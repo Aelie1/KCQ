@@ -1,4 +1,4 @@
-interface GameState {
+export interface GameState {
     metadata: StateMetadata;
     characters: CharacterState[];
     enemies: EnemyState[];
