@@ -11,7 +11,6 @@
           "${workspaceFolder}/dist/**/*.js"
         ],
         "sourceMaps": true,
-        "stopOnEntry": true,
         "console": "integratedTerminal",
         "skipFiles": [
           "<node_internals>/**"
