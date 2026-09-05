@@ -1,38 +1,67 @@
+
 export interface GameState {
-    turn: TurnState;
-    characters: CharacterState[];
-    enemies: EnemyState[];
+    turn: Turn;
+    characters: Character[];
+    enemies: Enemy[];
+}
+
+export interface Turn {
+    round: number;
+    step: number;
+    phase: Phase;
+}
+
+export type Phase = "player" | "enemy";
+export type EntitySide = "player" | "enemy";
+
+export interface Character {
+    acted: boolean;
+    bindings: Binding[];
+    buffs: Buff[];
+}
+
+export interface Enemy {
+    id: EntityId;
+    currHp: number;
+    currDef: number;
+    buffs: Buff[];
 }
 
 export interface Buff {
-    id: string;
-}
-
-export interface BuffState {
-    definition: Buff;
     duration: number;
     effect: number;
 }
 
-export interface Character {
+export interface Passive {
     id: string;
-    moves: Move[];
-    passives: Passive[];
 }
 
-export interface MoveInfo {
+export interface Move {
     id: string;
-    target: TargetType;
+    target: EntitySide;
     targets: number;
     type: MoveType;
 }
 
-export interface Move extends MoveInfo {
-    activate: (state: GameState, actor: EntityId, targets: EntityId[]) => void;
+export interface Binding {
+    id: BindingId;
+    ownerId: EntityId;
+    value: number;
 }
 
+export type MoveType = "physical" | "mystical" | "agility";
+export type EntityId = string;
+export type BindingId = string;
+export type BuffId = string;
+export type MoveId = string;
+
+
+/*******************************************************
+ * Actions
+ *******************************************************/
+
 export interface ActionInfo {
-    move: MoveInfo;
+    move: Move;
     available: boolean;
     reason?: ActionUnavailableReason;
 }
@@ -45,38 +74,23 @@ export type ActionUnavailableReason =
     | "insufficientResource"
     | "bindingRestriction";
 
-export interface Passive {
-    id: string;
+export type GameAction = AttackAction | EscapeAction | EndTurnAction;
+
+export interface AttackAction {
+    type: "attack";
+    actor: EntityId;
+    move: MoveId;
+    targets: EntityId[];
 }
 
-export interface CharacterState {
-    definition: Character;
-    acted: boolean;
-    bindings: BindingState[];
-    buffs: BuffState[];
+export interface EscapeAction {
+    type: "escape";
+    actor: EntityId;
+    track: BindingId;
 }
 
-export interface BindingState {
-    id: BindingId;
-    ownerId: EntityId;
-    value: number;
-}
-
-export interface Enemy {
-    id: string;
-    hp: number;
-    defense: number;
-    moves: Move[];
-    passives: Passive[];
-    ai: (state: GameState) => GameAction;
-}
-
-export interface EnemyState {
-    id: EntityId;
-    definition: Enemy;
-    currHp: number;
-    currDef: number;
-    buffs: BuffState[];
+export interface EndTurnAction {
+    type: "endTurn";
 }
 
 export type ActionResult = ActionSuccess | ActionFailure;
@@ -101,71 +115,49 @@ export type ActionFailureReason =
     | "moveUnavailable"
     | "cannotEscapeTrack";
 
-export type MoveType =
-    | "physical"
-    | "mystical"
-    | "agility";
 
-export type TargetType =
-    | "ally"
-    | "enemy";
 
-export type EntityId = string;
-export type BindingId = string;
-export type Phase =
-    | "player"
-    | "enemy";
+/*******************************************************
+ * Events
+ ********************************************************/
 
-export interface TurnState {
-    round: number;
-    step: number;
+export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | DefeatEvent;
+
+export interface MoveEvent {
+    type: "moveUsed";
+    actor: EntityId;
+    move: MoveId;
+    targets: EntityId[];
+}
+
+export interface DamageEvent {
+    type: "damage";
+    target: EntityId;
+    amount: number;
+}
+export interface BondageEvent {
+    type: "bondageChanged";
+    target: EntityId;
+    track: BindingId;
+    amount: number;
+}
+export interface PhaseEvent {
+    type: "phaseChanged";
     phase: Phase;
 }
-
-export type GameAction = AttackAction | EscapeAction | EndTurnAction;
-
-export interface AttackAction {
-    type: "attack";
-    actorId: EntityId;
-    moveId: Move;
-    targetId: EntityId;
+export interface BuffEvent {
+    type: "buff";
+    target: EntityId;
+    buff: BuffId;
+}
+export interface DefeatEvent {
+    type: "enemyDefeated";
+    target: EntityId;
 }
 
-export interface EscapeAction {
-    type: "escape";
-    actorId: EntityId;
-    targetTrackId: BindingId;
-}
-
-export interface EndTurnAction {
-    type: "endTurn";
-}
-
-export type GameEvent =
-    | {
-        type: "moveUsed";
-        actorId: EntityId;
-        moveId: Move;
-        targetIds: EntityId[];
-    }
-    | {
-        type: "damage";
-        sourceId: EntityId;
-        targetId: EntityId;
-        amount: number;
-    }
-    | {
-        type: "bondageChanged";
-        targetId: EntityId;
-        trackId: BindingId;
-        oldValue: number;
-        newValue: number;
-    }
-    | {
-        type: "phaseChanged";
-        from: Phase;
-        to: Phase;
-    };
+/*******************************************************
+ * History
+ *******************************************************/
 
 export interface HistoryEntry {
     action?: GameAction;
