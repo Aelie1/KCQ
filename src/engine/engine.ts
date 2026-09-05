@@ -1,4 +1,4 @@
-import type { Character, Enemy, GameState } from "./types";
+import type { ActionInfo, ActionUnavailableReason, Character, Enemy, EntityId, GameState } from "./types";
 
 export class GameEngine {
   private state: GameState;
@@ -35,7 +35,41 @@ export class GameEngine {
     });
   }
 
-  
+  getActions( name: EntityId ): ActionInfo[] {
+    let actions: ActionInfo[];
+    actions = [];
+    for (const character of this.state.characters) {
+      if (character.definition.id === name) {
+        for (const move of character.definition.moves) {
+          const { activate, ...moveInfo } = move;
+          let available = true;
+          let reason: ActionUnavailableReason;
+          reason = "moveUnavailable";
+          if (this.state.turn.phase !== "player") {
+            available = false;
+            reason = "wrongPhase";
+          }
+          if (character.acted) {
+            available = false;
+            reason = "actorAlreadyActed";
+          }
+          if (available) {
+            actions.push({
+              move: moveInfo,
+              available: true
+            });
+          } else {
+            actions.push({
+              move: moveInfo,
+              available: false,
+              reason: reason
+            });
+          }
+        }
+      }
+    }
+    return actions;
+  }
 }
 
 function serializeGameState(state: GameState) {

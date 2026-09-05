@@ -20,13 +20,30 @@ export interface Character {
     passives: Passive[];
 }
 
-export interface Move {
+export interface MoveInfo {
     id: string;
     target: TargetType;
     targets: number;
     type: MoveType;
+}
+
+export interface Move extends MoveInfo {
     activate: (state: GameState, actor: EntityId, targets: EntityId[]) => void;
 }
+
+export interface ActionInfo {
+    move: MoveInfo;
+    available: boolean;
+    reason?: ActionUnavailableReason;
+}
+
+export type ActionUnavailableReason =
+    | "wrongPhase"
+    | "actorAlreadyActed"
+    | "moveUnavailable"
+    | "onCooldown"
+    | "insufficientResource"
+    | "bindingRestriction";
 
 export interface Passive {
     id: string;
