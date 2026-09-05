@@ -36,15 +36,13 @@ export class GameEngine {
   }
 
   getActions( name: EntityId ): ActionInfo[] {
-    let actions: ActionInfo[];
-    actions = [];
+    const actions: ActionInfo[] = [];
     for (const character of this.state.characters) {
       if (character.definition.id === name) {
         for (const move of character.definition.moves) {
           const { activate, ...moveInfo } = move;
           let available = true;
-          let reason: ActionUnavailableReason;
-          reason = "moveUnavailable";
+          let reason: ActionUnavailableReason = "moveUnavailable";
           if (this.state.turn.phase !== "player") {
             available = false;
             reason = "wrongPhase";
