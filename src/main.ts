@@ -1,5 +1,6 @@
-import { createGameState } from "./engine/engine";
+import { ko } from "./content/characters/ko";
+import { GameEngine } from "./engine/engine";
 
-const state = createGameState();
-
-console.dir(state, { depth: null });
+const engine = new GameEngine();
+engine.loadCharacter(ko);
+console.dir(engine.getGameState(), { depth: null });
