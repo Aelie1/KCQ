@@ -15,6 +15,7 @@ export type Phase = "player" | "enemy";
 export type EntitySide = "player" | "enemy";
 
 export interface Character {
+    id: EntityId;
     acted: boolean;
     bindings: Binding[];
     buffs: Buff[];

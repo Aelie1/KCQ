@@ -23,6 +23,6 @@ export function defeatEnemy(state: iGameState, target: iEnemy): GameEvent[] {
         target: target.id,
     };
     events.push(event);
-    state.enemies.splice(state.enemies.indexOf(target));
+    state.enemies.splice(state.enemies.indexOf(target), 1);
     return events;
 }

@@ -30,3 +30,12 @@ console.log("~~Events: Attack #4~~");
 console.dir(events, {depth:null});
 console.log("~~State~~");
 console.dir(engine.getGameState());
+const state = engine.getGameState();
+
+state.turn.round = 999;
+state.characters[0].buffs.push({
+    duration: 999,
+    effect: 999
+});
+
+console.log(engine.getGameState());

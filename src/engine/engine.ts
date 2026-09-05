@@ -1,4 +1,5 @@
 import type { CharacterDef, EnemyDef, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
+import { serializeGameState } from "./serialize";
 import type { ActionInfo, ActionResult, ActionUnavailableReason, EntityId, EntitySide, GameAction, GameEvent, GameState, MoveId } from "./types";
 
 export class GameEngine {
@@ -19,6 +20,7 @@ export class GameEngine {
 
   loadCharacter(character: CharacterDef) {
     this.state.characters.push({
+      id: character.id,
       definition: character,
       acted: false,
       bindings: [],
@@ -73,18 +75,18 @@ export class GameEngine {
     const events: GameEvent[] = [];
     switch (action.type) {
       case "attack":
-        const side = getEntitySide(this.state, action.actor)
-        if (side !== this.state.turn.phase) {
-          return {
-            success: false,
-            reason: "wrongPhase"
-          };
-        }
         const actor = findEntity(this.state, action.actor);
         if (!actor) {
           return {
             success: false,
             reason: "invalidActor"
+          };
+        }
+        const side = getIEntitySide(actor)
+        if (side !== this.state.turn.phase) {
+          return {
+            success: false,
+            reason: "wrongPhase"
           };
         }
 
@@ -191,6 +193,11 @@ export function getEntitySide(state: iGameState, id: EntityId): EntitySide | und
   return undefined;
 }
 
+export function getIEntitySide(entity: iEntity): EntitySide {
+  return (isCharacter(entity)) ? "player" : "enemy";
+}
+
+
 export function isCharacter(entity: iCharacter | iEnemy): entity is iCharacter {
   return "bindings" in entity;
 }
@@ -199,16 +206,4 @@ export function isEnemy(entity: iCharacter | iEnemy): entity is iEnemy {
   return "currHp" in entity;
 }
 
-function serializeGameState(state: iGameState): GameState {
-  return {
-    ...state,
-
-    characters: state.characters.map(({ definition, ...runtime }) => ({
-      id: definition.id,
-      ...runtime
-    })),
-    enemies: state.enemies.map(({ definition, ...runtime }) => runtime),
-
-  }
-};
 

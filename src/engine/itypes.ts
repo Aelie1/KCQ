@@ -11,8 +11,9 @@ export interface iGameState {
 /*******************************************************
  * Characters
  *******************************************************/
-export interface iCharacter extends Character {
+export interface iCharacter extends Omit<Character, "buffs"> {
     definition: CharacterDef;
+    buffs: iBuff[];
 }
 
 export interface CharacterDef {
@@ -25,8 +26,9 @@ export interface CharacterDef {
  * Enemies
  *******************************************************/
 
-export interface iEnemy extends Enemy {
+export interface iEnemy extends Omit<Enemy, "buffs"> {
     definition: EnemyDef;
+    buffs: iBuff[];
 }
 
 export interface EnemyDef {
