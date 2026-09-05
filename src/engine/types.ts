@@ -4,38 +4,55 @@ export interface GameState {
     enemies: EnemyState[];
 }
 
-interface CharacterState {
-    id: EntityId;
-    name: string;
+export interface CharacterDefinition {
+    id: string;
+    moves: MoveDefinition[];
+    passives: PassiveDefinition[];
+}
+
+export interface MoveDefinition {
+    id: string;
+    target: TargetType;
+    targets: number;
+    type: MoveType;
+    activate: (state: GameState, actor: EntityId, targets: EntityId[]) => void;
+}
+
+export interface PassiveDefinition {
+    id: string;
+}
+
+export interface CharacterState {
+    definition: CharacterDefinition;
     acted: boolean;
     bindingTracks: BindingTrackState[];
 }
 
-interface BindingTrackState {
+export interface BindingTrackState {
     id: BindingTrackId;
     ownerId: EntityId;
     value: number;
 }
 
-interface EnemyState {
+export interface EnemyState {
     id: EntityId;
     name: string;
 }
 
-type ActionResult = ActionSuccess | ActionFailure;
+export type ActionResult = ActionSuccess | ActionFailure;
 
-interface ActionSuccess {
+export interface ActionSuccess {
     success: true;
     state: GameState;
     events: GameEvent[];
 }
 
-interface ActionFailure {
+export interface ActionFailure {
     success: false;
     reason: ActionFailureReason;
 }
 
-type ActionFailureReason =
+export type ActionFailureReason =
     | "invalidActor"
     | "invalidTarget"
     | "invalidMove"
@@ -44,43 +61,51 @@ type ActionFailureReason =
     | "moveUnavailable"
     | "cannotEscapeTrack";
 
-type EntityId = string;
-type BindingTrackId = string;
-type MoveId = string;
-type Phase =
+export type MoveType =
+    | "physical"
+    | "mystical"
+    | "agility";
+
+export type TargetType =
+    | "ally"
+    | "enemy";
+
+export type EntityId = string;
+export type BindingTrackId = string;
+export type Phase =
     | "player"
     | "enemy";
 
-interface StateMetadata {
+export interface StateMetadata {
     round: number;
     step: number;
     phase: Phase;
 }
 
-type GameAction = AttackAction | EscapeAction | EndTurnAction;
+export type GameAction = AttackAction | EscapeAction | EndTurnAction;
 
-interface AttackAction {
+export interface AttackAction {
     type: "attack";
     actorId: EntityId;
-    moveId: MoveId;
+    moveId: MoveDefinition;
     targetId: EntityId;
 }
 
-interface EscapeAction {
+export interface EscapeAction {
     type: "escape";
     actorId: EntityId;
     targetTrackId: BindingTrackId;
 }
 
-interface EndTurnAction {
+export interface EndTurnAction {
     type: "endTurn";
 }
 
-type GameEvent =
+export type GameEvent =
     | {
         type: "moveUsed";
         actorId: EntityId;
-        moveId: MoveId;
+        moveId: MoveDefinition;
         targetIds: EntityId[];
     }
     | {
@@ -102,7 +127,7 @@ type GameEvent =
         to: Phase;
     };
 
-interface HistoryEntry {
+export interface HistoryEntry {
     action?: GameAction;
     events: GameEvent[];
     state: GameState;
