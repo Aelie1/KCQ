@@ -1,6 +1,6 @@
-import { CharacterDefinition, EntityId, GameState, MoveDefinition, PassiveDefinition } from "../../engine/types";
+import { Character, EntityId, GameState, Move, Passive } from "../../engine/types";
 
-const telekinesis: MoveDefinition = {
+const telekinesis: Move = {
     id: "telekinesis",
     target: "enemy",
     targets: 1,
@@ -10,7 +10,7 @@ const telekinesis: MoveDefinition = {
     }
 };
 
-const starlight: MoveDefinition = {
+const starlight: Move = {
     id: "starlight",
     target: "enemy",
     targets: 0,
@@ -20,11 +20,11 @@ const starlight: MoveDefinition = {
     }
 }
 
-const thousandrestraintsbody: PassiveDefinition = {
+const thousandrestraintsbody: Passive = {
     id: "thousandrestraintsbody"
 }
 
-export const ko: CharacterDefinition = {
+export const ko: Character = {
     id: "ko",
     moves: [telekinesis, starlight],
     passives: [thousandrestraintsbody]

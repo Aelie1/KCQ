@@ -1,16 +1,26 @@
 export interface GameState {
-    metadata: StateMetadata;
+    turn: TurnState;
     characters: CharacterState[];
     enemies: EnemyState[];
 }
 
-export interface CharacterDefinition {
+export interface Buff {
     id: string;
-    moves: MoveDefinition[];
-    passives: PassiveDefinition[];
 }
 
-export interface MoveDefinition {
+export interface BuffState {
+    definition: Buff;
+    duration: number;
+    effect: number;
+}
+
+export interface Character {
+    id: string;
+    moves: Move[];
+    passives: Passive[];
+}
+
+export interface Move {
     id: string;
     target: TargetType;
     targets: number;
@@ -18,25 +28,38 @@ export interface MoveDefinition {
     activate: (state: GameState, actor: EntityId, targets: EntityId[]) => void;
 }
 
-export interface PassiveDefinition {
+export interface Passive {
     id: string;
 }
 
 export interface CharacterState {
-    definition: CharacterDefinition;
+    definition: Character;
     acted: boolean;
-    bindingTracks: BindingTrackState[];
+    bindings: BindingState[];
+    buffs: BuffState[];
 }
 
-export interface BindingTrackState {
-    id: BindingTrackId;
+export interface BindingState {
+    id: BindingId;
     ownerId: EntityId;
     value: number;
 }
 
+export interface Enemy {
+    id: string;
+    hp: number;
+    defense: number;
+    moves: Move[];
+    passives: Passive[];
+    ai: (state: GameState) => GameAction;
+}
+
 export interface EnemyState {
     id: EntityId;
-    name: string;
+    definition: Enemy;
+    currHp: number;
+    currDef: number;
+    buffs: BuffState[];
 }
 
 export type ActionResult = ActionSuccess | ActionFailure;
@@ -71,12 +94,12 @@ export type TargetType =
     | "enemy";
 
 export type EntityId = string;
-export type BindingTrackId = string;
+export type BindingId = string;
 export type Phase =
     | "player"
     | "enemy";
 
-export interface StateMetadata {
+export interface TurnState {
     round: number;
     step: number;
     phase: Phase;
@@ -87,14 +110,14 @@ export type GameAction = AttackAction | EscapeAction | EndTurnAction;
 export interface AttackAction {
     type: "attack";
     actorId: EntityId;
-    moveId: MoveDefinition;
+    moveId: Move;
     targetId: EntityId;
 }
 
 export interface EscapeAction {
     type: "escape";
     actorId: EntityId;
-    targetTrackId: BindingTrackId;
+    targetTrackId: BindingId;
 }
 
 export interface EndTurnAction {
@@ -105,7 +128,7 @@ export type GameEvent =
     | {
         type: "moveUsed";
         actorId: EntityId;
-        moveId: MoveDefinition;
+        moveId: Move;
         targetIds: EntityId[];
     }
     | {
@@ -117,7 +140,7 @@ export type GameEvent =
     | {
         type: "bondageChanged";
         targetId: EntityId;
-        trackId: BindingTrackId;
+        trackId: BindingId;
         oldValue: number;
         newValue: number;
     }
