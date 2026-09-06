@@ -11,7 +11,7 @@ export function damageEnemy(state: iGameState, target: iEnemy, amount: number): 
     };
     events.push(event);
     if (target.currHp <= 0) {
-        events.push(...defeatEnemy(state,target));
+        events.push(...defeatEnemy(state, target));
     }
     return events;
 }

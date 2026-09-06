@@ -1,13 +1,41 @@
-import { EnemyDef, iGameState } from "../../../engine/itypes";
-import { GameAction } from "../../../engine/types";
+import { addBinding } from "../../../engine/bindings";
+import { isCharacter } from "../../../engine/helpers";
+import { EnemyDef, iEnemy, iEntity, iGameState, MoveDef } from "../../../engine/itypes";
+import { GameAction, GameEvent } from "../../../engine/types";
+import { latexarms } from "../../bindings/latex";
+
+const latexspray: MoveDef = {
+    activate: function (state: iGameState, actor: iEntity, targets: iEntity[]): GameEvent[] {
+        const events: GameEvent[] = []
+        const target = targets[0];
+        if (isCharacter(target))
+            events.push(...addBinding(state, target, latexarms, 10));
+        return events;
+    },
+    isValid: function (state: iGameState, actor: iEntity, targets: iEntity[]): boolean {
+        if (targets.length !== 1) {
+            return false;
+        }
+        if (!isCharacter(targets[0])) {
+            return false;
+        }
+        return true;
+    },
+    id: "latexspray",
+    target: "player",
+    targets: 1,
+    type: "enemy"
+};
 
 export const skunkette: EnemyDef = {
     id: "skunkette",
     hp: 20,
     defense: 10,
-    moves: [],
+    moves: [latexspray],
     passives: [],
-    ai: function (state: iGameState): GameAction {
-        throw new Error("Function not implemented.");
+    ai: function (state: iGameState, actor: iEnemy): GameAction {
+        const target = state.characters[0]; //this becomes random later
+        const move = actor.definition.moves[0]; //this becomes smarter later, pounce->spray, mist, etc
+        return { type: "attack", actor: actor.id, targets: [target.id], move: move.id };
     }
 }

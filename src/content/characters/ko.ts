@@ -1,5 +1,5 @@
 import { damageEnemy } from "../../engine/combat";
-import { isEnemy } from "../../engine/engine";
+import { isEnemy } from "../../engine/helpers";
 import { CharacterDef, iEntity, iGameState, MoveDef, PassiveDef } from "../../engine/itypes";
 import { GameEvent } from "../../engine/types";
 
@@ -12,7 +12,7 @@ const telekinesis: MoveDef = {
         const events: GameEvent[] = []
         const target = targets[0];
         if (isEnemy(target))
-            events.push(...damageEnemy(state,target,10));
+            events.push(...damageEnemy(state, target, 10));
         return events;
     },
     isValid: function (state: iGameState, actor: iEntity, targets: iEntity[]): boolean {

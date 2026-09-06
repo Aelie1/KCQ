@@ -1,4 +1,4 @@
-import { Buff, Character, Enemy, GameAction, GameEvent, Move, Passive, Turn } from "./types";
+import { Binding, Buff, Character, Enemy, GameAction, GameEvent, Move, Passive, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -11,9 +11,10 @@ export interface iGameState {
 /*******************************************************
  * Characters
  *******************************************************/
-export interface iCharacter extends Omit<Character, "buffs"> {
+export interface iCharacter extends Omit<Character, "buffs" | "bindings"> {
     definition: CharacterDef;
     buffs: iBuff[];
+    bindings: iBinding[];
 }
 
 export interface CharacterDef {
@@ -37,7 +38,7 @@ export interface EnemyDef {
     defense: number;
     moves: MoveDef[];
     passives: PassiveDef[];
-    ai: (state: iGameState) => GameAction;
+    ai: (state: iGameState, actor: iEnemy) => GameAction;
 }
 
 /*******************************************************
@@ -72,3 +73,17 @@ export interface iPassive extends Passive {
 export interface PassiveDef {
     id: string;
 }
+
+/*******************************************************
+ * Bindings
+ *******************************************************/
+
+export interface iBinding extends Binding {
+    definition: BindingDef;
+}
+
+export interface BindingDef {
+    id: string;
+    max: number;
+}
+

@@ -1,3 +1,10 @@
+export type MoveType = "physical" | "mystical" | "agility" | "enemy";
+export type EntityId = string;
+export type BindingId = string;
+export type BuffId = string;
+export type MoveId = string;
+export type Phase = "player" | "enemy";
+export type EntitySide = "player" | "enemy";
 
 export interface GameState {
     turn: Turn;
@@ -11,9 +18,6 @@ export interface Turn {
     phase: Phase;
 }
 
-export type Phase = "player" | "enemy";
-export type EntitySide = "player" | "enemy";
-
 export interface Character {
     id: EntityId;
     acted: boolean;
@@ -25,6 +29,7 @@ export interface Enemy {
     id: EntityId;
     currHp: number;
     currDef: number;
+    intention: GameAction | null;
     buffs: Buff[];
 }
 
@@ -46,16 +51,8 @@ export interface Move {
 
 export interface Binding {
     id: BindingId;
-    ownerId: EntityId;
     value: number;
 }
-
-export type MoveType = "physical" | "mystical" | "agility";
-export type EntityId = string;
-export type BindingId = string;
-export type BuffId = string;
-export type MoveId = string;
-
 
 /*******************************************************
  * Actions
@@ -137,9 +134,9 @@ export interface DamageEvent {
     amount: number;
 }
 export interface BondageEvent {
-    type: "bondageChanged";
+    type: "bondageChanged" | "bondageAdded";
     target: EntityId;
-    track: BindingId;
+    binding: BindingId;
     amount: number;
 }
 export interface PhaseEvent {
