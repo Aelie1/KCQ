@@ -84,6 +84,5 @@ export interface iBinding extends Binding {
 
 export interface BindingDef {
     id: string;
-    max: number;
 }
 

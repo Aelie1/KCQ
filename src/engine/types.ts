@@ -1,4 +1,4 @@
-export type MoveType = "physical" | "mystical" | "agility" | "enemy";
+export type MoveType = "arms" | "mouth" | "legs" | "enemy";
 export type EntityId = string;
 export type BindingId = string;
 export type BuffId = string;
@@ -84,7 +84,8 @@ export interface AttackAction {
 export interface EscapeAction {
     type: "escape";
     actor: EntityId;
-    track: BindingId;
+    target: EntityId;
+    binding: BindingId;
 }
 
 export interface EndTurnAction {
@@ -108,6 +109,7 @@ export type ActionFailureReason =
     | "invalidActor"
     | "invalidTarget"
     | "invalidMove"
+    | "invalidBinding"
     | "wrongPhase"
     | "actorAlreadyActed"
     | "moveUnavailable"
@@ -134,7 +136,7 @@ export interface DamageEvent {
     amount: number;
 }
 export interface BondageEvent {
-    type: "bondageChanged" | "bondageAdded";
+    type: "bondageChanged" | "bondageAdded" | "bondageRemoved";
     target: EntityId;
     binding: BindingId;
     amount: number;

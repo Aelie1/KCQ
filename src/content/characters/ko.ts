@@ -7,7 +7,7 @@ const telekinesis: MoveDef = {
     id: "telekinesis",
     target: "enemy",
     targets: 1,
-    type: "mystical",
+    type: "mouth",
     activate: function (state: iGameState, actor: iEntity, targets: iEntity[]): GameEvent[] {
         const events: GameEvent[] = []
         const target = targets[0];
@@ -31,7 +31,7 @@ const starlight: MoveDef = {
     id: "starlight",
     target: "enemy",
     targets: 0,
-    type: "mystical",
+    type: "mouth",
     activate: function (state: iGameState, actor: iEntity, targets: iEntity[]): GameEvent[] {
         console.log("used starlight");
         return [];

@@ -9,7 +9,7 @@ const latexspray: MoveDef = {
         const events: GameEvent[] = []
         const target = targets[0];
         if (isCharacter(target))
-            events.push(...addBinding(state, target, latexarms, 10));
+            events.push(...addBinding(target, latexarms, 30));
         return events;
     },
     isValid: function (state: iGameState, actor: iEntity, targets: iEntity[]): boolean {

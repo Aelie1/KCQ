@@ -1,18 +1,25 @@
-import { findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
+import { calculateProgress, removeBinding } from "./bindings";
+import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
 import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
+import { XorShift32 } from "./random";
 import { serializeGameState } from "./serialize";
 import type { ActionInfo, ActionResult, ActionUnavailableReason, EntityId, GameAction, GameEvent, GameState } from "./types";
 
 export class GameEngine {
     private state: iGameState;
     private nextEntityId = 1;
+    private seed: number;
+    private rng: XorShift32;
 
-    constructor() {
+    constructor(seed?: number) {
         this.state = {
             turn: { round: 1, step: 1, phase: "player" },
             characters: [],
             enemies: []
         };
+        seed ??= Math.floor(Math.random() * 0x100000000)
+        this.seed = seed;
+        this.rng = new XorShift32(seed);
     }
 
     getGameState(): GameState {
@@ -76,7 +83,7 @@ export class GameEngine {
     executeAction(action: GameAction): ActionResult {
         const events: GameEvent[] = [];
         switch (action.type) {
-            case "attack":
+            case "attack": {
                 const actor = findEntity(this.state, action.actor);
                 if (!actor) {
                     return {
@@ -139,14 +146,55 @@ export class GameEngine {
                     events: events,
                     state: this.getGameState(),
                 };
-            case "escape":
+            }
+            case "escape": {
+                if (this.state.turn.phase !== "player") {
+                    return {
+                        success: false,
+                        reason: "wrongPhase"
+                    };
+                }
+
+                const actor = findCharacter(this.state, action.actor);
+                if (!actor) {
+                    return {
+                        success: false,
+                        reason: "invalidActor"
+                    };
+                }
+
+                if (actor.acted) {
+                    return {
+                        success: false,
+                        reason: "actorAlreadyActed"
+                    };
+                }
+
+                const target = findCharacter(this.state, action.target);
+                if (!target) {
+                    return {
+                        success: false,
+                        reason: "invalidTarget"
+                    };
+                }
+                const amount = calculateProgress(actor,target, action.binding);
+                const binding = findBinding(target,action.binding);
+                if (!binding) {
+                    return {
+                        success: false,
+                        reason: "invalidBinding"
+                    }
+                }
+                events.push(...removeBinding(target,binding.definition,amount))
+                actor.acted = true;
                 this.state.turn.step++;
                 return {
                     success: true,
                     events: events,
                     state: this.getGameState(),
                 };
-            case "endTurn":
+            }
+            case "endTurn": {
                 if (this.state.turn.phase !== "player") {
                     return {
                         success: false,
@@ -162,6 +210,7 @@ export class GameEngine {
                     events: events,
                     state: this.getGameState(),
                 };
+            }
         }
     }
 
