@@ -1,3 +1,5 @@
+import { getStatuses } from "./bindings";
+import { getBindingLevel } from "./helpers";
 import type { iGameState, iCharacter, iEnemy, iBuff, iBinding } from "./itypes";
 import type { GameState, Character, Enemy, Buff, Binding, GameAction } from "./types";
 
@@ -11,21 +13,22 @@ export function serializeGameState(state: iGameState): GameState {
 }
 
 function serializeCharacter(character: iCharacter): Character {
-    const { definition, ...state } = character;
+    const { definition, ..._character } = character;
 
     return {
-        ...state,
+        ..._character,
         id: definition.id,
         buffs: character.buffs.map(serializeBuff),
-        bindings: character.bindings.map(serializeBinding)
+        bindings: character.bindings.map(serializeBinding),
+        status: getStatuses(character)
     };
 
 }
 
 function serializeEnemy(enemy: iEnemy): Enemy {
-    const { definition, ...state } = enemy;
+    const { definition, ..._enemy } = enemy;
     return {
-        ...state,
+        ..._enemy,
         intention: enemy.intention ? serializeAction(enemy.intention) : null,
         buffs: enemy.buffs.map(serializeBuff)
     };
@@ -38,11 +41,15 @@ function serializeAction(action: GameAction): GameAction {
 }
 
 function serializeBuff(buff: iBuff): Buff {
-    const { definition, ...state } = buff;
-    return state;
+    const { definition, ..._buff } = buff;
+    return _buff;
 }
 
 function serializeBinding(binding: iBinding): Binding {
-    const { definition, ...state } = binding;
-    return state;
+    const { definition, ..._binding } = binding;
+    return {
+        ..._binding,
+        state: {...binding.state},
+        level: getBindingLevel(binding),
+    };
 }

@@ -1,5 +1,6 @@
+import { EASY_THRESHOLD, EXTREME_THRESHOLD, HARD_THRESHOLD, IMPOSSIBLE_THRESHOLD, MEDIUM_THRESHOLD } from "./constants";
 import type { iGameState, iCharacter, iEnemy, iEntity, MoveDef, iBinding } from "./itypes";
-import type { EntityId, MoveId, BindingId, EntitySide } from "./types";
+import type { EntityId, MoveId, BindingId, EntitySide, BindingLevel } from "./types";
 
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {
@@ -46,4 +47,18 @@ export function isCharacter(entity: iCharacter | iEnemy): entity is iCharacter {
 
 export function isEnemy(entity: iCharacter | iEnemy): entity is iEnemy {
     return "currHp" in entity;
+}
+
+export function getBindingLevel(binding: iBinding): BindingLevel {
+    if (binding.value >= IMPOSSIBLE_THRESHOLD)
+        return "impossible";
+    else if (binding.value >= EXTREME_THRESHOLD)
+        return "extreme";
+    else if (binding.value >= HARD_THRESHOLD)
+        return "hard";
+    else if (binding.value >= MEDIUM_THRESHOLD)
+        return "medium";
+    else if (binding.value >= EASY_THRESHOLD)
+        return "easy";
+    return "none";
 }

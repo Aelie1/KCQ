@@ -1,10 +1,13 @@
 export type MoveType = "arms" | "mouth" | "legs" | "enemy";
-export type EntityId = string;
-export type BindingId = string;
-export type BuffId = string;
 export type MoveId = string;
-export type Phase = "player" | "enemy";
+export type EntityId = string;
 export type EntitySide = "player" | "enemy";
+export type BindingId = string;
+export type BindingLevel = "none" | "easy" | "medium" | "hard" | "extreme" | "impossible"
+export type BuffId = string;
+export type StatusId = "bound" | "gagged" | "hobbled" | "vibrating" | "submissive" | "breathless" | "blinded" | "immobilized" | "helpless" | "incapacitated";
+export type Phase = "player" | "enemy";
+
 
 export interface GameState {
     turn: Turn;
@@ -23,6 +26,7 @@ export interface Character {
     acted: boolean;
     bindings: Binding[];
     buffs: Buff[];
+    status: Status[];
 }
 
 export interface Enemy {
@@ -51,6 +55,13 @@ export interface Move {
 
 export interface Binding {
     id: BindingId;
+    value: number;
+    level: BindingLevel;
+    state: Record<string,number>;
+}
+
+export interface Status {
+    id: StatusId;
     value: number;
 }
 

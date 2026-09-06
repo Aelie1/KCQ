@@ -1,7 +1,7 @@
 import { BINDING_MAX, IMPOSSIBLE_THRESHOLD } from "./constants";
-import { findBinding } from "./helpers";
+import { findBinding, getBindingLevel } from "./helpers";
 import { BindingDef, iCharacter } from "./itypes";
-import { BindingId, BondageEvent, GameEvent } from "./types";
+import { BindingId, BondageEvent, GameEvent, Status } from "./types";
 
 export function addBinding(target: iCharacter, type: BindingDef, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
@@ -9,7 +9,7 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
     let binding = findBinding(target, type.id);
     if (!binding) {
         //character doesnt have it, let's add it
-        binding = { definition: type, id: type.id, value: 0 };
+        binding = { definition: type, id: type.id, value: 0, state: type.initialState };
         target.bindings.push(binding);
         event.type = "bondageAdded";
     }
@@ -27,6 +27,10 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
     if (binding.value > BINDING_MAX) {
         binding.value = BINDING_MAX;
     }
+    if (type.onBindingAdd) {
+        type.onBindingAdd(binding);
+    }
+
     event.amount = binding.value - origLevel;
     events.push(event);
     return events;
@@ -71,4 +75,23 @@ export function calculateProgress(actor: iCharacter, target: iCharacter, type: B
     }
 
     return Math.ceil(escapePotency);
+}
+
+export function getStatuses(target: iCharacter): Status[] {
+    const statuses: Status[] = [];
+    for (const binding of target.bindings) {
+        const bStatuses = binding.definition.status;
+        const level = getBindingLevel(binding);
+        for (const bStatus of bStatuses[level]) {
+            const cStatus = statuses.find(x => x.id === bStatus.id);
+            if (cStatus !== undefined) {
+                if (cStatus.value < bStatus.value) {
+                    cStatus.value = bStatus.value;
+                }
+            } else {
+                statuses.push(bStatus);
+            }
+        }
+    }
+    return statuses;
 }

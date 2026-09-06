@@ -1,4 +1,4 @@
-import { Binding, Buff, Character, Enemy, GameAction, GameEvent, Move, Passive, Turn } from "./types";
+import { Binding, BindingLevel, Buff, Character, Enemy, GameAction, GameEvent, Move, Passive, Status, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -11,7 +11,7 @@ export interface iGameState {
 /*******************************************************
  * Characters
  *******************************************************/
-export interface iCharacter extends Omit<Character, "buffs" | "bindings"> {
+export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "status"> {
     definition: CharacterDef;
     buffs: iBuff[];
     bindings: iBinding[];
@@ -78,11 +78,14 @@ export interface PassiveDef {
  * Bindings
  *******************************************************/
 
-export interface iBinding extends Binding {
+export interface iBinding extends Omit<Binding, "level"> {
     definition: BindingDef;
 }
 
 export interface BindingDef {
     id: string;
+    status: Record<BindingLevel, Status[]>;
+    initialState: Record<string,number>;
+    onBindingAdd?: (binding: iBinding) => void;
 }
 
