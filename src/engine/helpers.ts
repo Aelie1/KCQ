@@ -3,7 +3,7 @@ import type { EntityId, MoveId, BindingId, EntitySide } from "./types";
 
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {
-    return state.characters.find(character => character.definition.id === id);
+    return state.characters.find(character => character.id === id);
 }
 
 export function findEnemy(state: iGameState, id: EntityId): iEnemy | undefined {

@@ -38,7 +38,6 @@ export class GameEngine {
             currDef: enemy.defense,
             intention: null,
         });
-        this.updateIntentions(this.state.enemies[index-1]);
     }
 
     getActions(name: EntityId): ActionInfo[] {
@@ -148,7 +147,16 @@ export class GameEngine {
                     state: this.getGameState(),
                 };
             case "endTurn":
+                if (this.state.turn.phase !== "player") {
+                    return {
+                        success: false,
+                        reason: "wrongPhase"
+                    };
+                }
                 events.push(...this.advancePhase());
+                events.push(...this.executeEnemyPhase());
+                events.push(...this.advancePhase());
+        
                 return {
                     success: true,
                     events: events,
@@ -181,23 +189,27 @@ export class GameEngine {
             for (const actor of this.state.characters) {
                 actor.acted = false;
             }
-            for (const enemy of this.state.enemies) {
-                this.updateIntentions(enemy);
-            }
+            this.updateIntentions();
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
         }
         events.push({ type: "phaseChanged", phase: this.state.turn.phase });
-        if (this.state.turn.phase === "enemy") {
-            events.push(...this.executeEnemyPhase());
-        }
 
         return events;
     }
 
+    
+    updateIntentions() {
+        for (const enemy of this.state.enemies) {
+            enemy.intention = null;
+        }
+        for (const enemy of this.state.enemies) {
+            this.updateIntention(enemy);
+        }
+    }
 
-    updateIntentions(actor: iEnemy) {
+    updateIntention(actor: iEnemy) {
         actor.intention = actor.definition.ai(this.state,actor);
     }
 }

@@ -5,6 +5,7 @@ import { GameEngine } from "./engine/engine";
 const engine = new GameEngine();
 engine.loadCharacter(ko);
 engine.loadEnemy(skunkette);
+engine.updateIntentions();
 const actions = engine.getActions("ko");
 console.log("~~Actions~~");
 console.dir(actions, { depth: null, breakLength: 200 });
@@ -29,7 +30,7 @@ events = engine.executeAction({ type: "attack", actor: "ko", "move": "telekinesi
 console.log("~~Events: Attack #4~~");
 console.dir(events, { depth: null, breakLength: 200 });
 console.log("~~State~~");
-console.dir(engine.getGameState());
+console.dir(engine.getGameState(), { depth: null, breakLength: 200 });
 const state = engine.getGameState();
 
 state.turn.round = 999;
@@ -38,4 +39,4 @@ state.characters[0].buffs.push({
     effect: 999
 });
 
-console.log(engine.getGameState());
+console.dir(engine.getGameState(), { depth: null, breakLength: 200 });
