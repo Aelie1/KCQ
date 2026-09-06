@@ -1,7 +1,7 @@
-# KCQ Design Spec — v1
+# KCQ Design Spec — v2
 
 **Status:** Working specification  
-**Scope:** Concrete decisions for the new game only. Historical research, archaeology, old-game analysis, and rationale belong in the separate *KCQ Design Notes* document.
+**Scope:** Concrete decisions for KCQ only. Historical research, archaeology, old-game analysis, and rationale belong in the separate *BQuest 2 Design Notes* document.
 
 ---
 
@@ -39,17 +39,23 @@ The default round flow is:
 1. **Start of player phase**
    - Tick and expire active timed effects.
    - Activate pending effects that begin this round.
-2. **Choose enemy intents**
-   - Each enemy selects its move from the current game state.
+2. **Generate enemy intents**
+   - Each enemy selects its move and target from the current game state.
+   - Any ordinary random resolution value used by that intent is rolled now.
+   - The resulting **base roll is committed** to the intent.
 3. **Reveal enemy intents**
-   - Show the selected move and target.
+   - Show the selected move, target, and current predicted resolution/effect.
+   - The player may inspect the committed base roll and the modifiers producing the current result.
 4. **Player phase**
    - Party members act in any order.
+   - Player actions may change modifiers, Defense, targets, intents, or even the committed rolls when an ability explicitly manipulates randomness.
+   - Intent previews update immediately as the state changes.
 5. **Enemy phase**
    - Enemies execute their revealed intents from top to bottom in displayed enemy order.
+   - They use the committed base roll with the game state/modifiers that apply at execution time.
 6. Begin the next round.
 
-Enemy intent selection occurs **after** start-of-round effects have ticked, expired, or activated.
+Enemy intent generation occurs **after** start-of-round effects have ticked, expired, or activated. Randomness therefore creates the tactical problem **before** the player commits actions to solving it.
 
 ---
 
@@ -77,24 +83,47 @@ It is acceptable for Stand Still to have little or no practical downside during 
 
 ## 4. Enemy Intents
 
-Enemy actions are announced through visible intents.
+Enemy actions are announced through visible intents. Enemy randomness is normally resolved **when the intent is generated**, before the player phase.
 
 An intent normally shows:
 
 - the **move/action name**;
 - the **target**;
-- a tooltip or expanded description explaining what the move does.
+- its current **Miss / Graze / Hit / Crit** result when applicable;
+- its current predicted numerical or discrete effect when that information is tactically useful;
+- a tooltip or expanded description explaining what the move does and how the current result was produced.
 
-Exact numerical outcomes do not need to be shown as part of the basic intent display.
+A weak or missed enemy intent is legitimate information. If an enemy has currently rolled a Miss, the player may choose to ignore it. If later player actions make the target easier to hit, the same committed roll may become a Graze or Hit and the preview updates accordingly.
+
+### Committed base rolls
+
+For ordinary rolled enemy moves, the intent stores a **base roll** generated during intent creation.
+
+- The base roll is normally immutable for the rest of the round.
+- Relevant modifiers are **not baked permanently into that number**. They are derived from current game state.
+- The current total, outcome band, and effect are recalculated when relevant state changes.
+- A tooltip should be able to expose the calculation, for example:
+
+```text
+Base roll:             17
+Power of the Goddess:  +4
+Enemy Effect:          +2
+                       --
+Current total:         23
+Outcome:               Crit
+```
+
+The exact arithmetic and modifier categories remain open, but the distinction between **committed random base value** and **live derived modifiers** is intentional.
 
 ### Intent rules
 
-- Once revealed, an intent is normally **locked**.
+- Once revealed, an intent's move, target, and committed base roll are normally **locked**.
 - Enemies do not silently choose a new target because circumstances changed.
 - If the target becomes invalid, the intent normally **fails/fizzles**.
 - If the enemy becomes unable to perform the declared move, the intent normally **fails/fizzles**.
 - A move may explicitly define a fallback or exception.
 - Player abilities may explicitly **redirect, cancel, alter, or otherwise manipulate** intents.
+- Player abilities may explicitly manipulate committed randomness, including effects such as **rerolling, modifying, replacing, swapping, or otherwise transforming base rolls**.
 - Taunts and similar effects may deliberately pull compatible enemy targeting onto a chosen character.
 - Precommitted reactions are preferred over interrupt/confirmation prompts.
 
@@ -134,6 +163,12 @@ An enemy may use:
 The engine does not prescribe a universal AI style.
 
 Cross-enemy communication and the implementation mechanism for coordinated intent selection are implementation details, but the design must permit such coordination.
+
+### Randomness as interactable state
+
+The engine must support player abilities that manipulate the committed random values attached to enemy intents. Possible authored effects include rerolling a base roll, forcing a worse/better reroll rule, adding or subtracting from it, swapping rolls between intents, or transforming a roll in another defined way.
+
+This capability is expected to be especially relevant to **Sakari's chaos-themed kit**, although her exact abilities remain open.
 
 ---
 
@@ -180,14 +215,14 @@ The UI must make valid and invalid targets clear before commitment.
 
 Player and enemy moves use the same core resolution machinery.
 
-A move has a base outcome profile built from some combination of:
+A move has an outcome profile built from some combination of:
 
 - **Miss**
 - **Graze**
 - **Hit**
 - **Crit**
 
-Any of these bands may have zero width.
+Any of these bands may have zero width. Enemies are not exempt from Miss: an enemy may simply roll poorly and reveal an intent that currently misses.
 
 Examples of valid move profiles include:
 
@@ -199,14 +234,17 @@ Examples of valid move profiles include:
 - a move with no Crit;
 - a binary Miss/Hit move.
 
-A move that must be completely reliable may explicitly prevent relevant state from modifying its resolution profile.
+A move that must be completely reliable may explicitly prevent relevant state from modifying its resolution.
 
-### Resolution process
+### Shared resolution process
 
-1. The move supplies its **base resolution profile**.
-2. Relevant game state modifies that profile.
-3. A roll selects a position on the final bar.
-4. The move translates that result into its effect.
+Conceptually, rolled moves use the following pipeline:
+
+1. The move supplies its **resolution profile** and effect rules.
+2. A **base roll** is generated.
+3. Relevant game state contributes named modifiers to produce the current resolved value.
+4. That value is interpreted through the move's Miss/Graze/Hit/Crit profile.
+5. The move translates the resulting band and, when useful, exact position/value into its effect.
 
 Potential modifiers include:
 
@@ -219,7 +257,22 @@ Potential modifiers include:
 - scenario rules;
 - difficulty/Ascension rules.
 
-The exact transformation formulas are not yet defined.
+The exact numeric scale, dice/range, ordering, and transformation formulas are not yet defined. A d20-style base roll remains possible but is not committed.
+
+### Player versus enemy roll timing
+
+The same resolution machinery is used on both sides, but the timing differs:
+
+- **Player rolled actions:** generate their base roll when the player executes the action.
+- **Enemy rolled actions:** generate their base roll when the enemy intent is created, before the player phase, and reveal the current outcome in advance.
+
+This preserves randomness while avoiding blind punishment after the player has already committed to a plan. Enemy randomness generates the problem; the player gets informed tactical agency in responding to it.
+
+### Live reinterpretation
+
+An enemy's committed base roll normally remains fixed, but its current result is live. If Defense, statuses, vulnerabilities, or other relevant modifiers change during the player phase, the same base roll may move between Miss, Graze, Hit, and Crit or change its numerical effect.
+
+For example, an intent that currently Misses may become a Graze if its target uses **Stand Still** and becomes easier to hit. Conversely, a defensive buff may turn a Hit into a Graze without rerolling the enemy's base value.
 
 ### Continuous effectiveness
 
@@ -281,7 +334,15 @@ Bondage progresses through named severity bands:
 
 Tracks may use different thresholds and different effects for these bands.
 
-The precise underlying numeric scale, thresholds, and upper limits remain open.
+The current general prototype candidate uses a fine **0–100+** scale with severity thresholds at approximately:
+
+- **Easy:** 10
+- **Medium:** 20
+- **Hard:** 30
+- **Extreme:** 50
+- **Impossible:** 80
+
+These values are intentionally provisional and may change with encounter testing. `Impossible` does not imply a hard numeric cap; tracks may continue above the threshold when overbinding is useful.
 
 ### Immediate threshold effects
 
@@ -321,7 +382,21 @@ Additional capability types may be introduced only when actual mechanics require
 
 Character-specific abilities may bypass normal physical assumptions. For example, a telekinetic character might assist while their arms are bound but lose that ability if a different required capability is disabled.
 
-Ordinary Escape/Assist effects are deterministic by default. Their resulting bondage changes should be fully previewable before commitment. Scenario-specific mechanics may introduce uncertain escape outcomes explicitly.
+Ordinary Escape/Assist effects are **deterministic by default**. Their resulting bondage changes should be fully previewable before commitment. Scenario-specific mechanics may introduce uncertain escape outcomes explicitly.
+
+### Escape scaling direction
+
+The current prototype direction is that ordinary self-escape becomes less effective as the targeted bondage amount increases. The degradation should be **continuous and accelerating toward high bondage**, rather than logarithmic or linearly collapsing. A convex/power-style curve is the current candidate shape.
+
+Design goals:
+
+- low bondage remains relatively easy to clean up;
+- moderate bondage begins to consume meaningful actions;
+- high bondage becomes increasingly inefficient to solve alone;
+- ordinary assistance remains substantially stronger than self-escape;
+- the system retains a meaningful recovery floor rather than making late escape mathematically impossible by default.
+
+The base escape curve should normally remain **smooth across severity thresholds**. Crossing from, for example, 79 to 81 may trigger new `Impossible` band consequences, but the universal escape formula should not also impose an arbitrary step penalty unless that binding/scenario explicitly defines one.
 
 ### Skunk-style redistribution
 
@@ -440,6 +515,8 @@ Show a compact indication of current Defense/evasiveness.
 
 The final representation may be a bar, percentage, raw value, symbolic rating, or another readable form. Exact presentation is open.
 
+When Defense changes during the player phase, any affected visible enemy intents should update immediately so the player can see whether a committed enemy roll has changed from Miss → Graze → Hit → Crit or vice versa.
+
 ### Attacking/action capabilities
 
 Show only capability summaries that matter to that character, such as Motion or Verbal.
@@ -472,7 +549,7 @@ The interface should make it clear whether the character has already acted this 
 
 ---
 
-## 15. Visual Preview of Bondage Changes
+## 15. Visual Preview of Bondage and Intent Changes
 
 Bondage should be communicated primarily through **bars and visual previews**, not arithmetic.
 
@@ -487,6 +564,27 @@ The goal is for the player to understand outcomes such as:
 > “This should free enough of my Arms to cross back into Medium, but it will push more restraint onto Torso.”
 
 without needing to read or calculate exact `-X / +Y` values.
+
+### Intent calculation preview
+
+Enemy intent numbers should show the **current answer first** and make the underlying equation available on hover/click. A useful presentation is:
+
+```text
+Skunk Gun → Ko
+CRIT — +46 Arms
+
+Base roll:             17
+Power of the Goddess:  +4
+Enemy Effect:          +2
+Current total:         23
+```
+
+The exact labels and layout are open, but the player should be able to answer both:
+
+- **What is about to happen right now?**
+- **Why is that the current result?**
+
+If a player action changes the calculation, the visible intent and its detailed breakdown should update immediately before commitment where practical.
 
 ---
 
@@ -512,7 +610,10 @@ Reaching 0 HP has no universal scenario-level victory meaning; the scenario deci
 - Capability/dashboard indicators answer **“what can I currently do?”**
 - Move tooltips answer **“what will this action do, and what can affect it?”**
 - Enemy intents answer **“what is about to happen?”**
-- Exact numbers should be shown only where they improve understanding.
+- Enemy intent details answer **“what was rolled, what modified it, and why does that produce this outcome?”**
+- A currently missed enemy attack should be visibly recognizable as a Miss before the player acts.
+- When player actions change the predicted result of an enemy intent, that change should be visible immediately.
+- Exact numbers should be shown where they improve tactical understanding, but arithmetic should be layered behind the clear current result rather than becoming mandatory reading.
 - Fine underlying numerical state is acceptable if the player-facing consequences remain discrete and readable.
 
 ---
@@ -521,16 +622,18 @@ Reaching 0 HP has no universal scenario-level victory meaning; the scenario deci
 
 The following are intentionally **not yet specified**:
 
-- exact bondage numeric scale;
-- exact severity thresholds for any binding type;
+- final bondage numeric scale and whether 100 has any universal special meaning;
+- final severity thresholds for any binding type; the current general prototype candidate is 10 / 20 / 30 / 50 / 80;
 - exact band effects for any binding type;
-- exact Miss/Graze/Hit/Crit percentages for moves;
+- exact base-roll range/die and Miss/Graze/Hit/Crit thresholds for moves;
 - exact within-band effectiveness ranges;
-- exact formulas used by Defense, restraints, and statuses to reshape resolution bars;
+- exact formulas and modifier ordering used by Defense, restraints, statuses, enemy power, and scenario effects to transform a base roll into its current resolved value;
+- exact self-Escape and Assist curves, coefficients, minimum floors, and character-specific modifiers;
 - final visual representation and name of the Defense stat;
-- exact visual layout of the dashboard;
+- exact visual layout of the dashboard and intent breakdown;
 - final character roster;
 - final character/class kits;
+- exact randomness-manipulation kit for Sakari or any other character;
 - whether any character has pre-battle loadout choices;
 - exact scenario/campaign structure;
 - exact difficulty/Ascension rules;
@@ -547,9 +650,12 @@ KCQ should favor:
 
 - **scenario-authored mechanics over unnecessary universal restrictions;**
 - **visible tactical information over hidden equation soup;**
-- **fixed enemy intents that players can interact with;**
+- **randomness that creates visible tactical problems before the player commits actions;**
+- **fixed enemy intents with committed base rolls that players can interact with;**
+- **the same Miss/Graze/Hit/Crit resolution language for ordinary player and enemy attacks;**
+- **deterministic, previewable player recovery as a counterpoint to random enemy pressure;**
 - **meaningful bondage state over conventional player HP;**
 - **character-specific tools/resources over generic RPG systems;**
 - **simple core rules with room for highly bespoke moves, enemies, and scenarios;**
 - **combat decisions over grinding or stat progression;**
-- **UI that communicates consequences without demanding arithmetic.**
+- **UI that communicates consequences without demanding arithmetic, while making the underlying calculation inspectable when desired.**

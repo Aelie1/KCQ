@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { addBinding } from "../src/engine/bindings";
-import { GameEngine } from "../src/engine/engine";
-import type { iGameState } from "../src/engine/itypes";
 import { latexarms } from "../src/content/bindings/latex";
 import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/enemies/skunk/skunkette";
+import { addBinding } from "../src/engine/bindings";
+import { GameEngine } from "../src/engine/engine";
+import type { iGameState } from "../src/engine/itypes";
 
 function setup() {
     const engine = new GameEngine();
@@ -36,11 +36,32 @@ describe("GameEngine state and loading", () => {
 
     it("returns serialized snapshots that cannot mutate engine state", () => {
         const engine = setup();
+        engine.updateIntentions();
+        engine.executeAction({ type: "endTurn" });
         const snapshot = engine.getGameState();
+
+        snapshot.turn.step = 99;
         snapshot.turn.round = 99;
+        snapshot.characters[0].acted = true;
+        snapshot.characters[0].bindings[0].value = 99;
         snapshot.characters[0].buffs.push({ duration: 1, effect: 2 });
-        expect(engine.getGameState().turn.round).toBe(1);
-        expect(engine.getGameState().characters[0].buffs).toEqual([]);
+        snapshot.enemies[0].currHp = 1;
+        snapshot.enemies[0].currDef = 1;
+        const intention = snapshot.enemies[0].intention;
+
+        expect(intention?.type).toBe("attack");
+
+        if (intention?.type === "attack") {
+            intention.targets.push("mutated");
+        }
+        snapshot.enemies[0].buffs.push({ duration: 1, effect: 2 });
+
+        const current = engine.getGameState();
+        expect(current).toMatchObject({
+            turn: { round: 2, step: 1, phase: "player" },
+            characters: [{ acted: false, bindings: [{ id: "latexarms", value: 10 }], buffs: [] }],
+            enemies: [{ currHp: 20, currDef: 10, buffs: [], intention: { type: "attack", actor: "skunkette1", move: "latexspray", targets: ["ko"] } }],
+        });
     });
 });
 
@@ -70,10 +91,12 @@ describe("player actions", () => {
     it("executes an attack and prevents the character acting twice", () => {
         const engine = setup();
         const result = engine.executeAction({ type: "attack", actor: "ko", move: "telekinesis", targets: ["skunkette1"] });
-        expect(result).toMatchObject({ success: true, events: [
-            { type: "moveUsed", actor: "ko", move: "telekinesis", targets: ["skunkette1"] },
-            { type: "damage", target: "skunkette1", amount: 10 },
-        ] });
+        expect(result).toMatchObject({
+            success: true, events: [
+                { type: "moveUsed", actor: "ko", move: "telekinesis", targets: ["skunkette1"] },
+                { type: "damage", target: "skunkette1", amount: 10 },
+            ]
+        });
         expect(engine.getGameState().enemies[0].currHp).toBe(10);
         expect(engine.getActions("ko").every(action => !action.available)).toBe(true);
         expect(engine.executeAction({ type: "attack", actor: "ko", move: "telekinesis", targets: ["skunkette1"] })).toEqual({ success: false, reason: "actorAlreadyActed" });
@@ -85,12 +108,14 @@ describe("turn phases and enemy actions", () => {
         const engine = setup();
         engine.updateIntentions();
         const result = engine.executeAction({ type: "endTurn" });
-        expect(result).toMatchObject({ success: true, events: [
-            { type: "phaseChanged", phase: "enemy" },
-            { type: "moveUsed", actor: "skunkette1", move: "latexspray", targets: ["ko"] },
-            { type: "bondageAdded", target: "ko", binding: "latexarms", amount: 10 },
-            { type: "phaseChanged", phase: "player" },
-        ] });
+        expect(result).toMatchObject({
+            success: true, events: [
+                { type: "phaseChanged", phase: "enemy" },
+                { type: "moveUsed", actor: "skunkette1", move: "latexspray", targets: ["ko"] },
+                { type: "bondageAdded", target: "ko", binding: "latexarms", amount: 10 },
+                { type: "phaseChanged", phase: "player" },
+            ]
+        });
         expect(engine.getGameState()).toMatchObject({ turn: { round: 2, step: 1, phase: "player" }, characters: [{ acted: false, bindings: [{ id: "latexarms", value: 10 }] }] });
     });
 

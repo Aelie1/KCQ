@@ -1,5 +1,5 @@
 import type { iGameState, iCharacter, iEnemy, iBuff, iBinding } from "./itypes";
-import type { GameState, Character, Enemy, Buff, Binding } from "./types";
+import type { GameState, Character, Enemy, Buff, Binding, GameAction } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     return {
@@ -26,8 +26,15 @@ function serializeEnemy(enemy: iEnemy): Enemy {
     const { definition, ...state } = enemy;
     return {
         ...state,
+        intention: enemy.intention ? serializeAction(enemy.intention) : null,
         buffs: enemy.buffs.map(serializeBuff)
     };
+}
+
+function serializeAction(action: GameAction): GameAction {
+    return action.type === "attack"
+        ? { ...action, targets: [...action.targets] }
+        : { ...action };
 }
 
 function serializeBuff(buff: iBuff): Buff {
