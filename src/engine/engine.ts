@@ -30,7 +30,7 @@ export class GameEngine {
     }
 
     loadEnemy(enemy: EnemyDef) {
-        let index = this.state.enemies.push({
+        this.state.enemies.push({
             definition: enemy,
             buffs: [],
             id: enemy.id + this.nextEntityId++,
@@ -176,7 +176,6 @@ export class GameEngine {
                 events.push(...result.events);
             }
         }
-        events.push(...this.advancePhase());
         return events;
     }
 
@@ -189,10 +188,10 @@ export class GameEngine {
             for (const actor of this.state.characters) {
                 actor.acted = false;
             }
-            this.updateIntentions();
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
+            this.updateIntentions();
         }
         events.push({ type: "phaseChanged", phase: this.state.turn.phase });
 
