@@ -5,7 +5,7 @@ import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCha
 import type { CharacterDef, EncounterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState } from "./serialize";
-import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
+import { breathless, canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
 import type { ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState } from "./types";
 
 export class GameEngine {
@@ -257,7 +257,7 @@ export class GameEngine {
                 } else {
                     actor.bonusEscapes--;
                 }
-                if (actor.standing && canBonusEscape(actor)) {
+                if (!actor.acted && actor.standing && canBonusEscape(actor)) {
                     actor.bonusEscapes++;
                 }
                 this.state.turn.step++;
@@ -292,6 +292,14 @@ export class GameEngine {
                         success: false,
                         reason: "actorImmobilized"
                     };
+                }
+                switch (action.stance) {
+                    case "standing":
+                        actor.standing = true;
+                        break;
+                    case "moving":
+                        actor.standing = false;
+                        break;
                 }
                 events.push({ type: "stanceChanged", actor: actor.id, stance: action.stance });
                 return {
