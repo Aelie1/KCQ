@@ -5,7 +5,7 @@ import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCha
 import type { CharacterDef, EncounterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState } from "./serialize";
-import { canAttack, canUseEscape, canUseMove } from "./status";
+import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
 import type { ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState } from "./types";
 
 export class GameEngine {
@@ -42,6 +42,8 @@ export class GameEngine {
             id: character.id,
             definition: character,
             acted: false,
+            standing: false,
+            bonusEscapes: 0,
             bindings: [],
             buffs: []
         });
@@ -211,7 +213,7 @@ export class GameEngine {
                     };
                 }
 
-                if (actor.acted) {
+                if (actor.acted && !actor.bonusEscapes) {
                     return {
                         success: false,
                         reason: "actorAlreadyActed"
@@ -250,8 +252,48 @@ export class GameEngine {
                 }
 
                 events.push(...removeBinding(target, binding.definition, amount))
-                actor.acted = true;
+                if (!actor.acted) {
+                    actor.acted = true;
+                } else {
+                    actor.bonusEscapes--;
+                }
+                if (actor.standing && canBonusEscape(actor)) {
+                    actor.bonusEscapes++;
+                }
                 this.state.turn.step++;
+                return {
+                    success: true,
+                    events: events,
+                    state: this.getGameState(),
+                };
+            }
+            case "stance": {
+                if (this.state.turn.phase !== "player") {
+                    return {
+                        success: false,
+                        reason: "wrongPhase"
+                    };
+                }
+                const actor = findCharacter(this.state, action.actor);
+                if (!actor) {
+                    return {
+                        success: false,
+                        reason: "invalidActor"
+                    };
+                }
+                if (actor.acted) {
+                    return {
+                        success: false,
+                        reason: "actorAlreadyActed"
+                    };
+                }
+                if (action.stance === "moving" && !canMove(actor)) {
+                    return {
+                        success: false,
+                        reason: "actorImmobilized"
+                    };
+                }
+                events.push({ type: "stanceChanged", actor: actor.id, stance: action.stance });
                 return {
                     success: true,
                     events: events,
@@ -300,6 +342,10 @@ export class GameEngine {
         } else {
             for (const actor of this.state.characters) {
                 actor.acted = false;
+                if (canMove(actor)) {
+                    actor.standing = false;
+                }
+                actor.bonusEscapes = 0;
             }
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
@@ -310,7 +356,6 @@ export class GameEngine {
 
         return events;
     }
-
 
     updateIntentions() {
         for (const enemy of this.state.enemies) {

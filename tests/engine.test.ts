@@ -115,6 +115,8 @@ function makeCharacter(
         id,
         definition: makeCharacterDef(id, moves),
         acted: false,
+        standing: false,
+        bonusEscapes: 0,
         bindings,
         buffs: [],
     };
@@ -238,6 +240,8 @@ describe("state and combatant loading", () => {
             characters: [{
                 id: ko.id,
                 acted: false,
+                standing: false,
+                bonusEscapes: 0,
                 bindings: [],
                 buffs: [],
                 status: [],

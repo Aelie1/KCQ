@@ -29,6 +29,8 @@ export type EntitySide = "player" | "enemy";
 export interface Character {
     id: EntityId;
     acted: boolean;
+    standing: boolean;
+    bonusEscapes: number;
     bindings: Binding[];
     buffs: Buff[];
     status: Status[];
@@ -149,7 +151,7 @@ export interface ActionInfo {
     reason?: ActionFailureReason;
 }
 
-export type GameAction = AttackAction | EscapeAction | EndTurnAction;
+export type GameAction = AttackAction | EscapeAction | StanceAction | EndTurnAction;
 
 export interface AttackAction {
     type: "attack";
@@ -164,6 +166,14 @@ export interface EscapeAction {
     target: EntityId;
     binding: BindingId;
 }
+
+export interface StanceAction {
+    type: "stance";
+    actor: EntityId;
+    stance: StanceId;
+}
+
+export type StanceId = "standing" | "moving";
 
 export interface EndTurnAction {
     type: "endTurn";
@@ -190,6 +200,7 @@ export type ActionFailureReason =
     | "wrongPhase"
     | "actorAlreadyActed"
     | "moveUnavailable"
+    | "actorImmobilized"
     | "assistUnavailable"
     | "escapeUnavailable"
     | "statusRestriction"
@@ -201,7 +212,7 @@ export type ActionFailureReason =
  * Events
  ********************************************************/
 
-export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | DefeatEvent;
+export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | DefeatEvent | StanceEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
@@ -233,6 +244,11 @@ export interface BuffEvent {
 export interface DefeatEvent {
     type: "enemyDefeated";
     target: EntityId;
+}
+export interface StanceEvent {
+    type: "stanceChanged";
+    actor: EntityId;
+    stance: StanceId;
 }
 
 /*******************************************************
