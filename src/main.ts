@@ -1,5 +1,5 @@
 import { ko } from "./content/characters/ko";
-import { skunkette } from "./content/enemies/skunk/skunkette";
+import { skunkette } from "./content/skunk/skunkette";
 import { GameEngine } from "./engine/engine";
 import { GameAction } from "./engine/types";
 

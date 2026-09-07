@@ -2,7 +2,7 @@ import { addBinding } from "../../../engine/bindings";
 import { isCharacter } from "../../../engine/helpers";
 import { EnemyDef, iEnemy, iEntity, iGameState, MoveDef } from "../../../engine/itypes";
 import { GameAction, GameEvent } from "../../../engine/types";
-import { latexarms } from "../../bindings/latex";
+import { latexarms } from "../../skunk/latex";
 
 const latexspray: MoveDef = {
     activate: function (state: iGameState, actor: iEntity, targets: iEntity[]): GameEvent[] {

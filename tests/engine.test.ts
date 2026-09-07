@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { latexarms } from "../src/content/bindings/latex";
+import { latexarms } from "../src/content/skunk/latex";
 import { ko } from "../src/content/characters/ko";
-import { skunkette } from "../src/content/enemies/skunk/skunkette";
+import { skunkette } from "../src/content/skunk/skunkette";
 import { addBinding, calculateProgress, removeBinding } from "../src/engine/bindings";
 import { damageEnemy } from "../src/engine/combat";
 import {
