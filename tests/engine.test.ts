@@ -13,19 +13,40 @@ import {
     MEDIUM_THRESHOLD,
 } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
-import { getBindingLevel } from "../src/engine/helpers";
+import { getBindingLevel, getEntitySide } from "../src/engine/helpers";
 import type {
     BindingDef,
+    BuffDef,
     CharacterDef,
     EnemyDef,
     iBinding,
+    iBuff,
     iCharacter,
     iEnemy,
+    iGameState,
     iStatus,
     MoveDef,
     StatusDef,
 } from "../src/engine/itypes";
-import { bound, canUseMove, getModifier, getStatuses, stunned } from "../src/engine/status";
+import { XorShift32 } from "../src/engine/random";
+import { serializeGameState } from "../src/engine/serialize";
+import {
+    bound,
+    canAttack,
+    canBonusEscape,
+    canMove,
+    canUseEscape,
+    canUseMove,
+    getModifier,
+    getStatuses,
+    helpless,
+    immobilized,
+    incapacitated,
+    isIncapacitated,
+    isSkipped,
+    stunned,
+    vibrating,
+} from "../src/engine/status";
 import type {
     ActionFailureReason,
     BindingLevel,
@@ -122,6 +143,24 @@ function makeEnemyDef(
             targets: [state.characters[0].id],
         })),
     };
+}
+
+function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnemy {
+    return {
+        id,
+        definition,
+        buffs: [],
+        currHp: definition.hp,
+        currDef: definition.defense,
+        intention: null,
+    };
+}
+
+function makeStatusCharacter(status: StatusDef, value = 1): iCharacter {
+    const source = makeBindingDef(`${status.id}-source`, {
+        easy: [{ definition: status, value }],
+    });
+    return makeCharacter(status.id, [makeBinding(source, EASY_THRESHOLD)]);
 }
 
 function setupAuthoredCombat(): GameEngine {
@@ -234,6 +273,44 @@ describe("state and combatant loading", () => {
 
         expect(engine.getGameState()).toEqual(expected);
     });
+
+    it("serializes internal buff instances without definitions or shared objects", () => {
+        const buffDefinition: BuffDef = { id: "focus" };
+        const characterBuff: iBuff = {
+            definition: buffDefinition,
+            duration: 2,
+            effect: 3,
+        };
+        const enemyBuff: iBuff = {
+            definition: buffDefinition,
+            duration: 4,
+            effect: 5,
+        };
+        const character = makeCharacter();
+        character.buffs.push(characterBuff);
+        const enemyDefinition = makeEnemyDef("foe", [makeWaitMove()]);
+        const enemy = makeEnemy(enemyDefinition);
+        enemy.buffs.push(enemyBuff);
+        enemy.intention = { type: "endTurn" };
+        const internalState: iGameState = {
+            turn: { round: 1, step: 1, phase: "player" },
+            characters: [character],
+            enemies: [enemy],
+        };
+
+        const serialized = serializeGameState(internalState);
+
+        expect(serialized.characters[0].buffs[0]).toEqual({ duration: 2, effect: 3 });
+        expect(serialized.enemies[0].buffs[0]).toEqual({ duration: 4, effect: 5 });
+        expect(serialized.enemies[0].intention).toEqual({ type: "endTurn" });
+        expect(serialized.characters[0].buffs[0]).not.toBe(characterBuff);
+        expect(serialized.enemies[0].buffs[0]).not.toBe(enemyBuff);
+
+        serialized.characters[0].buffs[0].duration = 99;
+        serialized.enemies[0].buffs[0].effect = 99;
+        expect(characterBuff.duration).toBe(2);
+        expect(enemyBuff.effect).toBe(5);
+    });
 });
 
 describe("move validation and player actions", () => {
@@ -294,7 +371,7 @@ describe("move validation and player actions", () => {
         expect(engine.getGameState().turn.step).toBe(1);
     });
 
-    it("applies a legal move, consumes the action, and advances the step", () => {
+    it("applies nonlethal damage without removing the enemy", () => {
         const damage = 7;
         const strike = makeMove("strike", "arms", {
             activate: (state, _actor, targets) =>
@@ -307,22 +384,91 @@ describe("move validation and player actions", () => {
         engine.loadEnemy(foe);
         const foeId = `${foe.id}1`;
 
-        expect(engine.executeAction({
+        const result = engine.executeAction({
             type: "attack",
             actor: hero.id,
             move: strike.id,
             targets: [foeId],
-        })).toMatchObject({
+        });
+        expect(result).toMatchObject({
             success: true,
             events: [
                 { type: "moveUsed", actor: hero.id, move: strike.id, targets: [foeId] },
                 { type: "damage", target: foeId, amount: damage },
             ],
         });
+        if (!result.success) throw new Error("Expected strike to succeed");
+        expect(result.events).not.toContainEqual({ type: "enemyDefeated", target: foeId });
+        expect(engine.getGameState().enemies.map((enemy) => enemy.id)).toEqual([foeId]);
         expect(engine.getGameState().enemies[0].currHp).toBe(foe.hp - damage);
         expect(engine.getGameState().characters[0].acted).toBe(true);
         expect(engine.getGameState().turn.step).toBe(2);
         expectMoveRejection(engine, hero.id, strike.id, foeId, "actorAlreadyActed");
+    });
+
+    it("emits enemyDefeated and removes an enemy after lethal damage", () => {
+        const enemyHp = 5;
+        const lethalDamage = enemyHp;
+        const strike = makeMove("lethal-strike", "arms", {
+            activate: (state, _actor, targets) =>
+                damageEnemy(state, targets[0] as iEnemy, lethalDamage),
+        });
+        const hero = makeCharacterDef("hero", [strike]);
+        const foe = makeEnemyDef("foe", [makeWaitMove()]);
+        foe.hp = enemyHp;
+        const engine = new GameEngine(1);
+        engine.loadCharacter(hero);
+        engine.loadEnemy(foe);
+        const foeId = `${foe.id}1`;
+
+        const result = engine.executeAction({
+            type: "attack",
+            actor: hero.id,
+            move: strike.id,
+            targets: [foeId],
+        });
+
+        expect(result).toMatchObject({
+            success: true,
+            events: [
+                { type: "moveUsed", actor: hero.id, move: strike.id, targets: [foeId] },
+                { type: "damage", target: foeId, amount: lethalDamage },
+                { type: "enemyDefeated", target: foeId },
+            ],
+            state: { enemies: [] },
+        });
+        expect(engine.getGameState().enemies).toEqual([]);
+    });
+
+    it("executes Ko's authored Telekinesis effect through the engine", () => {
+        const engine = setupAuthoredCombat();
+        const enemyId = `${skunkette.id}1`;
+        const move = ko.moves.find((candidate) => candidate.id === "telekinesis");
+        if (!move) throw new Error("Expected Ko to have Telekinesis");
+
+        const result = engine.executeAction({
+            type: "attack",
+            actor: ko.id,
+            move: move.id,
+            targets: [enemyId],
+        });
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected Telekinesis to succeed");
+
+        expect(result.events[0]).toEqual({
+            type: "moveUsed",
+            actor: ko.id,
+            move: move.id,
+            targets: [enemyId],
+        });
+        const damageEvent = result.events.find((event) => event.type === "damage");
+        if (!damageEvent || !("amount" in damageEvent)) {
+            throw new Error("Expected Telekinesis to deal damage");
+        }
+        expect(damageEvent.amount).toBeGreaterThan(0);
+        expect(engine.getGameState().enemies[0].currHp).toBe(
+            skunkette.hp - damageEvent.amount,
+        );
     });
 
     it("reports authored moves without leaking their executable functions", () => {
@@ -334,6 +480,13 @@ describe("move validation and player actions", () => {
         }));
     });
 
+    it.each(["missing", `${skunkette.id}1`])(
+        "returns no player actions for non-character id %s",
+        (id) => {
+            expect(setupAuthoredCombat().getActions(id)).toEqual([]);
+        },
+    );
+
     it("rejects attacks and reports every move unavailable outside the player phase", () => {
         const { engine, hero, legal, foeId } = validationEngine();
         engine.advancePhase();
@@ -343,11 +496,17 @@ describe("move validation and player actions", () => {
             success: false,
             reason: "wrongPhase",
         });
+        expect(engine.executeAction({
+            type: "escape",
+            actor: hero.id,
+            target: hero.id,
+            binding: "anything",
+        })).toEqual({ success: false, reason: "wrongPhase" });
     });
 });
 
 describe("turn phases and enemy intentions", () => {
-    it("executes an authored enemy intention between phase changes", () => {
+    it("executes Skunkette's authored Latex Spray between phase changes", () => {
         const engine = setupAuthoredCombat();
         const enemyId = `${skunkette.id}1`;
         const enemyMove = skunkette.moves[0];
@@ -513,6 +672,19 @@ describe("binding lifecycle", () => {
         expect(definition.initialState).toEqual({ peak: 0 });
     });
 
+    it("preserves Latex's historical maximum after a smaller reapplication", () => {
+        const target = makeCharacter();
+
+        addBinding(target, latexarms, 60);
+        expect(target.bindings[0]).toMatchObject({ value: 60, state: { max: 60 } });
+
+        removeBinding(target, latexarms, 50);
+        expect(target.bindings[0]).toMatchObject({ value: 10, state: { max: 60 } });
+
+        addBinding(target, latexarms, 30);
+        expect(target.bindings[0]).toMatchObject({ value: 40, state: { max: 60 } });
+    });
+
     it("partially removes a binding without deleting it", () => {
         const definition = makeBindingDef("rope");
         const target = makeCharacter("hero", [makeBinding(definition, 20)]);
@@ -552,6 +724,15 @@ describe("binding lifecycle", () => {
             amount: -value,
         }]);
         expect(target.bindings).toEqual([]);
+    });
+
+    it("leaves state unchanged when asked to remove a missing binding", () => {
+        const existing = makeBindingDef("existing");
+        const missing = makeBindingDef("missing");
+        const target = makeCharacter("hero", [makeBinding(existing, EASY_THRESHOLD)]);
+
+        expect(removeBinding(target, missing, 10)).toEqual([]);
+        expect(target.bindings).toEqual([makeBinding(existing, EASY_THRESHOLD)]);
     });
 });
 
@@ -601,6 +782,14 @@ describe("binding levels and effective statuses", () => {
             { definition: sharedStatus, value: 3 },
             { definition: otherStatus, value: 1 },
         ]);
+
+        const reversed = makeCharacter("reversed", [
+            makeBinding(strong, EASY_THRESHOLD),
+            makeBinding(weak, EASY_THRESHOLD),
+        ]);
+        expect(getStatuses(reversed)).toEqual([
+            { definition: sharedStatus, value: 3 },
+        ]);
     });
 
     it("sums modifiers from the effective status levels", () => {
@@ -634,6 +823,65 @@ describe("binding levels and effective statuses", () => {
 
         expect(getModifier(target, "defense")).toBe(strongestPenalty + bonus);
         expect(getModifier(target, "willpower")).toBe(0);
+    });
+});
+
+describe("entity and status helpers", () => {
+    it.each([
+        ["hero", "player"],
+        ["foe1", "enemy"],
+        ["missing", undefined],
+    ] as const)("identifies the side for entity id %s", (id, expectedSide) => {
+        const enemyDefinition = makeEnemyDef("foe", [makeWaitMove()]);
+        const state: iGameState = {
+            turn: { round: 1, step: 1, phase: "player" },
+            characters: [makeCharacter("hero")],
+            enemies: [makeEnemy(enemyDefinition)],
+        };
+
+        expect(getEntitySide(state, id)).toBe(expectedSide);
+    });
+
+    it("treats a skipped actor as unable to attack or escape", () => {
+        const actor = makeStatusCharacter(helpless);
+        const restraint = makeBindingDef("rope");
+        const target = makeCharacter("target", [makeBinding(restraint, EASY_THRESHOLD)]);
+
+        expect(isSkipped(actor)).toBe(true);
+        expect(canAttack(actor)).toBe(false);
+        expect(canUseEscape(actor, target, target.bindings[0])).toBe(false);
+    });
+
+    it("keeps movement restrictions separate from attacking", () => {
+        const actor = makeStatusCharacter(immobilized);
+        const unrestricted = makeCharacter("unrestricted");
+
+        expect(canMove(actor)).toBe(false);
+        expect(canAttack(actor)).toBe(true);
+        expect(canMove(unrestricted)).toBe(true);
+        expect(isSkipped(unrestricted)).toBe(false);
+    });
+
+    it("distinguishes bonus-escape restrictions from ordinary escape", () => {
+        const vibratingActor = makeStatusCharacter(vibrating);
+        const stunnedActor = makeStatusCharacter(stunned);
+
+        expect(canBonusEscape(vibratingActor)).toBe(false);
+        expect(canUseEscape(
+            vibratingActor,
+            vibratingActor,
+            vibratingActor.bindings[0],
+        )).toBe(true);
+        expect(canBonusEscape(stunnedActor)).toBe(false);
+        expect(canBonusEscape(makeCharacter("unrestricted"))).toBe(true);
+    });
+
+    it("recognizes incapacitation as a specific skipped state", () => {
+        const actor = makeStatusCharacter(incapacitated);
+
+        expect(isIncapacitated(actor)).toBe(true);
+        expect(isSkipped(actor)).toBe(true);
+        expect(isIncapacitated(makeStatusCharacter(helpless))).toBe(false);
     });
 });
 
@@ -870,5 +1118,47 @@ describe("escape progress", () => {
         engine.loadCharacter(makeCharacterDef("hero"));
 
         expect(engine.executeAction(action)).toEqual({ success: false, reason });
+    });
+});
+
+describe("XorShift32", () => {
+    it("replays the same sequence from the same seed and restored state", () => {
+        const seed = 123456;
+        const first = new XorShift32(seed);
+        const second = new XorShift32(seed);
+
+        expect(Array.from({ length: 5 }, () => first.nextU32())).toEqual(
+            Array.from({ length: 5 }, () => second.nextU32()),
+        );
+
+        const checkpoint = first.getState();
+        const nextValue = first.nextU32();
+        first.setState(checkpoint);
+        expect(first.nextU32()).toBe(nextValue);
+    });
+
+    it("produces normalized random values and integers inside inclusive bounds", () => {
+        const rng = new XorShift32(987654);
+
+        for (let sample = 0; sample < 100; sample++) {
+            const value = rng.random();
+            expect(value).toBeGreaterThanOrEqual(0);
+            expect(value).toBeLessThan(1);
+
+            const integer = rng.int(-3, 4);
+            expect(Number.isInteger(integer)).toBe(true);
+            expect(integer).toBeGreaterThanOrEqual(-3);
+            expect(integer).toBeLessThanOrEqual(4);
+        }
+        expect(rng.int(7, 7)).toBe(7);
+    });
+
+    it("normalizes zero seeds and restored states away from the locked zero state", () => {
+        const rng = new XorShift32(0);
+
+        expect(rng.getState()).not.toBe(0);
+        rng.setState(0);
+        expect(rng.getState()).not.toBe(0);
+        expect(rng.nextU32()).not.toBe(0);
     });
 });
