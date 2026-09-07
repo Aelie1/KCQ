@@ -122,5 +122,5 @@ export interface StatusLevelDef {
 export interface EncounterDef {
     id: string;
     enemies: EnemyDef[];
-    setup?: (state: iGameState) => iGameState;
+    setup?: (state: iGameState) => void;
 }

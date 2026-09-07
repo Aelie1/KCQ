@@ -58,7 +58,7 @@ export class GameEngine {
         });
     }
 
-    loadEncounter(id: EncounterId) {
+    loadEncounter(id: EncounterId): boolean {
         const encounter = encounterList.find(x => x.id === id);
         if (encounter) {
             for (const enemy of encounter.enemies) {
@@ -68,7 +68,9 @@ export class GameEngine {
                 encounter.setup(this.state);
             }
             this.updateIntentions();
+            return true;
         }
+        return false;
     }
 
     getActions(name: EntityId): ActionInfo[] {
