@@ -30,8 +30,8 @@ export class GameEngine {
     }
 
     listEncounters(): EncounterId[] {
-        const encounters: EncounterId[] = []; 
-        for (const encounter of encounterList){
+        const encounters: EncounterId[] = [];
+        for (const encounter of encounterList) {
             encounters.push(encounter.id);
         }
         return encounters;
@@ -60,17 +60,17 @@ export class GameEngine {
 
     loadEncounter(id: EncounterId): boolean {
         const encounter = encounterList.find(x => x.id === id);
-        if (encounter) {
-            for (const enemy of encounter.enemies) {
-                this.loadEnemy(enemy);
-            }
-            if (encounter.setup) {
-                encounter.setup(this.state);
-            }
-            this.updateIntentions();
-            return true;
+        if (!encounter) {
+            return false;
         }
-        return false;
+        for (const enemy of encounter.enemies) {
+            this.loadEnemy(enemy);
+        }
+        if (encounter.setup) {
+            encounter.setup(this.state);
+        }
+        this.updateIntentions();
+        return true;
     }
 
     getActions(name: EntityId): ActionInfo[] {

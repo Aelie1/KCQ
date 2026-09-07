@@ -334,8 +334,9 @@ describe("encounters", () => {
         engine.loadCharacter(ko);
         const before = engine.getGameState();
 
-        engine.loadEncounter("missing-encounter");
+        const loaded = engine.loadEncounter("missing-encounter");
 
+        expect(loaded).toBe(false);
         expect(engine.getGameState()).toEqual(before);
     });
 
@@ -343,8 +344,9 @@ describe("encounters", () => {
         const engine = new GameEngine(1);
         engine.loadCharacter(ko);
 
-        engine.loadEncounter(plains_1.id);
+        const loaded = engine.loadEncounter(plains_1.id);
 
+        expect(loaded).toBe(true);
         const state = engine.getGameState();
         const expectedEnemyIds = plains_1.enemies.map(
             (definition, index) => `${definition.id}${index + 1}`,
@@ -369,7 +371,7 @@ describe("encounters", () => {
     it("executes every Skunkette in the authored encounter during the enemy phase", () => {
         const engine = new GameEngine(1);
         engine.loadCharacter(ko);
-        engine.loadEncounter(plains_1.id);
+        expect(engine.loadEncounter(plains_1.id)).toBe(true);
         const expectedEnemyIds = plains_1.enemies.map(
             (definition, index) => `${definition.id}${index + 1}`,
         );
@@ -410,6 +412,7 @@ describe("encounters", () => {
     it("runs an optional setup hook after enemies load and before intentions update", () => {
         const calls: string[] = [];
         let enemiesVisibleToSetup: string[] = [];
+        const setupStep = 7;
         const wait = makeWaitMove();
         const enemy = makeEnemyDef("setup-foe", [wait], (state, actor) => {
             calls.push("ai");
@@ -426,7 +429,7 @@ describe("encounters", () => {
             setup: (state) => {
                 calls.push("setup");
                 enemiesVisibleToSetup = state.enemies.map((loaded) => loaded.id);
-                return state;
+                state.turn.step = setupStep;
             },
         };
         const catalogIndex = encounterList.length;
@@ -435,10 +438,12 @@ describe("encounters", () => {
         try {
             const engine = new GameEngine(1);
             engine.loadCharacter(makeCharacterDef("hero"));
-            engine.loadEncounter(encounter.id);
+            const loaded = engine.loadEncounter(encounter.id);
 
+            expect(loaded).toBe(true);
             expect(calls).toEqual(["setup", "ai"]);
             expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
+            expect(engine.getGameState().turn.step).toBe(setupStep);
             expect(engine.getGameState().enemies[0].intention).toMatchObject({
                 actor: `${enemy.id}1`,
                 move: wait.id,
