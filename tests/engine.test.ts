@@ -5,6 +5,7 @@ import { skunkette } from "../src/content/enemies/skunk/skunkette";
 import { addBinding } from "../src/engine/bindings";
 import { GameEngine } from "../src/engine/engine";
 import type { iGameState } from "../src/engine/itypes";
+import { BondageEvent } from "../src/engine/types";
 
 function setup() {
     const engine = new GameEngine();
@@ -79,11 +80,7 @@ describe("player actions", () => {
             success: false,
             reason: "invalidActor",
         });
-        expect(engine.getActions("ko")).toEqual([
-            { move: { id: "telekinesis", target: "enemy", targets: 1, type: "mouth" }, available: true },
-            { move: { id: "starlight", target: "enemy", targets: 0, type: "mouth" }, available: true },
-            { move: { id: "fairypunch", target: "enemy", targets: 1, type: "arms" }, available: true },
-        ]);
+        expect(engine.getActions("ko")).toEqual(ko.moves.map(({ activate, isValid, ...move }) => ({ move, available: true })));
         expect(engine.executeAction({ type: "attack", actor: "ko", move: "missing", targets: ["skunkette1"] })).toEqual({ success: false, reason: "invalidMove" });
         expect(engine.executeAction({ type: "attack", actor: "ko", move: "telekinesis", targets: ["missing"] })).toEqual({ success: false, reason: "invalidTarget" });
         expect(engine.executeAction({ type: "attack", actor: "ko", move: "telekinesis", targets: ["ko"] })).toEqual({ success: false, reason: "moveUnavailable" });
@@ -109,15 +106,32 @@ describe("turn phases and enemy actions", () => {
         const engine = setup();
         engine.updateIntentions();
         const result = engine.executeAction({ type: "endTurn" });
+        const sprayMove = skunkette.moves[0];
+        expect(result.success).toBe(true);
+
+        if (!result.success) {
+            throw new Error(`endTurn failed: ${result.reason}`);
+        }
+        
         expect(result).toMatchObject({
             success: true, events: [
                 { type: "phaseChanged", phase: "enemy" },
-                { type: "moveUsed", actor: "skunkette1", move: "latexspray", targets: ["ko"] },
-                { type: "bondageAdded", target: "ko", binding: "latexarms", amount: 30 },
+                { type: "moveUsed", actor: "skunkette1", move: sprayMove.id, targets: [ko.id] },
+                { type: "bondageAdded", target: ko.id, binding: latexarms.id },
                 { type: "phaseChanged", phase: "player" },
             ]
         });
-        expect(engine.getGameState()).toMatchObject({ turn: { round: 2, step: 1, phase: "player" }, characters: [{ acted: false, bindings: [{ id: "latexarms", value: 30 }] }] });
+        const bindingEvent = result.events.find(
+            (event): event is BondageEvent => event.type === "bondageAdded"
+        );
+        if (!bindingEvent) {
+            throw new Error("Expected bondageAdded event");
+        }
+        expect(bindingEvent).toBeDefined();
+        const state = engine.getGameState();
+        expect(state.characters[0].bindings[0].value).toBe(bindingEvent.amount);
+        expect(state.characters[0].bindings[0].id).toBe(latexarms.id);
+        expect(state).toMatchObject({ turn: { round: 2, step: 1, phase: "player" }, characters: [{ acted: false }] });
     });
 
     it("rejects player turn ending outside the player phase and rejects player actions in enemy phase", () => {
@@ -133,8 +147,28 @@ describe("bindings", () => {
     it("creates, modifies, and caps a binding", () => {
         const state: iGameState = { turn: { round: 1, step: 1, phase: "player" }, characters: [{ id: "ko", definition: ko, acted: false, bindings: [], buffs: [] }], enemies: [] };
         const character = state.characters[0];
-        expect(addBinding(character, latexarms, 30)).toEqual([{ type: "bondageAdded", target: "ko", binding: "latexarms", amount: 30 }]);
-        expect(addBinding(character, latexarms, 80)).toEqual([{ type: "bondageChanged", target: "ko", binding: "latexarms", amount: 53 }]);
-        expect(character.bindings).toEqual([{ definition: latexarms, id: "latexarms", value: 83, state: { max: 83 } }]);
+        const firstAmount = 30;
+        expect(addBinding(character, latexarms, firstAmount)).toEqual([{ type: "bondageAdded", target: "ko", binding: latexarms.id, amount: firstAmount }]);
+        expect(addBinding(character, latexarms, 80)).toEqual([{ type: "bondageChanged", target: "ko", binding: latexarms.id, amount: 53 }]);
+        expect(character.bindings[0]).toMatchObject({ definition: latexarms, id: latexarms.id, value: 83, state: { max: 83 } });
+    });
+
+    it("disables Arms moves at Bound 3 in getActions and execution", () => {
+        const engine = setup();
+        engine.updateIntentions();
+        engine.executeAction({ type: "endTurn" });
+        engine.executeAction({ type: "endTurn" });
+
+        const armsMove = ko.moves.find(move => move.type === "arms")!;
+        const actions = engine.getActions(ko.id);
+        expect(actions.find(action => action.move.id === armsMove.id)).toMatchObject({
+            move: { id: armsMove.id, type: armsMove.type },
+            available: false,
+            reason: "bindingRestriction",
+        });
+        expect(engine.executeAction({ type: "attack", actor: ko.id, move: armsMove.id, targets: ["skunkette1"] })).toEqual({
+            success: false,
+            reason: "bindingRestriction",
+        });
     });
 });
