@@ -1,6 +1,6 @@
 import { encounterList } from "../content/content";
 import { calculateProgress, removeBinding } from "./bindings";
-import { isValidMove } from "./combat";
+import { isValidMove, setStance } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
 import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
 import { XorShift32 } from "./random";
@@ -293,15 +293,7 @@ export class GameEngine {
                         reason: "actorImmobilized"
                     };
                 }
-                switch (action.stance) {
-                    case "standing":
-                        actor.standing = true;
-                        break;
-                    case "moving":
-                        actor.standing = false;
-                        break;
-                }
-                events.push({ type: "stanceChanged", actor: actor.id, stance: action.stance });
+                events.push(...setStance(actor,action.stance));
                 return {
                     success: true,
                     events: events,
