@@ -2,10 +2,10 @@ import { encounterList } from "../content/content";
 import { calculateProgress, removeBinding } from "./bindings";
 import { isValidMove } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
-import type { CharacterDef, EncounterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
+import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState } from "./serialize";
-import { breathless, canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
+import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
 import type { ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState } from "./types";
 
 export class GameEngine {
@@ -254,11 +254,11 @@ export class GameEngine {
                 events.push(...removeBinding(target, binding.definition, amount))
                 if (!actor.acted) {
                     actor.acted = true;
+                    if (actor.standing && canBonusEscape(actor)) {
+                        actor.bonusEscapes++;
+                    }
                 } else {
                     actor.bonusEscapes--;
-                }
-                if (!actor.acted && actor.standing && canBonusEscape(actor)) {
-                    actor.bonusEscapes++;
                 }
                 this.state.turn.step++;
                 return {
