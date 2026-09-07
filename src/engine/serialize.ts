@@ -1,7 +1,7 @@
 import { getBindingLevel } from "./helpers";
-import type { iBinding, iBuff, iCharacter, iEnemy, iGameState, iStatus } from "./itypes";
+import type { iBinding, iBuff, iCharacter, iEnemy, iGameState, iStatus, MoveDef } from "./itypes";
 import { getStatuses } from "./status";
-import type { Binding, Buff, Character, Enemy, GameAction, GameState, Status } from "./types";
+import type { Binding, Buff, Character, Enemy, GameAction, GameState, Move, Status } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     return {
@@ -20,7 +20,7 @@ function serializeCharacter(character: iCharacter): Character {
         id: definition.id,
         buffs: character.buffs.map(serializeBuff),
         bindings: character.bindings.map(serializeBinding),
-        status: getStatuses(character).map(serializeStatus)
+        status: getStatuses(character).map(serializeStatus),
     };
 
 }
@@ -49,7 +49,7 @@ function serializeBinding(binding: iBinding): Binding {
     const { definition, ..._binding } = binding;
     return {
         ..._binding,
-        state: {...binding.state},
+        state: { ...binding.state },
         level: getBindingLevel(binding),
     };
 }
@@ -59,5 +59,14 @@ function serializeStatus(status: iStatus): Status {
     return {
         ..._status,
         id: status.definition.id,
+    };
+}
+
+export function serializeMove(move: MoveDef): Move {
+    return {
+        id: move.id,
+        target: move.target,
+        targets: move.targets,
+        type: move.type
     };
 }

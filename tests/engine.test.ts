@@ -6,14 +6,7 @@ import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
 import { addBinding, calculateProgress, removeBinding } from "../src/engine/bindings";
 import { damageEnemy } from "../src/engine/combat";
-import {
-    BINDING_MAX,
-    EASY_THRESHOLD,
-    EXTREME_THRESHOLD,
-    HARD_THRESHOLD,
-    IMPOSSIBLE_THRESHOLD,
-    MEDIUM_THRESHOLD,
-} from "../src/engine/constants";
+import { bindingThresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { getBindingLevel, getEntitySide } from "../src/engine/helpers";
 import type {
@@ -93,6 +86,7 @@ function makeMove(
         target: "enemy",
         targets: 1,
         type,
+        accuracy:{miss:0,graze:0,hit:100,crit:0},
         activate: () => [],
         ...overrides,
     };
@@ -166,7 +160,7 @@ function makeStatusCharacter(status: StatusDef, value = 1): iCharacter {
     const source = makeBindingDef(`${status.id}-source`, {
         easy: [{ definition: status, value }],
     });
-    return makeCharacter(status.id, [makeBinding(source, EASY_THRESHOLD)]);
+    return makeCharacter(status.id, [makeBinding(source, bindingThresholds.easy)]);
 }
 
 function setupAuthoredCombat(): GameEngine {
@@ -621,7 +615,7 @@ describe("move validation and player actions", () => {
         const engine = setupAuthoredCombat();
 
         expect(engine.getActions(ko.id)).toEqual(ko.moves.map((definition) => {
-            const { activate: _activate, isValid: _isValid, ...move } = definition;
+            const { activate: _activate, isValid: _isValid, accuracy:accuracy, ...move } = definition;
             return { move, available: true };
         }));
     });
@@ -759,7 +753,7 @@ describe("binding lifecycle", () => {
     it("scales only the portion of an application above 80", () => {
         const definition = makeBindingDef("rope");
         const target = makeCharacter();
-        addBinding(target, definition, IMPOSSIBLE_THRESHOLD - 5);
+        addBinding(target, definition, bindingThresholds.impossible - 5);
 
         const events = addBinding(target, definition, 20);
 
@@ -770,13 +764,13 @@ describe("binding lifecycle", () => {
             binding: definition.id,
             amount: expectedIncrease,
         }]);
-        expect(target.bindings[0].value).toBe(IMPOSSIBLE_THRESHOLD - 5 + expectedIncrease);
+        expect(target.bindings[0].value).toBe(bindingThresholds.impossible - 5 + expectedIncrease);
     });
 
     it("scales the whole application when already above 80", () => {
         const definition = makeBindingDef("rope");
         const target = makeCharacter();
-        addBinding(target, definition, IMPOSSIBLE_THRESHOLD + 1);
+        addBinding(target, definition, bindingThresholds.impossible + 1);
 
         const events = addBinding(target, definition, 10);
 
@@ -786,7 +780,7 @@ describe("binding lifecycle", () => {
             binding: definition.id,
             amount: Math.ceil(10 * 0.1),
         }]);
-        expect(target.bindings[0].value).toBe(IMPOSSIBLE_THRESHOLD + 2);
+        expect(target.bindings[0].value).toBe(bindingThresholds.impossible + 2);
     });
 
     it("caps binding value and reports only the applied amount", () => {
@@ -795,8 +789,8 @@ describe("binding lifecycle", () => {
 
         const [event] = addBinding(target, definition, 1_000);
 
-        expect(target.bindings[0].value).toBe(BINDING_MAX);
-        expect(event).toMatchObject({ type: "bondageAdded", amount: BINDING_MAX });
+        expect(target.bindings[0].value).toBe(bindingThresholds.max);
+        expect(event).toMatchObject({ type: "bondageAdded", amount: bindingThresholds.max });
     });
 
     it("keeps callback-managed state independent per binding instance", () => {
@@ -875,27 +869,27 @@ describe("binding lifecycle", () => {
     it("leaves state unchanged when asked to remove a missing binding", () => {
         const existing = makeBindingDef("existing");
         const missing = makeBindingDef("missing");
-        const target = makeCharacter("hero", [makeBinding(existing, EASY_THRESHOLD)]);
+        const target = makeCharacter("hero", [makeBinding(existing, bindingThresholds.easy)]);
 
         expect(removeBinding(target, missing, 10)).toEqual([]);
-        expect(target.bindings).toEqual([makeBinding(existing, EASY_THRESHOLD)]);
+        expect(target.bindings).toEqual([makeBinding(existing, bindingThresholds.easy)]);
     });
 });
 
 describe("binding levels and effective statuses", () => {
     it.each([
         [0, "none"],
-        [EASY_THRESHOLD - 1, "none"],
-        [EASY_THRESHOLD, "easy"],
-        [MEDIUM_THRESHOLD - 1, "easy"],
-        [MEDIUM_THRESHOLD, "medium"],
-        [HARD_THRESHOLD - 1, "medium"],
-        [HARD_THRESHOLD, "hard"],
-        [EXTREME_THRESHOLD - 1, "hard"],
-        [EXTREME_THRESHOLD, "extreme"],
-        [IMPOSSIBLE_THRESHOLD - 1, "extreme"],
-        [IMPOSSIBLE_THRESHOLD, "impossible"],
-        [BINDING_MAX, "impossible"],
+        [bindingThresholds.easy - 1, "none"],
+        [bindingThresholds.easy, "easy"],
+        [bindingThresholds.medium - 1, "easy"],
+        [bindingThresholds.medium, "medium"],
+        [bindingThresholds.hard - 1, "medium"],
+        [bindingThresholds.hard, "hard"],
+        [bindingThresholds.extreme - 1, "hard"],
+        [bindingThresholds.extreme, "extreme"],
+        [bindingThresholds.impossible - 1, "extreme"],
+        [bindingThresholds.impossible, "impossible"],
+        [bindingThresholds.max, "impossible"],
     ] as const)("maps binding value %s to %s", (value, level) => {
         expect(getBindingLevel(makeBinding(makeBindingDef("rope"), value))).toBe(level);
     });
@@ -919,9 +913,9 @@ describe("binding levels and effective statuses", () => {
             easy: [{ definition: otherStatus, value: 1 }],
         });
         const target = makeCharacter("hero", [
-            makeBinding(weak, EASY_THRESHOLD),
-            makeBinding(strong, EASY_THRESHOLD),
-            makeBinding(other, EASY_THRESHOLD),
+            makeBinding(weak, bindingThresholds.easy),
+            makeBinding(strong, bindingThresholds.easy),
+            makeBinding(other, bindingThresholds.easy),
         ]);
 
         expect(getStatuses(target)).toEqual([
@@ -930,8 +924,8 @@ describe("binding levels and effective statuses", () => {
         ]);
 
         const reversed = makeCharacter("reversed", [
-            makeBinding(strong, EASY_THRESHOLD),
-            makeBinding(weak, EASY_THRESHOLD),
+            makeBinding(strong, bindingThresholds.easy),
+            makeBinding(weak, bindingThresholds.easy),
         ]);
         expect(getStatuses(reversed)).toEqual([
             { definition: sharedStatus, value: 3 },
@@ -964,7 +958,7 @@ describe("binding levels and effective statuses", () => {
             easy: [{ definition: bonusStatus, value: 1 }],
         });
         const target = makeCharacter("hero", [first, second, third].map((definition) =>
-            makeBinding(definition, EASY_THRESHOLD),
+            makeBinding(definition, bindingThresholds.easy),
         ));
 
         expect(getModifier(target, "defense")).toBe(strongestPenalty + bonus);
@@ -991,7 +985,7 @@ describe("entity and status helpers", () => {
     it("treats a skipped actor as unable to attack or escape", () => {
         const actor = makeStatusCharacter(helpless);
         const restraint = makeBindingDef("rope");
-        const target = makeCharacter("target", [makeBinding(restraint, EASY_THRESHOLD)]);
+        const target = makeCharacter("target", [makeBinding(restraint, bindingThresholds.easy)]);
 
         expect(isSkipped(actor)).toBe(true);
         expect(canAttack(actor)).toBe(false);
@@ -1033,9 +1027,9 @@ describe("entity and status helpers", () => {
 
 describe("move and status restrictions", () => {
     it.each([
-        [HARD_THRESHOLD, false, 2],
-        [EXTREME_THRESHOLD, true, 3],
-        [IMPOSSIBLE_THRESHOLD, true, 4],
+        [bindingThresholds.hard, false, 2],
+        [bindingThresholds.extreme, true, 3],
+        [bindingThresholds.impossible, true, 4],
     ] as const)(
         "applies Bound move restrictions at binding value %s",
         (value, armsBlocked, boundValue) => {
@@ -1091,7 +1085,7 @@ describe("move and status restrictions", () => {
         });
         const { engine, hero, foeId, mouthMove } = setupBoundEngine(
             restraint,
-            EASY_THRESHOLD,
+            bindingThresholds.easy,
         );
 
         expectMoveRejection(
@@ -1107,7 +1101,7 @@ describe("move and status restrictions", () => {
         const restraint = makeBindingDef("stunning-restraint", {
             easy: [{ definition: stunned, value: 1 }],
         });
-        const { engine, hero } = setupBoundEngine(restraint, EASY_THRESHOLD);
+        const { engine, hero } = setupBoundEngine(restraint, bindingThresholds.easy);
 
         expect(engine.executeAction({
             type: "escape",
@@ -1123,8 +1117,8 @@ describe("move and status restrictions", () => {
         const setupMove = makeMove("prepare", "mouth", {
             targets: 0,
             activate: (state): GameEvent[] => [
-                ...addBinding(state.characters[0], latexarms, EXTREME_THRESHOLD),
-                ...addBinding(state.characters[1], targetBinding, EASY_THRESHOLD),
+                ...addBinding(state.characters[0], latexarms, bindingThresholds.extreme),
+                ...addBinding(state.characters[1], targetBinding, bindingThresholds.easy),
             ],
         });
         const helper = makeCharacterDef("helper", [setupMove]);
@@ -1229,7 +1223,7 @@ describe("standing stance", () => {
         });
         const { engine, hero } = setupBoundEngine(
             immobilizingBinding,
-            EASY_THRESHOLD,
+            bindingThresholds.easy,
         );
         expect(engine.executeAction({
             type: "stance",
@@ -1250,7 +1244,7 @@ describe("standing stance", () => {
 
     it("grants exactly one bonus escape after the normal escape", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, IMPOSSIBLE_THRESHOLD);
+        const { engine, hero } = setupBoundEngine(restraint, bindingThresholds.impossible);
         const escape = {
             type: "escape" as const,
             actor: hero.id,
@@ -1286,8 +1280,8 @@ describe("standing stance", () => {
         const prepare = makeMove("prepare", "mouth", {
             targets: 0,
             activate: (state): GameEvent[] => [
-                ...addBinding(state.characters[0], restraint, IMPOSSIBLE_THRESHOLD),
-                ...addBinding(state.characters[1], restraint, IMPOSSIBLE_THRESHOLD),
+                ...addBinding(state.characters[0], restraint, bindingThresholds.impossible),
+                ...addBinding(state.characters[1], restraint, bindingThresholds.impossible),
             ],
         });
         const helper = makeCharacterDef("helper", [prepare]);
@@ -1335,7 +1329,7 @@ describe("standing stance", () => {
             extreme: [{ definition: vibrating, value: 1 }],
             impossible: [{ definition: vibrating, value: 1 }],
         });
-        const { engine, hero } = setupBoundEngine(vibratingBinding, BINDING_MAX);
+        const { engine, hero } = setupBoundEngine(vibratingBinding, bindingThresholds.max);
         const escape = {
             type: "escape" as const,
             actor: hero.id,
@@ -1361,7 +1355,7 @@ describe("standing stance", () => {
 
     it("returns a mobile standing character to moving at the next player phase", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, IMPOSSIBLE_THRESHOLD);
+        const { engine, hero } = setupBoundEngine(restraint, bindingThresholds.impossible);
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
@@ -1390,7 +1384,7 @@ describe("standing stance", () => {
 
     it("keeps a character standing when the enemy phase immobilizes them", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, IMPOSSIBLE_THRESHOLD);
+        const { engine, hero } = setupBoundEngine(restraint, bindingThresholds.impossible);
         const immobilizingBinding = makeBindingDef("immobilizing-binding", {
             easy: [{ definition: immobilized, value: 1 }],
         });
@@ -1400,7 +1394,7 @@ describe("standing stance", () => {
                 addBinding(
                     targets[0] as iCharacter,
                     immobilizingBinding,
-                    EASY_THRESHOLD,
+                    bindingThresholds.easy,
                 ),
         });
         const enemy = makeEnemyDef("immobilizer", [immobilize]);
@@ -1430,7 +1424,7 @@ describe("standing stance", () => {
 
     it("cannot change stance after using the normal action", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, IMPOSSIBLE_THRESHOLD);
+        const { engine, hero } = setupBoundEngine(restraint, bindingThresholds.impossible);
         expect(engine.executeAction({
             type: "escape",
             actor: hero.id,
@@ -1451,12 +1445,12 @@ describe("escape progress", () => {
     it("falls as binding strength rises and does not worsen past Impossible", () => {
         const definition = makeBindingDef("rope");
         const actor = makeCharacter("hero");
-        const easy = makeCharacter("easy", [makeBinding(definition, EASY_THRESHOLD)]);
+        const easy = makeCharacter("easy", [makeBinding(definition, bindingThresholds.easy)]);
         const impossible = makeCharacter("impossible", [
-            makeBinding(definition, IMPOSSIBLE_THRESHOLD),
+            makeBinding(definition, bindingThresholds.impossible),
         ]);
         const overImpossible = makeCharacter("over-impossible", [
-            makeBinding(definition, BINDING_MAX),
+            makeBinding(definition, bindingThresholds.max),
         ]);
 
         const easyProgress = calculateProgress(actor, easy, definition.id);
@@ -1482,10 +1476,10 @@ describe("escape progress", () => {
         });
         const targetBinding = makeBindingDef("rope");
         const target = makeCharacter("target", [
-            makeBinding(targetBinding, MEDIUM_THRESHOLD),
+            makeBinding(targetBinding, bindingThresholds.medium),
         ]);
         const helper = makeCharacter("helper", [
-            makeBinding(modifierBinding, EASY_THRESHOLD),
+            makeBinding(modifierBinding, bindingThresholds.easy),
         ]);
         const unpenalizedHelper = makeCharacter("unpenalized-helper");
 
@@ -1501,7 +1495,7 @@ describe("escape progress", () => {
         );
         expect(penalizedAssistedProgress).toBeLessThanOrEqual(unpenalizedProgress);
 
-        target.bindings.push(makeBinding(modifierBinding, EASY_THRESHOLD));
+        target.bindings.push(makeBinding(modifierBinding, bindingThresholds.easy));
         const penalizedSelfProgress = calculateProgress(
             target,
             target,
@@ -1512,7 +1506,7 @@ describe("escape progress", () => {
 
     it("applies progress through the engine and consumes the actor's action", () => {
         const restraint = makeBindingDef("rope");
-        const startingValue = HARD_THRESHOLD;
+        const startingValue = bindingThresholds.hard;
         const { engine, hero } = setupBoundEngine(restraint, startingValue);
         const calculationTarget = makeCharacter(hero.id, [
             makeBinding(restraint, startingValue),

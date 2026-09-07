@@ -18,6 +18,10 @@ export class XorShift32 {
         return this.nextU32() / 0x100000000;
     }
 
+    accuracy(): number {
+        return this.random() * 100;
+    }
+
     int(min: number, max: number): number {
         return min + Math.floor(this.random() * (max - min + 1));
     }

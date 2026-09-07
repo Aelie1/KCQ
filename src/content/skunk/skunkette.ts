@@ -1,20 +1,28 @@
 import { addBinding } from "../../engine/bindings";
 import { isCharacter } from "../../engine/helpers";
-import { MoveDef, iGameState, iEntity, EnemyDef, iEnemy } from "../../engine/itypes";
-import { GameEvent, GameAction } from "../../engine/types";
+import { DamageMoveDef, EnemyDef, iEnemy, iEntity, iGameState } from "../../engine/itypes";
+import { GameAction, GameEvent, TargetInfo } from "../../engine/types";
 import { latexarms } from "./latex";
 
-const latexspray: MoveDef = {
-    activate: function (state: iGameState, actor: iEntity, targets: iEntity[]): GameEvent[] {
+const latexspray: DamageMoveDef = {
+    activate: function (state: iGameState, actor: iEntity, targets: TargetInfo[]): GameEvent[] {
         const events: GameEvent[] = []
-        const target = targets[0];
+        const target = targets[0].target;
+        const effectiveness = targets[0].effectiveness;
         if (isCharacter(target))
-            events.push(...addBinding(target, latexarms, 30));
+            events.push(...addBinding(target, latexarms, this.baseDamage*effectiveness));
         return events;
     },
     id: "latexspray",
     target: "player",
     targets: 1,
+    baseDamage: 30,
+    accuracy: {
+        miss: 10,
+        graze: 15,
+        hit: 65,
+        crit: 10
+    },
     type: "enemy"
 };
 

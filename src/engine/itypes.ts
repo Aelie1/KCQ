@@ -1,4 +1,4 @@
-import { Binding, BindingLevel, Buff, Character, Enemy, GameAction, GameEvent, GameState, ModifierId, Move, MoveType, Passive, StatusId, Turn } from "./types";
+import { AccuracyProfile, Binding, BindingLevel, Buff, Character, Enemy, EntitySide, GameAction, GameEvent, GameState, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -57,11 +57,20 @@ export interface BuffDef {
 /*******************************************************
  * Moves
  *******************************************************/
-export interface MoveDef extends Move {
-    activate: (state: iGameState, actor: iEntity, targets: iEntity[]) => GameEvent[];
-    isValid?: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;
+export interface MoveDef {
+    id: string;
+    target: EntitySide;
+    targets: number;
+    baseDamage?: number;
+    type: MoveType;
+    accuracy: AccuracyProfile;
+    activate: (state: iGameState, actor: iEntity, targets: TargetInfo[]) => GameEvent[];
+    isValid?: (state: iGameState, actor: iEntity, targets: TargetInfo[]) => boolean;
 }
 
+export interface DamageMoveDef extends MoveDef {
+    baseDamage: number;
+}
 
 /*******************************************************
  * Passives

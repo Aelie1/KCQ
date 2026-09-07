@@ -4,6 +4,8 @@
  * State
  *******************************************************/
 
+import { iEntity } from "./itypes";
+
 export interface GameState {
     turn: Turn;
     characters: Character[];
@@ -86,6 +88,16 @@ export type MoveType =
 
 export type MoveId = string;
 
+export type AccuracyResult = "miss" | "graze" | "hit" | "crit";
+
+export type AccuracyProfile = Partial<Record<AccuracyResult, number>>;
+
+export interface TargetInfo {
+    target: iEntity;
+    result: AccuracyResult; //What band is it in
+    effectiveness: number;  //How strong is the hit?
+}
+
 /*******************************************************
  * Bindings
  *******************************************************/
@@ -106,6 +118,7 @@ export type BindingLevel =
     | "hard"
     | "extreme"
     | "impossible"
+    | "max"
 
 
 /*******************************************************
@@ -212,7 +225,7 @@ export type ActionFailureReason =
  * Events
  ********************************************************/
 
-export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | DefeatEvent | StanceEvent;
+export type GameEvent = MoveEvent | AccuracyEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | DefeatEvent | StanceEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
@@ -221,30 +234,44 @@ export interface MoveEvent {
     targets: EntityId[];
 }
 
+export interface AccuracyEvent {
+    type: "accuracyResult";
+    actor: EntityId;
+    move: MoveId;
+    target: EntityId;
+    result: AccuracyResult;
+    effectiveness: number;
+}
+
 export interface DamageEvent {
     type: "damage";
     target: EntityId;
     amount: number;
 }
+
 export interface BondageEvent {
     type: "bondageChanged" | "bondageAdded" | "bondageRemoved";
     target: EntityId;
     binding: BindingId;
     amount: number;
 }
+
 export interface PhaseEvent {
     type: "phaseChanged";
     phase: Phase;
 }
+
 export interface BuffEvent {
     type: "buff";
     target: EntityId;
     buff: BuffId;
 }
+
 export interface DefeatEvent {
     type: "enemyDefeated";
     target: EntityId;
 }
+
 export interface StanceEvent {
     type: "stanceChanged";
     actor: EntityId;

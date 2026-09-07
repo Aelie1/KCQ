@@ -1,12 +1,12 @@
 import { encounterList } from "../content/content";
 import { calculateProgress, removeBinding } from "./bindings";
-import { isValidMove, setStance } from "./combat";
+import { calculateAccuracy, evaluateResult, isValidMove, setStance } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
-import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
+import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
 import { XorShift32 } from "./random";
-import { serializeGameState } from "./serialize";
+import { serializeGameState, serializeMove } from "./serialize";
 import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
-import type { ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState } from "./types";
+import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState, TargetInfo } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -80,7 +80,6 @@ export class GameEngine {
         const character = findCharacter(this.state, name);
         if (character) {
             for (const move of character.definition.moves) {
-                const { activate, isValid, ...moveInfo } = move;
                 let available = true;
                 let reason: ActionFailureReason = "moveUnavailable";
                 if (this.state.turn.phase !== "player") {
@@ -101,12 +100,12 @@ export class GameEngine {
                 }
                 if (available) {
                     actions.push({
-                        move: moveInfo,
+                        move: serializeMove(move),
                         available: true
                     });
                 } else {
                     actions.push({
-                        move: moveInfo,
+                        move: serializeMove(move),
                         available: false,
                         reason: reason
                     });
@@ -142,19 +141,6 @@ export class GameEngine {
                     };
                 }
 
-                const targets: iEntity[] = [];
-                for (const target of action.targets) {
-                    const targetstate = findEntity(this.state, target);
-                    if (targetstate) {
-                        targets.push(targetstate);
-                    } else {
-                        return {
-                            success: false,
-                            reason: "invalidTarget"
-                        };
-                    }
-                }
-
                 const move = findMove(actor, action.move);
                 if (!move) {
                     return {
@@ -176,6 +162,22 @@ export class GameEngine {
                         reason: "bindingRestriction"
                     };
                 }
+                
+                const targets: TargetInfo[] = [];
+                for (const target of action.targets) {
+                    const targetState = findEntity(this.state, target);
+                    if (targetState) {
+                        const accuracy: AccuracyProfile = calculateAccuracy(actor, targetState, move);
+                        const roll: number = this.rng.accuracy();
+                        const targetInfo: TargetInfo = evaluateResult(targetState, accuracy, roll);
+                        targets.push(targetInfo);
+                    } else {
+                        return {
+                            success: false,
+                            reason: "invalidTarget"
+                        };
+                    }
+                }
 
                 if (!isValidMove(this.state, actor, targets, move)) {
                     return {
@@ -186,7 +188,22 @@ export class GameEngine {
 
                 //Now we have a valid actor, targets and move -- execute the move
                 events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: action.targets })
-                events.push(...move.activate(this.state, actor, targets));
+                for (const target of targets) {
+                    events.push({
+                        type:"accuracyResult", 
+                        actor:actor.id,
+                        target:target.target.id,
+                        move:move.id,
+                        result:target.result,
+                        effectiveness:target.effectiveness
+                    })
+                }
+                const successfulTargets = targets.filter(
+                    target => target.result !== "miss"
+                );
+                if (successfulTargets.length > 0) {
+                    events.push(...move.activate(this.state, actor, successfulTargets));
+                }
                 if (isCharacter(actor)) {
                     actor.acted = true;
                 }
@@ -370,5 +387,3 @@ export class GameEngine {
         actor.intention = actor.definition.ai(this.state, actor);
     }
 }
-
-

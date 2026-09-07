@@ -1,4 +1,4 @@
-import { BINDING_MAX, IMPOSSIBLE_THRESHOLD } from "./constants";
+import { bindingThresholds } from "./constants";
 import { findBinding } from "./helpers";
 import { BindingDef, iCharacter } from "./itypes";
 import { getModifier } from "./status";
@@ -7,6 +7,7 @@ import { BindingId, BondageEvent, GameEvent } from "./types";
 export function addBinding(target: iCharacter, type: BindingDef, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
     const event: BondageEvent = { type: "bondageChanged", target: target.id, binding: type.id, amount: 0 };
+    const intAmount = Math.ceil(amount);
     let binding = findBinding(target, type.id);
     if (!binding) {
         //character doesnt have it, let's add it
@@ -15,18 +16,18 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
         event.type = "bondageAdded";
     }
     let origLevel = binding.value;
-    let newAmount = amount;
+    let newAmount = intAmount;
     //bondage above 80 is reduced by 90%
-    if (origLevel > IMPOSSIBLE_THRESHOLD) {
-        newAmount = amount * 0.1;
+    if (origLevel > bindingThresholds.impossible) {
+        newAmount = intAmount * 0.1;
     } else {
-        const toThreshold = Math.min(newAmount, IMPOSSIBLE_THRESHOLD - origLevel);
+        const toThreshold = Math.min(newAmount, bindingThresholds.impossible - origLevel);
         const overflow = newAmount - toThreshold;
         newAmount = toThreshold + overflow * 0.1;
     }
     binding.value += Math.ceil(newAmount);
-    if (binding.value > BINDING_MAX) {
-        binding.value = BINDING_MAX;
+    if (binding.value > bindingThresholds.max) {
+        binding.value = bindingThresholds.max;
     }
     if (type.onBindingAdd) {
         type.onBindingAdd(binding);
@@ -68,7 +69,7 @@ export function calculateProgress(actor: iCharacter, target: iCharacter, type: B
     }
     const basePotency = 20;
     const bindingValue = binding.value;
-    const bindingRatio = Math.min(bindingValue / IMPOSSIBLE_THRESHOLD, 1);
+    const bindingRatio = Math.min(bindingValue / bindingThresholds.impossible, 1);
     const basePenalty = 15;
     let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
     escapePotency *= 1 + getModifier(actor,"escape") * 0.1;

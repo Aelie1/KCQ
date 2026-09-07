@@ -1,14 +1,15 @@
+import { effectivenessRange } from "./constants";
 import { getIEntitySide } from "./helpers";
 import { iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
 import { canMove } from "./status";
-import { DamageEvent, DefeatEvent, GameEvent, StanceId } from "./types";
+import { AccuracyProfile, AccuracyResult, DamageEvent, DefeatEvent, GameEvent, StanceId, TargetInfo } from "./types";
 
-export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
+export function isValidMove(state: iGameState, actor: iEntity, targets: TargetInfo[], move: MoveDef): boolean {
     if (targets.length !== move.targets) {
         return false;
     }
     for (const target of targets) {
-        if (getIEntitySide(target) !== move.target) {
+        if (getIEntitySide(target.target) !== move.target) {
             return false;
         }
     }
@@ -19,11 +20,12 @@ export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[
 
 export function damageEnemy(state: iGameState, target: iEnemy, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
-    target.currHp -= amount;
+    const intAmount =Math.ceil(amount);
+    target.currHp -= intAmount;
     const event: DamageEvent = {
         type: "damage",
         target: target.id,
-        amount: amount
+        amount: intAmount
     };
     events.push(event);
     if (target.currHp <= 0) {
@@ -60,4 +62,36 @@ export function setStance(target: iCharacter, stance: StanceId): GameEvent[] {
             break;
     }
     return events;
+}
+
+export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {
+    //This is where the magic will happen someday
+    return {...move.accuracy};
+}
+
+export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll: number): TargetInfo {
+    const result: TargetInfo = { target: target, result: "miss", effectiveness: 0 };
+
+    const order: AccuracyResult[] = ["miss", "graze", "hit", "crit"];
+
+    let cumulative = 0;
+    for (const band of order) {
+        const value = accuracy[band];
+        if (value !== undefined && value > 0) {
+            result.result = band;
+            if (roll < cumulative + value) {
+                if (band !== "miss") {
+                    const [min, max] = effectivenessRange[band];
+                    const effect = (roll - cumulative) / value;
+                    result.effectiveness = min + (max-min) * effect;
+                }
+                return result;
+            }
+            cumulative += value;
+        }
+    }
+    //rolled above the highest band, return the top of the highest band
+    result.effectiveness = effectivenessRange[result.result][1];
+
+    return result;
 }
