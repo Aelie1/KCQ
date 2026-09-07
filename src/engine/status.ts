@@ -143,7 +143,7 @@ export const bound: StatusDef = {
 }
 
 export const gagged: StatusDef = {
-    id: "bound",
+    id: "gagged",
     levels: [
         {},
         { modifiers: { hitmouth: -2 } },

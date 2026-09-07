@@ -61,9 +61,17 @@ export class GameEngine {
                     available = false;
                     reason = "wrongPhase";
                 }
-                if (character.acted) {
+                else if (character.acted) {
                     available = false;
                     reason = "actorAlreadyActed";
+                }
+                else if (!canAttack(character)) {
+                    available = false;
+                    reason = "statusRestriction";
+                }
+                else if (!canUseMove(character, move.type)) {
+                    available = false;
+                    reason = "bindingRestriction";
                 }
                 if (available) {
                     actions.push({

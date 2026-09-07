@@ -47,7 +47,7 @@ export function removeBinding(target: iCharacter, type: BindingDef, amount: numb
     }
     let origLevel = binding.value;
     binding.value -= amount;
-    if (binding.value < 0) {
+    if (binding.value <= 0) {
         binding.value = 0;
         event.type = "bondageRemoved";
     }
