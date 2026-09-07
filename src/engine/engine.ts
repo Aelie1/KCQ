@@ -1,11 +1,12 @@
+import { encounterList } from "../content/content";
 import { calculateProgress, removeBinding } from "./bindings";
 import { isValidMove } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
-import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
+import type { CharacterDef, EncounterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState } from "./serialize";
 import { canAttack, canUseEscape, canUseMove } from "./status";
-import type { ActionFailureReason, ActionInfo, ActionResult, EntityId, GameAction, GameEvent, GameState } from "./types";
+import type { ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -28,6 +29,14 @@ export class GameEngine {
         return serializeGameState(this.state);
     }
 
+    listEncounters(): EncounterId[] {
+        const encounters: EncounterId[] = []; 
+        for (const encounter of encounterList){
+            encounters.push(encounter.id);
+        }
+        return encounters;
+    }
+
     loadCharacter(character: CharacterDef) {
         this.state.characters.push({
             id: character.id,
@@ -47,6 +56,19 @@ export class GameEngine {
             currDef: enemy.defense,
             intention: null,
         });
+    }
+
+    loadEncounter(id: EncounterId) {
+        const encounter = encounterList.find(x => x.id === id);
+        if (encounter) {
+            for (const enemy of encounter.enemies) {
+                this.loadEnemy(enemy);
+            }
+            if (encounter.setup) {
+                encounter.setup(this.state);
+            }
+            this.updateIntentions();
+        }
     }
 
     getActions(name: EntityId): ActionInfo[] {
@@ -144,7 +166,7 @@ export class GameEngine {
                     };
                 }
 
-                if (isCharacter(actor) && !canUseMove(actor,move.type)) {
+                if (isCharacter(actor) && !canUseMove(actor, move.type)) {
                     return {
                         success: false,
                         reason: "bindingRestriction"
@@ -201,9 +223,9 @@ export class GameEngine {
                         reason: "invalidTarget"
                     };
                 }
-                
-                const amount = calculateProgress(actor,target, action.binding);
-                const binding = findBinding(target,action.binding);
+
+                const amount = calculateProgress(actor, target, action.binding);
+                const binding = findBinding(target, action.binding);
                 if (!binding) {
                     return {
                         success: false,
@@ -211,21 +233,21 @@ export class GameEngine {
                     }
                 }
 
-                if (actor === target && !canUseEscape(actor,target,binding)) {
+                if (actor === target && !canUseEscape(actor, target, binding)) {
                     return {
                         success: false,
                         reason: "escapeUnavailable"
                     }
                 }
 
-                if (actor !== target && !canUseEscape(actor,target,binding)) {
+                if (actor !== target && !canUseEscape(actor, target, binding)) {
                     return {
                         success: false,
                         reason: "assistUnavailable"
                     }
                 }
 
-                events.push(...removeBinding(target,binding.definition,amount))
+                events.push(...removeBinding(target, binding.definition, amount))
                 actor.acted = true;
                 this.state.turn.step++;
                 return {
@@ -244,7 +266,7 @@ export class GameEngine {
                 events.push(...this.advancePhase());
                 events.push(...this.executeEnemyPhase());
                 events.push(...this.advancePhase());
-        
+
                 return {
                     success: true,
                     events: events,
@@ -254,7 +276,7 @@ export class GameEngine {
         }
     }
 
-    executeEnemyPhase() : GameEvent[] {
+    executeEnemyPhase(): GameEvent[] {
         const events: GameEvent[] = [];
         for (const enemy of this.state.enemies) {
             let result: ActionResult | null = null;
@@ -268,7 +290,7 @@ export class GameEngine {
         return events;
     }
 
-    advancePhase() : GameEvent[] {
+    advancePhase(): GameEvent[] {
         const events: GameEvent[] = [];
 
         if (this.state.turn.phase === "player") {
@@ -287,7 +309,7 @@ export class GameEngine {
         return events;
     }
 
-    
+
     updateIntentions() {
         for (const enemy of this.state.enemies) {
             enemy.intention = null;
@@ -298,7 +320,7 @@ export class GameEngine {
     }
 
     updateIntention(actor: iEnemy) {
-        actor.intention = actor.definition.ai(this.state,actor);
+        actor.intention = actor.definition.ai(this.state, actor);
     }
 }
 

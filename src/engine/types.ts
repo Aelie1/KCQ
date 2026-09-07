@@ -236,11 +236,7 @@ export interface DefeatEvent {
 }
 
 /*******************************************************
- * History
+ * Encounters
  *******************************************************/
 
-export interface HistoryEntry {
-    action?: GameAction;
-    events: GameEvent[];
-    state: GameState;
-}
+export type EncounterId = string;

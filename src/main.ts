@@ -15,7 +15,7 @@ function logAction(engine: GameEngine, action: GameAction) {
 process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
 const engine = new GameEngine();
 engine.loadCharacter(ko);
-engine.loadEnemy(skunkette);
+engine.loadEncounter("plains_1");
 engine.updateIntentions();
 let actions = engine.getActions("ko");
 console.dir(actions, { depth: null, breakLength: 200 });

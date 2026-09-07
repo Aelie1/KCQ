@@ -1,31 +1,33 @@
 {
-  "name": "kcq",
-  "version": "1.0.0",
-  "main": "index.js",
-  "directories": {
-    "doc": "docs"
-  },
-  "scripts": {
-    "test": "vitest run",
-    "coverage": "vitest --coverage"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Aelie1/KCQ.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/Aelie1/KCQ/issues"
-  },
-  "homepage": "https://github.com/Aelie1/KCQ#readme",
-  "description": "",
-  "devDependencies": {
-    "@types/node": "^26.4.1",
-    "@vitest/coverage-v8": "^5.0.0",
-    "tsx": "^4.23.13",
-    "typescript": "^7.0.2",
-    "vitest": "^5.0.0"
-  }
+    "name": "kcq",
+    "version": "1.0.0",
+    "main": "index.js",
+    "directories": {
+        "doc": "docs"
+    },
+    "scripts": {
+        "test": "vitest run",
+        "coverage": "vitest --coverage",
+        "typecheck": "tsc --noEmit",
+        "typecheck:test": "tsc -p tsconfig.test.json"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Aelie1/KCQ.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Aelie1/KCQ/issues"
+    },
+    "homepage": "https://github.com/Aelie1/KCQ#readme",
+    "description": "",
+    "devDependencies": {
+        "@types/node": "^26.4.1",
+        "@vitest/coverage-v8": "^5.0.0",
+        "tsx": "^4.23.13",
+        "typescript": "^7.0.2",
+        "vitest": "^5.0.0"
+    }
 }

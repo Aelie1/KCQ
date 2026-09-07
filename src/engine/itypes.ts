@@ -1,4 +1,4 @@
-import { Binding, BindingLevel, Buff, Character, Enemy, GameAction, GameEvent, ModifierId, Move, MoveType, Passive, StatusId, Turn } from "./types";
+import { Binding, BindingLevel, Buff, Character, Enemy, GameAction, GameEvent, GameState, ModifierId, Move, MoveType, Passive, StatusId, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -113,4 +113,14 @@ export interface StatusLevelDef {
     blocksMoving?: boolean;
     skipsTurn?: boolean;
     incapacitated?: boolean;
+}
+
+/*******************************************************
+ * Encounters
+ *******************************************************/
+
+export interface EncounterDef {
+    id: string;
+    enemies: EnemyDef[];
+    setup?: (state: iGameState) => GameState;
 }
