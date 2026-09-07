@@ -1,0 +1,242 @@
+import { getBindingLevel } from "./helpers";
+import { iBinding, iCharacter, iStatus, StatusDef } from "./itypes";
+import { ModifierId, MoveType } from "./types";
+
+/*******************************************************
+ * Functions
+ *******************************************************/
+
+export function getStatuses(target: iCharacter): iStatus[] {
+    const statuses: iStatus[] = [];
+    for (const binding of target.bindings) {
+        const bindingStatuses = binding.definition.status;
+        const level = getBindingLevel(binding);
+        for (const bindingStatus of bindingStatuses[level]) {
+            const characterStatus = statuses.find(x => x.definition === bindingStatus.definition);
+            if (characterStatus !== undefined) {
+                if (characterStatus.value < bindingStatus.value) {
+                    characterStatus.value = bindingStatus.value;
+                }
+            } else {
+                statuses.push({ definition: bindingStatus.definition, value: bindingStatus.value });
+            }
+        }
+    }
+    return statuses;
+}
+
+
+export function getModifier(target: iCharacter, id: ModifierId): number {
+    let amount: number = 0;
+    const statuses: iStatus[] = getStatuses(target);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        amount += level.modifiers?.[id] ?? 0;
+    }
+    return amount;
+}
+
+
+export function canAttack(actor: iCharacter): boolean {
+    const statuses: iStatus[] = getStatuses(actor);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.skipsTurn) {
+            return false;
+        }
+        if (level.blocksAttack) {
+            return false;
+        }
+    }
+    return true;
+}
+
+export function canUseMove(actor: iCharacter, type: MoveType): boolean {
+    const statuses: iStatus[] = getStatuses(actor);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.blockedMoveTypes?.includes(type)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+export function canUseEscape(actor: iCharacter, target: iCharacter, binding: iBinding): boolean {
+    const statuses: iStatus[] = getStatuses(actor);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.skipsTurn) {
+            return false;
+        }
+        if (level.blocksEscape) {
+            return false;
+        }
+        if (actor !== target && level.blocksAssist) {
+            return false;
+        }
+    }
+    return true;
+}
+
+export function canMove(actor: iCharacter): boolean {
+    const statuses: iStatus[] = getStatuses(actor);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.blocksMoving) {
+            return false;
+        }
+    }
+    return true;
+}
+
+
+export function canBonusEscape(actor: iCharacter): boolean {
+    const statuses: iStatus[] = getStatuses(actor);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.blocksEscape) {
+            return false;
+        }
+        if (level.blocksBonusEscape) {
+            return false;
+        }
+    }
+    return true;
+}
+
+export function isSkipped(actor: iCharacter): boolean {
+    const statuses: iStatus[] = getStatuses(actor);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.skipsTurn) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+export function isIncapacitated(actor: iCharacter): boolean {
+    const statuses: iStatus[] = getStatuses(actor);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.incapacitated) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*******************************************************
+ * Definitions
+ *******************************************************/
+export const bound: StatusDef = {
+    id: "bound",
+    levels: [
+        {},
+        { modifiers: { hitarms: -2 } },
+        { modifiers: { hitarms: -4 } },
+        { blockedMoveTypes: ["arms"], blocksAssist: true },
+        { blockedMoveTypes: ["arms"], blocksAssist: true, modifiers: { escape: -1 } }
+    ]
+}
+
+export const gagged: StatusDef = {
+    id: "bound",
+    levels: [
+        {},
+        { modifiers: { hitmouth: -2 } },
+        { modifiers: { hitmouth: -4 } },
+        { blockedMoveTypes: ["mouth"] },
+        { blockedMoveTypes: ["mouth"], modifiers: { escape: -1 } }
+    ]
+}
+
+export const hobbled: StatusDef = {
+    id: "hobbled",
+    levels: [
+        {},
+        { modifiers: { defense: -1, traps: -1, hitlegs: -2 } },
+        { modifiers: { defense: -2, traps: -2, hitlegs: -4 } },
+        { modifiers: { defense: -3, traps: -3 }, blockedMoveTypes: ["legs"] },
+        { modifiers: { defense: -4, traps: -4, escape: -1 }, blockedMoveTypes: ["legs"] }
+    ]
+}
+
+export const vibrating: StatusDef = {
+    id: "vibrating",
+    levels: [
+        {},
+        { modifiers: { escape: -1 }, blocksBonusEscape: true },
+        { modifiers: { escape: -2 }, blocksBonusEscape: true },
+        { modifiers: { escape: -3 }, blocksBonusEscape: true },
+        { modifiers: { escape: -4 }, blocksBonusEscape: true }
+    ]
+}
+
+export const submissive: StatusDef = {
+    id: "submissive",
+    levels: [
+        {},
+        { modifiers: { willpower: -1, enemyeffect: 2 } },
+        { modifiers: { willpower: -2, enemyeffect: 4 } },
+        { modifiers: { willpower: -3, enemyeffect: 6 } },
+        { modifiers: { willpower: -4, enemyeffect: 8 } }
+    ]
+}
+
+export const breathless: StatusDef = {
+    id: "breathless",
+    levels: [
+        {},
+        { modifiers: { defense: -1 } },
+        { modifiers: { defense: -2 } },
+        { modifiers: { defense: -3 } },
+        { modifiers: { defense: -4 } }
+    ]
+}
+
+export const blinded: StatusDef = {
+    id: "blinded",
+    levels: [
+        {},
+        { modifiers: { hitarms: -1, hitlegs: -1, hitmouth: -1 } },
+        { modifiers: { hitarms: -2, hitlegs: -2, hitmouth: -2 } },
+        { modifiers: { hitarms: -3, hitlegs: -3, hitmouth: -3, defense: -1 } },
+        { modifiers: { hitarms: -4, hitlegs: -4, hitmouth: -4, defense: -2 } }
+    ]
+}
+
+export const immobilized: StatusDef = {
+    id: "immobilized",
+    levels: [
+        {},
+        { blocksMoving: true }
+    ]
+}
+
+export const helpless: StatusDef = {
+    id: "helpless",
+    levels: [
+        {},
+        { skipsTurn: true }
+    ]
+}
+
+export const incapacitated: StatusDef = {
+    id: "incapacitated",
+    levels: [
+        {},
+        { skipsTurn: true, incapacitated: true }
+    ]
+}
+
+export const stunned: StatusDef = {
+    id: "stunned",
+    levels: [
+        {},
+        { blocksAttack: true, blocksEscape: true, blocksMoving: true }
+    ]
+}
+

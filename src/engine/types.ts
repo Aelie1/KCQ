@@ -1,13 +1,8 @@
-export type MoveType = "arms" | "mouth" | "legs" | "enemy";
-export type MoveId = string;
-export type EntityId = string;
-export type EntitySide = "player" | "enemy";
-export type BindingId = string;
-export type BindingLevel = "none" | "easy" | "medium" | "hard" | "extreme" | "impossible"
-export type BuffId = string;
-export type StatusId = "bound" | "gagged" | "hobbled" | "vibrating" | "submissive" | "breathless" | "blinded" | "immobilized" | "helpless" | "incapacitated";
-export type Phase = "player" | "enemy";
 
+
+/*******************************************************
+ * State
+ *******************************************************/
 
 export interface GameState {
     turn: Turn;
@@ -21,6 +16,16 @@ export interface Turn {
     phase: Phase;
 }
 
+export type Phase = "player" | "enemy";
+
+export type EntityId = string;
+
+export type EntitySide = "player" | "enemy";
+
+/*******************************************************
+ * Characters
+ *******************************************************/
+
 export interface Character {
     id: EntityId;
     acted: boolean;
@@ -28,6 +33,10 @@ export interface Character {
     buffs: Buff[];
     status: Status[];
 }
+
+/*******************************************************
+ * Enemies
+ *******************************************************/
 
 export interface Enemy {
     id: EntityId;
@@ -37,14 +46,28 @@ export interface Enemy {
     buffs: Buff[];
 }
 
+/*******************************************************
+ * Buffs
+ *******************************************************/
+
 export interface Buff {
     duration: number;
     effect: number;
 }
 
+export type BuffId = string;
+
+/*******************************************************
+ * Passives
+ *******************************************************/
+
 export interface Passive {
     id: string;
 }
+
+/*******************************************************
+ * Moves
+ *******************************************************/
 
 export interface Move {
     id: string;
@@ -53,17 +76,68 @@ export interface Move {
     type: MoveType;
 }
 
+export type MoveType =
+    | "arms"
+    | "mouth"
+    | "legs"
+    | "enemy";
+
+export type MoveId = string;
+
+/*******************************************************
+ * Bindings
+ *******************************************************/
+
 export interface Binding {
     id: BindingId;
     value: number;
     level: BindingLevel;
-    state: Record<string,number>;
+    state: Record<string, number>;
 }
+
+export type BindingId = string;
+
+export type BindingLevel =
+    | "none"
+    | "easy"
+    | "medium"
+    | "hard"
+    | "extreme"
+    | "impossible"
+
+
+/*******************************************************
+ * Statuses
+ *******************************************************/
 
 export interface Status {
     id: StatusId;
     value: number;
 }
+
+export type StatusId =
+    | "bound"
+    | "gagged"
+    | "hobbled"
+    | "vibrating"
+    | "submissive"
+    | "breathless"
+    | "blinded"
+    | "immobilized"
+    | "helpless"
+    | "stunned"
+    | "incapacitated";
+
+export type ModifierId = 
+    | "hitarms" 
+    | "hitmouth" 
+    | "hitlegs" 
+    | "defense" 
+    | "escape" 
+    | "enemyeffect" 
+    | "traps" 
+    | "willpower"
+
 
 /*******************************************************
  * Actions
@@ -72,16 +146,8 @@ export interface Status {
 export interface ActionInfo {
     move: Move;
     available: boolean;
-    reason?: ActionUnavailableReason;
+    reason?: ActionFailureReason;
 }
-
-export type ActionUnavailableReason =
-    | "wrongPhase"
-    | "actorAlreadyActed"
-    | "moveUnavailable"
-    | "onCooldown"
-    | "insufficientResource"
-    | "bindingRestriction";
 
 export type GameAction = AttackAction | EscapeAction | EndTurnAction;
 
@@ -124,7 +190,10 @@ export type ActionFailureReason =
     | "wrongPhase"
     | "actorAlreadyActed"
     | "moveUnavailable"
-    | "cannotEscapeTrack";
+    | "assistUnavailable"
+    | "escapeUnavailable"
+    | "statusRestriction"
+    | "bindingRestriction";
 
 
 

@@ -1,4 +1,4 @@
-import { Binding, BindingLevel, Buff, Character, Enemy, GameAction, GameEvent, Move, Passive, Status, Turn } from "./types";
+import { Binding, BindingLevel, Buff, Character, Enemy, GameAction, GameEvent, ModifierId, Move, MoveType, Passive, StatusId, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -59,7 +59,7 @@ export interface BuffDef {
  *******************************************************/
 export interface MoveDef extends Move {
     activate: (state: iGameState, actor: iEntity, targets: iEntity[]) => GameEvent[];
-    isValid: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;
+    isValid?: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;
 }
 
 
@@ -84,8 +84,33 @@ export interface iBinding extends Omit<Binding, "level"> {
 
 export interface BindingDef {
     id: string;
-    status: Record<BindingLevel, Status[]>;
+    status: Record<BindingLevel, iStatus[]>;
     initialState: Record<string,number>;
     onBindingAdd?: (binding: iBinding) => void;
 }
 
+/*******************************************************
+ * Statuses
+ *******************************************************/
+
+export interface iStatus {
+    definition: StatusDef;
+    value: number;
+}
+
+export interface StatusDef {
+    id: StatusId;
+    levels: StatusLevelDef[];
+}
+
+export interface StatusLevelDef {
+    modifiers?: Partial<Record<ModifierId, number>>;
+    blockedMoveTypes?: MoveType[];
+    blocksAttack?: boolean;
+    blocksEscape?: boolean;
+    blocksAssist?: boolean;
+    blocksBonusEscape?: boolean;
+    blocksMoving?: boolean;
+    skipsTurn?: boolean;
+    incapacitated?: boolean;
+}

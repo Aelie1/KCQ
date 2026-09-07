@@ -1,6 +1,6 @@
 import { EASY_THRESHOLD, EXTREME_THRESHOLD, HARD_THRESHOLD, IMPOSSIBLE_THRESHOLD, MEDIUM_THRESHOLD } from "./constants";
-import type { iGameState, iCharacter, iEnemy, iEntity, MoveDef, iBinding } from "./itypes";
-import type { EntityId, MoveId, BindingId, EntitySide, BindingLevel } from "./types";
+import type { iBinding, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
+import type { BindingId, BindingLevel, EntityId, EntitySide, MoveId } from "./types";
 
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {

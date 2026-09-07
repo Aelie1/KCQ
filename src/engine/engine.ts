@@ -1,9 +1,11 @@
 import { calculateProgress, removeBinding } from "./bindings";
+import { isValidMove } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
 import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState } from "./serialize";
-import type { ActionInfo, ActionResult, ActionUnavailableReason, EntityId, GameAction, GameEvent, GameState } from "./types";
+import { canAttack, canUseEscape, canUseMove } from "./status";
+import type { ActionFailureReason, ActionInfo, ActionResult, EntityId, GameAction, GameEvent, GameState } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -54,7 +56,7 @@ export class GameEngine {
             for (const move of character.definition.moves) {
                 const { activate, isValid, ...moveInfo } = move;
                 let available = true;
-                let reason: ActionUnavailableReason = "moveUnavailable";
+                let reason: ActionFailureReason = "moveUnavailable";
                 if (this.state.turn.phase !== "player") {
                     available = false;
                     reason = "wrongPhase";
@@ -127,7 +129,21 @@ export class GameEngine {
                     };
                 }
 
-                if (!move.isValid(this.state, actor, targets)) {
+                if (isCharacter(actor) && !canAttack(actor)) {
+                    return {
+                        success: false,
+                        reason: "statusRestriction"
+                    };
+                }
+
+                if (isCharacter(actor) && !canUseMove(actor,move.type)) {
+                    return {
+                        success: false,
+                        reason: "bindingRestriction"
+                    };
+                }
+
+                if (!isValidMove(this.state, actor, targets, move)) {
                     return {
                         success: false,
                         reason: "moveUnavailable"
@@ -177,6 +193,7 @@ export class GameEngine {
                         reason: "invalidTarget"
                     };
                 }
+                
                 const amount = calculateProgress(actor,target, action.binding);
                 const binding = findBinding(target,action.binding);
                 if (!binding) {
@@ -185,6 +202,21 @@ export class GameEngine {
                         reason: "invalidBinding"
                     }
                 }
+
+                if (actor === target && !canUseEscape(actor,target,binding)) {
+                    return {
+                        success: false,
+                        reason: "escapeUnavailable"
+                    }
+                }
+
+                if (actor !== target && !canUseEscape(actor,target,binding)) {
+                    return {
+                        success: false,
+                        reason: "assistUnavailable"
+                    }
+                }
+
                 events.push(...removeBinding(target,binding.definition,amount))
                 actor.acted = true;
                 this.state.turn.step++;

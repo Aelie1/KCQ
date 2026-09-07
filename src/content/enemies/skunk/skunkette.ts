@@ -12,15 +12,6 @@ const latexspray: MoveDef = {
             events.push(...addBinding(target, latexarms, 30));
         return events;
     },
-    isValid: function (state: iGameState, actor: iEntity, targets: iEntity[]): boolean {
-        if (targets.length !== 1) {
-            return false;
-        }
-        if (!isCharacter(targets[0])) {
-            return false;
-        }
-        return true;
-    },
     id: "latexspray",
     target: "player",
     targets: 1,

@@ -15,15 +15,21 @@ const telekinesis: MoveDef = {
             events.push(...damageEnemy(state, target, 10));
         return events;
     },
-    isValid: function (state: iGameState, actor: iEntity, targets: iEntity[]): boolean {
-        if (targets.length !== 1) {
-            return false;
-        }
-        if (!isEnemy(targets[0])) {
-            return false;
-        }
-        return true;
-    }
+
+};
+
+const fairypunch: MoveDef = {
+    id: "fairypunch",
+    target: "enemy",
+    targets: 1,
+    type: "arms",
+    activate: function (state: iGameState, actor: iEntity, targets: iEntity[]): GameEvent[] {
+        const events: GameEvent[] = []
+        const target = targets[0];
+        if (isEnemy(target))
+            events.push(...damageEnemy(state, target, 10));
+        return events;
+    },
 
 };
 
@@ -36,9 +42,6 @@ const starlight: MoveDef = {
         console.log("used starlight");
         return [];
     },
-    isValid: function (state: iGameState, actor: iEntity, targets: iEntity[]): boolean {
-        return true;
-    }
 }
 
 const thousandrestraintsbody: PassiveDef = {
@@ -47,6 +50,6 @@ const thousandrestraintsbody: PassiveDef = {
 
 export const ko: CharacterDef = {
     id: "ko",
-    moves: [telekinesis, starlight],
+    moves: [telekinesis, starlight, fairypunch],
     passives: [thousandrestraintsbody]
 };

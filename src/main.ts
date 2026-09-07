@@ -10,7 +10,7 @@ function logAction(engine: GameEngine, action: GameAction) {
     
     console.log("~~" + action.type + " #" + actionCounts[action.type] + "~~");
     let events = engine.executeAction(action);
-    console.dir(events, { depth: null, breakLength: 200 });
+    console.dir(events, { depth: null, breakLength: 300 });
 }
 process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
 const engine = new GameEngine();
@@ -25,6 +25,7 @@ logAction(engine, { type: "endTurn" });
 logAction(engine, { type: "endTurn" });
 logAction(engine, { type: "endTurn" });
 logAction(engine, { type: "endTurn" });
+logAction(engine, { type: "attack", actor: "ko", "move": "fairypunch", targets: ["skunkette1"] });
 logAction(engine, { type: "attack", actor: "ko", "move": "telekinesis", targets: ["skunkette1"] });
 logAction(engine, { type: "endTurn" });
 logAction(engine, { type: "escape", actor: "ko", target: "ko", binding: "latexarms" });

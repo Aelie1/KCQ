@@ -1,7 +1,8 @@
 import { BINDING_MAX, IMPOSSIBLE_THRESHOLD } from "./constants";
-import { findBinding, getBindingLevel } from "./helpers";
+import { findBinding } from "./helpers";
 import { BindingDef, iCharacter } from "./itypes";
-import { BindingId, BondageEvent, GameEvent, Status } from "./types";
+import { getModifier } from "./status";
+import { BindingId, BondageEvent, GameEvent } from "./types";
 
 export function addBinding(target: iCharacter, type: BindingDef, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
@@ -9,7 +10,7 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
     let binding = findBinding(target, type.id);
     if (!binding) {
         //character doesnt have it, let's add it
-        binding = { definition: type, id: type.id, value: 0, state: type.initialState };
+        binding = { definition: type, id: type.id, value: 0, state: {...type.initialState} };
         target.bindings.push(binding);
         event.type = "bondageAdded";
     }
@@ -70,28 +71,10 @@ export function calculateProgress(actor: iCharacter, target: iCharacter, type: B
     const bindingRatio = Math.min(bindingValue / IMPOSSIBLE_THRESHOLD, 1);
     const basePenalty = 15;
     let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
+    escapePotency *= 1 + getModifier(actor,"escape") * 0.1;
     if (actor !== target) {
         escapePotency*=1.5;
     }
 
     return Math.ceil(escapePotency);
-}
-
-export function getStatuses(target: iCharacter): Status[] {
-    const statuses: Status[] = [];
-    for (const binding of target.bindings) {
-        const bStatuses = binding.definition.status;
-        const level = getBindingLevel(binding);
-        for (const bStatus of bStatuses[level]) {
-            const cStatus = statuses.find(x => x.id === bStatus.id);
-            if (cStatus !== undefined) {
-                if (cStatus.value < bStatus.value) {
-                    cStatus.value = bStatus.value;
-                }
-            } else {
-                statuses.push(bStatus);
-            }
-        }
-    }
-    return statuses;
 }
