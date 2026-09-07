@@ -17,10 +17,10 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
     let origLevel = binding.value;
     let newAmount = amount;
     //bondage above 80 is reduced by 90%
-    if (origLevel > 80) {
+    if (origLevel > IMPOSSIBLE_THRESHOLD) {
         newAmount = amount * 0.1;
     } else {
-        const toThreshold = Math.min(newAmount, 80 - origLevel);
+        const toThreshold = Math.min(newAmount, IMPOSSIBLE_THRESHOLD - origLevel);
         const overflow = newAmount - toThreshold;
         newAmount = toThreshold + overflow * 0.1;
     }
