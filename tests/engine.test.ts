@@ -1151,6 +1151,24 @@ describe("move and status restrictions", () => {
 });
 
 describe("standing stance", () => {
+    it("rejects invalid actor", () => {
+        const strike = makeMove("strike");
+        const hero = makeCharacterDef("hero", [strike]);
+        const engine = new GameEngine(1);
+        engine.loadCharacter(hero);
+
+        const result = engine.executeAction({
+            type: "stance",
+            actor: "invalid-actor",
+            stance: "standing",
+        });
+
+        expect(result).toMatchObject({
+            success: false,
+            reason: "invalidActor"
+        });
+    });
+    
     it("enters standing stance without consuming the normal action", () => {
         const strike = makeMove("strike");
         const hero = makeCharacterDef("hero", [strike]);
