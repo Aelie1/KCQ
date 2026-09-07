@@ -343,7 +343,7 @@ export class GameEngine {
             for (const actor of this.state.characters) {
                 actor.acted = false;
                 if (canMove(actor)) {
-                    actor.standing = false;
+                    events.push(...setStance(actor, "moving"));
                 }
                 actor.bonusEscapes = 0;
             }
