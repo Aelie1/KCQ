@@ -27,20 +27,8 @@ export function removeBuff(target: iEntity, buff: iBuff): GameEvent[] {
 export function tickBuffs(state: iGameState): GameEvent[] {
     const events: GameEvent[] = [];
 
-    for (const character of state.characters) {
-        for (const buff of [...character.buffs]) {
-            if (buff.duration === "infinite") {
-                continue;
-            }
-            buff.duration--;
-            if (buff.duration === 0) {
-                events.push(...removeBuff(character, buff));
-            }
-        }
-    }
-
-    for (const enemy of state.enemies) {
-        for (const buff of [...enemy.buffs]) {
+    for (const entity of [...state.characters, ...state.enemies]) {
+        for (const buff of [...entity.buffs]) {
             if (!buff.active) {
                 buff.active = true;
                 continue;
@@ -50,7 +38,7 @@ export function tickBuffs(state: iGameState): GameEvent[] {
             }
             buff.duration--;
             if (buff.duration === 0) {
-                events.push(...removeBuff(enemy, buff));
+                events.push(...removeBuff(entity, buff));
             }
         }
     }
