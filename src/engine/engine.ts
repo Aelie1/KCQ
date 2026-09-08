@@ -1,4 +1,3 @@
-import { encounterList } from "../content/content";
 import { calculateProgress, removeBinding } from "./bindings";
 import { tickBuffs } from "./buffs";
 import { calculateAccuracy, evaluateResult, isValidMove, loadEnemy, setStance, updateIntentions } from "./combat";
@@ -33,11 +32,11 @@ export class GameEngine {
     }
 
     listEncounters(): EncounterId[] {
-        const encounters: EncounterId[] = [];
-        for (const encounter of encounterList) {
-            encounters.push(encounter.id);
+        const encounterList: EncounterId[] = [];
+        for (const encounter of this.encounters) {
+            encounterList.push(encounter.id);
         }
-        return encounters;
+        return encounterList;
     }
 
     loadCharacter(character: CharacterDef) {

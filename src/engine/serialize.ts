@@ -4,8 +4,10 @@ import { getStatuses } from "./status";
 import type { Binding, Buff, Character, Enemy, GameAction, GameState, Move, Status } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
+    const { nextEntityId, ..._state } = state;
+
     return {
-        ...state,
+        ..._state,
         turn: { ...state.turn },
         characters: state.characters.map(serializeCharacter),
         enemies: state.enemies.map(serializeEnemy),
