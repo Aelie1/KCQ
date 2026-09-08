@@ -142,13 +142,15 @@ export class GameEngine {
                     };
                 }
 
-                const move = findMove(actor, action.move);
-                if (!move) {
+                const foundMove = findMove(actor, action.move);
+                if (!foundMove) {
                     return {
                         success: false,
                         reason: "invalidMove"
                     };
                 }
+
+                const move = { ...foundMove };
 
                 if (isCharacter(actor) && !canAttack(actor)) {
                     return {
@@ -162,6 +164,11 @@ export class GameEngine {
                         success: false,
                         reason: "bindingRestriction"
                     };
+                }
+
+                if (move.targets === "all") {
+                    action.targets = this.state.enemies.map(x => x.id);
+                    move.targets = this.state.enemies.length;
                 }
 
                 const targetStates: iEntity[] = [];
@@ -185,11 +192,13 @@ export class GameEngine {
                 }
 
                 const targets: TargetInfo[] = [];
-                const roll: number = this.rng.accuracy();
-                for (const target of targetStates) {
-                    const accuracy: AccuracyProfile = calculateAccuracy(actor, target, move);
-                    const targetInfo: TargetInfo = evaluateResult(target, accuracy, roll);
-                    targets.push(targetInfo);
+                if (move.targets > 0) {
+                    const roll: number = this.rng.accuracy();
+                    for (const target of targetStates) {
+                        const accuracy: AccuracyProfile = calculateAccuracy(actor, target, move);
+                        const targetInfo: TargetInfo = evaluateResult(target, accuracy, roll);
+                        targets.push(targetInfo);
+                    }
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move
@@ -207,7 +216,7 @@ export class GameEngine {
                 const successfulTargets = targets.filter(
                     target => target.result !== "miss"
                 );
-                if (successfulTargets.length > 0) {
+                if (move.targets === 0 || successfulTargets.length > 0) {
                     events.push(...move.activate(this.state, actor, successfulTargets));
                 }
                 if (isCharacter(actor)) {

@@ -16,12 +16,11 @@ const latexspray: DamageMoveDef = {
     id: "latexspray",
     target: "player",
     targets: 1,
-    baseDamage: 30,
+    baseDamage: 20,
     accuracy: {
         miss: 10,
-        graze: 15,
-        hit: 65,
-        crit: 10
+        graze: 25,
+        hit: 65
     },
     type: "enemy"
 };

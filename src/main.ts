@@ -23,7 +23,7 @@ console.log("~~State~~");
 console.dir(engine.getGameState(), { depth: null, breakLength: 200 });
 logAction(engine, { type: "attack", actor: "ko", "move": "telekinesis", targets: ["skunkette1"] });
 logAction(engine, { type: "endTurn" });
-logAction(engine, { type: "attack", actor: "ko", "move": "telekinesis", targets: ["skunkette1"] });
+logAction(engine, { type: "attack", actor: "ko", "move": "fairypunch", targets: [] });
 logAction(engine, { type: "endTurn" });
 logAction(engine, { type: "attack", actor: "ko", "move": "telekinesis", targets: ["skunkette1"] });
 logAction(engine, { type: "endTurn" });

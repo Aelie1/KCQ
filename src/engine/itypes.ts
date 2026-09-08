@@ -73,6 +73,7 @@ export interface TargetInfo {
     effectiveness: number; //How strong is the hit?
 }
 
+export type TargetCount = number | "all"
 
 /*******************************************************
  * Passives

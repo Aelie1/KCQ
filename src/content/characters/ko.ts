@@ -29,7 +29,7 @@ const telekinesis: DamageMoveDef = {
 const fairypunch: DamageMoveDef = {
     id: "fairypunch",
     target: "enemy",
-    targets: 1,
+    targets: "all",
     baseDamage: 10,
     type: "arms",
     activate: function (state: iGameState, actor: iEntity, targets: TargetInfo[]): GameEvent[] {

@@ -4,6 +4,8 @@
  * State
  *******************************************************/
 
+import { TargetCount } from "./itypes";
+
 
 export interface GameState {
     turn: Turn;
@@ -75,7 +77,7 @@ export interface Passive {
 export interface Move {
     id: string;
     target: EntitySide;
-    targets: number;
+    targets: TargetCount;
     type: MoveType;
 }
 
