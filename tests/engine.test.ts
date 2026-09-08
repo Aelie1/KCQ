@@ -13,9 +13,10 @@ import {
 const AUTHORED_HIT_SEED = 8224;
 
 function setupAuthoredCombat(): GameEngine {
-    const engine = new GameEngine(AUTHORED_HIT_SEED);
+    const encounter = { id: "authored-skunkette", enemies: [skunkette] };
+    const engine = new GameEngine([encounter], AUTHORED_HIT_SEED);
     engine.loadCharacter(ko);
-    engine.loadEnemy(skunkette);
+    engine.loadEncounter(encounter.id);
     return engine;
 }
 
@@ -24,8 +25,6 @@ describe("turn phases and enemy intentions", () => {
         const engine = setupAuthoredCombat();
         const enemyId = `${skunkette.id}1`;
         const enemyMove = skunkette.moves[0];
-        engine.updateIntentions();
-
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected endTurn to succeed");
@@ -66,9 +65,10 @@ describe("turn phases and enemy intentions", () => {
         const move = makeMove("move");
         const hero = makeCharacterDef("hero", [move]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const engine = new GameEngine(1);
+        const encounter = { id: "turn-phases", enemies: [foe] };
+        const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
-        engine.loadEnemy(foe);
+        engine.loadEncounter(encounter.id);
 
         expect(engine.executeAction({
             type: "attack",

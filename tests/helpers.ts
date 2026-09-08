@@ -11,6 +11,7 @@ import type {
     iEnemy,
     iStatus,
     MoveDef,
+    EncounterDef,
 } from "../src/engine/itypes";
 import type {
     ActionFailureReason,
@@ -122,7 +123,11 @@ export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnem
     };
 }
 
-export function setupBoundEngine(binding: BindingDef, amount: number) {
+export function setupBoundEngine(
+    binding: BindingDef,
+    amount: number,
+    additionalEncounters: EncounterDef[] = [],
+) {
     const setupMove = makeMove("apply-binding", "mouth", {
         target: "player",
         activate: (_state, _actor, targets) => {
@@ -134,9 +139,10 @@ export function setupBoundEngine(binding: BindingDef, amount: number) {
     const mouthMove = makeMove("mouth-move", "mouth");
     const hero = makeCharacterDef("hero", [setupMove, armsMove, mouthMove]);
     const foe = makeEnemyDef("foe", [makeWaitMove()]);
-    const engine = new GameEngine(1);
+    const encounter: EncounterDef = { id: "bound-test", enemies: [foe] };
+    const engine = new GameEngine([encounter, ...additionalEncounters], 1);
     engine.loadCharacter(hero);
-    engine.loadEnemy(foe);
+    engine.loadEncounter(encounter.id);
 
     expect(engine.executeAction({
         type: "attack",

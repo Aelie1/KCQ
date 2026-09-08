@@ -16,9 +16,10 @@ import {
 const AUTHORED_HIT_SEED = 8224;
 
 function setupAuthoredCombat(): GameEngine {
-    const engine = new GameEngine(AUTHORED_HIT_SEED);
+    const encounter = { id: "authored-skunkette", enemies: [skunkette] };
+    const engine = new GameEngine([encounter], AUTHORED_HIT_SEED);
     engine.loadCharacter(ko);
-    engine.loadEnemy(skunkette);
+    engine.loadEncounter(encounter.id);
     return engine;
 }
 
@@ -31,9 +32,10 @@ describe("move validation and player actions", () => {
         });
         const hero = makeCharacterDef("hero", [legal, conditionallyUnavailable]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const engine = new GameEngine(1);
+        const encounter = { id: "validation", enemies: [foe] };
+        const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
-        engine.loadEnemy(foe);
+        engine.loadEncounter(encounter.id);
         return { engine, hero, legal, conditionallyUnavailable, foeId: `${foe.id}1` };
     }
 
@@ -90,9 +92,10 @@ describe("move validation and player actions", () => {
         });
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const engine = new GameEngine(1);
+        const encounter = { id: "nonlethal-damage", enemies: [foe] };
+        const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
-        engine.loadEnemy(foe);
+        engine.loadEncounter(encounter.id);
         const foeId = `${foe.id}1`;
 
         const result = engine.executeAction({
@@ -137,9 +140,10 @@ describe("move validation and player actions", () => {
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         foe.hp = enemyHp;
-        const engine = new GameEngine(1);
+        const encounter = { id: "lethal-damage", enemies: [foe] };
+        const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
-        engine.loadEnemy(foe);
+        engine.loadEncounter(encounter.id);
         const foeId = `${foe.id}1`;
 
         const result = engine.executeAction({

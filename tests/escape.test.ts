@@ -121,7 +121,7 @@ describe("escape progress", () => {
         ["unknown target", { type: "escape", actor: "hero", target: "missing", binding: "rope" }, "invalidTarget"],
         ["unknown binding", { type: "escape", actor: "hero", target: "hero", binding: "missing" }, "invalidBinding"],
     ] as const)("rejects an %s", (_label, action, reason) => {
-        const engine = new GameEngine(1);
+        const engine = new GameEngine([], 1);
         engine.loadCharacter(makeCharacterDef("hero"));
 
         expect(engine.executeAction(action)).toEqual({ success: false, reason });

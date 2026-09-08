@@ -18,7 +18,7 @@ describe("standing stance", () => {
     it("rejects invalid actor", () => {
         const strike = makeMove("strike");
         const hero = makeCharacterDef("hero", [strike]);
-        const engine = new GameEngine(1);
+        const engine = new GameEngine([], 1);
         engine.loadCharacter(hero);
 
         const result = engine.executeAction({
@@ -37,9 +37,10 @@ describe("standing stance", () => {
         const strike = makeMove("strike");
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const engine = new GameEngine(1);
+        const encounter = { id: "stance", enemies: [foe] };
+        const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
-        engine.loadEnemy(foe);
+        engine.loadEncounter(encounter.id);
 
         const result = engine.executeAction({
             type: "stance",
@@ -65,7 +66,7 @@ describe("standing stance", () => {
 
     it("returns a mobile standing character to moving stance", () => {
         const hero = makeCharacterDef("hero");
-        const engine = new GameEngine(1);
+        const engine = new GameEngine([], 1);
         engine.loadCharacter(hero);
         expect(engine.executeAction({
             type: "stance",
@@ -156,7 +157,7 @@ describe("standing stance", () => {
         });
         const helper = makeCharacterDef("helper", [prepare]);
         const target = makeCharacterDef("target");
-        const engine = new GameEngine(1);
+        const engine = new GameEngine([], 1);
         engine.loadCharacter(helper);
         engine.loadCharacter(target);
         expect(engine.executeAction({
@@ -254,7 +255,6 @@ describe("standing stance", () => {
 
     it("keeps a character standing when the enemy phase immobilizes them", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, bindingThresholds.impossible);
         const immobilizingBinding = makeBindingDef("immobilizing-binding", {
             easy: [{ definition: immobilized, value: 1 }],
         });
@@ -268,8 +268,13 @@ describe("standing stance", () => {
             },
         });
         const enemy = makeEnemyDef("immobilizer", [immobilize]);
-        engine.loadEnemy(enemy);
-        engine.updateIntentions();
+        const encounter = { id: "immobilizer", enemies: [enemy] };
+        const { engine, hero } = setupBoundEngine(
+            restraint,
+            bindingThresholds.impossible,
+            [encounter],
+        );
+        engine.loadEncounter(encounter.id);
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,

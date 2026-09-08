@@ -117,6 +117,65 @@ describe("accuracy", () => {
         expect(targetDefense).toEqual(hitPenalty);
     });
 
+    it("applies generic hit and buff-derived defense modifiers to every entity side", () => {
+        const hitStatus: StatusDef = {
+            id: "blinded",
+            levels: [{}, { modifiers: { hit: 3 } }],
+        };
+        const defenseStatus: StatusDef = {
+            id: "breathless",
+            levels: [{}, { modifiers: { defense: 1 } }],
+        };
+        const character = makeCharacter("hero");
+        const enemy = makeAccuracyTarget(0, "foe1");
+        character.buffs.push({
+            id: "character-hit",
+            duration: 1,
+            active: true,
+            statuses: [{ definition: hitStatus, value: 1 }],
+        });
+        enemy.buffs.push({
+            id: "enemy-defense",
+            duration: 1,
+            active: true,
+            statuses: [{ definition: defenseStatus, value: 1 }],
+        });
+
+        const characterAttack = calculateAccuracy(
+            character,
+            enemy,
+            makeAccuracyMove(),
+        );
+
+        const enemyActor = makeAccuracyTarget(0, "attacker1");
+        const characterTarget = makeCharacter("target");
+        enemyActor.buffs.push({
+            id: "enemy-hit",
+            duration: 1,
+            active: true,
+            statuses: [{ definition: hitStatus, value: 1 }],
+        });
+        characterTarget.buffs.push({
+            id: "character-defense",
+            duration: 1,
+            active: true,
+            statuses: [{ definition: defenseStatus, value: 1 }],
+        });
+        const enemyAttack = calculateAccuracy(
+            enemyActor,
+            characterTarget,
+            makeAccuracyMove(standardProfile, { type: "enemy" }),
+        );
+
+        expect(characterAttack).toEqual({
+            miss: 9,
+            graze: 14,
+            hit: 66.5,
+            crit: 10.5,
+        });
+        expect(enemyAttack).toEqual(characterAttack);
+    });
+
     it("removes Crit quickly under penalties without allowing negative width", () => {
         const move = makeAccuracyMove();
         const noCrit = calculateAccuracy(
@@ -223,9 +282,10 @@ describe("accuracy", () => {
             const move = makeAccuracyMove();
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            const engine = new GameEngine(123456);
+            const encounter = { id: "accuracy", enemies: [foe] };
+            const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(hero);
-            engine.loadEnemy(foe);
+            engine.loadEncounter(encounter.id);
             return accuracyEvents(engine.executeAction({
                 type: "attack",
                 actor: hero.id,
@@ -242,9 +302,10 @@ describe("accuracy", () => {
             const move = makeAccuracyMove();
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            const engine = new GameEngine(123456);
+            const encounter = { id: "accuracy", enemies: [foe] };
+            const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(hero);
-            engine.loadEnemy(foe);
+            engine.loadEncounter(encounter.id);
             return { engine, hero, move, foeId: `${foe.id}1` };
         };
         const challenged = build();
@@ -287,10 +348,13 @@ describe("accuracy", () => {
         const lowDefense = makeEnemyDef("low-defense", [makeWaitMove()]);
         const highDefense = makeEnemyDef("high-defense", [makeWaitMove()]);
         highDefense.defense = 50;
-        const engine = new GameEngine(seed);
+        const encounter = {
+            id: "multi-target-accuracy",
+            enemies: [lowDefense, highDefense],
+        };
+        const engine = new GameEngine([encounter], seed);
         engine.loadCharacter(hero);
-        engine.loadEnemy(lowDefense);
-        engine.loadEnemy(highDefense);
+        engine.loadEncounter(encounter.id);
 
         const result = engine.executeAction({
             type: "attack",
@@ -337,9 +401,10 @@ describe("accuracy", () => {
         const run = (seed: number, id: string) => {
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef(id, [makeWaitMove()]);
-            const engine = new GameEngine(seed);
+            const encounter = { id: `accuracy-${id}`, enemies: [foe] };
+            const engine = new GameEngine([encounter], seed);
             engine.loadCharacter(hero);
-            engine.loadEnemy(foe);
+            engine.loadEncounter(encounter.id);
             return accuracyEvents(engine.executeAction({
                 type: "attack",
                 actor: hero.id,
@@ -367,11 +432,12 @@ describe("accuracy", () => {
         });
         const targeted = makeAccuracyMove(standardProfile, { id: "targeted" });
         const build = () => {
-            const engine = new GameEngine(123456);
+            const foe = makeEnemyDef("foe", [makeWaitMove()]);
+            const encounter = { id: "zero-target", enemies: [foe] };
+            const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(makeCharacterDef("zero-actor", [zeroTarget]));
             engine.loadCharacter(makeCharacterDef("shooter", [targeted]));
-            const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            engine.loadEnemy(foe);
+            engine.loadEncounter(encounter.id);
             return { engine, foeId: `${foe.id}1` };
         };
         const challenged = build();

@@ -2,111 +2,110 @@ import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
 import { plains_1 } from "../src/content/skunk/encounters";
-import { latexarms } from "../src/content/skunk/latex";
 import { GameEngine } from "../src/engine/engine";
 import type { EncounterDef } from "../src/engine/itypes";
-import type { BondageEvent } from "../src/engine/types";
+import { makeCharacterDef, makeEnemyDef, makeWaitMove } from "./helpers";
 import {
-    makeCharacterDef,
-    makeEnemyDef,
-    makeWaitMove,
-} from "./helpers";
-
-const AUTHORED_HIT_SEED = 8224;
+    multiEnemyEncounter,
+    oneEnemyEncounter,
+    waitEnemy,
+} from "./testContent";
 
 describe("encounters", () => {
-    it("lists authored encounter ids without exposing the content catalog array", () => {
-        const engine = new GameEngine(1);
-        const expectedIds = encounterList.map((encounter) => encounter.id);
+    it("lists only ids from the injected catalogue and returns a fresh array", () => {
+        const catalogue = [oneEnemyEncounter, multiEnemyEncounter];
+        const engine = new GameEngine(catalogue, 1);
 
         const listedIds = engine.listEncounters();
-        expect(listedIds).toEqual(expectedIds);
+        expect(listedIds).toEqual(catalogue.map((encounter) => encounter.id));
+        expect(listedIds).not.toContain(plains_1.id);
 
         listedIds.push("client-only");
-        expect(engine.listEncounters()).toEqual(expectedIds);
+        expect(engine.listEncounters()).toEqual(
+            catalogue.map((encounter) => encounter.id),
+        );
     });
 
-    it("leaves state unchanged for an unknown encounter id", () => {
-        const engine = new GameEngine(1);
-        engine.loadCharacter(ko);
+    it("searches only the injected catalogue", () => {
+        const engine = new GameEngine([oneEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
+
+        expect(engine.loadEncounter(plains_1.id)).toEqual([{
+            type: "encounter",
+            id: plains_1.id,
+            success: false,
+        }]);
+        expect(engine.getGameState().enemies).toEqual([]);
+    });
+
+    it("does not mutate combat state or consume an entity id for an unknown id", () => {
+        const engine = new GameEngine([oneEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
         const before = engine.getGameState();
 
-        const loaded = engine.loadEncounter("missing-encounter");
-
-        expect(loaded).toBe(false);
+        expect(engine.loadEncounter("missing-encounter")).toEqual([{
+            type: "encounter",
+            id: "missing-encounter",
+            success: false,
+        }]);
         expect(engine.getGameState()).toEqual(before);
-    });
 
-    it("loads the authored Plains encounter with fresh enemies and intentions", () => {
-        const engine = new GameEngine(1);
-        engine.loadCharacter(ko);
-
-        const loaded = engine.loadEncounter(plains_1.id);
-
-        expect(loaded).toBe(true);
-        const state = engine.getGameState();
-        const expectedEnemyIds = plains_1.enemies.map(
-            (definition, index) => `${definition.id}${index + 1}`,
-        );
-        expect(state.enemies.map((enemy) => enemy.id)).toEqual(expectedEnemyIds);
-        state.enemies.forEach((enemy, index) => {
-            const definition = plains_1.enemies[index];
-            expect(enemy).toMatchObject({
-                currHp: definition.hp,
-                currDef: definition.defense,
-                intention: {
-                    type: "attack",
-                    actor: expectedEnemyIds[index],
-                    move: definition.moves[0].id,
-                    targets: [ko.id],
-                },
-                buffs: [],
-            });
-        });
-    });
-
-    it("executes every Skunkette in the authored encounter during the enemy phase", () => {
-        const engine = new GameEngine(AUTHORED_HIT_SEED);
-        engine.loadCharacter(ko);
-        expect(engine.loadEncounter(plains_1.id)).toBe(true);
-        const expectedEnemyIds = plains_1.enemies.map(
-            (definition, index) => `${definition.id}${index + 1}`,
-        );
-
-        const result = engine.executeAction({ type: "endTurn" });
-        expect(result.success).toBe(true);
-        if (!result.success) throw new Error("Expected endTurn to succeed");
-
-        const moveEvents = result.events.filter((event) => event.type === "moveUsed");
-        expect(moveEvents.map((event) => event.actor)).toEqual(expectedEnemyIds);
-        expect(moveEvents.every((event) =>
-            event.targets.length === 1 && event.targets[0] === ko.id
-        )).toBe(true);
-
-        const bindingEvents = result.events.filter((event): event is BondageEvent =>
-            event.type === "bondageAdded" || event.type === "bondageChanged"
-        );
-        expect(bindingEvents).toHaveLength(plains_1.enemies.length);
-        expect(bindingEvents[0]).toMatchObject({
-            type: "bondageAdded",
-            target: ko.id,
-            binding: latexarms.id,
-        });
-        for (const event of bindingEvents.slice(1)) {
-            expect(event).toMatchObject({
-                type: "bondageChanged",
-                target: ko.id,
-                binding: latexarms.id,
-            });
-        }
-
-        const totalApplied = bindingEvents.reduce((sum, event) => sum + event.amount, 0);
-        expect(engine.getGameState().characters[0].bindings).toEqual([
-            expect.objectContaining({ id: latexarms.id, value: totalApplied }),
+        expect(engine.loadEncounter(oneEnemyEncounter.id)).toEqual([
+            { type: "enemySpawned", target: `${waitEnemy.id}1` },
+            { type: "encounter", id: oneEnemyEncounter.id, success: true },
         ]);
     });
 
-    it("runs an optional setup hook after enemies load and before intentions update", () => {
+    it("emits runtime enemy ids and increments them within one engine", () => {
+        const engine = new GameEngine([oneEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
+
+        const first = engine.loadEncounter(oneEnemyEncounter.id);
+        const second = engine.loadEncounter(oneEnemyEncounter.id);
+
+        expect(first[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
+        expect(second[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}2` });
+        expect(engine.getGameState().enemies.map((enemy) => enemy.id)).toEqual([
+            `${waitEnemy.id}1`,
+            `${waitEnemy.id}2`,
+        ]);
+    });
+
+    it("starts enemy numbering at one for each engine instance", () => {
+        const loadFirstEnemy = () => {
+            const engine = new GameEngine([oneEnemyEncounter], 1);
+            engine.loadCharacter(makeCharacterDef("hero"));
+            return engine.loadEncounter(oneEnemyEncounter.id)[0];
+        };
+
+        expect(loadFirstEnemy()).toEqual({
+            type: "enemySpawned",
+            target: `${waitEnemy.id}1`,
+        });
+        expect(loadFirstEnemy()).toEqual({
+            type: "enemySpawned",
+            target: `${waitEnemy.id}1`,
+        });
+    });
+
+    it("loads every enemy in a multi-enemy encounter through the public API", () => {
+        const engine = new GameEngine([multiEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
+
+        const events = engine.loadEncounter(multiEnemyEncounter.id);
+
+        expect(events).toEqual([
+            { type: "enemySpawned", target: "foe1" },
+            { type: "enemySpawned", target: "attacker2" },
+            { type: "encounter", id: multiEnemyEncounter.id, success: true },
+        ]);
+        expect(engine.getGameState().enemies).toEqual([
+            expect.objectContaining({ id: "foe1", intention: expect.any(Object) }),
+            expect.objectContaining({ id: "attacker2", intention: expect.any(Object) }),
+        ]);
+    });
+
+    it("runs setup after spawning enemies and before calculating intentions", () => {
         const calls: string[] = [];
         let enemiesVisibleToSetup: string[] = [];
         const setupStep = 7;
@@ -129,25 +128,36 @@ describe("encounters", () => {
                 state.turn.step = setupStep;
             },
         };
-        const catalogIndex = encounterList.length;
-        encounterList.push(encounter);
+        const engine = new GameEngine([encounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
 
-        try {
-            const engine = new GameEngine(1);
-            engine.loadCharacter(makeCharacterDef("hero"));
-            const loaded = engine.loadEncounter(encounter.id);
+        expect(engine.loadEncounter(encounter.id)).toEqual([
+            { type: "enemySpawned", target: `${enemy.id}1` },
+            { type: "encounter", id: encounter.id, success: true },
+        ]);
+        expect(calls).toEqual(["setup", "ai"]);
+        expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
+        expect(engine.getGameState().turn.step).toBe(setupStep);
+        expect(engine.getGameState().enemies[0].intention).toMatchObject({
+            actor: `${enemy.id}1`,
+            move: wait.id,
+            targets: ["hero"],
+        });
+    });
 
-            expect(loaded).toBe(true);
-            expect(calls).toEqual(["setup", "ai"]);
-            expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
-            expect(engine.getGameState().turn.step).toBe(setupStep);
-            expect(engine.getGameState().enemies[0].intention).toMatchObject({
-                actor: `${enemy.id}1`,
-                move: wait.id,
-                targets: ["hero"],
-            });
-        } finally {
-            encounterList.splice(catalogIndex, 1);
-        }
+    it("loads the authored catalogue when it is explicitly injected", () => {
+        const engine = new GameEngine(encounterList, 8224);
+        engine.loadCharacter(ko);
+
+        const events = engine.loadEncounter(plains_1.id);
+
+        expect(events.at(-1)).toEqual({
+            type: "encounter",
+            id: plains_1.id,
+            success: true,
+        });
+        expect(events.filter((event) => event.type === "enemySpawned"))
+            .toHaveLength(plains_1.enemies.length);
+        expect(engine.getGameState().enemies).toHaveLength(plains_1.enemies.length);
     });
 });

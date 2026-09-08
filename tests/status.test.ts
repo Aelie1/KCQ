@@ -50,6 +50,7 @@ describe("entity and status helpers", () => {
         const enemyDefinition = makeEnemyDef("foe", [makeWaitMove()]);
         const state: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
+            nextEntityId: 1,
             characters: [makeCharacter("hero")],
             enemies: [makeEnemy(enemyDefinition)],
         };
@@ -198,7 +199,7 @@ describe("move and status restrictions", () => {
         });
         const helper = makeCharacterDef("helper", [setupMove]);
         const target = makeCharacterDef("target");
-        const engine = new GameEngine(1);
+        const engine = new GameEngine([], 1);
         engine.loadCharacter(helper);
         engine.loadCharacter(target);
         expect(engine.executeAction({
