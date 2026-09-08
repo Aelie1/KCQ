@@ -201,13 +201,8 @@ export class GameEngine {
 
                 //Now we have a valid actor, targets and move -- execute the move
                 events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({target: x.target.id, result: x.result})) })
-                const successfulTargets = targets.filter(
-                    target => target.result !== "miss"
-                );
-                if (move.targets === 0 || successfulTargets.length > 0) {
-                    const effects = resolveMove(this.state, move, actor, successfulTargets);
-                    events.push(...processEffects(this.state, effects));
-                }
+                const effects = resolveMove(this.state, move, actor, targets);
+                events.push(...processEffects(this.state, effects));
                 actor.acted = true;
                 this.state.turn.step++;
                 return {
@@ -359,18 +354,13 @@ export class GameEngine {
 
         //Now we have a valid actor, targets and move -- execute the move
         events.push({ type: "moveUsed", actor: actor.id, move: move.id, targets: targets.map(x => ({target: x.target.id, result: x.result})) })
-        const successfulTargets = targets.filter(
-            target => target.result !== "miss"
-        );
-        if (move.targets === 0 || successfulTargets.length > 0) {
-            const effects = resolveMove(this.state, move, actor, successfulTargets);
-            events.push(...processEffects(this.state,effects));
-        }
+        const effects = resolveMove(this.state, move, actor, targets);
+        events.push(...processEffects(this.state,effects));
         this.state.turn.step++;
         return {
             success: true,
             events: events,
-            state: this.getGameState(),
+            state: null!,  //yes, i know, we wont use it in the next function so it's a waste to generate
         };
     }
 

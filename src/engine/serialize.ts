@@ -48,7 +48,7 @@ function serializeIntention(state: iGameState, intention: iIntention): Intention
     }
 
     return {
-        move: intention.action.move.id,
+        move: intention.action.move.displayId ? intention.action.move.displayId : intention.action.move.id,
         targets: targets,
         effects: effects.map(serializeEffect)
     }

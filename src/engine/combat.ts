@@ -86,8 +86,16 @@ export function setStance(target: iCharacter, stance: StanceId): GameEvent[] {
 }
 
 export function resolveMove (state:iGameState, move: MoveDef, actor: iEntity, targets: iTargetInfo[]) : iEffect[] {
-    const effects:iEffect[] = move.resolve(state, actor, targets);
-    return effects.map(normalizeEffect);
+    const successfulTargets = targets.filter(
+        target => target.result !== "miss"
+    );
+    if (move.targets === 0 || successfulTargets.length > 0) {
+        const effects:iEffect[] = move.resolve(state, actor, successfulTargets);
+        return effects.map(normalizeEffect);
+    }
+    else {
+        return [];
+    }
 }
 
 export function normalizeEffect(effect: iEffect): iEffect {
