@@ -1,11 +1,11 @@
 import { effectivenessRange } from "./constants";
 import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
-import { EnemyDef, iCharacter, iEnemy, iEntity, iGameState, MoveDef, TargetInfo } from "./itypes";
+import { EnemyDef, iCharacter, iEnemy, iEntity, iGameState, MoveDef, iTargetInfo, iIntention } from "./itypes";
 import { canMove, getModifier } from "./status";
-import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
+import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId, TargetInfo } from "./types";
 
 
-export function loadEnemy(state: iGameState, enemy: EnemyDef) : GameEvent[] {
+export function loadEnemy(state: iGameState, enemy: EnemyDef): GameEvent[] {
     const events: GameEvent[] = [];
     const name = enemy.id + state.nextEntityId++;
     state.enemies.push({
@@ -16,21 +16,12 @@ export function loadEnemy(state: iGameState, enemy: EnemyDef) : GameEvent[] {
         currDef: enemy.defense,
         intention: null,
     });
-    events.push({type:"enemySpawned",target:name});
+    events.push({ type: "enemySpawned", target: name });
     return events;
 }
 
-export function updateIntentions(state: iGameState) {
-    for (const enemy of state.enemies) {
-        enemy.intention = null;
-    }
-    for (const enemy of state.enemies) {
-        updateIntention(state, enemy);
-    }
-}
-
-export function updateIntention(state: iGameState, actor: iEnemy) {
-    actor.intention = actor.definition.ai(state, actor);
+export function updateIntention(state: iGameState, actor: iEnemy, roll: number) {
+    actor.intention = { action: actor.definition.ai(state, actor), roll: roll };
 }
 
 export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
@@ -49,7 +40,7 @@ export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[
 
 export function damageEnemy(state: iGameState, target: iEnemy, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
-    const intAmount =Math.ceil(amount);
+    const intAmount = Math.ceil(amount);
     target.currHp -= intAmount;
     const event: DamageEvent = {
         type: "damage",
@@ -93,6 +84,20 @@ export function setStance(target: iCharacter, stance: StanceId): GameEvent[] {
     return events;
 }
 
+
+export function evaluateIntention(intention: iIntention): iTargetInfo[] {
+    const targets: iTargetInfo[] = [];
+    for (const target of intention.action.targets) {
+        const accuracy = calculateAccuracy(intention.action.actor, target, intention.action.move);
+        const info = evaluateResult(target, accuracy, intention.roll);
+        targets.push({
+            target: info.target,
+            result: info.result,
+            effectiveness: info.effectiveness
+        });
+    }
+    return targets;
+}
 
 export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {
     const base = move.accuracy;
@@ -233,8 +238,8 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
 }
 
 
-export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll: number): TargetInfo {
-    const result: TargetInfo = { target: target, result: "miss", effectiveness: 0 };
+export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll: number): iTargetInfo {
+    const result: iTargetInfo = { target: target, result: "miss", effectiveness: 0 };
 
     const order: AccuracyResult[] = ["miss", "graze", "hit", "crit"];
 
@@ -247,7 +252,7 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
                 if (band !== "miss") {
                     const [min, max] = effectivenessRange[band];
                     const effect = (roll - cumulative) / value;
-                    result.effectiveness = min + (max-min) * effect;
+                    result.effectiveness = min + (max - min) * effect;
                 }
                 return result;
             }

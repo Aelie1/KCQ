@@ -42,8 +42,19 @@ export interface Enemy {
     id: EntityId;
     currHp: number;
     currDef: number;
-    intention: GameAction | null;
+    intention: Intention | null;
     buffs: Buff[];
+}
+
+export interface Intention {
+    move: MoveId;
+    targets: TargetInfo[];
+}
+
+export interface TargetInfo {
+    target: EntityId;
+    result: AccuracyResult; //What band is it in
+    effectiveness: number; //How strong is the hit?
 }
 
 /*******************************************************
@@ -161,7 +172,7 @@ export interface ActionInfo {
     reason?: ActionFailureReason;
 }
 
-export type GameAction = AttackAction | EscapeAction | StanceAction | EndTurnAction;
+export type PlayerAction = AttackAction | EscapeAction | StanceAction | EndTurnAction;
 
 export interface AttackAction {
     type: "attack";

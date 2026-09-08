@@ -55,7 +55,7 @@ export function getModifier(target: iEntity, id: ModifierId): number {
 }
 
 
-export function canAttack(actor: iCharacter): boolean {
+export function canAttack(actor: iEntity): boolean {
     const statuses: iStatus[] = getStatuses(actor);
     for (const status of statuses) {
         const level = status.definition.levels[status.value];
@@ -123,7 +123,7 @@ export function canBonusEscape(actor: iCharacter): boolean {
     return true;
 }
 
-export function isSkipped(actor: iCharacter): boolean {
+export function isSkipped(actor: iEntity): boolean {
     const statuses: iStatus[] = getStatuses(actor);
     for (const status of statuses) {
         const level = status.definition.levels[status.value];

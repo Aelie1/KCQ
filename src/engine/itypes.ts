@@ -1,4 +1,4 @@
-import { AccuracyProfile, AccuracyResult, Binding, BindingLevel, Buff, Character, Enemy, EntitySide, GameAction, GameEvent, GameState, ModifierId, Move, MoveType, Passive, StatusId, Turn } from "./types";
+import { AccuracyProfile, AccuracyResult, Binding, BindingLevel, Buff, Character, Enemy, EntitySide, PlayerAction, GameEvent, GameState, Intention, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn, AttackAction } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -28,8 +28,9 @@ export interface CharacterDef {
  * Enemies
  *******************************************************/
 
-export interface iEnemy extends Omit<Enemy, "buffs"> {
+export interface iEnemy extends Omit<Enemy, "buffs" | "intention"> {
     definition: EnemyDef;
+    intention: iIntention | null;
     buffs: iBuff[];
 }
 
@@ -39,8 +40,20 @@ export interface EnemyDef {
     defense: number;
     moves: MoveDef[];
     passives: PassiveDef[];
-    ai: (state: iGameState, actor: iEnemy) => GameAction;
+    ai: (state: iGameState, actor: iEnemy) => EnemyAction;
 }
+
+export interface iIntention {
+    action: EnemyAction;
+    roll: number;
+}
+
+export interface EnemyAction {
+    actor: iEntity;
+    move: MoveDef;
+    targets: iEntity[];
+}
+
 
 /*******************************************************
  * Buffs
@@ -50,15 +63,12 @@ export interface iBuff extends Omit<Buff,"statuses"> {
     statuses: iStatus[];
 }
 
-
-
-
 /*******************************************************
  * Moves
  *******************************************************/
 export interface MoveDef extends Move {
     accuracy: AccuracyProfile;
-    activate: (state: iGameState, actor: iEntity, targets: TargetInfo[]) => GameEvent[];
+    activate: (state: iGameState, actor: iEntity, targets: iTargetInfo[]) => GameEvent[];
     isValid?: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;
 }
 
@@ -66,10 +76,8 @@ export interface DamageMoveDef extends MoveDef {
     baseDamage: number;
 }
 
-export interface TargetInfo {
+export interface iTargetInfo extends Omit<TargetInfo,"target"> {
     target: iEntity;
-    result: AccuracyResult; //What band is it in
-    effectiveness: number; //How strong is the hit?
 }
 
 /*******************************************************

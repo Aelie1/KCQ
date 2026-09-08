@@ -1,11 +1,11 @@
 import { ko } from "./content/characters/ko";
 import { encounterList } from "./content/content";
 import { GameEngine } from "./engine/engine";
-import { GameAction } from "./engine/types";
+import { PlayerAction } from "./engine/types";
 
 const actionCounts: Record<string, number> = {};
 
-function logAction(engine: GameEngine, action: GameAction) {
+function logAction(engine: GameEngine, action: PlayerAction) {
     actionCounts[action.type] = (actionCounts[action.type] ?? 0) + 1;
     
     console.log("~~" + action.type + " #" + actionCounts[action.type] + "~~");

@@ -1,11 +1,11 @@
 import { addBinding } from "../../engine/bindings";
 import { isCharacter } from "../../engine/helpers";
-import { DamageMoveDef, EnemyDef, iEnemy, iEntity, iGameState, TargetInfo } from "../../engine/itypes";
-import { GameAction, GameEvent } from "../../engine/types";
+import { DamageMoveDef, EnemyAction, EnemyDef, iEnemy, iEntity, iGameState, iTargetInfo } from "../../engine/itypes";
+import { PlayerAction, GameEvent } from "../../engine/types";
 import { latexarms } from "./latex";
 
 const latexspray: DamageMoveDef = {
-    activate: function (state: iGameState, actor: iEntity, targets: TargetInfo[]): GameEvent[] {
+    activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
         const events: GameEvent[] = []
         const target = targets[0].target;
         const effectiveness = targets[0].effectiveness;
@@ -31,9 +31,9 @@ export const skunkette: EnemyDef = {
     defense: 0,
     moves: [latexspray],
     passives: [],
-    ai: function (state: iGameState, actor: iEnemy): GameAction {
+    ai: function (state: iGameState, actor: iEnemy): EnemyAction {
         const target = state.characters[0]; //this becomes random later
         const move = actor.definition.moves[0]; //this becomes smarter later, pounce->spray, mist, etc
-        return { type: "attack", actor: actor.id, targets: [target.id], move: move.id };
+        return { actor: actor, targets: [target], move: move };
     }
 }

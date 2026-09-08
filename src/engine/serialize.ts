@@ -1,7 +1,8 @@
+import { calculateAccuracy, evaluateIntention, evaluateResult } from "./combat";
 import { getBindingLevel } from "./helpers";
-import type { iBinding, iBuff, iCharacter, iEnemy, iGameState, iStatus, MoveDef } from "./itypes";
+import type { iBinding, iBuff, iCharacter, iEnemy, iGameState, iIntention, iStatus, iTargetInfo, MoveDef } from "./itypes";
 import { getStatuses } from "./status";
-import type { Binding, Buff, Character, Enemy, GameAction, GameState, Move, Status } from "./types";
+import type { Binding, Buff, Character, Enemy, PlayerAction, GameState, Move, Status, Intention, TargetInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     const { nextEntityId, ..._state } = state;
@@ -31,15 +32,23 @@ function serializeEnemy(enemy: iEnemy): Enemy {
     const { definition, ..._enemy } = enemy;
     return {
         ..._enemy,
-        intention: enemy.intention ? serializeAction(enemy.intention) : null,
+        intention: enemy.intention ? serializeIntention(enemy.intention) : null,
         buffs: enemy.buffs.map(serializeBuff)
     };
 }
 
-function serializeAction(action: GameAction): GameAction {
-    return action.type === "attack"
-        ? { ...action, targets: [...action.targets] }
-        : { ...action };
+function serializeIntention(intention: iIntention): Intention {
+    return {
+        move: intention.action.move.id,
+        targets: evaluateIntention(intention).map(serializeTarget)
+    }
+}
+
+function serializeTarget(target: iTargetInfo): TargetInfo {
+    return {
+        ...target,
+        target: target.target.id,
+    }
 }
 
 function serializeBuff(buff: iBuff): Buff {

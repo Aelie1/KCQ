@@ -1,6 +1,6 @@
 import { damageEnemy } from "../../engine/combat";
 import { isEnemy } from "../../engine/helpers";
-import { CharacterDef, DamageMoveDef, iEntity, iGameState, MoveDef, PassiveDef, TargetInfo } from "../../engine/itypes";
+import { CharacterDef, DamageMoveDef, iEntity, iGameState, MoveDef, PassiveDef, iTargetInfo } from "../../engine/itypes";
 import { GameEvent } from "../../engine/types";
 
 const telekinesis: DamageMoveDef = {
@@ -9,7 +9,7 @@ const telekinesis: DamageMoveDef = {
     targets: 1,
     baseDamage: 10,
     type: "mouth",
-    activate: function (state: iGameState, actor: iEntity, targets: TargetInfo[]): GameEvent[] {
+    activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
         const events: GameEvent[] = []
         const target = targets[0].target;
         const effectiveness = targets[0].effectiveness;
@@ -32,7 +32,7 @@ const fairypunch: DamageMoveDef = {
     targets: "all",
     baseDamage: 10,
     type: "arms",
-    activate: function (state: iGameState, actor: iEntity, targets: TargetInfo[]): GameEvent[] {
+    activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
         const events: GameEvent[] = []
         const target = targets[0].target;
         const effectiveness = targets[0].effectiveness;
@@ -54,7 +54,7 @@ const starlight: MoveDef = {
     target: "enemy",
     targets: 0,
     type: "mouth",
-    activate: function (state: iGameState, actor: iEntity, targets: TargetInfo[]): GameEvent[] {
+    activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
         console.log("used starlight");
         return [];
     },
