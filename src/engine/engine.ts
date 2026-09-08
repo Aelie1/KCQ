@@ -354,7 +354,6 @@ export class GameEngine {
     private executeEnemyPhase(): GameEvent[] {
         const events: GameEvent[] = [];
         for (const enemy of this.state.enemies) {
-            let result: ActionResult | null = null;
             if (enemy.intention) {
                 events.push(...this.executeEnemyAction(enemy.intention));
             }
