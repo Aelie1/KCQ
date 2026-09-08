@@ -166,7 +166,7 @@ export class GameEngine {
                     };
                 }
 
-                let targetIds : EntityId[] = [];
+                let targetIds : EntityId[] = [...action.targets];
                 if (move.targets === "all") {
                     if (move.target === "enemy") {
                         targetIds = this.state.enemies.map(x => x.id);
