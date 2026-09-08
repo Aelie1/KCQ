@@ -1,11 +1,6 @@
-
-
 /*******************************************************
  * State
  *******************************************************/
-
-import { TargetCount } from "./itypes";
-
 
 export interface GameState {
     turn: Turn;
@@ -92,6 +87,8 @@ export type MoveId = string;
 export type AccuracyResult = "miss" | "graze" | "hit" | "crit";
 
 export type AccuracyProfile = Partial<Record<AccuracyResult, number>>;
+
+export type TargetCount = number | "all"
 
 /*******************************************************
  * Bindings

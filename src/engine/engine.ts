@@ -166,13 +166,18 @@ export class GameEngine {
                     };
                 }
 
+                let targetIds : EntityId[] = [];
                 if (move.targets === "all") {
-                    action.targets = this.state.enemies.map(x => x.id);
-                    move.targets = this.state.enemies.length;
+                    if (move.target === "enemy") {
+                        targetIds = this.state.enemies.map(x => x.id);
+                    } else {
+                        targetIds = this.state.characters.map(x => x.id);
+                    }
+                    move.targets = targetIds.length
                 }
 
                 const targetStates: iEntity[] = [];
-                for (const target of action.targets) {
+                for (const target of targetIds) {
                     const targetState = findEntity(this.state, target);
                     if (targetState) {
                         targetStates.push(targetState);
@@ -202,7 +207,7 @@ export class GameEngine {
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move
-                events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: action.targets })
+                events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targetIds })
                 for (const target of targets) {
                     events.push({
                         type: "accuracyResult",
