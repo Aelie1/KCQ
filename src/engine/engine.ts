@@ -315,22 +315,16 @@ export class GameEngine {
         }
     }
 
-    executeEnemyAction(intention: iIntention): ActionResult {
+    private executeEnemyAction(intention: iIntention): GameEvent[] {
         const events: GameEvent[] = [];
         const actor = intention.action.actor;
         if (!actor) {
-            return {
-                success: false,
-                reason: "invalidActor"
-            };
+            return events;
         }
         const move = { ...intention.action.move };
 
         if (!canAttack(actor) || isSkipped(actor)) {
-            return {
-                success: false,
-                reason: "statusRestriction"
-            };
+            return events;
         }
 
         let targetStates: iEntity[] = [...intention.action.targets];
@@ -344,10 +338,7 @@ export class GameEngine {
         }
 
         if (!isValidMove(this.state, actor, targetStates, move)) {
-            return {
-                success: false,
-                reason: "moveUnavailable"
-            };
+            return events;
         }
 
         const targets: iTargetInfo[] = (move.targets > 0) ? evaluateIntention(intention) : [];
@@ -357,28 +348,21 @@ export class GameEngine {
         const effects = resolveMove(this.state, move, actor, targets);
         events.push(...processEffects(this.state,effects));
         this.state.turn.step++;
-        return {
-            success: true,
-            events: events,
-            state: null!,  //yes, i know, we wont use it in the next function so it's a waste to generate
-        };
+        return events;
     }
 
-    executeEnemyPhase(): GameEvent[] {
+    private executeEnemyPhase(): GameEvent[] {
         const events: GameEvent[] = [];
         for (const enemy of this.state.enemies) {
             let result: ActionResult | null = null;
             if (enemy.intention) {
-                result = this.executeEnemyAction(enemy.intention);
-            }
-            if (result?.success === true) {
-                events.push(...result.events);
+                events.push(...this.executeEnemyAction(enemy.intention));
             }
         }
         return events;
     }
 
-    advancePhase(): GameEvent[] {
+    private advancePhase(): GameEvent[] {
         const events: GameEvent[] = [];
 
         if (this.state.turn.phase === "player") {
