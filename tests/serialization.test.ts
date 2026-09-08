@@ -106,7 +106,13 @@ describe("state serialization and combatant loading", () => {
             snapshot.characters[0].status[0].value = 999;
             snapshot.enemies[0].currHp = 0;
             const intention = snapshot.enemies[0].intention;
-            if (intention?.type === "attack") intention.targets.push("intruder");
+            if (intention) {
+                intention.targets.push({
+                    target: "intruder",
+                    result: "miss",
+                    effectiveness: 0,
+                });
+            }
         }
 
         expect(engine.getGameState()).toEqual(expected);
@@ -135,7 +141,14 @@ describe("state serialization and combatant loading", () => {
         const enemyDefinition = makeEnemyDef("foe", [makeWaitMove()]);
         const enemy = makeEnemy(enemyDefinition);
         enemy.buffs.push(enemyBuff);
-        enemy.intention = { type: "endTurn" };
+        enemy.intention = {
+            action: {
+                actor: enemy,
+                move: enemyDefinition.moves[0],
+                targets: [character],
+            },
+            roll: 25,
+        };
         const internalState: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
             nextEntityId: 17,
@@ -158,7 +171,14 @@ describe("state serialization and combatant loading", () => {
             active: false,
             statuses: [{ id: status.id, value: 1 }],
         });
-        expect(serialized.enemies[0].intention).toEqual({ type: "endTurn" });
+        expect(serialized.enemies[0].intention).toEqual({
+            move: enemyDefinition.moves[0].id,
+            targets: [{
+                target: character.id,
+                result: "hit",
+                effectiveness: expect.any(Number),
+            }],
+        });
         expect(serialized).not.toHaveProperty("nextEntityId");
         expect(serialized.characters[0].buffs[0]).not.toBe(characterBuff);
         expect(serialized.characters[0].buffs[0].statuses[0])

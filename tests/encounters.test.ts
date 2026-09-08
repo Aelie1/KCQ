@@ -113,10 +113,9 @@ describe("encounters", () => {
         const enemy = makeEnemyDef("setup-foe", [wait], (state, actor) => {
             calls.push("ai");
             return {
-                type: "attack",
-                actor: actor.id,
-                move: wait.id,
-                targets: [state.characters[0].id],
+                actor,
+                move: wait,
+                targets: [state.characters[0]],
             };
         });
         const encounter: EncounterDef = {
@@ -139,9 +138,12 @@ describe("encounters", () => {
         expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
         expect(engine.getGameState().turn.step).toBe(setupStep);
         expect(engine.getGameState().enemies[0].intention).toMatchObject({
-            actor: `${enemy.id}1`,
             move: wait.id,
-            targets: ["hero"],
+            targets: [{
+                target: "hero",
+                result: "hit",
+                effectiveness: expect.any(Number),
+            }],
         });
     });
 

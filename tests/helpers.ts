@@ -104,10 +104,9 @@ export function makeEnemyDef(
         moves,
         passives: [],
         ai: ai ?? ((state, actor) => ({
-            type: "attack",
-            actor: actor.id,
-            move: moves[0].id,
-            targets: [state.characters[0].id],
+            actor,
+            move: moves[0],
+            targets: [state.characters[0]],
         })),
     };
 }

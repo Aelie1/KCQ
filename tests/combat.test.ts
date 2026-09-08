@@ -4,7 +4,7 @@ import { skunkette } from "../src/content/skunk/skunkette";
 import { damageEnemy } from "../src/engine/combat";
 import { GameEngine } from "../src/engine/engine";
 import { isEnemy } from "../src/engine/helpers";
-import type { GameAction } from "../src/engine/types";
+import type { PlayerAction } from "../src/engine/types";
 import {
     expectMoveRejection,
     makeCharacterDef,
@@ -72,7 +72,7 @@ describe("move validation and player actions", () => {
         ],
     ] as const)("rejects an %s without consuming the action", (_label, action, reason) => {
         const { engine } = validationEngine();
-        const mutableAction: GameAction = { ...action, targets: [...action.targets] };
+        const mutableAction: PlayerAction = { ...action, targets: [...action.targets] };
 
         expect(engine.executeAction(mutableAction)).toEqual({
             success: false,

@@ -7,7 +7,7 @@ import type {
     iEnemy,
     MoveDef,
     StatusDef,
-    TargetInfo,
+    iTargetInfo,
 } from "../src/engine/itypes";
 import { XorShift32 } from "../src/engine/random";
 import type { AccuracyEvent, AccuracyProfile } from "../src/engine/types";
@@ -336,7 +336,7 @@ describe("accuracy", () => {
 
     it("resolves all targets with one shared roll and target-specific Defense", () => {
         const seed = 123456;
-        let activatedTargets: TargetInfo[] = [];
+        let activatedTargets: iTargetInfo[] = [];
         const move = makeAccuracyMove(standardProfile, {
             targets: "all",
             activate: (_state, _actor, targets) => {
@@ -363,7 +363,9 @@ describe("accuracy", () => {
             targets: [],
         });
         const events = accuracyEvents(result);
-        const roll = new XorShift32(seed).accuracy();
+        const referenceRng = new XorShift32(seed);
+        for (const _enemy of encounter.enemies) referenceRng.accuracy();
+        const roll = referenceRng.accuracy();
         const referenceActor = makeCharacter(hero.id);
         const referenceTargets = [
             makeEnemy(lowDefense, `${lowDefense.id}1`),
@@ -386,7 +388,9 @@ describe("accuracy", () => {
             })));
         expect(new Set(events.map((event) => event.result)).size).toBeGreaterThan(1);
         expect(activatedTargets.map((target) => target.target.id)).toEqual(
-            referenceTargets.map((target) => target.id),
+            expected
+                .filter((target) => target.result !== "miss")
+                .map((target) => target.target.id),
         );
     });
 
@@ -415,7 +419,7 @@ describe("accuracy", () => {
 
         expect(run(1, "missed").result).toBe("miss");
         expect(activated).toEqual([]);
-        expect(run(123456, "hit").result).not.toBe("miss");
+        expect(run(8224, "hit").result).not.toBe("miss");
         expect(activated).toEqual(["hit1"]);
     });
 
