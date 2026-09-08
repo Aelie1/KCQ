@@ -789,8 +789,8 @@ describe("binding lifecycle", () => {
 
         const [event] = addBinding(target, definition, 1_000);
 
-        expect(target.bindings[0].value).toBe(bindingThresholds.max);
-        expect(event).toMatchObject({ type: "bondageAdded", amount: bindingThresholds.max });
+        expect(target.bindings[0].value).toBe(BINDING_MAX);
+        expect(event).toMatchObject({ type: "bondageAdded", amount: BINDING_MAX });
     });
 
     it("keeps callback-managed state independent per binding instance", () => {
@@ -889,7 +889,7 @@ describe("binding levels and effective statuses", () => {
         [bindingThresholds.extreme, "extreme"],
         [bindingThresholds.impossible - 1, "extreme"],
         [bindingThresholds.impossible, "impossible"],
-        [bindingThresholds.max, "impossible"],
+        [BINDING_MAX, "impossible"],
     ] as const)("maps binding value %s to %s", (value, level) => {
         expect(getBindingLevel(makeBinding(makeBindingDef("rope"), value))).toBe(level);
     });
@@ -1329,7 +1329,7 @@ describe("standing stance", () => {
             extreme: [{ definition: vibrating, value: 1 }],
             impossible: [{ definition: vibrating, value: 1 }],
         });
-        const { engine, hero } = setupBoundEngine(vibratingBinding, bindingThresholds.max);
+        const { engine, hero } = setupBoundEngine(vibratingBinding, BINDING_MAX);
         const escape = {
             type: "escape" as const,
             actor: hero.id,
@@ -1450,7 +1450,7 @@ describe("escape progress", () => {
             makeBinding(definition, bindingThresholds.impossible),
         ]);
         const overImpossible = makeCharacter("over-impossible", [
-            makeBinding(definition, bindingThresholds.max),
+            makeBinding(definition, BINDING_MAX),
         ]);
 
         const easyProgress = calculateProgress(actor, easy, definition.id);

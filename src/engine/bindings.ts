@@ -1,4 +1,4 @@
-import { bindingThresholds } from "./constants";
+import { BINDING_MAX, bindingThresholds } from "./constants";
 import { findBinding } from "./helpers";
 import { BindingDef, iCharacter } from "./itypes";
 import { getModifier } from "./status";
@@ -26,8 +26,8 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
         newAmount = toThreshold + overflow * 0.1;
     }
     binding.value += Math.ceil(newAmount);
-    if (binding.value > bindingThresholds.max) {
-        binding.value = bindingThresholds.max;
+    if (binding.value > BINDING_MAX) {
+        binding.value = BINDING_MAX;
     }
     if (type.onBindingAdd) {
         type.onBindingAdd(binding);

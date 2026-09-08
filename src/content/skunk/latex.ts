@@ -9,8 +9,7 @@ export const latexarms: BindingDef = {
         medium:     [{definition:bound,value:1}],
         hard:       [{definition:bound,value:2}],
         extreme:    [{definition:bound,value:3}],
-        impossible: [{definition:bound,value:4}],
-        max:        [{definition:bound,value:4}]
+        impossible: [{definition:bound,value:4}]
     },
     initialState: {
         max: 0

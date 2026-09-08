@@ -1,13 +1,14 @@
 import { AccuracyResult, BindingLevel } from "./types";
 
+export const BINDING_MAX = 100;
+
 export const bindingThresholds: Record<BindingLevel, number> = {
     none: 0,
     easy: 10,
     medium: 20,
     hard: 30,
     extreme: 50,
-    impossible: 80,
-    max: 100
+    impossible: 80
 };
 
 export const effectivenessRange: Record<AccuracyResult, [number, number]> = {

@@ -1,7 +1,7 @@
 import { damageEnemy } from "../../engine/combat";
 import { isEnemy } from "../../engine/helpers";
-import { CharacterDef, DamageMoveDef, iEntity, iGameState, MoveDef, PassiveDef } from "../../engine/itypes";
-import { GameEvent, TargetInfo } from "../../engine/types";
+import { CharacterDef, DamageMoveDef, iEntity, iGameState, MoveDef, PassiveDef, TargetInfo } from "../../engine/itypes";
+import { GameEvent } from "../../engine/types";
 
 const telekinesis: DamageMoveDef = {
     id: "telekinesis",

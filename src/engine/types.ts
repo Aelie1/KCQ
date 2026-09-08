@@ -4,7 +4,6 @@
  * State
  *******************************************************/
 
-import { iEntity } from "./itypes";
 
 export interface GameState {
     turn: Turn;
@@ -92,12 +91,6 @@ export type AccuracyResult = "miss" | "graze" | "hit" | "crit";
 
 export type AccuracyProfile = Partial<Record<AccuracyResult, number>>;
 
-export interface TargetInfo {
-    target: iEntity;
-    result: AccuracyResult; //What band is it in
-    effectiveness: number;  //How strong is the hit?
-}
-
 /*******************************************************
  * Bindings
  *******************************************************/
@@ -118,7 +111,6 @@ export type BindingLevel =
     | "hard"
     | "extreme"
     | "impossible"
-    | "max"
 
 
 /*******************************************************

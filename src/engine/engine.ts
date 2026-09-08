@@ -2,11 +2,12 @@ import { encounterList } from "../content/content";
 import { calculateProgress, removeBinding } from "./bindings";
 import { calculateAccuracy, evaluateResult, isValidMove, setStance } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
-import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
+import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState, serializeMove } from "./serialize";
 import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
-import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState, TargetInfo } from "./types";
+import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState } from "./types";
+import type { TargetInfo } from "./itypes";
 
 export class GameEngine {
     private state: iGameState;
@@ -162,15 +163,12 @@ export class GameEngine {
                         reason: "bindingRestriction"
                     };
                 }
-                
-                const targets: TargetInfo[] = [];
+
+                const targetStates: iEntity[] = [];
                 for (const target of action.targets) {
                     const targetState = findEntity(this.state, target);
                     if (targetState) {
-                        const accuracy: AccuracyProfile = calculateAccuracy(actor, targetState, move);
-                        const roll: number = this.rng.accuracy();
-                        const targetInfo: TargetInfo = evaluateResult(targetState, accuracy, roll);
-                        targets.push(targetInfo);
+                        targetStates.push(targetState);
                     } else {
                         return {
                             success: false,
@@ -179,23 +177,31 @@ export class GameEngine {
                     }
                 }
 
-                if (!isValidMove(this.state, actor, targets, move)) {
+                if (!isValidMove(this.state, actor, targetStates, move)) {
                     return {
                         success: false,
                         reason: "moveUnavailable"
                     };
                 }
 
+                const targets: TargetInfo[] = [];
+                const roll: number = this.rng.accuracy();
+                for (const target of targetStates) {
+                    const accuracy: AccuracyProfile = calculateAccuracy(actor, target, move);
+                    const targetInfo: TargetInfo = evaluateResult(target, accuracy, roll);
+                    targets.push(targetInfo);
+                }
+
                 //Now we have a valid actor, targets and move -- execute the move
                 events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: action.targets })
                 for (const target of targets) {
                     events.push({
-                        type:"accuracyResult", 
-                        actor:actor.id,
-                        target:target.target.id,
-                        move:move.id,
-                        result:target.result,
-                        effectiveness:target.effectiveness
+                        type: "accuracyResult",
+                        actor: actor.id,
+                        target: target.target.id,
+                        move: move.id,
+                        result: target.result,
+                        effectiveness: target.effectiveness
                     })
                 }
                 const successfulTargets = targets.filter(
@@ -310,7 +316,7 @@ export class GameEngine {
                         reason: "actorImmobilized"
                     };
                 }
-                events.push(...setStance(actor,action.stance));
+                events.push(...setStance(actor, action.stance));
                 return {
                     success: true,
                     events: events,

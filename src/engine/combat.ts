@@ -2,14 +2,15 @@ import { effectivenessRange } from "./constants";
 import { getIEntitySide } from "./helpers";
 import { iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
 import { canMove } from "./status";
-import { AccuracyProfile, AccuracyResult, DamageEvent, DefeatEvent, GameEvent, StanceId, TargetInfo } from "./types";
+import { AccuracyProfile, AccuracyResult, DamageEvent, DefeatEvent, GameEvent, StanceId } from "./types";
+import { TargetInfo } from "./itypes";
 
-export function isValidMove(state: iGameState, actor: iEntity, targets: TargetInfo[], move: MoveDef): boolean {
+export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
     if (targets.length !== move.targets) {
         return false;
     }
     for (const target of targets) {
-        if (getIEntitySide(target.target) !== move.target) {
+        if (getIEntitySide(target) !== move.target) {
             return false;
         }
     }

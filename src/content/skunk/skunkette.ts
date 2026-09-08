@@ -1,7 +1,7 @@
 import { addBinding } from "../../engine/bindings";
 import { isCharacter } from "../../engine/helpers";
-import { DamageMoveDef, EnemyDef, iEnemy, iEntity, iGameState } from "../../engine/itypes";
-import { GameAction, GameEvent, TargetInfo } from "../../engine/types";
+import { DamageMoveDef, EnemyDef, iEnemy, iEntity, iGameState, TargetInfo } from "../../engine/itypes";
+import { GameAction, GameEvent } from "../../engine/types";
 import { latexarms } from "./latex";
 
 const latexspray: DamageMoveDef = {
