@@ -1,6 +1,6 @@
 import { bindingThresholds } from "./constants";
-import type { iBinding, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
-import type { BindingId, BindingLevel, EntityId, EntitySide, MoveId } from "./types";
+import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
+import type { BindingId, BindingLevel, BuffId, EntityId, EntitySide, MoveId } from "./types";
 
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {
@@ -21,6 +21,10 @@ export function findMove(entity: iEntity, id: MoveId): MoveDef | undefined {
 
 export function findBinding(entity: iCharacter, id: BindingId): iBinding | undefined {
     return entity.bindings.find(binding => binding.id === id);
+}
+
+export function findBuff(entity: iEntity, id: BuffId): iBuff[] | undefined {
+    return entity.buffs.filter(buff => buff.id === id);
 }
 
 

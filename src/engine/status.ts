@@ -1,32 +1,47 @@
-import { getBindingLevel } from "./helpers";
-import { iBinding, iCharacter, iStatus, StatusDef } from "./itypes";
+import { getBindingLevel, isCharacter } from "./helpers";
+import { iBinding, iCharacter, iEntity, iStatus, StatusDef } from "./itypes";
 import { ModifierId, MoveType } from "./types";
 
 /*******************************************************
  * Functions
  *******************************************************/
 
-export function getStatuses(target: iCharacter): iStatus[] {
+export function getStatuses(target: iEntity): iStatus[] {
     const statuses: iStatus[] = [];
-    for (const binding of target.bindings) {
-        const bindingStatuses = binding.definition.status;
-        const level = getBindingLevel(binding);
-        for (const bindingStatus of bindingStatuses[level]) {
-            const characterStatus = statuses.find(x => x.definition === bindingStatus.definition);
-            if (characterStatus !== undefined) {
-                if (characterStatus.value < bindingStatus.value) {
-                    characterStatus.value = bindingStatus.value;
+    if (isCharacter(target)) {
+        for (const binding of target.bindings) {
+            const bindingStatuses = binding.definition.status;
+            const level = getBindingLevel(binding);
+            for (const bindingStatus of bindingStatuses[level]) {
+                const characterStatus = statuses.find(x => x.definition === bindingStatus.definition);
+                if (characterStatus !== undefined) {
+                    if (characterStatus.value < bindingStatus.value) {
+                        characterStatus.value = bindingStatus.value;
+                    }
+                } else {
+                    statuses.push({ definition: bindingStatus.definition, value: bindingStatus.value });
                 }
-            } else {
-                statuses.push({ definition: bindingStatus.definition, value: bindingStatus.value });
             }
         }
+    }
+    for (const buff of target.buffs) {
+        for (const buffStatus of buff.statuses) {
+            const characterStatus = statuses.find(x => x.definition === buffStatus.definition);
+            if (characterStatus !== undefined) {
+                if (characterStatus.value < buffStatus.value) {
+                    characterStatus.value = buffStatus.value;
+                }
+            } else {
+                statuses.push({ definition: buffStatus.definition, value: buffStatus.value });
+            }
+        }
+
     }
     return statuses;
 }
 
 
-export function getModifier(target: iCharacter, id: ModifierId): number {
+export function getModifier(target: iEntity, id: ModifierId): number {
     let amount: number = 0;
     const statuses: iStatus[] = getStatuses(target);
     for (const status of statuses) {
@@ -201,10 +216,10 @@ export const blinded: StatusDef = {
     id: "blinded",
     levels: [
         {},
-        { modifiers: { hitarms: -1, hitlegs: -1, hitmouth: -1 } },
-        { modifiers: { hitarms: -2, hitlegs: -2, hitmouth: -2 } },
-        { modifiers: { hitarms: -3, hitlegs: -3, hitmouth: -3, defense: -1 } },
-        { modifiers: { hitarms: -4, hitlegs: -4, hitmouth: -4, defense: -2 } }
+        { modifiers: { hit: -1 } },
+        { modifiers: { hit: -2 } },
+        { modifiers: { hit: -3, defense: -1 } },
+        { modifiers: { hit: -4, defense: -2 } }
     ]
 }
 

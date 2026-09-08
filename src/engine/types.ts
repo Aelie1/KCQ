@@ -51,11 +51,16 @@ export interface Enemy {
  *******************************************************/
 
 export interface Buff {
-    duration: number;
-    effect: number;
+    id: BuffId;
+    duration: BuffLength;
+    active: boolean;
+    statuses: Status[];
+    linkedEntity?: EntityId;
 }
 
 export type BuffId = string;
+
+export type BuffLength = number | "infinite";
 
 /*******************************************************
  * Passives
@@ -138,6 +143,7 @@ export type ModifierId =
     | "hitarms" 
     | "hitmouth" 
     | "hitlegs" 
+    | "hit" 
     | "defense" 
     | "escape" 
     | "enemyeffect" 
@@ -216,7 +222,7 @@ export type ActionFailureReason =
  * Events
  ********************************************************/
 
-export type GameEvent = MoveEvent | AccuracyEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | DefeatEvent | StanceEvent;
+export type GameEvent = MoveEvent | AccuracyEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
@@ -253,14 +259,20 @@ export interface PhaseEvent {
 }
 
 export interface BuffEvent {
-    type: "buff";
+    type: "buffAdded" | "buffRemoved";
     target: EntityId;
     buff: BuffId;
 }
 
-export interface DefeatEvent {
-    type: "enemyDefeated";
+export interface EnemyEvent {
+    type: "enemySpawned" | "enemyDefeated";
     target: EntityId;
+}
+
+export interface EncounterEvent {
+    type: "encounter";
+    id: string;
+    success: boolean;
 }
 
 export interface StanceEvent {

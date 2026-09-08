@@ -41,8 +41,11 @@ function serializeAction(action: GameAction): GameAction {
 }
 
 function serializeBuff(buff: iBuff): Buff {
-    const { definition, ..._buff } = buff;
-    return _buff;
+    const { ..._buff } = buff;
+    return {
+        ..._buff,
+        statuses: buff.statuses.map(serializeStatus)
+    };
 }
 
 function serializeBinding(binding: iBinding): Binding {

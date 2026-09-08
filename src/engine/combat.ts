@@ -1,8 +1,22 @@
 import { effectivenessRange } from "./constants";
-import { getIEntitySide, isCharacter } from "./helpers";
+import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
 import { iCharacter, iEnemy, iEntity, iGameState, MoveDef, TargetInfo } from "./itypes";
 import { canMove, getModifier } from "./status";
-import { AccuracyProfile, AccuracyResult, DamageEvent, DefeatEvent, GameEvent, StanceId } from "./types";
+import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
+
+
+export function updateIntentions(state: iGameState) {
+    for (const enemy of state.enemies) {
+        enemy.intention = null;
+    }
+    for (const enemy of state.enemies) {
+        updateIntention(state, enemy);
+    }
+}
+
+export function updateIntention(state: iGameState, actor: iEnemy) {
+    actor.intention = actor.definition.ai(state, actor);
+}
 
 export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
     if (targets.length !== move.targets) {
@@ -36,7 +50,7 @@ export function damageEnemy(state: iGameState, target: iEnemy, amount: number): 
 
 export function defeatEnemy(state: iGameState, target: iEnemy): GameEvent[] {
     const events: GameEvent[] = [];
-    const event: DefeatEvent = {
+    const event: EnemyEvent = {
         type: "enemyDefeated",
         target: target.id,
     };
@@ -82,9 +96,8 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
      * Characters currently have no base Hit stat, so their status modifiers
      * are relative to neutral accuracy.
      *
-     * Enemies currently have no Hit modifiers, so they also begin at neutral.
      */
-    let hitModifier = 0;
+    let hitModifier = getModifier(actor, "hit");
 
     if (isCharacter(actor)) {
         switch (move.type) {
@@ -99,19 +112,12 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
             case "legs":
                 hitModifier += getModifier(actor, "hitlegs");
                 break;
-
-            case "enemy":
-                break;
         }
     }
 
-    let defenseModifier = 0;
+    let defenseModifier = (isEnemy(target) ? target.currDef : 0);
 
-    if (isCharacter(target)) {
-        defenseModifier = getModifier(target, "defense");
-    } else {
-        defenseModifier = target.currDef;
-    }
+    defenseModifier += getModifier(target, "defense");
 
     const delta = hitModifier - defenseModifier;
 

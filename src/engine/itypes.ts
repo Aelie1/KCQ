@@ -45,13 +45,11 @@ export interface EnemyDef {
  * Buffs
  *******************************************************/
 
-export interface iBuff extends Buff {
-    definition: BuffDef;
+export interface iBuff extends Omit<Buff,"statuses"> {
+    statuses: iStatus[];
 }
 
-export interface BuffDef {
-    id: string;
-}
+
 
 
 /*******************************************************

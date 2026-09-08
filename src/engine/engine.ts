@@ -1,6 +1,6 @@
 import { encounterList } from "../content/content";
 import { calculateProgress, removeBinding } from "./bindings";
-import { calculateAccuracy, evaluateResult, isValidMove, setStance } from "./combat";
+import { calculateAccuracy, evaluateResult, isValidMove, setStance, updateIntentions } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
 import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
 import { XorShift32 } from "./random";
@@ -8,6 +8,7 @@ import { serializeGameState, serializeMove } from "./serialize";
 import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
 import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState } from "./types";
 import type { TargetInfo } from "./itypes";
+import { tickBuffs } from "./buffs";
 
 export class GameEngine {
     private state: iGameState;
@@ -50,7 +51,8 @@ export class GameEngine {
         });
     }
 
-    loadEnemy(enemy: EnemyDef) {
+    loadEnemy(enemy: EnemyDef) : GameEvent[] {
+        const events: GameEvent[] = [];
         this.state.enemies.push({
             definition: enemy,
             buffs: [],
@@ -59,21 +61,26 @@ export class GameEngine {
             currDef: enemy.defense,
             intention: null,
         });
+        events.push({type:"enemySpawned",target:enemy.id});
+        return events;
     }
 
-    loadEncounter(id: EncounterId): boolean {
+    loadEncounter(id: EncounterId): GameEvent[] {
+        const events: GameEvent[] = [];
         const encounter = encounterList.find(x => x.id === id);
         if (!encounter) {
-            return false;
+            events.push({type:"encounter",id:id,success:false});
+            return events;
         }
         for (const enemy of encounter.enemies) {
-            this.loadEnemy(enemy);
+            events.push(...this.loadEnemy(enemy));
         }
         if (encounter.setup) {
             encounter.setup(this.state);
         }
-        this.updateIntentions();
-        return true;
+        updateIntentions(this.state);
+        events.push({type:"encounter",id:id,success:true});
+        return events;
     }
 
     getActions(name: EntityId): ActionInfo[] {
@@ -387,23 +394,12 @@ export class GameEngine {
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
-            this.updateIntentions();
+            tickBuffs(this.state);
+            updateIntentions(this.state);
         }
         events.push({ type: "phaseChanged", phase: this.state.turn.phase });
 
         return events;
     }
 
-    updateIntentions() {
-        for (const enemy of this.state.enemies) {
-            enemy.intention = null;
-        }
-        for (const enemy of this.state.enemies) {
-            this.updateIntention(enemy);
-        }
-    }
-
-    updateIntention(actor: iEnemy) {
-        actor.intention = actor.definition.ai(this.state, actor);
-    }
 }
