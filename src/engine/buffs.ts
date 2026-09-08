@@ -1,10 +1,15 @@
+import { isCharacter, isEnemy } from "./helpers";
 import { iBuff, iEntity, iGameState } from "./itypes";
 import { GameEvent } from "./types";
 
-export function addBuff(target: iEntity, buff: iBuff): GameEvent[] {
+export function addBuff(actor:iEntity, target: iEntity, buff: iBuff): GameEvent[] {
     const events: GameEvent[] = [];
-    target.buffs.push(buff);
-    events.push({ type: "buffAdded", target: target.id, buff: buff.id });
+    const newBuff = {...buff};
+    newBuff.active = true;
+    if (isEnemy(actor))
+        newBuff.active = false;
+    target.buffs.push(newBuff);
+    events.push({ type: "buffAdded", target: target.id, buff: newBuff.id });
 
     return events;
 }
@@ -36,16 +41,16 @@ export function tickBuffs(state: iGameState): GameEvent[] {
 
     for (const enemy of state.enemies) {
         for (const buff of [...enemy.buffs]) {
+            if (!buff.active) {
+                buff.active = true;
+                continue;
+            }
             if (buff.duration === "infinite") {
                 continue;
             }
-            if (buff.active) {
-                buff.duration--;
-                if (buff.duration === 0) {
-                    events.push(...removeBuff(enemy, buff));
-                }
-            } else {
-                buff.active = true;
+            buff.duration--;
+            if (buff.duration === 0) {
+                events.push(...removeBuff(enemy, buff));
             }
         }
     }

@@ -394,7 +394,7 @@ export class GameEngine {
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
-            tickBuffs(this.state);
+            events.push(...tickBuffs(this.state));
             updateIntentions(this.state);
         }
         events.push({ type: "phaseChanged", phase: this.state.turn.phase });

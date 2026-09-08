@@ -25,6 +25,9 @@ export function getStatuses(target: iEntity): iStatus[] {
         }
     }
     for (const buff of target.buffs) {
+        if (!buff.active) {
+            continue;
+        }
         for (const buffStatus of buff.statuses) {
             const characterStatus = statuses.find(x => x.definition === buffStatus.definition);
             if (characterStatus !== undefined) {
