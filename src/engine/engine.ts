@@ -6,7 +6,7 @@ import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTarg
 import { XorShift32 } from "./random";
 import { serializeGameState, serializeMove } from "./serialize";
 import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove, isSkipped } from "./status";
-import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameEvent, GameState, PlayerAction } from "./types";
+import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameEvent, GameState, MoveId, PlayerAction } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -107,6 +107,23 @@ export class GameEngine {
             }
         }
         return actions;
+    }
+
+    getAccuracyPreview(actor: EntityId, target: EntityId, move: MoveId): AccuracyProfile | null {
+        const actorState = findEntity(this.state, actor);
+        const targetState = findEntity(this.state, target);
+
+        if (!actorState || !targetState) {
+            return null;
+        }
+
+        const moveState = findMove(actorState,move);
+
+        if (!moveState) {
+            return null;
+        }
+
+        return calculateAccuracy(actorState,targetState,moveState);
     }
 
     executeAction(action: PlayerAction): ActionResult {
