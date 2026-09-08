@@ -142,8 +142,9 @@ describe("encounters", () => {
             targets: [{
                 target: "hero",
                 result: "hit",
-                effectiveness: expect.any(Number),
+                effects: [],
             }],
+            effects: [],
         });
     });
 

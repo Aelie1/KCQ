@@ -1,13 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { damageEnemy } from "../src/engine/combat";
+import { resolveMove } from "../src/engine/combat";
 import { GameEngine } from "../src/engine/engine";
 import { isEnemy } from "../src/engine/helpers";
+import type { iGameState } from "../src/engine/itypes";
 import type { PlayerAction } from "../src/engine/types";
 import {
     expectMoveRejection,
+    makeCharacter,
     makeCharacterDef,
+    makeEnemy,
     makeEnemyDef,
     makeMove,
     makeWaitMove,
@@ -85,9 +88,11 @@ describe("move validation and player actions", () => {
     it("applies nonlethal damage without removing the enemy", () => {
         const damage = 7;
         const strike = makeMove("strike", "arms", {
-            activate: (state, _actor, targets) => {
+            resolve: (_state, _actor, targets) => {
                 const target = targets[0].target;
-                return isEnemy(target) ? damageEnemy(state, target, damage) : [];
+                return isEnemy(target)
+                    ? [{ type: "damage", target, amount: damage }]
+                    : [];
             },
         });
         const hero = makeCharacterDef("hero", [strike]);
@@ -107,14 +112,11 @@ describe("move validation and player actions", () => {
         expect(result).toMatchObject({
             success: true,
             events: [
-                { type: "moveUsed", actor: hero.id, move: strike.id, targets: [foeId] },
                 {
-                    type: "accuracyResult",
+                    type: "moveUsed",
                     actor: hero.id,
                     move: strike.id,
-                    target: foeId,
-                    result: "hit",
-                    effectiveness: expect.any(Number),
+                    targets: [{ target: foeId, result: "hit" }],
                 },
                 { type: "damage", target: foeId, amount: damage },
             ],
@@ -132,9 +134,11 @@ describe("move validation and player actions", () => {
         const enemyHp = 5;
         const lethalDamage = enemyHp;
         const strike = makeMove("lethal-strike", "arms", {
-            activate: (state, _actor, targets) => {
+            resolve: (_state, _actor, targets) => {
                 const target = targets[0].target;
-                return isEnemy(target) ? damageEnemy(state, target, lethalDamage) : [];
+                return isEnemy(target)
+                    ? [{ type: "damage", target, amount: lethalDamage }]
+                    : [];
             },
         });
         const hero = makeCharacterDef("hero", [strike]);
@@ -156,14 +160,11 @@ describe("move validation and player actions", () => {
         expect(result).toMatchObject({
             success: true,
             events: [
-                { type: "moveUsed", actor: hero.id, move: strike.id, targets: [foeId] },
                 {
-                    type: "accuracyResult",
+                    type: "moveUsed",
                     actor: hero.id,
                     move: strike.id,
-                    target: foeId,
-                    result: "hit",
-                    effectiveness: expect.any(Number),
+                    targets: [{ target: foeId, result: "hit" }],
                 },
                 { type: "damage", target: foeId, amount: lethalDamage },
                 { type: "enemyDefeated", target: foeId },
@@ -192,7 +193,7 @@ describe("move validation and player actions", () => {
             type: "moveUsed",
             actor: ko.id,
             move: move.id,
-            targets: [enemyId],
+            targets: [{ target: enemyId, result: "hit" }],
         });
         const damageEvent = result.events.find((event) => event.type === "damage");
         if (!damageEvent || !("amount" in damageEvent)) {
@@ -225,20 +226,52 @@ describe("move validation and player actions", () => {
         },
     );
 
-    it("rejects attacks and reports every move unavailable outside the player phase", () => {
-        const { engine, hero, legal, foeId } = validationEngine();
-        engine.advancePhase();
+    it("rejects enemy actors through the public player-action path", () => {
+        const { engine, legal, foeId } = validationEngine();
 
-        expectMoveRejection(engine, hero.id, legal.id, foeId, "wrongPhase");
-        expect(engine.executeAction({ type: "endTurn" })).toEqual({
-            success: false,
-            reason: "wrongPhase",
-        });
         expect(engine.executeAction({
-            type: "escape",
-            actor: hero.id,
-            target: hero.id,
-            binding: "anything",
-        })).toEqual({ success: false, reason: "wrongPhase" });
+            type: "attack",
+            actor: foeId,
+            move: legal.id,
+            targets: ["hero"],
+        })).toEqual({ success: false, reason: "invalidActor" });
+    });
+});
+
+describe("move resolution", () => {
+    it("filters misses and normalizes effects without mutating state", () => {
+        const actor = makeCharacter("hero");
+        const enemyDefinition = makeEnemyDef("foe", [makeWaitMove()]);
+        const missed = makeEnemy(enemyDefinition, "foe1");
+        const hit = makeEnemy(enemyDefinition, "foe2");
+        const state: iGameState = {
+            turn: { round: 1, step: 1, phase: "player" },
+            nextEntityId: 3,
+            characters: [actor],
+            enemies: [missed, hit],
+        };
+        let resolvedTargetIds: string[] = [];
+        const move = makeMove("fractional-damage", "arms", {
+            targets: 2,
+            resolve: (_state, _actor, targets) => {
+                resolvedTargetIds = targets.map((target) => target.target.id);
+                return targets.flatMap((target) => isEnemy(target.target)
+                    ? [{ type: "damage" as const, target: target.target, amount: 2.2 }]
+                    : []
+                );
+            },
+        });
+
+        const effects = resolveMove(state, move, actor, [
+            { target: missed, result: "miss", effectiveness: 0 },
+            { target: hit, result: "hit", effectiveness: 0.9 },
+        ]);
+
+        expect(resolvedTargetIds).toEqual([hit.id]);
+        expect(effects).toEqual([{ type: "damage", target: hit, amount: 3 }]);
+        expect(state.enemies.map((enemy) => enemy.currHp)).toEqual([
+            enemyDefinition.hp,
+            enemyDefinition.hp,
+        ]);
     });
 });

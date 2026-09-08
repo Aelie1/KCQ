@@ -1,13 +1,14 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { latexarms } from "../src/content/skunk/latex";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { addBuff } from "../src/engine/buffs";
 import { GameEngine } from "../src/engine/engine";
+import { isCharacter } from "../src/engine/helpers";
 import type { iBuff, StatusDef } from "../src/engine/itypes";
 import { XorShift32 } from "../src/engine/random";
 import {
     makeCharacterDef,
+    makeBindingDef,
     makeEnemyDef,
     makeMove,
     makeWaitMove,
@@ -37,7 +38,7 @@ describe("turn phases and enemy intentions", () => {
             type: "moveUsed",
             actor: enemyId,
             move: enemyMove.id,
-            targets: [ko.id],
+            targets: [{ target: ko.id, result: "hit" }],
         });
         const bindingEvent = result.events.find((event) => event.type === "bondageAdded");
         if (!bindingEvent || !("amount" in bindingEvent)) {
@@ -57,12 +58,18 @@ describe("turn phases and enemy intentions", () => {
         expect(state.characters[0].bindings[0]).toMatchObject({ id: latexarms.id });
         expect(state.characters[0].bindings[0].value).toBe(bindingEvent.amount);
         expect(state.enemies[0].intention).toEqual({
-            move: enemyMove.id,
+            move: enemyMove.displayId,
             targets: [{
                 target: ko.id,
                 result: expect.any(String),
-                effectiveness: expect.any(Number),
+                effects: [{
+                    type: "binding",
+                    target: ko.id,
+                    binding: latexarms.id,
+                    amount: expect.any(Number),
+                }],
             }],
+            effects: [],
         });
     });
 
@@ -81,9 +88,13 @@ describe("turn phases and enemy intentions", () => {
             move: move.id,
             targets: [`${foe.id}1`],
         }).success).toBe(true);
-        expect(engine.advancePhase()).toEqual([{ type: "phaseChanged", phase: "enemy" }]);
         expect(engine.getGameState().characters[0].acted).toBe(true);
-        expect(engine.advancePhase()).toEqual([{ type: "phaseChanged", phase: "player" }]);
+
+        const endTurn = engine.executeAction({ type: "endTurn" });
+        expect(endTurn.success).toBe(true);
+        if (!endTurn.success) throw new Error("Expected endTurn to succeed");
+        expect(endTurn.events[0]).toEqual({ type: "phaseChanged", phase: "enemy" });
+        expect(endTurn.events.at(-1)).toEqual({ type: "phaseChanged", phase: "player" });
         expect(engine.getGameState()).toMatchObject({
             turn: { round: 2, step: 1, phase: "player" },
             characters: [{ acted: false }],
@@ -113,25 +124,39 @@ describe("enemy intention previews", () => {
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected endTurn to succeed");
-        const accuracyEvent = result.events.find(
-            (event) => event.type === "accuracyResult" && event.actor === enemyId,
+        const moveEvent = result.events.find(
+            (event) => event.type === "moveUsed" && event.actor === enemyId,
         );
 
         expect(preview.move).toBe(enemyMove.id);
-        expect(accuracyEvent).toMatchObject({
+        expect(moveEvent).toMatchObject({
             actor: enemyId,
             move: preview.move,
-            target: preview.targets[0].target,
-            result: preview.targets[0].result,
-            effectiveness: preview.targets[0].effectiveness,
+            targets: [{
+                target: preview.targets[0].target,
+                result: preview.targets[0].result,
+            }],
         });
+        expect(preview.targets[0].effects).toEqual([]);
+        expect(preview.effects).toEqual([]);
     });
 
     it("does not consume RNG during serialization and commits a fresh roll next round", () => {
         const seed = 123456;
+        const pressure = makeBindingDef("pressure");
         const alwaysHit = makeMove("certain-threat", "enemy", {
             target: "player",
             accuracy: { hit: 100 },
+            resolve: (_state, _actor, targets) => targets.flatMap((target) =>
+                isCharacter(target.target)
+                    ? [{
+                        type: "binding" as const,
+                        target: target.target,
+                        binding: pressure,
+                        amount: 10 * target.effectiveness,
+                    }]
+                    : []
+            ),
         });
         const enemy = makeEnemyDef("foe", [alwaysHit]);
         const encounter = { id: "stable-preview", enemies: [enemy] };
@@ -149,16 +174,29 @@ describe("enemy intention previews", () => {
         const rng = new XorShift32(seed);
         const firstRoll = rng.accuracy();
         const secondRoll = rng.accuracy();
-        expect(previews[0]!.targets[0]).toMatchObject({
+        expect(previews[0]!.targets[0]).toEqual({
+            target: "hero",
             result: "hit",
-            effectiveness: expect.closeTo(0.8 + firstRoll * 0.002, 10),
+            effects: [{
+                type: "binding",
+                target: "hero",
+                binding: pressure.id,
+                amount: Math.ceil(10 * (0.8 + firstRoll * 0.002)),
+            }],
         });
+        expect(previews[0]!.effects).toEqual([]);
 
         expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
         const nextPreview = engine.getGameState().enemies[0].intention;
-        expect(nextPreview?.targets[0]).toMatchObject({
+        expect(nextPreview?.targets[0]).toEqual({
+            target: "hero",
             result: "hit",
-            effectiveness: expect.closeTo(0.8 + secondRoll * 0.002, 10),
+            effects: [{
+                type: "binding",
+                target: "hero",
+                binding: pressure.id,
+                amount: Math.ceil(10 * (0.8 + secondRoll * 0.002)),
+            }],
         });
         expect(nextPreview).not.toEqual(previews[0]);
     });
@@ -181,7 +219,12 @@ describe("enemy intention previews", () => {
         };
         const guard = makeMove("guard", "mouth", {
             targets: 0,
-            activate: (_state, actor) => addBuff(actor, actor, defenseBuff),
+            resolve: (_state, actor) => [{
+                type: "buff",
+                source: actor,
+                target: actor,
+                buff: defenseBuff,
+            }],
         });
         const enemyMove = makeMove("swing", "enemy", {
             target: "player",
@@ -206,25 +249,26 @@ describe("enemy intention previews", () => {
         expect(after?.targets[0]).toEqual({
             target: "hero",
             result: "miss",
-            effectiveness: 0,
+            effects: [],
         });
+        expect(after?.effects).toEqual([]);
 
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected endTurn to succeed");
         expect(result.events).toContainEqual({
-            type: "accuracyResult",
+            type: "moveUsed",
             actor: "foe1",
             move: enemyMove.id,
-            target: "hero",
-            result: after!.targets[0].result,
-            effectiveness: after!.targets[0].effectiveness,
+            targets: [{
+                target: "hero",
+                result: after!.targets[0].result,
+            }],
         });
     });
 
     it("routes enemies through the enemy executor, not the public player path", () => {
         const { engine, enemyMove, enemyId } = setupPreviewEngine();
-        const enemyExecutor = vi.spyOn(engine, "executeEnemyAction");
 
         expect(engine.executeAction({
             type: "attack",
@@ -232,9 +276,14 @@ describe("enemy intention previews", () => {
             move: enemyMove.id,
             targets: ["hero"],
         })).toEqual({ success: false, reason: "invalidActor" });
-        expect(enemyExecutor).not.toHaveBeenCalled();
 
-        expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
-        expect(enemyExecutor).toHaveBeenCalledOnce();
+        const result = engine.executeAction({ type: "endTurn" });
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected endTurn to succeed");
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: "moveUsed",
+            actor: enemyId,
+            move: enemyMove.id,
+        }));
     });
 });

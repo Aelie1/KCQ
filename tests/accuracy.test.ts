@@ -10,7 +10,7 @@ import type {
     iTargetInfo,
 } from "../src/engine/itypes";
 import { XorShift32 } from "../src/engine/random";
-import type { AccuracyEvent, AccuracyProfile } from "../src/engine/types";
+import type { AccuracyProfile, MoveEvent } from "../src/engine/types";
 import {
     makeBinding,
     makeBindingDef,
@@ -65,11 +65,13 @@ describe("accuracy", () => {
         return Object.values(profile).reduce((sum, width) => sum + width, 0);
     }
 
-    function accuracyEvents(result: ReturnType<GameEngine["executeAction"]>): AccuracyEvent[] {
+    function moveUsed(result: ReturnType<GameEngine["executeAction"]>): MoveEvent {
         if (!result.success) throw new Error(`Expected action success, got ${result.reason}`);
-        return result.events.filter(
-            (event): event is AccuracyEvent => event.type === "accuracyResult",
+        const event = result.events.find(
+            (candidate): candidate is MoveEvent => candidate.type === "moveUsed",
         );
+        if (!event) throw new Error("Expected moveUsed event");
+        return event;
     }
 
     it("returns the authored profile at zero net accuracy delta", () => {
@@ -286,12 +288,12 @@ describe("accuracy", () => {
             const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
-            return accuracyEvents(engine.executeAction({
+            return moveUsed(engine.executeAction({
                 type: "attack",
                 actor: hero.id,
                 move: move.id,
                 targets: [`${foe.id}1`],
-            }))[0];
+            })).targets[0];
         };
 
         expect(run()).toEqual(run());
@@ -318,29 +320,29 @@ describe("accuracy", () => {
             targets: ["missing"],
         })).toEqual({ success: false, reason: "invalidTarget" });
 
-        const afterInvalid = accuracyEvents(challenged.engine.executeAction({
+        const afterInvalid = moveUsed(challenged.engine.executeAction({
             type: "attack",
             actor: challenged.hero.id,
             move: challenged.move.id,
             targets: [challenged.foeId],
-        }))[0];
-        const firstControlRoll = accuracyEvents(control.engine.executeAction({
+        })).targets[0];
+        const firstControlRoll = moveUsed(control.engine.executeAction({
             type: "attack",
             actor: control.hero.id,
             move: control.move.id,
             targets: [control.foeId],
-        }))[0];
+        })).targets[0];
 
         expect(afterInvalid).toEqual(firstControlRoll);
     });
 
     it("resolves all targets with one shared roll and target-specific Defense", () => {
         const seed = 123456;
-        let activatedTargets: iTargetInfo[] = [];
+        let resolvedTargets: iTargetInfo[] = [];
         const move = makeAccuracyMove(standardProfile, {
             targets: "all",
-            activate: (_state, _actor, targets) => {
-                activatedTargets = [...targets];
+            resolve: (_state, _actor, targets) => {
+                resolvedTargets = [...targets];
                 return [];
             },
         });
@@ -362,7 +364,7 @@ describe("accuracy", () => {
             move: move.id,
             targets: [],
         });
-        const events = accuracyEvents(result);
+        const event = moveUsed(result);
         const referenceRng = new XorShift32(seed);
         for (const _enemy of encounter.enemies) referenceRng.accuracy();
         const roll = referenceRng.accuracy();
@@ -379,26 +381,31 @@ describe("accuracy", () => {
         if (!result.success) throw new Error("Expected all-target move to succeed");
         expect(result.events[0]).toMatchObject({
             type: "moveUsed",
-            targets: referenceTargets.map((target) => target.id),
+            targets: expected.map((target) => ({
+                target: target.target.id,
+                result: target.result,
+            })),
         });
-        expect(events.map(({ result: band, effectiveness }) => ({ band, effectiveness })))
-            .toEqual(expected.map(({ result: band, effectiveness }) => ({
+        expect(event.targets.map(({ result: band }) => band))
+            .toEqual(expected.map(({ result: band }) => band));
+        expect(resolvedTargets.map(({ result: band, effectiveness }) => ({ band, effectiveness })))
+            .toEqual(expected.filter((target) => target.result !== "miss").map(({ result: band, effectiveness }) => ({
                 band,
                 effectiveness,
             })));
-        expect(new Set(events.map((event) => event.result)).size).toBeGreaterThan(1);
-        expect(activatedTargets.map((target) => target.target.id)).toEqual(
+        expect(new Set(event.targets.map((target) => target.result)).size).toBeGreaterThan(1);
+        expect(resolvedTargets.map((target) => target.target.id)).toEqual(
             expected
                 .filter((target) => target.result !== "miss")
                 .map((target) => target.target.id),
         );
     });
 
-    it("does not activate effects for misses but does for successful targets", () => {
-        const activated: string[] = [];
+    it("does not resolve effects for misses but does for successful targets", () => {
+        const resolved: string[] = [];
         const move = makeAccuracyMove(standardProfile, {
-            activate: (_state, _actor, targets) => {
-                activated.push(...targets.map((target) => target.target.id));
+            resolve: (_state, _actor, targets) => {
+                resolved.push(...targets.map((target) => target.target.id));
                 return [];
             },
         });
@@ -409,27 +416,27 @@ describe("accuracy", () => {
             const engine = new GameEngine([encounter], seed);
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
-            return accuracyEvents(engine.executeAction({
+            return moveUsed(engine.executeAction({
                 type: "attack",
                 actor: hero.id,
                 move: move.id,
                 targets: [`${foe.id}1`],
-            }))[0];
+            })).targets[0];
         };
 
         expect(run(1, "missed").result).toBe("miss");
-        expect(activated).toEqual([]);
+        expect(resolved).toEqual([]);
         expect(run(8224, "hit").result).not.toBe("miss");
-        expect(activated).toEqual(["hit1"]);
+        expect(resolved).toEqual(["hit1"]);
     });
 
-    it("activates zero-target moves without consuming an accuracy roll", () => {
-        let activations = 0;
+    it("resolves zero-target moves without consuming an accuracy roll", () => {
+        let resolutions = 0;
         const zeroTarget = makeAccuracyMove({ hit: 100 }, {
             id: "zero-target",
             targets: 0,
-            activate: (_state, _actor, targets) => {
-                activations++;
+            resolve: (_state, _actor, targets) => {
+                resolutions++;
                 expect(targets).toEqual([]);
                 return [];
             },
@@ -457,21 +464,21 @@ describe("accuracy", () => {
             success: true,
             events: [{ type: "moveUsed", targets: [] }],
         });
-        expect(accuracyEvents(zeroResult)).toEqual([]);
-        expect(activations).toBe(1);
+        expect(moveUsed(zeroResult).targets).toEqual([]);
+        expect(resolutions).toBe(1);
 
-        const afterZeroTarget = accuracyEvents(challenged.engine.executeAction({
+        const afterZeroTarget = moveUsed(challenged.engine.executeAction({
             type: "attack",
             actor: "shooter",
             move: targeted.id,
             targets: [challenged.foeId],
-        }))[0];
-        const firstControlRoll = accuracyEvents(control.engine.executeAction({
+        })).targets[0];
+        const firstControlRoll = moveUsed(control.engine.executeAction({
             type: "attack",
             actor: "shooter",
             move: targeted.id,
             targets: [control.foeId],
-        }))[0];
+        })).targets[0];
 
         expect(afterZeroTarget).toEqual(firstControlRoll);
     });

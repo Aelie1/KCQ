@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { latexarms } from "../src/content/skunk/latex";
-import { addBinding } from "../src/engine/bindings";
 import { bindingThresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { getEntitySide } from "../src/engine/helpers";
@@ -20,7 +19,6 @@ import {
     stunned,
     vibrating,
 } from "../src/engine/status";
-import type { GameEvent } from "../src/engine/types";
 import {
     expectMoveRejection,
     makeBinding,
@@ -192,9 +190,19 @@ describe("move and status restrictions", () => {
         const targetBinding = makeBindingDef("target-binding");
         const setupMove = makeMove("prepare", "mouth", {
             targets: 0,
-            activate: (state): GameEvent[] => [
-                ...addBinding(state.characters[0], latexarms, bindingThresholds.extreme),
-                ...addBinding(state.characters[1], targetBinding, bindingThresholds.easy),
+            resolve: (state) => [
+                {
+                    type: "binding" as const,
+                    target: state.characters[0],
+                    binding: latexarms,
+                    amount: bindingThresholds.extreme,
+                },
+                {
+                    type: "binding" as const,
+                    target: state.characters[1],
+                    binding: targetBinding,
+                    amount: bindingThresholds.easy,
+                },
             ],
         });
         const helper = makeCharacterDef("helper", [setupMove]);

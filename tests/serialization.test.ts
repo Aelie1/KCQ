@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { addBinding } from "../src/engine/bindings";
 import { bindingThresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import type { iBuff, iGameState, StatusDef } from "../src/engine/itypes";
@@ -68,11 +67,12 @@ describe("state serialization and combatant loading", () => {
         });
         const prepare = makeMove("prepare", "mouth", {
             targets: 0,
-            activate: (state) => addBinding(
-                state.characters[0],
-                restraint,
-                bindingThresholds.easy,
-            ),
+            resolve: (state) => [{
+                type: "binding",
+                target: state.characters[0],
+                binding: restraint,
+                amount: bindingThresholds.easy,
+            }],
         });
         const hero = makeCharacterDef("hero", [prepare]);
         const enemy = makeEnemyDef("foe", [makeWaitMove()]);
@@ -110,7 +110,12 @@ describe("state serialization and combatant loading", () => {
                 intention.targets.push({
                     target: "intruder",
                     result: "miss",
-                    effectiveness: 0,
+                    effects: [],
+                });
+                intention.effects.push({
+                    type: "damage",
+                    target: "intruder",
+                    amount: 1,
                 });
             }
         }
@@ -176,8 +181,9 @@ describe("state serialization and combatant loading", () => {
             targets: [{
                 target: character.id,
                 result: "hit",
-                effectiveness: expect.any(Number),
+                effects: [],
             }],
+            effects: [],
         });
         expect(serialized).not.toHaveProperty("nextEntityId");
         expect(serialized.characters[0].buffs[0]).not.toBe(characterBuff);

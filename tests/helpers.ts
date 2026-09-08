@@ -1,5 +1,4 @@
 import { expect } from "vitest";
-import { addBinding } from "../src/engine/bindings";
 import { GameEngine } from "../src/engine/engine";
 import { isCharacter } from "../src/engine/helpers";
 import type {
@@ -54,7 +53,7 @@ export function makeMove(
         targets: 1,
         type,
         accuracy: { hit: 100 },
-        activate: () => [],
+        resolve: () => [],
         ...overrides,
     };
 }
@@ -129,9 +128,11 @@ export function setupBoundEngine(
 ) {
     const setupMove = makeMove("apply-binding", "mouth", {
         target: "player",
-        activate: (_state, _actor, targets) => {
+        resolve: (_state, _actor, targets) => {
             const target = targets[0].target;
-            return isCharacter(target) ? addBinding(target, binding, amount) : [];
+            return isCharacter(target)
+                ? [{ type: "binding", target, binding, amount }]
+                : [];
         },
     });
     const armsMove = makeMove("arms-move", "arms");

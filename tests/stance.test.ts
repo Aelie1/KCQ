@@ -1,10 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { addBinding } from "../src/engine/bindings";
 import { BINDING_MAX, bindingThresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { isCharacter } from "../src/engine/helpers";
 import { immobilized, vibrating } from "../src/engine/status";
-import type { GameEvent } from "../src/engine/types";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -150,9 +148,19 @@ describe("standing stance", () => {
         const restraint = makeBindingDef("rope");
         const prepare = makeMove("prepare", "mouth", {
             targets: 0,
-            activate: (state): GameEvent[] => [
-                ...addBinding(state.characters[0], restraint, bindingThresholds.impossible),
-                ...addBinding(state.characters[1], restraint, bindingThresholds.impossible),
+            resolve: (state) => [
+                {
+                    type: "binding" as const,
+                    target: state.characters[0],
+                    binding: restraint,
+                    amount: bindingThresholds.impossible,
+                },
+                {
+                    type: "binding" as const,
+                    target: state.characters[1],
+                    binding: restraint,
+                    amount: bindingThresholds.impossible,
+                },
             ],
         });
         const helper = makeCharacterDef("helper", [prepare]);
@@ -260,10 +268,15 @@ describe("standing stance", () => {
         });
         const immobilize = makeMove("immobilize", "enemy", {
             target: "player",
-            activate: (_state, _actor, targets) => {
+            resolve: (_state, _actor, targets) => {
                 const target = targets[0].target;
                 return isCharacter(target)
-                    ? addBinding(target, immobilizingBinding, bindingThresholds.easy)
+                    ? [{
+                        type: "binding",
+                        target,
+                        binding: immobilizingBinding,
+                        amount: bindingThresholds.easy,
+                    } as const]
                     : [];
             },
         });
