@@ -28,7 +28,7 @@ const latexspray: DamageMoveDef = {
 export const skunkette: EnemyDef = {
     id: "skunkette",
     hp: 20,
-    defense: 10,
+    defense: 0,
     moves: [latexspray],
     passives: [],
     ai: function (state: iGameState, actor: iEnemy): GameAction {

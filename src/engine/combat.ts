@@ -1,9 +1,8 @@
 import { effectivenessRange } from "./constants";
-import { getIEntitySide } from "./helpers";
-import { iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
-import { canMove } from "./status";
+import { getIEntitySide, isCharacter } from "./helpers";
+import { iCharacter, iEnemy, iEntity, iGameState, MoveDef, TargetInfo } from "./itypes";
+import { canMove, getModifier } from "./status";
 import { AccuracyProfile, AccuracyResult, DamageEvent, DefeatEvent, GameEvent, StanceId } from "./types";
-import { TargetInfo } from "./itypes";
 
 export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
     if (targets.length !== move.targets) {
@@ -65,10 +64,153 @@ export function setStance(target: iCharacter, stance: StanceId): GameEvent[] {
     return events;
 }
 
+
 export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {
-    //This is where the magic will happen someday
-    return {...move.accuracy};
+    const base = move.accuracy;
+
+    // Every accuracy-bearing move should have a Hit band.
+    if (base.hit === undefined) {
+        throw new Error(`Move ${move.id} has an accuracy profile with no Hit band`);
+    }
+
+    const clamp = (value: number, min: number, max: number): number =>
+        Math.max(min, Math.min(max, value));
+
+    /*
+     * The authored accuracy bar represents performance against neutral Defense.
+     *
+     * Characters currently have no base Hit stat, so their status modifiers
+     * are relative to neutral accuracy.
+     *
+     * Enemies currently have no Hit modifiers, so they also begin at neutral.
+     */
+    let hitModifier = 0;
+
+    if (isCharacter(actor)) {
+        switch (move.type) {
+            case "arms":
+                hitModifier += getModifier(actor, "hitarms");
+                break;
+
+            case "mouth":
+                hitModifier += getModifier(actor, "hitmouth");
+                break;
+
+            case "legs":
+                hitModifier += getModifier(actor, "hitlegs");
+                break;
+
+            case "enemy":
+                break;
+        }
+    }
+
+    let defenseModifier = 0;
+
+    if (isCharacter(target)) {
+        defenseModifier = getModifier(target, "defense");
+    } else {
+        defenseModifier = target.currDef;
+    }
+
+    const delta = hitModifier - defenseModifier;
+
+    /*
+     * Work with cumulative boundaries:
+     *
+     * crit     = Crit width
+     * fullHit  = Hit + Crit
+     * contact  = Graze + Hit + Crit
+     *
+     * This makes it much easier to reshape the bar without changing
+     * the total away from 100.
+     */
+    const hasMiss = base.miss !== undefined;
+    const hasGraze = base.graze !== undefined;
+    const hasCrit = base.crit !== undefined;
+
+    const baseCrit = base.crit ?? 0;
+    const baseFullHit = base.hit + baseCrit;
+    const baseContact = (base.graze ?? 0) + baseFullHit;
+
+    /*
+     * Accuracy mostly changes ordinary reliability.
+     *
+     * Crit is deliberately harder to gain and easier to lose:
+     *
+     *   positive accuracy: +Crit at 1/4 rate
+     *   negative accuracy: -Crit at 2x rate
+     *
+     * An absent Crit band can never be created by generic accuracy.
+     */
+    let crit = 0;
+
+    if (hasCrit) {
+        const critDelta = delta >= 0
+            ? delta * 0.25
+            : delta * 2;
+
+        crit = clamp(baseCrit + critDelta, 0, 100);
+    }
+
+    /*
+     * Full hits react directly to accuracy.
+     * Mere contact reacts only half as strongly.
+     */
+    let fullHit = clamp(baseFullHit + delta, 0, 100);
+    let contact = clamp(baseContact + delta * 0.5, 0, 100);
+
+    // Crit must live inside the full-hit region.
+    crit = Math.min(crit, fullHit);
+
+    /*
+     * Preserve structural zero-width bands.
+     *
+     * No Graze band:
+     *     Hit transitions directly into Miss.
+     *
+     * No Miss band:
+     *     Accuracy can degrade Hit into Graze, but cannot create Miss.
+     *
+     * No Miss AND no Graze:
+     *     The move always fully connects; only Hit/Crit distribution changes.
+     */
+    if (!hasMiss && !hasGraze) {
+        fullHit = 100;
+        contact = 100;
+        crit = Math.min(crit, fullHit);
+    } else if (!hasGraze) {
+        contact = fullHit;
+    } else {
+        contact = clamp(contact, fullHit, 100);
+
+        if (!hasMiss) {
+            contact = 100;
+        }
+    }
+
+    /*
+     * Convert the cumulative boundaries back into individual widths.
+     */
+    const result: AccuracyProfile = {};
+
+    if (hasMiss) {
+        result.miss = 100 - contact;
+    }
+
+    if (hasGraze) {
+        result.graze = contact - fullHit;
+    }
+
+    result.hit = fullHit - crit;
+
+    if (hasCrit) {
+        result.crit = crit;
+    }
+
+    return result;
 }
+
 
 export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll: number): TargetInfo {
     const result: TargetInfo = { target: target, result: "miss", effectiveness: 0 };
