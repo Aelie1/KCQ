@@ -1,22 +1,21 @@
 import { encounterList } from "../content/content";
 import { calculateProgress, removeBinding } from "./bindings";
-import { calculateAccuracy, evaluateResult, isValidMove, setStance, updateIntentions } from "./combat";
+import { tickBuffs } from "./buffs";
+import { calculateAccuracy, evaluateResult, isValidMove, loadEnemy, setStance, updateIntentions } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
-import type { CharacterDef, EnemyDef, iEnemy, iEntity, iGameState } from "./itypes";
+import type { CharacterDef, EncounterDef, iEntity, iGameState, TargetInfo } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState, serializeMove } from "./serialize";
 import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove } from "./status";
 import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameAction, GameEvent, GameState } from "./types";
-import type { TargetInfo } from "./itypes";
-import { tickBuffs } from "./buffs";
 
 export class GameEngine {
     private state: iGameState;
-    private nextEntityId = 1;
     private seed: number;
     private rng: XorShift32;
+    private encounters: EncounterDef[];
 
-    constructor(seed?: number) {
+    constructor(encounters: EncounterDef[], seed?: number) {
         this.state = {
             turn: { round: 1, step: 1, phase: "player" },
             characters: [],
@@ -25,6 +24,7 @@ export class GameEngine {
         seed ??= Math.floor(Math.random() * 0x100000000)
         this.seed = seed;
         this.rng = new XorShift32(seed);
+        this.encounters = encounters;
     }
 
     getGameState(): GameState {
@@ -51,29 +51,15 @@ export class GameEngine {
         });
     }
 
-    loadEnemy(enemy: EnemyDef) : GameEvent[] {
-        const events: GameEvent[] = [];
-        this.state.enemies.push({
-            definition: enemy,
-            buffs: [],
-            id: enemy.id + this.nextEntityId++,
-            currHp: enemy.hp,
-            currDef: enemy.defense,
-            intention: null,
-        });
-        events.push({type:"enemySpawned",target:enemy.id});
-        return events;
-    }
-
     loadEncounter(id: EncounterId): GameEvent[] {
         const events: GameEvent[] = [];
-        const encounter = encounterList.find(x => x.id === id);
+        const encounter = this.encounters.find(x => x.id === id);
         if (!encounter) {
             events.push({type:"encounter",id:id,success:false});
             return events;
         }
         for (const enemy of encounter.enemies) {
-            events.push(...this.loadEnemy(enemy));
+            events.push(...loadEnemy(this.state,enemy));
         }
         if (encounter.setup) {
             encounter.setup(this.state);

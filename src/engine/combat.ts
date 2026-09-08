@@ -1,9 +1,24 @@
 import { effectivenessRange } from "./constants";
 import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
-import { iCharacter, iEnemy, iEntity, iGameState, MoveDef, TargetInfo } from "./itypes";
+import { EnemyDef, iCharacter, iEnemy, iEntity, iGameState, MoveDef, TargetInfo } from "./itypes";
 import { canMove, getModifier } from "./status";
 import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
 
+let nextEntityId = 0;
+
+export function loadEnemy(state: iGameState, enemy: EnemyDef) : GameEvent[] {
+    const events: GameEvent[] = [];
+    state.enemies.push({
+        definition: enemy,
+        buffs: [],
+        id: enemy.id + nextEntityId++,
+        currHp: enemy.hp,
+        currDef: enemy.defense,
+        intention: null,
+    });
+    events.push({type:"enemySpawned",target:enemy.id});
+    return events;
+}
 
 export function updateIntentions(state: iGameState) {
     for (const enemy of state.enemies) {

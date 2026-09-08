@@ -1,5 +1,5 @@
 import { ko } from "./content/characters/ko";
-import { skunkette } from "./content/skunk/skunkette";
+import { encounterList } from "./content/content";
 import { GameEngine } from "./engine/engine";
 import { GameAction } from "./engine/types";
 
@@ -13,7 +13,7 @@ function logAction(engine: GameEngine, action: GameAction) {
     console.dir(events, { depth: null, breakLength: 200 });
 }
 process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
-const engine = new GameEngine();
+const engine = new GameEngine(encounterList);
 engine.loadCharacter(ko);
 engine.loadEncounter("plains_1");
 let actions = engine.getActions("ko");
