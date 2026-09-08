@@ -15,7 +15,7 @@ function logAction(engine: GameEngine, action: GameAction) {
 process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
 const engine = new GameEngine(encounterList);
 engine.loadCharacter(ko);
-engine.loadEncounter("plains_1");
+console.dir(engine.loadEncounter("plains_1"));
 let actions = engine.getActions("ko");
 console.dir(actions, { depth: null, breakLength: 200 });
 console.log("~~State~~");

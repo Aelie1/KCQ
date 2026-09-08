@@ -4,6 +4,7 @@ export type iEntity = iCharacter | iEnemy;
 
 export interface iGameState {
     turn: Turn;
+    nextEntityId: number;
     characters: iCharacter[];
     enemies: iEnemy[];
 }

@@ -4,19 +4,19 @@ import { EnemyDef, iCharacter, iEnemy, iEntity, iGameState, MoveDef, TargetInfo 
 import { canMove, getModifier } from "./status";
 import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
 
-let nextEntityId = 0;
 
 export function loadEnemy(state: iGameState, enemy: EnemyDef) : GameEvent[] {
     const events: GameEvent[] = [];
+    const name = enemy.id + state.nextEntityId++;
     state.enemies.push({
         definition: enemy,
         buffs: [],
-        id: enemy.id + nextEntityId++,
+        id: name,
         currHp: enemy.hp,
         currDef: enemy.defense,
         intention: null,
     });
-    events.push({type:"enemySpawned",target:enemy.id});
+    events.push({type:"enemySpawned",target:name});
     return events;
 }
 
