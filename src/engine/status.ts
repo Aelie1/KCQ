@@ -12,7 +12,10 @@ export function getStatuses(target: iEntity): iStatus[] {
         for (const binding of target.bindings) {
             const bindingStatuses = binding.definition.status;
             const level = getBindingLevel(binding);
-            for (const bindingStatus of bindingStatuses[level]) {
+            if (bindingStatuses === undefined) {
+                continue;
+            }
+            for (const bindingStatus of bindingStatuses[level] ?? []) {
                 const characterStatus = statuses.find(x => x.definition === bindingStatus.definition);
                 if (characterStatus !== undefined) {
                     if (characterStatus.value < bindingStatus.value) {

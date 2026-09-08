@@ -1,7 +1,5 @@
-import { damageEnemy } from "../../engine/combat";
 import { isEnemy } from "../../engine/helpers";
-import { CharacterDef, DamageMoveDef, iEntity, iGameState, MoveDef, PassiveDef, iTargetInfo } from "../../engine/itypes";
-import { GameEvent } from "../../engine/types";
+import { CharacterDef, DamageMoveDef, iEffect, iEntity, iGameState, iTargetInfo, MoveDef, PassiveDef } from "../../engine/itypes";
 
 const telekinesis: DamageMoveDef = {
     id: "telekinesis",
@@ -9,13 +7,18 @@ const telekinesis: DamageMoveDef = {
     targets: 1,
     baseDamage: 10,
     type: "mouth",
-    activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
-        const events: GameEvent[] = []
-        const target = targets[0].target;
-        const effectiveness = targets[0].effectiveness;
-        if (isEnemy(target))
-            events.push(...damageEnemy(state, target, this.baseDamage * effectiveness));
-        return events;
+    resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
+        const effects: iEffect[] = []
+        for (const target of targets) {
+            if (isEnemy(target.target)) {
+                effects.push({
+                    type: "damage",
+                    target: target.target,
+                    amount: (this.baseDamage * target.effectiveness)
+                });
+            }
+        }
+        return effects;
     },
     accuracy: {
         miss: 10,
@@ -32,14 +35,18 @@ const fairypunch: DamageMoveDef = {
     targets: "all",
     baseDamage: 10,
     type: "arms",
-    activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
-        const events: GameEvent[] = []
+    resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
+        const effects: iEffect[] = []
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                events.push(...damageEnemy(state, target.target, this.baseDamage * target.effectiveness));
+                effects.push({
+                    type: "damage",
+                    target: target.target,
+                    amount: (this.baseDamage * target.effectiveness)
+                });
             }
         }
-        return events;
+        return effects;
     },
     accuracy: {
         miss: 10,
@@ -55,7 +62,7 @@ const starlight: MoveDef = {
     target: "enemy",
     targets: 0,
     type: "mouth",
-    activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
+    resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
         console.log("used starlight");
         return [];
     },

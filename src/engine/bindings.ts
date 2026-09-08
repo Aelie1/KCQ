@@ -7,7 +7,6 @@ import { BindingId, BondageEvent, GameEvent } from "./types";
 export function addBinding(target: iCharacter, type: BindingDef, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
     const event: BondageEvent = { type: "bondageChanged", target: target.id, binding: type.id, amount: 0 };
-    const intAmount = Math.ceil(amount);
     let binding = findBinding(target, type.id);
     if (!binding) {
         //character doesnt have it, let's add it
@@ -16,16 +15,14 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
         event.type = "bondageAdded";
     }
     let origLevel = binding.value;
-    let newAmount = intAmount;
     //bondage above 80 is reduced by 90%
     if (origLevel > bindingThresholds.impossible) {
-        newAmount = intAmount * 0.1;
+        binding.value += Math.ceil(amount * 0.1);
     } else {
-        const toThreshold = Math.min(newAmount, bindingThresholds.impossible - origLevel);
-        const overflow = newAmount - toThreshold;
-        newAmount = toThreshold + overflow * 0.1;
+        const toThreshold = Math.min(amount, bindingThresholds.impossible - origLevel);
+        const overflow = amount - toThreshold;
+        binding.value += Math.ceil(toThreshold + overflow * 0.1);
     }
-    binding.value += Math.ceil(newAmount);
     if (binding.value > BINDING_MAX) {
         binding.value = BINDING_MAX;
     }

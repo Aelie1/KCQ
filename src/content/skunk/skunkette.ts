@@ -1,22 +1,28 @@
-import { addBinding } from "../../engine/bindings";
 import { isCharacter } from "../../engine/helpers";
-import { DamageMoveDef, EnemyAction, EnemyDef, iEnemy, iEntity, iGameState, iTargetInfo } from "../../engine/itypes";
-import { PlayerAction, GameEvent } from "../../engine/types";
-import { latexarms } from "./latex";
+import { BindingMoveDef, EnemyAction, EnemyDef, iEffect, iEnemy, iEntity, iGameState, iTargetInfo } from "../../engine/itypes";
+import { latexarms as latexArms, latexbindings as latexBindings } from "./latex";
 
-const latexspray: DamageMoveDef = {
-    activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
-        const events: GameEvent[] = []
-        const target = targets[0].target;
-        const effectiveness = targets[0].effectiveness;
-        if (isCharacter(target))
-            events.push(...addBinding(target, latexarms, this.baseDamage*effectiveness));
-        return events;
+const latexSpray: BindingMoveDef = {
+    resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
+        const effects: iEffect[] = []
+        for (const target of targets) {
+            if (isCharacter(target.target)) {
+                effects.push({
+                    type:"binding",
+                    target:target.target,
+                    binding:this.binding,
+                    amount:this.baseDamage*target.effectiveness
+                });
+            }
+        }
+        return effects;
     },
-    id: "latexspray",
+    id: "latexSpray",
+    displayId: "latexSpray",
     target: "player",
     targets: 1,
     baseDamage: 20,
+    binding: latexBindings,
     accuracy: {
         miss: 10,
         graze: 25,
@@ -25,15 +31,23 @@ const latexspray: DamageMoveDef = {
     type: "enemy"
 };
 
+
+const latexSprayArms: BindingMoveDef = {
+    ...latexSpray,
+    id:"latexSprayArms",
+    displayId:"latexSpray",
+    binding: latexArms
+};
+
 export const skunkette: EnemyDef = {
     id: "skunkette",
     hp: 20,
     defense: 0,
-    moves: [latexspray],
+    moves: [latexSprayArms],
     passives: [],
     ai: function (state: iGameState, actor: iEnemy): EnemyAction {
         const target = state.characters[0]; //this becomes random later
-        const move = actor.definition.moves[0]; //this becomes smarter later, pounce->spray, mist, etc
+        const move = this.moves[0]; //this becomes smarter later, pounce->spray, mist, etc
         return { actor: actor, targets: [target], move: move };
     }
 }

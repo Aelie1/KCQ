@@ -1,4 +1,4 @@
-import { AccuracyProfile, AccuracyResult, Binding, BindingLevel, Buff, Character, Enemy, EntitySide, PlayerAction, GameEvent, GameState, Intention, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn, AttackAction } from "./types";
+import { AccuracyProfile, Binding, BindingEffect, BindingId, BindingLevel, Buff, BuffEffect, Character, DamageEffect, Enemy, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -59,7 +59,7 @@ export interface EnemyAction {
  * Buffs
  *******************************************************/
 
-export interface iBuff extends Omit<Buff,"statuses"> {
+export interface iBuff extends Omit<Buff, "statuses"> {
     statuses: iStatus[];
 }
 
@@ -68,7 +68,7 @@ export interface iBuff extends Omit<Buff,"statuses"> {
  *******************************************************/
 export interface MoveDef extends Move {
     accuracy: AccuracyProfile;
-    activate: (state: iGameState, actor: iEntity, targets: iTargetInfo[]) => GameEvent[];
+    resolve: (state: iGameState, actor: iEntity, targets: iTargetInfo[]) => iEffect[];
     isValid?: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;
 }
 
@@ -76,8 +76,39 @@ export interface DamageMoveDef extends MoveDef {
     baseDamage: number;
 }
 
-export interface iTargetInfo extends Omit<TargetInfo,"target"> {
+export interface BindingMoveDef extends MoveDef {
+    displayId: BindingId;
+    baseDamage: number;
+    binding: BindingDef;
+}
+
+export interface iTargetInfo extends Omit<TargetInfo, "target" | "effects"> {
     target: iEntity;
+    effectiveness: number;
+}
+
+/*******************************************************
+ * Effects
+ *******************************************************/
+
+export type iEffect =
+    | iDamageEffect
+    | iBindingEffect
+    | iBuffEffect;
+
+export interface iDamageEffect extends Omit<DamageEffect, "target"> {
+    target: iEnemy;
+}
+
+export interface iBindingEffect  extends Omit<BindingEffect, "target" | "binding"> {
+    target: iCharacter;
+    binding: BindingDef;
+}
+
+export interface iBuffEffect extends Omit<BuffEffect, "source" | "target" | "buff">  {
+    source: iEntity;
+    target: iEntity;
+    buff: iBuff;
 }
 
 /*******************************************************
@@ -101,8 +132,8 @@ export interface iBinding extends Omit<Binding, "level"> {
 
 export interface BindingDef {
     id: string;
-    status: Record<BindingLevel, iStatus[]>;
-    initialState: Record<string,number>;
+    status?: Partial<Record<BindingLevel, iStatus[]>>;
+    initialState?: Record<string, number>;
     onBindingAdd?: (binding: iBinding) => void;
 }
 

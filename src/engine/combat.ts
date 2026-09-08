@@ -1,8 +1,10 @@
+import { addBinding } from "./bindings";
+import { addBuff } from "./buffs";
 import { effectivenessRange } from "./constants";
-import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
-import { EnemyDef, iCharacter, iEnemy, iEntity, iGameState, MoveDef, iTargetInfo, iIntention } from "./itypes";
+import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
+import { EnemyDef, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iTargetInfo, MoveDef } from "./itypes";
 import { canMove, getModifier } from "./status";
-import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId, TargetInfo } from "./types";
+import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
 
 
 export function loadEnemy(state: iGameState, enemy: EnemyDef): GameEvent[] {
@@ -40,12 +42,11 @@ export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[
 
 export function damageEnemy(state: iGameState, target: iEnemy, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
-    const intAmount = Math.ceil(amount);
-    target.currHp -= intAmount;
+    target.currHp -= amount;
     const event: DamageEvent = {
         type: "damage",
         target: target.id,
-        amount: intAmount
+        amount: amount
     };
     events.push(event);
     if (target.currHp <= 0) {
@@ -84,6 +85,46 @@ export function setStance(target: iCharacter, stance: StanceId): GameEvent[] {
     return events;
 }
 
+export function resolveMove (state:iGameState, move: MoveDef, actor: iEntity, targets: iTargetInfo[]) : iEffect[] {
+    const effects:iEffect[] = move.resolve(state, actor, targets);
+    return effects.map(normalizeEffect);
+}
+
+export function normalizeEffect(effect: iEffect): iEffect {
+    switch(effect.type) {
+        case "binding":
+        case "damage":
+            return {
+                ...effect,
+                amount: Math.ceil(effect.amount)
+            }
+        default:
+            return effect;
+    }
+}
+
+export function processEffects(state: iGameState, effects: iEffect[]) : GameEvent[] {
+    const events: GameEvent[] = [];
+
+    for (const effect of effects) {
+        if (!isValidEntity(state, effect.target)) {
+            continue;
+        }
+        switch (effect.type) {
+            case "binding":
+                events.push(...addBinding(effect.target,effect.binding,effect.amount))
+                break;
+            case "buff":
+                events.push(...addBuff(effect.source,effect.target,effect.buff))
+                break;
+            case "damage":
+                events.push(...damageEnemy(state,effect.target,effect.amount))
+                break;
+        }
+    }
+
+    return events;
+}
 
 export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     const targets: iTargetInfo[] = [];

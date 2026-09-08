@@ -1,4 +1,4 @@
-import { isCharacter, isEnemy } from "./helpers";
+import { isEnemy } from "./helpers";
 import { iBuff, iEntity, iGameState } from "./itypes";
 import { GameEvent } from "./types";
 

@@ -49,12 +49,13 @@ export interface Enemy {
 export interface Intention {
     move: MoveId;
     targets: TargetInfo[];
+    effects: Effect[];  //this is any effects not attached to a target
 }
 
 export interface TargetInfo {
     target: EntityId;
     result: AccuracyResult; //What band is it in
-    effectiveness: number; //How strong is the hit?
+    effects: Effect[];
 }
 
 /*******************************************************
@@ -72,6 +73,35 @@ export interface Buff {
 export type BuffId = string;
 
 export type BuffLength = number | "infinite";
+
+/*******************************************************
+ * Effects
+ *******************************************************/
+export type Effect =
+    | DamageEffect
+    | BindingEffect
+    | BuffEffect;
+
+export interface DamageEffect {
+    type: "damage";
+    target: EntityId;
+    amount: number;
+}
+
+export interface BindingEffect {
+    type: "binding";
+    target: EntityId;
+    binding: BindingId;
+    amount: number;
+}
+
+export interface BuffEffect {
+    type: "buff";
+    source: EntityId;
+    target: EntityId;
+    buff: BuffId;
+}
+
 
 /*******************************************************
  * Passives
@@ -150,15 +180,15 @@ export type StatusId =
     | "stunned"
     | "incapacitated";
 
-export type ModifierId = 
-    | "hitarms" 
-    | "hitmouth" 
-    | "hitlegs" 
-    | "hit" 
-    | "defense" 
-    | "escape" 
-    | "enemyeffect" 
-    | "traps" 
+export type ModifierId =
+    | "hitarms"
+    | "hitmouth"
+    | "hitlegs"
+    | "hit"
+    | "defense"
+    | "escape"
+    | "enemyeffect"
+    | "traps"
     | "willpower"
 
 
@@ -233,22 +263,16 @@ export type ActionFailureReason =
  * Events
  ********************************************************/
 
-export type GameEvent = MoveEvent | AccuracyEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent;
+export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
     actor: EntityId;
     move: MoveId;
-    targets: EntityId[];
-}
-
-export interface AccuracyEvent {
-    type: "accuracyResult";
-    actor: EntityId;
-    move: MoveId;
-    target: EntityId;
-    result: AccuracyResult;
-    effectiveness: number;
+    targets: { 
+        target: EntityId, 
+        result: AccuracyResult 
+    }[];
 }
 
 export interface DamageEvent {

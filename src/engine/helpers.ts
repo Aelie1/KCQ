@@ -44,12 +44,18 @@ export function getIEntitySide(entity: iEntity): EntitySide {
     return (isCharacter(entity)) ? "player" : "enemy";
 }
 
+export function isValidEntity(state: iGameState, entity: iEntity): boolean {
+    if (isCharacter(entity))
+        return state.characters.includes(entity)
+    else 
+        return state.enemies.includes(entity);
+}
 
-export function isCharacter(entity: iCharacter | iEnemy): entity is iCharacter {
+export function isCharacter(entity: iEntity): entity is iCharacter {
     return "bindings" in entity;
 }
 
-export function isEnemy(entity: iCharacter | iEnemy): entity is iEnemy {
+export function isEnemy(entity: iEntity): entity is iEnemy {
     return "currHp" in entity;
 }
 

@@ -1,8 +1,8 @@
-import { calculateAccuracy, evaluateIntention, evaluateResult } from "./combat";
+import { evaluateIntention, resolveMove } from "./combat";
 import { getBindingLevel } from "./helpers";
-import type { iBinding, iBuff, iCharacter, iEnemy, iGameState, iIntention, iStatus, iTargetInfo, MoveDef } from "./itypes";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, MoveDef } from "./itypes";
 import { getStatuses } from "./status";
-import type { Binding, Buff, Character, Enemy, PlayerAction, GameState, Move, Status, Intention, TargetInfo } from "./types";
+import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     const { nextEntityId, ..._state } = state;
@@ -11,7 +11,7 @@ export function serializeGameState(state: iGameState): GameState {
         ..._state,
         turn: { ...state.turn },
         characters: state.characters.map(serializeCharacter),
-        enemies: state.enemies.map(serializeEnemy),
+        enemies: state.enemies.map(enemy => serializeEnemy(state, enemy)),
     };
 }
 
@@ -28,26 +28,52 @@ function serializeCharacter(character: iCharacter): Character {
 
 }
 
-function serializeEnemy(enemy: iEnemy): Enemy {
+function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
     const { definition, ..._enemy } = enemy;
     return {
         ..._enemy,
-        intention: enemy.intention ? serializeIntention(enemy.intention) : null,
+        intention: enemy.intention ? serializeIntention(state, enemy.intention) : null,
         buffs: enemy.buffs.map(serializeBuff)
     };
 }
 
-function serializeIntention(intention: iIntention): Intention {
+function serializeIntention(state: iGameState, intention: iIntention): Intention {
+    const iTargets = evaluateIntention(intention);
+    const targets: TargetInfo[] = [];
+    let effects = resolveMove(state, intention.action.move, intention.action.actor, iTargets);
+    for (const iTarget of iTargets) {
+        const tEffects = effects.filter(x => x.target === iTarget.target);
+        targets.push({ target: iTarget.target.id, result: iTarget.result, effects: tEffects.map(serializeEffect) })
+        effects = effects.filter(x => x.target !== iTarget.target);
+    }
+
     return {
         move: intention.action.move.id,
-        targets: evaluateIntention(intention).map(serializeTarget)
+        targets: targets,
+        effects: effects.map(serializeEffect)
     }
 }
 
-function serializeTarget(target: iTargetInfo): TargetInfo {
-    return {
-        ...target,
-        target: target.target.id,
+function serializeEffect(effect: iEffect): Effect {
+    switch (effect.type) {
+        case "binding":
+            return {
+                ...effect,
+                target: effect.target.id,
+                binding: effect.binding.id
+            };
+        case "buff":
+            return {
+                ...effect,
+                source: effect.source.id,
+                target: effect.target.id,
+                buff: effect.buff.id
+            }
+        case "damage":
+            return {
+                ...effect,
+                target: effect.target.id,
+            }
     }
 }
 

@@ -1,11 +1,14 @@
 import { BindingDef, iBinding } from "../../engine/itypes";
 import { bound } from "../../engine/status";
 
+export const latexbindings: BindingDef = {
+    id: "latexbindings",
+    status: {}
+}
+
 export const latexarms: BindingDef = {
     id: "latexarms",
     status: {
-        none:       [],
-        easy:       [],
         medium:     [{definition:bound,value:1}],
         hard:       [{definition:bound,value:2}],
         extreme:    [{definition:bound,value:3}],

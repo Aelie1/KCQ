@@ -1,12 +1,12 @@
 import { calculateProgress, removeBinding } from "./bindings";
 import { tickBuffs } from "./buffs";
-import { calculateAccuracy, evaluateIntention, evaluateResult, isValidMove, loadEnemy, setStance, updateIntention } from "./combat";
-import { findBinding, findCharacter, findEntity, findMove, getIEntitySide, isCharacter } from "./helpers";
-import type { CharacterDef, EncounterDef, EnemyAction, iEntity, iGameState, iIntention, iTargetInfo } from "./itypes";
+import { calculateAccuracy, evaluateIntention, evaluateResult, isValidMove, loadEnemy, processEffects, resolveMove, setStance, updateIntention } from "./combat";
+import { findBinding, findCharacter, findEntity, findMove } from "./helpers";
+import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTargetInfo } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState, serializeMove } from "./serialize";
 import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove, isSkipped } from "./status";
-import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, PlayerAction, GameEvent, GameState } from "./types";
+import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameEvent, GameState, PlayerAction } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -200,22 +200,13 @@ export class GameEngine {
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move
-                events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => x.target.id) })
-                for (const target of targets) {
-                    events.push({
-                        type: "accuracyResult",
-                        actor: actor.id,
-                        target: target.target.id,
-                        move: move.id,
-                        result: target.result,
-                        effectiveness: target.effectiveness
-                    })
-                }
+                events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({target: x.target.id, result: x.result})) })
                 const successfulTargets = targets.filter(
                     target => target.result !== "miss"
                 );
                 if (move.targets === 0 || successfulTargets.length > 0) {
-                    events.push(...move.activate(this.state, actor, successfulTargets));
+                    const effects = resolveMove(this.state, move, actor, successfulTargets);
+                    events.push(...processEffects(this.state, effects));
                 }
                 actor.acted = true;
                 this.state.turn.step++;
@@ -367,22 +358,13 @@ export class GameEngine {
         const targets: iTargetInfo[] = (move.targets > 0) ? evaluateIntention(intention) : [];
 
         //Now we have a valid actor, targets and move -- execute the move
-        events.push({ type: "moveUsed", actor: actor.id, move: move.id, targets: targets.map(x => x.target.id) })
-        for (const target of targets) {
-            events.push({
-                type: "accuracyResult",
-                actor: actor.id,
-                target: target.target.id,
-                move: move.id,
-                result: target.result,
-                effectiveness: target.effectiveness
-            })
-        }
+        events.push({ type: "moveUsed", actor: actor.id, move: move.id, targets: targets.map(x => ({target: x.target.id, result: x.result})) })
         const successfulTargets = targets.filter(
             target => target.result !== "miss"
         );
         if (move.targets === 0 || successfulTargets.length > 0) {
-            events.push(...move.activate(this.state, actor, successfulTargets));
+            const effects = resolveMove(this.state, move, actor, successfulTargets);
+            events.push(...processEffects(this.state,effects));
         }
         this.state.turn.step++;
         return {
