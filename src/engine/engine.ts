@@ -364,12 +364,7 @@ export class GameEngine {
             };
         }
 
-        const targets: iTargetInfo[] = [];
-        if (move.targets > 0) {
-            for (const target of targetStates) {
-                targets.push(...evaluateIntention(intention))
-            }
-        }
+        const targets: iTargetInfo[] = (move.targets > 0) ? evaluateIntention(intention) : [];
 
         //Now we have a valid actor, targets and move -- execute the move
         events.push({ type: "moveUsed", actor: actor.id, move: move.id, targets: targets.map(x => x.target.id) })

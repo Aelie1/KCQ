@@ -14,7 +14,7 @@ const telekinesis: DamageMoveDef = {
         const target = targets[0].target;
         const effectiveness = targets[0].effectiveness;
         if (isEnemy(target))
-            events.push(...damageEnemy(state, target, this.baseDamage*effectiveness));
+            events.push(...damageEnemy(state, target, this.baseDamage * effectiveness));
         return events;
     },
     accuracy: {
@@ -34,10 +34,11 @@ const fairypunch: DamageMoveDef = {
     type: "arms",
     activate: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): GameEvent[] {
         const events: GameEvent[] = []
-        const target = targets[0].target;
-        const effectiveness = targets[0].effectiveness;
-        if (isEnemy(target))
-            events.push(...damageEnemy(state, target, this.baseDamage*effectiveness));
+        for (const target of targets) {
+            if (isEnemy(target.target)) {
+                events.push(...damageEnemy(state, target.target, this.baseDamage * target.effectiveness));
+            }
+        }
         return events;
     },
     accuracy: {
