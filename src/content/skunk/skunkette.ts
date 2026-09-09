@@ -21,7 +21,7 @@ const latexSpray: BindingMoveDef = {
     displayId: "latexSpray",
     target: "player",
     targets: 1,
-    baseDamage: 20,
+    baseDamage: 15,
     binding: latexBindings,
     accuracy: {
         miss: 10,

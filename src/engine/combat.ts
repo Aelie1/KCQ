@@ -307,7 +307,7 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
                 if (band !== "miss") {
                     const [min, max] = effectivenessRange[band];
                     const effect = (roll - cumulative) / value;
-                    result.effectiveness = min + (max - min) * effect;
+                    result.effectiveness = (min + (max - min) * effect) * (1 + getModifier(target,"effect") * EFFECT_MODIFIER);
                 }
                 return result;
             }
