@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { latexarms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import type { BindingDef } from "../src/engine/itypes";
 import type { StatusDef } from "../src/engine/itypes";
+import type { Effect } from "../src/engine/types";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -43,12 +45,25 @@ function setupEscapeScenario(
     return engine;
 }
 
-function escapeAmount(engine: GameEngine, actor: string, target: string, binding: string): number {
+function escapeEffects(engine: GameEngine, actor: string, target: string, binding: string): Effect[] {
     const option = engine.getEscapes(actor)?.options.find(
         (candidate) => candidate.target === target && candidate.binding === binding,
     );
     if (!option) throw new Error(`Expected ${actor} to have an escape for ${target}/${binding}`);
-    return option.amount;
+    return option.effects;
+}
+
+function escapeAmount(engine: GameEngine, actor: string, target: string, binding: string): number {
+    const effect = escapeEffects(engine, actor, target, binding).find(
+        (candidate) => candidate.type === "binding"
+            && candidate.target === target
+            && candidate.binding === binding
+            && candidate.amount < 0,
+    );
+    if (!effect || effect.type !== "binding") {
+        throw new Error(`Expected ${actor} to remove ${target}/${binding}`);
+    }
+    return -effect.amount;
 }
 
 describe("escape progress", () => {
@@ -125,6 +140,13 @@ describe("escape progress", () => {
         const before = engine.getGameState().characters[0].bindings[0].value;
         const amount = escapeAmount(engine, "hero", "hero", restraint.id);
 
+        expect(escapeEffects(engine, "hero", "hero", restraint.id)).toEqual([{
+            type: "binding",
+            target: "hero",
+            binding: restraint.id,
+            amount: -amount,
+        }]);
+
         const result = engine.executeAction({
             type: "escape",
             actor: "hero",
@@ -151,6 +173,58 @@ describe("escape progress", () => {
             target: "hero",
             binding: restraint.id,
         })).toEqual({ success: false, reason: "actorAlreadyActed" });
+    });
+
+    it("previews and applies additional effects produced by an escape", () => {
+        const engine = setupEscapeScenario(
+            "hero",
+            ["hero"],
+            [{ target: "hero", binding: latexarms, amount: thresholds.hard }],
+        );
+
+        expect(escapeEffects(engine, "hero", "hero", latexarms.id)).toEqual([
+            {
+                type: "binding",
+                target: "hero",
+                binding: "latexarms",
+                amount: -18,
+            },
+            {
+                type: "binding",
+                target: "hero",
+                binding: "latexhead",
+                amount: 5,
+            },
+        ]);
+
+        const result = engine.executeAction({
+            type: "escape",
+            actor: "hero",
+            target: "hero",
+            binding: latexarms.id,
+        });
+
+        expect(result).toMatchObject({
+            success: true,
+            events: [
+                {
+                    type: "bondageChanged",
+                    target: "hero",
+                    binding: "latexarms",
+                    amount: -18,
+                },
+                {
+                    type: "bondageAdded",
+                    target: "hero",
+                    binding: "latexhead",
+                    amount: 5,
+                },
+            ],
+        });
+        expect(engine.getGameState().characters[0].bindings).toEqual([
+            expect.objectContaining({ id: "latexarms", value: 12 }),
+            expect.objectContaining({ id: "latexhead", value: 5 }),
+        ]);
     });
 
     it.each([

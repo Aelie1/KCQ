@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { PassThrough } from "node:stream";
 import { runConsoleClient } from "../src/console/client";
 import { formatEvents, formatIntention } from "../src/console/format";
@@ -162,6 +162,16 @@ describe("console formatting", () => {
     it("refreshes stance and bonus-escape menus in place", async () => {
         const restraint = makeBindingDef("rope");
         const { engine } = setupBoundEngine(restraint, thresholds.impossible);
+        const getEscapes = engine.getEscapes.bind(engine);
+        const previewedAmounts: number[] = [];
+        vi.spyOn(engine, "getEscapes").mockImplementation((actor) => {
+            const escapes = getEscapes(actor);
+            const removal = escapes?.options[0]?.effects.find(
+                (effect) => effect.type === "binding" && effect.amount < 0,
+            );
+            if (removal?.type === "binding") previewedAmounts.push(removal.amount);
+            return escapes;
+        });
 
         const rendered = await runScriptedConsole(
             engine,
@@ -172,10 +182,8 @@ describe("console formatting", () => {
         expect(rendered).toContain("Change stance -> moving");
         expect(rendered.match(/Choose an action for hero\./g) ?? []).toHaveLength(2);
         expect(rendered.match(/Choose an escape for hero\./g) ?? []).toHaveLength(2);
-        const escapeAmounts = [...rendered.matchAll(/\[1\] hero - rope \(-(\d+)\)/g)]
-            .map((match) => Number(match[1]));
-        expect(escapeAmounts).toHaveLength(2);
-        expect(escapeAmounts[1]).not.toBe(escapeAmounts[0]);
+        expect(rendered.match(/\[1\] hero - rope/g) ?? []).toHaveLength(2);
+        expect(new Set(previewedAmounts).size).toBe(2);
         expect(rendered).not.toContain("Who should hero free?");
         expect(rendered).not.toContain("Choose a binding on hero.");
         expect(engine.getGameState().turn.round).toBe(3);
