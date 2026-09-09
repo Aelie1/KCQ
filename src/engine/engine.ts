@@ -141,6 +141,10 @@ export class GameEngine {
                     available = false;
                     reason = result.reason;
                 }
+                else if (!move.alwaysAvailable && !canAttack(character)) {
+                    available = false,
+                    reason = "attackUnavailable"
+                }
                 else if (!canUseMoveType(character, move.type)) {
                     available = false;
                     reason = "bindingRestriction";
@@ -195,7 +199,7 @@ export class GameEngine {
     }
 
     getAccuracyPreview(actor: EntityId, target: EntityId, move: MoveId): AccuracyProfile | null {
-        const actorState = findEntity(this.state, actor);
+        const actorState = findCharacter(this.state, actor);
         const targetState = findEntity(this.state, target);
 
         if (!actorState || !targetState) {
@@ -255,6 +259,13 @@ export class GameEngine {
                 }
 
                 const move = { ...foundMove };
+                if (!move.alwaysAvailable && !canAttack(actor)) {
+                    return {
+                        success: false,
+                        reason: "attackUnavailable"
+                    };
+                }
+
                 if (!canUseMoveType(actor, move.type)) {
                     return {
                         success: false,

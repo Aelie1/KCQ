@@ -15,7 +15,7 @@ export function findEntity(state: iGameState, id: EntityId): iCharacter | iEnemy
     return findCharacter(state, id) ?? findEnemy(state, id);
 }
 
-export function findMove(entity: iEntity, id: MoveId): MoveDef | undefined {
+export function findMove(entity: iCharacter, id: MoveId): MoveDef | undefined {
     return getMoves(entity).find(move => move.id === id);
 }
 
@@ -23,6 +23,6 @@ export function findBinding(entity: iCharacter, id: BindingId): iBinding | undef
     return entity.bindings.find(binding => binding.id === id);
 }
 
-export function findBuff(entity: iEntity, id: BuffId): iBuff[] | undefined {
-    return entity.buffs.filter(buff => buff.id === id);
+export function findBuff(entity: iEntity, id: BuffId): iBuff | undefined {
+    return entity.buffs.find(buff => buff.id === id);
 }

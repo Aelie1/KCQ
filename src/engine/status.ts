@@ -1,5 +1,4 @@
-import { isCharacter } from "./helpers";
-import { getBindingLevel } from "./helpers";
+import { getBindingLevel, isCharacter } from "./helpers";
 import { iCharacter, iEntity, iStatus, StatusDef } from "./itypes";
 import { ActionFailure, ActionType, ModifierId, MoveType } from "./types";
 
@@ -29,7 +28,7 @@ export function getStatuses(target: iEntity): iStatus[] {
         }
     }
     for (const buff of target.buffs) {
-        if (!buff.active) {
+        if (!buff.active || buff.statuses === undefined) {
             continue;
         }
         for (const buffStatus of buff.statuses) {
@@ -54,6 +53,13 @@ export function getModifier(target: iEntity, id: ModifierId): number {
     for (const status of statuses) {
         const level = status.definition.levels[status.value];
         amount += level.modifiers?.[id] ?? 0;
+    }
+    for (const buff of target.buffs) {
+        if (buff.modifiers === undefined) {
+            continue;
+        }
+        const level = buff.modifiers[id];
+        amount += level ?? 0;
     }
     return amount;
 }
@@ -81,14 +87,6 @@ export function canAct(actor: iCharacter, type: ActionType): ActionFailure | und
     }
 
     switch (type) {
-        case "attack":
-            if (!canAttack(actor)) {
-                return {
-                    success: false,
-                    reason: "attackUnavailable"
-                };
-            }
-            break;
         case "escape":
             if (!canEscape(actor)) {
                 return {
@@ -209,8 +207,8 @@ export const bound: StatusDef = {
     id: "bound",
     levels: [
         {},
-        { modifiers: { hitarms: -20 } },
-        { modifiers: { hitarms: -40 } },
+        { modifiers: { hitarms: -2 } },
+        { modifiers: { hitarms: -4 } },
         { blockedMoveTypes: ["arms"], blocksAssist: true },
         { blockedMoveTypes: ["arms"], blocksAssist: true, modifiers: { escape: -1 } }
     ]
@@ -220,8 +218,8 @@ export const gagged: StatusDef = {
     id: "gagged",
     levels: [
         {},
-        { modifiers: { hitmouth: -20 } },
-        { modifiers: { hitmouth: -40 } },
+        { modifiers: { hitmouth: -2 } },
+        { modifiers: { hitmouth: -4 } },
         { blockedMoveTypes: ["mouth"] },
         { blockedMoveTypes: ["mouth"], modifiers: { escape: -1 } }
     ]
@@ -231,10 +229,10 @@ export const hobbled: StatusDef = {
     id: "hobbled",
     levels: [
         {},
-        { modifiers: { defense: -10, traps: -1, hitlegs: -20 } },
-        { modifiers: { defense: -20, traps: -2, hitlegs: -40 } },
-        { modifiers: { defense: -30, traps: -3 }, blockedMoveTypes: ["legs"] },
-        { modifiers: { defense: -40, traps: -4, escape: -1 }, blockedMoveTypes: ["legs"] }
+        { modifiers: { defense: -1, traps: -1, hitlegs: -2 } },
+        { modifiers: { defense: -2, traps: -2, hitlegs: -4 } },
+        { modifiers: { defense: -3, traps: -3 }, blockedMoveTypes: ["legs"] },
+        { modifiers: { defense: -4, traps: -4, escape: -1 }, blockedMoveTypes: ["legs"] }
     ]
 }
 
@@ -264,10 +262,10 @@ export const breathless: StatusDef = {
     id: "breathless",
     levels: [
         {},
-        { modifiers: { defense: -10 } },
-        { modifiers: { defense: -20 } },
-        { modifiers: { defense: -30 } },
-        { modifiers: { defense: -40 } }
+        { modifiers: { defense: -1 } },
+        { modifiers: { defense: -2 } },
+        { modifiers: { defense: -3 } },
+        { modifiers: { defense: -4 } }
     ]
 }
 
@@ -275,10 +273,10 @@ export const blinded: StatusDef = {
     id: "blinded",
     levels: [
         {},
-        { modifiers: { hit: -10 } },
-        { modifiers: { hit: -20 } },
-        { modifiers: { hit: -30, defense: -10 } },
-        { modifiers: { hit: -40, defense: -20 } }
+        { modifiers: { hit: -1 } },
+        { modifiers: { hit: -2 } },
+        { modifiers: { hit: -3, defense: -1 } },
+        { modifiers: { hit: -4, defense: -2 } }
     ]
 }
 

@@ -1,7 +1,7 @@
 import { addBinding, removeBinding } from "./bindings";
 import { addBuff } from "./buffs";
-import { EFFECT_MODIFIER, effectivenessRange } from "./constants";
-import { isCharacter, isEnemy, isValidEntity } from "./helpers";
+import { DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
+import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
 import { EnemyDef, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iTargetInfo, MoveDef } from "./itypes";
 import { canMove, getModifier } from "./status";
 import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
@@ -71,7 +71,7 @@ export function setStance(target: iCharacter, stance: StanceId): GameEvent[] {
     return events;
 }
 
-export function processEffects(state: iGameState, effects: iEffect[]) : GameEvent[] {
+export function processEffects(state: iGameState, effects: iEffect[]): GameEvent[] {
     const events: GameEvent[] = [];
 
     for (const effect of effects) {
@@ -81,16 +81,16 @@ export function processEffects(state: iGameState, effects: iEffect[]) : GameEven
         switch (effect.type) {
             case "binding":
                 if (effect.amount > 0) {
-                    events.push(...addBinding(effect.target,effect.binding,effect.amount))
+                    events.push(...addBinding(effect.target, effect.binding, effect.amount))
                 } else {
-                    events.push(...removeBinding(effect.target,effect.binding,-effect.amount))
+                    events.push(...removeBinding(effect.target, effect.binding, -effect.amount))
                 }
                 break;
             case "buff":
-                events.push(...addBuff(effect.source,effect.target,effect.buff))
+                events.push(...addBuff(effect.source, effect.target, effect.buff))
                 break;
             case "damage":
-                events.push(...damageEnemy(state,effect.target,effect.amount))
+                events.push(...damageEnemy(state, effect.target, effect.amount))
                 break;
         }
     }
@@ -130,28 +130,33 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
      * are relative to neutral accuracy.
      *
      */
-    let hitModifier = getModifier(actor, "hit");
+    let hitModifier = getModifier(actor, "hit") * HIT_MODIFIER;
 
     if (isCharacter(actor)) {
         switch (move.type) {
             case "arms":
-                hitModifier += getModifier(actor, "hitarms");
+                hitModifier += getModifier(actor, "hitarms") * HIT_MODIFIER;
                 break;
 
             case "mouth":
-                hitModifier += getModifier(actor, "hitmouth");
+                hitModifier += getModifier(actor, "hitmouth") * HIT_MODIFIER;
                 break;
 
             case "legs":
-                hitModifier += getModifier(actor, "hitlegs");
+                hitModifier += getModifier(actor, "hitlegs") * HIT_MODIFIER;
                 break;
         }
     }
 
-    let defenseModifier = (isEnemy(target) ? target.currDef : 0);
 
-    defenseModifier += getModifier(target, "defense");
+    let defenseModifier = 0;
 
+    //Ignore defense when you're targetting your own side
+    if (getIEntitySide(actor) != getIEntitySide(target)) {
+        defenseModifier = (isEnemy(target) ? target.currDef : 0);
+        defenseModifier += getModifier(target, "defense") * DEFENSE_MODIFIER;
+    }
+    
     const delta = hitModifier - defenseModifier;
 
     /*
@@ -265,7 +270,7 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
                 if (band !== "miss") {
                     const [min, max] = effectivenessRange[band];
                     const effect = (roll - cumulative) / value;
-                    result.effectiveness = (min + (max - min) * effect) * (1 + getModifier(target,"effect") * EFFECT_MODIFIER);
+                    result.effectiveness = (min + (max - min) * effect) * (1 + getModifier(target, "effect") * EFFECT_MODIFIER);
                 }
                 return result;
             }
@@ -273,7 +278,7 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
         }
     }
     //rolled above the highest band, return the top of the highest band
-    result.effectiveness = effectivenessRange[result.result][1] * (1 + getModifier(target,"effect") * EFFECT_MODIFIER);
+    result.effectiveness = effectivenessRange[result.result][1] * (1 + getModifier(target, "effect") * EFFECT_MODIFIER);
 
     return result;
 }

@@ -1,5 +1,5 @@
 import { getIEntitySide } from "./helpers";
-import { iGameState, MoveDef, iEntity, iTargetInfo, iEffect } from "./itypes";
+import { iGameState, MoveDef, iEntity, iTargetInfo, iEffect, iCharacter } from "./itypes";
 
 export function resolveMove(state: iGameState, move: MoveDef, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
     const successfulTargets = targets.filter(
@@ -41,7 +41,7 @@ export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[
     return true;
 }
 
-export function getMoves(target: iEntity) : MoveDef[] {
+export function getMoves(target: iCharacter) : MoveDef[] {
     const moves: MoveDef[] = [];
     moves.push(...target.definition.moves);
     for (const buff of target.buffs) {

@@ -224,6 +224,7 @@ describe("enemy intention previews", () => {
                 source: actor,
                 target: actor,
                 buff: defenseBuff,
+                added: true
             }],
         });
         const enemyMove = makeMove("swing", "enemy", {

@@ -18,7 +18,7 @@ export type Phase = "player" | "enemy";
 
 export type EntityId = string;
 
-export type EntitySide = "player" | "enemy";
+export type EntitySide = "player" | "enemy" | "none";
 
 /*******************************************************
  * Characters
@@ -64,15 +64,14 @@ export interface TargetInfo {
 
 export interface Buff {
     id: BuffId;
-    duration: BuffLength;
+    duration?: number;
     active: boolean;
-    statuses: Status[];
+    statuses?: Status[];
+    modifiers?: ModifierSet;
     linkedEntity?: EntityId;
 }
 
 export type BuffId = string;
-
-export type BuffLength = number | "infinite";
 
 /*******************************************************
  * Effects
@@ -100,6 +99,7 @@ export interface BuffEffect {
     source: EntityId;
     target: EntityId;
     buff: BuffId;
+    added: boolean;
 }
 
 
@@ -181,6 +181,8 @@ export type StatusId =
     | "stunned"
     | "incapacitated";
 
+export type ModifierSet = Partial<Record<ModifierId,number>>;
+
 export type ModifierId =
     | "hitarms"
     | "hitmouth"
@@ -189,6 +191,7 @@ export type ModifierId =
     | "defense"
     | "escape"
     | "effect"
+    | "potency"
     | "traps"
     | "willpower"
 
@@ -321,7 +324,7 @@ export interface PhaseEvent {
 }
 
 export interface BuffEvent {
-    type: "buffAdded" | "buffRemoved";
+    type: "buffAdded" | "buffRemoved" | "buffUpdated";
     target: EntityId;
     buff: BuffId;
 }

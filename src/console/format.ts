@@ -68,6 +68,8 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [`${event.target} gained ${event.buff}.`];
             case "buffRemoved":
                 return [`${event.buff} expired on ${event.target}.`];
+            case "buffUpdated":
+                return [`${event.buff} refreshed on ${event.target}.`];
             case "enemySpawned":
                 return [`${event.target} appeared.`];
             case "enemyDefeated":

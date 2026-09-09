@@ -38,7 +38,6 @@ export interface EnemyDef {
     id: string;
     hp: number;
     defense: number;
-    moves: MoveDef[];
     passives: PassiveDef[];
     ai: (state: iGameState, actor: iEnemy) => EnemyAction;
 }
@@ -60,7 +59,7 @@ export interface EnemyAction {
  *******************************************************/
 
 export interface iBuff extends Omit<Buff, "statuses"> {
-    statuses: iStatus[];
+    statuses?: iStatus[];
     addedMoves?: MoveDef[];
 }
 
@@ -70,6 +69,7 @@ export interface iBuff extends Omit<Buff, "statuses"> {
 export interface MoveDef extends Move {
     displayId?: MoveId;
     accuracy: AccuracyProfile;
+    alwaysAvailable?: boolean;
     resolve: (state: iGameState, actor: iEntity, targets: iTargetInfo[]) => iEffect[];
     isValid?: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;
 }
@@ -143,9 +143,13 @@ export interface BindingDef {
  * Statuses
  *******************************************************/
 
-export interface iStatus {
+export type iStatus = {
     definition: StatusDef;
     value: number;
+}
+
+export function s(definition: StatusDef, value: number): iStatus {
+    return { definition, value };
 }
 
 export interface StatusDef {

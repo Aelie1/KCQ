@@ -82,7 +82,7 @@ function serializeBuff(buff: iBuff): Buff {
     const { addedMoves, ..._buff } = buff;
     return {
         ..._buff,
-        statuses: buff.statuses.map(serializeStatus)
+        statuses: buff.statuses?.map(serializeStatus)
     };
 }
 
