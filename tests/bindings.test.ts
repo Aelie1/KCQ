@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { latexArms } from "../src/content/skunk/latex";
 import { addBinding, removeBinding } from "../src/engine/bindings";
 import { thresholds } from "../src/engine/constants";
-import { getBindingLevel } from "../src/engine/bindings";
+import { getBindingLevel } from "../src/engine/helpers";
 import { getModifier, getStatuses } from "../src/engine/status";
 import type { StatusDef } from "../src/engine/itypes";
 import {

@@ -1,6 +1,6 @@
 import { evaluateIntention } from "./combat";
 import { resolveMove } from "./moves";
-import { getBindingLevel } from "./bindings";
+import { getBindingLevel } from "./helpers";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, MoveDef } from "./itypes";
 import { getStatuses } from "./status";
 import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo } from "./types";
@@ -79,7 +79,7 @@ export function serializeEffect(effect: iEffect): Effect {
 }
 
 function serializeBuff(buff: iBuff): Buff {
-    const { ..._buff } = buff;
+    const { addedMoves, ..._buff } = buff;
     return {
         ..._buff,
         statuses: buff.statuses.map(serializeStatus)

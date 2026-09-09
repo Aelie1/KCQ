@@ -1,7 +1,7 @@
 import { resolveEscape } from "./bindings";
 import { tickBuffs } from "./buffs";
 import { calculateAccuracy, evaluateIntention, evaluateResult, loadEnemy, processEffects, setStance, updateIntention } from "./combat";
-import { findBinding, findCharacter, findEntity, findMove } from "./helpers";
+import { findBinding, findCharacter, findEntity, findMove } from "./find";
 import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTargetInfo } from "./itypes";
 import { getMoves, isValidMove, resolveMove } from "./moves";
 import { XorShift32 } from "./random";

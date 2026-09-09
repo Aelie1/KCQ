@@ -1,22 +1,8 @@
 import { BINDING_MODIFIER, thresholds } from "./constants";
-import { findBinding } from "./helpers";
+import { findBinding } from "./find";
 import { BindingDef, iBinding, iCharacter, iEffect } from "./itypes";
 import { getModifier } from "./status";
-import { BindingLevel, BondageEvent, GameEvent } from "./types";
-
-export function getBindingLevel(binding: iBinding): BindingLevel {
-    if (binding.value >= thresholds.impossible)
-        return "impossible";
-    else if (binding.value >= thresholds.extreme)
-        return "extreme";
-    else if (binding.value >= thresholds.hard)
-        return "hard";
-    else if (binding.value >= thresholds.medium)
-        return "medium";
-    else if (binding.value >= thresholds.easy)
-        return "easy";
-    return "none";
-}
+import { BondageEvent, GameEvent } from "./types";
 
 export function addBinding(target: iCharacter, type: BindingDef, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
