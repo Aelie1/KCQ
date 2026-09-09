@@ -5,8 +5,8 @@ import { findBinding, findCharacter, findEntity, findMove } from "./helpers";
 import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTargetInfo } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState, serializeMove } from "./serialize";
-import { canAttack, canBonusEscape, canMove, canUseEscape, canUseMove, isSkipped } from "./status";
-import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, GameEvent, GameState, MoveId, PlayerAction } from "./types";
+import { canAttack, canBonusEscape, canMove, canEscape, canUseMove, isSkipped, canAssist } from "./status";
+import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceId, StanceInfo } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -25,6 +25,10 @@ export class GameEngine {
         this.seed = seed;
         this.rng = new XorShift32(seed);
         this.encounters = encounters;
+    }
+
+    getSeed(): number {
+        return this.seed;
     }
 
     getGameState(): GameState {
@@ -69,9 +73,54 @@ export class GameEngine {
         return events;
     }
 
-    getActions(name: EntityId): ActionInfo[] {
-        const actions: ActionInfo[] = [];
+    getStanceTargets(name: EntityId): StanceInfo {
         const character = findCharacter(this.state, name);
+        if (!character) {
+            return {
+                stance:"moving", 
+                available:false,
+                reason:"invalidActor"
+            }
+        }
+
+        switch (character.standing) {
+            case true:
+                if (character.acted) {
+                    return {
+                        stance:"moving",
+                        available:false,
+                        reason:"actorAlreadyActed"
+                    }
+                }
+                if (!canMove(character)) {
+                    return {
+                        stance:"moving", 
+                        available:false,
+                        reason:"actorImmobilized"
+                    }        
+                }
+                return {
+                    stance:"moving", 
+                    available:true
+                }
+            case false:
+                if (character.acted) {
+                    return {
+                        stance:"moving",
+                        available:false,
+                        reason:"actorAlreadyActed"
+                    }
+                }
+                return {
+                    stance:"moving", 
+                    available:true
+                }    
+        }
+    }
+
+    getActions(actor: EntityId): ActionInfo[] {
+        const actions: ActionInfo[] = [];
+        const character = findCharacter(this.state, actor);
         if (character) {
             for (const move of character.definition.moves) {
                 let available = true;
@@ -107,6 +156,30 @@ export class GameEngine {
             }
         }
         return actions;
+    }
+
+    getEscapes(actor: EntityId): EscapeOptions | null {
+        const character = findCharacter(this.state, actor);
+        if (!character) {
+            return null;
+        }
+
+        const options : EscapeOptions = {options: [],assistAllowed: canAssist(character)};
+        for (const target of this.state.characters) {
+            if (character !== target && !options.assistAllowed) {
+                continue;
+            }
+            for (const binding of target.bindings) {
+                options.options.push({
+                    actor: actor,
+                    target: target.id,
+                    binding: binding.id,
+                    amount: calculateProgress(character,target,binding)
+                })
+            }
+        }
+
+        return options;
     }
 
     getAccuracyPreview(actor: EntityId, target: EntityId, move: MoveId): AccuracyProfile | null {
@@ -149,6 +222,13 @@ export class GameEngine {
                     return {
                         success: false,
                         reason: "actorAlreadyActed"
+                    };
+                }
+
+                if (isSkipped(actor)) {
+                    return {
+                        success: false,
+                        reason: "actorSkipped"
                     };
                 }
 
@@ -243,6 +323,13 @@ export class GameEngine {
                         reason: "actorAlreadyActed"
                     };
                 }
+                
+                if (isSkipped(actor)) {
+                    return {
+                        success: false,
+                        reason: "actorSkipped"
+                    };
+                }
 
                 const target = findCharacter(this.state, action.target);
                 if (!target) {
@@ -252,7 +339,6 @@ export class GameEngine {
                     };
                 }
 
-                const amount = calculateProgress(actor, target, action.binding);
                 const binding = findBinding(target, action.binding);
                 if (!binding) {
                     return {
@@ -261,20 +347,21 @@ export class GameEngine {
                     }
                 }
 
-                if (actor === target && !canUseEscape(actor, target, binding)) {
+                if (actor === target && !canEscape(actor)) {
                     return {
                         success: false,
                         reason: "escapeUnavailable"
                     }
                 }
 
-                if (actor !== target && !canUseEscape(actor, target, binding)) {
+                if (actor !== target && !canAssist(actor)) {
                     return {
                         success: false,
                         reason: "assistUnavailable"
                     }
                 }
 
+                const amount = calculateProgress(actor, target, binding);
                 events.push(...removeBinding(target, binding.definition, amount))
                 if (!actor.acted) {
                     actor.acted = true;

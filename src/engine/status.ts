@@ -62,9 +62,6 @@ export function canAttack(actor: iEntity): boolean {
     const statuses: iStatus[] = getStatuses(actor);
     for (const status of statuses) {
         const level = status.definition.levels[status.value];
-        if (level.skipsTurn) {
-            return false;
-        }
         if (level.blocksAttack) {
             return false;
         }
@@ -83,17 +80,22 @@ export function canUseMove(actor: iCharacter, type: MoveType): boolean {
     return true;
 }
 
-export function canUseEscape(actor: iCharacter, target: iCharacter, binding: iBinding): boolean {
+export function canEscape(actor: iCharacter): boolean {
     const statuses: iStatus[] = getStatuses(actor);
     for (const status of statuses) {
         const level = status.definition.levels[status.value];
-        if (level.skipsTurn) {
-            return false;
-        }
         if (level.blocksEscape) {
             return false;
         }
-        if (actor !== target && level.blocksAssist) {
+    }
+    return true;
+}
+
+export function canAssist(actor: iCharacter): boolean {
+    const statuses: iStatus[] = getStatuses(actor);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.blocksAssist) {
             return false;
         }
     }

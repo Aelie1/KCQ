@@ -1,6 +1,6 @@
 import { BINDING_MAX, bindingThresholds } from "./constants";
 import { findBinding } from "./helpers";
-import { BindingDef, iCharacter } from "./itypes";
+import { BindingDef, iBinding, iCharacter } from "./itypes";
 import { getModifier } from "./status";
 import { BindingId, BondageEvent, GameEvent } from "./types";
 
@@ -59,11 +59,7 @@ export function removeBinding(target: iCharacter, type: BindingDef, amount: numb
     return events;
 }
 
-export function calculateProgress(actor: iCharacter, target: iCharacter, type: BindingId): number {
-    const binding = findBinding(target,type);
-    if (!binding) {
-        return 0;
-    }
+export function calculateProgress(actor: iCharacter, target: iCharacter, binding: iBinding): number {
     const basePotency = 20;
     const bindingValue = binding.value;
     const bindingRatio = Math.min(bindingValue / bindingThresholds.impossible, 1);
