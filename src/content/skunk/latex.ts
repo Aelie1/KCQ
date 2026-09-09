@@ -41,25 +41,35 @@ export const latexbindings: BindingDef = {
             //it should be impossible for an assistant to trigger this, but it should work even if they do
             //other than the escaped location and the main spread location, half goes onto each of the other two locations
             //this does mean a theoretical assistant could get 1.5* the spread total, but that's fine with me
-            const splashAmount = Math.min(spreadAmount, existingValue + spreadAmount - thresholds.impossible);
+            const overflowAmount = Math.min(spreadAmount, existingValue + spreadAmount - thresholds.impossible);
+            const splashAmount = Math.ceil(overflowAmount / 2);
+            const directAmount = spreadAmount - overflowAmount;
 
-            if (spreadAmount !== splashAmount) {
+            if (directAmount > 0) {
                 effects.push({
                     type: "binding",
                     target: actor,
                     binding: spreadLocation,
-                    amount: spreadAmount - splashAmount
+                    amount: directAmount
                 })
             }
 
             const splashLocations = [latexhead, latexarms, latextorso, latexlegs];
+            let carryoverAmount = 0;
             for (const location of splashLocations) {
-                if (location !== binding.definition && location !== spreadLocation) {
+                if (location === binding.definition || location === spreadLocation) {
+                    continue;
+                }
+                const newAmount = splashAmount + carryoverAmount;
+                const carryoverBinding = actor.bindings.find(x => x.definition === location);
+                const carryoverValue = carryoverBinding ? carryoverBinding.value : 0;
+                carryoverAmount = Math.min(newAmount,Math.max(0, carryoverValue + newAmount - thresholds.impossible))
+                if (newAmount != carryoverAmount) {
                     effects.push({
                         type: "binding",
                         target: actor,
                         binding: location,
-                        amount: Math.ceil(splashAmount / 2)
+                        amount: newAmount - carryoverAmount
                     })
                 }
             }

@@ -125,7 +125,7 @@ export function processEffects(state: iGameState, effects: iEffect[]) : GameEven
                 if (effect.amount > 0) {
                     events.push(...addBinding(effect.target,effect.binding,effect.amount))
                 } else {
-                    events.push(...removeBinding(effect.target,effect.binding,effect.amount))
+                    events.push(...removeBinding(effect.target,effect.binding,-effect.amount))
                 }
                 break;
             case "buff":

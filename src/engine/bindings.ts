@@ -70,12 +70,13 @@ export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iB
     if (actor !== target) {
         escapePotency *= 1.5;
     }
+    escapePotency = Math.ceil(escapePotency);
 
     effects.push({
         type: "binding",
         target: target,
-        binding: binding,
-        amount: Math.ceil(escapePotency) * -1
+        binding: binding.definition,
+        amount: escapePotency * -1
     })
 
     if (binding.definition.onEscape) {
