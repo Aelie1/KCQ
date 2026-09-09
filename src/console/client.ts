@@ -9,7 +9,7 @@ import type {
     Move,
     PlayerAction,
 } from "../engine/types";
-import { formatEvents } from "./format";
+import { formatEffect, formatEvents } from "./format";
 import {
     ACCURACY_HEADER,
     formatAccuracyRow,
@@ -142,16 +142,16 @@ export async function runConsoleClient(
                 return false;
             }
 
-            const choices = options.map(
-                (option, index) =>
-                    `[${index + 1}] ${option.target} - ${option.binding} (-${option.amount})`,
-            );
-            choices.push(`[${choices.length + 1}] Back`);
+            const choices = options.flatMap((option, index) => [
+                `[${index + 1}] ${option.target} - ${option.binding}`,
+                ...option.effects.map((effect) => `     ${formatEffect(effect, true)}`),
+            ]);
+            choices.push(`[${options.length + 1}] Back`);
             const choice = await choose([
                 `Choose an escape for ${actorId}.`,
                 "",
                 ...choices,
-            ], choices.length);
+            ], options.length + 1);
             if (choice === options.length) return false;
 
             const option = options[choice];
