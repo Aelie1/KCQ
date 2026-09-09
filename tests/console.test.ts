@@ -159,19 +159,23 @@ describe("console formatting", () => {
         expect(engine.getGameState().turn.round).toBe(3);
     });
 
-    it("uses flat escape options and keeps an actor selectable for a bonus escape", async () => {
+    it("refreshes stance and bonus-escape menus in place", async () => {
         const restraint = makeBindingDef("rope");
         const { engine } = setupBoundEngine(restraint, bindingThresholds.impossible);
 
         const rendered = await runScriptedConsole(
             engine,
-            ["1", "5", "1", "4", "1", "1", "4", "1", "3"],
+            ["1", "5", "4", "1", "1", "3"],
         );
 
         expect(rendered).toContain("Change stance -> standing");
-        expect(rendered).toMatch(/\[1\] hero - rope \(-\d+\)/);
-        expect(rendered).toContain("hero  ACTED / 1 BONUS ESCAPE");
-        expect(rendered).toContain("Change stance -> moving - unavailable: actorAlreadyActed");
+        expect(rendered).toContain("Change stance -> moving");
+        expect(rendered.match(/Choose an action for hero\./g) ?? []).toHaveLength(2);
+        expect(rendered.match(/Choose an escape for hero\./g) ?? []).toHaveLength(2);
+        const escapeAmounts = [...rendered.matchAll(/\[1\] hero - rope \(-(\d+)\)/g)]
+            .map((match) => Number(match[1]));
+        expect(escapeAmounts).toHaveLength(2);
+        expect(escapeAmounts[1]).not.toBe(escapeAmounts[0]);
         expect(rendered).not.toContain("Who should hero free?");
         expect(rendered).not.toContain("Choose a binding on hero.");
         expect(engine.getGameState().turn.round).toBe(3);

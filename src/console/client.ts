@@ -25,7 +25,7 @@ interface ConsoleStreams {
 
 interface MenuItem {
     label: string;
-    select: () => Promise<void>;
+    select: () => Promise<boolean>;
 }
 
 export async function runConsoleClient(
@@ -78,13 +78,12 @@ export async function runConsoleClient(
         return result.success;
     };
 
-    const chooseTargets = async (actor: EntityId, move: Move): Promise<void> => {
+    const chooseTargets = async (actor: EntityId, move: Move): Promise<boolean> => {
         let state = engine.getGameState();
         const targets = move.target === "enemy" ? state.enemies : state.characters;
 
         if (move.targets === 0) {
-            execute({ type: "attack", actor, move: move.id, targets: [] });
-            return;
+            return execute({ type: "attack", actor, move: move.id, targets: [] });
         }
 
         if (move.targets === "all") {
@@ -98,9 +97,9 @@ export async function runConsoleClient(
                 "[2] Back",
             ], 2);
             if (selection === 0) {
-                execute({ type: "attack", actor, move: move.id, targets: [] });
+                return execute({ type: "attack", actor, move: move.id, targets: [] });
             }
-            return;
+            return false;
         }
 
         const selected: EntityId[] = [];
@@ -110,7 +109,7 @@ export async function runConsoleClient(
                 .filter((target) => !selected.includes(target.id));
             if (candidates.length === 0) {
                 logLines.push(`Action failed: not enough targets for ${move.id}.`);
-                return;
+                return false;
             }
 
             const lines = accuracyLines(engine, actor, move, candidates.map((target) => target.id));
@@ -124,85 +123,112 @@ export async function runConsoleClient(
                 "",
                 ...choices,
             ], choices.length);
-            if (choice === candidates.length) return;
+            if (choice === candidates.length) return false;
             selected.push(candidates[choice].id);
         }
 
-        execute({ type: "attack", actor, move: move.id, targets: selected });
+        return execute({ type: "attack", actor, move: move.id, targets: selected });
     };
 
-    const chooseEscape = async (actorId: EntityId): Promise<void> => {
-        const options = engine.getEscapes(actorId)?.options ?? [];
-        if (options.length === 0) {
-            logLines.push("Escape / assist unavailable: no legal escapes.");
-            return;
+    const chooseEscape = async (actorId: EntityId): Promise<boolean> => {
+        while (true) {
+            const options = engine.getEscapes(actorId)?.options ?? [];
+            if (options.length === 0) {
+                await choose([
+                    `No legal escape options remain for ${actorId}.`,
+                    "",
+                    "[1] Back",
+                ], 1);
+                return false;
+            }
+
+            const choices = options.map(
+                (option, index) =>
+                    `[${index + 1}] ${option.target} - ${option.binding} (-${option.amount})`,
+            );
+            choices.push(`[${choices.length + 1}] Back`);
+            const choice = await choose([
+                `Choose an escape for ${actorId}.`,
+                "",
+                ...choices,
+            ], choices.length);
+            if (choice === options.length) return false;
+
+            const option = options[choice];
+            const success = execute({
+                type: "escape",
+                actor: actorId,
+                target: option.target,
+                binding: option.binding,
+            });
+            if (!success) return false;
+
+            const actor = engine.getGameState().characters.find(
+                (character) => character.id === actorId,
+            );
+            if (!actor || actor.bonusEscapes === 0) return true;
         }
-
-        const choices = options.map(
-            (option, index) =>
-                `[${index + 1}] ${option.target} - ${option.binding} (-${option.amount})`,
-        );
-        choices.push(`[${choices.length + 1}] Back`);
-        const choice = await choose([
-            `Choose an escape for ${actorId}.`,
-            "",
-            ...choices,
-        ], choices.length);
-        if (choice === options.length) return;
-
-        const option = options[choice];
-        execute({
-            type: "escape",
-            actor: actorId,
-            target: option.target,
-            binding: option.binding,
-        });
     };
 
     const chooseAction = async (characterId: EntityId): Promise<void> => {
-        const state = engine.getGameState();
-        const actor = state.characters.find((character) => character.id === characterId);
-        if (!actor) return;
-        const actions = engine.getActions(actor.id);
-        const escapes = engine.getEscapes(actor.id);
-        const escapeAvailable = (escapes?.options.length ?? 0) > 0;
-        const stance = engine.stanceAvailable(actor.id);
-        const menu: MenuItem[] = actions.map((action) => ({
-            label: moveLabel(action),
-            select: async () => {
-                if (!action.available) {
-                    logLines.push(`${action.move.id} unavailable: ${action.reason}.`);
-                    return;
-                }
-                await chooseTargets(actor.id, action.move);
-            },
-        }));
-        menu.push(
-            {
-                label: `Escape / assist${escapeAvailable ? "" : " - unavailable: no legal escapes"}`,
-                select: async () => {
-                    if (escapeAvailable) await chooseEscape(actor.id);
-                    else logLines.push("Escape / assist unavailable: no legal escapes.");
-                },
-            },
-            {
-                label: `Change stance -> ${actor.standing ? "moving" : "standing"}`
-                    + (stance.available ? "" : ` - unavailable: ${stance.reason}`),
-                select: async () => {
-                    if (stance.available) execute({ type: "stance", actor: actor.id });
-                    else logLines.push(`Stance change unavailable: ${stance.reason}.`);
-                },
-            },
-            { label: "End turn", select: async () => { execute({ type: "endTurn" }); } },
-            { label: "Back", select: async () => undefined },
-        );
+        while (true) {
+            const availability = engine.getAvailability().find(
+                (character) => character.id === characterId,
+            );
+            if (!availability?.available) return;
 
-        const choice = await choose([
-            `Choose an action for ${actor.id}.`,
-            "",
-            ...menu.map((item, index) => `[${index + 1}] ${item.label}`),
-        ], menu.length);
-        await menu[choice].select();
+            const state = engine.getGameState();
+            const actor = state.characters.find((character) => character.id === characterId);
+            if (!actor) return;
+            const actions = engine.getActions(actor.id);
+            const escapes = engine.getEscapes(actor.id);
+            const escapeAvailable = (escapes?.options.length ?? 0) > 0;
+            const stance = engine.stanceAvailable(actor.id);
+            const menu: MenuItem[] = actions.map((action) => ({
+                label: moveLabel(action),
+                select: async () => {
+                    if (!action.available) {
+                        logLines.push(`${action.move.id} unavailable: ${action.reason}.`);
+                        return false;
+                    }
+                    return chooseTargets(actor.id, action.move);
+                },
+            }));
+            menu.push(
+                {
+                    label: `Escape / assist${escapeAvailable ? "" : " - unavailable: no legal escapes"}`,
+                    select: async () => {
+                        if (escapeAvailable) return chooseEscape(actor.id);
+                        logLines.push("Escape / assist unavailable: no legal escapes.");
+                        return false;
+                    },
+                },
+                {
+                    label: `Change stance -> ${actor.standing ? "moving" : "standing"}`
+                        + (stance.available ? "" : ` - unavailable: ${stance.reason}`),
+                    select: async () => {
+                        if (stance.available) execute({ type: "stance", actor: actor.id });
+                        else logLines.push(`Stance change unavailable: ${stance.reason}.`);
+                        return false;
+                    },
+                },
+                {
+                    label: "End turn",
+                    select: async () => {
+                        execute({ type: "endTurn" });
+                        return true;
+                    },
+                },
+                { label: "Back", select: async () => true },
+            );
+
+            const choice = await choose([
+                `Choose an action for ${actor.id}.`,
+                "",
+                ...menu.map((item, index) => `[${index + 1}] ${item.label}`),
+            ], menu.length);
+            if (await menu[choice].select()) return;
+        }
     };
 
     try {
