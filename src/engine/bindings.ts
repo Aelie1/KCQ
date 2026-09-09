@@ -1,4 +1,4 @@
-import { thresholds } from "./constants";
+import { BINDING_MODIFIER, thresholds } from "./constants";
 import { findBinding } from "./helpers";
 import { BindingDef, iBinding, iCharacter, iEffect } from "./itypes";
 import { getModifier } from "./status";
@@ -66,7 +66,7 @@ export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iB
     const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
     const basePenalty = 15;
     let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
-    escapePotency *= 1 + getModifier(actor, "escape") * 0.1;
+    escapePotency *= 1 + getModifier(actor, "escape") * BINDING_MODIFIER;
     if (actor !== target) {
         escapePotency *= 1.5;
     }

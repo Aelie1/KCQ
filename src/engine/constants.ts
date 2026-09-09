@@ -1,5 +1,8 @@
 import { AccuracyResult, BindingLevel } from "./types";
 
+export const BINDING_MODIFIER = 0.1;
+export const EFFECT_MODIFIER = 0.125;
+
 export const thresholds: Record<BindingLevel, number> = {
     none: 0,
     easy: 10,

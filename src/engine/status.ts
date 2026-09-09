@@ -1,5 +1,5 @@
 import { getBindingLevel, isCharacter } from "./helpers";
-import { iBinding, iCharacter, iEntity, iStatus, StatusDef } from "./itypes";
+import { iCharacter, iEntity, iStatus, StatusDef } from "./itypes";
 import { ActionFailure, ActionType, ModifierId, MoveType } from "./types";
 
 /*******************************************************
@@ -208,8 +208,8 @@ export const bound: StatusDef = {
     id: "bound",
     levels: [
         {},
-        { modifiers: { hitarms: -2 } },
-        { modifiers: { hitarms: -4 } },
+        { modifiers: { hitarms: -20 } },
+        { modifiers: { hitarms: -40 } },
         { blockedMoveTypes: ["arms"], blocksAssist: true },
         { blockedMoveTypes: ["arms"], blocksAssist: true, modifiers: { escape: -1 } }
     ]
@@ -219,8 +219,8 @@ export const gagged: StatusDef = {
     id: "gagged",
     levels: [
         {},
-        { modifiers: { hitmouth: -2 } },
-        { modifiers: { hitmouth: -4 } },
+        { modifiers: { hitmouth: -20 } },
+        { modifiers: { hitmouth: -40 } },
         { blockedMoveTypes: ["mouth"] },
         { blockedMoveTypes: ["mouth"], modifiers: { escape: -1 } }
     ]
@@ -230,10 +230,10 @@ export const hobbled: StatusDef = {
     id: "hobbled",
     levels: [
         {},
-        { modifiers: { defense: -1, traps: -1, hitlegs: -2 } },
-        { modifiers: { defense: -2, traps: -2, hitlegs: -4 } },
-        { modifiers: { defense: -3, traps: -3 }, blockedMoveTypes: ["legs"] },
-        { modifiers: { defense: -4, traps: -4, escape: -1 }, blockedMoveTypes: ["legs"] }
+        { modifiers: { defense: -10, traps: -1, hitlegs: -20 } },
+        { modifiers: { defense: -20, traps: -2, hitlegs: -40 } },
+        { modifiers: { defense: -30, traps: -3 }, blockedMoveTypes: ["legs"] },
+        { modifiers: { defense: -40, traps: -4, escape: -1 }, blockedMoveTypes: ["legs"] }
     ]
 }
 
@@ -252,10 +252,10 @@ export const submissive: StatusDef = {
     id: "submissive",
     levels: [
         {},
-        { modifiers: { willpower: -1, enemyeffect: 2 } },
-        { modifiers: { willpower: -2, enemyeffect: 4 } },
-        { modifiers: { willpower: -3, enemyeffect: 6 } },
-        { modifiers: { willpower: -4, enemyeffect: 8 } }
+        { modifiers: { willpower: -1, effect: 1 } },
+        { modifiers: { willpower: -2, effect: 2 } },
+        { modifiers: { willpower: -3, effect: 3 } },
+        { modifiers: { willpower: -4, effect: 4 } }
     ]
 }
 
@@ -263,10 +263,10 @@ export const breathless: StatusDef = {
     id: "breathless",
     levels: [
         {},
-        { modifiers: { defense: -1 } },
-        { modifiers: { defense: -2 } },
-        { modifiers: { defense: -3 } },
-        { modifiers: { defense: -4 } }
+        { modifiers: { defense: -10 } },
+        { modifiers: { defense: -20 } },
+        { modifiers: { defense: -30 } },
+        { modifiers: { defense: -40 } }
     ]
 }
 
@@ -274,10 +274,10 @@ export const blinded: StatusDef = {
     id: "blinded",
     levels: [
         {},
-        { modifiers: { hit: -1 } },
-        { modifiers: { hit: -2 } },
-        { modifiers: { hit: -3, defense: -1 } },
-        { modifiers: { hit: -4, defense: -2 } }
+        { modifiers: { hit: -10 } },
+        { modifiers: { hit: -20 } },
+        { modifiers: { hit: -30, defense: -10 } },
+        { modifiers: { hit: -40, defense: -20 } }
     ]
 }
 

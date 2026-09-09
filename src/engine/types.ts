@@ -188,7 +188,7 @@ export type ModifierId =
     | "hit"
     | "defense"
     | "escape"
-    | "enemyeffect"
+    | "effect"
     | "traps"
     | "willpower"
 

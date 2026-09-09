@@ -1,6 +1,6 @@
 import { thresholds } from "../../engine/constants";
 import { BindingDef, iBinding, iCharacter, iEffect } from "../../engine/itypes";
-import { bound, breathless, gagged, hobbled } from "../../engine/status";
+import { bound, breathless, gagged, hobbled, submissive, vibrating } from "../../engine/status";
 
 export const latexbindings: BindingDef = {
     id: "latexbindings",
@@ -63,7 +63,7 @@ export const latexbindings: BindingDef = {
                 const newAmount = splashAmount + carryoverAmount;
                 const carryoverBinding = actor.bindings.find(x => x.definition === location);
                 const carryoverValue = carryoverBinding ? carryoverBinding.value : 0;
-                carryoverAmount = Math.min(newAmount,Math.max(0, carryoverValue + newAmount - thresholds.impossible))
+                carryoverAmount = Math.min(newAmount, Math.max(0, carryoverValue + newAmount - thresholds.impossible))
                 if (newAmount != carryoverAmount) {
                     effects.push({
                         type: "binding",
@@ -89,10 +89,11 @@ export const latexhead: BindingDef = {
     ...latexbindings,
     id: "latexhead",
     status: {
-        medium: [{ definition: gagged, value: 1 }],
-        hard: [{ definition: gagged, value: 2 }],
-        extreme: [{ definition: gagged, value: 3 }],
-        impossible: [{ definition: gagged, value: 4 }]
+        easy:       [{ definition: gagged, value: 1 }],
+        medium:     [{ definition: gagged, value: 2 }],
+        hard:       [{ definition: gagged, value: 2 }, { definition: submissive, value: 1 }],
+        extreme:    [{ definition: gagged, value: 3 }, { definition: submissive, value: 1 }],
+        impossible: [{ definition: gagged, value: 4 }, { definition: submissive, value: 2 }]
     },
 }
 
@@ -100,9 +101,9 @@ export const latexarms: BindingDef = {
     ...latexbindings,
     id: "latexarms",
     status: {
-        medium: [{ definition: bound, value: 1 }],
-        hard: [{ definition: bound, value: 2 }],
-        extreme: [{ definition: bound, value: 3 }],
+        medium:     [{ definition: bound, value: 1 }],
+        hard:       [{ definition: bound, value: 2 }],
+        extreme:    [{ definition: bound, value: 3 }],
         impossible: [{ definition: bound, value: 4 }]
     },
 }
@@ -111,10 +112,11 @@ export const latextorso: BindingDef = {
     ...latexbindings,
     id: "latextorso",
     status: {
-        medium: [{ definition: breathless, value: 1 }],
-        hard: [{ definition: breathless, value: 2 }],
-        extreme: [{ definition: breathless, value: 3 }],
-        impossible: [{ definition: breathless, value: 4 }]
+        easy:       [{ definition: breathless, value: 1 }],
+        medium:     [{ definition: breathless, value: 2 }, { definition: vibrating, value: 1 }],
+        hard:       [{ definition: breathless, value: 2 }, { definition: vibrating, value: 1 }],
+        extreme:    [{ definition: breathless, value: 3 }, { definition: vibrating, value: 2 }],
+        impossible: [{ definition: breathless, value: 4 }, { definition: vibrating, value: 3 }]
     },
 }
 
@@ -122,9 +124,9 @@ export const latexlegs: BindingDef = {
     ...latexbindings,
     id: "latexlegs",
     status: {
-        medium: [{ definition: hobbled, value: 1 }],
-        hard: [{ definition: hobbled, value: 2 }],
-        extreme: [{ definition: hobbled, value: 3 }],
+        medium:     [{ definition: hobbled, value: 1 }],
+        hard:       [{ definition: hobbled, value: 2 }],
+        extreme:    [{ definition: hobbled, value: 3 }],
         impossible: [{ definition: hobbled, value: 4 }]
     },
 }

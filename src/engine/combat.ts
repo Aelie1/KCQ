@@ -1,6 +1,6 @@
 import { addBinding, removeBinding } from "./bindings";
 import { addBuff } from "./buffs";
-import { effectivenessRange } from "./constants";
+import { EFFECT_MODIFIER, effectivenessRange } from "./constants";
 import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
 import { EnemyDef, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iTargetInfo, MoveDef } from "./itypes";
 import { canMove, getModifier } from "./status";
@@ -315,7 +315,7 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
         }
     }
     //rolled above the highest band, return the top of the highest band
-    result.effectiveness = effectivenessRange[result.result][1];
+    result.effectiveness = effectivenessRange[result.result][1] * (1 + getModifier(target,"effect") * EFFECT_MODIFIER);
 
     return result;
 }
