@@ -5,7 +5,7 @@ import { findBinding, findCharacter, findEntity, findMove } from "./helpers";
 import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTargetInfo } from "./itypes";
 import { XorShift32 } from "./random";
 import { serializeGameState, serializeMove } from "./serialize";
-import { canAttack, canBonusEscape, canMove, canEscape, canUseMove, isSkipped, canAssist } from "./status";
+import { canAttack, canBonusEscape, canMove, canEscape, canUseMoveType, isSkipped, canAssist, isIncapacitated, canAct } from "./status";
 import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceId, StanceInfo } from "./types";
 
 export class GameEngine {
@@ -77,67 +77,37 @@ export class GameEngine {
         const character = findCharacter(this.state, name);
         if (!character) {
             return {
-                stance:"moving", 
                 available:false,
                 reason:"invalidActor"
             }
         }
 
-        switch (character.standing) {
-            case true:
-                if (character.acted) {
-                    return {
-                        stance:"moving",
-                        available:false,
-                        reason:"actorAlreadyActed"
-                    }
-                }
-                if (!canMove(character)) {
-                    return {
-                        stance:"moving", 
-                        available:false,
-                        reason:"actorImmobilized"
-                    }        
-                }
-                return {
-                    stance:"moving", 
-                    available:true
-                }
-            case false:
-                if (character.acted) {
-                    return {
-                        stance:"moving",
-                        available:false,
-                        reason:"actorAlreadyActed"
-                    }
-                }
-                return {
-                    stance:"moving", 
-                    available:true
-                }    
+        const result = canAct(character, "stance");
+        if (result) {
+            return {
+                available: false,
+                reason: result.reason
+            }
         }
+        return {
+            available:true
+        }    
     }
 
     getActions(actor: EntityId): ActionInfo[] {
         const actions: ActionInfo[] = [];
         const character = findCharacter(this.state, actor);
         if (character) {
+            const result = canAct(character,"attack");
+
             for (const move of character.definition.moves) {
                 let available = true;
                 let reason: ActionFailureReason = "moveUnavailable";
-                if (this.state.turn.phase !== "player") {
+                if (result) {
                     available = false;
-                    reason = "wrongPhase";
+                    reason = result.reason;
                 }
-                else if (character.acted) {
-                    available = false;
-                    reason = "actorAlreadyActed";
-                }
-                else if (!canAttack(character)) {
-                    available = false;
-                    reason = "statusRestriction";
-                }
-                else if (!canUseMove(character, move.type)) {
+                else if (!canUseMoveType(character, move.type)) {
                     available = false;
                     reason = "bindingRestriction";
                 }
@@ -165,6 +135,16 @@ export class GameEngine {
         }
 
         const options : EscapeOptions = {options: [],assistAllowed: canAssist(character)};
+
+        const result = canAct(character,"escape");
+
+        if (result) {
+            return {
+                options: [],
+                assistAllowed: false
+            }
+        }
+
         for (const target of this.state.characters) {
             if (character !== target && !options.assistAllowed) {
                 continue;
@@ -207,31 +187,34 @@ export class GameEngine {
                 reason: "wrongPhase"
             };
         }
+        if (action.type === "endTurn") {
+            events.push(...this.advancePhase());
+            events.push(...this.executeEnemyPhase());
+            events.push(...this.advancePhase());
+
+            return {
+                success: true,
+                events: events,
+                state: this.getGameState(),
+            };
+        }
+
+        const actor = findCharacter(this.state, action.actor);
+        if (!actor) {
+            return {
+                success: false,
+                reason: "invalidActor"
+            };
+        }
+    
+        const result = canAct(actor, action.type);
+
+        if (result) {
+            return result;
+        }
 
         switch (action.type) {
             case "attack": {
-                const actor = findCharacter(this.state, action.actor);
-                if (!actor) {
-                    return {
-                        success: false,
-                        reason: "invalidActor"
-                    };
-                }
-
-                if (actor.acted) {
-                    return {
-                        success: false,
-                        reason: "actorAlreadyActed"
-                    };
-                }
-
-                if (isSkipped(actor)) {
-                    return {
-                        success: false,
-                        reason: "actorSkipped"
-                    };
-                }
-
                 const foundMove = findMove(actor, action.move);
                 if (!foundMove) {
                     return {
@@ -241,15 +224,7 @@ export class GameEngine {
                 }
 
                 const move = { ...foundMove };
-
-                if (!canAttack(actor)) {
-                    return {
-                        success: false,
-                        reason: "statusRestriction"
-                    };
-                }
-
-                if (!canUseMove(actor, move.type)) {
+                if (!canUseMoveType(actor, move.type)) {
                     return {
                         success: false,
                         reason: "bindingRestriction"
@@ -309,34 +284,20 @@ export class GameEngine {
                 };
             }
             case "escape": {
-                const actor = findCharacter(this.state, action.actor);
-                if (!actor) {
-                    return {
-                        success: false,
-                        reason: "invalidActor"
-                    };
-                }
-
-                if (actor.acted && !actor.bonusEscapes) {
-                    return {
-                        success: false,
-                        reason: "actorAlreadyActed"
-                    };
-                }
-                
-                if (isSkipped(actor)) {
-                    return {
-                        success: false,
-                        reason: "actorSkipped"
-                    };
-                }
-
+               
                 const target = findCharacter(this.state, action.target);
                 if (!target) {
                     return {
                         success: false,
                         reason: "invalidTarget"
                     };
+                }
+
+                if (actor !== target && !canAssist(actor)) {
+                    return {
+                        success: false,
+                        reason: "assistUnavailable"
+                    }
                 }
 
                 const binding = findBinding(target, action.binding);
@@ -347,20 +308,7 @@ export class GameEngine {
                     }
                 }
 
-                if (actor === target && !canEscape(actor)) {
-                    return {
-                        success: false,
-                        reason: "escapeUnavailable"
-                    }
-                }
-
-                if (actor !== target && !canAssist(actor)) {
-                    return {
-                        success: false,
-                        reason: "assistUnavailable"
-                    }
-                }
-
+                //now we have a valid actor, target, and binding -- execute the escape
                 const amount = calculateProgress(actor, target, binding);
                 events.push(...removeBinding(target, binding.definition, amount))
                 if (!actor.acted) {
@@ -379,37 +327,7 @@ export class GameEngine {
                 };
             }
             case "stance": {
-                const actor = findCharacter(this.state, action.actor);
-                if (!actor) {
-                    return {
-                        success: false,
-                        reason: "invalidActor"
-                    };
-                }
-                if (actor.acted) {
-                    return {
-                        success: false,
-                        reason: "actorAlreadyActed"
-                    };
-                }
-                if (action.stance === "moving" && !canMove(actor)) {
-                    return {
-                        success: false,
-                        reason: "actorImmobilized"
-                    };
-                }
-                events.push(...setStance(actor, action.stance));
-                return {
-                    success: true,
-                    events: events,
-                    state: this.getGameState(),
-                };
-            }
-            case "endTurn": {
-                events.push(...this.advancePhase());
-                events.push(...this.executeEnemyPhase());
-                events.push(...this.advancePhase());
-
+                events.push(...setStance(actor, actor.standing ? "moving" : "standing"));
                 return {
                     success: true,
                     events: events,

@@ -40,6 +40,8 @@ export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[
     return true;
 }
 
+
+
 export function damageEnemy(state: iGameState, target: iEnemy, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
     target.currHp -= amount;

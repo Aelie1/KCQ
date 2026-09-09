@@ -10,7 +10,7 @@ import {
     canBonusEscape,
     canMove,
     canUseEscape,
-    canUseMove,
+    canUseMoveType,
     helpless,
     immobilized,
     incapacitated,
@@ -123,7 +123,7 @@ describe("move and status restrictions", () => {
             expect(actions.find((action) => action.move.id === mouthMove.id)).toMatchObject({
                 available: true,
             });
-            expect(canUseMove(
+            expect(canUseMoveType(
                 makeCharacter("hero", [makeBinding(latexarms, value)]),
                 "mouth",
             )).toBe(true);

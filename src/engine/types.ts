@@ -203,7 +203,6 @@ export interface ActionInfo {
 }
 
 export interface StanceInfo {
-    stance: StanceId;
     available: boolean;
     reason?: ActionFailureReason;
 }
@@ -219,6 +218,8 @@ export interface EscapeInfo {
     binding: BindingId;
     amount: number;
 }
+
+export type ActionType = "attack" | "escape" | "stance" | "endTurn"
 
 export type PlayerAction = AttackAction | EscapeAction | StanceAction | EndTurnAction;
 
@@ -239,7 +240,6 @@ export interface EscapeAction {
 export interface StanceAction {
     type: "stance";
     actor: EntityId;
-    stance: StanceId;
 }
 
 export type StanceId = "standing" | "moving";
@@ -269,11 +269,12 @@ export type ActionFailureReason =
     | "wrongPhase"
     | "actorAlreadyActed"
     | "actorSkipped"
-    | "moveUnavailable"
     | "actorImmobilized"
+    | "actorIncapacitated"
+    | "moveUnavailable"
+    | "attackUnavailable"
     | "assistUnavailable"
     | "escapeUnavailable"
-    | "statusRestriction"
     | "bindingRestriction";
 
 

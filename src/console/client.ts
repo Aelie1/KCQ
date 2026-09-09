@@ -173,8 +173,7 @@ export async function runConsoleClient(
         if (choice === 2) return;
         execute({
             type: "stance",
-            actor: actor.id,
-            stance: choice === 0 ? "standing" : "moving",
+            actor: actor.id
         });
     };
 

@@ -1,6 +1,6 @@
 import { getBindingLevel, isCharacter } from "./helpers";
 import { iBinding, iCharacter, iEntity, iStatus, StatusDef } from "./itypes";
-import { ModifierId, MoveType } from "./types";
+import { ActionFailure, ActionType, ModifierId, MoveType } from "./types";
 
 /*******************************************************
  * Functions
@@ -57,6 +57,56 @@ export function getModifier(target: iEntity, id: ModifierId): number {
     return amount;
 }
 
+export function canAct(actor: iCharacter, type: ActionType): ActionFailure | undefined {
+    if (isIncapacitated(actor)) {
+        return {
+            success: false,
+            reason: "actorIncapacitated"
+        };
+    }
+    
+    if (isSkipped(actor)) {
+        return {
+            success: false,
+            reason: "actorSkipped"
+        };
+    }
+
+    if (actor.acted && (type !== "escape" || !actor.bonusEscapes)) {
+        return {
+            success: false,
+            reason: "actorAlreadyActed"
+        };
+    }
+
+    switch (type) {
+        case "attack":
+            if (!canAttack(actor)) {
+                return {
+                    success: false,
+                    reason: "attackUnavailable"
+                };
+            }
+            break;
+        case "escape":
+            if (!canEscape(actor)) {
+                return {
+                    success: false,
+                    reason: "escapeUnavailable"
+                }
+            }
+            break;
+        case "stance":
+            if (actor.standing && !canMove(actor)) {
+                return {
+                    success: false,
+                    reason: "actorImmobilized"
+                };
+            }
+            break;
+    }
+    return undefined;
+}
 
 export function canAttack(actor: iEntity): boolean {
     const statuses: iStatus[] = getStatuses(actor);
@@ -69,7 +119,7 @@ export function canAttack(actor: iEntity): boolean {
     return true;
 }
 
-export function canUseMove(actor: iCharacter, type: MoveType): boolean {
+export function canUseMoveType(actor: iCharacter, type: MoveType): boolean {
     const statuses: iStatus[] = getStatuses(actor);
     for (const status of statuses) {
         const level = status.definition.levels[status.value];
