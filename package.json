@@ -6,6 +6,7 @@
         "doc": "docs"
     },
     "scripts": {
+        "start": "tsc && node dist/main.js",
         "test": "vitest run",
         "coverage": "vitest --coverage",
         "typecheck": "tsc --noEmit",

@@ -63,7 +63,6 @@ const starlight: MoveDef = {
     targets: 0,
     type: "mouth",
     resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
-        console.log("used starlight");
         return [];
     },
     accuracy: {
