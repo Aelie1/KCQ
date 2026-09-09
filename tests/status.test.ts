@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { latexarms } from "../src/content/skunk/latex";
+import { latexArms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import type { BindingDef } from "../src/engine/itypes";
@@ -131,7 +131,7 @@ describe("move and escape restrictions", () => {
         "applies Bound move restrictions at binding value %s",
         (value, armsBlocked, boundValue) => {
             const { engine, hero, foeId, armsMove, mouthMove } =
-                setupBoundEngine(latexarms, value);
+                setupBoundEngine(latexArms, value);
             const actions = engine.getActions(hero.id);
 
             expect(engine.getGameState().characters[0].status).toContainEqual({
@@ -215,14 +215,14 @@ describe("move and escape restrictions", () => {
 
     it("allows self-escape but rejects assistance when only blocksAssist is active", () => {
         const { engine, helper, target, targetBinding } = setupActorAndTarget(
-            latexarms,
+            latexArms,
             thresholds.extreme,
         );
         const escapes = engine.getEscapes(helper.id);
 
         expect(escapes?.assistAllowed).toBe(false);
         expect(escapes?.options).toEqual([
-            expect.objectContaining({ target: helper.id, binding: latexarms.id }),
+            expect.objectContaining({ target: helper.id, binding: latexArms.id }),
         ]);
         expect(engine.executeAction({
             type: "escape",
@@ -234,7 +234,7 @@ describe("move and escape restrictions", () => {
             type: "escape",
             actor: helper.id,
             target: helper.id,
-            binding: latexarms.id,
+            binding: latexArms.id,
         }).success).toBe(true);
     });
 });

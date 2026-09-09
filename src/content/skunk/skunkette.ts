@@ -1,6 +1,6 @@
 import { isCharacter } from "../../engine/helpers";
 import { BindingMoveDef, EnemyAction, EnemyDef, iEffect, iEnemy, iEntity, iGameState, iTargetInfo } from "../../engine/itypes";
-import { latexarms as latexArms, latexbindings as latexBindings } from "./latex";
+import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
 
 const latexSpray: BindingMoveDef = {
     resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
@@ -32,6 +32,13 @@ const latexSpray: BindingMoveDef = {
 };
 
 
+const latexSprayHead: BindingMoveDef = {
+    ...latexSpray,
+    id:"latexSprayHead",
+    displayId:"latexSpray",
+    binding: latexHead
+};
+
 const latexSprayArms: BindingMoveDef = {
     ...latexSpray,
     id:"latexSprayArms",
@@ -39,11 +46,25 @@ const latexSprayArms: BindingMoveDef = {
     binding: latexArms
 };
 
+const latexSprayTorso: BindingMoveDef = {
+    ...latexSpray,
+    id:"latexSprayTorso",
+    displayId:"latexSpray",
+    binding: latexTorso
+};
+
+const latexSprayLegs: BindingMoveDef = {
+    ...latexSpray,
+    id:"latexSprayLegs",
+    displayId:"latexSpray",
+    binding: latexLegs
+};
+
 export const skunkette: EnemyDef = {
     id: "skunkette",
     hp: 20,
     defense: 0,
-    moves: [latexSprayArms],
+    moves: [latexSprayHead, latexSprayArms, latexSprayTorso, latexSprayLegs],
     passives: [],
     ai: function (state: iGameState, actor: iEnemy): EnemyAction {
         const target = state.characters[0]; //this becomes random later

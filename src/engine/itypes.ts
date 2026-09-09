@@ -61,6 +61,7 @@ export interface EnemyAction {
 
 export interface iBuff extends Omit<Buff, "statuses"> {
     statuses: iStatus[];
+    addedMoves?: MoveDef[];
 }
 
 /*******************************************************

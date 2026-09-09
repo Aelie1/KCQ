@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { latexarms } from "../src/content/skunk/latex";
+import { latexArms } from "../src/content/skunk/latex";
 import { addBinding, removeBinding } from "../src/engine/bindings";
 import { thresholds } from "../src/engine/constants";
-import { getBindingLevel } from "../src/engine/helpers";
+import { getBindingLevel } from "../src/engine/bindings";
 import { getModifier, getStatuses } from "../src/engine/status";
 import type { StatusDef } from "../src/engine/itypes";
 import {
@@ -114,13 +114,13 @@ describe("binding lifecycle", () => {
     it("preserves Latex's historical maximum after a smaller reapplication", () => {
         const target = makeCharacter();
 
-        addBinding(target, latexarms, 60);
+        addBinding(target, latexArms, 60);
         expect(target.bindings[0]).toMatchObject({ value: 60, state: { max: 60 } });
 
-        removeBinding(target, latexarms, 50);
+        removeBinding(target, latexArms, 50);
         expect(target.bindings[0]).toMatchObject({ value: 10, state: { max: 60 } });
 
-        addBinding(target, latexarms, 30);
+        addBinding(target, latexArms, 30);
         expect(target.bindings[0]).toMatchObject({ value: 40, state: { max: 60 } });
     });
 

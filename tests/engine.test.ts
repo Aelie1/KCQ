@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
-import { latexarms } from "../src/content/skunk/latex";
+import { latexArms, latexHead } from "../src/content/skunk/latex";
 import { skunkette } from "../src/content/skunk/skunkette";
 import { GameEngine } from "../src/engine/engine";
 import { isCharacter } from "../src/engine/helpers";
@@ -47,7 +47,7 @@ describe("turn phases and enemy intentions", () => {
         expect(bindingEvent).toMatchObject({
             type: "bondageAdded",
             target: ko.id,
-            binding: latexarms.id,
+            binding: latexHead.id,
         });
         expect(bindingEvent.amount).toBeGreaterThan(0);
         expect(result.events.at(-1)).toEqual({ type: "phaseChanged", phase: "player" });
@@ -55,7 +55,7 @@ describe("turn phases and enemy intentions", () => {
         const state = engine.getGameState();
         expect(state.turn).toEqual({ round: 2, step: 1, phase: "player" });
         expect(state.characters[0].acted).toBe(false);
-        expect(state.characters[0].bindings[0]).toMatchObject({ id: latexarms.id });
+        expect(state.characters[0].bindings[0]).toMatchObject({ id: latexHead.id });
         expect(state.characters[0].bindings[0].value).toBe(bindingEvent.amount);
         expect(state.enemies[0].intention).toEqual({
             move: enemyMove.displayId,
@@ -65,7 +65,7 @@ describe("turn phases and enemy intentions", () => {
                 effects: [{
                     type: "binding",
                     target: ko.id,
-                    binding: latexarms.id,
+                    binding: latexHead.id,
                     amount: expect.any(Number),
                 }],
             }],

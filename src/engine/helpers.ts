@@ -1,7 +1,6 @@
-import { thresholds } from "./constants";
 import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
-import type { BindingId, BindingLevel, BuffId, EntityId, EntitySide, MoveId } from "./types";
-
+import { getMoves } from "./moves";
+import type { BindingId, BuffId, EntityId, EntitySide, MoveId } from "./types";
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {
     return state.characters.find(character => character.id === id);
@@ -16,7 +15,7 @@ export function findEntity(state: iGameState, id: EntityId): iCharacter | iEnemy
 }
 
 export function findMove(entity: iEntity, id: MoveId): MoveDef | undefined {
-    return entity.definition.moves.find(move => move.id === id);
+    return getMoves(entity).find(move => move.id === id);
 }
 
 export function findBinding(entity: iCharacter, id: BindingId): iBinding | undefined {
@@ -46,16 +45,3 @@ export function isEnemy(entity: iEntity): entity is iEnemy {
     return "currHp" in entity;
 }
 
-export function getBindingLevel(binding: iBinding): BindingLevel {
-    if (binding.value >= thresholds.impossible)
-        return "impossible";
-    else if (binding.value >= thresholds.extreme)
-        return "extreme";
-    else if (binding.value >= thresholds.hard)
-        return "hard";
-    else if (binding.value >= thresholds.medium)
-        return "medium";
-    else if (binding.value >= thresholds.easy)
-        return "easy";
-    return "none";
-}

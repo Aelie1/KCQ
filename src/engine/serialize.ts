@@ -1,5 +1,6 @@
-import { evaluateIntention, resolveMove } from "./combat";
-import { getBindingLevel } from "./helpers";
+import { evaluateIntention } from "./combat";
+import { resolveMove } from "./moves";
+import { getBindingLevel } from "./bindings";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, MoveDef } from "./itypes";
 import { getStatuses } from "./status";
 import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo } from "./types";

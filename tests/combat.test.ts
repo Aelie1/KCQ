@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { resolveMove } from "../src/engine/combat";
+import { resolveMove } from "../src/engine/moves";
 import { GameEngine } from "../src/engine/engine";
 import { isEnemy } from "../src/engine/helpers";
 import type { iGameState } from "../src/engine/itypes";

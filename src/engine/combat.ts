@@ -1,7 +1,7 @@
 import { addBinding, removeBinding } from "./bindings";
 import { addBuff } from "./buffs";
 import { EFFECT_MODIFIER, effectivenessRange } from "./constants";
-import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
+import { isCharacter, isEnemy, isValidEntity } from "./helpers";
 import { EnemyDef, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iTargetInfo, MoveDef } from "./itypes";
 import { canMove, getModifier } from "./status";
 import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
@@ -25,22 +25,6 @@ export function loadEnemy(state: iGameState, enemy: EnemyDef): GameEvent[] {
 export function updateIntention(state: iGameState, actor: iEnemy, roll: number) {
     actor.intention = { action: actor.definition.ai(state, actor), roll: roll };
 }
-
-export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
-    if (targets.length !== move.targets) {
-        return false;
-    }
-    for (const target of targets) {
-        if (getIEntitySide(target) !== move.target) {
-            return false;
-        }
-    }
-    if (move.isValid)
-        return move.isValid(state, actor, targets)
-    return true;
-}
-
-
 
 export function damageEnemy(state: iGameState, target: iEnemy, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
@@ -85,32 +69,6 @@ export function setStance(target: iCharacter, stance: StanceId): GameEvent[] {
             break;
     }
     return events;
-}
-
-export function resolveMove (state:iGameState, move: MoveDef, actor: iEntity, targets: iTargetInfo[]) : iEffect[] {
-    const successfulTargets = targets.filter(
-        target => target.result !== "miss"
-    );
-    if (move.targets === 0 || successfulTargets.length > 0) {
-        const effects:iEffect[] = move.resolve(state, actor, successfulTargets);
-        return effects.map(normalizeEffect);
-    }
-    else {
-        return [];
-    }
-}
-
-export function normalizeEffect(effect: iEffect): iEffect {
-    switch(effect.type) {
-        case "binding":
-        case "damage":
-            return {
-                ...effect,
-                amount: Math.ceil(effect.amount)
-            }
-        default:
-            return effect;
-    }
 }
 
 export function processEffects(state: iGameState, effects: iEffect[]) : GameEvent[] {

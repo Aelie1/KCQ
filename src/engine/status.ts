@@ -1,4 +1,5 @@
-import { getBindingLevel, isCharacter } from "./helpers";
+import { isCharacter } from "./helpers";
+import { getBindingLevel } from "./bindings";
 import { iCharacter, iEntity, iStatus, StatusDef } from "./itypes";
 import { ActionFailure, ActionType, ModifierId, MoveType } from "./types";
 

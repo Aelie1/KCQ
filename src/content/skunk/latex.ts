@@ -2,8 +2,8 @@ import { thresholds } from "../../engine/constants";
 import { BindingDef, iBinding, iCharacter, iEffect } from "../../engine/itypes";
 import { bound, breathless, gagged, hobbled, submissive, vibrating } from "../../engine/status";
 
-export const latexbindings: BindingDef = {
-    id: "latexbindings",
+export const latexBindings: BindingDef = {
+    id: "latexBindings",
     status: {},
     initialState: {
         max: 0
@@ -18,7 +18,7 @@ export const latexbindings: BindingDef = {
         if (binding.value < thresholds.hard) {
             return [];
         }
-        const spreadLocation: BindingDef = (actor === target && binding.definition === latexarms) ? latexhead : latexarms;
+        const spreadLocation: BindingDef = (actor === target && binding.definition === latexArms) ? latexHead : latexArms;
         let spreadAmount = 0;
         if (binding.value >= thresholds.impossible) {
             const spreadRatio = 1 + 1 * ((binding.value - thresholds.impossible) / (thresholds.max - thresholds.impossible));
@@ -54,7 +54,7 @@ export const latexbindings: BindingDef = {
                 })
             }
 
-            const splashLocations = [latexhead, latexarms, latextorso, latexlegs];
+            const splashLocations = [latexHead, latexArms, latexTorso, latexLegs];
             let carryoverAmount = 0;
             for (const location of splashLocations) {
                 if (location === binding.definition || location === spreadLocation) {
@@ -85,9 +85,9 @@ export const latexbindings: BindingDef = {
     }
 }
 
-export const latexhead: BindingDef = {
-    ...latexbindings,
-    id: "latexhead",
+export const latexHead: BindingDef = {
+    ...latexBindings,
+    id: "latexHead",
     status: {
         easy:       [{ definition: gagged, value: 1 }],
         medium:     [{ definition: gagged, value: 2 }],
@@ -97,9 +97,9 @@ export const latexhead: BindingDef = {
     },
 }
 
-export const latexarms: BindingDef = {
-    ...latexbindings,
-    id: "latexarms",
+export const latexArms: BindingDef = {
+    ...latexBindings,
+    id: "latexArms",
     status: {
         medium:     [{ definition: bound, value: 1 }],
         hard:       [{ definition: bound, value: 2 }],
@@ -108,9 +108,9 @@ export const latexarms: BindingDef = {
     },
 }
 
-export const latextorso: BindingDef = {
-    ...latexbindings,
-    id: "latextorso",
+export const latexTorso: BindingDef = {
+    ...latexBindings,
+    id: "latexTorso",
     status: {
         easy:       [{ definition: breathless, value: 1 }],
         medium:     [{ definition: breathless, value: 2 }, { definition: vibrating, value: 1 }],
@@ -120,13 +120,25 @@ export const latextorso: BindingDef = {
     },
 }
 
-export const latexlegs: BindingDef = {
-    ...latexbindings,
-    id: "latexlegs",
+export const latexLegs: BindingDef = {
+    ...latexBindings,
+    id: "latexLegs",
     status: {
         medium:     [{ definition: hobbled, value: 1 }],
         hard:       [{ definition: hobbled, value: 2 }],
         extreme:    [{ definition: hobbled, value: 3 }],
         impossible: [{ definition: hobbled, value: 4 }]
+    },
+}
+
+//Collar doesn't follow the spreading and regeneration rules of the rest of the set
+export const latexCollar: BindingDef = {
+    id: "latexCollar",
+    status: {
+        easy:       [{ definition: submissive, value: 1 }],
+        medium:     [{ definition: submissive, value: 2 }],
+        hard:       [{ definition: submissive, value: 3 }],
+        extreme:    [{ definition: submissive, value: 4 }],
+        impossible: [{ definition: submissive, value: 4 }]
     },
 }

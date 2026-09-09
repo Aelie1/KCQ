@@ -1,8 +1,9 @@
 import { resolveEscape } from "./bindings";
 import { tickBuffs } from "./buffs";
-import { calculateAccuracy, evaluateIntention, evaluateResult, isValidMove, loadEnemy, processEffects, resolveMove, setStance, updateIntention } from "./combat";
+import { calculateAccuracy, evaluateIntention, evaluateResult, loadEnemy, processEffects, setStance, updateIntention } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove } from "./helpers";
 import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTargetInfo } from "./itypes";
+import { getMoves, isValidMove, resolveMove } from "./moves";
 import { XorShift32 } from "./random";
 import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canMove, canUseMoveType, isIncapacitated, isSkipped } from "./status";
@@ -133,7 +134,7 @@ export class GameEngine {
         const character = findCharacter(this.state, actor);
         if (character) {
             const result = canAct(character,"attack");
-            for (const move of character.definition.moves) {
+            for (const move of getMoves(character)) {
                 let available = true;
                 let reason: ActionFailureReason = "moveUnavailable";
                 if (result) {

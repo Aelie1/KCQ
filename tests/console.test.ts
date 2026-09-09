@@ -5,7 +5,7 @@ import { formatEvents, formatIntention } from "../src/console/format";
 import { formatAccuracyRow, renderScreen } from "../src/console/render";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
-import { latexarms } from "../src/content/skunk/latex";
+import { latexArms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { helpless } from "../src/engine/status";
@@ -24,7 +24,7 @@ const state: GameState = {
         acted: false,
         standing: true,
         bonusEscapes: 0,
-        bindings: [{ id: "latexarms", value: 55, level: "extreme", state: {} }],
+        bindings: [{ id: "latexArms", value: 55, level: "extreme", state: {} }],
         buffs: [],
         status: [{ id: "bound", value: 3 }],
     }],
@@ -38,7 +38,7 @@ const state: GameState = {
             targets: [{
                 target: "ko",
                 result: "hit",
-                effects: [{ type: "binding", target: "ko", binding: "latexarms", amount: 19 }],
+                effects: [{ type: "binding", target: "ko", binding: "latexArms", amount: 19 }],
             }],
             effects: [],
         },
@@ -105,7 +105,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("ENEMIES");
         expect(rendered).toContain("ACTIONS / TARGETING");
         expect(rendered).toContain("RECENT LOG");
-        expect(rendered).toContain("latexarms");
+        expect(rendered).toContain("latexArms");
         expect(rendered).toContain("Intent: latexSpray");
         expect(rendered).toContain("Seed 8224");
     });
@@ -184,15 +184,15 @@ describe("console formatting", () => {
     });
 
     it("previews every effect for an escape option", async () => {
-        const { engine } = setupBoundEngine(latexarms, thresholds.hard);
+        const { engine } = setupBoundEngine(latexArms, thresholds.hard);
 
         const rendered = await runScriptedConsole(
             engine,
             ["1", "4", "2", "7", "3"],
         );
 
-        expect(rendered).toContain("[1] hero - latexarms");
-        expect(rendered).toContain("     hero latexarms -18");
-        expect(rendered).toContain("     hero latexhead +5");
+        expect(rendered).toContain("[1] hero - latexArms");
+        expect(rendered).toContain("     hero latexArms -18");
+        expect(rendered).toContain("     hero latexHead +5");
     });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { latexarms } from "../src/content/skunk/latex";
+import { latexArms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import type { BindingDef } from "../src/engine/itypes";
@@ -179,20 +179,20 @@ describe("escape progress", () => {
         const engine = setupEscapeScenario(
             "hero",
             ["hero"],
-            [{ target: "hero", binding: latexarms, amount: thresholds.hard }],
+            [{ target: "hero", binding: latexArms, amount: thresholds.hard }],
         );
 
-        expect(escapeEffects(engine, "hero", "hero", latexarms.id)).toEqual([
+        expect(escapeEffects(engine, "hero", "hero", latexArms.id)).toEqual([
             {
                 type: "binding",
                 target: "hero",
-                binding: "latexarms",
+                binding: "latexArms",
                 amount: -18,
             },
             {
                 type: "binding",
                 target: "hero",
-                binding: "latexhead",
+                binding: "latexHead",
                 amount: 5,
             },
         ]);
@@ -201,7 +201,7 @@ describe("escape progress", () => {
             type: "escape",
             actor: "hero",
             target: "hero",
-            binding: latexarms.id,
+            binding: latexArms.id,
         });
 
         expect(result).toMatchObject({
@@ -210,20 +210,20 @@ describe("escape progress", () => {
                 {
                     type: "bondageChanged",
                     target: "hero",
-                    binding: "latexarms",
+                    binding: "latexArms",
                     amount: -18,
                 },
                 {
                     type: "bondageAdded",
                     target: "hero",
-                    binding: "latexhead",
+                    binding: "latexHead",
                     amount: 5,
                 },
             ],
         });
         expect(engine.getGameState().characters[0].bindings).toEqual([
-            expect.objectContaining({ id: "latexarms", value: 12 }),
-            expect.objectContaining({ id: "latexhead", value: 5 }),
+            expect.objectContaining({ id: "latexArms", value: 12 }),
+            expect.objectContaining({ id: "latexHead", value: 5 }),
         ]);
     });
 
