@@ -7,6 +7,7 @@ const BINDING_SCALE = 100;
 
 export interface ScreenModel {
     encounter: string;
+    seed: number;
     state: GameState;
     actionLines: string[];
     logLines: string[];
@@ -35,7 +36,7 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
         width - 2,
         " KO-CHAN'S QUEST",
         model.encounter,
-        `Round ${turn.round} / ${turn.phase.toUpperCase()} `,
+        `Seed ${model.seed} / Round ${turn.round} / ${turn.phase.toUpperCase()} `,
     );
 
     return [

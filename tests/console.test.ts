@@ -5,8 +5,16 @@ import { formatEvents, formatIntention } from "../src/console/format";
 import { formatAccuracyRow, renderScreen } from "../src/console/render";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
+import { bindingThresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
+import { helpless } from "../src/engine/status";
 import type { GameState } from "../src/engine/types";
+import {
+    makeBindingDef,
+    makeCharacterDef,
+    makeMove,
+    setupBoundEngine,
+} from "./helpers";
 
 const state: GameState = {
     turn: { round: 3, step: 1, phase: "player" },
@@ -36,6 +44,25 @@ const state: GameState = {
     }],
 };
 
+async function runScriptedConsole(engine: GameEngine, scriptedAnswers: string[]) {
+    const input = new PassThrough();
+    const output = Object.assign(new PassThrough(), { columns: 180, rows: 50 });
+    const answers = [...scriptedAnswers];
+    let rendered = "";
+    output.on("data", (chunk: Buffer) => {
+        const text = chunk.toString();
+        rendered += text;
+        if (text === "> ") {
+            const answer = answers.shift();
+            if (answer) setImmediate(() => input.write(`${answer}\n`));
+        }
+    });
+
+    await runConsoleClient(engine, "plains_1", [], { input, output });
+    expect(answers).toEqual([]);
+    return rendered;
+}
+
 describe("console formatting", () => {
     it("formats intentions with target-attached and top-level effects", () => {
         expect(formatIntention({
@@ -64,6 +91,7 @@ describe("console formatting", () => {
     it("renders a fixed-size four-panel screen", () => {
         const rendered = renderScreen({
             encounter: "plains_1",
+            seed: 8224,
             state,
             actionLines: ["[1] telekinesis"],
             logLines: ["Encounter plains_1 began."],
@@ -78,6 +106,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("RECENT LOG");
         expect(rendered).toContain("latexarms");
         expect(rendered).toContain("Intent: latexSpray");
+        expect(rendered).toContain("Seed 8224");
     });
 
     it("formats all accuracy bands", () => {
@@ -85,28 +114,66 @@ describe("console formatting", () => {
             .toContain("10%       15%      65%       10%");
     });
 
-    it("plays an attack and enemy phase using only numbered input", async () => {
+    it("automatically ends the turn after the last available character acts", async () => {
         const engine = new GameEngine(encounterList, 8224);
         engine.loadCharacter(ko);
         engine.loadEncounter("plains_1");
-        const input = new PassThrough();
-        const output = Object.assign(new PassThrough(), { columns: 180, rows: 50 });
-        const answers = ["1", "1", "1", "2", "3"];
-        let rendered = "";
-        output.on("data", (chunk: Buffer) => {
-            const text = chunk.toString();
-            rendered += text;
-            if (text === "> ") {
-                const answer = answers.shift();
-                if (answer) setImmediate(() => input.write(`${answer}\n`));
-            }
-        });
+        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"]);
 
-        await runConsoleClient(engine, "plains_1", [], { input, output });
-
-        expect(answers).toEqual([]);
         expect(engine.getGameState().turn.round).toBe(2);
         expect(rendered).toContain("TARGET");
         expect(rendered).toMatch(/telekinesis on skunkette1: (MISS|GRAZE|HIT|CRIT)/);
+        expect(rendered).toContain("No characters available. Ending turn automatically.");
+        expect(rendered).toContain("Seed 8224");
+        expect(rendered).toContain("Escape / assist - unavailable: no legal escapes");
+    });
+
+    it("shows a fully acted character without assigning it a menu number", async () => {
+        const engine = new GameEngine(encounterList, 8224);
+        engine.loadCharacter(ko);
+        engine.loadCharacter(makeCharacterDef("ally"));
+        engine.loadEncounter("plains_1");
+
+        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"]);
+
+        expect(rendered).toContain("[-] ko  UNAVAILABLE: actorAlreadyActed");
+        expect(rendered).toContain("[1] ally  READY");
+        expect(engine.getGameState().turn.round).toBe(1);
+    });
+
+    it("does not number unavailable characters and ignores them for automatic end turn", async () => {
+        const helplessBinding = makeBindingDef("helpless-source", {
+            easy: [{ definition: helpless, value: 1 }],
+        });
+        const { engine } = setupBoundEngine(helplessBinding, bindingThresholds.easy);
+        const wait = makeMove("player-wait", "mouth", { targets: 0 });
+        engine.loadCharacter(makeCharacterDef("ally", [wait]));
+
+        const rendered = await runScriptedConsole(engine, ["1", "1", "3"]);
+
+        expect(rendered).toContain("[-] hero  UNAVAILABLE: actorSkipped");
+        expect(rendered).toContain("[1] ally  READY");
+        expect(rendered).toContain("Choose an action for ally.");
+        expect(rendered).not.toContain("Choose an action for hero.");
+        expect(rendered).toContain("No characters available. Ending turn automatically.");
+        expect(engine.getGameState().turn.round).toBe(3);
+    });
+
+    it("uses flat escape options and keeps an actor selectable for a bonus escape", async () => {
+        const restraint = makeBindingDef("rope");
+        const { engine } = setupBoundEngine(restraint, bindingThresholds.impossible);
+
+        const rendered = await runScriptedConsole(
+            engine,
+            ["1", "5", "1", "4", "1", "1", "4", "1", "3"],
+        );
+
+        expect(rendered).toContain("Change stance -> standing");
+        expect(rendered).toMatch(/\[1\] hero - rope \(-\d+\)/);
+        expect(rendered).toContain("hero  ACTED / 1 BONUS ESCAPE");
+        expect(rendered).toContain("Change stance -> moving - unavailable: actorAlreadyActed");
+        expect(rendered).not.toContain("Who should hero free?");
+        expect(rendered).not.toContain("Choose a binding on hero.");
+        expect(engine.getGameState().turn.round).toBe(3);
     });
 });

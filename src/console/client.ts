@@ -43,6 +43,7 @@ export async function runConsoleClient(
         const height = Math.max(1, (streams.output.rows ?? 50) - 1);
         const screen = renderScreen({
             encounter,
+            seed: engine.getSeed(),
             state: engine.getGameState(),
             actionLines,
             logLines,
@@ -66,6 +67,14 @@ export async function runConsoleClient(
     const execute = (action: PlayerAction): boolean => {
         const result = engine.executeAction(action);
         appendResult(logLines, result);
+        if (
+            result.success
+            && action.type !== "endTurn"
+            && !engine.getAvailability().some((character) => character.available)
+        ) {
+            logLines.push("No characters available. Ending turn automatically.");
+            appendResult(logLines, engine.executeAction({ type: "endTurn" }));
+        }
         return result.success;
     };
 
@@ -122,58 +131,31 @@ export async function runConsoleClient(
         execute({ type: "attack", actor, move: move.id, targets: selected });
     };
 
-    const chooseEscape = async (actor: Character): Promise<void> => {
-        const targets = engine.getGameState().characters.filter(
-            (character) => character.bindings.length > 0,
-        );
-        if (targets.length === 0) {
-            logLines.push("Escape unavailable: no character has bindings.");
+    const chooseEscape = async (actorId: EntityId): Promise<void> => {
+        const options = engine.getEscapes(actorId)?.options ?? [];
+        if (options.length === 0) {
+            logLines.push("Escape / assist unavailable: no legal escapes.");
             return;
         }
 
-        const targetChoices = targets.map(
-            (target, index) => `[${index + 1}] ${target.id}${target.id === actor.id ? " (self)" : " (assist)"}`,
+        const choices = options.map(
+            (option, index) =>
+                `[${index + 1}] ${option.target} - ${option.binding} (-${option.amount})`,
         );
-        targetChoices.push(`[${targetChoices.length + 1}] Back`);
-        const targetChoice = await choose([
-            `Who should ${actor.id} free?`,
+        choices.push(`[${choices.length + 1}] Back`);
+        const choice = await choose([
+            `Choose an escape for ${actorId}.`,
             "",
-            ...targetChoices,
-        ], targetChoices.length);
-        if (targetChoice === targets.length) return;
+            ...choices,
+        ], choices.length);
+        if (choice === options.length) return;
 
-        const target = targets[targetChoice];
-        const bindingChoices = target.bindings.map(
-            (binding, index) => `[${index + 1}] ${binding.id}  ${binding.value}/100  ${binding.level.toUpperCase()}`,
-        );
-        bindingChoices.push(`[${bindingChoices.length + 1}] Back`);
-        const bindingChoice = await choose([
-            `Choose a binding on ${target.id}.`,
-            "",
-            ...bindingChoices,
-        ], bindingChoices.length);
-        if (bindingChoice === target.bindings.length) return;
-
+        const option = options[choice];
         execute({
             type: "escape",
-            actor: actor.id,
-            target: target.id,
-            binding: target.bindings[bindingChoice].id,
-        });
-    };
-
-    const chooseStance = async (actor: Character): Promise<void> => {
-        const choice = await choose([
-            `${actor.id} is currently ${actor.standing ? "standing" : "moving"}.`,
-            "",
-            "[1] Standing",
-            "[2] Moving",
-            "[3] Back",
-        ], 3);
-        if (choice === 2) return;
-        execute({
-            type: "stance",
-            actor: actor.id
+            actor: actorId,
+            target: option.target,
+            binding: option.binding,
         });
     };
 
@@ -182,6 +164,9 @@ export async function runConsoleClient(
         const actor = state.characters.find((character) => character.id === characterId);
         if (!actor) return;
         const actions = engine.getActions(actor.id);
+        const escapes = engine.getEscapes(actor.id);
+        const escapeAvailable = (escapes?.options.length ?? 0) > 0;
+        const stance = engine.stanceAvailable(actor.id);
         const menu: MenuItem[] = actions.map((action) => ({
             label: moveLabel(action),
             select: async () => {
@@ -193,8 +178,21 @@ export async function runConsoleClient(
             },
         }));
         menu.push(
-            { label: "Escape / assist", select: () => chooseEscape(actor) },
-            { label: "Change stance", select: () => chooseStance(actor) },
+            {
+                label: `Escape / assist${escapeAvailable ? "" : " - unavailable: no legal escapes"}`,
+                select: async () => {
+                    if (escapeAvailable) await chooseEscape(actor.id);
+                    else logLines.push("Escape / assist unavailable: no legal escapes.");
+                },
+            },
+            {
+                label: `Change stance -> ${actor.standing ? "moving" : "standing"}`
+                    + (stance.available ? "" : ` - unavailable: ${stance.reason}`),
+                select: async () => {
+                    if (stance.available) execute({ type: "stance", actor: actor.id });
+                    else logLines.push(`Stance change unavailable: ${stance.reason}.`);
+                },
+            },
             { label: "End turn", select: async () => { execute({ type: "endTurn" }); } },
             { label: "Back", select: async () => undefined },
         );
@@ -228,18 +226,33 @@ export async function runConsoleClient(
                 continue;
             }
 
-            const characters = state.characters;
+            const availability = engine.getAvailability();
+            const availableIds = availability
+                .filter((character) => character.available)
+                .map((character) => character.id);
+            let menuNumber = 1;
+            const characterLines = availability.map((character) => {
+                const stateCharacter = state.characters.find((candidate) => candidate.id === character.id);
+                if (!character.available) {
+                    return `[-] ${character.id}  UNAVAILABLE: ${character.reason}`;
+                }
+                const line = `[${menuNumber}] ${character.id}`
+                    + (stateCharacter ? `  ${readiness(stateCharacter)}` : "");
+                menuNumber++;
+                return line;
+            });
             const choices = [
-                ...characters.map((character, index) =>
-                    `[${index + 1}] ${character.id}  ${readiness(character)}`,
-                ),
-                `[${characters.length + 1}] End turn`,
-                `[${characters.length + 2}] Quit`,
+                ...characterLines,
+                `[${menuNumber}] End turn`,
+                `[${menuNumber + 1}] Quit`,
             ];
-            const choice = await choose(["Choose a character.", "", ...choices], choices.length);
-            if (choice < characters.length) {
-                await chooseAction(characters[choice].id);
-            } else if (choice === characters.length) {
+            const choice = await choose(
+                ["Choose a character.", "", ...choices],
+                availableIds.length + 2,
+            );
+            if (choice < availableIds.length) {
+                await chooseAction(availableIds[choice]);
+            } else if (choice === availableIds.length) {
                 execute({ type: "endTurn" });
             } else {
                 running = false;
