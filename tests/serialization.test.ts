@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bindingThresholds } from "../src/engine/constants";
+import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import type { iBuff, iGameState, StatusDef } from "../src/engine/itypes";
 import { serializeGameState } from "../src/engine/serialize";
@@ -71,7 +71,7 @@ describe("state serialization and combatant loading", () => {
                 type: "binding",
                 target: state.characters[0],
                 binding: restraint,
-                amount: bindingThresholds.easy,
+                amount: thresholds.easy,
             }],
         });
         const hero = makeCharacterDef("hero", [prepare]);

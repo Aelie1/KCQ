@@ -54,7 +54,7 @@ function serializeIntention(state: iGameState, intention: iIntention): Intention
     }
 }
 
-function serializeEffect(effect: iEffect): Effect {
+export function serializeEffect(effect: iEffect): Effect {
     switch (effect.type) {
         case "binding":
             return {

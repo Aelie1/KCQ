@@ -1,4 +1,4 @@
-import { addBinding } from "./bindings";
+import { addBinding, removeBinding } from "./bindings";
 import { addBuff } from "./buffs";
 import { effectivenessRange } from "./constants";
 import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
@@ -122,7 +122,11 @@ export function processEffects(state: iGameState, effects: iEffect[]) : GameEven
         }
         switch (effect.type) {
             case "binding":
-                events.push(...addBinding(effect.target,effect.binding,effect.amount))
+                if (effect.amount > 0) {
+                    events.push(...addBinding(effect.target,effect.binding,effect.amount))
+                } else {
+                    events.push(...removeBinding(effect.target,effect.binding,effect.amount))
+                }
                 break;
             case "buff":
                 events.push(...addBuff(effect.source,effect.target,effect.buff))

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bindingThresholds, effectivenessRange } from "../src/engine/constants";
+import { thresholds, effectivenessRange } from "../src/engine/constants";
 import { calculateAccuracy, evaluateResult } from "../src/engine/combat";
 import { GameEngine } from "../src/engine/engine";
 import type {
@@ -51,7 +51,7 @@ describe("accuracy", () => {
             easy: [{ definition: modifierStatus, value: 1 }],
         });
         return makeCharacter("actor", [
-            makeBinding(source, bindingThresholds.easy),
+            makeBinding(source, thresholds.easy),
         ]);
     }
 

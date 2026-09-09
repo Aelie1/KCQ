@@ -7,7 +7,7 @@
             "command": "${workspaceFolder}\\node_modules\\.bin\\tsc.cmd",
             "args": [
                 "-p",
-                "${workspaceFolder}\\tsconfig.json"
+                "${workspaceFolder}\\tsconfig.build.json"
             ],
             "group": {
                 "kind": "build",

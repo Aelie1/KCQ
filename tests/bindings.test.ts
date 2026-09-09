@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { latexarms } from "../src/content/skunk/latex";
 import { addBinding, removeBinding } from "../src/engine/bindings";
-import { BINDING_MAX, bindingThresholds } from "../src/engine/constants";
+import { thresholds } from "../src/engine/constants";
 import { getBindingLevel } from "../src/engine/helpers";
 import { getModifier, getStatuses } from "../src/engine/status";
 import type { StatusDef } from "../src/engine/itypes";
@@ -52,7 +52,7 @@ describe("binding lifecycle", () => {
     it("scales only the portion of an application above 80", () => {
         const definition = makeBindingDef("rope");
         const target = makeCharacter();
-        addBinding(target, definition, bindingThresholds.impossible - 5);
+        addBinding(target, definition, thresholds.impossible - 5);
 
         const events = addBinding(target, definition, 20);
 
@@ -63,13 +63,13 @@ describe("binding lifecycle", () => {
             binding: definition.id,
             amount: expectedIncrease,
         }]);
-        expect(target.bindings[0].value).toBe(bindingThresholds.impossible - 5 + expectedIncrease);
+        expect(target.bindings[0].value).toBe(thresholds.impossible - 5 + expectedIncrease);
     });
 
     it("scales the whole application when already above 80", () => {
         const definition = makeBindingDef("rope");
         const target = makeCharacter();
-        addBinding(target, definition, bindingThresholds.impossible + 1);
+        addBinding(target, definition, thresholds.impossible + 1);
 
         const events = addBinding(target, definition, 10);
 
@@ -79,7 +79,7 @@ describe("binding lifecycle", () => {
             binding: definition.id,
             amount: Math.ceil(10 * 0.1),
         }]);
-        expect(target.bindings[0].value).toBe(bindingThresholds.impossible + 2);
+        expect(target.bindings[0].value).toBe(thresholds.impossible + 2);
     });
 
     it("caps binding value and reports only the applied amount", () => {
@@ -88,14 +88,14 @@ describe("binding lifecycle", () => {
 
         const [event] = addBinding(target, definition, 1_000);
 
-        expect(target.bindings[0].value).toBe(BINDING_MAX);
-        expect(event).toMatchObject({ type: "bondageAdded", amount: BINDING_MAX });
+        expect(target.bindings[0].value).toBe(thresholds.max);
+        expect(event).toMatchObject({ type: "bondageAdded", amount: thresholds.max });
     });
 
     it("keeps callback-managed state independent per binding instance", () => {
         const definition = makeBindingDef("adaptive");
         definition.initialState = { peak: 0 };
-        definition.onBindingAdd = (binding) => {
+        definition.onAdd = (binding) => {
             binding.state.peak = Math.max(binding.state.peak, binding.value);
         };
         const first = makeCharacter("first");
@@ -168,27 +168,27 @@ describe("binding lifecycle", () => {
     it("leaves state unchanged when asked to remove a missing binding", () => {
         const existing = makeBindingDef("existing");
         const missing = makeBindingDef("missing");
-        const target = makeCharacter("hero", [makeBinding(existing, bindingThresholds.easy)]);
+        const target = makeCharacter("hero", [makeBinding(existing, thresholds.easy)]);
 
         expect(removeBinding(target, missing, 10)).toEqual([]);
-        expect(target.bindings).toEqual([makeBinding(existing, bindingThresholds.easy)]);
+        expect(target.bindings).toEqual([makeBinding(existing, thresholds.easy)]);
     });
 });
 
 describe("binding levels and effective statuses", () => {
     it.each([
         [0, "none"],
-        [bindingThresholds.easy - 1, "none"],
-        [bindingThresholds.easy, "easy"],
-        [bindingThresholds.medium - 1, "easy"],
-        [bindingThresholds.medium, "medium"],
-        [bindingThresholds.hard - 1, "medium"],
-        [bindingThresholds.hard, "hard"],
-        [bindingThresholds.extreme - 1, "hard"],
-        [bindingThresholds.extreme, "extreme"],
-        [bindingThresholds.impossible - 1, "extreme"],
-        [bindingThresholds.impossible, "impossible"],
-        [BINDING_MAX, "impossible"],
+        [thresholds.easy - 1, "none"],
+        [thresholds.easy, "easy"],
+        [thresholds.medium - 1, "easy"],
+        [thresholds.medium, "medium"],
+        [thresholds.hard - 1, "medium"],
+        [thresholds.hard, "hard"],
+        [thresholds.extreme - 1, "hard"],
+        [thresholds.extreme, "extreme"],
+        [thresholds.impossible - 1, "extreme"],
+        [thresholds.impossible, "impossible"],
+        [thresholds.max, "impossible"],
     ] as const)("maps binding value %s to %s", (value, level) => {
         expect(getBindingLevel(makeBinding(makeBindingDef("rope"), value))).toBe(level);
     });
@@ -212,9 +212,9 @@ describe("binding levels and effective statuses", () => {
             easy: [{ definition: otherStatus, value: 1 }],
         });
         const target = makeCharacter("hero", [
-            makeBinding(weak, bindingThresholds.easy),
-            makeBinding(strong, bindingThresholds.easy),
-            makeBinding(other, bindingThresholds.easy),
+            makeBinding(weak, thresholds.easy),
+            makeBinding(strong, thresholds.easy),
+            makeBinding(other, thresholds.easy),
         ]);
 
         expect(getStatuses(target)).toEqual([
@@ -223,8 +223,8 @@ describe("binding levels and effective statuses", () => {
         ]);
 
         const reversed = makeCharacter("reversed", [
-            makeBinding(strong, bindingThresholds.easy),
-            makeBinding(weak, bindingThresholds.easy),
+            makeBinding(strong, thresholds.easy),
+            makeBinding(weak, thresholds.easy),
         ]);
         expect(getStatuses(reversed)).toEqual([
             { definition: sharedStatus, value: 3 },
@@ -257,7 +257,7 @@ describe("binding levels and effective statuses", () => {
             easy: [{ definition: bonusStatus, value: 1 }],
         });
         const target = makeCharacter("hero", [first, second, third].map((definition) =>
-            makeBinding(definition, bindingThresholds.easy),
+            makeBinding(definition, thresholds.easy),
         ));
 
         expect(getModifier(target, "defense")).toBe(strongestPenalty + bonus);

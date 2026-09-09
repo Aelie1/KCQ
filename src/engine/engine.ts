@@ -1,12 +1,12 @@
-import { calculateProgress, removeBinding } from "./bindings";
+import { resolveEscape } from "./bindings";
 import { tickBuffs } from "./buffs";
 import { calculateAccuracy, evaluateIntention, evaluateResult, isValidMove, loadEnemy, processEffects, resolveMove, setStance, updateIntention } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove } from "./helpers";
 import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTargetInfo } from "./itypes";
 import { XorShift32 } from "./random";
-import { serializeGameState, serializeMove } from "./serialize";
-import { canAttack, canBonusEscape, canMove, canEscape, canUseMoveType, isSkipped, canAssist, isIncapacitated, canAct } from "./status";
-import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceId, StanceInfo } from "./types";
+import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
+import { canAct, canAssist, canAttack, canBonusEscape, canMove, canUseMoveType, isIncapacitated, isSkipped } from "./status";
+import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -185,7 +185,7 @@ export class GameEngine {
                     actor: actor,
                     target: target.id,
                     binding: binding.id,
-                    amount: calculateProgress(character,target,binding)
+                    effects: resolveEscape(character,target,binding).map(serializeEffect)
                 })
             }
         }
@@ -339,8 +339,8 @@ export class GameEngine {
                 }
 
                 //now we have a valid actor, target, and binding -- execute the escape
-                const amount = calculateProgress(actor, target, binding);
-                events.push(...removeBinding(target, binding.definition, amount))
+                const effects = resolveEscape(actor, target, binding);
+                events.push(...processEffects(this.state,effects))
                 if (!actor.acted) {
                     actor.acted = true;
                     if (actor.standing && canBonusEscape(actor)) {

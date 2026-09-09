@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { latexarms } from "../src/content/skunk/latex";
-import { bindingThresholds } from "../src/engine/constants";
+import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import type { BindingDef } from "../src/engine/itypes";
 import {
@@ -33,7 +33,7 @@ function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: numbe
                 type: "binding" as const,
                 target: state.characters[1],
                 binding: targetBinding,
-                amount: bindingThresholds.easy,
+                amount: thresholds.easy,
             },
         ],
     });
@@ -59,7 +59,7 @@ describe("actor-level action restrictions", () => {
         });
         const { engine, hero, foeId, mouthMove } = setupBoundEngine(
             source,
-            bindingThresholds.easy,
+            thresholds.easy,
         );
 
         expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorSkipped");
@@ -82,7 +82,7 @@ describe("actor-level action restrictions", () => {
         });
         const { engine, hero, foeId, mouthMove } = setupBoundEngine(
             source,
-            bindingThresholds.easy,
+            thresholds.easy,
         );
 
         expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorIncapacitated");
@@ -105,7 +105,7 @@ describe("actor-level action restrictions", () => {
         });
         const { engine, hero, mouthMove } = setupBoundEngine(
             source,
-            bindingThresholds.easy,
+            thresholds.easy,
         );
 
         expect(engine.getActions(hero.id).find((action) => action.move.id === mouthMove.id))
@@ -124,9 +124,9 @@ describe("actor-level action restrictions", () => {
 
 describe("move and escape restrictions", () => {
     it.each([
-        [bindingThresholds.hard, false, 2],
-        [bindingThresholds.extreme, true, 3],
-        [bindingThresholds.impossible, true, 4],
+        [thresholds.hard, false, 2],
+        [thresholds.extreme, true, 3],
+        [thresholds.impossible, true, 4],
     ] as const)(
         "applies Bound move restrictions at binding value %s",
         (value, armsBlocked, boundValue) => {
@@ -177,7 +177,7 @@ describe("move and escape restrictions", () => {
         });
         const { engine, hero, foeId, mouthMove } = setupBoundEngine(
             restraint,
-            bindingThresholds.easy,
+            thresholds.easy,
         );
 
         expectMoveRejection(
@@ -195,7 +195,7 @@ describe("move and escape restrictions", () => {
         });
         const { engine, helper, target, targetBinding } = setupActorAndTarget(
             escapeBlockingBinding,
-            bindingThresholds.easy,
+            thresholds.easy,
         );
 
         expect(engine.getEscapes(helper.id)).toEqual({ options: [], assistAllowed: false });
@@ -216,7 +216,7 @@ describe("move and escape restrictions", () => {
     it("allows self-escape but rejects assistance when only blocksAssist is active", () => {
         const { engine, helper, target, targetBinding } = setupActorAndTarget(
             latexarms,
-            bindingThresholds.extreme,
+            thresholds.extreme,
         );
         const escapes = engine.getEscapes(helper.id);
 

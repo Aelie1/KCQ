@@ -1,4 +1,4 @@
-import { bindingThresholds } from "./constants";
+import { thresholds } from "./constants";
 import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
 import type { BindingId, BindingLevel, BuffId, EntityId, EntitySide, MoveId } from "./types";
 
@@ -47,15 +47,15 @@ export function isEnemy(entity: iEntity): entity is iEnemy {
 }
 
 export function getBindingLevel(binding: iBinding): BindingLevel {
-    if (binding.value >= bindingThresholds.impossible)
+    if (binding.value >= thresholds.impossible)
         return "impossible";
-    else if (binding.value >= bindingThresholds.extreme)
+    else if (binding.value >= thresholds.extreme)
         return "extreme";
-    else if (binding.value >= bindingThresholds.hard)
+    else if (binding.value >= thresholds.hard)
         return "hard";
-    else if (binding.value >= bindingThresholds.medium)
+    else if (binding.value >= thresholds.medium)
         return "medium";
-    else if (binding.value >= bindingThresholds.easy)
+    else if (binding.value >= thresholds.easy)
         return "easy";
     return "none";
 }

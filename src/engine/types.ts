@@ -156,6 +156,7 @@ export type BindingLevel =
     | "hard"
     | "extreme"
     | "impossible"
+    | "max"
 
 
 /*******************************************************
@@ -222,7 +223,7 @@ export interface EscapeInfo {
     actor: EntityId;
     target: EntityId;
     binding: BindingId;
-    amount: number;
+    effects: Effect[];
 }
 
 export type ActionType = "attack" | "escape" | "stance" | "endTurn"

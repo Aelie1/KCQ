@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addBuff, removeBuff, tickBuffs } from "../src/engine/buffs";
-import { bindingThresholds } from "../src/engine/constants";
+import { thresholds } from "../src/engine/constants";
 import type {
     iBuff,
     iCharacter,
@@ -204,7 +204,7 @@ describe("buff status integration", () => {
             easy: [{ definition: modifierStatus, value: 1 }],
         });
         const character = makeCharacter("hero", [
-            makeBinding(source, bindingThresholds.easy),
+            makeBinding(source, thresholds.easy),
         ]);
         character.buffs.push(makeBuff({
             statuses: [{ definition: modifierStatus, value: 2 }],

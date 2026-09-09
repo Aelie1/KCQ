@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { BINDING_MAX, bindingThresholds } from "../src/engine/constants";
+import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import type { BindingDef } from "../src/engine/itypes";
 import type { StatusDef } from "../src/engine/itypes";
@@ -58,9 +58,9 @@ describe("escape progress", () => {
             "helper",
             ["helper", "easy", "impossible", "over-impossible"],
             [
-                { target: "easy", binding: restraint, amount: bindingThresholds.easy },
-                { target: "impossible", binding: restraint, amount: bindingThresholds.impossible },
-                { target: "over-impossible", binding: restraint, amount: BINDING_MAX },
+                { target: "easy", binding: restraint, amount: thresholds.easy },
+                { target: "impossible", binding: restraint, amount: thresholds.impossible },
+                { target: "over-impossible", binding: restraint, amount: thresholds.max },
             ],
         );
 
@@ -86,9 +86,9 @@ describe("escape progress", () => {
             "setup",
             ["setup", "unpenalized-helper", "penalized-helper", "target"],
             [
-                { target: "penalized-helper", binding: modifierBinding, amount: bindingThresholds.easy },
-                { target: "target", binding: modifierBinding, amount: bindingThresholds.easy },
-                { target: "target", binding: targetBinding, amount: bindingThresholds.medium },
+                { target: "penalized-helper", binding: modifierBinding, amount: thresholds.easy },
+                { target: "target", binding: modifierBinding, amount: thresholds.easy },
+                { target: "target", binding: targetBinding, amount: thresholds.medium },
             ],
         );
 
@@ -120,7 +120,7 @@ describe("escape progress", () => {
         const engine = setupEscapeScenario(
             "hero",
             ["hero"],
-            [{ target: "hero", binding: restraint, amount: bindingThresholds.hard }],
+            [{ target: "hero", binding: restraint, amount: thresholds.hard }],
         );
         const before = engine.getGameState().characters[0].bindings[0].value;
         const amount = escapeAmount(engine, "hero", "hero", restraint.id);

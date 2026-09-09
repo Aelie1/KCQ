@@ -134,7 +134,8 @@ export interface BindingDef {
     id: string;
     status?: Partial<Record<BindingLevel, iStatus[]>>;
     initialState?: Record<string, number>;
-    onBindingAdd?: (binding: iBinding) => void;
+    onAdd?: (binding: iBinding) => void;
+    onEscape?: (actor: iCharacter, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
 }
 
 /*******************************************************

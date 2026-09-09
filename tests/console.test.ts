@@ -5,7 +5,7 @@ import { formatEvents, formatIntention } from "../src/console/format";
 import { formatAccuracyRow, renderScreen } from "../src/console/render";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
-import { bindingThresholds } from "../src/engine/constants";
+import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { helpless } from "../src/engine/status";
 import type { GameState } from "../src/engine/types";
@@ -145,7 +145,7 @@ describe("console formatting", () => {
         const helplessBinding = makeBindingDef("helpless-source", {
             easy: [{ definition: helpless, value: 1 }],
         });
-        const { engine } = setupBoundEngine(helplessBinding, bindingThresholds.easy);
+        const { engine } = setupBoundEngine(helplessBinding, thresholds.easy);
         const wait = makeMove("player-wait", "mouth", { targets: 0 });
         engine.loadCharacter(makeCharacterDef("ally", [wait]));
 
@@ -161,7 +161,7 @@ describe("console formatting", () => {
 
     it("refreshes stance and bonus-escape menus in place", async () => {
         const restraint = makeBindingDef("rope");
-        const { engine } = setupBoundEngine(restraint, bindingThresholds.impossible);
+        const { engine } = setupBoundEngine(restraint, thresholds.impossible);
 
         const rendered = await runScriptedConsole(
             engine,
