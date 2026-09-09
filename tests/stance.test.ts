@@ -12,7 +12,7 @@ import {
     setupBoundEngine,
 } from "./helpers";
 
-describe("standing stance", () => {
+describe("stance toggling", () => {
     it("rejects invalid actor", () => {
         const strike = makeMove("strike");
         const hero = makeCharacterDef("hero", [strike]);
@@ -22,13 +22,11 @@ describe("standing stance", () => {
         const result = engine.executeAction({
             type: "stance",
             actor: "invalid-actor",
-            stance: "standing",
         });
 
-        expect(result).toMatchObject({
-            success: false,
-            reason: "invalidActor"
-        });
+        expect(result).toEqual({ success: false, reason: "invalidActor" });
+        expect(engine.stanceAvailable("invalid-actor"))
+            .toEqual({ available: false, reason: "invalidActor" });
     });
 
     it("enters standing stance without consuming the normal action", () => {
@@ -40,11 +38,8 @@ describe("standing stance", () => {
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);
 
-        const result = engine.executeAction({
-            type: "stance",
-            actor: hero.id,
-            stance: "standing",
-        });
+        expect(engine.stanceAvailable(hero.id)).toEqual({ available: true });
+        const result = engine.executeAction({ type: "stance", actor: hero.id });
 
         expect(result).toMatchObject({
             success: true,
@@ -69,13 +64,11 @@ describe("standing stance", () => {
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "standing",
         }).success).toBe(true);
 
         const result = engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "moving",
         });
 
         expect(result).toMatchObject({
@@ -97,13 +90,15 @@ describe("standing stance", () => {
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "standing",
         }).success).toBe(true);
 
+        expect(engine.stanceAvailable(hero.id)).toEqual({
+            available: false,
+            reason: "actorImmobilized",
+        });
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "moving",
         })).toEqual({ success: false, reason: "actorImmobilized" });
         expect(engine.getGameState().characters[0]).toMatchObject({
             standing: true,
@@ -123,7 +118,6 @@ describe("standing stance", () => {
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "standing",
         }).success).toBe(true);
 
         const first = engine.executeAction(escape);
@@ -178,7 +172,6 @@ describe("standing stance", () => {
         expect(engine.executeAction({
             type: "stance",
             actor: helper.id,
-            stance: "standing",
         }).success).toBe(true);
         expect(engine.executeAction({
             type: "escape",
@@ -218,7 +211,6 @@ describe("standing stance", () => {
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "standing",
         }).success).toBe(true);
 
         const first = engine.executeAction(escape);
@@ -238,7 +230,6 @@ describe("standing stance", () => {
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "standing",
         }).success).toBe(true);
         expect(engine.executeAction({
             type: "escape",
@@ -291,7 +282,6 @@ describe("standing stance", () => {
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "standing",
         }).success).toBe(true);
         expect(engine.executeAction({
             type: "escape",
@@ -323,8 +313,11 @@ describe("standing stance", () => {
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
-            stance: "standing",
         })).toEqual({ success: false, reason: "actorAlreadyActed" });
+        expect(engine.stanceAvailable(hero.id)).toEqual({
+            available: false,
+            reason: "actorAlreadyActed",
+        });
         expect(engine.getGameState().characters[0].standing).toBe(false);
     });
 });

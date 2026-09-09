@@ -2,104 +2,127 @@ import { describe, expect, it } from "vitest";
 import { latexarms } from "../src/content/skunk/latex";
 import { bindingThresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
-import { getEntitySide } from "../src/engine/helpers";
-import type { iGameState, StatusDef } from "../src/engine/itypes";
+import type { BindingDef } from "../src/engine/itypes";
 import {
     bound,
-    canAttack,
-    canBonusEscape,
-    canMove,
-    canUseEscape,
-    canUseMoveType,
     helpless,
     immobilized,
     incapacitated,
-    isIncapacitated,
-    isSkipped,
     stunned,
-    vibrating,
 } from "../src/engine/status";
 import {
     expectMoveRejection,
-    makeBinding,
     makeBindingDef,
-    makeCharacter,
     makeCharacterDef,
-    makeEnemy,
-    makeEnemyDef,
     makeMove,
-    makeWaitMove,
     setupBoundEngine,
 } from "./helpers";
 
-function makeStatusCharacter(status: StatusDef, value = 1) {
-    const source = makeBindingDef(`${status.id}-source`, {
-        easy: [{ definition: status, value }],
+function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: number) {
+    const targetBinding = makeBindingDef("target-binding");
+    const prepare = makeMove("prepare", "mouth", {
+        targets: 0,
+        resolve: (state) => [
+            {
+                type: "binding" as const,
+                target: state.characters[0],
+                binding: actorBinding,
+                amount: actorBindingAmount,
+            },
+            {
+                type: "binding" as const,
+                target: state.characters[1],
+                binding: targetBinding,
+                amount: bindingThresholds.easy,
+            },
+        ],
     });
-    return makeCharacter(status.id, [makeBinding(source, bindingThresholds.easy)]);
+    const helper = makeCharacterDef("helper", [prepare]);
+    const target = makeCharacterDef("target");
+    const engine = new GameEngine([], 1);
+    engine.loadCharacter(helper);
+    engine.loadCharacter(target);
+    expect(engine.executeAction({
+        type: "attack",
+        actor: helper.id,
+        move: prepare.id,
+        targets: [],
+    }).success).toBe(true);
+    expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
+    return { engine, helper, target, targetBinding };
 }
 
-describe("entity and status helpers", () => {
-    it.each([
-        ["hero", "player"],
-        ["foe1", "enemy"],
-        ["missing", undefined],
-    ] as const)("identifies the side for entity id %s", (id, expectedSide) => {
-        const enemyDefinition = makeEnemyDef("foe", [makeWaitMove()]);
-        const state: iGameState = {
-            turn: { round: 1, step: 1, phase: "player" },
-            nextEntityId: 1,
-            characters: [makeCharacter("hero")],
-            enemies: [makeEnemy(enemyDefinition)],
-        };
+describe("actor-level action restrictions", () => {
+    it("rejects every actor action when a skipped status is active", () => {
+        const source = makeBindingDef("helpless-source", {
+            easy: [{ definition: helpless, value: 1 }],
+        });
+        const { engine, hero, foeId, mouthMove } = setupBoundEngine(
+            source,
+            bindingThresholds.easy,
+        );
 
-        expect(getEntitySide(state, id)).toBe(expectedSide);
+        expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorSkipped");
+        expect(engine.getEscapes(hero.id)).toEqual({ options: [], assistAllowed: false });
+        expect(engine.stanceAvailable(hero.id))
+            .toEqual({ available: false, reason: "actorSkipped" });
+        expect(engine.executeAction({
+            type: "escape",
+            actor: hero.id,
+            target: hero.id,
+            binding: source.id,
+        })).toEqual({ success: false, reason: "actorSkipped" });
+        expect(engine.executeAction({ type: "stance", actor: hero.id }))
+            .toEqual({ success: false, reason: "actorSkipped" });
     });
 
-    it("treats a skipped actor as unable to attack or escape", () => {
-        const actor = makeStatusCharacter(helpless);
-        const restraint = makeBindingDef("rope");
-        const target = makeCharacter("target", [makeBinding(restraint, bindingThresholds.easy)]);
+    it("reports incapacitation distinctly from an ordinary skipped turn", () => {
+        const source = makeBindingDef("incapacitated-source", {
+            easy: [{ definition: incapacitated, value: 1 }],
+        });
+        const { engine, hero, foeId, mouthMove } = setupBoundEngine(
+            source,
+            bindingThresholds.easy,
+        );
 
-        expect(isSkipped(actor)).toBe(true);
-        expect(canAttack(actor)).toBe(false);
-        expect(canUseEscape(actor, target, target.bindings[0])).toBe(false);
+        expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorIncapacitated");
+        expect(engine.getEscapes(hero.id)).toEqual({ options: [], assistAllowed: false });
+        expect(engine.stanceAvailable(hero.id))
+            .toEqual({ available: false, reason: "actorIncapacitated" });
+        expect(engine.executeAction({
+            type: "escape",
+            actor: hero.id,
+            target: hero.id,
+            binding: source.id,
+        })).toEqual({ success: false, reason: "actorIncapacitated" });
+        expect(engine.executeAction({ type: "stance", actor: hero.id }))
+            .toEqual({ success: false, reason: "actorIncapacitated" });
     });
 
-    it("keeps movement restrictions separate from attacking", () => {
-        const actor = makeStatusCharacter(immobilized);
-        const unrestricted = makeCharacter("unrestricted");
+    it("allows attacks while immobilized but prevents toggling back to moving", () => {
+        const source = makeBindingDef("immobilized-source", {
+            easy: [{ definition: immobilized, value: 1 }],
+        });
+        const { engine, hero, mouthMove } = setupBoundEngine(
+            source,
+            bindingThresholds.easy,
+        );
 
-        expect(canMove(actor)).toBe(false);
-        expect(canAttack(actor)).toBe(true);
-        expect(canMove(unrestricted)).toBe(true);
-        expect(isSkipped(unrestricted)).toBe(false);
-    });
-
-    it("distinguishes bonus-escape restrictions from ordinary escape", () => {
-        const vibratingActor = makeStatusCharacter(vibrating);
-        const stunnedActor = makeStatusCharacter(stunned);
-
-        expect(canBonusEscape(vibratingActor)).toBe(false);
-        expect(canUseEscape(
-            vibratingActor,
-            vibratingActor,
-            vibratingActor.bindings[0],
-        )).toBe(true);
-        expect(canBonusEscape(stunnedActor)).toBe(false);
-        expect(canBonusEscape(makeCharacter("unrestricted"))).toBe(true);
-    });
-
-    it("recognizes incapacitation as a specific skipped state", () => {
-        const actor = makeStatusCharacter(incapacitated);
-
-        expect(isIncapacitated(actor)).toBe(true);
-        expect(isSkipped(actor)).toBe(true);
-        expect(isIncapacitated(makeStatusCharacter(helpless))).toBe(false);
+        expect(engine.getActions(hero.id).find((action) => action.move.id === mouthMove.id))
+            .toMatchObject({ available: true });
+        expect(engine.getEscapes(hero.id)?.options).toContainEqual(
+            expect.objectContaining({ target: hero.id, binding: source.id }),
+        );
+        expect(engine.stanceAvailable(hero.id)).toEqual({ available: true });
+        expect(engine.executeAction({ type: "stance", actor: hero.id }).success).toBe(true);
+        expect(engine.stanceAvailable(hero.id))
+            .toEqual({ available: false, reason: "actorImmobilized" });
+        expect(engine.executeAction({ type: "stance", actor: hero.id }))
+            .toEqual({ success: false, reason: "actorImmobilized" });
     });
 });
 
-describe("move and status restrictions", () => {
+describe("move and escape restrictions", () => {
     it.each([
         [bindingThresholds.hard, false, 2],
         [bindingThresholds.extreme, true, 3],
@@ -120,13 +143,8 @@ describe("move and status restrictions", () => {
                     ? { available: false, reason: "bindingRestriction" }
                     : { available: true },
             );
-            expect(actions.find((action) => action.move.id === mouthMove.id)).toMatchObject({
-                available: true,
-            });
-            expect(canUseMoveType(
-                makeCharacter("hero", [makeBinding(latexarms, value)]),
-                "mouth",
-            )).toBe(true);
+            expect(actions.find((action) => action.move.id === mouthMove.id))
+                .toMatchObject({ available: true });
 
             if (armsBlocked) {
                 expectMoveRejection(
@@ -167,63 +185,56 @@ describe("move and status restrictions", () => {
             hero.id,
             mouthMove.id,
             foeId,
-            "statusRestriction",
+            "attackUnavailable",
         );
     });
 
-    it("rejects self-escape when the actor has a blocksEscape status", () => {
-        const restraint = makeBindingDef("stunning-restraint", {
+    it("applies blocksEscape to both self-escape and assistance", () => {
+        const escapeBlockingBinding = makeBindingDef("escape-blocking", {
             easy: [{ definition: stunned, value: 1 }],
         });
-        const { engine, hero } = setupBoundEngine(restraint, bindingThresholds.easy);
+        const { engine, helper, target, targetBinding } = setupActorAndTarget(
+            escapeBlockingBinding,
+            bindingThresholds.easy,
+        );
 
+        expect(engine.getEscapes(helper.id)).toEqual({ options: [], assistAllowed: false });
         expect(engine.executeAction({
             type: "escape",
-            actor: hero.id,
-            target: hero.id,
-            binding: restraint.id,
+            actor: helper.id,
+            target: helper.id,
+            binding: escapeBlockingBinding.id,
         })).toEqual({ success: false, reason: "escapeUnavailable" });
-        expect(engine.getGameState().characters[0].acted).toBe(false);
+        expect(engine.executeAction({
+            type: "escape",
+            actor: helper.id,
+            target: target.id,
+            binding: targetBinding.id,
+        })).toEqual({ success: false, reason: "escapeUnavailable" });
     });
 
-    it("rejects assistance when the assisting actor has a blocksAssist status", () => {
-        const targetBinding = makeBindingDef("target-binding");
-        const setupMove = makeMove("prepare", "mouth", {
-            targets: 0,
-            resolve: (state) => [
-                {
-                    type: "binding" as const,
-                    target: state.characters[0],
-                    binding: latexarms,
-                    amount: bindingThresholds.extreme,
-                },
-                {
-                    type: "binding" as const,
-                    target: state.characters[1],
-                    binding: targetBinding,
-                    amount: bindingThresholds.easy,
-                },
-            ],
-        });
-        const helper = makeCharacterDef("helper", [setupMove]);
-        const target = makeCharacterDef("target");
-        const engine = new GameEngine([], 1);
-        engine.loadCharacter(helper);
-        engine.loadCharacter(target);
-        expect(engine.executeAction({
-            type: "attack",
-            actor: helper.id,
-            move: setupMove.id,
-            targets: [],
-        }).success).toBe(true);
-        expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
+    it("allows self-escape but rejects assistance when only blocksAssist is active", () => {
+        const { engine, helper, target, targetBinding } = setupActorAndTarget(
+            latexarms,
+            bindingThresholds.extreme,
+        );
+        const escapes = engine.getEscapes(helper.id);
 
+        expect(escapes?.assistAllowed).toBe(false);
+        expect(escapes?.options).toEqual([
+            expect.objectContaining({ target: helper.id, binding: latexarms.id }),
+        ]);
         expect(engine.executeAction({
             type: "escape",
             actor: helper.id,
             target: target.id,
             binding: targetBinding.id,
         })).toEqual({ success: false, reason: "assistUnavailable" });
-        expect(engine.getGameState().characters[0].acted).toBe(false);
+        expect(engine.executeAction({
+            type: "escape",
+            actor: helper.id,
+            target: helper.id,
+            binding: latexarms.id,
+        }).success).toBe(true);
     });
 });

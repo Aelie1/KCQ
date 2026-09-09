@@ -27,19 +27,6 @@ export function findBuff(entity: iEntity, id: BuffId): iBuff[] | undefined {
     return entity.buffs.filter(buff => buff.id === id);
 }
 
-
-export function getEntitySide(state: iGameState, id: EntityId): EntitySide | undefined {
-    if (findCharacter(state, id)) {
-        return "player";
-    }
-
-    if (findEnemy(state, id)) {
-        return "enemy";
-    }
-
-    return undefined;
-}
-
 export function getIEntitySide(entity: iEntity): EntitySide {
     return (isCharacter(entity)) ? "player" : "enemy";
 }

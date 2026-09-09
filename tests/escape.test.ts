@@ -1,38 +1,75 @@
 import { describe, expect, it } from "vitest";
-import { calculateProgress } from "../src/engine/bindings";
 import { BINDING_MAX, bindingThresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
+import type { BindingDef } from "../src/engine/itypes";
 import type { StatusDef } from "../src/engine/itypes";
 import {
-    makeBinding,
     makeBindingDef,
-    makeCharacter,
     makeCharacterDef,
-    setupBoundEngine,
+    makeMove,
 } from "./helpers";
+
+interface BindingSetup {
+    target: string;
+    binding: BindingDef;
+    amount: number;
+}
+
+function setupEscapeScenario(
+    actorId: string,
+    characterIds: string[],
+    bindings: BindingSetup[],
+): GameEngine {
+    const prepare = makeMove("prepare-bindings", "mouth", {
+        targets: 0,
+        resolve: (state) => bindings.map((setup) => ({
+            type: "binding" as const,
+            target: state.characters.find((character) => character.id === setup.target)!,
+            binding: setup.binding,
+            amount: setup.amount,
+        })),
+    });
+    const engine = new GameEngine([], 1);
+    for (const id of characterIds) {
+        engine.loadCharacter(makeCharacterDef(id, id === actorId ? [prepare] : []));
+    }
+    expect(engine.executeAction({
+        type: "attack",
+        actor: actorId,
+        move: prepare.id,
+        targets: [],
+    }).success).toBe(true);
+    expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
+    return engine;
+}
+
+function escapeAmount(engine: GameEngine, actor: string, target: string, binding: string): number {
+    const option = engine.getEscapes(actor)?.options.find(
+        (candidate) => candidate.target === target && candidate.binding === binding,
+    );
+    if (!option) throw new Error(`Expected ${actor} to have an escape for ${target}/${binding}`);
+    return option.amount;
+}
 
 describe("escape progress", () => {
     it("falls as binding strength rises and does not worsen past Impossible", () => {
-        const definition = makeBindingDef("rope");
-        const actor = makeCharacter("hero");
-        const easy = makeCharacter("easy", [makeBinding(definition, bindingThresholds.easy)]);
-        const impossible = makeCharacter("impossible", [
-            makeBinding(definition, bindingThresholds.impossible),
-        ]);
-        const overImpossible = makeCharacter("over-impossible", [
-            makeBinding(definition, BINDING_MAX),
-        ]);
-
-        const easyProgress = calculateProgress(actor, easy, definition.id);
-        const impossibleProgress = calculateProgress(actor, impossible, definition.id);
-        const overImpossibleProgress = calculateProgress(
-            actor,
-            overImpossible,
-            definition.id,
+        const restraint = makeBindingDef("rope");
+        const engine = setupEscapeScenario(
+            "helper",
+            ["helper", "easy", "impossible", "over-impossible"],
+            [
+                { target: "easy", binding: restraint, amount: bindingThresholds.easy },
+                { target: "impossible", binding: restraint, amount: bindingThresholds.impossible },
+                { target: "over-impossible", binding: restraint, amount: BINDING_MAX },
+            ],
         );
 
-        expect(easyProgress).toBeGreaterThan(impossibleProgress);
-        expect(overImpossibleProgress).toBe(impossibleProgress);
+        const easy = escapeAmount(engine, "helper", "easy", restraint.id);
+        const impossible = escapeAmount(engine, "helper", "impossible", restraint.id);
+        const overImpossible = escapeAmount(engine, "helper", "over-impossible", restraint.id);
+
+        expect(easy).toBeGreaterThan(impossible);
+        expect(overImpossible).toBe(impossible);
     });
 
     it("applies the actor's escape modifier and the assistance multiplier", () => {
@@ -45,52 +82,53 @@ describe("escape progress", () => {
             easy: [{ definition: modifierStatus, value: 1 }],
         });
         const targetBinding = makeBindingDef("rope");
-        const target = makeCharacter("target", [
-            makeBinding(targetBinding, bindingThresholds.medium),
-        ]);
-        const helper = makeCharacter("helper", [
-            makeBinding(modifierBinding, bindingThresholds.easy),
-        ]);
-        const unpenalizedHelper = makeCharacter("unpenalized-helper");
+        const engine = setupEscapeScenario(
+            "setup",
+            ["setup", "unpenalized-helper", "penalized-helper", "target"],
+            [
+                { target: "penalized-helper", binding: modifierBinding, amount: bindingThresholds.easy },
+                { target: "target", binding: modifierBinding, amount: bindingThresholds.easy },
+                { target: "target", binding: targetBinding, amount: bindingThresholds.medium },
+            ],
+        );
 
-        const unpenalizedProgress = calculateProgress(
-            unpenalizedHelper,
-            target,
+        const unpenalizedAssist = escapeAmount(
+            engine,
+            "unpenalized-helper",
+            "target",
             targetBinding.id,
         );
-        const penalizedAssistedProgress = calculateProgress(
-            helper,
-            target,
+        const penalizedAssist = escapeAmount(
+            engine,
+            "penalized-helper",
+            "target",
             targetBinding.id,
         );
-        expect(penalizedAssistedProgress).toBeLessThanOrEqual(unpenalizedProgress);
+        const penalizedSelfEscape = escapeAmount(
+            engine,
+            "target",
+            "target",
+            targetBinding.id,
+        );
 
-        target.bindings.push(makeBinding(modifierBinding, bindingThresholds.easy));
-        const penalizedSelfProgress = calculateProgress(
-            target,
-            target,
-            targetBinding.id,
-        );
-        expect(penalizedAssistedProgress).toBeGreaterThanOrEqual(penalizedSelfProgress);
+        expect(penalizedAssist).toBeLessThan(unpenalizedAssist);
+        expect(penalizedAssist).toBeGreaterThan(penalizedSelfEscape);
     });
 
-    it("applies progress through the engine and consumes the actor's action", () => {
+    it("reports and applies escape progress through the public API", () => {
         const restraint = makeBindingDef("rope");
-        const startingValue = bindingThresholds.hard;
-        const { engine, hero } = setupBoundEngine(restraint, startingValue);
-        const calculationTarget = makeCharacter(hero.id, [
-            makeBinding(restraint, startingValue),
-        ]);
-        const amount = calculateProgress(
-            calculationTarget,
-            calculationTarget,
-            restraint.id,
+        const engine = setupEscapeScenario(
+            "hero",
+            ["hero"],
+            [{ target: "hero", binding: restraint, amount: bindingThresholds.hard }],
         );
+        const before = engine.getGameState().characters[0].bindings[0].value;
+        const amount = escapeAmount(engine, "hero", "hero", restraint.id);
 
         const result = engine.executeAction({
             type: "escape",
-            actor: hero.id,
-            target: hero.id,
+            actor: "hero",
+            target: "hero",
             binding: restraint.id,
         });
 
@@ -98,20 +136,19 @@ describe("escape progress", () => {
             success: true,
             events: [{
                 type: "bondageChanged",
-                target: hero.id,
+                target: "hero",
                 binding: restraint.id,
                 amount: -amount,
             }],
         });
-        expect(engine.getGameState().characters[0].bindings[0].value).toBe(
-            startingValue - amount,
-        );
+        expect(engine.getGameState().characters[0].bindings[0].value).toBe(before - amount);
         expect(engine.getGameState().characters[0].acted).toBe(true);
         expect(engine.getGameState().turn.step).toBe(2);
+        expect(engine.getEscapes("hero")).toEqual({ options: [], assistAllowed: false });
         expect(engine.executeAction({
             type: "escape",
-            actor: hero.id,
-            target: hero.id,
+            actor: "hero",
+            target: "hero",
             binding: restraint.id,
         })).toEqual({ success: false, reason: "actorAlreadyActed" });
     });
@@ -125,5 +162,9 @@ describe("escape progress", () => {
         engine.loadCharacter(makeCharacterDef("hero"));
 
         expect(engine.executeAction(action)).toEqual({ success: false, reason });
+    });
+
+    it("returns null escape options for an invalid actor", () => {
+        expect(new GameEngine([], 1).getEscapes("missing")).toBeNull();
     });
 });
