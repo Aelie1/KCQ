@@ -6,7 +6,7 @@ import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTarg
 import { XorShift32 } from "./random";
 import { serializeGameState, serializeMove } from "./serialize";
 import { canAttack, canBonusEscape, canMove, canEscape, canUseMoveType, isSkipped, canAssist, isIncapacitated, canAct } from "./status";
-import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceId, StanceInfo } from "./types";
+import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceId, StanceInfo } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -71,6 +71,40 @@ export class GameEngine {
         this.updateIntentions();
         events.push({ type: "encounter", id: id, success: true });
         return events;
+    }
+
+    getAvailability() : AvailabilityInfo[] {
+        const info: AvailabilityInfo[] = [];
+        for (const character of this.state.characters) {
+            if (isIncapacitated(character)) {
+                info.push({
+                    id: character.id,
+                    available: false,
+                    reason: "actorIncapacitated"
+                });
+            }
+            else if (isSkipped(character)) {
+                info.push({
+                    id: character.id,
+                    available: false,
+                    reason: "actorSkipped"
+                });
+            }
+            else if (character.acted && !character.bonusEscapes) {
+                info.push({
+                    id: character.id,
+                    available: false,
+                    reason: "actorAlreadyActed"
+                });
+            }
+            else {
+                info.push({
+                    id: character.id,
+                    available: true
+                });
+            }
+        }
+        return info;
     }
 
     stanceAvailable(name: EntityId): StanceInfo {

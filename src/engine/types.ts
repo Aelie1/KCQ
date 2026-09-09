@@ -196,6 +196,12 @@ export type ModifierId =
  * Actions
  *******************************************************/
 
+export interface AvailabilityInfo {
+    id: EntityId;
+    available: boolean;
+    reason?: ActionFailureReason;
+}
+
 export interface ActionInfo {
     move: Move;
     available: boolean;
