@@ -73,7 +73,7 @@ export class GameEngine {
         return events;
     }
 
-    getStanceTargets(name: EntityId): StanceInfo {
+    stanceAvailable(name: EntityId): StanceInfo {
         const character = findCharacter(this.state, name);
         if (!character) {
             return {
@@ -99,7 +99,6 @@ export class GameEngine {
         const character = findCharacter(this.state, actor);
         if (character) {
             const result = canAct(character,"attack");
-
             for (const move of character.definition.moves) {
                 let available = true;
                 let reason: ActionFailureReason = "moveUnavailable";
@@ -134,17 +133,15 @@ export class GameEngine {
             return null;
         }
 
-        const options : EscapeOptions = {options: [],assistAllowed: canAssist(character)};
-
         const result = canAct(character,"escape");
-
         if (result) {
             return {
                 options: [],
                 assistAllowed: false
             }
         }
-
+        
+        const options : EscapeOptions = {options: [],assistAllowed: canAssist(character)};
         for (const target of this.state.characters) {
             if (character !== target && !options.assistAllowed) {
                 continue;
@@ -208,7 +205,6 @@ export class GameEngine {
         }
     
         const result = canAct(actor, action.type);
-
         if (result) {
             return result;
         }
