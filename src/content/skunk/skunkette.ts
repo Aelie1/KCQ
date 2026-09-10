@@ -198,6 +198,7 @@ export const throwOff: MoveDef = {
     },
     id: "throwOff",
     displayId: "throwOff",
+    alwaysAvailable: true,
     target: "none",
     targets: 0,
     accuracy: {

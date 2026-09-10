@@ -1,5 +1,5 @@
 import { addBinding, removeBinding } from "./bindings";
-import { addBuff } from "./buffs";
+import { addBuff, removeBuff } from "./buffs";
 import { DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
 import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
 import { EnemyDef, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iTargetInfo, MoveDef } from "./itypes";
@@ -87,7 +87,11 @@ export function processEffects(state: iGameState, effects: iEffect[]): GameEvent
                 }
                 break;
             case "buff":
-                events.push(...addBuff(effect.source, effect.target, effect.buff))
+                if (effect.added) {
+                    events.push(...addBuff(effect.source, effect.target, effect.buff))
+                } else {
+                    events.push(...removeBuff(effect.target, effect.buff))
+                }
                 break;
             case "damage":
                 events.push(...damageEnemy(state, effect.target, effect.amount))
@@ -114,6 +118,9 @@ export function evaluateIntention(intention: iIntention): iTargetInfo[] {
 
 export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {
     const base = move.accuracy;
+    if (!base) {
+        return {};
+    }
 
     // Every accuracy-bearing move should have a Hit band.
     if (base.hit === undefined) {
@@ -156,7 +163,7 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
         defenseModifier = (isEnemy(target) ? target.currDef : 0);
         defenseModifier += getModifier(target, "defense") * DEFENSE_MODIFIER;
     }
-    
+
     const delta = hitModifier - defenseModifier;
 
     /*

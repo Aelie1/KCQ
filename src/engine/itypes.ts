@@ -68,7 +68,7 @@ export interface iBuff extends Omit<Buff, "statuses"> {
  *******************************************************/
 export interface MoveDef extends Move {
     displayId?: MoveId;
-    accuracy: AccuracyProfile;
+    accuracy?: AccuracyProfile;
     alwaysAvailable?: boolean;
     resolve: (state: iGameState, actor: iEntity, targets: iTargetInfo[]) => iEffect[];
     isValid?: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;

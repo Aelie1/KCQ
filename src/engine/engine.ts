@@ -281,7 +281,8 @@ export class GameEngine {
                         targetStates.push(...this.state.characters);
                     }
                     move.targets = targetStates.length
-                } else {
+                } else 
+                    {
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
                         if (targetState) {
@@ -303,8 +304,12 @@ export class GameEngine {
                     };
                 }
 
+                if (move.targets === 0) {
+                    targetStates.push(actor);
+                }
+
                 const targets: iTargetInfo[] = [];
-                if (move.targets > 0) {
+                if (move.accuracy !== undefined) {
                     const roll: number = this.rng.accuracy();
                     for (const target of targetStates) {
                         const accuracy: AccuracyProfile = calculateAccuracy(actor, target, move);

@@ -55,7 +55,7 @@ export function getModifier(target: iEntity, id: ModifierId): number {
         amount += level.modifiers?.[id] ?? 0;
     }
     for (const buff of target.buffs) {
-        if (buff.modifiers === undefined) {
+        if (buff.modifiers === undefined || !buff.active) {
             continue;
         }
         const level = buff.modifiers[id];
