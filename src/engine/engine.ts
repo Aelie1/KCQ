@@ -318,12 +318,16 @@ export class GameEngine {
 
                 const iMove:iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
+                let anyHits: boolean = false;
                 if (move.accuracy !== undefined) {
                     for (const target of targetStates) {
                         const roll: number = this.rng.accuracy();
                         const accuracy: AccuracyProfile = calculateAccuracy(actor, target, move);
                         const targetInfo: iTargetInfo = evaluateResult(target, accuracy, roll);
                         targets.push(targetInfo);
+                        if (targetInfo.result !== "miss") {
+                            anyHits = true;
+                        }
                     }
                     if (move.targets === 0) {
                         const roll: number = this.rng.accuracy();
@@ -336,6 +340,9 @@ export class GameEngine {
                         const targetInfo: iTargetInfo = evaluateResult(blankActor, accuracy, roll);
                         iMove.result = targetInfo.result;
                         iMove.effectiveness = targetInfo.effectiveness;
+                        if (targetInfo.result !== "miss") {
+                            anyHits = true;
+                        }
                     }
     
                 } else {
@@ -346,13 +353,15 @@ export class GameEngine {
                             result: "none"
                         })
                     }
+                    anyHits = true;
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move
                 events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })
                 const effects = resolveMove(this.state, iMove, actor, targets);
                 events.push(...processEffects(this.state, effects));
-                if (move.freeOnHit !== true) {
+
+                if (move.freeOnHit !== true || anyHits === false) {
                     actor.acted = true;
                 }
                 this.state.turn.step++;
