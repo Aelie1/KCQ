@@ -2,8 +2,9 @@ import { addBinding, removeBinding } from "./bindings";
 import { addBuff, removeBuff } from "./buffs";
 import { DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
 import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
-import { EnemyDef, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iTargetInfo, MoveDef } from "./itypes";
-import { canMove, getModifier } from "./status";
+import { EnemyDef, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iIntentionTarget, iTargetInfo, MoveDef } from "./itypes";
+import { Random } from "./random";
+import { canMove, getModifier, isIncapacitated } from "./status";
 import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
 
 
@@ -17,13 +18,45 @@ export function loadEnemy(state: iGameState, enemy: EnemyDef): GameEvent[] {
         currHp: enemy.hp,
         currDef: enemy.defense,
         intention: null,
+        cooldowns: {}
     });
     events.push({ type: "enemySpawned", target: name });
     return events;
 }
 
-export function updateIntention(state: iGameState, actor: iEnemy, roll: number) {
-    actor.intention = { action: actor.definition.ai(state, actor), roll: roll };
+export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
+    const action = actor.definition.ai(state, actor, rng);
+    const targets = [ ...action.targets ];
+    const move = { ...action.move, roll: rng.accuracy() };
+    if (move.definition.targets === "all") {
+        if (move.definition.target === "enemy") {
+            targets.push(...state.enemies);
+        } else {
+            targets.push(...validTargets(state.characters));
+        }
+    }
+    const iTargets: iIntentionTarget[] = [];
+    for (const target of targets) {
+        iTargets.push({
+            target: target,
+            roll:rng.accuracy()
+        })
+    }
+    actor.intention = {
+        actor:action.actor,
+        move:action.move,
+        targets:iTargets 
+    };
+}
+
+export function evaluateIntention(intention: iIntention): iTargetInfo[] {
+    const targets: iTargetInfo[] = [];
+    for (const target of intention.targets) {
+        const accuracy = calculateAccuracy(intention.actor, target.target, intention.move.definition);
+        const info = evaluateResult(target.target, accuracy, target.roll);
+        targets.push(info);
+    }
+    return targets;
 }
 
 export function damageEnemy(state: iGameState, target: iEnemy, amount: number): GameEvent[] {
@@ -100,25 +133,6 @@ export function processEffects(state: iGameState, effects: iEffect[]): GameEvent
     }
 
     return events;
-}
-
-export function evaluateIntention(intention: iIntention): iTargetInfo[] {
-    const targets: iTargetInfo[] = [];
-    const iTargets = [...intention.action.targets];
-    //Do this so targetless moves can still get a roll
-    if (intention.action.move.targets === 0) {
-        iTargets.push(intention.action.actor);
-    }
-    for (const target of iTargets) {
-        const accuracy = calculateAccuracy(intention.action.actor, target, intention.action.move);
-        const info = evaluateResult(target, accuracy, intention.roll);
-        targets.push({
-            target: info.target,
-            result: info.result,
-            effectiveness: info.effectiveness
-        });
-    }
-    return targets;
 }
 
 export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {
@@ -293,4 +307,35 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
     result.effectiveness = effectivenessRange[result.result][1] * (1 + getModifier(target, "effect") * EFFECT_MODIFIER);
 
     return result;
+}
+
+export function validTargets(characters: iCharacter[]): iCharacter[] {
+    const validCharacters: iCharacter[] = [];
+    for (const character of characters) {
+        if (!isIncapacitated(character)) {
+            validCharacters.push(character);
+        }
+    }
+    return validCharacters;
+}
+
+export function pickTarget(characters: iCharacter[], rng: Random): iCharacter | undefined {
+    const validCharacters = validTargets(characters);
+
+    if (validCharacters.length === 0) {
+        return undefined;
+    }
+
+    const index = rng.int(0, validCharacters.length - 1);
+    return validCharacters[index];
+}
+
+export function tickCooldowns(enemies: iEnemy[]) {
+    for (const enemy of enemies) {
+        for (const move of Object.entries(enemy.cooldowns)) {
+            if (move[1] > 0) {
+                enemy.cooldowns[0]--;
+            }
+        }
+    }
 }

@@ -1,10 +1,10 @@
 import { resolveEscape } from "./bindings";
 import { tickBuffs } from "./buffs";
-import { calculateAccuracy, evaluateIntention, evaluateResult, loadEnemy, processEffects, setStance, updateIntention } from "./combat";
+import { calculateAccuracy, evaluateIntention, evaluateResult, loadEnemy, processEffects, setStance, tickCooldowns, updateIntention } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
-import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iTargetInfo } from "./itypes";
+import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "./itypes";
 import { getMoves, isValidMove, resolveMove } from "./moves";
-import { XorShift32 } from "./random";
+import { Random } from "./random";
 import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canMove, canUseMoveType, isIncapacitated, isSkipped } from "./status";
 import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo } from "./types";
@@ -12,7 +12,7 @@ import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, Av
 export class GameEngine {
     private state: iGameState;
     private seed: number;
-    private rng: XorShift32;
+    private rng: Random;
     private encounters: EncounterDef[];
 
     constructor(encounters: EncounterDef[], seed?: number) {
@@ -24,7 +24,7 @@ export class GameEngine {
         };
         seed ??= Math.floor(Math.random() * 0x100000000)
         this.seed = seed;
-        this.rng = new XorShift32(seed);
+        this.rng = new Random(seed);
         this.encounters = encounters;
     }
 
@@ -302,15 +302,10 @@ export class GameEngine {
                     };
                 }
 
-                //do this so targetless moves can still get a roll result
-                if (foundMove.targets === 0) {
-                    targetStates.push(actor);
-                }
-
                 const targets: iTargetInfo[] = [];
                 if (move.accuracy !== undefined) {
-                    const roll: number = this.rng.accuracy();
                     for (const target of targetStates) {
+                        const roll: number = this.rng.accuracy();
                         const accuracy: AccuracyProfile = calculateAccuracy(actor, target, move);
                         const targetInfo: iTargetInfo = evaluateResult(target, accuracy, roll);
                         targets.push(targetInfo);
@@ -324,10 +319,15 @@ export class GameEngine {
                         })
                     }
                 }
+                const iMove:iMove = { definition: move };
+
+                if (move.targets === 0) {
+                    iMove.roll = this.rng.random();
+                }
 
                 //Now we have a valid actor, targets and move -- execute the move
                 events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })
-                const effects = resolveMove(this.state, move, actor, targets);
+                const effects = resolveMove(this.state, iMove, actor, targets);
                 events.push(...processEffects(this.state, effects));
                 actor.acted = true;
                 this.state.turn.step++;
@@ -393,34 +393,29 @@ export class GameEngine {
 
     private executeEnemyAction(intention: iIntention): GameEvent[] {
         const events: GameEvent[] = [];
-        const actor = intention.action.actor;
+        const actor = intention.actor;
+        const move = intention.move;
         if (!actor) {
             return events;
         }
-        const move = { ...intention.action.move };
 
         if (!canAttack(actor) || isSkipped(actor)) {
             return events;
         }
 
-        let targetStates: iEntity[] = [...intention.action.targets];
-        if (move.targets === "all") {
-            if (move.target === "enemy") {
-                targetStates = this.state.enemies;
-            } else {
-                targetStates = this.state.characters;
-            }
-            move.targets = targetStates.length
-        }
-
-        if (!isValidMove(this.state, actor, targetStates, move)) {
+        if (!isValidMove(this.state, actor, intention.targets.map(x => x.target), move.definition)) {
             return events;
         }
 
         const targets: iTargetInfo[] = evaluateIntention(intention);
 
         //Now we have a valid actor, targets and move -- execute the move
-        events.push({ type: "moveUsed", actor: actor.id, move: move.id, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })
+        events.push({
+            type: "moveUsed",
+            actor: actor.id,
+            move: move.definition.id,
+            targets: targets.map(x => ({ target: x.target.id, result: x.result }))
+        });
         const effects = resolveMove(this.state, move, actor, targets);
         events.push(...processEffects(this.state, effects));
         this.state.turn.step++;
@@ -432,6 +427,10 @@ export class GameEngine {
         for (const enemy of this.state.enemies) {
             if (enemy.intention) {
                 events.push(...this.executeEnemyAction(enemy.intention));
+                const move = enemy.intention.move.definition;
+                if (move.cooldown !== undefined) {
+                    enemy.cooldowns[move.id] = move.cooldown;
+                }
             }
             enemy.intention = null;
         }
@@ -455,6 +454,7 @@ export class GameEngine {
             this.state.turn.step = 1;
             this.state.turn.round++;
             events.push(...tickBuffs(this.state));
+            tickCooldowns(this.state.enemies);
             this.updateIntentions();
         }
         events.push({ type: "phaseChanged", phase: this.state.turn.phase });
@@ -467,8 +467,7 @@ export class GameEngine {
             enemy.intention = null;
         }
         for (const enemy of this.state.enemies) {
-            const roll = this.rng.accuracy();
-            updateIntention(this.state, enemy, roll);
+            updateIntention(this.state, enemy, this.rng);
         }
     }
 }

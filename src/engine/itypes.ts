@@ -1,4 +1,5 @@
-import { AccuracyProfile, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect, Enemy, ModifierId, Move, MoveId, MoveType, Passive, StatusId, TargetInfo, Turn } from "./types";
+import { Random } from "./random";
+import { AccuracyProfile, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect, Enemy, EntitySide, ModifierId, Move, MoveId, MoveType, Passive, StatusId, TargetCount, TargetInfo, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -39,17 +40,23 @@ export interface EnemyDef {
     hp: number;
     defense: number;
     passives: PassiveDef[];
-    ai: (state: iGameState, actor: iEnemy) => EnemyAction;
+    ai: (state: iGameState, actor: iEnemy, rng: Random) => EnemyAction;
 }
 
 export interface iIntention {
-    action: EnemyAction;
-    roll: number;
+    actor: iEntity;
+    move: iMove;
+    targets: iIntentionTarget[];
+}
+
+export interface iIntentionTarget {
+    target: iEntity;
+    roll: number;    
 }
 
 export interface EnemyAction {
     actor: iEntity;
-    move: MoveDef;
+    move: iMove;
     targets: iEntity[];
 }
 
@@ -66,22 +73,21 @@ export interface iBuff extends Omit<Buff, "statuses"> {
 /*******************************************************
  * Moves
  *******************************************************/
-export interface MoveDef extends Move {
-    displayId?: MoveId;
+export interface iMove {
+    definition: MoveDef;
+    binding?: BindingDef;
+    roll?: number;
+}
+
+export interface MoveDef extends Move{
     accuracy?: AccuracyProfile;
     alwaysAvailable?: boolean;
-    resolve: (state: iGameState, actor: iEntity, targets: iTargetInfo[]) => iEffect[];
+    baseDamage?: number;
+    cooldown?: number;
+    resolve: (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]) => iEffect[];
     isValid?: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;
 }
 
-export interface DamageMoveDef extends MoveDef {
-    baseDamage: number;
-}
-
-export interface BindingMoveDef extends MoveDef {
-    baseDamage: number;
-    binding: BindingDef;
-}
 
 export interface iTargetInfo extends Omit<TargetInfo, "target" | "effects"> {
     target: iEntity;

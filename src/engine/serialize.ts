@@ -41,7 +41,7 @@ function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
 function serializeIntention(state: iGameState, intention: iIntention): Intention {
     const iTargets = evaluateIntention(intention);
     const targets: TargetInfo[] = [];
-    let effects = resolveMove(state, intention.action.move, intention.action.actor, iTargets);
+    let effects = resolveMove(state, intention.move, intention.actor, iTargets);
     for (const iTarget of iTargets) {
         const tEffects = effects.filter(x => x.target === iTarget.target);
         targets.push({ target: iTarget.target.id, result: iTarget.result, effects: tEffects.map(serializeEffect) })
@@ -49,7 +49,7 @@ function serializeIntention(state: iGameState, intention: iIntention): Intention
     }
 
     return {
-        move: intention.action.move.displayId ? intention.action.move.displayId : intention.action.move.id,
+        move: intention.move.definition.id,
         targets: targets,
         effects: effects.map(serializeEffect)
     }

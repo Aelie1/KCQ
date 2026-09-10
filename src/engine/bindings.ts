@@ -1,6 +1,7 @@
 import { BINDING_MODIFIER, thresholds } from "./constants";
 import { findBinding } from "./find";
-import { BindingDef, iBinding, iCharacter, iEffect } from "./itypes";
+import { BindingDef, iBinding, iCharacter, iEffect, iEntity, MoveDef } from "./itypes";
+import { Random } from "./random";
 import { getModifier } from "./status";
 import { BondageEvent, GameEvent } from "./types";
 
@@ -80,8 +81,26 @@ export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iB
     })
 
     if (binding.definition.onEscape) {
-        effects.push(...binding.definition.onEscape(actor,target,binding,escapePotency));
+        effects.push(...binding.definition.onEscape(actor, target, binding, escapePotency));
     }
 
     return effects;
+}
+
+export function pickBinding(target: iCharacter, bindings: BindingDef[], rng: Random): BindingDef | undefined {
+    const validMoves: BindingDef[] = [];
+    for (const binding of bindings) {
+        const tBinding = findBinding(target, binding.id);
+        if (tBinding !== undefined && tBinding.value >= thresholds.impossible) {
+            continue;
+        }
+        validMoves.push(binding);
+    }
+
+    if (validMoves.length === 0) {
+        return undefined;
+    }
+
+    const index = rng.int(0, validMoves.length - 1);
+    return validMoves[index];
 }

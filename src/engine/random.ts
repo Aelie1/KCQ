@@ -1,4 +1,4 @@
-export class XorShift32 {
+export class Random {
     private state: number;
 
     constructor(seed: number) {

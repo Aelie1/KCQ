@@ -9,7 +9,7 @@ import type {
     StatusDef,
     iTargetInfo,
 } from "../src/engine/itypes";
-import { XorShift32 } from "../src/engine/random";
+import { Random } from "../src/engine/random";
 import type { AccuracyProfile, MoveEvent } from "../src/engine/types";
 import {
     makeBinding,
@@ -365,7 +365,7 @@ describe("accuracy", () => {
             targets: [],
         });
         const event = moveUsed(result);
-        const referenceRng = new XorShift32(seed);
+        const referenceRng = new Random(seed);
         for (const _enemy of encounter.enemies) referenceRng.accuracy();
         const roll = referenceRng.accuracy();
         const referenceActor = makeCharacter(hero.id);
@@ -487,8 +487,8 @@ describe("accuracy", () => {
 describe("XorShift32", () => {
     it("replays the same sequence from the same seed and restored state", () => {
         const seed = 123456;
-        const first = new XorShift32(seed);
-        const second = new XorShift32(seed);
+        const first = new Random(seed);
+        const second = new Random(seed);
 
         expect(Array.from({ length: 5 }, () => first.nextU32())).toEqual(
             Array.from({ length: 5 }, () => second.nextU32()),
@@ -501,7 +501,7 @@ describe("XorShift32", () => {
     });
 
     it("produces normalized random values and integers inside inclusive bounds", () => {
-        const rng = new XorShift32(987654);
+        const rng = new Random(987654);
 
         for (let sample = 0; sample < 100; sample++) {
             const value = rng.random();
@@ -517,7 +517,7 @@ describe("XorShift32", () => {
     });
 
     it("normalizes zero seeds and restored states away from the locked zero state", () => {
-        const rng = new XorShift32(0);
+        const rng = new Random(0);
 
         expect(rng.getState()).not.toBe(0);
         rng.setState(0);

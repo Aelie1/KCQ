@@ -44,6 +44,7 @@ export interface Enemy {
     currDef: number;
     intention: Intention | null;
     buffs: Buff[];
+    cooldowns: Record<MoveId,number>;
 }
 
 export interface Intention {
@@ -120,6 +121,7 @@ export interface Move {
     target: EntitySide;
     targets: TargetCount;
     type: MoveType;
+    binding?: BindingId;
 }
 
 export type MoveType =

@@ -5,7 +5,7 @@ import { skunkette } from "../src/content/skunk/skunkette";
 import { GameEngine } from "../src/engine/engine";
 import { isCharacter } from "../src/engine/helpers";
 import type { iBuff, StatusDef } from "../src/engine/itypes";
-import { XorShift32 } from "../src/engine/random";
+import { Random } from "../src/engine/random";
 import {
     makeCharacterDef,
     makeBindingDef,
@@ -171,7 +171,7 @@ describe("enemy intention previews", () => {
         expect(previews.every((preview) => preview !== null)).toBe(true);
         expect(previews).toEqual(Array(5).fill(previews[0]));
 
-        const rng = new XorShift32(seed);
+        const rng = new Random(seed);
         const firstRoll = rng.accuracy();
         const secondRoll = rng.accuracy();
         expect(previews[0]!.targets[0]).toEqual({
@@ -203,7 +203,7 @@ describe("enemy intention previews", () => {
 
     it("recalculates against live modifiers while retaining the committed roll", () => {
         const seed = 8224;
-        const committedRoll = new XorShift32(seed).accuracy();
+        const committedRoll = new Random(seed).accuracy();
         expect(committedRoll).toBeGreaterThan(50);
         expect(committedRoll).toBeLessThan(70);
 

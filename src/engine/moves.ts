@@ -1,12 +1,12 @@
 import { getIEntitySide } from "./helpers";
-import { iGameState, MoveDef, iEntity, iTargetInfo, iEffect, iCharacter } from "./itypes";
+import { iGameState, MoveDef, iEntity, iTargetInfo, iEffect, iCharacter, iMove } from "./itypes";
 
-export function resolveMove(state: iGameState, move: MoveDef, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
+export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
     const successfulTargets = targets.filter(
         target => target.result !== "miss"
     );
-    if (successfulTargets.length > 0) {
-        const effects: iEffect[] = move.resolve(state, actor, successfulTargets);
+    if (move.definition.targets === 0 || successfulTargets.length > 0) {
+        const effects: iEffect[] = move.definition.resolve(state, actor, move, successfulTargets);
         return effects.map(normalizeEffect);
     }
     else {
@@ -28,7 +28,7 @@ export function normalizeEffect(effect: iEffect): iEffect {
 }
 
 export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
-    if (targets.length !== move.targets) {
+    if (targets.length !== move.targets && move.targets !== "all") {
         return false;
     }
     for (const target of targets) {

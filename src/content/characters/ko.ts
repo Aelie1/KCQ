@@ -1,20 +1,20 @@
 import { isEnemy } from "../../engine/helpers";
-import { CharacterDef, DamageMoveDef, iEffect, iEntity, iGameState, iTargetInfo, MoveDef, PassiveDef } from "../../engine/itypes";
+import { CharacterDef, iEffect, iEntity, iGameState, iMove, iTargetInfo, MoveDef, PassiveDef } from "../../engine/itypes";
 
-const telekinesis: DamageMoveDef = {
+const telekinesis: MoveDef = {
     id: "telekinesis",
     target: "enemy",
     targets: 1,
     baseDamage: 10,
     type: "mouth",
-    resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = []
         for (const target of targets) {
             if (isEnemy(target.target)) {
                 effects.push({
                     type: "damage",
                     target: target.target,
-                    amount: (this.baseDamage * target.effectiveness)
+                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }
@@ -29,20 +29,20 @@ const telekinesis: DamageMoveDef = {
 
 }
 
-const fairypunch: DamageMoveDef = {
+const fairypunch: MoveDef = {
     id: "fairypunch",
     target: "enemy",
     targets: "all",
     baseDamage: 10,
     type: "arms",
-    resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = []
         for (const target of targets) {
             if (isEnemy(target.target)) {
                 effects.push({
                     type: "damage",
                     target: target.target,
-                    amount: (this.baseDamage * target.effectiveness)
+                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }
@@ -62,7 +62,7 @@ const starlight: MoveDef = {
     target: "enemy",
     targets: 0,
     type: "mouth",
-    resolve: function (state: iGameState, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         return [];
     },
     accuracy: {
