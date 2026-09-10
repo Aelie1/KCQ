@@ -437,6 +437,7 @@ export class GameEngine {
             if (enemy.intention) {
                 events.push(...this.executeEnemyAction(enemy.intention));
             }
+            enemy.intention = null;
         }
         return events;
     }
