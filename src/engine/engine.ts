@@ -352,7 +352,9 @@ export class GameEngine {
                 events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })
                 const effects = resolveMove(this.state, iMove, actor, targets);
                 events.push(...processEffects(this.state, effects));
-                actor.acted = true;
+                if (move.freeOnHit !== true) {
+                    actor.acted = true;
+                }
                 this.state.turn.step++;
                 return {
                     success: true,

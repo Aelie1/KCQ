@@ -88,6 +88,7 @@ export interface MoveDef extends Move{
     alwaysAvailable?: boolean;
     baseDamage?: number;
     cooldown?: number;
+    freeOnHit?: boolean;
     resolve: (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]) => iEffect[];
     isValid?: (state: iGameState, actor: iEntity, targets: iEntity[]) => boolean;
 }
