@@ -41,7 +41,7 @@ const latexSpray: MoveDef = {
     type: "enemy"
 };
 
-function createPounceBuffs(character: iEntity, enemy: iEntity, level: number): iEffect[] {
+function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, active: boolean): iEffect[] {
     const effects: iEffect[] = [];
     const tStatus: iStatus[] = [s(immobilized, 1)];
     const tModifiers: ModifierSet = {};
@@ -82,7 +82,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number): i
     }
 
     effects.push({
-        source: enemy,
+        source: active ? character : enemy,
         target: character,
         type: "buff",
         buff: cBuff,
@@ -90,7 +90,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number): i
     });
 
     effects.push({
-        source: enemy,
+        source: active ? character : enemy,
         target: enemy,
         type: "buff",
         buff: eBuff,
@@ -118,16 +118,16 @@ export const pounce: MoveDef = {
         }
 
         if (effectiveness < 0.875) {
-            effects.push(...createPounceBuffs(target, actor, 1));
+            effects.push(...createPounceBuffs(target, actor, 1, false));
         }
         else if (effectiveness < 0.95) {
-            effects.push(...createPounceBuffs(target, actor, 2));
+            effects.push(...createPounceBuffs(target, actor, 2, false));
         }
         else if (effectiveness < 1.5) {
-            effects.push(...createPounceBuffs(target, actor, 3));
+            effects.push(...createPounceBuffs(target, actor, 3, false));
         }
         else {
-            effects.push(...createPounceBuffs(target, actor, 4));
+            effects.push(...createPounceBuffs(target, actor, 4, false));
         }
 
         if (effectiveness >= 1.75 && move.binding !== undefined && move.roll !== undefined) {
@@ -161,7 +161,7 @@ export const latexMist: MoveDef = {
         const effects: iEffect[] = [];
 
         //1) Add spread buff to everyone based on the common roll
-        const modifiers: ModifierSet = { "spread": Math.ceil((move.roll ?? 0.1) * 5) };
+        const modifiers: ModifierSet = { "spread": Math.ceil((move.roll ?? 10) / 20) };
 
         const buff: iBuff = {
             id: "latexMist",
@@ -294,7 +294,7 @@ export const skunkette: EnemyDef = {
                             added: false
                         });
                     } else {
-                        effects.push(...createPounceBuffs(character,target,newLevel));
+                        effects.push(...createPounceBuffs(character, target, newLevel, true));
                     }
                 }
             }
@@ -325,6 +325,9 @@ export const skunkette: EnemyDef = {
 
 export const throwOff: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        if (move.result === "miss") {
+            return [];
+        }
         const effects: iEffect[] = []
         const buff = findBuff(actor, "pounce");
         if (!buff) {

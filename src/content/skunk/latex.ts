@@ -1,4 +1,4 @@
-import { thresholds } from "../../engine/constants";
+import { SPREAD_MODIFIER, thresholds } from "../../engine/constants";
 import { BindingDef, iBinding, iCharacter, iEffect, s } from "../../engine/itypes";
 import { bound, breathless, gagged, getModifier, hobbled, submissive, vibrating } from "../../engine/status";
 
@@ -16,7 +16,7 @@ export const latexBindings: BindingDef = {
     onEscape(actor: iCharacter, target: iCharacter, binding: iBinding, amount: number): iEffect[] {
         const effects: iEffect[] = [];
         const spreadLocation: BindingDef = (actor === target && binding.definition === latexArms) ? latexHead : latexArms;
-        const spreadModifier = getModifier(target, "spread");
+        const spreadModifier = getModifier(target, "spread") * SPREAD_MODIFIER;
         let spreadAmount = 0;
         if (binding.value >= thresholds.impossible) {
             const spreadRatio = (1 + 1 * ((binding.value - thresholds.impossible) / (thresholds.max - thresholds.impossible))) * (1 + spreadModifier);
