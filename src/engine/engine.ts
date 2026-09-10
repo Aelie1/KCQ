@@ -417,10 +417,6 @@ export class GameEngine {
             return events;
         }
 
-        //Do this so targetless moves can still get a roll
-        if (intention.action.move.targets === 0) {
-            intention.action.targets.push(intention.action.actor);
-        }
         const targets: iTargetInfo[] = evaluateIntention(intention);
 
         //Now we have a valid actor, targets and move -- execute the move

@@ -104,7 +104,12 @@ export function processEffects(state: iGameState, effects: iEffect[]): GameEvent
 
 export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
-    for (const target of intention.action.targets) {
+    const iTargets = {...intention.action.targets};
+    //Do this so targetless moves can still get a roll
+    if (intention.action.move.targets === 0) {
+        iTargets.push(intention.action.actor);
+    }
+    for (const target of iTargets) {
         const accuracy = calculateAccuracy(intention.action.actor, target, intention.action.move);
         const info = evaluateResult(target, accuracy, intention.roll);
         targets.push({
