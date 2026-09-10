@@ -119,7 +119,7 @@ export function evaluateIntention(intention: iIntention): iTargetInfo[] {
 export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {
     const base = move.accuracy;
     if (!base) {
-        return {};
+        return {none:100};
     }
 
     // Every accuracy-bearing move should have a Hit band.

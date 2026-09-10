@@ -130,7 +130,7 @@ export type MoveType =
 
 export type MoveId = string;
 
-export type AccuracyResult = "miss" | "graze" | "hit" | "crit";
+export type AccuracyResult = "miss" | "graze" | "hit" | "crit" | "none";
 
 export type AccuracyProfile = Partial<Record<AccuracyResult, number>>;
 

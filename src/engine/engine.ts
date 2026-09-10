@@ -74,7 +74,7 @@ export class GameEngine {
         return events;
     }
 
-    getAvailability() : AvailabilityInfo[] {
+    getAvailability(): AvailabilityInfo[] {
         const info: AvailabilityInfo[] = [];
         for (const character of this.state.characters) {
             if (isIncapacitated(character)) {
@@ -112,8 +112,8 @@ export class GameEngine {
         const character = findCharacter(this.state, name);
         if (!character) {
             return {
-                available:false,
-                reason:"invalidActor"
+                available: false,
+                reason: "invalidActor"
             }
         }
 
@@ -125,15 +125,15 @@ export class GameEngine {
             }
         }
         return {
-            available:true
-        }    
+            available: true
+        }
     }
 
     getActions(actor: EntityId): ActionInfo[] {
         const actions: ActionInfo[] = [];
         const character = findCharacter(this.state, actor);
         if (character) {
-            const result = canAct(character,"attack");
+            const result = canAct(character, "attack");
             for (const move of getMoves(character)) {
                 let available = true;
                 let reason: ActionFailureReason = "moveUnavailable";
@@ -143,7 +143,7 @@ export class GameEngine {
                 }
                 else if (!move.alwaysAvailable && !canAttack(character)) {
                     available = false,
-                    reason = "attackUnavailable"
+                        reason = "attackUnavailable"
                 }
                 else if (!canUseMoveType(character, move.type)) {
                     available = false;
@@ -172,15 +172,15 @@ export class GameEngine {
             return null;
         }
 
-        const result = canAct(character,"escape");
+        const result = canAct(character, "escape");
         if (result) {
             return {
                 options: [],
                 assistAllowed: false
             }
         }
-        
-        const options : EscapeOptions = {options: [],assistAllowed: canAssist(character)};
+
+        const options: EscapeOptions = { options: [], assistAllowed: canAssist(character) };
         for (const target of this.state.characters) {
             if (character !== target && !options.assistAllowed) {
                 continue;
@@ -190,7 +190,7 @@ export class GameEngine {
                     actor: actor,
                     target: target.id,
                     binding: binding.id,
-                    effects: resolveEscape(character,target,binding).map(serializeEffect)
+                    effects: resolveEscape(character, target, binding).map(serializeEffect)
                 })
             }
         }
@@ -206,13 +206,13 @@ export class GameEngine {
             return null;
         }
 
-        const moveState = findMove(actorState,move);
+        const moveState = findMove(actorState, move);
 
         if (!moveState) {
             return null;
         }
 
-        return calculateAccuracy(actorState,targetState,moveState);
+        return calculateAccuracy(actorState, targetState, moveState);
     }
 
     executeAction(action: PlayerAction): ActionResult {
@@ -242,7 +242,7 @@ export class GameEngine {
                 reason: "invalidActor"
             };
         }
-    
+
         const result = canAct(actor, action.type);
         if (result) {
             return result;
@@ -281,8 +281,7 @@ export class GameEngine {
                         targetStates.push(...this.state.characters);
                     }
                     move.targets = targetStates.length
-                } else 
-                    {
+                } else {
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
                         if (targetState) {
@@ -316,10 +315,18 @@ export class GameEngine {
                         const targetInfo: iTargetInfo = evaluateResult(target, accuracy, roll);
                         targets.push(targetInfo);
                     }
+                } else {
+                    for (const target of targetStates) {
+                        targets.push({
+                            target: target,
+                            effectiveness: 0,
+                            result: "none"
+                        })
+                    }
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move
-                events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({target: x.target.id, result: x.result})) })
+                events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })
                 const effects = resolveMove(this.state, move, actor, targets);
                 events.push(...processEffects(this.state, effects));
                 actor.acted = true;
@@ -331,7 +338,7 @@ export class GameEngine {
                 };
             }
             case "escape": {
-               
+
                 const target = findCharacter(this.state, action.target);
                 if (!target) {
                     return {
@@ -357,7 +364,7 @@ export class GameEngine {
 
                 //now we have a valid actor, target, and binding -- execute the escape
                 const effects = resolveEscape(actor, target, binding);
-                events.push(...processEffects(this.state,effects))
+                events.push(...processEffects(this.state, effects))
                 if (!actor.acted) {
                     actor.acted = true;
                     if (actor.standing && canBonusEscape(actor)) {
@@ -413,9 +420,9 @@ export class GameEngine {
         const targets: iTargetInfo[] = (move.targets > 0) ? evaluateIntention(intention) : [];
 
         //Now we have a valid actor, targets and move -- execute the move
-        events.push({ type: "moveUsed", actor: actor.id, move: move.id, targets: targets.map(x => ({target: x.target.id, result: x.result})) })
+        events.push({ type: "moveUsed", actor: actor.id, move: move.id, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })
         const effects = resolveMove(this.state, move, actor, targets);
-        events.push(...processEffects(this.state,effects));
+        events.push(...processEffects(this.state, effects));
         this.state.turn.step++;
         return events;
     }

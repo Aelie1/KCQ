@@ -20,4 +20,5 @@ export const effectivenessRange: Record<AccuracyResult, [number, number]> = {
     graze: [0.20, 0.50],
     hit: [0.80, 1.00],
     crit: [1.50, 2.00],
+    none: [0, 0],
 };
