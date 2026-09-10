@@ -303,7 +303,7 @@ export class GameEngine {
                 }
 
                 //do this so targetless moves can still get a roll result
-                if (move.targets === 0) {
+                if (foundMove.targets === 0) {
                     targetStates.push(actor);
                 }
 
