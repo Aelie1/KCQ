@@ -2,7 +2,7 @@ import { resolveEscape } from "./bindings";
 import { tickBuffs } from "./buffs";
 import { calculateAccuracy, evaluateIntention, evaluateResult, loadEnemy, processEffects, setStance, tickCooldowns, updateIntention } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
-import type { CharacterDef, EncounterDef, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "./itypes";
+import type { CharacterDef, EncounterDef, iCharacter, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "./itypes";
 import { getMoves, isValidMove, resolveMove } from "./moves";
 import { Random } from "./random";
 import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
@@ -250,15 +250,14 @@ export class GameEngine {
 
         switch (action.type) {
             case "attack": {
-                const foundMove = findMove(actor, action.move);
-                if (!foundMove) {
+                const move = findMove(actor, action.move);
+                if (!move) {
                     return {
                         success: false,
                         reason: "invalidMove"
                     };
                 }
 
-                const move = { ...foundMove };
                 if (!move.alwaysAvailable && !canAttack(actor)) {
                     return {
                         success: false,
@@ -280,7 +279,6 @@ export class GameEngine {
                     } else {
                         targetStates.push(...this.state.characters);
                     }
-                    move.targets = targetStates.length
                 } else {
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
@@ -302,6 +300,7 @@ export class GameEngine {
                     };
                 }
 
+                const iMove:iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 if (move.accuracy !== undefined) {
                     for (const target of targetStates) {
@@ -310,6 +309,19 @@ export class GameEngine {
                         const targetInfo: iTargetInfo = evaluateResult(target, accuracy, roll);
                         targets.push(targetInfo);
                     }
+                    if (move.targets === 0) {
+                        const roll: number = this.rng.accuracy();
+                        const blankActor: iCharacter = {
+                            ...actor,
+                            buffs: [],
+                            bindings: [],
+                        }
+                        const accuracy: AccuracyProfile = calculateAccuracy(actor, blankActor, move);
+                        const targetInfo: iTargetInfo = evaluateResult(blankActor, accuracy, roll);
+                        iMove.result = targetInfo.result;
+                        iMove.effectiveness = targetInfo.effectiveness;
+                    }
+    
                 } else {
                     for (const target of targetStates) {
                         targets.push({
@@ -318,11 +330,6 @@ export class GameEngine {
                             result: "none"
                         })
                     }
-                }
-                const iMove:iMove = { definition: move };
-
-                if (move.targets === 0) {
-                    iMove.roll = this.rng.random();
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move

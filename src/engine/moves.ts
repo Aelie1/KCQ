@@ -5,7 +5,7 @@ export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targ
     const successfulTargets = targets.filter(
         target => target.result !== "miss"
     );
-    if (move.definition.targets === 0 || successfulTargets.length > 0) {
+    if ((move.result !== undefined && move.result !== "miss") || successfulTargets.length > 0) {
         const effects: iEffect[] = move.definition.resolve(state, actor, move, successfulTargets);
         return effects.map(normalizeEffect);
     }

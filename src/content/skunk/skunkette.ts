@@ -120,6 +120,7 @@ export const pounce: MoveDef = {
     target: "player",
     targets: 1,
     baseDamage: 10,
+    cooldown: 2,
     accuracy: {
         miss: 40,
         hit: 50,
@@ -234,6 +235,10 @@ export const throwOff: MoveDef = {
             buff: tBuff,
             added: false
         });
+
+        if (pounce.cooldown !== undefined) {
+            target.cooldowns["pounce"] = pounce.cooldown;
+        }
 
         return effects;
     },

@@ -44,7 +44,7 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
     }
     actor.intention = {
         actor:action.actor,
-        move:action.move,
+        move:move,
         targets:iTargets 
     };
 }
@@ -334,7 +334,7 @@ export function tickCooldowns(enemies: iEnemy[]) {
     for (const enemy of enemies) {
         for (const move of Object.entries(enemy.cooldowns)) {
             if (move[1] > 0) {
-                enemy.cooldowns[0]--;
+                enemy.cooldowns[move[0]]--;
             }
         }
     }
