@@ -198,17 +198,33 @@ export class GameEngine {
         return options;
     }
 
-    getAccuracyPreview(actor: EntityId, target: EntityId, move: MoveId): AccuracyProfile | null {
+    getAccuracyPreview(actor: EntityId, target: EntityId | null, move: MoveId): AccuracyProfile | null {
         const actorState = findCharacter(this.state, actor);
-        const targetState = findEntity(this.state, target);
-
-        if (!actorState || !targetState) {
+        let targetState : iEntity | undefined;
+        if (!actorState) {
             return null;
         }
 
         const moveState = findMove(actorState, move);
-
         if (!moveState) {
+            return null;
+        }
+
+        if (target === null ) {
+            if (moveState.targets !== 0) {
+                return null;
+            } else {
+                targetState = {
+                    ...actorState,
+                    buffs: [],
+                    bindings: [],
+                } 
+            }
+        } else {
+            targetState = findEntity(this.state, target);
+        }
+
+        if (!targetState) {
             return null;
         }
 
