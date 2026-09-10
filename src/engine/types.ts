@@ -84,6 +84,7 @@ export type Effect =
 
 export interface DamageEffect {
     type: "damage";
+    source: EntityId;
     target: EntityId;
     amount: number;
 }
@@ -196,6 +197,7 @@ export type ModifierId =
     | "potency"
     | "traps"
     | "willpower"
+    | "spread"
 
 
 /*******************************************************

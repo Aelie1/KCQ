@@ -1,6 +1,6 @@
 import { thresholds } from "../../engine/constants";
 import { BindingDef, iBinding, iCharacter, iEffect, s } from "../../engine/itypes";
-import { bound, breathless, gagged, hobbled, submissive, vibrating } from "../../engine/status";
+import { bound, breathless, gagged, getModifier, hobbled, submissive, vibrating } from "../../engine/status";
 
 export const latexBindings: BindingDef = {
     id: "latexBindings",
@@ -15,22 +15,27 @@ export const latexBindings: BindingDef = {
     },
     onEscape(actor: iCharacter, target: iCharacter, binding: iBinding, amount: number): iEffect[] {
         const effects: iEffect[] = [];
-        if (binding.value < thresholds.hard) {
-            return [];
-        }
         const spreadLocation: BindingDef = (actor === target && binding.definition === latexArms) ? latexHead : latexArms;
+        const spreadModifier = getModifier(target, "spread");
         let spreadAmount = 0;
         if (binding.value >= thresholds.impossible) {
-            const spreadRatio = 1 + 1 * ((binding.value - thresholds.impossible) / (thresholds.max - thresholds.impossible));
+            const spreadRatio = (1 + 1 * ((binding.value - thresholds.impossible) / (thresholds.max - thresholds.impossible))) * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         }
         else if (binding.value >= thresholds.extreme) {
-            const spreadRatio = .5 + .5 * ((binding.value - thresholds.extreme) / (thresholds.impossible - thresholds.extreme));
+            const spreadRatio = (.5 + .5 * ((binding.value - thresholds.extreme) / (thresholds.impossible - thresholds.extreme))) * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         }
-        else {
-            const spreadRatio = .25 + .25 * ((binding.value - thresholds.hard) / (thresholds.extreme - thresholds.hard));
+        else if (binding.value >= thresholds.hard) {
+            const spreadRatio = (.25 + .25 * ((binding.value - thresholds.hard) / (thresholds.extreme - thresholds.hard))) * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
+        } else {
+            const spreadRatio = spreadModifier;
+            spreadAmount = Math.ceil(amount * spreadRatio);
+        }
+
+        if (spreadAmount === 0) {
+            return effects;
         }
 
         const existingBinding = actor.bindings.find(x => x.definition === spreadLocation);
@@ -89,10 +94,10 @@ export const latexHead: BindingDef = {
     ...latexBindings,
     id: "latexHead",
     status: {
-        easy:       [s(gagged, 1)],
-        medium:     [s(gagged, 2)],
-        hard:       [s(gagged, 2), s(submissive, 1)],
-        extreme:    [s(gagged, 3), s(submissive, 1)],
+        easy: [s(gagged, 1)],
+        medium: [s(gagged, 2)],
+        hard: [s(gagged, 2), s(submissive, 1)],
+        extreme: [s(gagged, 3), s(submissive, 1)],
         impossible: [s(gagged, 4), s(submissive, 2)]
     },
 }
@@ -101,9 +106,9 @@ export const latexArms: BindingDef = {
     ...latexBindings,
     id: "latexArms",
     status: {
-        medium:     [s(bound, 1)],
-        hard:       [s(bound, 2)],
-        extreme:    [s(bound, 3)],
+        medium: [s(bound, 1)],
+        hard: [s(bound, 2)],
+        extreme: [s(bound, 3)],
         impossible: [s(bound, 4)]
     },
 }
@@ -112,10 +117,10 @@ export const latexTorso: BindingDef = {
     ...latexBindings,
     id: "latexTorso",
     status: {
-        easy:       [s(breathless, 1)],
-        medium:     [s(breathless, 2), s(vibrating, 1)],
-        hard:       [s(breathless, 2), s(vibrating, 1)],
-        extreme:    [s(breathless, 3), s(vibrating, 2)],
+        easy: [s(breathless, 1)],
+        medium: [s(breathless, 2), s(vibrating, 1)],
+        hard: [s(breathless, 2), s(vibrating, 1)],
+        extreme: [s(breathless, 3), s(vibrating, 2)],
         impossible: [s(breathless, 4), s(vibrating, 3)]
     },
 }
@@ -124,9 +129,9 @@ export const latexLegs: BindingDef = {
     ...latexBindings,
     id: "latexLegs",
     status: {
-        medium:     [s(hobbled, 1)],
-        hard:       [s(hobbled, 2)],
-        extreme:    [s(hobbled, 3)],
+        medium: [s(hobbled, 1)],
+        hard: [s(hobbled, 2)],
+        extreme: [s(hobbled, 3)],
         impossible: [s(hobbled, 4)]
     },
 }
@@ -135,10 +140,10 @@ export const latexLegs: BindingDef = {
 export const latexCollar: BindingDef = {
     id: "latexCollar",
     status: {
-        easy:       [s(submissive, 1)],
-        medium:     [s(submissive, 2)],
-        hard:       [s(submissive, 3)],
-        extreme:    [s(submissive, 4)],
+        easy: [s(submissive, 1)],
+        medium: [s(submissive, 2)],
+        hard: [s(submissive, 3)],
+        extreme: [s(submissive, 4)],
         impossible: [s(submissive, 4)]
     },
 }

@@ -34,3 +34,7 @@ export class Random {
         this.state = (state >>> 0) || 0x9e3779b9;
     }
 }
+
+export function effectivenessInt(effectiveness: number, min: number, max: number): number {
+    return min + Math.floor(effectiveness * 100000) % (max - min + 1);
+}

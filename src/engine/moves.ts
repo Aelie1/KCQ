@@ -5,16 +5,8 @@ export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targ
     const successfulTargets = targets.filter(
         target => target.result !== "miss"
     );
-    if (successfulTargets.length > 0 ||                                     //Normal targetted moves
-        (move.result === undefined && move.definition.targets === 0) ||     //Enemy 0-target moves
-        (move.result !== undefined && move.result !== "miss") )             //Player 0-target moves
-        {
-        const effects: iEffect[] = move.definition.resolve(state, actor, move, successfulTargets);
-        return effects.map(normalizeEffect);
-    }
-    else {
-        return [];
-    }
+    const effects: iEffect[] = move.definition.resolve(state, actor, move, successfulTargets);
+    return effects.map(normalizeEffect);
 }
 
 export function normalizeEffect(effect: iEffect): iEffect {

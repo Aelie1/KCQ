@@ -13,6 +13,7 @@ const telekinesis: MoveDef = {
             if (isEnemy(target.target)) {
                 effects.push({
                     type: "damage",
+                    source: actor,
                     target: target.target,
                     amount: ((this.baseDamage ?? 1) * target.effectiveness)
                 });
@@ -41,6 +42,7 @@ const fairypunch: MoveDef = {
             if (isEnemy(target.target)) {
                 effects.push({
                     type: "damage",
+                    source: actor,
                     target: target.target,
                     amount: ((this.baseDamage ?? 1) * target.effectiveness)
                 });

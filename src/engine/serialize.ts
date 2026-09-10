@@ -73,7 +73,8 @@ export function serializeEffect(effect: iEffect): Effect {
         case "damage":
             return {
                 ...effect,
-                target: effect.target.id,
+                source: effect.source.id,
+                target: effect.target.id
             }
     }
 }

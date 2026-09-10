@@ -1,16 +1,19 @@
 import { pickBinding } from "../../engine/bindings";
-import { calculateAccuracy, evaluateResult, pickTarget } from "../../engine/combat";
+import { calculateAccuracy, evaluateResult, pickTarget, validTargets } from "../../engine/combat";
 import { findBuff, findCharacter, findEnemy } from "../../engine/find";
 import { isCharacter } from "../../engine/helpers";
 import { EnemyAction, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, MoveDef, s } from "../../engine/itypes";
 import { resolveMove } from "../../engine/moves";
-import { Random } from "../../engine/random";
+import { effectivenessInt, Random } from "../../engine/random";
 import { helpless, immobilized, isIncapacitated, stunned } from "../../engine/status";
-import { ModifierSet } from "../../engine/types";
+import { EntityId, ModifierSet } from "../../engine/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const latexSpray: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        if (targets.length === 0) {
+            return [];
+        }
         const effects: iEffect[] = []
         const target = targets[0];
         if (move.binding === undefined) {
@@ -38,8 +41,70 @@ const latexSpray: MoveDef = {
     type: "enemy"
 };
 
+function createPounceBuffs(character: iEntity, enemy: iEntity, level: number): iEffect[] {
+    const effects: iEffect[] = [];
+    const tStatus: iStatus[] = [s(immobilized, 1)];
+    const tModifiers: ModifierSet = {};
+    const aModifiers: ModifierSet = { defense: -2 };
+    switch (level) {
+        case 1:
+            aModifiers.hit = 2;
+            break;
+        case 2:
+            tModifiers.hit = -1;
+            aModifiers.hit = 4;
+            break;
+        case 3:
+            tStatus.push(s(stunned, 1));
+            tModifiers.hit = -2;
+            aModifiers.hit = 6;
+            break;
+        case 4:
+            tStatus.push(s(helpless, 1));
+            aModifiers.hit = 8;
+            break
+    }
+
+    const cBuff: iBuff = {
+        id: "pounce",
+        statuses: tStatus,
+        modifiers: tModifiers,
+        active: false,
+        addedMoves: [throwOff],
+        linkedEntity: enemy.id
+    }
+
+    const eBuff: iBuff = {
+        id: "pounce",
+        modifiers: aModifiers,
+        active: false,
+        linkedEntity: character.id
+    }
+
+    effects.push({
+        source: enemy,
+        target: character,
+        type: "buff",
+        buff: cBuff,
+        added: true
+    });
+
+    effects.push({
+        source: enemy,
+        target: enemy,
+        type: "buff",
+        buff: eBuff,
+        added: true
+    });
+
+    return effects;
+}
+
 export const pounce: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        if (targets.length === 0) {
+            return [];
+        }
         const effects: iEffect[] = []
         const target = targets[0].target;
         const effectiveness = targets[0].effectiveness;
@@ -52,56 +117,18 @@ export const pounce: MoveDef = {
             return effects;
         }
 
-        const tStatus: iStatus[] = [s(immobilized, 1)];
-        const tModifiers: ModifierSet = {};
-        const aModifiers: ModifierSet = { defense: -2 };
         if (effectiveness < 0.875) {
-            aModifiers.hit = 2;
+            effects.push(...createPounceBuffs(target, actor, 1));
         }
         else if (effectiveness < 0.95) {
-            tModifiers.hit = -1;
-            aModifiers.hit = 4;
+            effects.push(...createPounceBuffs(target, actor, 2));
         }
         else if (effectiveness < 1.5) {
-            tStatus.push(s(stunned, 1));
-            tModifiers.hit = -2;
-            aModifiers.hit = 6;
-        } else {
-            tStatus.push(s(helpless, 1));
-            aModifiers.hit = 8;
+            effects.push(...createPounceBuffs(target, actor, 3));
         }
-
-        const tBuff: iBuff = {
-            id: "pounce",
-            statuses: tStatus,
-            modifiers: tModifiers,
-            active: false,
-            addedMoves: [throwOff],
-            linkedEntity: actor.id
+        else {
+            effects.push(...createPounceBuffs(target, actor, 4));
         }
-
-        const aBuff: iBuff = {
-            id: "pounce",
-            modifiers: aModifiers,
-            active: false,
-            linkedEntity: target.id
-        }
-
-        effects.push({
-            source: actor,
-            target: target,
-            type: "buff",
-            buff: tBuff,
-            added: true
-        });
-
-        effects.push({
-            source: actor,
-            target: actor,
-            type: "buff",
-            buff: aBuff,
-            added: true
-        });
 
         if (effectiveness >= 1.75 && move.binding !== undefined && move.roll !== undefined) {
             const spray: iMove = {
@@ -110,7 +137,7 @@ export const pounce: MoveDef = {
             }
             const accuracy = calculateAccuracy(actor, target, spray.definition);
             const info = [evaluateResult(target, accuracy, move.roll)];
-            
+
             effects.push(...resolveMove(state, spray, actor, info));
         }
 
@@ -131,11 +158,63 @@ export const pounce: MoveDef = {
 
 export const latexMist: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        return [];
+        const effects: iEffect[] = [];
+
+        //1) Add spread buff to everyone based on the common roll
+        const modifiers: ModifierSet = { "spread": Math.ceil((move.roll ?? 0.1) * 5) };
+
+        const buff: iBuff = {
+            id: "latexMist",
+            modifiers: modifiers,
+            active: false,
+            duration: 1
+        }
+        for (const character of validTargets(state.characters)) {
+            effects.push({
+                source: actor,
+                target: character,
+                type: "buff",
+                buff: buff,
+                added: true
+            });
+        }
+
+        //2) Individual players get additional bondage based on their roll
+        for (const target of targets) {
+            const character = target.target;
+            if (target.result === "hit" && isCharacter(character) && character.bindings.length > 0) {
+                const index = effectivenessInt(target.effectiveness, 0, character.bindings.length - 1)
+                const binding = character.bindings[index];
+                effects.push({
+                    type: "binding",
+                    target: character,
+                    binding: binding.definition,
+                    amount: (this.baseDamage ?? 1) * target.effectiveness
+                });
+            }
+            else if (target.result === "crit" && isCharacter(character) && character.bindings.length > 0) {
+                for (const binding of character.bindings) {
+                    effects.push({
+                        type: "binding",
+                        target: character,
+                        binding: binding.definition,
+                        amount: (this.baseDamage ?? 1) * target.effectiveness / 2
+                    });
+                }
+            }
+        }
+
+        return effects;
     },
     id: "latexMist",
     target: "player",
-    targets: 0,
+    targets: "all",
+    baseDamage: 10,
+    accuracy: {
+        miss: 70,
+        hit: 25,
+        crit: 5
+    },
     type: "enemy"
 }
 
@@ -189,7 +268,59 @@ export const skunkette: EnemyDef = {
             const binding = pickBinding(target, bindings, rng);
             return { actor: actor, targets: [target], move: { definition: latexSpray, binding: binding } };
         }
-    }
+    },
+    onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
+        const effects: iEffect[] = [];
+        const buff = findBuff(target, "pounce");
+        if (buff && buff.linkedEntity !== undefined) {
+            const character = findCharacter(state, buff.linkedEntity)
+            if (character !== undefined) {
+                const tBuff = findBuff(character, "pounce");
+                if (tBuff !== undefined) {
+                    const newLevel = (buff.modifiers?.hit ?? 1) / 2 - 1;
+                    if (newLevel === 0) {
+                        effects.push({
+                            type: "buff",
+                            source: target,
+                            target: character,
+                            buff: tBuff,
+                            added: false
+                        });
+                        effects.push({
+                            type: "buff",
+                            source: target,
+                            target: target,
+                            buff: buff,
+                            added: false
+                        });
+                    } else {
+                        effects.push(...createPounceBuffs(character,target,newLevel));
+                    }
+                }
+            }
+        }
+        return effects;
+    },
+    onDefeat(state: iGameState, target: iEnemy): iEffect[] {
+        const effects: iEffect[] = [];
+        const buff = findBuff(target, "pounce");
+        if (buff && buff.linkedEntity !== undefined) {
+            const character = findCharacter(state, buff.linkedEntity)
+            if (character !== undefined) {
+                const tBuff = findBuff(character, "pounce");
+                if (tBuff !== undefined) {
+                    effects.push({
+                        type: "buff",
+                        source: target,
+                        target: character,
+                        buff: tBuff,
+                        added: false
+                    });
+                }
+            }
+        }
+        return effects;
+    },
 }
 
 export const throwOff: MoveDef = {

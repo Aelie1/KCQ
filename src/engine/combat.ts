@@ -59,7 +59,7 @@ export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     return targets;
 }
 
-export function damageEnemy(state: iGameState, target: iEnemy, amount: number): GameEvent[] {
+export function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, amount: number): GameEvent[] {
     const events: GameEvent[] = [];
     target.currHp -= amount;
     const event: DamageEvent = {
@@ -68,6 +68,9 @@ export function damageEnemy(state: iGameState, target: iEnemy, amount: number): 
         amount: amount
     };
     events.push(event);
+    if (target.definition.onDamage) {
+        events.push(...processEffects(state, target.definition.onDamage(state, actor, target, amount)));
+    }
     if (target.currHp <= 0) {
         events.push(...defeatEnemy(state, target));
     }
@@ -81,6 +84,9 @@ export function defeatEnemy(state: iGameState, target: iEnemy): GameEvent[] {
         target: target.id,
     };
     events.push(event);
+    if (target.definition.onDefeat) {
+        events.push(...processEffects(state, target.definition.onDefeat(state, target)));
+    }
     state.enemies.splice(state.enemies.indexOf(target), 1);
     return events;
 }
@@ -127,7 +133,7 @@ export function processEffects(state: iGameState, effects: iEffect[]): GameEvent
                 }
                 break;
             case "damage":
-                events.push(...damageEnemy(state, effect.target, effect.amount))
+                events.push(...damageEnemy(state, effect.source, effect.target, effect.amount))
                 break;
         }
     }

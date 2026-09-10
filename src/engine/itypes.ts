@@ -41,6 +41,8 @@ export interface EnemyDef {
     defense: number;
     passives: PassiveDef[];
     ai: (state: iGameState, actor: iEnemy, rng: Random) => EnemyAction;
+    onDamage?: (state: iGameState, actor: iEntity, target: iEnemy, damage: number) => iEffect[];
+    onDefeat?: (state: iGameState, target: iEnemy) => iEffect[];
 }
 
 export interface iIntention {
@@ -105,7 +107,8 @@ export type iEffect =
     | iBindingEffect
     | iBuffEffect;
 
-export interface iDamageEffect extends Omit<DamageEffect, "target"> {
+export interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
+    source: iEntity;
     target: iEnemy;
 }
 
