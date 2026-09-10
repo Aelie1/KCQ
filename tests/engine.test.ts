@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
-import { latexArms, latexHead } from "../src/content/skunk/latex";
 import { skunkette } from "../src/content/skunk/skunkette";
 import { GameEngine } from "../src/engine/engine";
 import { isCharacter } from "../src/engine/helpers";
@@ -14,7 +13,7 @@ import {
     makeWaitMove,
 } from "./helpers";
 
-const AUTHORED_HIT_SEED = 8224;
+const AUTHORED_HIT_SEED = 3;
 
 function setupAuthoredCombat(): GameEngine {
     const encounter = { id: "authored-skunkette", enemies: [skunkette] };
@@ -25,10 +24,11 @@ function setupAuthoredCombat(): GameEngine {
 }
 
 describe("turn phases and enemy intentions", () => {
-    it("executes Skunkette's authored Latex Spray between phase changes", () => {
+    it("executes Skunkette's authored intention between phase changes", () => {
         const engine = setupAuthoredCombat();
         const enemyId = `${skunkette.id}1`;
-        const enemyMove = skunkette.moves[0];
+        const preview = engine.getGameState().enemies[0].intention;
+        if (!preview) throw new Error("Expected an authored intention");
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected endTurn to succeed");
@@ -37,40 +37,34 @@ describe("turn phases and enemy intentions", () => {
         expect(result.events[1]).toEqual({
             type: "moveUsed",
             actor: enemyId,
-            move: enemyMove.id,
-            targets: [{ target: ko.id, result: "hit" }],
+            move: preview.move,
+            targets: preview.targets.map(({ target, result: band }) => ({
+                target,
+                result: band,
+            })),
         });
-        const bindingEvent = result.events.find((event) => event.type === "bondageAdded");
-        if (!bindingEvent || !("amount" in bindingEvent)) {
-            throw new Error("Expected a bondageAdded event");
-        }
-        expect(bindingEvent).toMatchObject({
-            type: "bondageAdded",
+        expect(result.events).toContainEqual({
+            type: "buffAdded",
             target: ko.id,
-            binding: latexHead.id,
+            buff: "pounce",
         });
-        expect(bindingEvent.amount).toBeGreaterThan(0);
+        expect(result.events).toContainEqual({
+            type: "buffAdded",
+            target: enemyId,
+            buff: "pounce",
+        });
         expect(result.events.at(-1)).toEqual({ type: "phaseChanged", phase: "player" });
 
         const state = engine.getGameState();
         expect(state.turn).toEqual({ round: 2, step: 1, phase: "player" });
         expect(state.characters[0].acted).toBe(false);
-        expect(state.characters[0].bindings[0]).toMatchObject({ id: latexHead.id });
-        expect(state.characters[0].bindings[0].value).toBe(bindingEvent.amount);
-        expect(state.enemies[0].intention).toEqual({
-            move: enemyMove.displayId,
-            targets: [{
-                target: ko.id,
-                result: expect.any(String),
-                effects: [{
-                    type: "binding",
-                    target: ko.id,
-                    binding: latexHead.id,
-                    amount: expect.any(Number),
-                }],
-            }],
-            effects: [],
-        });
+        expect(state.characters[0].buffs).toContainEqual(
+            expect.objectContaining({ id: "pounce", linkedEntity: enemyId }),
+        );
+        expect(state.enemies[0].buffs).toContainEqual(
+            expect.objectContaining({ id: "pounce", linkedEntity: ko.id }),
+        );
+        expect(state.enemies[0].intention).not.toBeNull();
     });
 
     it("resets acted characters only when returning to the player phase", () => {
@@ -147,7 +141,7 @@ describe("enemy intention previews", () => {
         const alwaysHit = makeMove("certain-threat", "enemy", {
             target: "player",
             accuracy: { hit: 100 },
-            resolve: (_state, _actor, targets) => targets.flatMap((target) =>
+            resolve: (_state, _actor, _move, targets) => targets.flatMap((target) =>
                 isCharacter(target.target)
                     ? [{
                         type: "binding" as const,
@@ -172,7 +166,9 @@ describe("enemy intention previews", () => {
         expect(previews).toEqual(Array(5).fill(previews[0]));
 
         const rng = new Random(seed);
+        rng.accuracy();
         const firstRoll = rng.accuracy();
+        rng.accuracy();
         const secondRoll = rng.accuracy();
         expect(previews[0]!.targets[0]).toEqual({
             target: "hero",

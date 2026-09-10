@@ -259,7 +259,7 @@ describe("stance toggling", () => {
         });
         const immobilize = makeMove("immobilize", "enemy", {
             target: "player",
-            resolve: (_state, _actor, targets) => {
+            resolve: (_state, _actor, _move, targets) => {
                 const target = targets[0].target;
                 return isCharacter(target)
                     ? [{

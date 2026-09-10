@@ -117,22 +117,23 @@ describe("buff lifecycle", () => {
 
     it("leaves active infinite buffs indefinitely", () => {
         const target = makeCharacter("hero");
-        const buff = makeBuff({ duration: "infinite" });
+        const buff = makeBuff({ duration: undefined });
         target.buffs.push(buff);
 
         expect(tickBuffs(makeState([target]))).toEqual([]);
         expect(target.buffs).toEqual([buff]);
-        expect(buff.duration).toBe("infinite");
+        expect(buff.duration).toBeUndefined();
     });
 
     it("activates an inactive infinite buff without removing it", () => {
         const target = makeTestEnemy();
-        const buff = makeBuff({ duration: "infinite", active: false });
+        const buff = makeBuff({ duration: undefined, active: false });
         target.buffs.push(buff);
 
         expect(tickBuffs(makeState([], [target]))).toEqual([]);
         expect(target.buffs).toEqual([buff]);
-        expect(buff).toMatchObject({ duration: "infinite", active: true });
+        expect(buff).toMatchObject({ active: true });
+        expect(buff.duration).toBeUndefined();
     });
 
     it("allows duplicate ids and removes only the supplied object instance", () => {

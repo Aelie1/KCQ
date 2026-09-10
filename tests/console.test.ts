@@ -32,6 +32,7 @@ const state: GameState = {
         id: "skunkette1",
         currHp: 12,
         currDef: 0,
+        cooldowns: {},
         buffs: [],
         intention: {
             move: "latexSpray",

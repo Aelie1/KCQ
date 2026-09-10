@@ -114,6 +114,7 @@ describe("state serialization and combatant loading", () => {
                 });
                 intention.effects.push({
                     type: "damage",
+                    source: "hero",
                     target: "intruder",
                     amount: 1,
                 });
@@ -137,22 +138,19 @@ describe("state serialization and combatant loading", () => {
         };
         const enemyBuff: iBuff = {
             id: "focus",
-            duration: "infinite",
             active: false,
             statuses: [{ definition: status, value: 1 }],
         };
         const character = makeCharacter();
         character.buffs.push(characterBuff);
-        const enemyDefinition = makeEnemyDef("foe", [makeWaitMove()]);
+        const enemyMove = makeWaitMove();
+        const enemyDefinition = makeEnemyDef("foe", [enemyMove]);
         const enemy = makeEnemy(enemyDefinition);
         enemy.buffs.push(enemyBuff);
         enemy.intention = {
-            action: {
-                actor: enemy,
-                move: enemyDefinition.moves[0],
-                targets: [character],
-            },
-            roll: 25,
+            actor: enemy,
+            move: { definition: enemyMove },
+            targets: [{ target: character, roll: 25 }],
         };
         const internalState: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
@@ -172,12 +170,11 @@ describe("state serialization and combatant loading", () => {
         });
         expect(serialized.enemies[0].buffs[0]).toEqual({
             id: "focus",
-            duration: "infinite",
             active: false,
             statuses: [{ id: status.id, value: 1 }],
         });
         expect(serialized.enemies[0].intention).toEqual({
-            move: enemyDefinition.moves[0].id,
+            move: enemyMove.id,
             targets: [{
                 target: character.id,
                 result: "hit",
@@ -187,14 +184,16 @@ describe("state serialization and combatant loading", () => {
         });
         expect(serialized).not.toHaveProperty("nextEntityId");
         expect(serialized.characters[0].buffs[0]).not.toBe(characterBuff);
-        expect(serialized.characters[0].buffs[0].statuses[0])
-            .not.toBe(characterBuff.statuses[0]);
+        const serializedStatus = serialized.characters[0].buffs[0].statuses?.[0];
+        const internalStatus = characterBuff.statuses?.[0];
+        if (!serializedStatus || !internalStatus) throw new Error("Expected nested statuses");
+        expect(serializedStatus).not.toBe(internalStatus);
 
         serialized.characters[0].buffs[0].duration = 99;
-        serialized.characters[0].buffs[0].statuses[0].value = 99;
+        serializedStatus.value = 99;
         serialized.enemies[0].buffs[0].active = true;
         expect(characterBuff.duration).toBe(2);
-        expect(characterBuff.statuses[0].value).toBe(1);
+        expect(internalStatus.value).toBe(1);
         expect(enemyBuff.active).toBe(false);
     });
 });

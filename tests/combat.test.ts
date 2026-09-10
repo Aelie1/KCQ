@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
+import { processEffects } from "../src/engine/combat";
 import { resolveMove } from "../src/engine/moves";
 import { GameEngine } from "../src/engine/engine";
 import { isEnemy } from "../src/engine/helpers";
@@ -8,6 +9,7 @@ import type { iGameState } from "../src/engine/itypes";
 import type { PlayerAction } from "../src/engine/types";
 import {
     expectMoveRejection,
+    makeBindingDef,
     makeCharacter,
     makeCharacterDef,
     makeEnemy,
@@ -16,7 +18,7 @@ import {
     makeWaitMove,
 } from "./helpers";
 
-const AUTHORED_HIT_SEED = 8224;
+const AUTHORED_HIT_SEED = 3;
 
 function setupAuthoredCombat(): GameEngine {
     const encounter = { id: "authored-skunkette", enemies: [skunkette] };
@@ -88,10 +90,10 @@ describe("move validation and player actions", () => {
     it("applies nonlethal damage without removing the enemy", () => {
         const damage = 7;
         const strike = makeMove("strike", "arms", {
-            resolve: (_state, _actor, targets) => {
+            resolve: (_state, actor, _move, targets) => {
                 const target = targets[0].target;
                 return isEnemy(target)
-                    ? [{ type: "damage", target, amount: damage }]
+                    ? [{ type: "damage", source: actor, target, amount: damage }]
                     : [];
             },
         });
@@ -134,10 +136,10 @@ describe("move validation and player actions", () => {
         const enemyHp = 5;
         const lethalDamage = enemyHp;
         const strike = makeMove("lethal-strike", "arms", {
-            resolve: (_state, _actor, targets) => {
+            resolve: (_state, actor, _move, targets) => {
                 const target = targets[0].target;
                 return isEnemy(target)
-                    ? [{ type: "damage", target, amount: lethalDamage }]
+                    ? [{ type: "damage", source: actor, target, amount: lethalDamage }]
                     : [];
             },
         });
@@ -253,25 +255,82 @@ describe("move resolution", () => {
         let resolvedTargetIds: string[] = [];
         const move = makeMove("fractional-damage", "arms", {
             targets: 2,
-            resolve: (_state, _actor, targets) => {
+            resolve: (_state, actor, _move, targets) => {
                 resolvedTargetIds = targets.map((target) => target.target.id);
                 return targets.flatMap((target) => isEnemy(target.target)
-                    ? [{ type: "damage" as const, target: target.target, amount: 2.2 }]
+                    ? [{ type: "damage" as const, source: actor, target: target.target, amount: 2.2 }]
                     : []
                 );
             },
         });
 
-        const effects = resolveMove(state, move, actor, [
+        const effects = resolveMove(state, { definition: move }, actor, [
             { target: missed, result: "miss", effectiveness: 0 },
             { target: hit, result: "hit", effectiveness: 0.9 },
         ]);
 
         expect(resolvedTargetIds).toEqual([hit.id]);
-        expect(effects).toEqual([{ type: "damage", target: hit, amount: 3 }]);
+        expect(effects).toEqual([{ type: "damage", source: actor, target: hit, amount: 3 }]);
         expect(state.enemies.map((enemy) => enemy.currHp)).toEqual([
             enemyDefinition.hp,
             enemyDefinition.hp,
         ]);
+    });
+
+    it("propagates the damage source and preserves callback event ordering", () => {
+        const attacker = makeCharacter("hero");
+        const damageReaction = makeBindingDef("damage-reaction");
+        const defeatReaction = makeBindingDef("defeat-reaction");
+        const enemyDefinition = makeEnemyDef("reactive-foe", [makeWaitMove()]);
+        enemyDefinition.hp = 5;
+        let receivedSource: string | undefined;
+        enemyDefinition.onDamage = (_state, source) => {
+            receivedSource = source.id;
+            return [{
+                type: "binding",
+                target: attacker,
+                binding: damageReaction,
+                amount: 1,
+            }];
+        };
+        enemyDefinition.onDefeat = () => [{
+            type: "binding",
+            target: attacker,
+            binding: defeatReaction,
+            amount: 1,
+        }];
+        const enemy = makeEnemy(enemyDefinition);
+        const state: iGameState = {
+            turn: { round: 1, step: 1, phase: "player" },
+            nextEntityId: 2,
+            characters: [attacker],
+            enemies: [enemy],
+        };
+
+        const events = processEffects(state, [{
+            type: "damage",
+            source: attacker,
+            target: enemy,
+            amount: enemyDefinition.hp,
+        }]);
+
+        expect(receivedSource).toBe(attacker.id);
+        expect(events).toEqual([
+            { type: "damage", target: enemy.id, amount: enemyDefinition.hp },
+            {
+                type: "bondageAdded",
+                target: attacker.id,
+                binding: damageReaction.id,
+                amount: 1,
+            },
+            { type: "enemyDefeated", target: enemy.id },
+            {
+                type: "bondageAdded",
+                target: attacker.id,
+                binding: defeatReaction.id,
+                amount: 1,
+            },
+        ]);
+        expect(state.enemies).toEqual([]);
     });
 });

@@ -96,15 +96,17 @@ export function makeEnemyDef(
     moves: MoveDef[],
     ai?: EnemyDef["ai"],
 ): EnemyDef {
+    const defaultMove = moves[0];
+    if (!defaultMove) throw new Error("Test enemy requires at least one move");
+
     return {
         id,
         hp: 37,
         defense: 0,
-        moves,
         passives: [],
         ai: ai ?? ((state, actor) => ({
             actor,
-            move: moves[0],
+            move: { definition: defaultMove },
             targets: [state.characters[0]],
         })),
     };
@@ -118,6 +120,7 @@ export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnem
         currHp: definition.hp,
         currDef: definition.defense,
         intention: null,
+        cooldowns: {},
     };
 }
 
@@ -128,7 +131,7 @@ export function setupBoundEngine(
 ) {
     const setupMove = makeMove("apply-binding", "mouth", {
         target: "player",
-        resolve: (_state, _actor, targets) => {
+        resolve: (_state, _actor, _move, targets) => {
             const target = targets[0].target;
             return isCharacter(target)
                 ? [{ type: "binding", target, binding, amount }]

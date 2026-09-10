@@ -114,7 +114,7 @@ describe("encounters", () => {
             calls.push("ai");
             return {
                 actor,
-                move: wait,
+                move: { definition: wait },
                 targets: [state.characters[0]],
             };
         });

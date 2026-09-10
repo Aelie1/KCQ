@@ -89,7 +89,7 @@ describe("accuracy", () => {
             makeAccuracyActor(-2),
             makeAccuracyTarget(),
             makeAccuracyMove(),
-        )).toEqual({ miss: 11, graze: 16, hit: 67, crit: 6 });
+        )).toEqual({ miss: 20, graze: 25, hit: 55, crit: 0 });
     });
 
     it("applies positive accuracy while growing Crit at one quarter rate", () => {
@@ -99,8 +99,8 @@ describe("accuracy", () => {
             makeAccuracyMove(),
         );
 
-        expect(result).toEqual({ miss: 8, graze: 13, hit: 68, crit: 11 });
-        expect(result.crit).toBe(standardProfile.crit! + 1);
+        expect(result).toEqual({ miss: 0, graze: 0, hit: 80, crit: 20 });
+        expect(result.crit).toBe(standardProfile.crit! + 10);
     });
 
     it("treats target Defense as an equivalent accuracy penalty", () => {
@@ -112,7 +112,7 @@ describe("accuracy", () => {
         );
         const targetDefense = calculateAccuracy(
             makeAccuracyActor(),
-            makeAccuracyTarget(2),
+            makeAccuracyTarget(20),
             move,
         );
 
@@ -170,10 +170,10 @@ describe("accuracy", () => {
         );
 
         expect(characterAttack).toEqual({
-            miss: 9,
-            graze: 14,
-            hit: 66.5,
-            crit: 10.5,
+            miss: 0,
+            graze: 5,
+            hit: 80,
+            crit: 15,
         });
         expect(enemyAttack).toEqual(characterAttack);
     });
@@ -268,6 +268,7 @@ describe("accuracy", () => {
             graze: [0.20, 0.50],
             hit: [0.80, 1.00],
             crit: [1.50, 2.00],
+            none: [0, 0],
         });
         expect(evaluateResult(target, standardProfile, 5).effectiveness).toBe(0);
         expect(evaluateResult(target, standardProfile, 10).effectiveness).toBeCloseTo(0.20);
@@ -336,12 +337,12 @@ describe("accuracy", () => {
         expect(afterInvalid).toEqual(firstControlRoll);
     });
 
-    it("resolves all targets with one shared roll and target-specific Defense", () => {
+    it("resolves all targets with independent rolls", () => {
         const seed = 123456;
         let resolvedTargets: iTargetInfo[] = [];
         const move = makeAccuracyMove(standardProfile, {
             targets: "all",
-            resolve: (_state, _actor, targets) => {
+            resolve: (_state, _actor, _move, targets) => {
                 resolvedTargets = [...targets];
                 return [];
             },
@@ -349,7 +350,6 @@ describe("accuracy", () => {
         const hero = makeCharacterDef("hero", [move]);
         const lowDefense = makeEnemyDef("low-defense", [makeWaitMove()]);
         const highDefense = makeEnemyDef("high-defense", [makeWaitMove()]);
-        highDefense.defense = 50;
         const encounter = {
             id: "multi-target-accuracy",
             enemies: [lowDefense, highDefense],
@@ -366,16 +366,20 @@ describe("accuracy", () => {
         });
         const event = moveUsed(result);
         const referenceRng = new Random(seed);
-        for (const _enemy of encounter.enemies) referenceRng.accuracy();
-        const roll = referenceRng.accuracy();
+        for (const _enemy of encounter.enemies) {
+            referenceRng.accuracy();
+            referenceRng.accuracy();
+        }
         const referenceActor = makeCharacter(hero.id);
         const referenceTargets = [
             makeEnemy(lowDefense, `${lowDefense.id}1`),
             makeEnemy(highDefense, `${highDefense.id}2`),
         ];
-        const expected = referenceTargets.map((target) =>
-            evaluateResult(target, calculateAccuracy(referenceActor, target, move), roll)
-        );
+        const expected = referenceTargets.map((target) => evaluateResult(
+            target,
+            calculateAccuracy(referenceActor, target, move),
+            referenceRng.accuracy(),
+        ));
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected all-target move to succeed");
@@ -404,7 +408,7 @@ describe("accuracy", () => {
     it("does not resolve effects for misses but does for successful targets", () => {
         const resolved: string[] = [];
         const move = makeAccuracyMove(standardProfile, {
-            resolve: (_state, _actor, targets) => {
+            resolve: (_state, _actor, _move, targets) => {
                 resolved.push(...targets.map((target) => target.target.id));
                 return [];
             },
@@ -424,20 +428,21 @@ describe("accuracy", () => {
             })).targets[0];
         };
 
-        expect(run(1, "missed").result).toBe("miss");
+        expect(run(11, "missed").result).toBe("miss");
         expect(resolved).toEqual([]);
-        expect(run(8224, "hit").result).not.toBe("miss");
+        expect(run(1, "hit").result).not.toBe("miss");
         expect(resolved).toEqual(["hit1"]);
     });
 
-    it("resolves zero-target moves without consuming an accuracy roll", () => {
+    it("resolves zero-target moves with a move-level accuracy roll", () => {
         let resolutions = 0;
         const zeroTarget = makeAccuracyMove({ hit: 100 }, {
             id: "zero-target",
             targets: 0,
-            resolve: (_state, _actor, targets) => {
+            resolve: (_state, _actor, move, targets) => {
                 resolutions++;
                 expect(targets).toEqual([]);
+                expect(move.result).toBe("hit");
                 return [];
             },
         });
@@ -480,7 +485,8 @@ describe("accuracy", () => {
             targets: [control.foeId],
         })).targets[0];
 
-        expect(afterZeroTarget).toEqual(firstControlRoll);
+        expect(firstControlRoll.result).toBe("graze");
+        expect(afterZeroTarget.result).toBe("hit");
     });
 });
 
