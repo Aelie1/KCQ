@@ -295,7 +295,6 @@ export class GameEngine {
                     }
                 }
 
-
                 if (!isValidMove(this.state, actor, targetStates, move)) {
                     return {
                         success: false,
@@ -303,6 +302,7 @@ export class GameEngine {
                     };
                 }
 
+                //do this so targetless moves can still get a roll result
                 if (move.targets === 0) {
                     targetStates.push(actor);
                 }
@@ -417,7 +417,11 @@ export class GameEngine {
             return events;
         }
 
-        const targets: iTargetInfo[] = (move.targets > 0) ? evaluateIntention(intention) : [];
+        //Do this so targetless moves can still get a roll
+        if (intention.action.move.targets === 0) {
+            intention.action.targets.push(intention.action.actor);
+        }
+        const targets: iTargetInfo[] = evaluateIntention(intention);
 
         //Now we have a valid actor, targets and move -- execute the move
         events.push({ type: "moveUsed", actor: actor.id, move: move.id, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })

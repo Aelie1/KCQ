@@ -264,7 +264,7 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
 
 
 export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll: number): iTargetInfo {
-    const result: iTargetInfo = { target: target, result: "miss", effectiveness: 0 };
+    const result: iTargetInfo = { target: target, result: "none", effectiveness: 0 };
 
     const order: AccuracyResult[] = ["miss", "graze", "hit", "crit"];
 
