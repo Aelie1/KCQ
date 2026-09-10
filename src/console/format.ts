@@ -1,4 +1,4 @@
-import type { Effect, GameEvent, Intention } from "../engine/types";
+import type { Buff, Effect, GameEvent, Intention, ModifierId } from "../engine/types";
 
 export function formatEffect(effect: Effect, includeTarget = false): string {
     const target = includeTarget ? `${effect.target} ` : "";
@@ -13,19 +13,69 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
     }
 }
 
+export function formatEffects(effects: Effect[], includeTarget = false): string[] {
+    const groupedBindings = new Map<string, Extract<Effect, { type: "binding" }>[]>();
+    const entries: ({ type: "binding"; key: string } | { type: "effect"; effect: Effect })[] = [];
+
+    for (const effect of effects) {
+        if (effect.type !== "binding") {
+            entries.push({ type: "effect", effect });
+            continue;
+        }
+
+        const key = `${effect.target}\0${effect.amount}`;
+        const group = groupedBindings.get(key);
+        if (group) {
+            group.push(effect);
+        } else {
+            groupedBindings.set(key, [effect]);
+            entries.push({ type: "binding", key });
+        }
+    }
+
+    return entries.map((entry) => {
+        if (entry.type === "effect") return formatEffect(entry.effect, includeTarget);
+
+        const group = groupedBindings.get(entry.key)!;
+        const first = group[0];
+        const target = includeTarget ? `${first.target} ` : "";
+        return `${target}${group.map((effect) => effect.binding).join(", ")} ${signed(first.amount)}`;
+    });
+}
+
+export function formatBuff(buff: Buff): string {
+    const details: string[] = [];
+
+    if (!buff.active) details.push("pending");
+    if (buff.duration !== undefined) {
+        details.push(`${buff.duration} round${buff.duration === 1 ? "" : "s"}`);
+    }
+    if (buff.linkedEntity !== undefined) details.push(`linked: ${buff.linkedEntity}`);
+    for (const status of buff.statuses ?? []) {
+        details.push(status.value === 1
+            ? status.id.toUpperCase()
+            : `${status.id.toUpperCase()} ${status.value}`);
+    }
+    for (const [modifier, amount] of Object.entries(buff.modifiers ?? {})) {
+        details.push(`${modifierLabel(modifier as ModifierId)} ${signed(amount)}`);
+    }
+
+    return `${displayName(buff.id)}${details.map((detail) => ` (${detail})`).join("")}`;
+}
+
 export function formatIntention(intention: Intention): string[] {
     const lines = [`  Intent: ${intention.move}`];
 
     for (const target of intention.targets) {
-        const effects = target.effects.map((effect) => formatEffect(effect)).join(", ");
+        const effects = formatEffects(target.effects).join(", ");
         lines.push(
             `    ${target.target.padEnd(12)} ${target.result.toUpperCase().padEnd(6)}`
             + (effects ? ` ${effects}` : ""),
         );
     }
 
-    for (const effect of intention.effects) {
-        lines.push(`    + ${formatEffect(effect, true)}`);
+    for (const effect of formatEffects(intention.effects, true)) {
+        lines.push(`    + ${effect}`);
     }
 
     return lines;
@@ -86,4 +136,28 @@ export function formatEvents(events: GameEvent[]): string[] {
 
 function signed(value: number): string {
     return value >= 0 ? `+${value}` : String(value);
+}
+
+function displayName(value: string): string {
+    const spaced = value
+        .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+        .replace(/[-_]+/g, " ");
+    return spaced.length === 0 ? spaced : spaced[0].toUpperCase() + spaced.slice(1);
+}
+
+function modifierLabel(modifier: ModifierId): string {
+    const labels: Record<ModifierId, string> = {
+        hitarms: "Arms Hit",
+        hitmouth: "Mouth Hit",
+        hitlegs: "Legs Hit",
+        hit: "Hit",
+        defense: "Def",
+        escape: "Escape",
+        effect: "Effect",
+        potency: "Potency",
+        traps: "Traps",
+        willpower: "Willpower",
+        spread: "Spread",
+    };
+    return labels[modifier];
 }

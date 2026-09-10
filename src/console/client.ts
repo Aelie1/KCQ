@@ -9,13 +9,14 @@ import type {
     Move,
     PlayerAction,
 } from "../engine/types";
-import { formatEffect, formatEvents } from "./format";
+import { formatEffects, formatEvents } from "./format";
 import {
     ACCURACY_HEADER,
     formatAccuracyRow,
     MIN_TERMINAL_HEIGHT,
     MIN_TERMINAL_WIDTH,
     renderScreen,
+    renderTooSmall,
 } from "./render";
 
 interface ConsoleStreams {
@@ -25,6 +26,7 @@ interface ConsoleStreams {
 
 interface MenuItem {
     label: string;
+    detailLines?: string[];
     select: () => Promise<boolean>;
 }
 
@@ -34,6 +36,13 @@ export async function runConsoleClient(
     initialLog: string[] = [],
     streams: ConsoleStreams = { input: process.stdin, output: process.stdout },
 ): Promise<void> {
+    const terminalWidth = streams.output.columns ?? 180;
+    const terminalHeight = Math.max(1, (streams.output.rows ?? 50) - 1);
+    if (terminalWidth < MIN_TERMINAL_WIDTH || terminalHeight < MIN_TERMINAL_HEIGHT) {
+        streams.output.write(`${renderTooSmall(terminalWidth, terminalHeight)}\n`);
+        return;
+    }
+
     const rl = createInterface({ input: streams.input, output: streams.output });
     const logLines = [...initialLog];
     let running = true;
@@ -51,29 +60,43 @@ export async function runConsoleClient(
         streams.output.write(`\x1b[2J\x1b[H${screen}\n`);
     };
 
-    const choose = async (lines: string[], itemCount: number): Promise<number> => {
+    const choose = async (
+        lines: string[],
+        validChoices: number | readonly number[],
+    ): Promise<number> => {
+        const choices = typeof validChoices === "number"
+            ? Array.from({ length: validChoices }, (_, index) => index + 1)
+            : [...validChoices];
         let message = "";
         while (true) {
             draw([...lines, ...(message ? ["", message] : []), "", "Choice>"]);
             const answer = (await rl.question("> ")).trim();
             if (/^\d+$/.test(answer)) {
                 const choice = Number(answer);
-                if (choice >= 1 && choice <= itemCount) return choice - 1;
+                if (choices.includes(choice)) return choice - 1;
             }
-            message = `Enter a number from 1 to ${itemCount}.`;
+            message = choices.length > 1
+                ? `Enter one of: ${choices.join(", ")}.`
+                : `Enter ${choices[0]}.`;
         }
     };
 
     const execute = (action: PlayerAction): boolean => {
+        const previousRound = engine.getGameState().turn.round;
         const result = engine.executeAction(action);
-        appendResult(logLines, result);
+        appendResult(logLines, result, previousRound);
         if (
             result.success
             && action.type !== "endTurn"
             && !engine.getAvailability().some((character) => character.available)
         ) {
             logLines.push("No characters available. Ending turn automatically.");
-            appendResult(logLines, engine.executeAction({ type: "endTurn" }));
+            const roundBeforeEnd = engine.getGameState().turn.round;
+            appendResult(
+                logLines,
+                engine.executeAction({ type: "endTurn" }),
+                roundBeforeEnd,
+            );
         }
         return result.success;
     };
@@ -144,7 +167,7 @@ export async function runConsoleClient(
 
             const choices = options.flatMap((option, index) => [
                 `[${index + 1}] ${option.target} - ${option.binding}`,
-                ...option.effects.map((effect) => `     ${formatEffect(effect, true)}`),
+                ...formatEffects(option.effects, true).map((effect) => `     ${effect}`),
             ]);
             choices.push(`[${options.length + 1}] Back`);
             const choice = await choose([
@@ -186,6 +209,9 @@ export async function runConsoleClient(
             const stance = engine.stanceAvailable(actor.id);
             const menu: MenuItem[] = actions.map((action) => ({
                 label: moveLabel(action),
+                detailLines: action.move.targets === 0
+                    ? accuracyLines(engine, actor.id, action.move, [null])
+                    : undefined,
                 select: async () => {
                     if (!action.available) {
                         logLines.push(`${action.move.id} unavailable: ${action.reason}.`);
@@ -225,7 +251,10 @@ export async function runConsoleClient(
             const choice = await choose([
                 `Choose an action for ${actor.id}.`,
                 "",
-                ...menu.map((item, index) => `[${index + 1}] ${item.label}`),
+                ...menu.flatMap((item, index) => [
+                    `[${index + 1}] ${item.label}`,
+                    ...(item.detailLines ?? []).map((line) => `    ${line}`),
+                ]),
             ], menu.length);
             if (await menu[choice].select()) return;
         }
@@ -233,14 +262,6 @@ export async function runConsoleClient(
 
     try {
         while (running) {
-            const width = streams.output.columns ?? 180;
-            const height = (streams.output.rows ?? 50) - 1;
-            if (width < MIN_TERMINAL_WIDTH || height < MIN_TERMINAL_HEIGHT) {
-                const choice = await choose(["", "[1] Retry", "[2] Quit"], 2);
-                if (choice === 1) running = false;
-                continue;
-            }
-
             const state = engine.getGameState();
             if (state.enemies.length === 0) {
                 const choice = await choose([
@@ -253,32 +274,33 @@ export async function runConsoleClient(
             }
 
             const availability = engine.getAvailability();
-            const availableIds = availability
-                .filter((character) => character.available)
-                .map((character) => character.id);
-            let menuNumber = 1;
-            const characterLines = availability.map((character) => {
+            const characterLines = availability.map((character, index) => {
                 const stateCharacter = state.characters.find((candidate) => candidate.id === character.id);
                 if (!character.available) {
                     return `[-] ${character.id}  UNAVAILABLE: ${character.reason}`;
                 }
-                const line = `[${menuNumber}] ${character.id}`
+                const line = `[${index + 1}] ${character.id}`
                     + (stateCharacter ? `  ${readiness(stateCharacter)}` : "");
-                menuNumber++;
                 return line;
             });
+            const endTurnNumber = availability.length + 1;
+            const quitNumber = availability.length + 2;
             const choices = [
                 ...characterLines,
-                `[${menuNumber}] End turn`,
-                `[${menuNumber + 1}] Quit`,
+                `[${endTurnNumber}] End turn`,
+                `[${quitNumber}] Quit`,
             ];
+            const selectableNumbers = availability.flatMap((character, index) =>
+                character.available ? [index + 1] : [],
+            );
+            selectableNumbers.push(endTurnNumber, quitNumber);
             const choice = await choose(
                 ["Choose a character.", "", ...choices],
-                availableIds.length + 2,
+                selectableNumbers,
             );
-            if (choice < availableIds.length) {
-                await chooseAction(availableIds[choice]);
-            } else if (choice === availableIds.length) {
+            if (choice < availability.length) {
+                await chooseAction(availability[choice].id);
+            } else if (choice === availability.length) {
                 execute({ type: "endTurn" });
             } else {
                 running = false;
@@ -294,19 +316,25 @@ function accuracyLines(
     engine: GameEngine,
     actor: EntityId,
     move: Move,
-    targetIds: EntityId[],
+    targetIds: (EntityId | null)[],
 ): string[] {
     return [
         ACCURACY_HEADER,
         ...targetIds.map((target) =>
-            formatAccuracyRow(target, engine.getAccuracyPreview(actor, target, move.id)),
+            formatAccuracyRow(
+                target ?? "No target",
+                engine.getAccuracyPreview(actor, target, move.id),
+            ),
         ),
     ];
 }
 
-function appendResult(logLines: string[], result: ActionResult): void {
+function appendResult(logLines: string[], result: ActionResult, previousRound: number): void {
     if (result.success) {
         logLines.push(...formatEvents(result.events));
+        if (result.state.turn.round > previousRound) {
+            logLines.push(`~~~ ROUND ${result.state.turn.round} ~~~`);
+        }
     } else {
         logLines.push(`Action failed: ${result.reason}.`);
     }

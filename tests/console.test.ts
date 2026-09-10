@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PassThrough } from "node:stream";
 import { runConsoleClient } from "../src/console/client";
-import { formatEvents, formatIntention } from "../src/console/format";
+import { formatBuff, formatEffects, formatEvents, formatIntention } from "../src/console/format";
 import { formatAccuracyRow, renderScreen } from "../src/console/render";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
@@ -90,6 +90,35 @@ describe("console formatting", () => {
         ]);
     });
 
+    it("describes serialized buff effects", () => {
+        expect(formatBuff({
+            id: "pounce",
+            active: false,
+            duration: 2,
+            linkedEntity: "skunkette1",
+            statuses: [{ id: "immobilized", value: 1 }],
+            modifiers: { defense: -2, hit: 4 },
+        })).toBe(
+            "Pounce (pending) (2 rounds) (linked: skunkette1) "
+            + "(IMMOBILIZED) (Def -2) (Hit +4)",
+        );
+    });
+
+    it("groups equal binding effects without merging different operations", () => {
+        expect(formatEffects([
+            { type: "binding", target: "ko", binding: "latexArms", amount: 10 },
+            { type: "binding", target: "ko", binding: "latexLegs", amount: 10 },
+            { type: "damage", source: "foe", target: "ko", amount: 10 },
+            { type: "binding", target: "ko", binding: "latexTorso", amount: 6 },
+            { type: "binding", target: "ally", binding: "latexHead", amount: 10 },
+        ], true)).toEqual([
+            "ko latexArms, latexLegs +10",
+            "ko 10 damage",
+            "ko latexTorso +6",
+            "ally latexHead +10",
+        ]);
+    });
+
     it("renders a fixed-size four-panel screen", () => {
         const rendered = renderScreen({
             encounter: "plains_1",
@@ -111,6 +140,51 @@ describe("console formatting", () => {
         expect(rendered).toContain("Seed 8224");
     });
 
+    it("wraps long status and buff lists without losing their contents", () => {
+        const longState: GameState = {
+            ...state,
+            characters: [{
+                ...state.characters[0],
+                bindings: [],
+                status: [
+                    { id: "bound", value: 1 },
+                    { id: "gagged", value: 2 },
+                    { id: "hobbled", value: 3 },
+                    { id: "vibrating", value: 4 },
+                    { id: "submissive", value: 4 },
+                    { id: "breathless", value: 4 },
+                    { id: "blinded", value: 4 },
+                    { id: "immobilized", value: 1 },
+                    { id: "helpless", value: 1 },
+                    { id: "stunned", value: 1 },
+                    { id: "incapacitated", value: 1 },
+                ],
+                buffs: [{
+                    id: "veryLongBuffName",
+                    active: true,
+                    linkedEntity: "skunkette1",
+                    statuses: [{ id: "immobilized", value: 1 }],
+                    modifiers: { hitarms: -2, hitmouth: -3, defense: -4, willpower: 2 },
+                }],
+            }],
+        };
+        const rendered = renderScreen({
+            encounter: "plains_1",
+            seed: 8224,
+            state: longState,
+            actionLines: [],
+            logLines: [],
+        }, 120, 60);
+
+        expect(rendered).toContain("Status: bound 1, gagged 2");
+        expect(rendered).toContain("incapacitated 1");
+        expect(rendered).toContain("Buffs: Very Long Buff Name");
+        expect(rendered).toContain("(Mouth Hit -3)");
+        expect(rendered).toContain("(Def -4)");
+        expect(rendered).toContain("(Willpower +2)");
+        expect(rendered).not.toContain("…");
+    });
+
     it("formats all accuracy bands", () => {
         expect(formatAccuracyRow("foe", { miss: 10, graze: 15, hit: 65, crit: 10 }))
             .toContain("10%       15%      65%       10%");
@@ -126,6 +200,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("TARGET");
         expect(rendered).toMatch(/telekinesis on skunkette1: (MISS|GRAZE|HIT|CRIT)/);
         expect(rendered).toContain("No characters available. Ending turn automatically.");
+        expect(rendered).toContain("~~~ ROUND 2 ~~~");
         expect(rendered).toContain("Seed 8224");
         expect(rendered).toContain("Escape / assist - unavailable: no legal escapes");
     });
@@ -136,10 +211,12 @@ describe("console formatting", () => {
         engine.loadCharacter(makeCharacterDef("ally"));
         engine.loadEncounter("plains_1");
 
-        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"]);
+        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "4"]);
 
         expect(rendered).toContain("[-] ko  UNAVAILABLE: actorAlreadyActed");
-        expect(rendered).toContain("[1] ally  READY");
+        expect(rendered).toContain("[2] ally  READY");
+        expect(rendered).toContain("[3] End turn");
+        expect(rendered).toContain("[4] Quit");
         expect(engine.getGameState().turn.round).toBe(1);
     });
 
@@ -151,12 +228,14 @@ describe("console formatting", () => {
         const wait = makeMove("player-wait", "mouth", { targets: 0 });
         engine.loadCharacter(makeCharacterDef("ally", [wait]));
 
-        const rendered = await runScriptedConsole(engine, ["1", "1", "3"]);
+        const rendered = await runScriptedConsole(engine, ["2", "1", "4"]);
 
         expect(rendered).toContain("[-] hero  UNAVAILABLE: actorSkipped");
-        expect(rendered).toContain("[1] ally  READY");
+        expect(rendered).toContain("[2] ally  READY");
         expect(rendered).toContain("Choose an action for ally.");
         expect(rendered).not.toContain("Choose an action for hero.");
+        expect(rendered).toContain("No target");
+        expect(rendered).toMatch(/No target\s+-\s+-\s+100%\s+-/);
         expect(rendered).toContain("No characters available. Ending turn automatically.");
         expect(engine.getGameState().turn.round).toBe(3);
     });
@@ -195,5 +274,23 @@ describe("console formatting", () => {
         expect(rendered).toContain("[1] hero - latexArms");
         expect(rendered).toContain("     hero latexArms -18");
         expect(rendered).toContain("     hero latexHead +5");
+    });
+
+    it("exits immediately with dimensions when the terminal is too small", async () => {
+        const engine = new GameEngine(encounterList, 8224);
+        engine.loadCharacter(ko);
+        engine.loadEncounter("plains_1");
+        const input = new PassThrough();
+        const output = Object.assign(new PassThrough(), { columns: 80, rows: 20 });
+        let rendered = "";
+        output.on("data", (chunk: Buffer) => {
+            rendered += chunk.toString();
+        });
+
+        await runConsoleClient(engine, "plains_1", [], { input, output });
+
+        expect(rendered).toBe("Terminal too small: current 80x19; required 120x36.\n");
+        expect(rendered).not.toContain("Retry");
+        expect(rendered).not.toContain("Choice>");
     });
 });

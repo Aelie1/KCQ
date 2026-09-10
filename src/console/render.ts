@@ -1,5 +1,5 @@
 import type { AccuracyProfile, Character, Enemy, GameState } from "../engine/types";
-import { formatIntention } from "./format";
+import { formatBuff, formatIntention } from "./format";
 
 export const MIN_TERMINAL_WIDTH = 120;
 export const MIN_TERMINAL_HEIGHT = 36;
@@ -24,8 +24,8 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
     const upperHeight = Math.floor(contentHeight * 0.56);
     const lowerHeight = contentHeight - upperHeight;
 
-    const party = fitPanel(["PARTY", "", ...formatParty(model.state.characters)], leftWidth, upperHeight);
-    const enemies = fitPanel(["ENEMIES", "", ...formatEnemies(model.state.enemies)], rightWidth, upperHeight);
+    const party = fitPanel(["PARTY", "", ...formatParty(model.state.characters, leftWidth)], leftWidth, upperHeight);
+    const enemies = fitPanel(["ENEMIES", "", ...formatEnemies(model.state.enemies, rightWidth)], rightWidth, upperHeight);
     const actions = fitPanel(["ACTIONS / TARGETING", "", ...model.actionLines], leftWidth, lowerHeight);
     const logCapacity = Math.max(0, lowerHeight - 2);
     const wrappedLog = wrapLines(model.logLines, rightWidth);
@@ -64,7 +64,7 @@ export function formatAccuracyRow(label: string, profile: AccuracyProfile | null
 export const ACCURACY_HEADER = `${"TARGET".padEnd(18)}${"MISS".padStart(8)}`
     + `${"GRAZE".padStart(10)}${"HIT".padStart(9)}${"CRIT".padStart(10)}`;
 
-function formatParty(characters: Character[]): string[] {
+function formatParty(characters: Character[], width: number): string[] {
     if (characters.length === 0) return ["No player characters loaded."];
 
     return characters.flatMap((character, index) => {
@@ -91,23 +91,31 @@ function formatParty(characters: Character[]): string[] {
         const statuses = character.status.length === 0
             ? "none"
             : character.status.map((status) => `${status.id} ${status.value}`).join(", ");
-        lines.push(`  Status: ${statuses}`);
+        lines.push(...wrapList("  Status: ", statuses, width));
         if (character.buffs.length > 0) {
-            lines.push(`  Buffs: ${character.buffs.map((buff) => buff.id).join(", ")}`);
+            lines.push(...wrapList(
+                "  Buffs: ",
+                character.buffs.map(formatBuff).join(", "),
+                width,
+            ));
         }
         if (index < characters.length - 1) lines.push("");
         return lines;
     });
 }
 
-function formatEnemies(enemies: Enemy[]): string[] {
+function formatEnemies(enemies: Enemy[], width: number): string[] {
     if (enemies.length === 0) return ["No enemies remain."];
 
     return enemies.flatMap((enemy, index) => {
         const lines = [`${enemy.id}  HP ${enemy.currHp}  DEF ${enemy.currDef}`];
         lines.push(...(enemy.intention ? formatIntention(enemy.intention) : ["  Intent: none"]));
         if (enemy.buffs.length > 0) {
-            lines.push(`  Buffs: ${enemy.buffs.map((buff) => buff.id).join(", ")}`);
+            lines.push(...wrapList(
+                "  Buffs: ",
+                enemy.buffs.map(formatBuff).join(", "),
+                width,
+            ));
         }
         if (index < enemies.length - 1) lines.push("");
         return lines;
@@ -164,6 +172,28 @@ function wrapLines(lines: string[], width: number): string[] {
     });
 }
 
+function wrapList(prefix: string, value: string, width: number): string[] {
+    const continuation = " ".repeat(prefix.length);
+    const firstWidth = Math.max(1, width - prefix.length);
+    const continuationWidth = Math.max(1, width - continuation.length);
+    const lines: string[] = [];
+    let rest = value;
+    let available = firstWidth;
+
+    while (rest.length > available) {
+        const comma = rest.lastIndexOf(", ", available);
+        const parenthesis = rest.lastIndexOf(" (", available);
+        let split = Math.max(comma >= 0 ? comma + 1 : -1, parenthesis);
+        if (split <= 0) split = rest.lastIndexOf(" ", available);
+        if (split <= 0) split = available;
+        lines.push(`${lines.length === 0 ? prefix : continuation}${rest.slice(0, split)}`);
+        rest = rest.slice(split).trimStart();
+        available = continuationWidth;
+    }
+    lines.push(`${lines.length === 0 ? prefix : continuation}${rest}`);
+    return lines;
+}
+
 function pad(value: string, width: number): string {
     const clipped = truncate(value, width);
     return clipped + " ".repeat(Math.max(0, width - clipped.length));
@@ -179,11 +209,7 @@ function formatNumber(value: number): string {
     return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-function renderTooSmall(width: number, height: number): string {
-    return [
-        "KCQ console requires a larger terminal.",
-        `Current: ${width}x${height}`,
-        `Minimum: ${MIN_TERMINAL_WIDTH}x${MIN_TERMINAL_HEIGHT}`,
-        "Resize the terminal, then choose Retry.",
-    ].join("\n");
+export function renderTooSmall(width: number, height: number): string {
+    return `Terminal too small: current ${width}x${height}; required `
+        + `${MIN_TERMINAL_WIDTH}x${MIN_TERMINAL_HEIGHT}.`;
 }
