@@ -372,6 +372,7 @@ export interface EncounterEvent {
     type: "encounter";
     id: string;
     success: boolean;
+    bindings: BindingId[];
 }
 
 export interface StanceEvent {

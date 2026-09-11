@@ -66,7 +66,8 @@ export class GameEngine {
             result.addEvent({
                 type: "encounter",
                 id: id,
-                success: false
+                success: false,
+                bindings: []
             });
             return result.getEvents();
         }
@@ -80,7 +81,8 @@ export class GameEngine {
         result.addEvent({
             type: "encounter",
             id: id,
-            success: true
+            success: true,
+            bindings: encounter.bindings.map(x=>x.id)
         });
         return result.getEvents();
     }
