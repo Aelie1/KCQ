@@ -16,7 +16,7 @@ export interface iGameState {
 /*******************************************************
  * Characters
  *******************************************************/
-export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "status"> {
+export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "status" | "modifiers"> {
     definition: CharacterDef;
     buffs: iBuff[];
     bindings: iBinding[];

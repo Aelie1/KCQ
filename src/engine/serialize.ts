@@ -2,7 +2,7 @@ import { resolveMove } from "./combat";
 import { evaluateIntention } from "./enemies";
 import { getBindingLevel } from "./helpers";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iValidityInfo, MoveDef } from "./itypes";
-import { getStatuses } from "./status";
+import { getModifiers, getStatuses } from "./status";
 import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo, ValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
@@ -25,6 +25,7 @@ function serializeCharacter(character: iCharacter): Character {
         buffs: character.buffs.map(serializeBuff),
         bindings: character.bindings.map(serializeBinding),
         status: getStatuses(character).map(serializeStatus),
+        modifiers: getModifiers(character)
     };
 
 }

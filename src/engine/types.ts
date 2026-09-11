@@ -32,6 +32,7 @@ export interface Character {
     bindings: Binding[];
     buffs: Buff[];
     status: Status[];
+    modifiers: ModifierSet;
 }
 
 /*******************************************************

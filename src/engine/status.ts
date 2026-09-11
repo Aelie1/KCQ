@@ -1,6 +1,6 @@
 import { getBindingLevel, isCharacter } from "./helpers";
 import { iCharacter, iEntity, iStatus, StatusDef } from "./itypes";
-import { ActionFailure, ActionType, ModifierId, MoveType } from "./types";
+import { ActionFailure, ActionType, ModifierId, ModifierSet, MoveType } from "./types";
 
 /*******************************************************
  * Functions
@@ -65,6 +65,28 @@ export function getModifier(target: iEntity, id: ModifierId): number {
         amount += level ?? 0;
     }
     return amount;
+}
+
+export function getModifiers(target: iEntity): ModifierSet {
+    const modifiers: ModifierSet = {};
+    const statuses: iStatus[] = getStatuses(target);
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        if (level.modifiers) {
+            for (const [modifier, amount] of Object.entries(level.modifiers) as [ModifierId, number][]) {
+                modifiers[modifier] = (modifiers[modifier] ?? 0) + amount;
+            }
+        }
+    }
+    for (const buff of target.buffs) {
+        if (!buff.modifiers || !buff.active) {
+            continue;
+        }
+        for (const [modifier, amount] of Object.entries(buff.modifiers) as [ModifierId, number][]) {
+            modifiers[modifier] = (modifiers[modifier] ?? 0) + amount;
+        }
+    }
+    return modifiers;
 }
 
 export function canAct(actor: iCharacter, type: ActionType): ActionFailure | undefined {

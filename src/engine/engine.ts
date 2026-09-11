@@ -1,4 +1,5 @@
 import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
+import { thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
@@ -37,6 +38,19 @@ export class GameEngine {
 
     getGameState(): GameState {
         return serializeGameState(this.state);
+    }
+
+    getThresholds() {
+        return {
+            thresholds: {
+                easy: thresholds.easy,
+                medium: thresholds.medium,
+                hard: thresholds.hard,
+                extreme: thresholds.extreme,
+                impossible: thresholds.impossible
+            },
+            max: thresholds.max
+        }
     }
 
     listEncounters(): EncounterId[] {
