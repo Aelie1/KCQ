@@ -51,10 +51,10 @@ export interface EnemyDef {
 export interface iIntention {
     actor: iEntity;
     move: iMove;
-    targets: iIntentionTarget[];
+    rolls: iIntentionRoll[];
 }
 
-export interface iIntentionTarget {
+export interface iIntentionRoll {
     target: iEntity | null;
     roll: number;    
 }

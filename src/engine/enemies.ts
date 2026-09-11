@@ -2,7 +2,7 @@ import { evaluateProfile, evaluateResult, isValidTarget } from "./combat";
 import { thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { findBinding } from "./find";
-import { BindingDef, EnemyDef, iCharacter, iEnemy, iGameState, iIntention, iIntentionTarget, iTargetInfo } from "./itypes";
+import { BindingDef, EnemyDef, iCharacter, iEnemy, iGameState, iIntention, iIntentionRoll, iTargetInfo } from "./itypes";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";
 
@@ -36,7 +36,7 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
             targets.push(...validTargets(state.characters));
         }
     }
-    const iTargets: iIntentionTarget[] = [];
+    const iTargets: iIntentionRoll[] = [];
     for (const target of targets) {
         iTargets.push({
             target: target,
@@ -52,18 +52,18 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
     actor.intention = {
         actor: action.actor,
         move: move,
-        targets: iTargets
+        rolls: iTargets
     };
 }
 
 export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
-    for (const target of intention.targets) {
-        const info = isValidTarget(intention.actor, target.target, intention.move.definition);
+    for (const roll of intention.rolls) {
+        const info = isValidTarget(intention.actor, roll.target, intention.move.definition);
         if (info.valid) {
             if (info.target) {
                 if (info.accuracy) {
-                    const targetInfo = evaluateResult(info.target, info.accuracy, target.roll);
+                    const targetInfo = evaluateResult(info.target, info.accuracy, roll.roll);
                     targets.push(targetInfo);
                 } else {
                     targets.push({
@@ -74,7 +74,7 @@ export function evaluateIntention(intention: iIntention): iTargetInfo[] {
                 }
             } else {
                 if (info.accuracy) {
-                    const result = evaluateProfile(info.accuracy, target.roll, 0);
+                    const result = evaluateProfile(info.accuracy, roll.roll, 0);
                     intention.move.effectiveness = result.effectiveness;
                     intention.move.band = result.band;
                 } else {

@@ -151,7 +151,7 @@ describe("state serialization and combatant loading", () => {
         enemy.intention = {
             actor: enemy,
             move: { definition: enemyMove },
-            targets: [{ target: character, roll: 25 }],
+            rolls: [{ target: character, roll: 25 }],
         };
         const internalState: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
