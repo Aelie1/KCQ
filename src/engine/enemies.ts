@@ -1,8 +1,7 @@
-import { calculateAccuracy, evaluateResult, isValidTarget } from "./combat";
+import { evaluateResult, isValidTarget } from "./combat";
 import { thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { findBinding } from "./find";
-import { isEnemy } from "./helpers";
 import { BindingDef, EnemyDef, iCharacter, iEnemy, iGameState, iIntention, iIntentionTarget, iTargetInfo } from "./itypes";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";

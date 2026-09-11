@@ -1,4 +1,4 @@
-import { calculateAccuracy, evaluateResult, resolveMove } from "../../engine/combat";
+import { evaluateResult, isValidTarget, resolveMove } from "../../engine/combat";
 import { pickBinding, pickTarget, validTargets } from "../../engine/enemies";
 import { findBuff, findCharacter, findEnemy } from "../../engine/find";
 import { isCharacter } from "../../engine/helpers";
@@ -132,10 +132,11 @@ const pounce: MoveDef = {
                 definition: latexSpray,
                 binding: move.binding
             }
-            const accuracy = calculateAccuracy(actor, target, spray.definition);
-            const info = [evaluateResult(target, accuracy, move.roll)];
-
-            effects.push(...resolveMove(state, spray, actor, info));
+            const info = isValidTarget(actor,target,spray.definition);
+            if (info.valid && info.accuracy) {
+                const targets = [evaluateResult(target, info.accuracy, move.roll)];
+                effects.push(...resolveMove(state, spray, actor, targets));
+            }
         }
 
         return effects;

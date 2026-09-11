@@ -67,7 +67,7 @@ export function isValidTarget(actor: iEntity, target: iEntity | null, move: Move
     }
 }
 
-export function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef): AccuracyProfile {
+function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef): AccuracyProfile {
     const base = move.accuracy;
     if (!base) {
         return { none: 100 };

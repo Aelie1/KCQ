@@ -1,4 +1,4 @@
-import { calculateAccuracy, evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
+import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
 import { GameEffects } from "./effects";
 import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
@@ -8,7 +8,7 @@ import { Random } from "./random";
 import { serializeEffect, serializeGameState, serializeMove, serializeValidity } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, isIncapacitated, isSkipped } from "./status";
 import type {
-    AccuracyProfile, AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId,
+    AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId,
     EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo
 } from "./types";
 
@@ -320,7 +320,10 @@ export class GameEngine {
                             }
                             break;
                     }
-                } else {
+                } else if (move.targets === 0) {
+                    targetInfo.push(isValidTarget(actor, null, move));
+                }
+                else {
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
                         if (targetState) {
@@ -351,40 +354,41 @@ export class GameEngine {
                 const iMove: iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 let anyHits: boolean = false;
-                if (move.accuracy) {
-                    if (move.side === "none") {
-                        const roll: number = this.rng.accuracy();
-                        const accuracy: AccuracyProfile = calculateAccuracy(actor, null, move);
-                        const result: AccuracyResult = evaluateProfile(accuracy, roll, 0);
-                        iMove.band = result.band;
-                        iMove.effectiveness = result.effectiveness;
-                        if (result.band !== "miss") {
-                            anyHits = true;
-                        }
-                    }
-                    else {
-                        for (const target of targetInfo) {
-                            if (target.valid && target.target && target.accuracy) {
+
+                for (const target of targetInfo) {
+                    if (target.valid) {
+                        if (target.target) {
+                            if (target.accuracy) {
                                 const roll: number = this.rng.accuracy();
                                 const targetInfo: iTargetInfo = evaluateResult(target.target, target.accuracy, roll);
                                 targets.push(targetInfo);
                                 if (targetInfo.band !== "miss") {
                                     anyHits = true;
                                 }
+                            } else {
+                                targets.push({
+                                    target: target.target,
+                                    effectiveness: 0,
+                                    band: "none"
+                                })
+                                anyHits = true;
+                            }
+                        } else {
+                            if (target.accuracy) {
+                                const roll: number = this.rng.accuracy();
+                                const result: AccuracyResult = evaluateProfile(target.accuracy, roll, 0);
+                                iMove.band = result.band;
+                                iMove.effectiveness = result.effectiveness;
+                                if (result.band !== "miss") {
+                                    anyHits = true;
+                                }
+                            } else {
+                                iMove.band = "none";
+                                iMove.effectiveness = 0;
+                                anyHits = true;
                             }
                         }
                     }
-                } else {
-                    for (const target of targetInfo) {
-                        if (target.valid && target.target) {
-                            targets.push({
-                                target: target.target,
-                                effectiveness: 0,
-                                band: "none"
-                            })
-                        }
-                    }
-                    anyHits = true;
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move
