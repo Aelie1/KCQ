@@ -1,6 +1,7 @@
 import { findBuff } from "./find";
 import { isEnemy } from "./helpers";
-import { iBuff, iEntity, iEvents, iGameState } from "./itypes";
+import { iBuff, iEntity, iGameState } from "./itypes";
+import { iEvents } from "./effects";
 
 export function addBuff(actor: iEntity, target: iEntity, buff: iBuff): iEvents {
     const result = new iEvents();
@@ -52,6 +53,6 @@ export function tickBuffs(state: iGameState): iEvents {
             }
         }
     }
-
+    result.process(state);
     return result;
 }

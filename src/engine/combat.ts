@@ -1,11 +1,9 @@
-import { addBinding, removeBinding } from "./bindings";
-import { addBuff, removeBuff } from "./buffs";
 import { DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
-import { damageEnemy } from "./enemies";
-import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
-import { iCharacter, iEffect, iEntity, iEvents, iGameState, iTargetInfo, MoveDef } from "./itypes";
+import { iEvents } from "./effects";
+import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
+import { iCharacter, iEntity, iTargetInfo, MoveDef } from "./itypes";
 import { canMove, getModifier } from "./status";
-import { AccuracyProfile, AccuracyResult, Event, StanceId } from "./types";
+import { AccuracyProfile, AccuracyResult, StanceId } from "./types";
 
 
 export function setStance(target: iCharacter, stance: StanceId): iEvents {
@@ -25,41 +23,6 @@ export function setStance(target: iCharacter, stance: StanceId): iEvents {
             break;
     }
     return result;
-}
-
-export function processEffects(state: iGameState, effects: iEffect[]): Event[] {
-    const stack = new iEvents(effects);
-
-    while (stack.effects.length > 0) {
-        const effect = stack.effects.pop();
-        if (effect === undefined) {
-            continue;
-        }
-        if (!isValidEntity(state, effect.target)) {
-            continue;
-        }
-        switch (effect.type) {
-            case "binding":
-                if (effect.amount > 0) {
-                    stack.stack(addBinding(effect.target, effect.binding, effect.amount))
-                } else {
-                    stack.stack(removeBinding(effect.target, effect.binding, -effect.amount))
-                }
-                break;
-            case "buff":
-                if (effect.added) {
-                    stack.stack(addBuff(effect.source, effect.target, effect.buff))
-                } else {
-                    stack.stack(removeBuff(effect.target, effect.buff))
-                }
-                break;
-            case "damage":
-                stack.stack(damageEnemy(state, effect.source, effect.target, effect.amount))
-                break;
-        }
-    }
-
-    return stack.events;
 }
 
 export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {

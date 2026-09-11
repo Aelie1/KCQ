@@ -1,6 +1,7 @@
 import { BINDING_MODIFIER, thresholds } from "./constants";
 import { findBinding } from "./find";
-import { BindingDef, iBinding, iCharacter, iEffect, iEvents } from "./itypes";
+import { BindingDef, iBinding, iCharacter, iEffect } from "./itypes";
+import { iEvents } from "./effects";
 import { Random } from "./random";
 import { getModifier } from "./status";
 import { BondageEvent } from "./types";

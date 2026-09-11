@@ -1,6 +1,7 @@
 import { calculateAccuracy, evaluateResult } from "./combat";
 import { isEnemy } from "./helpers";
-import { EnemyDef, iCharacter, iEnemy, iEntity, iEvents, iGameState, iIntention, iIntentionTarget, iTargetInfo } from "./itypes";
+import { EnemyDef, iCharacter, iEnemy, iEntity, iGameState, iIntention, iIntentionTarget, iTargetInfo } from "./itypes";
+import { iEvents } from "./effects";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";
 import { DamageEvent, EnemyEvent } from "./types";
