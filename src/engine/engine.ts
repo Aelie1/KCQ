@@ -199,16 +199,16 @@ export class GameEngine {
 
         switch (moveState.side) {
             case "none":
-                result.push(isValidTarget(character, null, moveState));
+                result.push(isValidTarget(this.state, character, null, moveState));
                 break;
             case "player":
                 for (const target of this.state.characters) {
-                    result.push(isValidTarget(character, target, moveState));
+                    result.push(isValidTarget(this.state, character, target, moveState));
                 }
                 break;
             case "enemy":
                 for (const target of this.state.enemies) {
-                    result.push(isValidTarget(character, target, moveState));
+                    result.push(isValidTarget(this.state, character, target, moveState));
                 }
                 break;
         }
@@ -308,26 +308,44 @@ export class GameEngine {
                 const targetInfo: iValidityInfo[] = [];
 
                 if (move.targets === "all") {
+                    if (action.targets.length !== 0) {
+                        return {
+                            success: false,
+                            reason: "invalidTargetCount"
+                        }
+                    }
                     switch (move.side) {
                         case "enemy":
                             for (const enemy of this.state.enemies) {
-                                targetInfo.push(isValidTarget(actor, enemy, move));
+                                targetInfo.push(isValidTarget(this.state, actor, enemy, move));
                             }
                             break;
                         case "player":
                             for (const character of this.state.characters) {
-                                targetInfo.push(isValidTarget(actor, character, move));
+                                targetInfo.push(isValidTarget(this.state, actor, character, move));
                             }
                             break;
                     }
                 } else if (move.targets === 0) {
-                    targetInfo.push(isValidTarget(actor, null, move));
+                    if (action.targets.length !== 0) {
+                        return {
+                            success: false,
+                            reason: "invalidTargetCount"
+                        }
+                    }
+                    targetInfo.push(isValidTarget(this.state, actor, null, move));
                 }
                 else {
+                    if (new Set(action.targets).size != action.targets.length) {
+                        return {
+                            success: false,
+                            reason: "duplicateTargets"
+                        }
+                    }
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
                         if (targetState) {
-                            const info = isValidTarget(actor, targetState, move);
+                            const info = isValidTarget(this.state, actor, targetState, move);
                             if (info.valid) {
                                 targetInfo.push(info);
                             } else {
@@ -475,7 +493,7 @@ export class GameEngine {
             return result;
         }
 
-        const targets: iTargetInfo[] = evaluateIntention(intention);
+        const targets: iTargetInfo[] = evaluateIntention(this.state, intention);
 
         //Now we have a valid actor, targets and move -- execute the move
         result.addEvent({

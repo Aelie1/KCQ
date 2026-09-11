@@ -41,9 +41,13 @@ function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
 }
 
 function serializeIntention(state: iGameState, intention: iIntention): Intention {
-    const iTargets = evaluateIntention(intention);
+    const preview = {
+        ...intention,
+        move: { ...intention.move }
+    };
+    const iTargets = evaluateIntention(state, preview);
     const targets: TargetInfo[] = [];
-    let effects = resolveMove(state, intention.move, intention.actor, iTargets);
+    let effects = resolveMove(state, preview.move, preview.actor, iTargets);
     for (const iTarget of iTargets) {
         const tEffects = effects.filter(x => x.target === iTarget.target);
         targets.push({ target: iTarget.target.id, band: iTarget.band, effects: tEffects.map(serializeEffect) })

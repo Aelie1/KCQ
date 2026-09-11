@@ -1,6 +1,6 @@
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "./constants";
 import { GameEffects } from "./effects";
-import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
+import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iValidityInfo, MoveDef } from "./itypes";
 import { canMove, getModifier, isIncapacitated } from "./status";
 import { AccuracyProfile, AccuracyResult, HitBand, StanceId } from "./types";
@@ -33,7 +33,7 @@ export function setStance(target: iCharacter, stance: StanceId): GameEffects {
     return result;
 }
 
-export function isValidTarget(actor: iEntity, target: iEntity | null, move: MoveDef): iValidityInfo {
+export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity | null, move: MoveDef): iValidityInfo {
     if (target === null) {
         if (move.targets !== 0) {
             return {
@@ -43,6 +43,13 @@ export function isValidTarget(actor: iEntity, target: iEntity | null, move: Move
             };
         }
     } else {
+        if (!isValidEntity(state, target)) {
+            return {
+                valid: false,
+                target: target,
+                reason: "invalidTarget",
+            };
+        }
         if (getIEntitySide(target) !== move.side) {
             return {
                 valid: false,

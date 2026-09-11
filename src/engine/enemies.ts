@@ -27,7 +27,7 @@ export function spawnEnemy(state: iGameState, enemy: EnemyDef): GameEffects {
 
 export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
     const action = actor.definition.ai(state, actor, rng);
-    const targets = [...action.targets];
+    const targets = [];
     const move = { ...action.move, roll: rng.accuracy() };
     if (move.definition.targets === "all") {
         if (move.definition.side === "enemy") {
@@ -35,6 +35,8 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
         } else {
             targets.push(...validTargets(state.characters));
         }
+    } else {
+        targets.push(...action.targets);
     }
     const iTargets: iIntentionRoll[] = [];
     for (const target of targets) {
@@ -56,10 +58,10 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
     };
 }
 
-export function evaluateIntention(intention: iIntention): iTargetInfo[] {
+export function evaluateIntention(state: iGameState, intention: iIntention): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
     for (const roll of intention.rolls) {
-        const info = isValidTarget(intention.actor, roll.target, intention.move.definition);
+        const info = isValidTarget(state, intention.actor, roll.target, intention.move.definition);
         if (info.valid) {
             if (info.target) {
                 if (info.accuracy) {

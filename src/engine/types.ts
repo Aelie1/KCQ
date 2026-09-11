@@ -304,10 +304,11 @@ export interface ActionFailure {
 
 export type ActionFailureReason =
     | "invalidActor"
-    | "invalidTarget"
-    | "invalidTargetCount"
     | "invalidMove"
     | "invalidBinding"
+    | "invalidTarget"
+    | "invalidTargetCount"
+    | "duplicateTargets"
     | "wrongPhase"
     | "actorAlreadyActed"
     | "actorSkipped"

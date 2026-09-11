@@ -132,7 +132,7 @@ const pounce: MoveDef = {
                 definition: latexSpray,
                 binding: move.binding
             }
-            const info = isValidTarget(actor,target,spray.definition);
+            const info = isValidTarget(state, actor,target,spray.definition);
             if (info.valid && info.accuracy) {
                 const targets = [evaluateResult(target, info.accuracy, move.roll)];
                 effects.push(...resolveMove(state, spray, actor, targets));
