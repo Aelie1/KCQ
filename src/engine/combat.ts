@@ -79,6 +79,7 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
     if (getIEntitySide(actor) != getIEntitySide(target)) {
         defenseModifier = (isEnemy(target) ? target.currDef : 0);
         defenseModifier += getModifier(target, "defense") * DEFENSE_MODIFIER;
+        defenseModifier += (isCharacter(target) && target.standing) ? -20 : 0;
     }
 
     const delta = hitModifier - defenseModifier;
