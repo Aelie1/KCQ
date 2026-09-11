@@ -40,6 +40,7 @@ export interface Character {
 
 export interface Enemy {
     id: EntityId;
+    maxHp: number;
     currHp: number;
     currDef: number;
     intention: Intention | null;
@@ -205,7 +206,8 @@ export type StatusId =
     | "immobilized"
     | "helpless"
     | "stunned"
-    | "incapacitated";
+    | "incapacitated"
+    | "standing";
 
 export type ModifierSet = Partial<Record<ModifierId,number>>;
 

@@ -26,6 +26,9 @@ export function getStatuses(target: iEntity): iStatus[] {
                 }
             }
         }
+        if (target.standing) {
+            statuses.push({ definition: standing, value: 1 });
+        }
     }
     for (const buff of target.buffs) {
         if (!buff.active || !buff.statuses) {
@@ -71,7 +74,7 @@ export function canAct(actor: iCharacter, type: ActionType): ActionFailure | und
             reason: "actorIncapacitated"
         };
     }
-    
+
     if (isSkipped(actor)) {
         return {
             success: false,
@@ -309,6 +312,14 @@ export const stunned: StatusDef = {
     levels: [
         {},
         { blocksAttack: true, blocksEscape: true, blocksMoving: true }
+    ]
+}
+
+export const standing: StatusDef = {
+    id: "standing",
+    levels: [
+        {},
+        { modifiers: { defense: -2 } }
     ]
 }
 

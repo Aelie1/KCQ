@@ -13,6 +13,7 @@ export function spawnEnemy(state: iGameState, enemy: EnemyDef): GameEffects {
         definition: enemy,
         buffs: [],
         id: name,
+        maxHp: enemy.hp,
         currHp: enemy.hp,
         currDef: enemy.defense,
         intention: null,
