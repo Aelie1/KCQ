@@ -53,7 +53,7 @@ export function getMoves(target: iCharacter): MoveDef[] {
     const moves: MoveDef[] = [];
     moves.push(...target.definition.moves);
     for (const buff of target.buffs) {
-        if (buff.addedMoves) {
+        if (buff.active && buff.addedMoves) {
             moves.push(...buff.addedMoves);
         }
     }
