@@ -3,7 +3,7 @@ import { CharacterDef, iEffect, iEntity, iGameState, iMove, iTargetInfo, MoveDef
 
 const telekinesis: MoveDef = {
     id: "telekinesis",
-    target: "enemy",
+    side: "enemy",
     targets: 1,
     baseDamage: 10,
     type: "mouth",
@@ -32,7 +32,7 @@ const telekinesis: MoveDef = {
 
 const fairypunch: MoveDef = {
     id: "fairypunch",
-    target: "enemy",
+    side: "enemy",
     targets: "all",
     baseDamage: 10,
     type: "arms",
@@ -61,7 +61,7 @@ const fairypunch: MoveDef = {
 
 const starlight: MoveDef = {
     id: "starlight",
-    target: "enemy",
+    side: "enemy",
     targets: 0,
     type: "mouth",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {

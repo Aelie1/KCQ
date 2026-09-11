@@ -109,7 +109,7 @@ function serializeStatus(status: iStatus): Status {
 export function serializeMove(move: MoveDef): Move {
     return {
         id: move.id,
-        target: move.target,
+        side: move.side,
         targets: move.targets,
         type: move.type
     };

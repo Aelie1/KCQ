@@ -24,7 +24,7 @@ export function makeBehavioralMove(
 ): MoveDef {
     return {
         id,
-        target: "enemy",
+        side: "enemy",
         targets: 1,
         type,
         accuracy: { hit: 100 },
@@ -42,7 +42,7 @@ export function makeBehavioralCharacter(
 
 export function makeEnemyWaitMove(): MoveDef {
     return makeBehavioralMove("wait", "none", {
-        target: "player",
+        side: "player",
         targets: 1,
     });
 }

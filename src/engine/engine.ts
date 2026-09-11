@@ -2,7 +2,7 @@ import { calculateAccuracy, evaluateProfile, evaluateResult, isValidTarget, reso
 import { GameEffects } from "./effects";
 import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
-import { getMoves, isValidMove } from "./helpers";
+import { getMoves } from "./helpers";
 import { type CharacterDef, type EncounterDef, type iEntity, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
 import { Random } from "./random";
 import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
@@ -194,18 +194,18 @@ export class GameEngine {
             return result;
         }
 
-        switch (moveState.target) {
+        switch (moveState.side) {
             case "none":
-                result.push(isValidTarget(character,null,moveState));
+                result.push(isValidTarget(character, null, moveState));
                 break;
             case "player":
                 for (const target of this.state.characters) {
-                    result.push(isValidTarget(character,target,moveState));
+                    result.push(isValidTarget(character, target, moveState));
                 }
                 break;
             case "enemy":
                 for (const target of this.state.enemies) {
-                    result.push(isValidTarget(character,target,moveState));
+                    result.push(isValidTarget(character, target, moveState));
                 }
                 break;
         }
@@ -303,17 +303,34 @@ export class GameEngine {
                 }
 
                 const targetStates: iEntity[] = [];
+
                 if (move.targets === "all") {
-                    if (move.target === "enemy") {
-                        targetStates.push(...this.state.enemies);
-                    } else {
-                        targetStates.push(...this.state.characters);
+                    switch (move.side) {
+                        case "enemy":
+                            targetStates.push(...this.state.enemies);
+                            break;
+                        case "player":
+                            for (const character of this.state.characters) {
+                                const info = isValidTarget(actor, character, move);
+                                if (info.valid) {
+                                    targetStates.push(character);
+                                }
+                            }
+                            break;
                     }
                 } else {
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
                         if (targetState) {
-                            targetStates.push(targetState);
+                            const info = isValidTarget(actor, targetState, move);
+                            if (info.valid) {
+                                targetStates.push(targetState);
+                            } else {
+                                return {
+                                    success: false,
+                                    reason: info.reason
+                                };    
+                            }
                         } else {
                             return {
                                 success: false,
@@ -321,15 +338,14 @@ export class GameEngine {
                             };
                         }
                     }
+                    if (targetStates.length != move.targets) {
+                        return {
+                            success: false,
+                            reason: "invalidTargetCount"
+                        };
+                    }
                 }
-
-                if (!isValidMove(this.state, actor, targetStates, move)) {
-                    return {
-                        success: false,
-                        reason: "moveUnavailable"
-                    };
-                }
-
+                
                 const iMove: iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 let anyHits: boolean = false;
@@ -343,7 +359,7 @@ export class GameEngine {
                             anyHits = true;
                         }
                     }
-                    if (move.targets === 0) {
+                    if (move.side === "none") {
                         const roll: number = this.rng.accuracy();
                         const accuracy: AccuracyProfile = calculateAccuracy(actor, null, move);
                         const result: AccuracyResult = evaluateProfile(accuracy, roll, 0);
@@ -353,7 +369,6 @@ export class GameEngine {
                             anyHits = true;
                         }
                     }
-
                 } else {
                     for (const target of targetStates) {
                         targets.push({
@@ -446,10 +461,6 @@ export class GameEngine {
         }
 
         if (!canAttack(actor) || isSkipped(actor)) {
-            return result;
-        }
-
-        if (!isValidMove(this.state, actor, intention.targets.map(x => x.target), move.definition)) {
             return result;
         }
 

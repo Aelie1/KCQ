@@ -187,7 +187,7 @@ describe("Skunkette behavior through GameEngine", () => {
 
     it("does not select an Impossible latex location for Spray", () => {
         const prepare = makeBehavioralMove("prepare-impossible", "mouth", {
-            target: "none",
+            side: "none",
             targets: 0,
             resolve: (state) => [latexHead, latexArms, latexTorso].map((binding) => ({
                 type: "binding" as const,
@@ -223,7 +223,7 @@ describe("Skunkette behavior through GameEngine", () => {
 
     it("uses independent target rolls and one shared spread modifier for Latex Mist", () => {
         const prepare = makeBehavioralMove("prepare-mist", "mouth", {
-            target: "none",
+            side: "none",
             targets: 0,
             resolve: (state) => [
                 {

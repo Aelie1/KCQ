@@ -18,7 +18,7 @@ function bindingMove(
     targetIndex = 0,
 ): MoveDef {
     return makeBehavioralMove(id, "mouth", {
-        target: "player",
+        side: "player",
         targets: 0,
         alwaysAvailable: true,
         freeOnHit: true,
@@ -181,7 +181,7 @@ describe("binding levels and effective statuses through GameEngine", () => {
             status: { easy: [{ definition: blinded, value: 2 }] },
         });
         const applyBoth = makeBehavioralMove("apply-both", "mouth", {
-            target: "player",
+            side: "player",
             targets: 0,
             resolve: (state) => [
                 { type: "binding", target: state.characters[0], binding: weak, amount: 10 },

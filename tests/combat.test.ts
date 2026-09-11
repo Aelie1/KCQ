@@ -229,7 +229,7 @@ describe("move validation and player actions", () => {
         expect(engine.getMoves(ko.id)).toEqual(ko.moves.map((definition) => ({
             move: {
                 id: definition.id,
-                target: definition.target,
+                target: definition.side,
                 targets: definition.targets,
                 type: definition.type,
             },
@@ -239,7 +239,7 @@ describe("move validation and player actions", () => {
 
     it("applies a guaranteed all-player move to every party member", () => {
         const rally = makeMove("rally", "none", {
-            target: "player",
+            side: "player",
             targets: "all",
             accuracy: undefined,
             resolve: (_state, _actor, _move, targets) => targets.map(({ target }) => ({
@@ -365,7 +365,7 @@ describe("move and effect resolution through GameEngine", () => {
         });
         const sibling = makeBehavioralBinding("sibling");
         const chain = makeMove("chain", "mouth", {
-            target: "none",
+            side: "none",
             targets: 0,
             resolve: (state) => [
                 {

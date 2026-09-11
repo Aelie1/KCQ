@@ -42,7 +42,7 @@ export function isValidTarget(actor: iEntity, target: iEntity | null, move: Move
             };
         }
     } else {
-        if (getIEntitySide(target) !== move.target) {
+        if (getIEntitySide(target) !== move.side) {
             return {
                 valid: false,
                 reason: "invalidTarget",
@@ -229,8 +229,8 @@ export function evaluateProfile(accuracy: AccuracyProfile, roll: number, effect:
             if (roll < cumulative + value) {
                 if (band !== "miss") {
                     const [min, max] = effectivenessRange[band];
-                    const effect = (roll - cumulative) / value;
-                    result.effectiveness = (min + (max - min) * effect) * (1 + effect * EFFECT_MODIFIER);
+                    const ratio = (roll - cumulative) / value;
+                    result.effectiveness = (min + (max - min) * ratio) * (1 + effect * EFFECT_MODIFIER);
                 }
                 return result;
             }

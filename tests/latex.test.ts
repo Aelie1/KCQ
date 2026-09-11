@@ -27,7 +27,7 @@ function setupLatexScenario(
     spreadModifiers: Record<string, number> = {},
 ): GameEngine {
     const prepare = makeBehavioralMove("prepare-latex", "none", {
-        target: "none",
+        side: "none",
         targets: 0,
         resolve: (state) => {
             const effects: iEffect[] = [];

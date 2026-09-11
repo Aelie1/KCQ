@@ -6,7 +6,7 @@ export const waitMove = makeWaitMove();
 export const waitEnemy = makeEnemyDef("foe", [waitMove]);
 
 export const basicAttack = makeMove("basic-attack", "none", {
-    target: "player",
+    side: "player",
 });
 
 export const basicAttackingEnemy = makeEnemyDef("attacker", [basicAttack]);

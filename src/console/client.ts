@@ -103,7 +103,7 @@ export async function runConsoleClient(
 
     const chooseTargets = async (actor: EntityId, move: Move): Promise<boolean> => {
         let state = engine.getGameState();
-        const targets = move.target === "enemy" ? state.enemies : state.characters;
+        const targets = move.side === "enemy" ? state.enemies : state.characters;
 
         if (move.targets === 0) {
             return execute({ type: "attack", actor, move: move.id, targets: [] });
@@ -112,7 +112,7 @@ export async function runConsoleClient(
         if (move.targets === "all") {
             const lines = accuracyLines(engine, actor, move, targets.map((target) => target.id));
             const selection = await choose([
-                `${move.id} affects every ${move.target}.`,
+                `${move.id} affects every ${move.side}.`,
                 "",
                 ...lines,
                 "",
@@ -128,7 +128,7 @@ export async function runConsoleClient(
         const selected: EntityId[] = [];
         while (selected.length < move.targets) {
             state = engine.getGameState();
-            const candidates = (move.target === "enemy" ? state.enemies : state.characters)
+            const candidates = (move.side === "enemy" ? state.enemies : state.characters)
                 .filter((target) => !selected.includes(target.id));
             if (candidates.length === 0) {
                 logLines.push(`Action failed: not enough targets for ${move.id}.`);
@@ -342,10 +342,10 @@ function appendResult(logLines: string[], result: ActionResult, previousRound: n
 
 function moveLabel(action: ActionInfo): string {
     const target = action.move.targets === "all"
-        ? `all ${action.move.target} targets`
+        ? `all ${action.move.side} targets`
         : action.move.targets === 0
             ? "no target"
-            : `${action.move.targets} ${action.move.target}`;
+            : `${action.move.targets} ${action.move.side}`;
     const availability = action.available ? "" : ` — unavailable: ${action.reason}`;
     return `${action.move.id} [${action.move.type}; ${target}]${availability}`;
 }

@@ -35,20 +35,6 @@ export function getBindingLevel(binding: iBinding): BindingLevel {
     return "none";
 }
 
-export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
-    if (targets.length !== move.targets && move.targets !== "all") {
-        return false;
-    }
-    for (const target of targets) {
-        if (getIEntitySide(target) !== move.target) {
-            return false;
-        }
-    }
-    if (move.isValid)
-        return move.isValid(state, actor, targets);
-    return true;
-}
-
 export function getMoves(target: iCharacter): MoveDef[] {
     const moves: MoveDef[] = [];
     moves.push(...target.definition.moves);

@@ -29,7 +29,7 @@ const latexSpray: MoveDef = {
         return effects;
     },
     id: "latexSpray",
-    target: "player",
+    side: "player",
     targets: 1,
     baseDamage: 15,
     accuracy: {
@@ -141,7 +141,7 @@ const pounce: MoveDef = {
         return effects;
     },
     id: "pounce",
-    target: "player",
+    side: "player",
     targets: 1,
     baseDamage: 10,
     cooldown: 2,
@@ -203,7 +203,7 @@ const latexMist: MoveDef = {
         return effects;
     },
     id: "latexMist",
-    target: "player",
+    side: "player",
     targets: "all",
     baseDamage: 10,
     accuracy: {
@@ -370,7 +370,7 @@ const throwOff: MoveDef = {
     id: "throwOff",
     alwaysAvailable: true,
     freeOnHit: true,
-    target: "none",
+    side: "none",
     targets: 0,
     accuracy: {
         miss: 40,

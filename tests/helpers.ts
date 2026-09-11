@@ -48,7 +48,7 @@ export function makeMove(
 ): MoveDef {
     return {
         id,
-        target: "enemy",
+        side: "enemy",
         targets: 1,
         type,
         accuracy: { hit: 100 },
@@ -58,7 +58,7 @@ export function makeMove(
 }
 
 export function makeWaitMove(): MoveDef {
-    return makeMove("wait", "none", { target: "player" });
+    return makeMove("wait", "none", { side: "player" });
 }
 
 export function makeCharacterDef(id: string, moves: MoveDef[] = []): CharacterDef {
@@ -129,7 +129,7 @@ export function setupBoundEngine(
     additionalEncounters: EncounterDef[] = [],
 ) {
     const setupMove = makeMove("apply-binding", "mouth", {
-        target: "player",
+        side: "player",
         resolve: (state) => [{
             type: "binding",
             target: state.characters[0],

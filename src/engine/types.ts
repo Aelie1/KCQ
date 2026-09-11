@@ -118,7 +118,7 @@ export interface Passive {
 
 export interface Move {
     id: string;
-    target: EntitySide;
+    side: EntitySide;
     targets: TargetCount;
     type: MoveType;
     binding?: BindingId;
@@ -304,6 +304,7 @@ export interface ActionFailure {
 export type ActionFailureReason =
     | "invalidActor"
     | "invalidTarget"
+    | "invalidTargetCount"
     | "invalidMove"
     | "invalidBinding"
     | "wrongPhase"

@@ -1,4 +1,4 @@
-import { calculateAccuracy, evaluateResult } from "./combat";
+import { calculateAccuracy, evaluateResult, isValidTarget } from "./combat";
 import { thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { findBinding } from "./find";
@@ -31,7 +31,7 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
     const targets = [...action.targets];
     const move = { ...action.move, roll: rng.accuracy() };
     if (move.definition.targets === "all") {
-        if (move.definition.target === "enemy") {
+        if (move.definition.side === "enemy") {
             targets.push(...state.enemies);
         } else {
             targets.push(...validTargets(state.characters));
@@ -54,7 +54,8 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
 export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
     for (const target of intention.targets) {
-        if (isEnemy(target.target) || !isIncapacitated(target.target)) {
+        const info = isValidTarget(intention.actor,target.target,intention.move.definition);
+        if (info.valid) {
             const accuracy = calculateAccuracy(intention.actor, target.target, intention.move.definition);
             const info = evaluateResult(target.target, accuracy, target.roll);
             targets.push(info);
