@@ -185,6 +185,42 @@ describe("Skunkette behavior through GameEngine", () => {
             .toContain(bindingEffect?.type === "binding" ? bindingEffect.binding : undefined);
     });
 
+    it("does not select an Impossible latex location for Spray", () => {
+        const prepare = makeBehavioralMove("prepare-impossible", "mouth", {
+            target: "none",
+            targets: 0,
+            resolve: (state) => [latexHead, latexArms, latexTorso].map((binding) => ({
+                type: "binding" as const,
+                target: state.characters[0],
+                binding,
+                amount: 80,
+            })),
+        });
+        const encounter = { id: "select-latex", enemies: [skunkette] };
+        const engine = new GameEngine([encounter], 1);
+        engine.loadCharacter(makeBehavioralCharacter("hero", [prepare]));
+        execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: prepare.id,
+            targets: [],
+        });
+        engine.loadEncounter(encounter.id);
+        execute(engine, { type: "endTurn" });
+
+        const intention = enemyState(engine, "skunkette1").intention;
+        const bindingEffects = intention?.targets.flatMap(({ effects }) =>
+            effects.filter((effect) => effect.type === "binding"));
+        expect(intention?.move).toBe("latexSpray");
+        expect(bindingEffects).toEqual([expect.objectContaining({ binding: latexLegs.id })]);
+
+        execute(engine, { type: "endTurn" });
+        expect(bindingState(engine, latexHead.id)?.value).toBe(80);
+        expect(bindingState(engine, latexArms.id)?.value).toBe(80);
+        expect(bindingState(engine, latexTorso.id)?.value).toBe(80);
+        expect(bindingState(engine, latexLegs.id)?.value).toBeGreaterThan(0);
+    });
+
     it("uses independent target rolls and one shared spread modifier for Latex Mist", () => {
         const prepare = makeBehavioralMove("prepare-mist", "mouth", {
             target: "none",

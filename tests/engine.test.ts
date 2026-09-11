@@ -3,6 +3,7 @@ import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
 import { GameEngine } from "../src/engine/engine";
 import type { StatusDef } from "../src/engine/itypes";
+import { stunned } from "../src/engine/status";
 import {
     makeCharacterDef,
     makeBindingDef,
@@ -91,6 +92,52 @@ describe("turn phases and enemy intentions", () => {
             turn: { round: 2, step: 1, phase: "player" },
             characters: [{ acted: false }],
         });
+    });
+
+    it("cancels a committed enemy intention when an active status blocks attacking", () => {
+        const threatened = makeBindingDef("threatened");
+        const threat = makeMove("threat", "none", {
+            target: "player",
+            resolve: (state) => [{
+                type: "binding",
+                target: state.characters[0],
+                binding: threatened,
+                amount: 10,
+            }],
+        });
+        const stunEnemy = makeMove("stun-enemy", "mouth", {
+            target: "none",
+            targets: 0,
+            resolve: (state) => [{
+                type: "buff",
+                target: state.enemies[0],
+                buff: {
+                    id: "stunned-enemy",
+                    active: true,
+                    statuses: [{ definition: stunned, value: 1 }],
+                },
+                operation: "add",
+            }],
+        });
+        const foe = makeEnemyDef("foe", [threat]);
+        const encounter = { id: "cancel-intention", enemies: [foe] };
+        const engine = new GameEngine([encounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero", [stunEnemy]));
+        engine.loadEncounter(encounter.id);
+
+        expect(engine.getGameState().enemies[0].intention?.move).toBe(threat.id);
+        expect(engine.executeAction({
+            type: "attack",
+            actor: "hero",
+            move: stunEnemy.id,
+            targets: [],
+        }).success).toBe(true);
+
+        const result = engine.executeAction({ type: "endTurn" });
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected the enemy phase to resolve");
+        expect(result.events.filter(({ type }) => type === "moveUsed")).toEqual([]);
+        expect(engine.getGameState().characters[0].bindings).toEqual([]);
     });
 });
 

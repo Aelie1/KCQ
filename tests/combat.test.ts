@@ -237,6 +237,48 @@ describe("move validation and player actions", () => {
         })));
     });
 
+    it("applies a guaranteed all-player move to every party member", () => {
+        const rally = makeMove("rally", "none", {
+            target: "player",
+            targets: "all",
+            accuracy: undefined,
+            resolve: (_state, _actor, _move, targets) => targets.map(({ target }) => ({
+                type: "buff" as const,
+                target,
+                buff: { id: "rallied", active: true },
+                operation: "add" as const,
+            })),
+        });
+        const engine = makeBehavioralEngine([
+            makeCharacterDef("hero", [rally]),
+            makeCharacterDef("ally"),
+        ]);
+
+        expect(engine.getAccuracyPreview("hero", "ally", rally.id)).toEqual({ none: 100 });
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: rally.id,
+            targets: [],
+        });
+
+        expect(result.events).toEqual([
+            {
+                type: "moveUsed",
+                actor: "hero",
+                move: rally.id,
+                targets: [
+                    { target: "hero", result: "none" },
+                    { target: "ally", result: "none" },
+                ],
+            },
+            { type: "buffAdded", target: "hero", buff: "rallied" },
+            { type: "buffAdded", target: "ally", buff: "rallied" },
+        ]);
+        expect(buffState(engine, "rallied", "hero")?.active).toBe(true);
+        expect(buffState(engine, "rallied", "ally")?.active).toBe(true);
+    });
+
     it.each(["missing", `${skunkette.id}1`])(
         "returns no player actions for non-character id %s",
         (id) => {

@@ -134,6 +134,7 @@ describe("state serialization and combatant loading", () => {
             duration: 2,
             active: true,
             statuses: [{ definition: status, value: 1 }],
+            modifiers: { hit: -1 },
             linkedEntity: "foe1",
         };
         const enemyBuff: iBuff = {
@@ -167,7 +168,7 @@ describe("state serialization and combatant loading", () => {
             active: true,
             statuses: [{ id: status.id, value: 1 }],
             linkedEntity: "foe1",
-            modifiers: {},
+            modifiers: { hit: -1 },
         });
         expect(serialized.enemies[0].buffs[0]).toEqual({
             id: "focus",
@@ -193,9 +194,11 @@ describe("state serialization and combatant loading", () => {
 
         serialized.characters[0].buffs[0].duration = 99;
         serializedStatus.value = 99;
+        serialized.characters[0].buffs[0].modifiers!.hit = -99;
         serialized.enemies[0].buffs[0].active = true;
         expect(characterBuff.duration).toBe(2);
         expect(internalStatus.value).toBe(1);
+        expect(characterBuff.modifiers?.hit).toBe(-1);
         expect(enemyBuff.active).toBe(false);
     });
 });
