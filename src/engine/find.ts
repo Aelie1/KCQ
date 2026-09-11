@@ -1,5 +1,5 @@
 import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
-import { getMoves } from "./moves";
+import { getMoves } from "./helpers";
 import type { BindingId, BuffId, EntityId, MoveId } from "./types";
 
 

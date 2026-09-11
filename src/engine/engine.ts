@@ -1,11 +1,13 @@
-import { resolveEscape } from "./bindings";
-import { tickBuffs } from "./buffs";
+import { resolveEscape } from "./combat";
+import { tickBuffs } from "./combat";
 import { calculateAccuracy, evaluateResult, setStance } from "./combat";
 import { GameEffects } from "./effects";
-import { evaluateIntention, loadEnemy, tickCooldowns, updateIntention } from "./enemies";
+import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
+import { tickCooldowns } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
 import { type CharacterDef, type EncounterDef, type iCharacter, type iEntity, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
-import { getMoves, isValidMove, resolveMove } from "./moves";
+import { resolveMove } from "./combat";
+import { getMoves, isValidMove } from "./helpers";
 import { Random } from "./random";
 import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canMove, canUseMoveType, isIncapacitated, isSkipped } from "./status";
@@ -70,7 +72,7 @@ export class GameEngine {
             return result.getEvents();
         }
         for (const enemy of encounter.enemies) {
-            result.fromEvents(this.state, loadEnemy(this.state, enemy));
+            result.fromResults(this.state, spawnEnemy(this.state, enemy));
         }
         if (encounter.setup) {
             encounter.setup(this.state);
@@ -250,9 +252,9 @@ export class GameEngine {
             };
         }
         if (action.type === "endTurn") {
-            result.fromEvents(this.state, this.advancePhase());
-            result.fromEvents(this.state, this.executeEnemyPhase());
-            result.fromEvents(this.state, this.advancePhase());
+            result.fromResults(this.state, this.advancePhase());
+            result.fromResults(this.state, this.executeEnemyPhase());
+            result.fromResults(this.state, this.advancePhase());
 
             return {
                 success: true,
@@ -428,7 +430,7 @@ export class GameEngine {
                 };
             }
             case "stance": {
-                result.fromEvents(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
+                result.fromResults(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
                 return {
                     success: true,
                     events: result.getEvents(),
@@ -472,7 +474,7 @@ export class GameEngine {
         const result = new GameEffects();
         for (const enemy of this.state.enemies) {
             if (enemy.intention) {
-                result.fromEvents(this.state,this.executeEnemyAction(enemy.intention));
+                result.fromResults(this.state,this.executeEnemyAction(enemy.intention));
                 const move = enemy.intention.move.definition;
                 if (move.cooldown !== undefined) {
                     enemy.cooldowns[move.id] = move.cooldown;
@@ -492,14 +494,14 @@ export class GameEngine {
             for (const actor of this.state.characters) {
                 actor.acted = false;
                 if (canMove(actor)) {
-                    result.fromEvents(this.state,setStance(actor, "moving"));
+                    result.fromResults(this.state,setStance(actor, "moving"));
                 }
                 actor.bonusEscapes = 0;
             }
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
-            result.fromEvents(this.state,tickBuffs(this.state));
+            result.fromResults(this.state,tickBuffs(this.state));
             tickCooldowns(this.state.enemies);
             this.updateIntentions();
         }

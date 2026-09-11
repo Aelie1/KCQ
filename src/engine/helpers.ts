@@ -1,5 +1,5 @@
 import { thresholds } from "./constants";
-import type { iBinding, iCharacter, iEnemy, iEntity, iGameState } from "./itypes";
+import type { iBinding, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
 import type { BindingLevel, EntitySide } from "./types";
 
 export function isValidEntity(state: iGameState, entity: iEntity): boolean {
@@ -33,5 +33,30 @@ export function getBindingLevel(binding: iBinding): BindingLevel {
     else if (binding.value >= thresholds.easy)
         return "easy";
     return "none";
+}
+
+export function isValidMove(state: iGameState, actor: iEntity, targets: iEntity[], move: MoveDef): boolean {
+    if (targets.length !== move.targets && move.targets !== "all") {
+        return false;
+    }
+    for (const target of targets) {
+        if (getIEntitySide(target) !== move.target) {
+            return false;
+        }
+    }
+    if (move.isValid)
+        return move.isValid(state, actor, targets);
+    return true;
+}
+
+export function getMoves(target: iCharacter): MoveDef[] {
+    const moves: MoveDef[] = [];
+    moves.push(...target.definition.moves);
+    for (const buff of target.buffs) {
+        if (buff.addedMoves) {
+            moves.push(...buff.addedMoves);
+        }
+    }
+    return moves;
 }
 

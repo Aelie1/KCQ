@@ -1,12 +1,13 @@
 import { calculateAccuracy, evaluateResult } from "./combat";
 import { isEnemy } from "./helpers";
-import { EnemyDef, iCharacter, iEnemy, iEntity, iGameState, iIntention, iIntentionTarget, iTargetInfo } from "./itypes";
+import { BindingDef, EnemyDef, iCharacter, iEnemy, iGameState, iIntention, iIntentionTarget, iTargetInfo } from "./itypes";
 import { GameEffects } from "./effects";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";
-import { DamageEvent, EnemyEvent } from "./types";
+import { thresholds } from "./constants";
+import { findBinding } from "./find";
 
-export function loadEnemy(state: iGameState, enemy: EnemyDef): GameEffects {
+export function spawnEnemy(state: iGameState, enemy: EnemyDef): GameEffects {
     const result = new GameEffects();
     const name = enemy.id + state.nextEntityId++;
     state.enemies.push({
@@ -62,40 +63,6 @@ export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     return targets;
 }
 
-export function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, amount: number): GameEffects {
-    const result = new GameEffects();
-    target.currHp -= amount;
-    const event: DamageEvent = {
-        type: "damage",
-        target: target.id,
-        amount: amount
-    };
-    result.addEvent(event);
-    if (target.definition.onDamage) {
-        result.fromEffects(state,target.definition.onDamage(state, actor, target, amount));
-    }
-
-
-    if (target.currHp <= 0) {
-        result.fromEvents(state, defeatEnemy(state, target));
-    }    
-    return result;
-}
-
-export function defeatEnemy(state: iGameState, target: iEnemy): GameEffects {
-    const result = new GameEffects();
-    const event: EnemyEvent = {
-        type: "enemyDefeated",
-        target: target.id,
-    };
-    result.addEvent(event);
-    if (target.definition.onDefeat) {
-        result.fromEffects(state, target.definition.onDefeat(state, target));
-    }
-    state.enemies.splice(state.enemies.indexOf(target), 1);
-    return result;
-}
-
 export function validTargets(characters: iCharacter[]): iCharacter[] {
     const validCharacters: iCharacter[] = [];
     for (const character of characters) {
@@ -117,13 +84,21 @@ export function pickTarget(characters: iCharacter[], rng: Random): iCharacter | 
     return validCharacters[index];
 }
 
-export function tickCooldowns(enemies: iEnemy[]) {
-    for (const enemy of enemies) {
-        for (const move of Object.entries(enemy.cooldowns)) {
-            if (move[1] > 0) {
-                enemy.cooldowns[move[0]]--;
-            }
+export function pickBinding(target: iCharacter, bindings: BindingDef[], rng: Random): BindingDef | undefined {
+    const validMoves: BindingDef[] = [];
+    for (const binding of bindings) {
+        const tBinding = findBinding(target, binding.id);
+        if (tBinding !== undefined && tBinding.value >= thresholds.impossible) {
+            continue;
         }
+        validMoves.push(binding);
     }
+
+    if (validMoves.length === 0) {
+        return undefined;
+    }
+
+    const index = rng.int(0, validMoves.length - 1);
+    return validMoves[index];
 }
 

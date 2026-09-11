@@ -1,7 +1,7 @@
-import { DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
+import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
-import { iCharacter, iEntity, iTargetInfo, MoveDef } from "./itypes";
+import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, MoveDef } from "./itypes";
 import { canMove, getModifier } from "./status";
 import { AccuracyProfile, AccuracyResult, StanceId } from "./types";
 
@@ -207,3 +207,88 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
     return result;
 }
 
+export function tickBuffs(state: iGameState): GameEffects {
+    const result = new GameEffects();
+    const effects: iEffect[] = [];
+    for (const entity of [...state.characters, ...state.enemies]) {
+        for (const buff of [...entity.buffs]) {
+            if (!buff.active) {
+                buff.active = true;
+                continue;
+            }
+            if (buff.duration === undefined) {
+                continue;
+            }
+            buff.duration--;
+            if (buff.duration === 0) {
+                effects.push({
+                    type: "buff",
+                    buff: buff,
+                    source: entity,
+                    target: entity,
+                    added: false
+                });
+            }
+        }
+    }
+    result.fromEffects(state, effects);
+    return result;
+}
+
+export function tickCooldowns(enemies: iEnemy[]) {
+    for (const enemy of enemies) {
+        for (const [moveId,cooldown] of Object.entries(enemy.cooldowns)) {
+            if (cooldown > 0) {
+                enemy.cooldowns[moveId]--;
+            }
+        }
+    }
+}
+
+export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iBinding): iEffect[] {
+    const effects: iEffect[] = [];
+    const basePotency = 20;
+    const bindingValue = binding.value;
+    const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
+    const basePenalty = 15;
+    let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
+    escapePotency *= 1 + getModifier(actor, "escape") * BINDING_MODIFIER;
+    if (actor !== target) {
+        escapePotency *= 1.5;
+    }
+    escapePotency = Math.ceil(escapePotency);
+
+    effects.push({
+        type: "binding",
+        target: target,
+        binding: binding.definition,
+        amount: escapePotency * -1
+    });
+
+    if (binding.definition.onEscape) {
+        effects.push(...binding.definition.onEscape(actor, target, binding, escapePotency));
+    }
+
+    return effects;
+}
+
+export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
+    const successfulTargets = targets.filter(
+        target => target.result !== "miss"
+    );
+    const effects: iEffect[] = move.definition.resolve(state, actor, move, successfulTargets);
+    return effects.map(normalizeEffect);
+}
+
+function normalizeEffect(effect: iEffect): iEffect {
+    switch (effect.type) {
+        case "binding":
+        case "damage":
+            return {
+                ...effect,
+                amount: Math.ceil(effect.amount)
+            };
+        default:
+            return effect;
+    }
+}
