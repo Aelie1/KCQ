@@ -101,7 +101,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
     return effects;
 }
 
-export const pounce: MoveDef = {
+const pounce: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         if (targets.length === 0) {
             return [];
@@ -157,7 +157,7 @@ export const pounce: MoveDef = {
     type: "enemy"
 };
 
-export const latexMist: MoveDef = {
+const latexMist: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 
@@ -324,7 +324,7 @@ export const skunkette: EnemyDef = {
     },
 }
 
-export const throwOff: MoveDef = {
+const throwOff: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         if (move.result === "miss") {
             return [];

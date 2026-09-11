@@ -21,7 +21,7 @@ export class GameEffects {
         this.events.push(event);
     }
 
-    fromResults(state: iGameState, other: GameEffects) {
+    fromResult(state: iGameState, other: GameEffects) {
         this.events.push(...other.events);
         this.effects.push(...other.effects);
         this.resolve(state);
@@ -195,7 +195,7 @@ function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, amount: 
 
 
     if (target.currHp <= 0) {
-        result.fromResults(state, defeatEnemy(state, target));
+        result.fromResult(state, defeatEnemy(state, target));
     }
     return result;
 }

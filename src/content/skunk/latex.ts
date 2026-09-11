@@ -2,7 +2,7 @@ import { SPREAD_MODIFIER, thresholds } from "../../engine/constants";
 import { BindingDef, iBinding, iCharacter, iEffect, s } from "../../engine/itypes";
 import { bound, breathless, gagged, getModifier, hobbled, submissive, vibrating } from "../../engine/status";
 
-export const latexBindings: BindingDef = {
+const latexBindings: BindingDef = {
     id: "latexBindings",
     status: {},
     data: {

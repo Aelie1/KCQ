@@ -72,7 +72,7 @@ export class GameEngine {
             return result.getEvents();
         }
         for (const enemy of encounter.enemies) {
-            result.fromResults(this.state, spawnEnemy(this.state, enemy));
+            result.fromResult(this.state, spawnEnemy(this.state, enemy));
         }
         if (encounter.setup) {
             encounter.setup(this.state);
@@ -252,9 +252,9 @@ export class GameEngine {
             };
         }
         if (action.type === "endTurn") {
-            result.fromResults(this.state, this.advancePhase());
-            result.fromResults(this.state, this.executeEnemyPhase());
-            result.fromResults(this.state, this.advancePhase());
+            result.fromResult(this.state, this.advancePhase());
+            result.fromResult(this.state, this.executeEnemyPhase());
+            result.fromResult(this.state, this.advancePhase());
 
             return {
                 success: true,
@@ -430,7 +430,7 @@ export class GameEngine {
                 };
             }
             case "stance": {
-                result.fromResults(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
+                result.fromResult(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
                 return {
                     success: true,
                     events: result.getEvents(),
@@ -474,7 +474,7 @@ export class GameEngine {
         const result = new GameEffects();
         for (const enemy of this.state.enemies) {
             if (enemy.intention) {
-                result.fromResults(this.state,this.executeEnemyAction(enemy.intention));
+                result.fromResult(this.state,this.executeEnemyAction(enemy.intention));
                 const move = enemy.intention.move.definition;
                 if (move.cooldown !== undefined) {
                     enemy.cooldowns[move.id] = move.cooldown;
@@ -494,14 +494,14 @@ export class GameEngine {
             for (const actor of this.state.characters) {
                 actor.acted = false;
                 if (canMove(actor)) {
-                    result.fromResults(this.state,setStance(actor, "moving"));
+                    result.fromResult(this.state,setStance(actor, "moving"));
                 }
                 actor.bonusEscapes = 0;
             }
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
-            result.fromResults(this.state,tickBuffs(this.state));
+            result.fromResult(this.state,tickBuffs(this.state));
             tickCooldowns(this.state.enemies);
             this.updateIntentions();
         }

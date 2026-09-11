@@ -108,17 +108,17 @@ export type iEffect =
     | iBindingEffect
     | iBuffEffect;
 
-export interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
+interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
     target: iEnemy;
 }
 
-export interface iBindingEffect  extends Omit<BindingEffect, "target" | "binding"> {
+interface iBindingEffect  extends Omit<BindingEffect, "target" | "binding"> {
     target: iCharacter;
     binding: BindingDef;
 }
 
-export interface iBuffEffect extends Omit<BuffEffect, "source" | "target" | "buff">  {
+interface iBuffEffect extends Omit<BuffEffect, "source" | "target" | "buff">  {
     source: iEntity;
     target: iEntity;
     buff: iBuff;
@@ -169,7 +169,7 @@ export interface StatusDef {
     levels: StatusLevelDef[];
 }
 
-export interface StatusLevelDef {
+interface StatusLevelDef {
     modifiers?: Partial<Record<ModifierId, number>>;
     blockedMoveTypes?: MoveType[];
     blocksAttack?: boolean;
