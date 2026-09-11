@@ -1,5 +1,8 @@
 import { Random } from "./random";
-import { AccuracyProfile, HitBand, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect, Enemy, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn } from "./types";
+import {
+    AccuracyProfile, ActionFailureReason, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect,
+    Enemy, HitBand, InvalidTarget, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn, ValidTarget
+} from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -96,6 +99,20 @@ export interface MoveDef extends Move{
 export interface iTargetInfo extends Omit<TargetInfo, "target" | "effects"> {
     target: iEntity;
     effectiveness: number;
+}
+
+export type iValidityInfo = iValidTarget | iInvalidTarget;
+
+interface iValidTarget extends Omit<ValidTarget,"target"> {
+    valid: true;
+    target: iEntity | null;
+    accuracy?: AccuracyProfile;
+}
+
+interface iInvalidTarget extends Omit<InvalidTarget,"target"> {
+    valid: false;
+    target: iEntity | null;
+    reason: ActionFailureReason;
 }
 
 /*******************************************************

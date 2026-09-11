@@ -3,11 +3,14 @@ import { GameEffects } from "./effects";
 import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
 import { getMoves } from "./helpers";
-import { type CharacterDef, type EncounterDef, type iEntity, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
+import { iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
 import { Random } from "./random";
-import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
+import { serializeEffect, serializeGameState, serializeMove, serializeValidity } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, isIncapacitated, isSkipped } from "./status";
-import type { AccuracyProfile, AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo } from "./types";
+import type {
+    AccuracyProfile, AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId,
+    EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo
+} from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -175,23 +178,23 @@ export class GameEngine {
     }
 
     getTargets(actor: EntityId, move: MoveId): ValidityInfo[] {
-        const result: ValidityInfo[] = [];
+        const result: iValidityInfo[] = [];
         const character = findCharacter(this.state, actor);
         if (!character) {
-            result.push({
+            return [{
                 valid: false,
+                target: null,
                 reason: "invalidActor"
-            })
-            return result;
+            }]
         }
 
         const moveState = findMove(character, move);
         if (!moveState) {
-            result.push({
+            return [{
                 valid: false,
+                target: null,
                 reason: "invalidMove"
-            })
-            return result;
+            }]
         }
 
         switch (moveState.side) {
@@ -210,7 +213,7 @@ export class GameEngine {
                 break;
         }
 
-        return result;
+        return result.map(serializeValidity);
     }
 
     getEscapes(actor: EntityId): EscapeOptions | null {
@@ -302,19 +305,18 @@ export class GameEngine {
                     };
                 }
 
-                const targetStates: iEntity[] = [];
+                const targetInfo: iValidityInfo[] = [];
 
                 if (move.targets === "all") {
                     switch (move.side) {
                         case "enemy":
-                            targetStates.push(...this.state.enemies);
+                            for (const enemy of this.state.enemies) {
+                                targetInfo.push(isValidTarget(actor, enemy, move));
+                            }
                             break;
                         case "player":
                             for (const character of this.state.characters) {
-                                const info = isValidTarget(actor, character, move);
-                                if (info.valid) {
-                                    targetStates.push(character);
-                                }
+                                targetInfo.push(isValidTarget(actor, character, move));
                             }
                             break;
                     }
@@ -324,12 +326,12 @@ export class GameEngine {
                         if (targetState) {
                             const info = isValidTarget(actor, targetState, move);
                             if (info.valid) {
-                                targetStates.push(targetState);
+                                targetInfo.push(info);
                             } else {
                                 return {
                                     success: false,
                                     reason: info.reason
-                                };    
+                                };
                             }
                         } else {
                             return {
@@ -338,27 +340,18 @@ export class GameEngine {
                             };
                         }
                     }
-                    if (targetStates.length != move.targets) {
+                    if (targetInfo.length != move.targets) {
                         return {
                             success: false,
                             reason: "invalidTargetCount"
                         };
                     }
                 }
-                
+
                 const iMove: iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 let anyHits: boolean = false;
                 if (move.accuracy) {
-                    for (const target of targetStates) {
-                        const roll: number = this.rng.accuracy();
-                        const accuracy: AccuracyProfile = calculateAccuracy(actor, target, move);
-                        const targetInfo: iTargetInfo = evaluateResult(target, accuracy, roll);
-                        targets.push(targetInfo);
-                        if (targetInfo.band !== "miss") {
-                            anyHits = true;
-                        }
-                    }
                     if (move.side === "none") {
                         const roll: number = this.rng.accuracy();
                         const accuracy: AccuracyProfile = calculateAccuracy(actor, null, move);
@@ -369,13 +362,27 @@ export class GameEngine {
                             anyHits = true;
                         }
                     }
+                    else {
+                        for (const target of targetInfo) {
+                            if (target.valid && target.target && target.accuracy) {
+                                const roll: number = this.rng.accuracy();
+                                const targetInfo: iTargetInfo = evaluateResult(target.target, target.accuracy, roll);
+                                targets.push(targetInfo);
+                                if (targetInfo.band !== "miss") {
+                                    anyHits = true;
+                                }
+                            }
+                        }
+                    }
                 } else {
-                    for (const target of targetStates) {
-                        targets.push({
-                            target: target,
-                            effectiveness: 0,
-                            band: "none"
-                        })
+                    for (const target of targetInfo) {
+                        if (target.valid && target.target) {
+                            targets.push({
+                                target: target.target,
+                                effectiveness: 0,
+                                band: "none"
+                            })
+                        }
                     }
                     anyHits = true;
                 }

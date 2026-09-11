@@ -1,9 +1,9 @@
 import { resolveMove } from "./combat";
 import { evaluateIntention } from "./enemies";
 import { getBindingLevel } from "./helpers";
-import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, MoveDef } from "./itypes";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iValidityInfo, MoveDef } from "./itypes";
 import { getStatuses } from "./status";
-import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo } from "./types";
+import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo, ValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     const { nextEntityId, ..._state } = state;
@@ -112,5 +112,12 @@ export function serializeMove(move: MoveDef): Move {
         side: move.side,
         targets: move.targets,
         type: move.type
+    };
+}
+
+export function serializeValidity(info: iValidityInfo): ValidityInfo {
+    return {
+        ...info,
+        target: info.target === null ? null : info.target.id,
     };
 }

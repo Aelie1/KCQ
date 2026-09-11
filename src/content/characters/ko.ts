@@ -61,7 +61,7 @@ const fairypunch: MoveDef = {
 
 const starlight: MoveDef = {
     id: "starlight",
-    side: "enemy",
+    side: "none",
     targets: 0,
     type: "mouth",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {

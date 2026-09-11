@@ -1,9 +1,9 @@
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
-import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, MoveDef } from "./itypes";
+import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iValidityInfo, MoveDef } from "./itypes";
 import { canMove, getModifier, isIncapacitated } from "./status";
-import { AccuracyProfile, AccuracyResult, HitBand, StanceId, ValidityInfo } from "./types";
+import { AccuracyProfile, AccuracyResult, HitBand, StanceId } from "./types";
 
 
 export function setStance(target: iCharacter, stance: StanceId): GameEffects {
@@ -33,11 +33,12 @@ export function setStance(target: iCharacter, stance: StanceId): GameEffects {
     return result;
 }
 
-export function isValidTarget(actor: iEntity, target: iEntity | null, move: MoveDef): ValidityInfo {
+export function isValidTarget(actor: iEntity, target: iEntity | null, move: MoveDef): iValidityInfo {
     if (target === null) {
         if (move.targets !== 0) {
             return {
                 valid: false,
+                target: null,
                 reason: "invalidTarget"
             };
         }
@@ -45,12 +46,14 @@ export function isValidTarget(actor: iEntity, target: iEntity | null, move: Move
         if (getIEntitySide(target) !== move.side) {
             return {
                 valid: false,
+                target: target,
                 reason: "invalidTarget",
             };
         }
         if (isCharacter(target) && isIncapacitated(target)) {
             return {
                 valid: false,
+                target: target,
                 reason: "targetIncapacitated"
             };
         }
@@ -60,7 +63,7 @@ export function isValidTarget(actor: iEntity, target: iEntity | null, move: Move
     return {
         valid: true,
         accuracy: accuracy,
-        target: target ? target.id : null
+        target: target ?? null
     }
 }
 

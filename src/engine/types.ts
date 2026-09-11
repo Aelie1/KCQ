@@ -150,14 +150,15 @@ export type TargetCount = number | "all"
 
 export type ValidityInfo = ValidTarget | InvalidTarget;
 
-interface ValidTarget {
+export interface ValidTarget {
     valid: true;
-    accuracy: AccuracyProfile;
     target: EntityId | null;
+    accuracy?: AccuracyProfile;
 }
 
-interface InvalidTarget {
+export interface InvalidTarget {
     valid: false;
+    target: EntityId | null;
     reason: ActionFailureReason;
 }
 

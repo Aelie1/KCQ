@@ -55,10 +55,9 @@ export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
     for (const target of intention.targets) {
         const info = isValidTarget(intention.actor,target.target,intention.move.definition);
-        if (info.valid) {
-            const accuracy = calculateAccuracy(intention.actor, target.target, intention.move.definition);
-            const info = evaluateResult(target.target, accuracy, target.roll);
-            targets.push(info);
+        if (info.valid && info.accuracy) {
+            const targetInfo = evaluateResult(target.target, info.accuracy, target.roll);
+            targets.push(targetInfo);
         }
     }
     return targets;
