@@ -1,4 +1,4 @@
-import { evaluateResult, isValidTarget } from "./combat";
+import { evaluateProfile, evaluateResult, isValidTarget } from "./combat";
 import { thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { findBinding } from "./find";
@@ -43,6 +43,12 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
             roll: rng.accuracy()
         });
     }
+    if (move.definition.targets === 0) {
+        iTargets.push({
+            target: null,
+            roll: rng.accuracy()
+        })
+    }
     actor.intention = {
         actor: action.actor,
         move: move,
@@ -55,15 +61,26 @@ export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     for (const target of intention.targets) {
         const info = isValidTarget(intention.actor, target.target, intention.move.definition);
         if (info.valid) {
-            if (info.accuracy) {
-                const targetInfo = evaluateResult(target.target, info.accuracy, target.roll);
-                targets.push(targetInfo);
+            if (info.target) {
+                if (info.accuracy) {
+                    const targetInfo = evaluateResult(info.target, info.accuracy, target.roll);
+                    targets.push(targetInfo);
+                } else {
+                    targets.push({
+                        target: info.target,
+                        effectiveness: 0,
+                        band: "none"
+                    });
+                }
             } else {
-                targets.push({
-                    target: target.target,
-                    effectiveness: 0,
-                    band: "none"
-                });
+                if (info.accuracy) {
+                    const result = evaluateProfile(info.accuracy, target.roll, 0);
+                    intention.move.effectiveness = result.effectiveness;
+                    intention.move.band = result.band;
+                } else {
+                    intention.move.effectiveness = 0;
+                    intention.move.band = "none";
+                }
             }
         }
     }

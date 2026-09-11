@@ -55,7 +55,7 @@ export interface iIntention {
 }
 
 export interface iIntentionTarget {
-    target: iEntity;
+    target: iEntity | null;
     roll: number;    
 }
 
