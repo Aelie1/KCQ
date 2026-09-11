@@ -63,14 +63,14 @@ export function isValidTarget(actor: iEntity, target: iEntity | null, move: Move
     return {
         valid: true,
         accuracy: accuracy,
-        target: target ?? null
+        target: target
     }
 }
 
-function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef): AccuracyProfile {
+function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef): AccuracyProfile | null {
     const base = move.accuracy;
     if (!base) {
-        return { none: 100 };
+        return null;
     }
 
     const clamp = (value: number, min: number, max: number): number =>

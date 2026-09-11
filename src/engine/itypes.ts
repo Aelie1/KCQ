@@ -106,7 +106,7 @@ export type iValidityInfo = iValidTarget | iInvalidTarget;
 interface iValidTarget extends Omit<ValidTarget,"target"> {
     valid: true;
     target: iEntity | null;
-    accuracy?: AccuracyProfile;
+    accuracy: AccuracyProfile | null;
 }
 
 interface iInvalidTarget extends Omit<InvalidTarget,"target"> {

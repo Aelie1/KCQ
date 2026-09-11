@@ -153,7 +153,7 @@ export type ValidityInfo = ValidTarget | InvalidTarget;
 export interface ValidTarget {
     valid: true;
     target: EntityId | null;
-    accuracy?: AccuracyProfile;
+    accuracy: AccuracyProfile | null;
 }
 
 export interface InvalidTarget {
