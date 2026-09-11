@@ -18,9 +18,9 @@ export function spawnEnemy(state: iGameState, enemy: EnemyDef): GameEffects {
         intention: null,
         cooldowns: {}
     });
-    result.addEvent({ 
-        type: "enemySpawned", 
-        target: name 
+    result.addEvent({
+        type: "enemySpawned",
+        target: name
     });
     return result;
 }
@@ -53,10 +53,18 @@ export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
 export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
     for (const target of intention.targets) {
-        const info = isValidTarget(intention.actor,target.target,intention.move.definition);
-        if (info.valid && info.accuracy) {
-            const targetInfo = evaluateResult(target.target, info.accuracy, target.roll);
-            targets.push(targetInfo);
+        const info = isValidTarget(intention.actor, target.target, intention.move.definition);
+        if (info.valid) {
+            if (info.accuracy) {
+                const targetInfo = evaluateResult(target.target, info.accuracy, target.roll);
+                targets.push(targetInfo);
+            } else {
+                targets.push({
+                    target: target.target,
+                    effectiveness: 0,
+                    band: "none"
+                });
+            }
         }
     }
     return targets;
