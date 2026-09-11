@@ -8,10 +8,12 @@ export const latexBindings: BindingDef = {
     initialState: {
         max: 0
     },
-    onAdd(binding: iBinding) {
+    onAdd(target:iCharacter, binding: iBinding, amount: number) : iEffect[] {
+        const events: iEffect[] = [];
         if (binding.value > binding.state["max"]) {
             binding.state["max"] = binding.value;
         }
+        return events;
     },
     onEscape(actor: iCharacter, target: iCharacter, binding: iBinding, amount: number): iEffect[] {
         const effects: iEffect[] = [];

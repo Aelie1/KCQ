@@ -1,6 +1,6 @@
-import type { iGameState, iCharacter, iEnemy, iEntity, MoveDef, iBinding, iBuff } from "./itypes";
+import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
 import { getMoves } from "./moves";
-import type { EntityId, MoveId, BindingId, BuffId } from "./types";
+import type { BindingId, BuffId, EntityId, MoveId } from "./types";
 
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {

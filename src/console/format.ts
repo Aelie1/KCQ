@@ -1,4 +1,4 @@
-import type { Buff, Effect, GameEvent, Intention, ModifierId } from "../engine/types";
+import type { Buff, Effect, Event, Intention, ModifierId } from "../engine/types";
 
 export function formatEffect(effect: Effect, includeTarget = false): string {
     const target = includeTarget ? `${effect.target} ` : "";
@@ -81,7 +81,7 @@ export function formatIntention(intention: Intention): string[] {
     return lines;
 }
 
-export function formatEvents(events: GameEvent[]): string[] {
+export function formatEvents(events: Event[]): string[] {
     return events.flatMap((event) => {
         switch (event.type) {
             case "moveUsed": {

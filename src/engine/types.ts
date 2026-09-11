@@ -267,7 +267,7 @@ export type ActionResult = ActionSuccess | ActionFailure;
 export interface ActionSuccess {
     success: true;
     state: GameState;
-    events: GameEvent[];
+    events: Event[];
 }
 
 export interface ActionFailure {
@@ -297,7 +297,7 @@ export type ActionFailureReason =
  * Events
  ********************************************************/
 
-export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent;
+export type Event = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent;
 
 export interface MoveEvent {
     type: "moveUsed";

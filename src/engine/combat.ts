@@ -1,150 +1,71 @@
 import { addBinding, removeBinding } from "./bindings";
 import { addBuff, removeBuff } from "./buffs";
 import { DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
+import { damageEnemy } from "./enemies";
 import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
-import { EnemyDef, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iIntentionTarget, iTargetInfo, MoveDef } from "./itypes";
-import { Random } from "./random";
-import { canMove, getModifier, isIncapacitated } from "./status";
-import { AccuracyProfile, AccuracyResult, DamageEvent, EnemyEvent, GameEvent, StanceId } from "./types";
+import { iCharacter, iEffect, iEntity, iEvents, iGameState, iTargetInfo, MoveDef } from "./itypes";
+import { canMove, getModifier } from "./status";
+import { AccuracyProfile, AccuracyResult, Event, StanceId } from "./types";
 
 
-export function loadEnemy(state: iGameState, enemy: EnemyDef): GameEvent[] {
-    const events: GameEvent[] = [];
-    const name = enemy.id + state.nextEntityId++;
-    state.enemies.push({
-        definition: enemy,
-        buffs: [],
-        id: name,
-        currHp: enemy.hp,
-        currDef: enemy.defense,
-        intention: null,
-        cooldowns: {}
-    });
-    events.push({ type: "enemySpawned", target: name });
-    return events;
-}
-
-export function updateIntention(state: iGameState, actor: iEnemy, rng: Random) {
-    const action = actor.definition.ai(state, actor, rng);
-    const targets = [ ...action.targets ];
-    const move = { ...action.move, roll: rng.accuracy() };
-    if (move.definition.targets === "all") {
-        if (move.definition.target === "enemy") {
-            targets.push(...state.enemies);
-        } else {
-            targets.push(...validTargets(state.characters));
-        }
-    }
-    const iTargets: iIntentionTarget[] = [];
-    for (const target of targets) {
-        iTargets.push({
-            target: target,
-            roll:rng.accuracy()
-        })
-    }
-    actor.intention = {
-        actor:action.actor,
-        move:move,
-        targets:iTargets 
-    };
-}
-
-export function evaluateIntention(intention: iIntention): iTargetInfo[] {
-    const targets: iTargetInfo[] = [];
-    for (const target of intention.targets) {
-        const accuracy = calculateAccuracy(intention.actor, target.target, intention.move.definition);
-        const info = evaluateResult(target.target, accuracy, target.roll);
-        targets.push(info);
-    }
-    return targets;
-}
-
-export function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, amount: number): GameEvent[] {
-    const events: GameEvent[] = [];
-    target.currHp -= amount;
-    const event: DamageEvent = {
-        type: "damage",
-        target: target.id,
-        amount: amount
-    };
-    events.push(event);
-    if (target.definition.onDamage) {
-        events.push(...processEffects(state, target.definition.onDamage(state, actor, target, amount)));
-    }
-    if (target.currHp <= 0) {
-        events.push(...defeatEnemy(state, target));
-    }
-    return events;
-}
-
-export function defeatEnemy(state: iGameState, target: iEnemy): GameEvent[] {
-    const events: GameEvent[] = [];
-    const event: EnemyEvent = {
-        type: "enemyDefeated",
-        target: target.id,
-    };
-    events.push(event);
-    if (target.definition.onDefeat) {
-        events.push(...processEffects(state, target.definition.onDefeat(state, target)));
-    }
-    state.enemies.splice(state.enemies.indexOf(target), 1);
-    return events;
-}
-
-export function setStance(target: iCharacter, stance: StanceId): GameEvent[] {
-    const events: GameEvent[] = [];
+export function setStance(target: iCharacter, stance: StanceId): iEvents {
+    const result = new iEvents();
     switch (stance) {
         case "standing":
             if (!target.standing) {
-                events.push({ type: "stanceChanged", actor: target.id, stance: stance });
+                result.events.push({ type: "stanceChanged", actor: target.id, stance: stance });
                 target.standing = true;
             }
             break;
         case "moving":
             if (target.standing && canMove(target)) {
-                events.push({ type: "stanceChanged", actor: target.id, stance: stance });
+                result.events.push({ type: "stanceChanged", actor: target.id, stance: stance });
                 target.standing = false;
             }
             break;
     }
-    return events;
+    return result;
 }
 
-export function processEffects(state: iGameState, effects: iEffect[]): GameEvent[] {
-    const events: GameEvent[] = [];
+export function processEffects(state: iGameState, effects: iEffect[]): Event[] {
+    const stack = new iEvents(effects);
 
-    for (const effect of effects) {
+    while (stack.effects.length > 0) {
+        const effect = stack.effects.pop();
+        if (effect === undefined) {
+            continue;
+        }
         if (!isValidEntity(state, effect.target)) {
             continue;
         }
         switch (effect.type) {
             case "binding":
                 if (effect.amount > 0) {
-                    events.push(...addBinding(effect.target, effect.binding, effect.amount))
+                    stack.stack(addBinding(effect.target, effect.binding, effect.amount))
                 } else {
-                    events.push(...removeBinding(effect.target, effect.binding, -effect.amount))
+                    stack.stack(removeBinding(effect.target, effect.binding, -effect.amount))
                 }
                 break;
             case "buff":
                 if (effect.added) {
-                    events.push(...addBuff(effect.source, effect.target, effect.buff))
+                    stack.stack(addBuff(effect.source, effect.target, effect.buff))
                 } else {
-                    events.push(...removeBuff(effect.target, effect.buff))
+                    stack.stack(removeBuff(effect.target, effect.buff))
                 }
                 break;
             case "damage":
-                events.push(...damageEnemy(state, effect.source, effect.target, effect.amount))
+                stack.stack(damageEnemy(state, effect.source, effect.target, effect.amount))
                 break;
         }
     }
 
-    return events;
+    return stack.events;
 }
 
 export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {
     const base = move.accuracy;
     if (!base) {
-        return {none:100};
+        return { none: 100 };
     }
 
     // Every accuracy-bearing move should have a Hit band.
@@ -315,33 +236,3 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
     return result;
 }
 
-export function validTargets(characters: iCharacter[]): iCharacter[] {
-    const validCharacters: iCharacter[] = [];
-    for (const character of characters) {
-        if (!isIncapacitated(character)) {
-            validCharacters.push(character);
-        }
-    }
-    return validCharacters;
-}
-
-export function pickTarget(characters: iCharacter[], rng: Random): iCharacter | undefined {
-    const validCharacters = validTargets(characters);
-
-    if (validCharacters.length === 0) {
-        return undefined;
-    }
-
-    const index = rng.int(0, validCharacters.length - 1);
-    return validCharacters[index];
-}
-
-export function tickCooldowns(enemies: iEnemy[]) {
-    for (const enemy of enemies) {
-        for (const move of Object.entries(enemy.cooldowns)) {
-            if (move[1] > 0) {
-                enemy.cooldowns[move[0]]--;
-            }
-        }
-    }
-}

@@ -1,5 +1,6 @@
+import { processEffects } from "./combat";
 import { Random } from "./random";
-import { AccuracyProfile, AccuracyResult, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect, Enemy, EntitySide, ModifierId, Move, MoveId, MoveType, Passive, StatusId, TargetCount, TargetInfo, Turn } from "./types";
+import { AccuracyProfile, AccuracyResult, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect, Enemy, Event, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -147,7 +148,7 @@ export interface BindingDef {
     id: string;
     status?: Partial<Record<BindingLevel, iStatus[]>>;
     initialState?: Record<string, number>;
-    onAdd?: (binding: iBinding) => void;
+    onAdd?: (target:iCharacter, binding: iBinding, amount: number) => iEffect[];
     onEscape?: (actor: iCharacter, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
 }
 
@@ -179,6 +180,39 @@ export interface StatusLevelDef {
     blocksMoving?: boolean;
     skipsTurn?: boolean;
     incapacitated?: boolean;
+}
+
+/*******************************************************
+ * Events
+ *******************************************************/
+
+export class iEvents {
+    events: Event[];
+    effects: iEffect[];
+
+    //only processEffects should pass in an array
+    //normal use should use an empty constructor
+    constructor(effects?: iEffect[])  {
+        this.events = [];
+        this.effects = effects ? [...effects].reverse() : [];
+    }
+
+    merge(other: iEvents) {
+        this.events.push(...other.events);
+        this.effects.push(...other.effects);
+    }
+
+    stack(other: iEvents) {
+        this.events.push(...other.events);
+
+        for (let i = other.effects.length - 1; i >= 0; i--) {
+            this.effects.push(other.effects[i]);
+        }
+    }
+
+    process(state: iGameState) {
+        this.events.push(...processEffects(state,this.effects));
+    }
 }
 
 /*******************************************************

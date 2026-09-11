@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../src/content/skunk/latex";
 import { latexMist, pounce, skunkette, throwOff } from "../src/content/skunk/skunkette";
-import { damageEnemy, processEffects } from "../src/engine/combat";
+import { processEffects } from "../src/engine/combat";
+import { damageEnemy } from "../src/engine/enemies";
 import { GameEngine } from "../src/engine/engine";
 import { findBuff } from "../src/engine/find";
 import type { iCharacter, iEnemy, iGameState } from "../src/engine/itypes";

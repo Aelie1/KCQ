@@ -1,5 +1,5 @@
 import { getIEntitySide } from "./helpers";
-import { iGameState, MoveDef, iEntity, iTargetInfo, iEffect, iCharacter, iMove } from "./itypes";
+import { iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo, MoveDef } from "./itypes";
 
 export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
     const successfulTargets = targets.filter(

@@ -1,12 +1,12 @@
 import { BINDING_MODIFIER, thresholds } from "./constants";
 import { findBinding } from "./find";
-import { BindingDef, iBinding, iCharacter, iEffect, iEntity, MoveDef } from "./itypes";
+import { BindingDef, iBinding, iCharacter, iEffect, iEvents } from "./itypes";
 import { Random } from "./random";
 import { getModifier } from "./status";
-import { BondageEvent, GameEvent } from "./types";
+import { BondageEvent } from "./types";
 
-export function addBinding(target: iCharacter, type: BindingDef, amount: number): GameEvent[] {
-    const events: GameEvent[] = [];
+export function addBinding(target: iCharacter, type: BindingDef, amount: number): iEvents {
+    const result = new iEvents();
     const event: BondageEvent = { type: "bondageChanged", target: target.id, binding: type.id, amount: 0 };
     let binding = findBinding(target, type.id);
     if (!binding) {
@@ -27,22 +27,24 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
     if (binding.value > thresholds.max) {
         binding.value = thresholds.max;
     }
-    if (type.onAdd) {
-        type.onAdd(binding);
-    }
 
     event.amount = binding.value - origLevel;
-    events.push(event);
-    return events;
+    result.events.push(event);
+
+    if (type.onAdd) {
+        result.effects.push(...type.onAdd(target, binding, event.amount));
+    }
+
+    return result;
 }
 
-export function removeBinding(target: iCharacter, type: BindingDef, amount: number): GameEvent[] {
-    const events: GameEvent[] = [];
+export function removeBinding(target: iCharacter, type: BindingDef, amount: number): iEvents {
+    const result = new iEvents();
     const event: BondageEvent = { type: "bondageChanged", target: target.id, binding: type.id, amount: 0 };
     let binding = findBinding(target, type.id);
     if (!binding) {
         //character doesnt have it, do nothing
-        return events;
+        return result;
     }
     let origLevel = binding.value;
     binding.value -= amount;
@@ -51,13 +53,13 @@ export function removeBinding(target: iCharacter, type: BindingDef, amount: numb
         event.type = "bondageRemoved";
     }
     event.amount = binding.value - origLevel;
-    events.push(event);
+    result.events.push(event);
     if (binding.value === 0) {
         //it's at 0, remove it entirely
         target.bindings.splice(target.bindings.indexOf(binding), 1);
     }
 
-    return events;
+    return result;
 }
 
 export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iBinding): iEffect[] {

@@ -1,12 +1,13 @@
 import { pickBinding } from "../../engine/bindings";
-import { calculateAccuracy, evaluateResult, pickTarget, validTargets } from "../../engine/combat";
+import { calculateAccuracy, evaluateResult } from "../../engine/combat";
+import { pickTarget, validTargets } from "../../engine/enemies";
 import { findBuff, findCharacter, findEnemy } from "../../engine/find";
 import { isCharacter } from "../../engine/helpers";
 import { EnemyAction, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, MoveDef, s } from "../../engine/itypes";
 import { resolveMove } from "../../engine/moves";
 import { effectivenessInt, Random } from "../../engine/random";
 import { helpless, immobilized, isIncapacitated, stunned } from "../../engine/status";
-import { EntityId, ModifierSet } from "../../engine/types";
+import { ModifierSet } from "../../engine/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const latexSpray: MoveDef = {
