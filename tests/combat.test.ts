@@ -1,24 +1,40 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { processEffects } from "../src/engine/combat";
-import { resolveMove } from "../src/engine/moves";
 import { GameEngine } from "../src/engine/engine";
-import { isEnemy } from "../src/engine/helpers";
-import type { iGameState } from "../src/engine/itypes";
-import type { PlayerAction } from "../src/engine/types";
+import type { ActionFailureReason, PlayerAction } from "../src/engine/types";
 import {
-    expectMoveRejection,
-    makeBindingDef,
-    makeCharacter,
-    makeCharacterDef,
-    makeEnemy,
-    makeEnemyDef,
-    makeMove,
-    makeWaitMove,
-} from "./helpers";
+    bindingState,
+    buffState,
+    execute,
+    makeBehavioralBinding,
+    makeBehavioralCharacter as makeCharacterDef,
+    makeBehavioralEnemy as makeEnemyDef,
+    makeBehavioralEngine,
+    makeBehavioralMove as makeMove,
+    makeEnemyWaitMove as makeWaitMove,
+} from "./behavioralHelpers";
 
 const AUTHORED_HIT_SEED = 3;
+
+function expectMoveRejection(
+    engine: GameEngine,
+    actor: string,
+    move: string,
+    target: string,
+    reason: ActionFailureReason,
+) {
+    expect(engine.getActions(actor).find((action) => action.move.id === move)).toMatchObject({
+        available: false,
+        reason,
+    });
+    expect(engine.executeAction({
+        type: "attack",
+        actor,
+        move,
+        targets: [target],
+    })).toEqual({ success: false, reason });
+}
 
 function setupAuthoredCombat(): GameEngine {
     const encounter = { id: "authored-skunkette", enemies: [skunkette] };
@@ -90,12 +106,12 @@ describe("move validation and player actions", () => {
     it("applies nonlethal damage without removing the enemy", () => {
         const damage = 7;
         const strike = makeMove("strike", "arms", {
-            resolve: (_state, actor, _move, targets) => {
-                const target = targets[0].target;
-                return isEnemy(target)
-                    ? [{ type: "damage", source: actor, target, amount: damage }]
-                    : [];
-            },
+            resolve: (state, actor) => [{
+                type: "damage",
+                source: actor,
+                target: state.enemies[0],
+                amount: damage,
+            }],
         });
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
@@ -136,12 +152,12 @@ describe("move validation and player actions", () => {
         const enemyHp = 5;
         const lethalDamage = enemyHp;
         const strike = makeMove("lethal-strike", "arms", {
-            resolve: (_state, actor, _move, targets) => {
-                const target = targets[0].target;
-                return isEnemy(target)
-                    ? [{ type: "damage", source: actor, target, amount: lethalDamage }]
-                    : [];
-            },
+            resolve: (state, actor) => [{
+                type: "damage",
+                source: actor,
+                target: state.enemies[0],
+                amount: lethalDamage,
+            }],
         });
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
@@ -240,97 +256,199 @@ describe("move validation and player actions", () => {
     });
 });
 
-describe("move resolution", () => {
-    it("filters misses and normalizes effects without mutating state", () => {
-        const actor = makeCharacter("hero");
-        const enemyDefinition = makeEnemyDef("foe", [makeWaitMove()]);
-        const missed = makeEnemy(enemyDefinition, "foe1");
-        const hit = makeEnemy(enemyDefinition, "foe2");
-        const state: iGameState = {
-            turn: { round: 1, step: 1, phase: "player" },
-            nextEntityId: 3,
-            characters: [actor],
-            enemies: [missed, hit],
-        };
-        let resolvedTargetIds: string[] = [];
+describe("move and effect resolution through GameEngine", () => {
+    it("filters missed targets and normalizes successful effects before applying them", () => {
         const move = makeMove("fractional-damage", "arms", {
-            targets: 2,
-            resolve: (_state, actor, _move, targets) => {
-                resolvedTargetIds = targets.map((target) => target.target.id);
-                return targets.flatMap((target) => isEnemy(target.target)
-                    ? [{ type: "damage" as const, source: actor, target: target.target, amount: 2.2 }]
-                    : []
-                );
-            },
+            targets: "all",
+            accuracy: { miss: 50, hit: 50 },
+            resolve: (state, actor, _move, targets) => targets.flatMap(({ target }) => {
+                const enemy = state.enemies.find((candidate) => candidate === target);
+                return enemy ? [{
+                    type: "damage" as const,
+                    source: actor,
+                    target: enemy,
+                    amount: 2.2,
+                }] : [];
+            }),
         });
+        const first = makeEnemyDef("first", [makeWaitMove()]);
+        const second = makeEnemyDef("second", [makeWaitMove()]);
+        const engine = makeBehavioralEngine([
+            makeCharacterDef("hero", [move]),
+        ], [first, second], 1);
 
-        const effects = resolveMove(state, { definition: move }, actor, [
-            { target: missed, result: "miss", effectiveness: 0 },
-            { target: hit, result: "hit", effectiveness: 0.9 },
-        ]);
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: move.id,
+            targets: [],
+        });
+        const moveEvent = result.events[0];
+        if (moveEvent.type !== "moveUsed") throw new Error("Expected moveUsed event");
+        const successfulIds = moveEvent.targets
+            .filter(({ result: band }) => band !== "miss")
+            .map(({ target }) => target);
+        const damageEvents = result.events.filter((event) => event.type === "damage");
 
-        expect(resolvedTargetIds).toEqual([hit.id]);
-        expect(effects).toEqual([{ type: "damage", source: actor, target: hit, amount: 3 }]);
-        expect(state.enemies.map((enemy) => enemy.currHp)).toEqual([
-            enemyDefinition.hp,
-            enemyDefinition.hp,
+        expect(moveEvent.targets.map(({ result: band }) => band)).toContain("miss");
+        expect(successfulIds.length).toBeGreaterThan(0);
+        expect(damageEvents).toEqual(successfulIds.map((target) => ({
+            type: "damage",
+            target,
+            amount: 3,
+        })));
+        expect(result.state.enemies.map(({ id, currHp }) => ({ id, currHp }))).toEqual([
+            { id: "first1", currHp: successfulIds.includes("first1") ? 34 : 37 },
+            { id: "second2", currHp: successfulIds.includes("second2") ? 34 : 37 },
         ]);
     });
 
-    it("propagates the damage source and preserves callback event ordering", () => {
-        const attacker = makeCharacter("hero");
-        const damageReaction = makeBindingDef("damage-reaction");
-        const defeatReaction = makeBindingDef("defeat-reaction");
-        const enemyDefinition = makeEnemyDef("reactive-foe", [makeWaitMove()]);
-        enemyDefinition.hp = 5;
+    it("resolves initial and generated effects depth-first exactly once", () => {
+        const finalBuff = { id: "chain-finished", active: false };
+        const chained = makeBehavioralBinding("chained", {
+            onAdd: (target) => [{
+                type: "buff",
+                source: target,
+                target,
+                buff: finalBuff,
+                added: true,
+            }],
+        });
+        const trigger = makeBehavioralBinding("trigger", {
+            onAdd: (target) => [{
+                type: "binding",
+                target,
+                binding: chained,
+                amount: 2,
+            }],
+        });
+        const sibling = makeBehavioralBinding("sibling");
+        const chain = makeMove("chain", "mouth", {
+            target: "none",
+            targets: 0,
+            resolve: (state) => [
+                {
+                    type: "binding",
+                    target: state.characters[0],
+                    binding: trigger,
+                    amount: 1,
+                },
+                {
+                    type: "binding",
+                    target: state.characters[0],
+                    binding: sibling,
+                    amount: 3,
+                },
+            ],
+        });
+        const engine = makeBehavioralEngine([
+            makeCharacterDef("hero", [chain]),
+        ]);
+
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: chain.id,
+            targets: [],
+        });
+
+        expect(result.events).toEqual([
+            { type: "moveUsed", actor: "hero", move: "chain", targets: [] },
+            { type: "bondageAdded", target: "hero", binding: "trigger", amount: 1 },
+            { type: "bondageAdded", target: "hero", binding: "chained", amount: 2 },
+            { type: "buffAdded", target: "hero", buff: "chain-finished" },
+            { type: "bondageAdded", target: "hero", binding: "sibling", amount: 3 },
+        ]);
+        expect(bindingState(engine, "trigger")?.value).toBe(1);
+        expect(bindingState(engine, "chained")?.value).toBe(2);
+        expect(bindingState(engine, "sibling")?.value).toBe(3);
+        expect(buffState(engine, "chain-finished")?.active).toBe(true);
+    });
+
+    it("propagates the damage source into onDamage and resolves its effects", () => {
+        const reaction = makeBehavioralBinding("damage-reaction");
+        const strike = makeMove("strike", "arms", {
+            resolve: (state, actor) => [{
+                type: "damage",
+                source: actor,
+                target: state.enemies[0],
+                amount: 4,
+            }],
+        });
+        const foe = makeEnemyDef("reactive", [makeWaitMove()]);
         let receivedSource: string | undefined;
-        enemyDefinition.onDamage = (_state, source) => {
+        foe.onDamage = (state, source) => {
             receivedSource = source.id;
             return [{
                 type: "binding",
-                target: attacker,
-                binding: damageReaction,
+                target: state.characters[0],
+                binding: reaction,
                 amount: 1,
             }];
         };
-        enemyDefinition.onDefeat = () => [{
+        const engine = makeBehavioralEngine([
+            makeCharacterDef("hero", [strike]),
+        ], [foe]);
+
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: strike.id,
+            targets: ["reactive1"],
+        });
+
+        expect(receivedSource).toBe("hero");
+        expect(result.events.slice(1)).toEqual([
+            { type: "damage", target: "reactive1", amount: 4 },
+            { type: "bondageAdded", target: "hero", binding: "damage-reaction", amount: 1 },
+        ]);
+        expect(bindingState(engine, reaction.id)?.value).toBe(1);
+    });
+
+    it("resolves onDamage before defeat and onDefeat after the defeat event", () => {
+        const damageReaction = makeBehavioralBinding("damage-reaction");
+        const defeatReaction = makeBehavioralBinding("defeat-reaction");
+        const strike = makeMove("lethal-strike", "arms", {
+            resolve: (state, actor) => [{
+                type: "damage",
+                source: actor,
+                target: state.enemies[0],
+                amount: 5,
+            }],
+        });
+        const foe = makeEnemyDef("reactive", [makeWaitMove()]);
+        foe.hp = 5;
+        foe.onDamage = (state) => [{
             type: "binding",
-            target: attacker,
+            target: state.characters[0],
+            binding: damageReaction,
+            amount: 1,
+        }];
+        foe.onDefeat = (state) => [{
+            type: "binding",
+            target: state.characters[0],
             binding: defeatReaction,
             amount: 1,
         }];
-        const enemy = makeEnemy(enemyDefinition);
-        const state: iGameState = {
-            turn: { round: 1, step: 1, phase: "player" },
-            nextEntityId: 2,
-            characters: [attacker],
-            enemies: [enemy],
-        };
+        const engine = makeBehavioralEngine([
+            makeCharacterDef("hero", [strike]),
+        ], [foe]);
 
-        const events = processEffects(state, [{
-            type: "damage",
-            source: attacker,
-            target: enemy,
-            amount: enemyDefinition.hp,
-        }]);
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: strike.id,
+            targets: ["reactive1"],
+        });
 
-        expect(receivedSource).toBe(attacker.id);
-        expect(events).toEqual([
-            { type: "damage", target: enemy.id, amount: enemyDefinition.hp },
-            {
-                type: "bondageAdded",
-                target: attacker.id,
-                binding: damageReaction.id,
-                amount: 1,
-            },
-            { type: "enemyDefeated", target: enemy.id },
-            {
-                type: "bondageAdded",
-                target: attacker.id,
-                binding: defeatReaction.id,
-                amount: 1,
-            },
+        expect(result.events.slice(1)).toEqual([
+            { type: "damage", target: "reactive1", amount: 5 },
+            { type: "bondageAdded", target: "hero", binding: "damage-reaction", amount: 1 },
+            { type: "enemyDefeated", target: "reactive1" },
+            { type: "bondageAdded", target: "hero", binding: "defeat-reaction", amount: 1 },
         ]);
-        expect(state.enemies).toEqual([]);
+        expect(result.state.enemies).toEqual([]);
+        expect(bindingState(engine, damageReaction.id)?.value).toBe(1);
+        expect(bindingState(engine, defeatReaction.id)?.value).toBe(1);
     });
 });

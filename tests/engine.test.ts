@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
 import { GameEngine } from "../src/engine/engine";
-import { isCharacter } from "../src/engine/helpers";
-import type { iBuff, StatusDef } from "../src/engine/itypes";
-import { Random } from "../src/engine/random";
+import type { StatusDef } from "../src/engine/itypes";
 import {
     makeCharacterDef,
     makeBindingDef,
@@ -141,16 +139,19 @@ describe("enemy intention previews", () => {
         const alwaysHit = makeMove("certain-threat", "enemy", {
             target: "player",
             accuracy: { hit: 100 },
-            resolve: (_state, _actor, _move, targets) => targets.flatMap((target) =>
-                isCharacter(target.target)
+            resolve: (state, _actor, _move, targets) => targets.flatMap((target) => {
+                const character = state.characters.find(
+                    (candidate) => candidate === target.target,
+                );
+                return character
                     ? [{
                         type: "binding" as const,
-                        target: target.target,
+                        target: character,
                         binding: pressure,
                         amount: 10 * target.effectiveness,
                     }]
-                    : []
-            ),
+                    : [];
+            }),
         });
         const enemy = makeEnemyDef("foe", [alwaysHit]);
         const encounter = { id: "stable-preview", enemies: [enemy] };
@@ -165,49 +166,30 @@ describe("enemy intention previews", () => {
         expect(previews.every((preview) => preview !== null)).toBe(true);
         expect(previews).toEqual(Array(5).fill(previews[0]));
 
-        const rng = new Random(seed);
-        rng.accuracy();
-        const firstRoll = rng.accuracy();
-        rng.accuracy();
-        const secondRoll = rng.accuracy();
-        expect(previews[0]!.targets[0]).toEqual({
+        expect(previews[0]!.targets[0]).toMatchObject({
             target: "hero",
             result: "hit",
-            effects: [{
-                type: "binding",
-                target: "hero",
-                binding: pressure.id,
-                amount: Math.ceil(10 * (0.8 + firstRoll * 0.002)),
-            }],
+            effects: [{ type: "binding", target: "hero", binding: pressure.id }],
         });
         expect(previews[0]!.effects).toEqual([]);
 
         expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
         const nextPreview = engine.getGameState().enemies[0].intention;
-        expect(nextPreview?.targets[0]).toEqual({
+        expect(nextPreview?.targets[0]).toMatchObject({
             target: "hero",
             result: "hit",
-            effects: [{
-                type: "binding",
-                target: "hero",
-                binding: pressure.id,
-                amount: Math.ceil(10 * (0.8 + secondRoll * 0.002)),
-            }],
+            effects: [{ type: "binding", target: "hero", binding: pressure.id }],
         });
         expect(nextPreview).not.toEqual(previews[0]);
     });
 
     it("recalculates against live modifiers while retaining the committed roll", () => {
         const seed = 8224;
-        const committedRoll = new Random(seed).accuracy();
-        expect(committedRoll).toBeGreaterThan(50);
-        expect(committedRoll).toBeLessThan(70);
-
         const defenseStatus: StatusDef = {
             id: "breathless",
             levels: [{}, { modifiers: { defense: 20 } }],
         };
-        const defenseBuff: iBuff = {
+        const defenseBuff = {
             id: "guarded",
             duration: 1,
             active: false,

@@ -9,7 +9,7 @@
         "start": "tsc && node dist/main.js",
         "test": "vitest run",
         "coverage": "vitest --coverage",
-        "typecheck": "tsc --noEmit",
+        "typecheck": "tsc -p tsconfig.build.json --noEmit",
         "typecheck:test": "tsc -p tsconfig.test.json"
     },
     "repository": {

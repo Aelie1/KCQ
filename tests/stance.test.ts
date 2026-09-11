@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
-import { isCharacter } from "../src/engine/helpers";
 import { immobilized, vibrating } from "../src/engine/status";
 import {
     makeBindingDef,
@@ -259,9 +258,11 @@ describe("stance toggling", () => {
         });
         const immobilize = makeMove("immobilize", "enemy", {
             target: "player",
-            resolve: (_state, _actor, _move, targets) => {
-                const target = targets[0].target;
-                return isCharacter(target)
+            resolve: (state, _actor, _move, targets) => {
+                const target = state.characters.find(
+                    (character) => character === targets[0].target,
+                );
+                return target
                     ? [{
                         type: "binding",
                         target,

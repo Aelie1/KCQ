@@ -1,266 +1,206 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../src/content/skunk/latex";
-import { addBinding, removeBinding } from "../src/engine/bindings";
-import { thresholds } from "../src/engine/constants";
-import { getBindingLevel } from "../src/engine/helpers";
-import { getModifier, getStatuses } from "../src/engine/status";
-import type { StatusDef } from "../src/engine/itypes";
+import type { BindingDef, MoveDef, StatusDef } from "../src/engine/itypes";
 import {
-    makeBinding,
-    makeBindingDef,
-    makeCharacter,
-} from "./helpers";
+    bindingState,
+    characterState,
+    execute,
+    makeBehavioralBinding,
+    makeBehavioralCharacter,
+    makeBehavioralEngine,
+    makeBehavioralMove,
+} from "./behavioralHelpers";
 
-describe("binding lifecycle", () => {
-    it("creates a binding with an isolated copy of its initial state", () => {
-        const definition = makeBindingDef("rope");
-        definition.initialState = { peak: 2 };
-        const target = makeCharacter();
+function bindingMove(
+    id: string,
+    binding: BindingDef,
+    amount: number,
+    targetIndex = 0,
+): MoveDef {
+    return makeBehavioralMove(id, "mouth", {
+        target: "player",
+        targets: 0,
+        alwaysAvailable: true,
+        freeOnHit: true,
+        resolve: (state) => [{
+            type: "binding",
+            target: state.characters[targetIndex],
+            binding,
+            amount,
+        }],
+    });
+}
 
-        expect(addBinding(target, definition, 12)).toEqual([{
-            type: "bondageAdded",
-            target: target.id,
-            binding: definition.id,
-            amount: 12,
-        }]);
-        expect(target.bindings[0]).toMatchObject({
-            id: definition.id,
-            definition,
-            value: 12,
-            state: { peak: 2 },
+function use(engine: ReturnType<typeof makeBehavioralEngine>, actor: string, move: string) {
+    return execute(engine, { type: "attack", actor, move, targets: [] });
+}
+
+describe("binding behavior through GameEngine", () => {
+    it("adds, accumulates, scales above Impossible, caps, and removes a binding", () => {
+        const rope = makeBehavioralBinding("rope");
+        const moves = [
+            bindingMove("add-75", rope, 75),
+            bindingMove("add-20", rope, 20),
+            bindingMove("add-1000", rope, 1_000),
+            bindingMove("remove-7", rope, -7),
+            bindingMove("remove-all", rope, -1_000),
+        ];
+        const engine = makeBehavioralEngine([makeBehavioralCharacter("hero", moves)]);
+
+        expect(use(engine, "hero", "add-75").events).toEqual([
+            { type: "moveUsed", actor: "hero", move: "add-75", targets: [] },
+            { type: "bondageAdded", target: "hero", binding: "rope", amount: 75 },
+        ]);
+
+        expect(use(engine, "hero", "add-20").events[1]).toEqual({
+            type: "bondageChanged",
+            target: "hero",
+            binding: "rope",
+            amount: 7,
+        });
+        expect(bindingState(engine, "rope")?.value).toBe(82);
+
+        expect(use(engine, "hero", "add-1000").events[1]).toEqual({
+            type: "bondageChanged",
+            target: "hero",
+            binding: "rope",
+            amount: 18,
+        });
+        expect(bindingState(engine, "rope")).toMatchObject({ value: 100, level: "impossible" });
+
+        expect(use(engine, "hero", "remove-7").events[1]).toEqual({
+            type: "bondageChanged",
+            target: "hero",
+            binding: "rope",
+            amount: -7,
+        });
+        expect(bindingState(engine, "rope")?.value).toBe(93);
+
+        expect(use(engine, "hero", "remove-all").events[1]).toEqual({
+            type: "bondageRemoved",
+            target: "hero",
+            binding: "rope",
+            amount: -93,
+        });
+        expect(characterState(engine).bindings).toEqual([]);
+    });
+
+    it("does nothing publicly when an effect removes a missing binding", () => {
+        const missing = makeBehavioralBinding("missing");
+        const remove = bindingMove("remove-missing", missing, -10);
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [remove]),
+        ]);
+
+        expect(use(engine, "hero", remove.id).events).toEqual([
+            { type: "moveUsed", actor: "hero", move: remove.id, targets: [] },
+        ]);
+        expect(characterState(engine).bindings).toEqual([]);
+    });
+
+    it("keeps callback-managed state isolated between public binding instances", () => {
+        const adaptive = makeBehavioralBinding("adaptive", {
+            initialState: { peak: 0 },
+            onAdd: (_target, binding) => {
+                binding.state.peak = Math.max(binding.state.peak, binding.value);
+                return [];
+            },
+        });
+        const firstMove = bindingMove("bind-first", adaptive, 30, 0);
+        const secondMove = bindingMove("bind-second", adaptive, 10, 1);
+        const hero = makeBehavioralCharacter("hero", [firstMove, secondMove]);
+        const engine = makeBehavioralEngine([
+            hero,
+            makeBehavioralCharacter("ally"),
+        ]);
+
+        use(engine, hero.id, firstMove.id);
+        use(engine, hero.id, secondMove.id);
+
+        expect(bindingState(engine, adaptive.id, "hero")?.state).toEqual({ peak: 30 });
+        expect(bindingState(engine, adaptive.id, "ally")?.state).toEqual({ peak: 10 });
+        expect(adaptive.initialState).toEqual({ peak: 0 });
+    });
+
+    it("preserves Latex's historical maximum after removal and reapplication", () => {
+        const add60 = bindingMove("latex-60", latexArms, 60);
+        const remove50 = bindingMove("latex-minus-50", latexArms, -50);
+        const add30 = bindingMove("latex-30", latexArms, 30);
+        const hero = makeBehavioralCharacter("hero", [add60, remove50, add30]);
+        const engine = makeBehavioralEngine([hero]);
+
+        use(engine, hero.id, add60.id);
+        expect(bindingState(engine, latexArms.id)).toMatchObject({
+            value: 60,
+            state: { max: 60 },
         });
 
-        target.bindings[0].state.peak = 99;
-        expect(definition.initialState.peak).toBe(2);
-    });
+        use(engine, hero.id, remove50.id);
+        expect(bindingState(engine, latexArms.id)?.value).toBe(10);
+        expect(bindingState(engine, latexArms.id)?.state).toEqual({ max: 60 });
 
-    it("accumulates repeated applications into the existing binding", () => {
-        const definition = makeBindingDef("rope");
-        const target = makeCharacter();
-        addBinding(target, definition, 10);
-
-        expect(addBinding(target, definition, 5)).toEqual([{
-            type: "bondageChanged",
-            target: target.id,
-            binding: definition.id,
-            amount: 5,
-        }]);
-        expect(target.bindings).toHaveLength(1);
-        expect(target.bindings[0].value).toBe(15);
-    });
-
-    it("scales only the portion of an application above 80", () => {
-        const definition = makeBindingDef("rope");
-        const target = makeCharacter();
-        addBinding(target, definition, thresholds.impossible - 5);
-
-        const events = addBinding(target, definition, 20);
-
-        const expectedIncrease = Math.ceil(5 + 15 * 0.1);
-        expect(events).toEqual([{
-            type: "bondageChanged",
-            target: target.id,
-            binding: definition.id,
-            amount: expectedIncrease,
-        }]);
-        expect(target.bindings[0].value).toBe(thresholds.impossible - 5 + expectedIncrease);
-    });
-
-    it("scales the whole application when already above 80", () => {
-        const definition = makeBindingDef("rope");
-        const target = makeCharacter();
-        addBinding(target, definition, thresholds.impossible + 1);
-
-        const events = addBinding(target, definition, 10);
-
-        expect(events).toEqual([{
-            type: "bondageChanged",
-            target: target.id,
-            binding: definition.id,
-            amount: Math.ceil(10 * 0.1),
-        }]);
-        expect(target.bindings[0].value).toBe(thresholds.impossible + 2);
-    });
-
-    it("caps binding value and reports only the applied amount", () => {
-        const definition = makeBindingDef("rope");
-        const target = makeCharacter();
-
-        const [event] = addBinding(target, definition, 1_000);
-
-        expect(target.bindings[0].value).toBe(thresholds.max);
-        expect(event).toMatchObject({ type: "bondageAdded", amount: thresholds.max });
-    });
-
-    it("keeps callback-managed state independent per binding instance", () => {
-        const definition = makeBindingDef("adaptive");
-        definition.initialState = { peak: 0 };
-        definition.onAdd = (binding) => {
-            binding.state.peak = Math.max(binding.state.peak, binding.value);
-        };
-        const first = makeCharacter("first");
-        const second = makeCharacter("second");
-
-        addBinding(first, definition, 30);
-        addBinding(second, definition, 10);
-        removeBinding(first, definition, 20);
-
-        expect(first.bindings[0].state).toEqual({ peak: 30 });
-        expect(second.bindings[0].state).toEqual({ peak: 10 });
-        expect(first.bindings[0].state).not.toBe(second.bindings[0].state);
-        expect(definition.initialState).toEqual({ peak: 0 });
-    });
-
-    it("preserves Latex's historical maximum after a smaller reapplication", () => {
-        const target = makeCharacter();
-
-        addBinding(target, latexArms, 60);
-        expect(target.bindings[0]).toMatchObject({ value: 60, state: { max: 60 } });
-
-        removeBinding(target, latexArms, 50);
-        expect(target.bindings[0]).toMatchObject({ value: 10, state: { max: 60 } });
-
-        addBinding(target, latexArms, 30);
-        expect(target.bindings[0]).toMatchObject({ value: 40, state: { max: 60 } });
-    });
-
-    it("partially removes a binding without deleting it", () => {
-        const definition = makeBindingDef("rope");
-        const target = makeCharacter("hero", [makeBinding(definition, 20)]);
-
-        expect(removeBinding(target, definition, 7)).toEqual([{
-            type: "bondageChanged",
-            target: target.id,
-            binding: definition.id,
-            amount: -7,
-        }]);
-        expect(target.bindings[0].value).toBe(13);
-    });
-
-    it("emits bondageRemoved and deletes the instance on exact zero", () => {
-        const definition = makeBindingDef("rope");
-        const value = 12;
-        const target = makeCharacter("hero", [makeBinding(definition, value)]);
-
-        expect(removeBinding(target, definition, value)).toEqual([{
-            type: "bondageRemoved",
-            target: target.id,
-            binding: definition.id,
-            amount: -value,
-        }]);
-        expect(target.bindings).toEqual([]);
-    });
-
-    it("clamps over-removal to zero and reports the actual change", () => {
-        const definition = makeBindingDef("rope");
-        const value = 12;
-        const target = makeCharacter("hero", [makeBinding(definition, value)]);
-
-        expect(removeBinding(target, definition, value + 100)).toEqual([{
-            type: "bondageRemoved",
-            target: target.id,
-            binding: definition.id,
-            amount: -value,
-        }]);
-        expect(target.bindings).toEqual([]);
-    });
-
-    it("leaves state unchanged when asked to remove a missing binding", () => {
-        const existing = makeBindingDef("existing");
-        const missing = makeBindingDef("missing");
-        const target = makeCharacter("hero", [makeBinding(existing, thresholds.easy)]);
-
-        expect(removeBinding(target, missing, 10)).toEqual([]);
-        expect(target.bindings).toEqual([makeBinding(existing, thresholds.easy)]);
+        use(engine, hero.id, add30.id);
+        expect(bindingState(engine, latexArms.id)?.value).toBe(40);
+        expect(bindingState(engine, latexArms.id)?.state).toEqual({ max: 60 });
     });
 });
 
-describe("binding levels and effective statuses", () => {
+describe("binding levels and effective statuses through GameEngine", () => {
     it.each([
-        [0, "none"],
-        [thresholds.easy - 1, "none"],
-        [thresholds.easy, "easy"],
-        [thresholds.medium - 1, "easy"],
-        [thresholds.medium, "medium"],
-        [thresholds.hard - 1, "medium"],
-        [thresholds.hard, "hard"],
-        [thresholds.extreme - 1, "hard"],
-        [thresholds.extreme, "extreme"],
-        [thresholds.impossible - 1, "extreme"],
-        [thresholds.impossible, "impossible"],
-        [thresholds.max, "impossible"],
-    ] as const)("maps binding value %s to %s", (value, level) => {
-        expect(getBindingLevel(makeBinding(makeBindingDef("rope"), value))).toBe(level);
+        [1, 1, "none"],
+        [10, 10, "easy"],
+        [20, 20, "medium"],
+        [30, 30, "hard"],
+        [50, 50, "extreme"],
+        [80, 80, "impossible"],
+        [1_000, 100, "impossible"],
+    ] as const)("serializes binding application %s as value %s at level %s", (amount, value, level) => {
+        const rope = makeBehavioralBinding("rope");
+        const apply = bindingMove("apply", rope, amount);
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [apply]),
+        ]);
+
+        use(engine, "hero", apply.id);
+        expect(bindingState(engine, rope.id)).toMatchObject({ value, level });
     });
 
-    it("keeps the strongest value when bindings grant the same status", () => {
-        const sharedStatus: StatusDef = {
-            id: "bound",
-            levels: [{}, {}, {}, {}, {}],
-        };
-        const otherStatus: StatusDef = {
-            id: "gagged",
-            levels: [{}, {}],
-        };
-        const weak = makeBindingDef("weak", {
-            easy: [{ definition: sharedStatus, value: 1 }],
-        });
-        const strong = makeBindingDef("strong", {
-            easy: [{ definition: sharedStatus, value: 3 }],
-        });
-        const other = makeBindingDef("other", {
-            easy: [{ definition: otherStatus, value: 1 }],
-        });
-        const target = makeCharacter("hero", [
-            makeBinding(weak, thresholds.easy),
-            makeBinding(strong, thresholds.easy),
-            makeBinding(other, thresholds.easy),
-        ]);
-
-        expect(getStatuses(target)).toEqual([
-            { definition: sharedStatus, value: 3 },
-            { definition: otherStatus, value: 1 },
-        ]);
-
-        const reversed = makeCharacter("reversed", [
-            makeBinding(strong, thresholds.easy),
-            makeBinding(weak, thresholds.easy),
-        ]);
-        expect(getStatuses(reversed)).toEqual([
-            { definition: sharedStatus, value: 3 },
-        ]);
-    });
-
-    it("sums modifiers from the effective status levels", () => {
-        const strongestPenalty = -5;
-        const bonus = 3;
-        const penaltyStatus: StatusDef = {
-            id: "bound",
+    it("publishes only the strongest duplicate status and applies its modifier", () => {
+        const blinded: StatusDef = {
+            id: "blinded",
             levels: [
                 {},
-                { modifiers: { defense: -1 } },
-                { modifiers: { defense: -3 } },
-                { modifiers: { defense: strongestPenalty } },
+                { modifiers: { hit: -1 } },
+                { modifiers: { hit: -4 } },
             ],
         };
-        const bonusStatus: StatusDef = {
-            id: "gagged",
-            levels: [{}, { modifiers: { defense: bonus } }],
-        };
-        const first = makeBindingDef("first", {
-            easy: [{ definition: penaltyStatus, value: 1 }],
+        const weak = makeBehavioralBinding("weak", {
+            status: { easy: [{ definition: blinded, value: 1 }] },
         });
-        const second = makeBindingDef("second", {
-            easy: [{ definition: penaltyStatus, value: 3 }],
+        const strong = makeBehavioralBinding("strong", {
+            status: { easy: [{ definition: blinded, value: 2 }] },
         });
-        const third = makeBindingDef("third", {
-            easy: [{ definition: bonusStatus, value: 1 }],
+        const applyBoth = makeBehavioralMove("apply-both", "mouth", {
+            target: "player",
+            targets: 0,
+            resolve: (state) => [
+                { type: "binding", target: state.characters[0], binding: weak, amount: 10 },
+                { type: "binding", target: state.characters[0], binding: strong, amount: 10 },
+            ],
         });
-        const target = makeCharacter("hero", [first, second, third].map((definition) =>
-            makeBinding(definition, thresholds.easy),
-        ));
+        const attack = makeBehavioralMove("accuracy-check", "mouth", {
+            accuracy: { miss: 20, hit: 80 },
+        });
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [applyBoth, attack]),
+        ]);
 
-        expect(getModifier(target, "defense")).toBe(strongestPenalty + bonus);
-        expect(getModifier(target, "willpower")).toBe(0);
+        use(engine, "hero", applyBoth.id);
+
+        expect(characterState(engine).status).toEqual([{ id: "blinded", value: 2 }]);
+        expect(engine.getAccuracyPreview("hero", "foe1", attack.id)).toEqual({
+            miss: 60,
+            hit: 40,
+        });
     });
 });

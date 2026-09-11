@@ -1,25 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { addBuff, removeBuff, tickBuffs } from "../src/engine/buffs";
-import { thresholds } from "../src/engine/constants";
-import type {
-    iBuff,
-    iCharacter,
-    iEnemy,
-    iGameState,
-    StatusDef,
-} from "../src/engine/itypes";
-import { serializeGameState } from "../src/engine/serialize";
-import { getModifier, getStatuses } from "../src/engine/status";
+import type { MoveDef, StatusDef } from "../src/engine/itypes";
 import {
-    makeBinding,
-    makeBindingDef,
-    makeCharacter,
-    makeEnemy,
-    makeEnemyDef,
-    makeWaitMove,
-} from "./helpers";
+    buffState,
+    characterState,
+    enemyState,
+    execute,
+    makeBehavioralCharacter,
+    makeBehavioralEnemy,
+    makeBehavioralEngine,
+    makeBehavioralMove,
+    makeEnemyWaitMove,
+} from "./behavioralHelpers";
 
-const modifierStatus: StatusDef = {
+const blinded: StatusDef = {
     id: "blinded",
     levels: [
         {},
@@ -28,193 +21,278 @@ const modifierStatus: StatusDef = {
     ],
 };
 
-function makeBuff(overrides: Partial<iBuff> = {}): iBuff {
-    return {
-        id: "test-buff",
-        duration: 2,
-        active: true,
-        statuses: [{ definition: modifierStatus, value: 1 }],
-        ...overrides,
-    };
+function addBuffMove(
+    id: string,
+    target: "hero" | "foe",
+    duration: number | undefined,
+    buffId = "test-buff",
+): MoveDef {
+    return makeBehavioralMove(id, "mouth", {
+        targets: 0,
+        target: "none",
+        alwaysAvailable: true,
+        freeOnHit: true,
+        resolve: (state, actor) => [{
+            type: "buff",
+            source: actor,
+            target: target === "hero" ? state.characters[0] : state.enemies[0],
+            buff: {
+                id: buffId,
+                duration,
+                active: false,
+                statuses: [{ definition: blinded, value: 1 }],
+            },
+            added: true,
+        }],
+    });
 }
 
-function makeTestEnemy(id = "foe1"): iEnemy {
-    return makeEnemy(makeEnemyDef("foe", [makeWaitMove()]), id);
-}
-
-function makeState(
-    characters: iCharacter[] = [],
-    enemies: iEnemy[] = [],
-): iGameState {
-    return {
-        turn: { round: 1, step: 1, phase: "player" },
-        nextEntityId: 1,
-        characters,
-        enemies,
-    };
-}
-
-describe("buff lifecycle", () => {
-    it("adds a player-created buff as active and emits buffAdded", () => {
-        const actor = makeCharacter("hero");
-        const target = makeTestEnemy();
-        const buff = makeBuff({ active: false });
-
-        expect(addBuff(actor, target, buff)).toEqual([{
-            type: "buffAdded",
-            target: target.id,
-            buff: buff.id,
-        }]);
-        expect(target.buffs).toHaveLength(1);
-        expect(target.buffs[0]).toMatchObject({ id: buff.id, active: true });
-        expect(target.buffs[0]).not.toBe(buff);
-    });
-
-    it("adds an enemy-created buff as inactive", () => {
-        const actor = makeTestEnemy();
-        const target = makeCharacter("hero");
-
-        expect(addBuff(actor, target, makeBuff())).toEqual([{
-            type: "buffAdded",
-            target: target.id,
-            buff: "test-buff",
-        }]);
-        expect(target.buffs[0].active).toBe(false);
-    });
-
-    it("ignores inactive statuses, then activates them without losing duration", () => {
-        const actor = makeTestEnemy();
-        const target = makeCharacter("hero");
-        addBuff(actor, target, makeBuff({ duration: 3 }));
-
-        expect(getStatuses(target)).toEqual([]);
-        expect(getModifier(target, "hit")).toBe(0);
-
-        expect(tickBuffs(makeState([target], [actor]))).toEqual([]);
-        expect(target.buffs[0]).toMatchObject({ active: true, duration: 3 });
-        expect(getStatuses(target)).toEqual([{
-            definition: modifierStatus,
-            value: 1,
-        }]);
-        expect(getModifier(target, "hit")).toBe(-2);
-    });
-
-    it("decrements active finite buffs and removes them at zero", () => {
-        const target = makeCharacter("hero");
-        target.buffs.push(makeBuff({ duration: 2 }));
-        const state = makeState([target]);
-
-        expect(tickBuffs(state)).toEqual([]);
-        expect(target.buffs[0].duration).toBe(1);
-
-        expect(tickBuffs(state)).toEqual([{
-            type: "buffRemoved",
-            target: target.id,
-            buff: "test-buff",
-        }]);
-        expect(target.buffs).toEqual([]);
-    });
-
-    it("leaves active infinite buffs indefinitely", () => {
-        const target = makeCharacter("hero");
-        const buff = makeBuff({ duration: undefined });
-        target.buffs.push(buff);
-
-        expect(tickBuffs(makeState([target]))).toEqual([]);
-        expect(target.buffs).toEqual([buff]);
-        expect(buff.duration).toBeUndefined();
-    });
-
-    it("activates an inactive infinite buff without removing it", () => {
-        const target = makeTestEnemy();
-        const buff = makeBuff({ duration: undefined, active: false });
-        target.buffs.push(buff);
-
-        expect(tickBuffs(makeState([], [target]))).toEqual([]);
-        expect(target.buffs).toEqual([buff]);
-        expect(buff).toMatchObject({ active: true });
-        expect(buff.duration).toBeUndefined();
-    });
-
-    it("allows duplicate ids and removes only the supplied object instance", () => {
-        const target = makeCharacter("hero");
-        const first = makeBuff({ duration: 1 });
-        const second = makeBuff({ duration: 4 });
-        target.buffs.push(first, second);
-
-        expect(target.buffs.map((buff) => buff.id)).toEqual([
-            "test-buff",
-            "test-buff",
+describe("buff behavior through GameEngine", () => {
+    it("adds a player-created buff as active and publishes its serialized data", () => {
+        const add = addBuffMove("add-buff", "foe", 2);
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [add]),
         ]);
-        expect(removeBuff(target, first)).toEqual([{
-            type: "buffRemoved",
-            target: target.id,
-            buff: first.id,
-        }]);
-        expect(target.buffs).toEqual([second]);
-        expect(removeBuff(target, { ...second })).toEqual([]);
-        expect(target.buffs).toEqual([second]);
-    });
 
-    it("safely removes multiple expiring buffs in one tick", () => {
-        const character = makeCharacter("hero");
-        const enemy = makeTestEnemy();
-        character.buffs.push(
-            makeBuff({ id: "first", duration: 1 }),
-            makeBuff({ id: "second", duration: 1 }),
-        );
-        enemy.buffs.push(makeBuff({ id: "third", duration: 1 }));
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: add.id,
+            targets: [],
+        });
 
-        expect(tickBuffs(makeState([character], [enemy]))).toEqual([
-            { type: "buffRemoved", target: character.id, buff: "first" },
-            { type: "buffRemoved", target: character.id, buff: "second" },
-            { type: "buffRemoved", target: enemy.id, buff: "third" },
+        expect(result.events).toEqual([
+            { type: "moveUsed", actor: "hero", move: add.id, targets: [] },
+            { type: "buffAdded", target: "foe1", buff: "test-buff" },
         ]);
-        expect(character.buffs).toEqual([]);
-        expect(enemy.buffs).toEqual([]);
+        expect(buffState(engine, "test-buff", "foe1")).toMatchObject({
+            id: "test-buff",
+            duration: 2,
+            active: true,
+            statuses: [{ id: "blinded", value: 1 }],
+        });
     });
 
-    it("preserves linkedEntity when serialized", () => {
-        const character = makeCharacter("hero");
-        character.buffs.push(makeBuff({ linkedEntity: "foe1" }));
+    it("keeps an enemy-created reaction inactive until the next player phase", () => {
+        const strike = makeBehavioralMove("provoke", "arms", {
+            targets: 1,
+            target: "enemy",
+            resolve: (state, actor) => [{
+                type: "damage",
+                source: actor,
+                target: state.enemies[0],
+                amount: 1,
+            }],
+        });
+        const foe = makeBehavioralEnemy("foe");
+        foe.onDamage = (state, _source, enemy) => [{
+            type: "buff",
+            source: enemy,
+            target: state.characters[0],
+            buff: {
+                id: "enemy-debuff",
+                duration: 3,
+                active: true,
+                statuses: [{ definition: blinded, value: 1 }],
+            },
+            added: true,
+        }];
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [strike]),
+        ], [foe]);
 
-        expect(serializeGameState(makeState([character])).characters[0].buffs[0])
-            .toMatchObject({ linkedEntity: "foe1" });
+        execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: strike.id,
+            targets: ["foe1"],
+        });
+        expect(buffState(engine, "enemy-debuff")).toMatchObject({
+            active: false,
+            duration: 3,
+        });
+        expect(characterState(engine).status).toEqual([]);
+
+        execute(engine, { type: "endTurn" });
+        expect(buffState(engine, "enemy-debuff")).toMatchObject({
+            active: true,
+            duration: 3,
+        });
+        expect(characterState(engine).status).toEqual([{ id: "blinded", value: 1 }]);
+    });
+
+    it("updates an existing buff with the same id and emits buffUpdated", () => {
+        const first = addBuffMove("first-version", "hero", 4, "replaceable");
+        const second = addBuffMove("second-version", "hero", 1, "replaceable");
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [first, second]),
+        ]);
+
+        execute(engine, { type: "attack", actor: "hero", move: first.id, targets: [] });
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: second.id,
+            targets: [],
+        });
+
+        expect(result.events[1]).toEqual({
+            type: "buffUpdated",
+            target: "hero",
+            buff: "replaceable",
+        });
+        expect(characterState(engine).buffs).toHaveLength(1);
+        expect(buffState(engine, "replaceable")?.duration).toBe(1);
+    });
+
+    it("decrements and expires a finite buff on successive round transitions", () => {
+        const add = addBuffMove("temporary", "hero", 2, "temporary");
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [add]),
+        ]);
+
+        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
+        const firstTurn = execute(engine, { type: "endTurn" });
+        expect(firstTurn.events).not.toContainEqual({
+            type: "buffRemoved",
+            target: "hero",
+            buff: "temporary",
+        });
+        expect(buffState(engine, "temporary")?.duration).toBe(1);
+
+        const secondTurn = execute(engine, { type: "endTurn" });
+        expect(secondTurn.events).toContainEqual({
+            type: "buffRemoved",
+            target: "hero",
+            buff: "temporary",
+        });
+        expect(buffState(engine, "temporary")).toBeUndefined();
+    });
+
+    it("leaves an infinite buff active across round transitions", () => {
+        const add = addBuffMove("permanent", "hero", undefined, "permanent");
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [add]),
+        ]);
+
+        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
+        execute(engine, { type: "endTurn" });
+        execute(engine, { type: "endTurn" });
+
+        expect(buffState(engine, "permanent")).toMatchObject({
+            id: "permanent",
+            active: true,
+        });
+        expect(buffState(engine, "permanent")?.duration).toBeUndefined();
+    });
+
+    it("removes every expiring buff once and in public entity order", () => {
+        const addAll = makeBehavioralMove("add-all", "mouth", {
+            targets: 0,
+            target: "none",
+            resolve: (state, actor) => [
+                {
+                    type: "buff",
+                    source: actor,
+                    target: state.characters[0],
+                    buff: { id: "first", active: false, duration: 1 },
+                    added: true,
+                },
+                {
+                    type: "buff",
+                    source: actor,
+                    target: state.characters[0],
+                    buff: { id: "second", active: false, duration: 1 },
+                    added: true,
+                },
+                {
+                    type: "buff",
+                    source: actor,
+                    target: state.enemies[0],
+                    buff: { id: "third", active: false, duration: 1 },
+                    added: true,
+                },
+            ],
+        });
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [addAll]),
+        ]);
+        execute(engine, { type: "attack", actor: "hero", move: addAll.id, targets: [] });
+
+        const turn = execute(engine, { type: "endTurn" });
+        expect(turn.events.filter((event) => event.type === "buffRemoved")).toEqual([
+            { type: "buffRemoved", target: "hero", buff: "first" },
+            { type: "buffRemoved", target: "hero", buff: "second" },
+            { type: "buffRemoved", target: "foe1", buff: "third" },
+        ]);
+        expect(characterState(engine).buffs).toEqual([]);
+        expect(enemyState(engine).buffs).toEqual([]);
+    });
+
+    it("removes a buff through an authored action and preserves linkedEntity publicly", () => {
+        const add = makeBehavioralMove("link", "mouth", {
+            targets: 0,
+            target: "none",
+            freeOnHit: true,
+            resolve: (state, actor) => [{
+                type: "buff",
+                source: actor,
+                target: state.characters[0],
+                buff: { id: "linked", active: false, linkedEntity: "foe1" },
+                added: true,
+            }],
+        });
+        const remove = makeBehavioralMove("unlink", "mouth", {
+            targets: 0,
+            target: "none",
+            resolve: (state, actor) => {
+                const buff = actor.buffs.find(({ id }) => id === "linked");
+                return buff ? [{
+                    type: "buff",
+                    source: actor,
+                    target: state.characters[0],
+                    buff,
+                    added: false,
+                }] : [];
+            },
+        });
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [add, remove]),
+        ]);
+
+        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
+        expect(buffState(engine, "linked")?.linkedEntity).toBe("foe1");
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: remove.id,
+            targets: [],
+        });
+        expect(result.events[1]).toEqual({
+            type: "buffRemoved",
+            target: "hero",
+            buff: "linked",
+        });
+        expect(buffState(engine, "linked")).toBeUndefined();
     });
 });
 
-describe("buff status integration", () => {
-    it("includes active buff statuses and modifiers for characters and enemies", () => {
-        const character = makeCharacter("hero");
-        const enemy = makeTestEnemy();
-        character.buffs.push(makeBuff());
-        enemy.buffs.push(makeBuff());
-
-        for (const entity of [character, enemy]) {
-            expect(getStatuses(entity)).toEqual([{
-                definition: modifierStatus,
-                value: 1,
-            }]);
-            expect(getModifier(entity, "hit")).toBe(-2);
-            expect(getModifier(entity, "defense")).toBe(-3);
-        }
-    });
-
-    it("uses the maximum value when a binding and buff provide the same status", () => {
-        const source = makeBindingDef("blindfold", {
-            easy: [{ definition: modifierStatus, value: 1 }],
+describe("buff status integration through GameEngine", () => {
+    it("publishes active statuses and applies modifiers to accuracy previews", () => {
+        const add = addBuffMove("blind-self", "hero", 3, "blindness");
+        const attack = makeBehavioralMove("accuracy-check", "mouth", {
+            accuracy: { miss: 20, hit: 80 },
         });
-        const character = makeCharacter("hero", [
-            makeBinding(source, thresholds.easy),
-        ]);
-        character.buffs.push(makeBuff({
-            statuses: [{ definition: modifierStatus, value: 2 }],
-        }));
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [add, attack]),
+        ], [makeBehavioralEnemy("foe", [makeEnemyWaitMove()])]);
 
-        expect(getStatuses(character)).toEqual([{
-            definition: modifierStatus,
-            value: 2,
-        }]);
-        expect(getModifier(character, "hit")).toBe(-4);
+        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
+
+        expect(characterState(engine).status).toEqual([{ id: "blinded", value: 1 }]);
+        expect(engine.getAccuracyPreview("hero", "foe1", attack.id)).toEqual({
+            miss: 40,
+            hit: 60,
+        });
     });
 });

@@ -1,6 +1,5 @@
 import { expect } from "vitest";
 import { GameEngine } from "../src/engine/engine";
-import { isCharacter } from "../src/engine/helpers";
 import type {
     BindingDef,
     CharacterDef,
@@ -131,12 +130,12 @@ export function setupBoundEngine(
 ) {
     const setupMove = makeMove("apply-binding", "mouth", {
         target: "player",
-        resolve: (_state, _actor, _move, targets) => {
-            const target = targets[0].target;
-            return isCharacter(target)
-                ? [{ type: "binding", target, binding, amount }]
-                : [];
-        },
+        resolve: (state) => [{
+            type: "binding",
+            target: state.characters[0],
+            binding,
+            amount,
+        }],
     });
     const armsMove = makeMove("arms-move", "arms");
     const mouthMove = makeMove("mouth-move", "mouth");
