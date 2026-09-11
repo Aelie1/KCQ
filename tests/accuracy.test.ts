@@ -166,7 +166,7 @@ describe("accuracy", () => {
         const enemyAttack = calculateAccuracy(
             enemyActor,
             characterTarget,
-            makeAccuracyMove(standardProfile, { type: "enemy" }),
+            makeAccuracyMove(standardProfile, { type: "none" }),
         );
 
         expect(characterAttack).toEqual({

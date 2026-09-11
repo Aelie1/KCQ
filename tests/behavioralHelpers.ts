@@ -41,7 +41,7 @@ export function makeBehavioralCharacter(
 }
 
 export function makeEnemyWaitMove(): MoveDef {
-    return makeBehavioralMove("wait", "enemy", {
+    return makeBehavioralMove("wait", "none", {
         target: "player",
         targets: 1,
     });

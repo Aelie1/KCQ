@@ -96,7 +96,7 @@ describe("turn phases and enemy intentions", () => {
 
 describe("enemy intention previews", () => {
     function setupPreviewEngine(seed = 8224) {
-        const enemyMove = makeMove("threat", "enemy", {
+        const enemyMove = makeMove("threat", "none", {
             target: "player",
             accuracy: { miss: 20, graze: 20, hit: 50, crit: 10 },
         });
@@ -136,7 +136,7 @@ describe("enemy intention previews", () => {
     it("does not consume RNG during serialization and commits a fresh roll next round", () => {
         const seed = 123456;
         const pressure = makeBindingDef("pressure");
-        const alwaysHit = makeMove("certain-threat", "enemy", {
+        const alwaysHit = makeMove("certain-threat", "none", {
             target: "player",
             accuracy: { hit: 100 },
             resolve: (state, _actor, _move, targets) => targets.flatMap((target) => {
@@ -192,20 +192,19 @@ describe("enemy intention previews", () => {
         const defenseBuff = {
             id: "guarded",
             duration: 1,
-            active: false,
+            active: true,
             statuses: [{ definition: defenseStatus, value: 1 }],
         };
         const guard = makeMove("guard", "mouth", {
             targets: 0,
             resolve: (_state, actor) => [{
                 type: "buff",
-                source: actor,
                 target: actor,
                 buff: defenseBuff,
-                added: true
+                operation: "add"
             }],
         });
-        const enemyMove = makeMove("swing", "enemy", {
+        const enemyMove = makeMove("swing", "none", {
             target: "player",
             accuracy: { miss: 50, hit: 50 },
         });

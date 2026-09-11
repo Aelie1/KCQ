@@ -167,11 +167,13 @@ describe("state serialization and combatant loading", () => {
             active: true,
             statuses: [{ id: status.id, value: 1 }],
             linkedEntity: "foe1",
+            modifiers: {},
         });
         expect(serialized.enemies[0].buffs[0]).toEqual({
             id: "focus",
             active: false,
             statuses: [{ id: status.id, value: 1 }],
+            modifiers: {},
         });
         expect(serialized.enemies[0].intention).toEqual({
             move: enemyMove.id,

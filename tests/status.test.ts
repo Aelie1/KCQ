@@ -113,8 +113,6 @@ describe("actor-level action restrictions", () => {
         expect(engine.getEscapes(hero.id)?.options).toContainEqual(
             expect.objectContaining({ target: hero.id, binding: source.id }),
         );
-        expect(engine.stanceAvailable(hero.id)).toEqual({ available: true });
-        expect(engine.executeAction({ type: "stance", actor: hero.id }).success).toBe(true);
         expect(engine.stanceAvailable(hero.id))
             .toEqual({ available: false, reason: "actorImmobilized" });
         expect(engine.executeAction({ type: "stance", actor: hero.id }))

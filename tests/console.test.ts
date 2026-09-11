@@ -70,7 +70,7 @@ describe("console formatting", () => {
         expect(formatIntention({
             move: "royalMist",
             targets: [{ target: "ko", result: "graze", effects: [] }],
-            effects: [{ type: "buff", source: "queen", target: "queen", buff: "puddle", added: true }],
+            effects: [{ type: "buff", target: "queen", buff: "puddle", operation: "add" }],
         })).toEqual([
             "  Intent: royalMist",
             "    ko           GRAZE ",

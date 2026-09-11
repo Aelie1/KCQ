@@ -304,14 +304,13 @@ describe("move and effect resolution through GameEngine", () => {
     });
 
     it("resolves initial and generated effects depth-first exactly once", () => {
-        const finalBuff = { id: "chain-finished", active: false };
+        const finalBuff = { id: "chain-finished", active: true };
         const chained = makeBehavioralBinding("chained", {
             onAdd: (target) => [{
                 type: "buff",
-                source: target,
                 target,
                 buff: finalBuff,
-                added: true,
+                operation: "add",
             }],
         });
         const trigger = makeBehavioralBinding("trigger", {

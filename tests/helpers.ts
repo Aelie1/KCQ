@@ -58,7 +58,7 @@ export function makeMove(
 }
 
 export function makeWaitMove(): MoveDef {
-    return makeMove("wait", "enemy", { target: "player" });
+    return makeMove("wait", "none", { target: "player" });
 }
 
 export function makeCharacterDef(id: string, moves: MoveDef[] = []): CharacterDef {

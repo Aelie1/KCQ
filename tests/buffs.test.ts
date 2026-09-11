@@ -32,23 +32,22 @@ function addBuffMove(
         target: "none",
         alwaysAvailable: true,
         freeOnHit: true,
-        resolve: (state, actor) => [{
+        resolve: (state) => [{
             type: "buff",
-            source: actor,
             target: target === "hero" ? state.characters[0] : state.enemies[0],
             buff: {
                 id: buffId,
                 duration,
-                active: false,
+                active: true,
                 statuses: [{ definition: blinded, value: 1 }],
             },
-            added: true,
+            operation: "add",
         }],
     });
 }
 
 describe("buff behavior through GameEngine", () => {
-    it("adds a player-created buff as active and publishes its serialized data", () => {
+    it("adds an authored active buff and publishes its serialized data", () => {
         const add = addBuffMove("add-buff", "foe", 2);
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("hero", [add]),
@@ -73,7 +72,7 @@ describe("buff behavior through GameEngine", () => {
         });
     });
 
-    it("keeps an enemy-created reaction inactive until the next player phase", () => {
+    it("keeps an authored pending reaction inactive until the next player phase", () => {
         const strike = makeBehavioralMove("provoke", "arms", {
             targets: 1,
             target: "enemy",
@@ -87,15 +86,14 @@ describe("buff behavior through GameEngine", () => {
         const foe = makeBehavioralEnemy("foe");
         foe.onDamage = (state, _source, enemy) => [{
             type: "buff",
-            source: enemy,
             target: state.characters[0],
             buff: {
                 id: "enemy-debuff",
                 duration: 3,
-                active: true,
+                active: false,
                 statuses: [{ definition: blinded, value: 1 }],
             },
-            added: true,
+            operation: "add",
         }];
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("hero", [strike]),
@@ -190,27 +188,24 @@ describe("buff behavior through GameEngine", () => {
         const addAll = makeBehavioralMove("add-all", "mouth", {
             targets: 0,
             target: "none",
-            resolve: (state, actor) => [
+            resolve: (state) => [
                 {
                     type: "buff",
-                    source: actor,
                     target: state.characters[0],
-                    buff: { id: "first", active: false, duration: 1 },
-                    added: true,
+                    buff: { id: "first", active: true, duration: 1 },
+                    operation: "add",
                 },
                 {
                     type: "buff",
-                    source: actor,
                     target: state.characters[0],
-                    buff: { id: "second", active: false, duration: 1 },
-                    added: true,
+                    buff: { id: "second", active: true, duration: 1 },
+                    operation: "add",
                 },
                 {
                     type: "buff",
-                    source: actor,
                     target: state.enemies[0],
-                    buff: { id: "third", active: false, duration: 1 },
-                    added: true,
+                    buff: { id: "third", active: true, duration: 1 },
+                    operation: "add",
                 },
             ],
         });
@@ -234,12 +229,11 @@ describe("buff behavior through GameEngine", () => {
             targets: 0,
             target: "none",
             freeOnHit: true,
-            resolve: (state, actor) => [{
+            resolve: (state) => [{
                 type: "buff",
-                source: actor,
                 target: state.characters[0],
-                buff: { id: "linked", active: false, linkedEntity: "foe1" },
-                added: true,
+                buff: { id: "linked", active: true, linkedEntity: "foe1" },
+                operation: "add",
             }],
         });
         const remove = makeBehavioralMove("unlink", "mouth", {
@@ -249,10 +243,9 @@ describe("buff behavior through GameEngine", () => {
                 const buff = actor.buffs.find(({ id }) => id === "linked");
                 return buff ? [{
                     type: "buff",
-                    source: actor,
                     target: state.characters[0],
                     buff,
-                    added: false,
+                    operation: "remove",
                 }] : [];
             },
         });
@@ -293,6 +286,74 @@ describe("buff status integration through GameEngine", () => {
         expect(engine.getAccuracyPreview("hero", "foe1", attack.id)).toEqual({
             miss: 40,
             hit: 60,
+        });
+    });
+
+    it("withholds pending statuses, modifiers, and added moves until activation", () => {
+        const granted = makeBehavioralMove("buff-granted", "arms");
+        const accuracyCheck = makeBehavioralMove("accuracy-check", "mouth", {
+            accuracy: { miss: 20, hit: 80 },
+        });
+        const addPending = makeBehavioralMove("add-pending", "mouth", {
+            target: "none",
+            targets: 0,
+            resolve: (state) => [{
+                type: "buff",
+                target: state.characters[0],
+                buff: {
+                    id: "pending-kit",
+                    active: false,
+                    duration: 1,
+                    statuses: [{ definition: blinded, value: 1 }],
+                    modifiers: { hit: -1 },
+                    addedMoves: [granted],
+                },
+                operation: "add",
+            }],
+        });
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [addPending, accuracyCheck]),
+        ]);
+
+        execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: addPending.id,
+            targets: [],
+        });
+        expect(buffState(engine, "pending-kit")?.active).toBe(false);
+        expect(characterState(engine).status).toEqual([]);
+        expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(false);
+        expect(engine.getAccuracyPreview("hero", "foe1", accuracyCheck.id)).toEqual({
+            miss: 20,
+            hit: 80,
+        });
+
+        execute(engine, { type: "endTurn" });
+        expect(buffState(engine, "pending-kit")).toMatchObject({
+            active: true,
+            duration: 1,
+        });
+        expect(characterState(engine).status).toEqual([{ id: "blinded", value: 1 }]);
+        expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(true);
+        expect(engine.getAccuracyPreview("hero", "foe1", accuracyCheck.id)).toEqual({
+            miss: 50,
+            hit: 50,
+        });
+
+        execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: granted.id,
+            targets: ["foe1"],
+        });
+        execute(engine, { type: "endTurn" });
+        expect(buffState(engine, "pending-kit")).toBeUndefined();
+        expect(characterState(engine).status).toEqual([]);
+        expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(false);
+        expect(engine.getAccuracyPreview("hero", "foe1", accuracyCheck.id)).toEqual({
+            miss: 20,
+            hit: 80,
         });
     });
 });

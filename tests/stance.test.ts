@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { skunkette } from "../src/content/skunk/skunkette";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { immobilized, vibrating } from "../src/engine/status";
@@ -12,6 +13,17 @@ import {
 } from "./helpers";
 
 describe("stance toggling", () => {
+    it("starts a mobile character in the moving stance", () => {
+        const engine = new GameEngine([], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
+
+        expect(engine.getGameState().characters[0]).toMatchObject({
+            id: "hero",
+            standing: false,
+            status: [],
+        });
+    });
+
     it("rejects invalid actor", () => {
         const strike = makeMove("strike");
         const hero = makeCharacterDef("hero", [strike]);
@@ -48,6 +60,7 @@ describe("stance toggling", () => {
                 characters: [{ id: hero.id, standing: true, acted: false }],
             },
         });
+        expect(engine.getGameState().characters[0].status).toEqual([]);
         expect(engine.executeAction({
             type: "attack",
             actor: hero.id,
@@ -86,11 +99,6 @@ describe("stance toggling", () => {
             immobilizingBinding,
             thresholds.easy,
         );
-        expect(engine.executeAction({
-            type: "stance",
-            actor: hero.id,
-        }).success).toBe(true);
-
         expect(engine.stanceAvailable(hero.id)).toEqual({
             available: false,
             reason: "actorImmobilized",
@@ -256,7 +264,7 @@ describe("stance toggling", () => {
         const immobilizingBinding = makeBindingDef("immobilizing-binding", {
             easy: [{ definition: immobilized, value: 1 }],
         });
-        const immobilize = makeMove("immobilize", "enemy", {
+        const immobilize = makeMove("immobilize", "none", {
             target: "player",
             resolve: (state, _actor, _move, targets) => {
                 const target = state.characters.find(
@@ -299,6 +307,71 @@ describe("stance toggling", () => {
             bonusEscapes: 0,
             status: [{ id: immobilized.id, value: 1 }],
         });
+    });
+
+    it("keeps Pounce pending during the enemy phase, then activates it before stance reset", () => {
+        let observedDuringEnemyPhase: { active: boolean | undefined; standing: boolean } | undefined;
+        const observe = makeMove("observe-pounce", "none", {
+            target: "player",
+            targets: 0,
+            resolve: (state) => {
+                const victim = state.characters[0];
+                observedDuringEnemyPhase ??= {
+                    active: victim.buffs.find(({ id }) => id === "pounce")?.active,
+                    standing: victim.standing,
+                };
+                return [];
+            },
+        });
+        const observer = makeEnemyDef("observer", [observe], (_state, actor) => ({
+            actor,
+            move: { definition: observe },
+            targets: [],
+        }));
+        const encounter = { id: "pounce-transition", enemies: [skunkette, observer] };
+        const engine = new GameEngine([encounter], 3);
+        engine.loadCharacter(makeCharacterDef("victim"));
+        engine.loadEncounter(encounter.id);
+
+        const result = engine.executeAction({ type: "endTurn" });
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected the round transition to succeed");
+
+        expect(observedDuringEnemyPhase).toEqual({ active: false, standing: false });
+        expect(result.events).toContainEqual({
+            type: "stanceChanged",
+            actor: "victim",
+            stance: "standing",
+        });
+        expect(engine.getGameState().characters[0]).toMatchObject({
+            standing: true,
+            buffs: [expect.objectContaining({ id: "pounce", active: true })],
+            status: expect.arrayContaining([{ id: "immobilized", value: 1 }]),
+        });
+    });
+
+    it("applies exactly -20 defense while standing through enemy accuracy resolution", () => {
+        const outcomes = [
+            { seed: 19, standingResult: "miss" },
+            { seed: 7211, standingResult: "hit" },
+        ] as const;
+
+        for (const { seed, standingResult } of outcomes) {
+            const attack = makeMove("accuracy-check", "none", {
+                target: "player",
+                accuracy: { miss: 50, hit: 50 },
+            });
+            const enemy = makeEnemyDef("attacker", [attack]);
+            const encounter = { id: "standing-defense", enemies: [enemy] };
+            const engine = new GameEngine([encounter], seed);
+            engine.loadCharacter(makeCharacterDef("hero"));
+            engine.loadEncounter(encounter.id);
+
+            expect(engine.getGameState().enemies[0].intention?.targets[0].result).toBe("miss");
+            expect(engine.executeAction({ type: "stance", actor: "hero" }).success).toBe(true);
+            expect(engine.getGameState().enemies[0].intention?.targets[0].result)
+                .toBe(standingResult);
+        }
     });
 
     it("cannot change stance after using the normal action", () => {
