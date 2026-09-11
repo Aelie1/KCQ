@@ -74,6 +74,7 @@ describe("accuracy", () => {
         const encounter: EncounterDef = {
             id: "accuracy-preview",
             enemies: [target.definition],
+            bindings: [],
             setup: (state) => {
                 state.characters[0].bindings = actor.bindings;
                 state.characters[0].buffs = actor.buffs;
@@ -291,7 +292,7 @@ describe("accuracy", () => {
             const move = makeAccuracyMove();
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            const encounter = { id: "accuracy", enemies: [foe] };
+            const encounter = { id: "accuracy", enemies: [foe], bindings: [] };
             const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
@@ -311,7 +312,7 @@ describe("accuracy", () => {
             const move = makeAccuracyMove();
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            const encounter = { id: "accuracy", enemies: [foe] };
+            const encounter = { id: "accuracy", enemies: [foe], bindings: [] };
             const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
@@ -359,6 +360,7 @@ describe("accuracy", () => {
         const encounter = {
             id: "multi-target-accuracy",
             enemies: [lowDefense, highDefense],
+            bindings: [],
         };
         const engine = new GameEngine([encounter], seed);
         engine.loadCharacter(hero);
@@ -424,7 +426,7 @@ describe("accuracy", () => {
         const run = (seed: number, id: string) => {
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef(id, [makeWaitMove()]);
-            const encounter = { id: `accuracy-${id}`, enemies: [foe] };
+            const encounter = { id: `accuracy-${id}`, enemies: [foe], bindings: [] };
             const engine = new GameEngine([encounter], seed);
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
@@ -458,7 +460,7 @@ describe("accuracy", () => {
         const targeted = makeAccuracyMove(standardProfile, { id: "targeted" });
         const build = () => {
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            const encounter = { id: "zero-target", enemies: [foe] };
+            const encounter = { id: "zero-target", enemies: [foe], bindings: [] };
             const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(makeCharacterDef("zero-actor", [zeroTarget]));
             engine.loadCharacter(makeCharacterDef("shooter", [targeted]));

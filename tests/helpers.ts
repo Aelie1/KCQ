@@ -121,6 +121,7 @@ export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnem
         definition,
         buffs: [],
         currHp: definition.hp,
+        maxHp: definition.hp,
         currDef: definition.defense,
         intention: null,
         cooldowns: {},
@@ -145,7 +146,7 @@ export function setupBoundEngine(
     const mouthMove = makeMove("mouth-move", "mouth");
     const hero = makeCharacterDef("hero", [setupMove, armsMove, mouthMove]);
     const foe = makeEnemyDef("foe", [makeWaitMove()]);
-    const encounter: EncounterDef = { id: "bound-test", enemies: [foe] };
+    const encounter: EncounterDef = { id: "bound-test", enemies: [foe], bindings: [] };
     const engine = new GameEngine([encounter, ...additionalEncounters], 1);
     engine.loadCharacter(hero);
     engine.loadEncounter(encounter.id);

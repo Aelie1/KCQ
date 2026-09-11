@@ -31,6 +31,7 @@ const state: GameState = {
     enemies: [{
         id: "skunkette1",
         currHp: 12,
+        maxHp: 20,
         currDef: 0,
         cooldowns: {},
         buffs: [],

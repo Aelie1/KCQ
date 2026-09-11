@@ -14,9 +14,11 @@ export const basicAttackingEnemy = makeEnemyDef("attacker", [basicAttack]);
 export const oneEnemyEncounter: EncounterDef = {
     id: "one-enemy",
     enemies: [waitEnemy],
+    bindings: [],
 };
 
 export const multiEnemyEncounter: EncounterDef = {
     id: "multi-enemy",
     enemies: [waitEnemy, basicAttackingEnemy],
+    bindings: [],
 };

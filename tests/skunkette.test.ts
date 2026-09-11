@@ -196,7 +196,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 amount: 80,
             })),
         });
-        const encounter = { id: "select-latex", enemies: [skunkette] };
+        const encounter = { id: "select-latex", enemies: [skunkette], bindings: [] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(makeBehavioralCharacter("hero", [prepare]));
         execute(engine, {
@@ -246,7 +246,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 })),
             ],
         });
-        const encounter = { id: "mist", enemies: [skunkette] };
+        const encounter = { id: "mist", enemies: [skunkette], bindings: [] };
         const engine = new GameEngine([encounter], 2);
         engine.loadCharacter(makeBehavioralCharacter("first", [prepare]));
         engine.loadCharacter(makeBehavioralCharacter("second"));

@@ -15,7 +15,7 @@ import {
 const AUTHORED_HIT_SEED = 3;
 
 function setupAuthoredCombat(): GameEngine {
-    const encounter = { id: "authored-skunkette", enemies: [skunkette] };
+    const encounter = { id: "authored-skunkette", enemies: [skunkette], bindings: [] };
     const engine = new GameEngine([encounter], AUTHORED_HIT_SEED);
     engine.loadCharacter(ko);
     engine.loadEncounter(encounter.id);
@@ -70,7 +70,7 @@ describe("turn phases and enemy intentions", () => {
         const move = makeMove("move");
         const hero = makeCharacterDef("hero", [move]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "turn-phases", enemies: [foe] };
+        const encounter = { id: "turn-phases", enemies: [foe], bindings: [] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);
@@ -120,7 +120,7 @@ describe("turn phases and enemy intentions", () => {
             }],
         });
         const foe = makeEnemyDef("foe", [threat]);
-        const encounter = { id: "cancel-intention", enemies: [foe] };
+        const encounter = { id: "cancel-intention", enemies: [foe], bindings: [] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(makeCharacterDef("hero", [stunEnemy]));
         engine.loadEncounter(encounter.id);
@@ -162,7 +162,11 @@ describe("turn phases and enemy intentions", () => {
                 }] : [];
             },
         });
-        const encounter = { id: "missing-intention-target", enemies: [watcher, doomed, survivor] };
+        const encounter = {
+            id: "missing-intention-target",
+            enemies: [watcher, doomed, survivor],
+            bindings: [],
+        };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(makeCharacterDef("hero", [strike]));
         engine.loadEncounter(encounter.id);
@@ -198,7 +202,7 @@ describe("enemy intention previews", () => {
             accuracy: { miss: 20, graze: 20, hit: 50, crit: 10 },
         });
         const enemy = makeEnemyDef("foe", [enemyMove]);
-        const encounter = { id: "preview", enemies: [enemy] };
+        const encounter = { id: "preview", enemies: [enemy], bindings: [] };
         const engine = new GameEngine([encounter], seed);
         engine.loadCharacter(makeCharacterDef("hero"));
         engine.loadEncounter(encounter.id);
@@ -251,7 +255,7 @@ describe("enemy intention previews", () => {
             }),
         });
         const enemy = makeEnemyDef("foe", [alwaysHit]);
-        const encounter = { id: "stable-preview", enemies: [enemy] };
+        const encounter = { id: "stable-preview", enemies: [enemy], bindings: [] };
         const engine = new GameEngine([encounter], seed);
         engine.loadCharacter(makeCharacterDef("hero"));
         engine.loadEncounter(encounter.id);
@@ -307,7 +311,7 @@ describe("enemy intention previews", () => {
             accuracy: { miss: 50, hit: 50 },
         });
         const enemy = makeEnemyDef("foe", [enemyMove]);
-        const encounter = { id: "live-preview", enemies: [enemy] };
+        const encounter = { id: "live-preview", enemies: [enemy], bindings: [] };
         const engine = new GameEngine([encounter], seed);
         engine.loadCharacter(makeCharacterDef("hero", [guard]));
         engine.loadEncounter(encounter.id);

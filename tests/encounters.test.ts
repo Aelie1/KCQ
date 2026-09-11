@@ -6,6 +6,7 @@ import { GameEngine } from "../src/engine/engine";
 import type { EncounterDef } from "../src/engine/itypes";
 import { makeCharacterDef, makeEnemyDef, makeWaitMove } from "./helpers";
 import {
+    basicAttackingEnemy,
     multiEnemyEncounter,
     oneEnemyEncounter,
     waitEnemy,
@@ -34,6 +35,7 @@ describe("encounters", () => {
             type: "encounter",
             id: plains_1.id,
             success: false,
+            bindings: [],
         }]);
         expect(engine.getGameState().enemies).toEqual([]);
     });
@@ -47,12 +49,13 @@ describe("encounters", () => {
             type: "encounter",
             id: "missing-encounter",
             success: false,
+            bindings: [],
         }]);
         expect(engine.getGameState()).toEqual(before);
 
         expect(engine.loadEncounter(oneEnemyEncounter.id)).toEqual([
             { type: "enemySpawned", target: `${waitEnemy.id}1` },
-            { type: "encounter", id: oneEnemyEncounter.id, success: true },
+            { type: "encounter", id: oneEnemyEncounter.id, success: true, bindings: [] },
         ]);
     });
 
@@ -97,11 +100,19 @@ describe("encounters", () => {
         expect(events).toEqual([
             { type: "enemySpawned", target: "foe1" },
             { type: "enemySpawned", target: "attacker2" },
-            { type: "encounter", id: multiEnemyEncounter.id, success: true },
+            { type: "encounter", id: multiEnemyEncounter.id, success: true, bindings: [] },
         ]);
         expect(engine.getGameState().enemies).toEqual([
-            expect.objectContaining({ id: "foe1", intention: expect.any(Object) }),
-            expect.objectContaining({ id: "attacker2", intention: expect.any(Object) }),
+            expect.objectContaining({
+                id: "foe1",
+                maxHp: waitEnemy.hp,
+                intention: expect.any(Object),
+            }),
+            expect.objectContaining({
+                id: "attacker2",
+                maxHp: basicAttackingEnemy.hp,
+                intention: expect.any(Object),
+            }),
         ]);
     });
 
@@ -121,6 +132,7 @@ describe("encounters", () => {
         const encounter: EncounterDef = {
             id: "test-setup",
             enemies: [enemy],
+            bindings: [],
             setup: (state) => {
                 calls.push("setup");
                 enemiesVisibleToSetup = state.enemies.map((loaded) => loaded.id);
@@ -132,7 +144,7 @@ describe("encounters", () => {
 
         expect(engine.loadEncounter(encounter.id)).toEqual([
             { type: "enemySpawned", target: `${enemy.id}1` },
-            { type: "encounter", id: encounter.id, success: true },
+            { type: "encounter", id: encounter.id, success: true, bindings: [] },
         ]);
         expect(calls).toEqual(["setup", "ai"]);
         expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
@@ -154,6 +166,7 @@ describe("encounters", () => {
             type: "encounter",
             id: plains_1.id,
             success: true,
+            bindings: plains_1.bindings.map(({ id }) => id),
         });
         expect(events.filter((event) => event.type === "enemySpawned"))
             .toHaveLength(plains_1.enemies.length);

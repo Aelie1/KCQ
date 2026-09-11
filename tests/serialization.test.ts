@@ -36,7 +36,7 @@ describe("state serialization and combatant loading", () => {
         expect(events).toEqual([
             { type: "enemySpawned", target: "foe1" },
             { type: "enemySpawned", target: "attacker2" },
-            { type: "encounter", id: multiEnemyEncounter.id, success: true },
+            { type: "encounter", id: multiEnemyEncounter.id, success: true, bindings: [] },
         ]);
         expect(engine.getGameState()).toMatchObject({
             turn: { round: 1, step: 1, phase: "player" },
@@ -77,7 +77,7 @@ describe("state serialization and combatant loading", () => {
         });
         const hero = makeCharacterDef("hero", [prepare]);
         const enemy = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "serialization", enemies: [enemy] };
+        const encounter = { id: "serialization", enemies: [enemy], bindings: [] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);
