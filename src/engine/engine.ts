@@ -66,7 +66,7 @@ export class GameEngine {
             return result.events;
         }
         for (const enemy of encounter.enemies) {
-            result.merge(loadEnemy(this.state, enemy));
+            result.fromEvents(this.state, loadEnemy(this.state, enemy));
         }
         if (encounter.setup) {
             encounter.setup(this.state);
@@ -242,9 +242,9 @@ export class GameEngine {
             };
         }
         if (action.type === "endTurn") {
-            result.merge(this.advancePhase());
-            result.merge(this.executeEnemyPhase());
-            result.merge(this.advancePhase());
+            result.fromEvents(this.state, this.advancePhase());
+            result.fromEvents(this.state, this.executeEnemyPhase());
+            result.fromEvents(this.state, this.advancePhase());
 
             return {
                 success: true,
@@ -360,8 +360,7 @@ export class GameEngine {
 
                 //Now we have a valid actor, targets and move -- execute the move
                 result.events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })
-                result.effects.push(...resolveMove(this.state, iMove, actor, targets));
-                result.process(this.state);
+                result.fromEffects(this.state, resolveMove(this.state, iMove, actor, targets));
 
                 if (move.freeOnHit !== true || anyHits === false) {
                     actor.acted = true;
@@ -399,8 +398,7 @@ export class GameEngine {
                 }
 
                 //now we have a valid actor, target, and binding -- execute the escape
-                result.effects.push(...resolveEscape(actor, target, binding));
-                result.process(this.state);
+                result.fromEffects(this.state,resolveEscape(actor, target, binding));
                 if (!actor.acted) {
                     actor.acted = true;
                     if (actor.standing && canBonusEscape(actor)) {
@@ -417,7 +415,7 @@ export class GameEngine {
                 };
             }
             case "stance": {
-                result.merge(setStance(actor, actor.standing ? "moving" : "standing"));
+                result.fromEvents(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
                 return {
                     success: true,
                     events: result.events,
@@ -452,8 +450,7 @@ export class GameEngine {
             move: move.definition.id,
             targets: targets.map(x => ({ target: x.target.id, result: x.result }))
         });
-        result.effects.push(...resolveMove(this.state, move, actor, targets));
-        result.process(this.state);
+        result.fromEffects(this.state,resolveMove(this.state, move, actor, targets));
         this.state.turn.step++;
         return result;
     }
@@ -462,7 +459,7 @@ export class GameEngine {
         const result = new iEvents();
         for (const enemy of this.state.enemies) {
             if (enemy.intention) {
-                result.merge(this.executeEnemyAction(enemy.intention));
+                result.fromEvents(this.state,this.executeEnemyAction(enemy.intention));
                 const move = enemy.intention.move.definition;
                 if (move.cooldown !== undefined) {
                     enemy.cooldowns[move.id] = move.cooldown;
@@ -470,7 +467,6 @@ export class GameEngine {
             }
             enemy.intention = null;
         }
-        result.process(this.state);
         return result;
     }
 
@@ -483,18 +479,17 @@ export class GameEngine {
             for (const actor of this.state.characters) {
                 actor.acted = false;
                 if (canMove(actor)) {
-                    result.merge(setStance(actor, "moving"));
+                    result.fromEvents(this.state,setStance(actor, "moving"));
                 }
                 actor.bonusEscapes = 0;
             }
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
-            result.merge(tickBuffs(this.state));
+            result.fromEvents(this.state,tickBuffs(this.state));
             tickCooldowns(this.state.enemies);
             this.updateIntentions();
         }
-        result.process(this.state);
         result.events.push({ type: "phaseChanged", phase: this.state.turn.phase });
 
         return result;

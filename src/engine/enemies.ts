@@ -69,11 +69,13 @@ export function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, a
     };
     result.events.push(event);
     if (target.definition.onDamage) {
-        result.effects.push(...target.definition.onDamage(state, actor, target, amount));
+        result.fromEffects(state,target.definition.onDamage(state, actor, target, amount));
     }
+
+
     if (target.currHp <= 0) {
-        result.merge(defeatEnemy(state, target));
-    }
+        result.fromEvents(state, defeatEnemy(state, target));
+    }    
     return result;
 }
 

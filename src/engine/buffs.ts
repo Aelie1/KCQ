@@ -1,6 +1,6 @@
 import { findBuff } from "./find";
 import { isEnemy } from "./helpers";
-import { iBuff, iEntity, iGameState } from "./itypes";
+import { iBuff, iEffect, iEntity, iGameState } from "./itypes";
 import { iEvents } from "./effects";
 
 export function addBuff(actor: iEntity, target: iEntity, buff: iBuff): iEvents {
@@ -31,7 +31,7 @@ export function removeBuff(target: iEntity, buff: iBuff): iEvents {
 
 export function tickBuffs(state: iGameState): iEvents {
     const result = new iEvents();
-
+    const effects: iEffect[] = [];
     for (const entity of [...state.characters, ...state.enemies]) {
         for (const buff of [...entity.buffs]) {
             if (!buff.active) {
@@ -43,7 +43,7 @@ export function tickBuffs(state: iGameState): iEvents {
             }
             buff.duration--;
             if (buff.duration === 0) {
-                result.effects.push({
+                effects.push({
                     type: "buff",
                     buff: buff,
                     source: entity,
@@ -53,6 +53,6 @@ export function tickBuffs(state: iGameState): iEvents {
             }
         }
     }
-    result.process(state);
+    result.fromEffects(state, effects);
     return result;
 }

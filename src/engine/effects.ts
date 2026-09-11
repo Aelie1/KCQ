@@ -9,19 +9,23 @@ export class iEvents {
     events: Event[];
     effects: iEffect[];
 
-    //only processEffects should pass in an array
-    //normal use should use an empty constructor
     constructor() {
         this.events = [];
         this.effects = [];
     }
 
-    merge(other: iEvents) {
+    fromEvents(state: iGameState, other: iEvents) {
         this.events.push(...other.events);
         this.effects.push(...other.effects);
+        this.resolve(state);
     }
 
-    stack(other: iEvents) {
+    fromEffects(state: iGameState, other: iEffect[]) {
+        this.effects.push(...other);
+        this.resolve(state);
+    }
+
+    private stack(other: iEvents) {
         this.events.push(...other.events);
 
         for (let i = other.effects.length - 1; i >= 0; i--) {
@@ -29,9 +33,7 @@ export class iEvents {
         }
     }
 
-
-    
-    process(state: iGameState) {
+    private resolve(state: iGameState) {
         this.effects.reverse();
     
         while (this.effects.length > 0) {
