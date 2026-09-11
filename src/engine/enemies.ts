@@ -1,13 +1,13 @@
 import { calculateAccuracy, evaluateResult } from "./combat";
 import { isEnemy } from "./helpers";
 import { EnemyDef, iCharacter, iEnemy, iEntity, iGameState, iIntention, iIntentionTarget, iTargetInfo } from "./itypes";
-import { iEvents } from "./effects";
+import { GameEffects } from "./effects";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";
 import { DamageEvent, EnemyEvent } from "./types";
 
-export function loadEnemy(state: iGameState, enemy: EnemyDef): iEvents {
-    const result = new iEvents();
+export function loadEnemy(state: iGameState, enemy: EnemyDef): GameEffects {
+    const result = new GameEffects();
     const name = enemy.id + state.nextEntityId++;
     state.enemies.push({
         definition: enemy,
@@ -18,7 +18,10 @@ export function loadEnemy(state: iGameState, enemy: EnemyDef): iEvents {
         intention: null,
         cooldowns: {}
     });
-    result.events.push({ type: "enemySpawned", target: name });
+    result.addEvent({ 
+        type: "enemySpawned", 
+        target: name 
+    });
     return result;
 }
 
@@ -59,15 +62,15 @@ export function evaluateIntention(intention: iIntention): iTargetInfo[] {
     return targets;
 }
 
-export function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, amount: number): iEvents {
-    const result = new iEvents();
+export function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, amount: number): GameEffects {
+    const result = new GameEffects();
     target.currHp -= amount;
     const event: DamageEvent = {
         type: "damage",
         target: target.id,
         amount: amount
     };
-    result.events.push(event);
+    result.addEvent(event);
     if (target.definition.onDamage) {
         result.fromEffects(state,target.definition.onDamage(state, actor, target, amount));
     }
@@ -79,15 +82,15 @@ export function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, a
     return result;
 }
 
-export function defeatEnemy(state: iGameState, target: iEnemy): iEvents {
-    const result = new iEvents();
+export function defeatEnemy(state: iGameState, target: iEnemy): GameEffects {
+    const result = new GameEffects();
     const event: EnemyEvent = {
         type: "enemyDefeated",
         target: target.id,
     };
-    result.events.push(event);
+    result.addEvent(event);
     if (target.definition.onDefeat) {
-        result.effects.push(...target.definition.onDefeat(state, target));
+        result.fromEffects(state, target.definition.onDefeat(state, target));
     }
     state.enemies.splice(state.enemies.indexOf(target), 1);
     return result;

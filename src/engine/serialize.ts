@@ -91,7 +91,7 @@ function serializeBinding(binding: iBinding): Binding {
     const { definition, ..._binding } = binding;
     return {
         ..._binding,
-        state: { ...binding.state },
+        data: { ...binding.data },
         level: getBindingLevel(binding),
     };
 }

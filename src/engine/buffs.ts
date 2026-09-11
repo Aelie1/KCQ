@@ -1,36 +1,48 @@
 import { findBuff } from "./find";
 import { isEnemy } from "./helpers";
 import { iBuff, iEffect, iEntity, iGameState } from "./itypes";
-import { iEvents } from "./effects";
+import { GameEffects } from "./effects";
 
-export function addBuff(actor: iEntity, target: iEntity, buff: iBuff): iEvents {
-    const result = new iEvents();
+export function addBuff(actor: iEntity, target: iEntity, buff: iBuff): GameEffects {
+    const result = new GameEffects();
     const oldBuff = findBuff(target, buff.id);
     const newBuff = { ...buff };
     newBuff.active = !isEnemy(actor);
     if (oldBuff) {
         const index = target.buffs.indexOf(oldBuff);
         target.buffs[index] = newBuff;
-        result.events.push({ type: "buffUpdated", target: target.id, buff: newBuff.id });
+        result.addEvent({ 
+            type: "buffUpdated", 
+            target: target.id, 
+            buff: newBuff.id 
+        });
     } else {
         target.buffs.push(newBuff);
-        result.events.push({ type: "buffAdded", target: target.id, buff: newBuff.id });
+        result.addEvent({ 
+            type: "buffAdded", 
+            target: target.id, 
+            buff: newBuff.id 
+        });
     }
     return result;
 }
 
-export function removeBuff(target: iEntity, buff: iBuff): iEvents {
-    const result = new iEvents();
+export function removeBuff(target: iEntity, buff: iBuff): GameEffects {
+    const result = new GameEffects();
     const index = target.buffs.indexOf(buff);
     if (index >= 0) {
         target.buffs.splice(index, 1);
-        result.events.push({ type: "buffRemoved", target: target.id, buff: buff.id });
+        result.addEvent({ 
+            type: "buffRemoved", 
+            target: target.id, 
+            buff: buff.id 
+        });
     }
     return result;
 }
 
-export function tickBuffs(state: iGameState): iEvents {
-    const result = new iEvents();
+export function tickBuffs(state: iGameState): GameEffects {
+    const result = new GameEffects();
     const effects: iEffect[] = [];
     for (const entity of [...state.characters, ...state.enemies]) {
         for (const buff of [...entity.buffs]) {

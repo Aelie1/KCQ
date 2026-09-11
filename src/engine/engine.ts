@@ -1,15 +1,15 @@
 import { resolveEscape } from "./bindings";
 import { tickBuffs } from "./buffs";
 import { calculateAccuracy, evaluateResult, setStance } from "./combat";
+import { GameEffects } from "./effects";
 import { evaluateIntention, loadEnemy, tickCooldowns, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
 import { type CharacterDef, type EncounterDef, type iCharacter, type iEntity, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
-import { iEvents } from "./effects";
 import { getMoves, isValidMove, resolveMove } from "./moves";
 import { Random } from "./random";
 import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canMove, canUseMoveType, isIncapacitated, isSkipped } from "./status";
-import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, Event, GameState, MoveId, PlayerAction, StanceInfo } from "./types";
+import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -58,12 +58,16 @@ export class GameEngine {
         });
     }
 
-    loadEncounter(id: EncounterId): Event[] {
-        const result = new iEvents();
+    loadEncounter(id: EncounterId): GameEvent[] {
+        const result = new GameEffects();
         const encounter = this.encounters.find(x => x.id === id);
         if (!encounter) {
-            result.events.push({ type: "encounter", id: id, success: false });
-            return result.events;
+            result.addEvent({ 
+                type: "encounter", 
+                id: id, 
+                success: false 
+            });
+            return result.getEvents();
         }
         for (const enemy of encounter.enemies) {
             result.fromEvents(this.state, loadEnemy(this.state, enemy));
@@ -72,8 +76,12 @@ export class GameEngine {
             encounter.setup(this.state);
         }
         this.updateIntentions();
-        result.events.push({ type: "encounter", id: id, success: true });
-        return result.events;
+        result.addEvent({ 
+            type: "encounter", 
+            id: id, 
+            success: true 
+        });
+        return result.getEvents();
     }
 
     getAvailability(): AvailabilityInfo[] {
@@ -234,7 +242,7 @@ export class GameEngine {
     }
 
     executeAction(action: PlayerAction): ActionResult {
-        const result = new iEvents();
+        const result = new GameEffects();
         if (this.state.turn.phase !== "player") {
             return {
                 success: false,
@@ -248,7 +256,7 @@ export class GameEngine {
 
             return {
                 success: true,
-                events: result.events,
+                events: result.getEvents(),
                 state: this.getGameState(),
             };
         }
@@ -359,7 +367,12 @@ export class GameEngine {
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move
-                result.events.push({ type: "moveUsed", actor: action.actor, move: action.move, targets: targets.map(x => ({ target: x.target.id, result: x.result })) })
+                result.addEvent({ 
+                    type: "moveUsed", 
+                    actor: action.actor, 
+                    move: action.move, 
+                    targets: targets.map(x => ({ target: x.target.id, result: x.result })) 
+                })
                 result.fromEffects(this.state, resolveMove(this.state, iMove, actor, targets));
 
                 if (move.freeOnHit !== true || anyHits === false) {
@@ -368,7 +381,7 @@ export class GameEngine {
                 this.state.turn.step++;
                 return {
                     success: true,
-                    events: result.events,
+                    events: result.getEvents(),
                     state: this.getGameState(),
                 };
             }
@@ -410,7 +423,7 @@ export class GameEngine {
                 this.state.turn.step++;
                 return {
                     success: true,
-                    events: result.events,
+                    events: result.getEvents(),
                     state: this.getGameState(),
                 };
             }
@@ -418,15 +431,15 @@ export class GameEngine {
                 result.fromEvents(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
                 return {
                     success: true,
-                    events: result.events,
+                    events: result.getEvents(),
                     state: this.getGameState(),
                 };
             }
         }
     }
 
-    private executeEnemyAction(intention: iIntention): iEvents {
-        const result = new iEvents();
+    private executeEnemyAction(intention: iIntention): GameEffects {
+        const result = new GameEffects();
         const actor = intention.actor;
         const move = intention.move;
         if (!actor) {
@@ -444,7 +457,7 @@ export class GameEngine {
         const targets: iTargetInfo[] = evaluateIntention(intention);
 
         //Now we have a valid actor, targets and move -- execute the move
-        result.events.push({
+        result.addEvent({
             type: "moveUsed",
             actor: actor.id,
             move: move.definition.id,
@@ -455,8 +468,8 @@ export class GameEngine {
         return result;
     }
 
-    private executeEnemyPhase(): iEvents {
-        const result = new iEvents();
+    private executeEnemyPhase(): GameEffects {
+        const result = new GameEffects();
         for (const enemy of this.state.enemies) {
             if (enemy.intention) {
                 result.fromEvents(this.state,this.executeEnemyAction(enemy.intention));
@@ -470,8 +483,8 @@ export class GameEngine {
         return result;
     }
 
-    private advancePhase(): iEvents {
-        const result = new iEvents();
+    private advancePhase(): GameEffects {
+        const result = new GameEffects();
 
         if (this.state.turn.phase === "player") {
             this.state.turn.phase = "enemy";
@@ -490,7 +503,10 @@ export class GameEngine {
             tickCooldowns(this.state.enemies);
             this.updateIntentions();
         }
-        result.events.push({ type: "phaseChanged", phase: this.state.turn.phase });
+        result.addEvent({
+            type: "phaseChanged", 
+            phase: this.state.turn.phase 
+        });
 
         return result;
     }

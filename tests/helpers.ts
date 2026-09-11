@@ -38,7 +38,7 @@ export function makeBindingDef(
     id: string,
     entries: Partial<Record<BindingLevel, iStatus[]>> = {},
 ): BindingDef {
-    return { id, status: statusMap(entries), initialState: {} };
+    return { id, status: statusMap(entries), data: {} };
 }
 
 export function makeMove(
@@ -86,7 +86,7 @@ export function makeBinding(definition: BindingDef, value: number): iBinding {
         id: definition.id,
         definition,
         value,
-        state: { ...definition.initialState },
+        data: { ...definition.data },
     };
 }
 

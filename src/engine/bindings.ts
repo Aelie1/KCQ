@@ -1,18 +1,28 @@
 import { BINDING_MODIFIER, thresholds } from "./constants";
 import { findBinding } from "./find";
-import { BindingDef, iBinding, iCharacter, iEffect } from "./itypes";
-import { iEvents } from "./effects";
+import { BindingDef, iBinding, iCharacter, iEffect, iGameState } from "./itypes";
+import { GameEffects } from "./effects";
 import { Random } from "./random";
 import { getModifier } from "./status";
 import { BondageEvent } from "./types";
 
-export function addBinding(target: iCharacter, type: BindingDef, amount: number): iEvents {
-    const result = new iEvents();
-    const event: BondageEvent = { type: "bondageChanged", target: target.id, binding: type.id, amount: 0 };
+export function addBinding(state: iGameState, target: iCharacter, type: BindingDef, amount: number): GameEffects {
+    const result = new GameEffects();
+    const event: BondageEvent = { 
+        type: "bondageChanged", 
+        target: target.id, 
+        binding: type.id, 
+        amount: 0 
+    };
     let binding = findBinding(target, type.id);
     if (!binding) {
         //character doesnt have it, let's add it
-        binding = { definition: type, id: type.id, value: 0, state: { ...type.initialState } };
+        binding = { 
+            definition: type, 
+            id: type.id, 
+            value: 0, 
+            data: { ...type.data } 
+        };
         target.bindings.push(binding);
         event.type = "bondageAdded";
     }
@@ -30,17 +40,17 @@ export function addBinding(target: iCharacter, type: BindingDef, amount: number)
     }
 
     event.amount = binding.value - origLevel;
-    result.events.push(event);
+    result.addEvent(event);
 
     if (type.onAdd) {
-        result.effects.push(...type.onAdd(target, binding, event.amount));
+        result.fromEffects(state,type.onAdd(target, binding, event.amount));
     }
 
     return result;
 }
 
-export function removeBinding(target: iCharacter, type: BindingDef, amount: number): iEvents {
-    const result = new iEvents();
+export function removeBinding(state: iGameState, target: iCharacter, type: BindingDef, amount: number): GameEffects {
+    const result = new GameEffects();
     const event: BondageEvent = { type: "bondageChanged", target: target.id, binding: type.id, amount: 0 };
     let binding = findBinding(target, type.id);
     if (!binding) {
@@ -54,7 +64,7 @@ export function removeBinding(target: iCharacter, type: BindingDef, amount: numb
         event.type = "bondageRemoved";
     }
     event.amount = binding.value - origLevel;
-    result.events.push(event);
+    result.addEvent(event);
     if (binding.value === 0) {
         //it's at 0, remove it entirely
         target.bindings.splice(target.bindings.indexOf(binding), 1);

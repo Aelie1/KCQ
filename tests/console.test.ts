@@ -24,7 +24,7 @@ const state: GameState = {
         acted: false,
         standing: true,
         bonusEscapes: 0,
-        bindings: [{ id: "latexArms", value: 55, level: "extreme", state: {} }],
+        bindings: [{ id: "latexArms", value: 55, level: "extreme", data: {} }],
         buffs: [],
         status: [{ id: "bound", value: 3 }],
     }],

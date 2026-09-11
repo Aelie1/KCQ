@@ -1,23 +1,31 @@
 import { DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
-import { iEvents } from "./effects";
+import { GameEffects } from "./effects";
 import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
 import { iCharacter, iEntity, iTargetInfo, MoveDef } from "./itypes";
 import { canMove, getModifier } from "./status";
 import { AccuracyProfile, AccuracyResult, StanceId } from "./types";
 
 
-export function setStance(target: iCharacter, stance: StanceId): iEvents {
-    const result = new iEvents();
+export function setStance(target: iCharacter, stance: StanceId): GameEffects {
+    const result = new GameEffects();
     switch (stance) {
         case "standing":
             if (!target.standing) {
-                result.events.push({ type: "stanceChanged", actor: target.id, stance: stance });
+                result.addEvent({ 
+                    type: "stanceChanged", 
+                    actor: target.id, 
+                    stance: stance 
+                });
                 target.standing = true;
             }
             break;
         case "moving":
             if (target.standing && canMove(target)) {
-                result.events.push({ type: "stanceChanged", actor: target.id, stance: stance });
+                result.addEvent({ 
+                    type: "stanceChanged", 
+                    actor: target.id, 
+                    stance: stance 
+                });
                 target.standing = false;
             }
             break;

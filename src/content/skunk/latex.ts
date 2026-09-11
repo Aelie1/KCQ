@@ -5,13 +5,13 @@ import { bound, breathless, gagged, getModifier, hobbled, submissive, vibrating 
 export const latexBindings: BindingDef = {
     id: "latexBindings",
     status: {},
-    initialState: {
+    data: {
         max: 0
     },
     onAdd(target:iCharacter, binding: iBinding, amount: number) : iEffect[] {
         const events: iEffect[] = [];
-        if (binding.value > binding.state["max"]) {
-            binding.state["max"] = binding.value;
+        if (binding.value > binding.data["max"]) {
+            binding.data["max"] = binding.value;
         }
         return events;
     },

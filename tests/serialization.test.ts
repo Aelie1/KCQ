@@ -102,7 +102,7 @@ describe("state serialization and combatant loading", () => {
                 statuses: [],
             });
             snapshot.characters[0].bindings[0].value = 999;
-            snapshot.characters[0].bindings[0].state.clientOnly = 999;
+            snapshot.characters[0].bindings[0].data.clientOnly = 999;
             snapshot.characters[0].status[0].value = 999;
             snapshot.enemies[0].currHp = 0;
             const intention = snapshot.enemies[0].intention;

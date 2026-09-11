@@ -146,7 +146,7 @@ export interface iBinding extends Omit<Binding, "level"> {
 export interface BindingDef {
     id: string;
     status?: Partial<Record<BindingLevel, iStatus[]>>;
-    initialState?: Record<string, number>;
+    data?: Record<string, number>;
     onAdd?: (target:iCharacter, binding: iBinding, amount: number) => iEffect[];
     onEscape?: (actor: iCharacter, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
 }

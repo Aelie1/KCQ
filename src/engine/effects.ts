@@ -3,18 +3,26 @@ import { addBuff, removeBuff } from "./buffs";
 import { damageEnemy } from "./enemies";
 import { isValidEntity } from "./helpers";
 import { iEffect, iGameState } from "./itypes";
-import { Event } from "./types";
+import { GameEvent } from "./types";
 
-export class iEvents {
-    events: Event[];
-    effects: iEffect[];
+export class GameEffects {
+    private events: GameEvent[];
+    private effects: iEffect[];
 
     constructor() {
         this.events = [];
         this.effects = [];
     }
 
-    fromEvents(state: iGameState, other: iEvents) {
+    getEvents() : GameEvent[] {
+        return [...this.events];
+    }
+
+    addEvent(event: GameEvent) {
+        this.events.push(event);
+    }
+
+    fromEvents(state: iGameState, other: GameEffects) {
         this.events.push(...other.events);
         this.effects.push(...other.effects);
         this.resolve(state);
@@ -25,7 +33,7 @@ export class iEvents {
         this.resolve(state);
     }
 
-    private stack(other: iEvents) {
+    private stack(other: GameEffects) {
         this.events.push(...other.events);
 
         for (let i = other.effects.length - 1; i >= 0; i--) {
@@ -47,9 +55,9 @@ export class iEvents {
             switch (effect.type) {
                 case "binding":
                     if (effect.amount > 0) {
-                        this.stack(addBinding(effect.target, effect.binding, effect.amount))
+                        this.stack(addBinding(state, effect.target, effect.binding, effect.amount))
                     } else {
-                        this.stack(removeBinding(effect.target, effect.binding, -effect.amount))
+                        this.stack(removeBinding(state, effect.target, effect.binding, -effect.amount))
                     }
                     break;
                 case "buff":

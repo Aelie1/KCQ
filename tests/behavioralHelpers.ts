@@ -71,7 +71,7 @@ export function makeBehavioralBinding(
     id: string,
     overrides: Partial<BindingDef> = {},
 ): BindingDef {
-    return { id, initialState: {}, ...overrides };
+    return { id, data: {}, ...overrides };
 }
 
 export function makeBehavioralEngine(

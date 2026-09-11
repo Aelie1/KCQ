@@ -147,7 +147,7 @@ export interface Binding {
     id: BindingId;
     value: number;
     level: BindingLevel;
-    state: Record<string, number>;
+    data: Record<string, number>;
 }
 
 export type BindingId = string;
@@ -267,7 +267,7 @@ export type ActionResult = ActionSuccess | ActionFailure;
 export interface ActionSuccess {
     success: true;
     state: GameState;
-    events: Event[];
+    events: GameEvent[];
 }
 
 export interface ActionFailure {
@@ -297,7 +297,7 @@ export type ActionFailureReason =
  * Events
  ********************************************************/
 
-export type Event = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent;
+export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
