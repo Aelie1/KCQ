@@ -1,4 +1,4 @@
-import { calculateAccuracy, evaluateResult, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns } from "./combat";
+import { calculateAccuracy, evaluateResult, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
 import { GameEffects } from "./effects";
 import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
@@ -487,19 +487,13 @@ export class GameEngine {
         if (this.state.turn.phase === "player") {
             this.state.turn.phase = "enemy";
         } else {
-            for (const actor of this.state.characters) {
-                actor.acted = false;
-                if (canMove(actor)) {
-                    result.fromResult(this.state,setStance(actor, "moving"));
-                }
-                actor.bonusEscapes = 0;
-            }
+            tickCooldowns(this.state.enemies);
+            result.fromResult(this.state,tickBuffs(this.state));
+            result.fromResult(this.state,tickPlayers(this.state));
+            this.updateIntentions();
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
-            result.fromResult(this.state,tickBuffs(this.state));
-            tickCooldowns(this.state.enemies);
-            this.updateIntentions();
         }
         result.addEvent({
             type: "phaseChanged", 

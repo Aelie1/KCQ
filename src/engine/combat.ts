@@ -11,20 +11,20 @@ export function setStance(target: iCharacter, stance: StanceId): GameEffects {
     switch (stance) {
         case "standing":
             if (!target.standing) {
-                result.addEvent({ 
-                    type: "stanceChanged", 
-                    actor: target.id, 
-                    stance: stance 
+                result.addEvent({
+                    type: "stanceChanged",
+                    actor: target.id,
+                    stance: stance
                 });
                 target.standing = true;
             }
             break;
         case "moving":
             if (target.standing && canMove(target)) {
-                result.addEvent({ 
-                    type: "stanceChanged", 
-                    actor: target.id, 
-                    stance: stance 
+                result.addEvent({
+                    type: "stanceChanged",
+                    actor: target.id,
+                    stance: stance
                 });
                 target.standing = false;
             }
@@ -236,12 +236,26 @@ export function tickBuffs(state: iGameState): GameEffects {
 
 export function tickCooldowns(enemies: iEnemy[]) {
     for (const enemy of enemies) {
-        for (const [moveId,cooldown] of Object.entries(enemy.cooldowns)) {
+        for (const [moveId, cooldown] of Object.entries(enemy.cooldowns)) {
             if (cooldown > 0) {
                 enemy.cooldowns[moveId]--;
             }
         }
     }
+}
+
+export function tickPlayers(state: iGameState): GameEffects {
+    const result = new GameEffects();
+    for (const actor of state.characters) {
+        actor.acted = false;
+        if (canMove(actor)) {
+            result.fromResult(state, setStance(actor, "moving"));
+        } else {
+            result.fromResult(state, setStance(actor, "standing"));
+        }
+        actor.bonusEscapes = 0;
+    }
+    return result;
 }
 
 export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iBinding): iEffect[] {
