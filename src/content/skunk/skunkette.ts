@@ -15,7 +15,7 @@ const latexSpray: MoveDef = {
         }
         const effects: iEffect[] = []
         const target = targets[0];
-        if (move.binding === undefined) {
+        if (!move.binding) {
             return effects;
         }
         if (isCharacter(target.target)) {
@@ -127,7 +127,7 @@ const pounce: MoveDef = {
             effects.push(...createPounceBuffs(target, actor, 4, false));
         }
 
-        if (effectiveness >= 1.75 && move.binding !== undefined && move.roll !== undefined) {
+        if (effectiveness >= 1.75 && move.binding && move.roll !== undefined) {
             const spray: iMove = {
                 definition: latexSpray,
                 binding: move.binding
@@ -178,7 +178,7 @@ const latexMist: MoveDef = {
         //2) Individual players get additional bondage based on their roll
         for (const target of targets) {
             const character = target.target;
-            if (target.result === "hit" && isCharacter(character) && character.bindings.length > 0) {
+            if (target.band === "hit" && isCharacter(character) && character.bindings.length > 0) {
                 const index = effectivenessInt(target.effectiveness, 0, character.bindings.length - 1)
                 const binding = character.bindings[index];
                 effects.push({
@@ -188,7 +188,7 @@ const latexMist: MoveDef = {
                     amount: (this.baseDamage ?? 1) * target.effectiveness
                 });
             }
-            else if (target.result === "crit" && isCharacter(character) && character.bindings.length > 0) {
+            else if (target.band === "crit" && isCharacter(character) && character.bindings.length > 0) {
                 for (const binding of character.bindings) {
                     effects.push({
                         type: "binding",
@@ -224,9 +224,9 @@ export const skunkette: EnemyDef = {
 
         //1) Spray an existing pounced character
         const buff = findBuff(actor, "pounce");
-        if (buff && buff.linkedEntity !== undefined) {
+        if (buff && buff.linkedEntity) {
             const target = findCharacter(state, buff.linkedEntity)
-            if (target !== undefined && !isIncapacitated(target)) {
+            if (target && !isIncapacitated(target)) {
                 const binding = pickBinding(target, bindings, rng);
                 return { actor: actor, targets: [target], move: { definition: latexSpray, binding: binding } };
             }
@@ -237,13 +237,13 @@ export const skunkette: EnemyDef = {
             const validCharacters: iCharacter[] = [];
             for (const character of state.characters) {
                 const cBuff = findBuff(character, "pounce");
-                if (cBuff === undefined) {
+                if (!cBuff) {
                     validCharacters.push(character);
                 }
             }
             if (validCharacters.length > 0) {
                 const target = pickTarget(validCharacters, rng);
-                if (target !== undefined) {
+                if (target) {
                     const binding = pickBinding(target, bindings, rng);
                     return { actor: actor, targets: [target], move: { definition: pounce, binding: binding } };
                 }
@@ -257,7 +257,7 @@ export const skunkette: EnemyDef = {
             return { actor: actor, targets: [], move: { definition: latexMist } };
         } else {
             const target = pickTarget(state.characters, rng);
-            if (target === undefined) {
+            if (!target) {
                 //No valid targets...
                 return { actor: actor, targets: [], move: { definition: latexMist } };
             }
@@ -268,11 +268,11 @@ export const skunkette: EnemyDef = {
     onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
         const effects: iEffect[] = [];
         const buff = findBuff(target, "pounce");
-        if (buff && buff.linkedEntity !== undefined) {
+        if (buff && buff.linkedEntity) {
             const character = findCharacter(state, buff.linkedEntity)
-            if (character !== undefined) {
+            if (character) {
                 const tBuff = findBuff(character, "pounce");
-                if (tBuff !== undefined) {
+                if (tBuff) {
                     const newLevel = (buff.modifiers?.hit ?? 1) / 2 - 1;
                     if (newLevel === 0) {
                         effects.push({
@@ -298,11 +298,11 @@ export const skunkette: EnemyDef = {
     onDefeat(state: iGameState, target: iEnemy): iEffect[] {
         const effects: iEffect[] = [];
         const buff = findBuff(target, "pounce");
-        if (buff && buff.linkedEntity !== undefined) {
+        if (buff && buff.linkedEntity) {
             const character = findCharacter(state, buff.linkedEntity)
-            if (character !== undefined) {
+            if (character) {
                 const tBuff = findBuff(character, "pounce");
-                if (tBuff !== undefined) {
+                if (tBuff) {
                     effects.push({
                         type: "buff",
                         target: character,
@@ -318,7 +318,7 @@ export const skunkette: EnemyDef = {
 
 const throwOff: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        if (move.result === "miss") {
+        if (move.band === "miss") {
             return [];
         }
         const effects: iEffect[] = []
@@ -361,7 +361,7 @@ const throwOff: MoveDef = {
             operation: "remove"
         });
 
-        if (pounce.cooldown !== undefined) {
+        if (pounce.cooldown) {
             target.cooldowns["pounce"] = pounce.cooldown;
         }
 

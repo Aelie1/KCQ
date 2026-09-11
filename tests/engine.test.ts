@@ -37,7 +37,7 @@ describe("turn phases and enemy intentions", () => {
             type: "moveUsed",
             actor: enemyId,
             move: preview.move,
-            targets: preview.targets.map(({ target, result: band }) => ({
+            targets: preview.targets.map(({ target, band: band }) => ({
                 target,
                 result: band,
             })),
@@ -173,7 +173,7 @@ describe("enemy intention previews", () => {
             move: preview.move,
             targets: [{
                 target: preview.targets[0].target,
-                result: preview.targets[0].result,
+                result: preview.targets[0].band,
             }],
         });
         expect(preview.targets[0].effects).toEqual([]);
@@ -262,7 +262,7 @@ describe("enemy intention previews", () => {
         engine.loadEncounter(encounter.id);
 
         const before = engine.getGameState().enemies[0].intention;
-        expect(before?.targets[0].result).toBe("hit");
+        expect(before?.targets[0].band).toBe("hit");
 
         expect(engine.executeAction({
             type: "attack",
@@ -287,7 +287,7 @@ describe("enemy intention previews", () => {
             move: enemyMove.id,
             targets: [{
                 target: "hero",
-                result: after!.targets[0].result,
+                result: after!.targets[0].band,
             }],
         });
     });

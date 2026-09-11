@@ -1,5 +1,5 @@
 import { Random } from "./random";
-import { AccuracyProfile, AccuracyResult, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect, Enemy, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn } from "./types";
+import { AccuracyProfile, HitBand, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect, Enemy, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -78,7 +78,7 @@ export interface iBuff extends Omit<Buff, "statuses"> {
 export interface iMove {
     definition: MoveDef;
     binding?: BindingDef;
-    result?: AccuracyResult;
+    band?: HitBand;
     effectiveness?: number;
     roll?: number;
 }

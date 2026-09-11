@@ -92,15 +92,15 @@ describe("accuracy", () => {
         )).toEqual({ miss: 20, graze: 25, hit: 55, crit: 0 });
     });
 
-    it("applies positive accuracy while growing Crit at one quarter rate", () => {
+    it("applies positive accuracy while growing Crit at one half rate", () => {
         const result = calculateAccuracy(
             makeAccuracyActor(4),
             makeAccuracyTarget(),
             makeAccuracyMove(),
         );
 
-        expect(result).toEqual({ miss: 0, graze: 0, hit: 80, crit: 20 });
-        expect(result.crit).toBe(standardProfile.crit! + 10);
+        expect(result).toEqual({ miss: 0, graze: 0, hit: 70, crit: 30 });
+        expect(result.crit).toBe(standardProfile.crit! + 20);
     });
 
     it("treats target Defense as an equivalent accuracy penalty", () => {
@@ -172,8 +172,8 @@ describe("accuracy", () => {
         expect(characterAttack).toEqual({
             miss: 0,
             graze: 5,
-            hit: 80,
-            crit: 15,
+            hit: 75,
+            crit: 20,
         });
         expect(enemyAttack).toEqual(characterAttack);
     });
@@ -257,7 +257,7 @@ describe("accuracy", () => {
             makeAccuracyTarget(),
             standardProfile,
             roll,
-        ).result).toBe(expectedBand);
+        ).band).toBe(expectedBand);
     });
 
     it("interpolates effectiveness continuously within each accuracy band", () => {
@@ -387,20 +387,20 @@ describe("accuracy", () => {
             type: "moveUsed",
             targets: expected.map((target) => ({
                 target: target.target.id,
-                result: target.result,
+                result: target.band,
             })),
         });
         expect(event.targets.map(({ result: band }) => band))
-            .toEqual(expected.map(({ result: band }) => band));
-        expect(resolvedTargets.map(({ result: band, effectiveness }) => ({ band, effectiveness })))
-            .toEqual(expected.filter((target) => target.result !== "miss").map(({ result: band, effectiveness }) => ({
+            .toEqual(expected.map(({ band: band }) => band));
+        expect(resolvedTargets.map(({ band: band, effectiveness }) => ({ band, effectiveness })))
+            .toEqual(expected.filter((target) => target.band !== "miss").map(({ band: band, effectiveness }) => ({
                 band,
                 effectiveness,
             })));
         expect(new Set(event.targets.map((target) => target.result)).size).toBeGreaterThan(1);
         expect(resolvedTargets.map((target) => target.target.id)).toEqual(
             expected
-                .filter((target) => target.result !== "miss")
+                .filter((target) => target.band !== "miss")
                 .map((target) => target.target.id),
         );
     });
@@ -442,7 +442,7 @@ describe("accuracy", () => {
             resolve: (_state, _actor, move, targets) => {
                 resolutions++;
                 expect(targets).toEqual([]);
-                expect(move.result).toBe("hit");
+                expect(move.band).toBe("hit");
                 return [];
             },
         });

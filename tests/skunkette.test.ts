@@ -255,7 +255,7 @@ describe("Skunkette behavior through GameEngine", () => {
 
         const preview = enemyState(engine, "skunkette1").intention;
         expect(preview?.move).toBe(LATEX_MIST_ID);
-        expect(preview?.targets.map(({ target, result }) => ({ target, result }))).toEqual([
+        expect(preview?.targets.map(({ target, band: result }) => ({ target, result }))).toEqual([
             { target: "first", result: "miss" },
             { target: "second", result: "hit" },
         ]);

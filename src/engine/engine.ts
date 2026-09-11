@@ -1,13 +1,13 @@
-import { calculateAccuracy, evaluateResult, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
+import { calculateAccuracy, evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
 import { GameEffects } from "./effects";
 import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
 import { getMoves, isValidMove } from "./helpers";
-import { type CharacterDef, type EncounterDef, type iCharacter, type iEntity, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
+import { type CharacterDef, type EncounterDef, type iEntity, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
 import { Random } from "./random";
 import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
-import { canAct, canAssist, canAttack, canBonusEscape, canMove, canUseMoveType, isIncapacitated, isSkipped } from "./status";
-import type { AccuracyProfile, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo } from "./types";
+import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, isIncapacitated, isSkipped } from "./status";
+import type { AccuracyProfile, AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId, EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo } from "./types";
 
 export class GameEngine {
     private state: iGameState;
@@ -60,10 +60,10 @@ export class GameEngine {
         const result = new GameEffects();
         const encounter = this.encounters.find(x => x.id === id);
         if (!encounter) {
-            result.addEvent({ 
-                type: "encounter", 
-                id: id, 
-                success: false 
+            result.addEvent({
+                type: "encounter",
+                id: id,
+                success: false
             });
             return result.getEvents();
         }
@@ -74,10 +74,10 @@ export class GameEngine {
             encounter.setup(this.state);
         }
         this.updateIntentions();
-        result.addEvent({ 
-            type: "encounter", 
-            id: id, 
-            success: true 
+        result.addEvent({
+            type: "encounter",
+            id: id,
+            success: true
         });
         return result.getEvents();
     }
@@ -174,6 +174,45 @@ export class GameEngine {
         return actions;
     }
 
+    getTargets(actor: EntityId, move: MoveId): ValidityInfo[] {
+        const result: ValidityInfo[] = [];
+        const character = findCharacter(this.state, actor);
+        if (!character) {
+            result.push({
+                valid: false,
+                reason: "invalidActor"
+            })
+            return result;
+        }
+
+        const moveState = findMove(character, move);
+        if (!moveState) {
+            result.push({
+                valid: false,
+                reason: "invalidMove"
+            })
+            return result;
+        }
+
+        switch (moveState.target) {
+            case "none":
+                result.push(isValidTarget(character,null,moveState));
+                break;
+            case "player":
+                for (const target of this.state.characters) {
+                    result.push(isValidTarget(character,target,moveState));
+                }
+                break;
+            case "enemy":
+                for (const target of this.state.enemies) {
+                    result.push(isValidTarget(character,target,moveState));
+                }
+                break;
+        }
+
+        return result;
+    }
+
     getEscapes(actor: EntityId): EscapeOptions | null {
         const character = findCharacter(this.state, actor);
         if (!character) {
@@ -204,39 +243,6 @@ export class GameEngine {
         }
 
         return options;
-    }
-
-    getAccuracyPreview(actor: EntityId, target: EntityId | null, move: MoveId): AccuracyProfile | null {
-        const actorState = findCharacter(this.state, actor);
-        let targetState : iEntity | undefined;
-        if (!actorState) {
-            return null;
-        }
-
-        const moveState = findMove(actorState, move);
-        if (!moveState) {
-            return null;
-        }
-
-        if (target === null ) {
-            if (moveState.targets !== 0) {
-                return null;
-            } else {
-                targetState = {
-                    ...actorState,
-                    buffs: [],
-                    bindings: [],
-                } 
-            }
-        } else {
-            targetState = findEntity(this.state, target);
-        }
-
-        if (!targetState) {
-            return null;
-        }
-
-        return calculateAccuracy(actorState, targetState, moveState);
     }
 
     executeAction(action: PlayerAction): ActionResult {
@@ -324,52 +330,47 @@ export class GameEngine {
                     };
                 }
 
-                const iMove:iMove = { definition: move };
+                const iMove: iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 let anyHits: boolean = false;
-                if (move.accuracy !== undefined) {
+                if (move.accuracy) {
                     for (const target of targetStates) {
                         const roll: number = this.rng.accuracy();
                         const accuracy: AccuracyProfile = calculateAccuracy(actor, target, move);
                         const targetInfo: iTargetInfo = evaluateResult(target, accuracy, roll);
                         targets.push(targetInfo);
-                        if (targetInfo.result !== "miss") {
+                        if (targetInfo.band !== "miss") {
                             anyHits = true;
                         }
                     }
                     if (move.targets === 0) {
                         const roll: number = this.rng.accuracy();
-                        const blankActor: iCharacter = {
-                            ...actor,
-                            buffs: [],
-                            bindings: [],
-                        }
-                        const accuracy: AccuracyProfile = calculateAccuracy(actor, blankActor, move);
-                        const targetInfo: iTargetInfo = evaluateResult(blankActor, accuracy, roll);
-                        iMove.result = targetInfo.result;
-                        iMove.effectiveness = targetInfo.effectiveness;
-                        if (targetInfo.result !== "miss") {
+                        const accuracy: AccuracyProfile = calculateAccuracy(actor, null, move);
+                        const result: AccuracyResult = evaluateProfile(accuracy, roll, 0);
+                        iMove.band = result.band;
+                        iMove.effectiveness = result.effectiveness;
+                        if (result.band !== "miss") {
                             anyHits = true;
                         }
                     }
-    
+
                 } else {
                     for (const target of targetStates) {
                         targets.push({
                             target: target,
                             effectiveness: 0,
-                            result: "none"
+                            band: "none"
                         })
                     }
                     anyHits = true;
                 }
 
                 //Now we have a valid actor, targets and move -- execute the move
-                result.addEvent({ 
-                    type: "moveUsed", 
-                    actor: action.actor, 
-                    move: action.move, 
-                    targets: targets.map(x => ({ target: x.target.id, result: x.result })) 
+                result.addEvent({
+                    type: "moveUsed",
+                    actor: action.actor,
+                    move: action.move,
+                    targets: targets.map(x => ({ target: x.target.id, result: x.band }))
                 })
                 result.fromEffects(this.state, resolveMove(this.state, iMove, actor, targets));
 
@@ -409,7 +410,7 @@ export class GameEngine {
                 }
 
                 //now we have a valid actor, target, and binding -- execute the escape
-                result.fromEffects(this.state,resolveEscape(actor, target, binding));
+                result.fromEffects(this.state, resolveEscape(actor, target, binding));
                 if (!actor.acted) {
                     actor.acted = true;
                     if (actor.standing && canBonusEscape(actor)) {
@@ -459,9 +460,9 @@ export class GameEngine {
             type: "moveUsed",
             actor: actor.id,
             move: move.definition.id,
-            targets: targets.map(x => ({ target: x.target.id, result: x.result }))
+            targets: targets.map(x => ({ target: x.target.id, result: x.band }))
         });
-        result.fromEffects(this.state,resolveMove(this.state, move, actor, targets));
+        result.fromEffects(this.state, resolveMove(this.state, move, actor, targets));
         this.state.turn.step++;
         return result;
     }
@@ -470,9 +471,9 @@ export class GameEngine {
         const result = new GameEffects();
         for (const enemy of this.state.enemies) {
             if (enemy.intention) {
-                result.fromResult(this.state,this.executeEnemyAction(enemy.intention));
+                result.fromResult(this.state, this.executeEnemyAction(enemy.intention));
                 const move = enemy.intention.move.definition;
-                if (move.cooldown !== undefined) {
+                if (move.cooldown) {
                     enemy.cooldowns[move.id] = move.cooldown;
                 }
             }
@@ -488,16 +489,16 @@ export class GameEngine {
             this.state.turn.phase = "enemy";
         } else {
             tickCooldowns(this.state.enemies);
-            result.fromResult(this.state,tickBuffs(this.state));
-            result.fromResult(this.state,tickPlayers(this.state));
+            result.fromResult(this.state, tickBuffs(this.state));
+            result.fromResult(this.state, tickPlayers(this.state));
             this.updateIntentions();
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
             this.state.turn.round++;
         }
         result.addEvent({
-            type: "phaseChanged", 
-            phase: this.state.turn.phase 
+            type: "phaseChanged",
+            phase: this.state.turn.phase
         });
 
         return result;

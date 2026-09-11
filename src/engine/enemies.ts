@@ -88,7 +88,7 @@ export function pickBinding(target: iCharacter, bindings: BindingDef[], rng: Ran
     const validMoves: BindingDef[] = [];
     for (const binding of bindings) {
         const tBinding = findBinding(target, binding.id);
-        if (tBinding !== undefined && tBinding.value >= thresholds.impossible) {
+        if (tBinding && tBinding.value >= thresholds.impossible) {
             continue;
         }
         validMoves.push(binding);

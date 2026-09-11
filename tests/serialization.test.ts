@@ -109,7 +109,7 @@ describe("state serialization and combatant loading", () => {
             if (intention) {
                 intention.targets.push({
                     target: "intruder",
-                    result: "miss",
+                    band: "miss",
                     effects: [],
                 });
                 intention.effects.push({

@@ -12,12 +12,12 @@ export function getStatuses(target: iEntity): iStatus[] {
         for (const binding of target.bindings) {
             const bindingStatuses = binding.definition.status;
             const level = getBindingLevel(binding);
-            if (bindingStatuses === undefined) {
+            if (!bindingStatuses) {
                 continue;
             }
             for (const bindingStatus of bindingStatuses[level] ?? []) {
                 const characterStatus = statuses.find(x => x.definition === bindingStatus.definition);
-                if (characterStatus !== undefined) {
+                if (characterStatus) {
                     if (characterStatus.value < bindingStatus.value) {
                         characterStatus.value = bindingStatus.value;
                     }
@@ -28,12 +28,12 @@ export function getStatuses(target: iEntity): iStatus[] {
         }
     }
     for (const buff of target.buffs) {
-        if (!buff.active || buff.statuses === undefined) {
+        if (!buff.active || !buff.statuses) {
             continue;
         }
         for (const buffStatus of buff.statuses) {
             const characterStatus = statuses.find(x => x.definition === buffStatus.definition);
-            if (characterStatus !== undefined) {
+            if (characterStatus) {
                 if (characterStatus.value < buffStatus.value) {
                     characterStatus.value = buffStatus.value;
                 }
@@ -55,7 +55,7 @@ export function getModifier(target: iEntity, id: ModifierId): number {
         amount += level.modifiers?.[id] ?? 0;
     }
     for (const buff of target.buffs) {
-        if (buff.modifiers === undefined || !buff.active) {
+        if (!buff.modifiers || !buff.active) {
             continue;
         }
         const level = buff.modifiers[id];

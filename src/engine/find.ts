@@ -11,7 +11,7 @@ export function findEnemy(state: iGameState, id: EntityId): iEnemy | undefined {
     return state.enemies.find(enemy => enemy.id === id);
 }
 
-export function findEntity(state: iGameState, id: EntityId): iCharacter | iEnemy | undefined {
+export function findEntity(state: iGameState, id: EntityId): iEntity | undefined {
     return findCharacter(state, id) ?? findEnemy(state, id);
 }
 

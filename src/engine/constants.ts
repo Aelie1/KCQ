@@ -1,4 +1,4 @@
-import { AccuracyResult, BindingLevel } from "./types";
+import { HitBand, BindingLevel } from "./types";
 
 export const BINDING_MODIFIER = 0.1;
 export const EFFECT_MODIFIER = 0.125;
@@ -16,7 +16,7 @@ export const thresholds: Record<BindingLevel, number> = {
     max: 100
 };
 
-export const effectivenessRange: Record<AccuracyResult, [number, number]> = {
+export const effectivenessRange: Record<HitBand, [number, number]> = {
     miss: [0, 0],
     graze: [0.20, 0.50],
     hit: [0.80, 1.00],

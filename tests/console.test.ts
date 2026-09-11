@@ -38,7 +38,7 @@ const state: GameState = {
             move: "latexSpray",
             targets: [{
                 target: "ko",
-                result: "hit",
+                band: "hit",
                 effects: [{ type: "binding", target: "ko", binding: "latexArms", amount: 19 }],
             }],
             effects: [],
@@ -69,7 +69,7 @@ describe("console formatting", () => {
     it("formats intentions with target-attached and top-level effects", () => {
         expect(formatIntention({
             move: "royalMist",
-            targets: [{ target: "ko", result: "graze", effects: [] }],
+            targets: [{ target: "ko", band: "graze", effects: [] }],
             effects: [{ type: "buff", target: "queen", buff: "puddle", operation: "add" }],
         })).toEqual([
             "  Intent: royalMist",

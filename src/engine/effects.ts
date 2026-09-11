@@ -45,7 +45,7 @@ export class GameEffects {
     
         while (this.effects.length > 0) {
             const effect = this.effects.pop();
-            if (effect === undefined) {
+            if (!effect) {
                 continue;
             }
             if (!isValidEntity(state, effect.target)) {

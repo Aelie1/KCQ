@@ -46,7 +46,7 @@ function serializeIntention(state: iGameState, intention: iIntention): Intention
     let effects = resolveMove(state, intention.move, intention.actor, iTargets);
     for (const iTarget of iTargets) {
         const tEffects = effects.filter(x => x.target === iTarget.target);
-        targets.push({ target: iTarget.target.id, result: iTarget.result, effects: tEffects.map(serializeEffect) })
+        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: tEffects.map(serializeEffect) })
         effects = effects.filter(x => x.target !== iTarget.target);
     }
 

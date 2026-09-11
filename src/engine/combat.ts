@@ -2,8 +2,8 @@ import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange
 import { GameEffects } from "./effects";
 import { getIEntitySide, isCharacter, isEnemy } from "./helpers";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, MoveDef } from "./itypes";
-import { canMove, getModifier } from "./status";
-import { AccuracyProfile, AccuracyResult, StanceId } from "./types";
+import { canMove, getModifier, isIncapacitated } from "./status";
+import { AccuracyProfile, AccuracyResult, HitBand, StanceId, ValidityInfo } from "./types";
 
 
 export function setStance(target: iCharacter, stance: StanceId): GameEffects {
@@ -33,27 +33,46 @@ export function setStance(target: iCharacter, stance: StanceId): GameEffects {
     return result;
 }
 
-export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef): AccuracyProfile {
+export function isValidTarget(actor: iEntity, target: iEntity | null, move: MoveDef): ValidityInfo {
+    if (target === null) {
+        if (move.targets !== 0) {
+            return {
+                valid: false,
+                reason: "invalidTarget"
+            };
+        }
+    } else {
+        if (getIEntitySide(target) !== move.target) {
+            return {
+                valid: false,
+                reason: "invalidTarget",
+            };
+        }
+        if (isCharacter(target) && isIncapacitated(target)) {
+            return {
+                valid: false,
+                reason: "targetIncapacitated"
+            };
+        }
+    }
+
+    const accuracy = calculateAccuracy(actor, target, move);
+    return {
+        valid: true,
+        accuracy: accuracy,
+        target: target ? target.id : null
+    }
+}
+
+export function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef): AccuracyProfile {
     const base = move.accuracy;
     if (!base) {
         return { none: 100 };
     }
 
-    // Every accuracy-bearing move should have a Hit band.
-    if (base.hit === undefined) {
-        throw new Error(`Move ${move.id} has an accuracy profile with no Hit band`);
-    }
-
     const clamp = (value: number, min: number, max: number): number =>
         Math.max(min, Math.min(max, value));
 
-    /*
-     * The authored accuracy bar represents performance against neutral Defense.
-     *
-     * Characters currently have no base Hit stat, so their status modifiers
-     * are relative to neutral accuracy.
-     *
-     */
     let hitModifier = getModifier(actor, "hit") * HIT_MODIFIER;
 
     if (isCharacter(actor)) {
@@ -72,11 +91,10 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
         }
     }
 
-
     let defenseModifier = 0;
 
-    //Ignore defense when you're targetting your own side
-    if (getIEntitySide(actor) != getIEntitySide(target)) {
+    //Ignore defense when you have no target
+    if (target != null) {
         defenseModifier = (isEnemy(target) ? target.currDef : 0);
         defenseModifier += getModifier(target, "defense") * DEFENSE_MODIFIER;
         defenseModifier += (isCharacter(target) && target.standing) ? -20 : 0;
@@ -96,10 +114,11 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
      */
     const hasMiss = base.miss !== undefined;
     const hasGraze = base.graze !== undefined;
+    const hasHit = base.hit !== undefined;
     const hasCrit = base.crit !== undefined;
 
     const baseCrit = base.crit ?? 0;
-    const baseFullHit = base.hit + baseCrit;
+    const baseFullHit = (base.hit ?? 0) + baseCrit;
     const baseContact = (base.graze ?? 0) + baseFullHit;
 
     /*
@@ -107,7 +126,7 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
      *
      * Crit is deliberately harder to gain and easier to lose:
      *
-     *   positive accuracy: +Crit at 1/4 rate
+     *   positive accuracy: +Crit at 1/2 rate
      *   negative accuracy: -Crit at 2x rate
      *
      * An absent Crit band can never be created by generic accuracy.
@@ -116,7 +135,7 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
 
     if (hasCrit) {
         const critDelta = delta >= 0
-            ? delta * 0.25
+            ? delta * 0.5
             : delta * 2;
 
         crit = clamp(baseCrit + critDelta, 0, 100);
@@ -129,32 +148,40 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
     let fullHit = clamp(baseFullHit + delta, 0, 100);
     let contact = clamp(baseContact + delta * 0.5, 0, 100);
 
-    // Crit must live inside the full-hit region.
-    crit = Math.min(crit, fullHit);
+    // Full hit must live inside the contact region.
+    contact = clamp(contact, fullHit, 100);
 
     /*
      * Preserve structural zero-width bands.
      *
+     * No Hit band:
+     *     Crit transitions directly into Graze.
+     * 
      * No Graze band:
      *     Hit transitions directly into Miss.
      *
      * No Miss band:
      *     Accuracy can degrade Hit into Graze, but cannot create Miss.
      *
-     * No Miss AND no Graze:
-     *     The move always fully connects; only Hit/Crit distribution changes.
      */
-    if (!hasMiss && !hasGraze) {
-        fullHit = 100;
-        contact = 100;
-        crit = Math.min(crit, fullHit);
-    } else if (!hasGraze) {
-        contact = fullHit;
-    } else {
-        contact = clamp(contact, fullHit, 100);
 
-        if (!hasMiss) {
-            contact = 100;
+    if (!hasHit) {
+        fullHit = crit;
+    }
+
+    if (!hasGraze) {
+        contact = fullHit;
+    }
+
+    if (!hasMiss) {
+        contact = 100;
+
+        if (!hasGraze) {
+            fullHit = 100;
+
+            if (!hasHit) {
+                crit = 100;
+            }
         }
     }
 
@@ -171,7 +198,9 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
         result.graze = contact - fullHit;
     }
 
-    result.hit = fullHit - crit;
+    if (hasHit) {
+        result.hit = fullHit - crit;
+    }
 
     if (hasCrit) {
         result.crit = crit;
@@ -182,20 +211,26 @@ export function calculateAccuracy(actor: iEntity, target: iEntity, move: MoveDef
 
 
 export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll: number): iTargetInfo {
-    const result: iTargetInfo = { target: target, result: "none", effectiveness: 0 };
+    return {
+        target: target,
+        ...evaluateProfile(accuracy, roll, getModifier(target, "effect"))
+    };
+}
 
-    const order: AccuracyResult[] = ["miss", "graze", "hit", "crit"];
+export function evaluateProfile(accuracy: AccuracyProfile, roll: number, effect: number): AccuracyResult {
+    const order: HitBand[] = ["miss", "graze", "hit", "crit"];
+    const result: AccuracyResult = { band: "none", effectiveness: 0 }
 
     let cumulative = 0;
     for (const band of order) {
         const value = accuracy[band];
-        if (value !== undefined && value > 0) {
-            result.result = band;
+        if (value) {
+            result.band = band;
             if (roll < cumulative + value) {
                 if (band !== "miss") {
                     const [min, max] = effectivenessRange[band];
                     const effect = (roll - cumulative) / value;
-                    result.effectiveness = (min + (max - min) * effect) * (1 + getModifier(target, "effect") * EFFECT_MODIFIER);
+                    result.effectiveness = (min + (max - min) * effect) * (1 + effect * EFFECT_MODIFIER);
                 }
                 return result;
             }
@@ -203,7 +238,7 @@ export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll:
         }
     }
     //rolled above the highest band, return the top of the highest band
-    result.effectiveness = effectivenessRange[result.result][1] * (1 + getModifier(target, "effect") * EFFECT_MODIFIER);
+    result.effectiveness = effectivenessRange[result.band][1] * (1 + effect * EFFECT_MODIFIER);
 
     return result;
 }
@@ -288,7 +323,7 @@ export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iB
 
 export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
     const successfulTargets = targets.filter(
-        target => target.result !== "miss"
+        target => target.band !== "miss"
     );
     const effects: iEffect[] = move.definition.resolve(state, actor, move, successfulTargets);
     return effects.map(normalizeEffect);

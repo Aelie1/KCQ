@@ -55,7 +55,7 @@ export interface Intention {
 
 export interface TargetInfo {
     target: EntityId;
-    result: AccuracyResult; //What band is it in
+    band: HitBand;
     effects: Effect[];
 }
 
@@ -132,16 +132,34 @@ export type MoveType =
 
 export type MoveId = string;
 
-export type AccuracyResult = 
+export type HitBand = 
     | "miss" 
     | "graze" 
     | "hit" 
     | "crit" 
     | "none";
 
-export type AccuracyProfile = Partial<Record<AccuracyResult, number>>;
+export type AccuracyProfile = Partial<Record<HitBand, number>>;
+
+export interface AccuracyResult {
+    band: HitBand;
+    effectiveness: number;
+}
 
 export type TargetCount = number | "all"
+
+export type ValidityInfo = ValidTarget | InvalidTarget;
+
+interface ValidTarget {
+    valid: true;
+    accuracy: AccuracyProfile;
+    target: EntityId | null;
+}
+
+interface InvalidTarget {
+    valid: false;
+    reason: ActionFailureReason;
+}
 
 /*******************************************************
  * Bindings
@@ -293,6 +311,7 @@ export type ActionFailureReason =
     | "actorSkipped"
     | "actorImmobilized"
     | "actorIncapacitated"
+    | "targetIncapacitated"
     | "moveUnavailable"
     | "attackUnavailable"
     | "assistUnavailable"
@@ -313,7 +332,7 @@ export interface MoveEvent {
     move: MoveId;
     targets: { 
         target: EntityId, 
-        result: AccuracyResult 
+        result: HitBand 
     }[];
 }
 
