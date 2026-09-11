@@ -139,6 +139,56 @@ describe("turn phases and enemy intentions", () => {
         expect(result.events.filter(({ type }) => type === "moveUsed")).toEqual([]);
         expect(engine.getGameState().characters[0].bindings).toEqual([]);
     });
+
+    it("drops a committed target that is no longer in state without adding a replacement", () => {
+        const threat = makeMove("threat", "none", {
+            side: "enemy",
+        });
+        const watcher = makeEnemyDef("watcher", [threat], (state, actor) => ({
+            actor,
+            move: { definition: threat },
+            targets: state.enemies.filter((candidate) => candidate !== actor).slice(0, 1),
+        }));
+        const doomed = makeEnemyDef("doomed", [makeWaitMove()]);
+        const survivor = makeEnemyDef("survivor", [makeWaitMove()]);
+        const strike = makeMove("strike", "arms", {
+            resolve: (state, actor, _move, targets) => {
+                const target = state.enemies.find((candidate) => candidate === targets[0]?.target);
+                return target ? [{
+                    type: "damage" as const,
+                    source: actor,
+                    target,
+                    amount: 999,
+                }] : [];
+            },
+        });
+        const encounter = { id: "missing-intention-target", enemies: [watcher, doomed, survivor] };
+        const engine = new GameEngine([encounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero", [strike]));
+        engine.loadEncounter(encounter.id);
+
+        expect(engine.getGameState().enemies[0].intention?.targets).toEqual([{
+            target: "doomed2",
+            band: "hit",
+            effects: [],
+        }]);
+        expect(engine.executeAction({
+            type: "attack",
+            actor: "hero",
+            move: strike.id,
+            targets: ["doomed2"],
+        }).success).toBe(true);
+
+        const result = engine.executeAction({ type: "endTurn" });
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected the enemy phase to resolve");
+        expect(result.events).toContainEqual({
+            type: "moveUsed",
+            actor: "watcher1",
+            move: threat.id,
+            targets: [],
+        });
+    });
 });
 
 describe("enemy intention previews", () => {
@@ -215,7 +265,7 @@ describe("enemy intention previews", () => {
 
         expect(previews[0]!.targets[0]).toMatchObject({
             target: "hero",
-            result: "hit",
+            band: "hit",
             effects: [{ type: "binding", target: "hero", binding: pressure.id }],
         });
         expect(previews[0]!.effects).toEqual([]);
@@ -224,7 +274,7 @@ describe("enemy intention previews", () => {
         const nextPreview = engine.getGameState().enemies[0].intention;
         expect(nextPreview?.targets[0]).toMatchObject({
             target: "hero",
-            result: "hit",
+            band: "hit",
             effects: [{ type: "binding", target: "hero", binding: pressure.id }],
         });
         expect(nextPreview).not.toEqual(previews[0]);
@@ -243,6 +293,7 @@ describe("enemy intention previews", () => {
             statuses: [{ definition: defenseStatus, value: 1 }],
         };
         const guard = makeMove("guard", "mouth", {
+            side: "none",
             targets: 0,
             resolve: (_state, actor) => [{
                 type: "buff",
@@ -273,7 +324,7 @@ describe("enemy intention previews", () => {
         const after = engine.getGameState().enemies[0].intention;
         expect(after?.targets[0]).toEqual({
             target: "hero",
-            result: "miss",
+            band: "miss",
             effects: [],
         });
         expect(after?.effects).toEqual([]);

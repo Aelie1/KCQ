@@ -58,7 +58,11 @@ export function makeMove(
 }
 
 export function makeWaitMove(): MoveDef {
-    return makeMove("wait", "none", { side: "player" });
+    return makeMove("wait", "none", {
+        side: "none",
+        targets: 0,
+        accuracy: undefined,
+    });
 }
 
 export function makeCharacterDef(id: string, moves: MoveDef[] = []): CharacterDef {
@@ -103,10 +107,10 @@ export function makeEnemyDef(
         hp: 37,
         defense: 0,
         passives: [],
-        ai: ai ?? ((state, actor) => ({
+        ai: ai ?? ((_state, actor) => ({
             actor,
             move: { definition: defaultMove },
-            targets: [state.characters[0]],
+            targets: defaultMove.targets === 0 ? [] : [_state.characters[0]],
         })),
     };
 }

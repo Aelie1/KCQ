@@ -21,6 +21,7 @@ import {
 function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: number) {
     const targetBinding = makeBindingDef("target-binding");
     const prepare = makeMove("prepare", "mouth", {
+        side: "none",
         targets: 0,
         resolve: (state) => [
             {

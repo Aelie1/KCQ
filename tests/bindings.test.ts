@@ -9,6 +9,7 @@ import {
     makeBehavioralCharacter,
     makeBehavioralEngine,
     makeBehavioralMove,
+    targetAccuracy,
 } from "./behavioralHelpers";
 
 function bindingMove(
@@ -18,7 +19,7 @@ function bindingMove(
     targetIndex = 0,
 ): MoveDef {
     return makeBehavioralMove(id, "mouth", {
-        side: "player",
+        side: "none",
         targets: 0,
         alwaysAvailable: true,
         freeOnHit: true,
@@ -181,7 +182,7 @@ describe("binding levels and effective statuses through GameEngine", () => {
             status: { easy: [{ definition: blinded, value: 2 }] },
         });
         const applyBoth = makeBehavioralMove("apply-both", "mouth", {
-            side: "player",
+            side: "none",
             targets: 0,
             resolve: (state) => [
                 { type: "binding", target: state.characters[0], binding: weak, amount: 10 },
@@ -198,7 +199,7 @@ describe("binding levels and effective statuses through GameEngine", () => {
         use(engine, "hero", applyBoth.id);
 
         expect(characterState(engine).status).toEqual([{ id: "blinded", value: 2 }]);
-        expect(engine.getAccuracyPreview("hero", "foe1", attack.id)).toEqual({
+        expect(targetAccuracy(engine, "hero", attack.id, "foe1")).toEqual({
             miss: 60,
             hit: 40,
         });

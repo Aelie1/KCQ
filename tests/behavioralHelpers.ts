@@ -8,6 +8,7 @@ import type {
     MoveDef,
 } from "../src/engine/itypes";
 import type {
+    AccuracyProfile,
     ActionSuccess,
     Binding,
     Buff,
@@ -16,6 +17,17 @@ import type {
     MoveType,
     PlayerAction,
 } from "../src/engine/types";
+
+export function targetAccuracy(
+    engine: GameEngine,
+    actor: string,
+    move: string,
+    target: string | null,
+): AccuracyProfile | null {
+    const info = engine.getTargets(actor, move).find((candidate) => candidate.target === target);
+    if (!info || !info.valid) throw new Error(`Expected ${String(target)} to be a valid target`);
+    return info.accuracy;
+}
 
 export function makeBehavioralMove(
     id: string,
@@ -42,8 +54,9 @@ export function makeBehavioralCharacter(
 
 export function makeEnemyWaitMove(): MoveDef {
     return makeBehavioralMove("wait", "none", {
-        side: "player",
-        targets: 1,
+        side: "none",
+        targets: 0,
+        accuracy: undefined,
     });
 }
 

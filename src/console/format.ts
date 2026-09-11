@@ -69,7 +69,7 @@ export function formatIntention(intention: Intention): string[] {
     for (const target of intention.targets) {
         const effects = formatEffects(target.effects).join(", ");
         lines.push(
-            `    ${target.target.padEnd(12)} ${target.result.toUpperCase().padEnd(6)}`
+            `    ${target.target.padEnd(12)} ${target.band.toUpperCase().padEnd(6)}`
             + (effects ? ` ${effects}` : ""),
         );
     }

@@ -13,6 +13,7 @@ import {
     makeBehavioralEngine,
     makeBehavioralMove as makeMove,
     makeEnemyWaitMove as makeWaitMove,
+    targetAccuracy,
 } from "./behavioralHelpers";
 
 const AUTHORED_HIT_SEED = 3;
@@ -47,17 +48,19 @@ function setupAuthoredCombat(): GameEngine {
 describe("move validation and player actions", () => {
     function validationEngine() {
         const legal = makeMove("legal");
-        const conditionallyUnavailable = makeMove("conditional", "mouth", {
+        const targetless = makeMove("targetless", "mouth", {
+            side: "none",
             targets: 0,
-            isValid: () => false,
         });
-        const hero = makeCharacterDef("hero", [legal, conditionallyUnavailable]);
+        const allTargets = makeMove("all-targets", "mouth", { targets: "all" });
+        const twoTargets = makeMove("two-targets", "mouth", { targets: 2 });
+        const hero = makeCharacterDef("hero", [legal, targetless, allTargets, twoTargets]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter = { id: "validation", enemies: [foe] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);
-        return { engine, hero, legal, conditionallyUnavailable, foeId: `${foe.id}1` };
+        return { engine, hero, legal, targetless, allTargets, twoTargets, foeId: `${foe.id}1` };
     }
 
     it.each([
@@ -79,17 +82,27 @@ describe("move validation and player actions", () => {
         [
             "wrong target count",
             { type: "attack", actor: "hero", move: "legal", targets: [] },
-            "moveUnavailable",
+            "invalidTargetCount",
         ],
         [
             "wrong target side",
             { type: "attack", actor: "hero", move: "legal", targets: ["hero"] },
-            "moveUnavailable",
+            "invalidTarget",
         ],
         [
-            "failed move predicate",
-            { type: "attack", actor: "hero", move: "conditional", targets: [] },
-            "moveUnavailable",
+            "duplicate numeric targets",
+            { type: "attack", actor: "hero", move: "two-targets", targets: ["foe1", "foe1"] },
+            "duplicateTargets",
+        ],
+        [
+            "explicit target for a targetless move",
+            { type: "attack", actor: "hero", move: "targetless", targets: ["foe1"] },
+            "invalidTargetCount",
+        ],
+        [
+            "explicit target for an all-target move",
+            { type: "attack", actor: "hero", move: "all-targets", targets: ["foe1"] },
+            "invalidTargetCount",
         ],
     ] as const)("rejects an %s without consuming the action", (_label, action, reason) => {
         const { engine } = validationEngine();
@@ -229,7 +242,7 @@ describe("move validation and player actions", () => {
         expect(engine.getMoves(ko.id)).toEqual(ko.moves.map((definition) => ({
             move: {
                 id: definition.id,
-                target: definition.side,
+                side: definition.side,
                 targets: definition.targets,
                 type: definition.type,
             },
@@ -254,7 +267,7 @@ describe("move validation and player actions", () => {
             makeCharacterDef("ally"),
         ]);
 
-        expect(engine.getAccuracyPreview("hero", "ally", rally.id)).toEqual({ none: 100 });
+        expect(targetAccuracy(engine, "hero", rally.id, "ally")).toBeNull();
         const result = execute(engine, {
             type: "attack",
             actor: "hero",

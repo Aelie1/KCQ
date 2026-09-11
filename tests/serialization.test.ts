@@ -66,6 +66,7 @@ describe("state serialization and combatant loading", () => {
             easy: [{ definition: status, value: 1 }],
         });
         const prepare = makeMove("prepare", "mouth", {
+            side: "none",
             targets: 0,
             resolve: (state) => [{
                 type: "binding",
@@ -151,7 +152,7 @@ describe("state serialization and combatant loading", () => {
         enemy.intention = {
             actor: enemy,
             move: { definition: enemyMove },
-            rolls: [{ target: character, roll: 25 }],
+            rolls: [{ target: null, roll: 25 }],
         };
         const internalState: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
@@ -178,11 +179,7 @@ describe("state serialization and combatant loading", () => {
         });
         expect(serialized.enemies[0].intention).toEqual({
             move: enemyMove.id,
-            targets: [{
-                target: character.id,
-                result: "hit",
-                effects: [],
-            }],
+            targets: [],
             effects: [],
         });
         expect(serialized).not.toHaveProperty("nextEntityId");

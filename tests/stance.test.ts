@@ -148,6 +148,7 @@ describe("stance toggling", () => {
     it("allows the bonus escape to assist another character", () => {
         const restraint = makeBindingDef("rope");
         const prepare = makeMove("prepare", "mouth", {
+            side: "none",
             targets: 0,
             resolve: (state) => [
                 {
@@ -312,7 +313,7 @@ describe("stance toggling", () => {
     it("keeps Pounce pending during the enemy phase, then activates it before stance reset", () => {
         let observedDuringEnemyPhase: { active: boolean | undefined; standing: boolean } | undefined;
         const observe = makeMove("observe-pounce", "none", {
-            side: "player",
+            side: "none",
             targets: 0,
             resolve: (state) => {
                 const victim = state.characters[0];

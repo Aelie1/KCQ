@@ -23,6 +23,7 @@ function setupEscapeScenario(
     bindings: BindingSetup[],
 ): GameEngine {
     const prepare = makeMove("prepare-bindings", "mouth", {
+        side: "none",
         targets: 0,
         resolve: (state) => bindings.map((setup) => ({
             type: "binding" as const,

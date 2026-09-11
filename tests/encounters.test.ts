@@ -115,7 +115,7 @@ describe("encounters", () => {
             return {
                 actor,
                 move: { definition: wait },
-                targets: [state.characters[0]],
+                targets: [],
             };
         });
         const encounter: EncounterDef = {
@@ -139,11 +139,7 @@ describe("encounters", () => {
         expect(engine.getGameState().turn.step).toBe(setupStep);
         expect(engine.getGameState().enemies[0].intention).toMatchObject({
             move: wait.id,
-            targets: [{
-                target: "hero",
-                result: "hit",
-                effects: [],
-            }],
+            targets: [],
             effects: [],
         });
     });

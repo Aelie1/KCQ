@@ -8,6 +8,7 @@ import type {
     EntityId,
     Move,
     PlayerAction,
+    ValidTarget,
 } from "../engine/types";
 import { formatEffects, formatEvents } from "./format";
 import {
@@ -102,15 +103,12 @@ export async function runConsoleClient(
     };
 
     const chooseTargets = async (actor: EntityId, move: Move): Promise<boolean> => {
-        let state = engine.getGameState();
-        const targets = move.side === "enemy" ? state.enemies : state.characters;
-
         if (move.targets === 0) {
             return execute({ type: "attack", actor, move: move.id, targets: [] });
         }
 
         if (move.targets === "all") {
-            const lines = accuracyLines(engine, actor, move, targets.map((target) => target.id));
+            const lines = accuracyLines(validTargets(engine, actor, move.id));
             const selection = await choose([
                 `${move.id} affects every ${move.side}.`,
                 "",
@@ -127,16 +125,17 @@ export async function runConsoleClient(
 
         const selected: EntityId[] = [];
         while (selected.length < move.targets) {
-            state = engine.getGameState();
-            const candidates = (move.side === "enemy" ? state.enemies : state.characters)
-                .filter((target) => !selected.includes(target.id));
+            const candidates = validTargets(engine, actor, move.id)
+                .filter((target): target is ValidTarget & { target: EntityId } =>
+                    target.target !== null && !selected.includes(target.target),
+                );
             if (candidates.length === 0) {
                 logLines.push(`Action failed: not enough targets for ${move.id}.`);
                 return false;
             }
 
-            const lines = accuracyLines(engine, actor, move, candidates.map((target) => target.id));
-            const choices = candidates.map((target, index) => `[${index + 1}] ${target.id}`);
+            const lines = accuracyLines(candidates);
+            const choices = candidates.map((target, index) => `[${index + 1}] ${target.target}`);
             choices.push(`[${choices.length + 1}] Back`);
             const choice = await choose([
                 `Choose target ${selected.length + 1} of ${move.targets} for ${move.id}.`,
@@ -147,7 +146,7 @@ export async function runConsoleClient(
                 ...choices,
             ], choices.length);
             if (choice === candidates.length) return false;
-            selected.push(candidates[choice].id);
+            selected.push(candidates[choice].target);
         }
 
         return execute({ type: "attack", actor, move: move.id, targets: selected });
@@ -210,7 +209,7 @@ export async function runConsoleClient(
             const menu: MenuItem[] = actions.map((action) => ({
                 label: moveLabel(action),
                 detailLines: action.move.targets === 0
-                    ? accuracyLines(engine, actor.id, action.move, [null])
+                    ? accuracyLines(validTargets(engine, actor.id, action.move.id))
                     : undefined,
                 select: async () => {
                     if (!action.available) {
@@ -313,20 +312,23 @@ export async function runConsoleClient(
 }
 
 function accuracyLines(
-    engine: GameEngine,
-    actor: EntityId,
-    move: Move,
-    targetIds: (EntityId | null)[],
+    targets: ValidTarget[],
 ): string[] {
     return [
         ACCURACY_HEADER,
-        ...targetIds.map((target) =>
+        ...targets.map((target) =>
             formatAccuracyRow(
-                target ?? "No target",
-                engine.getAccuracyPreview(actor, target, move.id),
+                target.target ?? "No target",
+                target.accuracy,
             ),
         ),
     ];
+}
+
+function validTargets(engine: GameEngine, actor: EntityId, move: string): ValidTarget[] {
+    return engine.getTargets(actor, move).filter(
+        (target): target is ValidTarget => target.valid,
+    );
 }
 
 function appendResult(logLines: string[], result: ActionResult, previousRound: number): void {

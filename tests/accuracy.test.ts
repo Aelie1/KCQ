@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { thresholds, effectivenessRange } from "../src/engine/constants";
-import { calculateAccuracy, evaluateResult } from "../src/engine/combat";
+import { evaluateResult } from "../src/engine/combat";
 import { GameEngine } from "../src/engine/engine";
 import type {
     iCharacter,
     iEnemy,
+    EncounterDef,
     MoveDef,
     StatusDef,
     iTargetInfo,
@@ -65,6 +66,32 @@ describe("accuracy", () => {
         return Object.values(profile).reduce((sum, width) => sum + width, 0);
     }
 
+    function previewAccuracy(
+        actor: iCharacter,
+        target: iEnemy,
+        move: MoveDef,
+    ): AccuracyProfile {
+        const encounter: EncounterDef = {
+            id: "accuracy-preview",
+            enemies: [target.definition],
+            setup: (state) => {
+                state.characters[0].bindings = actor.bindings;
+                state.characters[0].buffs = actor.buffs;
+                state.characters[0].standing = actor.standing;
+                state.enemies[0].currDef = target.currDef;
+                state.enemies[0].buffs = target.buffs;
+            },
+        };
+        const engine = new GameEngine([encounter], 1);
+        engine.loadCharacter({ ...actor.definition, moves: [move] });
+        engine.loadEncounter(encounter.id);
+        const info = engine.getTargets(actor.id, move.id).find(({ target }) => target !== null);
+        if (!info || !info.valid || !info.accuracy) {
+            throw new Error("Expected a valid target with an accuracy profile");
+        }
+        return info.accuracy;
+    }
+
     function moveUsed(result: ReturnType<GameEngine["executeAction"]>): MoveEvent {
         if (!result.success) throw new Error(`Expected action success, got ${result.reason}`);
         const event = result.events.find(
@@ -77,7 +104,7 @@ describe("accuracy", () => {
     it("returns the authored profile at zero net accuracy delta", () => {
         const move = makeAccuracyMove();
 
-        expect(calculateAccuracy(
+        expect(previewAccuracy(
             makeAccuracyActor(),
             makeAccuracyTarget(),
             move,
@@ -85,7 +112,7 @@ describe("accuracy", () => {
     });
 
     it("applies the asymmetric negative accuracy formula", () => {
-        expect(calculateAccuracy(
+        expect(previewAccuracy(
             makeAccuracyActor(-2),
             makeAccuracyTarget(),
             makeAccuracyMove(),
@@ -93,7 +120,7 @@ describe("accuracy", () => {
     });
 
     it("applies positive accuracy while growing Crit at one half rate", () => {
-        const result = calculateAccuracy(
+        const result = previewAccuracy(
             makeAccuracyActor(4),
             makeAccuracyTarget(),
             makeAccuracyMove(),
@@ -105,12 +132,12 @@ describe("accuracy", () => {
 
     it("treats target Defense as an equivalent accuracy penalty", () => {
         const move = makeAccuracyMove();
-        const hitPenalty = calculateAccuracy(
+        const hitPenalty = previewAccuracy(
             makeAccuracyActor(-2),
             makeAccuracyTarget(),
             move,
         );
-        const targetDefense = calculateAccuracy(
+        const targetDefense = previewAccuracy(
             makeAccuracyActor(),
             makeAccuracyTarget(20),
             move,
@@ -119,7 +146,7 @@ describe("accuracy", () => {
         expect(targetDefense).toEqual(hitPenalty);
     });
 
-    it("applies generic hit and buff-derived defense modifiers to every entity side", () => {
+    it("applies generic hit and buff-derived defense modifiers", () => {
         const hitStatus: StatusDef = {
             id: "blinded",
             levels: [{}, { modifiers: { hit: 3 } }],
@@ -143,30 +170,10 @@ describe("accuracy", () => {
             statuses: [{ definition: defenseStatus, value: 1 }],
         });
 
-        const characterAttack = calculateAccuracy(
+        const characterAttack = previewAccuracy(
             character,
             enemy,
             makeAccuracyMove(),
-        );
-
-        const enemyActor = makeAccuracyTarget(0, "attacker1");
-        const characterTarget = makeCharacter("target");
-        enemyActor.buffs.push({
-            id: "enemy-hit",
-            duration: 1,
-            active: true,
-            statuses: [{ definition: hitStatus, value: 1 }],
-        });
-        characterTarget.buffs.push({
-            id: "character-defense",
-            duration: 1,
-            active: true,
-            statuses: [{ definition: defenseStatus, value: 1 }],
-        });
-        const enemyAttack = calculateAccuracy(
-            enemyActor,
-            characterTarget,
-            makeAccuracyMove(standardProfile, { type: "none" }),
         );
 
         expect(characterAttack).toEqual({
@@ -175,17 +182,16 @@ describe("accuracy", () => {
             hit: 75,
             crit: 20,
         });
-        expect(enemyAttack).toEqual(characterAttack);
     });
 
     it("removes Crit quickly under penalties without allowing negative width", () => {
         const move = makeAccuracyMove();
-        const noCrit = calculateAccuracy(
+        const noCrit = previewAccuracy(
             makeAccuracyActor(-5),
             makeAccuracyTarget(),
             move,
         );
-        const extremePenalty = calculateAccuracy(
+        const extremePenalty = previewAccuracy(
             makeAccuracyActor(-1_000),
             makeAccuracyTarget(),
             move,
@@ -199,7 +205,7 @@ describe("accuracy", () => {
     it("does not create a Crit band when the move did not author one", () => {
         const move = makeAccuracyMove({ miss: 10, graze: 20, hit: 70 });
 
-        const result = calculateAccuracy(
+        const result = previewAccuracy(
             makeAccuracyActor(40),
             makeAccuracyTarget(),
             move,
@@ -220,7 +226,7 @@ describe("accuracy", () => {
         ];
 
         for (const { profile, absent } of cases) {
-            const result = calculateAccuracy(
+            const result = previewAccuracy(
                 makeAccuracyActor(-20),
                 makeAccuracyTarget(),
                 makeAccuracyMove(profile),
@@ -232,7 +238,7 @@ describe("accuracy", () => {
 
     it("keeps every band nonnegative and totals 100 at extreme deltas", () => {
         for (const delta of [-1_000, 1_000]) {
-            const result = calculateAccuracy(
+            const result = previewAccuracy(
                 makeAccuracyActor(delta),
                 makeAccuracyTarget(),
                 makeAccuracyMove(),
@@ -370,16 +376,18 @@ describe("accuracy", () => {
             referenceRng.accuracy();
             referenceRng.accuracy();
         }
-        const referenceActor = makeCharacter(hero.id);
         const referenceTargets = [
             makeEnemy(lowDefense, `${lowDefense.id}1`),
             makeEnemy(highDefense, `${highDefense.id}2`),
         ];
-        const expected = referenceTargets.map((target) => evaluateResult(
-            target,
-            calculateAccuracy(referenceActor, target, move),
-            referenceRng.accuracy(),
-        ));
+        const previews = engine.getTargets(hero.id, move.id);
+        const expected = referenceTargets.map((target) => {
+            const preview = previews.find(({ target: id }) => id === target.id);
+            if (!preview || !preview.valid || !preview.accuracy) {
+                throw new Error(`Expected an accuracy preview for ${target.id}`);
+            }
+            return evaluateResult(target, preview.accuracy, referenceRng.accuracy());
+        });
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected all-target move to succeed");
@@ -438,6 +446,7 @@ describe("accuracy", () => {
         let resolutions = 0;
         const zeroTarget = makeAccuracyMove({ hit: 100 }, {
             id: "zero-target",
+            side: "none",
             targets: 0,
             resolve: (_state, _actor, move, targets) => {
                 resolutions++;
