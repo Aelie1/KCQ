@@ -108,7 +108,7 @@ describe("actor-level action restrictions", () => {
             thresholds.easy,
         );
 
-        expect(engine.getActions(hero.id).find((action) => action.move.id === mouthMove.id))
+        expect(engine.getMoves(hero.id).find((action) => action.move.id === mouthMove.id))
             .toMatchObject({ available: true });
         expect(engine.getEscapes(hero.id)?.options).toContainEqual(
             expect.objectContaining({ target: hero.id, binding: source.id }),
@@ -132,7 +132,7 @@ describe("move and escape restrictions", () => {
         (value, armsBlocked, boundValue) => {
             const { engine, hero, foeId, armsMove, mouthMove } =
                 setupBoundEngine(latexArms, value);
-            const actions = engine.getActions(hero.id);
+            const actions = engine.getMoves(hero.id);
 
             expect(engine.getGameState().characters[0].status).toContainEqual({
                 id: bound.id,

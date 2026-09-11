@@ -1,7 +1,7 @@
+import { resolveMove } from "./combat";
 import { evaluateIntention } from "./enemies";
 import { getBindingLevel } from "./helpers";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, MoveDef } from "./itypes";
-import { resolveMove } from "./combat";
 import { getStatuses } from "./status";
 import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo } from "./types";
 
@@ -34,7 +34,9 @@ function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
     return {
         ..._enemy,
         intention: enemy.intention ? serializeIntention(state, enemy.intention) : null,
-        buffs: enemy.buffs.map(serializeBuff)
+        buffs: enemy.buffs.map(serializeBuff),
+        cooldowns: {..._enemy.cooldowns},
+
     };
 }
 
@@ -66,7 +68,6 @@ export function serializeEffect(effect: iEffect): Effect {
         case "buff":
             return {
                 ...effect,
-                source: effect.source.id,
                 target: effect.target.id,
                 buff: effect.buff.id
             }
@@ -83,7 +84,8 @@ function serializeBuff(buff: iBuff): Buff {
     const { addedMoves, ..._buff } = buff;
     return {
         ..._buff,
-        statuses: buff.statuses?.map(serializeStatus)
+        statuses: buff.statuses?.map(serializeStatus),
+        modifiers: {..._buff.modifiers}
     };
 }
 

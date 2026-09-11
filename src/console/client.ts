@@ -203,7 +203,7 @@ export async function runConsoleClient(
             const state = engine.getGameState();
             const actor = state.characters.find((character) => character.id === characterId);
             if (!actor) return;
-            const actions = engine.getActions(actor.id);
+            const actions = engine.getMoves(actor.id);
             const escapes = engine.getEscapes(actor.id);
             const escapeAvailable = (escapes?.options.length ?? 0) > 0;
             const stance = engine.stanceAvailable(actor.id);

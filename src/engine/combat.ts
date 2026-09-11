@@ -224,9 +224,8 @@ export function tickBuffs(state: iGameState): GameEffects {
                 effects.push({
                     type: "buff",
                     buff: buff,
-                    source: entity,
                     target: entity,
-                    added: false
+                    operation: "remove"
                 });
             }
         }

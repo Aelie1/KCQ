@@ -1,11 +1,11 @@
 import { calculateAccuracy, evaluateResult } from "./combat";
+import { thresholds } from "./constants";
+import { GameEffects } from "./effects";
+import { findBinding } from "./find";
 import { isEnemy } from "./helpers";
 import { BindingDef, EnemyDef, iCharacter, iEnemy, iGameState, iIntention, iIntentionTarget, iTargetInfo } from "./itypes";
-import { GameEffects } from "./effects";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";
-import { thresholds } from "./constants";
-import { findBinding } from "./find";
 
 export function spawnEnemy(state: iGameState, enemy: EnemyDef): GameEffects {
     const result = new GameEffects();

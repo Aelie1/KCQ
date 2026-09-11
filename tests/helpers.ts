@@ -164,7 +164,7 @@ export function expectMoveRejection(
     target: string,
     reason: ActionFailureReason,
 ) {
-    expect(engine.getActions(actor).find((action) => action.move.id === move)).toMatchObject({
+    expect(engine.getMoves(actor).find((action) => action.move.id === move)).toMatchObject({
         available: false,
         reason,
     });

@@ -1,13 +1,9 @@
-import { resolveEscape } from "./combat";
-import { tickBuffs } from "./combat";
-import { calculateAccuracy, evaluateResult, setStance } from "./combat";
+import { calculateAccuracy, evaluateResult, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns } from "./combat";
 import { GameEffects } from "./effects";
 import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
-import { tickCooldowns } from "./combat";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
-import { type CharacterDef, type EncounterDef, type iCharacter, type iEntity, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
-import { resolveMove } from "./combat";
 import { getMoves, isValidMove } from "./helpers";
+import { type CharacterDef, type EncounterDef, type iCharacter, type iEntity, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
 import { Random } from "./random";
 import { serializeEffect, serializeGameState, serializeMove } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canMove, canUseMoveType, isIncapacitated, isSkipped } from "./status";
@@ -141,7 +137,7 @@ export class GameEngine {
         }
     }
 
-    getActions(actor: EntityId): ActionInfo[] {
+    getMoves(actor: EntityId): ActionInfo[] {
         const actions: ActionInfo[] = [];
         const character = findCharacter(this.state, actor);
         if (character) {

@@ -1,6 +1,6 @@
 import { thresholds } from "./constants";
 import { findBinding, findBuff } from "./find";
-import { isEnemy, isValidEntity } from "./helpers";
+import { isValidEntity } from "./helpers";
 import { BindingDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState } from "./itypes";
 import { BondageEvent, DamageEvent, EnemyEvent, GameEvent } from "./types";
 
@@ -60,8 +60,8 @@ export class GameEffects {
                     }
                     break;
                 case "buff":
-                    if (effect.added) {
-                        this.stack(addBuff(effect.source, effect.target, effect.buff))
+                    if (effect.operation == "add") {
+                        this.stack(addBuff(effect.target, effect.buff))
                     } else {
                         this.stack(removeBuff(effect.target, effect.buff))
                     }
@@ -142,11 +142,10 @@ function removeBinding(state: iGameState, target: iCharacter, type: BindingDef, 
     return result;
 }
 
-function addBuff(actor: iEntity, target: iEntity, buff: iBuff): GameEffects {
+function addBuff(target: iEntity, buff: iBuff): GameEffects {
     const result = new GameEffects();
     const oldBuff = findBuff(target, buff.id);
     const newBuff = { ...buff };
-    newBuff.active = !isEnemy(actor);
     if (oldBuff) {
         const index = target.buffs.indexOf(oldBuff);
         target.buffs[index] = newBuff;

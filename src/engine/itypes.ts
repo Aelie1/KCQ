@@ -118,8 +118,7 @@ interface iBindingEffect  extends Omit<BindingEffect, "target" | "binding"> {
     binding: BindingDef;
 }
 
-interface iBuffEffect extends Omit<BuffEffect, "source" | "target" | "buff">  {
-    source: iEntity;
+interface iBuffEffect extends Omit<BuffEffect, "target" | "buff">  {
     target: iEntity;
     buff: iBuff;
 }

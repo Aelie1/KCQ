@@ -1,10 +1,8 @@
-import { pickBinding } from "../../engine/enemies";
-import { calculateAccuracy, evaluateResult } from "../../engine/combat";
-import { pickTarget, validTargets } from "../../engine/enemies";
+import { calculateAccuracy, evaluateResult, resolveMove } from "../../engine/combat";
+import { pickBinding, pickTarget, validTargets } from "../../engine/enemies";
 import { findBuff, findCharacter, findEnemy } from "../../engine/find";
 import { isCharacter } from "../../engine/helpers";
 import { EnemyAction, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, MoveDef, s } from "../../engine/itypes";
-import { resolveMove } from "../../engine/combat";
 import { effectivenessInt, Random } from "../../engine/random";
 import { helpless, immobilized, isIncapacitated, stunned } from "../../engine/status";
 import { ModifierSet } from "../../engine/types";
@@ -39,7 +37,7 @@ const latexSpray: MoveDef = {
         graze: 25,
         hit: 65
     },
-    type: "enemy"
+    type: "none"
 };
 
 function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, active: boolean): iEffect[] {
@@ -70,7 +68,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
         id: "pounce",
         statuses: tStatus,
         modifiers: tModifiers,
-        active: false,
+        active: active,
         addedMoves: [throwOff],
         linkedEntity: enemy.id
     }
@@ -78,24 +76,22 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
     const eBuff: iBuff = {
         id: "pounce",
         modifiers: aModifiers,
-        active: false,
+        active: active,
         linkedEntity: character.id
     }
 
     effects.push({
-        source: active ? character : enemy,
         target: character,
         type: "buff",
         buff: cBuff,
-        added: true
+        operation: "add"
     });
 
     effects.push({
-        source: active ? character : enemy,
         target: enemy,
         type: "buff",
         buff: eBuff,
-        added: true
+        operation: "add"
     });
 
     return effects;
@@ -154,7 +150,7 @@ const pounce: MoveDef = {
         hit: 50,
         crit: 10
     },
-    type: "enemy"
+    type: "none"
 };
 
 const latexMist: MoveDef = {
@@ -172,11 +168,10 @@ const latexMist: MoveDef = {
         }
         for (const character of validTargets(state.characters)) {
             effects.push({
-                source: actor,
                 target: character,
                 type: "buff",
                 buff: buff,
-                added: true
+                operation: "add"
             });
         }
 
@@ -216,7 +211,7 @@ const latexMist: MoveDef = {
         hit: 25,
         crit: 5
     },
-    type: "enemy"
+    type: "none"
 }
 
 export const skunkette: EnemyDef = {
@@ -282,17 +277,15 @@ export const skunkette: EnemyDef = {
                     if (newLevel === 0) {
                         effects.push({
                             type: "buff",
-                            source: target,
                             target: character,
                             buff: tBuff,
-                            added: false
+                            operation: "remove"
                         });
                         effects.push({
                             type: "buff",
-                            source: target,
                             target: target,
                             buff: buff,
-                            added: false
+                            operation: "remove"
                         });
                     } else {
                         effects.push(...createPounceBuffs(character, target, newLevel, true));
@@ -312,10 +305,9 @@ export const skunkette: EnemyDef = {
                 if (tBuff !== undefined) {
                     effects.push({
                         type: "buff",
-                        source: target,
                         target: character,
                         buff: tBuff,
-                        added: false
+                        operation: "remove"
                     });
                 }
             }
@@ -337,11 +329,10 @@ const throwOff: MoveDef = {
         }
 
         effects.push({
-            source: actor,
             target: actor,
             type: "buff",
             buff: buff,
-            added: false
+            operation: "remove"
         });
 
         if (!buff.linkedEntity) {
@@ -364,11 +355,10 @@ const throwOff: MoveDef = {
         }
 
         effects.push({
-            source: actor,
             target: target,
             type: "buff",
             buff: tBuff,
-            added: false
+            operation: "remove"
         });
 
         if (pounce.cooldown !== undefined) {
@@ -386,6 +376,6 @@ const throwOff: MoveDef = {
         miss: 40,
         hit: 60
     },
-    type: "enemy"
+    type: "none"
 };
 

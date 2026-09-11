@@ -98,10 +98,9 @@ export interface BindingEffect {
 
 export interface BuffEffect {
     type: "buff";
-    source: EntityId;
     target: EntityId;
     buff: BuffId;
-    added: boolean;
+    operation: "add" | "remove";
 }
 
 
@@ -129,11 +128,16 @@ export type MoveType =
     | "arms"
     | "mouth"
     | "legs"
-    | "enemy";
+    | "none";
 
 export type MoveId = string;
 
-export type AccuracyResult = "miss" | "graze" | "hit" | "crit" | "none";
+export type AccuracyResult = 
+    | "miss" 
+    | "graze" 
+    | "hit" 
+    | "crit" 
+    | "none";
 
 export type AccuracyProfile = Partial<Record<AccuracyResult, number>>;
 
@@ -233,7 +237,11 @@ export interface EscapeInfo {
     effects: Effect[];
 }
 
-export type ActionType = "attack" | "escape" | "stance" | "endTurn"
+export type ActionType = 
+    | "attack" 
+    | "escape" 
+    | "stance" 
+    | "endTurn"
 
 export type PlayerAction = AttackAction | EscapeAction | StanceAction | EndTurnAction;
 

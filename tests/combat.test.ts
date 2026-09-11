@@ -24,7 +24,7 @@ function expectMoveRejection(
     target: string,
     reason: ActionFailureReason,
 ) {
-    expect(engine.getActions(actor).find((action) => action.move.id === move)).toMatchObject({
+    expect(engine.getMoves(actor).find((action) => action.move.id === move)).toMatchObject({
         available: false,
         reason,
     });
@@ -226,7 +226,7 @@ describe("move validation and player actions", () => {
     it("reports authored moves without leaking their executable functions", () => {
         const engine = setupAuthoredCombat();
 
-        expect(engine.getActions(ko.id)).toEqual(ko.moves.map((definition) => ({
+        expect(engine.getMoves(ko.id)).toEqual(ko.moves.map((definition) => ({
             move: {
                 id: definition.id,
                 target: definition.target,
@@ -240,7 +240,7 @@ describe("move validation and player actions", () => {
     it.each(["missing", `${skunkette.id}1`])(
         "returns no player actions for non-character id %s",
         (id) => {
-            expect(setupAuthoredCombat().getActions(id)).toEqual([]);
+            expect(setupAuthoredCombat().getMoves(id)).toEqual([]);
         },
     );
 
