@@ -89,6 +89,18 @@ export function getModifiers(target: iEntity): ModifierSet {
     return modifiers;
 }
 
+export function getBlockedMoveTypes(actor: iCharacter): MoveType[] {
+    const statuses: iStatus[] = getStatuses(actor);
+    const types: Set<MoveType> = new Set();
+    for (const status of statuses) {
+        const level = status.definition.levels[status.value];
+        for(const type of level.blockedMoveTypes ?? []) {
+            types.add(type);
+        }
+    }
+    return Array.from(types);
+}
+
 export function canAct(actor: iCharacter, type: ActionType): ActionFailure | undefined {
     if (isIncapacitated(actor)) {
         return {

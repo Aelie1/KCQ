@@ -31,6 +31,7 @@ const state: GameState = {
             { id: "standing", value: 1 },
         ],
         modifiers: { defense: -2 },
+        blockedMoveTypes: []
     }],
     enemies: [{
         id: "skunkette1",

@@ -33,6 +33,7 @@ export interface Character {
     buffs: Buff[];
     status: Status[];
     modifiers: ModifierSet;
+    blockedMoveTypes: MoveType[];
 }
 
 /*******************************************************
