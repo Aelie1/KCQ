@@ -97,7 +97,7 @@ export interface BindingEffect {
     type: "binding";
     target: EntityId;
     binding: BindingId;
-    amount: number;
+    amount?: number;
 }
 
 export interface BuffEffect {
@@ -244,7 +244,7 @@ export type ModifierId =
     | "hit"
     | "defense"
     | "escape"
-    | "effect"
+    | "vulnerability"
     | "potency"
     | "traps"
     | "willpower"
@@ -448,6 +448,7 @@ export interface Encounter {
     id: string;
     enemies: EntityId[];
     bindings: BindingId[];
+    traps: TrapId[];
 }
 
 export type EncounterId = string;

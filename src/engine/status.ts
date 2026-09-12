@@ -288,10 +288,10 @@ export const submissive: StatusDef = {
     id: "submissive",
     levels: [
         {},
-        { modifiers: { willpower: -1, effect: 1 } },
-        { modifiers: { willpower: -2, effect: 2 } },
-        { modifiers: { willpower: -3, effect: 3 } },
-        { modifiers: { willpower: -4, effect: 4 } }
+        { modifiers: { willpower: -1, vulnerability: 1 } },
+        { modifiers: { willpower: -2, vulnerability: 2 } },
+        { modifiers: { willpower: -3, vulnerability: 3 } },
+        { modifiers: { willpower: -4, vulnerability: 4 } }
     ]
 }
 

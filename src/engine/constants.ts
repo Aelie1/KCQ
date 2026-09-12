@@ -1,7 +1,7 @@
 import { HitBand, BindingLevel } from "./types";
 
 export const BINDING_MODIFIER = 0.1;
-export const EFFECT_MODIFIER = 0.125;
+export const EFFECTIVENESS_MODIFIER = 0.125;
 export const DEFENSE_MODIFIER = 10;
 export const HIT_MODIFIER = 10;
 export const SPREAD_MODIFIER = 0.1;

@@ -1,3 +1,4 @@
+import { GameEffects } from "./effects";
 import { Random } from "./random";
 import {
     AccuracyProfile, ActionFailureReason, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect,
@@ -136,6 +137,7 @@ interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
 interface iBindingEffect  extends Omit<BindingEffect, "target" | "binding"> {
     target: iCharacter;
     binding: BindingDef;
+    onResolve?: (effect: iBindingEffect) => iEffect[];
 }
 
 interface iBuffEffect extends Omit<BuffEffect, "target" | "buff">  {
@@ -237,9 +239,15 @@ interface StatusLevelDef {
  * Encounters
  *******************************************************/
 
+export interface TrapSetup {
+    definition: TrapDef;
+    amount: number;
+}
+
 export interface EncounterDef {
     id: string;
     enemies: EnemyDef[];
     bindings: BindingDef[];
+    traps: TrapSetup[];
     setup?: (state: iGameState) => void;
 }

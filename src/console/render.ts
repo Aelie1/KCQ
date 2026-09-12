@@ -199,7 +199,7 @@ const MODIFIER_DISPLAY: readonly [ModifierId, string, MoveType?][] = [
     ["hit", "Hit"],
     ["defense", "Def"],
     ["escape", "Esc"],
-    ["effect", "Eff"],
+    ["vulnerability", "Vuln"],
     ["potency", "Pot"],
     ["traps", "Trap"],
     ["willpower", "Will"],

@@ -100,6 +100,14 @@ export class GameEngine {
         }
         result.fromEffects(this.state, spawns);
 
+        for (const trap of encounter.traps) {
+            this.state.traps.push({
+                id: trap.definition.id,
+                definition: trap.definition,
+                amount: trap.amount
+            })
+        }
+
         if (encounter.setup) {
             encounter.setup(this.state);
         }
@@ -451,7 +459,7 @@ export class GameEngine {
                         if (target.target) {
                             if (target.accuracy) {
                                 const roll: number = this.rng.accuracy();
-                                const targetInfo: iTargetInfo = evaluateResult(target.target, target.accuracy, roll);
+                                const targetInfo: iTargetInfo = evaluateResult(actor, target.target, target.accuracy, roll);
                                 targets.push(targetInfo);
                                 if (targetInfo.band !== "miss") {
                                     anyHits = true;
@@ -467,7 +475,7 @@ export class GameEngine {
                         } else {
                             if (target.accuracy) {
                                 const roll: number = this.rng.accuracy();
-                                const result: AccuracyResult = evaluateProfile(target.accuracy, roll, 0);
+                                const result: AccuracyResult = evaluateProfile(actor, target.accuracy, roll, 0);
                                 iMove.band = result.band;
                                 iMove.effectiveness = result.effectiveness;
                                 if (result.band !== "miss") {
@@ -537,7 +545,7 @@ export class GameEngine {
 
                     //Redo some checks in case status has changed
                     let reason: ActionFailureReason | undefined;
-                    
+
                     const capability = canAct(actor, action.type);
                     if (capability) {
                         reason = capability.reason;

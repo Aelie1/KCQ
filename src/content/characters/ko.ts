@@ -5,7 +5,7 @@ const telekinesis: MoveDef = {
     id: "telekinesis",
     side: "enemy",
     targets: 1,
-    baseDamage: 10,
+    baseDamage: 100,
     type: "mouth",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
@@ -34,7 +34,7 @@ const fairypunch: MoveDef = {
     id: "fairypunch",
     side: "enemy",
     targets: "all",
-    baseDamage: 10,
+    baseDamage: 100,
     type: "arms",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];

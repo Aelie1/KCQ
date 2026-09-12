@@ -4,7 +4,7 @@ import { BindingDef, iBinding, iBuff, iCharacter, iEffect, iGameState, s } from 
 import { bound, breathless, gagged, getModifier, hobbled, incapacitated, isIncapacitated, submissive, vibrating } from "../../engine/status";
 import { skunkette } from "./skunkette";
 
-const latexBindings: BindingDef = {
+export const latexBindings: BindingDef = {
     id: "latexBindings",
     status: {},
     data: {

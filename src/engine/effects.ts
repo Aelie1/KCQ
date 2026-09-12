@@ -40,6 +40,12 @@ export class GameEffects {
         }
     }
 
+    private stackEffects(other: iEffect[]) {
+        for (let i = other.length - 1; i >= 0; i--) {
+            this.effects.push(other[i]);
+        }
+    }
+
     private resolve(state: iGameState) {
         this.effects.reverse();
 
@@ -53,10 +59,15 @@ export class GameEffects {
             }
             switch (effect.type) {
                 case "binding":
-                    if (effect.amount > 0) {
-                        this.stack(addBinding(state, effect.target, effect.binding, effect.amount));
-                    } else {
-                        this.stack(removeBinding(state, effect.target, effect.binding, -effect.amount));
+                    if (effect.onResolve) {
+                        this.stackEffects(effect.onResolve(effect));
+                    }
+                    if (effect.amount !== undefined) {
+                        if (effect.amount > 0) {
+                            this.stack(addBinding(state, effect.target, effect.binding, effect.amount));
+                        } else {
+                            this.stack(removeBinding(state, effect.target, effect.binding, -effect.amount));
+                        }
                     }
                     break;
                 case "buff":

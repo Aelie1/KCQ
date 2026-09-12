@@ -45,7 +45,7 @@ export function evaluateIntention(state: iGameState, intention: iIntention): iTa
         if (info.valid) {
             if (info.target) {
                 if (info.accuracy) {
-                    const targetInfo = evaluateResult(info.target, info.accuracy, roll.roll);
+                    const targetInfo = evaluateResult(intention.actor, info.target, info.accuracy, roll.roll);
                     targets.push(targetInfo);
                 } else {
                     targets.push({
@@ -56,7 +56,7 @@ export function evaluateIntention(state: iGameState, intention: iIntention): iTa
                 }
             } else {
                 if (info.accuracy) {
-                    const result = evaluateProfile(info.accuracy, roll.roll, 0);
+                    const result = evaluateProfile(intention.actor, info.accuracy, roll.roll, 0);
                     intention.move.effectiveness = result.effectiveness;
                     intention.move.band = result.band;
                 } else {

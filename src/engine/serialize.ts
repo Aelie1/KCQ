@@ -159,6 +159,7 @@ export function serializeEncounter(encounter: EncounterDef): Encounter {
     return {
         id: encounter.id,
         enemies: encounter.enemies.map(x => x.id),
-        bindings: encounter.bindings.map(x => x.id)
+        bindings: encounter.bindings.map(x => x.id),
+        traps: encounter.traps.map(x => x.definition.id)
     }
 }

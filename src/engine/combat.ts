@@ -1,4 +1,4 @@
-import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECT_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "./constants";
+import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iValidityInfo, MoveDef } from "./itypes";
@@ -219,16 +219,17 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
 }
 
 
-export function evaluateResult(target: iEntity, accuracy: AccuracyProfile, roll: number): iTargetInfo {
+export function evaluateResult(actor: iEntity, target: iEntity, accuracy: AccuracyProfile, roll: number): iTargetInfo {
     return {
         target: target,
-        ...evaluateProfile(accuracy, roll, getModifier(target, "effect"))
+        ...evaluateProfile(actor, accuracy, roll, getModifier(target, "vulnerability"))
     };
 }
 
-export function evaluateProfile(accuracy: AccuracyProfile, roll: number, effect: number): AccuracyResult {
+export function evaluateProfile(actor: iEntity, accuracy: AccuracyProfile, roll: number, vulnerability: number): AccuracyResult {
     const order: HitBand[] = ["miss", "graze", "hit", "crit"];
     const result: AccuracyResult = { band: "none", effectiveness: 0 }
+    const potency = getModifier(actor, "potency");
 
     let cumulative = 0;
     for (const band of order) {
@@ -239,7 +240,9 @@ export function evaluateProfile(accuracy: AccuracyProfile, roll: number, effect:
                 if (band !== "miss") {
                     const [min, max] = effectivenessRange[band];
                     const ratio = (roll - cumulative) / value;
-                    result.effectiveness = (min + (max - min) * ratio) * (1 + effect * EFFECT_MODIFIER);
+                    result.effectiveness = (min + (max - min) * ratio)
+                        * (1 + vulnerability * EFFECTIVENESS_MODIFIER)
+                        * (1 + potency * EFFECTIVENESS_MODIFIER);
                 }
                 return result;
             }
@@ -247,7 +250,9 @@ export function evaluateProfile(accuracy: AccuracyProfile, roll: number, effect:
         }
     }
     //rolled above the highest band, return the top of the highest band
-    result.effectiveness = effectivenessRange[result.band][1] * (1 + effect * EFFECT_MODIFIER);
+    result.effectiveness = effectivenessRange[result.band][1]
+        * (1 + vulnerability * EFFECTIVENESS_MODIFIER)
+        * (1 + potency * EFFECTIVENESS_MODIFIER);
 
     return result;
 }
@@ -265,7 +270,7 @@ export function tickBuffs(state: iGameState): GameEffects {
                 continue;
             }
             buff.duration--;
-            if (buff.duration === 0) {
+            if (buff.duration <= 0) {
                 effects.push({
                     type: "buff",
                     buff: buff,
@@ -344,7 +349,7 @@ function normalizeEffect(effect: iEffect): iEffect {
         case "damage":
             return {
                 ...effect,
-                amount: Math.ceil(effect.amount)
+                ...(effect.amount !== undefined ? { amount: Math.ceil(effect.amount) } : {})
             };
         default:
             return effect;

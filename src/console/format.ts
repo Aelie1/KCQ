@@ -6,7 +6,7 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
         case "damage":
             return `${target}${effect.amount} damage`;
         case "binding":
-            return `${target}${effect.binding} ${signed(effect.amount)}`;
+            return `${target}${effect.binding} ${effect.amount ? signed(effect.amount) : "+??"}`;
         case "buff":
             return `${target}${effect.buff} added`;
         case "enemy":
@@ -42,7 +42,7 @@ export function formatEffects(effects: Effect[], includeTarget = false): string[
         const group = groupedBindings.get(entry.key)!;
         const first = group[0];
         const target = includeTarget ? `${first.target} ` : "";
-        return `${target}${group.map((effect) => effect.binding).join(", ")} ${signed(first.amount)}`;
+        return `${target}${group.map((effect) => effect.binding).join(", ")} ${first.amount ? signed(first.amount) : "+??"}`;
     });
 }
 
@@ -192,7 +192,7 @@ function modifierLabel(modifier: ModifierId): string {
         hit: "Hit",
         defense: "Def",
         escape: "Escape",
-        effect: "Effect",
+        vulnerability: "Vulnerability",
         potency: "Potency",
         traps: "Traps",
         willpower: "Willpower",

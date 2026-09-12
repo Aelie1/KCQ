@@ -19,8 +19,8 @@ function makeTrap(target: iCharacter, trap: iTrap, binding: BindingDef, size: nu
     return effects;
 }
 
-export const latexPuddle : TrapDef = {
-    id: "latexPuddle",
+export const trapPuddle : TrapDef = {
+    id: "trapPuddle",
     onTrigger(target: iCharacter, trap: iTrap, roll: number): iEffect[]{
         const effects: iEffect[] = [];
         const _trap = {...trap}

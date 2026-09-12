@@ -1,6 +1,6 @@
 import { getMoves } from "./helpers";
-import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
-import type { BindingId, BuffId, EntityId, MoveId } from "./types";
+import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iTrap, MoveDef } from "./itypes";
+import type { BindingId, BuffId, EntityId, MoveId, TrapId } from "./types";
 
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {
@@ -13,6 +13,10 @@ export function findEnemy(state: iGameState, id: EntityId): iEnemy | undefined {
 
 export function findEntity(state: iGameState, id: EntityId): iEntity | undefined {
     return findCharacter(state, id) ?? findEnemy(state, id);
+}
+
+export function findTrap(state: iGameState, id: TrapId): iTrap | undefined {
+    return state.traps.find(x => x.id == id)
 }
 
 export function findMove(entity: iCharacter, id: MoveId): MoveDef | undefined {
