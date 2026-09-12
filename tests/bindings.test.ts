@@ -166,7 +166,7 @@ describe("binding levels and effective statuses through GameEngine", () => {
         expect(bindingState(engine, rope.id)).toMatchObject({ value, level });
     });
 
-    it("publishes only the strongest duplicate status and applies its modifier", () => {
+    it("publishes statuses on their bindings and applies the strongest modifier", () => {
         const blinded: StatusDef = {
             id: "blinded",
             levels: [
@@ -198,7 +198,8 @@ describe("binding levels and effective statuses through GameEngine", () => {
 
         use(engine, "hero", applyBoth.id);
 
-        expect(characterState(engine).status).toEqual([{ id: "blinded", value: 2 }]);
+        expect(bindingState(engine, weak.id)?.status).toEqual([{ id: "blinded", value: 1 }]);
+        expect(bindingState(engine, strong.id)?.status).toEqual([{ id: "blinded", value: 2 }]);
         expect(characterState(engine).modifiers).toEqual({ hit: -4 });
         expect(targetAccuracy(engine, "hero", attack.id, "foe1")).toEqual({
             miss: 60,

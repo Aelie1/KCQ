@@ -20,7 +20,6 @@ describe("stance toggling", () => {
         expect(engine.getGameState().characters[0]).toMatchObject({
             id: "hero",
             standing: false,
-            status: [],
         });
     });
 
@@ -60,9 +59,6 @@ describe("stance toggling", () => {
                 characters: [{ id: hero.id, standing: true, acted: false }],
             },
         });
-        expect(engine.getGameState().characters[0].status).toEqual([
-            { id: "standing", value: 1 },
-        ]);
         expect(engine.executeAction({
             type: "attack",
             actor: hero.id,
@@ -308,11 +304,10 @@ describe("stance toggling", () => {
             standing: true,
             acted: false,
             bonusEscapes: 0,
-            status: [
-                { id: immobilized.id, value: 1 },
-                { id: "standing", value: 1 },
-            ],
         });
+        expect(engine.getGameState().characters[0].bindings
+            .find((binding) => binding.id === immobilizingBinding.id)?.status)
+            .toEqual([{ id: immobilized.id, value: 1 }]);
     });
 
     it("keeps Pounce pending during the enemy phase, then activates it before stance reset", () => {
@@ -355,8 +350,11 @@ describe("stance toggling", () => {
         });
         expect(engine.getGameState().characters[0]).toMatchObject({
             standing: true,
-            buffs: [expect.objectContaining({ id: "pounce", active: true })],
-            status: expect.arrayContaining([{ id: "immobilized", value: 1 }]),
+            buffs: [expect.objectContaining({
+                id: "pounce",
+                active: true,
+                statuses: expect.arrayContaining([{ id: "immobilized", value: 1 }]),
+            })],
         });
     });
 

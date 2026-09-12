@@ -133,7 +133,8 @@ describe("move and escape restrictions", () => {
                 setupBoundEngine(latexArms, value);
             const actions = engine.getMoves(hero.id);
 
-            expect(engine.getGameState().characters[0].status).toContainEqual({
+            expect(engine.getGameState().characters[0].bindings
+                .find((binding) => binding.id === latexArms.id)?.status).toContainEqual({
                 id: bound.id,
                 value: boundValue,
             });

@@ -4,9 +4,8 @@ import type { GameEngine } from "../engine/engine";
 import type {
     ActionInfo,
     ActionResult,
-    BindingId,
+    Character,
     EntityId,
-    GameEvent,
     Move,
     PlayerAction,
     ValidTarget,
@@ -35,7 +34,7 @@ interface MenuItem {
 export async function runConsoleClient(
     engine: GameEngine,
     encounter: string,
-    initialOutput: GameEvent[] | string[] = [],
+    initialLog: string[] = [],
     streams: ConsoleStreams = { input: process.stdin, output: process.stdout },
 ): Promise<void> {
     const terminalWidth = streams.output.columns ?? 180;
@@ -46,13 +45,7 @@ export async function runConsoleClient(
     }
 
     const rl = createInterface({ input: streams.input, output: streams.output });
-    const initialEvents = initialOutput.length > 0 && typeof initialOutput[0] !== "string"
-        ? initialOutput as GameEvent[]
-        : [];
-    const logLines = initialEvents.length > 0
-        ? formatEvents(initialEvents)
-        : [...initialOutput as string[]];
-    let bindingIds = encounterBindings(initialEvents);
+    const logLines = [...initialLog];
     let running = true;
 
     const draw = (actionLines: string[]): void => {
@@ -62,9 +55,6 @@ export async function runConsoleClient(
             encounter,
             seed: engine.getSeed(),
             state: engine.getGameState(),
-            availability: engine.getAvailability(),
-            bindings: bindingIds,
-            bindingThresholds: engine.getThresholds(),
             actionLines,
             logLines,
         }, width, height);
@@ -95,7 +85,6 @@ export async function runConsoleClient(
     const execute = (action: PlayerAction): boolean => {
         const previousRound = engine.getGameState().turn.round;
         const result = engine.executeAction(action);
-        if (result.success) bindingIds = updateEncounterBindings(bindingIds, result.events);
         appendResult(logLines, result, previousRound);
         if (
             result.success
@@ -224,7 +213,7 @@ export async function runConsoleClient(
                     : undefined,
                 select: async () => {
                     if (!action.available) {
-                        logLines.push(`${action.move.id} -- ${action.reason}.`);
+                        logLines.push(`${action.move.id} unavailable: ${action.reason}.`);
                         return false;
                     }
                     return chooseTargets(actor.id, action.move);
@@ -232,19 +221,19 @@ export async function runConsoleClient(
             }));
             menu.push(
                 {
-                    label: `Escape / assist${escapeAvailable ? "" : " -- no legal escapes"}`,
+                    label: `Escape / assist${escapeAvailable ? "" : " - unavailable: no legal escapes"}`,
                     select: async () => {
                         if (escapeAvailable) return chooseEscape(actor.id);
-                        logLines.push("Escape / assist -- no legal escapes.");
+                        logLines.push("Escape / assist unavailable: no legal escapes.");
                         return false;
                     },
                 },
                 {
                     label: `Change stance -> ${actor.standing ? "moving" : "standing"}`
-                        + (stance.available ? "" : ` -- ${stance.reason}`),
+                        + (stance.available ? "" : ` - unavailable: ${stance.reason}`),
                     select: async () => {
                         if (stance.available) execute({ type: "stance", actor: actor.id });
-                        else logLines.push(`Stance change -- ${stance.reason}.`);
+                        else logLines.push(`Stance change unavailable: ${stance.reason}.`);
                         return false;
                     },
                 },
@@ -287,10 +276,11 @@ export async function runConsoleClient(
             const characterLines = availability.map((character, index) => {
                 const stateCharacter = state.characters.find((candidate) => candidate.id === character.id);
                 if (!character.available) {
-                    return `[-] ${character.id}  -- ${character.reason}`;
+                    return `[-] ${character.id}  UNAVAILABLE: ${character.reason}`;
                 }
-                return `[${index + 1}] ${character.id}`
-                    + (stateCharacter ? `  ${stateCharacter.acted ? "Acted" : "Ready"}` : "");
+                const line = `[${index + 1}] ${character.id}`
+                    + (stateCharacter ? `  ${readiness(stateCharacter)}` : "");
+                return line;
             });
             const endTurnNumber = availability.length + 1;
             const quitNumber = availability.length + 2;
@@ -358,18 +348,13 @@ function moveLabel(action: ActionInfo): string {
         : action.move.targets === 0
             ? "no target"
             : `${action.move.targets} ${action.move.side}`;
-    const availability = action.available ? "" : ` -- ${action.reason}`;
+    const availability = action.available ? "" : ` — unavailable: ${action.reason}`;
     return `${action.move.id} [${action.move.type}; ${target}]${availability}`;
 }
 
-function encounterBindings(events: GameEvent[]): BindingId[] {
-    return updateEncounterBindings([], events);
-}
-
-function updateEncounterBindings(current: BindingId[], events: GameEvent[]): BindingId[] {
-    let bindings = current;
-    for (const event of events) {
-        if (event.type === "encounter" && event.success) bindings = [...event.bindings];
-    }
-    return bindings;
+function readiness(character: Character): string {
+    if (!character.acted) return "READY";
+    return character.bonusEscapes > 0
+        ? `ACTED / ${character.bonusEscapes} BONUS ESCAPE`
+        : "ACTED";
 }
