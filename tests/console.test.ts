@@ -9,7 +9,7 @@ import { latexArms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { helpless } from "../src/engine/status";
-import type { GameEvent, GameState } from "../src/engine/types";
+import type { GameEvent, GameState, Intention } from "../src/engine/types";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -56,11 +56,28 @@ const state: GameState = {
 
 const bindingThresholds = new GameEngine([], 1).getThresholds();
 
+const longIntention: Intention = {
+    move: "royalMist",
+    targets: [{
+        target: "ko",
+        band: "crit",
+        effects: [
+            { type: "buff", target: "ko", buff: "latexMist", operation: "add" },
+            { type: "binding", target: "ko", binding: "latexTorso", amount: 19 },
+            { type: "binding", target: "ko", binding: "latexHead", amount: 19 },
+            { type: "binding", target: "ko", binding: "latexArms", amount: 19 },
+            { type: "binding", target: "ko", binding: "latexLegs", amount: 19 },
+        ],
+    }],
+    effects: [],
+};
+
 function renderState(
     gameState: GameState,
     availability: { id: string; available: boolean; reason?: "actorAlreadyActed" | "actorSkipped" | "actorIncapacitated" }[],
     bindings: string[] = [],
     width = 180,
+    height = 70,
 ): string {
     return renderScreen({
         encounter: "test",
@@ -71,7 +88,7 @@ function renderState(
         bindingThresholds,
         actionLines: [],
         logLines: [],
-    }, width, 70);
+    }, width, height);
 }
 
 async function runScriptedConsole(
@@ -110,6 +127,29 @@ describe("console formatting", () => {
         ]);
     });
 
+    it("wraps long intention effects beneath the effect column without losing content", () => {
+        const lines = formatIntention(longIntention, 59);
+        const effectColumn = lines[1].indexOf("latexMist");
+
+        expect(lines.length).toBeGreaterThan(2);
+        expect(lines[1]).toContain("ko           CRIT");
+        for (const continuation of lines.slice(2)) {
+            expect(continuation.slice(0, effectColumn)).toBe(" ".repeat(effectColumn));
+            expect(continuation).not.toContain("ko           CRIT");
+        }
+        for (const effect of ["latexMist", "latexTorso", "latexHead", "latexArms", "latexLegs"] as const) {
+            expect(lines.join("\n")).toContain(effect);
+        }
+        expect(lines.join("\n")).not.toContain("…");
+
+        const rendered = renderState(
+            { ...state, enemies: [{ ...state.enemies[0], intention: longIntention }] },
+            [{ id: "ko", available: true }],
+        );
+        expect(rendered).toContain("latexLegs +19");
+        expect(rendered).not.toContain("latexTorso,…");
+    });
+
     it("turns action events into readable log lines", () => {
         expect(formatEvents([
             { type: "moveUsed", actor: "ko", move: "telekinesis", targets: [{ target: "foe1", result: "hit" }] },
@@ -132,7 +172,7 @@ describe("console formatting", () => {
             modifiers: { defense: -2, hit: 4 },
         })).toBe(
             "Pounce (pending) (2 rounds) (linked: skunkette1) "
-            + "(IMMOBILIZED) (Def -2) (Hit +4)",
+            + "(Immobilized) (Def -2) (Hit +4)",
         );
     });
 
@@ -178,6 +218,20 @@ describe("console formatting", () => {
         expect(rendered).toContain("Intent: latexSpray");
         expect(rendered).toContain("Seed 8224");
         expect(rendered).toContain("skunkette1 [HP: 12/20]");
+    });
+
+    it("gives the upper panes five more rows at the normal console height", () => {
+        const rendered = renderState(
+            state,
+            [{ id: "ko", available: true }],
+            ["latexArms"],
+            180,
+            49,
+        );
+        const middleDivider = rendered.split("\n").findIndex((line) => line.includes("┼"));
+
+        expect(middleDivider - 3).toBe(29);
+        expect(middleDivider).toBe(32);
     });
 
     it("renders encounter-defined binding rows in order with calculated threshold markers", () => {

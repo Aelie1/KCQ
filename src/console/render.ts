@@ -45,7 +45,7 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
     const leftWidth = Math.floor((width - 3) * 2 / 3);
     const rightWidth = width - 3 - leftWidth;
     const contentHeight = height - 5;
-    const upperHeight = Math.floor(contentHeight * 0.56);
+    const upperHeight = Math.floor(contentHeight * 2 / 3);
     const lowerHeight = contentHeight - upperHeight;
 
     const party = fitPanel([
@@ -152,7 +152,7 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
 
     return enemies.flatMap((enemy, index) => {
         const lines = [`${enemy.id} [HP: ${enemy.currHp}/${enemy.maxHp}]  DEF ${enemy.currDef}`];
-        lines.push(...(enemy.intention ? formatIntention(enemy.intention) : ["  Intent: none"]));
+        lines.push(...(enemy.intention ? formatIntention(enemy.intention, width) : ["  Intent: none"]));
         if (enemy.buffs.length > 0) {
             lines.push(...wrapList(
                 "  Buffs: ",

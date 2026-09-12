@@ -67,19 +67,43 @@ function titleCase(value: string): string {
     return value.length === 0 ? value : value[0].toUpperCase() + value.slice(1).toLowerCase();
 }
 
-export function formatIntention(intention: Intention): string[] {
+export function formatIntention(intention: Intention, width?: number): string[] {
     const lines = [`  Intent: ${intention.move}`];
 
     for (const target of intention.targets) {
         const effects = formatEffects(target.effects).join(", ");
-        lines.push(
-            `    ${target.target.padEnd(12)} ${target.band.toUpperCase().padEnd(6)}`
-            + (effects ? ` ${effects}` : ""),
-        );
+        const prefix = `    ${target.target.padEnd(12)} ${target.band.toUpperCase().padEnd(6)}`;
+        lines.push(...formatIntentionLine(`${prefix} `, effects, width));
     }
 
     for (const effect of formatEffects(intention.effects, true)) {
-        lines.push(`    + ${effect}`);
+        lines.push(...formatIntentionLine("    + ", effect, width));
+    }
+
+    return lines;
+}
+
+function formatIntentionLine(prefix: string, value: string, width?: number): string[] {
+    if (!value) return [prefix.slice(0, -1)];
+    if (width === undefined || prefix.length + value.length <= width) return [`${prefix}${value}`];
+
+    const continuation = " ".repeat(prefix.length);
+    const lines: string[] = [];
+    let remaining = value;
+
+    while (remaining.length > 0) {
+        const linePrefix = lines.length === 0 ? prefix : continuation;
+        const available = Math.max(1, width - linePrefix.length);
+        if (remaining.length <= available) {
+            lines.push(`${linePrefix}${remaining}`);
+            break;
+        }
+
+        const comma = remaining.lastIndexOf(", ", available - 1);
+        const space = remaining.lastIndexOf(" ", available);
+        const split = comma >= 0 ? comma + 1 : space > 0 ? space : available;
+        lines.push(`${linePrefix}${remaining.slice(0, split).trimEnd()}`);
+        remaining = remaining.slice(split).trimStart();
     }
 
     return lines;
