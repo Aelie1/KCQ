@@ -314,25 +314,6 @@ export class GameEngine {
             return capability;
         }
 
-        if (action.type === "stance") {
-            result.fromResult(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
-            return {
-                success: true,
-                events: result.getEvents(),
-                state: this.getGameState(),
-            };
-        }
-
-        //If moving, check for traps
-        if (!actor.standing) {
-            for (const trap of this.state.traps) {
-                const roll = Math.max(0, this.rng.accuracy() + getModifier(actor,"traps") * TRAP_MODIFIER);
-                if (roll < trap.amount) {
-                    result.fromEffects(this.state, trap.definition.onTrigger(actor,trap,roll));
-                }
-            }
-        }
-
         switch (action.type) {
             case "attack": {
                 const move = findMove(actor, action.move);
@@ -421,6 +402,47 @@ export class GameEngine {
                     }
                 }
 
+                //If moving, check for traps
+                if (!actor.standing) {
+                    for (const trap of this.state.traps) {
+                        const roll = Math.max(0, this.rng.accuracy() + getModifier(actor,"traps") * TRAP_MODIFIER);
+                        if (roll < trap.amount) {
+                            result.fromEffects(this.state, trap.definition.onTrigger(actor,trap,roll));
+                        }
+                    }
+                    //Redo some checks in case status has changed
+                    if (!move.alwaysAvailable && !canAttack(actor)) {
+                        result.addEvent({
+                            type: "actionInterrupted",
+                            actor: actor.id,
+                            reason: "attackUnavailable"
+                        });
+                        actor.acted = true;
+                        this.state.turn.step++;
+                        return {
+                            success: true,
+                            events: result.getEvents(),
+                            state: this.getGameState(),
+                        };
+                    }
+    
+                    if (!canUseMoveType(actor, move.type)) {
+                        result.addEvent({
+                            type: "actionInterrupted",
+                            actor: actor.id,
+                            reason: "bindingRestriction"
+                        });
+                        actor.acted = true;
+                        this.state.turn.step++;
+                        return {
+                            success: true,
+                            events: result.getEvents(),
+                            state: this.getGameState(),
+                        };
+                    }
+    
+                }
+        
                 const iMove: iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 let anyHits: boolean = false;
@@ -505,6 +527,31 @@ export class GameEngine {
                     }
                 }
 
+                //If moving, check for traps
+                if (!actor.standing) {
+                    for (const trap of this.state.traps) {
+                        const roll = Math.max(0, this.rng.accuracy() + getModifier(actor,"traps") * TRAP_MODIFIER);
+                        if (roll < trap.amount) {
+                            result.fromEffects(this.state, trap.definition.onTrigger(actor,trap,roll));
+                        }
+                    }
+                    //Redo some checks in case status has changed
+                    if (actor !== target && !canAssist(actor)) {
+                        result.addEvent({
+                            type: "actionInterrupted",
+                            actor: actor.id,
+                            reason: "assistUnavailable"
+                        });
+                        actor.acted = true;
+                        this.state.turn.step++;
+                        return {
+                            success: true,
+                            events: result.getEvents(),
+                            state: this.getGameState(),
+                        };
+                    }
+                }
+
                 //now we have a valid actor, target, and binding -- execute the escape
                 result.fromEffects(this.state, resolveEscape(actor, target, binding));
                 if (!actor.acted) {
@@ -516,6 +563,14 @@ export class GameEngine {
                     actor.bonusEscapes--;
                 }
                 this.state.turn.step++;
+                return {
+                    success: true,
+                    events: result.getEvents(),
+                    state: this.getGameState(),
+                };
+            }
+            case "stance": {
+                result.fromResult(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
                 return {
                     success: true,
                     events: result.getEvents(),

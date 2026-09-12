@@ -94,6 +94,12 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 type: effect.type,
                 target: effect.definition.id
             }
+        case "trap":
+            return {
+                type: effect.type,
+                trap: effect.trap.id,
+                amount: effect.amount
+            }
     }
 }
 

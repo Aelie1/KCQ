@@ -365,7 +365,8 @@ export type GameEvent =
     | StanceEvent
     | EncounterEvent
     | CooldownEvent
-    | TrapEvent;
+    | TrapEvent
+    | InterruptEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
@@ -431,6 +432,12 @@ export interface TrapEvent {
     actor: EntityId;
     trap: TrapId;
     amount: number;
+}
+
+export interface InterruptEvent {
+    type: "actionInterrupted";
+    actor: EntityId;
+    reason: ActionFailureReason;
 }
 
 /*******************************************************
