@@ -284,6 +284,7 @@ describe("buff status integration through GameEngine", () => {
         execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
 
         expect(characterState(engine).status).toEqual([{ id: "blinded", value: 1 }]);
+        expect(characterState(engine).modifiers).toEqual({ hit: -2, defense: -3 });
         expect(targetAccuracy(engine, "hero", attack.id, "foe1")).toEqual({
             miss: 40,
             hit: 60,
@@ -324,6 +325,7 @@ describe("buff status integration through GameEngine", () => {
         });
         expect(buffState(engine, "pending-kit")?.active).toBe(false);
         expect(characterState(engine).status).toEqual([]);
+        expect(characterState(engine).modifiers).toEqual({});
         expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(false);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({
             miss: 20,
@@ -336,6 +338,7 @@ describe("buff status integration through GameEngine", () => {
             duration: 1,
         });
         expect(characterState(engine).status).toEqual([{ id: "blinded", value: 1 }]);
+        expect(characterState(engine).modifiers).toEqual({ hit: -3, defense: -3 });
         expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(true);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({
             miss: 50,
@@ -351,6 +354,7 @@ describe("buff status integration through GameEngine", () => {
         execute(engine, { type: "endTurn" });
         expect(buffState(engine, "pending-kit")).toBeUndefined();
         expect(characterState(engine).status).toEqual([]);
+        expect(characterState(engine).modifiers).toEqual({});
         expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(false);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({
             miss: 20,

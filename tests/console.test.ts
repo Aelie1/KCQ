@@ -26,7 +26,11 @@ const state: GameState = {
         bonusEscapes: 0,
         bindings: [{ id: "latexArms", value: 55, level: "extreme", data: {} }],
         buffs: [],
-        status: [{ id: "bound", value: 3 }],
+        status: [
+            { id: "bound", value: 3 },
+            { id: "standing", value: 1 },
+        ],
+        modifiers: { defense: -2 },
     }],
     enemies: [{
         id: "skunkette1",

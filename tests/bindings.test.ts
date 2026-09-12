@@ -199,6 +199,7 @@ describe("binding levels and effective statuses through GameEngine", () => {
         use(engine, "hero", applyBoth.id);
 
         expect(characterState(engine).status).toEqual([{ id: "blinded", value: 2 }]);
+        expect(characterState(engine).modifiers).toEqual({ hit: -4 });
         expect(targetAccuracy(engine, "hero", attack.id, "foe1")).toEqual({
             miss: 60,
             hit: 40,

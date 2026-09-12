@@ -26,6 +26,19 @@ describe("state serialization and combatant loading", () => {
         expect(state).not.toHaveProperty("nextEntityId");
     });
 
+    it("publishes the current binding thresholds through the public API", () => {
+        expect(new GameEngine([], 1).getThresholds()).toEqual({
+            thresholds: {
+                easy: 10,
+                medium: 20,
+                hard: 30,
+                extreme: 50,
+                impossible: 80,
+            },
+            max: 100,
+        });
+    });
+
     it("loads definitions into fresh combatant state through an encounter", () => {
         const hero = makeCharacterDef("hero");
         const engine = new GameEngine([multiEnemyEncounter], 1);
@@ -48,6 +61,7 @@ describe("state serialization and combatant loading", () => {
                 bindings: [],
                 buffs: [],
                 status: [],
+                modifiers: {},
             }],
             enemies: [
                 { id: "foe1", buffs: [] },
@@ -91,6 +105,7 @@ describe("state serialization and combatant loading", () => {
         if (!result.success) throw new Error("Expected prepare to succeed");
 
         const expected = engine.getGameState();
+        expect(expected.characters[0].modifiers).toEqual({ hitarms: -1 });
         const snapshots = [result.state, engine.getGameState()];
 
         for (const snapshot of snapshots) {
@@ -105,6 +120,7 @@ describe("state serialization and combatant loading", () => {
             snapshot.characters[0].bindings[0].value = 999;
             snapshot.characters[0].bindings[0].data.clientOnly = 999;
             snapshot.characters[0].status[0].value = 999;
+            snapshot.characters[0].modifiers.hitarms = -99;
             snapshot.enemies[0].currHp = 0;
             const intention = snapshot.enemies[0].intention;
             if (intention) {
@@ -143,8 +159,14 @@ describe("state serialization and combatant loading", () => {
             active: false,
             statuses: [{ definition: status, value: 1 }],
         };
+        const inactiveCharacterBuff: iBuff = {
+            id: "inactive-focus",
+            active: false,
+            statuses: [{ definition: status, value: 1 }],
+            modifiers: { hit: -100, defense: -100 },
+        };
         const character = makeCharacter();
-        character.buffs.push(characterBuff);
+        character.buffs.push(characterBuff, inactiveCharacterBuff);
         const enemyMove = makeWaitMove();
         const enemyDefinition = makeEnemyDef("foe", [enemyMove]);
         const enemy = makeEnemy(enemyDefinition);
@@ -163,6 +185,7 @@ describe("state serialization and combatant loading", () => {
 
         const serialized = serializeGameState(internalState);
 
+        expect(serialized.characters[0].modifiers).toEqual({ hit: -3 });
         expect(serialized.characters[0].buffs[0]).toEqual({
             id: "focus",
             duration: 2,
