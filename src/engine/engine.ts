@@ -6,10 +6,10 @@ import { findBinding, findCharacter, findEntity, findMove } from "./find";
 import { getMoves } from "./helpers";
 import { iEffect, iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
 import { Random } from "./random";
-import { serializeEffects, serializeGameState, serializeMove, serializeValidity } from "./serialize";
+import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, isIncapacitated, isSkipped } from "./status";
 import type {
-    AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId,
+    AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, Encounter, EncounterId, EntityId,
     EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo
 } from "./types";
 
@@ -18,6 +18,7 @@ export class GameEngine {
     private seed: number;
     private rng: Random;
     private encounters: EncounterDef[];
+    private currentEncounter: EncounterDef | null;
 
     constructor(encounters: EncounterDef[], seed?: number) {
         this.state = {
@@ -30,6 +31,7 @@ export class GameEngine {
         this.seed = seed;
         this.rng = new Random(seed);
         this.encounters = encounters;
+        this.currentEncounter = null;
     }
 
     getSeed(): number {
@@ -85,7 +87,9 @@ export class GameEngine {
             });
             return result.getEvents();
         }
-        
+
+        this.currentEncounter = encounter;
+
         const spawns: iEffect[] = [];
         for (const enemy of encounter.enemies) {
             spawns.push({
@@ -104,9 +108,13 @@ export class GameEngine {
             type: "encounterLoad",
             id: id,
             success: true,
-            bindings: encounter.bindings.map(x=>x.id)
+            bindings: encounter.bindings.map(x => x.id)
         });
         return result.getEvents();
+    }
+
+    getEncounter(): Encounter | null {
+        return this.currentEncounter ? serializeEncounter(this.currentEncounter) : null;
     }
 
     getAvailability(): AvailabilityInfo[] {

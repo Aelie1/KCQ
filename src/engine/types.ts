@@ -402,4 +402,10 @@ export interface CooldownEvent {
  * Encounters
  *******************************************************/
 
+export interface Encounter {
+    id: string;
+    enemies: EntityId[];
+    bindings: BindingId[];
+}
+
 export type EncounterId = string;

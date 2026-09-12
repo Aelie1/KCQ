@@ -1,9 +1,9 @@
 import { resolveMove } from "./combat";
 import { evaluateIntention } from "./enemies";
 import { getBindingLevel } from "./helpers";
-import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iValidityInfo, MoveDef } from "./itypes";
+import type { EncounterDef, iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iValidityInfo, MoveDef } from "./itypes";
 import { getBlockedMoveTypes, getModifiers } from "./status";
-import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo, ValidityInfo } from "./types";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, ValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     const { nextEntityId, ..._state } = state;
@@ -36,7 +36,7 @@ function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
         ..._enemy,
         intention: enemy.intention ? serializeIntention(state, enemy.intention) : null,
         buffs: enemy.buffs.map(serializeBuff),
-        cooldowns: {..._enemy.cooldowns},
+        cooldowns: { ..._enemy.cooldowns },
 
     };
 }
@@ -102,7 +102,7 @@ function serializeBuff(buff: iBuff): Buff {
     return {
         ..._buff,
         statuses: buff.statuses?.map(serializeStatus),
-        modifiers: {..._buff.modifiers}
+        modifiers: { ..._buff.modifiers }
     };
 }
 
@@ -140,4 +140,12 @@ export function serializeValidity(info: iValidityInfo): ValidityInfo {
         ...info,
         target: info.target === null ? null : info.target.id,
     };
+}
+
+export function serializeEncounter(encounter: EncounterDef): Encounter {
+    return {
+        id: encounter.id,
+        enemies: encounter.enemies.map(x => x.id),
+        bindings: encounter.bindings.map(x => x.id)
+    }
 }
