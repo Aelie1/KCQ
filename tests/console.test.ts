@@ -10,6 +10,7 @@ import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { helpless } from "../src/engine/status";
 import type { GameEvent, GameState, Intention } from "../src/engine/types";
+import { oneEnemyEncounter } from "./testContent";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -401,9 +402,11 @@ describe("console formatting", () => {
         expect(rendered).not.toContain("…");
     });
 
-    it("formats all accuracy bands", () => {
+    it("formats defined accuracy bands on one line and omits missing bands", () => {
         expect(formatAccuracyRow("foe", { miss: 10, graze: 15, hit: 65, crit: 10 }))
-            .toContain("10%       15%      65%       10%");
+            .toBe("foe — Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%");
+        expect(formatAccuracyRow("No target", { miss: 60, hit: 40 }))
+            .toBe("Miss: 60%   Hit: 40%");
     });
 
     it("automatically ends the turn after the last available character acts", async () => {
@@ -413,13 +416,29 @@ describe("console formatting", () => {
         const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
 
         expect(engine.getGameState().turn.round).toBe(2);
-        expect(rendered).toContain("TARGET");
+        expect(rendered).toContain("skunkette1 — Miss:");
+        expect(rendered).not.toMatch(/TARGET\s+MISS\s+GRAZE/);
         expect(rendered).toMatch(/telekinesis on skunkette1: (MISS|GRAZE|HIT|CRIT)/);
         expect(rendered).toContain("No characters available. Ending turn automatically.");
         expect(rendered).toContain("~~~ ROUND 2 ~~~");
         expect(rendered).toContain("Seed 8224");
         expect(rendered).toContain("Escape / assist -- no legal escapes");
         expect(rendered).not.toMatch(/unavailable:/i);
+    });
+
+    it("puts a single accuracy preview on the move row", async () => {
+        const engine = new GameEngine([oneEnemyEncounter], 8224);
+        engine.loadCharacter(ko);
+        const events = engine.loadEncounter(oneEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "7", "3"], events);
+
+        expect(rendered).toContain(
+            "[1] telekinesis [mouth; 1 enemy]   foe1 — Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%",
+        );
+        expect(rendered).toContain(
+            "[2] starlight [mouth; no target]   Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%",
+        );
     });
 
     it("replaces stored bindings when a newer encounter event is received", async () => {
@@ -466,8 +485,8 @@ describe("console formatting", () => {
         expect(rendered).toContain("[2] ally  Ready");
         expect(rendered).toContain("Choose an action for ally.");
         expect(rendered).not.toContain("Choose an action for hero.");
-        expect(rendered).toContain("No target");
-        expect(rendered).toMatch(/No target\s+-\s+-\s+100%\s+-/);
+        expect(rendered).toContain("Hit: 100%");
+        expect(rendered).not.toContain("No target");
         expect(rendered).toContain("No characters available. Ending turn automatically.");
         expect(engine.getGameState().turn.round).toBe(3);
     });

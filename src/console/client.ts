@@ -13,7 +13,6 @@ import type {
 } from "../engine/types";
 import { formatEffects, formatEvents } from "./format";
 import {
-    ACCURACY_HEADER,
     formatAccuracyRow,
     MIN_TERMINAL_HEIGHT,
     MIN_TERMINAL_WIDTH,
@@ -217,19 +216,24 @@ export async function runConsoleClient(
             const escapes = engine.getEscapes(actor.id);
             const escapeAvailable = (escapes?.options.length ?? 0) > 0;
             const stance = engine.stanceAvailable(actor.id);
-            const menu: MenuItem[] = actions.map((action) => ({
-                label: moveLabel(action),
-                detailLines: action.move.targets === 0
-                    ? accuracyLines(validTargets(engine, actor.id, action.move.id))
-                    : undefined,
-                select: async () => {
-                    if (!action.available) {
-                        logLines.push(`${action.move.id} -- ${action.reason}.`);
-                        return false;
-                    }
-                    return chooseTargets(actor.id, action.move);
-                },
-            }));
+            const menu: MenuItem[] = actions.map((action) => {
+                const targets = validTargets(engine, actor.id, action.move.id);
+                const detailLines = action.move.targets === 0
+                    || (action.move.targets === 1 && targets.length === 1)
+                    ? accuracyLines(targets)
+                    : undefined;
+                return {
+                    label: moveLabel(action),
+                    detailLines,
+                    select: async () => {
+                        if (!action.available) {
+                            logLines.push(`${action.move.id} -- ${action.reason}.`);
+                            return false;
+                        }
+                        return chooseTargets(actor.id, action.move);
+                    },
+                };
+            });
             menu.push(
                 {
                     label: `Escape / assist${escapeAvailable ? "" : " -- no legal escapes"}`,
@@ -261,10 +265,12 @@ export async function runConsoleClient(
             const choice = await choose([
                 `Choose an action for ${actor.id}.`,
                 "",
-                ...menu.flatMap((item, index) => [
-                    `[${index + 1}] ${item.label}`,
-                    ...(item.detailLines ?? []).map((line) => `    ${line}`),
-                ]),
+                ...menu.flatMap((item, index) => item.detailLines?.length === 1
+                    ? [`[${index + 1}] ${item.label}   ${item.detailLines[0]}`]
+                    : [
+                        `[${index + 1}] ${item.label}`,
+                        ...(item.detailLines ?? []).map((line) => `    ${line}`),
+                    ]),
             ], menu.length);
             if (await menu[choice].select()) return;
         }
@@ -324,15 +330,12 @@ export async function runConsoleClient(
 function accuracyLines(
     targets: ValidTarget[],
 ): string[] {
-    return [
-        ACCURACY_HEADER,
-        ...targets.map((target) =>
-            formatAccuracyRow(
-                target.target ?? "No target",
-                target.accuracy,
-            ),
+    return targets.map((target) =>
+        formatAccuracyRow(
+            target.target ?? "No target",
+            target.accuracy,
         ),
-    ];
+    );
 }
 
 function validTargets(engine: GameEngine, actor: EntityId, move: string): ValidTarget[] {

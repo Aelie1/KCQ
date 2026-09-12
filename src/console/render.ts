@@ -85,18 +85,19 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
 }
 
 export function formatAccuracyRow(label: string, profile: AccuracyProfile | null): string {
-    const value = (key: keyof AccuracyProfile): string => {
+    const bands: readonly [keyof AccuracyProfile, string][] = [
+        ["miss", "Miss"],
+        ["graze", "Graze"],
+        ["hit", "Hit"],
+        ["crit", "Crit"],
+    ];
+    const values = bands.flatMap(([key, display]) => {
         const percentage = profile?.[key];
-        return percentage === undefined ? "-" : `${formatNumber(percentage)}%`;
-    };
-
-    return `${label.padEnd(18)}${value("miss").padStart(8)}`
-        + `${value("graze").padStart(10)}${value("hit").padStart(9)}`
-        + `${value("crit").padStart(10)}`;
+        return percentage === undefined ? [] : [`${display}: ${formatNumber(percentage)}%`];
+    });
+    const target = label === "No target" ? "" : `${label} — `;
+    return values.length > 0 ? `${target}${values.join("   ")}` : label;
 }
-
-export const ACCURACY_HEADER = `${"TARGET".padEnd(18)}${"MISS".padStart(8)}`
-    + `${"GRAZE".padStart(10)}${"HIT".padStart(9)}${"CRIT".padStart(10)}`;
 
 function formatParty(
     characters: Character[],
