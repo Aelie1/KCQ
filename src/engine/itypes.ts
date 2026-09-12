@@ -1,7 +1,7 @@
 import { Random } from "./random";
 import {
     AccuracyProfile, ActionFailureReason, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect,
-    Enemy, EnemyEffect, EntityId, HitBand, InvalidTarget, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn, ValidTarget
+    Enemy, EnemyEffect, EntityId, HitBand, InvalidTarget, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Trap, TrapEffect, TrapId, Turn, ValidTarget
 } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
@@ -11,6 +11,7 @@ export interface iGameState {
     nextEntityId: number;
     characters: iCharacter[];
     enemies: iEnemy[];
+    traps: iTrap[];
 }
 
 /*******************************************************
@@ -124,7 +125,8 @@ export type iEffect =
     | iBindingEffect
     | iBuffEffect
     | iEnemyEffect
-    | iCooldownEffect;
+    | iCooldownEffect
+    | iTrapEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -143,7 +145,7 @@ interface iBuffEffect extends Omit<BuffEffect, "target" | "buff">  {
 }
 
 interface iEnemyEffect extends Omit<EnemyEffect, "target">  {
-    target: EnemyDef;
+    definition: EnemyDef;
     id?: EntityId;
     buff?: iBuff;
 }
@@ -153,6 +155,11 @@ interface iCooldownEffect {
     target: iEnemy;
     move: MoveDef;
     value: number;
+}
+
+export interface iTrapEffect extends Omit<TrapEffect, "trap" | "actor">{
+    actor: iEntity;
+    trap: iTrap;
 }
 
 
@@ -181,6 +188,19 @@ export interface BindingDef {
     data?: Record<string, number>;
     onAdd?: (state: iGameState, target:iCharacter, binding: iBinding, amount: number) => iEffect[];
     onEscape?: (actor: iCharacter, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
+}
+
+/*******************************************************
+ * Traps
+ *******************************************************/
+
+export interface iTrap extends Trap {
+    definition: TrapDef;
+}
+
+export interface TrapDef {
+    id: TrapId;
+    onTrigger: (target: iCharacter, trap: iTrap, roll: number) => iEffect[];
 }
 
 /*******************************************************

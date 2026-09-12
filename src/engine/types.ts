@@ -6,6 +6,7 @@ export interface GameState {
     turn: Turn;
     characters: Character[];
     enemies: Enemy[];
+    traps: Trap[];
 }
 
 export interface Turn {
@@ -46,7 +47,7 @@ export interface Enemy {
     currDef: number;
     intention: Intention | null;
     buffs: Buff[];
-    cooldowns: Record<MoveId,number>;
+    cooldowns: Record<MoveId, number>;
 }
 
 export interface Intention {
@@ -83,11 +84,11 @@ export type Effect =
     | DamageEffect
     | BindingEffect
     | BuffEffect
-    | EnemyEffect;
+    | EnemyEffect
+    | TrapEffect;
 
 export interface DamageEffect {
     type: "damage";
-    source: EntityId;
     target: EntityId;
     amount: number;
 }
@@ -109,6 +110,12 @@ export interface BuffEffect {
 export interface EnemyEffect {
     type: "enemy";
     target: EntityId;
+}
+
+export interface TrapEffect {
+    type: "trap";
+    trap: TrapId;
+    amount: number;
 }
 
 
@@ -140,11 +147,11 @@ export type MoveType =
 
 export type MoveId = string;
 
-export type HitBand = 
-    | "miss" 
-    | "graze" 
-    | "hit" 
-    | "crit" 
+export type HitBand =
+    | "miss"
+    | "graze"
+    | "hit"
+    | "crit"
     | "none";
 
 export type AccuracyProfile = Partial<Record<HitBand, number>>;
@@ -195,6 +202,17 @@ export type BindingLevel =
 
 
 /*******************************************************
+ * Traps
+ *******************************************************/
+
+export interface Trap {
+    id: TrapId;
+    amount: number;
+}
+
+export type TrapId = string;
+
+/*******************************************************
  * Statuses
  *******************************************************/
 
@@ -217,7 +235,7 @@ export type StatusId =
     | "incapacitated"
     | "standing";
 
-export type ModifierSet = Partial<Record<ModifierId,number>>;
+export type ModifierSet = Partial<Record<ModifierId, number>>;
 
 export type ModifierId =
     | "hitarms"
@@ -266,10 +284,10 @@ export interface EscapeInfo {
     effects: Effect[];
 }
 
-export type ActionType = 
-    | "attack" 
-    | "escape" 
-    | "stance" 
+export type ActionType =
+    | "attack"
+    | "escape"
+    | "stance"
     | "endTurn"
 
 export type PlayerAction = AttackAction | EscapeAction | StanceAction | EndTurnAction;
@@ -337,15 +355,25 @@ export type ActionFailureReason =
  * Events
  ********************************************************/
 
-export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent | CooldownEvent;
+export type GameEvent =
+    | MoveEvent
+    | DamageEvent
+    | BondageEvent
+    | PhaseEvent
+    | BuffEvent
+    | EnemyEvent
+    | StanceEvent
+    | EncounterEvent
+    | CooldownEvent
+    | TrapEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
     actor: EntityId;
     move: MoveId;
-    targets: { 
-        target: EntityId, 
-        result: HitBand 
+    targets: {
+        target: EntityId,
+        result: HitBand
     }[];
 }
 
@@ -396,6 +424,13 @@ export interface CooldownEvent {
     target: EntityId;
     move: MoveId;
     value: number;
+}
+
+export interface TrapEvent {
+    type: "trapAdded" | "trapRemoved";
+    actor: EntityId;
+    trap: TrapId;
+    amount: number;
 }
 
 /*******************************************************

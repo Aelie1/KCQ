@@ -1,7 +1,7 @@
-import { thresholds } from "./constants";
+import { thresholds, TRAP_MAX } from "./constants";
 import { findBinding, findBuff, findEntity } from "./find";
 import { isValidEntity } from "./helpers";
-import { BindingDef, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
+import { BindingDef, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iTrap, MoveDef } from "./itypes";
 import { BondageEvent, DamageEvent, EnemyEvent, EntityId, GameEvent } from "./types";
 
 export class GameEffects {
@@ -48,7 +48,7 @@ export class GameEffects {
             if (!effect) {
                 continue;
             }
-            if (effect.type != "enemy" && !isValidEntity(state, effect.target)) {
+            if ("target" in effect && !isValidEntity(state, effect.target)) {
                 continue;
             }
             switch (effect.type) {
@@ -74,10 +74,17 @@ export class GameEffects {
                     this.stack(damageEnemy(state, effect.source, effect.target, effect.amount));
                     break;
                 case "enemy":
-                    this.stack(spawnEnemy(state, effect.target, { buff: effect.buff, id: effect.id }));
+                    this.stack(spawnEnemy(state, effect.definition, { buff: effect.buff, id: effect.id }));
                     break;
                 case "cooldown":
-                    this.stack(setCooldown(effect.target,effect.move,effect.value));
+                    this.stack(setCooldown(effect.target, effect.move, effect.value));
+                    break;
+                case "trap":
+                    if (effect.amount > 0) {
+                        this.stack(addTrap(effect.actor, effect.trap, effect.amount));
+                    } else {
+                        this.stack(removeTrap(effect.actor, effect.trap, -effect.amount));
+                    }
                     break;
             }
         }
@@ -190,10 +197,10 @@ function removeBuff(target: iEntity, buff: iBuff): GameEffects {
 }
 
 
-function removeLinkedBuffs(state: iGameState, target: iEntity, buff: iBuff) : GameEffects {
+function removeLinkedBuffs(state: iGameState, target: iEntity, buff: iBuff): GameEffects {
     const result = new GameEffects();
-    
-    result.fromResult(state, removeBuff(target,buff));
+
+    result.fromResult(state, removeBuff(target, buff));
     if (!buff.linkedEntity) {
         return result;
     }
@@ -208,7 +215,7 @@ function removeLinkedBuffs(state: iGameState, target: iEntity, buff: iBuff) : Ga
         return result;
     }
 
-    result.fromResult(state, removeBuff(linkedEntity,linkedBuff));
+    result.fromResult(state, removeBuff(linkedEntity, linkedBuff));
     return result;
 }
 
@@ -287,5 +294,45 @@ function setCooldown(target: iEnemy, move: MoveDef, value: number): GameEffects 
         move: move.id,
         value: value
     });
+    return result;
+}
+
+function addTrap(actor: iEntity, trap: iTrap, amount: number): GameEffects {
+    const result = new GameEffects();
+
+    const origLevel = trap.amount;
+
+    trap.amount += amount;
+    if (trap.amount > TRAP_MAX) {
+        trap.amount = TRAP_MAX;
+    }
+
+    result.addEvent({
+        type: "trapAdded",
+        actor: actor.id,
+        trap: trap.id,
+        amount: trap.amount - origLevel
+    })
+
+    return result;
+}
+
+function removeTrap(actor: iEntity, trap: iTrap, amount: number): GameEffects {
+    const result = new GameEffects();
+
+    const origLevel = trap.amount;
+
+    trap.amount -= amount;
+    if (trap.amount < 0) {
+        trap.amount = 0;
+    }
+
+    result.addEvent({
+        type: "trapRemoved",
+        actor: actor.id,
+        trap: trap.id,
+        amount: origLevel - trap.amount
+    })
+
     return result;
 }

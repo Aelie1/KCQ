@@ -72,7 +72,7 @@ const latexBindings: BindingDef = {
 
         effects.push({
             type: "enemy",
-            target: skunkette,
+            definition: skunkette,
             id: skunketteName,
             buff: eBuff,
         });

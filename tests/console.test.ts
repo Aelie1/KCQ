@@ -53,6 +53,7 @@ const state: GameState = {
             effects: [],
         },
     }],
+    traps: []
 };
 
 const bindingThresholds = new GameEngine([], 1).getThresholds();
@@ -181,7 +182,7 @@ describe("console formatting", () => {
         expect(formatEffects([
             { type: "binding", target: "ko", binding: "latexArms", amount: 10 },
             { type: "binding", target: "ko", binding: "latexLegs", amount: 10 },
-            { type: "damage", source: "foe", target: "ko", amount: 10 },
+            { type: "damage", target: "ko", amount: 10 },
             { type: "binding", target: "ko", binding: "latexTorso", amount: 6 },
             { type: "binding", target: "ally", binding: "latexHead", amount: 10 },
         ], true)).toEqual([

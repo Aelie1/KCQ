@@ -22,6 +22,7 @@ describe("state serialization and combatant loading", () => {
             turn: { round: 1, step: 1, phase: "player" },
             characters: [],
             enemies: [],
+            traps: [],
         });
         expect(state).not.toHaveProperty("nextEntityId");
     });
@@ -130,7 +131,6 @@ describe("state serialization and combatant loading", () => {
                 });
                 intention.effects.push({
                     type: "damage",
-                    source: "hero",
                     target: "intruder",
                     amount: 1,
                 });
@@ -180,6 +180,7 @@ describe("state serialization and combatant loading", () => {
             nextEntityId: 17,
             characters: [character],
             enemies: [enemy],
+            traps: [],
         };
 
         const serialized = serializeGameState(internalState);

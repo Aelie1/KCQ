@@ -1,7 +1,7 @@
 import type { Buff, Effect, GameEvent, Intention, ModifierId } from "../engine/types";
 
 export function formatEffect(effect: Effect, includeTarget = false): string {
-    const target = includeTarget ? `${effect.target} ` : "";
+    const target = includeTarget ? `${"target" in effect && effect.target} ` : "";
 
     switch (effect.type) {
         case "damage":
@@ -12,7 +12,9 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
             return `${target}${effect.buff} added`;
         case "enemy":
             return `${target}${effect.target} spawned`;
-        }
+        case "trap":
+            return `${target}${effect.amount} ${effect.trap} created`;
+    }
 }
 
 export function formatEffects(effects: Effect[], includeTarget = false): string[] {
@@ -162,6 +164,10 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [event.success
                     ? `Encounter ${event.id} began.`
                     : `Could not load encounter ${event.id}.`];
+            case "trapAdded":
+                return [`${event.actor} created ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
+            case "trapRemoved":
+                return [`${event.actor} removed ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
         }
     });
 }

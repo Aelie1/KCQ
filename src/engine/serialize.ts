@@ -1,9 +1,9 @@
 import { resolveMove } from "./combat";
 import { evaluateIntention } from "./enemies";
 import { getBindingLevel } from "./helpers";
-import type { EncounterDef, iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iValidityInfo, MoveDef } from "./itypes";
+import type { EncounterDef, iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iTrap, iValidityInfo, MoveDef } from "./itypes";
 import { getBlockedMoveTypes, getModifiers } from "./status";
-import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, ValidityInfo } from "./types";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     const { nextEntityId, ..._state } = state;
@@ -13,6 +13,7 @@ export function serializeGameState(state: iGameState): GameState {
         turn: { ...state.turn },
         characters: state.characters.map(serializeCharacter),
         enemies: state.enemies.map(enemy => serializeEnemy(state, enemy)),
+        traps: state.traps.map(serializeTraps)
     };
 }
 
@@ -50,9 +51,9 @@ function serializeIntention(state: iGameState, intention: iIntention): Intention
     const targets: TargetInfo[] = [];
     let effects = resolveMove(state, preview.move, preview.actor, iTargets);
     for (const iTarget of iTargets) {
-        const tEffects = effects.filter(x => x.target === iTarget.target);
+        const tEffects = effects.filter(x => "target" in x && x.target === iTarget.target);
         targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(tEffects) });
-        effects = effects.filter(x => x.target !== iTarget.target);
+        effects = effects.filter(x => "target" in x && x.target !== iTarget.target);
     }
 
     return {
@@ -85,14 +86,13 @@ function serializeEffect(effect: iEffect): Effect | undefined {
         case "damage":
             return {
                 type: effect.type,
-                source: effect.source.id,
                 target: effect.target.id,
                 amount: effect.amount
             }
         case "enemy":
             return {
                 type: effect.type,
-                target: effect.target.id
+                target: effect.definition.id
             }
     }
 }
@@ -116,6 +116,13 @@ function serializeBinding(binding: iBinding): Binding {
         level: level,
         status: status ? (status[level] ?? []).map(serializeStatus) : []
     };
+}
+
+function serializeTraps(trap: iTrap): Trap {
+    const { definition, ..._trap } = trap;
+    return {
+        ..._trap
+    }
 }
 
 function serializeStatus(status: iStatus): Status {

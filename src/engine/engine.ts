@@ -1,5 +1,5 @@
 import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
-import { thresholds } from "./constants";
+import { thresholds, TRAP_MODIFIER } from "./constants";
 import { GameEffects } from "./effects";
 import { evaluateIntention, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
@@ -7,7 +7,7 @@ import { getMoves } from "./helpers";
 import { iEffect, iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
 import { Random } from "./random";
 import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "./serialize";
-import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, isIncapacitated, isSkipped } from "./status";
+import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, isIncapacitated, isSkipped } from "./status";
 import type {
     AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, Encounter, EncounterId, EntityId,
     EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo
@@ -25,7 +25,8 @@ export class GameEngine {
             turn: { round: 1, step: 1, phase: "player" },
             nextEntityId: 1,
             characters: [],
-            enemies: []
+            enemies: [],
+            traps: []
         };
         seed ??= Math.floor(Math.random() * 0x100000000);
         this.seed = seed;
@@ -94,7 +95,7 @@ export class GameEngine {
         for (const enemy of encounter.enemies) {
             spawns.push({
                 type: "enemy",
-                target: enemy
+                definition: enemy
             });
         }
         result.fromEffects(this.state, spawns);
@@ -313,6 +314,25 @@ export class GameEngine {
             return capability;
         }
 
+        if (action.type === "stance") {
+            result.fromResult(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
+            return {
+                success: true,
+                events: result.getEvents(),
+                state: this.getGameState(),
+            };
+        }
+
+        //If moving, check for traps
+        if (!actor.standing) {
+            for (const trap of this.state.traps) {
+                const roll = Math.max(0, this.rng.accuracy() + getModifier(actor,"traps") * TRAP_MODIFIER);
+                if (roll < trap.amount) {
+                    result.fromEffects(this.state, trap.definition.onTrigger(actor,trap,roll));
+                }
+            }
+        }
+
         switch (action.type) {
             case "attack": {
                 const move = findMove(actor, action.move);
@@ -496,14 +516,6 @@ export class GameEngine {
                     actor.bonusEscapes--;
                 }
                 this.state.turn.step++;
-                return {
-                    success: true,
-                    events: result.getEvents(),
-                    state: this.getGameState(),
-                };
-            }
-            case "stance": {
-                result.fromResult(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
                 return {
                     success: true,
                     events: result.getEvents(),
