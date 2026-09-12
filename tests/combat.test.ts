@@ -236,6 +236,51 @@ describe("move validation and player actions", () => {
         );
     });
 
+    it("exposes, targets, and executes Ko's authored Fairy Punch", () => {
+        const engine = setupAuthoredCombat();
+        const enemyId = `${skunkette.id}1`;
+        const move = ko.moves.find((candidate) => candidate.id === "fairypunch");
+        if (!move) throw new Error("Expected Ko to have Fairy Punch");
+
+        expect(engine.getMoves(ko.id)).toContainEqual({
+            move: {
+                id: move.id,
+                side: "enemy",
+                targets: "all",
+                type: "arms",
+            },
+            available: true,
+        });
+        expect(engine.getTargets(ko.id, move.id)).toContainEqual({
+            target: enemyId,
+            valid: true,
+            accuracy: move.accuracy,
+        });
+
+        const result = engine.executeAction({
+            type: "attack",
+            actor: ko.id,
+            move: move.id,
+            targets: [],
+        });
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected Fairy Punch to succeed");
+
+        expect(result.events[0]).toEqual({
+            type: "moveUsed",
+            actor: ko.id,
+            move: move.id,
+            targets: [{ target: enemyId, result: "hit" }],
+        });
+        const damageEvent = result.events.find((event) => event.type === "enemyDamaged");
+        if (!damageEvent) throw new Error("Expected Fairy Punch to damage an enemy");
+        expect(damageEvent).toMatchObject({ target: enemyId, amount: expect.any(Number) });
+        expect(damageEvent.amount).toBeGreaterThan(0);
+        expect(engine.getGameState().enemies[0].currHp).toBe(
+            skunkette.hp - damageEvent.amount,
+        );
+    });
+
     it("reports authored moves without leaking their executable functions", () => {
         const engine = setupAuthoredCombat();
 
