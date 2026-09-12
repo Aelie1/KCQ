@@ -102,7 +102,7 @@ describe("binding behavior through GameEngine", () => {
     it("keeps callback-managed state isolated between public binding instances", () => {
         const adaptive = makeBehavioralBinding("adaptive", {
             data: { peak: 0 },
-            onAdd: (_target, binding) => {
+            onAdd: (_state, _target, binding) => {
                 binding.data.peak = Math.max(binding.data.peak, binding.value);
                 return [];
             },
@@ -133,16 +133,16 @@ describe("binding behavior through GameEngine", () => {
         use(engine, hero.id, add60.id);
         expect(bindingState(engine, latexArms.id)).toMatchObject({
             value: 60,
-            data: { max: 60 },
+            data: { peak: 60 },
         });
 
         use(engine, hero.id, remove50.id);
         expect(bindingState(engine, latexArms.id)?.value).toBe(10);
-        expect(bindingState(engine, latexArms.id)?.data).toEqual({ max: 60 });
+        expect(bindingState(engine, latexArms.id)?.data).toEqual({ peak: 60 });
 
         use(engine, hero.id, add30.id);
         expect(bindingState(engine, latexArms.id)?.value).toBe(40);
-        expect(bindingState(engine, latexArms.id)?.data).toEqual({ max: 60 });
+        expect(bindingState(engine, latexArms.id)?.data).toEqual({ peak: 60 });
     });
 });
 

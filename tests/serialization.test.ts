@@ -49,7 +49,7 @@ describe("state serialization and combatant loading", () => {
         expect(events).toEqual([
             { type: "enemySpawned", target: "foe1" },
             { type: "enemySpawned", target: "attacker2" },
-            { type: "encounter", id: multiEnemyEncounter.id, success: true, bindings: [] },
+            { type: "encounterLoad", id: multiEnemyEncounter.id, success: true, bindings: [] },
         ]);
         expect(engine.getGameState()).toMatchObject({
             turn: { round: 1, step: 1, phase: "player" },

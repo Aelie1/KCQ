@@ -32,7 +32,7 @@ describe("encounters", () => {
         engine.loadCharacter(makeCharacterDef("hero"));
 
         expect(engine.loadEncounter(plains_1.id)).toEqual([{
-            type: "encounter",
+            type: "encounterLoad",
             id: plains_1.id,
             success: false,
             bindings: [],
@@ -46,7 +46,7 @@ describe("encounters", () => {
         const before = engine.getGameState();
 
         expect(engine.loadEncounter("missing-encounter")).toEqual([{
-            type: "encounter",
+            type: "encounterLoad",
             id: "missing-encounter",
             success: false,
             bindings: [],
@@ -55,7 +55,7 @@ describe("encounters", () => {
 
         expect(engine.loadEncounter(oneEnemyEncounter.id)).toEqual([
             { type: "enemySpawned", target: `${waitEnemy.id}1` },
-            { type: "encounter", id: oneEnemyEncounter.id, success: true, bindings: [] },
+            { type: "encounterLoad", id: oneEnemyEncounter.id, success: true, bindings: [] },
         ]);
     });
 
@@ -100,7 +100,7 @@ describe("encounters", () => {
         expect(events).toEqual([
             { type: "enemySpawned", target: "foe1" },
             { type: "enemySpawned", target: "attacker2" },
-            { type: "encounter", id: multiEnemyEncounter.id, success: true, bindings: [] },
+            { type: "encounterLoad", id: multiEnemyEncounter.id, success: true, bindings: [] },
         ]);
         expect(engine.getGameState().enemies).toEqual([
             expect.objectContaining({
@@ -144,7 +144,7 @@ describe("encounters", () => {
 
         expect(engine.loadEncounter(encounter.id)).toEqual([
             { type: "enemySpawned", target: `${enemy.id}1` },
-            { type: "encounter", id: encounter.id, success: true, bindings: [] },
+            { type: "encounterLoad", id: encounter.id, success: true, bindings: [] },
         ]);
         expect(calls).toEqual(["setup", "ai"]);
         expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
@@ -163,7 +163,7 @@ describe("encounters", () => {
         const events = engine.loadEncounter(plains_1.id);
 
         expect(events.at(-1)).toEqual({
-            type: "encounter",
+            type: "encounterLoad",
             id: plains_1.id,
             success: true,
             bindings: plains_1.bindings.map(({ id }) => id),

@@ -154,7 +154,7 @@ describe("console formatting", () => {
     it("turns action events into readable log lines", () => {
         expect(formatEvents([
             { type: "moveUsed", actor: "ko", move: "telekinesis", targets: [{ target: "foe1", result: "hit" }] },
-            { type: "damage", target: "foe1", amount: 10 },
+            { type: "enemyDamaged", target: "foe1", amount: 10 },
             { type: "enemyDefeated", target: "foe1" },
         ])).toEqual([
             "ko used telekinesis on foe1: HIT",
@@ -446,8 +446,8 @@ describe("console formatting", () => {
         engine.loadCharacter(ko);
         engine.loadEncounter("plains_1");
         const events: GameEvent[] = [
-            { type: "encounter", id: "old", success: true, bindings: ["oldBinding"] },
-            { type: "encounter", id: "new", success: true, bindings: ["latexHead"] },
+            { type: "encounterLoad", id: "old", success: true, bindings: ["oldBinding"] },
+            { type: "encounterLoad", id: "new", success: true, bindings: ["latexHead"] },
         ];
 
         const rendered = await runScriptedConsole(engine, ["3"], events);

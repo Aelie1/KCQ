@@ -149,7 +149,7 @@ describe("move validation and player actions", () => {
                     move: strike.id,
                     targets: [{ target: foeId, result: "hit" }],
                 },
-                { type: "damage", target: foeId, amount: damage },
+                { type: "enemyDamaged", target: foeId, amount: damage },
             ],
         });
         if (!result.success) throw new Error("Expected strike to succeed");
@@ -197,7 +197,7 @@ describe("move validation and player actions", () => {
                     move: strike.id,
                     targets: [{ target: foeId, result: "hit" }],
                 },
-                { type: "damage", target: foeId, amount: lethalDamage },
+                { type: "enemyDamaged", target: foeId, amount: lethalDamage },
                 { type: "enemyDefeated", target: foeId },
             ],
             state: { enemies: [] },
@@ -226,7 +226,7 @@ describe("move validation and player actions", () => {
             move: move.id,
             targets: [{ target: enemyId, result: "hit" }],
         });
-        const damageEvent = result.events.find((event) => event.type === "damage");
+        const damageEvent = result.events.find((event) => event.type === "enemyDamaged");
         if (!damageEvent || !("amount" in damageEvent)) {
             throw new Error("Expected Telekinesis to deal damage");
         }
@@ -343,12 +343,12 @@ describe("move and effect resolution through GameEngine", () => {
         const successfulIds = moveEvent.targets
             .filter(({ result: band }) => band !== "miss")
             .map(({ target }) => target);
-        const damageEvents = result.events.filter((event) => event.type === "damage");
+        const damageEvents = result.events.filter((event) => event.type === "enemyDamaged");
 
         expect(moveEvent.targets.map(({ result: band }) => band)).toContain("miss");
         expect(successfulIds.length).toBeGreaterThan(0);
         expect(damageEvents).toEqual(successfulIds.map((target) => ({
-            type: "damage",
+            type: "enemyDamaged",
             target,
             amount: 3,
         })));
@@ -361,7 +361,7 @@ describe("move and effect resolution through GameEngine", () => {
     it("resolves initial and generated effects depth-first exactly once", () => {
         const finalBuff = { id: "chain-finished", active: true };
         const chained = makeBehavioralBinding("chained", {
-            onAdd: (target) => [{
+            onAdd: (_state, target) => [{
                 type: "buff",
                 target,
                 buff: finalBuff,
@@ -369,7 +369,7 @@ describe("move and effect resolution through GameEngine", () => {
             }],
         });
         const trigger = makeBehavioralBinding("trigger", {
-            onAdd: (target) => [{
+            onAdd: (_state, target) => [{
                 type: "binding",
                 target,
                 binding: chained,
@@ -453,7 +453,7 @@ describe("move and effect resolution through GameEngine", () => {
 
         expect(receivedSource).toBe("hero");
         expect(result.events.slice(1)).toEqual([
-            { type: "damage", target: "reactive1", amount: 4 },
+            { type: "enemyDamaged", target: "reactive1", amount: 4 },
             { type: "bondageAdded", target: "hero", binding: "damage-reaction", amount: 1 },
         ]);
         expect(bindingState(engine, reaction.id)?.value).toBe(1);
@@ -496,7 +496,7 @@ describe("move and effect resolution through GameEngine", () => {
         });
 
         expect(result.events.slice(1)).toEqual([
-            { type: "damage", target: "reactive1", amount: 5 },
+            { type: "enemyDamaged", target: "reactive1", amount: 5 },
             { type: "bondageAdded", target: "hero", binding: "damage-reaction", amount: 1 },
             { type: "enemyDefeated", target: "reactive1" },
             { type: "bondageAdded", target: "hero", binding: "defeat-reaction", amount: 1 },

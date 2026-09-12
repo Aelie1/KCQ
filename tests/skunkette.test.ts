@@ -85,13 +85,39 @@ describe("Skunkette behavior through GameEngine", () => {
         });
 
         expect(result.events.slice(1)).toEqual([
-            { type: "damage", target: "skunkette1", amount: 1 },
+            { type: "enemyDamaged", target: "skunkette1", amount: 1 },
             { type: "buffUpdated", target: "victim", buff: POUNCE_ID },
             { type: "buffUpdated", target: "skunkette1", buff: POUNCE_ID },
         ]);
         expect(buffState(engine, POUNCE_ID, "skunkette1")?.modifiers?.hit).toBe(6);
         expect(buffState(engine, POUNCE_ID, "victim")?.statuses?.map(({ id }) => id))
             .toEqual(["immobilized", "stunned"]);
+    });
+
+    it("removes both linked Pounce buffs and restores cooldown when damage breaks it", () => {
+        const { engine, strike } = setupPounce(3, true);
+
+        const result = execute(engine, {
+            type: "attack",
+            actor: "attacker",
+            move: strike.id,
+            targets: ["skunkette1"],
+        });
+
+        expect(result.events.slice(1)).toEqual([
+            { type: "enemyDamaged", target: "skunkette1", amount: 1 },
+            { type: "buffRemoved", target: "skunkette1", buff: POUNCE_ID },
+            { type: "buffRemoved", target: "victim", buff: POUNCE_ID },
+            {
+                type: "cooldownChanged",
+                target: "skunkette1",
+                move: POUNCE_ID,
+                value: 2,
+            },
+        ]);
+        expect(buffState(engine, POUNCE_ID, "victim")).toBeUndefined();
+        expect(buffState(engine, POUNCE_ID, "skunkette1")).toBeUndefined();
+        expect(enemyState(engine, "skunkette1").cooldowns[POUNCE_ID]).toBe(2);
     });
 
     it("removes the surviving linked Pounce after damage callbacks and defeat", () => {
@@ -117,10 +143,11 @@ describe("Skunkette behavior through GameEngine", () => {
         });
 
         expect(result.events.slice(1)).toEqual([
-            { type: "damage", target: "skunkette1", amount: skunkette.hp },
+            { type: "enemyDamaged", target: "skunkette1", amount: skunkette.hp },
             { type: "buffUpdated", target: "victim", buff: POUNCE_ID },
             { type: "buffUpdated", target: "skunkette1", buff: POUNCE_ID },
             { type: "enemyDefeated", target: "skunkette1" },
+            { type: "buffRemoved", target: "skunkette1", buff: POUNCE_ID },
             { type: "buffRemoved", target: "victim", buff: POUNCE_ID },
         ]);
         expect(buffState(engine, POUNCE_ID, "victim")).toBeUndefined();
@@ -157,6 +184,12 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "moveUsed", actor: "victim", move: THROW_OFF_ID, targets: [] },
             { type: "buffRemoved", target: "victim", buff: POUNCE_ID },
             { type: "buffRemoved", target: "skunkette1", buff: POUNCE_ID },
+            {
+                type: "cooldownChanged",
+                target: "skunkette1",
+                move: POUNCE_ID,
+                value: 2,
+            },
         ]);
         expect(buffState(hit, POUNCE_ID, "victim")).toBeUndefined();
         expect(buffState(hit, POUNCE_ID, "skunkette1")).toBeUndefined();
