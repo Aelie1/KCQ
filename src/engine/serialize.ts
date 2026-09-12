@@ -24,7 +24,6 @@ function serializeCharacter(character: iCharacter): Character {
         id: definition.id,
         buffs: character.buffs.map(serializeBuff),
         bindings: character.bindings.map(serializeBinding),
-        status: getStatuses(character).map(serializeStatus),
         modifiers: getModifiers(character),
         blockedMoveTypes: getBlockedMoveTypes(character)
     };
@@ -97,10 +96,13 @@ function serializeBuff(buff: iBuff): Buff {
 
 function serializeBinding(binding: iBinding): Binding {
     const { definition, ..._binding } = binding;
+    const level = getBindingLevel(binding);
+    const status = definition.status;
     return {
         ..._binding,
         data: { ...binding.data },
-        level: getBindingLevel(binding),
+        level: level,
+        status: status ? (status[level] ?? []).map(serializeStatus) : []
     };
 }
 

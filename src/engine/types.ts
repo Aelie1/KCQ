@@ -31,7 +31,6 @@ export interface Character {
     bonusEscapes: number;
     bindings: Binding[];
     buffs: Buff[];
-    status: Status[];
     modifiers: ModifierSet;
     blockedMoveTypes: MoveType[];
 }
@@ -174,6 +173,7 @@ export interface Binding {
     value: number;
     level: BindingLevel;
     data: Record<string, number>;
+    status: Status[];
 }
 
 export type BindingId = string;

@@ -16,7 +16,7 @@ export interface iGameState {
 /*******************************************************
  * Characters
  *******************************************************/
-export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "status" | "modifiers" | "blockedMoveTypes"> {
+export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modifiers" | "blockedMoveTypes"> {
     definition: CharacterDef;
     buffs: iBuff[];
     bindings: iBinding[];
@@ -154,7 +154,7 @@ export interface PassiveDef {
  * Bindings
  *******************************************************/
 
-export interface iBinding extends Omit<Binding, "level"> {
+export interface iBinding extends Omit<Binding, "level" | "status"> {
     definition: BindingDef;
 }
 
