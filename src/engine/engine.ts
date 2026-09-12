@@ -411,18 +411,18 @@ export class GameEngine {
                         }
                     }
                     //Redo some checks in case status has changed
-                    let reason: ActionFailureReason | undefined = undefined;
+                    let reason: ActionFailureReason | undefined;
 
                     const capability = canAct(actor, action.type);
                     if (capability) {
                         reason = capability.reason;
                     }
 
-                    if (!move.alwaysAvailable && !canAttack(actor)) {
+                    if (!reason && !move.alwaysAvailable && !canAttack(actor)) {
                         reason = "attackUnavailable";
                     }
 
-                    if (!canUseMoveType(actor, move.type)) {
+                    if (!reason && !canUseMoveType(actor, move.type)) {
                         reason = "bindingRestriction";
                     }
 
@@ -534,16 +534,16 @@ export class GameEngine {
                             result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
                         }
                     }
-                    
+
                     //Redo some checks in case status has changed
-                    let reason: ActionFailureReason | undefined = undefined;
+                    let reason: ActionFailureReason | undefined;
                     
                     const capability = canAct(actor, action.type);
                     if (capability) {
                         reason = capability.reason;
                     }
 
-                    if (actor !== target && !canAssist(actor)) {
+                    if (!reason && actor !== target && !canAssist(actor)) {
                         reason = "assistUnavailable";
                     }
 
