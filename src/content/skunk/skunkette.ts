@@ -307,7 +307,7 @@ export const skunkette: EnemyDef = {
             });
         }
         const skunkedBuff = findBuff(target, "skunked");
-        if (skunkedBuff) {
+        if (skunkedBuff && skunkedBuff.linkedEntity) {
             effects.push({
                 type: "buff",
                 target: target,
@@ -315,6 +315,17 @@ export const skunkette: EnemyDef = {
                 operation: "remove",
                 linked: true
             });
+            const character = findCharacter(state, skunkedBuff.linkedEntity);
+            if (character) {
+                for (const binding of character.bindings) {
+                    effects.push({
+                        type: "binding",
+                        target: character,
+                        binding: binding,
+                        amount: Math.floor(binding.value * -0.5)
+                    });
+                }
+            }
         }
         return effects;
     }

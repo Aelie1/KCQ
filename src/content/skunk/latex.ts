@@ -1,5 +1,5 @@
 import { SPREAD_MODIFIER, thresholds } from "../../engine/constants";
-import { findBuff } from "../../engine/find";
+import { findBinding, findBuff } from "../../engine/find";
 import { BindingDef, iBinding, iBuff, iCharacter, iEffect, iGameState, s } from "../../engine/itypes";
 import { bound, breathless, gagged, getModifier, hobbled, incapacitated, isIncapacitated, submissive, vibrating } from "../../engine/status";
 import { skunkette } from "./skunkette";
@@ -50,6 +50,16 @@ const latexBindings: BindingDef = {
                 buff: pounceBuff,
                 operation: "remove",
                 linked: true
+            });
+        }
+
+        const collar = findBinding(target,latexCollar.id);
+        if (collar) {
+            effects.push({
+                type: "binding",
+                target: target,
+                binding: collar,
+                amount: binding.value * -1
             });
         }
         
