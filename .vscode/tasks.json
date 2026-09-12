@@ -21,7 +21,8 @@
             "command": "npx",
             "args": [
                 "tsc",
-                "--noEmit",
+                "-p",
+                "${workspaceFolder}\\tsconfig.test.json",
                 "--watch"
             ],
             "isBackground": true,

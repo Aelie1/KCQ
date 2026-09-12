@@ -58,7 +58,7 @@ const latexBindings: BindingDef = {
             effects.push({
                 type: "binding",
                 target: target,
-                binding: collar,
+                binding: collar.definition,
                 amount: binding.value * -1
             });
         }
