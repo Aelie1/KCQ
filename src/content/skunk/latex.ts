@@ -58,14 +58,14 @@ const latexBindings: BindingDef = {
             target: target,
             buff: cBuff,
             operation: "add"
-        })
+        });
 
         effects.push({
             type: "enemy",
             target: skunkette,
             id: skunketteName,
             buff: eBuff,
-        })
+        });
 
         return effects;
     },
@@ -112,7 +112,7 @@ const latexBindings: BindingDef = {
                     target: actor,
                     binding: spreadLocation,
                     amount: directAmount
-                })
+                });
             }
 
             const splashLocations = [latexHead, latexArms, latexTorso, latexLegs];
@@ -124,14 +124,14 @@ const latexBindings: BindingDef = {
                 const newAmount = splashAmount + carryoverAmount;
                 const carryoverBinding = actor.bindings.find(x => x.definition === location);
                 const carryoverValue = carryoverBinding ? carryoverBinding.value : 0;
-                carryoverAmount = Math.min(newAmount, Math.max(0, carryoverValue + newAmount - thresholds.impossible))
+                carryoverAmount = Math.min(newAmount, Math.max(0, carryoverValue + newAmount - thresholds.impossible));
                 if (newAmount != carryoverAmount) {
                     effects.push({
                         type: "binding",
                         target: actor,
                         binding: location,
                         amount: newAmount - carryoverAmount
-                    })
+                    });
                 }
             }
         } else {
@@ -140,7 +140,7 @@ const latexBindings: BindingDef = {
                 target: actor,
                 binding: spreadLocation,
                 amount: spreadAmount
-            })
+            });
         }
         return effects;
     }

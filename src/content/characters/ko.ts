@@ -8,7 +8,7 @@ const telekinesis: MoveDef = {
     baseDamage: 10,
     type: "mouth",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = []
+        const effects: iEffect[] = [];
         for (const target of targets) {
             if (isEnemy(target.target)) {
                 effects.push({
@@ -37,7 +37,7 @@ const fairypunch: MoveDef = {
     baseDamage: 10,
     type: "arms",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = []
+        const effects: iEffect[] = [];
         for (const target of targets) {
             if (isEnemy(target.target)) {
                 effects.push({

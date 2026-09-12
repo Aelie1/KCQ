@@ -337,7 +337,7 @@ export type ActionFailureReason =
  * Events
  ********************************************************/
 
-export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent;
+export type GameEvent = MoveEvent | DamageEvent | BondageEvent | PhaseEvent | BuffEvent | EnemyEvent | StanceEvent | EncounterEvent | CooldownEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
@@ -350,7 +350,7 @@ export interface MoveEvent {
 }
 
 export interface DamageEvent {
-    type: "damage";
+    type: "enemyDamaged";
     target: EntityId;
     amount: number;
 }
@@ -379,7 +379,7 @@ export interface EnemyEvent {
 }
 
 export interface EncounterEvent {
-    type: "encounter";
+    type: "encounterLoad";
     id: string;
     success: boolean;
     bindings: BindingId[];
@@ -389,6 +389,13 @@ export interface StanceEvent {
     type: "stanceChanged";
     actor: EntityId;
     stance: StanceId;
+}
+
+export interface CooldownEvent {
+    type: "cooldownChanged";
+    target: EntityId;
+    move: MoveId;
+    value: number;
 }
 
 /*******************************************************

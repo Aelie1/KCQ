@@ -1,12 +1,12 @@
 import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
 import { thresholds } from "./constants";
 import { GameEffects } from "./effects";
-import { evaluateIntention, spawnEnemy, updateIntention } from "./enemies";
+import { evaluateIntention, updateIntention } from "./enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "./find";
 import { getMoves } from "./helpers";
-import { iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
+import { iEffect, iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
 import { Random } from "./random";
-import { serializeEffect, serializeGameState, serializeMove, serializeValidity } from "./serialize";
+import { serializeEffects, serializeGameState, serializeMove, serializeValidity } from "./serialize";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, isIncapacitated, isSkipped } from "./status";
 import type {
     AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, EncounterId, EntityId,
@@ -26,7 +26,7 @@ export class GameEngine {
             characters: [],
             enemies: []
         };
-        seed ??= Math.floor(Math.random() * 0x100000000)
+        seed ??= Math.floor(Math.random() * 0x100000000);
         this.seed = seed;
         this.rng = new Random(seed);
         this.encounters = encounters;
@@ -78,22 +78,30 @@ export class GameEngine {
         const encounter = this.encounters.find(x => x.id === id);
         if (!encounter) {
             result.addEvent({
-                type: "encounter",
+                type: "encounterLoad",
                 id: id,
                 success: false,
                 bindings: []
             });
             return result.getEvents();
         }
+        
+        const spawns: iEffect[] = [];
         for (const enemy of encounter.enemies) {
-            result.fromResult(this.state, spawnEnemy(this.state, enemy));
+            spawns.push({
+                type: "enemy",
+                target: enemy
+            });
         }
+        result.fromEffects(this.state, spawns);
+
         if (encounter.setup) {
             encounter.setup(this.state);
         }
+
         this.updateIntentions();
         result.addEvent({
-            type: "encounter",
+            type: "encounterLoad",
             id: id,
             success: true,
             bindings: encounter.bindings.map(x=>x.id)
@@ -201,7 +209,7 @@ export class GameEngine {
                 valid: false,
                 target: null,
                 reason: "invalidActor"
-            }]
+            }];
         }
 
         const moveState = findMove(character, move);
@@ -210,7 +218,7 @@ export class GameEngine {
                 valid: false,
                 target: null,
                 reason: "invalidMove"
-            }]
+            }];
         }
 
         switch (moveState.side) {
@@ -256,8 +264,8 @@ export class GameEngine {
                     actor: actor,
                     target: target.id,
                     binding: binding.id,
-                    effects: resolveEscape(character, target, binding).map(serializeEffect)
-                })
+                    effects: serializeEffects(resolveEscape(character, target, binding))
+                });
             }
         }
 
@@ -404,7 +412,7 @@ export class GameEngine {
                                     target: target.target,
                                     effectiveness: 0,
                                     band: "none"
-                                })
+                                });
                                 anyHits = true;
                             }
                         } else {
@@ -431,7 +439,7 @@ export class GameEngine {
                     actor: action.actor,
                     move: action.move,
                     targets: targets.map(x => ({ target: x.target.id, result: x.band }))
-                })
+                });
                 result.fromEffects(this.state, resolveMove(this.state, iMove, actor, targets));
 
                 if (move.freeOnHit !== true || anyHits === false) {

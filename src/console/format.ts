@@ -131,7 +131,7 @@ export function formatEvents(events: GameEvent[]): string[] {
                     ),
                 ];
             }
-            case "damage":
+            case "enemyDamaged":
                 return [`${event.target} took ${event.amount} damage.`];
             case "bondageAdded":
             case "bondageChanged":
@@ -156,7 +156,9 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [`${event.target} was defeated.`];
             case "stanceChanged":
                 return [`${event.actor} changed stance to ${event.stance}.`];
-            case "encounter":
+            case "cooldownChanged":
+                return [`${event.target}'s ${event.move} cooldown changed to ${event.value}.`];
+            case "encounterLoad":
                 return [event.success
                     ? `Encounter ${event.id} began.`
                     : `Could not load encounter ${event.id}.`];

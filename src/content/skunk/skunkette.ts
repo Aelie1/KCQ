@@ -1,6 +1,6 @@
 import { evaluateResult, isValidTarget, resolveMove } from "../../engine/combat";
 import { pickBinding, pickTarget, validTargets } from "../../engine/enemies";
-import { findBuff, findCharacter } from "../../engine/find";
+import { findBuff, findCharacter, findEnemy } from "../../engine/find";
 import { isCharacter } from "../../engine/helpers";
 import { EnemyAction, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, MoveDef, s } from "../../engine/itypes";
 import { effectivenessInt, Random } from "../../engine/random";
@@ -13,7 +13,7 @@ const latexSpray: MoveDef = {
         if (targets.length === 0) {
             return [];
         }
-        const effects: iEffect[] = []
+        const effects: iEffect[] = [];
         const target = targets[0];
         if (!move.binding) {
             return effects;
@@ -180,7 +180,7 @@ const latexMist: MoveDef = {
         for (const target of targets) {
             const character = target.target;
             if (target.band === "hit" && isCharacter(character) && character.bindings.length > 0) {
-                const index = effectivenessInt(target.effectiveness, 0, character.bindings.length - 1)
+                const index = effectivenessInt(target.effectiveness, 0, character.bindings.length - 1);
                 const binding = character.bindings[index];
                 effects.push({
                     type: "binding",
@@ -226,7 +226,7 @@ export const skunkette: EnemyDef = {
         //1) Spray an existing pounced character
         const buff = findBuff(actor, "pounce");
         if (buff && buff.linkedEntity) {
-            const target = findCharacter(state, buff.linkedEntity)
+            const target = findCharacter(state, buff.linkedEntity);
             if (target && !isIncapacitated(target)) {
                 const binding = pickBinding(target, bindings, rng);
                 return { actor: actor, targets: [target], move: { definition: latexSpray, binding: binding } };
@@ -267,25 +267,32 @@ export const skunkette: EnemyDef = {
         }
     },
     onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
+        const effects: iEffect[] = [];
         const buff = findBuff(target, "pounce");
         if (buff && buff.linkedEntity) {
             const newLevel = (buff.modifiers?.hit ?? 1) / 2 - 1;
             if (newLevel === 0) {
-                return [{
+                effects.push({
                     type: "buff",
                     target: target,
                     buff: buff,
                     operation: "remove",
                     linked: true
-                }];
+                });
+                effects.push({
+                    type: "cooldown",
+                    target: target,
+                    move: pounce,
+                    value: pounce.cooldown ?? 0
+                });
             } else {
-                const character = findCharacter(state, buff.linkedEntity)
+                const character = findCharacter(state, buff.linkedEntity);
                 if (character) {
-                    return createPounceBuffs(character, target, newLevel, true);
+                    effects.push(...createPounceBuffs(character, target, newLevel, true));
                 }
             }
         }
-        return [];
+        return effects;
     },
     onDefeat(state: iGameState, target: iEnemy): iEffect[] {
         const effects: iEffect[] = [];
@@ -315,21 +322,33 @@ export const skunkette: EnemyDef = {
 
 const throwOff: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects: iEffect[] = [];
         if (move.band === "miss") {
-            return [];
+            return effects;
         }
 
         const pounceBuff = findBuff(actor, "pounce");
         if (pounceBuff) {
-            return [{
+            effects.push({
                 type: "buff",
                 target: actor,
                 buff: pounceBuff,
                 operation: "remove",
                 linked: true
-            }];
+            });
+            if (pounceBuff.linkedEntity) {
+                const enemy = findEnemy(state, pounceBuff.linkedEntity)
+                if (enemy) {
+                    effects.push({
+                        type: "cooldown",
+                        target: enemy,
+                        move: pounce,
+                        value: pounce.cooldown ?? 0
+                    })
+                }
+            }
         }
-        return [];
+        return effects;
     },
     id: "throwOff",
     alwaysAvailable: true,

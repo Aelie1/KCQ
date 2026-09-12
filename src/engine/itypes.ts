@@ -123,7 +123,8 @@ export type iEffect =
     | iDamageEffect
     | iBindingEffect
     | iBuffEffect
-    | iEnemyEffect;
+    | iEnemyEffect
+    | iCooldownEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -146,6 +147,14 @@ interface iEnemyEffect extends Omit<EnemyEffect, "target">  {
     id?: EntityId;
     buff?: iBuff;
 }
+
+interface iCooldownEffect {
+    type: "cooldown";
+    target: iEnemy;
+    move: MoveDef;
+    value: number;
+}
+
 
 /*******************************************************
  * Passives

@@ -372,7 +372,7 @@ function encounterBindings(events: GameEvent[]): BindingId[] {
 function updateEncounterBindings(current: BindingId[], events: GameEvent[]): BindingId[] {
     let bindings = current;
     for (const event of events) {
-        if (event.type === "encounter" && event.success) bindings = [...event.bindings];
+        if (event.type === "encounterLoad" && event.success) bindings = [...event.bindings];
     }
     return bindings;
 }

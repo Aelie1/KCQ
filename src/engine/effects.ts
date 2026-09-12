@@ -1,9 +1,8 @@
 import { thresholds } from "./constants";
-import { spawnEnemy } from "./enemies";
 import { findBinding, findBuff, findEntity } from "./find";
 import { isValidEntity } from "./helpers";
-import { BindingDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState } from "./itypes";
-import { BondageEvent, DamageEvent, EnemyEvent, GameEvent } from "./types";
+import { BindingDef, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
+import { BondageEvent, DamageEvent, EnemyEvent, EntityId, GameEvent } from "./types";
 
 export class GameEffects {
     private events: GameEvent[];
@@ -55,27 +54,31 @@ export class GameEffects {
             switch (effect.type) {
                 case "binding":
                     if (effect.amount > 0) {
-                        this.stack(addBinding(state, effect.target, effect.binding, effect.amount))
+                        this.stack(addBinding(state, effect.target, effect.binding, effect.amount));
                     } else {
-                        this.stack(removeBinding(state, effect.target, effect.binding, -effect.amount))
+                        this.stack(removeBinding(state, effect.target, effect.binding, -effect.amount));
                     }
                     break;
                 case "buff":
                     if (effect.operation == "add") {
-                        this.stack(addBuff(effect.target, effect.buff))
+                        this.stack(addBuff(effect.target, effect.buff));
                     } else {
                         if (effect.linked) {
-                            this.stack(removeLinkedBuffs(state, effect.target, effect.buff))
+                            this.stack(removeLinkedBuffs(state, effect.target, effect.buff));
                         } else {
-                            this.stack(removeBuff(effect.target, effect.buff))
+                            this.stack(removeBuff(effect.target, effect.buff));
                         }
                     }
                     break;
                 case "damage":
-                    this.stack(damageEnemy(state, effect.source, effect.target, effect.amount))
+                    this.stack(damageEnemy(state, effect.source, effect.target, effect.amount));
                     break;
                 case "enemy":
-                    this.stack(spawnEnemy(state, effect.target, { buff: effect.buff, id: effect.id }))
+                    this.stack(spawnEnemy(state, effect.target, { buff: effect.buff, id: effect.id }));
+                    break;
+                case "cooldown":
+                    this.stack(setCooldown(effect.target,effect.move,effect.value));
+                    break;
             }
         }
 
@@ -214,7 +217,7 @@ function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, amount: 
     const result = new GameEffects();
     target.currHp -= amount;
     const event: DamageEvent = {
-        type: "damage",
+        type: "enemyDamaged",
         target: target.id,
         amount: amount
     };
@@ -244,3 +247,45 @@ function defeatEnemy(state: iGameState, target: iEnemy): GameEffects {
     return result;
 }
 
+function spawnEnemy(state: iGameState, definition: EnemyDef, options?: { buff?: iBuff; id?: EntityId; }): GameEffects {
+    const result = new GameEffects();
+    const name = options?.id ? options.id : definition.id + state.nextEntityId++;
+    const enemy = {
+        definition: definition,
+        buffs: [],
+        id: name,
+        maxHp: definition.hp,
+        currHp: definition.hp,
+        currDef: definition.defense,
+        intention: null,
+        cooldowns: {}
+    };
+    state.enemies.push(enemy);
+    result.addEvent({
+        type: "enemySpawned",
+        target: name
+    });
+    if (options?.buff) {
+        const effects: iEffect[] = [];
+        effects.push({
+            type: "buff",
+            target: enemy,
+            buff: options.buff,
+            operation: "add"
+        });
+        result.fromEffects(state, effects);
+    }
+    return result;
+}
+
+function setCooldown(target: iEnemy, move: MoveDef, value: number): GameEffects {
+    const result = new GameEffects();
+    target.cooldowns[move.id] = value;
+    result.addEvent({
+        type: "cooldownChanged",
+        target: target.id,
+        move: move.id,
+        value: value
+    });
+    return result;
+}
