@@ -2,27 +2,39 @@ import { evaluateProfile, evaluateResult, isValidTarget } from "./combat";
 import { thresholds } from "./constants";
 import { GameEffects } from "./effects";
 import { findBinding } from "./find";
-import { BindingDef, EnemyDef, iCharacter, iEnemy, iGameState, iIntention, iIntentionRoll, iTargetInfo } from "./itypes";
+import { BindingDef, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iIntentionRoll, iTargetInfo } from "./itypes";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";
+import { EntityId } from "./types";
 
-export function spawnEnemy(state: iGameState, enemy: EnemyDef): GameEffects {
+export function spawnEnemy(state: iGameState, definition: EnemyDef, options?: { buff?: iBuff, id?: EntityId }): GameEffects {
     const result = new GameEffects();
-    const name = enemy.id + state.nextEntityId++;
-    state.enemies.push({
-        definition: enemy,
+    const name = options?.id ? options.id : definition.id + state.nextEntityId++;
+    const enemy = {
+        definition: definition,
         buffs: [],
         id: name,
-        maxHp: enemy.hp,
-        currHp: enemy.hp,
-        currDef: enemy.defense,
+        maxHp: definition.hp,
+        currHp: definition.hp,
+        currDef: definition.defense,
         intention: null,
         cooldowns: {}
-    });
+    };
+    state.enemies.push(enemy);
     result.addEvent({
         type: "enemySpawned",
         target: name
     });
+    if (options?.buff) {
+        const effects: iEffect[] = [];
+        effects.push({
+            type: "buff",
+            target: enemy,
+            buff: options.buff,
+            operation: "add"
+        });
+        result.fromEffects(state, effects);
+    }
     return result;
 }
 

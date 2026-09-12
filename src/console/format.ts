@@ -10,7 +10,9 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
             return `${target}${effect.binding} ${signed(effect.amount)}`;
         case "buff":
             return `${target}${effect.buff} added`;
-    }
+        case "enemy":
+            return `${target}${effect.target} spawned`;
+        }
 }
 
 export function formatEffects(effects: Effect[], includeTarget = false): string[] {

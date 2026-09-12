@@ -1,19 +1,73 @@
 import { SPREAD_MODIFIER, thresholds } from "../../engine/constants";
-import { BindingDef, iBinding, iCharacter, iEffect, s } from "../../engine/itypes";
-import { bound, breathless, gagged, getModifier, hobbled, submissive, vibrating } from "../../engine/status";
+import { findBuff } from "../../engine/find";
+import { BindingDef, iBinding, iBuff, iCharacter, iEffect, iGameState, s } from "../../engine/itypes";
+import { bound, breathless, gagged, getModifier, hobbled, incapacitated, isIncapacitated, submissive, vibrating } from "../../engine/status";
+import { skunkette } from "./skunkette";
 
 const latexBindings: BindingDef = {
     id: "latexBindings",
     status: {},
     data: {
-        max: 0
+        peak: 0
     },
-    onAdd(target:iCharacter, binding: iBinding, amount: number) : iEffect[] {
-        const events: iEffect[] = [];
-        if (binding.value > binding.data["max"]) {
-            binding.data["max"] = binding.value;
+    onAdd(state: iGameState, target: iCharacter, binding: iBinding, amount: number): iEffect[] {
+        const effects: iEffect[] = [];
+        if (binding.value > binding.data["peak"]) {
+            binding.data["peak"] = binding.value;
         }
-        return events;
+        if (isIncapacitated(target)) {
+            return effects;
+        }
+
+        const skunkedDefs = [latexHead, latexArms, latexTorso, latexLegs];
+        const bindings = target.bindings.filter(x => skunkedDefs.includes(x.definition));
+        if (bindings.length != skunkedDefs.length ||
+            !bindings.every(x => x.value >= thresholds.impossible)) {
+            return effects;
+        }
+
+        //We're already Impossible x4, incapacitate the player
+        const skunketteName = "skunkette" + target.id[0].toUpperCase() + target.id.slice(1).toLowerCase();
+        const cBuff: iBuff = {
+            id:"skunked",
+            statuses:[s(incapacitated,1)],
+            linkedEntity:skunketteName,
+            active: true
+        }
+
+        const eBuff: iBuff = {
+            id:"skunked",
+            linkedEntity:target.id,
+            active: true
+        }
+
+        
+        const pounceBuff = findBuff(target, "pounce");
+        if (pounceBuff) {
+            effects.push({
+                type: "buff",
+                target: target,
+                buff: pounceBuff,
+                operation: "remove",
+                linked: true
+            });
+        }
+        
+        effects.push({
+            type: "buff",
+            target: target,
+            buff: cBuff,
+            operation: "add"
+        })
+
+        effects.push({
+            type: "enemy",
+            target: skunkette,
+            id: skunketteName,
+            buff: eBuff,
+        })
+
+        return effects;
     },
     onEscape(actor: iCharacter, target: iCharacter, binding: iBinding, amount: number): iEffect[] {
         const effects: iEffect[] = [];

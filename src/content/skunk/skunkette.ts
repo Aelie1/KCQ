@@ -1,6 +1,6 @@
 import { evaluateResult, isValidTarget, resolveMove } from "../../engine/combat";
 import { pickBinding, pickTarget, validTargets } from "../../engine/enemies";
-import { findBuff, findCharacter, findEnemy } from "../../engine/find";
+import { findBuff, findCharacter } from "../../engine/find";
 import { isCharacter } from "../../engine/helpers";
 import { EnemyAction, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, MoveDef, s } from "../../engine/itypes";
 import { effectivenessInt, Random } from "../../engine/random";
@@ -99,10 +99,10 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
 
 const pounce: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects: iEffect[] = [];
         if (targets.length === 0) {
-            return [];
+            return effects;
         }
-        const effects: iEffect[] = []
         const target = targets[0].target;
         const effectiveness = targets[0].effectiveness;
         if (!isCharacter(target)) {
@@ -132,7 +132,7 @@ const pounce: MoveDef = {
                 definition: latexSpray,
                 binding: move.binding
             }
-            const info = isValidTarget(state, actor,target,spray.definition);
+            const info = isValidTarget(state, actor, target, spray.definition);
             if (info.valid && info.accuracy) {
                 const targets = [evaluateResult(target, info.accuracy, move.roll)];
                 effects.push(...resolveMove(state, spray, actor, targets));
@@ -267,54 +267,50 @@ export const skunkette: EnemyDef = {
         }
     },
     onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
-        const effects: iEffect[] = [];
         const buff = findBuff(target, "pounce");
         if (buff && buff.linkedEntity) {
-            const character = findCharacter(state, buff.linkedEntity)
-            if (character) {
-                const tBuff = findBuff(character, "pounce");
-                if (tBuff) {
-                    const newLevel = (buff.modifiers?.hit ?? 1) / 2 - 1;
-                    if (newLevel === 0) {
-                        effects.push({
-                            type: "buff",
-                            target: character,
-                            buff: tBuff,
-                            operation: "remove"
-                        });
-                        effects.push({
-                            type: "buff",
-                            target: target,
-                            buff: buff,
-                            operation: "remove"
-                        });
-                    } else {
-                        effects.push(...createPounceBuffs(character, target, newLevel, true));
-                    }
+            const newLevel = (buff.modifiers?.hit ?? 1) / 2 - 1;
+            if (newLevel === 0) {
+                return [{
+                    type: "buff",
+                    target: target,
+                    buff: buff,
+                    operation: "remove",
+                    linked: true
+                }];
+            } else {
+                const character = findCharacter(state, buff.linkedEntity)
+                if (character) {
+                    return createPounceBuffs(character, target, newLevel, true);
                 }
             }
         }
-        return effects;
+        return [];
     },
     onDefeat(state: iGameState, target: iEnemy): iEffect[] {
         const effects: iEffect[] = [];
-        const buff = findBuff(target, "pounce");
-        if (buff && buff.linkedEntity) {
-            const character = findCharacter(state, buff.linkedEntity)
-            if (character) {
-                const tBuff = findBuff(character, "pounce");
-                if (tBuff) {
-                    effects.push({
-                        type: "buff",
-                        target: character,
-                        buff: tBuff,
-                        operation: "remove"
-                    });
-                }
-            }
+        const pounceBuff = findBuff(target, "pounce");
+        if (pounceBuff) {
+            effects.push({
+                type: "buff",
+                target: target,
+                buff: pounceBuff,
+                operation: "remove",
+                linked: true
+            });
+        }
+        const skunkedBuff = findBuff(target, "skunked");
+        if (skunkedBuff) {
+            effects.push({
+                type: "buff",
+                target: target,
+                buff: skunkedBuff,
+                operation: "remove",
+                linked: true
+            });
         }
         return effects;
-    },
+    }
 }
 
 const throwOff: MoveDef = {
@@ -322,51 +318,18 @@ const throwOff: MoveDef = {
         if (move.band === "miss") {
             return [];
         }
-        const effects: iEffect[] = []
-        const buff = findBuff(actor, "pounce");
-        if (!buff) {
-            //how did you get here anyhow?
-            return effects;
+
+        const pounceBuff = findBuff(actor, "pounce");
+        if (pounceBuff) {
+            return [{
+                type: "buff",
+                target: actor,
+                buff: pounceBuff,
+                operation: "remove",
+                linked: true
+            }];
         }
-
-        effects.push({
-            target: actor,
-            type: "buff",
-            buff: buff,
-            operation: "remove"
-        });
-
-        if (!buff.linkedEntity) {
-            //a badly formed pounce?
-            return effects;
-        }
-
-        const target = findEnemy(state, buff.linkedEntity);
-
-        if (!target) {
-            //pounce target died?
-            return effects;
-        }
-
-        const tBuff = findBuff(target, "pounce");
-
-        if (!tBuff) {
-            //target lost their side of the pounce
-            return effects;
-        }
-
-        effects.push({
-            target: target,
-            type: "buff",
-            buff: tBuff,
-            operation: "remove"
-        });
-
-        if (pounce.cooldown) {
-            target.cooldowns["pounce"] = pounce.cooldown;
-        }
-
-        return effects;
+        return [];
     },
     id: "throwOff",
     alwaysAvailable: true,

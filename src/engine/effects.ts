@@ -1,5 +1,6 @@
 import { thresholds } from "./constants";
-import { findBinding, findBuff } from "./find";
+import { spawnEnemy } from "./enemies";
+import { findBinding, findBuff, findEntity } from "./find";
 import { isValidEntity } from "./helpers";
 import { BindingDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState } from "./itypes";
 import { BondageEvent, DamageEvent, EnemyEvent, GameEvent } from "./types";
@@ -13,7 +14,7 @@ export class GameEffects {
         this.effects = [];
     }
 
-    getEvents() : GameEvent[] {
+    getEvents(): GameEvent[] {
         return [...this.events];
     }
 
@@ -42,13 +43,13 @@ export class GameEffects {
 
     private resolve(state: iGameState) {
         this.effects.reverse();
-    
+
         while (this.effects.length > 0) {
             const effect = this.effects.pop();
             if (!effect) {
                 continue;
             }
-            if (!isValidEntity(state, effect.target)) {
+            if (effect.type != "enemy" && !isValidEntity(state, effect.target)) {
                 continue;
             }
             switch (effect.type) {
@@ -63,15 +64,21 @@ export class GameEffects {
                     if (effect.operation == "add") {
                         this.stack(addBuff(effect.target, effect.buff))
                     } else {
-                        this.stack(removeBuff(effect.target, effect.buff))
+                        if (effect.linked) {
+                            this.stack(removeLinkedBuffs(state, effect.target, effect.buff))
+                        } else {
+                            this.stack(removeBuff(effect.target, effect.buff))
+                        }
                     }
                     break;
                 case "damage":
                     this.stack(damageEnemy(state, effect.source, effect.target, effect.amount))
                     break;
+                case "enemy":
+                    this.stack(spawnEnemy(state, effect.target, { buff: effect.buff, id: effect.id }))
             }
         }
-    
+
     }
 }
 
@@ -112,7 +119,7 @@ function addBinding(state: iGameState, target: iCharacter, type: BindingDef, amo
     result.addEvent(event);
 
     if (type.onAdd) {
-        result.fromEffects(state, type.onAdd(target, binding, event.amount));
+        result.fromEffects(state, type.onAdd(state, target, binding, event.amount));
     }
 
     return result;
@@ -178,6 +185,30 @@ function removeBuff(target: iEntity, buff: iBuff): GameEffects {
     }
     return result;
 }
+
+
+function removeLinkedBuffs(state: iGameState, target: iEntity, buff: iBuff) : GameEffects {
+    const result = new GameEffects();
+    
+    result.fromResult(state, removeBuff(target,buff));
+    if (!buff.linkedEntity) {
+        return result;
+    }
+
+    const linkedEntity = findEntity(state, buff.linkedEntity);
+    if (!linkedEntity) {
+        return result;
+    }
+
+    const linkedBuff = findBuff(linkedEntity, buff.id);
+    if (!linkedBuff) {
+        return result;
+    }
+
+    result.fromResult(state, removeBuff(linkedEntity,linkedBuff));
+    return result;
+}
+
 
 function damageEnemy(state: iGameState, actor: iEntity, target: iEnemy, amount: number): GameEffects {
     const result = new GameEffects();

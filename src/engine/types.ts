@@ -82,7 +82,8 @@ export type BuffId = string;
 export type Effect =
     | DamageEffect
     | BindingEffect
-    | BuffEffect;
+    | BuffEffect
+    | EnemyEffect;
 
 export interface DamageEffect {
     type: "damage";
@@ -103,6 +104,11 @@ export interface BuffEffect {
     target: EntityId;
     buff: BuffId;
     operation: "add" | "remove";
+}
+
+export interface EnemyEffect {
+    type: "enemy";
+    target: EntityId;
 }
 
 

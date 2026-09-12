@@ -1,7 +1,7 @@
 import { Random } from "./random";
 import {
     AccuracyProfile, ActionFailureReason, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect,
-    Enemy, HitBand, InvalidTarget, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn, ValidTarget
+    Enemy, EnemyEffect, EntityId, HitBand, InvalidTarget, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Turn, ValidTarget
 } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
@@ -122,7 +122,8 @@ interface iInvalidTarget extends Omit<InvalidTarget,"target"> {
 export type iEffect =
     | iDamageEffect
     | iBindingEffect
-    | iBuffEffect;
+    | iBuffEffect
+    | iEnemyEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -137,6 +138,13 @@ interface iBindingEffect  extends Omit<BindingEffect, "target" | "binding"> {
 interface iBuffEffect extends Omit<BuffEffect, "target" | "buff">  {
     target: iEntity;
     buff: iBuff;
+    linked?: boolean;
+}
+
+interface iEnemyEffect extends Omit<EnemyEffect, "target">  {
+    target: EnemyDef;
+    id?: EntityId;
+    buff?: iBuff;
 }
 
 /*******************************************************
@@ -162,7 +170,7 @@ export interface BindingDef {
     id: string;
     status?: Partial<Record<BindingLevel, iStatus[]>>;
     data?: Record<string, number>;
-    onAdd?: (target:iCharacter, binding: iBinding, amount: number) => iEffect[];
+    onAdd?: (state: iGameState, target:iCharacter, binding: iBinding, amount: number) => iEffect[];
     onEscape?: (actor: iCharacter, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
 }
 

@@ -2,7 +2,7 @@ import { resolveMove } from "./combat";
 import { evaluateIntention } from "./enemies";
 import { getBindingLevel } from "./helpers";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iValidityInfo, MoveDef } from "./itypes";
-import { getBlockedMoveTypes, getModifiers, getStatuses } from "./status";
+import { getBlockedMoveTypes, getModifiers } from "./status";
 import type { Binding, Buff, Character, Effect, Enemy, GameState, Intention, Move, Status, TargetInfo, ValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
@@ -66,20 +66,28 @@ export function serializeEffect(effect: iEffect): Effect {
     switch (effect.type) {
         case "binding":
             return {
-                ...effect,
+                type: effect.type,
                 target: effect.target.id,
-                binding: effect.binding.id
+                binding: effect.binding.id,
+                amount: effect.amount
             };
         case "buff":
             return {
-                ...effect,
+                type: effect.type,
                 target: effect.target.id,
-                buff: effect.buff.id
+                buff: effect.buff.id,
+                operation: effect.operation
             }
         case "damage":
             return {
-                ...effect,
+                type: effect.type,
                 source: effect.source.id,
+                target: effect.target.id,
+                amount: effect.amount
+            }
+        case "enemy":
+            return {
+                type: effect.type,
                 target: effect.target.id
             }
     }
