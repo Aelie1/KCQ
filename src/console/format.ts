@@ -53,14 +53,18 @@ export function formatBuff(buff: Buff): string {
     if (buff.linkedEntity !== undefined) details.push(`linked: ${buff.linkedEntity}`);
     for (const status of buff.statuses ?? []) {
         details.push(status.value === 1
-            ? status.id.toUpperCase()
-            : `${status.id.toUpperCase()} ${status.value}`);
+            ? titleCase(status.id)
+            : `${titleCase(status.id)} ${status.value}`);
     }
     for (const [modifier, amount] of Object.entries(buff.modifiers ?? {})) {
         details.push(`${modifierLabel(modifier as ModifierId)} ${signed(amount)}`);
     }
 
     return `${displayName(buff.id)}${details.map((detail) => ` (${detail})`).join("")}`;
+}
+
+function titleCase(value: string): string {
+    return value.length === 0 ? value : value[0].toUpperCase() + value.slice(1).toLowerCase();
 }
 
 export function formatIntention(intention: Intention): string[] {

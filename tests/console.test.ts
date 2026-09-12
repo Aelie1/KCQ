@@ -9,7 +9,7 @@ import { latexArms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { helpless } from "../src/engine/status";
-import type { GameState } from "../src/engine/types";
+import type { GameEvent, GameState } from "../src/engine/types";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -54,7 +54,31 @@ const state: GameState = {
     }],
 };
 
-async function runScriptedConsole(engine: GameEngine, scriptedAnswers: string[]) {
+const bindingThresholds = new GameEngine([], 1).getThresholds();
+
+function renderState(
+    gameState: GameState,
+    availability: { id: string; available: boolean; reason?: "actorAlreadyActed" | "actorSkipped" | "actorIncapacitated" }[],
+    bindings: string[] = [],
+    width = 180,
+): string {
+    return renderScreen({
+        encounter: "test",
+        seed: 1,
+        state: gameState,
+        availability,
+        bindings,
+        bindingThresholds,
+        actionLines: [],
+        logLines: [],
+    }, width, 70);
+}
+
+async function runScriptedConsole(
+    engine: GameEngine,
+    scriptedAnswers: string[],
+    initialEvents: GameEvent[] = [],
+) {
     const input = new PassThrough();
     const output = Object.assign(new PassThrough(), { columns: 180, rows: 50 });
     const answers = [...scriptedAnswers];
@@ -68,7 +92,7 @@ async function runScriptedConsole(engine: GameEngine, scriptedAnswers: string[])
         }
     });
 
-    await runConsoleClient(engine, "plains_1", [], { input, output });
+    await runConsoleClient(engine, "plains_1", initialEvents, { input, output });
     expect(answers).toEqual([]);
     return rendered;
 }
@@ -132,6 +156,9 @@ describe("console formatting", () => {
             encounter: "plains_1",
             seed: 8224,
             state,
+            availability: [{ id: "ko", available: true }],
+            bindings: ["latexArms"],
+            bindingThresholds,
             actionLines: ["[1] telekinesis"],
             logLines: ["Encounter plains_1 began."],
         }, 120, 36);
@@ -139,6 +166,10 @@ describe("console formatting", () => {
 
         expect(lines).toHaveLength(36);
         expect(lines.every((line) => line.length === 120)).toBe(true);
+        const divider = lines[2].indexOf("┬");
+        const leftWidth = divider - 1;
+        const rightWidth = lines[2].length - divider - 2;
+        expect(leftWidth / (leftWidth + rightWidth)).toBeCloseTo(2 / 3, 2);
         expect(rendered).toContain("PARTY");
         expect(rendered).toContain("ENEMIES");
         expect(rendered).toContain("ACTIONS / TARGETING");
@@ -146,9 +177,142 @@ describe("console formatting", () => {
         expect(rendered).toContain("latexArms");
         expect(rendered).toContain("Intent: latexSpray");
         expect(rendered).toContain("Seed 8224");
+        expect(rendered).toContain("skunkette1 [HP: 12/20]");
     });
 
-    it("wraps long status and buff lists without losing their contents", () => {
+    it("renders encounter-defined binding rows in order with calculated threshold markers", () => {
+        const bindingState: GameState = {
+            ...state,
+            characters: [{
+                ...state.characters[0],
+                bindings: [
+                    { id: "notInEncounter", value: 100, level: "max", data: {}, status: [] },
+                    {
+                        id: "latexArms",
+                        value: 36,
+                        level: "hard",
+                        data: {},
+                        status: [
+                            { id: "bound", value: 3 },
+                            { id: "immobilized", value: 1 },
+                        ],
+                    },
+                    {
+                        id: "latexTorso",
+                        value: 23,
+                        level: "medium",
+                        data: {},
+                        status: [{ id: "gagged", value: 2 }],
+                    },
+                ],
+            }],
+        };
+        const rendered = renderState(
+            bindingState,
+            [{ id: "ko", available: true }],
+            ["latexLegs", "latexArms", "latexTorso"],
+        );
+
+        expect(rendered.indexOf("latexLegs")).toBeLessThan(rendered.indexOf("latexArms"));
+        expect(rendered.indexOf("latexArms")).toBeLessThan(rendered.indexOf("latexTorso"));
+        expect(rendered).toContain("latexLegs   [-+-+-+---+-----+----] 0/100  ---");
+        expect(rendered).toContain(
+            "latexArms   [#######--+-----+----] 36/100  Hard    [Bound 3] [Immobilized]",
+        );
+        expect(rendered).toContain(
+            "latexTorso  [#####+---+-----+----] 23/100  Medium    [Gagged 2]",
+        );
+        expect(rendered).not.toContain("notInEncounter");
+        expect(rendered).not.toContain("Status:");
+    });
+
+    it("shows action state, stance, signed modifiers, and blocked body parts on headers", () => {
+        const characters = [
+            {
+                ...state.characters[0], id: "ready", standing: true, acted: false,
+                bindings: [],
+                modifiers: {
+                    hitarms: -4,
+                    hitmouth: -4,
+                    hitlegs: -3,
+                    hit: 1,
+                    defense: -2,
+                    escape: 2,
+                    effect: 3,
+                    potency: 1,
+                    traps: -2,
+                    willpower: -1,
+                    spread: 1,
+                },
+                blockedMoveTypes: ["arms" as const],
+            },
+            {
+                ...state.characters[0], id: "acted", standing: false, acted: true,
+                bindings: [], modifiers: {}, blockedMoveTypes: [],
+            },
+            {
+                ...state.characters[0], id: "skip", standing: true, acted: true,
+                bindings: [], modifiers: {}, blockedMoveTypes: [],
+            },
+            {
+                ...state.characters[0], id: "incap", standing: false, acted: true,
+                bindings: [], modifiers: {}, blockedMoveTypes: [],
+            },
+        ];
+        const rendered = renderState(
+            { ...state, characters },
+            [
+                { id: "ready", available: true },
+                { id: "acted", available: false, reason: "actorAlreadyActed" },
+                { id: "skip", available: false, reason: "actorSkipped" },
+                { id: "incap", available: false, reason: "actorIncapacitated" },
+            ],
+            [],
+            120,
+        );
+
+        for (const token of [
+            "[Ready]", "[Standing]", "[Arms: Blk]", "[Mouth: -4]", "[Legs: -3]",
+            "[Hit: +1]", "[Def: -2]", "[Esc: +2]", "[Eff: +3]", "[Pot: +1]",
+            "[Trap: -2]", "[Will: -1]", "[Spr: +1]",
+        ]) {
+            expect(rendered).toContain(token);
+        }
+        expect(rendered).not.toContain("[Arms: -4]");
+        const readyHeaderLines = rendered.split("\n")
+            .map((line) => line.slice(1, 79).trimEnd())
+            .filter((line) => line.includes("ready [") || /^\s+\[/.test(line));
+        expect(readyHeaderLines.length).toBeGreaterThan(1);
+        expect(readyHeaderLines.every((line) =>
+            (line.match(/\[/g) ?? []).length === (line.match(/\]/g) ?? []).length,
+        )).toBe(true);
+        expect(readyHeaderLines.some((line) => line.includes("…"))).toBe(false);
+        expect(rendered).toContain("acted [Acted] [Moving]");
+        expect(rendered).toContain("skip [Skip] [Standing]");
+        expect(rendered).toContain("incap [Incap] [Moving]");
+    });
+
+    it("renders each character buff on its own line", () => {
+        const buffState: GameState = {
+            ...state,
+            characters: [{
+                ...state.characters[0],
+                bindings: [],
+                buffs: [
+                    { id: "firstBuff", active: false, duration: 2 },
+                    { id: "secondBuff", active: true, modifiers: { defense: -1 } },
+                ],
+            }],
+        };
+        const rendered = renderState(buffState, [{ id: "ko", available: true }]);
+
+        expect(rendered).toContain("First Buff (pending) (2 rounds)");
+        expect(rendered).toContain("Second Buff (Def -1)");
+        expect(rendered.split("\n").some((line) => line.includes("First Buff") && line.includes("Second Buff")))
+            .toBe(false);
+    });
+
+    it("wraps long buff lists without adding an aggregate status row", () => {
         const longState: GameState = {
             ...state,
             characters: [{
@@ -158,19 +322,7 @@ describe("console formatting", () => {
                     id: "veryLongBuffName",
                     active: true,
                     linkedEntity: "skunkette1",
-                    statuses: [
-                        { id: "bound", value: 1 },
-                        { id: "gagged", value: 2 },
-                        { id: "hobbled", value: 3 },
-                        { id: "vibrating", value: 4 },
-                        { id: "submissive", value: 4 },
-                        { id: "breathless", value: 4 },
-                        { id: "blinded", value: 4 },
-                        { id: "immobilized", value: 1 },
-                        { id: "helpless", value: 1 },
-                        { id: "stunned", value: 1 },
-                        { id: "incapacitated", value: 1 },
-                    ],
+                    statuses: [{ id: "immobilized", value: 1 }],
                     modifiers: { hitarms: -2, hitmouth: -3, defense: -4, willpower: 2 },
                 }],
             }],
@@ -179,13 +331,16 @@ describe("console formatting", () => {
             encounter: "plains_1",
             seed: 8224,
             state: longState,
+            availability: [{ id: "ko", available: true }],
+            bindings: [],
+            bindingThresholds,
             actionLines: [],
             logLines: [],
         }, 120, 60);
 
-        expect(rendered).toContain("Status: standing 1, bound 1, gagged 2");
-        expect(rendered).toContain("incapacitated 1");
-        expect(rendered).toContain("Buffs: Very Long Buff Name");
+        expect(rendered).not.toContain("Status:");
+        expect(rendered).toContain("Buffs:");
+        expect(rendered).toContain("Very Long Buff Name");
         expect(rendered).toContain("(Mouth Hit -3)");
         expect(rendered).toContain("(Def -4)");
         expect(rendered).toContain("(Willpower +2)");
@@ -200,8 +355,8 @@ describe("console formatting", () => {
     it("automatically ends the turn after the last available character acts", async () => {
         const engine = new GameEngine(encounterList, 8224);
         engine.loadCharacter(ko);
-        engine.loadEncounter("plains_1");
-        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"]);
+        const events = engine.loadEncounter("plains_1");
+        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
 
         expect(engine.getGameState().turn.round).toBe(2);
         expect(rendered).toContain("TARGET");
@@ -209,19 +364,35 @@ describe("console formatting", () => {
         expect(rendered).toContain("No characters available. Ending turn automatically.");
         expect(rendered).toContain("~~~ ROUND 2 ~~~");
         expect(rendered).toContain("Seed 8224");
-        expect(rendered).toContain("Escape / assist - unavailable: no legal escapes");
+        expect(rendered).toContain("Escape / assist -- no legal escapes");
+        expect(rendered).not.toMatch(/unavailable:/i);
+    });
+
+    it("replaces stored bindings when a newer encounter event is received", async () => {
+        const engine = new GameEngine(encounterList, 8224);
+        engine.loadCharacter(ko);
+        engine.loadEncounter("plains_1");
+        const events: GameEvent[] = [
+            { type: "encounter", id: "old", success: true, bindings: ["oldBinding"] },
+            { type: "encounter", id: "new", success: true, bindings: ["latexHead"] },
+        ];
+
+        const rendered = await runScriptedConsole(engine, ["3"], events);
+
+        expect(rendered).toContain("latexHead");
+        expect(rendered).not.toContain("oldBinding");
     });
 
     it("shows a fully acted character without assigning it a menu number", async () => {
         const engine = new GameEngine(encounterList, 8224);
         engine.loadCharacter(ko);
         engine.loadCharacter(makeCharacterDef("ally"));
-        engine.loadEncounter("plains_1");
+        const events = engine.loadEncounter("plains_1");
 
-        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "4"]);
+        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "4"], events);
 
-        expect(rendered).toContain("[-] ko  UNAVAILABLE: actorAlreadyActed");
-        expect(rendered).toContain("[2] ally  READY");
+        expect(rendered).toContain("[-] ko  -- actorAlreadyActed");
+        expect(rendered).toContain("[2] ally  Ready");
         expect(rendered).toContain("[3] End turn");
         expect(rendered).toContain("[4] Quit");
         expect(engine.getGameState().turn.round).toBe(1);
@@ -237,8 +408,8 @@ describe("console formatting", () => {
 
         const rendered = await runScriptedConsole(engine, ["2", "1", "4"]);
 
-        expect(rendered).toContain("[-] hero  UNAVAILABLE: actorSkipped");
-        expect(rendered).toContain("[2] ally  READY");
+        expect(rendered).toContain("[-] hero  -- actorSkipped");
+        expect(rendered).toContain("[2] ally  Ready");
         expect(rendered).toContain("Choose an action for ally.");
         expect(rendered).not.toContain("Choose an action for hero.");
         expect(rendered).toContain("No target");
