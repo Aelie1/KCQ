@@ -405,32 +405,32 @@ export class GameEngine {
                 //If moving, check for traps
                 if (!actor.standing) {
                     for (const trap of this.state.traps) {
-                        const roll = Math.max(0, this.rng.accuracy() + getModifier(actor,"traps") * TRAP_MODIFIER);
+                        const roll = Math.max(0, this.rng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
-                            result.fromEffects(this.state, trap.definition.onTrigger(actor,trap,roll));
+                            result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
                         }
                     }
                     //Redo some checks in case status has changed
+                    let reason: ActionFailureReason | undefined = undefined;
+
+                    const capability = canAct(actor, action.type);
+                    if (capability) {
+                        reason = capability.reason;
+                    }
+
                     if (!move.alwaysAvailable && !canAttack(actor)) {
-                        result.addEvent({
-                            type: "actionInterrupted",
-                            actor: actor.id,
-                            reason: "attackUnavailable"
-                        });
-                        actor.acted = true;
-                        this.state.turn.step++;
-                        return {
-                            success: true,
-                            events: result.getEvents(),
-                            state: this.getGameState(),
-                        };
+                        reason = "attackUnavailable";
                     }
-    
+
                     if (!canUseMoveType(actor, move.type)) {
+                        reason = "bindingRestriction";
+                    }
+
+                    if (reason) {
                         result.addEvent({
                             type: "actionInterrupted",
                             actor: actor.id,
-                            reason: "bindingRestriction"
+                            reason: reason
                         });
                         actor.acted = true;
                         this.state.turn.step++;
@@ -440,9 +440,8 @@ export class GameEngine {
                             state: this.getGameState(),
                         };
                     }
-    
                 }
-        
+
                 const iMove: iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 let anyHits: boolean = false;
@@ -530,17 +529,29 @@ export class GameEngine {
                 //If moving, check for traps
                 if (!actor.standing) {
                     for (const trap of this.state.traps) {
-                        const roll = Math.max(0, this.rng.accuracy() + getModifier(actor,"traps") * TRAP_MODIFIER);
+                        const roll = Math.max(0, this.rng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
-                            result.fromEffects(this.state, trap.definition.onTrigger(actor,trap,roll));
+                            result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
                         }
                     }
+                    
                     //Redo some checks in case status has changed
+                    let reason: ActionFailureReason | undefined = undefined;
+                    
+                    const capability = canAct(actor, action.type);
+                    if (capability) {
+                        reason = capability.reason;
+                    }
+
                     if (actor !== target && !canAssist(actor)) {
+                        reason = "assistUnavailable";
+                    }
+
+                    if (reason) {
                         result.addEvent({
                             type: "actionInterrupted",
                             actor: actor.id,
-                            reason: "assistUnavailable"
+                            reason: reason
                         });
                         actor.acted = true;
                         this.state.turn.step++;
