@@ -272,7 +272,9 @@ function defeatEnemy(state: iGameState, target: iEnemy): GameEffects {
 
 function spawnEnemy(state: iGameState, definition: EnemyDef, options?: { buff?: iBuff; id?: EntityId; }): GameEffects {
     const result = new GameEffects();
-    state.nextId[definition.id] = (state.nextId[definition.id] ?? 0) + 1;
+    if (!options?.id) {
+        state.nextId[definition.id] = (state.nextId[definition.id] ?? 0) + 1;
+    }
     const name = options?.id ? options.id : definition.id + state.nextId[definition.id];
     const enemy = {
         definition: definition,
