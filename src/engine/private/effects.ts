@@ -28,34 +28,24 @@ export class GameEffects {
         this.events.push(event);
     }
 
-    fromResult(state: iGameState, other: GameEffects) {
+    fromResult(other: GameEffects) {
         this.events.push(...other.events);
-        this.effects.push(...other.effects);
+        this.stack(other.effects);
         this.resolve();
     }
 
-    fromEffects(state: iGameState, other: iEffect[]) {
-        this.effects.push(...other);
+    fromEffects(other: iEffect[]) {
+        this.stack(other);
         this.resolve();
     }
 
-    private stack(other: GameEffects) {
-        this.events.push(...other.events);
-
-        for (let i = other.effects.length - 1; i >= 0; i--) {
-            this.effects.push(other.effects[i]);
-        }
-    }
-
-    private stackEffects(other: iEffect[]) {
+    private stack(other: iEffect[]) {
         for (let i = other.length - 1; i >= 0; i--) {
             this.effects.push(other[i]);
         }
     }
 
     private resolve() {
-        this.effects.reverse();
-
         while (this.effects.length > 0) {
             const effect = this.effects.pop();
             if (!effect) {
@@ -67,7 +57,7 @@ export class GameEffects {
             switch (effect.type) {
                 case "binding":
                     if (effect.onResolve) {
-                        this.stackEffects(effect.onResolve(effect));
+                        this.stack(effect.onResolve(effect));
                     }
                     if (effect.amount !== undefined) {
                         if (effect.amount > 0) {
@@ -92,7 +82,17 @@ export class GameEffects {
                     this.damageEnemy(effect.source, effect.target, effect.amount);
                     break;
                 case "enemy":
-                    this.spawnEnemy(effect.definition, { buff: effect.buff, id: effect.id, hp: effect.hpRatio });
+                    switch (effect.operation) {
+                        case "spawn":
+                            this.spawnEnemy(effect.definition, { buff: effect.buff, id: effect.id, hp: effect.hpRatio });
+                            break;
+                        case "check":
+                            this.checkEnemy(effect.target);
+                            break;
+                        case "defeat":
+                            this.defeatEnemy(effect.target);
+                            break;
+                    }
                     break;
                 case "cooldown":
                     this.setCooldown(effect.target, effect.move, effect.value);
@@ -116,7 +116,7 @@ export class GameEffects {
     };
 
 
-    addBinding(target: iCharacter, type: BindingDef, amount: number) {
+    private addBinding(target: iCharacter, type: BindingDef, amount: number) {
         const event: BondageEvent = {
             type: "bondageChanged",
             target: target.id,
@@ -152,37 +152,32 @@ export class GameEffects {
         this.addEvent(event);
 
         if (type.onAdd) {
-            this.stackEffects(type.onAdd(this.state, target, binding, event.amount));
+            this.stack(type.onAdd(this.state, target, binding, event.amount));
         }
     };
 
-    removeBinding(target: iCharacter, type: BindingDef, amount: number) {
-        const event: BondageEvent = {
-            type: "bondageChanged",
-            target: target.id,
-            binding: type.id,
-            amount: 0
-        };
+    private removeBinding(target: iCharacter, type: BindingDef, amount: number) {
         let binding = findBinding(target, type.id);
         if (!binding) {
-            //character doesnt have it, do nothing
             return;
         }
         let origLevel = binding.value;
         binding.value -= amount;
         if (binding.value <= 0) {
             binding.value = 0;
-            event.type = "bondageRemoved";
         }
-        event.amount = binding.value - origLevel;
-        this.addEvent(event);
+        this.addEvent({
+            type: binding.value === 0 ? "bondageRemoved" : "bondageChanged",
+            target: target.id,
+            binding: type.id,
+            amount: binding.value - origLevel
+        });
         if (binding.value === 0) {
-            //it's at 0, remove it entirely
             target.bindings.splice(target.bindings.indexOf(binding), 1);
         }
     };
 
-    addBuff(target: iEntity, buff: iBuff) {
+    private addBuff(target: iEntity, buff: iBuff) {
         const oldBuff = findBuff(target, buff.id);
         const newBuff = { ...buff };
         if (oldBuff) {
@@ -204,7 +199,7 @@ export class GameEffects {
         return;
     };
 
-    removeBuff(target: iEntity, buff: iBuff) {
+    private removeBuff(target: iEntity, buff: iBuff) {
         const index = target.buffs.indexOf(buff);
         if (index >= 0) {
             target.buffs.splice(index, 1);
@@ -218,8 +213,7 @@ export class GameEffects {
     };
 
 
-    removeLinkedBuffs(target: iEntity, buff: iBuff) {
-
+    private removeLinkedBuffs(target: iEntity, buff: iBuff) {
         this.removeBuff(target, buff);
         if (!buff.linkedEntity) {
             return;
@@ -240,42 +234,51 @@ export class GameEffects {
     };
 
 
-    damageEnemy(actor: iEntity, target: iEnemy, amount: number) {
+    private damageEnemy(actor: iEntity, target: iEnemy, amount: number) {
         target.currHp -= amount;
-        const event: DamageEvent = {
+        this.addEvent({
             type: "enemyDamaged",
             target: target.id,
             amount: amount
-        };
-        this.addEvent(event);
+        });
+
+        this.effects.push({
+            type: "enemy",
+            operation: "check",
+            target: target
+        })
 
         if (target.definition.onDamage) {
-            this.stackEffects(target.definition.onDamage(this.state, actor, target, amount));
-            this.resolve();
-        }
-
-        if (target.currHp <= 0) {
-            this.defeatEnemy(target);
+            this.stack(target.definition.onDamage(this.state, actor, target, amount));
         }
         return;
     };
 
-    defeatEnemy(target: iEnemy) {
-        const event: EnemyEvent = {
+    private checkEnemy(target: iEnemy) {
+        if (target.currHp <= 0) {
+            this.effects.push({
+                type: "enemy",
+                operation: "defeat",
+                target: target
+            })
+
+            if (target.definition.onDefeat) {
+                this.stack(target.definition.onDefeat(this.state, target));
+            }
+        }
+    }
+
+    private defeatEnemy(target: iEnemy) {
+        this.addEvent({
             type: "enemyDefeated",
             target: target.id,
-        };
-        this.addEvent(event);
-
-        if (target.definition.onDefeat) {
-            target.definition.onDefeat(this.state, target);
-        }
+        });
 
         this.state.enemies.splice(this.state.enemies.indexOf(target), 1);
         return;
     };
 
-    spawnEnemy(definition: EnemyDef, options?: { buff?: iBuff; id?: EntityId; hp?: number }) {
+    private spawnEnemy(definition: EnemyDef, options?: { buff?: iBuff; id?: EntityId; hp?: number }) {
         if (!options?.id) {
             this.state.nextId[definition.id] = (this.state.nextId[definition.id] ?? 0) + 1;
         }
@@ -309,7 +312,7 @@ export class GameEffects {
         return;
     };
 
-    setCooldown(target: iEnemy, move: MoveDef, value: number) {
+    private setCooldown(target: iEnemy, move: MoveDef, value: number) {
         target.cooldowns[move.id] = value;
         this.addEvent({
             type: "cooldownChanged",
@@ -320,7 +323,7 @@ export class GameEffects {
         return;
     };
 
-    addTrap(actor: iEntity, trap: iTrap, amount: number) {
+    private addTrap(actor: iEntity, trap: iTrap, amount: number) {
         const origLevel = trap.amount;
 
         trap.amount += amount;
@@ -338,7 +341,7 @@ export class GameEffects {
         return;
     };
 
-    removeTrap(actor: iEntity, trap: iTrap, amount: number) {
+    private removeTrap(actor: iEntity, trap: iTrap, amount: number) {
         const origLevel = trap.amount;
 
         trap.amount -= amount;
@@ -349,7 +352,7 @@ export class GameEffects {
         return;
     };
 
-    setStance(target: iCharacter, stance: StanceId) {
+    private setStance(target: iCharacter, stance: StanceId) {
         switch (stance) {
             case "standing":
                 if (!target.standing) {
@@ -375,7 +378,7 @@ export class GameEffects {
         return;
     };
 
-    addIntention(action: iEffect) {
+    private addIntention(action: iEffect) {
         if (action.type != "move" || !isEnemy(action.actor)) {
             return;
         }

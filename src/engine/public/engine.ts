@@ -97,10 +97,11 @@ export class GameEngine {
         for (const enemy of encounter.enemies) {
             spawns.push({
                 type: "enemy",
+                operation: "spawn",
                 definition: enemy
             });
         }
-        result.fromEffects(this.state, spawns);
+        result.fromEffects(spawns);
 
         for (const trap of encounter.traps) {
             this.state.traps.push({
@@ -300,9 +301,9 @@ export class GameEngine {
             };
         }
         if (action.type === "endTurn") {
-            result.fromResult(this.state, this.advancePhase());
-            result.fromResult(this.state, this.executeEnemyPhase());
-            result.fromResult(this.state, this.advancePhase());
+            result.fromResult(this.advancePhase());
+            result.fromResult(this.executeEnemyPhase());
+            result.fromResult(this.advancePhase());
 
             return {
                 success: true,
@@ -418,7 +419,7 @@ export class GameEngine {
                         const roll = Math.max(0, this.accRng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
-                            result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
+                            result.fromEffects(trap.definition.onTrigger(actor, trap, roll));
                             result.addEvent({
                                 type: "trapTriggered",
                                 actor: actor.id,
@@ -506,7 +507,7 @@ export class GameEngine {
                     move: action.move,
                     targets: targets.map(x => ({ target: x.target.id, result: x.band }))
                 });
-                result.fromEffects(this.state, resolveMove(this.state, iMove, actor, targets));
+                result.fromEffects(resolveMove(this.state, iMove, actor, targets));
 
                 if (move.freeOnHit !== true || anyHits === false) {
                     actor.acted = true;
@@ -549,7 +550,7 @@ export class GameEngine {
                         const roll = Math.max(0, this.accRng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
-                            result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
+                            result.fromEffects(trap.definition.onTrigger(actor, trap, roll));
                             result.addEvent({
                                 type: "trapTriggered",
                                 actor: actor.id,
@@ -588,7 +589,7 @@ export class GameEngine {
                 }
 
                 //now we have a valid actor, target, and binding -- execute the escape
-                result.fromEffects(this.state, resolveEscape(actor, target, binding));
+                result.fromEffects(resolveEscape(actor, target, binding));
                 if (!actor.acted) {
                     actor.acted = true;
                     if (actor.standing && canBonusEscape(actor)) {
@@ -605,7 +606,7 @@ export class GameEngine {
                 };
             }
             case "stance": {
-                result.fromEffects(this.state, [{
+                result.fromEffects([{
                     type: "stance",
                     actor: actor,
                     stance: actor.standing ? "moving" : "standing"
@@ -640,7 +641,7 @@ export class GameEngine {
             move: move.definition.id,
             targets: targets.map(x => ({ target: x.target.id, result: x.band }))
         });
-        result.fromEffects(this.state, resolveMove(this.state, move, actor, targets));
+        result.fromEffects(resolveMove(this.state, move, actor, targets));
         this.state.turn.step++;
         return result;
     }
@@ -649,7 +650,7 @@ export class GameEngine {
         const result = new GameEffects(this.state,this.accRng);
         for (const enemy of this.state.enemies) {
             for (const intention of enemy.intention) {
-                result.fromResult(this.state, this.executeEnemyAction(intention));
+                result.fromResult(this.executeEnemyAction(intention));
                 const move = intention.move.definition;
                 if (move.cooldown) {
                     enemy.cooldowns[move.id] = move.cooldown;
@@ -664,12 +665,12 @@ export class GameEngine {
         const result = new GameEffects(this.state,this.accRng);
 
         if (this.state.turn.phase === "player") {
-            result.fromEffects(this.state,tickBindings(this.state));
+            result.fromEffects(tickBindings(this.state));
             this.state.turn.phase = "enemy";
         } else {
             tickCooldowns(this.state.enemies);
-            result.fromEffects(this.state, tickBuffs(this.state));
-            result.fromEffects(this.state, tickPlayers(this.state));
+            result.fromEffects(tickBuffs(this.state));
+            result.fromEffects(tickPlayers(this.state));
             this.updateIntentions();
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
@@ -689,7 +690,7 @@ export class GameEngine {
             enemy.intention.length = 0;
         }
         for (const enemy of this.state.enemies) {
-            result.fromEffects(this.state, enemy.definition.ai(this.state, enemy, this.aiRng));
+            result.fromEffects(enemy.definition.ai(this.state, enemy, this.aiRng));
         }
     }
 }

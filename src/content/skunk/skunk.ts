@@ -53,6 +53,7 @@ export const skunk: EnemyDef = {
                         targets: [target],
                         move: { definition: latexExplosion }
                     });
+                    return effects;
                 }
             }
         }

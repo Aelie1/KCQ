@@ -35,7 +35,7 @@ function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
     const { definition, ..._enemy } = enemy;
     return {
         ..._enemy,
-        intention: enemy.intention.map(intention=>serializeIntention(state,intention)),
+        intention: enemy.intention.map(intention => serializeIntention(state, intention)),
         buffs: enemy.buffs.map(serializeBuff),
         cooldowns: { ..._enemy.cooldowns },
 
@@ -90,10 +90,13 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 amount: effect.amount
             }
         case "enemy":
-            return {
-                type: effect.type,
-                target: effect.definition.id
+            if (effect.operation === "spawn") {
+                return {
+                    type: effect.type,
+                    target: effect.definition ? effect.definition.id : ""
+                }
             }
+            return;
         case "trap":
             return {
                 type: effect.type,

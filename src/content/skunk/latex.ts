@@ -78,6 +78,7 @@ export const latexBindings: BindingDef = {
 
         effects.push({
             type: "enemy",
+            operation: "spawn",
             definition: skunkette,
             id: skunketteName,
             buff: eBuff,
