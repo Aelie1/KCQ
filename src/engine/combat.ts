@@ -133,19 +133,16 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
     /*
      * Accuracy mostly changes ordinary reliability.
      *
-     * Crit is deliberately harder to gain and easier to lose:
+     * Crit can only be lost:
      *
-     *   positive accuracy: +Crit at 1/2 rate
-     *   negative accuracy: -Crit at 2x rate
+     *   negative accuracy: -Crit at 0.1x rate
      *
      * An absent Crit band can never be created by generic accuracy.
      */
     let crit = 0;
 
     if (hasCrit) {
-        const critDelta = delta >= 0
-            ? delta * 0.5
-            : delta * 2;
+        const critDelta = Math.min(delta, 0) * 0.1;
 
         crit = clamp(baseCrit + critDelta, 0, 100);
     }
@@ -347,6 +344,7 @@ function normalizeEffect(effect: iEffect): iEffect {
     switch (effect.type) {
         case "binding":
         case "damage":
+        case "trap":
             return {
                 ...effect,
                 ...(effect.amount !== undefined ? { amount: Math.ceil(effect.amount) } : {})

@@ -127,11 +127,12 @@ function formatParty(
             for (const bindingId of bindingIds) {
                 const binding = character.bindings.find((candidate) => candidate.id === bindingId);
                 const value = binding?.value ?? 0;
+                const peak = binding?.data["peak"] ?? 0;
                 const level = binding ? titleCase(binding.level) : "---";
                 const statuses = binding ? formatBindingStatuses(binding.status) : "";
                 lines.push(
                     `    ${bindingId.padEnd(bindingNameWidth)}  `
-                    + `${bindingBar(value, bindingThresholds)} ${value}/${bindingThresholds.max}  ${level}`
+                    + `${bindingBar(value, bindingThresholds)} ${value}/${peak}  ${level}`
                     + (statuses ? `    ${statuses}` : ""),
                 );
             }

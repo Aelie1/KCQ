@@ -415,7 +415,14 @@ export class GameEngine {
                     for (const trap of this.state.traps) {
                         const roll = Math.max(0, this.rng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
+                            const origValue = trap.amount;
                             result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
+                            result.addEvent({
+                                type: "trapTriggered",
+                                actor: actor.id,
+                                trap: trap.id,
+                                amount: origValue - trap.amount
+                            });
                         }
                     }
                     //Redo some checks in case status has changed
@@ -539,7 +546,14 @@ export class GameEngine {
                     for (const trap of this.state.traps) {
                         const roll = Math.max(0, this.rng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
+                            const origValue = trap.amount;
                             result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
+                            result.addEvent({
+                                type: "trapTriggered",
+                                actor: actor.id,
+                                trap: trap.id,
+                                amount: origValue - trap.amount
+                            });
                         }
                     }
 

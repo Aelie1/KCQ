@@ -167,6 +167,8 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [`${event.actor} created ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
             case "trapRemoved":
                 return [`${event.actor} removed ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
+            case "trapTriggered":
+                return [`${event.actor} triggered ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
             case "actionInterrupted":
                 return [`${event.actor}'s action was interrupted due to ${event.reason}.`];
         }

@@ -192,9 +192,10 @@ const latexSpray: MoveDef = {
     targets: 1,
     baseDamage: SPRAY_DAMAGE,
     accuracy: {
-        miss: 10,
-        graze: 25,
-        hit: 65
+        miss: 50,
+        graze: 20,
+        hit: 27,
+        crit: 3
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {

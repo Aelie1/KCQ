@@ -12,7 +12,7 @@ export const plains_1: EncounterDef = {
 }
 
 export const plains_2: EncounterDef = {
-    id: "plains_1",
+    id: "plains_2",
     enemies: [skunkette, skunkette, skunk, skunk],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [

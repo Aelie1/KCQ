@@ -428,7 +428,7 @@ export interface CooldownEvent {
 }
 
 export interface TrapEvent {
-    type: "trapAdded" | "trapRemoved";
+    type: "trapAdded" | "trapRemoved" | "trapTriggered";
     actor: EntityId;
     trap: TrapId;
     amount: number;
@@ -439,6 +439,7 @@ export interface InterruptEvent {
     actor: EntityId;
     reason: ActionFailureReason;
 }
+
 
 /*******************************************************
  * Encounters

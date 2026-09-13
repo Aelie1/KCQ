@@ -1,10 +1,8 @@
-import { GameEffects } from "../../engine/effects";
 import { pickBinding, pickTarget, validTargets } from "../../engine/enemies";
 import { findBinding, findTrap } from "../../engine/find";
 import { isCharacter, isEnemy } from "../../engine/helpers";
-import { EnemyDef, iGameState, iEnemy, EnemyAction, iEffect, iEntity, iMove, iTargetInfo, MoveDef } from "../../engine/itypes";
+import { EnemyAction, EnemyDef, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, MoveDef } from "../../engine/itypes";
 import { Random } from "../../engine/random";
-import { isIncapacitated } from "../../engine/status";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 
@@ -13,7 +11,7 @@ const SKUNK_DEF = 0;
 
 const SPRAY_DAMAGE = 25;
 
-const PUDDLE_BASE = 10;
+const PUDDLE_BASE = 25;
 
 const REGENERATION_DAMAGE = 30;
 
@@ -22,7 +20,7 @@ const EXPLOSION_HEAL = SKUNK_HP * 0.2;
 const EXPLOSION_DAMAGE = 25;
 
 export const skunk: EnemyDef = {
-    id: "skunkette",
+    id: "skunk",
     hp: SKUNK_HP,
     defense: SKUNK_DEF,
     passives: [],
@@ -74,7 +72,6 @@ export const skunk: EnemyDef = {
         {
             let total = 0;
             let target = undefined;
-            let binding = undefined;
             for (const character of validTargets(state.characters)) {
                 let amount = 0
                 for (const binding of character.bindings) {
@@ -83,7 +80,6 @@ export const skunk: EnemyDef = {
                 if (amount > total) {
                     total = amount;
                     target = character;
-                    binding = binding;
                 }
             }
             const roll = rng.accuracy();
@@ -132,9 +128,10 @@ const latexSpray: MoveDef = {
     targets: 1,
     baseDamage: SPRAY_DAMAGE,
     accuracy: {
-        miss: 10,
-        graze: 25,
-        hit: 65
+        miss: 50,
+        graze: 20,
+        hit: 27,
+        crit: 3
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
@@ -164,35 +161,27 @@ const latexPuddle: MoveDef = {
     id: "latexPuddle",
     side: "none",
     targets: 0,
+    baseDamage: PUDDLE_BASE,
+    accuracy: {
+        graze: 45,
+        hit: 50,
+        crit: 5
+    },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
-        const roll = move.roll ?? 0.5;
 
         const trap = findTrap(state, trapPuddle.id);
         if (!trap) {
             return effects;
         }
 
-        let amount = 0;
-        if (roll < 0.3) {
-            amount = PUDDLE_BASE;
-        }
-        else if (roll < 0.8) {
-            amount = PUDDLE_BASE * 2;
-        }
-        else {
-            amount = PUDDLE_BASE * 3;
-        }
-
-        if (amount) {
-            effects.push({
-                type: "trap",
-                actor: actor,
-                trap: trap,
-                amount: amount
-            });
-        }
+        effects.push({
+            type: "trap",
+            actor: actor,
+            trap: trap,
+            amount: (this.baseDamage ?? 1) * (move.effectiveness ?? 0)
+        });
 
         return effects;
     }
@@ -271,15 +260,14 @@ const latexExplosion: MoveDef = {
         const effects: iEffect[] = [];
         if (targets.length === 0) {
             const trap = findTrap(state, trapPuddle.id);
-            if (!trap) {
-                return effects;
+            if (trap) {
+                effects.push({
+                    type: "trap",
+                    actor: actor,
+                    trap: trap,
+                    amount: PUDDLE_BASE * 3
+                });
             }
-            effects.push({
-                type: "trap",
-                actor: actor,
-                trap: trap,
-                amount: PUDDLE_BASE * 3
-            });
             if (isEnemy(actor)) {
                 effects.push({
                     type: "damage",
@@ -288,6 +276,7 @@ const latexExplosion: MoveDef = {
                     amount: 999
                 });
             }
+            return effects;
         }
 
         const target = targets[0];
@@ -356,6 +345,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
                 amount: Math.min(effect.amount, binding.data["peak"] - binding.value)
             })
         }
+        effect.amount = undefined;
         return effects;
     }
 

@@ -148,7 +148,12 @@ function addBinding(state: iGameState, target: iCharacter, type: BindingDef, amo
 
 function removeBinding(state: iGameState, target: iCharacter, type: BindingDef, amount: number): GameEffects {
     const result = new GameEffects();
-    const event: BondageEvent = { type: "bondageChanged", target: target.id, binding: type.id, amount: 0 };
+    const event: BondageEvent = {
+        type: "bondageChanged",
+        target: target.id,
+        binding: type.id,
+        amount: 0
+    };
     let binding = findBinding(target, type.id);
     if (!binding) {
         //character doesnt have it, do nothing
