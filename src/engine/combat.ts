@@ -133,8 +133,8 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
     /*
      * Accuracy mostly changes ordinary reliability.
      *
-     * Crit can only be lost by enemies
-     * and operates at 0.1x rate for players
+     * nemy crit chance can only decrease; 
+     * player crit chance scales in both directions.
      *
      * An absent Crit band can never be created by generic accuracy.
      */
@@ -158,6 +158,8 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
     let fullHit = clamp(baseFullHit + delta, 0, 100);
     let contact = clamp(baseContact + delta * 0.5, 0, 100);
 
+    // crit must live inside the full hit region.
+    fullHit = clamp(fullHit, crit, 100);
     // Full hit must live inside the contact region.
     contact = clamp(contact, fullHit, 100);
 
