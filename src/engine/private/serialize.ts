@@ -93,7 +93,7 @@ function serializeEffect(effect: iEffect): Effect | undefined {
             if (effect.operation === "spawn") {
                 return {
                     type: effect.type,
-                    target: effect.definition ? effect.definition.id : ""
+                    target: effect.definition.id
                 }
             }
             return;
@@ -102,6 +102,11 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 type: effect.type,
                 trap: effect.trap.id,
                 amount: effect.amount
+            }
+        case "move":
+            return {
+                type: effect.type,
+                move: effect.move.definition.id
             }
     }
 }

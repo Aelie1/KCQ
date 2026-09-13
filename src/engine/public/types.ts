@@ -85,7 +85,8 @@ export type Effect =
     | BindingEffect
     | BuffEffect
     | EnemyEffect
-    | TrapEffect;
+    | TrapEffect
+    | MoveEffect;
 
 export interface DamageEffect {
     type: "damage";
@@ -116,6 +117,11 @@ export interface TrapEffect {
     type: "trap";
     trap: TrapId;
     amount: number;
+}
+
+export interface MoveEffect {
+    type: "move";
+    move: MoveId;
 }
 
 

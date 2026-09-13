@@ -13,6 +13,8 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
             return `${target}${effect.target} spawned`;
         case "trap":
             return `${target}${effect.amount} ${effect.trap} created`;
+        case "move":
+            return `${target}${effect.move} used`;
     }
 }
 

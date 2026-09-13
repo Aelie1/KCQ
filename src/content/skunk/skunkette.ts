@@ -240,9 +240,9 @@ const pounce: MoveDef = {
     baseDamage: POUNCE_DAMAGE,
     cooldown: POUNCE_COOLDOWN,
     accuracy: {
-        miss: 10,
-        hit: 10,
-        crit: 80
+        miss: 40,
+        hit: 50,
+        crit: 10
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {

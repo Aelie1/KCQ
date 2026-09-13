@@ -1,4 +1,4 @@
-import { getMoves } from "../protected/helpers";
+import { getMoves, isValidEntity } from "../protected/helpers";
 import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers } from "../private/combat";
 import { GameEffects } from "../private/effects";
 import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
@@ -31,8 +31,8 @@ export class GameEngine {
         };
         seed ??= Math.floor(Math.random() * 0x100000000);
         this.seed = seed;
-        this.aiRng = new Random(mixSeed(seed,1));
-        this.accRng = new Random(mixSeed(seed,2));
+        this.aiRng = new Random(mixSeed(seed, 1));
+        this.accRng = new Random(mixSeed(seed, 2));
         this.encounters = encounters;
         this.currentEncounter = null;
     }
@@ -79,7 +79,7 @@ export class GameEngine {
     }
 
     loadEncounter(id: EncounterId): GameEvent[] {
-        const result = new GameEffects(this.state,this.accRng);
+        const result = new GameEffects(this.state, this.accRng);
         const encounter = this.encounters.find(x => x.id === id);
         if (!encounter) {
             result.addEvent({
@@ -293,7 +293,7 @@ export class GameEngine {
     }
 
     executeAction(action: PlayerAction): ActionResult {
-        const result = new GameEffects(this.state,this.accRng);
+        const result = new GameEffects(this.state, this.accRng);
         if (this.state.turn.phase !== "player") {
             return {
                 success: false,
@@ -621,7 +621,7 @@ export class GameEngine {
     }
 
     private executeEnemyAction(intention: iIntention): GameEffects {
-        const result = new GameEffects(this.state,this.accRng);
+        const result = new GameEffects(this.state, this.accRng);
         const actor = intention.actor;
         const move = intention.move;
         if (!actor) {
@@ -647,13 +647,15 @@ export class GameEngine {
     }
 
     private executeEnemyPhase(): GameEffects {
-        const result = new GameEffects(this.state,this.accRng);
-        for (const enemy of this.state.enemies) {
+        const result = new GameEffects(this.state, this.accRng);
+        for (const enemy of [...this.state.enemies]) {
             for (const intention of enemy.intention) {
-                result.fromResult(this.executeEnemyAction(intention));
-                const move = intention.move.definition;
-                if (move.cooldown) {
-                    enemy.cooldowns[move.id] = move.cooldown;
+                if (isValidEntity(this.state, enemy)) {
+                    result.fromResult(this.executeEnemyAction(intention));
+                    const move = intention.move.definition;
+                    if (move.cooldown) {
+                        enemy.cooldowns[move.id] = move.cooldown;
+                    }
                 }
             }
             enemy.intention.length = 0;
@@ -662,7 +664,7 @@ export class GameEngine {
     }
 
     private advancePhase(): GameEffects {
-        const result = new GameEffects(this.state,this.accRng);
+        const result = new GameEffects(this.state, this.accRng);
 
         if (this.state.turn.phase === "player") {
             result.fromEffects(tickBindings(this.state));
@@ -685,7 +687,7 @@ export class GameEngine {
     }
 
     private updateIntentions() {
-        const result = new GameEffects(this.state,this.accRng);
+        const result = new GameEffects(this.state, this.accRng);
         for (const enemy of this.state.enemies) {
             enemy.intention.length = 0;
         }
