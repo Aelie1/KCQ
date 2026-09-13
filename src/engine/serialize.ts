@@ -53,7 +53,7 @@ function serializeIntention(state: iGameState, intention: iIntention): Intention
     for (const iTarget of iTargets) {
         const tEffects = effects.filter(x => "target" in x && x.target === iTarget.target);
         targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(tEffects) });
-        effects = effects.filter(x => "target" in x && x.target !== iTarget.target);
+        effects = effects.filter(x => !("target" in x) || x.target !== iTarget.target);
     }
 
     return {

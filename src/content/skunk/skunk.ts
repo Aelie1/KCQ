@@ -265,7 +265,7 @@ const latexExplosion: MoveDef = {
                     type: "trap",
                     actor: actor,
                     trap: trap,
-                    amount: PUDDLE_BASE * 3
+                    amount: PUDDLE_BASE
                 });
             }
             if (isEnemy(actor)) {
