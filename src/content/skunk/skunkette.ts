@@ -2,7 +2,7 @@ import { evaluateResult, isValidTarget, resolveMove } from "../../engine/private
 import { pickBinding, pickTarget, validTargets } from "../../engine/protected/enemies";
 import { findBuff, findCharacter, findEnemy } from "../../engine/protected/find";
 import { isCharacter } from "../../engine/protected/helpers";
-import { EnemyAction, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, MoveDef, s } from "../../engine/protected/itypes";
+import { EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, MoveDef, s } from "../../engine/protected/itypes";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { helpless, immobilized, isIncapacitated, stunned } from "../../engine/protected/status";
 import { ModifierSet } from "../../engine/public/types";
@@ -28,8 +28,9 @@ export const skunkette: EnemyDef = {
     hp: SKUNKETTE_HP,
     defense: SKUNKETTE_DEF,
     passives: [],
-    ai: function (state: iGameState, actor: iEnemy, rng: Random): EnemyAction {
+    ai: function (state: iGameState, actor: iEnemy, rng: Random): iEffect[] {
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
+        const effects: iEffect[] = [];
 
         //1) Spray an existing pounced character
         {
@@ -38,11 +39,13 @@ export const skunkette: EnemyDef = {
                 const target = findCharacter(state, buff.linkedEntity);
                 if (target && !isIncapacitated(target)) {
                     const binding = pickBinding(target, bindings, rng);
-                    return {
+                    effects.push({
+                        type: "move",
                         actor: actor,
                         targets: [target],
                         move: { definition: latexSpray, binding: binding }
-                    };
+                    });
+                    return effects;
                 }
             }
         }
@@ -61,11 +64,13 @@ export const skunkette: EnemyDef = {
                     const target = pickTarget(validCharacters, rng);
                     if (target) {
                         const binding = pickBinding(target, bindings, rng);
-                        return {
+                        effects.push({
+                            type: "move",
                             actor: actor,
                             targets: [target],
                             move: { definition: pounce, binding: binding }
-                        };
+                        });
+                        return effects;
                     }
                 }
             }
@@ -76,17 +81,25 @@ export const skunkette: EnemyDef = {
             const roll = rng.int(1, 2);
             if (roll === 1) {
                 //Latex mist
-                return { actor: actor, targets: [], move: { definition: latexMist } };
+                effects.push({
+                    type: "move",
+                    actor: actor, 
+                    targets: [], 
+                    move: { definition: latexMist } 
+                });
+                return effects;
             } else {
                 const target = pickTarget(state.characters, rng);
                 if (target) {
                     const binding = pickBinding(target, bindings, rng);
                     if (binding) {
-                        return {
+                        effects.push({
+                            type: "move",
                             actor: actor,
                             targets: [target],
                             move: { definition: latexSpray, binding: binding }
-                        };
+                        });
+                        return effects;
                     }
                 }
             }
@@ -94,11 +107,13 @@ export const skunkette: EnemyDef = {
 
         //4) Just mist I guess?
         {
-            return {
+            effects.push({
+                type: "move",
                 actor: actor,
                 targets: [],
                 move: { definition: latexMist }
-            };
+            });
+            return effects;
         }
     },
     onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
@@ -226,9 +241,9 @@ const pounce: MoveDef = {
     baseDamage: POUNCE_DAMAGE,
     cooldown: POUNCE_COOLDOWN,
     accuracy: {
-        miss: 40,
-        hit: 50,
-        crit: 10
+        miss: 10,
+        hit: 10,
+        crit: 80
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
@@ -261,15 +276,15 @@ const pounce: MoveDef = {
         }
 
         if (effectiveness >= 1.75 && move.binding && move.roll !== undefined) {
-            const spray: iMove = {
-                definition: latexSpray,
-                binding: move.binding
-            }
-            const info = isValidTarget(state, actor, target, spray.definition);
-            if (info.valid && info.accuracy) {
-                const targets = [evaluateResult(actor, target, info.accuracy, move.roll)];
-                effects.push(...resolveMove(state, spray, actor, targets));
-            }
+            effects.push({
+                type: "move",
+                actor: actor,
+                move: {
+                    definition: latexSpray,
+                    binding: move.binding
+                },
+                targets:[target]
+            })
         }
 
         return effects;

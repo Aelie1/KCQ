@@ -3,10 +3,10 @@ import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveM
 import { GameEffects } from "../private/effects";
 import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
 import { thresholds, TRAP_MODIFIER } from "../protected/constants";
-import { evaluateIntention, updateIntention } from "../protected/enemies";
+import { evaluateIntention } from "../protected/enemies";
 import { findBinding, findCharacter, findEntity, findMove } from "../protected/find";
 import { iEffect, iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/itypes";
-import { Random } from "../protected/random";
+import { mixSeed, Random } from "../protected/random";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, isIncapacitated, isSkipped } from "../protected/status";
 import type {
     AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, Encounter, EncounterId, EntityId,
@@ -16,7 +16,8 @@ import type {
 export class GameEngine {
     private state: iGameState;
     private seed: number;
-    private rng: Random;
+    private aiRng: Random;
+    private accRng: Random;
     private encounters: EncounterDef[];
     private currentEncounter: EncounterDef | null;
 
@@ -30,7 +31,8 @@ export class GameEngine {
         };
         seed ??= Math.floor(Math.random() * 0x100000000);
         this.seed = seed;
-        this.rng = new Random(seed);
+        this.aiRng = new Random(mixSeed(seed,1));
+        this.accRng = new Random(mixSeed(seed,2));
         this.encounters = encounters;
         this.currentEncounter = null;
     }
@@ -77,7 +79,7 @@ export class GameEngine {
     }
 
     loadEncounter(id: EncounterId): GameEvent[] {
-        const result = new GameEffects();
+        const result = new GameEffects(this.state,this.accRng);
         const encounter = this.encounters.find(x => x.id === id);
         if (!encounter) {
             result.addEvent({
@@ -290,7 +292,7 @@ export class GameEngine {
     }
 
     executeAction(action: PlayerAction): ActionResult {
-        const result = new GameEffects();
+        const result = new GameEffects(this.state,this.accRng);
         if (this.state.turn.phase !== "player") {
             return {
                 success: false,
@@ -413,7 +415,7 @@ export class GameEngine {
                 //If moving, check for traps
                 if (!actor.standing) {
                     for (const trap of this.state.traps) {
-                        const roll = Math.max(0, this.rng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
+                        const roll = Math.max(0, this.accRng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
                             result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
@@ -465,7 +467,7 @@ export class GameEngine {
                     if (target.valid) {
                         if (target.target) {
                             if (target.accuracy) {
-                                const roll: number = this.rng.accuracy();
+                                const roll: number = this.accRng.accuracy();
                                 const targetInfo: iTargetInfo = evaluateResult(actor, target.target, target.accuracy, roll);
                                 targets.push(targetInfo);
                                 if (targetInfo.band !== "miss") {
@@ -481,7 +483,7 @@ export class GameEngine {
                             }
                         } else {
                             if (target.accuracy) {
-                                const roll: number = this.rng.accuracy();
+                                const roll: number = this.accRng.accuracy();
                                 const result: AccuracyResult = evaluateProfile(actor, target.accuracy, roll, 0);
                                 iMove.band = result.band;
                                 iMove.effectiveness = result.effectiveness;
@@ -544,7 +546,7 @@ export class GameEngine {
                 //If moving, check for traps
                 if (!actor.standing) {
                     for (const trap of this.state.traps) {
-                        const roll = Math.max(0, this.rng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
+                        const roll = Math.max(0, this.accRng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
                             result.fromEffects(this.state, trap.definition.onTrigger(actor, trap, roll));
@@ -618,7 +620,7 @@ export class GameEngine {
     }
 
     private executeEnemyAction(intention: iIntention): GameEffects {
-        const result = new GameEffects();
+        const result = new GameEffects(this.state,this.accRng);
         const actor = intention.actor;
         const move = intention.move;
         if (!actor) {
@@ -644,22 +646,22 @@ export class GameEngine {
     }
 
     private executeEnemyPhase(): GameEffects {
-        const result = new GameEffects();
+        const result = new GameEffects(this.state,this.accRng);
         for (const enemy of this.state.enemies) {
-            if (enemy.intention) {
-                result.fromResult(this.state, this.executeEnemyAction(enemy.intention));
-                const move = enemy.intention.move.definition;
+            for (const intention of enemy.intention) {
+                result.fromResult(this.state, this.executeEnemyAction(intention));
+                const move = intention.move.definition;
                 if (move.cooldown) {
                     enemy.cooldowns[move.id] = move.cooldown;
                 }
             }
-            enemy.intention = null;
+            enemy.intention.length = 0;
         }
         return result;
     }
 
     private advancePhase(): GameEffects {
-        const result = new GameEffects();
+        const result = new GameEffects(this.state,this.accRng);
 
         if (this.state.turn.phase === "player") {
             result.fromEffects(this.state,tickBindings(this.state));
@@ -682,11 +684,12 @@ export class GameEngine {
     }
 
     private updateIntentions() {
+        const result = new GameEffects(this.state,this.accRng);
         for (const enemy of this.state.enemies) {
-            enemy.intention = null;
+            enemy.intention.length = 0;
         }
         for (const enemy of this.state.enemies) {
-            updateIntention(this.state, enemy, this.rng);
+            result.fromEffects(this.state, enemy.definition.ai(this.state, enemy, this.aiRng));
         }
     }
 }

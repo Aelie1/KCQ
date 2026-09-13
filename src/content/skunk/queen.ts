@@ -1,6 +1,6 @@
 import { pickBinding } from "../../engine/protected/enemies";
 import { isCharacter } from "../../engine/protected/helpers";
-import { EnemyDef, iGameState, iEnemy, EnemyAction, iEffect, iEntity, iMove, iTargetInfo, MoveDef } from "../../engine/protected/itypes";
+import { EnemyDef, iGameState, iEnemy, iEffect, iEntity, iMove, iTargetInfo, MoveDef } from "../../engine/protected/itypes";
 import { Random } from "../../engine/protected/random";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 
@@ -24,23 +24,28 @@ export const queen: EnemyDef = {
     hp: QUEEN_HP,
     defense: QUEEN_DEF,
     passives: [],
-    ai: function (state: iGameState, actor: iEnemy, rng: Random): EnemyAction {
+    ai: function (state: iGameState, actor: iEnemy, rng: Random): iEffect[] {
+        const effects: iEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
         const roll = rng.int(1, 2)
         if (roll === 1) {
-            const binding = pickBinding(state.characters[0],bindings,rng);
-            return {
+            const binding = pickBinding(state.characters[0], bindings, rng);
+            effects.push({
+                type: "move",
                 actor: actor,
                 move: { definition: skunkGun, binding: binding },
                 targets: [state.characters[0]]
-            }
+            });
+            return effects;
         }
         else {
-            return {
+            effects.push({
+                type: "move",
                 actor: actor,
                 move: { definition: skunkCollar },
                 targets: [state.characters[0]]
-            }
+            });
+            return effects;
         }
     }
 }

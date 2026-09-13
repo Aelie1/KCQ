@@ -5,6 +5,7 @@ export class Random {
         this.state = (seed >>> 0) || 0x9e3779b9;
     }
 
+
     nextU32(): number {
         let x = this.state >>> 0;
         x ^= (x << 13) >>> 0;
@@ -34,6 +35,20 @@ export class Random {
         this.state = (state >>> 0) || 0x9e3779b9;
     }
 }
+
+
+export function mixSeed(seed: number, salt: number): number {
+    let x = (seed ^ salt) >>> 0;
+
+    x ^= x >>> 16;
+    x = Math.imul(x, 0x7feb352d);
+    x ^= x >>> 15;
+    x = Math.imul(x, 0x846ca68b);
+    x ^= x >>> 16;
+
+    return x >>> 0;
+}
+
 
 export function effectivenessInt(effectiveness: number, min: number, max: number): number {
     return min + Math.floor(effectiveness * 100000) % (max - min + 1);

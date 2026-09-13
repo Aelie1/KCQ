@@ -45,7 +45,7 @@ export interface Enemy {
     maxHp: number;
     currHp: number;
     currDef: number;
-    intention: Intention | null;
+    intention: Intention[];
     buffs: Buff[];
     cooldowns: Record<MoveId, number>;
 }

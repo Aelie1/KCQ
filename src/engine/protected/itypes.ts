@@ -36,7 +36,7 @@ export interface CharacterDef {
 
 export interface iEnemy extends Omit<Enemy, "buffs" | "intention"> {
     definition: EnemyDef;
-    intention: iIntention | null;
+    intention: iIntention[];
     buffs: iBuff[];
 }
 
@@ -45,7 +45,7 @@ export interface EnemyDef {
     hp: number;
     defense: number;
     passives: PassiveDef[];
-    ai: (state: iGameState, actor: iEnemy, rng: Random) => EnemyAction;
+    ai: (state: iGameState, actor: iEnemy, rng: Random) => iEffect[];
     onDamage?: (state: iGameState, actor: iEntity, target: iEnemy, damage: number) => iEffect[];
     onDefeat?: (state: iGameState, target: iEnemy) => iEffect[];
 }
@@ -60,13 +60,6 @@ export interface iIntentionRoll {
     target: iEntity | null;
     roll: number;    
 }
-
-export interface EnemyAction {
-    actor: iEntity;
-    move: iMove;
-    targets: iEntity[];
-}
-
 
 /*******************************************************
  * Buffs
@@ -128,7 +121,8 @@ export type iEffect =
     | iEnemyEffect
     | iCooldownEffect
     | iTrapEffect
-    | iStanceEffect;
+    | iStanceEffect
+    | iMoveEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -161,16 +155,24 @@ interface iCooldownEffect {
     value: number;
 }
 
-export interface iTrapEffect extends Omit<TrapEffect, "trap" | "actor">{
+interface iTrapEffect extends Omit<TrapEffect, "trap" | "actor">{
     actor: iEntity;
     trap: iTrap;
 }
 
-export interface iStanceEffect {
+interface iStanceEffect {
     type: "stance";
     actor: iCharacter;
     stance: StanceId;
 }
+
+interface iMoveEffect {
+    type: "move"
+    actor: iEntity;
+    move: iMove;
+    targets: iEntity[];
+}
+
 
 
 /*******************************************************

@@ -35,7 +35,7 @@ function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
     const { definition, ..._enemy } = enemy;
     return {
         ..._enemy,
-        intention: enemy.intention ? serializeIntention(state, enemy.intention) : null,
+        intention: enemy.intention.map(intention=>serializeIntention(state,intention)),
         buffs: enemy.buffs.map(serializeBuff),
         cooldowns: { ..._enemy.cooldowns },
 

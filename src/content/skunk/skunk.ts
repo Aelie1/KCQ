@@ -1,7 +1,7 @@
 import { pickBinding, pickTarget, validTargets } from "../../engine/protected/enemies";
 import { findBinding, findTrap } from "../../engine/protected/find";
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
-import { EnemyAction, EnemyDef, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, MoveDef } from "../../engine/protected/itypes";
+import { EnemyDef, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, MoveDef } from "../../engine/protected/itypes";
 import { Random } from "../../engine/protected/random";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
@@ -24,7 +24,8 @@ export const skunk: EnemyDef = {
     hp: SKUNK_HP,
     defense: SKUNK_DEF,
     passives: [],
-    ai: function (state: iGameState, actor: iEnemy, rng: Random): EnemyAction {
+    ai: function (state: iGameState, actor: iEnemy, rng: Random): iEffect[] {
+        const effects: iEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
 
         //1) Explode if low HP
@@ -46,11 +47,12 @@ export const skunk: EnemyDef = {
                     target = pickTarget(state.characters, rng);
                 }
                 if (target) {
-                    return {
+                    effects.push({
+                        type: "move",
                         actor: actor,
                         targets: [target],
                         move: { definition: latexExplosion }
-                    }
+                    });
                 }
             }
         }
@@ -60,11 +62,13 @@ export const skunk: EnemyDef = {
             const amount = findTrap(state, trapPuddle.id)?.amount ?? 0;
             const roll = rng.accuracy();
             if (roll > amount + 25) {
-                return {
+                effects.push({
+                    type: "move",
                     actor: actor,
                     targets: [],
                     move: { definition: latexPuddle }
-                }
+                });
+                return effects;
             }
         }
 
@@ -87,11 +91,13 @@ export const skunk: EnemyDef = {
                 const bindings = target.bindings.filter(x => x.value < x.data["peak"]);
                 if (bindings.length > 0) {
                     const index = Math.floor(rng.random() * bindings.length);
-                    return {
+                    effects.push({
+                        type: "move",
                         actor: actor,
                         targets: [target],
                         move: { definition: latexRegeneration, binding: bindings[index].definition }
-                    }
+                    });
+                    return effects;
                 }
             }
         }
@@ -102,22 +108,26 @@ export const skunk: EnemyDef = {
             if (target) {
                 const binding = pickBinding(target, bindings, rng);
                 if (binding) {
-                    return {
+                    effects.push({
+                        type: "move",
                         actor: actor,
                         targets: [target],
                         move: { definition: latexSpray, binding: binding }
-                    };
+                    });
+                    return effects;
                 }
             }
 
         }
 
         //5) Just spray I guess?
-        return {
+        effects.push({
+            type: "move",
             actor: actor,
             targets: [],
             move: { definition: latexPuddle }
-        }
+        });
+        return effects;
 
     }
 }
