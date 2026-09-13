@@ -133,16 +133,20 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
     /*
      * Accuracy mostly changes ordinary reliability.
      *
-     * Crit can only be lost:
-     *
-     *   negative accuracy: -Crit at 0.1x rate
+     * Crit can only be lost by enemies
+     * and operates at 0.1x rate for players
      *
      * An absent Crit band can never be created by generic accuracy.
      */
     let crit = 0;
 
     if (hasCrit) {
-        const critDelta = Math.min(delta, 0) * 0.1;
+        let critDelta;
+        if (isCharacter(actor)) {
+            critDelta = delta * 0.1;
+        } else {
+            critDelta = Math.min(delta, 0) * 0.1;
+        }
 
         crit = clamp(baseCrit + critDelta, 0, 100);
     }
