@@ -3,7 +3,7 @@ import { ko } from "./content/characters/ko";
 import { encounterList } from "./content/content";
 import { GameEngine } from "./engine/engine";
 
-const encounterId = "plains_2";
+const encounterId = "plains_3";
 const engine = new GameEngine(encounterList);
 engine.loadCharacter(ko);
 const loadEvents = engine.loadEncounter(encounterId);

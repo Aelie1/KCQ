@@ -150,6 +150,7 @@ interface iEnemyEffect extends Omit<EnemyEffect, "target">  {
     definition: EnemyDef;
     id?: EntityId;
     buff?: iBuff;
+    hpRatio?: number;
 }
 
 interface iCooldownEffect {
@@ -190,6 +191,7 @@ export interface BindingDef {
     data?: Record<string, number>;
     onAdd?: (state: iGameState, target:iCharacter, binding: iBinding, amount: number) => iEffect[];
     onEscape?: (actor: iCharacter, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
+    onTick?: (target: iCharacter, binding: iBinding) => iEffect[];
 }
 
 /*******************************************************

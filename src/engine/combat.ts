@@ -299,14 +299,19 @@ export function tickCooldowns(enemies: iEnemy[]) {
 
 export function tickPlayers(state: iGameState): GameEffects {
     const result = new GameEffects();
-    for (const actor of state.characters) {
-        actor.acted = false;
-        if (canMove(actor)) {
-            result.fromResult(state, setStance(actor, "moving"));
+    for (const character of state.characters) {
+        character.acted = false;
+        if (canMove(character)) {
+            result.fromResult(state, setStance(character, "moving"));
         } else {
-            result.fromResult(state, setStance(actor, "standing"));
+            result.fromResult(state, setStance(character, "standing"));
         }
-        actor.bonusEscapes = 0;
+        character.bonusEscapes = 0;
+        for (const binding of character.bindings) {
+            if (binding.definition.onTick) {
+                result.fromEffects(state, binding.definition.onTick(character,binding));
+            }
+        }
     }
     return result;
 }

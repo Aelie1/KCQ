@@ -4,6 +4,12 @@ import { BindingDef, iBinding, iBuff, iCharacter, iEffect, iGameState, s } from 
 import { bound, breathless, gagged, getModifier, hobbled, incapacitated, isIncapacitated, submissive, vibrating } from "../../engine/status";
 import { skunkette } from "./skunkette";
 
+const COLLAR_BINDING = 10;
+
+const HARD_SPREAD_RATIO = 0.25;
+const EXTREME_SPREAD_RATIO = 0.5;
+const IMPOSSIBLE_SPREAD_RATIO = 1;
+
 export const latexBindings: BindingDef = {
     id: "latexBindings",
     status: {},
@@ -85,15 +91,24 @@ export const latexBindings: BindingDef = {
         const spreadModifier = getModifier(target, "spread") * SPREAD_MODIFIER;
         let spreadAmount = 0;
         if (binding.value >= thresholds.impossible) {
-            const spreadRatio = (1 + 1 * ((binding.value - thresholds.impossible) / (thresholds.max - thresholds.impossible))) * (1 + spreadModifier);
+            const spreadRatio = (IMPOSSIBLE_SPREAD_RATIO + IMPOSSIBLE_SPREAD_RATIO 
+                                    * ((binding.value - thresholds.impossible) 
+                                    / (thresholds.max - thresholds.impossible)))
+                                * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         }
         else if (binding.value >= thresholds.extreme) {
-            const spreadRatio = (.5 + .5 * ((binding.value - thresholds.extreme) / (thresholds.impossible - thresholds.extreme))) * (1 + spreadModifier);
+            const spreadRatio = (EXTREME_SPREAD_RATIO + EXTREME_SPREAD_RATIO 
+                                    * ((binding.value - thresholds.extreme) 
+                                    / (thresholds.impossible - thresholds.extreme))) 
+                                * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         }
         else if (binding.value >= thresholds.hard) {
-            const spreadRatio = (.25 + .25 * ((binding.value - thresholds.hard) / (thresholds.extreme - thresholds.hard))) * (1 + spreadModifier);
+            const spreadRatio = (HARD_SPREAD_RATIO + HARD_SPREAD_RATIO 
+                                    * ((binding.value - thresholds.hard) 
+                                    / (thresholds.extreme - thresholds.hard))) 
+                                * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         } else {
             const spreadRatio = spreadModifier;
@@ -212,4 +227,17 @@ export const latexCollar: BindingDef = {
         extreme: [s(submissive, 4)],
         impossible: [s(submissive, 4)]
     },
+    onTick(target: iCharacter, binding: iBinding): iEffect[] {
+        const effects: iEffect[] = [];
+        const bindings = [latexHead, latexArms, latexTorso, latexLegs];
+        for (const binding of bindings) {
+            effects.push({
+                type: "binding",
+                target: target,
+                binding: binding,
+                amount: COLLAR_BINDING
+            });
+        }
+        return effects
+    }
 }

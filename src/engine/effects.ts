@@ -85,7 +85,7 @@ export class GameEffects {
                     this.stack(damageEnemy(state, effect.source, effect.target, effect.amount));
                     break;
                 case "enemy":
-                    this.stack(spawnEnemy(state, effect.definition, { buff: effect.buff, id: effect.id }));
+                    this.stack(spawnEnemy(state, effect.definition, { buff: effect.buff, id: effect.id, hp: effect.hpRatio }));
                     break;
                 case "cooldown":
                     this.stack(setCooldown(effect.target, effect.move, effect.value));
@@ -270,18 +270,19 @@ function defeatEnemy(state: iGameState, target: iEnemy): GameEffects {
     return result;
 }
 
-function spawnEnemy(state: iGameState, definition: EnemyDef, options?: { buff?: iBuff; id?: EntityId; }): GameEffects {
+function spawnEnemy(state: iGameState, definition: EnemyDef, options?: { buff?: iBuff; id?: EntityId; hp?: number }): GameEffects {
     const result = new GameEffects();
     if (!options?.id) {
         state.nextId[definition.id] = (state.nextId[definition.id] ?? 0) + 1;
     }
     const name = options?.id ? options.id : definition.id + state.nextId[definition.id];
+    const hpRatio = Math.min(1,Math.max(0.1,(options?.hp ?? 1)));
     const enemy = {
         definition: definition,
         buffs: [],
         id: name,
         maxHp: definition.hp,
-        currHp: definition.hp,
+        currHp: definition.hp * hpRatio,
         currDef: definition.defense,
         intention: null,
         cooldowns: {}
