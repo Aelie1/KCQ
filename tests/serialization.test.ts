@@ -49,7 +49,7 @@ describe("state serialization and combatant loading", () => {
 
         expect(events).toEqual([
             { type: "enemySpawned", target: "foe1" },
-            { type: "enemySpawned", target: "attacker2" },
+            { type: "enemySpawned", target: "attacker1" },
             { type: "encounterLoad", id: multiEnemyEncounter.id, success: true, bindings: [] },
         ]);
         expect(engine.getGameState()).toMatchObject({
@@ -65,7 +65,7 @@ describe("state serialization and combatant loading", () => {
             }],
             enemies: [
                 { id: "foe1", buffs: [] },
-                { id: "attacker2", buffs: [] },
+                { id: "attacker1", buffs: [] },
             ],
         });
         expect(engine.getGameState()).not.toHaveProperty("nextEntityId");
@@ -177,7 +177,7 @@ describe("state serialization and combatant loading", () => {
         };
         const internalState: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
-            nextEntityId: 17,
+            nextId: {},
             characters: [character],
             enemies: [enemy],
             traps: [],

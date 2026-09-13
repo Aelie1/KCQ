@@ -77,7 +77,7 @@ describe("accuracy", () => {
         const move = makeAccuracyMove(standardProfile, { side: "player", type: "none" });
         const info = isValidTarget({
             turn: { round: 1, step: 1, phase: "enemy" },
-            nextEntityId: 1,
+            nextId: {},
             characters: [target],
             enemies: [actor],
             traps: [],
@@ -435,7 +435,7 @@ describe("accuracy", () => {
         }
         const referenceTargets = [
             makeEnemy(lowDefense, `${lowDefense.id}1`),
-            makeEnemy(highDefense, `${highDefense.id}2`),
+            makeEnemy(highDefense, `${highDefense.id}1`),
         ];
         const previews = engine.getTargets(hero.id, move.id);
         const expected = referenceTargets.map((target) => {

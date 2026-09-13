@@ -306,7 +306,7 @@ describe("normal Latex Skunk", () => {
                 type: "enemyDefeated", target: "skunk1",
             });
             if (withTrap) {
-                expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 75 }]);
+                expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 25 }]);
             } else {
                 expect(result.state.traps).toEqual([]);
             }

@@ -102,7 +102,7 @@ describe("encounters", () => {
 
         expect(events).toEqual([
             { type: "enemySpawned", target: "foe1" },
-            { type: "enemySpawned", target: "attacker2" },
+            { type: "enemySpawned", target: "attacker1" },
             { type: "encounterLoad", id: multiEnemyEncounter.id, success: true, bindings: [] },
         ]);
         expect(engine.getGameState().enemies).toEqual([
@@ -112,7 +112,7 @@ describe("encounters", () => {
                 intention: expect.any(Object),
             }),
             expect.objectContaining({
-                id: "attacker2",
+                id: "attacker1",
                 maxHp: basicAttackingEnemy.hp,
                 intention: expect.any(Object),
             }),
@@ -204,7 +204,7 @@ describe("encounters", () => {
         });
         expect(state.traps).toEqual([{ id: trapPuddle.id, amount: 0 }]);
         expect(state.enemies.map(({ id }) => id)).toEqual([
-            "skunkette1", "skunkette2", "skunk3", "skunk4",
+            "skunkette1", "skunkette2", "skunk1", "skunk2",
         ]);
         expect(state.enemies.every(({ intention }) => intention !== null)).toBe(true);
         expect(state.enemies.every(({ intention }) =>

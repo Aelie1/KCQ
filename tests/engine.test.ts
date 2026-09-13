@@ -173,7 +173,7 @@ describe("turn phases and enemy intentions", () => {
         engine.loadEncounter(encounter.id);
 
         expect(engine.getGameState().enemies[0].intention?.targets).toEqual([{
-            target: "doomed2",
+            target: "doomed1",
             band: "hit",
             effects: [],
         }]);
@@ -181,7 +181,7 @@ describe("turn phases and enemy intentions", () => {
             type: "attack",
             actor: "hero",
             move: strike.id,
-            targets: ["doomed2"],
+            targets: ["doomed1"],
         }).success).toBe(true);
 
         const result = engine.executeAction({ type: "endTurn" });

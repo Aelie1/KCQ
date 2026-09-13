@@ -399,7 +399,7 @@ describe("move and effect resolution through GameEngine", () => {
         })));
         expect(result.state.enemies.map(({ id, currHp }) => ({ id, currHp }))).toEqual([
             { id: "first1", currHp: successfulIds.includes("first1") ? 34 : 37 },
-            { id: "second2", currHp: successfulIds.includes("second2") ? 34 : 37 },
+            { id: "second1", currHp: successfulIds.includes("second2") ? 34 : 37 },
         ]);
     });
 

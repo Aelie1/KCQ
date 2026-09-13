@@ -580,8 +580,8 @@ describe("console formatting", () => {
 
         expect(rendered).toContain("Choose target 1 of 1 for telekinesis.");
         expect(rendered).toContain("[1] foe1");
-        expect(rendered).toContain("[2] attacker2");
-        expect(rendered).toMatch(/telekinesis on attacker2: (MISS|GRAZE|HIT|CRIT)/);
+        expect(rendered).toContain("[2] attacker1");
+        expect(rendered).toMatch(/telekinesis on attacker1: (MISS|GRAZE|HIT|CRIT)/);
     });
 
     it("orders escape choices by encounter bindings and keeps unknown bindings last", async () => {
