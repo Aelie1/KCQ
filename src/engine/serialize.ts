@@ -6,7 +6,7 @@ import { getBlockedMoveTypes, getModifiers } from "./status";
 import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
-    const { nextEntityId, ..._state } = state;
+    const { nextId, ..._state } = state;
 
     return {
         ..._state,

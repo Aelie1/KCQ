@@ -234,7 +234,7 @@ describe("console formatting", () => {
             bindings: ["latexArms"],
             bindingThresholds,
             actionLines: ["[1] telekinesis"],
-            logLines: ["Encounter plains_1 began."],
+            logLines: Array.from({ length: 11 }, (_, index) => `Log line ${index + 1}`),
         }, 120, 36);
         const lines = rendered.split("\n");
 
@@ -247,12 +247,14 @@ describe("console formatting", () => {
         expect(rendered).toContain("PARTY");
         expect(rendered).toContain("ENEMIES");
         expect(rendered).toContain("ACTIONS / TARGETING");
-        expect(rendered).toContain("LOG");
-        expect(rendered).not.toContain("RECENT LOG");
+        expect(rendered).not.toContain("LOG");
+        expect(rendered).toContain("Log line 1");
+        expect(rendered).toContain("Log line 11");
         expect(rendered).toContain("latexArms");
         expect(rendered).toContain("Intent: latexSpray");
         expect(rendered).toContain("Seed 8224");
         expect(rendered).toContain("skunkette1 [HP: 12/20]");
+        expect(rendered).not.toContain("[Def 0]");
     });
 
     it("renders generic trap meters in the header with exact amounts", () => {
@@ -264,7 +266,9 @@ describe("console formatting", () => {
             36,
         );
 
-        expect(rendered).toContain("Puddles [#######-------------] 35/100");
+        const header = rendered.split("\n")[1];
+        expect(header).toContain("KO-CHAN'S QUEST  test");
+        expect(header).toContain("Puddles [#######-------------] 35/100");
         expect(rendered.split("\n")).toHaveLength(36);
         expect(rendered.split("\n").every((line) => line.length === 120)).toBe(true);
     });
@@ -284,13 +288,14 @@ describe("console formatting", () => {
             36,
         );
 
-        expect(rendered).toContain("Puddles [#######-------------] 35/100");
-        expect(rendered).toContain("Ribbons [##------------------] 10/100");
+        const header = rendered.split("\n")[1];
+        expect(header).toContain("KO-CHAN'S QUEST  test");
+        expect(header).toContain("Puddles 35/100 | Ribbons 10/100");
         expect(rendered.split("\n")).toHaveLength(36);
         expect(rendered.split("\n").every((line) => line.length === 120)).toBe(true);
     });
 
-    it("shows only active enemy cooldowns with readable move names", () => {
+    it("puts active enemy cooldowns beside intent and omits zero defense", () => {
         const rendered = renderState({
             ...state,
             enemies: [{
@@ -299,12 +304,17 @@ describe("console formatting", () => {
             }],
         }, [{ id: "ko", available: true }]);
 
-        expect(rendered).toContain("Cooldowns: Pounce 2");
+        expect(rendered).toContain("Intent: latexSpray      [Pounce 2]");
+        expect(rendered).not.toContain("Cooldowns:");
         expect(rendered).not.toContain("Latex Spray 0");
         expect(rendered).not.toContain("Old Move");
+        expect(rendered).not.toContain("[Def 0]");
 
-        const withoutCooldowns = renderState(state, [{ id: "ko", available: true }]);
-        expect(withoutCooldowns).not.toContain("Cooldowns:");
+        const withDefense = renderState({
+            ...state,
+            enemies: [{ ...state.enemies[0], currDef: 1 }],
+        }, [{ id: "ko", available: true }]);
+        expect(withDefense).toContain("skunkette1 [HP: 12/20] [Def 1]");
     });
 
     it("shows bonus escapes only while at least one remains", () => {
@@ -536,6 +546,18 @@ describe("console formatting", () => {
         expect(rendered).toContain(
             "[2] starlight [mouth; no target]   Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%",
         );
+    });
+
+    it("omits accuracy from move rows that have a failure reason", async () => {
+        const { engine } = setupBoundEngine(latexArms, thresholds.extreme);
+
+        const rendered = await runScriptedConsole(engine, ["1", "7", "3"]);
+        const unavailableRow = rendered.split("\n")
+            .find((line) => line.includes("[2] arms-move"));
+
+        expect(unavailableRow).toContain("bindingRestriction");
+        expect(unavailableRow).not.toContain("Miss:");
+        expect(unavailableRow).not.toContain("foe1");
     });
 
     it("executes a one-target move immediately when only one valid target exists", async () => {

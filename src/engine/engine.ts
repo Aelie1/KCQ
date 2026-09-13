@@ -23,7 +23,7 @@ export class GameEngine {
     constructor(encounters: EncounterDef[], seed?: number) {
         this.state = {
             turn: { round: 1, step: 1, phase: "player" },
-            nextEntityId: 1,
+            nextId: {},
             characters: [],
             enemies: [],
             traps: []

@@ -45,8 +45,7 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
 
     const leftWidth = Math.floor((width - 3) * 2 / 3);
     const rightWidth = width - 3 - leftWidth;
-    const trapHeader = formatTrapHeader(model.state.traps, width - 2);
-    const contentHeight = height - 5 - trapHeader.length;
+    const contentHeight = height - 5;
     const upperHeight = Math.floor(contentHeight * 2 / 3);
     const lowerHeight = contentHeight - upperHeight;
 
@@ -63,22 +62,23 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
     ], leftWidth, upperHeight);
     const enemies = fitPanel(["ENEMIES", "", ...formatEnemies(model.state.enemies, rightWidth)], rightWidth, upperHeight);
     const actions = fitPanel(["ACTIONS / TARGETING", "", ...model.actionLines], leftWidth, lowerHeight);
-    const logCapacity = Math.max(0, lowerHeight - 2);
     const wrappedLog = wrapLines(model.logLines, rightWidth);
-    const log = fitPanel(["LOG", "", ...wrappedLog.slice(-logCapacity)], rightWidth, lowerHeight);
+    const log = fitPanel(wrappedLog.slice(-lowerHeight), rightWidth, lowerHeight);
 
     const turn = model.state.turn;
+    const headerLeft = ` KO-CHAN'S QUEST  ${model.encounter}`;
+    const headerRight = `Seed ${model.seed} / Round ${turn.round} / ${turn.phase.toUpperCase()} `;
+    const trapWidth = Math.max(0, width - 2 - headerLeft.length - headerRight.length - 2);
     const header = overlayHeader(
         width - 2,
-        " KO-CHAN'S QUEST",
-        model.encounter,
-        `Seed ${model.seed} / Round ${turn.round} / ${turn.phase.toUpperCase()} `,
+        headerLeft,
+        formatTrapHeader(model.state.traps, trapWidth),
+        headerRight,
     );
 
     return [
         `┌${"─".repeat(width - 2)}┐`,
         `│${header}│`,
-        ...trapHeader.map((line) => `│${pad(line, width - 2)}│`),
         `├${"─".repeat(leftWidth)}┬${"─".repeat(rightWidth)}┤`,
         ...joinPanels(party, enemies, leftWidth, rightWidth),
         `├${"─".repeat(leftWidth)}┼${"─".repeat(rightWidth)}┤`,
@@ -161,14 +161,18 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
     if (enemies.length === 0) return ["No enemies remain."];
 
     return enemies.flatMap((enemy, index) => {
-        const lines = [`${enemy.id} [HP: ${enemy.currHp}/${enemy.maxHp}]  DEF ${enemy.currDef}`];
+        const defense = enemy.currDef !== 0 ? ` [Def ${formatNumber(enemy.currDef)}]` : "";
+        const lines = [`${enemy.id} [HP: ${enemy.currHp}/${enemy.maxHp}]${defense}`];
         const cooldowns = Object.entries(enemy.cooldowns)
             .filter(([, value]) => value > 0)
-            .map(([move, value]) => `${displayName(move)} ${value}`);
+            .map(([move, value]) => `[${displayName(move)} ${value}]`);
+        const intention = enemy.intention ? formatIntention(enemy.intention, width) : ["  Intent: none"];
         if (cooldowns.length > 0) {
-            lines.push(...wrapList("  Cooldowns: ", cooldowns.join(", "), width));
+            intention.splice(0, 1, ...wrapLines([
+                `${intention[0]}      ${cooldowns.join(" ")}`,
+            ], width));
         }
-        lines.push(...(enemy.intention ? formatIntention(enemy.intention, width) : ["  Intent: none"]));
+        lines.push(...intention);
         if (enemy.buffs.length > 0) {
             lines.push(...wrapList(
                 "  Buffs: ",
@@ -181,7 +185,7 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
     });
 }
 
-function formatTrapHeader(traps: GameState["traps"], width: number): string[] {
+function formatTrapHeader(traps: GameState["traps"], width: number): string {
     const tokens = traps.map((trap) => {
         const amount = Number.isFinite(trap.amount)
             ? Math.max(0, Math.min(100, trap.amount))
@@ -190,23 +194,15 @@ function formatTrapHeader(traps: GameState["traps"], width: number): string[] {
         const bar = `[${"#".repeat(filled)}${"-".repeat(TRAP_BAR_WIDTH - filled)}]`;
         return `${trapDisplayName(trap.id, amount)} ${bar} ${formatNumber(amount)}/100`;
     });
-    const lines: string[] = [];
-    let line = "";
+    const full = tokens.join("   ");
+    if (full.length <= width) return full;
 
-    for (const token of tokens) {
-        const candidate = line ? `${line}   ${token}` : token;
-        if (line && candidate.length > width) {
-            lines.push(line);
-            line = token;
-        } else {
-            line = candidate;
-        }
-    }
-    if (line) lines.push(line);
-
-    return lines.map((value) => value.length >= width
-        ? truncate(value, width)
-        : `${" ".repeat(Math.floor((width - value.length) / 2))}${value}`);
+    return truncate(traps.map((trap) => {
+        const amount = Number.isFinite(trap.amount)
+            ? Math.max(0, Math.min(100, trap.amount))
+            : 0;
+        return `${trapDisplayName(trap.id, amount)} ${formatNumber(amount)}/100`;
+    }).join(" | "), width);
 }
 
 function trapDisplayName(id: string, amount: number): string {
@@ -311,8 +307,12 @@ function titleCase(value: string): string {
 function overlayHeader(width: number, left: string, center: string, right: string): string {
     const cells = Array<string>(width).fill(" ");
     put(cells, left, 0);
-    put(cells, center, Math.floor((width - center.length) / 2));
     put(cells, right, width - right.length);
+    const centerStart = left.length;
+    const centerEnd = Math.max(centerStart, width - right.length);
+    const centerWidth = centerEnd - centerStart;
+    const centered = truncate(center, centerWidth);
+    put(cells, centered, centerStart + Math.max(0, Math.floor((centerWidth - centered.length) / 2)));
     return cells.join("");
 }
 

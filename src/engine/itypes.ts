@@ -9,7 +9,7 @@ export type iEntity = iCharacter | iEnemy;
 
 export interface iGameState {
     turn: Turn;
-    nextEntityId: number;
+    nextId: Record<EntityId,number>;
     characters: iCharacter[];
     enemies: iEnemy[];
     traps: iTrap[];

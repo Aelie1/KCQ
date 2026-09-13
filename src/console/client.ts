@@ -238,9 +238,11 @@ export async function runConsoleClient(
             const escapeAvailable = (escapes?.options.length ?? 0) > 0;
             const stance = engine.stanceAvailable(actor.id);
             const menu: MenuItem[] = actions.map((action) => {
-                const targets = validTargets(engine, actor.id, action.move.id);
-                const detailLines = action.move.targets === 0
-                    || (action.move.targets === 1 && targets.length === 1)
+                const targets = action.available
+                    ? validTargets(engine, actor.id, action.move.id)
+                    : [];
+                const detailLines = action.available && (action.move.targets === 0
+                    || (action.move.targets === 1 && targets.length === 1))
                     ? accuracyLines(targets)
                     : undefined;
                 return {
