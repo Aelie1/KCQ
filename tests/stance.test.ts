@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { thresholds } from "../src/engine/constants";
-import { GameEngine } from "../src/engine/engine";
-import { immobilized, vibrating } from "../src/engine/status";
+import { thresholds } from "../src/engine/protected/constants";
+import { GameEngine } from "../src/engine/public/engine";
+import { immobilized, vibrating } from "../src/engine/protected/status";
 import {
     makeBindingDef,
     makeCharacterDef,

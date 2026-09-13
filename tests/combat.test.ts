@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { GameEngine } from "../src/engine/engine";
-import type { ActionFailureReason, PlayerAction } from "../src/engine/types";
+import { GameEngine } from "../src/engine/public/engine";
+import type { ActionFailureReason, PlayerAction } from "../src/engine/public/types";
 import {
     bindingState,
     buffState,

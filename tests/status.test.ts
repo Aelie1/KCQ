@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../src/content/skunk/latex";
-import { thresholds } from "../src/engine/constants";
-import { GameEngine } from "../src/engine/engine";
-import type { BindingDef } from "../src/engine/itypes";
+import { thresholds } from "../src/engine/protected/constants";
+import { GameEngine } from "../src/engine/public/engine";
+import type { BindingDef } from "../src/engine/protected/itypes";
 import {
     bound,
     helpless,
     immobilized,
     incapacitated,
     stunned,
-} from "../src/engine/status";
+} from "../src/engine/protected/status";
 import {
     expectMoveRejection,
     makeBindingDef,

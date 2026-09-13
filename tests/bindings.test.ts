@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../src/content/skunk/latex";
-import type { BindingDef, MoveDef, StatusDef } from "../src/engine/itypes";
+import type { BindingDef, MoveDef, StatusDef } from "../src/engine/protected/itypes";
 import {
     bindingState,
     characterState,

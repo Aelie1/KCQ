@@ -1,5 +1,5 @@
 import { expect } from "vitest";
-import { GameEngine } from "../src/engine/engine";
+import { GameEngine } from "../src/engine/public/engine";
 import type {
     BindingDef,
     CharacterDef,
@@ -10,12 +10,12 @@ import type {
     iStatus,
     MoveDef,
     EncounterDef,
-} from "../src/engine/itypes";
+} from "../src/engine/protected/itypes";
 import type {
     ActionFailureReason,
     BindingLevel,
     MoveType,
-} from "../src/engine/types";
+} from "../src/engine/public/types";
 
 const bindingLevels: BindingLevel[] = [
     "none",

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { thresholds } from "../src/engine/constants";
-import { GameEngine } from "../src/engine/engine";
-import type { iBuff, iGameState, StatusDef } from "../src/engine/itypes";
-import { serializeGameState } from "../src/engine/serialize";
+import { thresholds } from "../src/engine/protected/constants";
+import { GameEngine } from "../src/engine/public/engine";
+import type { iBuff, iGameState, StatusDef } from "../src/engine/protected/itypes";
+import { serializeGameState } from "../src/engine/private/serialize";
 import {
     makeBindingDef,
     makeCharacter,

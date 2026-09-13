@@ -1,6 +1,6 @@
-import { getMoves } from "./helpers";
+import { getMoves } from "../protected/helpers";
 import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iTrap, MoveDef } from "./itypes";
-import type { BindingId, BuffId, EntityId, MoveId, TrapId } from "./types";
+import type { BindingId, BuffId, EntityId, MoveId, TrapId } from "../public/types";
 
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {

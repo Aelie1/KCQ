@@ -8,7 +8,7 @@ import type {
     ModifierId,
     MoveType,
     Status,
-} from "../engine/types";
+} from "../engine/public/types";
 import { formatBuff, formatIntention } from "./format";
 
 export const MIN_TERMINAL_WIDTH = 120;

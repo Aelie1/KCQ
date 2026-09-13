@@ -1,5 +1,5 @@
-import { isEnemy } from "../../engine/helpers";
-import { CharacterDef, iEffect, iEntity, iGameState, iMove, iTargetInfo, MoveDef, PassiveDef } from "../../engine/itypes";
+import { isEnemy } from "../../engine/protected/helpers";
+import { CharacterDef, iEffect, iEntity, iGameState, iMove, iTargetInfo, MoveDef, PassiveDef } from "../../engine/protected/itypes";
 
 const telekinesis: MoveDef = {
     id: "telekinesis",

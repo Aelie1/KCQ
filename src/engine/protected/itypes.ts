@@ -3,7 +3,7 @@ import {
     AccuracyProfile, ActionFailureReason, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect,
     Enemy, EnemyEffect, EntityId, HitBand, InvalidTarget, ModifierId, Move, MoveType, Passive, StanceId, StatusId, TargetInfo,
     Trap, TrapEffect, TrapId, Turn, ValidTarget
-} from "./types";
+} from "../public/types";
 
 export type iEntity = iCharacter | iEnemy;
 

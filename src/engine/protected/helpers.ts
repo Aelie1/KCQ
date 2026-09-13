@@ -1,6 +1,6 @@
 import { thresholds } from "./constants";
 import type { iBinding, iCharacter, iEnemy, iEntity, iGameState, MoveDef } from "./itypes";
-import type { BindingLevel, EntitySide } from "./types";
+import type { BindingLevel, EntitySide } from "../public/types";
 
 export function isValidEntity(state: iGameState, entity: iEntity): boolean {
     if (isCharacter(entity)) {

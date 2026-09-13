@@ -1,4 +1,4 @@
-import { HitBand, BindingLevel } from "./types";
+import { HitBand, BindingLevel } from "../public/types";
 
 export const BINDING_MODIFIER = 0.1;
 export const EFFECTIVENESS_MODIFIER = 0.125;

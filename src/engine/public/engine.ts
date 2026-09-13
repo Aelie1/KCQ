@@ -1,13 +1,13 @@
-import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
-import { thresholds, TRAP_MODIFIER } from "./constants";
-import { GameEffects } from "./effects";
-import { evaluateIntention, updateIntention } from "./enemies";
-import { findBinding, findCharacter, findEntity, findMove } from "./find";
-import { getMoves } from "./helpers";
-import { iEffect, iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "./itypes";
-import { Random } from "./random";
-import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "./serialize";
-import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, isIncapacitated, isSkipped } from "./status";
+import { getMoves } from "../protected/helpers";
+import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers } from "../private/combat";
+import { GameEffects } from "../private/effects";
+import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
+import { thresholds, TRAP_MODIFIER } from "../protected/constants";
+import { evaluateIntention, updateIntention } from "../protected/enemies";
+import { findBinding, findCharacter, findEntity, findMove } from "../protected/find";
+import { iEffect, iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/itypes";
+import { Random } from "../protected/random";
+import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, isIncapacitated, isSkipped } from "../protected/status";
 import type {
     AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, Encounter, EncounterId, EntityId,
     EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo

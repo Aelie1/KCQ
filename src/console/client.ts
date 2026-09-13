@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
-import type { GameEngine } from "../engine/engine";
+import type { GameEngine } from "../engine/public/engine";
 import type {
     ActionInfo,
     ActionResult,
@@ -11,7 +11,7 @@ import type {
     Move,
     PlayerAction,
     ValidTarget,
-} from "../engine/types";
+} from "../engine/public/types";
 import { formatEffects, formatEvents } from "./format";
 import {
     formatAccuracyRow,

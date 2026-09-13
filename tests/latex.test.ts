@@ -5,8 +5,8 @@ import {
     latexLegs,
     latexTorso,
 } from "../src/content/skunk/latex";
-import { GameEngine } from "../src/engine/engine";
-import type { BindingDef, iEffect } from "../src/engine/itypes";
+import { GameEngine } from "../src/engine/public/engine";
+import type { BindingDef, iEffect } from "../src/engine/protected/itypes";
 import {
     bindingState,
     characterState,

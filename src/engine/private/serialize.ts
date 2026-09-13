@@ -1,9 +1,9 @@
 import { resolveMove } from "./combat";
-import { evaluateIntention } from "./enemies";
-import { getBindingLevel } from "./helpers";
-import type { EncounterDef, iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iTrap, iValidityInfo, MoveDef } from "./itypes";
-import { getBlockedMoveTypes, getModifiers } from "./status";
-import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "./types";
+import { evaluateIntention } from "../protected/enemies";
+import { getBindingLevel } from "../protected/helpers";
+import type { EncounterDef, iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iTrap, iValidityInfo, MoveDef } from "../protected/itypes";
+import { getBlockedMoveTypes, getModifiers } from "../protected/status";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "../public/types";
 
 export function serializeGameState(state: iGameState): GameState {
     const { nextId, ..._state } = state;

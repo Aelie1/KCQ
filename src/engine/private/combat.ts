@@ -1,8 +1,8 @@
-import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "./constants";
-import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
-import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iValidityInfo, MoveDef } from "./itypes";
-import { canMove, getModifier, isIncapacitated } from "./status";
-import { AccuracyProfile, AccuracyResult, HitBand } from "./types";
+import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "../protected/constants";
+import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "../protected/helpers";
+import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iValidityInfo, MoveDef } from "../protected/itypes";
+import { canMove, getModifier, isIncapacitated } from "../protected/status";
+import { AccuracyProfile, AccuracyResult, HitBand } from "../public/types";
 
 
 export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity | null, move: MoveDef): iValidityInfo {

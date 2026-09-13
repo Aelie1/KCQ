@@ -1,7 +1,7 @@
 import { runConsoleClient } from "./console/client";
 import { ko } from "./content/characters/ko";
 import { encounterList } from "./content/content";
-import { GameEngine } from "./engine/engine";
+import { GameEngine } from "./engine/public/engine";
 
 const encounterId = "plains_3";
 const engine = new GameEngine(encounterList);

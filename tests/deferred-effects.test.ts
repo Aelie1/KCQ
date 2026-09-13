@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { GameEngine } from "../src/engine/engine";
-import { isCharacter } from "../src/engine/helpers";
-import type { BindingDef, EncounterDef } from "../src/engine/itypes";
+import { GameEngine } from "../src/engine/public/engine";
+import { isCharacter } from "../src/engine/protected/helpers";
+import type { BindingDef, EncounterDef } from "../src/engine/protected/itypes";
 import {
     makeBindingDef,
     makeCharacterDef,

@@ -1,4 +1,4 @@
-import type { EncounterDef } from "../src/engine/itypes";
+import type { EncounterDef } from "../src/engine/protected/itypes";
 import { makeEnemyDef, makeMove, makeWaitMove } from "./helpers";
 
 export const waitMove = makeWaitMove();

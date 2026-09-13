@@ -6,11 +6,11 @@ import { formatAccuracyRow, renderScreen } from "../src/console/render";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
 import { latexArms } from "../src/content/skunk/latex";
-import { thresholds } from "../src/engine/constants";
-import { GameEngine } from "../src/engine/engine";
-import { helpless } from "../src/engine/status";
-import type { EncounterDef } from "../src/engine/itypes";
-import type { GameEvent, GameState, Intention } from "../src/engine/types";
+import { thresholds } from "../src/engine/protected/constants";
+import { GameEngine } from "../src/engine/public/engine";
+import { helpless } from "../src/engine/protected/status";
+import type { EncounterDef } from "../src/engine/protected/itypes";
+import type { GameEvent, GameState, Intention } from "../src/engine/public/types";
 import { multiEnemyEncounter, oneEnemyEncounter, waitEnemy } from "./testContent";
 import {
     makeBindingDef,

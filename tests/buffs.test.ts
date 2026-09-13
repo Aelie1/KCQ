@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { MoveDef, StatusDef } from "../src/engine/itypes";
+import type { MoveDef, StatusDef } from "../src/engine/protected/itypes";
 import {
     buffState,
     characterState,

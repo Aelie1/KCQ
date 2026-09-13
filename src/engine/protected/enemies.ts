@@ -1,4 +1,4 @@
-import { evaluateProfile, evaluateResult, isValidTarget } from "./combat";
+import { evaluateProfile, evaluateResult, isValidTarget } from "../private/combat";
 import { thresholds } from "./constants";
 import { findBinding } from "./find";
 import { BindingDef, iCharacter, iEnemy, iGameState, iIntention, iIntentionRoll, iTargetInfo } from "./itypes";

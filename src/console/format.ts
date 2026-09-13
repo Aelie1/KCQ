@@ -1,4 +1,4 @@
-import type { Buff, Effect, GameEvent, Intention, ModifierId } from "../engine/types";
+import type { Buff, Effect, GameEvent, Intention, ModifierId } from "../engine/public/types";
 
 export function formatEffect(effect: Effect, includeTarget = false): string {
     const target = includeTarget && "target" in effect ? `${effect.target} ` : "";

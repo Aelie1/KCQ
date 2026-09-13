@@ -7,7 +7,7 @@ import {
     latexTorso,
 } from "../src/content/skunk/latex";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { GameEngine } from "../src/engine/engine";
+import { GameEngine } from "../src/engine/public/engine";
 import {
     bindingState,
     buffState,

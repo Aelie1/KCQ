@@ -5,8 +5,8 @@ import { plains_1, plains_2 } from "../src/content/skunk/encounters";
 import { skunk } from "../src/content/skunk/skunk";
 import { skunkette } from "../src/content/skunk/skunkette";
 import { trapPuddle } from "../src/content/skunk/puddles";
-import { GameEngine } from "../src/engine/engine";
-import type { EncounterDef } from "../src/engine/itypes";
+import { GameEngine } from "../src/engine/public/engine";
+import type { EncounterDef } from "../src/engine/protected/itypes";
 import { makeCharacterDef, makeEnemyDef, makeWaitMove } from "./helpers";
 import {
     basicAttackingEnemy,

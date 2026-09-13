@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { thresholds, effectivenessRange } from "../src/engine/constants";
-import { evaluateResult, isValidTarget } from "../src/engine/combat";
-import { GameEngine } from "../src/engine/engine";
+import { thresholds, effectivenessRange } from "../src/engine/protected/constants";
+import { evaluateResult, isValidTarget } from "../src/engine/private/combat";
+import { GameEngine } from "../src/engine/public/engine";
 import type {
     iCharacter,
     iEnemy,
@@ -9,9 +9,9 @@ import type {
     MoveDef,
     StatusDef,
     iTargetInfo,
-} from "../src/engine/itypes";
-import { Random } from "../src/engine/random";
-import type { AccuracyProfile, MoveEvent } from "../src/engine/types";
+} from "../src/engine/protected/itypes";
+import { Random } from "../src/engine/protected/random";
+import type { AccuracyProfile, MoveEvent } from "../src/engine/public/types";
 import {
     makeBinding,
     makeBindingDef,
