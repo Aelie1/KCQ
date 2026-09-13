@@ -14,6 +14,7 @@ import { formatBuff, formatIntention } from "./format";
 export const MIN_TERMINAL_WIDTH = 120;
 export const MIN_TERMINAL_HEIGHT = 36;
 const BINDING_BAR_WIDTH = 20;
+const TRAP_BAR_WIDTH = 20;
 
 export interface BindingThresholds {
     thresholds: {
@@ -44,7 +45,8 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
 
     const leftWidth = Math.floor((width - 3) * 2 / 3);
     const rightWidth = width - 3 - leftWidth;
-    const contentHeight = height - 5;
+    const trapHeader = formatTrapHeader(model.state.traps, width - 2);
+    const contentHeight = height - 5 - trapHeader.length;
     const upperHeight = Math.floor(contentHeight * 2 / 3);
     const lowerHeight = contentHeight - upperHeight;
 
@@ -63,7 +65,7 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
     const actions = fitPanel(["ACTIONS / TARGETING", "", ...model.actionLines], leftWidth, lowerHeight);
     const logCapacity = Math.max(0, lowerHeight - 2);
     const wrappedLog = wrapLines(model.logLines, rightWidth);
-    const log = fitPanel(["RECENT LOG", "", ...wrappedLog.slice(-logCapacity)], rightWidth, lowerHeight);
+    const log = fitPanel(["LOG", "", ...wrappedLog.slice(-logCapacity)], rightWidth, lowerHeight);
 
     const turn = model.state.turn;
     const header = overlayHeader(
@@ -76,6 +78,7 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
     return [
         `┌${"─".repeat(width - 2)}┐`,
         `│${header}│`,
+        ...trapHeader.map((line) => `│${pad(line, width - 2)}│`),
         `├${"─".repeat(leftWidth)}┬${"─".repeat(rightWidth)}┤`,
         ...joinPanels(party, enemies, leftWidth, rightWidth),
         `├${"─".repeat(leftWidth)}┼${"─".repeat(rightWidth)}┤`,
@@ -116,7 +119,12 @@ function formatParty(
         const stance = character.standing ? "Standing" : "Moving";
         const lines = wrapCharacterHeader(
             character.id,
-            [`[${state}]`, `[${stance}]`, ...modifierTokens(character)],
+            [
+                `[${state}]`,
+                `[${stance}]`,
+                ...(character.bonusEscapes > 0 ? [`[Escapes: +${character.bonusEscapes}]`] : []),
+                ...modifierTokens(character),
+            ],
             width,
         );
 
@@ -154,6 +162,12 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
 
     return enemies.flatMap((enemy, index) => {
         const lines = [`${enemy.id} [HP: ${enemy.currHp}/${enemy.maxHp}]  DEF ${enemy.currDef}`];
+        const cooldowns = Object.entries(enemy.cooldowns)
+            .filter(([, value]) => value > 0)
+            .map(([move, value]) => `${displayName(move)} ${value}`);
+        if (cooldowns.length > 0) {
+            lines.push(...wrapList("  Cooldowns: ", cooldowns.join(", "), width));
+        }
         lines.push(...(enemy.intention ? formatIntention(enemy.intention, width) : ["  Intent: none"]));
         if (enemy.buffs.length > 0) {
             lines.push(...wrapList(
@@ -165,6 +179,42 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
         if (index < enemies.length - 1) lines.push("");
         return lines;
     });
+}
+
+function formatTrapHeader(traps: GameState["traps"], width: number): string[] {
+    const tokens = traps.map((trap) => {
+        const amount = Number.isFinite(trap.amount)
+            ? Math.max(0, Math.min(100, trap.amount))
+            : 0;
+        const filled = Math.floor(amount / 5);
+        const bar = `[${"#".repeat(filled)}${"-".repeat(TRAP_BAR_WIDTH - filled)}]`;
+        return `${trapDisplayName(trap.id, amount)} ${bar} ${formatNumber(amount)}/100`;
+    });
+    const lines: string[] = [];
+    let line = "";
+
+    for (const token of tokens) {
+        const candidate = line ? `${line}   ${token}` : token;
+        if (line && candidate.length > width) {
+            lines.push(line);
+            line = token;
+        } else {
+            line = candidate;
+        }
+    }
+    if (line) lines.push(line);
+
+    return lines.map((value) => value.length >= width
+        ? truncate(value, width)
+        : `${" ".repeat(Math.floor((width - value.length) / 2))}${value}`);
+}
+
+function trapDisplayName(id: string, amount: number): string {
+    const withoutMarker = id
+        .replace(/^trap(?=[A-Z_-])/, "")
+        .replace(/Trap$/, "");
+    const name = displayName(withoutMarker || id);
+    return amount === 1 || name.endsWith("s") ? name : `${name}s`;
 }
 
 function bindingBar(value: number, bindingThresholds: BindingThresholds): string {

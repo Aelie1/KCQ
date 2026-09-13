@@ -9,8 +9,9 @@ import { latexArms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/constants";
 import { GameEngine } from "../src/engine/engine";
 import { helpless } from "../src/engine/status";
+import type { EncounterDef } from "../src/engine/itypes";
 import type { GameEvent, GameState, Intention } from "../src/engine/types";
-import { oneEnemyEncounter } from "./testContent";
+import { multiEnemyEncounter, oneEnemyEncounter, waitEnemy } from "./testContent";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -246,11 +247,75 @@ describe("console formatting", () => {
         expect(rendered).toContain("PARTY");
         expect(rendered).toContain("ENEMIES");
         expect(rendered).toContain("ACTIONS / TARGETING");
-        expect(rendered).toContain("RECENT LOG");
+        expect(rendered).toContain("LOG");
+        expect(rendered).not.toContain("RECENT LOG");
         expect(rendered).toContain("latexArms");
         expect(rendered).toContain("Intent: latexSpray");
         expect(rendered).toContain("Seed 8224");
         expect(rendered).toContain("skunkette1 [HP: 12/20]");
+    });
+
+    it("renders generic trap meters in the header with exact amounts", () => {
+        const rendered = renderState(
+            { ...state, traps: [{ id: "trapPuddle", amount: 35 }] },
+            [{ id: "ko", available: true }],
+            [],
+            120,
+            36,
+        );
+
+        expect(rendered).toContain("Puddles [#######-------------] 35/100");
+        expect(rendered.split("\n")).toHaveLength(36);
+        expect(rendered.split("\n").every((line) => line.length === 120)).toBe(true);
+    });
+
+    it("lays out multiple generic trap meters without breaking the screen", () => {
+        const rendered = renderState(
+            {
+                ...state,
+                traps: [
+                    { id: "trapPuddle", amount: 35 },
+                    { id: "trapRibbon", amount: 10 },
+                ],
+            },
+            [{ id: "ko", available: true }],
+            [],
+            120,
+            36,
+        );
+
+        expect(rendered).toContain("Puddles [#######-------------] 35/100");
+        expect(rendered).toContain("Ribbons [##------------------] 10/100");
+        expect(rendered.split("\n")).toHaveLength(36);
+        expect(rendered.split("\n").every((line) => line.length === 120)).toBe(true);
+    });
+
+    it("shows only active enemy cooldowns with readable move names", () => {
+        const rendered = renderState({
+            ...state,
+            enemies: [{
+                ...state.enemies[0],
+                cooldowns: { pounce: 2, latexSpray: 0, oldMove: -1 },
+            }],
+        }, [{ id: "ko", available: true }]);
+
+        expect(rendered).toContain("Cooldowns: Pounce 2");
+        expect(rendered).not.toContain("Latex Spray 0");
+        expect(rendered).not.toContain("Old Move");
+
+        const withoutCooldowns = renderState(state, [{ id: "ko", available: true }]);
+        expect(withoutCooldowns).not.toContain("Cooldowns:");
+    });
+
+    it("shows bonus escapes only while at least one remains", () => {
+        const withBonus = renderState({
+            ...state,
+            characters: [{ ...state.characters[0], bonusEscapes: 1 }],
+        }, [{ id: "ko", available: true }]);
+
+        expect(withBonus).toContain("[Escapes: +1]");
+        expect(renderState(state, [{ id: "ko", available: true }]))
+            .not.toContain("[Escapes:");
     });
 
     it("gives the upper panes five more rows at the normal console height", () => {
@@ -471,6 +536,69 @@ describe("console formatting", () => {
         expect(rendered).toContain(
             "[2] starlight [mouth; no target]   Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%",
         );
+    });
+
+    it("executes a one-target move immediately when only one valid target exists", async () => {
+        const engine = new GameEngine([oneEnemyEncounter], 8224);
+        engine.loadCharacter(ko);
+        const events = engine.loadEncounter(oneEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "1", "3"], events);
+
+        expect(rendered).not.toContain("Choose target 1 of 1 for telekinesis.");
+        expect(rendered).toMatch(/telekinesis on foe1: (MISS|GRAZE|HIT|CRIT)/);
+    });
+
+    it("retains target selection when a one-target move has multiple valid targets", async () => {
+        const engine = new GameEngine([multiEnemyEncounter], 8224);
+        engine.loadCharacter(ko);
+        const events = engine.loadEncounter(multiEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "1", "2", "3"], events);
+
+        expect(rendered).toContain("Choose target 1 of 1 for telekinesis.");
+        expect(rendered).toContain("[1] foe1");
+        expect(rendered).toContain("[2] attacker2");
+        expect(rendered).toMatch(/telekinesis on attacker2: (MISS|GRAZE|HIT|CRIT)/);
+    });
+
+    it("orders escape choices by encounter bindings and keeps unknown bindings last", async () => {
+        const first = makeBindingDef("firstBinding");
+        const second = makeBindingDef("secondBinding");
+        const firstUnknown = makeBindingDef("firstUnknownBinding");
+        const secondUnknown = makeBindingDef("secondUnknownBinding");
+        const encounter: EncounterDef = {
+            id: "escape-order",
+            enemies: [waitEnemy],
+            bindings: [first, second],
+            traps: [],
+            setup: (internal) => {
+                internal.characters[0].bindings.push(
+                    { id: firstUnknown.id, definition: firstUnknown, value: 10, data: {} },
+                    { id: second.id, definition: second, value: 10, data: {} },
+                    { id: secondUnknown.id, definition: secondUnknown, value: 10, data: {} },
+                    { id: first.id, definition: first, value: 10, data: {} },
+                );
+            },
+        };
+        const engine = new GameEngine([encounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
+        const events = engine.loadEncounter(encounter.id);
+
+        const rendered = await runScriptedConsole(
+            engine,
+            ["1", "1", "5", "4", "3"],
+            events,
+        );
+
+        const firstIndex = rendered.indexOf("[1] hero - firstBinding");
+        const secondIndex = rendered.indexOf("[2] hero - secondBinding");
+        const firstUnknownIndex = rendered.indexOf("[3] hero - firstUnknownBinding");
+        const secondUnknownIndex = rendered.indexOf("[4] hero - secondUnknownBinding");
+        expect(firstIndex).toBeGreaterThanOrEqual(0);
+        expect(firstIndex).toBeLessThan(secondIndex);
+        expect(secondIndex).toBeLessThan(firstUnknownIndex);
+        expect(firstUnknownIndex).toBeLessThan(secondUnknownIndex);
     });
 
     it("replaces stored bindings when a newer encounter event is received", async () => {

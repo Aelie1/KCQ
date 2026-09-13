@@ -6,6 +6,7 @@ import type {
     ActionResult,
     BindingId,
     EntityId,
+    EscapeInfo,
     GameEvent,
     Move,
     PlayerAction,
@@ -52,6 +53,9 @@ export async function runConsoleClient(
         ? formatEvents(initialEvents)
         : [...initialOutput as string[]];
     let bindingIds = encounterBindings(initialEvents);
+    if (bindingIds.length === 0) {
+        bindingIds = [...(engine.getEncounter()?.bindings ?? [])];
+    }
     let running = true;
 
     const draw = (actionLines: string[]): void => {
@@ -133,6 +137,20 @@ export async function runConsoleClient(
             return false;
         }
 
+        if (move.targets === 1) {
+            const candidates = validTargets(engine, actor, move.id).filter(
+                (target): target is ValidTarget & { target: EntityId } => target.target !== null,
+            );
+            if (candidates.length === 1) {
+                return execute({
+                    type: "attack",
+                    actor,
+                    move: move.id,
+                    targets: [candidates[0].target],
+                });
+            }
+        }
+
         const selected: EntityId[] = [];
         while (selected.length < move.targets) {
             const candidates = validTargets(engine, actor, move.id)
@@ -164,7 +182,10 @@ export async function runConsoleClient(
 
     const chooseEscape = async (actorId: EntityId): Promise<boolean> => {
         while (true) {
-            const options = engine.getEscapes(actorId)?.options ?? [];
+            const options = orderEscapeOptions(
+                engine.getEscapes(actorId)?.options ?? [],
+                bindingIds,
+            );
             if (options.length === 0) {
                 await choose([
                     `No legal escape options remain for ${actorId}.`,
@@ -375,4 +396,24 @@ function updateEncounterBindings(current: BindingId[], events: GameEvent[]): Bin
         if (event.type === "encounterLoad" && event.success) bindings = [...event.bindings];
     }
     return bindings;
+}
+
+function orderEscapeOptions(options: EscapeInfo[], bindingIds: BindingId[]): EscapeInfo[] {
+    const bindingOrder = new Map(bindingIds.map((id, index) => [id, index]));
+    const groups = new Map<EntityId, Array<{ option: EscapeInfo; index: number }>>();
+
+    options.forEach((option, index) => {
+        const group = groups.get(option.target);
+        const entry = { option, index };
+        if (group) group.push(entry);
+        else groups.set(option.target, [entry]);
+    });
+
+    return [...groups.values()].flatMap((group) => group
+        .sort((left, right) => {
+            const leftOrder = bindingOrder.get(left.option.binding) ?? Number.POSITIVE_INFINITY;
+            const rightOrder = bindingOrder.get(right.option.binding) ?? Number.POSITIVE_INFINITY;
+            return leftOrder - rightOrder || left.index - right.index;
+        })
+        .map(({ option }) => option));
 }
