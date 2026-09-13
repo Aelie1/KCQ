@@ -1,37 +1,9 @@
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "./constants";
-import { GameEffects } from "./effects";
 import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "./helpers";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iValidityInfo, MoveDef } from "./itypes";
 import { canMove, getModifier, isIncapacitated } from "./status";
-import { AccuracyProfile, AccuracyResult, HitBand, StanceId } from "./types";
+import { AccuracyProfile, AccuracyResult, HitBand } from "./types";
 
-
-export function setStance(target: iCharacter, stance: StanceId): GameEffects {
-    const result = new GameEffects();
-    switch (stance) {
-        case "standing":
-            if (!target.standing) {
-                result.addEvent({
-                    type: "stanceChanged",
-                    actor: target.id,
-                    stance: stance
-                });
-                target.standing = true;
-            }
-            break;
-        case "moving":
-            if (target.standing && canMove(target)) {
-                result.addEvent({
-                    type: "stanceChanged",
-                    actor: target.id,
-                    stance: stance
-                });
-                target.standing = false;
-            }
-            break;
-    }
-    return result;
-}
 
 export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity | null, move: MoveDef): iValidityInfo {
     if (target === null) {
@@ -260,8 +232,7 @@ export function evaluateProfile(actor: iEntity, accuracy: AccuracyProfile, roll:
     return result;
 }
 
-export function tickBuffs(state: iGameState): GameEffects {
-    const result = new GameEffects();
+export function tickBuffs(state: iGameState): iEffect[] {
     const effects: iEffect[] = [];
     for (const entity of [...state.characters, ...state.enemies]) {
         for (const buff of [...entity.buffs]) {
@@ -283,8 +254,7 @@ export function tickBuffs(state: iGameState): GameEffects {
             }
         }
     }
-    result.fromEffects(state, effects);
-    return result;
+    return effects;
 }
 
 export function tickCooldowns(enemies: iEnemy[]) {
@@ -297,23 +267,30 @@ export function tickCooldowns(enemies: iEnemy[]) {
     }
 }
 
-export function tickPlayers(state: iGameState): GameEffects {
-    const result = new GameEffects();
+export function tickPlayers(state: iGameState): iEffect[] {
+    const effects: iEffect[] = [];
     for (const character of state.characters) {
         character.acted = false;
-        if (canMove(character)) {
-            result.fromResult(state, setStance(character, "moving"));
-        } else {
-            result.fromResult(state, setStance(character, "standing"));
-        }
+        effects.push({
+            type: "stance",
+            actor: character,
+            stance: canMove(character) ? "moving" : "standing"
+        });
         character.bonusEscapes = 0;
+    }
+    return effects;
+}
+
+export function tickBindings(state: iGameState): iEffect[] {
+    const effects: iEffect[] = [];
+    for (const character of state.characters) {
         for (const binding of character.bindings) {
             if (binding.definition.onTick) {
-                result.fromEffects(state, binding.definition.onTick(character,binding));
+                effects.push(...binding.definition.onTick(character, binding));
             }
         }
     }
-    return result;
+    return effects;
 }
 
 export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iBinding): iEffect[] {

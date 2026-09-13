@@ -2,7 +2,8 @@ import { thresholds, TRAP_MAX } from "./constants";
 import { findBinding, findBuff, findEntity } from "./find";
 import { isValidEntity } from "./helpers";
 import { BindingDef, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iTrap, MoveDef } from "./itypes";
-import { BondageEvent, DamageEvent, EnemyEvent, EntityId, GameEvent } from "./types";
+import { canMove } from "./status";
+import { BondageEvent, DamageEvent, EnemyEvent, EntityId, GameEvent, StanceId } from "./types";
 
 export class GameEffects {
     private events: GameEvent[];
@@ -96,6 +97,9 @@ export class GameEffects {
                     } else {
                         this.stack(removeTrap(effect.actor, effect.trap, -effect.amount));
                     }
+                    break;
+                case "stance":
+                    this.stack(setStance(effect.actor, effect.stance));
                     break;
             }
         }
@@ -276,7 +280,7 @@ function spawnEnemy(state: iGameState, definition: EnemyDef, options?: { buff?: 
         state.nextId[definition.id] = (state.nextId[definition.id] ?? 0) + 1;
     }
     const name = options?.id ? options.id : definition.id + state.nextId[definition.id];
-    const hpRatio = Math.min(1,Math.max(0.1,(options?.hp ?? 1)));
+    const hpRatio = Math.min(1, Math.max(0.1, (options?.hp ?? 1)));
     const enemy = {
         definition: definition,
         buffs: [],
@@ -347,5 +351,32 @@ function removeTrap(actor: iEntity, trap: iTrap, amount: number): GameEffects {
         trap.amount = 0;
     }
 
+    return result;
+}
+
+function setStance(target: iCharacter, stance: StanceId): GameEffects {
+    const result = new GameEffects();
+    switch (stance) {
+        case "standing":
+            if (!target.standing) {
+                result.addEvent({
+                    type: "stanceChanged",
+                    actor: target.id,
+                    stance: stance
+                });
+                target.standing = true;
+            }
+            break;
+        case "moving":
+            if (target.standing && canMove(target)) {
+                result.addEvent({
+                    type: "stanceChanged",
+                    actor: target.id,
+                    stance: stance
+                });
+                target.standing = false;
+            }
+            break;
+    }
     return result;
 }

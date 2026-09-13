@@ -1,8 +1,8 @@
-import { GameEffects } from "./effects";
 import { Random } from "./random";
 import {
     AccuracyProfile, ActionFailureReason, Binding, BindingEffect, BindingLevel, Buff, BuffEffect, Character, DamageEffect,
-    Enemy, EnemyEffect, EntityId, HitBand, InvalidTarget, ModifierId, Move, MoveType, Passive, StatusId, TargetInfo, Trap, TrapEffect, TrapId, Turn, ValidTarget
+    Enemy, EnemyEffect, EntityId, HitBand, InvalidTarget, ModifierId, Move, MoveType, Passive, StanceId, StatusId, TargetInfo,
+    Trap, TrapEffect, TrapId, Turn, ValidTarget
 } from "./types";
 
 export type iEntity = iCharacter | iEnemy;
@@ -127,7 +127,8 @@ export type iEffect =
     | iBuffEffect
     | iEnemyEffect
     | iCooldownEffect
-    | iTrapEffect;
+    | iTrapEffect
+    | iStanceEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -163,6 +164,12 @@ interface iCooldownEffect {
 export interface iTrapEffect extends Omit<TrapEffect, "trap" | "actor">{
     actor: iEntity;
     trap: iTrap;
+}
+
+export interface iStanceEffect {
+    type: "stance";
+    actor: iCharacter;
+    stance: StanceId;
 }
 
 

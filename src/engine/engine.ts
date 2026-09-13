@@ -1,4 +1,4 @@
-import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, setStance, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
+import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers } from "./combat";
 import { thresholds, TRAP_MODIFIER } from "./constants";
 import { GameEffects } from "./effects";
 import { evaluateIntention, updateIntention } from "./enemies";
@@ -603,7 +603,11 @@ export class GameEngine {
                 };
             }
             case "stance": {
-                result.fromResult(this.state, setStance(actor, actor.standing ? "moving" : "standing"));
+                result.fromEffects(this.state, [{
+                    type: "stance",
+                    actor: actor,
+                    stance: actor.standing ? "moving" : "standing"
+                }]);
                 return {
                     success: true,
                     events: result.getEvents(),
@@ -658,11 +662,12 @@ export class GameEngine {
         const result = new GameEffects();
 
         if (this.state.turn.phase === "player") {
+            result.fromEffects(this.state,tickBindings(this.state));
             this.state.turn.phase = "enemy";
         } else {
             tickCooldowns(this.state.enemies);
-            result.fromResult(this.state, tickBuffs(this.state));
-            result.fromResult(this.state, tickPlayers(this.state));
+            result.fromEffects(this.state, tickBuffs(this.state));
+            result.fromEffects(this.state, tickPlayers(this.state));
             this.updateIntentions();
             this.state.turn.phase = "player";
             this.state.turn.step = 1;
