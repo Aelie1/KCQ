@@ -59,12 +59,13 @@ function escapeAmount(engine: GameEngine, actor: string, target: string, binding
         (candidate) => candidate.type === "binding"
             && candidate.target === target
             && candidate.binding === binding
+            && candidate.amount !== undefined
             && candidate.amount < 0,
     );
     if (!effect || effect.type !== "binding") {
         throw new Error(`Expected ${actor} to remove ${target}/${binding}`);
     }
-    return -effect.amount;
+    return -effect.amount!;
 }
 
 describe("escape progress", () => {

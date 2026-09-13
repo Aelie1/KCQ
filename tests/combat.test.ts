@@ -38,7 +38,7 @@ function expectMoveRejection(
 }
 
 function setupAuthoredCombat(): GameEngine {
-    const encounter = { id: "authored-skunkette", enemies: [skunkette], bindings: [] };
+    const encounter = { id: "authored-skunkette", enemies: [skunkette], bindings: [], traps: [] };
     const engine = new GameEngine([encounter], AUTHORED_HIT_SEED);
     engine.loadCharacter(ko);
     engine.loadEncounter(encounter.id);
@@ -56,7 +56,7 @@ describe("move validation and player actions", () => {
         const twoTargets = makeMove("two-targets", "mouth", { targets: 2 });
         const hero = makeCharacterDef("hero", [legal, targetless, allTargets, twoTargets]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "validation", enemies: [foe], bindings: [] };
+        const encounter = { id: "validation", enemies: [foe], bindings: [], traps: [] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);
@@ -128,7 +128,7 @@ describe("move validation and player actions", () => {
         });
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "nonlethal-damage", enemies: [foe], bindings: [] };
+        const encounter = { id: "nonlethal-damage", enemies: [foe], bindings: [], traps: [] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);
@@ -175,7 +175,7 @@ describe("move validation and player actions", () => {
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         foe.hp = enemyHp;
-        const encounter = { id: "lethal-damage", enemies: [foe], bindings: [] };
+        const encounter = { id: "lethal-damage", enemies: [foe], bindings: [], traps: [] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);

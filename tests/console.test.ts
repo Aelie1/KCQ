@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PassThrough } from "node:stream";
 import { runConsoleClient } from "../src/console/client";
-import { formatBuff, formatEffects, formatEvents, formatIntention } from "../src/console/format";
+import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention } from "../src/console/format";
 import { formatAccuracyRow, renderScreen } from "../src/console/render";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
@@ -193,6 +193,37 @@ describe("console formatting", () => {
         ]);
     });
 
+    it("distinguishes zero binding amounts from unresolved deferred amounts", () => {
+        const zero = { type: "binding" as const, target: "ko", binding: "latexArms", amount: 0 };
+        const unknown = { type: "binding" as const, target: "ko", binding: "latexLegs" };
+
+        expect(formatEffect(zero, true)).toBe("ko latexArms +0");
+        expect(formatEffect(unknown, true)).toBe("ko latexLegs +??");
+        expect(formatEffects([zero, unknown], true)).toEqual([
+            "ko latexArms +0",
+            "ko latexLegs +??",
+        ]);
+        expect(formatEffects([
+            zero,
+            { ...zero, binding: "latexTorso" },
+            unknown,
+            { ...unknown, binding: "latexHead" },
+        ], true)).toEqual([
+            "ko latexArms, latexTorso +0",
+            "ko latexLegs, latexHead +??",
+        ]);
+    });
+
+    it("formats structured trap-trigger and interruption events", () => {
+        expect(formatEvents([
+            { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
+            { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
+        ])).toEqual([
+            "ko triggered 10 trapPuddles.",
+            "ko's action was interrupted due to bindingRestriction.",
+        ]);
+    });
+
     it("renders a fixed-size four-panel screen", () => {
         const rendered = renderScreen({
             encounter: "plains_1",
@@ -271,12 +302,12 @@ describe("console formatting", () => {
 
         expect(rendered.indexOf("latexLegs")).toBeLessThan(rendered.indexOf("latexArms"));
         expect(rendered.indexOf("latexArms")).toBeLessThan(rendered.indexOf("latexTorso"));
-        expect(rendered).toContain("latexLegs   [-+-+-+---+-----+----] 0/100  ---");
+        expect(rendered).toContain("latexLegs   [-+-+-+---+-----+----] 0/0  ---");
         expect(rendered).toContain(
-            "latexArms   [#######--+-----+----] 36/100  Hard    [Bound 3] [Immobilized]",
+            "latexArms   [#######--+-----+----] 36/0  Hard    [Bound 3] [Immobilized]",
         );
         expect(rendered).toContain(
-            "latexTorso  [#####+---+-----+----] 23/100  Medium    [Gagged 2]",
+            "latexTorso  [#####+---+-----+----] 23/0  Medium    [Gagged 2]",
         );
         expect(rendered).not.toContain("notInEncounter");
         expect(rendered).not.toContain("Status:");
@@ -294,7 +325,7 @@ describe("console formatting", () => {
                     hit: 1,
                     defense: -2,
                     escape: 2,
-                    effect: 3,
+                    vulnerability: 3,
                     potency: 1,
                     traps: -2,
                     willpower: -1,
@@ -329,7 +360,7 @@ describe("console formatting", () => {
 
         for (const token of [
             "[Ready]", "[Standing]", "[Arms: Blk]", "[Mouth: -4]", "[Legs: -3]",
-            "[Hit: +1]", "[Def: -2]", "[Esc: +2]", "[Eff: +3]", "[Pot: +1]",
+            "[Hit: +1]", "[Def: -2]", "[Esc: +2]", "[Vuln: +3]", "[Pot: +1]",
             "[Trap: -2]", "[Will: -1]", "[Spr: +1]",
         ]) {
             expect(rendered).toContain(token);

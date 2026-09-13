@@ -73,6 +73,20 @@ function setupLatexScenario(
 }
 
 describe("latex escape spread through GameEngine", () => {
+    it("lowers current Latex through escape while preserving its saved peak", () => {
+        const engine = setupLatexScenario(
+            ["hero"],
+            [{ character: "hero", binding: latexHead, amount: 60 }],
+        );
+
+        const result = execute(engine, {
+            type: "escape", actor: "hero", target: "hero", binding: latexHead.id,
+        });
+        const escaped = result.state.characters[0].bindings.find(({ id }) => id === latexHead.id);
+        expect(escaped?.value).toBeLessThan(60);
+        expect(escaped?.data).toEqual({ peak: 60 });
+    });
+
     it("does not spread below Hard without a modifier, but does with one", () => {
         const plain = setupLatexScenario(
             ["hero"],

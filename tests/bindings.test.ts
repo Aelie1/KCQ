@@ -123,11 +123,12 @@ describe("binding behavior through GameEngine", () => {
         expect(adaptive.data).toEqual({ peak: 0 });
     });
 
-    it("preserves Latex's historical maximum after removal and reapplication", () => {
+    it("preserves Latex's historical maximum and raises it only after a new maximum", () => {
         const add60 = bindingMove("latex-60", latexArms, 60);
         const remove50 = bindingMove("latex-minus-50", latexArms, -50);
         const add30 = bindingMove("latex-30", latexArms, 30);
-        const hero = makeBehavioralCharacter("hero", [add60, remove50, add30]);
+        const add40 = bindingMove("latex-40", latexArms, 40);
+        const hero = makeBehavioralCharacter("hero", [add60, remove50, add30, add40]);
         const engine = makeBehavioralEngine([hero]);
 
         use(engine, hero.id, add60.id);
@@ -143,6 +144,12 @@ describe("binding behavior through GameEngine", () => {
         use(engine, hero.id, add30.id);
         expect(bindingState(engine, latexArms.id)?.value).toBe(40);
         expect(bindingState(engine, latexArms.id)?.data).toEqual({ peak: 60 });
+
+        use(engine, hero.id, add40.id);
+        expect(bindingState(engine, latexArms.id)).toMatchObject({
+            value: 80,
+            data: { peak: 80 },
+        });
     });
 });
 

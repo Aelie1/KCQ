@@ -42,7 +42,7 @@ export function formatEffects(effects: Effect[], includeTarget = false): string[
         const group = groupedBindings.get(entry.key)!;
         const first = group[0];
         const target = includeTarget ? `${first.target} ` : "";
-        return `${target}${group.map((effect) => effect.binding).join(", ")} ${first.amount ? signed(first.amount) : "+??"}`;
+        return `${target}${group.map((effect) => effect.binding).join(", ")} ${first.amount !== undefined ? signed(first.amount) : "+??"}`;
     });
 }
 

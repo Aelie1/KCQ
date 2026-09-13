@@ -146,7 +146,7 @@ export function setupBoundEngine(
     const mouthMove = makeMove("mouth-move", "mouth");
     const hero = makeCharacterDef("hero", [setupMove, armsMove, mouthMove]);
     const foe = makeEnemyDef("foe", [makeWaitMove()]);
-    const encounter: EncounterDef = { id: "bound-test", enemies: [foe], bindings: [] };
+    const encounter: EncounterDef = { id: "bound-test", enemies: [foe], bindings: [], traps: [] };
     const engine = new GameEngine([encounter, ...additionalEncounters], 1);
     engine.loadCharacter(hero);
     engine.loadEncounter(encounter.id);

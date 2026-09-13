@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { thresholds, effectivenessRange } from "../src/engine/constants";
-import { evaluateResult } from "../src/engine/combat";
+import { evaluateResult, isValidTarget } from "../src/engine/combat";
 import { GameEngine } from "../src/engine/engine";
 import type {
     iCharacter,
@@ -66,6 +66,26 @@ describe("accuracy", () => {
         return Object.values(profile).reduce((sum, width) => sum + width, 0);
     }
 
+    function enemyAccuracy(hitModifier: number): AccuracyProfile {
+        const actor = makeAccuracyTarget(0, "enemy-actor");
+        actor.buffs.push({
+            id: "enemy-hit",
+            active: true,
+            modifiers: { hit: hitModifier },
+        });
+        const target = makeCharacter("character-target");
+        const move = makeAccuracyMove(standardProfile, { side: "player", type: "none" });
+        const info = isValidTarget({
+            turn: { round: 1, step: 1, phase: "enemy" },
+            nextEntityId: 1,
+            characters: [target],
+            enemies: [actor],
+            traps: [],
+        }, actor, target, move);
+        if (!info.valid || !info.accuracy) throw new Error("Expected enemy accuracy profile");
+        return info.accuracy;
+    }
+
     function previewAccuracy(
         actor: iCharacter,
         target: iEnemy,
@@ -75,6 +95,7 @@ describe("accuracy", () => {
             id: "accuracy-preview",
             enemies: [target.definition],
             bindings: [],
+            traps: [],
             setup: (state) => {
                 state.characters[0].bindings = actor.bindings;
                 state.characters[0].buffs = actor.buffs;
@@ -112,23 +133,28 @@ describe("accuracy", () => {
         )).toEqual(standardProfile);
     });
 
-    it("applies the asymmetric negative accuracy formula", () => {
+    it("reduces player Crit slowly while applying the full negative accuracy penalty", () => {
         expect(previewAccuracy(
             makeAccuracyActor(-2),
             makeAccuracyTarget(),
             makeAccuracyMove(),
-        )).toEqual({ miss: 20, graze: 25, hit: 55, crit: 0 });
+        )).toEqual({ miss: 20, graze: 25, hit: 47, crit: 8 });
     });
 
-    it("applies positive accuracy while growing Crit at one half rate", () => {
+    it("applies positive accuracy while growing player Crit at one tenth rate", () => {
         const result = previewAccuracy(
             makeAccuracyActor(4),
             makeAccuracyTarget(),
             makeAccuracyMove(),
         );
 
-        expect(result).toEqual({ miss: 0, graze: 0, hit: 70, crit: 30 });
-        expect(result.crit).toBe(standardProfile.crit! + 20);
+        expect(result).toEqual({ miss: 0, graze: 0, hit: 86, crit: 14 });
+        expect(result.crit).toBe(standardProfile.crit! + 4);
+    });
+
+    it("never raises enemy Crit above its authored chance", () => {
+        expect(enemyAccuracy(5)).toEqual({ miss: 0, graze: 0, hit: 90, crit: 10 });
+        expect(enemyAccuracy(-5)).toEqual({ miss: 35, graze: 40, hit: 20, crit: 5 });
     });
 
     it("treats target Defense as an equivalent accuracy penalty", () => {
@@ -180,12 +206,12 @@ describe("accuracy", () => {
         expect(characterAttack).toEqual({
             miss: 0,
             graze: 5,
-            hit: 75,
-            crit: 20,
+            hit: 83,
+            crit: 12,
         });
     });
 
-    it("removes Crit quickly under penalties without allowing negative width", () => {
+    it("reduces Crit slowly under penalties without allowing negative width", () => {
         const move = makeAccuracyMove();
         const noCrit = previewAccuracy(
             makeAccuracyActor(-5),
@@ -198,7 +224,7 @@ describe("accuracy", () => {
             move,
         );
 
-        expect(noCrit.crit).toBe(0);
+        expect(noCrit.crit).toBe(5);
         expect(extremePenalty.crit).toBe(0);
         expect(Object.values(extremePenalty).every((width) => width >= 0)).toBe(true);
     });
@@ -250,6 +276,32 @@ describe("accuracy", () => {
         }
     });
 
+    it("keeps Crit inside Full Hit when a penalty would otherwise make Hit negative", () => {
+        const result = previewAccuracy(
+            makeAccuracyActor(-8),
+            makeAccuracyTarget(),
+            makeAccuracyMove({ miss: 90, hit: 1, crit: 9 }),
+        );
+
+        expect(result).toEqual({ miss: 99, hit: 0, crit: 1 });
+        expect(Object.values(result).every((width) => width >= 0)).toBe(true);
+        expect(profileTotal(result)).toBe(100);
+    });
+
+    it("uses Potency and Vulnerability for effectiveness without changing band widths", () => {
+        const actor = makeAccuracyActor();
+        const target = makeAccuracyTarget();
+        actor.buffs.push({ id: "potent", active: true, modifiers: { potency: 2 } });
+        target.buffs.push({ id: "vulnerable", active: true, modifiers: { vulnerability: 3 } });
+
+        expect(previewAccuracy(actor, target, makeAccuracyMove())).toEqual(standardProfile);
+        expect(evaluateResult(actor, target, standardProfile, 25)).toEqual({
+            target,
+            band: "hit",
+            effectiveness: 0.8 * 1.25 * 1.375,
+        });
+    });
+
     it.each([
         [0, "miss"],
         [9.999, "miss"],
@@ -261,6 +313,7 @@ describe("accuracy", () => {
         [100, "crit"],
     ] as const)("maps roll %s to the %s band", (roll, expectedBand) => {
         expect(evaluateResult(
+            makeAccuracyActor(),
             makeAccuracyTarget(),
             standardProfile,
             roll,
@@ -277,14 +330,15 @@ describe("accuracy", () => {
             crit: [1.50, 2.00],
             none: [0, 0],
         });
-        expect(evaluateResult(target, standardProfile, 5).effectiveness).toBe(0);
-        expect(evaluateResult(target, standardProfile, 10).effectiveness).toBeCloseTo(0.20);
-        expect(evaluateResult(target, standardProfile, 17.5).effectiveness).toBeCloseTo(0.35);
-        expect(evaluateResult(target, standardProfile, 25).effectiveness).toBeCloseTo(0.80);
-        expect(evaluateResult(target, standardProfile, 57.5).effectiveness).toBeCloseTo(0.90);
-        expect(evaluateResult(target, standardProfile, 90).effectiveness).toBeCloseTo(1.50);
-        expect(evaluateResult(target, standardProfile, 95).effectiveness).toBeCloseTo(1.75);
-        expect(evaluateResult(target, standardProfile, 100).effectiveness).toBeCloseTo(2.00);
+        const actor = makeAccuracyActor();
+        expect(evaluateResult(actor, target, standardProfile, 5).effectiveness).toBe(0);
+        expect(evaluateResult(actor, target, standardProfile, 10).effectiveness).toBeCloseTo(0.20);
+        expect(evaluateResult(actor, target, standardProfile, 17.5).effectiveness).toBeCloseTo(0.35);
+        expect(evaluateResult(actor, target, standardProfile, 25).effectiveness).toBeCloseTo(0.80);
+        expect(evaluateResult(actor, target, standardProfile, 57.5).effectiveness).toBeCloseTo(0.90);
+        expect(evaluateResult(actor, target, standardProfile, 90).effectiveness).toBeCloseTo(1.50);
+        expect(evaluateResult(actor, target, standardProfile, 95).effectiveness).toBeCloseTo(1.75);
+        expect(evaluateResult(actor, target, standardProfile, 100).effectiveness).toBeCloseTo(2.00);
     });
 
     it("produces the same accuracy result from the same seed and action", () => {
@@ -292,7 +346,7 @@ describe("accuracy", () => {
             const move = makeAccuracyMove();
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            const encounter = { id: "accuracy", enemies: [foe], bindings: [] };
+            const encounter = { id: "accuracy", enemies: [foe], bindings: [], traps: [] };
             const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
@@ -312,7 +366,7 @@ describe("accuracy", () => {
             const move = makeAccuracyMove();
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            const encounter = { id: "accuracy", enemies: [foe], bindings: [] };
+            const encounter = { id: "accuracy", enemies: [foe], bindings: [], traps: [] };
             const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
@@ -361,6 +415,7 @@ describe("accuracy", () => {
             id: "multi-target-accuracy",
             enemies: [lowDefense, highDefense],
             bindings: [],
+            traps: [],
         };
         const engine = new GameEngine([encounter], seed);
         engine.loadCharacter(hero);
@@ -388,7 +443,7 @@ describe("accuracy", () => {
             if (!preview || !preview.valid || !preview.accuracy) {
                 throw new Error(`Expected an accuracy preview for ${target.id}`);
             }
-            return evaluateResult(target, preview.accuracy, referenceRng.accuracy());
+            return evaluateResult(makeAccuracyActor(), target, preview.accuracy, referenceRng.accuracy());
         });
 
         expect(result.success).toBe(true);
@@ -426,7 +481,7 @@ describe("accuracy", () => {
         const run = (seed: number, id: string) => {
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef(id, [makeWaitMove()]);
-            const encounter = { id: `accuracy-${id}`, enemies: [foe], bindings: [] };
+            const encounter = { id: `accuracy-${id}`, enemies: [foe], bindings: [], traps: [] };
             const engine = new GameEngine([encounter], seed);
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
@@ -460,7 +515,7 @@ describe("accuracy", () => {
         const targeted = makeAccuracyMove(standardProfile, { id: "targeted" });
         const build = () => {
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
-            const encounter = { id: "zero-target", enemies: [foe], bindings: [] };
+            const encounter = { id: "zero-target", enemies: [foe], bindings: [], traps: [] };
             const engine = new GameEngine([encounter], 123456);
             engine.loadCharacter(makeCharacterDef("zero-actor", [zeroTarget]));
             engine.loadCharacter(makeCharacterDef("shooter", [targeted]));

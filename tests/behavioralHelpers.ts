@@ -92,7 +92,7 @@ export function makeBehavioralEngine(
     enemies: EnemyDef[] = [makeBehavioralEnemy()],
     seed = 1,
 ): GameEngine {
-    const encounter: EncounterDef = { id: "behavioral-test", enemies, bindings: [] };
+    const encounter: EncounterDef = { id: "behavioral-test", enemies, bindings: [], traps: [] };
     const engine = new GameEngine([encounter], seed);
     for (const character of characters) engine.loadCharacter(character);
     engine.loadEncounter(encounter.id);

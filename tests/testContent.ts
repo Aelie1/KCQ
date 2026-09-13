@@ -15,10 +15,12 @@ export const oneEnemyEncounter: EncounterDef = {
     id: "one-enemy",
     enemies: [waitEnemy],
     bindings: [],
+    traps: [],
 };
 
 export const multiEnemyEncounter: EncounterDef = {
     id: "multi-enemy",
     enemies: [waitEnemy, basicAttackingEnemy],
     bindings: [],
+    traps: [],
 };

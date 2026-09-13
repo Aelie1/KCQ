@@ -91,7 +91,7 @@ describe("state serialization and combatant loading", () => {
         });
         const hero = makeCharacterDef("hero", [prepare]);
         const enemy = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "serialization", enemies: [enemy], bindings: [] };
+        const encounter = { id: "serialization", enemies: [enemy], bindings: [], traps: [] };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);
@@ -150,7 +150,7 @@ describe("state serialization and combatant loading", () => {
             duration: 2,
             active: true,
             statuses: [{ definition: status, value: 1 }],
-            modifiers: { hit: -1 },
+            modifiers: { hit: -1, potency: 2, vulnerability: 3 },
             linkedEntity: "foe1",
         };
         const enemyBuff: iBuff = {
@@ -185,14 +185,18 @@ describe("state serialization and combatant loading", () => {
 
         const serialized = serializeGameState(internalState);
 
-        expect(serialized.characters[0].modifiers).toEqual({ hit: -3 });
+        expect(serialized.characters[0].modifiers).toEqual({
+            hit: -3,
+            potency: 2,
+            vulnerability: 3,
+        });
         expect(serialized.characters[0].buffs[0]).toEqual({
             id: "focus",
             duration: 2,
             active: true,
             statuses: [{ id: status.id, value: 1 }],
             linkedEntity: "foe1",
-            modifiers: { hit: -1 },
+            modifiers: { hit: -1, potency: 2, vulnerability: 3 },
         });
         expect(serialized.enemies[0].buffs[0]).toEqual({
             id: "focus",
@@ -206,6 +210,7 @@ describe("state serialization and combatant loading", () => {
             effects: [],
         });
         expect(serialized).not.toHaveProperty("nextEntityId");
+        expect(serialized.characters[0].modifiers).not.toHaveProperty("effect");
         expect(serialized.characters[0].buffs[0]).not.toBe(characterBuff);
         const serializedStatus = serialized.characters[0].buffs[0].statuses?.[0];
         const internalStatus = characterBuff.statuses?.[0];

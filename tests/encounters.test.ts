@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
-import { plains_1 } from "../src/content/skunk/encounters";
+import { plains_1, plains_2 } from "../src/content/skunk/encounters";
+import { skunk } from "../src/content/skunk/skunk";
+import { skunkette } from "../src/content/skunk/skunkette";
+import { trapPuddle } from "../src/content/skunk/puddles";
 import { GameEngine } from "../src/engine/engine";
 import type { EncounterDef } from "../src/engine/itypes";
 import { makeCharacterDef, makeEnemyDef, makeWaitMove } from "./helpers";
@@ -133,6 +136,7 @@ describe("encounters", () => {
             id: "test-setup",
             enemies: [enemy],
             bindings: [],
+            traps: [],
             setup: (state) => {
                 calls.push("setup");
                 enemiesVisibleToSetup = state.enemies.map((loaded) => loaded.id);
@@ -171,5 +175,43 @@ describe("encounters", () => {
         expect(events.filter((event) => event.type === "enemySpawned"))
             .toHaveLength(plains_1.enemies.length);
         expect(engine.getGameState().enemies).toHaveLength(plains_1.enemies.length);
+    });
+
+    it("catalogues and loads plains_2 with Skunks, puddles, and valid intentions", () => {
+        expect(encounterList).toContain(plains_2);
+        expect(plains_2.id).toBe("plains_2");
+        expect(plains_2.enemies.map(({ id }) => id)).toEqual([
+            skunkette.id, skunkette.id, skunk.id, skunk.id,
+        ]);
+        expect(plains_2.traps).toEqual([{ definition: trapPuddle, amount: 0 }]);
+
+        const engine = new GameEngine(encounterList, 8224);
+        engine.loadCharacter(ko);
+        const events = engine.loadEncounter(plains_2.id);
+        const state = engine.getGameState();
+
+        expect(events.at(-1)).toEqual({
+            type: "encounterLoad",
+            id: plains_2.id,
+            success: true,
+            bindings: plains_2.bindings.map(({ id }) => id),
+        });
+        expect(engine.getEncounter()).toEqual({
+            id: plains_2.id,
+            enemies: [skunkette.id, skunkette.id, skunk.id, skunk.id],
+            bindings: plains_2.bindings.map(({ id }) => id),
+            traps: [trapPuddle.id],
+        });
+        expect(state.traps).toEqual([{ id: trapPuddle.id, amount: 0 }]);
+        expect(state.enemies.map(({ id }) => id)).toEqual([
+            "skunkette1", "skunkette2", "skunk3", "skunk4",
+        ]);
+        expect(state.enemies.every(({ intention }) => intention !== null)).toBe(true);
+        expect(state.enemies.every(({ intention }) =>
+            intention!.targets.every(({ target }) =>
+                state.characters.some(({ id }) => id === target),
+            ),
+        )).toBe(true);
+        expect(engine.getMoves(ko.id).some(({ available }) => available)).toBe(true);
     });
 });
