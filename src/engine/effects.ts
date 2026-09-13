@@ -343,12 +343,5 @@ function removeTrap(actor: iEntity, trap: iTrap, amount: number): GameEffects {
         trap.amount = 0;
     }
 
-    result.addEvent({
-        type: "trapRemoved",
-        actor: actor.id,
-        trap: trap.id,
-        amount: origLevel - trap.amount
-    })
-
     return result;
 }

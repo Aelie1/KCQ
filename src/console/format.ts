@@ -6,7 +6,7 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
         case "damage":
             return `${target}${effect.amount} damage`;
         case "binding":
-            return `${target}${effect.binding} ${effect.amount ? signed(effect.amount) : "+??"}`;
+            return `${target}${effect.binding} ${effect.amount !== undefined ? signed(effect.amount) : "+??"}`;
         case "buff":
             return `${target}${effect.buff} added`;
         case "enemy":

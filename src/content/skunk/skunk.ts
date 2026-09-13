@@ -327,7 +327,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
                 effects.push({
                     type: "binding",
                     target: effect.target,
-                    binding: binding,
+                    binding: binding.definition,
                     amount: binding.data["peak"] - binding.value
                 })
             }
@@ -341,7 +341,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
             effects.push({
                 type: "binding",
                 target: effect.target,
-                binding: binding,
+                binding: binding.definition,
                 amount: Math.min(effect.amount, binding.data["peak"] - binding.value)
             })
         }
@@ -354,7 +354,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
         effects.push({
             type: "binding",
             target: effect.target,
-            binding: binding,
+            binding: binding.definition,
             amount: binding.data["peak"] - binding.value
         })
     }
