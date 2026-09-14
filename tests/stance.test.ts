@@ -377,9 +377,9 @@ describe("stance toggling", () => {
             engine.loadCharacter(makeCharacterDef("hero"));
             engine.loadEncounter(encounter.id);
 
-            expect(engine.getGameState().enemies[0].intention[0]?.targets[0].band).toBe("miss");
+            expect(engine.getGameState().enemies[0].intentions[0]?.targets[0].band).toBe("miss");
             expect(engine.executeAction({ type: "stance", actor: "hero" }).success).toBe(true);
-            expect(engine.getGameState().enemies[0].intention[0]?.targets[0].band)
+            expect(engine.getGameState().enemies[0].intentions[0]?.targets[0].band)
                 .toBe(standingResult);
         }
     });

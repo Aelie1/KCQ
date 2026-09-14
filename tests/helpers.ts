@@ -120,7 +120,8 @@ export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnem
         currHp: definition.hp,
         maxHp: definition.hp,
         currDef: definition.defense,
-        intention: [],
+        intentions: [],
+        preview: [],
         cooldowns: {},
         data: {},
     };

@@ -4,8 +4,10 @@ import { findBinding, findBuff, findEntity, isEnemy, isValidEntity, thresholds }
 import { Random } from "../protected/random";
 import { canMove } from "../protected/status";
 import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap } from "../protected/types";
-import { BondageEvent, EntityId, GameEvent, StanceId } from "../public/types";
+import { BondageEvent, EntityId, GameEvent, StanceId, TargetInfo } from "../public/types";
+import { evaluateIntention, resolveMove } from "./combat";
 import { TRAP_MAX } from "./constants";
+import { serializeEffects } from "./serialize";
 import { iEngineEffect } from "./types";
 
 export class GameEffects {
@@ -33,16 +35,43 @@ export class GameEffects {
         this.events.push(...other.events);
         this.stack(other.effects);
         this.resolve();
+        this.refreshPreviews()
     }
 
     fromEffects(other: iEngineEffect[]) {
         this.stack(other);
         this.resolve();
+        this.refreshPreviews()
     }
 
     private stack(other: iEngineEffect[]) {
         for (let i = other.length - 1; i >= 0; i--) {
             this.effects.push(other[i]);
+        }
+    }
+
+    private refreshPreviews() {
+        for (const enemy of this.state.enemies) {
+            enemy.preview.length = 0;
+            for (const intention of enemy.intentions) {
+                const preview = {
+                    ...intention,
+                    move: { ...intention.move }
+                };
+                const iTargets = evaluateIntention(this.state, preview);
+                const targets: TargetInfo[] = [];
+                let effects = resolveMove(this.state, preview.move, preview.actor, iTargets);
+                for (const iTarget of iTargets) {
+                    const tEffects = effects.filter(x => "target" in x && x.target === iTarget.target);
+                    targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(tEffects) });
+                    effects = effects.filter(x => !("target" in x) || x.target !== iTarget.target);
+                }
+                enemy.preview.push({
+                    move: intention.move.definition.id,
+                    targets: targets,
+                    effects: serializeEffects(effects)
+                });
+            }
         }
     }
 
@@ -113,7 +142,6 @@ export class GameEffects {
                     break;
             }
         }
-
     };
 
 
@@ -239,9 +267,7 @@ export class GameEffects {
         const origHp = target.currHp;
 
         target.currHp -= amount;
-        if (target.currHp > target.maxHp) {
-            target.currHp = target.maxHp
-        }
+        target.currHp = Math.min(Math.max(0, target.currHp), target.maxHp);
 
         const newAmount = origHp - target.currHp;
 
@@ -308,7 +334,8 @@ export class GameEffects {
             maxHp: definition.hp,
             currHp: definition.hp * hpRatio,
             currDef: definition.defense,
-            intention: [],
+            intentions: [],
+            preview: [],
             cooldowns: {},
             data: {}
         };
@@ -424,10 +451,10 @@ export class GameEffects {
                 roll: this.rng.accuracy()
             });
         }
-        action.actor.intention.push({
+        action.actor.intentions.push({
             actor: action.actor,
             move: move,
-            rolls: iTargets
+            rolls: iTargets,
         });
     };
 

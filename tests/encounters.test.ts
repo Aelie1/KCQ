@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { encounterList } from "../src/content/content";
 import { plains_1, plains_2 } from "../src/content/skunk/encounters";
+import { trapPuddle } from "../src/content/skunk/puddles";
 import { skunk } from "../src/content/skunk/skunk";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { trapPuddle } from "../src/content/skunk/puddles";
-import { GameEngine } from "../src/engine/public/engine";
 import type { EncounterDef } from "../src/engine/protected/definitions";
+import { GameEngine } from "../src/engine/public/engine";
 import { makeCharacterDef, makeEnemyDef, makeWaitMove } from "./helpers";
 import {
     basicAttackingEnemy,
@@ -109,12 +109,12 @@ describe("encounters", () => {
             expect.objectContaining({
                 id: "foe1",
                 maxHp: waitEnemy.hp,
-                intention: expect.any(Array),
+                intentions: expect.any(Array),
             }),
             expect.objectContaining({
                 id: "attacker1",
                 maxHp: basicAttackingEnemy.hp,
-                intention: expect.any(Array),
+                intentions: expect.any(Array),
             }),
         ]);
     });
@@ -154,7 +154,7 @@ describe("encounters", () => {
         expect(calls).toEqual(["setup", "ai"]);
         expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
         expect(engine.getGameState().turn.step).toBe(setupStep);
-        expect(engine.getGameState().enemies[0].intention).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: wait.id,
             targets: [],
             effects: [],
@@ -207,8 +207,8 @@ describe("encounters", () => {
         expect(state.enemies.map(({ id }) => id)).toEqual([
             "skunkette1", "skunkette2", "skunk1", "skunk2",
         ]);
-        expect(state.enemies.every(({ intention }) => intention.length > 0)).toBe(true);
-        expect(state.enemies.every(({ intention }) =>
+        expect(state.enemies.every(({ intentions: intention }) => intention.length > 0)).toBe(true);
+        expect(state.enemies.every(({ intentions: intention }) =>
             intention.every(({ targets }) => targets.every(({ target }) =>
                 state.characters.some(({ id }) => id === target),
             )),

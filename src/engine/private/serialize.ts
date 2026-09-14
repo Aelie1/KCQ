@@ -1,16 +1,15 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/helpers";
 import { getBlockedMoveTypes, getModifiers } from "../protected/status";
-import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iTrap } from "../protected/types";
-import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "../public/types";
-import { evaluateIntention, resolveMove } from "./combat";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iStatus, iTrap } from "../protected/types";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Move, Status, Trap, ValidityInfo } from "../public/types";
 import type { iValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     return {
         turn: { ...state.turn },
         characters: state.characters.map(serializeCharacter),
-        enemies: state.enemies.map(enemy => serializeEnemy(state, enemy)),
+        enemies: state.enemies.map(enemy => serializeEnemy(enemy)),
         traps: state.traps.map(serializeTraps)
     };
 }
@@ -28,37 +27,16 @@ function serializeCharacter(character: iCharacter): Character {
     };
 }
 
-function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
+function serializeEnemy(enemy: iEnemy): Enemy {
     return {
         id: enemy.id,
         maxHp: enemy.maxHp,
         currHp: enemy.currHp,
         currDef: enemy.currDef,
-        intention: enemy.intention.map(x => serializeIntention(state, x)),
+        intentions: structuredClone(enemy.preview),
         buffs: enemy.buffs.filter(x => x.active).map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
     };
-}
-
-function serializeIntention(state: iGameState, intention: iIntention): Intention {
-    const preview = {
-        ...intention,
-        move: { ...intention.move }
-    };
-    const iTargets = evaluateIntention(state, preview);
-    const targets: TargetInfo[] = [];
-    let effects = resolveMove(state, preview.move, preview.actor, iTargets);
-    for (const iTarget of iTargets) {
-        const tEffects = effects.filter(x => "target" in x && x.target === iTarget.target);
-        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(tEffects) });
-        effects = effects.filter(x => !("target" in x) || x.target !== iTarget.target);
-    }
-
-    return {
-        move: intention.move.definition.id,
-        targets: targets,
-        effects: serializeEffects(effects)
-    }
 }
 
 export function serializeEffects(effects: iEffect[]): Effect[] {

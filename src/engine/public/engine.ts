@@ -653,7 +653,7 @@ export class GameEngine {
     private executeEnemyPhase(): GameEffects {
         const result = new GameEffects(this.state, this.accRng);
         for (const enemy of [...this.state.enemies]) {
-            for (const intention of enemy.intention) {
+            for (const intention of enemy.intentions) {
                 if (isValidEntity(this.state, enemy)) {
                     result.fromResult(this.executeEnemyAction(intention));
                     const move = intention.move.definition;
@@ -662,7 +662,7 @@ export class GameEngine {
                     }
                 }
             }
-            enemy.intention.length = 0;
+            enemy.intentions.length = 0;
         }
         return result;
     }
@@ -693,10 +693,11 @@ export class GameEngine {
     private updateIntentions() {
         const result = new GameEffects(this.state, this.accRng);
         for (const enemy of this.state.enemies) {
-            enemy.intention.length = 0;
+            enemy.intentions.length = 0;
         }
         for (const enemy of this.state.enemies) {
             result.fromEffects(enemy.definition.ai(this.state, enemy, this.aiRng));
         }
+
     }
 }

@@ -69,7 +69,7 @@ function enemiesByBaseId(state: GameState, baseId: string) {
 }
 
 function queenMoves(engine: GameEngine): string[] {
-    return queenState(engine).intention.map(({ move }) => move);
+    return queenState(engine).intentions.map(({ move }) => move);
 }
 
 function setQueenCooldowns(state: iGameState, collar: number, perfume: number) {
@@ -84,7 +84,7 @@ function activeBuff(id: string, modifiers: ModifierSet = {}): iBuff {
 }
 
 function intentionFor(engine: GameEngine, move: string) {
-    return queenState(engine).intention.find((intention) => intention.move === move);
+    return queenState(engine).intentions.find((intention) => intention.move === move);
 }
 
 function findSeed(build: (seed: number) => GameEngine, predicate: (engine: GameEngine) => boolean): number {
@@ -126,7 +126,7 @@ describe("Queen HP threshold reinforcements", () => {
     it("preserves and executes all six reaction intentions from one enormous hit", () => {
         const devastate = damageMove("devastate", 749);
         const engine = loadQueen({ characters: [makeBehavioralCharacter("hero", [devastate])] });
-        const ordinary = queenState(engine).intention[0];
+        const ordinary = queenState(engine).intentions[0];
 
         const hit = execute(engine, {
             type: "attack", actor: "hero", move: devastate.id, targets: [QUEEN_ID],
@@ -224,7 +224,7 @@ describe("Queen HP threshold reinforcements", () => {
         const reinforcement = enemiesByBaseId(spawnPhase.state, "skunkette")[0];
         expect(reinforcement).toBeDefined();
         expect(moveEvents(spawnPhase.events, reinforcement.id)).toEqual([]);
-        expect(reinforcement.intention).toHaveLength(1);
+        expect(reinforcement.intentions).toHaveLength(1);
 
         const followingPhase = endTurn(engine);
         expect(moveEvents(followingPhase.events, reinforcement.id)).toHaveLength(1);

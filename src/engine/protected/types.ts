@@ -1,5 +1,6 @@
 import {
     Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect, Enemy, EnemyEffect, EntityId, HitBand,
+    Intention,
     StanceId, TargetInfo, Trap, TrapEffect, Turn
 } from "../public/types";
 import { BindingDef, CharacterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "./definitions";
@@ -20,9 +21,10 @@ export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modi
     bindings: iBinding[];
 }
 
-export interface iEnemy extends Omit<Enemy, "buffs" | "intention"> {
+export interface iEnemy extends Omit<Enemy, "buffs" | "intentions"> {
     definition: EnemyDef;
-    intention: iIntention[];
+    intentions: iIntention[];
+    preview: Intention[];
     buffs: iBuff[];
     data: Record<string, number>;
 }

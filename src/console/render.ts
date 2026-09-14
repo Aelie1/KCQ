@@ -166,7 +166,7 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
         const cooldowns = Object.entries(enemy.cooldowns)
             .filter(([, value]) => value > 0)
             .map(([move, value]) => `[${displayName(move)} ${value}]`);
-        for (const intention of enemy.intention) {
+        for (const intention of enemy.intentions) {
             const intentionStr = formatIntention(intention, width);
             if (cooldowns.length > 0) {
                 intentionStr.splice(0, 1, ...wrapLines([
@@ -175,7 +175,7 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
             }
             lines.push(...intentionStr);
         }
-        if (enemy.intention.length === 0) {
+        if (enemy.intentions.length === 0) {
             const intentionStr = ["  Intent: none"];
             if (cooldowns.length > 0) {
                 intentionStr.splice(0, 1, ...wrapLines([

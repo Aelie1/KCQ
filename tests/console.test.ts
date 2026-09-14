@@ -44,7 +44,7 @@ const state: GameState = {
         currDef: 0,
         cooldowns: {},
         buffs: [],
-        intention: [{
+        intentions: [{
             move: "latexSpray",
             targets: [{
                 target: "ko",
@@ -146,7 +146,7 @@ describe("console formatting", () => {
         expect(lines.join("\n")).not.toContain("…");
 
         const rendered = renderState(
-            { ...state, enemies: [{ ...state.enemies[0], intention: [longIntention] }] },
+            { ...state, enemies: [{ ...state.enemies[0], intentions: [longIntention] }] },
             [{ id: "ko", available: true }],
         );
         expect(rendered).toContain("latexLegs +19");

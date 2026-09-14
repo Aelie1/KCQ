@@ -122,7 +122,7 @@ describe("state serialization and combatant loading", () => {
             snapshot.characters[0].bindings[0].status[0].value = 999;
             snapshot.characters[0].modifiers.hitarms = -99;
             snapshot.enemies[0].currHp = 0;
-            const intention = snapshot.enemies[0].intention[0];
+            const intention = snapshot.enemies[0].intentions[0];
             if (intention) {
                 intention.targets.push({
                     target: "intruder",
@@ -176,10 +176,10 @@ describe("state serialization and combatant loading", () => {
         const enemy = makeEnemy(enemyDefinition);
         enemy.buffs.push(enemyBuff, inactiveEnemyBuff);
         enemy.data.previewOnly = 7;
-        enemy.intention = [{
+        enemy.intentions = [{
             actor: enemy,
             move: { definition: enemyMove },
-            rolls: [{ target: null, roll: 25 }],
+            rolls: [{ target: null, roll: 25 }]
         }];
         const internalState: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
@@ -211,7 +211,7 @@ describe("state serialization and combatant loading", () => {
             linkedEntity: undefined,
         });
         expect(serialized.enemies[0].buffs).toHaveLength(1);
-        expect(serialized.enemies[0].intention).toEqual([{
+        expect(serialized.enemies[0].intentions).toEqual([{
             move: enemyMove.id,
             targets: [],
             effects: [],

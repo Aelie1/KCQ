@@ -443,9 +443,9 @@ describe("Skunkette behavior through GameEngine", () => {
             makeBehavioralCharacter("hero"),
         ], [skunkette], 3);
 
-        expect(enemyState(engine, "skunkette1").intention[0]?.move).toBe(POUNCE_ID);
+        expect(enemyState(engine, "skunkette1").intentions[0]?.move).toBe(POUNCE_ID);
         execute(engine, { type: "endTurn" });
-        const nextIntention = enemyState(engine, "skunkette1").intention[0];
+        const nextIntention = enemyState(engine, "skunkette1").intentions[0];
         const bindingEffect = nextIntention?.targets[0].effects.find(
             (effect) => effect.type === "binding",
         );
@@ -474,7 +474,7 @@ describe("Skunkette behavior through GameEngine", () => {
         execute(engine, { type: "endTurn" });
 
         const state = engine.getGameState();
-        const intention = enemyState(engine, "skunkette1").intention[0];
+        const intention = enemyState(engine, "skunkette1").intentions[0];
         const bindingEffect = intention?.targets[0]?.effects.find(
             (effect) => effect.type === "binding",
         );
@@ -538,7 +538,7 @@ describe("Skunkette behavior through GameEngine", () => {
         engine.loadEncounter(encounter.id);
         execute(engine, { type: "endTurn" });
 
-        const intention = enemyState(engine, "skunkette1").intention[0];
+        const intention = enemyState(engine, "skunkette1").intentions[0];
         const bindingEffects = intention?.targets.flatMap(({ effects }) =>
             effects.filter((effect) => effect.type === "binding"));
         expect(intention?.move).toBe("latexSpray");
@@ -583,7 +583,7 @@ describe("Skunkette behavior through GameEngine", () => {
         execute(engine, { type: "attack", actor: "first", move: prepare.id, targets: [] });
         engine.loadEncounter(encounter.id);
 
-        const preview = enemyState(engine, "skunkette1").intention[0];
+        const preview = enemyState(engine, "skunkette1").intentions[0];
         expect(preview?.move).toBe(LATEX_MIST_ID);
         expect(preview?.targets.map(({ target, band: result }) => ({ target, result }))).toEqual([
             { target: "first", result: "miss" },
@@ -637,7 +637,7 @@ describe("Skunkette behavior through GameEngine", () => {
         });
         engine.loadEncounter(encounter.id);
 
-        expect(enemyState(engine, "skunkette1").intention).toMatchObject([{
+        expect(enemyState(engine, "skunkette1").intentions).toMatchObject([{
             move: LATEX_MIST_ID,
             targets: [{ target: "hero", band: "crit" }],
         }]);
