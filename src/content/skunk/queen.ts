@@ -8,7 +8,7 @@ import { rainmaker } from "./rainmaker";
 import { skunk } from "./skunk";
 import { skunkette } from "./skunkette";
 
-const QUEEN_HP = 300;
+const QUEEN_HP = 750;
 const QUEEN_DEF = 0;
 
 const GUN_DAMAGE = 35;
@@ -17,6 +17,14 @@ const COLLAR_DAMAGE = 50;
 
 const PERFUME_DURATION = 4;
 const PERFUME_HEAL_RATIO = 0.10;
+
+const WAVE_1_HP_RATIO = 0.8;
+const WAVE_2_HP_RATIO = 0.6;
+const WAVE_3_HP_RATIO = 0.4;
+const WAVE_4_HP_RATIO = 0.2;
+
+const RAINMAKER_1_HP_RATIO = 0.66;
+const RAINMAKER_2_HP_RATIO = 0.33;
 
 export const queen: EnemyDef = {
     id: "queen",
@@ -29,27 +37,29 @@ export const queen: EnemyDef = {
 
         //1) If no one has a collar and it is off CD, use skunk collar on the person who dealt the most damage to her
         {
-            let damage = 0;
-            let target = undefined;
-            if ((actor.cooldowns['skunkCollar'] ?? 0) === 0) {
-                const targets = getValidTargets(state.characters);
-                for (const character of targets) {
-                    if (actor.data[character.id] ?? 0 > damage) {
-                        damage = actor.data[character.id];
-                        target = character;
+            const targets = getValidTargets(state.characters);
+            if (!targets.some(x => x.bindings.some(x => x.id === latexCollar.id))) {
+                let damage = 0;
+                let target = undefined;
+                if ((actor.cooldowns['skunkCollar'] ?? 0) === 0) {
+                    for (const character of targets) {
+                        if ((actor.data[character.id] ?? 0) > damage) {
+                            damage = actor.data[character.id];
+                            target = character;
+                        }
                     }
-                }
-                if (target === undefined) {
-                    target = pickTarget(targets, rng);
-                }
-                if (target) {
-                    effects.push({
-                        type: "move",
-                        actor: actor,
-                        move: { definition: skunkCollar },
-                        targets: [target]
-                    });
-                    return effects;
+                    if (target === undefined) {
+                        target = pickTarget(targets, rng);
+                    }
+                    if (target) {
+                        effects.push({
+                            type: "move",
+                            actor: actor,
+                            move: { definition: skunkCollar },
+                            targets: [target]
+                        });
+                        return effects;
+                    }
                 }
             }
         }
@@ -76,7 +86,7 @@ export const queen: EnemyDef = {
                     type: "move",
                     actor: actor,
                     move: { definition: skunkGun, binding: binding },
-                    targets: [state.characters[0]]
+                    targets: [target]
                 });
                 return effects;
             }
@@ -92,6 +102,64 @@ export const queen: EnemyDef = {
             });
             return effects;
         }
+    },
+    onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
+        const effects: iEffect[] = [];
+        if (isCharacter(actor)) {
+            target.data[actor.id] = (target.data[actor.id] ?? 0) + damage;
+        }
+        const minHpRatio = (target.data["minHp"] ?? target.maxHp) / target.maxHp;
+        const currHpRatio = target.currHp / target.maxHp;
+        if (currHpRatio < WAVE_1_HP_RATIO && minHpRatio > WAVE_1_HP_RATIO) {
+            effects.push({
+                type: "move",
+                actor: target,
+                move: { definition: callReinforcements, data: { "wave": 1 } },
+                targets: []
+            });
+        }
+        if (currHpRatio < WAVE_2_HP_RATIO && minHpRatio > WAVE_2_HP_RATIO) {
+            effects.push({
+                type: "move",
+                actor: target,
+                move: { definition: callReinforcements, data: { "wave": 2 } },
+                targets: []
+            });
+        }
+        if (currHpRatio < WAVE_3_HP_RATIO && minHpRatio > WAVE_3_HP_RATIO) {
+            effects.push({
+                type: "move",
+                actor: target,
+                move: { definition: callReinforcements, data: { "wave": 3 } },
+                targets: []
+            });
+        }
+        if (currHpRatio < WAVE_4_HP_RATIO && minHpRatio > WAVE_4_HP_RATIO) {
+            effects.push({
+                type: "move",
+                actor: target,
+                move: { definition: callReinforcements, data: { "wave": 4 } },
+                targets: []
+            });
+        }
+        if (currHpRatio < RAINMAKER_1_HP_RATIO && minHpRatio > RAINMAKER_1_HP_RATIO) {
+            effects.push({
+                type: "move",
+                actor: target,
+                move: { definition: latexRainmaker, data: { "wave": 1 } },
+                targets: []
+            });
+        }
+        if (currHpRatio < RAINMAKER_2_HP_RATIO && minHpRatio > RAINMAKER_2_HP_RATIO) {
+            effects.push({
+                type: "move",
+                actor: target,
+                move: { definition: latexRainmaker, data: { "wave": 2 } },
+                targets: []
+            });
+        }
+        target.data["minHp"] = Math.min((target.data["minhp"] ?? target.maxHp), target.currHp);
+        return effects;
     }
 }
 
@@ -219,7 +287,7 @@ const latexRainmaker: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 
-        if (!move.data || !move.data["rainmaker"] || move.data["rainmaker"] === 1) {
+        if (!move.data || !move.data["wave"] || move.data["wave"] === 1) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
@@ -227,7 +295,7 @@ const latexRainmaker: MoveDef = {
                 hpRatio: 0.5
             });
         }
-        else if (move.data["rainmaker"] === 2) {
+        else if (move.data["wave"] === 2) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
@@ -250,6 +318,7 @@ const skunkPerfume: MoveDef = {
         hit: 40,
     },
     check: "willpower",
+    cooldown: 5,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
         if (move.roll === undefined) {
