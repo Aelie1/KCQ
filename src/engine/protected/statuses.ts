@@ -108,10 +108,3 @@ export const stunned: StatusDef = {
         { blocksAttack: true, blocksEscape: true, blocksMoving: true }
     ]
 };
-export const standing: StatusDef = {
-    id: "standing",
-    levels: [
-        {},
-        { modifiers: { defense: -2 } }
-    ]
-};

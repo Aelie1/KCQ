@@ -91,13 +91,10 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 amount: effect.amount
             }
         case "enemy":
-            if (effect.operation === "spawn") {
-                return {
-                    type: effect.type,
-                    target: effect.definition.id
-                }
+            return {
+                type: effect.type,
+                target: effect.definition.id
             }
-            return;
         case "trap":
             return {
                 type: effect.type,

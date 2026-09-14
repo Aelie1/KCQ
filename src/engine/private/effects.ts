@@ -1,5 +1,6 @@
 import { BindingDef, EnemyDef, MoveDef } from "../protected/definitions";
-import { findBinding, findBuff, findEntity, getValidTargets, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
+import { getValidTargets } from "../protected/enemies";
+import { findBinding, findBuff, findEntity, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { Random } from "../protected/random";
 import { canMove } from "../protected/status";
 import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap } from "../protected/types";

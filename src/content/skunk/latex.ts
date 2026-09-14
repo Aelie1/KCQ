@@ -67,7 +67,7 @@ export const latexBindings: BindingDef = {
                 type: "binding",
                 target: target,
                 binding: collar.definition,
-                amount: binding.value * -1
+                amount: collar.value * -1
             });
         }
 

@@ -1,5 +1,6 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
-import { findBinding, findTrap, getValidTargets, isCharacter, isEnemy, pickBinding, pickTarget } from "../../engine/protected/helpers";
+import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
+import { findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
@@ -90,7 +91,7 @@ export const skunk: EnemyDef = {
             if (target && roll < total) {
                 const bindings = target.bindings.filter(x => x.value < x.data["peak"]);
                 if (bindings.length > 0) {
-                    const index = Math.floor(rng.random() * bindings.length);
+                    const index = rng.int(0, bindings.length);
                     effects.push({
                         type: "move",
                         actor: actor,

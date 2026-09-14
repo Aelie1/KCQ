@@ -1,7 +1,6 @@
 import { ActionFailure, ActionType, ModifierId, ModifierSet, MoveType } from "../public/types";
 import { StatusDef } from "./definitions";
 import { getBindingLevel, isCharacter } from "./helpers";
-import { standing } from "./statuses";
 import { iCharacter, iEntity, iStatus } from "./types";
 
 /*******************************************************
@@ -243,4 +242,10 @@ export function isIncapacitated(actor: iCharacter): boolean {
     return false;
 }
 
-
+const standing: StatusDef = {
+    id: "standing",
+    levels: [
+        {},
+        { modifiers: { defense: -2 } }
+    ]
+};

@@ -6,7 +6,7 @@ export class Random {
     }
 
 
-    nextU32(): number {
+    private nextU32(): number {
         let x = this.state >>> 0;
         x ^= (x << 13) >>> 0;
         x ^= x >>> 17;
@@ -15,7 +15,7 @@ export class Random {
         return this.state;
     }
 
-    random(): number {
+    private random(): number {
         return this.nextU32() / 0x100000000;
     }
 
@@ -25,10 +25,6 @@ export class Random {
 
     int(min: number, max: number): number {
         return min + Math.floor(this.random() * (max - min + 1));
-    }
-
-    getState(): number {
-        return this.state;
     }
 
     setState(state: number): void {

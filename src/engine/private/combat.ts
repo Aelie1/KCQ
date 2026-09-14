@@ -6,7 +6,7 @@ import { AccuracyProfile, AccuracyResult, HitBand, type EntitySide } from "../pu
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
-export function getIEntitySide(entity: iEntity): EntitySide {
+function getIEntitySide(entity: iEntity): EntitySide {
     return (isCharacter(entity)) ? "player" : "enemy";
 }
 

@@ -1,5 +1,6 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
-import { findBuff, findCharacter, findEnemy, getValidTargets, isCharacter, pickBinding, pickTarget } from "../../engine/protected/helpers";
+import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
+import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { isIncapacitated, s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";

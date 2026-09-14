@@ -1,8 +1,8 @@
 import {
     Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect, Enemy, EnemyEffect, EntityId, HitBand,
-    Passive, StanceId, TargetInfo, Trap, TrapEffect, Turn
+    StanceId, TargetInfo, Trap, TrapEffect, Turn
 } from "../public/types";
-import { BindingDef, CharacterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, TrapDef } from "./definitions";
+import { BindingDef, CharacterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "./definitions";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -19,7 +19,6 @@ export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modi
     buffs: iBuff[];
     bindings: iBinding[];
 }
-
 
 export interface iEnemy extends Omit<Enemy, "buffs" | "intention"> {
     definition: EnemyDef;
@@ -54,10 +53,6 @@ export interface iMove {
 export interface iTargetInfo extends Omit<TargetInfo, "target" | "effects"> {
     target: iEntity;
     effectiveness: number;
-}
-
-export interface iPassive extends Passive {
-    definition: PassiveDef;
 }
 
 export interface iBinding extends Omit<Binding, "level" | "status"> {

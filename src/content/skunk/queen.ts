@@ -1,5 +1,6 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
-import { isCharacter, pickBinding } from "../../engine/protected/helpers";
+import { pickBinding } from "../../engine/protected/enemies";
+import { isCharacter } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
