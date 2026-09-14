@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { latexArms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/protected/constants";
 import { GameEngine } from "../src/engine/public/engine";
-import type { BindingDef } from "../src/engine/protected/itypes";
+import type { BindingDef } from "../src/engine/protected/definitions";
 import {
     bound,
     helpless,

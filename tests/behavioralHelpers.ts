@@ -1,12 +1,10 @@
 import { expect } from "vitest";
 import { GameEngine } from "../src/engine/public/engine";
-import type {
-    BindingDef,
-    CharacterDef,
-    EncounterDef,
-    EnemyDef,
-    MoveDef,
-} from "../src/engine/protected/itypes";
+import type { EncounterDef } from "../src/engine/protected/definitions";
+import type { BindingDef } from "../src/engine/protected/definitions";
+import type { MoveDef } from "../src/engine/protected/definitions";
+import type { EnemyDef } from "../src/engine/protected/definitions";
+import type { CharacterDef } from "../src/engine/protected/definitions";
 import type {
     AccuracyProfile,
     ActionSuccess,

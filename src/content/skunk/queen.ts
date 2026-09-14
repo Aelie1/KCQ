@@ -1,7 +1,8 @@
+import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { pickBinding } from "../../engine/protected/enemies";
 import { isCharacter } from "../../engine/protected/helpers";
-import { EnemyDef, iGameState, iEnemy, iEffect, iEntity, iMove, iTargetInfo, MoveDef } from "../../engine/protected/itypes";
 import { Random } from "../../engine/protected/random";
+import { iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 
 const QUEEN_HP = 300;

@@ -5,11 +5,11 @@ import { GameEngine } from "../src/engine/public/engine";
 import type {
     iCharacter,
     iEnemy,
-    EncounterDef,
-    MoveDef,
-    StatusDef,
     iTargetInfo,
-} from "../src/engine/protected/itypes";
+} from "../src/engine/protected/types";
+import type { EncounterDef } from "../src/engine/protected/definitions";
+import type { StatusDef } from "../src/engine/protected/definitions";
+import type { MoveDef } from "../src/engine/protected/definitions";
 import { Random } from "../src/engine/protected/random";
 import type { AccuracyProfile, MoveEvent } from "../src/engine/public/types";
 import {

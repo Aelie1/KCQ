@@ -1,8 +1,8 @@
+import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { pickBinding, pickTarget, validTargets } from "../../engine/protected/enemies";
-import { findBinding, findTrap } from "../../engine/protected/find";
-import { isCharacter, isEnemy } from "../../engine/protected/helpers";
-import { EnemyDef, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, MoveDef } from "../../engine/protected/itypes";
+import { findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
+import { iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 

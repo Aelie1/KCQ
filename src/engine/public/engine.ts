@@ -1,13 +1,14 @@
-import { getMoves, isValidEntity } from "../protected/helpers";
-import { evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers } from "../private/combat";
+import { evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, 
+    tickBindings, tickBuffs, tickCooldowns, tickPlayers } from "../private/combat";
 import { GameEffects } from "../private/effects";
 import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
+import { iValidityInfo } from "../private/types";
 import { thresholds, TRAP_MODIFIER } from "../protected/constants";
-import { evaluateIntention } from "../protected/enemies";
-import { findBinding, findCharacter, findEntity, findMove } from "../protected/find";
-import { iEffect, iValidityInfo, type CharacterDef, type EncounterDef, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/itypes";
+import { type CharacterDef, type EncounterDef } from "../protected/definitions";
+import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity } from "../protected/helpers";
 import { mixSeed, Random } from "../protected/random";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, isIncapacitated, isSkipped } from "../protected/status";
+import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import type {
     AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, Encounter, EncounterId, EntityId,
     EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo

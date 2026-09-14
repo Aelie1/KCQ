@@ -1,11 +1,11 @@
 import { thresholds, TRAP_MAX } from "../protected/constants";
+import { BindingDef, EnemyDef, MoveDef } from "../protected/definitions";
 import { validTargets } from "../protected/enemies";
-import { findBinding, findBuff, findEntity } from "../protected/find";
-import { isEnemy, isValidEntity } from "../protected/helpers";
-import { BindingDef, EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap, MoveDef } from "../protected/itypes";
+import { findBinding, findBuff, findEntity, isEnemy, isValidEntity } from "../protected/helpers";
 import { Random } from "../protected/random";
 import { canMove } from "../protected/status";
-import { BondageEvent, DamageEvent, EnemyEvent, EntityId, GameEvent, StanceId } from "../public/types";
+import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap } from "../protected/types";
+import { BondageEvent, EntityId, GameEvent, StanceId } from "../public/types";
 
 export class GameEffects {
     private events: GameEvent[];

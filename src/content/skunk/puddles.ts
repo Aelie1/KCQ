@@ -1,4 +1,6 @@
-import { BindingDef, iCharacter, iEffect, iTrap, TrapDef } from "../../engine/protected/itypes";
+import { iCharacter, iEffect, iTrap } from "../../engine/protected/types";
+import { TrapDef } from "../../engine/protected/definitions";
+import { BindingDef } from "../../engine/protected/definitions";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const TRAP_SMALL = 10;

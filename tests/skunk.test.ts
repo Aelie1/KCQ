@@ -8,7 +8,9 @@ import {
 } from "../src/content/skunk/latex";
 import { trapPuddle } from "../src/content/skunk/puddles";
 import { GameEngine } from "../src/engine/public/engine";
-import type { BindingDef, EncounterDef, iGameState } from "../src/engine/protected/itypes";
+import type { iGameState } from "../src/engine/protected/types";
+import type { EncounterDef } from "../src/engine/protected/definitions";
+import type { BindingDef } from "../src/engine/protected/definitions";
 import { makeBindingDef, makeCharacterDef } from "./helpers";
 
 const BODY_LATEX = [latexHead, latexArms, latexTorso, latexLegs];

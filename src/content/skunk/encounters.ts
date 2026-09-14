@@ -1,4 +1,4 @@
-import { EncounterDef } from "../../engine/protected/itypes";
+import { EncounterDef } from "../../engine/protected/definitions";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 import { queen } from "./queen";

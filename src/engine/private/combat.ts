@@ -1,6 +1,8 @@
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "../protected/constants";
 import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "../protected/helpers";
-import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iValidityInfo, MoveDef } from "../protected/itypes";
+import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
+import { MoveDef } from "../protected/definitions";
+import { iValidityInfo } from "./types";
 import { canMove, getModifier, isIncapacitated } from "../protected/status";
 import { AccuracyProfile, AccuracyResult, HitBand } from "../public/types";
 
@@ -341,3 +343,35 @@ function normalizeEffect(effect: iEffect): iEffect {
             return effect;
     }
 }
+
+export function evaluateIntention(state: iGameState, intention: iIntention): iTargetInfo[] {
+    const targets: iTargetInfo[] = [];
+    for (const roll of intention.rolls) {
+        const info = isValidTarget(state, intention.actor, roll.target, intention.move.definition);
+        if (info.valid) {
+            if (info.target) {
+                if (info.accuracy) {
+                    const targetInfo = evaluateResult(intention.actor, info.target, info.accuracy, roll.roll);
+                    targets.push(targetInfo);
+                } else {
+                    targets.push({
+                        target: info.target,
+                        effectiveness: 0,
+                        band: "none"
+                    });
+                }
+            } else {
+                if (info.accuracy) {
+                    const result = evaluateProfile(intention.actor, info.accuracy, roll.roll, 0);
+                    intention.move.effectiveness = result.effectiveness;
+                    intention.move.band = result.band;
+                } else {
+                    intention.move.effectiveness = 0;
+                    intention.move.band = "none";
+                }
+            }
+        }
+    }
+    return targets;
+}
+

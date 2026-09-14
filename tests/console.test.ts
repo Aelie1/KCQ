@@ -9,7 +9,7 @@ import { latexArms } from "../src/content/skunk/latex";
 import { thresholds } from "../src/engine/protected/constants";
 import { GameEngine } from "../src/engine/public/engine";
 import { helpless } from "../src/engine/protected/status";
-import type { EncounterDef } from "../src/engine/protected/itypes";
+import type { EncounterDef } from "../src/engine/protected/definitions";
 import type { GameEvent, GameState, Intention } from "../src/engine/public/types";
 import { multiEnemyEncounter, oneEnemyEncounter, waitEnemy } from "./testContent";
 import {

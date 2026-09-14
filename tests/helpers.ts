@@ -1,16 +1,16 @@
 import { expect } from "vitest";
 import { GameEngine } from "../src/engine/public/engine";
 import type {
-    BindingDef,
-    CharacterDef,
-    EnemyDef,
     iBinding,
     iCharacter,
     iEnemy,
     iStatus,
-    MoveDef,
-    EncounterDef,
-} from "../src/engine/protected/itypes";
+} from "../src/engine/protected/types";
+import type { EncounterDef } from "../src/engine/protected/definitions";
+import type { BindingDef } from "../src/engine/protected/definitions";
+import type { MoveDef } from "../src/engine/protected/definitions";
+import type { EnemyDef } from "../src/engine/protected/definitions";
+import type { CharacterDef } from "../src/engine/protected/definitions";
 import type {
     ActionFailureReason,
     BindingLevel,

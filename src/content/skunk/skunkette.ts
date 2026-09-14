@@ -1,9 +1,9 @@
+import { EnemyDef, MoveDef, s } from "../../engine/protected/definitions";
 import { pickBinding, pickTarget, validTargets } from "../../engine/protected/enemies";
-import { findBuff, findCharacter, findEnemy } from "../../engine/protected/find";
-import { isCharacter } from "../../engine/protected/helpers";
-import { EnemyDef, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, MoveDef, s } from "../../engine/protected/itypes";
+import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { helpless, immobilized, isIncapacitated, stunned } from "../../engine/protected/status";
+import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 

@@ -6,7 +6,8 @@ import {
     latexTorso,
 } from "../src/content/skunk/latex";
 import { GameEngine } from "../src/engine/public/engine";
-import type { BindingDef, iEffect } from "../src/engine/protected/itypes";
+import type { iEffect } from "../src/engine/protected/types";
+import type { BindingDef } from "../src/engine/protected/definitions";
 import {
     bindingState,
     characterState,

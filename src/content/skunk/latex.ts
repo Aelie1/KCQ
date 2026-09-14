@@ -1,7 +1,8 @@
 import { SPREAD_MODIFIER, thresholds } from "../../engine/protected/constants";
-import { findBinding, findBuff } from "../../engine/protected/find";
-import { BindingDef, iBinding, iBuff, iCharacter, iEffect, iGameState, s } from "../../engine/protected/itypes";
+import { BindingDef, s } from "../../engine/protected/definitions";
+import { findBinding, findBuff } from "../../engine/protected/helpers";
 import { bound, breathless, gagged, getModifier, hobbled, incapacitated, isIncapacitated, submissive, vibrating } from "../../engine/protected/status";
+import { iBinding, iBuff, iCharacter, iEffect, iGameState } from "../../engine/protected/types";
 import { skunkette } from "./skunkette";
 
 const COLLAR_BINDING = 10;
