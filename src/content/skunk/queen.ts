@@ -67,10 +67,14 @@ export const queen: EnemyDef = {
         //2) Use Skunk Pefume if off CD
         {
             if ((actor.cooldowns['skunkPerfume'] ?? 0) === 0) {
+                const roll = rng.random();
+                const damagedEnemies = state.enemies.filter(x => ((x.definition.id === "skunkette" || x.definition.id === "skunk") && x.currHp < x.maxHp));
+                const type = damagedEnemies.length > 0 ? Math.floor(roll * 3) : Math.floor(roll * 2);
+
                 effects.push({
                     type: "move",
                     actor: actor,
-                    move: { definition: skunkPerfume },
+                    move: { definition: skunkPerfume, data: { "type": type } },
                     targets: []
                 });
                 return effects;
@@ -240,7 +244,9 @@ const callReinforcements: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 
-        if (!move.data || !move.data["wave"] || move.data["wave"] === 1) {
+        const wave = move.data?.["wave"] ?? 1;
+
+        if (wave === 1) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
@@ -248,21 +254,21 @@ const callReinforcements: MoveDef = {
                 hpRatio: 0.5
             });
         }
-        else if (move.data["wave"] === 2) {
+        else if (wave === 2) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
                 definition: skunkette,
             });
         }
-        else if (move.data["wave"] === 3) {
+        else if (wave === 3) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
                 definition: skunk,
             });
         }
-        else if (move.data["wave"] === 4) {
+        else if (wave === 4) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
@@ -287,7 +293,9 @@ const latexRainmaker: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 
-        if (!move.data || !move.data["wave"] || move.data["wave"] === 1) {
+        const wave = move.data?.["wave"] ?? 1;
+
+        if (wave === 1) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
@@ -295,7 +303,7 @@ const latexRainmaker: MoveDef = {
                 hpRatio: 0.5
             });
         }
-        else if (move.data["wave"] === 2) {
+        else if (wave === 2) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
@@ -324,8 +332,7 @@ const skunkPerfume: MoveDef = {
         if (move.roll === undefined) {
             return effects;
         }
-        const damagedEnemies = state.enemies.filter(x => ((x.definition.id === "skunkette" || x.definition.id === "skunk") && x.currHp < x.maxHp));
-        const type = damagedEnemies.length > 0 ? Math.floor(move.roll * 3) : Math.floor(move.roll * 2);
+        const type = move.data?.["type"] ?? 0;
 
         switch (type) {
             case 0:  //Defense perfume
@@ -362,6 +369,7 @@ const skunkPerfume: MoveDef = {
                 break;
 
             case 2:  //Heal perfume
+                const damagedEnemies = state.enemies.filter(x => ((x.definition.id === "skunkette" || x.definition.id === "skunk") && x.currHp < x.maxHp));
                 for (const enemy of damagedEnemies) {
                     effects.push({
                         type: "damage",

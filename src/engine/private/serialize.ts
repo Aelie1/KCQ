@@ -7,10 +7,7 @@ import { evaluateIntention, resolveMove } from "./combat";
 import type { iValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
-    const { nextId, ..._state } = state;
-
     return {
-        ..._state,
         turn: { ...state.turn },
         characters: state.characters.map(serializeCharacter),
         enemies: state.enemies.map(enemy => serializeEnemy(state, enemy)),
@@ -19,27 +16,27 @@ export function serializeGameState(state: iGameState): GameState {
 }
 
 function serializeCharacter(character: iCharacter): Character {
-    const { definition, ..._character } = character;
-
     return {
-        ..._character,
-        id: definition.id,
-        buffs: character.buffs.map(serializeBuff),
+        id: character.id,
+        acted: character.acted,
+        standing: character.standing,
+        bonusEscapes: character.bonusEscapes,
         bindings: character.bindings.map(serializeBinding),
+        buffs: character.buffs.filter(x => x.active).map(serializeBuff),
         modifiers: getModifiers(character),
-        blockedMoveTypes: getBlockedMoveTypes(character)
+        blockedMoveTypes: getBlockedMoveTypes(character),
     };
-
 }
 
 function serializeEnemy(state: iGameState, enemy: iEnemy): Enemy {
-    const { definition, ..._enemy } = enemy;
     return {
-        ..._enemy,
-        intention: enemy.intention.map(intention => serializeIntention(state, intention)),
-        buffs: enemy.buffs.map(serializeBuff),
-        cooldowns: { ..._enemy.cooldowns },
-
+        id: enemy.id,
+        maxHp: enemy.maxHp,
+        currHp: enemy.currHp,
+        currDef: enemy.currDef,
+        intention: enemy.intention.map(x => serializeIntention(state, x)),
+        buffs: enemy.buffs.filter(x => x.active).map(serializeBuff),
+        cooldowns: { ...enemy.cooldowns },
     };
 }
 
@@ -110,38 +107,36 @@ function serializeEffect(effect: iEffect): Effect | undefined {
 }
 
 function serializeBuff(buff: iBuff): Buff {
-    const { addedMoves, ..._buff } = buff;
     return {
-        ..._buff,
+        id: buff.id,
         statuses: buff.statuses?.map(serializeStatus),
-        modifiers: { ..._buff.modifiers }
+        modifiers: { ...buff.modifiers }
     };
 }
 
 function serializeBinding(binding: iBinding): Binding {
-    const { definition, ..._binding } = binding;
     const level = getBindingLevel(binding);
-    const status = definition.status;
+    const status = binding.definition.status;
     return {
-        ..._binding,
+        id: binding.id,
         data: { ...binding.data },
+        value: binding.value,
         level: level,
         status: status ? (status[level] ?? []).map(serializeStatus) : []
     };
 }
 
 function serializeTraps(trap: iTrap): Trap {
-    const { definition, ..._trap } = trap;
     return {
-        ..._trap
+        id: trap.id,
+        amount: trap.amount
     }
 }
 
 function serializeStatus(status: iStatus): Status {
-    const { definition, ..._status } = status;
     return {
-        ..._status,
         id: status.definition.id,
+        value: status.value
     };
 }
 
@@ -155,9 +150,20 @@ export function serializeMove(move: MoveDef): Move {
 }
 
 export function serializeValidity(info: iValidityInfo): ValidityInfo {
+    const target = info.target === null ? null : info.target.id;
+
+    if (!info.valid) {
+        return {
+            valid: false,
+            target,
+            reason: info.reason
+        };
+    }
+
     return {
-        ...info,
-        target: info.target === null ? null : info.target.id,
+        valid: true,
+        target,
+        accuracy: info.accuracy
     };
 }
 

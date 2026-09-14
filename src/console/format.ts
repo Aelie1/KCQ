@@ -51,7 +51,6 @@ export function formatEffects(effects: Effect[], includeTarget = false): string[
 export function formatBuff(buff: Buff): string {
     const details: string[] = [];
 
-    if (!buff.active) details.push("pending");
     if (buff.duration !== undefined) {
         details.push(`${buff.duration} round${buff.duration === 1 ? "" : "s"}`);
     }

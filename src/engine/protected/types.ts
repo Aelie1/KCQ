@@ -39,6 +39,7 @@ export interface iIntentionRoll {
 }
 
 export interface iBuff extends Omit<Buff, "statuses"> {
+    active: boolean;
     statuses?: iStatus[];
     addedMoves?: MoveDef[];
 }

@@ -69,7 +69,6 @@ export interface TargetInfo {
 export interface Buff {
     id: BuffId;
     duration?: number;
-    active: boolean;
     statuses?: Status[];
     modifiers?: ModifierSet;
     linkedEntity?: EntityId;
