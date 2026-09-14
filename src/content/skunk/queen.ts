@@ -23,8 +23,8 @@ const WAVE_2_HP_RATIO = 0.6;
 const WAVE_3_HP_RATIO = 0.4;
 const WAVE_4_HP_RATIO = 0.2;
 
-const RAINMAKER_1_HP_RATIO = 0.66;
-const RAINMAKER_2_HP_RATIO = 0.33;
+const RAINMAKER_1_HP_RATIO = 2 / 3;
+const RAINMAKER_2_HP_RATIO = 1 / 3;
 
 export const queen: EnemyDef = {
     id: "queen",
