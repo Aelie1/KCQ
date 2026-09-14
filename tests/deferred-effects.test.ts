@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { GameEngine } from "../src/engine/public/engine";
+import type { BindingDef, EncounterDef } from "../src/engine/protected/definitions";
 import { isCharacter } from "../src/engine/protected/helpers";
-import type { EncounterDef } from "../src/engine/protected/definitions";
-import type { BindingDef } from "../src/engine/protected/definitions";
+import { GameEngine } from "../src/engine/public/engine";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -29,7 +28,7 @@ describe("deferred binding onResolve effects", () => {
         const first = makeBindingDef("first");
         const second = makeBindingDef("second");
         const move = makeMove("defer", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             accuracy: undefined,
             resolve: (state) => [{
@@ -63,7 +62,7 @@ describe("deferred binding onResolve effects", () => {
         const placeholder = makeBindingDef("placeholder");
         const replacement = makeBindingDef("replacement");
         const move = makeMove("replace", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             accuracy: undefined,
             resolve: (state) => [{
@@ -103,7 +102,7 @@ describe("deferred binding onResolve effects", () => {
         };
         const placeholder = makeBindingDef("placeholder");
         const move = makeMove("generate", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             accuracy: undefined,
             resolve: (state) => [{
@@ -133,7 +132,7 @@ describe("deferred binding onResolve effects", () => {
     it("serializes an unresolved deferred amount as unknown without leaking callbacks", () => {
         const placeholder = makeBindingDef("previewPlaceholder");
         const deferred = makeMove("deferredPreview", "none", {
-            side: "player",
+            targetSide: "player",
             targets: 1,
             resolve: (_state, _actor, _move, targets) => targets.flatMap(({ target }) =>
                 isCharacter(target) ? [{

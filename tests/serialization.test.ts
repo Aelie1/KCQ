@@ -81,7 +81,7 @@ describe("state serialization and combatant loading", () => {
             easy: [{ definition: status, value: 1 }],
         });
         const prepare = makeMove("prepare", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => [{
                 type: "binding",

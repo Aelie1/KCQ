@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { StatusDef } from "../src/engine/protected/definitions";
-import type { MoveDef } from "../src/engine/protected/definitions";
+import type { MoveDef, StatusDef } from "../src/engine/protected/definitions";
 import {
     buffState,
     characterState,
@@ -31,7 +30,7 @@ function addBuffMove(
 ): MoveDef {
     return makeBehavioralMove(id, "mouth", {
         targets: 0,
-        side: "none",
+        targetSide: "none",
         alwaysAvailable: true,
         freeOnHit: true,
         resolve: (state) => [{
@@ -77,7 +76,7 @@ describe("buff behavior through GameEngine", () => {
     it("keeps an authored pending reaction inactive until the next player phase", () => {
         const strike = makeBehavioralMove("provoke", "arms", {
             targets: 1,
-            side: "enemy",
+            targetSide: "enemy",
             resolve: (state, actor) => [{
                 type: "damage",
                 source: actor,
@@ -185,7 +184,7 @@ describe("buff behavior through GameEngine", () => {
     it("removes every expiring buff once and in public entity order", () => {
         const addAll = makeBehavioralMove("add-all", "mouth", {
             targets: 0,
-            side: "none",
+            targetSide: "none",
             resolve: (state) => [
                 {
                     type: "buff",
@@ -225,7 +224,7 @@ describe("buff behavior through GameEngine", () => {
     it("removes a buff through an authored action and preserves linkedEntity publicly", () => {
         const add = makeBehavioralMove("link", "mouth", {
             targets: 0,
-            side: "none",
+            targetSide: "none",
             freeOnHit: true,
             resolve: (state) => [{
                 type: "buff",
@@ -236,7 +235,7 @@ describe("buff behavior through GameEngine", () => {
         });
         const remove = makeBehavioralMove("unlink", "mouth", {
             targets: 0,
-            side: "none",
+            targetSide: "none",
             resolve: (state, actor) => {
                 const buff = actor.buffs.find(({ id }) => id === "linked");
                 return buff ? [{
@@ -295,7 +294,7 @@ describe("buff status integration through GameEngine", () => {
             accuracy: { miss: 20, hit: 80 },
         });
         const addPending = makeBehavioralMove("add-pending", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => [{
                 type: "buff",

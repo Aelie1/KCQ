@@ -5,9 +5,9 @@ import {
     latexLegs,
     latexTorso,
 } from "../src/content/skunk/latex";
-import { GameEngine } from "../src/engine/public/engine";
-import type { iEffect } from "../src/engine/protected/types";
 import type { BindingDef } from "../src/engine/protected/definitions";
+import type { iEffect } from "../src/engine/protected/types";
+import { GameEngine } from "../src/engine/public/engine";
 import {
     bindingState,
     characterState,
@@ -28,7 +28,7 @@ function setupLatexScenario(
     spreadModifiers: Record<string, number> = {},
 ): GameEngine {
     const prepare = makeBehavioralMove("prepare-latex", "none", {
-        side: "none",
+        targetSide: "none",
         targets: 0,
         resolve: (state) => {
             const effects: iEffect[] = [];

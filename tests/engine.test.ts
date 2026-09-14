@@ -99,7 +99,7 @@ describe("turn phases and enemy intentions", () => {
     it("cancels a committed enemy intention when an active status blocks attacking", () => {
         const threatened = makeBindingDef("threatened");
         const threat = makeMove("threat", "none", {
-            side: "player",
+            targetSide: "player",
             resolve: (state) => [{
                 type: "binding",
                 target: state.characters[0],
@@ -108,7 +108,7 @@ describe("turn phases and enemy intentions", () => {
             }],
         });
         const stunEnemy = makeMove("stun-enemy", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => [{
                 type: "buff",
@@ -144,7 +144,7 @@ describe("turn phases and enemy intentions", () => {
 
     it("drops a committed target that is no longer in state without adding a replacement", () => {
         const threat = makeMove("threat", "none", {
-            side: "enemy",
+            targetSide: "enemy",
         });
         const watcher = makeEnemyDef("watcher", [threat], (state, actor) => [{
             type: "move",
@@ -202,7 +202,7 @@ describe("turn phases and enemy intentions", () => {
 describe("enemy intention previews", () => {
     function setupPreviewEngine(seed = 8224) {
         const enemyMove = makeMove("threat", "none", {
-            side: "player",
+            targetSide: "player",
             accuracy: { miss: 20, graze: 20, hit: 50, crit: 10 },
         });
         const enemy = makeEnemyDef("foe", [enemyMove]);
@@ -242,7 +242,7 @@ describe("enemy intention previews", () => {
         const seed = 123456;
         const pressure = makeBindingDef("pressure");
         const alwaysHit = makeMove("certain-threat", "none", {
-            side: "player",
+            targetSide: "player",
             accuracy: { hit: 100 },
             resolve: (state, _actor, _move, targets) => targets.flatMap((target) => {
                 const character = state.characters.find(
@@ -301,7 +301,7 @@ describe("enemy intention previews", () => {
             statuses: [{ definition: defenseStatus, value: 1 }],
         };
         const guard = makeMove("guard", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (_state, actor) => [{
                 type: "buff",
@@ -311,7 +311,7 @@ describe("enemy intention previews", () => {
             }],
         });
         const enemyMove = makeMove("swing", "none", {
-            side: "player",
+            targetSide: "player",
             accuracy: { miss: 50, hit: 50 },
         });
         const enemy = makeEnemyDef("foe", [enemyMove]);

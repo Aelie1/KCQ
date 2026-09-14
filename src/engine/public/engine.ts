@@ -244,7 +244,7 @@ export class GameEngine {
             }];
         }
 
-        switch (moveState.side) {
+        switch (moveState.targetSide) {
             case "none":
                 result.push(isValidTarget(this.state, character, null, moveState));
                 break;
@@ -273,7 +273,8 @@ export class GameEngine {
         if (result) {
             return {
                 options: [],
-                assistAllowed: false
+                assistAllowed: false,
+                reason: result.reason
             }
         }
 
@@ -361,7 +362,7 @@ export class GameEngine {
                             reason: "invalidTargetCount"
                         }
                     }
-                    switch (move.side) {
+                    switch (move.targetSide) {
                         case "enemy":
                             for (const enemy of this.state.enemies) {
                                 targetInfo.push(isValidTarget(this.state, actor, enemy, move));

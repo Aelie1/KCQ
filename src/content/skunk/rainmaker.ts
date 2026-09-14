@@ -1,7 +1,7 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
-import { iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
+import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const RAINMAKER_HP = 200;
@@ -14,8 +14,8 @@ export const rainmaker: EnemyDef = {
     hp: RAINMAKER_HP,
     defense: RAINMAKER_DEF,
     passives: [],
-    ai: function (state: iGameState, actor: iEnemy, rng: Random): iEffect[] {
-        const effects: iEffect[] = [];
+    ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
+        const effects: iMoveEffect[] = [];
         effects.push({
             type: "move",
             actor: actor,
@@ -28,7 +28,7 @@ export const rainmaker: EnemyDef = {
 
 const latexRain: MoveDef = {
     id: "latexRain",
-    side: "player",
+    targetSide: "player",
     targets: "all",
     baseDamage: RAIN_DAMAGE,
     accuracy: {

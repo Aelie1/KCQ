@@ -21,7 +21,7 @@ import {
 function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: number) {
     const targetBinding = makeBindingDef("target-binding");
     const prepare = makeMove("prepare", "mouth", {
-        side: "none",
+        targetSide: "none",
         targets: 0,
         resolve: (state) => [
             {
@@ -64,7 +64,7 @@ describe("actor-level action restrictions", () => {
         );
 
         expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorSkipped");
-        expect(engine.getEscapes(hero.id)).toEqual({ options: [], assistAllowed: false });
+        expect(engine.getEscapes(hero.id)).toEqual({ options: [], assistAllowed: false, "reason": "actorSkipped" });
         expect(engine.stanceAvailable(hero.id))
             .toEqual({ available: false, reason: "actorSkipped" });
         expect(engine.executeAction({
@@ -87,7 +87,7 @@ describe("actor-level action restrictions", () => {
         );
 
         expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorIncapacitated");
-        expect(engine.getEscapes(hero.id)).toEqual({ options: [], assistAllowed: false });
+        expect(engine.getEscapes(hero.id)).toEqual({ options: [], assistAllowed: false, "reason": "actorIncapacitated" });
         expect(engine.stanceAvailable(hero.id))
             .toEqual({ available: false, reason: "actorIncapacitated" });
         expect(engine.executeAction({
@@ -198,7 +198,7 @@ describe("move and escape restrictions", () => {
             thresholds.easy,
         );
 
-        expect(engine.getEscapes(helper.id)).toEqual({ options: [], assistAllowed: false });
+        expect(engine.getEscapes(helper.id)).toEqual({ options: [], assistAllowed: false, "reason": "escapeUnavailable" });
         expect(engine.executeAction({
             type: "escape",
             actor: helper.id,

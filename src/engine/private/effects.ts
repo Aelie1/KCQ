@@ -258,7 +258,7 @@ export class GameEffects {
             })
 
             if (target.definition.onDamage) {
-                this.stack(target.definition.onDamage(this.state, actor, target, amount));
+                this.stack(target.definition.onDamage(this.state, actor, target, newAmount));
             }
         } else if (newAmount < 0) {
             this.addEvent({
@@ -403,7 +403,7 @@ export class GameEffects {
         const targets = [];
         const move = { ...action.move, roll: this.rng.random() };
         if (move.definition.targets === "all") {
-            if (move.definition.side === "enemy") {
+            if (move.definition.targetSide === "enemy") {
                 targets.push(...this.state.enemies);
             } else {
                 targets.push(...getValidTargets(this.state.characters));

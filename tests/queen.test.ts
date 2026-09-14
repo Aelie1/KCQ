@@ -260,7 +260,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
         const aStrike = damageMove("a-strike", 60);
         const bStrike = damageMove("b-strike", 50);
         const incapacitate = makeBehavioralMove("incapacitate", "none", {
-            side: "player",
+            targetSide: "player",
             resolve: (_state, _actor, _move, targets) => targets.flatMap(({ target }) =>
                 isCharacter(target) ? [{
                     type: "buff" as const,
@@ -289,7 +289,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
 
     it("does not create another Collar while a valid character has one, then permits it after removal", () => {
         const add = makeBehavioralMove("add-collar", "none", {
-            side: "player",
+            targetSide: "player",
             targets: 1,
             freeOnHit: true,
             resolve: (_state, _actor, _move, targets) => targets.flatMap(({ target }) =>
@@ -297,7 +297,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
             ),
         });
         const remove = makeBehavioralMove("remove-collar", "none", {
-            side: "player",
+            targetSide: "player",
             targets: 1,
             resolve: (_state, _actor, _move, targets) => targets.flatMap(({ target }) =>
                 isCharacter(target) ? [{ type: "binding" as const, target, binding: latexCollar, amount: -100 }] : [],
@@ -319,7 +319,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
 
     it("removes a Collar during Latex incapacitation so another valid target can be collared", () => {
         const transform = makeBehavioralMove("transform", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => {
                 const target = state.characters.find(({ id }) => id === "alpha");

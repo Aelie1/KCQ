@@ -124,7 +124,7 @@ export async function runConsoleClient(
         if (move.targets === "all") {
             const lines = accuracyLines(validTargets(engine, actor, move.id));
             const selection = await choose([
-                `${move.id} affects every ${move.side}.`,
+                `${move.id} affects every ${move.targetSide}.`,
                 "",
                 ...lines,
                 "",
@@ -380,10 +380,10 @@ function appendResult(logLines: string[], result: ActionResult, previousRound: n
 
 function moveLabel(action: ActionInfo): string {
     const target = action.move.targets === "all"
-        ? `all ${action.move.side} targets`
+        ? `all ${action.move.targetSide} targets`
         : action.move.targets === 0
             ? "no target"
-            : `${action.move.targets} ${action.move.side}`;
+            : `${action.move.targets} ${action.move.targetSide}`;
     const availability = action.available ? "" : ` -- ${action.reason}`;
     return `${action.move.id} [${action.move.type}; ${target}]${availability}`;
 }

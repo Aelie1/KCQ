@@ -656,7 +656,7 @@ describe("console formatting", () => {
             easy: [{ definition: helpless, value: 1 }],
         });
         const { engine } = setupBoundEngine(helplessBinding, thresholds.easy);
-        const wait = makeMove("player-wait", "mouth", { side: "none", targets: 0 });
+        const wait = makeMove("player-wait", "mouth", { targetSide: "none", targets: 0 });
         engine.loadCharacter(makeCharacterDef("ally", [wait]));
 
         const rendered = await runScriptedConsole(engine, ["2", "1", "4"]);

@@ -1,6 +1,6 @@
 import type { AccuracyProfile, BindingLevel, ModifierId, Move, MoveType, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
-import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, iTrap } from "./types";
+import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo, iTrap } from "./types";
 
 
 export interface CharacterDef {
@@ -14,7 +14,7 @@ export interface EnemyDef {
     hp: number;
     defense: number;
     passives: PassiveDef[];
-    ai: (state: iGameState, actor: iEnemy, rng: Random) => iEffect[];
+    ai: (state: iGameState, actor: iEnemy, rng: Random) => iMoveEffect[];
     onDamage?: (state: iGameState, actor: iEntity, target: iEnemy, damage: number) => iEffect[];
     onDefeat?: (state: iGameState, target: iEnemy) => iEffect[];
 }

@@ -129,7 +129,7 @@ export interface MoveEffect {
 
 export interface Move {
     id: string;
-    side: EntitySide;
+    targetSide: EntitySide;
     targets: TargetCount;
     type: MoveType;
     binding?: BindingId;
@@ -271,6 +271,7 @@ export interface StanceInfo {
 export interface EscapeOptions {
     options: EscapeInfo[];
     assistAllowed: boolean;
+    reason?: ActionFailureReason;
 }
 
 export interface EscapeInfo {

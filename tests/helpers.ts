@@ -1,16 +1,12 @@
 import { expect } from "vitest";
-import { GameEngine } from "../src/engine/public/engine";
+import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
 import type {
     iBinding,
     iCharacter,
     iEnemy,
     iStatus,
 } from "../src/engine/protected/types";
-import type { EncounterDef } from "../src/engine/protected/definitions";
-import type { BindingDef } from "../src/engine/protected/definitions";
-import type { MoveDef } from "../src/engine/protected/definitions";
-import type { EnemyDef } from "../src/engine/protected/definitions";
-import type { CharacterDef } from "../src/engine/protected/definitions";
+import { GameEngine } from "../src/engine/public/engine";
 import type {
     ActionFailureReason,
     BindingLevel,
@@ -48,7 +44,7 @@ export function makeMove(
 ): MoveDef {
     return {
         id,
-        side: "enemy",
+        targetSide: "enemy",
         targets: 1,
         type,
         accuracy: { hit: 100 },
@@ -59,7 +55,7 @@ export function makeMove(
 
 export function makeWaitMove(): MoveDef {
     return makeMove("wait", "none", {
-        side: "none",
+        targetSide: "none",
         targets: 0,
         accuracy: undefined,
     });
@@ -136,7 +132,7 @@ export function setupBoundEngine(
     additionalEncounters: EncounterDef[] = [],
 ) {
     const setupMove = makeMove("apply-binding", "mouth", {
-        side: "player",
+        targetSide: "player",
         resolve: (state) => [{
             type: "binding",
             target: state.characters[0],

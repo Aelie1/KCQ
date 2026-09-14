@@ -27,7 +27,7 @@ export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity
                 reason: "invalidTarget",
             };
         }
-        if (getIEntitySide(target) !== move.side) {
+        if (getIEntitySide(target) !== move.targetSide) {
             return {
                 valid: false,
                 target: target,

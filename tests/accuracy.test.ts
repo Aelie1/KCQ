@@ -73,7 +73,7 @@ describe("accuracy", () => {
             modifiers: { hit: hitModifier },
         });
         const target = makeCharacter("character-target");
-        const move = makeAccuracyMove(standardProfile, { side: "player", type: "none" });
+        const move = makeAccuracyMove(standardProfile, { targetSide: "player", type: "none" });
         const info = isValidTarget({
             turn: { round: 1, step: 1, phase: "enemy" },
             nextId: {},
@@ -522,7 +522,7 @@ describe("accuracy", () => {
         let resolutions = 0;
         const zeroTarget = makeAccuracyMove({ hit: 100 }, {
             id: "zero-target",
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (_state, _actor, move, targets) => {
                 resolutions++;

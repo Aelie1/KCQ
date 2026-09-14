@@ -2,7 +2,7 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { isCharacter } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
-import { iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
+import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { rainmaker } from "./rainmaker";
 import { skunk } from "./skunk";
@@ -31,8 +31,8 @@ export const queen: EnemyDef = {
     hp: QUEEN_HP,
     defense: QUEEN_DEF,
     passives: [],
-    ai: function (state: iGameState, actor: iEnemy, rng: Random): iEffect[] {
-        const effects: iEffect[] = [];
+    ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
+        const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
 
         //1) If no one has a collar and it is off CD, use skunk collar on the person who dealt the most damage to her
@@ -169,7 +169,7 @@ export const queen: EnemyDef = {
 
 const skunkGun: MoveDef = {
     id: "skunkGun",
-    side: "player",
+    targetSide: "player",
     targets: 1,
     baseDamage: GUN_DAMAGE,
     accuracy: {
@@ -204,7 +204,7 @@ const skunkGun: MoveDef = {
 
 const skunkCollar: MoveDef = {
     id: "skunkCollar",
-    side: "player",
+    targetSide: "player",
     targets: 1,
     baseDamage: COLLAR_DAMAGE,
     cooldown: 3,
@@ -238,7 +238,7 @@ const skunkCollar: MoveDef = {
 
 const callReinforcements: MoveDef = {
     id: "callReinforcements",
-    side: "none",
+    targetSide: "none",
     targets: 0,
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
@@ -287,7 +287,7 @@ const callReinforcements: MoveDef = {
 
 const latexRainmaker: MoveDef = {
     id: "latexRainmaker",
-    side: "none",
+    targetSide: "none",
     targets: 0,
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
@@ -318,7 +318,7 @@ const latexRainmaker: MoveDef = {
 
 const skunkPerfume: MoveDef = {
     id: "skunkPerfume",
-    side: "player",
+    targetSide: "player",
     targets: "all",
     type: "none",
     accuracy: {

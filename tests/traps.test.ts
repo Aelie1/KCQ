@@ -1,10 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { trapPuddle } from "../src/content/skunk/puddles";
+import type { BindingDef, EncounterDef, StatusDef, TrapDef } from "../src/engine/protected/definitions";
 import { GameEngine } from "../src/engine/public/engine";
-import type { EncounterDef } from "../src/engine/protected/definitions";
-import type { StatusDef } from "../src/engine/protected/definitions";
-import type { TrapDef } from "../src/engine/protected/definitions";
-import type { BindingDef } from "../src/engine/protected/definitions";
 import type { PlayerAction } from "../src/engine/public/types";
 import {
     makeBindingDef,
@@ -38,7 +35,7 @@ function trapThatConsumes(
 
 function makeTrapEngine(
     traps: EncounterDef["traps"],
-    moves = [makeMove("act", "none", { side: "none", targets: 0, accuracy: undefined })],
+    moves = [makeMove("act", "none", { targetSide: "none", targets: 0, accuracy: undefined })],
     seed = 1,
     setup?: EncounterDef["setup"],
     characterIds = ["hero"],
@@ -85,21 +82,21 @@ describe("generic traps through GameEngine", () => {
     it("normalizes generated amounts, caps additions, and clamps removals at zero", () => {
         const trap = trapThatConsumes("meter", 0);
         const add = makeMove("add", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             accuracy: undefined,
             freeOnHit: true,
             resolve: (state, actor) => [{ type: "trap", actor, trap: state.traps[0], amount: 1.2 }],
         });
         const fill = makeMove("fill", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             accuracy: undefined,
             freeOnHit: true,
             resolve: (state, actor) => [{ type: "trap", actor, trap: state.traps[0], amount: 200 }],
         });
         const remove = makeMove("remove", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             accuracy: undefined,
             freeOnHit: true,
@@ -142,7 +139,7 @@ describe("generic traps through GameEngine", () => {
         const attackMarker = makeBindingDef("attackMarker");
         const trap = trapThatConsumes("snareTrap", 7, snare);
         const act = makeMove("act", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             accuracy: undefined,
             resolve: (state) => [{
@@ -182,7 +179,7 @@ describe("generic traps through GameEngine", () => {
         const marker = makeBindingDef("marker");
         const trap = trapThatConsumes("rngTrap", 7, marker);
         const rolledMove = makeMove("rolled", "none", {
-            side: "none", targets: 0, accuracy: { miss: 50, hit: 50 },
+            targetSide: "none", targets: 0, accuracy: { miss: 50, hit: 50 },
         });
         const build = () => makeTrapEngine([{ definition: trap, amount: 100 }], [rolledMove], 12345);
         const challenged = build();
@@ -199,28 +196,28 @@ describe("generic traps through GameEngine", () => {
     it.each(["bindingRestriction", "attackUnavailable"] as const)(
         "commits trap effects and interrupts an attack for %s",
         (reason) => {
-        const restriction = reason === "bindingRestriction"
-            ? { blockedMoveTypes: ["arms" as const] }
-            : { blocksAttack: true };
-        const status: StatusDef = { id: "bound", levels: [{}, restriction] };
-        const blocker = makeBindingDef(`${reason}-source`, {
-            easy: [{ definition: status, value: 1 }],
-        });
-        const trap = trapThatConsumes(`${reason}-trap`, 9, blocker);
-        const move = makeMove("arms-action", "arms", {
-            side: "none", targets: 0, accuracy: undefined,
-        });
-        const engine = makeTrapEngine([{ definition: trap, amount: 100 }], [move]);
+            const restriction = reason === "bindingRestriction"
+                ? { blockedMoveTypes: ["arms" as const] }
+                : { blocksAttack: true };
+            const status: StatusDef = { id: "bound", levels: [{}, restriction] };
+            const blocker = makeBindingDef(`${reason}-source`, {
+                easy: [{ definition: status, value: 1 }],
+            });
+            const trap = trapThatConsumes(`${reason}-trap`, 9, blocker);
+            const move = makeMove("arms-action", "arms", {
+                targetSide: "none", targets: 0, accuracy: undefined,
+            });
+            const engine = makeTrapEngine([{ definition: trap, amount: 100 }], [move]);
 
-        const result = engine.executeAction(attack("hero", move.id));
-        expect(result.success).toBe(true);
-        if (!result.success) throw new Error("Expected committed interruption");
-        expect(result.events).toContainEqual({
-            type: "actionInterrupted", actor: "hero", reason,
-        });
-        expect(result.events.some((event) => event.type === "moveUsed")).toBe(false);
-        expect(result.state.characters[0].acted).toBe(true);
-        expect(result.state.traps[0].amount).toBe(91);
+            const result = engine.executeAction(attack("hero", move.id));
+            expect(result.success).toBe(true);
+            if (!result.success) throw new Error("Expected committed interruption");
+            expect(result.events).toContainEqual({
+                type: "actionInterrupted", actor: "hero", reason,
+            });
+            expect(result.events.some((event) => event.type === "moveUsed")).toBe(false);
+            expect(result.state.characters[0].acted).toBe(true);
+            expect(result.state.traps[0].amount).toBe(91);
         },
     );
 

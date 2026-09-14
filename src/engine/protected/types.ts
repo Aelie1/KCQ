@@ -124,7 +124,7 @@ interface iStanceEffect {
     stance: StanceId;
 }
 
-interface iMoveEffect {
+export interface iMoveEffect {
     type: "move"
     actor: iEntity;
     move: iMove;

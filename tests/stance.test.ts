@@ -146,7 +146,7 @@ describe("stance toggling", () => {
     it("allows the bonus escape to assist another character", () => {
         const restraint = makeBindingDef("rope");
         const prepare = makeMove("prepare", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => [
                 {
@@ -264,7 +264,7 @@ describe("stance toggling", () => {
             easy: [{ definition: immobilized, value: 1 }],
         });
         const immobilize = makeMove("immobilize", "none", {
-            side: "player",
+            targetSide: "player",
             resolve: (state, _actor, _move, targets) => {
                 const target = state.characters.find(
                     (character) => character === targets[0].target,
@@ -313,7 +313,7 @@ describe("stance toggling", () => {
     it("keeps Pounce pending during the enemy phase, then activates it before stance reset", () => {
         let observedDuringEnemyPhase: { active: boolean | undefined; standing: boolean } | undefined;
         const observe = makeMove("observe-pounce", "none", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => {
                 const victim = state.characters[0];
@@ -368,7 +368,7 @@ describe("stance toggling", () => {
 
         for (const { seed, standingResult } of outcomes) {
             const attack = makeMove("accuracy-check", "none", {
-                side: "player",
+                targetSide: "player",
                 accuracy: { miss: 50, hit: 50 },
             });
             const enemy = makeEnemyDef("attacker", [attack]);

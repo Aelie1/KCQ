@@ -8,9 +8,9 @@ import {
     buffState,
     execute,
     makeBehavioralBinding,
+    makeBehavioralEngine,
     makeBehavioralCharacter as makeCharacterDef,
     makeBehavioralEnemy as makeEnemyDef,
-    makeBehavioralEngine,
     makeBehavioralMove as makeMove,
     makeEnemyWaitMove as makeWaitMove,
     targetAccuracy,
@@ -49,7 +49,7 @@ describe("move validation and player actions", () => {
     function validationEngine() {
         const legal = makeMove("legal");
         const targetless = makeMove("targetless", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
         });
         const allTargets = makeMove("all-targets", "mouth", { targets: "all" });
@@ -245,7 +245,7 @@ describe("move validation and player actions", () => {
         expect(engine.getMoves(ko.id)).toContainEqual({
             move: {
                 id: move.id,
-                side: "enemy",
+                targetSide: "enemy",
                 targets: "all",
                 type: "arms",
             },
@@ -289,7 +289,7 @@ describe("move validation and player actions", () => {
         expect(engine.getMoves(ko.id)).toEqual(ko.moves.map((definition) => ({
             move: {
                 id: definition.id,
-                side: definition.side,
+                targetSide: definition.targetSide,
                 targets: definition.targets,
                 type: definition.type,
             },
@@ -299,7 +299,7 @@ describe("move validation and player actions", () => {
 
     it("applies a guaranteed all-player move to every party member", () => {
         const rally = makeMove("rally", "none", {
-            side: "player",
+            targetSide: "player",
             targets: "all",
             accuracy: undefined,
             resolve: (_state, _actor, _move, targets) => targets.map(({ target }) => ({
@@ -427,7 +427,7 @@ describe("move and effect resolution through GameEngine", () => {
         });
         const sibling = makeBehavioralBinding("sibling");
         const chain = makeMove("chain", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => [
                 {

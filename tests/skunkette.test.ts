@@ -45,12 +45,12 @@ function setupPounce(seed: number, withAttacker = false) {
 
 function setupSkunkingLifecycle() {
     const victimMove = makeBehavioralMove("victim-action", "none", {
-        side: "none",
+        targetSide: "none",
         targets: 0,
         accuracy: undefined,
     });
     const fullySkunk = makeBehavioralMove("fully-skunk", "none", {
-        side: "none",
+        targetSide: "none",
         targets: 0,
         accuracy: undefined,
         freeOnHit: true,
@@ -311,7 +311,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(engine.getMoves(SKUNKED_CHARACTER_ID)).toContainEqual({
             move: {
                 id: victimMove.id,
-                side: victimMove.side,
+                targetSide: victimMove.targetSide,
                 targets: victimMove.targets,
                 type: victimMove.type,
             },
@@ -390,7 +390,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(engine.getMoves(SKUNKED_CHARACTER_ID)).toContainEqual({
             move: {
                 id: victimMove.id,
-                side: victimMove.side,
+                targetSide: victimMove.targetSide,
                 targets: victimMove.targets,
                 type: victimMove.type,
             },
@@ -517,7 +517,7 @@ describe("Skunkette behavior through GameEngine", () => {
 
     it("does not select an Impossible latex location for Spray", () => {
         const prepare = makeBehavioralMove("prepare-impossible", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => [latexHead, latexArms, latexTorso].map((binding) => ({
                 type: "binding" as const,
@@ -553,7 +553,7 @@ describe("Skunkette behavior through GameEngine", () => {
 
     it("uses independent target rolls and one shared spread modifier for Latex Mist", () => {
         const prepare = makeBehavioralMove("prepare-mist", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => [
                 {
@@ -609,7 +609,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const existingBindings = [latexHead, latexArms, latexTorso];
         const startingValues = [10, 20, 30];
         const prepare = makeBehavioralMove("prepare-mist-crit", "mouth", {
-            side: "none",
+            targetSide: "none",
             targets: 0,
             resolve: (state) => [
                 ...existingBindings.map((binding, index) => ({

@@ -1,10 +1,6 @@
 import { expect } from "vitest";
+import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
 import { GameEngine } from "../src/engine/public/engine";
-import type { EncounterDef } from "../src/engine/protected/definitions";
-import type { BindingDef } from "../src/engine/protected/definitions";
-import type { MoveDef } from "../src/engine/protected/definitions";
-import type { EnemyDef } from "../src/engine/protected/definitions";
-import type { CharacterDef } from "../src/engine/protected/definitions";
 import type {
     AccuracyProfile,
     ActionSuccess,
@@ -34,7 +30,7 @@ export function makeBehavioralMove(
 ): MoveDef {
     return {
         id,
-        side: "enemy",
+        targetSide: "enemy",
         targets: 1,
         type,
         accuracy: { hit: 100 },
@@ -52,7 +48,7 @@ export function makeBehavioralCharacter(
 
 export function makeEnemyWaitMove(): MoveDef {
     return makeBehavioralMove("wait", "none", {
-        side: "none",
+        targetSide: "none",
         targets: 0,
         accuracy: undefined,
     });

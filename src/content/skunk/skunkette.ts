@@ -4,7 +4,7 @@ import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/pr
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { isIncapacitated, s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
-import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
@@ -28,9 +28,9 @@ export const skunkette: EnemyDef = {
     hp: SKUNKETTE_HP,
     defense: SKUNKETTE_DEF,
     passives: [],
-    ai: function (state: iGameState, actor: iEnemy, rng: Random): iEffect[] {
+    ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
+        const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
-        const effects: iEffect[] = [];
 
         //1) Spray an existing pounced character
         {
@@ -203,7 +203,7 @@ export const skunkette: EnemyDef = {
 
 const latexSpray: MoveDef = {
     id: "latexSpray",
-    side: "player",
+    targetSide: "player",
     targets: 1,
     baseDamage: SPRAY_DAMAGE,
     accuracy: {
@@ -236,7 +236,7 @@ const latexSpray: MoveDef = {
 
 const pounce: MoveDef = {
     id: "pounce",
-    side: "player",
+    targetSide: "player",
     targets: 1,
     baseDamage: POUNCE_DAMAGE,
     cooldown: POUNCE_COOLDOWN,
@@ -293,7 +293,7 @@ const pounce: MoveDef = {
 
 const latexMist: MoveDef = {
     id: "latexMist",
-    side: "player",
+    targetSide: "player",
     targets: "all",
     baseDamage: MIST_DAMAGE,
     accuracy: {
@@ -360,7 +360,7 @@ const throwOff: MoveDef = {
     id: "throwOff",
     alwaysAvailable: true,
     freeOnHit: true,
-    side: "none",
+    targetSide: "none",
     targets: 0,
     accuracy: {
         miss: 40,

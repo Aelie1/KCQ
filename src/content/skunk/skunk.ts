@@ -2,7 +2,7 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
-import { iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
+import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 
@@ -24,8 +24,8 @@ export const skunk: EnemyDef = {
     hp: SKUNK_HP,
     defense: SKUNK_DEF,
     passives: [],
-    ai: function (state: iGameState, actor: iEnemy, rng: Random): iEffect[] {
-        const effects: iEffect[] = [];
+    ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
+        const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
 
         //1) Explode if low HP
@@ -135,7 +135,7 @@ export const skunk: EnemyDef = {
 
 const latexSpray: MoveDef = {
     id: "latexSpray",
-    side: "player",
+    targetSide: "player",
     targets: 1,
     baseDamage: SPRAY_DAMAGE,
     accuracy: {
@@ -170,7 +170,7 @@ const latexSpray: MoveDef = {
 
 const latexPuddle: MoveDef = {
     id: "latexPuddle",
-    side: "none",
+    targetSide: "none",
     targets: 0,
     baseDamage: PUDDLE_BASE,
     accuracy: {
@@ -200,7 +200,7 @@ const latexPuddle: MoveDef = {
 
 const latexRegeneration: MoveDef = {
     id: "latexRegeneration",
-    side: "player",
+    targetSide: "player",
     targets: 1,
     accuracy: {
         miss: 50,
@@ -257,7 +257,7 @@ const latexRegeneration: MoveDef = {
 
 const latexExplosion: MoveDef = {
     id: "latexExplosion",
-    side: "player",
+    targetSide: "player",
     targets: 1,
     baseDamage: EXPLOSION_DAMAGE,
     accuracy: {

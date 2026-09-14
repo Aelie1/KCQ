@@ -22,7 +22,7 @@ function setupEscapeScenario(
     bindings: BindingSetup[],
 ): GameEngine {
     const prepare = makeMove("prepare-bindings", "mouth", {
-        side: "none",
+        targetSide: "none",
         targets: 0,
         resolve: (state) => bindings.map((setup) => ({
             type: "binding" as const,
@@ -167,7 +167,7 @@ describe("escape progress", () => {
         expect(engine.getGameState().characters[0].bindings[0].value).toBe(before - amount);
         expect(engine.getGameState().characters[0].acted).toBe(true);
         expect(engine.getGameState().turn.step).toBe(2);
-        expect(engine.getEscapes("hero")).toEqual({ options: [], assistAllowed: false });
+        expect(engine.getEscapes("hero")).toEqual({ options: [], assistAllowed: false, "reason": "actorAlreadyActed" });
         expect(engine.executeAction({
             type: "escape",
             actor: "hero",

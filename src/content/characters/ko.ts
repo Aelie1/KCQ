@@ -4,7 +4,7 @@ import { iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/p
 
 const telekinesis: MoveDef = {
     id: "telekinesis",
-    side: "enemy",
+    targetSide: "enemy",
     targets: 1,
     baseDamage: 100,
     type: "mouth",
@@ -33,7 +33,7 @@ const telekinesis: MoveDef = {
 
 const fairypunch: MoveDef = {
     id: "fairypunch",
-    side: "enemy",
+    targetSide: "enemy",
     targets: "all",
     baseDamage: 100,
     type: "arms",
@@ -62,7 +62,7 @@ const fairypunch: MoveDef = {
 
 const starlight: MoveDef = {
     id: "starlight",
-    side: "none",
+    targetSide: "none",
     targets: 0,
     type: "mouth",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
