@@ -136,6 +136,8 @@ export function formatEvents(events: GameEvent[]): string[] {
             }
             case "enemyDamaged":
                 return [`${event.target} took ${event.amount} damage.`];
+            case "enemyHealed":
+                return [`${event.target} healed ${event.amount} damage.`];
             case "bondageAdded":
             case "bondageChanged":
                 return event.amount >= 0

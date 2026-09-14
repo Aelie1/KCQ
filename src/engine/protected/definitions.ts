@@ -21,6 +21,7 @@ export interface EnemyDef {
 
 export interface MoveDef extends Move {
     accuracy?: AccuracyProfile;
+    check?: "accuracy" | "willpower"
     alwaysAvailable?: boolean;
     baseDamage?: number;
     cooldown?: number;

@@ -236,22 +236,38 @@ export class GameEffects {
 
 
     private damageEnemy(actor: iEntity, target: iEnemy, amount: number) {
+        const origHp = target.currHp;
+
         target.currHp -= amount;
-        this.addEvent({
-            type: "enemyDamaged",
-            target: target.id,
-            amount: amount
-        });
-
-        this.effects.push({
-            type: "enemy",
-            operation: "check",
-            target: target
-        })
-
-        if (target.definition.onDamage) {
-            this.stack(target.definition.onDamage(this.state, actor, target, amount));
+        if (target.currHp > target.maxHp) {
+            target.currHp = target.maxHp
         }
+
+        const newAmount = origHp - target.currHp;
+
+        if (newAmount > 0) {
+            this.addEvent({
+                type: "enemyDamaged",
+                target: target.id,
+                amount: newAmount
+            });
+            this.effects.push({
+                type: "enemy",
+                operation: "check",
+                target: target
+            })
+
+            if (target.definition.onDamage) {
+                this.stack(target.definition.onDamage(this.state, actor, target, amount));
+            }
+        } else if (newAmount < 0) {
+            this.addEvent({
+                type: "enemyHealed",
+                target: target.id,
+                amount: -newAmount
+            });
+        }
+
         return;
     };
 
@@ -293,7 +309,8 @@ export class GameEffects {
             currHp: definition.hp * hpRatio,
             currDef: definition.defense,
             intention: [],
-            cooldowns: {}
+            cooldowns: {},
+            data: {}
         };
         this.state.enemies.push(enemy);
 

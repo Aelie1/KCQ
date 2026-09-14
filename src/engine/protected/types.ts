@@ -24,6 +24,7 @@ export interface iEnemy extends Omit<Enemy, "buffs" | "intention"> {
     definition: EnemyDef;
     intention: iIntention[];
     buffs: iBuff[];
+    data: Record<string, number>;
 }
 
 export interface iIntention {
@@ -48,6 +49,7 @@ export interface iMove {
     band?: HitBand;
     effectiveness?: number;
     roll?: number;
+    data?: Record<string, number>;
 }
 
 export interface iTargetInfo extends Omit<TargetInfo, "target" | "effects"> {

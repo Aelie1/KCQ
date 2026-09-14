@@ -91,7 +91,7 @@ export const skunk: EnemyDef = {
             if (target && roll < total) {
                 const bindings = target.bindings.filter(x => x.value < x.data["peak"]);
                 if (bindings.length > 0) {
-                    const index = rng.int(0, bindings.length);
+                    const index = rng.int(0, bindings.length - 1);
                     effects.push({
                         type: "move",
                         actor: actor,
