@@ -3,7 +3,7 @@ import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/he
 import { canMove, getModifier, isIncapacitated } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, HitBand, type EntitySide } from "../public/types";
-import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
+import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
 function getIEntitySide(entity: iEntity): EntitySide {
@@ -60,30 +60,41 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
     const clamp = (value: number, min: number, max: number): number =>
         Math.max(min, Math.min(max, value));
 
-    let hitModifier = getModifier(actor, "hit") * HIT_MODIFIER;
-
-    if (isCharacter(actor)) {
-        switch (move.type) {
-            case "arms":
-                hitModifier += getModifier(actor, "hitarms") * HIT_MODIFIER;
-                break;
-
-            case "mouth":
-                hitModifier += getModifier(actor, "hitmouth") * HIT_MODIFIER;
-                break;
-
-            case "legs":
-                hitModifier += getModifier(actor, "hitlegs") * HIT_MODIFIER;
-                break;
-        }
-    }
-
+    let hitModifier = 0;
     let defenseModifier = 0;
 
-    //Ignore defense when you have no target
-    if (target != null) {
-        defenseModifier = (isEnemy(target) ? target.currDef : 0);
-        defenseModifier += getModifier(target, "defense") * DEFENSE_MODIFIER;
+    if ((move.check ?? "accuracy") === "willpower") {
+        hitModifier = getModifier(actor, "willpower") * WILLPOWER_MODIFIER;
+
+        //Ignore target's willpower when you have no target
+        if (target != null) {
+            defenseModifier = getModifier(target, "willpower") * WILLPOWER_MODIFIER;
+        }
+    }
+    else {
+        hitModifier = getModifier(actor, "hit") * HIT_MODIFIER;
+
+        if (isCharacter(actor)) {
+            switch (move.type) {
+                case "arms":
+                    hitModifier += getModifier(actor, "hitarms") * HIT_MODIFIER;
+                    break;
+
+                case "mouth":
+                    hitModifier += getModifier(actor, "hitmouth") * HIT_MODIFIER;
+                    break;
+
+                case "legs":
+                    hitModifier += getModifier(actor, "hitlegs") * HIT_MODIFIER;
+                    break;
+            }
+        }
+
+        //Ignore defense when you have no target
+        if (target != null) {
+            defenseModifier = (isEnemy(target) ? target.currDef : 0);
+            defenseModifier += getModifier(target, "defense") * DEFENSE_MODIFIER;
+        }
     }
 
     const delta = hitModifier - defenseModifier;

@@ -110,7 +110,7 @@ export const queen: EnemyDef = {
         }
         const minHpRatio = (target.data["minHp"] ?? target.maxHp) / target.maxHp;
         const currHpRatio = target.currHp / target.maxHp;
-        if (currHpRatio < WAVE_1_HP_RATIO && minHpRatio > WAVE_1_HP_RATIO) {
+        if (currHpRatio <= WAVE_1_HP_RATIO && minHpRatio > WAVE_1_HP_RATIO) {
             effects.push({
                 type: "move",
                 actor: target,
@@ -118,7 +118,7 @@ export const queen: EnemyDef = {
                 targets: []
             });
         }
-        if (currHpRatio < WAVE_2_HP_RATIO && minHpRatio > WAVE_2_HP_RATIO) {
+        if (currHpRatio <= WAVE_2_HP_RATIO && minHpRatio > WAVE_2_HP_RATIO) {
             effects.push({
                 type: "move",
                 actor: target,
@@ -126,7 +126,7 @@ export const queen: EnemyDef = {
                 targets: []
             });
         }
-        if (currHpRatio < WAVE_3_HP_RATIO && minHpRatio > WAVE_3_HP_RATIO) {
+        if (currHpRatio <= WAVE_3_HP_RATIO && minHpRatio > WAVE_3_HP_RATIO) {
             effects.push({
                 type: "move",
                 actor: target,
@@ -134,7 +134,7 @@ export const queen: EnemyDef = {
                 targets: []
             });
         }
-        if (currHpRatio < WAVE_4_HP_RATIO && minHpRatio > WAVE_4_HP_RATIO) {
+        if (currHpRatio <= WAVE_4_HP_RATIO && minHpRatio > WAVE_4_HP_RATIO) {
             effects.push({
                 type: "move",
                 actor: target,
@@ -142,7 +142,7 @@ export const queen: EnemyDef = {
                 targets: []
             });
         }
-        if (currHpRatio < RAINMAKER_1_HP_RATIO && minHpRatio > RAINMAKER_1_HP_RATIO) {
+        if (currHpRatio <= RAINMAKER_1_HP_RATIO && minHpRatio > RAINMAKER_1_HP_RATIO) {
             effects.push({
                 type: "move",
                 actor: target,
@@ -150,7 +150,7 @@ export const queen: EnemyDef = {
                 targets: []
             });
         }
-        if (currHpRatio < RAINMAKER_2_HP_RATIO && minHpRatio > RAINMAKER_2_HP_RATIO) {
+        if (currHpRatio <= RAINMAKER_2_HP_RATIO && minHpRatio > RAINMAKER_2_HP_RATIO) {
             effects.push({
                 type: "move",
                 actor: target,
@@ -158,7 +158,7 @@ export const queen: EnemyDef = {
                 targets: []
             });
         }
-        target.data["minHp"] = Math.min((target.data["minhp"] ?? target.maxHp), target.currHp);
+        target.data["minHp"] = Math.min((target.data["minHp"] ?? target.maxHp), target.currHp);
         return effects;
     }
 }
