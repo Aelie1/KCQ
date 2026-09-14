@@ -275,7 +275,7 @@ const pounce: MoveDef = {
             effects.push(...createPounceBuffs(target, actor, 4, false));
         }
 
-        if (effectiveness >= 1.75 && move.binding && move.roll !== undefined) {
+        if (effectiveness >= 1.75 && move.binding) {
             effects.push({
                 type: "move",
                 actor: actor,
@@ -305,8 +305,12 @@ const latexMist: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 
+        if (move.roll === undefined) {
+            return effects;
+        }
+
         //1) Add spread buff to everyone based on the common roll
-        const modifiers: ModifierSet = { "spread": Math.ceil((move.roll ?? 10) / 100 * MIST_SPREAD) };
+        const modifiers: ModifierSet = { "spread": Math.ceil(move.roll * MIST_SPREAD) };
 
         const buff: iBuff = {
             id: "latexMist",

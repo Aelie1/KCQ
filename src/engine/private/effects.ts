@@ -401,7 +401,7 @@ export class GameEffects {
             return;
         }
         const targets = [];
-        const move = { ...action.move, roll: this.rng.accuracy() };
+        const move = { ...action.move, roll: this.rng.random() };
         if (move.definition.targets === "all") {
             if (move.definition.side === "enemy") {
                 targets.push(...this.state.enemies);

@@ -14,7 +14,7 @@ export class Random {
         return this.state;
     }
 
-    private random(): number {
+    random(): number {
         return this.nextU32() / 0x100000000;
     }
 

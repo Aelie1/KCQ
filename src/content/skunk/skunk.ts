@@ -240,7 +240,7 @@ const latexRegeneration: MoveDef = {
                 }
                 break;
             case "crit":
-                if (isCharacter(target.target) && move.roll) {
+                if (isCharacter(target.target)) {
                     effects.push({
                         type: "binding",
                         target: target.target,
