@@ -3,7 +3,7 @@ import { evaluateResult, isValidTarget } from "../src/engine/private/combat";
 import { effectivenessRange } from "../src/engine/private/constants";
 import type { EncounterDef, MoveDef, StatusDef } from "../src/engine/protected/definitions";
 import { thresholds } from "../src/engine/protected/helpers";
-import { Random } from "../src/engine/protected/random";
+import { mixSeed, Random } from "../src/engine/protected/random";
 import type {
     iCharacter,
     iEnemy,
@@ -210,6 +210,26 @@ describe("accuracy", () => {
         });
     });
 
+    it("uses opposing willpower modifiers and ignores Defense for willpower checks", () => {
+        const actor = makeAccuracyActor();
+        const target = makeAccuracyTarget(1_000);
+        actor.buffs.push({
+            id: "actor-willpower",
+            active: true,
+            modifiers: { willpower: 2 },
+        });
+        target.buffs.push({
+            id: "target-willpower",
+            active: true,
+            modifiers: { willpower: 1 },
+        });
+
+        expect(previewAccuracy(actor, target, makeAccuracyMove(
+            { miss: 20, hit: 80 },
+            { check: "willpower" },
+        ))).toEqual({ miss: 10, hit: 90 });
+    });
+
     it("reduces Crit slowly under penalties without allowing negative width", () => {
         const move = makeAccuracyMove();
         const noCrit = previewAccuracy(
@@ -398,7 +418,7 @@ describe("accuracy", () => {
     });
 
     it("resolves all targets with independent rolls", () => {
-        const seed = 123456;
+        const seed = 2;
         let resolvedTargets: iTargetInfo[] = [];
         const move = makeAccuracyMove(standardProfile, {
             targets: "all",
@@ -427,7 +447,7 @@ describe("accuracy", () => {
             targets: [],
         });
         const event = moveUsed(result);
-        const referenceRng = new Random(seed);
+        const referenceRng = new Random(mixSeed(seed, 2));
         for (const _enemy of encounter.enemies) {
             referenceRng.accuracy();
             referenceRng.accuracy();
@@ -492,9 +512,9 @@ describe("accuracy", () => {
             })).targets[0];
         };
 
-        expect(run(11, "missed").result).toBe("miss");
+        expect(run(8, "missed").result).toBe("miss");
         expect(resolved).toEqual([]);
-        expect(run(1, "hit").result).not.toBe("miss");
+        expect(run(2, "hit").result).not.toBe("miss");
         expect(resolved).toEqual(["hit1"]);
     });
 
@@ -515,7 +535,7 @@ describe("accuracy", () => {
         const build = () => {
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
             const encounter = { id: "zero-target", enemies: [foe], bindings: [], traps: [] };
-            const engine = new GameEngine([encounter], 123456);
+            const engine = new GameEngine([encounter], 1);
             engine.loadCharacter(makeCharacterDef("zero-actor", [zeroTarget]));
             engine.loadCharacter(makeCharacterDef("shooter", [targeted]));
             engine.loadEncounter(encounter.id);
@@ -550,25 +570,20 @@ describe("accuracy", () => {
             targets: [control.foeId],
         })).targets[0];
 
-        expect(firstControlRoll.result).toBe("graze");
+        expect(firstControlRoll.result).toBe("crit");
         expect(afterZeroTarget.result).toBe("hit");
     });
 });
 
 describe("XorShift32", () => {
-    it("replays the same sequence from the same seed and restored state", () => {
+    it("replays the same public sequence from the same seed", () => {
         const seed = 123456;
         const first = new Random(seed);
         const second = new Random(seed);
 
-        expect(Array.from({ length: 5 }, () => first.nextU32())).toEqual(
-            Array.from({ length: 5 }, () => second.nextU32()),
+        expect(Array.from({ length: 5 }, () => first.random())).toEqual(
+            Array.from({ length: 5 }, () => second.random()),
         );
-
-        const checkpoint = first.getState();
-        const nextValue = first.nextU32();
-        first.setState(checkpoint);
-        expect(first.nextU32()).toBe(nextValue);
     });
 
     it("produces normalized random values and integers inside inclusive bounds", () => {
@@ -587,12 +602,12 @@ describe("XorShift32", () => {
         expect(rng.int(7, 7)).toBe(7);
     });
 
-    it("normalizes zero seeds and restored states away from the locked zero state", () => {
-        const rng = new Random(0);
+    it("normalizes zero seeds away from the locked zero state", () => {
+        const first = new Random(0);
+        const second = new Random(0);
 
-        expect(rng.getState()).not.toBe(0);
-        rng.setState(0);
-        expect(rng.getState()).not.toBe(0);
-        expect(rng.nextU32()).not.toBe(0);
+        const sequence = Array.from({ length: 3 }, () => first.random());
+        expect(sequence).toEqual(Array.from({ length: 3 }, () => second.random()));
+        expect(sequence.some((value) => value !== 0)).toBe(true);
     });
 });

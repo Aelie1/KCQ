@@ -115,7 +115,6 @@ describe("state serialization and combatant loading", () => {
             snapshot.characters[0].buffs.push({
                 id: "client-only",
                 duration: 1,
-                active: true,
                 statuses: [],
             });
             snapshot.characters[0].bindings[0].value = 999;
@@ -123,7 +122,7 @@ describe("state serialization and combatant loading", () => {
             snapshot.characters[0].bindings[0].status[0].value = 999;
             snapshot.characters[0].modifiers.hitarms = -99;
             snapshot.enemies[0].currHp = 0;
-            const intention = snapshot.enemies[0].intention;
+            const intention = snapshot.enemies[0].intention[0];
             if (intention) {
                 intention.targets.push({
                     target: "intruder",
@@ -156,6 +155,11 @@ describe("state serialization and combatant loading", () => {
         };
         const enemyBuff: iBuff = {
             id: "focus",
+            active: true,
+            statuses: [{ definition: status, value: 1 }],
+        };
+        const inactiveEnemyBuff: iBuff = {
+            id: "inactive-enemy-focus",
             active: false,
             statuses: [{ definition: status, value: 1 }],
         };
@@ -170,12 +174,13 @@ describe("state serialization and combatant loading", () => {
         const enemyMove = makeWaitMove();
         const enemyDefinition = makeEnemyDef("foe", [enemyMove]);
         const enemy = makeEnemy(enemyDefinition);
-        enemy.buffs.push(enemyBuff);
-        enemy.intention = {
+        enemy.buffs.push(enemyBuff, inactiveEnemyBuff);
+        enemy.data.previewOnly = 7;
+        enemy.intention = [{
             actor: enemy,
             move: { definition: enemyMove },
             rolls: [{ target: null, roll: 25 }],
-        };
+        }];
         const internalState: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
             nextId: {},
@@ -194,24 +199,29 @@ describe("state serialization and combatant loading", () => {
         expect(serialized.characters[0].buffs[0]).toEqual({
             id: "focus",
             duration: 2,
-            active: true,
             statuses: [{ id: status.id, value: 1 }],
             linkedEntity: "foe1",
             modifiers: { hit: -1, potency: 2, vulnerability: 3 },
         });
         expect(serialized.enemies[0].buffs[0]).toEqual({
             id: "focus",
-            active: false,
+            duration: undefined,
             statuses: [{ id: status.id, value: 1 }],
             modifiers: {},
+            linkedEntity: undefined,
         });
-        expect(serialized.enemies[0].intention).toEqual({
+        expect(serialized.enemies[0].buffs).toHaveLength(1);
+        expect(serialized.enemies[0].intention).toEqual([{
             move: enemyMove.id,
             targets: [],
             effects: [],
-        });
+        }]);
         expect(serialized).not.toHaveProperty("nextEntityId");
+        expect(serialized.enemies[0]).not.toHaveProperty("data");
+        expect(serialized.enemies[0]).not.toHaveProperty("definition");
         expect(serialized.characters[0].modifiers).not.toHaveProperty("effect");
+        expect(serialized.characters[0].buffs[0]).not.toHaveProperty("active");
+        expect(serialized.enemies[0].buffs[0]).not.toHaveProperty("active");
         expect(serialized.characters[0].buffs[0]).not.toBe(characterBuff);
         const serializedStatus = serialized.characters[0].buffs[0].statuses?.[0];
         const internalStatus = characterBuff.statuses?.[0];
@@ -221,10 +231,11 @@ describe("state serialization and combatant loading", () => {
         serialized.characters[0].buffs[0].duration = 99;
         serializedStatus.value = 99;
         serialized.characters[0].buffs[0].modifiers!.hit = -99;
-        serialized.enemies[0].buffs[0].active = true;
+        serialized.enemies[0].buffs[0].statuses![0].value = 88;
         expect(characterBuff.duration).toBe(2);
         expect(internalStatus.value).toBe(1);
         expect(characterBuff.modifiers?.hit).toBe(-1);
-        expect(enemyBuff.active).toBe(false);
+        expect(enemyBuff.statuses?.[0].value).toBe(1);
+        expect(inactiveEnemyBuff.active).toBe(false);
     });
 });

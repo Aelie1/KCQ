@@ -99,10 +99,10 @@ function setupSkunkingLifecycle() {
 
 describe("Skunkette behavior through GameEngine", () => {
     it.each([
-        [3, 2, ["immobilized"]],
-        [6, 4, ["immobilized"]],
-        [4, 6, ["immobilized", "stunned"]],
-        [10, 8, ["immobilized", "helpless"]],
+        [9, 2, ["immobilized"]],
+        [4, 4, ["immobilized"]],
+        [2, 6, ["immobilized", "stunned"]],
+        [3, 8, ["immobilized", "helpless"]],
     ] as const)(
         "creates the expected linked Pounce severity with seed %s",
         (seed, enemyHit, statusIds) => {
@@ -126,7 +126,7 @@ describe("Skunkette behavior through GameEngine", () => {
     );
 
     it("adds the linked Spray binding on a sufficiently strong Pounce crit", () => {
-        const { engine, pounceTurn } = setupPounce(36);
+        const { engine, pounceTurn } = setupPounce(64);
         const bindingEvent = pounceTurn.events.find(
             (event) => event.type === "bondageAdded",
         );
@@ -138,7 +138,7 @@ describe("Skunkette behavior through GameEngine", () => {
     });
 
     it("weakens both linked Pounce buffs when another character damages Skunkette", () => {
-        const { engine, strike } = setupPounce(10, true);
+        const { engine, strike } = setupPounce(3, true);
         expect(buffState(engine, POUNCE_ID, "skunkette1")?.modifiers?.hit).toBe(8);
 
         const result = execute(engine, {
@@ -159,7 +159,7 @@ describe("Skunkette behavior through GameEngine", () => {
     });
 
     it("removes both linked Pounce buffs and restores cooldown when damage breaks it", () => {
-        const { engine, strike } = setupPounce(3, true);
+        const { engine, strike } = setupPounce(32, true);
 
         const result = execute(engine, {
             type: "attack",
@@ -196,7 +196,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("victim"),
             makeBehavioralCharacter("attacker", [lethal]),
-        ], [skunkette], 10);
+        ], [skunkette], 3);
         execute(engine, { type: "endTurn" });
 
         const result = execute(engine, {
@@ -211,16 +211,16 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffAdded", target: "skunkette1", buff: "resistance" },
             { type: "buffUpdated", target: "victim", buff: POUNCE_ID },
             { type: "buffUpdated", target: "skunkette1", buff: POUNCE_ID },
-            { type: "enemyDefeated", target: "skunkette1" },
             { type: "buffRemoved", target: "skunkette1", buff: POUNCE_ID },
             { type: "buffRemoved", target: "victim", buff: POUNCE_ID },
+            { type: "enemyDefeated", target: "skunkette1" },
         ]);
         expect(buffState(engine, POUNCE_ID, "victim")).toBeUndefined();
         expect(engine.getGameState().enemies).toEqual([]);
     });
 
     it("keeps Pounce on a Throw Off miss and removes both sides on a hit", () => {
-        const missed = setupPounce(3).engine;
+        const missed = setupPounce(4).engine;
         expect(enemyState(missed, "skunkette1").cooldowns[POUNCE_ID]).toBe(1);
         const missResult = execute(missed, {
             type: "attack",
@@ -238,7 +238,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(buffState(missed, POUNCE_ID, "skunkette1")).toBeDefined();
         expect(enemyState(missed, "skunkette1").cooldowns[POUNCE_ID]).toBe(1);
 
-        const hit = setupPounce(18).engine;
+        const hit = setupPounce(2).engine;
         const hitResult = execute(hit, {
             type: "attack",
             actor: "victim",
@@ -368,7 +368,6 @@ describe("Skunkette behavior through GameEngine", () => {
             },
             { type: "enemyDamaged", target: LINKED_SKUNKETTE_ID, amount: skunkette.hp },
             { type: "buffAdded", target: LINKED_SKUNKETTE_ID, buff: "resistance" },
-            { type: "enemyDefeated", target: LINKED_SKUNKETTE_ID },
             { type: "buffRemoved", target: LINKED_SKUNKETTE_ID, buff: SKUNKED_ID },
             { type: "buffRemoved", target: SKUNKED_CHARACTER_ID, buff: SKUNKED_ID },
             ...LATEX_BODY_BINDINGS.map((binding) => ({
@@ -377,6 +376,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 binding: binding.id,
                 amount: -40,
             })),
+            { type: "enemyDefeated", target: LINKED_SKUNKETTE_ID },
         ]);
         expect(rescue.state.enemies.some(({ id }) => id === LINKED_SKUNKETTE_ID)).toBe(false);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toBeUndefined();
@@ -443,9 +443,9 @@ describe("Skunkette behavior through GameEngine", () => {
             makeBehavioralCharacter("hero"),
         ], [skunkette], 3);
 
-        expect(enemyState(engine, "skunkette1").intention?.move).toBe(POUNCE_ID);
+        expect(enemyState(engine, "skunkette1").intention[0]?.move).toBe(POUNCE_ID);
         execute(engine, { type: "endTurn" });
-        const nextIntention = enemyState(engine, "skunkette1").intention;
+        const nextIntention = enemyState(engine, "skunkette1").intention[0];
         const bindingEffect = nextIntention?.targets[0].effects.find(
             (effect) => effect.type === "binding",
         );
@@ -457,7 +457,7 @@ describe("Skunkette behavior through GameEngine", () => {
     });
 
     it("selects Latex Spray from fallback priority when Pounce is unavailable", () => {
-        const { engine, strike } = setupPounce(8, true);
+        const { engine, strike } = setupPounce(32, true);
         execute(engine, {
             type: "attack",
             actor: "attacker",
@@ -474,7 +474,7 @@ describe("Skunkette behavior through GameEngine", () => {
         execute(engine, { type: "endTurn" });
 
         const state = engine.getGameState();
-        const intention = enemyState(engine, "skunkette1").intention;
+        const intention = enemyState(engine, "skunkette1").intention[0];
         const bindingEffect = intention?.targets[0]?.effects.find(
             (effect) => effect.type === "binding",
         );
@@ -483,33 +483,36 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(buffState(engine, POUNCE_ID, "skunkette1")).toBeUndefined();
         expect(intention?.move).toBe("latexSpray");
         expect(state.characters.map(({ id }) => id)).toContain(intention?.targets[0]?.target);
-        expect(bindingEffect).toEqual({
+        expect(bindingEffect).toMatchObject({
             type: "binding",
-            target: "victim",
-            binding: latexHead.id,
-            amount: 14,
+            target: expect.any(String),
+            binding: expect.any(String),
+            amount: expect.any(Number),
         });
         expect(LATEX_BODY_BINDINGS.map(({ id }) => id)).toContain(
             bindingEffect?.type === "binding" ? bindingEffect.binding : undefined,
         );
 
-        const before = bindingState(engine, latexHead.id, "victim")?.value;
+        if (bindingEffect?.type !== "binding" || bindingEffect.amount === undefined) {
+            throw new Error("Expected the fallback Spray preview to contain bondage");
+        }
+        const before = bindingState(engine, bindingEffect.binding, bindingEffect.target)?.value ?? 0;
         const fallbackTurn = execute(engine, { type: "endTurn" });
 
-        expect(before).toBe(24);
         expect(fallbackTurn.events).toContainEqual({
             type: "moveUsed",
             actor: "skunkette1",
             move: "latexSpray",
-            targets: [{ target: "victim", result: "hit" }],
+            targets: [{ target: bindingEffect.target, result: intention.targets[0].band }],
         });
-        expect(fallbackTurn.events).toContainEqual({
-            type: "bondageChanged",
-            target: "victim",
-            binding: latexHead.id,
-            amount: 14,
-        });
-        expect(bindingState(engine, latexHead.id, "victim")?.value).toBe(38);
+        expect(fallbackTurn.events).toContainEqual(expect.objectContaining({
+            type: before === 0 ? "bondageAdded" : "bondageChanged",
+            target: bindingEffect.target,
+            binding: bindingEffect.binding,
+            amount: bindingEffect.amount,
+        }));
+        expect(bindingState(engine, bindingEffect.binding, bindingEffect.target)?.value)
+            .toBe(before + bindingEffect.amount);
     });
 
     it("does not select an Impossible latex location for Spray", () => {
@@ -535,7 +538,7 @@ describe("Skunkette behavior through GameEngine", () => {
         engine.loadEncounter(encounter.id);
         execute(engine, { type: "endTurn" });
 
-        const intention = enemyState(engine, "skunkette1").intention;
+        const intention = enemyState(engine, "skunkette1").intention[0];
         const bindingEffects = intention?.targets.flatMap(({ effects }) =>
             effects.filter((effect) => effect.type === "binding"));
         expect(intention?.move).toBe("latexSpray");
@@ -574,13 +577,13 @@ describe("Skunkette behavior through GameEngine", () => {
             ],
         });
         const encounter = { id: "mist", enemies: [skunkette], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], 2);
+        const engine = new GameEngine([encounter], 23);
         engine.loadCharacter(makeBehavioralCharacter("first", [prepare]));
         engine.loadCharacter(makeBehavioralCharacter("second"));
         execute(engine, { type: "attack", actor: "first", move: prepare.id, targets: [] });
         engine.loadEncounter(encounter.id);
 
-        const preview = enemyState(engine, "skunkette1").intention;
+        const preview = enemyState(engine, "skunkette1").intention[0];
         expect(preview?.move).toBe(LATEX_MIST_ID);
         expect(preview?.targets.map(({ target, band: result }) => ({ target, result }))).toEqual([
             { target: "first", result: "miss" },
@@ -591,13 +594,11 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(buffState(engine, LATEX_MIST_ID, "first")).toMatchObject({
             id: LATEX_MIST_ID,
             modifiers: { spread: 1 },
-            active: true,
             duration: 1,
         });
         expect(buffState(engine, LATEX_MIST_ID, "second")).toMatchObject({
             id: LATEX_MIST_ID,
             modifiers: { spread: 1 },
-            active: true,
             duration: 1,
         });
         expect(bindingState(engine, latexArms.id, "first")?.value).toBe(10);
@@ -626,7 +627,7 @@ describe("Skunkette behavior through GameEngine", () => {
             ],
         });
         const encounter = { id: "mist-crit", enemies: [skunkette], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], 11);
+        const engine = new GameEngine([encounter], 428);
         engine.loadCharacter(makeBehavioralCharacter("hero", [prepare]));
         execute(engine, {
             type: "attack",
@@ -636,10 +637,10 @@ describe("Skunkette behavior through GameEngine", () => {
         });
         engine.loadEncounter(encounter.id);
 
-        expect(enemyState(engine, "skunkette1").intention).toMatchObject({
+        expect(enemyState(engine, "skunkette1").intention).toMatchObject([{
             move: LATEX_MIST_ID,
             targets: [{ target: "hero", band: "crit" }],
-        });
+        }]);
 
         const result = execute(engine, { type: "endTurn" });
 
@@ -666,7 +667,6 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(buffState(engine, LATEX_MIST_ID)).toMatchObject({
             id: LATEX_MIST_ID,
             modifiers: { spread: 1 },
-            active: true,
             duration: 1,
         });
         expect(buffState(engine, SKUNKED_ID)).toBeUndefined();

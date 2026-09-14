@@ -155,7 +155,7 @@ describe("deferred binding onResolve effects", () => {
         engine.loadCharacter(makeCharacterDef("hero"));
         engine.loadEncounter(encounter.id);
 
-        const effect = engine.getGameState().enemies[0].intention?.targets[0]?.effects[0];
+        const effect = engine.getGameState().enemies[0].intention[0]?.targets[0]?.effects[0];
         expect(effect).toEqual({
             type: "binding", target: "hero", binding: placeholder.id, amount: undefined,
         });

@@ -324,11 +324,12 @@ describe("stance toggling", () => {
                 return [];
             },
         });
-        const observer = makeEnemyDef("observer", [observe], (_state, actor) => ({
+        const observer = makeEnemyDef("observer", [observe], (_state, actor) => [{
+            type: "move",
             actor,
             move: { definition: observe },
             targets: [],
-        }));
+        }]);
         const encounter = {
             id: "pounce-transition",
             enemies: [skunkette, observer],
@@ -353,16 +354,16 @@ describe("stance toggling", () => {
             standing: true,
             buffs: [expect.objectContaining({
                 id: "pounce",
-                active: true,
                 statuses: expect.arrayContaining([{ id: "immobilized", value: 1 }]),
             })],
         });
+        expect(engine.getGameState().characters[0].buffs[0]).not.toHaveProperty("active");
     });
 
     it("applies exactly -20 defense while standing through enemy accuracy resolution", () => {
         const outcomes = [
-            { seed: 19, standingResult: "miss" },
-            { seed: 7211, standingResult: "hit" },
+            { seed: 5, standingResult: "miss" },
+            { seed: 1, standingResult: "hit" },
         ] as const;
 
         for (const { seed, standingResult } of outcomes) {
@@ -376,9 +377,9 @@ describe("stance toggling", () => {
             engine.loadCharacter(makeCharacterDef("hero"));
             engine.loadEncounter(encounter.id);
 
-            expect(engine.getGameState().enemies[0].intention?.targets[0].band).toBe("miss");
+            expect(engine.getGameState().enemies[0].intention[0]?.targets[0].band).toBe("miss");
             expect(engine.executeAction({ type: "stance", actor: "hero" }).success).toBe(true);
-            expect(engine.getGameState().enemies[0].intention?.targets[0].band)
+            expect(engine.getGameState().enemies[0].intention[0]?.targets[0].band)
                 .toBe(standingResult);
         }
     });

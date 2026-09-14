@@ -322,10 +322,10 @@ describe("generic traps through GameEngine", () => {
 
 describe("authored Latex puddles", () => {
     it.each([
-        [1, [20, 20, 20, 20], 80],
-        [2516, [20, 20, 0, 0], 40],
-        [7942, [20, 0, 0, 0], 20],
-        [14424, [10, 0, 0, 0], 10],
+        [3, [20, 20, 20, 20], 80],
+        [2, [20, 20, 0, 0], 40],
+        [1, [20, 0, 0, 0], 20],
+        [5, [10, 0, 0, 0], 10],
     ] as const)("applies its authored severity region with seed %s", (seed, amounts, consumed) => {
         const engine = makeTrapEngine([{ definition: trapPuddle, amount: 100 }], undefined, seed);
 
@@ -353,7 +353,7 @@ describe("authored Latex puddles", () => {
     });
 
     it("consumes only the remaining puddle amount and never drops below zero", () => {
-        const engine = makeTrapEngine([{ definition: trapPuddle, amount: 15 }], undefined, 1);
+        const engine = makeTrapEngine([{ definition: trapPuddle, amount: 15 }], undefined, 3);
 
         const result = engine.executeAction(attack());
         expect(result.success).toBe(true);

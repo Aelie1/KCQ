@@ -44,7 +44,7 @@ const state: GameState = {
         currDef: 0,
         cooldowns: {},
         buffs: [],
-        intention: {
+        intention: [{
             move: "latexSpray",
             targets: [{
                 target: "ko",
@@ -52,7 +52,7 @@ const state: GameState = {
                 effects: [{ type: "binding", target: "ko", binding: "latexArms", amount: 19 }],
             }],
             effects: [],
-        },
+        }],
     }],
     traps: []
 };
@@ -146,7 +146,7 @@ describe("console formatting", () => {
         expect(lines.join("\n")).not.toContain("…");
 
         const rendered = renderState(
-            { ...state, enemies: [{ ...state.enemies[0], intention: longIntention }] },
+            { ...state, enemies: [{ ...state.enemies[0], intention: [longIntention] }] },
             [{ id: "ko", available: true }],
         );
         expect(rendered).toContain("latexLegs +19");
@@ -168,13 +168,12 @@ describe("console formatting", () => {
     it("describes serialized buff effects", () => {
         expect(formatBuff({
             id: "pounce",
-            active: false,
             duration: 2,
             linkedEntity: "skunkette1",
             statuses: [{ id: "immobilized", value: 1 }],
             modifiers: { defense: -2, hit: 4 },
         })).toBe(
-            "Pounce (pending) (2 rounds) (linked: skunkette1) "
+            "Pounce (2 rounds) (linked: skunkette1) "
             + "(Immobilized) (Def -2) (Hit +4)",
         );
     });
@@ -461,14 +460,14 @@ describe("console formatting", () => {
                 ...state.characters[0],
                 bindings: [],
                 buffs: [
-                    { id: "firstBuff", active: false, duration: 2 },
-                    { id: "secondBuff", active: true, modifiers: { defense: -1 } },
+                    { id: "firstBuff", duration: 2 },
+                    { id: "secondBuff", modifiers: { defense: -1 } },
                 ],
             }],
         };
         const rendered = renderState(buffState, [{ id: "ko", available: true }]);
 
-        expect(rendered).toContain("First Buff (pending) (2 rounds)");
+        expect(rendered).toContain("First Buff (2 rounds)");
         expect(rendered).toContain("Second Buff (Def -1)");
         expect(rendered.split("\n").some((line) => line.includes("First Buff") && line.includes("Second Buff")))
             .toBe(false);
@@ -482,7 +481,6 @@ describe("console formatting", () => {
                 bindings: [],
                 buffs: [{
                     id: "veryLongBuffName",
-                    active: true,
                     linkedEntity: "skunkette1",
                     statuses: [{ id: "immobilized", value: 1 }],
                     modifiers: { hitarms: -2, hitmouth: -3, defense: -4, willpower: 2 },
@@ -534,7 +532,7 @@ describe("console formatting", () => {
     });
 
     it("puts a single accuracy preview on the move row", async () => {
-        const engine = new GameEngine([oneEnemyEncounter], 8224);
+        const engine = new GameEngine([oneEnemyEncounter], 2);
         engine.loadCharacter(ko);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
@@ -561,7 +559,7 @@ describe("console formatting", () => {
     });
 
     it("executes a one-target move immediately when only one valid target exists", async () => {
-        const engine = new GameEngine([oneEnemyEncounter], 8224);
+        const engine = new GameEngine([oneEnemyEncounter], 8);
         engine.loadCharacter(ko);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 

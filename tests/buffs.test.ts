@@ -69,9 +69,9 @@ describe("buff behavior through GameEngine", () => {
         expect(buffState(engine, "test-buff", "foe1")).toMatchObject({
             id: "test-buff",
             duration: 2,
-            active: true,
             statuses: [{ id: "blinded", value: 1 }],
         });
+        expect(buffState(engine, "test-buff", "foe1")).not.toHaveProperty("active");
     });
 
     it("keeps an authored pending reaction inactive until the next player phase", () => {
@@ -107,18 +107,14 @@ describe("buff behavior through GameEngine", () => {
             move: strike.id,
             targets: ["foe1"],
         });
-        expect(buffState(engine, "enemy-debuff")).toMatchObject({
-            active: false,
-            duration: 3,
-            statuses: [{ id: "blinded", value: 1 }],
-        });
+        expect(buffState(engine, "enemy-debuff")).toBeUndefined();
 
         execute(engine, { type: "endTurn" });
         expect(buffState(engine, "enemy-debuff")).toMatchObject({
-            active: true,
             duration: 3,
             statuses: [{ id: "blinded", value: 1 }],
         });
+        expect(buffState(engine, "enemy-debuff")).not.toHaveProperty("active");
     });
 
     it("updates an existing buff with the same id and emits buffUpdated", () => {
@@ -181,8 +177,8 @@ describe("buff behavior through GameEngine", () => {
 
         expect(buffState(engine, "permanent")).toMatchObject({
             id: "permanent",
-            active: true,
         });
+        expect(buffState(engine, "permanent")).not.toHaveProperty("active");
         expect(buffState(engine, "permanent")?.duration).toBeUndefined();
     });
 
@@ -325,10 +321,7 @@ describe("buff status integration through GameEngine", () => {
             move: addPending.id,
             targets: [],
         });
-        expect(buffState(engine, "pending-kit")).toMatchObject({
-            active: false,
-            statuses: [{ id: "blinded", value: 1 }],
-        });
+        expect(buffState(engine, "pending-kit")).toBeUndefined();
         expect(characterState(engine).modifiers).toEqual({});
         expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(false);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({
@@ -338,10 +331,10 @@ describe("buff status integration through GameEngine", () => {
 
         execute(engine, { type: "endTurn" });
         expect(buffState(engine, "pending-kit")).toMatchObject({
-            active: true,
             duration: 1,
             statuses: [{ id: "blinded", value: 1 }],
         });
+        expect(buffState(engine, "pending-kit")).not.toHaveProperty("active");
         expect(characterState(engine).modifiers).toEqual({ hit: -3, defense: -3 });
         expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(true);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({

@@ -107,11 +107,12 @@ export function makeEnemyDef(
         hp: 37,
         defense: 0,
         passives: [],
-        ai: ai ?? ((_state, actor) => ({
+        ai: ai ?? ((state, actor) => [{
+            type: "move",
             actor,
             move: { definition: defaultMove },
-            targets: defaultMove.targets === 0 ? [] : [_state.characters[0]],
-        })),
+            targets: defaultMove.targets === 0 ? [] : [state.characters[0]],
+        }]),
     };
 }
 
@@ -123,8 +124,9 @@ export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnem
         currHp: definition.hp,
         maxHp: definition.hp,
         currDef: definition.defense,
-        intention: null,
+        intention: [],
         cooldowns: {},
+        data: {},
     };
 }
 

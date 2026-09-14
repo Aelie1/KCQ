@@ -70,11 +70,12 @@ export function makeBehavioralEnemy(
         hp: 37,
         defense: 0,
         passives: [],
-        ai: (state, actor) => ({
+        ai: (state, actor) => [{
+            type: "move",
             actor,
             move: { definition: defaultMove },
             targets: defaultMove.targets === 0 ? [] : [state.characters[0]],
-        }),
+        }],
     };
 }
 

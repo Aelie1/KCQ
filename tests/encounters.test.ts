@@ -109,12 +109,12 @@ describe("encounters", () => {
             expect.objectContaining({
                 id: "foe1",
                 maxHp: waitEnemy.hp,
-                intention: expect.any(Object),
+                intention: expect.any(Array),
             }),
             expect.objectContaining({
                 id: "attacker1",
                 maxHp: basicAttackingEnemy.hp,
-                intention: expect.any(Object),
+                intention: expect.any(Array),
             }),
         ]);
     });
@@ -126,11 +126,12 @@ describe("encounters", () => {
         const wait = makeWaitMove();
         const enemy = makeEnemyDef("setup-foe", [wait], (state, actor) => {
             calls.push("ai");
-            return {
+            return [{
+                type: "move",
                 actor,
                 move: { definition: wait },
                 targets: [],
-            };
+            }];
         });
         const encounter: EncounterDef = {
             id: "test-setup",
@@ -153,11 +154,11 @@ describe("encounters", () => {
         expect(calls).toEqual(["setup", "ai"]);
         expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
         expect(engine.getGameState().turn.step).toBe(setupStep);
-        expect(engine.getGameState().enemies[0].intention).toMatchObject({
+        expect(engine.getGameState().enemies[0].intention).toMatchObject([{
             move: wait.id,
             targets: [],
             effects: [],
-        });
+        }]);
     });
 
     it("loads the authored catalogue when it is explicitly injected", () => {
@@ -206,11 +207,11 @@ describe("encounters", () => {
         expect(state.enemies.map(({ id }) => id)).toEqual([
             "skunkette1", "skunkette2", "skunk1", "skunk2",
         ]);
-        expect(state.enemies.every(({ intention }) => intention !== null)).toBe(true);
+        expect(state.enemies.every(({ intention }) => intention.length > 0)).toBe(true);
         expect(state.enemies.every(({ intention }) =>
-            intention!.targets.every(({ target }) =>
+            intention.every(({ targets }) => targets.every(({ target }) =>
                 state.characters.some(({ id }) => id === target),
-            ),
+            )),
         )).toBe(true);
         expect(engine.getMoves(ko.id).some(({ available }) => available)).toBe(true);
     });

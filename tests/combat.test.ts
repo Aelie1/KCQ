@@ -16,7 +16,7 @@ import {
     targetAccuracy,
 } from "./behavioralHelpers";
 
-const AUTHORED_HIT_SEED = 3;
+const AUTHORED_HIT_SEED = 2;
 
 function expectMoveRejection(
     engine: GameEngine,
@@ -273,7 +273,9 @@ describe("move validation and player actions", () => {
             targets: [{ target: enemyId, result: "hit" }],
         });
         const damageEvent = result.events.find((event) => event.type === "enemyDamaged");
-        if (!damageEvent) throw new Error("Expected Fairy Punch to damage an enemy");
+        if (!damageEvent || damageEvent.type !== "enemyDamaged") {
+            throw new Error("Expected Fairy Punch to damage an enemy");
+        }
         expect(damageEvent).toMatchObject({ target: enemyId, amount: expect.any(Number) });
         expect(damageEvent.amount).toBeGreaterThan(0);
         expect(engine.getGameState().enemies[0].currHp).toBe(
@@ -333,8 +335,10 @@ describe("move validation and player actions", () => {
             { type: "buffAdded", target: "hero", buff: "rallied" },
             { type: "buffAdded", target: "ally", buff: "rallied" },
         ]);
-        expect(buffState(engine, "rallied", "hero")?.active).toBe(true);
-        expect(buffState(engine, "rallied", "ally")?.active).toBe(true);
+        expect(buffState(engine, "rallied", "hero")).toMatchObject({ id: "rallied" });
+        expect(buffState(engine, "rallied", "ally")).toMatchObject({ id: "rallied" });
+        expect(buffState(engine, "rallied", "hero")).not.toHaveProperty("active");
+        expect(buffState(engine, "rallied", "ally")).not.toHaveProperty("active");
     });
 
     it.each(["missing", `${skunkette.id}1`])(
@@ -461,7 +465,8 @@ describe("move and effect resolution through GameEngine", () => {
         expect(bindingState(engine, "trigger")?.value).toBe(1);
         expect(bindingState(engine, "chained")?.value).toBe(2);
         expect(bindingState(engine, "sibling")?.value).toBe(3);
-        expect(buffState(engine, "chain-finished")?.active).toBe(true);
+        expect(buffState(engine, "chain-finished")).toMatchObject({ id: "chain-finished" });
+        expect(buffState(engine, "chain-finished")).not.toHaveProperty("active");
     });
 
     it("propagates the damage source into onDamage and resolves its effects", () => {
@@ -504,7 +509,7 @@ describe("move and effect resolution through GameEngine", () => {
         expect(bindingState(engine, reaction.id)?.value).toBe(1);
     });
 
-    it("resolves onDamage before defeat and onDefeat after the defeat event", () => {
+    it("resolves onDamage and onDefeat depth-first before removing the enemy", () => {
         const damageReaction = makeBehavioralBinding("damage-reaction");
         const defeatReaction = makeBehavioralBinding("defeat-reaction");
         const strike = makeMove("lethal-strike", "arms", {
@@ -543,8 +548,8 @@ describe("move and effect resolution through GameEngine", () => {
         expect(result.events.slice(1)).toEqual([
             { type: "enemyDamaged", target: "reactive1", amount: 5 },
             { type: "bondageAdded", target: "hero", binding: "damage-reaction", amount: 1 },
-            { type: "enemyDefeated", target: "reactive1" },
             { type: "bondageAdded", target: "hero", binding: "defeat-reaction", amount: 1 },
+            { type: "enemyDefeated", target: "reactive1" },
         ]);
         expect(result.state.enemies).toEqual([]);
         expect(bindingState(engine, damageReaction.id)?.value).toBe(1);
