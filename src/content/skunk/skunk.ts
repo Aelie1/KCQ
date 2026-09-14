@@ -1,6 +1,5 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
-import { pickBinding, pickTarget, validTargets } from "../../engine/protected/enemies";
-import { findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { findBinding, findTrap, getValidTargets, isCharacter, isEnemy, pickBinding, pickTarget } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
@@ -33,7 +32,7 @@ export const skunk: EnemyDef = {
             if (actor.currHp / actor.maxHp < EXPLOSION_HP_RATIO) {
                 let total = 0;
                 let target = undefined;
-                for (const character of validTargets(state.characters)) {
+                for (const character of getValidTargets(state.characters)) {
                     let amount = 0
                     for (const binding of character.bindings) {
                         amount += binding.value;
@@ -77,7 +76,7 @@ export const skunk: EnemyDef = {
         {
             let total = 0;
             let target = undefined;
-            for (const character of validTargets(state.characters)) {
+            for (const character of getValidTargets(state.characters)) {
                 let amount = 0
                 for (const binding of character.bindings) {
                     amount += Math.max(0, binding.data["peak"] - binding.value);

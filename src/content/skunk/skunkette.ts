@@ -1,8 +1,7 @@
-import { EnemyDef, MoveDef, s } from "../../engine/protected/definitions";
-import { pickBinding, pickTarget, validTargets } from "../../engine/protected/enemies";
-import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
+import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
+import { findBuff, findCharacter, findEnemy, getValidTargets, isCharacter, pickBinding, pickTarget } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
-import { helpless, immobilized, isIncapacitated, stunned } from "../../engine/protected/status";
+import { helpless, immobilized, isIncapacitated, s, stunned } from "../../engine/protected/status";
 import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
@@ -313,7 +312,7 @@ const latexMist: MoveDef = {
             active: false,
             duration: 1
         }
-        for (const character of validTargets(state.characters)) {
+        for (const character of getValidTargets(state.characters)) {
             effects.push({
                 target: character,
                 type: "buff",

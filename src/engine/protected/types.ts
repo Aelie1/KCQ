@@ -73,11 +73,6 @@ export type iStatus = {
     value: number;
 }
 
-export interface TrapSetup {
-    definition: TrapDef;
-    amount: number;
-}
-
 export type iEffect =
     | iDamageEffect
     | iBindingEffect

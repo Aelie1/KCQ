@@ -1,6 +1,6 @@
 import { thresholds, TRAP_MAX } from "../protected/constants";
 import { BindingDef, EnemyDef, MoveDef } from "../protected/definitions";
-import { validTargets } from "../protected/enemies";
+import { getValidTargets } from "../protected/helpers";
 import { findBinding, findBuff, findEntity, isEnemy, isValidEntity } from "../protected/helpers";
 import { Random } from "../protected/random";
 import { canMove } from "../protected/status";
@@ -388,7 +388,7 @@ export class GameEffects {
             if (move.definition.side === "enemy") {
                 targets.push(...this.state.enemies);
             } else {
-                targets.push(...validTargets(this.state.characters));
+                targets.push(...getValidTargets(this.state.characters));
             }
         } else {
             targets.push(...action.targets);

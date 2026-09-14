@@ -1,11 +1,15 @@
+import { ActionFailure, ActionType, ModifierId, ModifierSet, MoveType } from "../public/types";
+import { StatusDef } from "./definitions";
 import { getBindingLevel, isCharacter } from "./helpers";
 import { iCharacter, iEntity, iStatus } from "./types";
-import { StatusDef } from "./definitions";
-import { ActionFailure, ActionType, ModifierId, ModifierSet, MoveType } from "../public/types";
 
 /*******************************************************
  * Functions
  *******************************************************/
+
+export function s(definition: StatusDef, value: number): iStatus {
+    return { definition, value };
+}
 
 export function getStatuses(target: iEntity): iStatus[] {
     const statuses: iStatus[] = [];
@@ -95,7 +99,7 @@ export function getBlockedMoveTypes(actor: iCharacter): MoveType[] {
     const types: Set<MoveType> = new Set();
     for (const status of statuses) {
         const level = status.definition.levels[status.value];
-        for(const type of level.blockedMoveTypes ?? []) {
+        for (const type of level.blockedMoveTypes ?? []) {
             types.add(type);
         }
     }
@@ -357,4 +361,3 @@ export const standing: StatusDef = {
         { modifiers: { defense: -2 } }
     ]
 }
-

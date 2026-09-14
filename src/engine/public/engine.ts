@@ -1,5 +1,7 @@
-import { evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove, 
-    tickBindings, tickBuffs, tickCooldowns, tickPlayers } from "../private/combat";
+import {
+    evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove,
+    tickBindings, tickBuffs, tickCooldowns, tickPlayers
+} from "../private/combat";
 import { GameEffects } from "../private/effects";
 import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
 import { iValidityInfo } from "../private/types";

@@ -1,6 +1,6 @@
-import { AccuracyProfile, BindingLevel, ModifierId, Move, MoveType, StatusId, TrapId } from "../public/types";
-import { Random } from "./random";
-import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, iTrap, TrapSetup } from "./types";
+import type { AccuracyProfile, BindingLevel, ModifierId, Move, MoveType, StatusId, TrapId } from "../public/types";
+import type { Random } from "./random";
+import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo, iTrap } from "./types";
 
 
 export interface CharacterDef {
@@ -46,10 +46,6 @@ export interface TrapDef {
     onTrigger: (target: iCharacter, trap: iTrap, roll: number) => iEffect[];
 }
 
-export function s(definition: StatusDef, value: number): iStatus {
-    return { definition, value };
-}
-
 export interface StatusDef {
     id: StatusId;
     levels: StatusLevelDef[];
@@ -73,5 +69,10 @@ export interface EncounterDef {
     bindings: BindingDef[];
     traps: TrapSetup[];
     setup?: (state: iGameState) => void;
+}
+
+export interface TrapSetup {
+    definition: TrapDef;
+    amount: number;
 }
 
