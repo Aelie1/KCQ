@@ -100,24 +100,12 @@ interface iBuffEffect extends Omit<BuffEffect, "target" | "buff"> {
     linked?: boolean;
 }
 
-type iEnemyEffect = iEnemySpawnEffect | iEnemyCheckEffect | iEnemyDefeatEffect;
-
-interface iEnemySpawnEffect extends Omit<EnemyEffect, "target"> {
+interface iEnemyEffect extends Omit<EnemyEffect, "target"> {
     operation: "spawn";
     definition: EnemyDef;
     id?: EntityId;
     buff?: iBuff;
     hpRatio?: number;
-}
-
-interface iEnemyCheckEffect extends Omit<EnemyEffect, "target"> {
-    operation: "check";
-    target: iEnemy;
-}
-
-interface iEnemyDefeatEffect extends Omit<EnemyEffect, "target"> {
-    operation: "defeat";
-    target: iEnemy;
 }
 
 interface iCooldownEffect {

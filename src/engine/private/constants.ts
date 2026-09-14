@@ -1,22 +1,11 @@
-import { HitBand, BindingLevel } from "../public/types";
+import { HitBand } from "../public/types";
 
 export const BINDING_MODIFIER = 0.1;
 export const EFFECTIVENESS_MODIFIER = 0.125;
 export const DEFENSE_MODIFIER = 10;
 export const HIT_MODIFIER = 10;
-export const SPREAD_MODIFIER = 0.1;
 export const TRAP_MODIFIER = 5;
 export const TRAP_MAX = 100;
-
-export const thresholds: Record<BindingLevel, number> = {
-    none: 0,
-    easy: 10,
-    medium: 20,
-    hard: 30,
-    extreme: 50,
-    impossible: 80,
-    max: 100
-};
 
 export const effectivenessRange: Record<HitBand, [number, number]> = {
     miss: [0, 0],

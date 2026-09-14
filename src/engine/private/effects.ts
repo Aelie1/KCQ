@@ -1,15 +1,15 @@
-import { thresholds, TRAP_MAX } from "../protected/constants";
 import { BindingDef, EnemyDef, MoveDef } from "../protected/definitions";
-import { getValidTargets } from "../protected/helpers";
-import { findBinding, findBuff, findEntity, isEnemy, isValidEntity } from "../protected/helpers";
+import { findBinding, findBuff, findEntity, getValidTargets, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { Random } from "../protected/random";
 import { canMove } from "../protected/status";
-import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap } from "../protected/types";
+import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, GameEvent, StanceId } from "../public/types";
+import { TRAP_MAX } from "./constants";
+import { iEngineEffect } from "./types";
 
 export class GameEffects {
     private events: GameEvent[];
-    private effects: iEffect[];
+    private effects: iEngineEffect[];
     private state: iGameState;
     private rng: Random;
 
@@ -34,12 +34,12 @@ export class GameEffects {
         this.resolve();
     }
 
-    fromEffects(other: iEffect[]) {
+    fromEffects(other: iEngineEffect[]) {
         this.stack(other);
         this.resolve();
     }
 
-    private stack(other: iEffect[]) {
+    private stack(other: iEngineEffect[]) {
         for (let i = other.length - 1; i >= 0; i--) {
             this.effects.push(other[i]);
         }
@@ -378,7 +378,7 @@ export class GameEffects {
         return;
     };
 
-    private addIntention(action: iEffect) {
+    private addIntention(action: iEngineEffect) {
         if (action.type != "move" || !isEnemy(action.actor)) {
             return;
         }

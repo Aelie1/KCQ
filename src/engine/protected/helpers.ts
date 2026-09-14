@@ -1,5 +1,4 @@
-import type { BindingId, BindingLevel, BuffId, EntityId, EntitySide, MoveId, TrapId } from "../public/types";
-import { thresholds } from "./constants";
+import type { BindingId, BindingLevel, BuffId, EntityId, MoveId, TrapId } from "../public/types";
 import type { BindingDef, MoveDef } from "./definitions";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";
@@ -22,9 +21,15 @@ export function isEnemy(entity: iEntity): entity is iEnemy {
     return "currHp" in entity;
 }
 
-export function getIEntitySide(entity: iEntity): EntitySide {
-    return (isCharacter(entity)) ? "player" : "enemy";
-}
+export const thresholds: Record<BindingLevel, number> = {
+    none: 0,
+    easy: 10,
+    medium: 20,
+    hard: 30,
+    extreme: 50,
+    impossible: 80,
+    max: 100
+};
 
 export function getBindingLevel(binding: iBinding): BindingLevel {
     if (binding.value >= thresholds.impossible) {

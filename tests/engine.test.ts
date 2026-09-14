@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
 import { skunkette } from "../src/content/skunk/skunkette";
-import { GameEngine } from "../src/engine/public/engine";
 import type { StatusDef } from "../src/engine/protected/definitions";
-import { stunned } from "../src/engine/protected/status";
+import { stunned } from "../src/engine/protected/statuses";
+import { GameEngine } from "../src/engine/public/engine";
 import {
-    makeCharacterDef,
     makeBindingDef,
+    makeCharacterDef,
     makeEnemyDef,
     makeMove,
     makeWaitMove,

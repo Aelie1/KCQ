@@ -1,7 +1,8 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { findBuff, findCharacter, findEnemy, getValidTargets, isCharacter, pickBinding, pickTarget } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
-import { helpless, immobilized, isIncapacitated, s, stunned } from "../../engine/protected/status";
+import { isIncapacitated, s } from "../../engine/protected/status";
+import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
 import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
@@ -81,9 +82,9 @@ export const skunkette: EnemyDef = {
                 //Latex mist
                 effects.push({
                     type: "move",
-                    actor: actor, 
-                    targets: [], 
-                    move: { definition: latexMist } 
+                    actor: actor,
+                    targets: [],
+                    move: { definition: latexMist }
                 });
                 return effects;
             } else {
@@ -281,7 +282,7 @@ const pounce: MoveDef = {
                     definition: latexSpray,
                     binding: move.binding
                 },
-                targets:[target]
+                targets: [target]
             })
         }
 

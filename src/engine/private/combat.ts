@@ -1,11 +1,14 @@
-import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, thresholds } from "../protected/constants";
-import { getIEntitySide, isCharacter, isEnemy, isValidEntity } from "../protected/helpers";
-import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
 import { MoveDef } from "../protected/definitions";
-import { iValidityInfo } from "./types";
+import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { canMove, getModifier, isIncapacitated } from "../protected/status";
-import { AccuracyProfile, AccuracyResult, HitBand } from "../public/types";
+import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
+import { AccuracyProfile, AccuracyResult, HitBand, type EntitySide } from "../public/types";
+import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER } from "./constants";
+import { iValidityInfo } from "./types";
 
+export function getIEntitySide(entity: iEntity): EntitySide {
+    return (isCharacter(entity)) ? "player" : "enemy";
+}
 
 export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity | null, move: MoveDef): iValidityInfo {
     if (target === null) {
@@ -374,4 +377,3 @@ export function evaluateIntention(state: iGameState, intention: iIntention): iTa
     }
     return targets;
 }
-

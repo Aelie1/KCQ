@@ -1,16 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { thresholds, effectivenessRange } from "../src/engine/protected/constants";
 import { evaluateResult, isValidTarget } from "../src/engine/private/combat";
-import { GameEngine } from "../src/engine/public/engine";
+import { effectivenessRange } from "../src/engine/private/constants";
+import type { EncounterDef, MoveDef, StatusDef } from "../src/engine/protected/definitions";
+import { thresholds } from "../src/engine/protected/helpers";
+import { Random } from "../src/engine/protected/random";
 import type {
     iCharacter,
     iEnemy,
     iTargetInfo,
 } from "../src/engine/protected/types";
-import type { EncounterDef } from "../src/engine/protected/definitions";
-import type { StatusDef } from "../src/engine/protected/definitions";
-import type { MoveDef } from "../src/engine/protected/definitions";
-import { Random } from "../src/engine/protected/random";
+import { GameEngine } from "../src/engine/public/engine";
 import type { AccuracyProfile, MoveEvent } from "../src/engine/public/types";
 import {
     makeBinding,
@@ -247,10 +246,10 @@ describe("accuracy", () => {
             profile: AccuracyProfile;
             absent: Array<keyof AccuracyProfile>;
         }> = [
-            { profile: { hit: 100 }, absent: ["miss", "graze", "crit"] },
-            { profile: { miss: 20, hit: 80 }, absent: ["graze", "crit"] },
-            { profile: { graze: 20, hit: 80 }, absent: ["miss", "crit"] },
-        ];
+                { profile: { hit: 100 }, absent: ["miss", "graze", "crit"] },
+                { profile: { miss: 20, hit: 80 }, absent: ["graze", "crit"] },
+                { profile: { graze: 20, hit: 80 }, absent: ["miss", "crit"] },
+            ];
 
         for (const { profile, absent } of cases) {
             const result = previewAccuracy(

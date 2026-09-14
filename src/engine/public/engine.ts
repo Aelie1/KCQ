@@ -2,12 +2,12 @@ import {
     evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove,
     tickBindings, tickBuffs, tickCooldowns, tickPlayers
 } from "../private/combat";
+import { TRAP_MODIFIER } from "../private/constants";
 import { GameEffects } from "../private/effects";
 import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
 import { iValidityInfo } from "../private/types";
-import { thresholds, TRAP_MODIFIER } from "../protected/constants";
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
-import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity } from "../protected/helpers";
+import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity, thresholds } from "../protected/helpers";
 import { mixSeed, Random } from "../protected/random";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, isIncapacitated, isSkipped } from "../protected/status";
 import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";

@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../src/content/skunk/latex";
-import { thresholds } from "../src/engine/protected/constants";
+import type { BindingDef, StatusDef } from "../src/engine/protected/definitions";
+import { thresholds } from "../src/engine/protected/helpers";
 import { GameEngine } from "../src/engine/public/engine";
-import type { BindingDef } from "../src/engine/protected/definitions";
-import type { StatusDef } from "../src/engine/protected/definitions";
 import type { Effect } from "../src/engine/public/types";
 import {
     makeBindingDef,

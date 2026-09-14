@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../src/content/skunk/latex";
-import { thresholds } from "../src/engine/protected/constants";
-import { GameEngine } from "../src/engine/public/engine";
 import type { BindingDef } from "../src/engine/protected/definitions";
+import { thresholds } from "../src/engine/protected/helpers";
 import {
     bound,
     helpless,
     immobilized,
     incapacitated,
-    stunned,
-} from "../src/engine/protected/status";
+    stunned
+} from "../src/engine/protected/statuses";
+import { GameEngine } from "../src/engine/public/engine";
 import {
     expectMoveRejection,
     makeBindingDef,
@@ -135,9 +135,9 @@ describe("move and escape restrictions", () => {
 
             expect(engine.getGameState().characters[0].bindings
                 .find((binding) => binding.id === latexArms.id)?.status).toContainEqual({
-                id: bound.id,
-                value: boundValue,
-            });
+                    id: bound.id,
+                    value: boundValue,
+                });
             expect(actions.find((action) => action.move.id === armsMove.id)).toMatchObject(
                 armsBlocked
                     ? { available: false, reason: "bindingRestriction" }

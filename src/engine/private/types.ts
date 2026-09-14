@@ -1,5 +1,5 @@
-import { iEntity } from "../protected/types";
-import { AccuracyProfile, ActionFailureReason, InvalidTarget, ValidTarget } from "../public/types";
+import { iEffect, iEnemy, iEntity } from "../protected/types";
+import { AccuracyProfile, ActionFailureReason, EnemyEffect, InvalidTarget, ValidTarget } from "../public/types";
 
 export type iValidityInfo = iValidTarget | iInvalidTarget;
 
@@ -15,3 +15,14 @@ interface iInvalidTarget extends Omit<InvalidTarget, "target"> {
     reason: ActionFailureReason;
 }
 
+interface iCheckEffect extends Omit<EnemyEffect, "target"> {
+    operation: "check";
+    target: iEnemy;
+}
+
+interface iDefeatEffect extends Omit<EnemyEffect, "target"> {
+    operation: "defeat";
+    target: iEnemy;
+}
+
+export type iEngineEffect = iEffect | iCheckEffect | iDefeatEffect;
