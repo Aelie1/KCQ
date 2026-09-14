@@ -181,6 +181,11 @@ describe("state serialization and combatant loading", () => {
             move: { definition: enemyMove },
             rolls: [{ target: null, roll: 25 }]
         }];
+        enemy.preview = [{
+            move: enemyMove.id,
+            targets: [],
+            effects: [],
+        }];
         const internalState: iGameState = {
             turn: { round: 1, step: 1, phase: "player" },
             nextId: {},

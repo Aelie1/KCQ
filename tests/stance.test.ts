@@ -312,17 +312,22 @@ describe("stance toggling", () => {
 
     it("keeps Pounce pending during the enemy phase, then activates it before stance reset", () => {
         let observedDuringEnemyPhase: { active: boolean | undefined; standing: boolean } | undefined;
+        const observation = makeBindingDef("observe-pounce");
         const observe = makeMove("observe-pounce", "none", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => {
-                const victim = state.characters[0];
-                observedDuringEnemyPhase ??= {
-                    active: victim.buffs.find(({ id }) => id === "pounce")?.active,
-                    standing: victim.standing,
-                };
-                return [];
-            },
+            resolve: (state) => [{
+                type: "binding",
+                target: state.characters[0],
+                binding: observation,
+                onResolve: ({ target }) => {
+                    observedDuringEnemyPhase = {
+                        active: target.buffs.find(({ id }) => id === "pounce")?.active,
+                        standing: target.standing,
+                    };
+                    return [];
+                },
+            }],
         });
         const observer = makeEnemyDef("observer", [observe], (_state, actor) => [{
             type: "move",
@@ -339,6 +344,7 @@ describe("stance toggling", () => {
         const engine = new GameEngine([encounter], 3);
         engine.loadCharacter(makeCharacterDef("victim"));
         engine.loadEncounter(encounter.id);
+        expect(observedDuringEnemyPhase).toBeUndefined();
 
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
