@@ -109,8 +109,10 @@ function serializeEffect(effect: iEffect): Effect | undefined {
 function serializeBuff(buff: iBuff): Buff {
     return {
         id: buff.id,
+        duration: buff.duration,
         statuses: buff.statuses?.map(serializeStatus),
-        modifiers: { ...buff.modifiers }
+        modifiers: { ...buff.modifiers },
+        linkedEntity: buff.linkedEntity
     };
 }
 

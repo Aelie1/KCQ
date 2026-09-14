@@ -329,9 +329,6 @@ const skunkPerfume: MoveDef = {
     cooldown: 5,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
-        if (move.roll === undefined) {
-            return effects;
-        }
         const type = move.data?.["type"] ?? 0;
 
         switch (type) {
