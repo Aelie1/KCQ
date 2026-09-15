@@ -153,8 +153,8 @@ const healingMagic: MoveDef = {
     targetSide: "enemy",
     targets: 1,
     accuracy: {
-        hit: 5,
-        crit: 95
+        hit: 95,
+        crit: 5
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
@@ -291,7 +291,7 @@ const barrierMagic: MoveDef = {
 function barrierCallback(target: iEntity, buff: iBuff, amount: number): iCallbackReturn {
     const effects: iEffect[] = [];
     let newAmount = amount;
-    if (buff.duration && buff.duration > 0 && amount > 0) {
+    if (buff.duration && buff.duration > 0) {
         buff.duration--;
         if (buff.duration === 0) {
             effects.push({

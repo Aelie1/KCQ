@@ -266,21 +266,22 @@ export class GameEffects {
     private damageEnemy(actor: iEntity, target: iEnemy, amount: number) {
         const origHp = target.currHp;
         let modifiedAmount = amount;
-        for (const buff of target.buffs) {
-            if (buff.modifyDamage) {
-                const result = buff.modifyDamage(target, buff, modifiedAmount);
-                modifiedAmount = result.value;
-                this.stack(result.effects);
+        if (modifiedAmount > 0) {
+            for (const buff of target.buffs) {
+                if (buff.active && buff.modifyDamage) {
+                    const result = buff.modifyDamage(target, buff, modifiedAmount);
+                    modifiedAmount = result.value;
+                    this.stack(result.effects);
+                }
+            }
+            if (modifiedAmount < amount) {
+                this.addEvent({
+                    type: "damageBlocked",
+                    target: target.id,
+                    amount: amount - modifiedAmount
+                });
             }
         }
-        if (modifiedAmount < amount) {
-            this.addEvent({
-                type: "damageBlocked",
-                target: target.id,
-                amount: amount - modifiedAmount
-            });
-        }
-
         target.currHp -= modifiedAmount;
         target.currHp = Math.min(Math.max(0, target.currHp), target.maxHp);
 
