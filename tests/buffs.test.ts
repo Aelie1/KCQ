@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { MoveDef, StatusDef } from "../src/engine/protected/definitions";
+import type { iBuff, iEnemy, iEntity } from "../src/engine/protected/types";
 import {
     buffState,
     characterState,
@@ -355,5 +356,124 @@ describe("buff status integration through GameEngine", () => {
             miss: 20,
             hit: 80,
         });
+    });
+});
+
+describe("buff modifyDamage integration through GameEngine", () => {
+    function damageHookMove(
+        buffs: iBuff[],
+        damage: number,
+        id = "exercise-damage-hook",
+    ): MoveDef {
+        return makeBehavioralMove(id, "arms", {
+            freeOnHit: true,
+            resolve: (_state, actor, _move, targets) => [
+                ...buffs.map((buff) => ({
+                    type: "buff" as const,
+                    target: targets[0].target,
+                    buff,
+                    operation: "add" as const,
+                })),
+                {
+                    type: "damage" as const,
+                    source: actor,
+                    target: targets[0].target as iEnemy,
+                    amount: damage,
+                },
+            ],
+        });
+    }
+
+    it("allows only active buffs to modify damage", () => {
+        const inactive = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+            value: 0,
+            effects: [],
+        }));
+        const active = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+            value: amount - 3,
+            effects: [],
+        }));
+        const strike = damageHookMove([
+            { id: "pending", active: false, modifyDamage: inactive },
+            { id: "active", active: true, modifyDamage: active },
+        ], 10);
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [strike]),
+        ]);
+
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: strike.id,
+            targets: ["foe1"],
+        });
+
+        expect(inactive).not.toHaveBeenCalled();
+        expect(active).toHaveBeenCalledOnce();
+        expect(active.mock.calls[0][2]).toBe(10);
+        expect(result.events).toContainEqual({ type: "damageBlocked", target: "foe1", amount: 3 });
+        expect(result.events).toContainEqual({ type: "enemyDamaged", target: "foe1", amount: 7 });
+    });
+
+    it("processes multiple damage modifiers in buff order", () => {
+        const subtract = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+            value: amount - 2,
+            effects: [],
+        }));
+        const halve = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+            value: amount / 2,
+            effects: [],
+        }));
+        const strike = damageHookMove([
+            { id: "subtract", active: true, modifyDamage: subtract },
+            { id: "halve", active: true, modifyDamage: halve },
+        ], 10);
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [strike]),
+        ]);
+
+        const result = execute(engine, {
+            type: "attack",
+            actor: "hero",
+            move: strike.id,
+            targets: ["foe1"],
+        });
+
+        expect(subtract.mock.calls[0][2]).toBe(10);
+        expect(halve.mock.calls[0][2]).toBe(8);
+        expect(result.events).toContainEqual({ type: "damageBlocked", target: "foe1", amount: 6 });
+        expect(result.events).toContainEqual({ type: "enemyDamaged", target: "foe1", amount: 4 });
+        expect(enemyState(engine).currHp).toBe(33);
+    });
+
+    it("invokes modifyDamage only for positive damage", () => {
+        const modifier = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+            value: amount,
+            effects: [],
+        }));
+        const apply = makeBehavioralMove("apply-hook", "none", {
+            targetSide: "enemy",
+            freeOnHit: true,
+            resolve: (_state, _actor, _move, targets) => [{
+                type: "buff",
+                target: targets[0].target,
+                buff: { id: "hook", active: true, modifyDamage: modifier },
+                operation: "add",
+            }],
+        });
+        const heal = damageHookMove([], -5, "heal");
+        const zero = damageHookMove([], 0, "zero");
+        const strike = damageHookMove([], 4, "strike");
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [apply, heal, zero, strike]),
+        ]);
+
+        execute(engine, { type: "attack", actor: "hero", move: apply.id, targets: ["foe1"] });
+        execute(engine, { type: "attack", actor: "hero", move: heal.id, targets: ["foe1"] });
+        execute(engine, { type: "attack", actor: "hero", move: zero.id, targets: ["foe1"] });
+        execute(engine, { type: "attack", actor: "hero", move: strike.id, targets: ["foe1"] });
+
+        expect(modifier).toHaveBeenCalledOnce();
+        expect(modifier.mock.calls[0][2]).toBe(4);
     });
 });
