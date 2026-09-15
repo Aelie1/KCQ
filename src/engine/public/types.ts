@@ -376,7 +376,7 @@ export interface MoveEvent {
 }
 
 export interface DamageEvent {
-    type: "enemyDamaged" | "enemyHealed";
+    type: "enemyDamaged" | "enemyHealed" | "damageBlocked";
     target: EntityId;
     amount: number;
 }

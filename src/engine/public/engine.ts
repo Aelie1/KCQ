@@ -111,7 +111,7 @@ export class GameEngine {
                 id: trap.definition.id,
                 definition: trap.definition,
                 amount: trap.amount
-            })
+            });
         }
 
         if (encounter.setup) {
@@ -698,6 +698,5 @@ export class GameEngine {
         for (const enemy of this.state.enemies) {
             result.fromEffects(enemy.definition.ai(this.state, enemy, this.aiRng));
         }
-
     }
 }

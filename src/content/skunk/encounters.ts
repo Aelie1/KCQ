@@ -1,4 +1,5 @@
 import { EncounterDef } from "../../engine/protected/definitions";
+import { fairy } from "./fairy";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 import { queen } from "./queen";
@@ -25,6 +26,15 @@ export const plains_3: EncounterDef = {
     id: "plains_3",
     enemies: [queen],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
+    traps: [
+        { definition: trapPuddle, amount: 0 }
+    ]
+}
+
+export const forest_1: EncounterDef = {
+    id: "forest_1",
+    enemies: [skunk, skunk, fairy],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
         { definition: trapPuddle, amount: 0 }
     ]

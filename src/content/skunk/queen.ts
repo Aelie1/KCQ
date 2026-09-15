@@ -9,7 +9,7 @@ import { skunk } from "./skunk";
 import { skunkette } from "./skunkette";
 
 const QUEEN_HP = 750;
-const QUEEN_DEF = 0;
+const QUEEN_DEF = 2;
 
 const GUN_DAMAGE = 35;
 
@@ -38,7 +38,7 @@ export const queen: EnemyDef = {
         //1) If no one has a collar and it is off CD, use skunk collar on the person who dealt the most damage to her
         {
             const targets = getValidTargets(state.characters);
-            if (!targets.some(x => x.bindings.some(x => x.id === latexCollar.id))) {
+            if (!targets.some(x => isCharacter(x) && x.bindings.some(x => x.id === latexCollar.id))) {
                 let damage = 0;
                 let target = undefined;
                 if ((actor.cooldowns['skunkCollar'] ?? 0) === 0) {
@@ -68,7 +68,8 @@ export const queen: EnemyDef = {
         {
             if ((actor.cooldowns['skunkPerfume'] ?? 0) === 0) {
                 const roll = rng.random();
-                const damagedEnemies = state.enemies.filter(x => ((x.definition.id === "skunkette" || x.definition.id === "skunk") && x.currHp < x.maxHp));
+                const filter = ["skunkette", "skunk", "fairy"];
+                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
                 const type = damagedEnemies.length > 0 ? Math.floor(roll * 3) : Math.floor(roll * 2);
 
                 effects.push({
@@ -84,14 +85,16 @@ export const queen: EnemyDef = {
         //3) Use Skunk Gun on a random target
         {
             const target = pickTarget(state.characters, rng);
-            if (target) {
+            if (target && isCharacter(target)) {
                 const binding = pickBinding(target, bindings, rng);
-                effects.push({
-                    type: "move",
-                    actor: actor,
-                    move: { definition: skunkGun, binding: binding },
-                    targets: [target]
-                });
+                if (binding) {
+                    effects.push({
+                        type: "move",
+                        actor: actor,
+                        move: { definition: skunkGun, binding: binding },
+                        targets: [target]
+                    });
+                }
                 return effects;
             }
         }
@@ -345,7 +348,7 @@ const skunkPerfume: MoveDef = {
                         operation: "add",
                         buff: defBuff,
                         target: target.target
-                    })
+                    });
                 }
                 break;
             case 1:  //Escape perfume
@@ -361,19 +364,20 @@ const skunkPerfume: MoveDef = {
                         operation: "add",
                         buff: escBuff,
                         target: target.target
-                    })
+                    });
                 }
                 break;
 
             case 2:  //Heal perfume
-                const damagedEnemies = state.enemies.filter(x => ((x.definition.id === "skunkette" || x.definition.id === "skunk") && x.currHp < x.maxHp));
+                const filter = ["skunkette", "skunk", "fairy"];
+                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
                 for (const enemy of damagedEnemies) {
                     effects.push({
                         type: "damage",
                         source: actor,
                         target: enemy,
                         amount: -PERFUME_HEAL_RATIO * enemy.maxHp
-                    })
+                    });
                 }
                 break;
         }

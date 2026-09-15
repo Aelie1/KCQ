@@ -416,6 +416,5 @@ function orderEscapeOptions(options: EscapeInfo[], bindingIds: BindingId[]): Esc
             const leftOrder = bindingOrder.get(left.option.binding) ?? Number.POSITIVE_INFINITY;
             const rightOrder = bindingOrder.get(right.option.binding) ?? Number.POSITIVE_INFINITY;
             return leftOrder - rightOrder || left.index - right.index;
-        })
-        .map(({ option }) => option));
+        }).map(({ option }) => option));
 }

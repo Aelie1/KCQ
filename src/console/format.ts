@@ -4,7 +4,7 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
     const target = includeTarget && "target" in effect ? `${effect.target} ` : "";
     switch (effect.type) {
         case "damage":
-            return `${target}${effect.amount} damage`;
+            return (effect.amount > 0) ? `${target}${effect.amount} damage` : `${target}${-effect.amount} healing`;
         case "binding":
             return `${target}${effect.binding} ${effect.amount !== undefined ? signed(effect.amount) : "+??"}`;
         case "buff":
@@ -137,6 +137,8 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [`${event.target} took ${event.amount} damage.`];
             case "enemyHealed":
                 return [`${event.target} healed ${event.amount} damage.`];
+            case "damageBlocked":
+                return [`${event.target} blocked ${event.amount} damage.`];
             case "bondageAdded":
             case "bondageChanged":
                 return event.amount >= 0

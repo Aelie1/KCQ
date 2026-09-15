@@ -2,10 +2,10 @@ import type { BindingDef } from "./definitions";
 import { findBinding, thresholds } from "./helpers";
 import { Random } from "./random";
 import { isIncapacitated } from "./status";
-import type { iCharacter } from "./types";
+import type { iCharacter, iEntity } from "./types";
 
-export function getValidTargets(characters: iCharacter[]): iCharacter[] {
-    const validCharacters: iCharacter[] = [];
+export function getValidTargets(characters: iEntity[]): iEntity[] {
+    const validCharacters: iEntity[] = [];
     for (const character of characters) {
         if (!isIncapacitated(character)) {
             validCharacters.push(character);
@@ -14,7 +14,7 @@ export function getValidTargets(characters: iCharacter[]): iCharacter[] {
     return validCharacters;
 }
 
-export function pickTarget(characters: iCharacter[], rng: Random): iCharacter | undefined {
+export function pickTarget(characters: iEntity[], rng: Random): iEntity | undefined {
     const validCharacters = getValidTargets(characters);
 
     if (validCharacters.length === 0) {

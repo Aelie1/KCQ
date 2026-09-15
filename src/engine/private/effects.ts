@@ -265,8 +265,23 @@ export class GameEffects {
 
     private damageEnemy(actor: iEntity, target: iEnemy, amount: number) {
         const origHp = target.currHp;
+        let modifiedAmount = amount;
+        for (const buff of target.buffs) {
+            if (buff.modifyDamage) {
+                const result = buff.modifyDamage(target, buff, modifiedAmount);
+                modifiedAmount = result.value;
+                this.stack(result.effects);
+            }
+        }
+        if (modifiedAmount < amount) {
+            this.addEvent({
+                type: "damageBlocked",
+                target: target.id,
+                amount: amount - modifiedAmount
+            });
+        }
 
-        target.currHp -= amount;
+        target.currHp -= modifiedAmount;
         target.currHp = Math.min(Math.max(0, target.currHp), target.maxHp);
 
         const newAmount = origHp - target.currHp;
@@ -281,7 +296,7 @@ export class GameEffects {
                 type: "enemy",
                 operation: "check",
                 target: target
-            })
+            });
 
             if (target.definition.onDamage) {
                 this.stack(target.definition.onDamage(this.state, actor, target, newAmount));
@@ -303,7 +318,7 @@ export class GameEffects {
                 type: "enemy",
                 operation: "defeat",
                 target: target
-            })
+            });
 
             if (target.definition.onDefeat) {
                 this.stack(target.definition.onDefeat(this.state, target));
@@ -381,7 +396,7 @@ export class GameEffects {
             actor: actor.id,
             trap: trap.id,
             amount: trap.amount - origLevel
-        })
+        });
 
         return;
     };

@@ -34,13 +34,15 @@ export const skunk: EnemyDef = {
                 let total = 0;
                 let target = undefined;
                 for (const character of getValidTargets(state.characters)) {
-                    let amount = 0
-                    for (const binding of character.bindings) {
-                        amount += binding.value;
-                    }
-                    if (amount > total) {
-                        total = amount;
-                        target = character;
+                    if (isCharacter(character)) {
+                        let amount = 0
+                        for (const binding of character.bindings) {
+                            amount += binding.value;
+                        }
+                        if (amount > total) {
+                            total = amount;
+                            target = character;
+                        }
                     }
                 }
                 if (!target) {
@@ -78,17 +80,19 @@ export const skunk: EnemyDef = {
             let total = 0;
             let target = undefined;
             for (const character of getValidTargets(state.characters)) {
-                let amount = 0
-                for (const binding of character.bindings) {
-                    amount += Math.max(0, binding.data["peak"] - binding.value);
-                }
-                if (amount > total) {
-                    total = amount;
-                    target = character;
+                if (isCharacter(character)) {
+                    let amount = 0
+                    for (const binding of character.bindings) {
+                        amount += Math.max(0, binding.data["peak"] - binding.value);
+                    }
+                    if (amount > total) {
+                        total = amount;
+                        target = character;
+                    }
                 }
             }
             const roll = rng.accuracy();
-            if (target && roll < total) {
+            if (target && isCharacter(target) && roll < total) {
                 const bindings = target.bindings.filter(x => x.value < x.data["peak"]);
                 if (bindings.length > 0) {
                     const index = rng.int(0, bindings.length - 1);
@@ -106,7 +110,7 @@ export const skunk: EnemyDef = {
         //4) Randomly latex spray
         {
             const target = pickTarget(state.characters, rng);
-            if (target) {
+            if (target && isCharacter(target)) {
                 const binding = pickBinding(target, bindings, rng);
                 if (binding) {
                     effects.push({
@@ -340,7 +344,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
                     target: effect.target,
                     binding: binding.definition,
                     amount: binding.data["peak"] - binding.value
-                })
+                });
             }
         }
         return effects;
@@ -354,7 +358,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
                 target: effect.target,
                 binding: binding.definition,
                 amount: Math.min(effect.amount, binding.data["peak"] - binding.value)
-            })
+            });
         }
         effect.amount = undefined;
         return effects;
@@ -367,7 +371,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
             target: effect.target,
             binding: binding.definition,
             amount: binding.data["peak"] - binding.value
-        })
+        });
     }
     return effects;
 }

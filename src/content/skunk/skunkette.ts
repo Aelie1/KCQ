@@ -62,7 +62,7 @@ export const skunkette: EnemyDef = {
                 }
                 if (validCharacters.length > 0) {
                     const target = pickTarget(validCharacters, rng);
-                    if (target) {
+                    if (target && isCharacter(target)) {
                         const binding = pickBinding(target, bindings, rng);
                         effects.push({
                             type: "move",
@@ -90,7 +90,7 @@ export const skunkette: EnemyDef = {
                 return effects;
             } else {
                 const target = pickTarget(state.characters, rng);
-                if (target) {
+                if (target && isCharacter(target)) {
                     const binding = pickBinding(target, bindings, rng);
                     if (binding) {
                         effects.push({
@@ -134,7 +134,7 @@ export const skunkette: EnemyDef = {
                     target: target,
                     buff: tBuff,
                     operation: "add"
-                })
+                });
             }
         }
 
@@ -284,7 +284,7 @@ const pounce: MoveDef = {
                     binding: move.binding
                 },
                 targets: [target]
-            })
+            });
         }
 
         return effects;
@@ -390,7 +390,7 @@ const throwOff: MoveDef = {
                         target: enemy,
                         move: pounce,
                         value: pounce.cooldown ?? 0
-                    })
+                    });
                 }
             }
         }

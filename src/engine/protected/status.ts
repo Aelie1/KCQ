@@ -231,7 +231,7 @@ export function isSkipped(actor: iEntity): boolean {
 }
 
 
-export function isIncapacitated(actor: iCharacter): boolean {
+export function isIncapacitated(actor: iEntity): boolean {
     const statuses: iStatus[] = getStatuses(actor);
     for (const status of statuses) {
         const level = status.definition.levels[status.value];
