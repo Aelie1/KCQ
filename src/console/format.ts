@@ -144,6 +144,8 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return event.amount >= 0
                     ? [`${event.target} gained ${event.amount} ${event.binding}.`]
                     : [`${event.target} removed ${Math.abs(event.amount)} ${event.binding}.`];
+            case "bondageBlocked":
+                return [`${event.target} blocked ${event.amount} ${event.binding}.`]
             case "bondageRemoved":
                 return [
                     `${event.target} escaped ${event.binding} (${Math.abs(event.amount)} removed).`,

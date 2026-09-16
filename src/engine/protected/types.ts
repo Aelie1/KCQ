@@ -45,7 +45,7 @@ export interface iBuff extends Omit<Buff, "statuses"> {
     statuses?: iStatus[];
     addedMoves?: MoveDef[];
     modifyDamage?: (target: iEnemy, buff: iBuff, amount: number) => iCallbackReturn;
-    modifyBinding?: (actor: iEnemy, target: iCharacter, buff: iBuff, binding: iBinding, amount: number) => iCallbackReturn;
+    modifyBinding?: (actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number) => iCallbackReturn;
 }
 
 export interface iCallbackReturn {
@@ -96,6 +96,7 @@ interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
 }
 
 interface iBindingEffect extends Omit<BindingEffect, "target" | "binding"> {
+    source: iEntity;
     target: iCharacter;
     binding: BindingDef;
     onResolve?: (effect: iBindingEffect) => iEffect[];

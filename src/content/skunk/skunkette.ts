@@ -190,6 +190,7 @@ export const skunkette: EnemyDef = {
                 for (const binding of character.bindings) {
                     effects.push({
                         type: "binding",
+                        source: character,
                         target: character,
                         binding: binding,
                         amount: Math.floor(binding.value * -0.5)
@@ -225,6 +226,7 @@ const latexSpray: MoveDef = {
         if (isCharacter(target.target)) {
             effects.push({
                 type: "binding",
+                source: actor,
                 target: target.target,
                 binding: move.binding,
                 amount: (this.baseDamage ?? 1) * target.effectiveness
@@ -335,6 +337,7 @@ const latexMist: MoveDef = {
                 const binding = character.bindings[index];
                 effects.push({
                     type: "binding",
+                    source: actor,
                     target: character,
                     binding: binding.definition,
                     amount: (this.baseDamage ?? 1) * target.effectiveness
@@ -344,6 +347,7 @@ const latexMist: MoveDef = {
                 for (const binding of character.bindings) {
                     effects.push({
                         type: "binding",
+                        source: actor,
                         target: character,
                         binding: binding.definition,
                         amount: (this.baseDamage ?? 1) * target.effectiveness / 2

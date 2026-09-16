@@ -53,6 +53,7 @@ const latexRain: MoveDef = {
                     const binding = bindings[index];
                     effects.push({
                         type: "binding",
+                        source: actor,
                         target: target.target,
                         binding: binding,
                         amount: (this.baseDamage ?? 1) * target.effectiveness

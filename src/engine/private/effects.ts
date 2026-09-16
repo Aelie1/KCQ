@@ -91,7 +91,7 @@ export class GameEffects {
                     }
                     if (effect.amount !== undefined) {
                         if (effect.amount > 0) {
-                            this.addBinding(effect.target, effect.binding, effect.amount);
+                            this.addBinding(effect.source, effect.target, effect.binding, effect.amount);
                         } else {
                             this.removeBinding(effect.target, effect.binding, -effect.amount);
                         }
@@ -145,7 +145,30 @@ export class GameEffects {
     };
 
 
-    private addBinding(target: iCharacter, type: BindingDef, amount: number) {
+    private addBinding(actor: iEntity, target: iCharacter, type: BindingDef, amount: number) {
+        let modifiedAmount = amount;
+        if (modifiedAmount > 0) {
+            for (const buff of target.buffs) {
+                if (buff.active && buff.modifyBinding) {
+                    const result = buff.modifyBinding(actor, target, buff, type, modifiedAmount);
+                    modifiedAmount = result.value;
+                    this.stack(result.effects);
+                }
+            }
+            if (modifiedAmount < amount) {
+                this.addEvent({
+                    type: "bondageBlocked",
+                    target: target.id,
+                    binding: type.id,
+                    amount: amount - modifiedAmount
+                });
+            }
+        }
+
+        if (modifiedAmount <= 0) {
+            return;
+        }
+
         const event: BondageEvent = {
             type: "bondageChanged",
             target: target.id,
@@ -167,10 +190,10 @@ export class GameEffects {
         let origLevel = binding.value;
         //bondage above 80 is reduced by 90%
         if (origLevel > thresholds.impossible) {
-            binding.value += Math.ceil(amount * 0.1);
+            binding.value += Math.ceil(modifiedAmount * 0.1);
         } else {
-            const toThreshold = Math.min(amount, thresholds.impossible - origLevel);
-            const overflow = amount - toThreshold;
+            const toThreshold = Math.min(modifiedAmount, thresholds.impossible - origLevel);
+            const overflow = modifiedAmount - toThreshold;
             binding.value += Math.ceil(toThreshold + overflow * 0.1);
         }
         if (binding.value > thresholds.max) {

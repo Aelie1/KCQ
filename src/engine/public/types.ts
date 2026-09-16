@@ -382,7 +382,7 @@ export interface DamageEvent {
 }
 
 export interface BondageEvent {
-    type: "bondageChanged" | "bondageAdded" | "bondageRemoved";
+    type: "bondageChanged" | "bondageAdded" | "bondageRemoved" | "bondageBlocked";
     target: EntityId;
     binding: BindingId;
     amount: number;

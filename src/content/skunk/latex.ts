@@ -65,6 +65,7 @@ export const latexBindings: BindingDef = {
         if (collar) {
             effects.push({
                 type: "binding",
+                source: target,
                 target: target,
                 binding: collar.definition,
                 amount: collar.value * -1
@@ -137,6 +138,7 @@ export const latexBindings: BindingDef = {
             if (directAmount > 0) {
                 effects.push({
                     type: "binding",
+                    source: actor,
                     target: actor,
                     binding: spreadLocation,
                     amount: directAmount
@@ -156,6 +158,7 @@ export const latexBindings: BindingDef = {
                 if (newAmount != carryoverAmount) {
                     effects.push({
                         type: "binding",
+                        source: actor,
                         target: actor,
                         binding: location,
                         amount: newAmount - carryoverAmount
@@ -165,6 +168,7 @@ export const latexBindings: BindingDef = {
         } else {
             effects.push({
                 type: "binding",
+                source: actor,
                 target: actor,
                 binding: spreadLocation,
                 amount: spreadAmount
@@ -236,6 +240,7 @@ export const latexCollar: BindingDef = {
         for (const binding of bindings) {
             effects.push({
                 type: "binding",
+                source: target,
                 target: target,
                 binding: binding,
                 amount: COLLAR_BINDING

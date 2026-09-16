@@ -163,6 +163,7 @@ const latexSpray: MoveDef = {
         if (isCharacter(target.target)) {
             effects.push({
                 type: "binding",
+                source: actor,
                 target: target.target,
                 binding: move.binding,
                 amount: (this.baseDamage ?? 1) * target.effectiveness
@@ -226,6 +227,7 @@ const latexRegeneration: MoveDef = {
                 if (isCharacter(target.target) && move.binding) {
                     effects.push({
                         type: "binding",
+                        source: actor,
                         target: target.target,
                         binding: move.binding,
                         amount: (this.baseDamage ?? 1) * target.effectiveness,
@@ -237,6 +239,7 @@ const latexRegeneration: MoveDef = {
                 if (isCharacter(target.target) && move.binding) {
                     effects.push({
                         type: "binding",
+                        source: actor,
                         target: target.target,
                         binding: move.binding,
                         onResolve: regenerateCallback
@@ -247,6 +250,7 @@ const latexRegeneration: MoveDef = {
                 if (isCharacter(target.target)) {
                     effects.push({
                         type: "binding",
+                        source: actor,
                         target: target.target,
                         binding: latexBindings,
                         onResolve: regenerateCallback
@@ -301,6 +305,7 @@ const latexExplosion: MoveDef = {
             for (const binding of bindings) {
                 effects.push({
                     type: "binding",
+                    source: actor,
                     target: target.target,
                     binding: binding,
                     amount: (this.baseDamage ?? 1) * target.effectiveness
@@ -341,6 +346,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
             if (binding.value < binding.data["peak"]) {
                 effects.push({
                     type: "binding",
+                    source: effect.source,
                     target: effect.target,
                     binding: binding.definition,
                     amount: binding.data["peak"] - binding.value
@@ -355,6 +361,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
         if (binding && binding.value < binding.data["peak"]) {
             effects.push({
                 type: "binding",
+                source: effect.source,
                 target: effect.target,
                 binding: binding.definition,
                 amount: Math.min(effect.amount, binding.data["peak"] - binding.value)
@@ -368,6 +375,7 @@ function regenerateCallback(effect: iEffect): iEffect[] {
     if (binding && binding.value < binding.data["peak"]) {
         effects.push({
             type: "binding",
+            source: effect.source,
             target: effect.target,
             binding: binding.definition,
             amount: binding.data["peak"] - binding.value

@@ -324,6 +324,7 @@ export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iB
 
     effects.push({
         type: "binding",
+        source: actor,
         target: target,
         binding: binding.definition,
         amount: escapePotency * -1

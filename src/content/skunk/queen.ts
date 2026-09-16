@@ -196,6 +196,7 @@ const skunkGun: MoveDef = {
         if (isCharacter(target.target)) {
             effects.push({
                 type: "binding",
+                source: actor,
                 target: target.target,
                 binding: move.binding,
                 amount: (this.baseDamage ?? 1) * target.effectiveness
@@ -229,6 +230,7 @@ const skunkCollar: MoveDef = {
         if (isCharacter(target.target)) {
             effects.push({
                 type: "binding",
+                source: actor,
                 target: target.target,
                 binding: latexCollar,
                 amount: (this.baseDamage ?? 1) * target.effectiveness

@@ -138,6 +138,7 @@ const bindingMagic: MoveDef = {
         if (isCharacter(target.target)) {
             effects.push({
                 type: "binding",
+                source: actor,
                 target: target.target,
                 binding: move.binding,
                 amount: (this.baseDamage ?? 1) * target.effectiveness

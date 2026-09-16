@@ -1,6 +1,6 @@
-import { CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
+import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { findBuff, isEnemy } from "../../engine/protected/helpers";
-import { iBinding, iBuff, iCallbackReturn, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 
 const TELEKINESIS_DAMAGE = 100;
 
@@ -68,11 +68,11 @@ const starlightBindings: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 
-        const buff = {
+        const buff: iBuff = {
             id: "starlightBindings",
             duration: 3,
             active: true,
-            modifications: {
+            modifiers: {
                 defense: -2,
                 hit: -2,
             }
@@ -117,9 +117,10 @@ const reflect: MoveDef = {
             newTargets.push(...targets.map(x => x.target));
         }
 
-        const buff = {
+        const buff: iBuff = {
             id: "reflect",
             active: true,
+            duration: 1,
             modifyBinding: reflectCallback
         }
 
@@ -160,11 +161,11 @@ const fairyTransformation: MoveDef = {
             newTargets.push(...targets.map(x => x.target));
         }
 
-        const buff = {
+        const buff: iBuff = {
             id: "fairyTransformation",
             active: true,
             duration: 3,
-            modifications: {
+            modifiers: {
                 defense: 3,
             }
         }
@@ -176,29 +177,28 @@ const fairyTransformation: MoveDef = {
                 buff: buff,
                 operation: "add"
             });
-        }
 
-        const fairyBuff = findBuff(actor, "fairyEmpowerment");
-        if (fairyBuff) {
-            effects.push({
-                type: "buff",
-                target: actor,
-                buff: fairyBuff,
-                operation: "remove"
-            })
-        } else {
-            const newBuff = {
-                id: "fairyEmpowerment",
-                active: true,
-                modifyBinding: reflectCallback
+            const fairyBuff = findBuff(actor, "fairyEmpowerment");
+            if (target === actor && fairyBuff) {
+                effects.push({
+                    type: "buff",
+                    target: actor,
+                    buff: fairyBuff,
+                    operation: "remove"
+                })
+            } else {
+                const newBuff = {
+                    id: "fairyEmpowerment",
+                    active: true,
+                }
+
+                effects.push({
+                    type: "buff",
+                    target: actor,
+                    buff: newBuff,
+                    operation: "add"
+                })
             }
-
-            effects.push({
-                type: "buff",
-                target: actor,
-                buff: newBuff,
-                operation: "add"
-            })
         }
         return effects;
     }
@@ -228,10 +228,10 @@ const fairyEmpowerment: MoveDef = {
     targets: "all"
 }
 
-function reflectCallback(actor: iEnemy, target: iCharacter, buff: iBuff, binding: iBinding, amount: number): iCallbackReturn {
+function reflectCallback(actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
     const effects: iEffect[] = [];
     let newAmount = amount;
-    if (buff.duration && buff.duration > 0) {
+    if (isEnemy(actor) && buff.duration && buff.duration > 0) {
         buff.duration--;
         if (buff.duration === 0) {
             effects.push({
