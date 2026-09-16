@@ -182,7 +182,7 @@ const fairyTransformation: MoveDef = {
             if (target === actor && fairyBuff) {
                 effects.push({
                     type: "buff",
-                    target: actor,
+                    target: target,
                     buff: fairyBuff,
                     operation: "remove"
                 })
@@ -194,7 +194,7 @@ const fairyTransformation: MoveDef = {
 
                 effects.push({
                     type: "buff",
-                    target: actor,
+                    target: target,
                     buff: newBuff,
                     operation: "add"
                 })
