@@ -17,8 +17,8 @@ export const gagged: StatusDef = {
         {},
         { modifiers: { hitmouth: -2 } },
         { modifiers: { hitmouth: -4 } },
-        { modifiers: { hitmouth: -4 }, blockedMoveTypes: ["mouth"] },
-        { modifiers: { hitmouth: -4, escape: -1 }, blockedMoveTypes: ["mouth"] }
+        { modifiers: { hitmouth: -6 }, blockedMoveTypes: ["mouth"] },
+        { modifiers: { hitmouth: -8, escape: -1 }, blockedMoveTypes: ["mouth"] }
     ]
 };
 
