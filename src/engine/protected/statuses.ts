@@ -6,8 +6,8 @@ export const bound: StatusDef = {
         {},
         { modifiers: { hitarms: -2 } },
         { modifiers: { hitarms: -4 } },
-        { blockedMoveTypes: ["arms"], blocksAssist: true },
-        { blockedMoveTypes: ["arms"], blocksAssist: true, modifiers: { escape: -1 } }
+        { modifiers: { hitarms: -6 }, blockedMoveTypes: ["arms"], blocksAssist: true },
+        { modifiers: { hitarms: -8, escape: -1 }, blockedMoveTypes: ["arms"], blocksAssist: true }
     ]
 };
 
@@ -17,8 +17,8 @@ export const gagged: StatusDef = {
         {},
         { modifiers: { hitmouth: -2 } },
         { modifiers: { hitmouth: -4 } },
-        { blockedMoveTypes: ["mouth"] },
-        { blockedMoveTypes: ["mouth"], modifiers: { escape: -1 } }
+        { modifiers: { hitmouth: -4 }, blockedMoveTypes: ["mouth"] },
+        { modifiers: { hitmouth: -4, escape: -1 }, blockedMoveTypes: ["mouth"] }
     ]
 };
 
@@ -28,8 +28,8 @@ export const hobbled: StatusDef = {
         {},
         { modifiers: { defense: -1, traps: -1, hitlegs: -2 } },
         { modifiers: { defense: -2, traps: -2, hitlegs: -4 } },
-        { modifiers: { defense: -3, traps: -3 }, blockedMoveTypes: ["legs"] },
-        { modifiers: { defense: -4, traps: -4, escape: -1 }, blockedMoveTypes: ["legs"] }
+        { modifiers: { defense: -3, traps: -3, hitlegs: -6 }, blockedMoveTypes: ["legs"] },
+        { modifiers: { defense: -4, traps: -4, hitlegs: -8, escape: -1 }, blockedMoveTypes: ["legs"] }
     ]
 };
 
