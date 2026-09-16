@@ -1,110 +1,7 @@
 import { ActionFailure, ActionType, ModifierId, ModifierSet, MoveType } from "../public/types";
-import { StatusDef } from "./definitions";
+import { StatusDef, StatusLevelDef } from "./definitions";
 import { getBindingLevel, isCharacter } from "./helpers";
 import { iCharacter, iEntity, iStatus } from "./types";
-
-/*******************************************************
- * Functions
- *******************************************************/
-
-export function s(definition: StatusDef, value: number): iStatus {
-    return { definition, value };
-}
-
-function getStatuses(target: iEntity): iStatus[] {
-    const statuses: iStatus[] = [];
-    if (isCharacter(target)) {
-        for (const binding of target.bindings) {
-            const bindingStatuses = binding.definition.status;
-            const level = getBindingLevel(binding);
-            if (!bindingStatuses) {
-                continue;
-            }
-            for (const bindingStatus of bindingStatuses[level] ?? []) {
-                const characterStatus = statuses.find(x => x.definition === bindingStatus.definition);
-                if (characterStatus) {
-                    if (characterStatus.value < bindingStatus.value) {
-                        characterStatus.value = bindingStatus.value;
-                    }
-                } else {
-                    statuses.push({ definition: bindingStatus.definition, value: bindingStatus.value });
-                }
-            }
-        }
-        if (target.standing) {
-            statuses.push({ definition: standing, value: 1 });
-        }
-    }
-    for (const buff of target.buffs) {
-        if (!buff.active || !buff.statuses) {
-            continue;
-        }
-        for (const buffStatus of buff.statuses) {
-            const characterStatus = statuses.find(x => x.definition === buffStatus.definition);
-            if (characterStatus) {
-                if (characterStatus.value < buffStatus.value) {
-                    characterStatus.value = buffStatus.value;
-                }
-            } else {
-                statuses.push({ definition: buffStatus.definition, value: buffStatus.value });
-            }
-        }
-
-    }
-    return statuses;
-}
-
-
-export function getModifier(target: iEntity, id: ModifierId): number {
-    let amount: number = 0;
-    const statuses: iStatus[] = getStatuses(target);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        amount += level.modifiers?.[id] ?? 0;
-    }
-    for (const buff of target.buffs) {
-        if (!buff.modifiers || !buff.active) {
-            continue;
-        }
-        const level = buff.modifiers[id];
-        amount += level ?? 0;
-    }
-    return amount;
-}
-
-export function getModifiers(target: iEntity): ModifierSet {
-    const modifiers: ModifierSet = {};
-    const statuses: iStatus[] = getStatuses(target);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        if (level.modifiers) {
-            for (const [modifier, amount] of Object.entries(level.modifiers) as [ModifierId, number][]) {
-                modifiers[modifier] = (modifiers[modifier] ?? 0) + amount;
-            }
-        }
-    }
-    for (const buff of target.buffs) {
-        if (!buff.modifiers || !buff.active) {
-            continue;
-        }
-        for (const [modifier, amount] of Object.entries(buff.modifiers) as [ModifierId, number][]) {
-            modifiers[modifier] = (modifiers[modifier] ?? 0) + amount;
-        }
-    }
-    return modifiers;
-}
-
-export function getBlockedMoveTypes(actor: iCharacter): MoveType[] {
-    const statuses: iStatus[] = getStatuses(actor);
-    const types: Set<MoveType> = new Set();
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        for (const type of level.blockedMoveTypes ?? []) {
-            types.add(type);
-        }
-    }
-    return Array.from(types);
-}
 
 export function canAct(actor: iCharacter, type: ActionType): ActionFailure | undefined {
     if (isIncapacitated(actor)) {
@@ -149,97 +46,163 @@ export function canAct(actor: iCharacter, type: ActionType): ActionFailure | und
     return undefined;
 }
 
-export function canAttack(actor: iEntity): boolean {
-    const statuses: iStatus[] = getStatuses(actor);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        if (level.blocksAttack) {
-            return false;
-        }
-    }
-    return true;
+export function getModifier(target: iEntity, id: ModifierId): number {
+    const status: StatusLevelDef = getStatuses(target);
+    return status.modifiers?.[id] ?? 0;
 }
 
-export function canUseMoveType(actor: iCharacter, type: MoveType): boolean {
-    const statuses: iStatus[] = getStatuses(actor);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        if (level.blockedMoveTypes?.includes(type)) {
-            return false;
-        }
-    }
-    return true;
+export function getModifiers(target: iEntity): ModifierSet {
+    const status: StatusLevelDef = getStatuses(target);
+    return status.modifiers ?? {};
 }
 
-function canEscape(actor: iCharacter): boolean {
-    const statuses: iStatus[] = getStatuses(actor);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        if (level.blocksEscape) {
-            return false;
-        }
-    }
-    return true;
+export function getBlockedMoveTypes(target: iCharacter): MoveType[] {
+    const status: StatusLevelDef = getStatuses(target);
+    return status.blockedMoveTypes?.filter(type => !status.allowedMoveTypes?.includes(type)) ?? [];
 }
 
-export function canAssist(actor: iCharacter): boolean {
-    const statuses: iStatus[] = getStatuses(actor);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        if (level.blocksAssist) {
-            return false;
-        }
-    }
-    return true;
+export function canAttack(target: iEntity): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return !status.blocksAttack;
 }
 
-export function canMove(actor: iCharacter): boolean {
-    const statuses: iStatus[] = getStatuses(actor);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        if (level.blocksMoving) {
-            return false;
-        }
-    }
-    return true;
+export function canUseMoveType(target: iCharacter, type: MoveType): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return !status.blockedMoveTypes?.includes(type) || (status.allowedMoveTypes?.includes(type) ?? false);
+}
+
+function canEscape(target: iCharacter): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return !status.blocksEscape;
+}
+
+export function canAssist(target: iCharacter): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return !status.blocksAssist;
+}
+
+export function canMove(target: iCharacter): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return !status.blocksMoving;
 }
 
 
-export function canBonusEscape(actor: iCharacter): boolean {
-    const statuses: iStatus[] = getStatuses(actor);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        if (level.blocksEscape) {
-            return false;
-        }
-        if (level.blocksBonusEscape) {
-            return false;
-        }
-    }
-    return true;
+export function canBonusEscape(target: iCharacter): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return !status.blocksBonusEscape;
 }
 
-export function isSkipped(actor: iEntity): boolean {
-    const statuses: iStatus[] = getStatuses(actor);
-    for (const status of statuses) {
-        const level = status.definition.levels[status.value];
-        if (level.skipsTurn) {
-            return true;
-        }
-    }
-    return false;
+export function isSkipped(target: iEntity): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return status.skipsTurn ?? false;
+
 }
 
+export function isIncapacitated(target: iEntity): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return status.incapacitated ?? false;
 
-export function isIncapacitated(actor: iEntity): boolean {
-    const statuses: iStatus[] = getStatuses(actor);
-    for (const status of statuses) {
+}
+
+function getStatuses(target: iEntity): StatusLevelDef {
+    const result: StatusLevelDef = {};
+    for (const status of getStatusList(target)) {
         const level = status.definition.levels[status.value];
-        if (level.incapacitated) {
-            return true;
+        mergeStatus(result, level);
+    }
+
+    for (const passive of target.definition.passives) {
+        if (passive.status) {
+            mergeStatus(result, passive.status);
         }
     }
-    return false;
+
+    for (const buff of target.buffs) {
+        if (!buff.modifiers || !buff.active) {
+            continue;
+        }
+        result.modifiers ??= {};
+        mergeModifiers(result.modifiers, buff.modifiers)
+    }
+
+    return result;
+}
+
+function getStatusList(target: iEntity): iStatus[] {
+    const statuses: iStatus[] = [];
+    if (isCharacter(target)) {
+        for (const binding of target.bindings) {
+            const bindingStatuses = binding.definition.status;
+            const level = getBindingLevel(binding);
+            if (!bindingStatuses) {
+                continue;
+            }
+            for (const bindingStatus of bindingStatuses[level] ?? []) {
+                mergeIStatus(statuses, bindingStatus);
+            }
+        }
+        if (target.standing) {
+            statuses.push({ definition: standing, value: 1 });
+        }
+    }
+    for (const buff of target.buffs) {
+        if (!buff.active || !buff.statuses) {
+            continue;
+        }
+        for (const buffStatus of buff.statuses) {
+            mergeIStatus(statuses, buffStatus);
+        }
+
+    }
+    return statuses;
+}
+
+function mergeIStatus(target: iStatus[], source: iStatus) {
+    const status = target.find(x => x.definition === source.definition);
+    if (status) {
+        status.value = Math.max(status.value, source.value);
+    } else {
+        target.push({ definition: source.definition, value: source.value });
+    }
+}
+
+function mergeModifiers(target: ModifierSet, source: ModifierSet): void {
+    for (const [modifier, amount] of Object.entries(source) as [ModifierId, number][]) {
+        target[modifier] = (target[modifier] ?? 0) + amount;
+    }
+}
+
+function mergeStatus(target: StatusLevelDef, source: StatusLevelDef): void {
+    if (source.modifiers) {
+        target.modifiers ??= {};
+        mergeModifiers(target.modifiers, source.modifiers);
+    }
+
+    if (source.allowedMoveTypes) {
+        target.allowedMoveTypes ??= [];
+        for (const type of source.allowedMoveTypes) {
+            if (!target.allowedMoveTypes.includes(type)) {
+                target.allowedMoveTypes.push(type);
+            }
+        }
+    }
+    if (source.blockedMoveTypes) {
+        target.blockedMoveTypes ??= [];
+        for (const type of source.blockedMoveTypes) {
+            if (!target.blockedMoveTypes.includes(type)) {
+                target.blockedMoveTypes.push(type);
+            }
+        }
+    }
+
+    target.blocksAssist ||= source.blocksAssist;
+    target.blocksAttack ||= source.blocksAttack;
+    target.blocksBonusEscape ||= source.blocksBonusEscape;
+    target.blocksEscape ||= source.blocksEscape;
+    target.blocksMoving ||= source.blocksMoving;
+    target.incapacitated ||= source.incapacitated;
+    target.skipsTurn ||= source.skipsTurn;
+
 }
 
 const standing: StatusDef = {
@@ -249,3 +212,7 @@ const standing: StatusDef = {
         { modifiers: { defense: -2 } }
     ]
 };
+
+export function s(definition: StatusDef, value: number): iStatus {
+    return { definition, value };
+}

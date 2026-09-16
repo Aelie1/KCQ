@@ -5,7 +5,7 @@ import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove,
 
 export interface CharacterDef {
     id: string;
-    moves: MoveDef[];
+    getMoves: (actor: iCharacter) => MoveDef[];
     passives: PassiveDef[];
 }
 
@@ -31,6 +31,7 @@ export interface MoveDef extends Move {
 
 export interface PassiveDef {
     id: string;
+    status?: StatusLevelDef;
 }
 
 export interface BindingDef {
@@ -52,8 +53,9 @@ export interface StatusDef {
     levels: StatusLevelDef[];
 }
 
-interface StatusLevelDef {
+export interface StatusLevelDef {
     modifiers?: Partial<Record<ModifierId, number>>;
+    allowedMoveTypes?: MoveType[];
     blockedMoveTypes?: MoveType[];
     blocksAttack?: boolean;
     blocksEscape?: boolean;

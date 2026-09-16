@@ -49,8 +49,7 @@ export function getBindingLevel(binding: iBinding): BindingLevel {
 }
 
 export function getMoves(target: iCharacter): MoveDef[] {
-    const moves: MoveDef[] = [];
-    moves.push(...target.definition.moves);
+    const moves: MoveDef[] = target.definition.getMoves(target);
     for (const buff of target.buffs) {
         if (buff.active && buff.addedMoves) {
             moves.push(...buff.addedMoves);

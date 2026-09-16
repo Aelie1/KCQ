@@ -44,7 +44,8 @@ export interface iBuff extends Omit<Buff, "statuses"> {
     active: boolean;
     statuses?: iStatus[];
     addedMoves?: MoveDef[];
-    modifyDamage?: (target: iEntity, buff: iBuff, amount: number) => iCallbackReturn;
+    modifyDamage?: (target: iEnemy, buff: iBuff, amount: number) => iCallbackReturn;
+    modifyBinding?: (actor: iEnemy, target: iCharacter, buff: iBuff, binding: iBinding, amount: number) => iCallbackReturn;
 }
 
 export interface iCallbackReturn {
