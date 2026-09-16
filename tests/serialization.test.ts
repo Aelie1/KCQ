@@ -83,8 +83,9 @@ describe("state serialization and combatant loading", () => {
         const prepare = makeMove("prepare", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [{
+            resolve: (state, actor) => [{
                 type: "binding",
+                source: actor,
                 target: state.characters[0],
                 binding: restraint,
                 amount: thresholds.easy,

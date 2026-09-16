@@ -62,7 +62,7 @@ export function makeWaitMove(): MoveDef {
 }
 
 export function makeCharacterDef(id: string, moves: MoveDef[] = []): CharacterDef {
-    return { id, moves, passives: [] };
+    return { id, getMoves: () => moves, passives: [] };
 }
 
 export function makeCharacter(
@@ -134,8 +134,9 @@ export function setupBoundEngine(
 ) {
     const setupMove = makeMove("apply-binding", "mouth", {
         targetSide: "player",
-        resolve: (state) => [{
+        resolve: (state, actor) => [{
             type: "binding",
+            source: actor,
             target: state.characters[0],
             binding,
             amount,

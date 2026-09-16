@@ -208,7 +208,7 @@ describe("move validation and player actions", () => {
     it("executes Ko's authored Telekinesis effect through the engine", () => {
         const engine = setupAuthoredCombat();
         const enemyId = `${skunkette.id}1`;
-        const move = ko.moves.find((candidate) => candidate.id === "telekinesis");
+        const move = engine.getMoves(ko.id).find(({ move }) => move.id === "telekinesis")?.move;
         if (!move) throw new Error("Expected Ko to have Telekinesis");
 
         const result = engine.executeAction({
@@ -236,25 +236,38 @@ describe("move validation and player actions", () => {
         );
     });
 
-    it("exposes, targets, and executes Ko's authored Fairy Punch", () => {
-        const engine = setupAuthoredCombat();
-        const enemyId = `${skunkette.id}1`;
-        const move = ko.moves.find((candidate) => candidate.id === "fairypunch");
-        if (!move) throw new Error("Expected Ko to have Fairy Punch");
+    it("exposes, targets, and executes Ko's authored Fairy Telekinesis", () => {
+        const foe = makeEnemyDef("foe", [makeWaitMove()]);
+        foe.hp = 500;
+        const encounter = { id: "fairy-telekinesis", enemies: [foe], bindings: [], traps: [] };
+        const engine = new GameEngine([encounter], AUTHORED_HIT_SEED);
+        engine.loadCharacter(ko);
+        engine.loadEncounter(encounter.id);
+        const enemyId = "foe1";
+        expect(engine.executeAction({
+            type: "attack",
+            actor: ko.id,
+            move: "fairyTransformation",
+            targets: [],
+        }).success).toBe(true);
+        expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
+
+        const move = engine.getMoves(ko.id).find(({ move }) => move.id === "fairyTelekinesis")?.move;
+        if (!move) throw new Error("Expected empowered Ko to have Fairy Telekinesis");
 
         expect(engine.getMoves(ko.id)).toContainEqual({
             move: {
                 id: move.id,
                 targetSide: "enemy",
                 targets: "all",
-                type: "arms",
+                type: "mouth",
             },
             available: true,
         });
         expect(engine.getTargets(ko.id, move.id)).toContainEqual({
             target: enemyId,
             valid: true,
-            accuracy: move.accuracy,
+            accuracy: expect.any(Object),
         });
 
         const result = engine.executeAction({
@@ -264,7 +277,7 @@ describe("move validation and player actions", () => {
             targets: [],
         });
         expect(result.success).toBe(true);
-        if (!result.success) throw new Error("Expected Fairy Punch to succeed");
+        if (!result.success) throw new Error("Expected Fairy Telekinesis to succeed");
 
         expect(result.events[0]).toEqual({
             type: "moveUsed",
@@ -274,19 +287,28 @@ describe("move validation and player actions", () => {
         });
         const damageEvent = result.events.find((event) => event.type === "enemyDamaged");
         if (!damageEvent || damageEvent.type !== "enemyDamaged") {
-            throw new Error("Expected Fairy Punch to damage an enemy");
+            throw new Error("Expected Fairy Telekinesis to damage an enemy");
         }
         expect(damageEvent).toMatchObject({ target: enemyId, amount: expect.any(Number) });
         expect(damageEvent.amount).toBeGreaterThan(0);
         expect(engine.getGameState().enemies[0].currHp).toBe(
-            skunkette.hp - damageEvent.amount,
+            foe.hp - damageEvent.amount,
         );
     });
 
     it("reports authored moves without leaking their executable functions", () => {
         const engine = setupAuthoredCombat();
 
-        expect(engine.getMoves(ko.id)).toEqual(ko.moves.map((definition) => ({
+        const definitions = ko.getMoves({
+            id: ko.id,
+            definition: ko,
+            acted: false,
+            standing: false,
+            bonusEscapes: 0,
+            bindings: [],
+            buffs: [],
+        });
+        expect(engine.getMoves(ko.id)).toEqual(definitions.map((definition) => ({
             move: {
                 id: definition.id,
                 targetSide: definition.targetSide,
@@ -420,6 +442,7 @@ describe("move and effect resolution through GameEngine", () => {
         const trigger = makeBehavioralBinding("trigger", {
             onAdd: (_state, target) => [{
                 type: "binding",
+                source: target,
                 target,
                 binding: chained,
                 amount: 2,
@@ -429,15 +452,17 @@ describe("move and effect resolution through GameEngine", () => {
         const chain = makeMove("chain", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [
+            resolve: (state, actor) => [
                 {
                     type: "binding",
+                    source: actor,
                     target: state.characters[0],
                     binding: trigger,
                     amount: 1,
                 },
                 {
                     type: "binding",
+                    source: actor,
                     target: state.characters[0],
                     binding: sibling,
                     amount: 3,
@@ -481,10 +506,11 @@ describe("move and effect resolution through GameEngine", () => {
         });
         const foe = makeEnemyDef("reactive", [makeWaitMove()]);
         let receivedSource: string | undefined;
-        foe.onDamage = (state, source) => {
+        foe.onDamage = (state, source, target) => {
             receivedSource = source.id;
             return [{
                 type: "binding",
+                source: target,
                 target: state.characters[0],
                 binding: reaction,
                 amount: 1,
@@ -522,14 +548,16 @@ describe("move and effect resolution through GameEngine", () => {
         });
         const foe = makeEnemyDef("reactive", [makeWaitMove()]);
         foe.hp = 5;
-        foe.onDamage = (state) => [{
+        foe.onDamage = (state, _source, target) => [{
             type: "binding",
+            source: target,
             target: state.characters[0],
             binding: damageReaction,
             amount: 1,
         }];
-        foe.onDefeat = (state) => [{
+        foe.onDefeat = (state, target) => [{
             type: "binding",
+            source: target,
             target: state.characters[0],
             binding: defeatReaction,
             amount: 1,

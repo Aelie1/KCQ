@@ -54,15 +54,17 @@ function setupSkunkingLifecycle() {
         targets: 0,
         accuracy: undefined,
         freeOnHit: true,
-        resolve: (state) => [
+        resolve: (state, actor) => [
             {
                 type: "binding",
+                source: actor,
                 target: state.characters[0],
                 binding: latexCollar,
                 amount: 30,
             },
             ...LATEX_BODY_BINDINGS.map((binding) => ({
                 type: "binding" as const,
+                source: actor,
                 target: state.characters[0],
                 binding,
                 amount: 80,
@@ -519,8 +521,9 @@ describe("Skunkette behavior through GameEngine", () => {
         const prepare = makeBehavioralMove("prepare-impossible", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [latexHead, latexArms, latexTorso].map((binding) => ({
+            resolve: (state, actor) => [latexHead, latexArms, latexTorso].map((binding) => ({
                 type: "binding" as const,
+                source: actor,
                 target: state.characters[0],
                 binding,
                 amount: 80,
@@ -555,15 +558,17 @@ describe("Skunkette behavior through GameEngine", () => {
         const prepare = makeBehavioralMove("prepare-mist", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [
+            resolve: (state, actor) => [
                 {
                     type: "binding",
+                    source: actor,
                     target: state.characters[0],
                     binding: latexArms,
                     amount: 10,
                 },
                 {
                     type: "binding",
+                    source: actor,
                     target: state.characters[1],
                     binding: latexHead,
                     amount: 10,
@@ -611,9 +616,10 @@ describe("Skunkette behavior through GameEngine", () => {
         const prepare = makeBehavioralMove("prepare-mist-crit", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [
+            resolve: (state, actor) => [
                 ...existingBindings.map((binding, index) => ({
                     type: "binding" as const,
+                    source: actor,
                     target: state.characters[0],
                     binding,
                     amount: startingValues[index],

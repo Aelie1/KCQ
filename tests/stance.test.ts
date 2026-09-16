@@ -148,15 +148,17 @@ describe("stance toggling", () => {
         const prepare = makeMove("prepare", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [
+            resolve: (state, actor) => [
                 {
                     type: "binding" as const,
+                    source: actor,
                     target: state.characters[0],
                     binding: restraint,
                     amount: thresholds.impossible,
                 },
                 {
                     type: "binding" as const,
+                    source: actor,
                     target: state.characters[1],
                     binding: restraint,
                     amount: thresholds.impossible,
@@ -265,13 +267,14 @@ describe("stance toggling", () => {
         });
         const immobilize = makeMove("immobilize", "none", {
             targetSide: "player",
-            resolve: (state, _actor, _move, targets) => {
+            resolve: (state, actor, _move, targets) => {
                 const target = state.characters.find(
                     (character) => character === targets[0].target,
                 );
                 return target
                     ? [{
                         type: "binding",
+                        source: actor,
                         target,
                         binding: immobilizingBinding,
                         amount: thresholds.easy,
@@ -316,8 +319,9 @@ describe("stance toggling", () => {
         const observe = makeMove("observe-pounce", "none", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [{
+            resolve: (state, actor) => [{
                 type: "binding",
+                source: actor,
                 target: state.characters[0],
                 binding: observation,
                 onResolve: ({ target }) => {

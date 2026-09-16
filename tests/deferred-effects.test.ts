@@ -31,14 +31,15 @@ describe("deferred binding onResolve effects", () => {
             targetSide: "none",
             targets: 0,
             accuracy: undefined,
-            resolve: (state) => [{
+            resolve: (state, actor) => [{
                 type: "binding",
+                source: actor,
                 target: state.characters[0],
                 binding: original,
                 amount: 4,
                 onResolve: (effect) => [
-                    { type: "binding", target: effect.target, binding: first, amount: 2 },
-                    { type: "binding", target: effect.target, binding: second, amount: 3 },
+                    { type: "binding", source: effect.source, target: effect.target, binding: first, amount: 2 },
+                    { type: "binding", source: effect.source, target: effect.target, binding: second, amount: 3 },
                 ],
             }],
         });
@@ -65,15 +66,16 @@ describe("deferred binding onResolve effects", () => {
             targetSide: "none",
             targets: 0,
             accuracy: undefined,
-            resolve: (state) => [{
+            resolve: (state, actor) => [{
                 type: "binding",
+                source: actor,
                 target: state.characters[0],
                 binding: placeholder,
                 amount: 9,
                 onResolve: (effect) => {
                     effect.amount = undefined;
                     return [{
-                        type: "binding", target: effect.target, binding: replacement, amount: 5,
+                        type: "binding", source: effect.source, target: effect.target, binding: replacement, amount: 5,
                     }];
                 },
             }],
@@ -97,7 +99,7 @@ describe("deferred binding onResolve effects", () => {
         const generated: BindingDef = {
             ...makeBindingDef("generated"),
             onAdd: (_state, target, _binding, amount) => [{
-                type: "binding", target, binding: downstream, amount,
+                type: "binding", source: target, target, binding: downstream, amount,
             }],
         };
         const placeholder = makeBindingDef("placeholder");
@@ -105,12 +107,13 @@ describe("deferred binding onResolve effects", () => {
             targetSide: "none",
             targets: 0,
             accuracy: undefined,
-            resolve: (state) => [{
+            resolve: (state, actor) => [{
                 type: "binding",
+                source: actor,
                 target: state.characters[0],
                 binding: placeholder,
                 onResolve: (effect) => [{
-                    type: "binding", target: effect.target, binding: generated, amount: 6,
+                    type: "binding", source: effect.source, target: effect.target, binding: generated, amount: 6,
                 }],
             }],
         });
@@ -134,9 +137,10 @@ describe("deferred binding onResolve effects", () => {
         const deferred = makeMove("deferredPreview", "none", {
             targetSide: "player",
             targets: 1,
-            resolve: (_state, _actor, _move, targets) => targets.flatMap(({ target }) =>
+            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
                 isCharacter(target) ? [{
                     type: "binding" as const,
+                    source: actor,
                     target,
                     binding: placeholder,
                     onResolve: () => [],

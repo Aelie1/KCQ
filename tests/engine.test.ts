@@ -100,8 +100,9 @@ describe("turn phases and enemy intentions", () => {
         const threatened = makeBindingDef("threatened");
         const threat = makeMove("threat", "none", {
             targetSide: "player",
-            resolve: (state) => [{
+            resolve: (state, actor) => [{
                 type: "binding",
+                source: actor,
                 target: state.characters[0],
                 binding: threatened,
                 amount: 10,
@@ -244,13 +245,14 @@ describe("enemy intention previews", () => {
         const alwaysHit = makeMove("certain-threat", "none", {
             targetSide: "player",
             accuracy: { hit: 100 },
-            resolve: (state, _actor, _move, targets) => targets.flatMap((target) => {
+            resolve: (state, actor, _move, targets) => targets.flatMap((target) => {
                 const character = state.characters.find(
                     (candidate) => candidate === target.target,
                 );
                 return character
                     ? [{
                         type: "binding" as const,
+                        source: actor,
                         target: character,
                         binding: pressure,
                         amount: 100 * target.effectiveness,

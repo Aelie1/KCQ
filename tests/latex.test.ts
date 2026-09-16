@@ -30,13 +30,14 @@ function setupLatexScenario(
     const prepare = makeBehavioralMove("prepare-latex", "none", {
         targetSide: "none",
         targets: 0,
-        resolve: (state) => {
+        resolve: (state, actor) => {
             const effects: iEffect[] = [];
             for (const setup of bindings) {
                 const target = state.characters.find(({ id }) => id === setup.character);
                 if (!target) throw new Error(`Expected character ${setup.character}`);
                 effects.push({
                     type: "binding",
+                    source: actor,
                     target,
                     binding: setup.binding,
                     amount: setup.amount,

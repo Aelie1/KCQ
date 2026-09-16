@@ -19,6 +19,7 @@ function trapThatConsumes(
         onTrigger: (target, trap) => [
             ...(binding ? [{
                 type: "binding" as const,
+                source: target,
                 target,
                 binding,
                 amount: 10,
@@ -142,8 +143,8 @@ describe("generic traps through GameEngine", () => {
             targetSide: "none",
             targets: 0,
             accuracy: undefined,
-            resolve: (state) => [{
-                type: "binding", target: state.characters[0], binding: attackMarker, amount: 1,
+            resolve: (state, actor) => [{
+                type: "binding", source: actor, target: state.characters[0], binding: attackMarker, amount: 1,
             }],
         });
         const engine = makeTrapEngine([{ definition: trap, amount: 100 }], [act]);

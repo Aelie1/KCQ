@@ -23,15 +23,17 @@ function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: numbe
     const prepare = makeMove("prepare", "mouth", {
         targetSide: "none",
         targets: 0,
-        resolve: (state) => [
+        resolve: (state, actor) => [
             {
                 type: "binding" as const,
+                source: actor,
                 target: state.characters[0],
                 binding: actorBinding,
                 amount: actorBindingAmount,
             },
             {
                 type: "binding" as const,
+                source: actor,
                 target: state.characters[1],
                 binding: targetBinding,
                 amount: thresholds.easy,

@@ -104,7 +104,7 @@ describe("accuracy", () => {
             },
         };
         const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter({ ...actor.definition, moves: [move] });
+        engine.loadCharacter({ ...actor.definition, getMoves: () => [move] });
         engine.loadEncounter(encounter.id);
         const info = engine.getTargets(actor.id, move.id).find(({ target }) => target !== null);
         if (!info || !info.valid || !info.accuracy) {

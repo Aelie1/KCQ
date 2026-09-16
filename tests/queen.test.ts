@@ -292,15 +292,15 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
             targetSide: "player",
             targets: 1,
             freeOnHit: true,
-            resolve: (_state, _actor, _move, targets) => targets.flatMap(({ target }) =>
-                isCharacter(target) ? [{ type: "binding" as const, target, binding: latexCollar, amount: 20 }] : [],
+            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
+                isCharacter(target) ? [{ type: "binding" as const, source: actor, target, binding: latexCollar, amount: 20 }] : [],
             ),
         });
         const remove = makeBehavioralMove("remove-collar", "none", {
             targetSide: "player",
             targets: 1,
-            resolve: (_state, _actor, _move, targets) => targets.flatMap(({ target }) =>
-                isCharacter(target) ? [{ type: "binding" as const, target, binding: latexCollar, amount: -100 }] : [],
+            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
+                isCharacter(target) ? [{ type: "binding" as const, source: actor, target, binding: latexCollar, amount: -100 }] : [],
             ),
         });
         const engine = loadQueen({
@@ -321,12 +321,12 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
         const transform = makeBehavioralMove("transform", "none", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => {
+            resolve: (state, actor) => {
                 const target = state.characters.find(({ id }) => id === "alpha");
                 if (!target) return [];
                 return [
-                    { type: "binding" as const, target, binding: latexCollar, amount: 20 },
-                    ...BODY_LATEX.map((binding) => ({ type: "binding" as const, target, binding, amount: 80 })),
+                    { type: "binding" as const, source: actor, target, binding: latexCollar, amount: 20 },
+                    ...BODY_LATEX.map((binding) => ({ type: "binding" as const, source: actor, target, binding, amount: 80 })),
                 ];
             },
         });

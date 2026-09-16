@@ -23,8 +23,9 @@ function bindingMove(
         targets: 0,
         alwaysAvailable: true,
         freeOnHit: true,
-        resolve: (state) => [{
+        resolve: (state, actor) => [{
             type: "binding",
+            source: actor,
             target: state.characters[targetIndex],
             binding,
             amount,
@@ -191,9 +192,9 @@ describe("binding levels and effective statuses through GameEngine", () => {
         const applyBoth = makeBehavioralMove("apply-both", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [
-                { type: "binding", target: state.characters[0], binding: weak, amount: 10 },
-                { type: "binding", target: state.characters[0], binding: strong, amount: 10 },
+            resolve: (state, actor) => [
+                { type: "binding", source: actor, target: state.characters[0], binding: weak, amount: 10 },
+                { type: "binding", source: actor, target: state.characters[0], binding: strong, amount: 10 },
             ],
         });
         const attack = makeBehavioralMove("accuracy-check", "mouth", {

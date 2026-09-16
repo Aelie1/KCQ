@@ -24,8 +24,9 @@ function setupEscapeScenario(
     const prepare = makeMove("prepare-bindings", "mouth", {
         targetSide: "none",
         targets: 0,
-        resolve: (state) => bindings.map((setup) => ({
+        resolve: (state, actor) => bindings.map((setup) => ({
             type: "binding" as const,
+            source: actor,
             target: state.characters.find((character) => character.id === setup.target)!,
             binding: setup.binding,
             amount: setup.amount,

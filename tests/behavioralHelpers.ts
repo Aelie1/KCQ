@@ -43,7 +43,7 @@ export function makeBehavioralCharacter(
     id = "hero",
     moves: MoveDef[] = [],
 ): CharacterDef {
-    return { id, moves, passives: [] };
+    return { id, getMoves: () => moves, passives: [] };
 }
 
 export function makeEnemyWaitMove(): MoveDef {

@@ -542,7 +542,7 @@ describe("console formatting", () => {
             "[1] telekinesis [mouth; 1 enemy]   foe1 — Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%",
         );
         expect(rendered).toContain(
-            "[2] starlight [mouth; no target]   Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%",
+            "[2] starlightBindings [mouth; 1 enemy]   foe1",
         );
     });
 
