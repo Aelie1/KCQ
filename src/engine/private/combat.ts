@@ -79,7 +79,7 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
         }
     }
     else {
-        hitModifier = getModifier(actor, "hit") * HIT_MODIFIER;
+        hitModifier = (actorModifiers.hit ?? 0) * HIT_MODIFIER;
 
         if (isCharacter(actor)) {
             switch (move.type) {
@@ -217,17 +217,21 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
 }
 
 
-export function evaluateResult(actor: iEntity, target: iEntity, accuracy: AccuracyProfile, roll: number): iTargetInfo {
+export function evaluateResult(actor: iEntity, target: iEntity, move: MoveDef, accuracy: AccuracyProfile, roll: number): iTargetInfo {
     return {
         target: target,
-        ...evaluateProfile(actor, accuracy, roll, getModifier(target, "vulnerability"))
+        ...evaluateProfile(actor, move, accuracy, roll, getModifier(target, "vulnerability"))
     };
 }
 
-export function evaluateProfile(actor: iEntity, accuracy: AccuracyProfile, roll: number, vulnerability: number): AccuracyResult {
+export function evaluateProfile(actor: iEntity, move: MoveDef, accuracy: AccuracyProfile, roll: number, vulnerability: number): AccuracyResult {
     const order: HitBand[] = ["miss", "graze", "hit", "crit"];
     const result: AccuracyResult = { band: "none", effectiveness: 0 }
-    const potency = getModifier(actor, "potency");
+    const modifiers = getModifiers(actor);
+    if (move.modifiers) {
+        mergeModifiers(modifiers, move.modifiers)
+    }
+    const potency = modifiers.potency ?? 0;
 
     let cumulative = 0;
     for (const band of order) {
@@ -373,7 +377,7 @@ export function evaluateIntention(state: iGameState, intention: iIntention): iTa
         if (info.valid) {
             if (info.target) {
                 if (info.accuracy) {
-                    const targetInfo = evaluateResult(intention.actor, info.target, info.accuracy, roll.roll);
+                    const targetInfo = evaluateResult(intention.actor, info.target, intention.move.definition, info.accuracy, roll.roll);
                     targets.push(targetInfo);
                 } else {
                     targets.push({
@@ -384,7 +388,7 @@ export function evaluateIntention(state: iGameState, intention: iIntention): iTa
                 }
             } else {
                 if (info.accuracy) {
-                    const result = evaluateProfile(intention.actor, info.accuracy, roll.roll, 0);
+                    const result = evaluateProfile(intention.actor, intention.move.definition, info.accuracy, roll.roll, 0);
                     intention.move.effectiveness = result.effectiveness;
                     intention.move.band = result.band;
                 } else {

@@ -473,7 +473,7 @@ export class GameEngine {
                         if (target.target) {
                             if (target.accuracy) {
                                 const roll: number = this.accRng.accuracy();
-                                const targetInfo: iTargetInfo = evaluateResult(actor, target.target, target.accuracy, roll);
+                                const targetInfo: iTargetInfo = evaluateResult(actor, target.target, move, target.accuracy, roll);
                                 targets.push(targetInfo);
                                 if (targetInfo.band !== "miss") {
                                     anyHits = true;
@@ -489,7 +489,7 @@ export class GameEngine {
                         } else {
                             if (target.accuracy) {
                                 const roll: number = this.accRng.accuracy();
-                                const result: AccuracyResult = evaluateProfile(actor, target.accuracy, roll, 0);
+                                const result: AccuracyResult = evaluateProfile(actor, move, target.accuracy, roll, 0);
                                 iMove.band = result.band;
                                 iMove.effectiveness = result.effectiveness;
                                 if (result.band !== "miss") {
