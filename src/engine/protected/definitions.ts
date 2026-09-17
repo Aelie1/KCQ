@@ -11,6 +11,7 @@ export interface CharacterDef {
 
 export interface EnemyDef {
     id: string;
+    rank: "minion" | "enemy" | "boss";
     hp: number;
     defense: number;
     passives: PassiveDef[];

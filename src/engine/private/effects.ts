@@ -6,7 +6,7 @@ import { canMove } from "../protected/status";
 import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, GameEvent, StanceId, TargetInfo } from "../public/types";
 import { evaluateIntention, resolveMove } from "./combat";
-import { TRAP_MAX } from "./constants";
+import { ACCURACY_MODIFIER, TRAP_MAX } from "./constants";
 import { serializeEffects } from "./serialize";
 import { iEngineEffect } from "./types";
 
@@ -139,6 +139,19 @@ export class GameEffects {
                     break;
                 case "move":
                     this.addIntention(effect);
+                    break;
+                case "refresh":
+                    this.refreshCharacter(effect.target);
+                    break;
+                case "intention":
+                    switch (effect.operation) {
+                        case "target":
+                            this.retargetIntention(effect.target, effect.destination);
+                            break;
+                        case "remove":
+                            this.removeIntention(effect.target, effect.amount);
+                            break;
+                    }
                     break;
             }
         }
@@ -370,6 +383,7 @@ export class GameEffects {
             definition: definition,
             buffs: [],
             id: name,
+            rank: definition.rank,
             maxHp: definition.hp,
             currHp: definition.hp * hpRatio,
             currDef: definition.defense,
@@ -497,4 +511,56 @@ export class GameEffects {
         });
     };
 
-}
+    private refreshCharacter(target: iCharacter) {
+        if (target.acted) {
+            this.addEvent({
+                type: "actionRefreshed",
+                target: target.id,
+            });
+            target.acted = false;
+        }
+    }
+
+    private retargetIntention(target: iEnemy, destination: iCharacter) {
+        let cancelled = false;
+        for (const intention of target.intentions) {
+            if (intention.move.definition.targetSide === "player"
+                && intention.move.definition.targets === 1
+                && intention.rolls[0].target !== destination) {
+                intention.rolls[0].target = destination;
+                cancelled = true;
+            }
+        }
+        if (cancelled) {
+            this.addEvent({
+                type: "targetChanged",
+                target: target.id,
+                destination: destination.id
+            });
+        }
+    }
+
+    private removeIntention(target: iEnemy, amount: number) {
+        if (target.rank !== "boss") {
+            target.intentions.length = 0;
+            this.addEvent({
+                type: "intentionCancelled",
+                target: target.id,
+            });
+        }
+        else {
+            for (const intention of target.intentions) {
+                if (intention.move.roll) {
+                    intention.move.roll = Math.max(0, intention.move.roll - amount);
+                }
+                for (const roll of intention.rolls) {
+                    roll.roll = Math.max(0, roll.roll - amount * ACCURACY_MODIFIER);
+                }
+            }
+            this.addEvent({
+                type: "intentionWeakened",
+                target: target.id,
+            });
+        }
+    }
+};

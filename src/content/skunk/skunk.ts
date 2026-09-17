@@ -21,6 +21,7 @@ const EXPLOSION_DAMAGE = 25;
 
 export const skunk: EnemyDef = {
     id: "skunk",
+    rank: "enemy",
     hp: SKUNK_HP,
     defense: SKUNK_DEF,
     passives: [],

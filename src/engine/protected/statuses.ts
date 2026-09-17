@@ -108,3 +108,11 @@ export const stunned: StatusDef = {
         { blocksAttack: true, blocksEscape: true, blocksMoving: true }
     ]
 };
+
+export const servitude: StatusDef = {
+    id: "servitude",
+    levels: [
+        {},
+        { blocksEscape: true }
+    ]
+};

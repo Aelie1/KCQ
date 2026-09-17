@@ -1,3 +1,5 @@
+import { ACCURACY_MODIFIER } from "../private/constants";
+
 export class Random {
     private state: number;
 
@@ -19,7 +21,7 @@ export class Random {
     }
 
     accuracy(): number {
-        return this.random() * 100;
+        return this.random() * ACCURACY_MODIFIER;
     }
 
     int(min: number, max: number): number {

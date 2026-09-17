@@ -18,6 +18,7 @@ const EMPOWERING_MAGIC_DURATION = 1;
 
 export const fairy: EnemyDef = {
     id: "fairy",
+    rank: "enemy",
     hp: FAIRY_HP,
     defense: FAIRY_DEF,
     passives: [],

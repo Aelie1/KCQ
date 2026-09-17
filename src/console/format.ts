@@ -178,6 +178,14 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [`${event.actor} triggered ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
             case "actionInterrupted":
                 return [`${event.actor}'s action was interrupted due to ${event.reason}.`];
+            case "actionRefreshed":
+                return [`${event.target}'s action was refreshed.`];
+            case "intentionCancelled":
+                return [`${event.target}'s action was cancelled.`];
+            case "intentionWeakened":
+                return [`${event.target}'s action was weakened.`];
+            case "targetChanged":
+                return [`${event.target}'s action's target was changed to ${event.destination}.`];
         }
     });
 }

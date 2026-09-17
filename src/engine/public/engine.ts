@@ -244,20 +244,25 @@ export class GameEngine {
             }];
         }
 
-        switch (moveState.targetSide) {
-            case "none":
-                result.push(isValidTarget(this.state, character, null, moveState));
-                break;
-            case "player":
-                for (const target of this.state.characters) {
-                    result.push(isValidTarget(this.state, character, target, moveState));
-                }
-                break;
-            case "enemy":
-                for (const target of this.state.enemies) {
-                    result.push(isValidTarget(this.state, character, target, moveState));
-                }
-                break;
+        if (moveState.targets === 0) {
+            result.push(isValidTarget(this.state, character, null, moveState));
+        }
+        else {
+            switch (moveState.targetSide) {
+                case "none":
+                    result.push(isValidTarget(this.state, character, null, moveState));
+                    break;
+                case "player":
+                    for (const target of this.state.characters) {
+                        result.push(isValidTarget(this.state, character, target, moveState));
+                    }
+                    break;
+                case "enemy":
+                    for (const target of this.state.enemies) {
+                        result.push(isValidTarget(this.state, character, target, moveState));
+                    }
+                    break;
+            }
         }
 
         return result.map(serializeValidity);

@@ -30,6 +30,7 @@ function serializeCharacter(character: iCharacter): Character {
 function serializeEnemy(enemy: iEnemy): Enemy {
     return {
         id: enemy.id,
+        rank: enemy.rank,
         maxHp: enemy.maxHp,
         currHp: enemy.currHp,
         currDef: enemy.currDef,

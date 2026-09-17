@@ -88,7 +88,10 @@ export type iEffect =
     | iCooldownEffect
     | iTrapEffect
     | iStanceEffect
-    | iMoveEffect;
+    | iMoveEffect
+    | iRefreshEffect
+    | iRetargetEffect
+    | iCancelEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -139,4 +142,23 @@ export interface iMoveEffect {
     actor: iEntity;
     move: iMove;
     targets: iEntity[];
+}
+
+export interface iRefreshEffect {
+    type: "refresh"
+    target: iCharacter;
+}
+
+export interface iRetargetEffect {
+    type: "intention"
+    operation: "target";
+    target: iEnemy;
+    destination: iCharacter;
+}
+
+export interface iCancelEffect {
+    type: "intention"
+    operation: "remove";
+    target: iEnemy;
+    amount: number;
 }

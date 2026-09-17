@@ -42,6 +42,7 @@ export interface Character {
 
 export interface Enemy {
     id: EntityId;
+    rank: "minion" | "enemy" | "boss";
     maxHp: number;
     currHp: number;
     currDef: number;
@@ -229,7 +230,8 @@ export type StatusId =
     | "helpless"
     | "stunned"
     | "incapacitated"
-    | "standing";
+    | "standing"
+    | "servitude";
 
 export type ModifierSet = Partial<Record<ModifierId, number>>;
 
@@ -363,7 +365,11 @@ export type GameEvent =
     | EncounterEvent
     | CooldownEvent
     | TrapEvent
-    | InterruptEvent;
+    | InterruptEvent
+    | RefreshEvent
+    | RetargetEvent
+    | CancelEvent
+    | WeakenEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
@@ -435,6 +441,27 @@ export interface InterruptEvent {
     type: "actionInterrupted";
     actor: EntityId;
     reason: ActionFailureReason;
+}
+
+export interface RefreshEvent {
+    type: "actionRefreshed";
+    target: EntityId;
+}
+
+export interface RetargetEvent {
+    type: "targetChanged";
+    target: EntityId;
+    destination: EntityId;
+}
+
+export interface CancelEvent {
+    type: "intentionCancelled";
+    target: EntityId;
+}
+
+export interface WeakenEvent {
+    type: "intentionWeakened";
+    target: EntityId;
 }
 
 

@@ -28,6 +28,7 @@ const RAINMAKER_2_HP_RATIO = 1 / 3;
 
 export const queen: EnemyDef = {
     id: "queen",
+    rank: "boss",
     hp: QUEEN_HP,
     defense: QUEEN_DEF,
     passives: [],

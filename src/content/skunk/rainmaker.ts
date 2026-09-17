@@ -11,6 +11,7 @@ const RAIN_DAMAGE = 10;
 
 export const rainmaker: EnemyDef = {
     id: "rainmaker",
+    rank: "minion",
     hp: RAINMAKER_HP,
     defense: RAINMAKER_DEF,
     passives: [],

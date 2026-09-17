@@ -25,6 +25,7 @@ const RESISTANCE_DEFENSE = -1;
 
 export const skunkette: EnemyDef = {
     id: "skunkette",
+    rank: "enemy",
     hp: SKUNKETTE_HP,
     defense: SKUNKETTE_DEF,
     passives: [],
