@@ -166,7 +166,7 @@ function mergeIStatus(target: iStatus[], source: iStatus) {
     }
 }
 
-function mergeModifiers(target: ModifierSet, source: ModifierSet): void {
+export function mergeModifiers(target: ModifierSet, source: ModifierSet): void {
     for (const [modifier, amount] of Object.entries(source) as [ModifierId, number][]) {
         target[modifier] = (target[modifier] ?? 0) + amount;
     }

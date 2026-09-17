@@ -1,4 +1,4 @@
-import type { AccuracyProfile, BindingLevel, ModifierId, Move, MoveType, StatusId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingLevel, ModifierId, ModifierSet, Move, MoveType, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo, iTrap } from "./types";
 
@@ -26,6 +26,7 @@ export interface MoveDef extends Move {
     baseDamage?: number;
     cooldown?: number;
     freeOnHit?: boolean;
+    modifiers?: ModifierSet;
     resolve: (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]) => iEffect[];
 }
 
