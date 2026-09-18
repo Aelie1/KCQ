@@ -10,6 +10,45 @@ function getIEntitySide(entity: iEntity): EntitySide {
     return (isCharacter(entity)) ? "player" : "enemy";
 }
 
+
+export function getTargets(state: iGameState, actor: iCharacter, move: MoveDef): iValidityInfo[] {
+    const result: iValidityInfo[] = [];
+
+    if (move.targets === 0) {
+        result.push(isValidTarget(state, actor, null, move));
+    }
+    else {
+        switch (move.targetSide) {
+            case "none":
+                result.push(isValidTarget(state, actor, null, move));
+                break;
+            case "player":
+                for (const target of state.characters) {
+                    result.push(isValidTarget(state, actor, target, move));
+                }
+                break;
+            case "enemy":
+                for (const target of state.enemies) {
+                    result.push(isValidTarget(state, actor, target, move));
+                }
+                break;
+        }
+    }
+
+    const validTargets = result.filter(x => x.valid).length;
+    if (move.targets !== "all"
+        && move.targets > 0
+        && move.targets > validTargets) {
+        return [{
+            valid: false,
+            target: null,
+            reason: "invalidTargetCount"
+        }];
+    }
+
+    return result;
+}
+
 export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity | null, move: MoveDef): iValidityInfo {
     if (target === null) {
         if (move.targets !== 0) {

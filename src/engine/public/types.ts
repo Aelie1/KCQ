@@ -262,8 +262,8 @@ export interface AvailabilityInfo {
 export interface ActionInfo {
     move: Move;
     available: boolean;
+    targets: ValidityInfo[];
     reason?: ActionFailureReason;
-    targets?: ValidityInfo[];
 }
 
 export interface StanceInfo {

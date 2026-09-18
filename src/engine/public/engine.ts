@@ -1,10 +1,10 @@
 import {
-    evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape, resolveMove,
+    evaluateIntention, evaluateProfile, evaluateResult, getTargets, isValidTarget, resolveEscape, resolveMove,
     tickBindings, tickBuffs, tickCooldowns, tickPlayers
 } from "../private/combat";
 import { TRAP_MODIFIER } from "../private/constants";
 import { GameEffects } from "../private/effects";
-import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeTargets } from "../private/serialize";
+import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
 import { iValidityInfo } from "../private/types";
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
 import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity, thresholds } from "../protected/helpers";
@@ -196,7 +196,7 @@ export class GameEngine {
             for (const move of getMoves(character)) {
                 let available = true;
                 let reason: ActionFailureReason = "moveUnavailable";
-                const targets = serializeTargets(this.state, character, move);
+                const targets = getTargets(this.state, character, move);
                 if (result) {
                     available = false;
                     reason = result.reason;
@@ -209,7 +209,8 @@ export class GameEngine {
                     available = false;
                     reason = "bindingRestriction";
                 }
-                else if (!targets.some(x => x.valid)) {
+                else if (move.targets !== "all"
+                    && !targets.some(x => x.valid)) {
                     available = false;
                     if (targets.length && !targets[0].valid) {
                         reason = targets[0].reason;
@@ -219,12 +220,13 @@ export class GameEngine {
                     actions.push({
                         move: serializeMove(move),
                         available: true,
-                        targets: targets
+                        targets: targets.map(serializeValidity)
                     });
                 } else {
                     actions.push({
                         move: serializeMove(move),
                         available: false,
+                        targets: targets.map(serializeValidity),
                         reason: reason
                     });
                 }
