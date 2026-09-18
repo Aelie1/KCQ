@@ -1,4 +1,5 @@
 import { runConsoleClient } from "./console/client";
+import { hinari } from "./content/characters/hinari";
 import { ko } from "./content/characters/ko";
 import { matsuko } from "./content/characters/matsuko";
 import { encounterList } from "./content/content";
@@ -8,6 +9,7 @@ const encounterId = "plains_3";
 const engine = new GameEngine(encounterList);
 engine.loadCharacter(ko);
 engine.loadCharacter(matsuko);
+engine.loadCharacter(hinari);
 const loadEvents = engine.loadEncounter(encounterId);
 
 void runConsoleClient(engine, encounterId, loadEvents).catch((error: unknown) => {

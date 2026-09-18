@@ -3,7 +3,7 @@ import { getValidTargets } from "../protected/enemies";
 import { findBinding, findBuff, findEntity, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { Random } from "../protected/random";
 import { canMove } from "../protected/status";
-import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap } from "../protected/types";
+import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, GameEvent, StanceId, TargetInfo } from "../public/types";
 import { evaluateIntention, resolveMove } from "./combat";
 import { TRAP_MAX } from "./constants";
@@ -138,7 +138,7 @@ export class GameEffects {
                     this.setStance(effect.actor, effect.stance);
                     break;
                 case "move":
-                    this.addIntention(effect);
+                    this.addIntention(effect.actor, effect.move, effect.targets);
                     break;
                 case "refresh":
                     this.refreshCharacter(effect.target);
@@ -153,6 +153,8 @@ export class GameEffects {
                             break;
                     }
                     break;
+                case "data":
+                    this.setData(effect.target, effect.name, effect.amount);
             }
         }
     };
@@ -476,38 +478,38 @@ export class GameEffects {
         return;
     };
 
-    private addIntention(action: iEngineEffect) {
-        if (action.type != "move" || !isEnemy(action.actor)) {
+    private addIntention(actor: iEntity, move: iMove, targets: iEntity[]) {
+        if (!isEnemy(actor)) {
             return;
         }
-        const targets = [];
-        const move = { ...action.move, roll: this.rng.random() };
-        if (move.definition.targets === "all") {
-            if (move.definition.targetSide === "either" || move.definition.targetSide === "enemy") {
-                targets.push(...this.state.enemies);
+        const targetStates = [];
+        const moveState = { ...move, roll: this.rng.random() };
+        if (moveState.definition.targets === "all") {
+            if (moveState.definition.targetSide === "either" || moveState.definition.targetSide === "enemy") {
+                targetStates.push(...this.state.enemies);
             }
-            if (move.definition.targetSide === "either" || move.definition.targetSide === "player") {
-                targets.push(...getValidTargets(this.state.characters));
+            if (moveState.definition.targetSide === "either" || moveState.definition.targetSide === "player") {
+                targetStates.push(...getValidTargets(this.state.characters));
             }
         } else {
-            targets.push(...action.targets);
+            targetStates.push(...targets);
         }
         const iTargets: iIntentionRoll[] = [];
-        for (const target of targets) {
+        for (const target of targetStates) {
             iTargets.push({
                 target: target,
                 roll: this.rng.accuracy()
             });
         }
-        if (move.definition.targets === 0) {
+        if (moveState.definition.targets === 0) {
             iTargets.push({
                 target: null,
                 roll: this.rng.accuracy()
             });
         }
-        action.actor.intentions.push({
-            actor: action.actor,
-            move: move,
+        actor.intentions.push({
+            actor: actor,
+            move: moveState,
             rolls: iTargets,
         });
     };
@@ -564,5 +566,9 @@ export class GameEffects {
                 target: target.id,
             });
         }
+    }
+
+    private setData(target: iEntity, name: string, amount: number) {
+        target.data[name] = Math.max(0, (target.data[name] ?? 0) + amount);
     }
 };

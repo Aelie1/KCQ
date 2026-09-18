@@ -3,7 +3,7 @@ import {
     Intention,
     StanceId, TargetInfo, Trap, TrapEffect, Turn
 } from "../public/types";
-import { BindingDef, CharacterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "./definitions";
+import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "./definitions";
 
 export type iEntity = iCharacter | iEnemy;
 
@@ -13,6 +13,7 @@ export interface iGameState {
     characters: iCharacter[];
     enemies: iEnemy[];
     traps: iTrap[];
+    encounter: EncounterDef | null;
 }
 
 export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modifiers" | "blockedMoveTypes"> {
@@ -91,7 +92,8 @@ export type iEffect =
     | iMoveEffect
     | iRefreshEffect
     | iRetargetEffect
-    | iCancelEffect;
+    | iCancelEffect
+    | iDataEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -160,5 +162,12 @@ export interface iCancelEffect {
     type: "intention"
     operation: "cancel";
     target: iEnemy;
+    amount: number;
+}
+
+export interface iDataEffect {
+    type: "data"
+    target: iEntity;
+    name: string;
     amount: number;
 }

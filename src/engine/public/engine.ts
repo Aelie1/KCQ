@@ -4,7 +4,7 @@ import {
 } from "../private/combat";
 import { TRAP_MODIFIER } from "../private/constants";
 import { GameEffects } from "../private/effects";
-import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
+import { serializeEffects, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
 import { iValidityInfo } from "../private/types";
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
 import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity, thresholds } from "../protected/helpers";
@@ -12,7 +12,8 @@ import { mixSeed, Random } from "../protected/random";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, isIncapacitated, isSkipped } from "../protected/status";
 import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import type {
-    AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, Encounter, EncounterId, EntityId,
+    AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo,
+    EncounterId, EntityId,
     EscapeOptions, GameEvent, GameState,
     PlayerAction, StanceInfo
 } from "./types";
@@ -23,7 +24,6 @@ export class GameEngine {
     private aiRng: Random;
     private accRng: Random;
     private encounters: EncounterDef[];
-    private currentEncounter: EncounterDef | null;
 
     constructor(encounters: EncounterDef[], seed?: number) {
         this.state = {
@@ -31,14 +31,14 @@ export class GameEngine {
             nextId: {},
             characters: [],
             enemies: [],
-            traps: []
+            traps: [],
+            encounter: null
         };
         seed ??= Math.floor(Math.random() * 0x100000000);
         this.seed = seed;
         this.aiRng = new Random(mixSeed(seed, 1));
         this.accRng = new Random(mixSeed(seed, 2));
         this.encounters = encounters;
-        this.currentEncounter = null;
     }
 
     getSeed(): number {
@@ -96,7 +96,7 @@ export class GameEngine {
             return result.getEvents();
         }
 
-        this.currentEncounter = encounter;
+        this.state.encounter = encounter;
 
         const spawns: iEffect[] = [];
         for (const enemy of encounter.enemies) {
@@ -128,10 +128,6 @@ export class GameEngine {
             bindings: encounter.bindings.map(x => x.id)
         });
         return result.getEvents();
-    }
-
-    getEncounter(): Encounter | null {
-        return this.currentEncounter ? serializeEncounter(this.currentEncounter) : null;
     }
 
     getAvailability(): AvailabilityInfo[] {
@@ -439,24 +435,27 @@ export class GameEngine {
                 const iMove: iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 let anyHits: boolean = false;
+                const totalHits = move.baseHits ?? 1;
 
                 for (const target of targetInfo) {
                     if (target.valid) {
                         if (target.target) {
-                            if (target.accuracy) {
-                                const roll: number = this.accRng.accuracy();
-                                const targetInfo: iTargetInfo = evaluateResult(actor, target.target, move, target.accuracy, roll);
-                                targets.push(targetInfo);
-                                if (targetInfo.band !== "miss") {
+                            for (let i = 0; i < totalHits; i++) {
+                                if (target.accuracy) {
+                                    const roll: number = this.accRng.accuracy();
+                                    const result: iTargetInfo = evaluateResult(actor, target.target, move, target.accuracy, roll);
+                                    targets.push(result);
+                                    if (result.band !== "miss") {
+                                        anyHits = true;
+                                    }
+                                } else {
+                                    targets.push({
+                                        target: target.target,
+                                        effectiveness: 0,
+                                        band: "none"
+                                    });
                                     anyHits = true;
                                 }
-                            } else {
-                                targets.push({
-                                    target: target.target,
-                                    effectiveness: 0,
-                                    band: "none"
-                                });
-                                anyHits = true;
                             }
                         } else {
                             if (target.accuracy) {

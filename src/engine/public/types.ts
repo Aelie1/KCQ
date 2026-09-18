@@ -7,6 +7,7 @@ export interface GameState {
     characters: Character[];
     enemies: Enemy[];
     traps: Trap[];
+    encounter: Encounter | null;
 }
 
 export interface Turn {

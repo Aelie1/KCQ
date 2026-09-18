@@ -10,7 +10,8 @@ export function serializeGameState(state: iGameState): GameState {
         turn: { ...state.turn },
         characters: state.characters.map(serializeCharacter),
         enemies: state.enemies.map(enemy => serializeEnemy(enemy)),
-        traps: state.traps.map(serializeTraps)
+        traps: state.traps.map(serializeTraps),
+        encounter: state.encounter ? serializeEncounter(state.encounter) : null
     };
 }
 

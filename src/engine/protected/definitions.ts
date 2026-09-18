@@ -26,6 +26,7 @@ export interface MoveDef extends Move {
     check?: "accuracy" | "willpower"
     alwaysAvailable?: boolean;
     baseDamage?: number;
+    baseHits?: number;
     cooldown?: number;
     freeOnHit?: boolean;
     modifiers?: ModifierSet;

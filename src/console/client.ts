@@ -53,7 +53,7 @@ export async function runConsoleClient(
         : [...initialOutput as string[]];
     let bindingIds = encounterBindings(initialEvents);
     if (bindingIds.length === 0) {
-        bindingIds = [...(engine.getEncounter()?.bindings ?? [])];
+        bindingIds = [...(engine.getGameState().encounter?.bindings ?? [])];
     }
     let running = true;
 
