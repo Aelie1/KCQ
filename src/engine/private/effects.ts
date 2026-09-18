@@ -91,7 +91,7 @@ export class GameEffects {
                     }
                     if (effect.amount !== undefined) {
                         if (effect.amount > 0) {
-                            this.addBinding(effect.source, effect.target, effect.binding, effect.amount);
+                            this.addBinding(this.state, effect.source, effect.target, effect.binding, effect.amount);
                         } else {
                             this.removeBinding(effect.target, effect.binding, -effect.amount);
                         }
@@ -160,12 +160,12 @@ export class GameEffects {
     };
 
 
-    private addBinding(actor: iEntity, target: iCharacter, type: BindingDef, amount: number) {
+    private addBinding(state: iGameState, actor: iEntity, target: iCharacter, type: BindingDef, amount: number) {
         let modifiedAmount = amount;
         if (modifiedAmount > 0) {
             for (const buff of target.buffs) {
                 if (buff.active && buff.modifyBinding) {
-                    const result = buff.modifyBinding(actor, target, buff, type, modifiedAmount);
+                    const result = buff.modifyBinding(state, actor, target, buff, type, modifiedAmount);
                     modifiedAmount = result.value;
                     this.stack(result.effects);
                 }

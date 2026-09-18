@@ -228,7 +228,7 @@ const fairyEmpowerment: MoveDef = {
     targets: "all"
 }
 
-function reflectCallback(actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
+function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
     const effects: iEffect[] = [];
     let newAmount = amount;
     if (isEnemy(actor) && buff.duration && buff.duration > 0) {

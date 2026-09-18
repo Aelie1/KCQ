@@ -1,6 +1,7 @@
 import { BindingDef, CharacterDef, MoveDef } from "../../engine/protected/definitions";
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
+import { ActionFailureReason } from "../../engine/public/types";
 
 const SUBSPACE_MAX = 100;
 
@@ -18,14 +19,18 @@ export const hinari: CharacterDef = {
     getMoves: function (actor: iCharacter): MoveDef[] {
         const moves: MoveDef[] = [];
         moves.push(...[store, brace]);
-        if (typeof actor.data["subspace"] === "number" && actor.data["subspace"] < SUBSPACE_MAX) {
-            const totalRockfallHits = 4 - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / 4));
-            moves.push({
-                ...rockfall,
-                baseHits: totalRockfallHits
-            });
+        if (actor.data["subspace"] !== undefined) {
+            if (actor.data["subspace"] < SUBSPACE_MAX) {
+                const totalRockfallHits = 4 - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / 4));
+                moves.push({
+                    ...rockfall,
+                    baseHits: totalRockfallHits
+                });
+            }
+            if (actor.data["subspace"] > 0) {
+                moves.push(release);
+            }
         }
-
         return moves;
     },
     passives: [],
@@ -58,7 +63,8 @@ const store: MoveDef = {
                     const removeAmount = Math.min(highest, STORE_REMOVE_AMOUNT);
                     const spreadAmount = Math.max(0, removeAmount + actor.data["subspace"] - SUBSPACE_MAX);
                     const subspaceAmount = removeAmount - spreadAmount;
-                    const bindingId = state.encounter.bindings.indexOf(highestBinding);
+                    const bindingId = state.encounter.bindings.findIndex(x => x.id === highestBinding.id);
+                    const currentBindingId = actor.data["subspaceBinding"] ?? 0;
                     effects.push({
                         type: "binding",
                         source: actor,
@@ -74,12 +80,14 @@ const store: MoveDef = {
                             name: "subspace",
                             amount: subspaceAmount
                         });
-                        effects.push({
-                            type: "data",
-                            target: actor,
-                            name: "subspaceBinding",
-                            amount: bindingId
-                        });
+                        if (bindingId >= 0) {
+                            effects.push({
+                                type: "data",
+                                target: actor,
+                                name: "subspaceBinding",
+                                amount: bindingId - currentBindingId
+                            });
+                        }
                     }
                     if (spreadAmount) {
                         effects.push({
@@ -94,7 +102,15 @@ const store: MoveDef = {
             }
         }
         return effects;
+    },
+    isValid: function (move: MoveDef, target: iEntity | null): ActionFailureReason | undefined {
+        if (target !== null &&
+            (!isCharacter(target)
+                || target.bindings.length === 0)) {
+            return "invalidTarget";
+        }
     }
+
 }
 
 const brace: MoveDef = {
@@ -104,9 +120,6 @@ const brace: MoveDef = {
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
-        if (typeof actor.data["subspace"] !== "number") {
-            return effects;
-        }
 
         const buff: iBuff = {
             id: "brace",
@@ -139,9 +152,6 @@ const rockfall: MoveDef = {
     },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
-        if (typeof actor.data["subspace"] !== "number") {
-            return effects;
-        }
         for (const target of targets) {
             if (isEnemy(target.target)) {
                 effects.push({
@@ -164,8 +174,7 @@ const release: MoveDef = {
     baseDamage: RELEASE_DAMAGE,
     type: "arms",
     accuracy: {
-        miss: 10,
-        graze: 15,
+        graze: 25,
         hit: 65,
         crit: 10
     },
@@ -191,19 +200,20 @@ const release: MoveDef = {
             }
             else {
                 const binding = state.encounter.bindings[actor.data["subspaceBinding"]];
+                const bindingAmount = actor.data["subspace"] ?? 0;
                 if (binding) {
                     effects.push({
                         type: "binding",
                         source: actor,
                         target: target.target,
                         binding: binding,
-                        amount: RELEASE_PLAYER_BINDING
+                        amount: Math.min(bindingAmount, RELEASE_PLAYER_BINDING)
                     });
                     effects.push({
                         type: "data",
                         target: actor,
                         name: "subspace",
-                        amount: -RELEASE_ENEMY_AMOUNT
+                        amount: -RELEASE_PLAYER_AMOUNT
                     });
                 }
             }
@@ -212,10 +222,10 @@ const release: MoveDef = {
     }
 }
 
-function braceCallback(actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
+function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
     const effects: iEffect[] = [];
     let newAmount = amount;
-    if (isEnemy(actor) && buff.duration && buff.duration > 0) {
+    if (isEnemy(actor) && buff.duration && buff.duration > 0 && state.encounter) {
         buff.duration--;
         if (buff.duration === 0) {
             effects.push({
@@ -235,6 +245,16 @@ function braceCallback(actor: iEntity, target: iCharacter, buff: iBuff, binding:
                 target: target,
                 name: "subspace",
                 amount: subspaceAmount
+            });
+        }
+        const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
+        const currentBindingId = target.data["subspaceBinding"] ?? 0;
+        if (bindingId >= 0) {
+            effects.push({
+                type: "data",
+                target: target,
+                name: "subspaceBinding",
+                amount: bindingId - currentBindingId
             });
         }
 
