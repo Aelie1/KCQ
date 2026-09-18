@@ -79,7 +79,7 @@ export class GameEngine {
             bonusEscapes: 0,
             bindings: [],
             buffs: [],
-            data: {},
+            data: { ...(character.data ?? {}) },
         });
     }
 

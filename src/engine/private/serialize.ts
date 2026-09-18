@@ -24,7 +24,7 @@ function serializeCharacter(character: iCharacter): Character {
         buffs: character.buffs.filter(x => x.active).map(serializeBuff),
         modifiers: getModifiers(character),
         blockedMoveTypes: getBlockedMoveTypes(character),
-        data: character.data
+        data: { ...character.data }
     };
 }
 
