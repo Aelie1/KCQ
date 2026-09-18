@@ -3,6 +3,7 @@ import { getBindingLevel } from "../protected/helpers";
 import { getBlockedMoveTypes, getModifiers } from "../protected/status";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iStatus, iTrap } from "../protected/types";
 import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Move, Status, Trap, ValidityInfo } from "../public/types";
+import { isValidTarget } from "./combat";
 import type { iValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
@@ -130,7 +131,45 @@ export function serializeMove(move: MoveDef): Move {
     };
 }
 
-export function serializeValidity(info: iValidityInfo): ValidityInfo {
+export function serializeTargets(state: iGameState, actor: iCharacter, move: MoveDef): ValidityInfo[] {
+    const result: iValidityInfo[] = [];
+
+    if (move.targets === 0) {
+        result.push(isValidTarget(state, actor, null, move));
+    }
+    else {
+        switch (move.targetSide) {
+            case "none":
+                result.push(isValidTarget(state, actor, null, move));
+                break;
+            case "player":
+                for (const target of state.characters) {
+                    result.push(isValidTarget(state, actor, target, move));
+                }
+                break;
+            case "enemy":
+                for (const target of state.enemies) {
+                    result.push(isValidTarget(state, actor, target, move));
+                }
+                break;
+        }
+    }
+
+    const validTargets = result.filter(x => x.valid).length;
+    if (move.targets !== "all"
+        && move.targets > 0
+        && move.targets > validTargets) {
+        return [{
+            valid: false,
+            target: null,
+            reason: "invalidTargetCount"
+        }];
+    }
+
+    return result.map(serializeValidity);
+}
+
+function serializeValidity(info: iValidityInfo): ValidityInfo {
     const target = info.target === null ? null : info.target.id;
 
     if (!info.valid) {

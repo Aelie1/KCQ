@@ -4,7 +4,7 @@ import {
 } from "../private/combat";
 import { TRAP_MODIFIER } from "../private/constants";
 import { GameEffects } from "../private/effects";
-import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
+import { serializeEffects, serializeEncounter, serializeGameState, serializeMove, serializeTargets } from "../private/serialize";
 import { iValidityInfo } from "../private/types";
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
 import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity, thresholds } from "../protected/helpers";
@@ -13,7 +13,8 @@ import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifi
 import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import type {
     AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo, Encounter, EncounterId, EntityId,
-    EscapeOptions, GameEvent, GameState, MoveId, PlayerAction, StanceInfo, ValidityInfo
+    EscapeOptions, GameEvent, GameState,
+    PlayerAction, StanceInfo
 } from "./types";
 
 export class GameEngine {
@@ -195,22 +196,30 @@ export class GameEngine {
             for (const move of getMoves(character)) {
                 let available = true;
                 let reason: ActionFailureReason = "moveUnavailable";
+                const targets = serializeTargets(this.state, character, move);
                 if (result) {
                     available = false;
                     reason = result.reason;
                 }
                 else if (!move.alwaysAvailable && !canAttack(character)) {
-                    available = false,
-                        reason = "attackUnavailable"
+                    available = false;
+                    reason = "attackUnavailable";
                 }
                 else if (!canUseMoveType(character, move.type)) {
                     available = false;
                     reason = "bindingRestriction";
                 }
+                else if (!targets.some(x => x.valid)) {
+                    available = false;
+                    if (targets.length && !targets[0].valid) {
+                        reason = targets[0].reason;
+                    }
+                }
                 if (available) {
                     actions.push({
                         move: serializeMove(move),
-                        available: true
+                        available: true,
+                        targets: targets
                     });
                 } else {
                     actions.push({
@@ -222,60 +231,6 @@ export class GameEngine {
             }
         }
         return actions;
-    }
-
-    getTargets(actor: EntityId, move: MoveId): ValidityInfo[] {
-        const result: iValidityInfo[] = [];
-        const character = findCharacter(this.state, actor);
-        if (!character) {
-            return [{
-                valid: false,
-                target: null,
-                reason: "invalidActor"
-            }];
-        }
-
-        const moveState = findMove(character, move);
-        if (!moveState) {
-            return [{
-                valid: false,
-                target: null,
-                reason: "invalidMove"
-            }];
-        }
-
-        if (moveState.targets === 0) {
-            result.push(isValidTarget(this.state, character, null, moveState));
-        }
-        else {
-            switch (moveState.targetSide) {
-                case "none":
-                    result.push(isValidTarget(this.state, character, null, moveState));
-                    break;
-                case "player":
-                    for (const target of this.state.characters) {
-                        result.push(isValidTarget(this.state, character, target, moveState));
-                    }
-                    break;
-                case "enemy":
-                    for (const target of this.state.enemies) {
-                        result.push(isValidTarget(this.state, character, target, moveState));
-                    }
-                    break;
-            }
-        }
-
-        const validTargets = result.filter(x => x.valid).length;
-        if ((moveState.targets === "all" && validTargets === 0) ||
-            (moveState.targets !== "all" && moveState.targets > 0 && moveState.targets > validTargets)) {
-            return [{
-                valid: false,
-                target: null,
-                reason: "invalidTargetCount"
-            }];
-        }
-
-        return result.map(serializeValidity);
     }
 
     getEscapes(actor: EntityId): EscapeOptions | null {

@@ -263,6 +263,7 @@ export interface ActionInfo {
     move: Move;
     available: boolean;
     reason?: ActionFailureReason;
+    targets?: ValidityInfo[];
 }
 
 export interface StanceInfo {
