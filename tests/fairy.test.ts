@@ -7,6 +7,7 @@ import type { iEnemy, iGameState, iMoveEffect } from "../src/engine/protected/ty
 import { GameEngine } from "../src/engine/public/engine";
 import type { HitBand } from "../src/engine/public/types";
 import {
+    bindingState,
     buffState,
     enemyState,
     execute,
@@ -196,6 +197,65 @@ describe("Skunk Fairy AI", () => {
         expect([latexHead, latexArms, latexTorso, latexLegs].map(({ id }) => id)).toContain(
             action?.type === "move" ? action.move.binding?.id : undefined,
         );
+    });
+});
+
+describe("Binding Magic", () => {
+    it("executes the selected binding through the enemy phase", () => {
+        const encounter: EncounterDef = {
+            id: "fairy-binding-test",
+            enemies: [fairy],
+            bindings: [latexHead, latexArms, latexTorso, latexLegs],
+            traps: [],
+        };
+        const engine = new GameEngine([encounter], 2);
+        engine.loadCharacter(makeBehavioralCharacter("hero"));
+        engine.loadEncounter(encounter.id);
+
+        const intention = enemyState(engine, "fairy1").intentions[0];
+        expect(intention).toMatchObject({
+            move: BINDING_ID,
+            targets: [{ target: "hero" }],
+        });
+        const preview = intention?.targets[0]?.effects.find(
+            (effect) => effect.type === "binding",
+        );
+        if (!preview || preview.type !== "binding") {
+            throw new Error("Expected Binding Magic to preview a binding effect");
+        }
+
+        const result = execute(engine, { type: "endTurn" });
+
+        expect(result.events).toContainEqual({
+            type: "bondageAdded",
+            target: "hero",
+            binding: preview.binding,
+            amount: preview.amount,
+        });
+        expect(bindingState(engine, preview.binding, "hero")?.value).toBe(preview.amount);
+    });
+
+    it("does not overbind a hero whose four latex locations are already Impossible", () => {
+        const bindings = [latexHead, latexArms, latexTorso, latexLegs];
+        const encounter: EncounterDef = {
+            id: "fairy-fully-bound-test",
+            enemies: [fairy],
+            bindings,
+            traps: [],
+            setup: (state) => state.characters[0].bindings.push(
+                ...bindings.map((definition) => ({
+                    id: definition.id,
+                    definition,
+                    value: 80,
+                    data: { peak: 80 },
+                })),
+            ),
+        };
+        const engine = new GameEngine([encounter], 2);
+        engine.loadCharacter(makeBehavioralCharacter("hero"));
+        engine.loadEncounter(encounter.id);
+
+        expect(enemyState(engine, "fairy1").intentions).toEqual([]);
     });
 });
 

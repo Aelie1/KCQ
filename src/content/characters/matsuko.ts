@@ -33,7 +33,13 @@ export const matsuko: CharacterDef = {
             moves.push(...[punch, kick]);
         }
         else {
-            moves.push(...[whiteFlame, phoenixKick, immolation]);
+            const buff = findBuff(actor, "fairyEmpowerment");
+            if (buff) {
+                moves.push(...[fairyWhiteFlame, fairyPhoenixKick, immolation]);
+            }
+            else {
+                moves.push(...[whiteFlame, phoenixKick, immolation]);
+            }
         }
         const compulsionBuff = findBuff(actor, "compulsionCD");
         if (!compulsionBuff) {
@@ -155,6 +161,24 @@ const phoenixKick: MoveDef = {
             }
         }
         return effects;
+    }
+}
+
+const fairyWhiteFlame: MoveDef = {
+    ...whiteFlame,
+    id: "fairyWhiteFlame",
+    modifiers: {
+        ...whiteFlame.modifiers,
+        potency: 2,
+    }
+}
+
+const fairyPhoenixKick: MoveDef = {
+    ...phoenixKick,
+    id: "fairyPhoenixKick",
+    modifiers: {
+        ...phoenixKick.modifiers,
+        hit: 2,
     }
 }
 

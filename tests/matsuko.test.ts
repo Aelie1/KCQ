@@ -201,6 +201,33 @@ describe("Matsuko's dynamic offensive kit", () => {
         expect(damageAmount(ordinary, "foe1")).toBe(88);
         expect(damageAmount(phoenix, "foe1")).toBe(109);
     });
+
+    it("uses Punch as a basic arms attack while burned out", () => {
+        const engine = loadMatsukoEncounter({
+            seed: 2,
+            setup: (state) => state.characters[0].buffs.push({
+                id: "burnout",
+                active: true,
+            }),
+        });
+
+        expect(action(engine, "punch")).toMatchObject({
+            available: true,
+            move: { type: "arms", targetSide: "enemy", targets: 1 },
+        });
+        const result = execute(engine, {
+            type: "move",
+            actor: matsuko.id,
+            move: "punch",
+            targets: ["foe1"],
+        });
+
+        expect(result.events[0]).toMatchObject({
+            type: "moveUsed",
+            targets: [{ target: "foe1", result: "hit" }],
+        });
+        expect(damageAmount(result, "foe1")).toBe(88);
+    });
 });
 
 describe("Matsuko's Compulsion moves", () => {

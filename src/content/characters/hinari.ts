@@ -1,5 +1,5 @@
 import { BindingDef, CharacterDef, MoveDef } from "../../engine/protected/definitions";
-import { isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { ActionFailureReason } from "../../engine/public/types";
 
@@ -22,10 +22,17 @@ export const hinari: CharacterDef = {
         if (actor.data["subspace"] !== undefined) {
             if (actor.data["subspace"] < SUBSPACE_MAX) {
                 moves.push(brace);
-                const totalRockfallHits = 4 - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / 4));
+                const buff = findBuff(actor, "fairyEmpowerment");
+                let baseRocks = 4;
+                let definition = rockfall;
+                if (buff) {
+                    baseRocks *= 1.5;
+                    definition = fairyRockfall;
+                };
+                const totalRocks = baseRocks - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / baseRocks));
                 moves.push({
-                    ...rockfall,
-                    baseHits: totalRockfallHits
+                    ...definition,
+                    baseHits: totalRocks
                 });
             }
             if (actor.data["subspace"] > 0) {
@@ -167,6 +174,10 @@ const rockfall: MoveDef = {
     }
 }
 
+const fairyRockfall: MoveDef = {
+    ...rockfall,
+    id: "fairyRockfall",
+}
 
 const release: MoveDef = {
     id: "release",

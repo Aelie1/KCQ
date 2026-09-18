@@ -208,6 +208,8 @@ const fairyTelekinesis: MoveDef = {
     ...telekinesis,
     id: "fairyTelekinesis",
     targets: "all",
+    baseDamage: TELEKINESIS_DAMAGE / 2,
+    baseHits: 2,
 }
 
 const fairyStarlightBindings: MoveDef = {
