@@ -46,7 +46,7 @@ function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: numbe
     engine.loadCharacter(helper);
     engine.loadCharacter(target);
     expect(engine.executeAction({
-        type: "attack",
+        type: "move",
         actor: helper.id,
         move: prepare.id,
         targets: [],
@@ -157,14 +157,14 @@ describe("move and escape restrictions", () => {
                     "bindingRestriction",
                 );
                 expect(engine.executeAction({
-                    type: "attack",
+                    type: "move",
                     actor: hero.id,
                     move: mouthMove.id,
                     targets: [foeId],
                 }).success).toBe(true);
             } else {
                 expect(engine.executeAction({
-                    type: "attack",
+                    type: "move",
                     actor: hero.id,
                     move: armsMove.id,
                     targets: [foeId],

@@ -78,7 +78,7 @@ describe("turn phases and enemy intentions", () => {
         engine.loadEncounter(encounter.id);
 
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: hero.id,
             move: move.id,
             targets: [`${foe.id}1`],
@@ -130,7 +130,7 @@ describe("turn phases and enemy intentions", () => {
 
         expect(engine.getGameState().enemies[0].intentions[0]?.move).toBe(threat.id);
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: stunEnemy.id,
             targets: [],
@@ -182,7 +182,7 @@ describe("turn phases and enemy intentions", () => {
             effects: [],
         }]);
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: strike.id,
             targets: ["doomed1"],
@@ -326,7 +326,7 @@ describe("enemy intention previews", () => {
         expect(before?.targets[0].band).toBe("hit");
 
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: guard.id,
             targets: [],
@@ -357,7 +357,7 @@ describe("enemy intention previews", () => {
         const { engine, enemyMove, enemyId } = setupPreviewEngine();
 
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: enemyId,
             move: enemyMove.id,
             targets: ["hero"],

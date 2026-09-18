@@ -375,7 +375,7 @@ describe("accuracy", () => {
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
             return moveUsed(engine.executeAction({
-                type: "attack",
+                type: "move",
                 actor: hero.id,
                 move: move.id,
                 targets: [`${foe.id}1`],
@@ -400,20 +400,20 @@ describe("accuracy", () => {
         const control = build();
 
         expect(challenged.engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: challenged.hero.id,
             move: challenged.move.id,
             targets: ["missing"],
         })).toEqual({ success: false, reason: "invalidTarget" });
 
         const afterInvalid = moveUsed(challenged.engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: challenged.hero.id,
             move: challenged.move.id,
             targets: [challenged.foeId],
         })).targets[0];
         const firstControlRoll = moveUsed(control.engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: control.hero.id,
             move: control.move.id,
             targets: [control.foeId],
@@ -446,7 +446,7 @@ describe("accuracy", () => {
         engine.loadEncounter(encounter.id);
 
         const result = engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: hero.id,
             move: move.id,
             targets: [],
@@ -518,7 +518,7 @@ describe("accuracy", () => {
             engine.loadCharacter(hero);
             engine.loadEncounter(encounter.id);
             return moveUsed(engine.executeAction({
-                type: "attack",
+                type: "move",
                 actor: hero.id,
                 move: move.id,
                 targets: [`${foe.id}1`],
@@ -558,7 +558,7 @@ describe("accuracy", () => {
         const control = build();
 
         const zeroResult = challenged.engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: "zero-actor",
             move: zeroTarget.id,
             targets: [],
@@ -571,13 +571,13 @@ describe("accuracy", () => {
         expect(resolutions).toBe(1);
 
         const afterZeroTarget = moveUsed(challenged.engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: "shooter",
             move: targeted.id,
             targets: [challenged.foeId],
         })).targets[0];
         const firstControlRoll = moveUsed(control.engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: "shooter",
             move: targeted.id,
             targets: [control.foeId],

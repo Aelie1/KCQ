@@ -65,7 +65,7 @@ function setupLatexScenario(
         engine.loadCharacter(makeBehavioralCharacter(id, index === 0 ? [prepare] : []));
     }
     execute(engine, {
-        type: "attack",
+        type: "move",
         actor: characterIds[0],
         move: prepare.id,
         targets: [],

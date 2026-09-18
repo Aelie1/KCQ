@@ -37,7 +37,7 @@ function setupEscapeScenario(
         engine.loadCharacter(makeCharacterDef(id, id === actorId ? [prepare] : []));
     }
     expect(engine.executeAction({
-        type: "attack",
+        type: "move",
         actor: actorId,
         move: prepare.id,
         targets: [],

@@ -119,7 +119,7 @@ export async function runConsoleClient(
         const { move } = action;
         const targets = validTargets(action);
         if (move.targets === 0) {
-            return execute({ type: "attack", actor, move: move.id, targets: [] });
+            return execute({ type: "move", actor, move: move.id, targets: [] });
         }
 
         if (move.targets === "all") {
@@ -133,7 +133,7 @@ export async function runConsoleClient(
                 "[2] Back",
             ], 2);
             if (selection === 0) {
-                return execute({ type: "attack", actor, move: move.id, targets: [] });
+                return execute({ type: "move", actor, move: move.id, targets: [] });
             }
             return false;
         }
@@ -144,7 +144,7 @@ export async function runConsoleClient(
             );
             if (candidates.length === 1) {
                 return execute({
-                    type: "attack",
+                    type: "move",
                     actor,
                     move: move.id,
                     targets: [candidates[0].target],
@@ -178,7 +178,7 @@ export async function runConsoleClient(
             selected.push(candidates[choice].target);
         }
 
-        return execute({ type: "attack", actor, move: move.id, targets: selected });
+        return execute({ type: "move", actor, move: move.id, targets: selected });
     };
 
     const chooseEscape = async (actorId: EntityId): Promise<boolean> => {

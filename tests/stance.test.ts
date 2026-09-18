@@ -60,7 +60,7 @@ describe("stance toggling", () => {
             },
         });
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: hero.id,
             move: strike.id,
             targets: [`${foe.id}1`],
@@ -171,7 +171,7 @@ describe("stance toggling", () => {
         engine.loadCharacter(helper);
         engine.loadCharacter(target);
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: helper.id,
             move: prepare.id,
             targets: [],

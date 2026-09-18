@@ -111,9 +111,9 @@ describe("Queen HP threshold reinforcements", () => {
         const cross = damageMove("cross", finalDamage);
         const engine = loadQueen({ characters: [makeBehavioralCharacter("hero", [approach, cross])] });
 
-        execute(engine, { type: "attack", actor: "hero", move: approach.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: approach.id, targets: [QUEEN_ID] });
         expect(queenState(engine).currHp).toBe(justAbove);
-        execute(engine, { type: "attack", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
         expect(queenState(engine).currHp).toBe(justAbove - finalDamage);
 
         const result = endTurn(engine);
@@ -129,7 +129,7 @@ describe("Queen HP threshold reinforcements", () => {
         const ordinary = queenState(engine).intentions[0];
 
         const hit = execute(engine, {
-            type: "attack", actor: "hero", move: devastate.id, targets: [QUEEN_ID],
+            type: "move", actor: "hero", move: devastate.id, targets: [QUEEN_ID],
         });
         expect(hit.state.enemies.find(({ id }) => id === QUEEN_ID)?.currHp).toBe(1);
         expect(queenMoves(engine)).toHaveLength(7);
@@ -157,7 +157,7 @@ describe("Queen HP threshold reinforcements", () => {
                 characters: [makeBehavioralCharacter("hero", moves)],
             });
             for (const move of moves) {
-                execute(engine, { type: "attack", actor: "hero", move: move.id, targets: [QUEEN_ID] });
+                execute(engine, { type: "move", actor: "hero", move: move.id, targets: [QUEEN_ID] });
             }
             return endTurn(engine).state.enemies
                 .filter(({ id }) => id !== QUEEN_ID)
@@ -173,9 +173,9 @@ describe("Queen HP threshold reinforcements", () => {
         const heal = healingMove("heal", 100);
         const engine = loadQueen({ characters: [makeBehavioralCharacter("hero", [cross, heal])] });
 
-        execute(engine, { type: "attack", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
         expect(queenMoves(engine)).toContain("callReinforcements");
-        execute(engine, { type: "attack", actor: "hero", move: heal.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: heal.id, targets: [QUEEN_ID] });
         expect(queenState(engine).currHp).toBe(700);
 
         expect(enemiesByBaseId(endTurn(engine).state, "skunkette")).toHaveLength(1);
@@ -188,13 +188,13 @@ describe("Queen HP threshold reinforcements", () => {
         const hero = makeBehavioralCharacter("hero", [cross, heal, recross]);
         const engine = loadQueen({ characters: [hero] });
 
-        execute(engine, { type: "attack", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
         endTurn(engine);
         expect(enemiesByBaseId(engine.getGameState(), "skunkette")).toHaveLength(1);
 
-        execute(engine, { type: "attack", actor: "hero", move: heal.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: heal.id, targets: [QUEEN_ID] });
         endTurn(engine);
-        execute(engine, { type: "attack", actor: "hero", move: recross.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: recross.id, targets: [QUEEN_ID] });
         endTurn(engine);
 
         expect(enemiesByBaseId(engine.getGameState(), "skunkette")).toHaveLength(1);
@@ -205,9 +205,9 @@ describe("Queen HP threshold reinforcements", () => {
         const lower = damageMove("lower", 1);
         const engine = loadQueen({ characters: [makeBehavioralCharacter("hero", [exact, lower])] });
 
-        execute(engine, { type: "attack", actor: "hero", move: exact.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: exact.id, targets: [QUEEN_ID] });
         endTurn(engine);
-        execute(engine, { type: "attack", actor: "hero", move: lower.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: lower.id, targets: [QUEEN_ID] });
         const secondPhase = endTurn(engine);
 
         expect(secondPhase.events.filter((event) => event.type === "enemySpawned" && event.target.startsWith("skunkette")))
@@ -218,7 +218,7 @@ describe("Queen HP threshold reinforcements", () => {
     it("keeps newly spawned reinforcements idle until their following enemy phase", () => {
         const cross = damageMove("cross-eighty", 150);
         const engine = loadQueen({ characters: [makeBehavioralCharacter("hero", [cross])], seed: 19 });
-        execute(engine, { type: "attack", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
 
         const spawnPhase = endTurn(engine);
         const reinforcement = enemiesByBaseId(spawnPhase.state, "skunkette")[0];
@@ -248,9 +248,9 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
             setup: (state) => setQueenCooldowns(state, 1, 99),
         });
 
-        execute(engine, { type: "attack", actor: "alpha", move: aStrike.id, targets: [QUEEN_ID] });
-        execute(engine, { type: "attack", actor: "alpha", move: aStrike.id, targets: [QUEEN_ID] });
-        execute(engine, { type: "attack", actor: "beta", move: bStrike.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "alpha", move: aStrike.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "alpha", move: aStrike.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "beta", move: bStrike.id, targets: [QUEEN_ID] });
         endTurn(engine);
 
         expect(intentionFor(engine, "skunkCollar")?.targets).toMatchObject([{ target: "alpha" }]);
@@ -279,9 +279,9 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
             setup: (state) => setQueenCooldowns(state, 1, 99),
         });
 
-        execute(engine, { type: "attack", actor: "alpha", move: aStrike.id, targets: [QUEEN_ID] });
-        execute(engine, { type: "attack", actor: "beta", move: bStrike.id, targets: [QUEEN_ID] });
-        execute(engine, { type: "attack", actor: "helper", move: incapacitate.id, targets: ["alpha"] });
+        execute(engine, { type: "move", actor: "alpha", move: aStrike.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "beta", move: bStrike.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "helper", move: incapacitate.id, targets: ["alpha"] });
         endTurn(engine);
 
         expect(intentionFor(engine, "skunkCollar")?.targets).toMatchObject([{ target: "beta" }]);
@@ -308,11 +308,11 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
             setup: (state) => setQueenCooldowns(state, 1, 1),
         });
 
-        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: ["hero"] });
+        execute(engine, { type: "move", actor: "hero", move: add.id, targets: ["hero"] });
         endTurn(engine);
         expect(queenMoves(engine)).toEqual(["skunkPerfume"]);
 
-        execute(engine, { type: "attack", actor: "hero", move: remove.id, targets: ["hero"] });
+        execute(engine, { type: "move", actor: "hero", move: remove.id, targets: ["hero"] });
         endTurn(engine);
         expect(queenMoves(engine)).toEqual(["skunkCollar"]);
     });
@@ -339,7 +339,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
             setup: (state) => setQueenCooldowns(state, 1, 99),
         });
 
-        execute(engine, { type: "attack", actor: "helper", move: transform.id, targets: [] });
+        execute(engine, { type: "move", actor: "helper", move: transform.id, targets: [] });
         expect(engine.getGameState().characters.find(({ id }) => id === "alpha")?.bindings)
             .not.toContainEqual(expect.objectContaining({ id: latexCollar.id }));
         endTurn(engine);
@@ -506,7 +506,7 @@ describe("Queen Perfume", () => {
         const preview = intentionFor(engine, "skunkPerfume");
         expect(preview?.effects).toContainEqual({ type: "damage", target: "skunk1", amount: -30 });
 
-        execute(engine, { type: "attack", actor: "hero", move: healSkunk.id, targets: ["skunk1"] });
+        execute(engine, { type: "move", actor: "hero", move: healSkunk.id, targets: ["skunk1"] });
         const phase = endTurn(engine);
 
         expect(phase.state.enemies.find(({ id }) => id === "skunk1")?.currHp).toBe(skunk.hp);
@@ -532,7 +532,7 @@ describe("Queen Perfume", () => {
         const expectedModifiers = control.getGameState().characters[0].buffs
             .find(({ id }) => id === "skunkPerfume")?.modifiers;
 
-        execute(engine, { type: "attack", actor: "hero", move: wound.id, targets: ["skunk1"] });
+        execute(engine, { type: "move", actor: "hero", move: wound.id, targets: ["skunk1"] });
         expect(intentionFor(engine, "skunkPerfume")).toEqual(before);
         const phase = endTurn(engine);
 
@@ -561,7 +561,7 @@ describe("Queen Perfume", () => {
         const engine = build(seed);
         expect(engine.getGameState().enemies.find(({ id }) => id === "skunkette1")?.currHp).toBe(200);
 
-        execute(engine, { type: "attack", actor: "hero", move: wound.id, targets: ["skunkette1"] });
+        execute(engine, { type: "move", actor: "hero", move: wound.id, targets: ["skunkette1"] });
         const phase = endTurn(engine);
         expect(phase.state.enemies.find(({ id }) => id === "skunkette1")?.currHp).toBe(200);
         expect(phase.events).toContainEqual({ type: "enemyHealed", target: "skunkette1", amount: 10 });
@@ -639,7 +639,7 @@ describe("Queen public invariants and determinism", () => {
     it("does not expose Queen implementation bookkeeping in public state", () => {
         const strike = damageMove("strike", 30);
         const engine = loadQueen({ characters: [makeBehavioralCharacter("hero", [strike])] });
-        execute(engine, { type: "attack", actor: "hero", move: strike.id, targets: [QUEEN_ID] });
+        execute(engine, { type: "move", actor: "hero", move: strike.id, targets: [QUEEN_ID] });
 
         expect(queenState(engine)).not.toHaveProperty("data");
         expect(JSON.stringify(queenState(engine))).not.toContain("minHp");
@@ -650,7 +650,7 @@ describe("Queen public invariants and determinism", () => {
             const strike = damageMove("strike", 503);
             const engine = loadQueen({ seed: 123456, characters: [makeBehavioralCharacter("hero", [strike])] });
             const attack = execute(engine, {
-                type: "attack", actor: "hero", move: strike.id, targets: [QUEEN_ID],
+                type: "move", actor: "hero", move: strike.id, targets: [QUEEN_ID],
             });
             const phase = endTurn(engine);
             return { attack: attack.events, phase: phase.events, state: phase.state };

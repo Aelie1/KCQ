@@ -4,7 +4,7 @@ import type { EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/de
 import { s } from "../src/engine/protected/status";
 import { gagged, servitude } from "../src/engine/protected/statuses";
 import { GameEngine } from "../src/engine/public/engine";
-import type { ActionInfo, ActionSuccess, AccuracyProfile } from "../src/engine/public/types";
+import type { AccuracyProfile, ActionInfo, ActionSuccess } from "../src/engine/public/types";
 import {
     buffState,
     characterState,
@@ -103,7 +103,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "immolation",
             targets: [],
@@ -149,7 +149,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
 
         const result = execute(normal, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "whiteFlame",
             targets: ["foe1"],
@@ -178,13 +178,13 @@ describe("Matsuko's dynamic offensive kit", () => {
             .toEqual(STANDARD_ACCURACY);
 
         const phoenix = execute(normal, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "phoenixKick",
             targets: ["foe1"],
         });
         const ordinary = execute(burnedOut, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "kick",
             targets: ["foe1"],
@@ -244,7 +244,7 @@ describe("Matsuko's Compulsion moves", () => {
         });
 
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ally.id,
             move: wait.id,
             targets: [],
@@ -259,7 +259,7 @@ describe("Matsuko's Compulsion moves", () => {
         });
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "obey",
             targets: [ally.id],
@@ -280,7 +280,7 @@ describe("Matsuko's Compulsion moves", () => {
         expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
 
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "whiteFlame",
             targets: ["foe1"],
@@ -334,7 +334,7 @@ describe("Matsuko's Compulsion moves", () => {
         });
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "stop",
             targets: ["caster1"],
@@ -347,7 +347,7 @@ describe("Matsuko's Compulsion moves", () => {
         expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
 
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "whiteFlame",
             targets: ["caster1"],
@@ -383,7 +383,7 @@ describe("Matsuko's Compulsion moves", () => {
         )).toEqual(["hit", "hit"]);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "stop",
             targets: ["boss1"],
@@ -468,7 +468,7 @@ describe("Matsuko's Compulsion moves", () => {
         });
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "attackMe",
             targets: [],
@@ -490,7 +490,7 @@ describe("Matsuko's Compulsion moves", () => {
         expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
 
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: matsuko.id,
             move: "whiteFlame",
             targets: ["first1"],

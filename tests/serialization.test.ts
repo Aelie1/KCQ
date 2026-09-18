@@ -98,7 +98,7 @@ describe("state serialization and combatant loading", () => {
         engine.loadCharacter(hero);
         engine.loadEncounter(encounter.id);
         const result = engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: hero.id,
             move: prepare.id,
             targets: [],

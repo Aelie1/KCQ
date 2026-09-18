@@ -78,6 +78,7 @@ export function makeCharacter(
         bonusEscapes: 0,
         bindings,
         buffs: [],
+        data: {},
     };
 }
 
@@ -154,7 +155,7 @@ export function setupBoundEngine(
     engine.loadEncounter(encounter.id);
 
     expect(engine.executeAction({
-        type: "attack",
+        type: "move",
         actor: hero.id,
         move: setupMove.id,
         targets: [hero.id],
@@ -176,7 +177,7 @@ export function expectMoveRejection(
         reason,
     });
     expect(engine.executeAction({
-        type: "attack",
+        type: "move",
         actor,
         move,
         targets: [target],

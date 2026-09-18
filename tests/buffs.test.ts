@@ -56,7 +56,7 @@ describe("buff behavior through GameEngine", () => {
         ]);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: add.id,
             targets: [],
@@ -102,7 +102,7 @@ describe("buff behavior through GameEngine", () => {
         ], [foe]);
 
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: strike.id,
             targets: ["foe1"],
@@ -124,9 +124,9 @@ describe("buff behavior through GameEngine", () => {
             makeBehavioralCharacter("hero", [first, second]),
         ]);
 
-        execute(engine, { type: "attack", actor: "hero", move: first.id, targets: [] });
+        execute(engine, { type: "move", actor: "hero", move: first.id, targets: [] });
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: second.id,
             targets: [],
@@ -147,7 +147,7 @@ describe("buff behavior through GameEngine", () => {
             makeBehavioralCharacter("hero", [add]),
         ]);
 
-        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
+        execute(engine, { type: "move", actor: "hero", move: add.id, targets: [] });
         const firstTurn = execute(engine, { type: "endTurn" });
         expect(firstTurn.events).not.toContainEqual({
             type: "buffRemoved",
@@ -171,7 +171,7 @@ describe("buff behavior through GameEngine", () => {
             makeBehavioralCharacter("hero", [add]),
         ]);
 
-        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
+        execute(engine, { type: "move", actor: "hero", move: add.id, targets: [] });
         execute(engine, { type: "endTurn" });
         execute(engine, { type: "endTurn" });
 
@@ -210,7 +210,7 @@ describe("buff behavior through GameEngine", () => {
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("hero", [addAll]),
         ]);
-        execute(engine, { type: "attack", actor: "hero", move: addAll.id, targets: [] });
+        execute(engine, { type: "move", actor: "hero", move: addAll.id, targets: [] });
 
         const turn = execute(engine, { type: "endTurn" });
         expect(turn.events.filter((event) => event.type === "buffRemoved")).toEqual([
@@ -251,10 +251,10 @@ describe("buff behavior through GameEngine", () => {
             makeBehavioralCharacter("hero", [add, remove]),
         ]);
 
-        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
+        execute(engine, { type: "move", actor: "hero", move: add.id, targets: [] });
         expect(buffState(engine, "linked")?.linkedEntity).toBe("foe1");
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: remove.id,
             targets: [],
@@ -278,7 +278,7 @@ describe("buff status integration through GameEngine", () => {
             makeBehavioralCharacter("hero", [add, attack]),
         ], [makeBehavioralEnemy("foe", [makeEnemyWaitMove()])]);
 
-        execute(engine, { type: "attack", actor: "hero", move: add.id, targets: [] });
+        execute(engine, { type: "move", actor: "hero", move: add.id, targets: [] });
 
         expect(buffState(engine, "blindness")?.statuses)
             .toEqual([{ id: "blinded", value: 1 }]);
@@ -316,7 +316,7 @@ describe("buff status integration through GameEngine", () => {
         ]);
 
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: addPending.id,
             targets: [],
@@ -343,7 +343,7 @@ describe("buff status integration through GameEngine", () => {
         });
 
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: granted.id,
             targets: ["foe1"],
@@ -402,7 +402,7 @@ describe("buff modifyDamage integration through GameEngine", () => {
         ]);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: strike.id,
             targets: ["foe1"],
@@ -433,7 +433,7 @@ describe("buff modifyDamage integration through GameEngine", () => {
         ]);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: strike.id,
             targets: ["foe1"],
@@ -468,10 +468,10 @@ describe("buff modifyDamage integration through GameEngine", () => {
             makeBehavioralCharacter("hero", [apply, heal, zero, strike]),
         ]);
 
-        execute(engine, { type: "attack", actor: "hero", move: apply.id, targets: ["foe1"] });
-        execute(engine, { type: "attack", actor: "hero", move: heal.id, targets: ["foe1"] });
-        execute(engine, { type: "attack", actor: "hero", move: zero.id, targets: ["foe1"] });
-        execute(engine, { type: "attack", actor: "hero", move: strike.id, targets: ["foe1"] });
+        execute(engine, { type: "move", actor: "hero", move: apply.id, targets: ["foe1"] });
+        execute(engine, { type: "move", actor: "hero", move: heal.id, targets: ["foe1"] });
+        execute(engine, { type: "move", actor: "hero", move: zero.id, targets: ["foe1"] });
+        execute(engine, { type: "move", actor: "hero", move: strike.id, targets: ["foe1"] });
 
         expect(modifier).toHaveBeenCalledOnce();
         expect(modifier.mock.calls[0][2]).toBe(4);

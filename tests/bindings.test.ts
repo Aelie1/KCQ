@@ -34,7 +34,7 @@ function bindingMove(
 }
 
 function use(engine: ReturnType<typeof makeBehavioralEngine>, actor: string, move: string) {
-    return execute(engine, { type: "attack", actor, move, targets: [] });
+    return execute(engine, { type: "move", actor, move, targets: [] });
 }
 
 describe("binding behavior through GameEngine", () => {

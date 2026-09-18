@@ -193,7 +193,7 @@ export class GameEngine {
         const actions: ActionInfo[] = [];
         const character = findCharacter(this.state, actor);
         if (character) {
-            const result = canAct(character, "attack");
+            const result = canAct(character, "move");
             for (const move of getMoves(character)) {
                 let available = true;
                 let reason: ActionFailureReason = "moveUnavailable";
@@ -303,7 +303,7 @@ export class GameEngine {
         }
 
         switch (action.type) {
-            case "attack": {
+            case "move": {
                 const move = findMove(actor, action.move);
                 if (!move) {
                     return {

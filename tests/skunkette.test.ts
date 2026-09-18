@@ -90,7 +90,7 @@ function setupSkunkingLifecycle() {
 
     execute(engine, { type: "endTurn" });
     const skunking = execute(engine, {
-        type: "attack",
+        type: "move",
         actor: "rescuer",
         move: fullySkunk.id,
         targets: [],
@@ -144,7 +144,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(buffState(engine, POUNCE_ID, "skunkette1")?.modifiers?.hit).toBe(8);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "attacker",
             move: strike.id,
             targets: ["skunkette1"],
@@ -164,7 +164,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const { engine, strike } = setupPounce(32, true);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "attacker",
             move: strike.id,
             targets: ["skunkette1"],
@@ -202,7 +202,7 @@ describe("Skunkette behavior through GameEngine", () => {
         execute(engine, { type: "endTurn" });
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "attacker",
             move: lethal.id,
             targets: ["skunkette1"],
@@ -225,7 +225,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const missed = setupPounce(4).engine;
         expect(enemyState(missed, "skunkette1").cooldowns[POUNCE_ID]).toBe(1);
         const missResult = execute(missed, {
-            type: "attack",
+            type: "move",
             actor: "victim",
             move: THROW_OFF_ID,
             targets: [],
@@ -242,7 +242,7 @@ describe("Skunkette behavior through GameEngine", () => {
 
         const hit = setupPounce(2).engine;
         const hitResult = execute(hit, {
-            type: "attack",
+            type: "move",
             actor: "victim",
             move: THROW_OFF_ID,
             targets: [],
@@ -323,7 +323,7 @@ describe("Skunkette behavior through GameEngine", () => {
         });
 
         const ordinaryDefeat = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "rescuer",
             move: defeatSkunkette.id,
             targets: ["skunkette1"],
@@ -356,7 +356,7 @@ describe("Skunkette behavior through GameEngine", () => {
         });
 
         const rescue = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "rescuer",
             move: defeatSkunkette.id,
             targets: [LINKED_SKUNKETTE_ID],
@@ -406,7 +406,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const { defeatSkunkette, engine } = setupSkunkingLifecycle();
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "rescuer",
             move: defeatSkunkette.id,
             targets: ["skunkette1"],
@@ -463,7 +463,7 @@ describe("Skunkette behavior through GameEngine", () => {
     it("selects Latex Spray from fallback priority when Pounce is unavailable", () => {
         const { engine, strike } = setupPounce(32, true);
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "attacker",
             move: strike.id,
             targets: ["skunkette1"],
@@ -535,7 +535,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(makeBehavioralCharacter("hero", [prepare]));
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: prepare.id,
             targets: [],
@@ -587,7 +587,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const engine = new GameEngine([encounter], 23);
         engine.loadCharacter(makeBehavioralCharacter("first", [prepare]));
         engine.loadCharacter(makeBehavioralCharacter("second"));
-        execute(engine, { type: "attack", actor: "first", move: prepare.id, targets: [] });
+        execute(engine, { type: "move", actor: "first", move: prepare.id, targets: [] });
         engine.loadEncounter(encounter.id);
 
         const preview = enemyState(engine, "skunkette1").intentions[0];
@@ -638,7 +638,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const engine = new GameEngine([encounter], 428);
         engine.loadCharacter(makeBehavioralCharacter("hero", [prepare]));
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: prepare.id,
             targets: [],

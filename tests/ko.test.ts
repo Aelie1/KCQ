@@ -161,7 +161,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         engine.loadCharacter(helper);
         engine.loadEncounter(encounter.id);
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: helper.id,
             move: bindKo.id,
             targets: [ko.id],
@@ -226,7 +226,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         engine.loadCharacter(helper);
         engine.loadEncounter(encounter.id);
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: helper.id,
             move: apply.id,
             targets: [ko.id],
@@ -238,7 +238,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             reason,
         });
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "telekinesis",
             targets: ["foe1"],
@@ -275,7 +275,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
     it("rejects moves that are not in Ko's current dynamic move set", () => {
         const normal = loadKoEncounter();
         expect(normal.executeAction({
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "fairyTelekinesis",
             targets: [],
@@ -283,7 +283,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
 
         const empowered = loadKoEncounter(undefined, empowerKo);
         expect(empowered.executeAction({
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "telekinesis",
             targets: ["foe1"],
@@ -302,7 +302,7 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(engine.getMoves(ko.id).find(({ move }) => move.id === "telekinesis"))
             .toMatchObject({ move: { targets: 1, targetSide: "enemy" }, available: true });
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "telekinesis",
             targets: ["first1"],
@@ -334,7 +334,7 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(engine.getMoves(ko.id).find(({ move }) => move.id === "fairyTelekinesis"))
             .toMatchObject({ move: { targets: "all", targetSide: "enemy" }, available: true });
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "fairyTelekinesis",
             targets: [],
@@ -381,7 +381,7 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(engine.getMoves(ko.id).find(({ move }) => move.id === "fairyStarlightBindings"))
             .toMatchObject({ move: { targets: "all", targetSide: "enemy" }, available: true });
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "fairyStarlightBindings",
             targets: [],
@@ -410,7 +410,7 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(engine.getMoves(ko.id).find(({ move }) => move.id === "starlightBindings"))
             .toMatchObject({ move: { targets: 1, targetSide: "enemy" }, available: true });
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "starlightBindings",
             targets: ["first1"],
@@ -435,7 +435,7 @@ describe("Ko's normal and Fairy move effects", () => {
     it("applies Fairy Transformation immediately and ticks its Defense duration", () => {
         const engine = loadKoEncounter();
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "fairyTransformation",
             targets: [],
@@ -474,7 +474,7 @@ describe("Ko's normal and Fairy move effects", () => {
         const second = enemyTargetingCharacter("second", bindingMove("second-rope", 20), 1);
         const engine = loadKoEncounter([first, second], empowerKo, true);
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "fairyReflect",
             targets: [],
@@ -543,7 +543,7 @@ describe("Ko's normal and Fairy move effects", () => {
         ]);
 
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "fairyEmpowerment",
             targets: [],
@@ -579,7 +579,7 @@ describe("Ko's Reflect source handling", () => {
         const attacker = makeBehavioralEnemy("attacker", [bindingMove("enemy-rope", 12)]);
         const engine = loadKoEncounter([spectator, attacker]);
         execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "reflect",
             targets: [],
@@ -655,7 +655,7 @@ describe("Ko's Reflect source handling", () => {
         engine.loadEncounter(encounter.id);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "fairyTransformation",
             targets: [],

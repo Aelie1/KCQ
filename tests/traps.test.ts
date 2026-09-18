@@ -55,7 +55,7 @@ function makeTrapEngine(
 }
 
 function attack(actor = "hero", move = "act"): PlayerAction {
-    return { type: "attack", actor, move, targets: [] };
+    return { type: "move", actor, move, targets: [] };
 }
 
 describe("generic traps through GameEngine", () => {

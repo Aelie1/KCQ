@@ -30,7 +30,7 @@ function expectMoveRejection(
         reason,
     });
     expect(engine.executeAction({
-        type: "attack",
+        type: "move",
         actor,
         move,
         targets: [target],
@@ -66,42 +66,42 @@ describe("move validation and player actions", () => {
     it.each([
         [
             "unknown actor",
-            { type: "attack", actor: "missing", move: "legal", targets: ["foe1"] },
+            { type: "move", actor: "missing", move: "legal", targets: ["foe1"] },
             "invalidActor",
         ],
         [
             "unknown move",
-            { type: "attack", actor: "hero", move: "missing", targets: ["foe1"] },
+            { type: "move", actor: "hero", move: "missing", targets: ["foe1"] },
             "invalidMove",
         ],
         [
             "unknown target",
-            { type: "attack", actor: "hero", move: "legal", targets: ["missing"] },
+            { type: "move", actor: "hero", move: "legal", targets: ["missing"] },
             "invalidTarget",
         ],
         [
             "wrong target count",
-            { type: "attack", actor: "hero", move: "legal", targets: [] },
+            { type: "move", actor: "hero", move: "legal", targets: [] },
             "invalidTargetCount",
         ],
         [
             "wrong target side",
-            { type: "attack", actor: "hero", move: "legal", targets: ["hero"] },
+            { type: "move", actor: "hero", move: "legal", targets: ["hero"] },
             "invalidTarget",
         ],
         [
             "duplicate numeric targets",
-            { type: "attack", actor: "hero", move: "two-targets", targets: ["foe1", "foe1"] },
+            { type: "move", actor: "hero", move: "two-targets", targets: ["foe1", "foe1"] },
             "duplicateTargets",
         ],
         [
             "explicit target for a targetless move",
-            { type: "attack", actor: "hero", move: "targetless", targets: ["foe1"] },
+            { type: "move", actor: "hero", move: "targetless", targets: ["foe1"] },
             "invalidTargetCount",
         ],
         [
             "explicit target for an all-target move",
-            { type: "attack", actor: "hero", move: "all-targets", targets: ["foe1"] },
+            { type: "move", actor: "hero", move: "all-targets", targets: ["foe1"] },
             "invalidTargetCount",
         ],
     ] as const)("rejects an %s without consuming the action", (_label, action, reason) => {
@@ -135,7 +135,7 @@ describe("move validation and player actions", () => {
         const foeId = `${foe.id}1`;
 
         const result = engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: hero.id,
             move: strike.id,
             targets: [foeId],
@@ -182,7 +182,7 @@ describe("move validation and player actions", () => {
         const foeId = `${foe.id}1`;
 
         const result = engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: hero.id,
             move: strike.id,
             targets: [foeId],
@@ -212,7 +212,7 @@ describe("move validation and player actions", () => {
         if (!move) throw new Error("Expected Ko to have Telekinesis");
 
         const result = engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: move.id,
             targets: [enemyId],
@@ -245,7 +245,7 @@ describe("move validation and player actions", () => {
         engine.loadEncounter(encounter.id);
         const enemyId = "foe1";
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: "fairyTransformation",
             targets: [],
@@ -272,7 +272,7 @@ describe("move validation and player actions", () => {
         });
 
         const result = engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: ko.id,
             move: move.id,
             targets: [],
@@ -308,6 +308,7 @@ describe("move validation and player actions", () => {
             bonusEscapes: 0,
             bindings: [],
             buffs: [],
+            data: {}
         });
         const moves = engine.getMoves(ko.id).map(({ move, available }) => ({ move, available }));
         expect(moves).toEqual(definitions.map((definition) => ({
@@ -340,7 +341,7 @@ describe("move validation and player actions", () => {
 
         expect(targetAccuracy(engine, "hero", rally.id, "ally")).toBeNull();
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: rally.id,
             targets: [],
@@ -376,7 +377,7 @@ describe("move validation and player actions", () => {
         const { engine, legal, foeId } = validationEngine();
 
         expect(engine.executeAction({
-            type: "attack",
+            type: "move",
             actor: foeId,
             move: legal.id,
             targets: ["hero"],
@@ -406,7 +407,7 @@ describe("move and effect resolution through GameEngine", () => {
         ], [first, second], 1);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: move.id,
             targets: [],
@@ -476,7 +477,7 @@ describe("move and effect resolution through GameEngine", () => {
         ]);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: chain.id,
             targets: [],
@@ -523,7 +524,7 @@ describe("move and effect resolution through GameEngine", () => {
         ], [foe]);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: strike.id,
             targets: ["reactive1"],
@@ -569,7 +570,7 @@ describe("move and effect resolution through GameEngine", () => {
         ], [foe]);
 
         const result = execute(engine, {
-            type: "attack",
+            type: "move",
             actor: "hero",
             move: strike.id,
             targets: ["reactive1"],

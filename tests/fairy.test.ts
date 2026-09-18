@@ -112,7 +112,7 @@ function makeEngine(
 
 function cast(engine: GameEngine, move: MoveDef, target: string) {
     return execute(engine, {
-        type: "attack",
+        type: "move",
         actor: "hero",
         move: move.id,
         targets: [target],

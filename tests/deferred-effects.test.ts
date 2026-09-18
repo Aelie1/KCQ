@@ -44,7 +44,7 @@ describe("deferred binding onResolve effects", () => {
             }],
         });
         const result = engineFor(move).executeAction({
-            type: "attack", actor: "hero", move: move.id, targets: [],
+            type: "move", actor: "hero", move: move.id, targets: [],
         });
 
         expect(result.success).toBe(true);
@@ -81,7 +81,7 @@ describe("deferred binding onResolve effects", () => {
             }],
         });
         const result = engineFor(move).executeAction({
-            type: "attack", actor: "hero", move: move.id, targets: [],
+            type: "move", actor: "hero", move: move.id, targets: [],
         });
 
         expect(result.success).toBe(true);
@@ -118,7 +118,7 @@ describe("deferred binding onResolve effects", () => {
             }],
         });
         const result = engineFor(move).executeAction({
-            type: "attack", actor: "hero", move: move.id, targets: [],
+            type: "move", actor: "hero", move: move.id, targets: [],
         });
 
         expect(result.success).toBe(true);

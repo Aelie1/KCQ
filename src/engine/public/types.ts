@@ -286,15 +286,15 @@ export interface EscapeInfo {
 }
 
 export type ActionType =
-    | "attack"
+    | "move"
     | "escape"
     | "stance"
     | "endTurn"
 
-export type PlayerAction = AttackAction | EscapeAction | StanceAction | EndTurnAction;
+export type PlayerAction = MoveAction | EscapeAction | StanceAction | EndTurnAction;
 
-export interface AttackAction {
-    type: "attack";
+export interface MoveAction {
+    type: "move";
     actor: EntityId;
     move: MoveId;
     targets: EntityId[];
