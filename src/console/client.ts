@@ -8,7 +8,6 @@ import type {
     EntityId,
     EscapeInfo,
     GameEvent,
-    Move,
     PlayerAction,
     ValidTarget,
 } from "../engine/public/types";
@@ -116,13 +115,15 @@ export async function runConsoleClient(
         return result.success;
     };
 
-    const chooseTargets = async (actor: EntityId, move: Move): Promise<boolean> => {
+    const chooseTargets = async (actor: EntityId, action: ActionInfo): Promise<boolean> => {
+        const { move } = action;
+        const targets = validTargets(action);
         if (move.targets === 0) {
             return execute({ type: "attack", actor, move: move.id, targets: [] });
         }
 
         if (move.targets === "all") {
-            const lines = accuracyLines(validTargets(engine, actor, move.id));
+            const lines = accuracyLines(targets);
             const selection = await choose([
                 `${move.id} affects every ${move.targetSide}.`,
                 "",
@@ -138,7 +139,7 @@ export async function runConsoleClient(
         }
 
         if (move.targets === 1) {
-            const candidates = validTargets(engine, actor, move.id).filter(
+            const candidates = targets.filter(
                 (target): target is ValidTarget & { target: EntityId } => target.target !== null,
             );
             if (candidates.length === 1) {
@@ -153,7 +154,7 @@ export async function runConsoleClient(
 
         const selected: EntityId[] = [];
         while (selected.length < move.targets) {
-            const candidates = validTargets(engine, actor, move.id)
+            const candidates = targets
                 .filter((target): target is ValidTarget & { target: EntityId } =>
                     target.target !== null && !selected.includes(target.target),
                 );
@@ -239,7 +240,7 @@ export async function runConsoleClient(
             const stance = engine.stanceAvailable(actor.id);
             const menu: MenuItem[] = actions.map((action) => {
                 const targets = action.available
-                    ? validTargets(engine, actor.id, action.move.id)
+                    ? validTargets(action)
                     : [];
                 const detailLines = action.available && (action.move.targets === 0
                     || (action.move.targets === 1 && targets.length === 1))
@@ -253,7 +254,7 @@ export async function runConsoleClient(
                             logLines.push(`${action.move.id} -- ${action.reason}.`);
                             return false;
                         }
-                        return chooseTargets(actor.id, action.move);
+                        return chooseTargets(actor.id, action);
                     },
                 };
             });
@@ -361,8 +362,8 @@ function accuracyLines(
     );
 }
 
-function validTargets(engine: GameEngine, actor: EntityId, move: string): ValidTarget[] {
-    return engine.getTargets(actor, move).filter(
+function validTargets(action: ActionInfo): ValidTarget[] {
+    return action.targets.filter(
         (target): target is ValidTarget => target.valid,
     );
 }

@@ -318,6 +318,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 type: victimMove.type,
             },
             available: false,
+            targets: [{ target: null, valid: true, accuracy: null }],
             reason: "actorIncapacitated",
         });
 
@@ -397,6 +398,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 type: victimMove.type,
             },
             available: true,
+            targets: [{ target: null, valid: true, accuracy: null }],
         });
     });
 

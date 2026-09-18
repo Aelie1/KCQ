@@ -106,7 +106,9 @@ describe("accuracy", () => {
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter({ ...actor.definition, getMoves: () => [move] });
         engine.loadEncounter(encounter.id);
-        const info = engine.getTargets(actor.id, move.id).find(({ target }) => target !== null);
+        const info = engine.getMoves(actor.id)
+            .find(({ move: candidate }) => candidate.id === move.id)
+            ?.targets.find(({ target }) => target !== null);
         if (!info || !info.valid || !info.accuracy) {
             throw new Error("Expected a valid target with an accuracy profile");
         }
@@ -310,11 +312,12 @@ describe("accuracy", () => {
     it("uses Potency and Vulnerability for effectiveness without changing band widths", () => {
         const actor = makeAccuracyActor();
         const target = makeAccuracyTarget();
+        const move = makeAccuracyMove();
         actor.buffs.push({ id: "potent", active: true, modifiers: { potency: 2 } });
         target.buffs.push({ id: "vulnerable", active: true, modifiers: { vulnerability: 3 } });
 
-        expect(previewAccuracy(actor, target, makeAccuracyMove())).toEqual(standardProfile);
-        expect(evaluateResult(actor, target, standardProfile, 25)).toEqual({
+        expect(previewAccuracy(actor, target, move)).toEqual(standardProfile);
+        expect(evaluateResult(actor, target, move, standardProfile, 25)).toEqual({
             target,
             band: "hit",
             effectiveness: 0.8 * 1.25 * 1.375,
@@ -334,6 +337,7 @@ describe("accuracy", () => {
         expect(evaluateResult(
             makeAccuracyActor(),
             makeAccuracyTarget(),
+            makeAccuracyMove(),
             standardProfile,
             roll,
         ).band).toBe(expectedBand);
@@ -350,14 +354,15 @@ describe("accuracy", () => {
             none: [0, 0],
         });
         const actor = makeAccuracyActor();
-        expect(evaluateResult(actor, target, standardProfile, 5).effectiveness).toBe(0);
-        expect(evaluateResult(actor, target, standardProfile, 10).effectiveness).toBeCloseTo(0.20);
-        expect(evaluateResult(actor, target, standardProfile, 17.5).effectiveness).toBeCloseTo(0.35);
-        expect(evaluateResult(actor, target, standardProfile, 25).effectiveness).toBeCloseTo(0.80);
-        expect(evaluateResult(actor, target, standardProfile, 57.5).effectiveness).toBeCloseTo(0.90);
-        expect(evaluateResult(actor, target, standardProfile, 90).effectiveness).toBeCloseTo(1.50);
-        expect(evaluateResult(actor, target, standardProfile, 95).effectiveness).toBeCloseTo(1.75);
-        expect(evaluateResult(actor, target, standardProfile, 100).effectiveness).toBeCloseTo(2.00);
+        const move = makeAccuracyMove();
+        expect(evaluateResult(actor, target, move, standardProfile, 5).effectiveness).toBe(0);
+        expect(evaluateResult(actor, target, move, standardProfile, 10).effectiveness).toBeCloseTo(0.20);
+        expect(evaluateResult(actor, target, move, standardProfile, 17.5).effectiveness).toBeCloseTo(0.35);
+        expect(evaluateResult(actor, target, move, standardProfile, 25).effectiveness).toBeCloseTo(0.80);
+        expect(evaluateResult(actor, target, move, standardProfile, 57.5).effectiveness).toBeCloseTo(0.90);
+        expect(evaluateResult(actor, target, move, standardProfile, 90).effectiveness).toBeCloseTo(1.50);
+        expect(evaluateResult(actor, target, move, standardProfile, 95).effectiveness).toBeCloseTo(1.75);
+        expect(evaluateResult(actor, target, move, standardProfile, 100).effectiveness).toBeCloseTo(2.00);
     });
 
     it("produces the same accuracy result from the same seed and action", () => {
@@ -456,13 +461,21 @@ describe("accuracy", () => {
             makeEnemy(lowDefense, `${lowDefense.id}1`),
             makeEnemy(highDefense, `${highDefense.id}1`),
         ];
-        const previews = engine.getTargets(hero.id, move.id);
+        const previews = engine.getMoves(hero.id)
+            .find(({ move: candidate }) => candidate.id === move.id)
+            ?.targets ?? [];
         const expected = referenceTargets.map((target) => {
             const preview = previews.find(({ target: id }) => id === target.id);
             if (!preview || !preview.valid || !preview.accuracy) {
                 throw new Error(`Expected an accuracy preview for ${target.id}`);
             }
-            return evaluateResult(makeAccuracyActor(), target, preview.accuracy, referenceRng.accuracy());
+            return evaluateResult(
+                makeAccuracyActor(),
+                target,
+                move,
+                preview.accuracy,
+                referenceRng.accuracy(),
+            );
         });
 
         expect(result.success).toBe(true);

@@ -18,7 +18,8 @@ export function targetAccuracy(
     move: string,
     target: string | null,
 ): AccuracyProfile | null {
-    const info = engine.getTargets(actor, move).find((candidate) => candidate.target === target);
+    const action = engine.getMoves(actor).find((candidate) => candidate.move.id === move);
+    const info = action?.targets.find((candidate) => candidate.target === target);
     if (!info || !info.valid) throw new Error(`Expected ${String(target)} to be a valid target`);
     return info.accuracy;
 }
@@ -63,6 +64,7 @@ export function makeBehavioralEnemy(
 
     return {
         id,
+        rank: "enemy",
         hp: 37,
         defense: 0,
         passives: [],

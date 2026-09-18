@@ -252,10 +252,11 @@ describe("move validation and player actions", () => {
         }).success).toBe(true);
         expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
 
-        const move = engine.getMoves(ko.id).find(({ move }) => move.id === "fairyTelekinesis")?.move;
-        if (!move) throw new Error("Expected empowered Ko to have Fairy Telekinesis");
+        const action = engine.getMoves(ko.id).find(({ move }) => move.id === "fairyTelekinesis");
+        if (!action) throw new Error("Expected empowered Ko to have Fairy Telekinesis");
+        const { move } = action;
 
-        expect(engine.getMoves(ko.id)).toContainEqual({
+        expect(action).toMatchObject({
             move: {
                 id: move.id,
                 targetSide: "enemy",
@@ -264,7 +265,7 @@ describe("move validation and player actions", () => {
             },
             available: true,
         });
-        expect(engine.getTargets(ko.id, move.id)).toContainEqual({
+        expect(action.targets).toContainEqual({
             target: enemyId,
             valid: true,
             accuracy: expect.any(Object),
@@ -308,7 +309,8 @@ describe("move validation and player actions", () => {
             bindings: [],
             buffs: [],
         });
-        expect(engine.getMoves(ko.id)).toEqual(definitions.map((definition) => ({
+        const moves = engine.getMoves(ko.id).map(({ move, available }) => ({ move, available }));
+        expect(moves).toEqual(definitions.map((definition) => ({
             move: {
                 id: definition.id,
                 targetSide: definition.targetSide,

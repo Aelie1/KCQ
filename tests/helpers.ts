@@ -100,6 +100,7 @@ export function makeEnemyDef(
 
     return {
         id,
+        rank: "enemy",
         hp: 37,
         defense: 0,
         passives: [],
@@ -115,6 +116,7 @@ export function makeEnemyDef(
 export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnemy {
     return {
         id,
+        rank: definition.rank,
         definition,
         buffs: [],
         currHp: definition.hp,

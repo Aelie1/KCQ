@@ -39,6 +39,7 @@ const state: GameState = {
     }],
     enemies: [{
         id: "skunkette1",
+        rank: "enemy",
         currHp: 12,
         maxHp: 20,
         currDef: 0,
@@ -580,6 +581,38 @@ describe("console formatting", () => {
         expect(rendered).toContain("[1] foe1");
         expect(rendered).toContain("[2] attacker1");
         expect(rendered).toMatch(/telekinesis on attacker1: (MISS|GRAZE|HIT|CRIT)/);
+    });
+
+    it("only offers valid entries from a move's published targets", async () => {
+        const selectiveMove = makeMove("selective", "mouth", {
+            isValid: (_move, target) => target?.id === "attacker1" ? "invalidTarget" : undefined,
+        });
+        const engine = new GameEngine([multiEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero", [selectiveMove]));
+        const events = engine.loadEncounter(multiEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "1", "3"], events);
+
+        expect(rendered).not.toContain("Choose target 1 of 1 for selective.");
+        expect(rendered).toContain("[1] selective [mouth; 1 enemy]   foe1");
+        expect(rendered).not.toContain("selective [mouth; 1 enemy]   attacker1");
+        expect(rendered).toContain("selective on foe1: HIT");
+    });
+
+    it("allows confirmation of an all-target move with no valid entity targets", async () => {
+        const emptyAllMove = makeMove("empty-all", "mouth", {
+            targets: "all",
+            isValid: () => "invalidTarget",
+        });
+        const engine = new GameEngine([oneEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero", [emptyAllMove]));
+        const events = engine.loadEncounter(oneEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
+
+        expect(rendered).toContain("empty-all affects every enemy.");
+        expect(rendered).toContain("[1] Confirm");
+        expect(rendered).not.toContain("not enough targets for empty-all");
     });
 
     it("orders escape choices by encounter bindings and keeps unknown bindings last", async () => {
