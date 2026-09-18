@@ -56,7 +56,8 @@ const state: GameState = {
             effects: [],
         }],
     }],
-    traps: []
+    traps: [],
+    encounter: null
 };
 
 const bindingThresholds = new GameEngine([], 1).getThresholds();

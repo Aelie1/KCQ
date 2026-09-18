@@ -7,7 +7,7 @@
     },
     "scripts": {
         "start": "tsc && node dist/main.js",
-        "test": "vitest run",
+        "test": "tsc -p tsconfig.test.json && vitest run",
         "coverage": "vitest --coverage",
         "typecheck": "tsc -p tsconfig.build.json --noEmit",
         "typecheck:test": "tsc -p tsconfig.test.json"

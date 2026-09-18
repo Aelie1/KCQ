@@ -80,6 +80,7 @@ describe("accuracy", () => {
             characters: [target],
             enemies: [actor],
             traps: [],
+            encounter: null
         }, actor, target, move);
         if (!info.valid || !info.accuracy) throw new Error("Expected enemy accuracy profile");
         return info.accuracy;

@@ -24,6 +24,7 @@ describe("state serialization and combatant loading", () => {
             characters: [],
             enemies: [],
             traps: [],
+            encounter: null
         });
         expect(state).not.toHaveProperty("nextEntityId");
     });
@@ -193,6 +194,7 @@ describe("state serialization and combatant loading", () => {
             characters: [character],
             enemies: [enemy],
             traps: [],
+            encounter: null
         };
 
         const serialized = serializeGameState(internalState);

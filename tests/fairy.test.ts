@@ -38,6 +38,7 @@ function rawState(enemies: iEnemy[], withCharacter = false): iGameState {
         characters: withCharacter ? [makeCharacter()] : [],
         enemies,
         traps: [],
+        encounter: null
     };
 }
 

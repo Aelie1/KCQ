@@ -18,9 +18,10 @@ export const hinari: CharacterDef = {
     id: "hinari",
     getMoves: function (actor: iCharacter): MoveDef[] {
         const moves: MoveDef[] = [];
-        moves.push(...[store, brace]);
+        moves.push(store);
         if (actor.data["subspace"] !== undefined) {
             if (actor.data["subspace"] < SUBSPACE_MAX) {
+                moves.push(brace);
                 const totalRockfallHits = 4 - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / 4));
                 moves.push({
                     ...rockfall,
@@ -246,16 +247,16 @@ function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, bu
                 name: "subspace",
                 amount: subspaceAmount
             });
-        }
-        const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
-        const currentBindingId = target.data["subspaceBinding"] ?? 0;
-        if (bindingId >= 0) {
-            effects.push({
-                type: "data",
-                target: target,
-                name: "subspaceBinding",
-                amount: bindingId - currentBindingId
-            });
+            const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
+            const currentBindingId = target.data["subspaceBinding"] ?? 0;
+            if (bindingId >= 0) {
+                effects.push({
+                    type: "data",
+                    target: target,
+                    name: "subspaceBinding",
+                    amount: bindingId - currentBindingId
+                });
+            }
         }
 
         newAmount = spreadAmount;

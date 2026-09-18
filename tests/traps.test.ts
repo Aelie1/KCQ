@@ -71,7 +71,7 @@ describe("generic traps through GameEngine", () => {
             { id: first.id, amount: 12 },
             { id: second.id, amount: 34 },
         ]);
-        expect(engine.getEncounter()).toEqual({
+        expect(engine.getGameState().encounter).toEqual({
             id: "trap-test",
             enemies: [],
             bindings: [],

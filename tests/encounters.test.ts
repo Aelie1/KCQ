@@ -197,7 +197,7 @@ describe("encounters", () => {
             success: true,
             bindings: plains_2.bindings.map(({ id }) => id),
         });
-        expect(engine.getEncounter()).toEqual({
+        expect(state.encounter).toEqual({
             id: plains_2.id,
             enemies: [skunkette.id, skunkette.id, skunk.id, skunk.id],
             bindings: plains_2.bindings.map(({ id }) => id),
