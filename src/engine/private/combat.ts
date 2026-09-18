@@ -32,6 +32,15 @@ export function getTargets(state: iGameState, actor: iCharacter, move: MoveDef):
                     result.push(isValidTarget(state, actor, target, move));
                 }
                 break;
+            case "either":
+                for (const target of state.characters) {
+                    result.push(isValidTarget(state, actor, target, move));
+                }
+                for (const target of state.enemies) {
+                    result.push(isValidTarget(state, actor, target, move));
+                }
+                break;
+
         }
     }
 
@@ -66,7 +75,7 @@ export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity
                 reason: "invalidTarget",
             };
         }
-        if (getIEntitySide(target) !== move.targetSide) {
+        if (move.targetSide === "either" || getIEntitySide(target) !== move.targetSide) {
             return {
                 valid: false,
                 target: target,

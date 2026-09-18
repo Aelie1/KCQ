@@ -78,7 +78,8 @@ export class GameEngine {
             standing: false,
             bonusEscapes: 0,
             bindings: [],
-            buffs: []
+            buffs: [],
+            data: {},
         });
     }
 
@@ -334,17 +335,16 @@ export class GameEngine {
                             reason: "invalidTargetCount"
                         }
                     }
-                    switch (move.targetSide) {
-                        case "enemy":
-                            for (const enemy of this.state.enemies) {
-                                targetInfo.push(isValidTarget(this.state, actor, enemy, move));
-                            }
-                            break;
-                        case "player":
-                            for (const character of this.state.characters) {
-                                targetInfo.push(isValidTarget(this.state, actor, character, move));
-                            }
-                            break;
+                    if (move.targetSide === "either" || move.targetSide === "enemy") {
+                        for (const enemy of this.state.enemies) {
+                            targetInfo.push(isValidTarget(this.state, actor, enemy, move));
+                        }
+                    }
+                    if (move.targetSide === "either" || move.targetSide === "player") {
+
+                        for (const character of this.state.characters) {
+                            targetInfo.push(isValidTarget(this.state, actor, character, move));
+                        }
                     }
                 } else if (move.targets === 0) {
                     if (action.targets.length !== 0) {

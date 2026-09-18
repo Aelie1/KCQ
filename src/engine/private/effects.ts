@@ -483,9 +483,10 @@ export class GameEffects {
         const targets = [];
         const move = { ...action.move, roll: this.rng.random() };
         if (move.definition.targets === "all") {
-            if (move.definition.targetSide === "enemy") {
+            if (move.definition.targetSide === "either" || move.definition.targetSide === "enemy") {
                 targets.push(...this.state.enemies);
-            } else {
+            }
+            if (move.definition.targetSide === "either" || move.definition.targetSide === "player") {
                 targets.push(...getValidTargets(this.state.characters));
             }
         } else {
@@ -522,16 +523,17 @@ export class GameEffects {
     }
 
     private retargetIntention(target: iEnemy, destination: iCharacter) {
-        let cancelled = false;
+        let retargetted = false;
         for (const intention of target.intentions) {
-            if (intention.move.definition.targetSide === "player"
+            if ((intention.move.definition.targetSide === "either" ||
+                intention.move.definition.targetSide === "player")
                 && intention.move.definition.targets === 1
                 && intention.rolls[0].target !== destination) {
                 intention.rolls[0].target = destination;
-                cancelled = true;
+                retargetted = true;
             }
         }
-        if (cancelled) {
+        if (retargetted) {
             this.addEvent({
                 type: "targetChanged",
                 target: target.id,

@@ -7,6 +7,7 @@ export interface CharacterDef {
     id: string;
     getMoves: (actor: iCharacter) => MoveDef[];
     passives: PassiveDef[];
+    data?: Record<string, number>;
 }
 
 export interface EnemyDef {

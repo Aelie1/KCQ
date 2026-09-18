@@ -19,7 +19,7 @@ export type Phase = "player" | "enemy";
 
 export type EntityId = string;
 
-export type EntitySide = "player" | "enemy" | "none";
+export type EntitySide = "either" | "player" | "enemy" | "none";
 
 /*******************************************************
  * Characters
@@ -34,6 +34,7 @@ export interface Character {
     buffs: Buff[];
     modifiers: ModifierSet;
     blockedMoveTypes: MoveType[];
+    data: Record<string, number>;
 }
 
 /*******************************************************
