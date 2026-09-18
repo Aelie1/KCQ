@@ -3,6 +3,7 @@ import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
 import { iBuff, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
+import { ActionFailureReason } from "../../engine/public/types";
 
 
 const PUNCH_DAMAGE = 100;
@@ -201,7 +202,8 @@ const obey: MoveDef = {
     id: "obey",
     targetSide: "player",
     targets: 1,
-    type: "none",
+    type: "mouth",
+    freeOnHit: true,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 
@@ -241,6 +243,14 @@ const obey: MoveDef = {
         });
 
         return effects;
+    },
+    isValid: function (move: MoveDef, target: iEntity | null): ActionFailureReason | undefined {
+        if (target !== null &&
+            (!isCharacter(target)
+                || !target.acted
+                || findBuff(target, "servitude"))) {
+            return "invalidTarget";
+        }
     }
 }
 
@@ -248,7 +258,8 @@ const stop: MoveDef = {
     id: "stop",
     targetSide: "enemy",
     targets: 1,
-    type: "none",
+    type: "mouth",
+    freeOnHit: true,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 
@@ -260,7 +271,7 @@ const stop: MoveDef = {
             if (isEnemy(target.target)) {
                 effects.push({
                     type: "intention",
-                    operation: "remove",
+                    operation: "cancel",
                     target: target.target,
                     amount: STOP_BOSS_WEAKEN
                 });
@@ -288,7 +299,8 @@ const attackMe: MoveDef = {
     id: "attackMe",
     targetSide: "enemy",
     targets: "all",
-    type: "none",
+    type: "mouth",
+    freeOnHit: true,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
 

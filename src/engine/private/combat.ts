@@ -43,6 +43,17 @@ export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity
         }
     }
 
+    if (move.isValid) {
+        const reason = move.isValid(move, target);
+        if (reason) {
+            return {
+                valid: false,
+                target: target,
+                reason: reason
+            }
+        }
+    }
+
     const accuracy = calculateAccuracy(actor, target, move);
     return {
         valid: true,

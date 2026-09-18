@@ -158,7 +158,7 @@ export interface iRetargetEffect {
 
 export interface iCancelEffect {
     type: "intention"
-    operation: "remove";
+    operation: "cancel";
     target: iEnemy;
     amount: number;
 }

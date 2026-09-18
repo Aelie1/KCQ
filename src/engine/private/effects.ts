@@ -6,7 +6,7 @@ import { canMove } from "../protected/status";
 import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, GameEvent, StanceId, TargetInfo } from "../public/types";
 import { evaluateIntention, resolveMove } from "./combat";
-import { ACCURACY_MODIFIER, TRAP_MAX } from "./constants";
+import { TRAP_MAX } from "./constants";
 import { serializeEffects } from "./serialize";
 import { iEngineEffect } from "./types";
 
@@ -148,8 +148,8 @@ export class GameEffects {
                         case "target":
                             this.retargetIntention(effect.target, effect.destination);
                             break;
-                        case "remove":
-                            this.removeIntention(effect.target, effect.amount);
+                        case "cancel":
+                            this.cancelIntentions(effect.target, effect.amount);
                             break;
                     }
                     break;
@@ -540,7 +540,7 @@ export class GameEffects {
         }
     }
 
-    private removeIntention(target: iEnemy, amount: number) {
+    private cancelIntentions(target: iEnemy, amount: number) {
         if (target.rank !== "boss") {
             target.intentions.length = 0;
             this.addEvent({
@@ -554,7 +554,7 @@ export class GameEffects {
                     intention.move.roll = Math.max(0, intention.move.roll - amount);
                 }
                 for (const roll of intention.rolls) {
-                    roll.roll = Math.max(0, roll.roll - amount * ACCURACY_MODIFIER);
+                    roll.roll = Math.max(0, roll.roll - amount * 100);
                 }
             }
             this.addEvent({

@@ -7,7 +7,7 @@ export const HIT_MODIFIER = 10;
 export const WILLPOWER_MODIFIER = 10;
 export const TRAP_MODIFIER = 5;
 export const TRAP_MAX = 100;
-export const ACCURACY_MODIFIER = 100;
+
 
 export const effectivenessRange: Record<HitBand, [number, number]> = {
     miss: [0, 0],
