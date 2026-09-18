@@ -34,6 +34,7 @@ const state: GameState = {
             status: [{ id: "bound", value: 3 }],
         }],
         buffs: [],
+        data: {},
         modifiers: { defense: -2 },
         blockedMoveTypes: []
     }],
