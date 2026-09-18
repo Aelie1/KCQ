@@ -265,6 +265,16 @@ export class GameEngine {
             }
         }
 
+        const validTargets = result.filter(x => x.valid).length;
+        if ((moveState.targets === "all" && validTargets === 0) ||
+            (moveState.targets !== "all" && moveState.targets > 0 && moveState.targets > validTargets)) {
+            return [{
+                valid: false,
+                target: null,
+                reason: "invalidTargetCount"
+            }];
+        }
+
         return result.map(serializeValidity);
     }
 

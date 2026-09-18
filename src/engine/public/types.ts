@@ -330,7 +330,6 @@ export interface ActionFailure {
 }
 
 export type ActionFailureReason =
-    | "none"
     | "invalidActor"
     | "invalidMove"
     | "invalidBinding"
