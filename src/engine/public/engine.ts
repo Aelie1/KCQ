@@ -612,6 +612,7 @@ export class GameEngine {
                 result.fromEffects(resolveEscape(actor, status, target, binding));
                 if (!actor.acted) {
                     actor.acted = true;
+                    status = new GameStatus(actor);
                     if (actor.standing && status.canBonusEscape()) {
                         actor.bonusEscapes++;
                     }
