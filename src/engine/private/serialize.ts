@@ -1,9 +1,9 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/helpers";
 import { GameStatus, getStatus } from "../protected/status";
-import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iStatus, iTrap } from "../protected/types";
-import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Move, Status, Trap, ValidityInfo } from "../public/types";
-import { evaluateBattleState } from "./combat";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iStatus, iTrap } from "../protected/types";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "../public/types";
+import { evaluateBattleState, evaluateIntention, resolveMove } from "./combat";
 import type { iValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState, statuses: Map<iEntity, GameStatus>): GameState {
@@ -13,7 +13,7 @@ export function serializeGameState(state: iGameState, statuses: Map<iEntity, Gam
             outcome: evaluateBattleState(state, statuses)
         },
         characters: state.characters.map(x => serializeCharacter(x, getStatus(statuses, x))),
-        enemies: state.enemies.map(enemy => serializeEnemy(enemy)),
+        enemies: state.enemies.map(x => serializeEnemy(state, x, getStatus(statuses, x))),
         traps: state.traps.map(serializeTraps),
         encounter: state.encounter ? serializeEncounter(state.encounter) : null
     };
@@ -33,18 +33,35 @@ function serializeCharacter(character: iCharacter, status: GameStatus): Characte
     };
 }
 
-function serializeEnemy(enemy: iEnemy): Enemy {
+function serializeEnemy(state: iGameState, enemy: iEnemy, status: GameStatus): Enemy {
     return {
         id: enemy.id,
         rank: enemy.rank,
         maxHp: enemy.maxHp,
         currHp: enemy.currHp,
         currDef: enemy.currDef,
-        intentions: structuredClone(enemy.preview),
+        intentions: enemy.intentions.map(x => (serializeIntention(state, status, x))),
         buffs: enemy.buffs.filter(x => x.active).map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
     };
 }
+
+function serializeIntention(state: iGameState, status: GameStatus, intention: iIntention): Intention {
+    const iTargets = evaluateIntention(state, intention, status);
+    const targets: TargetInfo[] = [];
+    let effects = resolveMove(state, intention.move, intention.actor, iTargets);
+    for (const iTarget of iTargets) {
+        const tEffects = effects.filter(x => "target" in x && x.target === iTarget.target);
+        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(tEffects) });
+        effects = effects.filter(x => !("target" in x) || x.target !== iTarget.target);
+    }
+    return {
+        move: intention.move.definition.id,
+        targets: targets,
+        effects: serializeEffects(effects)
+    };
+}
+
 
 export function serializeEffects(effects: iEffect[]): Effect[] {
     return effects.map(serializeEffect).filter(x => x !== undefined);

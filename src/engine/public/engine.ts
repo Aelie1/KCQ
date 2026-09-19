@@ -20,6 +20,7 @@ export function createEngine(seed?: number): GameEngine {
 
 export class GameEngine {
     private state: iGameState;
+    private view: GameView;
     private seed: number;
     private aiRng: Random;
     private accRng: Random;
@@ -28,13 +29,14 @@ export class GameEngine {
 
     constructor(encounters: EncounterDef[], characters: CharacterDef[], seed?: number) {
         this.state = {
-            turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
+            turn: { round: 1, step: 1, phase: "player" },
             nextId: {},
             characters: [],
             enemies: [],
             traps: [],
             encounter: null
         };
+        this.view = getGameView(this.state);
         seed ??= Math.floor(Math.random() * 0x100000000);
         this.seed = seed;
         this.aiRng = new Random(mixSeed(seed, 1));
@@ -48,7 +50,11 @@ export class GameEngine {
     }
 
     getGameView(): GameView {
-        return getGameView(this.state);
+        return structuredClone(this.view);
+    }
+
+    private refreshView() {
+        this.view = getGameView(this.state);
     }
 
     getThresholds() {
@@ -98,6 +104,7 @@ export class GameEngine {
             id: id,
             success: true
         });
+        this.refreshView();
         return result.getEvents();
     }
 
@@ -156,6 +163,7 @@ export class GameEngine {
             success: true,
             bindings: encounter.bindings.map(x => x.id)
         });
+        this.refreshView();
         return result.getEvents();
     }
 
@@ -172,6 +180,7 @@ export class GameEngine {
             result.fromResult(this.executeEnemyPhase());
             result.fromResult(this.advancePhase());
 
+            this.refreshView();
             return {
                 success: true,
                 events: result.getEvents(),
@@ -326,6 +335,7 @@ export class GameEngine {
                         });
                         actor.acted = true;
                         this.state.turn.step++;
+                        this.refreshView();
                         return {
                             success: true,
                             events: result.getEvents(),
@@ -390,6 +400,7 @@ export class GameEngine {
                     actor.acted = true;
                 }
                 this.state.turn.step++;
+                this.refreshView();
                 return {
                     success: true,
                     events: result.getEvents(),
@@ -458,6 +469,7 @@ export class GameEngine {
                         });
                         actor.acted = true;
                         this.state.turn.step++;
+                        this.refreshView();
                         return {
                             success: true,
                             events: result.getEvents(),
@@ -478,6 +490,7 @@ export class GameEngine {
                     actor.bonusEscapes--;
                 }
                 this.state.turn.step++;
+                this.refreshView();
                 return {
                     success: true,
                     events: result.getEvents(),
@@ -490,6 +503,8 @@ export class GameEngine {
                     actor: actor,
                     stance: actor.standing ? "moving" : "standing"
                 }]);
+                this.state.turn.step++;
+                this.refreshView();
                 return {
                     success: true,
                     events: result.getEvents(),

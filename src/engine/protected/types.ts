@@ -1,6 +1,5 @@
 import {
     Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect, Enemy, EnemyEffect, EntityId, HitBand,
-    Intention,
     StanceId, TargetInfo, Trap, TrapEffect, Turn
 } from "../public/types";
 import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "./definitions";
@@ -8,13 +7,15 @@ import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, T
 export type iEntity = iCharacter | iEnemy;
 
 export interface iGameState {
-    turn: Turn;
+    turn: iTurn;
     nextId: Record<EntityId, number>;
     characters: iCharacter[];
     enemies: iEnemy[];
     traps: iTrap[];
     encounter: EncounterDef | null;
 }
+
+interface iTurn extends Omit<Turn, "outcome"> { };
 
 export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modifiers" | "blockedMoveTypes"> {
     definition: CharacterDef;
@@ -25,7 +26,6 @@ export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modi
 export interface iEnemy extends Omit<Enemy, "buffs" | "intentions"> {
     definition: EnemyDef;
     intentions: iIntention[];
-    preview: Intention[];
     buffs: iBuff[];
     data: Record<string, number>;
 }

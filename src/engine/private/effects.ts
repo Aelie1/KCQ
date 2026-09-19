@@ -2,12 +2,9 @@ import { BindingDef, EnemyDef, MoveDef } from "../protected/definitions";
 import { getValidTargets } from "../protected/enemies";
 import { findBinding, findBuff, findEntity, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { Random } from "../protected/random";
-import { GameStatus } from "../protected/status";
 import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
-import { BondageEvent, EntityId, GameEvent, StanceId, TargetInfo } from "../public/types";
-import { evaluateIntention, resolveMove } from "./combat";
+import { BondageEvent, EntityId, GameEvent, StanceId } from "../public/types";
 import { TRAP_MAX } from "./constants";
-import { serializeEffects } from "./serialize";
 import { iEngineEffect } from "./types";
 
 export class GameEffects {
@@ -35,13 +32,11 @@ export class GameEffects {
         this.events.push(...other.events);
         this.stack(other.effects);
         this.resolve();
-        this.refreshPreviews()
     }
 
     fromEffects(other: iEngineEffect[]) {
         this.stack(other);
         this.resolve();
-        this.refreshPreviews()
     }
 
     private stack(other: iEngineEffect[]) {
@@ -50,31 +45,6 @@ export class GameEffects {
         }
     }
 
-    private refreshPreviews() {
-        for (const enemy of this.state.enemies) {
-            enemy.preview.length = 0;
-            const status = new GameStatus(enemy);
-            for (const intention of enemy.intentions) {
-                const preview = {
-                    ...intention,
-                    move: { ...intention.move }
-                };
-                const iTargets = evaluateIntention(this.state, preview, status);
-                const targets: TargetInfo[] = [];
-                let effects = resolveMove(this.state, preview.move, preview.actor, iTargets);
-                for (const iTarget of iTargets) {
-                    const tEffects = effects.filter(x => "target" in x && x.target === iTarget.target);
-                    targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(tEffects) });
-                    effects = effects.filter(x => !("target" in x) || x.target !== iTarget.target);
-                }
-                enemy.preview.push({
-                    move: intention.move.definition.id,
-                    targets: targets,
-                    effects: serializeEffects(effects)
-                });
-            }
-        }
-    }
 
     private resolve() {
         while (this.effects.length > 0) {
