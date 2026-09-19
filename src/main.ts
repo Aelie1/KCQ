@@ -1,9 +1,8 @@
 import { runConsoleClient } from "./console/client";
-import { characterList, encounterList } from "./content/content";
-import { GameEngine } from "./engine/private/engine";
+import { createEngine } from "./engine/public/engine";
 
 const encounterId = "forest_3";
-const engine = new GameEngine(encounterList, characterList);
+const engine = createEngine();
 const loadEvents = engine.loadCharacter("ko");
 loadEvents.push(...engine.loadCharacter("matsuko"));
 loadEvents.push(...engine.loadCharacter("hinari"));

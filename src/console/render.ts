@@ -8,6 +8,7 @@ import type {
     ModifierId,
     MoveType,
     Status,
+    ThresholdInfo,
 } from "../engine/public/types";
 import { formatBuff, formatIntention } from "./format";
 
@@ -17,16 +18,7 @@ const BINDING_BAR_WIDTH = 20;
 const TRAP_BAR_WIDTH = 20;
 const BUFF_COLUMN_GAP = 4;
 
-export interface BindingThresholds {
-    thresholds: {
-        easy: number;
-        medium: number;
-        hard: number;
-        extreme: number;
-        impossible: number;
-    };
-    max: number;
-}
+export type BindingThresholds = ThresholdInfo;
 
 export interface ScreenModel {
     encounter: string;

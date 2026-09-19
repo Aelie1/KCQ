@@ -1,10 +1,10 @@
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
-import type { GameEngine } from "../engine/private/engine";
 import type {
     ActionInfo,
     ActionResult,
     BindingId,
+    Engine,
     EntityId,
     EscapeInfo,
     GameEvent,
@@ -29,7 +29,7 @@ interface MenuItem {
 }
 
 export async function runConsoleClient(
-    engine: GameEngine,
+    engine: Engine,
     encounter: string,
     initialOutput: GameEvent[] | string[] = [],
     streams: ConsoleStreams = { input: process.stdin, output: process.stdout },
@@ -43,18 +43,19 @@ export async function runConsoleClient(
         : [...initialOutput as string[]];
     let bindingIds = encounterBindings(initialEvents);
     if (bindingIds.length === 0) {
-        bindingIds = [...(engine.getGameState().encounter?.bindings ?? [])];
+        bindingIds = [...(engine.getGameView().encounter?.bindings ?? [])];
     }
     let running = true;
 
     const draw = (actionLines: string[]): void => {
         const width = streams.output.columns ?? 180;
         const height = Math.max(1, (streams.output.rows ?? 50) - 1);
+        const view = engine.getGameView();
         const screen = renderScreen({
             encounter,
             seed: engine.getSeed(),
-            state: engine.getGameState(),
-            availability: engine.getAvailability(),
+            state: view,
+            availability: view.actions,
             bindings: bindingIds,
             bindingThresholds: engine.getThresholds(),
             actionLines,
@@ -85,21 +86,20 @@ export async function runConsoleClient(
     };
 
     const execute = (action: PlayerAction): boolean => {
-        const previousRound = engine.getGameState().turn.round;
+        const previousRound = engine.getGameView().turn.round;
         const result = engine.executeAction(action);
         if (result.success) bindingIds = updateEncounterBindings(bindingIds, result.events);
         appendResult(logLines, result, previousRound);
         if (
             result.success
             && action.type !== "endTurn"
-            && !engine.getAvailability().some((character) => character.available)
+            && !result.view.actions.some((character) => character.available)
         ) {
             logLines.push("No characters available. Ending turn automatically.");
-            const roundBeforeEnd = engine.getGameState().turn.round;
             appendResult(
                 logLines,
                 engine.executeAction({ type: "endTurn" }),
-                roundBeforeEnd,
+                result.view.turn.round,
             );
         }
         return result.success;
@@ -171,8 +171,10 @@ export async function runConsoleClient(
 
     const chooseEscape = async (actorId: EntityId): Promise<boolean> => {
         while (true) {
+            const view = engine.getGameView();
+            const actorView = view.actions.find((action) => action.id === actorId);
             const options = orderEscapeOptions(
-                engine.getEscapes(actorId)?.options ?? [],
+                actorView?.escapes ?? [],
                 bindingIds,
             );
             if (options.length === 0) {
@@ -205,7 +207,7 @@ export async function runConsoleClient(
             });
             if (!success) return false;
 
-            const actor = engine.getGameState().characters.find(
+            const actor = engine.getGameView().characters.find(
                 (character) => character.id === actorId,
             );
             if (!actor || actor.bonusEscapes === 0) return true;
@@ -214,19 +216,14 @@ export async function runConsoleClient(
 
     const chooseAction = async (characterId: EntityId): Promise<void> => {
         while (true) {
-            const availability = engine.getAvailability().find(
-                (character) => character.id === characterId,
-            );
-            if (!availability?.available) return;
+            const view = engine.getGameView();
+            const actorView = view.actions.find((action) => action.id === characterId);
+            if (!actorView?.available) return;
 
-            const state = engine.getGameState();
-            const actor = state.characters.find((character) => character.id === characterId);
+            const actor = view.characters.find((character) => character.id === characterId);
             if (!actor) return;
-            const actions = engine.getMoves(actor.id);
-            const escapes = engine.getEscapes(actor.id);
-            const escapeAvailable = (escapes?.options.length ?? 0) > 0;
-            const stance = engine.stanceAvailable(actor.id);
-            const menu: MenuItem[] = actions.map((action) => {
+            const escapeAvailable = actorView.escapes.length > 0;
+            const menu: MenuItem[] = actorView.moves.map((action) => {
                 const targets = action.available
                     ? validTargets(action)
                     : [];
@@ -257,10 +254,10 @@ export async function runConsoleClient(
                 },
                 {
                     label: `Change stance -> ${actor.standing ? "moving" : "standing"}`
-                        + (stance.available ? "" : ` -- ${stance.reason}`),
+                        + (actorView.stance.available ? "" : ` -- ${actorView.stance.reason}`),
                     select: async () => {
-                        if (stance.available) execute({ type: "stance", actor: actor.id });
-                        else logLines.push(`Stance change -- ${stance.reason}.`);
+                        if (actorView.stance.available) execute({ type: "stance", actor: actor.id });
+                        else logLines.push(`Stance change -- ${actorView.stance.reason}.`);
                         return false;
                     },
                 },
@@ -290,8 +287,8 @@ export async function runConsoleClient(
 
     try {
         while (running) {
-            const state = engine.getGameState();
-            if (state.enemies.length === 0) {
+            const view = engine.getGameView();
+            if (view.enemies.length === 0) {
                 const choice = await choose([
                     "VICTORY — all enemies have been defeated.",
                     "",
@@ -301,23 +298,22 @@ export async function runConsoleClient(
                 continue;
             }
 
-            const availability = engine.getAvailability();
-            const characterLines = availability.map((character, index) => {
-                const stateCharacter = state.characters.find((candidate) => candidate.id === character.id);
+            const characterLines = view.actions.map((character, index) => {
+                const stateCharacter = view.characters.find((candidate) => candidate.id === character.id);
                 if (!character.available) {
                     return `[-] ${character.id}  -- ${character.reason}`;
                 }
                 return `[${index + 1}] ${character.id}`
                     + (stateCharacter ? `  ${stateCharacter.acted ? "Acted" : "Ready"}` : "");
             });
-            const endTurnNumber = availability.length + 1;
-            const quitNumber = availability.length + 2;
+            const endTurnNumber = view.actions.length + 1;
+            const quitNumber = view.actions.length + 2;
             const choices = [
                 ...characterLines,
                 `[${endTurnNumber}] End turn`,
                 `[${quitNumber}] Quit`,
             ];
-            const selectableNumbers = availability.flatMap((character, index) =>
+            const selectableNumbers = view.actions.flatMap((character, index) =>
                 character.available ? [index + 1] : [],
             );
             selectableNumbers.push(endTurnNumber, quitNumber);
@@ -325,9 +321,9 @@ export async function runConsoleClient(
                 ["Choose a character.", "", ...choices],
                 selectableNumbers,
             );
-            if (choice < availability.length) {
-                await chooseAction(availability[choice].id);
-            } else if (choice === availability.length) {
+            if (choice < view.actions.length) {
+                await chooseAction(view.actions[choice].id);
+            } else if (choice === view.actions.length) {
                 execute({ type: "endTurn" });
             } else {
                 running = false;
