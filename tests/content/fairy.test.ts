@@ -264,7 +264,7 @@ describe("Binding Magic", () => {
 
         expect(enemyState(engine, "fairy1").intentions.map(({ move }) => move))
             .not.toContain(BINDING_ID);
-        expect(engine.getGameState().characters[0].bindings)
+        expect(engine.getGameView().characters[0].bindings)
             .toEqual(expect.arrayContaining(bindings.map(({ id }) => expect.objectContaining({ id, value: 80 }))));
     });
 });

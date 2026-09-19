@@ -12,6 +12,9 @@ import type {
     FailureReason,
     MoveType,
 } from "../../src/engine/public/types";
+import { actionView } from "./gameView";
+
+export { actionView } from "./gameView";
 
 const bindingLevels: BindingLevel[] = [
     "none",
@@ -177,7 +180,7 @@ export function expectMoveRejection(
     target: string,
     reason: FailureReason,
 ) {
-    expect(engine.getMoves(actor).find((action) => action.move.id === move)).toMatchObject({
+    expect(actionView(engine, actor).moves.find((action) => action.move.id === move)).toMatchObject({
         available: false,
         reason,
     });

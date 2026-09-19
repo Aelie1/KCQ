@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { actionView } from "../helpers/gameView";
 import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
 import { plains_1 } from "../../src/content/skunk/encounters";
@@ -31,7 +32,7 @@ describe("turn phases and enemy intentions", () => {
             const engine = new GameEngine(encounterList, [ko], 123456);
             engine.loadCharacter(ko.id);
             const loadEvents = engine.loadEncounter(plains_1.id);
-            const snapshots = [engine.getGameState()];
+            const snapshots = [engine.getGameView()];
             const results: ReturnType<GameEngine["executeAction"]>[] = [];
             const actions: PlayerAction[] = [
                 { type: "stance", actor: ko.id },
@@ -39,11 +40,11 @@ describe("turn phases and enemy intentions", () => {
                 { type: "endTurn" },
             ];
             const query = () => {
-                engine.getGameState();
-                engine.getMoves(ko.id);
-                engine.getEscapes(ko.id);
-                engine.getAvailability();
-                engine.stanceAvailable(ko.id);
+                engine.getGameView();
+                actionView(engine, ko.id).moves;
+                actionView(engine, ko.id).escapes;
+                engine.getGameView().actions;
+                actionView(engine, ko.id).stance;
             };
 
             for (const action of actions) {
@@ -54,11 +55,11 @@ describe("turn phases and enemy intentions", () => {
                 const result = engine.executeAction(action);
                 expect(result.success).toBe(true);
                 results.push(result);
-                snapshots.push(engine.getGameState());
+                snapshots.push(engine.getGameView());
                 if (queryBetweenActions) query();
             }
 
-            return { loadEvents, results, snapshots, finalState: engine.getGameState() };
+            return { loadEvents, results, snapshots, finalState: engine.getGameView() };
         };
 
         expect(run(true)).toEqual(run(false));
@@ -67,7 +68,7 @@ describe("turn phases and enemy intentions", () => {
     it("executes Skunkette's authored intention between phase changes", () => {
         const engine = setupAuthoredCombat();
         const enemyId = `${skunkette.id}1`;
-        const intentions = engine.getGameState().enemies[0].intentions;
+        const intentions = engine.getGameView().enemies[0].intentions;
         expect(intentions).toHaveLength(1);
         const preview = intentions[0];
         if (!preview) throw new Error("Expected an authored intention");
@@ -97,7 +98,7 @@ describe("turn phases and enemy intentions", () => {
         });
         expect(result.events.at(-1)).toEqual({ type: "phaseChanged", phase: "player" });
 
-        const state = engine.getGameState();
+        const state = engine.getGameView();
         expect(state.turn).toEqual({ outcome: "ongoing", round: 2, step: 1, phase: "player" });
         expect(state.characters[0].acted).toBe(false);
         expect(state.characters[0].buffs).toContainEqual(
@@ -124,14 +125,14 @@ describe("turn phases and enemy intentions", () => {
             move: move.id,
             targets: [`${foe.id}1`],
         }).success).toBe(true);
-        expect(engine.getGameState().characters[0].acted).toBe(true);
+        expect(engine.getGameView().characters[0].acted).toBe(true);
 
         const endTurn = engine.executeAction({ type: "endTurn" });
         expect(endTurn.success).toBe(true);
         if (!endTurn.success) throw new Error("Expected endTurn to succeed");
         expect(endTurn.events[0]).toEqual({ type: "phaseChanged", phase: "enemy" });
         expect(endTurn.events.at(-1)).toEqual({ type: "phaseChanged", phase: "player" });
-        expect(engine.getGameState()).toMatchObject({
+        expect(engine.getGameView()).toMatchObject({
             turn: { round: 2, step: 1, phase: "player" },
             characters: [{ acted: false }],
         });
@@ -170,7 +171,7 @@ describe("turn phases and enemy intentions", () => {
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
-        expect(engine.getGameState().enemies[0].intentions[0]?.move).toBe(threat.id);
+        expect(engine.getGameView().enemies[0].intentions[0]?.move).toBe(threat.id);
         expect(engine.executeAction({
             type: "move",
             actor: "hero",
@@ -182,7 +183,7 @@ describe("turn phases and enemy intentions", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected the enemy phase to resolve");
         expect(result.events.filter(({ type }) => type === "moveUsed")).toEqual([]);
-        expect(engine.getGameState().characters[0].bindings).toEqual([]);
+        expect(engine.getGameView().characters[0].bindings).toEqual([]);
     });
 
     it("drops a committed target that is no longer in state without adding a replacement", () => {
@@ -219,7 +220,7 @@ describe("turn phases and enemy intentions", () => {
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
-        expect(engine.getGameState().enemies[0].intentions[0]?.targets).toEqual([{
+        expect(engine.getGameView().enemies[0].intentions[0]?.targets).toEqual([{
             target: "doomed1",
             band: "hit",
             effects: [],
@@ -260,7 +261,7 @@ describe("enemy intention previews", () => {
 
     it("matches the eventual enemy result when live state is unchanged", () => {
         const { engine, enemyMove, enemyId } = setupPreviewEngine();
-        const preview = engine.getGameState().enemies[0].intentions[0];
+        const preview = engine.getGameView().enemies[0].intentions[0];
         if (!preview) throw new Error("Expected an enemy intention");
 
         const result = engine.executeAction({ type: "endTurn" });
@@ -313,7 +314,7 @@ describe("enemy intention previews", () => {
 
         const previews = Array.from(
             { length: 5 },
-            () => engine.getGameState().enemies[0].intentions[0],
+            () => engine.getGameView().enemies[0].intentions[0],
         );
         expect(previews.every((preview) => preview !== undefined)).toBe(true);
         expect(previews).toEqual(Array(5).fill(previews[0]));
@@ -326,7 +327,7 @@ describe("enemy intention previews", () => {
         expect(previews[0]!.effects).toEqual([]);
 
         expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
-        const nextPreview = engine.getGameState().enemies[0].intentions[0];
+        const nextPreview = engine.getGameView().enemies[0].intentions[0];
         expect(nextPreview?.targets[0]).toMatchObject({
             target: "hero",
             band: "hit",
@@ -368,7 +369,7 @@ describe("enemy intention previews", () => {
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
-        const before = engine.getGameState().enemies[0].intentions[0];
+        const before = engine.getGameView().enemies[0].intentions[0];
         expect(before?.targets[0].band).toBe("hit");
 
         expect(engine.executeAction({
@@ -377,7 +378,7 @@ describe("enemy intention previews", () => {
             move: guard.id,
             targets: [],
         }).success).toBe(true);
-        const after = engine.getGameState().enemies[0].intentions[0];
+        const after = engine.getGameView().enemies[0].intentions[0];
         expect(after?.targets[0]).toEqual({
             target: "hero",
             band: "miss",

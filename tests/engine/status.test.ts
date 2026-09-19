@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { actionView } from "../helpers/gameView";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { BindingDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
@@ -66,8 +67,10 @@ describe("actor-level action restrictions", () => {
         );
 
         expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorSkipped");
-        expect(engine.getEscapes(hero.id)).toEqual({ options: [], assistAllowed: false, "reason": "actorSkipped" });
-        expect(engine.stanceAvailable(hero.id))
+        expect(actionView(engine, hero.id).escapes).toEqual([
+            expect.objectContaining({ available: false, reason: "actorSkipped" }),
+        ]);
+        expect(actionView(engine, hero.id).stance)
             .toEqual({ available: false, reason: "actorSkipped" });
         expect(engine.executeAction({
             type: "escape",
@@ -89,8 +92,10 @@ describe("actor-level action restrictions", () => {
         );
 
         expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorIncapacitated");
-        expect(engine.getEscapes(hero.id)).toEqual({ options: [], assistAllowed: false, "reason": "actorIncapacitated" });
-        expect(engine.stanceAvailable(hero.id))
+        expect(actionView(engine, hero.id).escapes).toEqual([
+            expect.objectContaining({ available: false, reason: "actorIncapacitated" }),
+        ]);
+        expect(actionView(engine, hero.id).stance)
             .toEqual({ available: false, reason: "actorIncapacitated" });
         expect(engine.executeAction({
             type: "escape",
@@ -111,12 +116,12 @@ describe("actor-level action restrictions", () => {
             thresholds.easy,
         );
 
-        expect(engine.getMoves(hero.id).find((action) => action.move.id === mouthMove.id))
+        expect(actionView(engine, hero.id).moves.find((action) => action.move.id === mouthMove.id))
             .toMatchObject({ available: true });
-        expect(engine.getEscapes(hero.id)?.options).toContainEqual(
+        expect(actionView(engine, hero.id).escapes).toContainEqual(
             expect.objectContaining({ target: hero.id, binding: source.id }),
         );
-        expect(engine.stanceAvailable(hero.id))
+        expect(actionView(engine, hero.id).stance)
             .toEqual({ available: false, reason: "actorImmobilized" });
         expect(engine.executeAction({ type: "stance", actor: hero.id }))
             .toEqual({ success: false, reason: "actorImmobilized" });
@@ -133,9 +138,9 @@ describe("move and escape restrictions", () => {
         (value, armsBlocked, boundValue) => {
             const { engine, hero, foeId, armsMove, mouthMove } =
                 setupBoundEngine(latexArms, value);
-            const actions = engine.getMoves(hero.id);
+            const actions = actionView(engine, hero.id).moves;
 
-            expect(engine.getGameState().characters[0].bindings
+            expect(engine.getGameView().characters[0].bindings
                 .find((binding) => binding.id === latexArms.id)?.status).toContainEqual({
                     id: bound.id,
                     value: boundValue,
@@ -200,7 +205,18 @@ describe("move and escape restrictions", () => {
             thresholds.easy,
         );
 
-        expect(engine.getEscapes(helper.id)).toEqual({ options: [], assistAllowed: false, "reason": "escapeUnavailable" });
+        expect(actionView(engine, helper.id).escapes).toEqual([
+            expect.objectContaining({
+                available: false,
+                reason: "escapeUnavailable",
+                target: helper.id,
+            }),
+            expect.objectContaining({
+                available: false,
+                reason: "escapeUnavailable",
+                target: target.id,
+            }),
+        ]);
         expect(engine.executeAction({
             type: "escape",
             actor: helper.id,
@@ -220,11 +236,20 @@ describe("move and escape restrictions", () => {
             latexArms,
             thresholds.extreme,
         );
-        const escapes = engine.getEscapes(helper.id);
+        const escapes = actionView(engine, helper.id).escapes;
 
-        expect(escapes?.assistAllowed).toBe(false);
-        expect(escapes?.options).toEqual([
-            expect.objectContaining({ target: helper.id, binding: latexArms.id }),
+        expect(escapes).toEqual([
+            expect.objectContaining({
+                available: true,
+                target: helper.id,
+                binding: latexArms.id,
+            }),
+            expect.objectContaining({
+                available: false,
+                reason: "assistUnavailable",
+                target: target.id,
+                binding: targetBinding.id,
+            }),
         ]);
         expect(engine.executeAction({
             type: "escape",

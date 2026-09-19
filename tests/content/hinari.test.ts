@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { actionView } from "../helpers/gameView";
 import { hinari } from "../../src/content/characters/hinari";
 import { latexLegs } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
@@ -89,11 +90,11 @@ function hinariData(state: iGameState, subspace: number, binding = 0): iEffect[]
 }
 
 function action(engine: GameEngine, id: string): ActionInfo | undefined {
-    return engine.getMoves(hinari.id).find(({ move }) => move.id === id);
+    return actionView(engine, hinari.id).moves.find(({ move }) => move.id === id);
 }
 
 function moveIds(engine: GameEngine): string[] {
-    return engine.getMoves(hinari.id).map(({ move }) => move.id);
+    return actionView(engine, hinari.id).moves.map(({ move }) => move.id);
 }
 
 function moveEvent(result: ActionSuccess) {
@@ -150,7 +151,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
         expect(damage).toHaveLength(rolls.filter(({ result: band }) => band !== "miss").length);
         expect(damage.length).toBeGreaterThan(1);
         expect(new Set(damage.map(({ amount }) => amount)).size).toBeGreaterThan(1);
-        expect(engine.getGameState().enemies[0].currHp).toBe(
+        expect(engine.getGameView().enemies[0].currHp).toBe(
             2_000 - damage.reduce((total, { amount }) => total + amount, 0),
         );
     });
@@ -281,7 +282,7 @@ describe("Hinari's Spatial Movement", () => {
                 statuses: [{ id: immobilized.id, value: 1 }],
             })],
         });
-        expect(engine.stanceAvailable(hinari.id))
+        expect(actionView(engine, hinari.id).stance)
             .toEqual({ available: false, reason: "actorImmobilized" });
         expect(engine.executeAction({ type: "stance", actor: hinari.id }))
             .toEqual({ success: false, reason: "actorImmobilized" });
@@ -683,7 +684,7 @@ describe("Hinari's Release", () => {
             type: "enemyDamaged",
             target: "foe1",
         }));
-        expect(engine.getGameState().enemies[0].currHp).toBeLessThan(2_000);
+        expect(engine.getGameView().enemies[0].currHp).toBeLessThan(2_000);
         expect(characterState(engine, hinari.id).data.subspace).toBe(35);
     });
 

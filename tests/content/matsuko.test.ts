@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { actionView } from "../helpers/gameView";
 import { matsuko } from "../../src/content/characters/matsuko";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { s } from "../../src/engine/protected/status";
@@ -55,13 +56,13 @@ function loadMatsukoEncounter(options: {
 }
 
 function action(engine: GameEngine, id: string): ActionInfo {
-    const result = engine.getMoves(matsuko.id).find(({ move }) => move.id === id);
+    const result = actionView(engine, matsuko.id).moves.find(({ move }) => move.id === id);
     if (!result) throw new Error(`Expected Matsuko move ${id}`);
     return result;
 }
 
 function expectMoveSet(engine: GameEngine, expected: string[]): void {
-    const actual = engine.getMoves(matsuko.id).map(({ move }) => move.id);
+    const actual = actionView(engine, matsuko.id).moves.map(({ move }) => move.id);
     expect(actual).toHaveLength(expected.length);
     expect(new Set(actual)).toEqual(new Set(expected));
 }
@@ -272,7 +273,7 @@ describe("Matsuko's dynamic offensive kit", () => {
             "stop",
             "attackMe",
         ]);
-        expect(engine.getMoves(matsuko.id).some(({ move }) => move.id === normalMove)).toBe(false);
+        expect(actionView(engine, matsuko.id).moves.some(({ move }) => move.id === normalMove)).toBe(false);
         expect(targetAccuracy(engine, matsuko.id, fairyMove, "foe1")).toEqual({
             miss: 0,
             graze: 5,
@@ -524,7 +525,7 @@ describe("Matsuko's Compulsion moves", () => {
         }));
         const engine = loadMatsukoEncounter({ enemies: [enemy] });
 
-        expect(engine.getGameState().enemies[0].intentions.map(({ move }) => move))
+        expect(engine.getGameView().enemies[0].intentions.map(({ move }) => move))
             .toEqual([first.id, second.id]);
         expect(action(engine, "stop")).toMatchObject({
             available: true,
@@ -539,7 +540,7 @@ describe("Matsuko's Compulsion moves", () => {
         });
 
         expect(result.events).toContainEqual({ type: "intentionCancelled", target: "caster1" });
-        expect(engine.getGameState().enemies[0].intentions).toEqual([]);
+        expect(engine.getGameView().enemies[0].intentions).toEqual([]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
         expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 3 });
         expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
@@ -576,7 +577,7 @@ describe("Matsuko's Compulsion moves", () => {
         }));
         const engine = loadMatsukoEncounter({ enemies: [boss], seed: 4 });
 
-        expect(engine.getGameState().enemies[0].intentions.map(
+        expect(engine.getGameView().enemies[0].intentions.map(
             ({ targets }) => targets[0]?.band,
         )).toEqual(["hit", "hit"]);
 
@@ -588,8 +589,8 @@ describe("Matsuko's Compulsion moves", () => {
         });
 
         expect(result.events).toContainEqual({ type: "intentionWeakened", target: "boss1" });
-        expect(engine.getGameState().enemies[0].intentions).toHaveLength(2);
-        expect(engine.getGameState().enemies[0].intentions.map(
+        expect(engine.getGameView().enemies[0].intentions).toHaveLength(2);
+        expect(engine.getGameView().enemies[0].intentions.map(
             ({ targets }) => targets[0]?.band,
         )).toEqual(["graze", "graze"]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
@@ -647,7 +648,7 @@ describe("Matsuko's Compulsion moves", () => {
             allies: [ally],
         });
         const intentionTargets = () => Object.fromEntries(
-            engine.getGameState().enemies.map((enemy) => [
+            engine.getGameView().enemies.map((enemy) => [
                 enemy.id,
                 enemy.intentions[0]?.targets.map(({ target }) => target) ?? [],
             ]),

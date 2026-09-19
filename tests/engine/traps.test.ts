@@ -68,17 +68,17 @@ describe("generic traps through GameEngine", () => {
             { definition: second, amount: 34 },
         ]);
 
-        expect(engine.getGameState().traps).toEqual([
+        expect(engine.getGameView().traps).toEqual([
             { id: first.id, amount: 12 },
             { id: second.id, amount: 34 },
         ]);
-        expect(engine.getGameState().encounter).toEqual({
+        expect(engine.getGameView().encounter).toEqual({
             id: "trap-test",
             enemies: [],
             bindings: [],
             traps: [first.id, second.id],
         });
-        expect(engine.getGameState().traps[0]).not.toHaveProperty("definition");
+        expect(engine.getGameView().traps[0]).not.toHaveProperty("definition");
     });
 
     it("normalizes generated amounts, caps additions, and clamps removals at zero", () => {
@@ -110,7 +110,7 @@ describe("generic traps through GameEngine", () => {
         const added = engine.executeAction(attack("hero", add.id));
         expect(added).toMatchObject({
             success: true,
-            state: { traps: [{ id: trap.id, amount: 2 }] },
+            view: { traps: [{ id: trap.id, amount: 2 }] },
         });
         if (!added.success) throw new Error("Expected add action to succeed");
         expect(added.events).toContainEqual({
@@ -120,7 +120,7 @@ describe("generic traps through GameEngine", () => {
         const filled = engine.executeAction(attack("hero", fill.id));
         expect(filled).toMatchObject({
             success: true,
-            state: { traps: [{ id: trap.id, amount: 100 }] },
+            view: { traps: [{ id: trap.id, amount: 100 }] },
         });
         if (!filled.success) throw new Error("Expected fill action to succeed");
         expect(filled.events).toContainEqual({
@@ -130,7 +130,7 @@ describe("generic traps through GameEngine", () => {
         const removed = engine.executeAction(attack("hero", remove.id));
         expect(removed).toMatchObject({
             success: true,
-            state: { traps: [{ id: trap.id, amount: 0 }] },
+            view: { traps: [{ id: trap.id, amount: 0 }] },
         });
         if (!removed.success) throw new Error("Expected remove action to succeed");
         expect(removed.events.some((event) => event.type === "trapRemoved")).toBe(false);
@@ -172,7 +172,7 @@ describe("generic traps through GameEngine", () => {
         expect(engine.executeAction({ type: "stance", actor: "hero" }).success).toBe(true);
 
         const result = engine.executeAction(attack());
-        expect(result).toMatchObject({ success: true, state: { traps: [{ amount: 100 }] } });
+        expect(result).toMatchObject({ success: true, view: { traps: [{ amount: 100 }] } });
         if (!result.success) throw new Error("Expected action success");
         expect(result.events.map(({ type }) => type)).toEqual(["moveUsed"]);
     });
@@ -186,11 +186,11 @@ describe("generic traps through GameEngine", () => {
         const build = () => makeTrapEngine([{ definition: trap, amount: 100 }], [rolledMove], 12345);
         const challenged = build();
         const control = build();
-        const before = challenged.getGameState();
+        const before = challenged.getGameView();
 
         expect(challenged.executeAction(attack("hero", "missing")))
             .toEqual({ success: false, reason: "invalidMove" });
-        expect(challenged.getGameState()).toEqual(before);
+        expect(challenged.getGameView()).toEqual(before);
         expect(challenged.executeAction(attack("hero", rolledMove.id)))
             .toEqual(control.executeAction(attack("hero", rolledMove.id)));
     });

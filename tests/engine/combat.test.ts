@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { actionView } from "../helpers/gameView";
 import { ko } from "../../src/content/characters/ko";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { GameEngine } from "../../src/engine/public/engine";
@@ -25,7 +26,7 @@ function expectMoveRejection(
     target: string,
     reason: FailureReason,
 ) {
-    expect(engine.getMoves(actor).find((action) => action.move.id === move)).toMatchObject({
+    expect(actionView(engine, actor).moves.find((action) => action.move.id === move)).toMatchObject({
         available: false,
         reason,
     });
@@ -112,8 +113,8 @@ describe("move validation and player actions", () => {
             success: false,
             reason,
         });
-        expect(engine.getGameState().characters[0].acted).toBe(false);
-        expect(engine.getGameState().turn.step).toBe(1);
+        expect(engine.getGameView().characters[0].acted).toBe(false);
+        expect(engine.getGameView().turn.step).toBe(1);
     });
 
     it("applies nonlethal damage without removing the enemy", () => {
@@ -154,10 +155,10 @@ describe("move validation and player actions", () => {
         });
         if (!result.success) throw new Error("Expected strike to succeed");
         expect(result.events).not.toContainEqual({ type: "enemyDefeated", target: foeId });
-        expect(engine.getGameState().enemies.map((enemy) => enemy.id)).toEqual([foeId]);
-        expect(engine.getGameState().enemies[0].currHp).toBe(foe.hp - damage);
-        expect(engine.getGameState().characters[0].acted).toBe(true);
-        expect(engine.getGameState().turn.step).toBe(2);
+        expect(engine.getGameView().enemies.map((enemy) => enemy.id)).toEqual([foeId]);
+        expect(engine.getGameView().enemies[0].currHp).toBe(foe.hp - damage);
+        expect(engine.getGameView().characters[0].acted).toBe(true);
+        expect(engine.getGameView().turn.step).toBe(2);
         expectMoveRejection(engine, hero.id, strike.id, foeId, "actorAlreadyActed");
     });
 
@@ -200,15 +201,15 @@ describe("move validation and player actions", () => {
                 { type: "enemyDamaged", target: foeId, amount: lethalDamage },
                 { type: "enemyDefeated", target: foeId },
             ],
-            state: { enemies: [] },
+            view: { enemies: [] },
         });
-        expect(engine.getGameState().enemies).toEqual([]);
+        expect(engine.getGameView().enemies).toEqual([]);
     });
 
     it("executes Ko's authored Telekinesis effect through the engine", () => {
         const engine = setupAuthoredCombat();
         const enemyId = `${skunkette.id}1`;
-        const move = engine.getMoves(ko.id).find(({ move }) => move.id === "telekinesis")?.move;
+        const move = actionView(engine, ko.id).moves.find(({ move }) => move.id === "telekinesis")?.move;
         if (!move) throw new Error("Expected Ko to have Telekinesis");
 
         const result = engine.executeAction({
@@ -231,7 +232,7 @@ describe("move validation and player actions", () => {
             throw new Error("Expected Telekinesis to deal damage");
         }
         expect(damageEvent.amount).toBeGreaterThan(0);
-        expect(engine.getGameState().enemies[0].currHp).toBe(
+        expect(engine.getGameView().enemies[0].currHp).toBe(
             skunkette.hp - damageEvent.amount,
         );
     });
@@ -252,7 +253,7 @@ describe("move validation and player actions", () => {
         }).success).toBe(true);
         expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
 
-        const action = engine.getMoves(ko.id).find(({ move }) => move.id === "fairyTelekinesis");
+        const action = actionView(engine, ko.id).moves.find(({ move }) => move.id === "fairyTelekinesis");
         if (!action) throw new Error("Expected empowered Ko to have Fairy Telekinesis");
         const { move } = action;
 
@@ -296,7 +297,7 @@ describe("move validation and player actions", () => {
             expect(damageEvent.amount).toBeGreaterThan(0);
             totalDamage += damageEvent.amount;
         }
-        expect(engine.getGameState().enemies[0].currHp).toBe(
+        expect(engine.getGameView().enemies[0].currHp).toBe(
             foe.hp - totalDamage,
         );
     });
@@ -314,7 +315,7 @@ describe("move validation and player actions", () => {
             buffs: [],
             data: {}
         });
-        const moves = engine.getMoves(ko.id).map(({ move, available }) => ({ move, available }));
+        const moves = actionView(engine, ko.id).moves.map(({ move, available }) => ({ move, available }));
         expect(moves).toEqual(definitions.map((definition) => ({
             move: {
                 id: definition.id,
@@ -373,7 +374,8 @@ describe("move validation and player actions", () => {
     it.each(["missing", `${skunkette.id}1`])(
         "returns no player actions for non-character id %s",
         (id) => {
-            expect(setupAuthoredCombat().getMoves(id)).toEqual([]);
+            expect(setupAuthoredCombat().getGameView().actions
+                .find((action) => action.id === id)).toBeUndefined();
         },
     );
 

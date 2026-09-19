@@ -11,6 +11,9 @@ import type {
     MoveType,
     PlayerAction,
 } from "../../src/engine/public/types";
+import { actionView } from "./gameView";
+
+export { actionView } from "./gameView";
 
 export function targetAccuracy(
     engine: GameEngine,
@@ -18,7 +21,7 @@ export function targetAccuracy(
     move: string,
     target: string | null,
 ): AccuracyProfile | null {
-    const action = engine.getMoves(actor).find((candidate) => candidate.move.id === move);
+    const action = actionView(engine, actor).moves.find((candidate) => candidate.move.id === move);
     const info = action?.targets.find((candidate) => candidate.target === target);
     if (!info || !info.valid) throw new Error(`Expected ${String(target)} to be a valid target`);
     return info.accuracy;
@@ -106,13 +109,13 @@ export function execute(engine: GameEngine, action: PlayerAction): ActionSuccess
 }
 
 export function characterState(engine: GameEngine, id = "hero"): Character {
-    const character = engine.getGameState().characters.find((entry) => entry.id === id);
+    const character = engine.getGameView().characters.find((entry) => entry.id === id);
     if (!character) throw new Error(`Expected character ${id}`);
     return character;
 }
 
 export function enemyState(engine: GameEngine, id = "foe1"): Enemy {
-    const enemy = engine.getGameState().enemies.find((entry) => entry.id === id);
+    const enemy = engine.getGameView().enemies.find((entry) => entry.id === id);
     if (!enemy) throw new Error(`Expected enemy ${id}`);
     return enemy;
 }
@@ -132,7 +135,7 @@ export function buffState(
     buffId: string,
     entityId = "hero",
 ): Buff | undefined {
-    const state = engine.getGameState();
+    const state = engine.getGameView();
     const entity = state.characters.find(({ id }) => id === entityId)
         ?? state.enemies.find(({ id }) => id === entityId);
     if (!entity) throw new Error(`Expected entity ${entityId}`);

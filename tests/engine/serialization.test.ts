@@ -3,8 +3,9 @@ import { ko } from "../../src/content/characters/ko";
 import { serializeGameState } from "../../src/engine/private/serialize";
 import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
+import { GameStatus } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
-import type { iBuff, iGameState } from "../../src/engine/protected/types";
+import type { iBuff, iEntity, iGameState } from "../../src/engine/protected/types";
 import { GameEngine } from "../../src/engine/public/engine";
 import {
     makeBindingDef,
@@ -46,21 +47,21 @@ describe("character catalogue", () => {
             id: catalogued.id,
             success: true,
         }]);
-        expect(engine.getGameState().characters).toEqual([
+        expect(engine.getGameView().characters).toEqual([
             expect.objectContaining({ id: catalogued.id, data: { marker: 7 } }),
         ]);
     });
 
     it("rejects an unknown id without mutating character state", () => {
         const engine = new GameEngine([], testCharacterList, 1);
-        const before = engine.getGameState().characters;
+        const before = engine.getGameView().characters;
 
         expect(engine.loadCharacter("missing-character")).toEqual([{
             type: "characterLoad",
             id: "missing-character",
             success: false,
         }]);
-        expect(engine.getGameState().characters).toEqual(before);
+        expect(engine.getGameView().characters).toEqual(before);
     });
 
     it("cannot load a repository definition that was not injected", () => {
@@ -71,20 +72,21 @@ describe("character catalogue", () => {
             id: ko.id,
             success: false,
         }]);
-        expect(engine.getGameState().characters).toEqual([]);
+        expect(engine.getGameView().characters).toEqual([]);
     });
 });
 
 describe("state serialization and combatant loading", () => {
     it("starts with an empty public player phase", () => {
-        const state = new GameEngine([], [], 1).getGameState();
+        const state = new GameEngine([], [], 1).getGameView();
 
         expect(state).toEqual({
             turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
             characters: [],
             enemies: [],
             traps: [],
-            encounter: null
+            encounter: null,
+            actions: [],
         });
         expect(state).not.toHaveProperty("nextEntityId");
     });
@@ -107,7 +109,7 @@ describe("state serialization and combatant loading", () => {
         const engine = new GameEngine([], [hero], 1);
         engine.loadCharacter(hero.id);
 
-        expect(engine.getGameState().turn.outcome).toBe("victory");
+        expect(engine.getGameView().turn.outcome).toBe("victory");
     });
 
     it("reports defeat when every player is incapacitated", () => {
@@ -134,7 +136,7 @@ describe("state serialization and combatant loading", () => {
         engine.loadCharacter(ally.id);
         engine.loadEncounter(encounter.id);
 
-        expect(engine.getGameState().turn.outcome).toBe("defeat");
+        expect(engine.getGameView().turn.outcome).toBe("defeat");
     });
 
     it("reports an ongoing battle while any player remains capable", () => {
@@ -161,7 +163,7 @@ describe("state serialization and combatant loading", () => {
         engine.loadCharacter(ally.id);
         engine.loadEncounter(encounter.id);
 
-        expect(engine.getGameState().turn.outcome).toBe("ongoing");
+        expect(engine.getGameView().turn.outcome).toBe("ongoing");
     });
 
     it("loads definitions into fresh combatant state through an encounter", () => {
@@ -176,7 +178,7 @@ describe("state serialization and combatant loading", () => {
             { type: "enemySpawned", target: "attacker1" },
             { type: "encounterLoad", id: multiEnemyEncounter.id, success: true, bindings: [] },
         ]);
-        expect(engine.getGameState()).toMatchObject({
+        expect(engine.getGameView()).toMatchObject({
             turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
             characters: [{
                 id: hero.id,
@@ -192,7 +194,7 @@ describe("state serialization and combatant loading", () => {
                 { id: "attacker1", buffs: [] },
             ],
         });
-        expect(engine.getGameState()).not.toHaveProperty("nextEntityId");
+        expect(engine.getGameView()).not.toHaveProperty("nextEntityId");
     });
 
     it("returns deeply isolated state from getters and successful actions", () => {
@@ -229,9 +231,9 @@ describe("state serialization and combatant loading", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected prepare to succeed");
 
-        const expected = engine.getGameState();
+        const expected = engine.getGameView();
         expect(expected.characters[0].modifiers).toEqual({ hitarms: -1 });
-        const snapshots = [result.view, engine.getGameState()];
+        const snapshots = [result.view, engine.getGameView()];
 
         for (const snapshot of snapshots) {
             snapshot.turn.round = 999;
@@ -261,7 +263,7 @@ describe("state serialization and combatant loading", () => {
             }
         }
 
-        expect(engine.getGameState()).toEqual(expected);
+        expect(engine.getGameView()).toEqual(expected);
     });
 
     it("serializes runtime buffs and nested statuses into isolated public objects", () => {
@@ -319,7 +321,11 @@ describe("state serialization and combatant loading", () => {
             encounter: null
         };
 
-        const serialized = serializeGameState(internalState);
+        const statuses = new Map<iEntity, GameStatus>([
+            [character, new GameStatus(character)],
+            [enemy, new GameStatus(enemy)],
+        ]);
+        const serialized = serializeGameState(internalState, statuses);
 
         expect(serialized.characters[0].modifiers).toEqual({
             hit: -3,

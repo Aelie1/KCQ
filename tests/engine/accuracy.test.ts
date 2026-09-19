@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { actionView } from "../helpers/gameView";
 import { evaluateResult, isValidTarget } from "../../src/engine/private/combat";
 import { effectivenessRange } from "../../src/engine/private/constants";
 import type { EncounterDef, MoveDef, StatusDef } from "../../src/engine/protected/definitions";
@@ -100,7 +101,7 @@ describe("accuracy", () => {
             enemies: [actor],
             traps: [],
             encounter: null
-        }, actor, new GameStatus(actor), target, move);
+        }, actor, new GameStatus(actor), target, new GameStatus(target), move);
         if (!info.valid || !info.accuracy) throw new Error("Expected enemy accuracy profile");
         return info.accuracy;
     }
@@ -150,7 +151,7 @@ describe("accuracy", () => {
         const engine = new GameEngine([encounter], [character], 1);
         engine.loadCharacter(character.id);
         engine.loadEncounter(encounter.id);
-        const info = engine.getMoves(actor.id)
+        const info = actionView(engine, actor.id).moves
             .find(({ move: candidate }) => candidate.id === move.id)
             ?.targets.find(({ target }) => target !== null);
         if (!info || !info.valid || !info.accuracy) {
@@ -505,7 +506,7 @@ describe("accuracy", () => {
             makeEnemy(lowDefense, `${lowDefense.id}1`),
             makeEnemy(highDefense, `${highDefense.id}1`),
         ];
-        const previews = engine.getMoves(hero.id)
+        const previews = actionView(engine, hero.id).moves
             .find(({ move: candidate }) => candidate.id === move.id)
             ?.targets ?? [];
         const expected = referenceTargets.map((target) => {

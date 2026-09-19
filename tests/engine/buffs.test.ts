@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { actionView } from "../helpers/gameView";
 import type { MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import type { iBuff, iEnemy, iEntity } from "../../src/engine/protected/types";
 import {
@@ -323,7 +324,7 @@ describe("buff status integration through GameEngine", () => {
         });
         expect(buffState(engine, "pending-kit")).toBeUndefined();
         expect(characterState(engine).modifiers).toEqual({});
-        expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(false);
+        expect(actionView(engine, "hero").moves.some(({ move }) => move.id === granted.id)).toBe(false);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({
             miss: 20,
             hit: 80,
@@ -336,7 +337,7 @@ describe("buff status integration through GameEngine", () => {
         });
         expect(buffState(engine, "pending-kit")).not.toHaveProperty("active");
         expect(characterState(engine).modifiers).toEqual({ hit: -3, defense: -3 });
-        expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(true);
+        expect(actionView(engine, "hero").moves.some(({ move }) => move.id === granted.id)).toBe(true);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({
             miss: 50,
             hit: 50,
@@ -351,7 +352,7 @@ describe("buff status integration through GameEngine", () => {
         execute(engine, { type: "endTurn" });
         expect(buffState(engine, "pending-kit")).toBeUndefined();
         expect(characterState(engine).modifiers).toEqual({});
-        expect(engine.getMoves("hero").some(({ move }) => move.id === granted.id)).toBe(false);
+        expect(actionView(engine, "hero").moves.some(({ move }) => move.id === granted.id)).toBe(false);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({
             miss: 20,
             hit: 80,

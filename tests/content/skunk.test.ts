@@ -97,7 +97,7 @@ function endTurn(engine: GameEngine) {
 describe("normal Latex Skunk", () => {
     it("loads its authored identity, stats, and a usable intention", () => {
         const engine = loadSkunk({ seed: 1 });
-        const enemy = engine.getGameState().enemies[0];
+        const enemy = engine.getGameView().enemies[0];
 
         expect(skunk.id).toBe("skunk");
         expect(enemy).toMatchObject({
@@ -112,7 +112,7 @@ describe("normal Latex Skunk", () => {
 
     it("creates puddles with a no-target move using its accuracy effectiveness", () => {
         const engine = loadSkunk({ seed: 16, trapAmount: 0 });
-        const preview = engine.getGameState().enemies[0].intentions[0];
+        const preview = engine.getGameView().enemies[0].intentions[0];
         const previewEffect = preview?.effects.find((effect) => effect.type === "trap");
 
         expect(preview).toMatchObject({ move: "latexPuddle", targets: [] });
@@ -134,7 +134,7 @@ describe("normal Latex Skunk", () => {
         "applies Spray effectiveness for a %s seed (%s)",
         (seed, band, minAmount, maxAmount) => {
             const engine = loadSkunk({ seed, trapAmount: 100 });
-            const preview = engine.getGameState().enemies[0].intentions[0];
+            const preview = engine.getGameView().enemies[0].intentions[0];
             expect(preview?.move).toBe("latexSpray");
             expect(preview?.targets[0]?.band).toBe(band);
 
@@ -162,7 +162,7 @@ describe("normal Latex Skunk", () => {
                 second: [{ definition: latexArms, value: 10, peak: 50 }],
             },
         });
-        const intention = engine.getGameState().enemies[0].intentions[0];
+        const intention = engine.getGameView().enemies[0].intentions[0];
 
         expect(intention).toMatchObject({
             move: "latexRegeneration",
@@ -193,7 +193,7 @@ describe("normal Latex Skunk", () => {
                 ],
             },
         });
-        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
             move: "latexRegeneration",
             targets: [{ target: "hero", band: "hit" }],
         }]);
@@ -216,7 +216,7 @@ describe("normal Latex Skunk", () => {
                 ],
             },
         });
-        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
             move: "latexRegeneration",
             targets: [{ target: "hero", band: "crit" }],
         }]);
@@ -259,7 +259,7 @@ describe("normal Latex Skunk", () => {
 
     it("does not regenerate when no Latex has a recoverable peak", () => {
         const engine = loadSkunk({ seed: 1 });
-        expect(engine.getGameState().enemies[0].intentions[0]?.move).toBe("latexSpray");
+        expect(engine.getGameView().enemies[0].intentions[0]?.move).toBe("latexSpray");
     });
 
     it("leaves recoverable Latex unchanged when Regeneration misses", () => {
@@ -267,7 +267,7 @@ describe("normal Latex Skunk", () => {
             seed: 16,
             bindings: { hero: [{ definition: latexHead, value: 20, peak: 50 }] },
         });
-        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
             move: "latexRegeneration",
             targets: [{ target: "hero", band: "miss", effects: [] }],
         }]);
@@ -290,7 +290,7 @@ describe("normal Latex Skunk", () => {
             },
         });
 
-        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
             move: "latexExplosion",
             targets: [{ target: "moreBound" }],
         }]);
@@ -302,7 +302,7 @@ describe("normal Latex Skunk", () => {
             hp: 60,
             characterIds: ["first", "second"],
         });
-        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
             move: "latexExplosion",
             targets: [{ target: "first" }],
         }]);
@@ -318,7 +318,7 @@ describe("normal Latex Skunk", () => {
                 trapAmount: withTrap ? 0 : null,
                 bindings: { hero: [{ definition: rope, value: 1 }] },
             });
-            expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
+            expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
                 move: "latexExplosion",
                 targets: [{ target: "hero", band: "miss", effects: [] }],
             }]);
@@ -343,7 +343,7 @@ describe("normal Latex Skunk", () => {
             hp: 60,
             bindings: { hero: [{ definition: rope, value: 1 }] },
         });
-        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
             move: "latexExplosion",
             targets: [{ target: "hero", band: "hit" }],
         }]);
@@ -362,7 +362,7 @@ describe("normal Latex Skunk", () => {
             hp: 60,
             bindings: { hero: [{ definition: rope, value: 1 }] },
         });
-        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
             move: "latexExplosion",
             targets: [{ target: "hero", band: "crit" }],
         }]);

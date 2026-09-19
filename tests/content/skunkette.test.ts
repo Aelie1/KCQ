@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { actionView } from "../helpers/gameView";
 import {
     latexArms,
     latexCollar,
@@ -218,7 +219,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
         expect(buffState(engine, POUNCE_ID, "victim")).toBeUndefined();
-        expect(engine.getGameState().enemies).toEqual([]);
+        expect(engine.getGameView().enemies).toEqual([]);
     });
 
     it("keeps Pounce on a Throw Off miss and removes both sides on a hit", () => {
@@ -305,12 +306,12 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(buffState(engine, SKUNKED_ID, LINKED_SKUNKETTE_ID)).toMatchObject({
             linkedEntity: SKUNKED_CHARACTER_ID,
         });
-        expect(engine.getAvailability()).toContainEqual({
+        expect(actionView(engine, SKUNKED_CHARACTER_ID)).toMatchObject({
             id: SKUNKED_CHARACTER_ID,
             available: false,
             reason: "actorIncapacitated",
         });
-        expect(engine.getMoves(SKUNKED_CHARACTER_ID)).toContainEqual({
+        expect(actionView(engine, SKUNKED_CHARACTER_ID).moves).toContainEqual({
             move: {
                 id: victimMove.id,
                 targetSide: victimMove.targetSide,
@@ -349,7 +350,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(LATEX_BODY_BINDINGS.map((binding) =>
             bindingState(engine, binding.id, SKUNKED_CHARACTER_ID)?.value,
         )).toEqual([80, 80, 80, 80]);
-        expect(engine.getAvailability()).toContainEqual({
+        expect(actionView(engine, SKUNKED_CHARACTER_ID)).toMatchObject({
             id: SKUNKED_CHARACTER_ID,
             available: false,
             reason: "actorIncapacitated",
@@ -386,11 +387,11 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(LATEX_BODY_BINDINGS.map((binding) =>
             bindingState(engine, binding.id, SKUNKED_CHARACTER_ID)?.value,
         )).toEqual([40, 40, 40, 40]);
-        expect(engine.getAvailability()).toContainEqual({
+        expect(actionView(engine, SKUNKED_CHARACTER_ID)).toMatchObject({
             id: SKUNKED_CHARACTER_ID,
             available: true,
         });
-        expect(engine.getMoves(SKUNKED_CHARACTER_ID)).toContainEqual({
+        expect(actionView(engine, SKUNKED_CHARACTER_ID).moves).toContainEqual({
             move: {
                 id: victimMove.id,
                 targetSide: victimMove.targetSide,
@@ -435,7 +436,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(LATEX_BODY_BINDINGS.map((binding) =>
             bindingState(engine, binding.id, SKUNKED_CHARACTER_ID)?.value,
         )).toEqual([80, 80, 80, 80]);
-        expect(engine.getAvailability()).toContainEqual({
+        expect(actionView(engine, SKUNKED_CHARACTER_ID)).toMatchObject({
             id: SKUNKED_CHARACTER_ID,
             available: false,
             reason: "actorIncapacitated",
@@ -477,7 +478,7 @@ describe("Skunkette behavior through GameEngine", () => {
         // use priority #3 because there is no Pounce relationship and its cooldown remains active.
         execute(engine, { type: "endTurn" });
 
-        const state = engine.getGameState();
+        const state = engine.getGameView();
         const intention = enemyState(engine, "skunkette1").intentions[0];
         const bindingEffect = intention?.targets[0]?.effects.find(
             (effect) => effect.type === "binding",
@@ -682,6 +683,6 @@ describe("Skunkette behavior through GameEngine", () => {
             duration: 1,
         });
         expect(buffState(engine, SKUNKED_ID)).toBeUndefined();
-        expect(engine.getGameState().enemies.map(({ id }) => id)).toEqual(["skunkette1"]);
+        expect(engine.getGameView().enemies.map(({ id }) => id)).toEqual(["skunkette1"]);
     });
 });

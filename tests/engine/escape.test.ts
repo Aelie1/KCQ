@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { actionView } from "../helpers/gameView";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { BindingDef, StatusDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
@@ -50,7 +51,7 @@ function setupEscapeScenario(
 }
 
 function escapeEffects(engine: GameEngine, actor: string, target: string, binding: string): Effect[] {
-    const option = engine.getEscapes(actor)?.options.find(
+    const option = actionView(engine, actor).escapes.find(
         (candidate) => candidate.target === target && candidate.binding === binding,
     );
     if (!option) throw new Error(`Expected ${actor} to have an escape for ${target}/${binding}`);
@@ -142,7 +143,7 @@ describe("escape progress", () => {
             ["hero"],
             [{ target: "hero", binding: restraint, amount: thresholds.hard }],
         );
-        const before = engine.getGameState().characters[0].bindings[0].value;
+        const before = engine.getGameView().characters[0].bindings[0].value;
         const amount = escapeAmount(engine, "hero", "hero", restraint.id);
 
         expect(escapeEffects(engine, "hero", "hero", restraint.id)).toEqual([{
@@ -168,10 +169,17 @@ describe("escape progress", () => {
                 amount: -amount,
             }],
         });
-        expect(engine.getGameState().characters[0].bindings[0].value).toBe(before - amount);
-        expect(engine.getGameState().characters[0].acted).toBe(true);
-        expect(engine.getGameState().turn.step).toBe(2);
-        expect(engine.getEscapes("hero")).toEqual({ options: [], assistAllowed: false, "reason": "actorAlreadyActed" });
+        expect(engine.getGameView().characters[0].bindings[0].value).toBe(before - amount);
+        expect(engine.getGameView().characters[0].acted).toBe(true);
+        expect(engine.getGameView().turn.step).toBe(2);
+        expect(actionView(engine, "hero").escapes).toEqual([
+            expect.objectContaining({
+                available: false,
+                reason: "actorAlreadyActed",
+                target: "hero",
+                binding: restraint.id,
+            }),
+        ]);
         expect(engine.executeAction({
             type: "escape",
             actor: "hero",
@@ -226,7 +234,7 @@ describe("escape progress", () => {
                 },
             ],
         });
-        expect(engine.getGameState().characters[0].bindings).toEqual([
+        expect(engine.getGameView().characters[0].bindings).toEqual([
             expect.objectContaining({ id: "latexArms", value: 12 }),
             expect.objectContaining({ id: "latexHead", value: 5 }),
         ]);
@@ -244,7 +252,8 @@ describe("escape progress", () => {
         expect(engine.executeAction(action)).toEqual({ success: false, reason });
     });
 
-    it("returns null escape options for an invalid actor", () => {
-        expect(new GameEngine([], [], 1).getEscapes("missing")).toBeNull();
+    it("omits action information for an invalid actor", () => {
+        expect(new GameEngine([], [], 1).getGameView().actions
+            .find(({ id }) => id === "missing")).toBeUndefined();
     });
 });
