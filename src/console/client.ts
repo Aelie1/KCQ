@@ -14,10 +14,7 @@ import type {
 import { formatEffects, formatEvents } from "./format";
 import {
     formatAccuracyRow,
-    MIN_TERMINAL_HEIGHT,
-    MIN_TERMINAL_WIDTH,
     renderScreen,
-    renderTooSmall,
 } from "./render";
 
 interface ConsoleStreams {
@@ -37,13 +34,6 @@ export async function runConsoleClient(
     initialOutput: GameEvent[] | string[] = [],
     streams: ConsoleStreams = { input: process.stdin, output: process.stdout },
 ): Promise<void> {
-    const terminalWidth = streams.output.columns ?? 180;
-    const terminalHeight = Math.max(1, (streams.output.rows ?? 50) - 1);
-    if (terminalWidth < MIN_TERMINAL_WIDTH || terminalHeight < MIN_TERMINAL_HEIGHT) {
-        streams.output.write(`${renderTooSmall(terminalWidth, terminalHeight)}\n`);
-        return;
-    }
-
     const rl = createInterface({ input: streams.input, output: streams.output });
     const initialEvents = initialOutput.length > 0 && typeof initialOutput[0] !== "string"
         ? initialOutput as GameEvent[]

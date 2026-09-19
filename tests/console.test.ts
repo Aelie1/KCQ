@@ -386,8 +386,34 @@ describe("console formatting", () => {
         expect(rendered).toContain(
             "latexTorso  [#####+---+-----+----] 23/0  Medium    [Gagged 2]",
         );
+        const bindingLines = rendered.split("\n");
+        const firstBindingLine = bindingLines.findIndex((line) => line.includes("Bindings:"));
+        expect(bindingLines[firstBindingLine]).toContain("Bindings: latexLegs");
+        expect(bindingLines[firstBindingLine + 1].indexOf("latexArms"))
+            .toBe(bindingLines[firstBindingLine].indexOf("latexLegs"));
         expect(rendered).not.toContain("notInEncounter");
         expect(rendered).not.toContain("Status:");
+    });
+
+    it("shows Hinari's Subspace resource between action state and stance", () => {
+        const hinariState: GameState = {
+            ...state,
+            characters: [{
+                ...state.characters[0],
+                id: "hinari",
+                standing: false,
+                data: { subspace: 83 },
+            }],
+        };
+
+        const rendered = renderState(hinariState, [{ id: "hinari", available: true }]);
+        const withoutSubspace = renderState({
+            ...hinariState,
+            characters: [{ ...hinariState.characters[0], data: {} }],
+        }, [{ id: "hinari", available: true }]);
+
+        expect(rendered).toContain("hinari [Ready] [Subspace 83/100] [Moving]");
+        expect(withoutSubspace).toContain("hinari [Ready] [Subspace 0/100] [Moving]");
     });
 
     it("shows action state, stance, signed modifiers, and blocked body parts on headers", () => {
@@ -456,7 +482,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("incap [Incap] [Moving]");
     });
 
-    it("renders each character buff on its own line", () => {
+    it("renders short character buffs in two columns on the Buffs line", () => {
         const buffState: GameState = {
             ...state,
             characters: [{
@@ -465,6 +491,8 @@ describe("console formatting", () => {
                 buffs: [
                     { id: "firstBuff", duration: 2 },
                     { id: "secondBuff", modifiers: { defense: -1 } },
+                    { id: "thirdBuff", duration: 1 },
+                    { id: "fourthBuff", modifiers: { potency: 2 } },
                 ],
             }],
         };
@@ -472,8 +500,13 @@ describe("console formatting", () => {
 
         expect(rendered).toContain("First Buff (2 rounds)");
         expect(rendered).toContain("Second Buff (Def -1)");
-        expect(rendered.split("\n").some((line) => line.includes("First Buff") && line.includes("Second Buff")))
-            .toBe(false);
+        const buffLines = rendered.split("\n");
+        const firstRow = buffLines.find((line) => line.includes("First Buff"));
+        const secondRow = buffLines.find((line) => line.includes("Third Buff"));
+        expect(firstRow).toContain("Buffs: First Buff (2 rounds)");
+        expect(firstRow).toContain("Second Buff (Def -1)");
+        expect(secondRow).toContain("Fourth Buff (Potency +2)");
+        expect(secondRow?.indexOf("Third Buff")).toBe(firstRow?.indexOf("First Buff"));
     });
 
     it("wraps long buff lists without adding an aggregate status row", () => {
@@ -742,7 +775,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("     hero latexHead +5");
     });
 
-    it("exits immediately with dimensions when the terminal is too small", async () => {
+    it("stays alive while undersized and resumes normal rendering after resize", async () => {
         const engine = new GameEngine(encounterList, 8224);
         engine.loadCharacter(ko);
         engine.loadEncounter("plains_1");
@@ -753,10 +786,25 @@ describe("console formatting", () => {
             rendered += chunk.toString();
         });
 
-        await runConsoleClient(engine, "plains_1", [], { input, output });
+        let finished = false;
+        const client = runConsoleClient(engine, "plains_1", [], { input, output })
+            .finally(() => {
+                finished = true;
+            });
+        await new Promise((resolve) => setImmediate(resolve));
 
-        expect(rendered).toBe("Terminal too small: current 80x19; required 120x36.\n");
-        expect(rendered).not.toContain("Retry");
-        expect(rendered).not.toContain("Choice>");
+        expect(rendered).toContain("Terminal too small: current 80x19; required 120x36.");
+        expect(finished).toBe(false);
+
+        output.columns = 180;
+        output.rows = 50;
+        input.write("invalid\n");
+        await new Promise((resolve) => setImmediate(resolve));
+
+        expect(rendered).toContain("PARTY");
+        expect(rendered).toContain("Choose a character.");
+
+        input.write("3\n");
+        await client;
     });
 });

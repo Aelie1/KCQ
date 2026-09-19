@@ -15,6 +15,7 @@ export const MIN_TERMINAL_WIDTH = 120;
 export const MIN_TERMINAL_HEIGHT = 36;
 const BINDING_BAR_WIDTH = 20;
 const TRAP_BAR_WIDTH = 20;
+const BUFF_COLUMN_GAP = 4;
 
 export interface BindingThresholds {
     thresholds: {
@@ -121,6 +122,7 @@ function formatParty(
             character.id,
             [
                 `[${state}]`,
+                ...(character.id === "hinari" ? [formatSubspace(character)] : []),
                 `[${stance}]`,
                 ...(character.bonusEscapes > 0 ? [`[Escapes: +${character.bonusEscapes}]`] : []),
                 ...modifierTokens(character),
@@ -131,15 +133,16 @@ function formatParty(
         if (bindingIds.length === 0) {
             lines.push("  Bindings: none");
         } else {
-            lines.push("  Bindings:");
-            for (const bindingId of bindingIds) {
+            const prefix = "  Bindings: ";
+            for (const [index, bindingId] of bindingIds.entries()) {
                 const binding = character.bindings.find((candidate) => candidate.id === bindingId);
                 const value = binding?.value ?? 0;
                 const peak = binding?.data["peak"] ?? 0;
                 const level = binding ? titleCase(binding.level) : "---";
                 const statuses = binding ? formatBindingStatuses(binding.status) : "";
                 lines.push(
-                    `    ${bindingId.padEnd(bindingNameWidth)}  `
+                    `${index === 0 ? prefix : " ".repeat(prefix.length)}`
+                    + `${bindingId.padEnd(bindingNameWidth)}  `
                     + `${bindingBar(value, bindingThresholds)} ${value}/${peak}  ${level}`
                     + (statuses ? `    ${statuses}` : ""),
                 );
@@ -147,14 +150,48 @@ function formatParty(
         }
 
         if (character.buffs.length > 0) {
-            lines.push("  Buffs:");
-            for (const buff of character.buffs) {
-                lines.push(...wrapList("    ", formatBuff(buff), width));
-            }
+            lines.push(...formatCharacterBuffs(character.buffs.map(formatBuff), width));
         }
         if (index < characters.length - 1) lines.push("");
         return lines;
     });
+}
+
+function formatSubspace(character: Character): string {
+    const value = character.data["subspace"];
+    const subspace = Number.isFinite(value) ? value : 0;
+    return `[Subspace ${formatNumber(subspace)}/100]`;
+}
+
+function formatCharacterBuffs(buffs: string[], width: number): string[] {
+    const prefix = "  Buffs: ";
+    const continuation = " ".repeat(prefix.length);
+    const contentWidth = Math.max(1, width - prefix.length);
+    const columnWidth = Math.max(1, Math.floor((contentWidth - BUFF_COLUMN_GAP) / 2));
+    const lines: string[] = [];
+
+    const append = (content: string): void => {
+        lines.push(`${lines.length === 0 ? prefix : continuation}${content}`);
+    };
+
+    for (let index = 0; index < buffs.length;) {
+        const first = buffs[index];
+        const second = buffs[index + 1];
+        if (
+            second !== undefined
+            && first.length <= columnWidth
+            && second.length <= contentWidth - columnWidth - BUFF_COLUMN_GAP
+        ) {
+            append(`${first.padEnd(columnWidth)}${" ".repeat(BUFF_COLUMN_GAP)}${second}`);
+            index += 2;
+            continue;
+        }
+
+        for (const line of wrapList("", first, contentWidth)) append(line);
+        index += 1;
+    }
+
+    return lines;
 }
 
 function formatEnemies(enemies: Enemy[], width: number): string[] {
