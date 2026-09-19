@@ -10,7 +10,7 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
         case "buff":
             return `${target}${effect.buff} added`;
         case "enemy":
-            return `${target}${effect.target} spawned`;
+            return `${effect.target} spawned`;
         case "trap":
             return `${target}${effect.amount} ${effect.trap} created`;
         case "move":
