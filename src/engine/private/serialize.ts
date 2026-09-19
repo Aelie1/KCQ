@@ -60,6 +60,7 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 type: effect.type,
                 target: effect.target.id,
                 buff: effect.buff.id,
+                effects: effect.buff.modifiers,
                 operation: effect.operation
             }
         case "damage":

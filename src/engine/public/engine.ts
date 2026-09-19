@@ -520,7 +520,7 @@ export class GameEngine {
                 }
 
                 //If moving, check for traps
-                if (!actor.standing) {
+                if (!actor.standing && !ignoresTraps(actor)) {
                     for (const trap of this.state.traps) {
                         const roll = Math.max(0, this.accRng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {

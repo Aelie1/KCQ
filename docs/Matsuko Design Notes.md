@@ -265,7 +265,7 @@ Matsuko commands an ally to exceed their normal action economy.
 
 - The ally immediately performs one eligible action, even if they have already acted this round.
 - The extra action should feel approximately like creating one additional ordinary move's worth of tactical value.
-- After Obey!, the target gains **Servitude**.
+- **Servitude** is applied immediately when Obey resolves, before the refreshed action.
 - An ally under Servitude cannot be targeted by Obey! again.
 - Servitude duration and exact penalties remain TBD.
 

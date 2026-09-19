@@ -107,7 +107,7 @@ interface iBindingEffect extends Omit<BindingEffect, "target" | "binding"> {
     onResolve?: (effect: iBindingEffect) => iEffect[];
 }
 
-interface iBuffEffect extends Omit<BuffEffect, "target" | "buff"> {
+interface iBuffEffect extends Omit<BuffEffect, "target" | "buff" | "effects"> {
     target: iEntity;
     buff: iBuff;
     linked?: boolean;

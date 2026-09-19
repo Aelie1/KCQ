@@ -92,7 +92,7 @@ const store: MoveDef = {
                         source: actor,
                         target: target,
                         binding: highestBinding,
-                        amount: -Math.min(highest, STORE_REMOVE_AMOUNT)
+                        amount: -removeAmount
                     });
 
                     if (subspaceAmount) {

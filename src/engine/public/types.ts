@@ -107,6 +107,7 @@ export interface BuffEffect {
     type: "buff";
     target: EntityId;
     buff: BuffId;
+    effects?: ModifierSet;
     operation: "add" | "remove";
 }
 

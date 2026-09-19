@@ -451,7 +451,7 @@ describe("Queen Perfume", () => {
         expect(queenState(engine).cooldowns.skunkPerfume).toBe(4);
         for (const id of successful) {
             expect(engine.getGameState().characters.find((character) => character.id === id)?.buffs)
-                .toContainEqual(expect.objectContaining({ id: "skunkPerfume", duration: 4 }));
+                .toContainEqual(expect.objectContaining({ id: "defensePerfume", duration: 4 }));
         }
         for (const id of missed) {
             expect(engine.getGameState().characters.find((character) => character.id === id)?.buffs)
@@ -471,13 +471,13 @@ describe("Queen Perfume", () => {
             (engine) => {
                 if (intentionFor(engine, "skunkPerfume")?.targets[0]?.band === "miss") return false;
                 endTurn(engine);
-                return engine.getGameState().characters[0].buffs.find(({ id }) => id === "skunkPerfume")
+                return engine.getGameState().characters[0].buffs.find(({ id }) => id === (modifier + "Perfume"))
                     ?.modifiers?.[modifier] === -2;
             },
         );
         const engine = perfumeEngine(seed);
         endTurn(engine);
-        const perfume = engine.getGameState().characters[0].buffs.find(({ id }) => id === "skunkPerfume");
+        const perfume = engine.getGameState().characters[0].buffs.find(({ id }) => id === (modifier + "Perfume"));
 
         expect(perfume?.modifiers).toEqual({ [modifier]: -2 });
     });
