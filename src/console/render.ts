@@ -118,6 +118,7 @@ function formatParty(
     return characters.flatMap((character, index) => {
         const state = actionState(character, availabilityById.get(character.id));
         const stance = character.standing ? "Standing" : "Moving";
+        const modifiers = modifierTokens(character);
         const lines = wrapCharacterHeader(
             character.id,
             [
@@ -125,10 +126,12 @@ function formatParty(
                 ...(character.id === "hinari" ? [formatSubspace(character)] : []),
                 `[${stance}]`,
                 ...(character.bonusEscapes > 0 ? [`[Escapes: +${character.bonusEscapes}]`] : []),
-                ...modifierTokens(character),
             ],
             width,
         );
+        if (modifiers.length > 0) {
+            lines.push(...wrapCharacterHeader("  Mods:", modifiers, width));
+        }
 
         if (bindingIds.length === 0) {
             lines.push("  Bindings: none");

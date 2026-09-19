@@ -416,7 +416,7 @@ describe("console formatting", () => {
         expect(withoutSubspace).toContain("hinari [Ready] [Subspace 0/100] [Moving]");
     });
 
-    it("shows action state, stance, signed modifiers, and blocked body parts on headers", () => {
+    it("renders state on headers and modifiers on a dedicated Mods line", () => {
         const characters = [
             {
                 ...state.characters[0], id: "ready", standing: true, acted: false,
@@ -469,14 +469,19 @@ describe("console formatting", () => {
             expect(rendered).toContain(token);
         }
         expect(rendered).not.toContain("[Arms: -4]");
-        const readyHeaderLines = rendered.split("\n")
-            .map((line) => line.slice(1, 79).trimEnd())
-            .filter((line) => line.includes("ready [") || /^\s+\[/.test(line));
-        expect(readyHeaderLines.length).toBeGreaterThan(1);
-        expect(readyHeaderLines.every((line) =>
+        const leftPanelLines = rendered.split("\n")
+            .map((line) => line.slice(1, 79).trimEnd());
+        const readyHeader = leftPanelLines.find((line) => line.includes("ready ["));
+        const modsLineIndex = leftPanelLines.findIndex((line) => line.includes("Mods:"));
+        const modsLines = leftPanelLines.slice(modsLineIndex, modsLineIndex + 2);
+        expect(readyHeader).toBe("ready [Ready] [Standing]");
+        expect(modsLines[0]).toContain("  Mods: [Arms: Blk] [Mouth: -4]");
+        expect(modsLines[1].indexOf("[")).toBe(modsLines[0].indexOf("["));
+        expect(modsLines.every((line) =>
             (line.match(/\[/g) ?? []).length === (line.match(/\]/g) ?? []).length,
         )).toBe(true);
-        expect(readyHeaderLines.some((line) => line.includes("…"))).toBe(false);
+        expect(modsLines.some((line) => line.includes("…"))).toBe(false);
+        expect(rendered.match(/Mods:/g)).toHaveLength(1);
         expect(rendered).toContain("acted [Acted] [Moving]");
         expect(rendered).toContain("skip [Skip] [Standing]");
         expect(rendered).toContain("incap [Incap] [Moving]");
