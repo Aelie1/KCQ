@@ -40,16 +40,20 @@ function serializeEnemy(state: iGameState, enemy: iEnemy, status: GameStatus): E
         maxHp: enemy.maxHp,
         currHp: enemy.currHp,
         currDef: enemy.currDef,
-        intentions: enemy.intentions.map(x => (serializeIntention(state, status, x))),
+        intentions: enemy.intentions.map(x => (serializeIntention(state, status, { ...x }))),
         buffs: enemy.buffs.filter(x => x.active).map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
     };
 }
 
 function serializeIntention(state: iGameState, status: GameStatus, intention: iIntention): Intention {
-    const iTargets = evaluateIntention(state, intention, status);
+    const preview = {
+        ...intention,
+        move: { ...intention.move }
+    };
+    const iTargets = evaluateIntention(state, preview, status);
     const targets: TargetInfo[] = [];
-    let effects = resolveMove(state, intention.move, intention.actor, iTargets);
+    let effects = resolveMove(state, preview.move, preview.actor, iTargets);
     for (const iTarget of iTargets) {
         const tEffects = effects.filter(x => "target" in x && x.target === iTarget.target);
         targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(tEffects) });

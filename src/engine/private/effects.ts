@@ -361,7 +361,6 @@ export class GameEffects {
             currHp: definition.hp * hpRatio,
             currDef: definition.defense,
             intentions: [],
-            preview: [],
             cooldowns: {},
             data: {}
         };

@@ -132,6 +132,8 @@ export class GameEngine {
         this.state.enemies.length = 0;
         this.state.traps.length = 0;
         this.state.nextId = {};
+        this.state.turn = { round: 1, step: 1, phase: "player" };
+
         this.state.encounter = encounter;
 
         const spawns: iEffect[] = [];
