@@ -1,6 +1,6 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/helpers";
-import { getBlockedMoveTypes, getModifiers } from "../protected/status";
+import { GameStatus } from "../protected/status";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iStatus, iTrap } from "../protected/types";
 import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Move, Status, Trap, ValidityInfo } from "../public/types";
 import { evaluateBattleState } from "./combat";
@@ -20,6 +20,7 @@ export function serializeGameState(state: iGameState): GameState {
 }
 
 function serializeCharacter(character: iCharacter): Character {
+    const status = new GameStatus(character);
     return {
         id: character.id,
         acted: character.acted,
@@ -27,8 +28,8 @@ function serializeCharacter(character: iCharacter): Character {
         bonusEscapes: character.bonusEscapes,
         bindings: character.bindings.map(serializeBinding),
         buffs: character.buffs.filter(x => x.active).map(serializeBuff),
-        modifiers: getModifiers(character),
-        blockedMoveTypes: getBlockedMoveTypes(character),
+        modifiers: status.getModifiers(),
+        blockedMoveTypes: status.getBlockedMoveTypes(),
         data: { ...character.data }
     };
 }

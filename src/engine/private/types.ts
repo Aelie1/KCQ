@@ -1,3 +1,4 @@
+import { GameStatus } from "../protected/status";
 import { iEffect, iEnemy, iEntity } from "../protected/types";
 import { AccuracyProfile, EnemyEffect, FailureReason, InvalidTarget, ValidTarget } from "../public/types";
 
@@ -6,6 +7,7 @@ export type iValidityInfo = iValidTarget | iInvalidTarget;
 interface iValidTarget extends Omit<ValidTarget, "target"> {
     valid: true;
     target: iEntity | null;
+    status: GameStatus | null;
     accuracy: AccuracyProfile | null;
 }
 

@@ -2,7 +2,7 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
-import { isIncapacitated, s } from "../../engine/protected/status";
+import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
 import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
@@ -38,7 +38,7 @@ export const skunkette: EnemyDef = {
             const buff = findBuff(actor, "pounce");
             if (buff && buff.linkedEntity) {
                 const target = findCharacter(state, buff.linkedEntity);
-                if (target && !isIncapacitated(target)) {
+                if (target) {
                     const binding = pickBinding(target, bindings, rng);
                     effects.push({
                         type: "move",

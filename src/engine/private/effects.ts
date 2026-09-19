@@ -2,7 +2,6 @@ import { BindingDef, EnemyDef, MoveDef } from "../protected/definitions";
 import { getValidTargets } from "../protected/enemies";
 import { findBinding, findBuff, findEntity, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { Random } from "../protected/random";
-import { canMove } from "../protected/status";
 import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, GameEvent, StanceId, TargetInfo } from "../public/types";
 import { evaluateIntention, resolveMove } from "./combat";
@@ -465,7 +464,7 @@ export class GameEffects {
                 }
                 break;
             case "moving":
-                if (target.standing && canMove(target)) {
+                if (target.standing) {
                     this.addEvent({
                         type: "stanceChanged",
                         actor: target.id,

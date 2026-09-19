@@ -1,6 +1,6 @@
 import { MoveDef } from "../protected/definitions";
 import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
-import { canMove, getModifier, getModifiers, isIncapacitated, mergeModifiers } from "../protected/status";
+import { GameStatus, mergeModifiers } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
@@ -13,31 +13,31 @@ function getIEntitySide(entity: iEntity): EntitySide {
 
 export function getTargets(state: iGameState, actor: iCharacter, move: MoveDef): iValidityInfo[] {
     const result: iValidityInfo[] = [];
-
+    const status = new GameStatus(actor);
     if (move.targets === 0) {
-        result.push(isValidTarget(state, actor, null, move));
+        result.push(isValidTarget(state, actor, status, null, move));
     }
     else {
         switch (move.targetSide) {
             case "none":
-                result.push(isValidTarget(state, actor, null, move));
+                result.push(isValidTarget(state, actor, status, null, move));
                 break;
             case "player":
                 for (const target of state.characters) {
-                    result.push(isValidTarget(state, actor, target, move));
+                    result.push(isValidTarget(state, actor, status, target, move));
                 }
                 break;
             case "enemy":
                 for (const target of state.enemies) {
-                    result.push(isValidTarget(state, actor, target, move));
+                    result.push(isValidTarget(state, actor, status, target, move));
                 }
                 break;
             case "either":
                 for (const target of state.characters) {
-                    result.push(isValidTarget(state, actor, target, move));
+                    result.push(isValidTarget(state, actor, status, target, move));
                 }
                 for (const target of state.enemies) {
-                    result.push(isValidTarget(state, actor, target, move));
+                    result.push(isValidTarget(state, actor, status, target, move));
                 }
                 break;
 
@@ -58,7 +58,8 @@ export function getTargets(state: iGameState, actor: iCharacter, move: MoveDef):
     return result;
 }
 
-export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity | null, move: MoveDef): iValidityInfo {
+export function isValidTarget(state: iGameState, actor: iEntity, status: GameStatus, target: iEntity | null, move: MoveDef): iValidityInfo {
+    let targetStatus = null;
     if (target === null) {
         if (move.targets !== 0) {
             return {
@@ -82,7 +83,8 @@ export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity
                 reason: "invalidTarget",
             };
         }
-        if (isCharacter(target) && isIncapacitated(target)) {
+        targetStatus = new GameStatus(target);
+        if (isCharacter(target) && targetStatus && targetStatus.isIncapacitated()) {
             return {
                 valid: false,
                 target: target,
@@ -102,15 +104,16 @@ export function isValidTarget(state: iGameState, actor: iEntity, target: iEntity
         }
     }
 
-    const accuracy = calculateAccuracy(actor, target, move);
+    const accuracy = calculateAccuracy(actor, status, target, targetStatus, move);
     return {
         valid: true,
         accuracy: accuracy,
-        target: target
+        target: target,
+        status: targetStatus
     }
 }
 
-function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef): AccuracyProfile | null {
+function calculateAccuracy(actor: iEntity, actorStatus: GameStatus, target: iEntity | null, targetStatus: GameStatus | null, move: MoveDef): AccuracyProfile | null {
     const base = move.accuracy;
     if (!base) {
         return null;
@@ -119,8 +122,8 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
     const clamp = (value: number, min: number, max: number): number =>
         Math.max(min, Math.min(max, value));
 
-    const actorModifiers = getModifiers(actor);
-    const targetModifiers = target ? getModifiers(target) : {};
+    const actorModifiers = actorStatus.getModifiers();
+    const targetModifiers = targetStatus ? targetStatus.getModifiers() : {};
 
     if (move.modifiers) {
         mergeModifiers(actorModifiers, move.modifiers);
@@ -276,19 +279,19 @@ function calculateAccuracy(actor: iEntity, target: iEntity | null, move: MoveDef
 }
 
 
-export function evaluateResult(actor: iEntity, target: iEntity, move: MoveDef, accuracy: AccuracyProfile, roll: number): iTargetInfo {
+export function evaluateResult(actor: iEntity, actorStatus: GameStatus, target: iEntity, targetStatus: GameStatus | null, move: MoveDef, accuracy: AccuracyProfile, roll: number): iTargetInfo {
     return {
         target: target,
-        ...evaluateProfile(actor, move, accuracy, roll, getModifier(target, "vulnerability"))
+        ...evaluateProfile(actor, actorStatus, move, accuracy, roll, targetStatus?.getModifier("vulnerability") ?? 0)
     };
 }
 
-export function evaluateProfile(actor: iEntity, move: MoveDef, accuracy: AccuracyProfile, roll: number, vulnerability: number): AccuracyResult {
+export function evaluateProfile(actor: iEntity, status: GameStatus, move: MoveDef, accuracy: AccuracyProfile, roll: number, vulnerability: number): AccuracyResult {
     const order: HitBand[] = ["miss", "graze", "hit", "crit"];
     const result: AccuracyResult = { band: "none", effectiveness: 0 }
-    const modifiers = getModifiers(actor);
+    const modifiers = status.getModifiers();
     if (move.modifiers) {
-        mergeModifiers(modifiers, move.modifiers)
+        mergeModifiers(modifiers, move.modifiers);
     }
     const potency = modifiers.potency ?? 0;
 
@@ -357,10 +360,11 @@ export function tickPlayers(state: iGameState): iEffect[] {
     const effects: iEffect[] = [];
     for (const character of state.characters) {
         character.acted = false;
+        const status = new GameStatus(character);
         effects.push({
             type: "stance",
             actor: character,
-            stance: canMove(character) ? "moving" : "standing"
+            stance: status.canMove() ? "moving" : "standing"
         });
         character.bonusEscapes = 0;
     }
@@ -379,14 +383,14 @@ export function tickBindings(state: iGameState): iEffect[] {
     return effects;
 }
 
-export function resolveEscape(actor: iCharacter, target: iCharacter, binding: iBinding): iEffect[] {
+export function resolveEscape(actor: iCharacter, status: GameStatus, target: iCharacter, binding: iBinding): iEffect[] {
     const effects: iEffect[] = [];
     const basePotency = 20;
     const bindingValue = binding.value;
     const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
     const basePenalty = 15;
     let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
-    escapePotency *= 1 + getModifier(actor, "escape") * BINDING_MODIFIER;
+    escapePotency *= 1 + status.getModifier("escape") * BINDING_MODIFIER;
     if (actor !== target) {
         escapePotency *= 1.5;
     }
@@ -431,12 +435,13 @@ function normalizeEffect(effect: iEffect): iEffect {
 
 export function evaluateIntention(state: iGameState, intention: iIntention): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
+    const actorStatus = new GameStatus(intention.actor);
     for (const roll of intention.rolls) {
-        const info = isValidTarget(state, intention.actor, roll.target, intention.move.definition);
+        const info = isValidTarget(state, intention.actor, actorStatus, roll.target, intention.move.definition);
         if (info.valid) {
             if (info.target) {
                 if (info.accuracy) {
-                    const targetInfo = evaluateResult(intention.actor, info.target, intention.move.definition, info.accuracy, roll.roll);
+                    const targetInfo = evaluateResult(intention.actor, actorStatus, info.target, info.status, intention.move.definition, info.accuracy, roll.roll);
                     targets.push(targetInfo);
                 } else {
                     targets.push({
@@ -447,7 +452,7 @@ export function evaluateIntention(state: iGameState, intention: iIntention): iTa
                 }
             } else {
                 if (info.accuracy) {
-                    const result = evaluateProfile(intention.actor, intention.move.definition, info.accuracy, roll.roll, 0);
+                    const result = evaluateProfile(intention.actor, actorStatus, intention.move.definition, info.accuracy, roll.roll, 0);
                     intention.move.effectiveness = result.effectiveness;
                     intention.move.band = result.band;
                 } else {
@@ -465,7 +470,8 @@ export function evaluateBattleState(state: iGameState): BattleState {
         return "victory";
     }
     for (const character of state.characters) {
-        if (!isIncapacitated(character)) {
+        const status = new GameStatus(character)
+        if (!status.isIncapacitated()) {
             return "ongoing";
         }
     }

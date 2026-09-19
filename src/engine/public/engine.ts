@@ -10,7 +10,7 @@ import { iValidityInfo } from "../private/types";
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
 import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity, thresholds } from "../protected/helpers";
 import { mixSeed, Random } from "../protected/random";
-import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, ignoresTraps, isIncapacitated, isSkipped } from "../protected/status";
+import { GameStatus } from "../protected/status";
 import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import type {
     AccuracyResult,
@@ -168,14 +168,15 @@ export class GameEngine {
     getAvailability(): AvailabilityInfo[] {
         const info: AvailabilityInfo[] = [];
         for (const character of this.state.characters) {
-            if (isIncapacitated(character)) {
+            const status = new GameStatus(character);
+            if (status.isIncapacitated()) {
                 info.push({
                     id: character.id,
                     available: false,
                     reason: "actorIncapacitated"
                 });
             }
-            else if (isSkipped(character)) {
+            else if (status.isSkipped()) {
                 info.push({
                     id: character.id,
                     available: false,
@@ -208,11 +209,12 @@ export class GameEngine {
             }
         }
 
-        const result = canAct(character, "stance");
+        const status = new GameStatus(character);
+        const result = status.canAct("stance");
         if (result) {
             return {
                 available: false,
-                reason: result.reason
+                reason: result
             }
         }
         return {
@@ -224,20 +226,21 @@ export class GameEngine {
         const actions: ActionInfo[] = [];
         const character = findCharacter(this.state, actor);
         if (character) {
-            const result = canAct(character, "move");
+            const status = new GameStatus(character);
+            const result = status.canAct("move");
             for (const move of getMoves(character)) {
                 let available = true;
                 let reason: FailureReason = "moveUnavailable";
                 const targets = getTargets(this.state, character, move);
                 if (result) {
                     available = false;
-                    reason = result.reason;
+                    reason = result;
                 }
-                else if (!move.alwaysAvailable && !canAttack(character)) {
+                else if (!move.alwaysAvailable && !status.canAttack()) {
                     available = false;
                     reason = "attackUnavailable";
                 }
-                else if (!canUseMoveType(character, move.type)) {
+                else if (!status.canUseMoveType(move.type)) {
                     available = false;
                     reason = "bindingRestriction";
                 }
@@ -273,16 +276,17 @@ export class GameEngine {
             return null;
         }
 
-        const result = canAct(character, "escape");
+        const status = new GameStatus(character);
+        const result = status.canAct("escape");
         if (result) {
             return {
                 options: [],
                 assistAllowed: false,
-                reason: result.reason
+                reason: result
             }
         }
 
-        const options: EscapeOptions = { options: [], assistAllowed: canAssist(character) };
+        const options: EscapeOptions = { options: [], assistAllowed: status.canAssist() };
         for (const target of this.state.characters) {
             if (character !== target && !options.assistAllowed) {
                 continue;
@@ -292,7 +296,7 @@ export class GameEngine {
                     actor: actor,
                     target: target.id,
                     binding: binding.id,
-                    effects: serializeEffects(resolveEscape(character, target, binding))
+                    effects: serializeEffects(resolveEscape(character, status, target, binding))
                 });
             }
         }
@@ -328,9 +332,13 @@ export class GameEngine {
             };
         }
 
-        const capability = canAct(actor, action.type);
+        const status = new GameStatus(actor);
+        const capability = status.canAct(action.type);
         if (capability) {
-            return capability;
+            return {
+                success: false,
+                reason: capability
+            }
         }
 
         switch (action.type) {
@@ -343,14 +351,14 @@ export class GameEngine {
                     };
                 }
 
-                if (!move.alwaysAvailable && !canAttack(actor)) {
+                if (!move.alwaysAvailable && !status.canAttack()) {
                     return {
                         success: false,
                         reason: "attackUnavailable"
                     };
                 }
 
-                if (!canUseMoveType(actor, move.type)) {
+                if (!status.canUseMoveType(move.type)) {
                     return {
                         success: false,
                         reason: "bindingRestriction"
@@ -368,13 +376,13 @@ export class GameEngine {
                     }
                     if (move.targetSide === "either" || move.targetSide === "enemy") {
                         for (const enemy of this.state.enemies) {
-                            targetInfo.push(isValidTarget(this.state, actor, enemy, move));
+                            targetInfo.push(isValidTarget(this.state, actor, status, enemy, move));
                         }
                     }
                     if (move.targetSide === "either" || move.targetSide === "player") {
 
                         for (const character of this.state.characters) {
-                            targetInfo.push(isValidTarget(this.state, actor, character, move));
+                            targetInfo.push(isValidTarget(this.state, actor, status, character, move));
                         }
                     }
                 } else if (move.targets === 0) {
@@ -384,7 +392,7 @@ export class GameEngine {
                             reason: "invalidTargetCount"
                         }
                     }
-                    targetInfo.push(isValidTarget(this.state, actor, null, move));
+                    targetInfo.push(isValidTarget(this.state, actor, status, null, move));
                 }
                 else {
                     if (new Set(action.targets).size != action.targets.length) {
@@ -396,7 +404,7 @@ export class GameEngine {
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
                         if (targetState) {
-                            const info = isValidTarget(this.state, actor, targetState, move);
+                            const info = isValidTarget(this.state, actor, status, targetState, move);
                             if (info.valid) {
                                 targetInfo.push(info);
                             } else {
@@ -421,9 +429,9 @@ export class GameEngine {
                 }
 
                 //If moving, check for traps
-                if (!actor.standing && !ignoresTraps(actor)) {
+                if (!actor.standing && !status.ignoresTraps()) {
                     for (const trap of this.state.traps) {
-                        const roll = Math.max(0, this.accRng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
+                        const roll = Math.max(0, this.accRng.accuracy() + status.getModifier("traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
                             result.fromEffects(trap.definition.onTrigger(actor, trap, roll));
@@ -438,16 +446,16 @@ export class GameEngine {
                     //Redo some checks in case status has changed
                     let reason: FailureReason | undefined;
 
-                    const capability = canAct(actor, action.type);
+                    const capability = status.canAct(action.type);
                     if (capability) {
-                        reason = capability.reason;
+                        reason = capability;
                     }
 
-                    if (!reason && !move.alwaysAvailable && !canAttack(actor)) {
+                    if (!reason && !move.alwaysAvailable && !status.canAttack()) {
                         reason = "attackUnavailable";
                     }
 
-                    if (!reason && !canUseMoveType(actor, move.type)) {
+                    if (!reason && !status.canUseMoveType(move.type)) {
                         reason = "bindingRestriction";
                     }
 
@@ -478,7 +486,7 @@ export class GameEngine {
                             for (let i = 0; i < totalHits; i++) {
                                 if (target.accuracy) {
                                     const roll: number = this.accRng.accuracy();
-                                    const result: iTargetInfo = evaluateResult(actor, target.target, move, target.accuracy, roll);
+                                    const result: iTargetInfo = evaluateResult(actor, status, target.target, target.status, move, target.accuracy, roll);
                                     targets.push(result);
                                     if (result.band !== "miss") {
                                         anyHits = true;
@@ -495,7 +503,7 @@ export class GameEngine {
                         } else {
                             if (target.accuracy) {
                                 const roll: number = this.accRng.accuracy();
-                                const result: AccuracyResult = evaluateProfile(actor, move, target.accuracy, roll, 0);
+                                const result: AccuracyResult = evaluateProfile(actor, status, move, target.accuracy, roll, 0);
                                 iMove.band = result.band;
                                 iMove.effectiveness = result.effectiveness;
                                 if (result.band !== "miss") {
@@ -539,7 +547,7 @@ export class GameEngine {
                     };
                 }
 
-                if (actor !== target && !canAssist(actor)) {
+                if (actor !== target && !status.canAssist()) {
                     return {
                         success: false,
                         reason: "assistUnavailable"
@@ -555,9 +563,9 @@ export class GameEngine {
                 }
 
                 //If moving, check for traps
-                if (!actor.standing && !ignoresTraps(actor)) {
+                if (!actor.standing && !status.ignoresTraps()) {
                     for (const trap of this.state.traps) {
-                        const roll = Math.max(0, this.accRng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
+                        const roll = Math.max(0, this.accRng.accuracy() + status.getModifier("traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
                             result.fromEffects(trap.definition.onTrigger(actor, trap, roll));
@@ -573,12 +581,12 @@ export class GameEngine {
                     //Redo some checks in case status has changed
                     let reason: FailureReason | undefined;
 
-                    const capability = canAct(actor, action.type);
+                    const capability = status.canAct(action.type);
                     if (capability) {
-                        reason = capability.reason;
+                        reason = capability;
                     }
 
-                    if (!reason && actor !== target && !canAssist(actor)) {
+                    if (!reason && actor !== target && !status.canAssist()) {
                         reason = "assistUnavailable";
                     }
 
@@ -599,10 +607,10 @@ export class GameEngine {
                 }
 
                 //now we have a valid actor, target, and binding -- execute the escape
-                result.fromEffects(resolveEscape(actor, target, binding));
+                result.fromEffects(resolveEscape(actor, status, target, binding));
                 if (!actor.acted) {
                     actor.acted = true;
-                    if (actor.standing && canBonusEscape(actor)) {
+                    if (actor.standing && status.canBonusEscape()) {
                         actor.bonusEscapes++;
                     }
                 } else {
@@ -638,7 +646,8 @@ export class GameEngine {
             return result;
         }
 
-        if (!canAttack(actor) || isSkipped(actor)) {
+        const status = new GameStatus(actor);
+        if (!status.canAttack() || status.isSkipped()) {
             return result;
         }
 

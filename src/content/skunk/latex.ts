@@ -1,6 +1,6 @@
 import { BindingDef } from "../../engine/protected/definitions";
 import { findBinding, findBuff, thresholds } from "../../engine/protected/helpers";
-import { getModifier, isIncapacitated, s } from "../../engine/protected/status";
+import { GameStatus, s } from "../../engine/protected/status";
 import { bound, breathless, gagged, hobbled, incapacitated, submissive, vibrating } from "../../engine/protected/statuses";
 import { iBinding, iBuff, iCharacter, iEffect, iGameState } from "../../engine/protected/types";
 import { skunkette } from "./skunkette";
@@ -23,7 +23,8 @@ export const latexBindings: BindingDef = {
         if (binding.value > binding.data["peak"]) {
             binding.data["peak"] = binding.value;
         }
-        if (isIncapacitated(target)) {
+        const status = new GameStatus(target);
+        if (status.isIncapacitated()) {
             return effects;
         }
 
@@ -92,7 +93,8 @@ export const latexBindings: BindingDef = {
     onEscape(actor: iCharacter, target: iCharacter, binding: iBinding, amount: number): iEffect[] {
         const effects: iEffect[] = [];
         const spreadLocation: BindingDef = (actor === target && binding.definition === latexArms) ? latexHead : latexArms;
-        const spreadModifier = getModifier(target, "spread") * SPREAD_MODIFIER;
+        const status = new GameStatus(target);
+        const spreadModifier = status.getModifier("spread") * SPREAD_MODIFIER;
         let spreadAmount = 0;
         if (binding.value >= thresholds.impossible) {
             const spreadRatio = (IMPOSSIBLE_SPREAD_RATIO + IMPOSSIBLE_SPREAD_RATIO

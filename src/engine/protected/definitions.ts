@@ -60,6 +60,9 @@ export interface StatusDef {
 }
 
 export interface StatusLevelDef {
+    hasActed?: boolean;
+    hasBonusEscapes?: boolean;
+    isStanding?: boolean;
     modifiers?: Partial<Record<ModifierId, number>>;
     allowedMoveTypes?: MoveType[];
     blockedMoveTypes?: MoveType[];

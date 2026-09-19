@@ -1,28 +1,29 @@
 import type { BindingDef } from "./definitions";
 import { findBinding, thresholds } from "./helpers";
 import { Random } from "./random";
-import { isIncapacitated } from "./status";
+import { GameStatus } from "./status";
 import type { iCharacter, iEntity } from "./types";
 
-export function getValidTargets(characters: iEntity[]): iEntity[] {
-    const validCharacters: iEntity[] = [];
-    for (const character of characters) {
-        if (!isIncapacitated(character)) {
-            validCharacters.push(character);
+export function getValidTargets(entities: iEntity[]): iEntity[] {
+    const validTargets: iEntity[] = [];
+    for (const character of entities) {
+        const status = new GameStatus(character);
+        if (!status.isIncapacitated()) {
+            validTargets.push(character);
         }
     }
-    return validCharacters;
+    return validTargets;
 }
 
-export function pickTarget(characters: iEntity[], rng: Random): iEntity | undefined {
-    const validCharacters = getValidTargets(characters);
+export function pickTarget(entities: iEntity[], rng: Random): iEntity | undefined {
+    const validTargets = getValidTargets(entities);
 
-    if (validCharacters.length === 0) {
+    if (validTargets.length === 0) {
         return undefined;
     }
 
-    const index = rng.int(0, validCharacters.length - 1);
-    return validCharacters[index];
+    const index = rng.int(0, validTargets.length - 1);
+    return validTargets[index];
 }
 
 export function pickBinding(target: iCharacter, bindings: BindingDef[], rng: Random): BindingDef | undefined {
