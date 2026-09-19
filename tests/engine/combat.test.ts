@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { actionView } from "../helpers/gameView";
 import { ko } from "../../src/content/characters/ko";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import { GameEngine } from "../../src/engine/public/engine";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { FailureReason, PlayerAction } from "../../src/engine/public/types";
 import {
     bindingState,
@@ -16,6 +15,7 @@ import {
     makeEnemyWaitMove as makeWaitMove,
     targetAccuracy,
 } from "../helpers/behavioralHelpers";
+import { actionView } from "../helpers/gameView";
 
 const AUTHORED_HIT_SEED = 2;
 

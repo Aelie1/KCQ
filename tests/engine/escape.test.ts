@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { actionView } from "../helpers/gameView";
 import { latexArms } from "../../src/content/skunk/latex";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, StatusDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
-import { GameEngine } from "../../src/engine/public/engine";
 import type { Effect } from "../../src/engine/public/types";
+import { actionView } from "../helpers/gameView";
 import {
     makeBindingDef,
     makeCharacterDef,

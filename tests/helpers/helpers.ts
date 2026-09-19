@@ -1,4 +1,5 @@
 import { expect } from "vitest";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import type {
     iBinding,
@@ -6,7 +7,6 @@ import type {
     iEnemy,
     iStatus,
 } from "../../src/engine/protected/types";
-import { GameEngine } from "../../src/engine/public/engine";
 import type {
     BindingLevel,
     FailureReason,

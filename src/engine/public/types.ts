@@ -1,4 +1,18 @@
 /*******************************************************
+ * Engine
+ *******************************************************/
+export interface Engine {
+    getSeed(): number;
+    getGameView(): GameView;
+    getThresholds(): ThresholdInfo;
+    listCharacters(): EntityId[];
+    loadCharacter(id: EntityId): GameEvent[];
+    listEncounters(): EncounterId[];
+    loadEncounter(id: EncounterId): GameEvent[];
+    executeAction(action: PlayerAction): ActionResult;
+}
+
+/*******************************************************
  * State
  *******************************************************/
 
@@ -216,6 +230,10 @@ export type BindingLevel =
     | "impossible"
     | "max"
 
+export interface ThresholdInfo {
+    thresholds: Partial<Record<BindingLevel, number>>;
+    max: number;
+}
 
 /*******************************************************
  * Traps

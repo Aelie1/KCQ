@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { actionView } from "../helpers/gameView";
 import { evaluateResult, isValidTarget } from "../../src/engine/private/combat";
 import { effectivenessRange } from "../../src/engine/private/constants";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { EncounterDef, MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { mixSeed, Random } from "../../src/engine/protected/random";
@@ -11,8 +11,8 @@ import type {
     iEnemy,
     iTargetInfo,
 } from "../../src/engine/protected/types";
-import { GameEngine } from "../../src/engine/public/engine";
 import type { AccuracyProfile, MoveEvent } from "../../src/engine/public/types";
+import { actionView } from "../helpers/gameView";
 import {
     makeBinding,
     makeBindingDef,

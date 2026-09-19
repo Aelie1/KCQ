@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
+import { GameEngine } from "../../src/engine/private/engine";
 import { serializeGameState } from "../../src/engine/private/serialize";
 import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { GameStatus } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEntity, iGameState } from "../../src/engine/protected/types";
-import { GameEngine } from "../../src/engine/public/engine";
 import {
     makeBindingDef,
     makeCharacter,

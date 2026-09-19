@@ -6,10 +6,10 @@ import { formatAccuracyRow, renderScreen } from "../../src/console/render";
 import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
 import { latexArms } from "../../src/content/skunk/latex";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { helpless } from "../../src/engine/protected/statuses";
-import { GameEngine } from "../../src/engine/public/engine";
 import type { GameEvent, GameState, Intention } from "../../src/engine/public/types";
 import {
     makeBindingDef,

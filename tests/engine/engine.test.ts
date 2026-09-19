@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { actionView } from "../helpers/gameView";
 import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
 import { plains_1 } from "../../src/content/skunk/encounters";
 import { skunkette } from "../../src/content/skunk/skunkette";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { StatusDef } from "../../src/engine/protected/definitions";
 import { stunned } from "../../src/engine/protected/statuses";
-import { GameEngine } from "../../src/engine/public/engine";
 import type { PlayerAction } from "../../src/engine/public/types";
+import { actionView } from "../helpers/gameView";
 import {
     makeBindingDef,
     makeCharacterDef,

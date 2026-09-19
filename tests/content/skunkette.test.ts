@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { actionView } from "../helpers/gameView";
 import {
     latexArms,
     latexCollar,
@@ -8,7 +7,7 @@ import {
     latexTorso,
 } from "../../src/content/skunk/latex";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import { GameEngine } from "../../src/engine/public/engine";
+import { GameEngine } from "../../src/engine/private/engine";
 import {
     bindingState,
     buffState,
@@ -19,6 +18,7 @@ import {
     makeBehavioralEngine,
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
+import { actionView } from "../helpers/gameView";
 
 const POUNCE_ID = "pounce";
 const SKUNKED_ID = "skunked";

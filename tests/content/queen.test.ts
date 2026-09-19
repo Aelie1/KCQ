@@ -4,13 +4,13 @@ import { queen } from "../../src/content/skunk/queen";
 import { rainmaker } from "../../src/content/skunk/rainmaker";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { isCharacter, isEnemy } from "../../src/engine/protected/helpers";
 import { mixSeed, Random } from "../../src/engine/protected/random";
 import { s } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEffect, iGameState } from "../../src/engine/protected/types";
-import { GameEngine } from "../../src/engine/public/engine";
 import type { ActionSuccess, GameEvent, GameState, HitBand, ModifierSet } from "../../src/engine/public/types";
 import { execute, makeBehavioralCharacter, makeBehavioralMove } from "../helpers/behavioralHelpers";
 

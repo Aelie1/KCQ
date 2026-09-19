@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { actionView } from "../helpers/gameView";
 import { skunkette } from "../../src/content/skunk/skunkette";
+import { GameEngine } from "../../src/engine/private/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { immobilized, vibrating } from "../../src/engine/protected/statuses";
-import { GameEngine } from "../../src/engine/public/engine";
+import { actionView } from "../helpers/gameView";
 import {
     makeBindingDef,
     makeCharacterDef,

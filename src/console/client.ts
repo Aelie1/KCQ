@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
-import type { GameEngine } from "../engine/public/engine";
+import type { GameEngine } from "../engine/private/engine";
 import type {
     ActionInfo,
     ActionResult,

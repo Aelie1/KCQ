@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { actionView } from "../helpers/gameView";
 import { latexArms } from "../../src/content/skunk/latex";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
 import {
@@ -10,7 +10,7 @@ import {
     incapacitated,
     stunned
 } from "../../src/engine/protected/statuses";
-import { GameEngine } from "../../src/engine/public/engine";
+import { actionView } from "../helpers/gameView";
 import {
     expectMoveRejection,
     makeBindingDef,

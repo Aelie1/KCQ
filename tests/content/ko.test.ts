@@ -1,11 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { actionView } from "../helpers/gameView";
 import { ko } from "../../src/content/characters/ko";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import { bound, gagged, helpless, hobbled, incapacitated } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
-import { GameEngine } from "../../src/engine/public/engine";
 import {
     buffState,
     execute,
@@ -15,6 +14,7 @@ import {
     makeBehavioralMove,
     makeEnemyWaitMove,
 } from "../helpers/behavioralHelpers";
+import { actionView } from "../helpers/gameView";
 
 function loadKoEncounter(
     enemies: EnemyDef[] = [makeBehavioralEnemy("foe")],

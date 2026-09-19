@@ -1,6 +1,6 @@
 import { expect } from "vitest";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { GameEngine } from "../../src/engine/public/engine";
 import type {
     AccuracyProfile,
     ActionSuccess,

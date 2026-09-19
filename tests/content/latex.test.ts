@@ -5,9 +5,9 @@ import {
     latexLegs,
     latexTorso,
 } from "../../src/content/skunk/latex";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef } from "../../src/engine/protected/definitions";
 import type { iEffect } from "../../src/engine/protected/types";
-import { GameEngine } from "../../src/engine/public/engine";
 import {
     bindingState,
     characterState,

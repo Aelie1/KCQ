@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { trapPuddle } from "../../src/content/skunk/puddles";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, EncounterDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
-import { GameEngine } from "../../src/engine/public/engine";
 import type { PlayerAction } from "../../src/engine/public/types";
 import {
     makeBindingDef,

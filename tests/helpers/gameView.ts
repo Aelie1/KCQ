@@ -1,4 +1,4 @@
-import { GameEngine } from "../../src/engine/public/engine";
+import { GameEngine } from "../../src/engine/private/engine";
 import type { ActionView, EntityId } from "../../src/engine/public/types";
 
 export function actionView(engine: GameEngine, id: EntityId): ActionView {
