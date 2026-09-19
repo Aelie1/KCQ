@@ -28,9 +28,11 @@ function loadKoEncounter(
         traps: [],
         setup,
     };
-    const engine = new GameEngine([encounter], seed);
-    engine.loadCharacter(ko);
-    if (ally) engine.loadCharacter(makeBehavioralCharacter("ally"));
+    const allyCharacter = ally ? makeBehavioralCharacter("ally") : undefined;
+    const characters = allyCharacter ? [ko, allyCharacter] : [ko];
+    const engine = new GameEngine([encounter], characters, seed);
+    engine.loadCharacter(ko.id);
+    if (allyCharacter) engine.loadCharacter(allyCharacter.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }
@@ -121,8 +123,8 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
                 amount: 80,
             }],
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(restrainedKo);
+        const engine = new GameEngine([encounter], [restrainedKo], 1);
+        engine.loadCharacter(restrainedKo.id);
         engine.loadEncounter(encounter.id);
 
         expect(engine.getGameState().characters[0].blockedMoveTypes).toEqual(["none"]);
@@ -162,9 +164,9 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             bindings: [restraint],
             traps: [],
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(ko);
-        engine.loadCharacter(helper);
+        const engine = new GameEngine([encounter], [ko, helper], 1);
+        engine.loadCharacter(ko.id);
+        engine.loadCharacter(helper.id);
         engine.loadEncounter(encounter.id);
         execute(engine, {
             type: "move",
@@ -227,9 +229,9 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             bindings: [restriction],
             traps: [],
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(ko);
-        engine.loadCharacter(helper);
+        const engine = new GameEngine([encounter], [ko, helper], 1);
+        engine.loadCharacter(ko.id);
+        engine.loadCharacter(helper.id);
         engine.loadEncounter(encounter.id);
         execute(engine, {
             type: "move",
@@ -568,9 +570,9 @@ describe("Ko's normal and Fairy move effects", () => {
             traps: [],
             setup: empowerKo,
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(ko);
-        engine.loadCharacter(ally);
+        const engine = new GameEngine([encounter], [ko, ally], 1);
+        engine.loadCharacter(ko.id);
+        engine.loadCharacter(ally.id);
         engine.loadEncounter(encounter.id);
         expect(engine.getMoves(ally.id).map(({ move }) => move.id)).toEqual([allyNormal.id]);
         expectMoveSet(engine, [
@@ -693,8 +695,8 @@ describe("Ko's Reflect source handling", () => {
                 return [{ ...effect, buff: { ...effect.buff } }];
             },
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(ko);
+        const engine = new GameEngine([encounter], [ko], 1);
+        engine.loadCharacter(ko.id);
         engine.loadEncounter(encounter.id);
 
         const result = execute(engine, {

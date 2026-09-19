@@ -14,8 +14,9 @@ import {
 
 describe("stance toggling", () => {
     it("starts a mobile character in the moving stance", () => {
-        const engine = new GameEngine([], 1);
-        engine.loadCharacter(makeCharacterDef("hero"));
+        const hero = makeCharacterDef("hero");
+        const engine = new GameEngine([], [hero], 1);
+        engine.loadCharacter(hero.id);
 
         expect(engine.getGameState().characters[0]).toMatchObject({
             id: "hero",
@@ -26,8 +27,8 @@ describe("stance toggling", () => {
     it("rejects invalid actor", () => {
         const strike = makeMove("strike");
         const hero = makeCharacterDef("hero", [strike]);
-        const engine = new GameEngine([], 1);
-        engine.loadCharacter(hero);
+        const engine = new GameEngine([], [hero], 1);
+        engine.loadCharacter(hero.id);
 
         const result = engine.executeAction({
             type: "stance",
@@ -44,8 +45,8 @@ describe("stance toggling", () => {
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter = { id: "stance", enemies: [foe], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(hero);
+        const engine = new GameEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         expect(engine.stanceAvailable(hero.id)).toEqual({ available: true });
@@ -69,8 +70,8 @@ describe("stance toggling", () => {
 
     it("returns a mobile standing character to moving stance", () => {
         const hero = makeCharacterDef("hero");
-        const engine = new GameEngine([], 1);
-        engine.loadCharacter(hero);
+        const engine = new GameEngine([], [hero], 1);
+        engine.loadCharacter(hero.id);
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
@@ -167,9 +168,9 @@ describe("stance toggling", () => {
         });
         const helper = makeCharacterDef("helper", [prepare]);
         const target = makeCharacterDef("target");
-        const engine = new GameEngine([], 1);
-        engine.loadCharacter(helper);
-        engine.loadCharacter(target);
+        const engine = new GameEngine([], [helper, target], 1);
+        engine.loadCharacter(helper.id);
+        engine.loadCharacter(target.id);
         expect(engine.executeAction({
             type: "move",
             actor: helper.id,
@@ -345,8 +346,9 @@ describe("stance toggling", () => {
             bindings: [],
             traps: [],
         };
-        const engine = new GameEngine([encounter], 3);
-        engine.loadCharacter(makeCharacterDef("victim"));
+        const victim = makeCharacterDef("victim");
+        const engine = new GameEngine([encounter], [victim], 3);
+        engine.loadCharacter(victim.id);
         engine.loadEncounter(encounter.id);
         expect(observedDuringEnemyPhase).toBeUndefined();
 
@@ -383,8 +385,9 @@ describe("stance toggling", () => {
             });
             const enemy = makeEnemyDef("attacker", [attack]);
             const encounter = { id: "standing-defense", enemies: [enemy], bindings: [], traps: [] };
-            const engine = new GameEngine([encounter], seed);
-            engine.loadCharacter(makeCharacterDef("hero"));
+            const hero = makeCharacterDef("hero");
+            const engine = new GameEngine([encounter], [hero], seed);
+            engine.loadCharacter(hero.id);
             engine.loadEncounter(encounter.id);
 
             expect(engine.getGameState().enemies[0].intentions[0]?.targets[0].band).toBe("miss");

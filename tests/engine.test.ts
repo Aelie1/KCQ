@@ -19,8 +19,8 @@ const AUTHORED_HIT_SEED = 3;
 
 function setupAuthoredCombat(): GameEngine {
     const encounter = { id: "authored-skunkette", enemies: [skunkette], bindings: [], traps: [] };
-    const engine = new GameEngine([encounter], AUTHORED_HIT_SEED);
-    engine.loadCharacter(ko);
+    const engine = new GameEngine([encounter], [ko], AUTHORED_HIT_SEED);
+    engine.loadCharacter(ko.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }
@@ -28,8 +28,8 @@ function setupAuthoredCombat(): GameEngine {
 describe("turn phases and enemy intentions", () => {
     it("replays an authored encounter identically despite aggressive public queries", () => {
         const run = (queryBetweenActions: boolean) => {
-            const engine = new GameEngine(encounterList, 123456);
-            engine.loadCharacter(ko);
+            const engine = new GameEngine(encounterList, [ko], 123456);
+            engine.loadCharacter(ko.id);
             const loadEvents = engine.loadEncounter(plains_1.id);
             const snapshots = [engine.getGameState()];
             const results: ReturnType<GameEngine["executeAction"]>[] = [];
@@ -114,8 +114,8 @@ describe("turn phases and enemy intentions", () => {
         const hero = makeCharacterDef("hero", [move]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter = { id: "turn-phases", enemies: [foe], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(hero);
+        const engine = new GameEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         expect(engine.executeAction({
@@ -165,8 +165,9 @@ describe("turn phases and enemy intentions", () => {
         });
         const foe = makeEnemyDef("foe", [threat]);
         const encounter = { id: "cancel-intention", enemies: [foe], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero", [stunEnemy]));
+        const hero = makeCharacterDef("hero", [stunEnemy]);
+        const engine = new GameEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         expect(engine.getGameState().enemies[0].intentions[0]?.move).toBe(threat.id);
@@ -213,8 +214,9 @@ describe("turn phases and enemy intentions", () => {
             bindings: [],
             traps: [],
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero", [strike]));
+        const hero = makeCharacterDef("hero", [strike]);
+        const engine = new GameEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         expect(engine.getGameState().enemies[0].intentions[0]?.targets).toEqual([{
@@ -249,8 +251,9 @@ describe("enemy intention previews", () => {
         });
         const enemy = makeEnemyDef("foe", [enemyMove]);
         const encounter = { id: "preview", enemies: [enemy], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], seed);
-        engine.loadCharacter(makeCharacterDef("hero"));
+        const hero = makeCharacterDef("hero");
+        const engine = new GameEngine([encounter], [hero], seed);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
         return { engine, enemyMove, enemyId: "foe1" };
     }
@@ -303,8 +306,9 @@ describe("enemy intention previews", () => {
         });
         const enemy = makeEnemyDef("foe", [alwaysHit]);
         const encounter = { id: "stable-preview", enemies: [enemy], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], seed);
-        engine.loadCharacter(makeCharacterDef("hero"));
+        const hero = makeCharacterDef("hero");
+        const engine = new GameEngine([encounter], [hero], seed);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         const previews = Array.from(
@@ -359,8 +363,9 @@ describe("enemy intention previews", () => {
         });
         const enemy = makeEnemyDef("foe", [enemyMove]);
         const encounter = { id: "live-preview", enemies: [enemy], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], seed);
-        engine.loadCharacter(makeCharacterDef("hero", [guard]));
+        const hero = makeCharacterDef("hero", [guard]);
+        const engine = new GameEngine([encounter], [hero], seed);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         const before = engine.getGameState().enemies[0].intentions[0];

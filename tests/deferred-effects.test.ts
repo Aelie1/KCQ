@@ -16,8 +16,9 @@ function engineFor(move: ReturnType<typeof makeMove>): GameEngine {
         bindings: [],
         traps: [],
     };
-    const engine = new GameEngine([encounter], 1);
-    engine.loadCharacter(makeCharacterDef("hero", [move]));
+    const hero = makeCharacterDef("hero", [move]);
+    const engine = new GameEngine([encounter], [hero], 1);
+    engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }
@@ -154,8 +155,9 @@ describe("deferred binding onResolve effects", () => {
             bindings: [placeholder],
             traps: [],
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero"));
+        const hero = makeCharacterDef("hero");
+        const engine = new GameEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         const effect = engine.getGameState().enemies[0].intentions[0]?.targets[0]?.effects[0];

@@ -45,9 +45,10 @@ function loadQueen(options: QueenSetup = {}): GameEngine {
         traps: [],
         setup: options.setup,
     };
-    const engine = new GameEngine([encounter], options.seed ?? 1);
-    for (const character of options.characters ?? [makeBehavioralCharacter("hero")]) {
-        engine.loadCharacter(character);
+    const characters = options.characters ?? [makeBehavioralCharacter("hero")];
+    const engine = new GameEngine([encounter], characters, options.seed ?? 1);
+    for (const character of characters) {
+        engine.loadCharacter(character.id);
     }
     engine.loadEncounter(encounter.id);
     return engine;

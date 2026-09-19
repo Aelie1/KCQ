@@ -42,9 +42,9 @@ function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: numbe
     });
     const helper = makeCharacterDef("helper", [prepare]);
     const target = makeCharacterDef("target");
-    const engine = new GameEngine([], 1);
-    engine.loadCharacter(helper);
-    engine.loadCharacter(target);
+    const engine = new GameEngine([], [helper, target], 1);
+    engine.loadCharacter(helper.id);
+    engine.loadCharacter(target.id);
     expect(engine.executeAction({
         type: "move",
         actor: helper.id,

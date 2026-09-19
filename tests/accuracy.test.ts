@@ -127,8 +127,9 @@ describe("accuracy", () => {
                 ];
             },
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter({ ...actor.definition, getMoves: () => [move] });
+        const character = { ...actor.definition, getMoves: () => [move] };
+        const engine = new GameEngine([encounter], [character], 1);
+        engine.loadCharacter(character.id);
         engine.loadEncounter(encounter.id);
         const info = engine.getMoves(actor.id)
             .find(({ move: candidate }) => candidate.id === move.id)
@@ -395,8 +396,8 @@ describe("accuracy", () => {
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
             const encounter = { id: "accuracy", enemies: [foe], bindings: [], traps: [] };
-            const engine = new GameEngine([encounter], 123456);
-            engine.loadCharacter(hero);
+            const engine = new GameEngine([encounter], [hero], 123456);
+            engine.loadCharacter(hero.id);
             engine.loadEncounter(encounter.id);
             return moveUsed(engine.executeAction({
                 type: "move",
@@ -415,8 +416,8 @@ describe("accuracy", () => {
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
             const encounter = { id: "accuracy", enemies: [foe], bindings: [], traps: [] };
-            const engine = new GameEngine([encounter], 123456);
-            engine.loadCharacter(hero);
+            const engine = new GameEngine([encounter], [hero], 123456);
+            engine.loadCharacter(hero.id);
             engine.loadEncounter(encounter.id);
             return { engine, hero, move, foeId: `${foe.id}1` };
         };
@@ -465,8 +466,8 @@ describe("accuracy", () => {
             bindings: [],
             traps: [],
         };
-        const engine = new GameEngine([encounter], seed);
-        engine.loadCharacter(hero);
+        const engine = new GameEngine([encounter], [hero], seed);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         const result = engine.executeAction({
@@ -538,8 +539,8 @@ describe("accuracy", () => {
             const hero = makeCharacterDef("hero", [move]);
             const foe = makeEnemyDef(id, [makeWaitMove()]);
             const encounter = { id: `accuracy-${id}`, enemies: [foe], bindings: [], traps: [] };
-            const engine = new GameEngine([encounter], seed);
-            engine.loadCharacter(hero);
+            const engine = new GameEngine([encounter], [hero], seed);
+            engine.loadCharacter(hero.id);
             engine.loadEncounter(encounter.id);
             return moveUsed(engine.executeAction({
                 type: "move",
@@ -572,9 +573,11 @@ describe("accuracy", () => {
         const build = () => {
             const foe = makeEnemyDef("foe", [makeWaitMove()]);
             const encounter = { id: "zero-target", enemies: [foe], bindings: [], traps: [] };
-            const engine = new GameEngine([encounter], 1);
-            engine.loadCharacter(makeCharacterDef("zero-actor", [zeroTarget]));
-            engine.loadCharacter(makeCharacterDef("shooter", [targeted]));
+            const zeroActor = makeCharacterDef("zero-actor", [zeroTarget]);
+            const shooter = makeCharacterDef("shooter", [targeted]);
+            const engine = new GameEngine([encounter], [zeroActor, shooter], 1);
+            engine.loadCharacter(zeroActor.id);
+            engine.loadCharacter(shooter.id);
             engine.loadEncounter(encounter.id);
             return { engine, foeId: `${foe.id}1` };
         };

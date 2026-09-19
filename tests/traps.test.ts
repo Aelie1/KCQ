@@ -48,8 +48,9 @@ function makeTrapEngine(
         traps,
         setup,
     };
-    const engine = new GameEngine([encounter], seed);
-    for (const id of characterIds) engine.loadCharacter(makeCharacterDef(id, moves));
+    const characters = characterIds.map((id) => makeCharacterDef(id, moves));
+    const engine = new GameEngine([encounter], characters, seed);
+    for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }

@@ -32,9 +32,12 @@ function setupEscapeScenario(
             amount: setup.amount,
         })),
     });
-    const engine = new GameEngine([], 1);
-    for (const id of characterIds) {
-        engine.loadCharacter(makeCharacterDef(id, id === actorId ? [prepare] : []));
+    const characters = characterIds.map((id) =>
+        makeCharacterDef(id, id === actorId ? [prepare] : []),
+    );
+    const engine = new GameEngine([], characters, 1);
+    for (const character of characters) {
+        engine.loadCharacter(character.id);
     }
     expect(engine.executeAction({
         type: "move",
@@ -234,13 +237,14 @@ describe("escape progress", () => {
         ["unknown target", { type: "escape", actor: "hero", target: "missing", binding: "rope" }, "invalidTarget"],
         ["unknown binding", { type: "escape", actor: "hero", target: "hero", binding: "missing" }, "invalidBinding"],
     ] as const)("rejects an %s", (_label, action, reason) => {
-        const engine = new GameEngine([], 1);
-        engine.loadCharacter(makeCharacterDef("hero"));
+        const hero = makeCharacterDef("hero");
+        const engine = new GameEngine([], [hero], 1);
+        engine.loadCharacter(hero.id);
 
         expect(engine.executeAction(action)).toEqual({ success: false, reason });
     });
 
     it("returns null escape options for an invalid actor", () => {
-        expect(new GameEngine([], 1).getEscapes("missing")).toBeNull();
+        expect(new GameEngine([], [], 1).getEscapes("missing")).toBeNull();
     });
 });

@@ -1,5 +1,5 @@
-import type { EncounterDef } from "../src/engine/protected/definitions";
-import { makeEnemyDef, makeMove, makeWaitMove } from "./helpers";
+import type { CharacterDef, EncounterDef } from "../src/engine/protected/definitions";
+import { makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove } from "./helpers";
 
 export const waitMove = makeWaitMove();
 
@@ -24,3 +24,9 @@ export const multiEnemyEncounter: EncounterDef = {
     bindings: [],
     traps: [],
 };
+
+export const testHero = makeCharacterDef("hero");
+
+export const testAlly = makeCharacterDef("ally");
+
+export const testCharacterList: CharacterDef[] = [testHero, testAlly];

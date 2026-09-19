@@ -134,6 +134,7 @@ export function setupBoundEngine(
     binding: BindingDef,
     amount: number,
     additionalEncounters: EncounterDef[] = [],
+    additionalCharacters: CharacterDef[] = [],
 ) {
     const setupMove = makeMove("apply-binding", "mouth", {
         targetSide: "player",
@@ -150,8 +151,12 @@ export function setupBoundEngine(
     const hero = makeCharacterDef("hero", [setupMove, armsMove, mouthMove]);
     const foe = makeEnemyDef("foe", [makeWaitMove()]);
     const encounter: EncounterDef = { id: "bound-test", enemies: [foe], bindings: [], traps: [] };
-    const engine = new GameEngine([encounter, ...additionalEncounters], 1);
-    engine.loadCharacter(hero);
+    const engine = new GameEngine(
+        [encounter, ...additionalEncounters],
+        [hero, ...additionalCharacters],
+        1,
+    );
+    engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
 
     expect(engine.executeAction({

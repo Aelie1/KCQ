@@ -111,8 +111,9 @@ function makeEngine(
         traps: [],
         setup,
     };
-    const engine = new GameEngine([encounter], seed);
-    engine.loadCharacter(makeBehavioralCharacter("hero", moves));
+    const hero = makeBehavioralCharacter("hero", moves);
+    const engine = new GameEngine([encounter], [hero], seed);
+    engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }
@@ -213,8 +214,9 @@ describe("Binding Magic", () => {
             bindings: [latexHead, latexArms, latexTorso, latexLegs],
             traps: [],
         };
-        const engine = new GameEngine([encounter], 2);
-        engine.loadCharacter(makeBehavioralCharacter("hero"));
+        const hero = makeBehavioralCharacter("hero");
+        const engine = new GameEngine([encounter], [hero], 2);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         const intention = enemyState(engine, "fairy1").intentions[0];
@@ -255,8 +257,9 @@ describe("Binding Magic", () => {
                 amount: 80,
             })),
         };
-        const engine = new GameEngine([encounter], 2);
-        engine.loadCharacter(makeBehavioralCharacter("hero"));
+        const hero = makeBehavioralCharacter("hero");
+        const engine = new GameEngine([encounter], [hero], 2);
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         expect(enemyState(engine, "fairy1").intentions.map(({ move }) => move))

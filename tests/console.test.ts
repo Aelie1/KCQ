@@ -60,7 +60,7 @@ const state: GameState = {
     encounter: null
 };
 
-const bindingThresholds = new GameEngine([], 1).getThresholds();
+const bindingThresholds = new GameEngine([], [], 1).getThresholds();
 
 const longIntention: Intention = {
     move: "royalMist",
@@ -556,8 +556,8 @@ describe("console formatting", () => {
     });
 
     it("automatically ends the turn after the last available character acts", async () => {
-        const engine = new GameEngine(encounterList, 8224);
-        engine.loadCharacter(ko);
+        const engine = new GameEngine(encounterList, [ko], 8224);
+        engine.loadCharacter(ko.id);
         const events = engine.loadEncounter("plains_1");
         const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
 
@@ -573,8 +573,8 @@ describe("console formatting", () => {
     });
 
     it("puts a single accuracy preview on the move row", async () => {
-        const engine = new GameEngine([oneEnemyEncounter], 2);
-        engine.loadCharacter(ko);
+        const engine = new GameEngine([oneEnemyEncounter], [ko], 2);
+        engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
         const rendered = await runScriptedConsole(engine, ["1", "7", "3"], events);
@@ -600,8 +600,8 @@ describe("console formatting", () => {
     });
 
     it("executes a one-target move immediately when only one valid target exists", async () => {
-        const engine = new GameEngine([oneEnemyEncounter], 8);
-        engine.loadCharacter(ko);
+        const engine = new GameEngine([oneEnemyEncounter], [ko], 8);
+        engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
         const rendered = await runScriptedConsole(engine, ["1", "1", "3"], events);
@@ -611,8 +611,8 @@ describe("console formatting", () => {
     });
 
     it("retains target selection when a one-target move has multiple valid targets", async () => {
-        const engine = new GameEngine([multiEnemyEncounter], 8224);
-        engine.loadCharacter(ko);
+        const engine = new GameEngine([multiEnemyEncounter], [ko], 8224);
+        engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
         const rendered = await runScriptedConsole(engine, ["1", "1", "2", "3"], events);
@@ -634,9 +634,11 @@ describe("console formatting", () => {
 
     it("numbers detailed ally target rows without adding a duplicate list", async () => {
         const assistMove = makeMove("assist", "mouth", { targetSide: "player" });
-        const engine = new GameEngine([oneEnemyEncounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero", [assistMove]));
-        engine.loadCharacter(makeCharacterDef("ally"));
+        const hero = makeCharacterDef("hero", [assistMove]);
+        const ally = makeCharacterDef("ally");
+        const engine = new GameEngine([oneEnemyEncounter], [hero, ally], 1);
+        engine.loadCharacter(hero.id);
+        engine.loadCharacter(ally.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
         const rendered = await runScriptedConsole(engine, ["1", "1", "2", "4"], events);
@@ -656,8 +658,9 @@ describe("console formatting", () => {
 
     it("renumbers the remaining detailed rows during multi-target selection", async () => {
         const sweep = makeMove("sweep", "mouth", { targets: 2 });
-        const engine = new GameEngine([multiEnemyEncounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero", [sweep]));
+        const hero = makeCharacterDef("hero", [sweep]);
+        const engine = new GameEngine([multiEnemyEncounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
         const rendered = await runScriptedConsole(
@@ -685,8 +688,9 @@ describe("console formatting", () => {
 
     it("keeps all-target accuracy rows informational and unnumbered", async () => {
         const allMove = makeMove("all-move", "mouth", { targets: "all" });
-        const engine = new GameEngine([multiEnemyEncounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero", [allMove]));
+        const hero = makeCharacterDef("hero", [allMove]);
+        const engine = new GameEngine([multiEnemyEncounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
         const rendered = await runScriptedConsole(
@@ -710,8 +714,9 @@ describe("console formatting", () => {
         const selectiveMove = makeMove("selective", "mouth", {
             isValid: (_move, target) => target?.id === "attacker1" ? "invalidTarget" : undefined,
         });
-        const engine = new GameEngine([multiEnemyEncounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero", [selectiveMove]));
+        const hero = makeCharacterDef("hero", [selectiveMove]);
+        const engine = new GameEngine([multiEnemyEncounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
         const rendered = await runScriptedConsole(engine, ["1", "1", "3"], events);
@@ -727,8 +732,9 @@ describe("console formatting", () => {
             targets: "all",
             isValid: () => "invalidTarget",
         });
-        const engine = new GameEngine([oneEnemyEncounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero", [emptyAllMove]));
+        const hero = makeCharacterDef("hero", [emptyAllMove]);
+        const engine = new GameEngine([oneEnemyEncounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
         const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
@@ -759,8 +765,9 @@ describe("console formatting", () => {
                 }));
             },
         };
-        const engine = new GameEngine([encounter], 1);
-        engine.loadCharacter(makeCharacterDef("hero"));
+        const hero = makeCharacterDef("hero");
+        const engine = new GameEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
 
         const rendered = await runScriptedConsole(
@@ -780,8 +787,8 @@ describe("console formatting", () => {
     });
 
     it("replaces stored bindings when a newer encounter event is received", async () => {
-        const engine = new GameEngine(encounterList, 8224);
-        engine.loadCharacter(ko);
+        const engine = new GameEngine(encounterList, [ko], 8224);
+        engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const events: GameEvent[] = [
             { type: "encounterLoad", id: "old", success: true, bindings: ["oldBinding"] },
@@ -795,9 +802,10 @@ describe("console formatting", () => {
     });
 
     it("shows a fully acted character without assigning it a menu number", async () => {
-        const engine = new GameEngine(encounterList, 8224);
-        engine.loadCharacter(ko);
-        engine.loadCharacter(makeCharacterDef("ally"));
+        const ally = makeCharacterDef("ally");
+        const engine = new GameEngine(encounterList, [ko, ally], 8224);
+        engine.loadCharacter(ko.id);
+        engine.loadCharacter(ally.id);
         const events = engine.loadEncounter("plains_1");
 
         const rendered = await runScriptedConsole(engine, ["1", "1", "1", "4"], events);
@@ -813,9 +821,10 @@ describe("console formatting", () => {
         const helplessBinding = makeBindingDef("helpless-source", {
             easy: [{ definition: helpless, value: 1 }],
         });
-        const { engine } = setupBoundEngine(helplessBinding, thresholds.easy);
         const wait = makeMove("player-wait", "mouth", { targetSide: "none", targets: 0 });
-        engine.loadCharacter(makeCharacterDef("ally", [wait]));
+        const ally = makeCharacterDef("ally", [wait]);
+        const { engine } = setupBoundEngine(helplessBinding, thresholds.easy, [], [ally]);
+        engine.loadCharacter(ally.id);
 
         const rendered = await runScriptedConsole(engine, ["2", "1", "4"]);
 
@@ -866,8 +875,8 @@ describe("console formatting", () => {
     });
 
     it("stays alive while undersized and resumes normal rendering after resize", async () => {
-        const engine = new GameEngine(encounterList, 8224);
-        engine.loadCharacter(ko);
+        const engine = new GameEngine(encounterList, [ko], 8224);
+        engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const input = new PassThrough();
         const output = Object.assign(new PassThrough(), { columns: 80, rows: 20 });

@@ -72,9 +72,10 @@ function loadHinariEncounter(options: {
         traps: options.traps ?? [],
         setup: options.setup,
     };
-    const engine = new GameEngine([encounter], options.seed ?? 1);
-    engine.loadCharacter(hinari);
-    for (const ally of options.allies ?? []) engine.loadCharacter(ally);
+    const allies = options.allies ?? [];
+    const engine = new GameEngine([encounter], [hinari, ...allies], options.seed ?? 1);
+    engine.loadCharacter(hinari.id);
+    for (const ally of allies) engine.loadCharacter(ally.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }

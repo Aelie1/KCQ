@@ -60,9 +60,12 @@ function setupLatexScenario(
             return effects;
         },
     });
-    const engine = new GameEngine([], 1);
-    for (const [index, id] of characterIds.entries()) {
-        engine.loadCharacter(makeBehavioralCharacter(id, index === 0 ? [prepare] : []));
+    const characters = characterIds.map((id, index) =>
+        makeBehavioralCharacter(id, index === 0 ? [prepare] : []),
+    );
+    const engine = new GameEngine([], characters, 1);
+    for (const character of characters) {
+        engine.loadCharacter(character.id);
     }
     execute(engine, {
         type: "move",

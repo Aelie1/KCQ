@@ -50,8 +50,9 @@ function loadSkunk(options: {
             return effects;
         },
     };
-    const engine = new GameEngine([encounter], options.seed);
-    for (const id of characterIds) engine.loadCharacter(makeCharacterDef(id));
+    const characters = characterIds.map((id) => makeCharacterDef(id));
+    const engine = new GameEngine([encounter], characters, options.seed);
+    for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }
