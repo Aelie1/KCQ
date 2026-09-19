@@ -146,26 +146,26 @@ export interface iMoveEffect {
     targets: iEntity[];
 }
 
-export interface iRefreshEffect {
+interface iRefreshEffect {
     type: "refresh"
     target: iCharacter;
 }
 
-export interface iRetargetEffect {
+interface iRetargetEffect {
     type: "intention"
     operation: "target";
     target: iEnemy;
     destination: iCharacter;
 }
 
-export interface iCancelEffect {
+interface iCancelEffect {
     type: "intention"
     operation: "cancel";
     target: iEnemy;
     amount: number;
 }
 
-export interface iDataEffect {
+interface iDataEffect {
     type: "data"
     target: iEntity;
     name: string;

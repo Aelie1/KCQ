@@ -1,15 +1,4 @@
-import type {
-    AccuracyProfile,
-    AvailabilityInfo,
-    BindingId,
-    Character,
-    Enemy,
-    GameState,
-    ModifierId,
-    MoveType,
-    Status,
-    ThresholdInfo,
-} from "../engine/public/types";
+import type { AccuracyProfile, BindingId, Character, Enemy, EntityId, FailureReason, GameState, ModifierId, MoveType, Status, ThresholdInfo, } from "../engine/public/types";
 import { formatBuff, formatIntention } from "./format";
 
 export const MIN_TERMINAL_WIDTH = 120;
@@ -18,7 +7,11 @@ const BINDING_BAR_WIDTH = 20;
 const TRAP_BAR_WIDTH = 20;
 const BUFF_COLUMN_GAP = 4;
 
-export type BindingThresholds = ThresholdInfo;
+export interface AvailabilityInfo {
+    id: EntityId;
+    available: boolean;
+    reason?: FailureReason;
+}
 
 export interface ScreenModel {
     encounter: string;
@@ -26,7 +19,7 @@ export interface ScreenModel {
     state: GameState;
     availability: AvailabilityInfo[];
     bindings: BindingId[];
-    bindingThresholds: BindingThresholds;
+    bindingThresholds: ThresholdInfo;
     actionLines: string[];
     logLines: string[];
 }
@@ -99,7 +92,7 @@ function formatParty(
     characters: Character[],
     availability: AvailabilityInfo[],
     bindingIds: BindingId[],
-    bindingThresholds: BindingThresholds,
+    bindingThresholds: ThresholdInfo,
     width: number,
 ): string[] {
     if (characters.length === 0) return ["No player characters loaded."];
@@ -256,7 +249,7 @@ function trapDisplayName(id: string, amount: number): string {
     return amount === 1 || name.endsWith("s") ? name : `${name}s`;
 }
 
-function bindingBar(value: number, bindingThresholds: BindingThresholds): string {
+function bindingBar(value: number, bindingThresholds: ThresholdInfo): string {
     const max = bindingThresholds.max;
     const boundedValue = Math.max(0, Math.min(max, value));
     const filled = max > 0 ? Math.round(boundedValue / max * BINDING_BAR_WIDTH) : 0;
@@ -436,3 +429,7 @@ export function renderTooSmall(width: number, height: number): string {
     return `Terminal too small: current ${width}x${height}; required `
         + `${MIN_TERMINAL_WIDTH}x${MIN_TERMINAL_HEIGHT}.`;
 }
+/*******************************************************
+ * Actions
+ *******************************************************/
+

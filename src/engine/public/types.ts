@@ -286,16 +286,6 @@ export type ModifierId =
     | "spread"
 
 
-/*******************************************************
- * Actions
- *******************************************************/
-
-export interface AvailabilityInfo {
-    id: EntityId;
-    available: boolean;
-    reason?: FailureReason;
-}
-
 export interface ActionInfo {
     move: Move;
     available: boolean;

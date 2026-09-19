@@ -1,21 +1,8 @@
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
-import type {
-    ActionInfo,
-    ActionResult,
-    BindingId,
-    Engine,
-    EntityId,
-    EscapeInfo,
-    GameEvent,
-    PlayerAction,
-    ValidTarget,
-} from "../engine/public/types";
+import type { ActionInfo, ActionResult, BindingId, Engine, EntityId, EscapeInfo, GameEvent, PlayerAction, ValidTarget } from "../engine/public/types";
 import { formatEffects, formatEvents } from "./format";
-import {
-    formatAccuracyRow,
-    renderScreen,
-} from "./render";
+import { formatAccuracyRow, renderScreen } from "./render";
 
 interface ConsoleStreams {
     input: Readable;
