@@ -57,7 +57,7 @@ const latexRain: MoveDef = {
                         source: actor,
                         target: target.target,
                         binding: binding,
-                        amount: (this.baseDamage ?? 1) * target.effectiveness
+                        amount: (move.definition.baseDamage ?? 1) * target.effectiveness
                     });
                 }
             }

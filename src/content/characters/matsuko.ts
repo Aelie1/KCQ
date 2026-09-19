@@ -4,6 +4,7 @@ import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
 import { iBuff, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { ActionFailureReason } from "../../engine/public/types";
+import { removeEmpowerment } from "./ko";
 
 
 const PUNCH_DAMAGE = 100;
@@ -70,7 +71,7 @@ const punch: MoveDef = {
                     type: "damage",
                     source: actor,
                     target: target.target,
-                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }
@@ -98,7 +99,7 @@ const kick: MoveDef = {
                     type: "damage",
                     source: actor,
                     target: target.target,
-                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }
@@ -127,10 +128,24 @@ const whiteFlame: MoveDef = {
                     type: "damage",
                     source: actor,
                     target: target.target,
-                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }
+        return effects;
+    }
+}
+
+const fairyWhiteFlame: MoveDef = {
+    ...whiteFlame,
+    id: "fairyWhiteFlame",
+    modifiers: {
+        ...whiteFlame.modifiers,
+        potency: 2,
+    },
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects = whiteFlame.resolve(state, actor, move, targets);
+        effects.push(...removeEmpowerment(actor));
         return effects;
     }
 }
@@ -156,20 +171,11 @@ const phoenixKick: MoveDef = {
                     type: "damage",
                     source: actor,
                     target: target.target,
-                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }
         return effects;
-    }
-}
-
-const fairyWhiteFlame: MoveDef = {
-    ...whiteFlame,
-    id: "fairyWhiteFlame",
-    modifiers: {
-        ...whiteFlame.modifiers,
-        potency: 2,
     }
 }
 
@@ -179,6 +185,11 @@ const fairyPhoenixKick: MoveDef = {
     modifiers: {
         ...phoenixKick.modifiers,
         hit: 2,
+    },
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects = phoenixKick.resolve(state, actor, move, targets);
+        effects.push(...removeEmpowerment(actor));
+        return effects;
     }
 }
 
@@ -202,7 +213,7 @@ const immolation: MoveDef = {
                     type: "damage",
                     source: actor,
                     target: target.target,
-                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }

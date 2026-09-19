@@ -284,16 +284,20 @@ describe("move validation and player actions", () => {
             type: "moveUsed",
             actor: ko.id,
             move: move.id,
-            targets: [{ target: enemyId, result: "hit" }],
+            targets: [{ target: enemyId, result: "hit" }, { target: enemyId, result: "crit" }],
         });
-        const damageEvent = result.events.find((event) => event.type === "enemyDamaged");
-        if (!damageEvent || damageEvent.type !== "enemyDamaged") {
-            throw new Error("Expected Fairy Telekinesis to damage an enemy");
+        const damageEvents = result.events.filter((event) => event.type === "enemyDamaged");
+        let totalDamage = 0;
+        for (const damageEvent of damageEvents) {
+            if (!damageEvent || damageEvent.type !== "enemyDamaged") {
+                throw new Error("Expected Fairy Telekinesis to damage an enemy");
+            }
+            expect(damageEvent).toMatchObject({ target: enemyId, amount: expect.any(Number) });
+            expect(damageEvent.amount).toBeGreaterThan(0);
+            totalDamage += damageEvent.amount;
         }
-        expect(damageEvent).toMatchObject({ target: enemyId, amount: expect.any(Number) });
-        expect(damageEvent.amount).toBeGreaterThan(0);
         expect(engine.getGameState().enemies[0].currHp).toBe(
-            foe.hp - damageEvent.amount,
+            foe.hp - totalDamage,
         );
     });
 

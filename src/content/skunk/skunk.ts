@@ -167,7 +167,7 @@ const latexSpray: MoveDef = {
                 source: actor,
                 target: target.target,
                 binding: move.binding,
-                amount: (this.baseDamage ?? 1) * target.effectiveness
+                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
             });
         }
         return effects;
@@ -197,7 +197,7 @@ const latexPuddle: MoveDef = {
             type: "trap",
             actor: actor,
             trap: trap,
-            amount: (this.baseDamage ?? 1) * (move.effectiveness ?? 0)
+            amount: (move.definition.baseDamage ?? 1) * (move.effectiveness ?? 0)
         });
 
         return effects;
@@ -231,7 +231,7 @@ const latexRegeneration: MoveDef = {
                         source: actor,
                         target: target.target,
                         binding: move.binding,
-                        amount: (this.baseDamage ?? 1) * target.effectiveness,
+                        amount: (move.definition.baseDamage ?? 1) * target.effectiveness,
                         onResolve: regenerateCallback
                     });
                 }
@@ -309,7 +309,7 @@ const latexExplosion: MoveDef = {
                     source: actor,
                     target: target.target,
                     binding: binding,
-                    amount: (this.baseDamage ?? 1) * target.effectiveness
+                    amount: (move.definition.baseDamage ?? 1) * target.effectiveness
                 });
             }
             if (target.band === "crit") {

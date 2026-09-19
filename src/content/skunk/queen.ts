@@ -200,7 +200,7 @@ const skunkGun: MoveDef = {
                 source: actor,
                 target: target.target,
                 binding: move.binding,
-                amount: (this.baseDamage ?? 1) * target.effectiveness
+                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
             });
         }
         return effects;
@@ -234,7 +234,7 @@ const skunkCollar: MoveDef = {
                 source: actor,
                 target: target.target,
                 binding: latexCollar,
-                amount: (this.baseDamage ?? 1) * target.effectiveness
+                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
             });
         }
         return effects;

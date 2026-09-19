@@ -2,6 +2,7 @@ import { BindingDef, CharacterDef, MoveDef } from "../../engine/protected/defini
 import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { ActionFailureReason } from "../../engine/public/types";
+import { removeEmpowerment } from "./ko";
 
 const SUBSPACE_MAX = 100;
 
@@ -42,7 +43,7 @@ export const hinari: CharacterDef = {
         return moves;
     },
     passives: [],
-    data: { "subspace": 0 }
+    data: { "subspace": 0, "subspaceMax": SUBSPACE_MAX }
 };
 
 
@@ -166,7 +167,7 @@ const rockfall: MoveDef = {
                     type: "damage",
                     source: actor,
                     target: target.target,
-                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }
@@ -177,6 +178,11 @@ const rockfall: MoveDef = {
 const fairyRockfall: MoveDef = {
     ...rockfall,
     id: "fairyRockfall",
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects = rockfall.resolve(state, actor, move, targets);
+        effects.push(...removeEmpowerment(actor));
+        return effects;
+    }
 }
 
 const release: MoveDef = {
@@ -201,7 +207,7 @@ const release: MoveDef = {
                     type: "damage",
                     source: actor,
                     target: target.target,
-                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 });
                 effects.push({
                     type: "data",

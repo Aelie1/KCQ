@@ -333,6 +333,7 @@ describe("Ko's normal and Fairy move effects", () => {
 
         expect(engine.getMoves(ko.id).find(({ move }) => move.id === "fairyTelekinesis"))
             .toMatchObject({ move: { targets: "all", targetSide: "enemy" }, available: true });
+
         const result = execute(engine, {
             type: "move",
             actor: ko.id,
@@ -344,26 +345,42 @@ describe("Ko's normal and Fairy move effects", () => {
             type: "moveUsed",
             targets: [
                 { target: "first1", result: "hit" },
+                { target: "first1", result: "crit" },
+                { target: "second1", result: "hit" },
                 { target: "second1", result: "crit" },
             ],
         });
+
         expect(result.events).toEqual(expect.arrayContaining([
             {
                 type: "enemyDamaged",
                 target: "first1",
-                amount: 100,
+                amount: 50,
+            },
+            {
+                type: "enemyDamaged",
+                target: "first1",
+                amount: 94,
             },
             {
                 type: "enemyDamaged",
                 target: "second1",
-                amount: 188,
+                amount: 48,
+            },
+            {
+                type: "enemyDamaged",
+                target: "second1",
+                amount: 98,
             },
         ]));
+
         expect(result.state.enemies.find(({ id }) => id === "first1")?.currHp)
-            .toBe(400);
+            .toBe(356);
         expect(result.state.enemies.find(({ id }) => id === "second1")?.currHp)
-            .toBe(312);
+            .toBe(354);
+
         expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
+
         expectMoveSet(engine, [
             "telekinesis",
             "starlightBindings",
@@ -559,10 +576,10 @@ describe("Ko's normal and Fairy move effects", () => {
             modifiers: { defense: 3 },
         });
         expect(buffState(engine, "fairyTransformation", "ally")).toMatchObject({
-            modifiers: { defense: 3 },
+            modifiers: { defense: 2 },
         });
         expect(engine.getGameState().characters.map(({ modifiers }) => modifiers))
-            .toEqual([{ defense: 3 }, { defense: 3 }]);
+            .toEqual([{ defense: 3 }, { defense: 2 }]);
         expect(engine.getMoves(ally.id).map(({ move }) => move.id)).toEqual([allyFairy.id]);
         expectMoveSet(engine, [
             "telekinesis",

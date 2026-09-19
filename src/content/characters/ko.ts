@@ -43,19 +43,23 @@ const telekinesis: MoveDef = {
                     type: "damage",
                     source: actor,
                     target: target.target,
-                    amount: ((this.baseDamage ?? 1) * target.effectiveness)
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 });
             }
         }
-        const fairyBuff = findBuff(actor, "fairyEmpowerment");
-        if (fairyBuff) {
-            effects.push({
-                type: "buff",
-                target: actor,
-                buff: fairyBuff,
-                operation: "remove"
-            })
-        }
+        return effects;
+    }
+}
+
+const fairyTelekinesis: MoveDef = {
+    ...telekinesis,
+    id: "fairyTelekinesis",
+    targets: "all",
+    baseDamage: TELEKINESIS_DAMAGE / 2,
+    baseHits: 2,
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects = telekinesis.resolve(state, actor, move, targets);
+        effects.push(...removeEmpowerment(actor));
         return effects;
     }
 }
@@ -88,18 +92,20 @@ const starlightBindings: MoveDef = {
                 });
             }
         }
-
-        const fairyBuff = findBuff(actor, "fairyEmpowerment");
-        if (fairyBuff) {
-            effects.push({
-                type: "buff",
-                target: actor,
-                buff: fairyBuff,
-                operation: "remove"
-            })
-        }
         return effects;
     }
+}
+
+const fairyStarlightBindings: MoveDef = {
+    ...starlightBindings,
+    id: "fairyStarlightBindings",
+    targets: "all",
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects = starlightBindings.resolve(state, actor, move, targets);
+        effects.push(...removeEmpowerment(actor));
+        return effects;
+    }
+
 }
 
 const reflect: MoveDef = {
@@ -133,15 +139,17 @@ const reflect: MoveDef = {
             });
         }
 
-        const fairyBuff = findBuff(actor, "fairyEmpowerment");
-        if (fairyBuff) {
-            effects.push({
-                type: "buff",
-                target: actor,
-                buff: fairyBuff,
-                operation: "remove"
-            })
-        }
+        return effects;
+    }
+}
+
+const fairyReflect: MoveDef = {
+    ...reflect,
+    id: "fairyReflect",
+    targets: "all",
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects = reflect.resolve(state, actor, move, targets);
+        effects.push(...removeEmpowerment(actor));
         return effects;
     }
 }
@@ -153,15 +161,8 @@ const fairyTransformation: MoveDef = {
     type: "mouth",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
-        const newTargets: iEntity[] = [];
-        if (targets.length === 0) {
-            newTargets.push(actor);
-        }
-        else {
-            newTargets.push(...targets.map(x => x.target));
-        }
 
-        const buff: iBuff = {
+        const transformBuff: iBuff = {
             id: "fairyTransformation",
             active: true,
             duration: 3,
@@ -170,64 +171,73 @@ const fairyTransformation: MoveDef = {
             }
         }
 
-        for (const target of newTargets) {
+        effects.push({
+            type: "buff",
+            target: actor,
+            buff: transformBuff,
+            operation: "add"
+        })
+
+        const fairyBuff = findBuff(actor, "fairyEmpowerment");
+        if (!fairyBuff) {
+            const newBuff = {
+                id: "fairyEmpowerment",
+                active: true,
+            }
+
             effects.push({
                 type: "buff",
-                target: target,
-                buff: buff,
+                target: actor,
+                buff: newBuff,
                 operation: "add"
-            });
-
-            const fairyBuff = findBuff(actor, "fairyEmpowerment");
-            if (target === actor && fairyBuff) {
-                effects.push({
-                    type: "buff",
-                    target: target,
-                    buff: fairyBuff,
-                    operation: "remove"
-                })
-            } else {
-                const newBuff = {
-                    id: "fairyEmpowerment",
-                    active: true,
-                }
-
-                effects.push({
-                    type: "buff",
-                    target: target,
-                    buff: newBuff,
-                    operation: "add"
-                })
-            }
+            })
         }
+
         return effects;
     }
-}
-
-const fairyTelekinesis: MoveDef = {
-    ...telekinesis,
-    id: "fairyTelekinesis",
-    targets: "all",
-    baseDamage: TELEKINESIS_DAMAGE / 2,
-    baseHits: 2,
-}
-
-const fairyStarlightBindings: MoveDef = {
-    ...starlightBindings,
-    id: "fairyStarlightBindings",
-    targets: "all"
-}
-
-const fairyReflect: MoveDef = {
-    ...reflect,
-    id: "fairyReflect",
-    targets: "all"
 }
 
 const fairyEmpowerment: MoveDef = {
     ...fairyTransformation,
     id: "fairyEmpowerment",
-    targets: "all"
+    targets: "all",
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+        const effects = fairyTransformation.resolve(state, actor, move, targets);
+        effects.push(...removeEmpowerment(actor));
+
+        const transformBuff: iBuff = {
+            id: "fairyTransformation",
+            active: true,
+            duration: 2,
+            modifiers: {
+                defense: 2,
+            }
+        }
+        const empowerBuff = {
+            id: "fairyEmpowerment",
+            active: true,
+        }
+
+        for (const { target } of targets) {
+            if (target !== actor) {
+                effects.push({
+                    type: "buff",
+                    target: target,
+                    buff: transformBuff,
+                    operation: "add"
+                });
+
+                effects.push({
+                    type: "buff",
+                    target: target,
+                    buff: empowerBuff,
+                    operation: "add"
+                });
+            }
+        }
+
+        return effects;
+    }
 }
 
 function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
@@ -252,4 +262,18 @@ function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, 
         newAmount = 0;
     }
     return { value: newAmount, effects: effects };
+}
+
+export function removeEmpowerment(actor: iEntity): iEffect[] {
+    const effects: iEffect[] = [];
+    const fairyBuff = findBuff(actor, "fairyEmpowerment");
+    if (fairyBuff) {
+        effects.push({
+            type: "buff",
+            target: actor,
+            buff: fairyBuff,
+            operation: "remove"
+        })
+    }
+    return effects;
 }

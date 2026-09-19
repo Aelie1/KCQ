@@ -230,7 +230,7 @@ const latexSpray: MoveDef = {
                 source: actor,
                 target: target.target,
                 binding: move.binding,
-                amount: (this.baseDamage ?? 1) * target.effectiveness
+                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
             });
         }
         return effects;
@@ -341,7 +341,7 @@ const latexMist: MoveDef = {
                     source: actor,
                     target: character,
                     binding: binding.definition,
-                    amount: (this.baseDamage ?? 1) * target.effectiveness
+                    amount: (move.definition.baseDamage ?? 1) * target.effectiveness
                 });
             }
             else if (target.band === "crit" && isCharacter(character) && character.bindings.length > 0) {
@@ -351,7 +351,7 @@ const latexMist: MoveDef = {
                         source: actor,
                         target: character,
                         binding: binding.definition,
-                        amount: (this.baseDamage ?? 1) * target.effectiveness / 2
+                        amount: (move.definition.baseDamage ?? 1) * target.effectiveness / 2
                     });
                 }
             }
