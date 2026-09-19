@@ -618,8 +618,17 @@ describe("console formatting", () => {
         const rendered = await runScriptedConsole(engine, ["1", "1", "2", "3"], events);
 
         expect(rendered).toContain("Choose target 1 of 1 for telekinesis.");
-        expect(rendered).toContain("[1] foe1");
-        expect(rendered).toContain("[2] attacker1");
+        const targetScreen = rendered.split("\x1b[2J\x1b[H")
+            .find((screen) => screen.includes("Choose target 1 of 1 for telekinesis."));
+        expect(targetScreen).toBeDefined();
+        const firstTargetLines = targetScreen?.split("\n")
+            .filter((line) => line.includes("[1] foe1")) ?? [];
+        const secondTargetLines = targetScreen?.split("\n")
+            .filter((line) => line.includes("[2] attacker1")) ?? [];
+        expect(firstTargetLines).toHaveLength(1);
+        expect(firstTargetLines[0]).toContain("Miss:");
+        expect(secondTargetLines).toHaveLength(1);
+        expect(secondTargetLines[0]).toContain("Miss:");
         expect(rendered).toMatch(/telekinesis on attacker1: (MISS|GRAZE|HIT|CRIT)/);
     });
 

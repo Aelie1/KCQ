@@ -153,14 +153,12 @@ export async function runConsoleClient(
                 return false;
             }
 
-            const lines = accuracyLines(candidates);
-            const choices = candidates.map((target, index) => `[${index + 1}] ${target.target}`);
+            const choices = accuracyLines(candidates)
+                .map((line, index) => `[${index + 1}] ${line}`);
             choices.push(`[${choices.length + 1}] Back`);
             const choice = await choose([
                 `Choose target ${selected.length + 1} of ${move.targets} for ${move.id}.`,
                 ...(selected.length ? [`Selected: ${selected.join(", ")}`] : []),
-                "",
-                ...lines,
                 "",
                 ...choices,
             ], choices.length);
