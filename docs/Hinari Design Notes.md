@@ -1,469 +1,447 @@
-# Hinari — Character Design Spec v1
+# Hinari — Character Design Spec v2
 
-**Status:** Early working character design
-**Role:** Spatial controller / defensive resource manager
-**Core identity:** Hinari uses her subspace inventory to remove pressure from allies, siphon power out of incoming enemy attacks, and absorb attacks aimed at herself. Everything she stores clogs the same inventory she relies on for offense and defense, gradually reducing her options until she releases the accumulated contents.
+**Status:** 0.3 working character design
+**Role:** Spatial support / bondage redistribution / multihit attacker
+**Core identity:** Hinari manipulates space to move restraints away from allies and into her Subspace Inventory. The fuller her Inventory becomes, the weaker her offense becomes and the fewer defensive options she retains. She must continually decide whether to absorb more problems, tolerate congestion, or dump stored material back onto the battlefield.
 
-The central tension is:
+Hinari does **not** destroy bondage.
 
-> **The more Hinari protects the party, the less functional her own inventory becomes.**
+Her central rule is:
 
-Unlike a traditional charge meter, **Subspace Load is primarily congestion, not power**. High Load should be useful in some ways, but remaining full should be a meaningful disadvantage rather than the obvious optimal state.
-
----
-
-## 1. Subspace Load
-
-Hinari has a **Subspace Load** ranging from `0` to a tentative maximum of `100`.
-
-Load represents bindings, attacks, debris, and other material currently obstructing her subspace inventory.
-
-Several parts of Hinari's kit depend directly on Load:
-
-* **Store** adds Load.
-* **Brace** adds Load when it absorbs an attack.
-* **Rockfall** becomes progressively weaker as Load rises.
-* **Brace** becomes less effective as free capacity disappears.
-* **Release** empties the inventory.
-* Some effects may become stronger at high Load, but Release should **not** become a huge damage nuke.
-
-The intended shape is:
-
-```text
-Low Load
-= maximum flexibility
-= strongest Rockfall
-= maximum Brace capacity
-= plenty of room for Store
-
-High Load
-= weaker inventory attacks
-= less defensive capacity
-= increased danger of overflow
-= more useful Release riders
-
-Full
-= inventory essentially clogged shut
-```
-
-### Overflow
-
-Store is not simply disabled when Hinari reaches capacity.
-
-If Hinari attempts to store more than her remaining capacity:
-
-```text
-free space = max load - current load
-stored = min(amount, free space)
-overflow = amount - stored
-```
-
-The excess **spills onto Hinari as binding pressure** rather than disappearing.
-
-This allows Hinari to continue protecting someone even while nearly full, but forces her to personally absorb the consequences.
-
-Exact overflow binding rules are still TBD.
+> **Hinari can move problems around. She cannot make them disappear for free.**
 
 ---
 
-## 2. Store
+## 1. Core Gameplay Loop
 
-**Type:** Support / Control
-**Role:** Proactive pressure transfer
-**Target:** Ally or enemy
+Hinari's gameplay revolves around **Subspace Load**, ranging from **0–100**.
 
-Store is Hinari's central mechanic.
+She can increase Subspace Load by:
 
-Hinari takes part of a problem that currently exists elsewhere and places it into subspace.
+* using **Store** to remove bondage from an ally;
+* using **Brace** to absorb incoming bondage that would otherwise affect her.
 
-### Store — ally
+A fuller Subspace directly interferes with her offensive ability.
 
-When used on an ally:
+Hinari reduces Subspace by actively using **Release** to move stored material somewhere else.
 
-* find that ally's highest binding;
-* remove some amount of that binding;
-* add the removed amount to Hinari's Subspace Load;
-* if Hinari does not have enough free capacity, the excess spills onto Hinari.
+There is **no passive Subspace recovery**.
 
-Conceptually:
+This creates a repeating loop:
 
-```text
-Ko:
-Latex Arms 45
+> **Rescue / absorb → become congested → lose offensive efficiency → Release → recover capacity**
 
-Hinari uses Store for 20.
+Subspace is therefore both:
 
-Ko:
-Latex Arms 25
+* a defensive resource she wants available;
+* and a burden she does not want to fill unnecessarily.
 
-Hinari:
-Subspace Load +20
-```
-
-Store is therefore not a generic heal. Hinari is **physically relocating the restraint**.
-
-### Store — enemy
-
-When used on an enemy with a compatible offensive intention, Hinari siphons part of the impending attack into subspace.
-
-Current direction:
-
-1. Evaluate the enemy's locked intention using its current adjusted accuracy profile.
-2. Determine the intention's current result band.
-3. Lower the locked roll to the **bottom of that same band**.
-4. Re-evaluate the resulting effect.
-5. The removed portion becomes Subspace Load.
-
-For example:
-
-```text
-Current adjusted profile:
-Miss   0–19
-Graze 20–44
-Hit   45–91
-Crit  92–99
-
-Locked roll: 73
-Result: Hit
-
-Store:
-73 -> 45
-
-The attack remains a Hit,
-but all excess effectiveness within Hit is removed.
-```
-
-This deliberately differs from Matsuko's **Stop!**
-
-**Stop!** may immediately knock an attack into a lower band.
-
-**Store** strips the attack down to the weakest possible version of its **current** band.
-
-That creates a useful interaction with later defensive effects. After Hinari reduces an attack to the bottom of Hit, a Defense increase may shift the accuracy profile enough that the same locked roll now becomes a Graze.
-
-### Open questions
-
-* Exact amount/conversion of prevented enemy effect into Subspace Load.
-* How damage and binding effects map onto the same 0–100 Load scale.
-* Behavior for intentions containing multiple effect types.
-* Which intentions are compatible with Store.
-* Exact overflow behavior when Store is used against an enemy attack.
+Every point Hinari stores eventually has to be dealt with deliberately.
 
 ---
 
-## 3. Brace
+## 2. Subspace Inventory
 
-**Type:** Reaction / Defense
-**Role:** Convert free inventory space into personal protection
-**Target:** Self / zero-target setup
+Hinari begins combat with:
 
-Brace works similarly to Ko's Reflect structurally: Hinari prepares a reaction rather than selecting an enemy intention directly.
+**Subspace: 0 / 100**
 
-Hinari opens her subspace defensively.
+Stored bondage occupies Subspace capacity.
 
-The next compatible attack against Hinari is partially or completely absorbed into her inventory.
+Subspace is not intended to behave like a conventional mana bar. Low Subspace is good: it represents free room for Hinari's spatial abilities.
+
+### Congestion
+
+As Subspace fills, Hinari becomes progressively worse at using Inventory-based attacks.
+
+At maximum Subspace:
+
+* **Rockfall** is unavailable;
+* **Brace** is unavailable because there is no remaining capacity to absorb anything.
+
+This gives Hinari a natural failure state short of capture:
+
+> **Her Inventory is completely clogged.**
+
+Subspace does not clear automatically. Once Hinari accepts pressure into her Inventory, spending an action on Release is the normal way to regain that capacity.
+
+---
+
+## 3. Store
+
+**Type:** Support
+**Requirement:** Arms
+**Target:** One ally
+**Role:** Rescue / transfer existing bondage
+
+Hinari moves existing bondage from an ally into her Subspace Inventory.
 
 ### Current behavior
 
-When Brace triggers:
-
-```text
-incoming effect = X
-free inventory capacity = Y
-
-absorbed = min(X, Y)
-remaining effect = X - absorbed
-
-Subspace Load += absorbed
-Hinari receives the remainder normally
-```
+* Targets one allied character.
+* Selects that character's highest existing binding.
+* Removes up to **25 bondage** from that binding.
+* Available Subspace capacity absorbs as much of the transferred bondage as possible.
+* If Hinari does not have enough free capacity, the excess bondage is transferred onto **Hinari herself** rather than being destroyed.
 
 Example:
 
-```text
-Hinari Load: 60 / 100
-Incoming binding: 55
+> Ally has 25 bondage removed.
+> Hinari has only 10 free Subspace.
+> 10 enters Subspace and the remaining 15 is applied to Hinari.
 
-40 -> subspace
-15 -> Hinari
+This preserves the central rule that Hinari can relocate bondage but cannot simply erase it.
 
-Final Load: 100
-```
+### Tactical purpose
 
-Brace therefore becomes naturally weaker as Hinari fills up.
+Store lets Hinari rapidly rescue a character who is approaching an important threshold, but doing so makes Hinari's own kit progressively worse.
 
-At empty Load, Hinari has enormous defensive capacity.
+This creates the decision:
 
-At full Load, Brace has nothing to work with and should probably be unavailable.
+> **Is freeing this ally worth clogging Hinari's Inventory?**
 
-### Design distinction
-
-**Store**
-
-* proactive;
-* works on allies or enemies;
-* deliberately chooses where to siphon pressure from.
-
-**Brace**
-
-* reactive;
-* protects Hinari;
-* consumes whatever free subspace capacity remains.
-
-### Still open
-
-* Which attack/effect types Brace can absorb.
-* Whether Brace reacts once or lasts until triggered.
-* Interaction with multihit attacks.
-* Interaction with AoE.
-* Whether one Brace can absorb multiple effects belonging to a single triggering move.
+Because Subspace does not drain naturally, Store also creates a future action obligation: eventually Hinari must decide how to Release what she stored.
 
 ---
 
-## 4. Rockfall
+## 4. Brace
 
-**Type:** Multihit Attack
-**Role:** Primary sustained offense / visible cost of inventory congestion
+**Type:** Reaction / Defense
+**Requirement:** None
+**Target:** Self / no target
+**Role:** Convert incoming bondage into Subspace Load
 
-Hinari retrieves rocks from subspace and summons them directly over an enemy.
+Hinari prepares herself to spatially absorb an incoming hostile binding effect.
 
-This is intended to be her straightforward offensive move and her primary multihit attack.
+Brace behaves similarly to a precommitted reaction.
 
-The number of hits depends on how much of the inventory remains accessible.
+### Current behavior
 
-### Current Load scaling
+* Hinari prepares Brace using her action.
+* The next compatible incoming enemy binding effect against Hinari triggers it.
+* As much of the incoming bondage as possible is moved into free Subspace capacity.
+* Any amount that cannot fit still resolves normally onto Hinari.
+* Brace is then consumed.
 
-```text
-Subspace Load    Rockfall
-0–24             4 hits
-25–49            3 hits
-50–74            2 hits
-75–99            1 hit
-100               unavailable
-```
+Brace does **not** require enough capacity for the entire attack.
 
-Conceptually, stored material is physically covering the rocks deeper inside her inventory.
+For example:
 
-This directly adapts the novel's inventory limitation: useful objects can still be inside subspace but inaccessible because too much junk is piled in front of them.
+> Hinari has 15 free Subspace.
+> An attack would apply 25 bondage.
+> 15 enters Subspace and Hinari receives the remaining 10.
 
-Rockfall should probably be reasonably accurate, reflecting Hinari's ability to summon objects directly into useful positions.
+Brace becomes unavailable when Subspace is completely full.
 
-Exact damage per hit and resolution profile are TBD.
+### Tactical purpose
 
-### Design purpose
+Brace allows Hinari to voluntarily use her Inventory as a defensive buffer.
 
-Rockfall makes filling the inventory immediately costly.
+Unlike Store, which fixes an existing problem on another character, Brace spends Hinari's action in advance to prevent a future problem from fully materializing.
 
-Hinari does not merely suffer an abstract penalty at high Load. The player can watch one of her core attacks deteriorate:
-
-```text
-4 hits -> 3 -> 2 -> 1 -> inaccessible
-```
-
-This also gives KCQ an early dedicated multihit character.
+The prevented bondage is not gone, however. It becomes another Subspace problem Hinari will eventually have to Release.
 
 ---
 
-## 5. Release
+## 5. Rockfall
 
-**Type:** Attack / Debuff / Resource Reset
-**Role:** Clear Subspace Load and restore Hinari's full kit
+**Type:** Attack
+**Requirement:** Arms
+**Target:** One enemy
+**Role:** Variable multihit offense
 
-Hinari opens her subspace and dumps its accumulated contents onto one enemy.
+Hinari opens her Inventory and drops stored objects onto an enemy.
 
-Release consumes the stored Load and returns Hinari toward an empty inventory.
+Rockfall's effectiveness depends directly on how much free room remains in Subspace.
 
-### Important design rule
+### Current hit progression
 
-Release should **not** be an enormous damage payoff.
+| Subspace |        Hits |
+| -------- | ----------: |
+| 0–24     |           4 |
+| 25–49    |           3 |
+| 50–74    |           2 |
+| 75–99    |           1 |
+| 100      | Unavailable |
 
-If damage scales too aggressively with Load, Hinari's obvious optimal loop becomes:
+Rockfall therefore gives Hinari a direct offensive reason to keep her Inventory clean.
 
-```text
-0 -> fill to 100 -> Release -> 0 -> fill to 100 -> Release
-```
+The punishment for storing bondage is not merely an abstract stat penalty. The move visibly deteriorates:
 
-That is not the intended character.
+> **4 hits → 3 → 2 → 1 → disabled**
 
-The primary reward for Release is:
+### Multihit behavior
 
-* restoring Rockfall hits;
-* restoring Brace capacity;
-* creating room for Store;
-* escaping dangerous overflow territory.
+Rockfall is a true multihit move rather than one large attack represented cosmetically as several impacts.
 
-The attack/debuff is compensation for dumping the inventory, not the reason the entire mechanic exists.
+Individual hits should use the normal resolution machinery independently where appropriate.
 
-### Current direction
-
-Release deals modest damage and gains additional riders at Load breakpoints.
-
-Tentative shape:
-
-```text
-Low Load:
-modest damage
-
-Moderate Load:
-damage + Defense penalty
-
-High Load:
-damage + stronger Defense penalty
-
-Very High Load:
-possibly an additional Vulnerability/control rider
-```
-
-The fiction is simple: the enemy is now buried under restraints, rocks, stolen attacks, and assorted garbage that Hinari has been stuffing into subspace.
-
-A Defense penalty is therefore a particularly natural rider.
-
-### Still open
-
-* Exact damage.
-* Exact Load breakpoints.
-* Defense penalty values.
-* Whether the highest breakpoint adds Vulnerability or another effect.
-* Whether Release always empties all Load or may eventually have a partial-release variant.
+Exact per-hit damage and resolution values remain balance parameters.
 
 ---
 
-## 6. Spatial Movement
+## 6. Fairy Rockfall
+
+**Type:** Fairy Attack
+**Requirement:** Arms
+**Target:** One enemy
+**Role:** Empowered multihit payoff
+
+While Hinari has Fairy Empowerment, Rockfall becomes **Fairy Rockfall**.
+
+Current implementation direction uses a smoother and stronger congestion curve:
+
+| Subspace |        Hits |
+| -------- | ----------: |
+| 0–16     |           6 |
+| 17–33    |           5 |
+| 34–49    |           4 |
+| 50–66    |           3 |
+| 67–83    |           2 |
+| 84–99    |           1 |
+| 100      | Unavailable |
+
+Fairy Rockfall therefore improves Hinari most strongly when she has successfully managed her Inventory.
+
+It does **not** bypass the Subspace system.
+
+Even empowered Hinari still loses offensive capability as congestion rises.
+
+This preserves the character's core resource loop rather than allowing Fairy Empowerment to erase it.
+
+Exact Fairy consumption behavior follows the party-wide Fairy Empowerment rules.
+
+---
+
+## 7. Release
+
+**Type:** Attack / Support
+**Requirement:** Arms
+**Target:** One ally or one enemy
+**Role:** Actively clear Subspace by relocating its contents
+
+Release lets Hinari force stored material back out of her Inventory.
+
+Because Subspace does not recover naturally, Release is Hinari's primary means of restoring capacity.
+
+It is deliberately asymmetric depending on the target.
+
+### Enemy Release
+
+* Target one enemy.
+* Remove **25 Subspace Load**.
+* Deal damage to the enemy.
+
+This is the slower, safer disposal option.
+
+It converts congestion back into offense without inflicting additional bondage on the party.
+
+Exact damage remains a balance value.
+
+### Ally Release
+
+* Target one ally.
+* Remove **50 Subspace Load**.
+* Apply **20 bondage** to the target using the appropriate stored binding context.
+
+This clears Hinari's Inventory much faster, but it does so by putting some of the problem back onto the party.
+
+The resulting bondage is less than the amount of Subspace cleared, representing the efficiency of deliberately transferring stored material rather than merely reversing Store one-for-one.
+
+### Tactical purpose
+
+Release creates the central disposal choice:
+
+> **Clear Subspace slowly and safely through an enemy, or clear it rapidly by accepting a new party problem.**
+
+Because Hinari cannot simply wait for Subspace to recover, congestion creates real action pressure.
+
+Release is especially important because Arms bondage can disable it.
+
+A badly restrained Hinari can therefore become trapped with a completely clogged Inventory.
+
+---
+
+## 8. Spatial Movement
 
 **Type:** Passive
-**Role:** Mobility specialization
 
-Hinari does not need to walk normally in order to move around the battlefield. She can relocate herself spatially.
+Hinari does not need to physically walk across the battlefield when she can manipulate space.
 
-### Current candidate effects
+Current intent:
 
-Hinari may:
+* **Hobbled does not interfere with Hinari's movement.**
+* Hinari avoids ordinary **movement-triggered traps** by teleporting rather than crossing the affected space normally.
+* **Immobilized still works.**
 
-* be immune to **Hobbled**;
-* avoid movement-triggered traps because she can warp across the affected space instead of physically crossing it.
-
-She is **not** necessarily immune to Immobilized.
-
-The intended distinction is:
-
-> **Restricting Hinari's legs is ineffective. Completely preventing her from acting or repositioning is not.**
-
-This keeps Spatial Movement useful without making Hinari generically immune to severe restraint.
-
-Exact trap interaction remains TBD.
+Spatial Movement should bypass consequences specifically caused by conventional locomotion rather than becoming a generic immunity to every movement restriction.
 
 ---
 
-## 7. Intended Resource Loop
+## 9. Restraint Profile
 
-Hinari's kit should create a continuous tension rather than a simple build-and-spend meter.
+Hinari's active kit is strongly dependent on her Arms.
 
-```text
-            STORE
-       ally / enemy pressure
-              |
-              v
-        Subspace Load
-              |
-      +-------+-------+
-      |               |
-      v               v
-Rockfall weakens   Brace weakens
-      |               |
-      +-------+-------+
-              |
-              v
-           RELEASE
-              |
-              v
-       inventory clears
-              |
-              v
-   Rockfall + Brace recover
-```
+### Arms-dependent
 
-The important strategic question is not:
+* Store
+* Rockfall
+* Release
+* Fairy Rockfall
 
-> **How quickly can I reach 100?**
+### No capability requirement
 
-It is:
+* Brace
 
-> **How much congestion am I willing to accept in exchange for protecting the party right now?**
+This creates a deliberate vulnerability.
+
+As Hinari loses use of her Arms:
+
+1. she loses Rockfall;
+2. she loses Release;
+3. she loses Store;
+4. Brace remains available while Subspace has room;
+5. once Subspace reaches maximum, even Brace disappears.
+
+Hinari can therefore enter a genuine **resource shutdown** state:
+
+> **Arms disabled + full Subspace = her spatial toolkit has effectively seized up.**
+
+Because Subspace has no passive drain, this state cannot fix itself merely by waiting.
+
+This is intentional rather than something the engine should automatically rescue her from.
 
 ---
 
-## 8. Party Interaction
+## 10. Party Role
 
-Hinari should naturally participate in KCQ's character-combo philosophy without requiring bespoke combo buttons.
+Hinari is not primarily a conventional healer or tank.
 
-### Defense manipulation
+She is a **pressure redistributor**.
 
-Because Store reduces an enemy intention to the bottom of its current result band, subsequent Defense manipulation can push that locked roll into a lower band.
+She can:
 
-Example:
+* pull an ally away from an important bondage threshold with Store;
+* preemptively soften an incoming attack with Brace;
+* retain respectable offense while her Inventory is clean;
+* trade stored pressure for damage through enemy Release;
+* deliberately put some pressure back onto the party to recover capacity quickly.
 
-```text
-Enemy has a Hit.
+Unlike a conventional cleansing character, Hinari does not make accumulated enemy progress vanish.
 
-Hinari Store:
-Hit -> weakest possible Hit.
-
-Ally applies +Defense.
-
-The adjusted profile shifts.
-The same locked roll may now become a Graze.
-```
-
-The order of actions therefore matters.
-
-### Matsuko
-
-Matsuko's **Obey!** can be especially useful when Hinari has spent her action on Store or when she urgently needs to Release and reopen her inventory.
-
-This gives Matsuko a natural way to accelerate Hinari's resource cycle without adding a special-case combo rule.
-
-### Ko
-
-A Fairy interaction for Hinari has not yet been designed.
-
-Potential directions should interact with the Subspace system rather than merely adding generic damage.
+This should make rescue decisions more interesting because helping someone now creates a problem that still has to be dealt with later.
 
 ---
 
-## 9. Current Move Set
+## 11. Character Interaction
 
-| Move                 | Role                    | Load Interaction                                      |
-| -------------------- | ----------------------- | ----------------------------------------------------- |
-| **Store**            | Support / Control       | Adds Load by siphoning bindings or enemy attack power |
-| **Brace**            | Reaction / Defense      | Converts free capacity into protection; adds Load     |
-| **Rockfall**         | Multihit Attack         | Loses hits as Load rises                              |
-| **Release**          | Attack / Debuff / Reset | Clears Load and restores inventory access             |
-| **Spatial Movement** | Passive                 | Tentative Hobbled / trap resistance                   |
+Hinari's strongest party interaction is inherent in **Store** and **Release**.
 
-Four active moves are considered sufficient for the first implementation. A fifth move should only be added if playtesting reveals an actual tactical hole rather than to meet an arbitrary move count.
+She can rescue another character immediately, but the party as a whole has not escaped the underlying pressure.
+
+This allows other characters to exploit the temporary breathing room Hinari creates.
+
+Examples:
+
+* rescue a character before they lose access to an important move;
+* move pressure away from the character currently being focused by enemy intents;
+* accept bondage on a safer character through Release;
+* preserve an ally's action economy at the cost of Hinari's future offensive power.
+
+Fairy Rockfall also gives Ko's Fairy Empowerment a direct offensive payoff for Hinari.
 
 ---
 
-## 10. Design Goals
+## 12. Why the Current Design Changed
 
-Hinari should feel fundamentally different at different inventory states.
+Hinari originally leaned much harder into arbitrary spatial manipulation:
 
-At low Load:
+* redirecting targets;
+* swapping characters;
+* teleporting allies out of effects;
+* invalidating enemy intents;
+* temporarily removing entities from combat.
 
-> **“I have room. I can intercept almost anything and my whole arsenal is accessible.”**
+That version required extensive special-case interaction with targeting, intents, immobilization, and encounter mechanics.
 
-At medium Load:
+The current design expresses the same underlying fantasy through mechanics the engine already supports cleanly:
 
-> **“I can keep protecting people, but I'm starting to lose tools.”**
+* **space as storage;**
+* **space as relocation;**
+* **space as defensive interception;**
+* **space as movement;**
+* **space as an offensive Inventory.**
 
-At high Load:
+The architectural constraint ultimately produced a more unified character.
 
-> **“I can still save somebody, but I'm running out of space and Rockfall is barely functional.”**
+Nearly every active Hinari decision now asks the same question:
 
-At full Load:
+> **What should I do with the limited space I have left?**
 
-> **“My inventory is completely stuffed. I need to dump this somewhere.”**
+---
 
-The defining fantasy is not that Hinari has a resource she wants to maximize.
+## 13. Current Turn Choices
 
-It is that **she possesses an incredibly useful spatial inventory and keeps filling it with everyone else's problems until she can no longer find her own stuff.**
+A typical Hinari turn should present choices resembling:
+
+### Immediate offense
+
+Use **Rockfall** while Subspace is relatively empty.
+
+### Rescue an ally
+
+Use **Store**, sacrificing future Inventory capacity.
+
+### Prepare for incoming pressure
+
+Use **Brace**.
+
+### Recover capacity safely
+
+Use **Release** on an enemy.
+
+### Recover capacity quickly
+
+Use **Release** on an ally and accept the resulting bondage.
+
+### Cash out Fairy Empowerment
+
+Use **Fairy Rockfall**, ideally while Subspace is still clean.
+
+The goal is that Hinari's resource management emerges naturally from normal tactical decisions rather than requiring a separate builder/spender minigame.
+
+---
+
+## 14. Current Core Kit
+
+Hinari currently has **four active moves**:
+
+1. **Store**
+2. **Brace**
+3. **Rockfall**
+4. **Release**
+
+There is no need to add a fifth move merely because another character has more buttons.
+
+A new move should only be introduced if playtesting reveals a tactical hole that the existing four cannot address.
+
+---
+
+## 15. Major Open Balance Questions
+
+Still intentionally unresolved:
+
+* Store's final transfer amount.
+* Rockfall damage per hit.
+* Rockfall resolution profile.
+* Fairy Rockfall final hit progression.
+* Fairy Rockfall damage per hit.
+* Enemy Release damage.
+* Ally Release bondage amount.
+* Exact rules for retaining/storing binding identity inside Subspace.
+* Which incoming effects qualify for Brace.
+* Brace interaction with multihit binding attacks.
+* Interaction between Subspace and unusual scenario-specific restraints.
+* Whether any later Double/Triple Tech uses Subspace.
+
+These should be tuned through playtesting rather than solved architecturally in advance.

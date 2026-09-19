@@ -68,6 +68,90 @@ Neither should simply obsolete the other when both are available.
 
 ---
 
+# Fairy Empowerment
+
+Ko-chan's Fairy Empowerment upgrades Matsuko's two flame-enhanced single-target attacks.
+
+Unlike characters whose Fairy move substantially changes targeting or move behavior, Matsuko's Fairy variants improve the complementary weakness of each premium attack.
+
+## Fairy White Flame
+
+**Type:** Fairy Attack
+**Requirement:** Arms
+**State:** Flame active + Fairy Empowerment
+
+Fairy White Flame retains White Flame's normal strengths and adds the offensive property associated with Phoenix Kick.
+
+* Same base role and damage as White Flame.
+* Retains White Flame's **Hit bonus**.
+* Also gains a **Potency bonus**.
+* Current implementation: **+2 Hit, +2 Potency**.
+* Consumes Fairy Empowerment when used.
+
+Normal White Flame favors reliability. Fairy White Flame temporarily removes that tradeoff by making the attack both reliable and potent.
+
+## Fairy Phoenix Kick
+
+**Type:** Fairy Attack
+**Requirement:** Legs
+**State:** Flame active + Fairy Empowerment
+
+Fairy Phoenix Kick retains Phoenix Kick's normal strengths and adds the offensive property associated with White Flame.
+
+* Same base role and damage as Phoenix Kick.
+* Retains Phoenix Kick's **Potency bonus**.
+* Also gains a **Hit bonus**.
+* Current implementation: **+2 Hit, +2 Potency**.
+* Consumes Fairy Empowerment when used.
+
+Normal Phoenix Kick favors stronger successful results. Fairy Phoenix Kick temporarily removes its corresponding reliability tradeoff.
+
+## Design Purpose
+
+White Flame and Phoenix Kick normally divide Matsuko's premium offense across two slightly different profiles:
+
+* **White Flame:** higher reliability.
+* **Phoenix Kick:** higher effectiveness.
+
+Fairy Empowerment temporarily completes either attack by giving it the other move's advantage.
+
+This preserves the identity of the underlying move rather than replacing it with an unrelated special attack.
+
+The choice of Fairy attack therefore still depends on Matsuko's available capability channel:
+
+> **Arms available → Fairy White Flame**
+> **Legs available → Fairy Phoenix Kick**
+
+If both are available, their current numerical profiles become equivalent unless later balancing gives them additional distinctions.
+
+## Interaction with Immolation
+
+Fairy Empowerment does not currently modify Immolation.
+
+While Matsuko has Fairy Empowerment and her flame is active, her offensive move set becomes:
+
+* Fairy White Flame
+* Fairy Phoenix Kick
+* Immolation
+
+Using Immolation still causes normal Flame Burnout.
+
+After Flame Burnout:
+
+* Fairy White Flame disappears;
+* Fairy Phoenix Kick disappears;
+* Punch and Kick replace the flame attacks as normal.
+
+Burnout therefore takes precedence over Fairy Empowerment. Fairy Empowerment does not restore Matsuko's burned-out flame techniques.
+
+## Interaction with Compulsion
+
+Fairy Empowerment does not modify Compulsion.
+
+Available Compulsion commands continue to be added according to the normal shared-cooldown rules regardless of whether Matsuko is Fairy Empowered.
+
+---
+
 # Immolation / Flame Burnout
 
 ## Immolation
@@ -225,6 +309,14 @@ Matsuko's visible move list should reflect her current combat state rather than 
 
 - White Flame
 - Phoenix Kick
+- Immolation
+- available Compulsion commands
+- other future core actions, if any
+
+### Flame active + Fairy Empowerment
+
+- Fairy White Flame
+- Fairy Phoenix Kick
 - Immolation
 - available Compulsion commands
 - other future core actions, if any
