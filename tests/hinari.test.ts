@@ -142,6 +142,67 @@ describe("Hinari's dynamic move set and Rockfall", () => {
             2_000 - damage.reduce((total, { amount }) => total + amount, 0),
         );
     });
+
+    it.each([
+        [0, 6],
+        [17, 5],
+        [34, 4],
+        [50, 3],
+        [67, 2],
+        [84, 1],
+    ] as const)("offers %i Subspace as %i Fairy Rockfall hits, then restores Rockfall", (
+        subspace,
+        hits,
+    ) => {
+        const engine = loadHinariEncounter({
+            seed: 2,
+            setup: (state) => {
+                state.characters[0].data.subspace = subspace;
+                if (subspace > 0) state.characters[0].data.subspaceBinding = 0;
+                state.characters[0].buffs.push({ id: "fairyEmpowerment", active: true });
+            },
+        });
+
+        expect(moveIds(engine)).toContain("fairyRockfall");
+        expect(moveIds(engine)).not.toContain("rockfall");
+
+        const result = execute(engine, {
+            type: "move",
+            actor: hinari.id,
+            move: "fairyRockfall",
+            targets: ["foe1"],
+        });
+
+        expect(moveEvent(result).targets).toHaveLength(hits);
+        expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
+            type: "buffRemoved",
+            target: hinari.id,
+            buff: "fairyEmpowerment",
+        }]);
+        expect(buffState(engine, "fairyEmpowerment", hinari.id)).toBeUndefined();
+        expect(moveIds(engine)).toContain("rockfall");
+        expect(moveIds(engine)).not.toContain("fairyRockfall");
+    });
+
+    it("does not consume Fairy Empowerment when Hinari uses a normal move", () => {
+        const engine = loadHinariEncounter({
+            setup: (state) => state.characters[0].buffs.push({
+                id: "fairyEmpowerment",
+                active: true,
+            }),
+        });
+
+        const result = execute(engine, {
+            type: "move",
+            actor: hinari.id,
+            move: "brace",
+            targets: [],
+        });
+
+        expect(result.events.some(({ type }) => type === "buffRemoved")).toBe(false);
+        expect(buffState(engine, "fairyEmpowerment", hinari.id)).toBeDefined();
+        expect(moveIds(engine)).toContain("fairyRockfall");
+    });
 });
 
 describe("Hinari's Store", () => {

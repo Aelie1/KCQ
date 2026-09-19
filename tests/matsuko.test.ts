@@ -4,7 +4,12 @@ import type { EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/de
 import { s } from "../src/engine/protected/status";
 import { gagged, servitude } from "../src/engine/protected/statuses";
 import { GameEngine } from "../src/engine/public/engine";
-import type { AccuracyProfile, ActionInfo, ActionSuccess } from "../src/engine/public/types";
+import type {
+    AccuracyProfile,
+    ActionInfo,
+    ActionSuccess,
+    PlayerAction,
+} from "../src/engine/public/types";
 import {
     buffState,
     characterState,
@@ -227,6 +232,137 @@ describe("Matsuko's dynamic offensive kit", () => {
             targets: [{ target: "foe1", result: "hit" }],
         });
         expect(damageAmount(result, "foe1")).toBe(88);
+    });
+
+    it.each([
+        ["fairyWhiteFlame", "whiteFlame"],
+        ["fairyPhoenixKick", "phoenixKick"],
+    ] as const)("uses %s with both Hit and Potency bonuses, consumes once, and restores %s", (
+        fairyMove,
+        normalMove,
+    ) => {
+        const engine = loadMatsukoEncounter({
+            seed: 2,
+            setup: (state) => state.characters[0].buffs.push({
+                id: "fairyEmpowerment",
+                active: true,
+            }),
+        });
+
+        expectMoveSet(engine, [
+            "fairyWhiteFlame",
+            "fairyPhoenixKick",
+            "immolation",
+            "obey",
+            "stop",
+            "attackMe",
+        ]);
+        expect(engine.getMoves(matsuko.id).some(({ move }) => move.id === normalMove)).toBe(false);
+        expect(targetAccuracy(engine, matsuko.id, fairyMove, "foe1")).toEqual({
+            miss: 0,
+            graze: 5,
+            hit: 83,
+            crit: 12,
+        });
+
+        const result = execute(engine, {
+            type: "move",
+            actor: matsuko.id,
+            move: fairyMove,
+            targets: ["foe1"],
+        });
+
+        expect(result.events[0]).toMatchObject({
+            type: "moveUsed",
+            targets: [{ target: "foe1", result: "hit" }],
+        });
+        expect(damageAmount(result, "foe1")).toBe(114);
+        expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
+            type: "buffRemoved",
+            target: matsuko.id,
+            buff: "fairyEmpowerment",
+        }]);
+        expect(buffState(engine, "fairyEmpowerment", matsuko.id)).toBeUndefined();
+        expectMoveSet(engine, [
+            "whiteFlame",
+            "phoenixKick",
+            "immolation",
+            "obey",
+            "stop",
+            "attackMe",
+        ]);
+    });
+
+    it("does not consume Fairy Empowerment when using Immolation", () => {
+        const engine = loadMatsukoEncounter({
+            seed: 2,
+            setup: (state) => state.characters[0].buffs.push({
+                id: "fairyEmpowerment",
+                active: true,
+            }),
+        });
+
+        const result = execute(engine, {
+            type: "move",
+            actor: matsuko.id,
+            move: "immolation",
+            targets: [],
+        });
+
+        expect(result.events.some(({ type }) => type === "buffRemoved")).toBe(false);
+        expect(buffState(engine, "fairyEmpowerment", matsuko.id)).toBeDefined();
+        expectMoveSet(engine, ["punch", "kick", "obey", "stop", "attackMe"]);
+    });
+
+    it("does not consume Fairy Empowerment when using Compulsion moves", () => {
+        const empoweredSetup: EncounterDef["setup"] = (state) => {
+            state.characters[0].buffs.push({ id: "fairyEmpowerment", active: true });
+        };
+        const stopEngine = loadMatsukoEncounter({ setup: empoweredSetup });
+        const attackMeEngine = loadMatsukoEncounter({ setup: empoweredSetup });
+        const ally = makeBehavioralCharacter("ally");
+        const obeyEngine = loadMatsukoEncounter({
+            allies: [ally],
+            setup: (state) => {
+                empoweredSetup?.(state);
+                state.characters[1].acted = true;
+            },
+        });
+        const scenarios: Array<{ engine: GameEngine; action: PlayerAction }> = [
+            {
+                engine: stopEngine,
+                action: {
+                    type: "move",
+                    actor: matsuko.id,
+                    move: "stop",
+                    targets: ["foe1"],
+                },
+            },
+            {
+                engine: attackMeEngine,
+                action: {
+                    type: "move",
+                    actor: matsuko.id,
+                    move: "attackMe",
+                    targets: [],
+                },
+            },
+            {
+                engine: obeyEngine,
+                action: {
+                    type: "move",
+                    actor: matsuko.id,
+                    move: "obey",
+                    targets: [ally.id],
+                },
+            },
+        ];
+
+        for (const { engine, action: playerAction } of scenarios) {
+            const result = execute(engine, playerAction);
+            expect(result.events.some(({ type }) => type === "buffRemoved")).toBe(false);
+            expect(buffState(engine, "fairyEmpowerment", matsuko.id)).toBeDefined();
+        }
     });
 });
 

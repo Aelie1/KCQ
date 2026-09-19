@@ -324,7 +324,7 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(result.state.enemies.find(({ id }) => id === "second1")?.currHp).toBe(500);
     });
 
-    it("makes Fairy Telekinesis AoE and consumes Fairy Empowerment", () => {
+    it("makes Fairy Telekinesis AoE with two half-damage hits and consumes once", () => {
         const first = makeBehavioralEnemy("first");
         const second = makeBehavioralEnemy("second");
         first.hp = 500;
@@ -379,6 +379,11 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(result.state.enemies.find(({ id }) => id === "second1")?.currHp)
             .toBe(354);
 
+        expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
+            type: "buffRemoved",
+            target: ko.id,
+            buff: "fairyEmpowerment",
+        }]);
         expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
 
         expectMoveSet(engine, [
@@ -397,7 +402,7 @@ describe("Ko's normal and Fairy move effects", () => {
 
         expect(engine.getMoves(ko.id).find(({ move }) => move.id === "fairyStarlightBindings"))
             .toMatchObject({ move: { targets: "all", targetSide: "enemy" }, available: true });
-        execute(engine, {
+        const result = execute(engine, {
             type: "move",
             actor: ko.id,
             move: "fairyStarlightBindings",
@@ -410,6 +415,11 @@ describe("Ko's normal and Fairy move effects", () => {
                 modifiers: { defense: -2, hit: -2 },
             }));
         }
+        expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
+            type: "buffRemoved",
+            target: ko.id,
+            buff: "fairyEmpowerment",
+        }]);
         expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
         expectMoveSet(engine, [
             "telekinesis",
@@ -490,7 +500,7 @@ describe("Ko's normal and Fairy move effects", () => {
         const first = enemyTargetingCharacter("first", bindingMove("first-rope", 10), 0);
         const second = enemyTargetingCharacter("second", bindingMove("second-rope", 20), 1);
         const engine = loadKoEncounter([first, second], empowerKo, true);
-        execute(engine, {
+        const fairyReflect = execute(engine, {
             type: "move",
             actor: ko.id,
             move: "fairyReflect",
@@ -499,6 +509,11 @@ describe("Ko's normal and Fairy move effects", () => {
 
         expect(buffState(engine, "reflect", ko.id)).toMatchObject({ duration: 1 });
         expect(buffState(engine, "reflect", "ally")).toMatchObject({ duration: 1 });
+        expect(fairyReflect.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
+            type: "buffRemoved",
+            target: ko.id,
+            buff: "fairyEmpowerment",
+        }]);
         expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
 
         const result = execute(engine, { type: "endTurn" });
@@ -559,13 +574,18 @@ describe("Ko's normal and Fairy move effects", () => {
             "fairyEmpowerment",
         ]);
 
-        execute(engine, {
+        const result = execute(engine, {
             type: "move",
             actor: ko.id,
             move: "fairyEmpowerment",
             targets: [],
         });
 
+        expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
+            type: "buffRemoved",
+            target: ko.id,
+            buff: "fairyEmpowerment",
+        }]);
         expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
         expect(buffState(engine, "fairyEmpowerment", "ally")).toBeDefined();
         expect(engine.getGameState().characters[0].buffs
