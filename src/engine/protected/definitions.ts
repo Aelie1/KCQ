@@ -37,6 +37,7 @@ export interface MoveDef extends Move {
 export interface PassiveDef {
     id: string;
     status?: StatusLevelDef;
+    immunities?: StatusDef[];
 }
 
 export interface BindingDef {
@@ -67,6 +68,7 @@ export interface StatusLevelDef {
     blocksAssist?: boolean;
     blocksBonusEscape?: boolean;
     blocksMoving?: boolean;
+    skipsTraps?: boolean;
     skipsTurn?: boolean;
     incapacitated?: boolean;
 }

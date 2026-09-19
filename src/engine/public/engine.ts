@@ -9,7 +9,7 @@ import { iValidityInfo } from "../private/types";
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
 import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity, thresholds } from "../protected/helpers";
 import { mixSeed, Random } from "../protected/random";
-import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, isIncapacitated, isSkipped } from "../protected/status";
+import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, ignoresTraps, isIncapacitated, isSkipped } from "../protected/status";
 import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import type {
     AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo,
@@ -386,7 +386,7 @@ export class GameEngine {
                 }
 
                 //If moving, check for traps
-                if (!actor.standing) {
+                if (!actor.standing && !ignoresTraps(actor)) {
                     for (const trap of this.state.traps) {
                         const roll = Math.max(0, this.accRng.accuracy() + getModifier(actor, "traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {

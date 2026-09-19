@@ -216,7 +216,7 @@ Punch and Kick do not need elaborate secondary identities. Their main purpose is
 
 Compulsion is Matsuko's tactical-command subsystem.
 
-She may use a Compulsion command **in addition to her normal primary action**, provided her Mouth capability is available and Compulsion is not on cooldown.
+She may use a Compulsion command **for free before her normal primary action**, provided her Mouth capability is available and Compulsion is not on cooldown.
 
 All Compulsion commands share the same cooldown state. Matsuko therefore chooses what form her authority will take over the next several rounds rather than using multiple commands independently.
 
@@ -265,7 +265,7 @@ Matsuko commands an ally to exceed their normal action economy.
 
 - The ally immediately performs one eligible action, even if they have already acted this round.
 - The extra action should feel approximately like creating one additional ordinary move's worth of tactical value.
-- After the action, the target gains **Servitude**.
+- After Obey!, the target gains **Servitude**.
 - An ally under Servitude cannot be targeted by Obey! again.
 - Servitude duration and exact penalties remain TBD.
 

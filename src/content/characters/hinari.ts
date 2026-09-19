@@ -1,5 +1,6 @@
-import { BindingDef, CharacterDef, MoveDef } from "../../engine/protected/definitions";
-import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
+import { findBinding, findBuff, isCharacter, isEnemy, thresholds } from "../../engine/protected/helpers";
+import { hobbled } from "../../engine/protected/statuses";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { ActionFailureReason } from "../../engine/public/types";
 import { removeEmpowerment } from "./ko";
@@ -14,6 +15,12 @@ const RELEASE_ENEMY_AMOUNT = 25;
 const RELEASE_DAMAGE = 100;
 
 const ROCKFALL_DAMAGE = 40;
+
+const subspaceMovement: PassiveDef = {
+    id: "subspaceMovement",
+    status: { skipsTraps: true },
+    immunities: [hobbled]
+}
 
 export const hinari: CharacterDef = {
     id: "hinari",
@@ -42,7 +49,7 @@ export const hinari: CharacterDef = {
         }
         return moves;
     },
-    passives: [],
+    passives: [subspaceMovement],
     data: { "subspace": 0, "subspaceMax": SUBSPACE_MAX }
 };
 
@@ -69,9 +76,15 @@ const store: MoveDef = {
                     }
                 }
                 if (highestBinding) {
-                    const removeAmount = Math.min(highest, STORE_REMOVE_AMOUNT);
-                    const spreadAmount = Math.max(0, removeAmount + actor.data["subspace"] - SUBSPACE_MAX);
+                    const actorBinding = findBinding(actor, highestBinding.id);
+                    const bindingRoom = Math.max(0, thresholds.impossible - (actorBinding?.value ?? 0));
+                    let removeAmount = Math.min(highest, STORE_REMOVE_AMOUNT);
+                    let spreadAmount = Math.max(0, removeAmount + actor.data["subspace"] - SUBSPACE_MAX);
                     const subspaceAmount = removeAmount - spreadAmount;
+                    if (spreadAmount > bindingRoom) {
+                        removeAmount -= (spreadAmount - bindingRoom);
+                        spreadAmount = bindingRoom;
+                    }
                     const bindingId = state.encounter.bindings.findIndex(x => x.id === highestBinding.id);
                     const currentBindingId = actor.data["subspaceBinding"] ?? 0;
                     effects.push({

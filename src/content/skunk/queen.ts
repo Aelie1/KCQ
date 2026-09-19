@@ -299,7 +299,7 @@ const skunkPerfume: MoveDef = {
         switch (type) {
             case 0:  //Defense perfume
                 const defBuff = {
-                    id: "skunkPerfume",
+                    id: "defensePerfume",
                     active: false,
                     modifiers: { defense: -2 },
                     duration: PERFUME_DURATION,
@@ -315,7 +315,7 @@ const skunkPerfume: MoveDef = {
                 break;
             case 1:  //Escape perfume
                 const escBuff = {
-                    id: "skunkPerfume",
+                    id: "escapePerfume",
                     active: false,
                     modifiers: { escape: -2 },
                     duration: PERFUME_DURATION,

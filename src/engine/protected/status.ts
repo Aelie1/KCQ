@@ -95,13 +95,16 @@ export function canBonusEscape(target: iCharacter): boolean {
 export function isSkipped(target: iEntity): boolean {
     const status: StatusLevelDef = getStatuses(target);
     return status.skipsTurn ?? false;
+}
 
+export function ignoresTraps(target: iEntity): boolean {
+    const status: StatusLevelDef = getStatuses(target);
+    return status.skipsTraps ?? false;
 }
 
 export function isIncapacitated(target: iEntity): boolean {
     const status: StatusLevelDef = getStatuses(target);
     return status.incapacitated ?? false;
-
 }
 
 function getStatuses(target: iEntity): StatusLevelDef {
@@ -154,6 +157,14 @@ function getStatusList(target: iEntity): iStatus[] {
         }
 
     }
+    for (const passive of target.definition.passives) {
+        for (const immunity of passive.immunities ?? []) {
+            const index = statuses.findIndex(x => x.definition === immunity);
+            if (index >= 0) {
+                statuses.splice(index, 1);
+            }
+        }
+    }
     return statuses;
 }
 
@@ -201,8 +212,8 @@ function mergeStatus(target: StatusLevelDef, source: StatusLevelDef): void {
     target.blocksEscape ||= source.blocksEscape;
     target.blocksMoving ||= source.blocksMoving;
     target.incapacitated ||= source.incapacitated;
+    target.skipsTraps ||= source.skipsTraps;
     target.skipsTurn ||= source.skipsTurn;
-
 }
 
 const standing: StatusDef = {
