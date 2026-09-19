@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
-import {
-    latexArms,
-    latexHead,
-    latexLegs,
-    latexTorso,
-} from "../../src/content/skunk/latex";
+import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import { skunk } from "../../src/content/skunk/skunk";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
+import type { Engine } from "../../src/engine/public/types";
 import { makeBindingDef, makeCharacterDef } from "../helpers/helpers";
 
 const BODY_LATEX = [latexHead, latexArms, latexTorso, latexLegs];
@@ -26,7 +22,7 @@ function loadSkunk(options: {
     trapAmount?: number | null;
     hp?: number;
     bindings?: Record<string, InitialBinding[]>;
-}): GameEngine {
+}): Engine {
     const characterIds = options.characterIds ?? ["hero"];
     const encounter: EncounterDef = {
         id: "skunk-test",
@@ -51,7 +47,7 @@ function loadSkunk(options: {
         },
     };
     const characters = characterIds.map((id) => makeCharacterDef(id));
-    const engine = new GameEngine([encounter], characters, options.seed);
+    const engine = createCustomEngine([encounter], characters, options.seed);
     for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;
@@ -87,7 +83,7 @@ function initialBindingEffects(
     return effects;
 }
 
-function endTurn(engine: GameEngine) {
+function endTurn(engine: Engine) {
     const result = engine.executeAction({ type: "endTurn" });
     expect(result.success).toBe(true);
     if (!result.success) throw new Error("Expected end turn success");

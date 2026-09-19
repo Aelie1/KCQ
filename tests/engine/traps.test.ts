@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { trapPuddle } from "../../src/content/skunk/puddles";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, EncounterDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
-import type { PlayerAction } from "../../src/engine/public/types";
-import {
-    makeBindingDef,
-    makeCharacterDef,
-    makeMove,
-} from "../helpers/helpers";
+import { createCustomEngine } from "../../src/engine/protected/engine";
+import type { Engine, PlayerAction } from "../../src/engine/public/types";
+import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
 
 function trapThatConsumes(
     id: string,
@@ -40,7 +36,7 @@ function makeTrapEngine(
     seed = 1,
     setup?: EncounterDef["setup"],
     characterIds = ["hero"],
-): GameEngine {
+): Engine {
     const encounter: EncounterDef = {
         id: "trap-test",
         enemies: [],
@@ -49,7 +45,7 @@ function makeTrapEngine(
         setup,
     };
     const characters = characterIds.map((id) => makeCharacterDef(id, moves));
-    const engine = new GameEngine([encounter], characters, seed);
+    const engine = createCustomEngine([encounter], characters, seed);
     for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;

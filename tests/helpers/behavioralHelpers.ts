@@ -1,22 +1,13 @@
 import { expect } from "vitest";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import type {
-    AccuracyProfile,
-    ActionSuccess,
-    Binding,
-    Buff,
-    Character,
-    Enemy,
-    MoveType,
-    PlayerAction,
-} from "../../src/engine/public/types";
+import { createCustomEngine } from "../../src/engine/protected/engine";
+import type { AccuracyProfile, ActionSuccess, Binding, Buff, Character, Enemy, Engine, MoveType, PlayerAction } from "../../src/engine/public/types";
 import { actionView } from "./gameView";
 
 export { actionView } from "./gameView";
 
 export function targetAccuracy(
-    engine: GameEngine,
+    engine: Engine,
     actor: string,
     move: string,
     target: string | null,
@@ -91,15 +82,15 @@ export function makeBehavioralEngine(
     characters: CharacterDef[],
     enemies: EnemyDef[] = [makeBehavioralEnemy()],
     seed = 1,
-): GameEngine {
+): Engine {
     const encounter: EncounterDef = { id: "behavioral-test", enemies, bindings: [], traps: [] };
-    const engine = new GameEngine([encounter], characters, seed);
+    const engine = createCustomEngine([encounter], characters, seed);
     for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }
 
-export function execute(engine: GameEngine, action: PlayerAction): ActionSuccess {
+export function execute(engine: Engine, action: PlayerAction): ActionSuccess {
     const result = engine.executeAction(action);
     expect(result.success).toBe(true);
     if (!result.success) {
@@ -108,20 +99,20 @@ export function execute(engine: GameEngine, action: PlayerAction): ActionSuccess
     return result;
 }
 
-export function characterState(engine: GameEngine, id = "hero"): Character {
+export function characterState(engine: Engine, id = "hero"): Character {
     const character = engine.getGameView().characters.find((entry) => entry.id === id);
     if (!character) throw new Error(`Expected character ${id}`);
     return character;
 }
 
-export function enemyState(engine: GameEngine, id = "foe1"): Enemy {
+export function enemyState(engine: Engine, id = "foe1"): Enemy {
     const enemy = engine.getGameView().enemies.find((entry) => entry.id === id);
     if (!enemy) throw new Error(`Expected enemy ${id}`);
     return enemy;
 }
 
 export function bindingState(
-    engine: GameEngine,
+    engine: Engine,
     bindingId: string,
     characterId = "hero",
 ): Binding | undefined {
@@ -131,7 +122,7 @@ export function bindingState(
 }
 
 export function buffState(
-    engine: GameEngine,
+    engine: Engine,
     buffId: string,
     entityId = "hero",
 ): Buff | undefined {

@@ -1,13 +1,7 @@
 import { describe, expect, it } from "vitest";
-import {
-    latexArms,
-    latexCollar,
-    latexHead,
-    latexLegs,
-    latexTorso,
-} from "../../src/content/skunk/latex";
+import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import { GameEngine } from "../../src/engine/private/engine";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import {
     bindingState,
     buffState,
@@ -534,7 +528,7 @@ describe("Skunkette behavior through GameEngine", () => {
         });
         const encounter = { id: "select-latex", enemies: [skunkette], bindings: [], traps: [] };
         const hero = makeBehavioralCharacter("hero", [prepare]);
-        const engine = new GameEngine([encounter], [hero], 1);
+        const engine = createCustomEngine([encounter], [hero], 1);
         engine.loadCharacter(hero.id);
         execute(engine, {
             type: "move",
@@ -588,7 +582,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const encounter = { id: "mist", enemies: [skunkette], bindings: [], traps: [] };
         const first = makeBehavioralCharacter("first", [prepare]);
         const second = makeBehavioralCharacter("second");
-        const engine = new GameEngine([encounter], [first, second], 23);
+        const engine = createCustomEngine([encounter], [first, second], 23);
         engine.loadCharacter(first.id);
         engine.loadCharacter(second.id);
         execute(engine, { type: "move", actor: "first", move: prepare.id, targets: [] });
@@ -640,7 +634,7 @@ describe("Skunkette behavior through GameEngine", () => {
         });
         const encounter = { id: "mist-crit", enemies: [skunkette], bindings: [], traps: [] };
         const hero = makeBehavioralCharacter("hero", [prepare]);
-        const engine = new GameEngine([encounter], [hero], 428);
+        const engine = createCustomEngine([encounter], [hero], 428);
         engine.loadCharacter(hero.id);
         execute(engine, {
             type: "move",

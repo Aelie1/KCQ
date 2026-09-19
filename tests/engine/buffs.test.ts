@@ -1,19 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { actionView } from "../helpers/gameView";
 import type { MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import type { iBuff, iEnemy, iEntity } from "../../src/engine/protected/types";
 import {
-    buffState,
-    characterState,
-    enemyState,
-    execute,
-    makeBehavioralCharacter,
-    makeBehavioralEnemy,
-    makeBehavioralEngine,
-    makeBehavioralMove,
-    makeEnemyWaitMove,
-    targetAccuracy,
+    buffState, characterState, enemyState, execute, makeBehavioralCharacter,
+    makeBehavioralEnemy, makeBehavioralEngine, makeBehavioralMove, makeEnemyWaitMove, targetAccuracy,
 } from "../helpers/behavioralHelpers";
+import { actionView } from "../helpers/gameView";
 
 const blinded: StatusDef = {
     id: "blinded",

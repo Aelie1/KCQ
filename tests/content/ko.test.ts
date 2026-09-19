@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import { bound, gagged, helpless, hobbled, incapacitated } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
+import type { Engine } from "../../src/engine/public/types";
 import {
     buffState,
     execute,
@@ -21,7 +22,7 @@ function loadKoEncounter(
     setup?: EncounterDef["setup"],
     ally = false,
     seed = 1,
-): GameEngine {
+): Engine {
     const encounter: EncounterDef = {
         id: "ko-test",
         enemies,
@@ -31,7 +32,7 @@ function loadKoEncounter(
     };
     const allyCharacter = ally ? makeBehavioralCharacter("ally") : undefined;
     const characters = allyCharacter ? [ko, allyCharacter] : [ko];
-    const engine = new GameEngine([encounter], characters, seed);
+    const engine = createCustomEngine([encounter], characters, seed);
     engine.loadCharacter(ko.id);
     if (allyCharacter) engine.loadCharacter(allyCharacter.id);
     engine.loadEncounter(encounter.id);
@@ -47,11 +48,11 @@ function empowerKo(state: iGameState): iEffect[] {
     }];
 }
 
-function moveIds(engine: GameEngine): string[] {
+function moveIds(engine: Engine): string[] {
     return actionView(engine, ko.id).moves.map(({ move }) => move.id);
 }
 
-function expectMoveSet(engine: GameEngine, expected: string[]): void {
+function expectMoveSet(engine: Engine, expected: string[]): void {
     const actual = moveIds(engine);
     expect(actual).toHaveLength(expected.length);
     expect(new Set(actual)).toEqual(new Set(expected));
@@ -124,7 +125,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
                 amount: 80,
             }],
         };
-        const engine = new GameEngine([encounter], [restrainedKo], 1);
+        const engine = createCustomEngine([encounter], [restrainedKo], 1);
         engine.loadCharacter(restrainedKo.id);
         engine.loadEncounter(encounter.id);
 
@@ -165,7 +166,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             bindings: [restraint],
             traps: [],
         };
-        const engine = new GameEngine([encounter], [ko, helper], 1);
+        const engine = createCustomEngine([encounter], [ko, helper], 1);
         engine.loadCharacter(ko.id);
         engine.loadCharacter(helper.id);
         engine.loadEncounter(encounter.id);
@@ -234,7 +235,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             bindings: [restriction],
             traps: [],
         };
-        const engine = new GameEngine([encounter], [ko, helper], 1);
+        const engine = createCustomEngine([encounter], [ko, helper], 1);
         engine.loadCharacter(ko.id);
         engine.loadCharacter(helper.id);
         engine.loadEncounter(encounter.id);
@@ -575,7 +576,7 @@ describe("Ko's normal and Fairy move effects", () => {
             traps: [],
             setup: empowerKo,
         };
-        const engine = new GameEngine([encounter], [ko, ally], 1);
+        const engine = createCustomEngine([encounter], [ko, ally], 1);
         engine.loadCharacter(ko.id);
         engine.loadCharacter(ally.id);
         engine.loadEncounter(encounter.id);
@@ -700,7 +701,7 @@ describe("Ko's Reflect source handling", () => {
                 return [{ ...effect, buff: { ...effect.buff } }];
             },
         };
-        const engine = new GameEngine([encounter], [ko], 1);
+        const engine = createCustomEngine([encounter], [ko], 1);
         engine.loadCharacter(ko.id);
         engine.loadEncounter(encounter.id);
 

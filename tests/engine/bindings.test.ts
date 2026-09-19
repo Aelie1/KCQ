@@ -2,14 +2,8 @@ import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { BindingDef, MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import {
-    bindingState,
-    characterState,
-    execute,
-    makeBehavioralBinding,
-    makeBehavioralCharacter,
-    makeBehavioralEngine,
-    makeBehavioralMove,
-    targetAccuracy,
+    bindingState, characterState, execute, makeBehavioralBinding, makeBehavioralCharacter,
+    makeBehavioralEngine, makeBehavioralMove, targetAccuracy,
 } from "../helpers/behavioralHelpers";
 
 function bindingMove(

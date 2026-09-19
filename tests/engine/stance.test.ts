@@ -1,22 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import { GameEngine } from "../../src/engine/private/engine";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { immobilized, vibrating } from "../../src/engine/protected/statuses";
 import { actionView } from "../helpers/gameView";
-import {
-    makeBindingDef,
-    makeCharacterDef,
-    makeEnemyDef,
-    makeMove,
-    makeWaitMove,
-    setupBoundEngine,
-} from "../helpers/helpers";
+import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove, setupBoundEngine } from "../helpers/helpers";
 
 describe("stance toggling", () => {
     it("starts a mobile character in the moving stance", () => {
         const hero = makeCharacterDef("hero");
-        const engine = new GameEngine([], [hero], 1);
+        const engine = createCustomEngine([], [hero], 1);
         engine.loadCharacter(hero.id);
 
         expect(engine.getGameView().characters[0]).toMatchObject({
@@ -28,7 +21,7 @@ describe("stance toggling", () => {
     it("rejects invalid actor", () => {
         const strike = makeMove("strike");
         const hero = makeCharacterDef("hero", [strike]);
-        const engine = new GameEngine([], [hero], 1);
+        const engine = createCustomEngine([], [hero], 1);
         engine.loadCharacter(hero.id);
 
         const result = engine.executeAction({
@@ -46,7 +39,7 @@ describe("stance toggling", () => {
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter = { id: "stance", enemies: [foe], bindings: [], traps: [] };
-        const engine = new GameEngine([encounter], [hero], 1);
+        const engine = createCustomEngine([encounter], [hero], 1);
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
@@ -57,7 +50,7 @@ describe("stance toggling", () => {
             success: true,
             events: [{ type: "stanceChanged", actor: hero.id, stance: "standing" }],
             view: {
-                turn: { step: 1 },
+                turn: { step: 2 },
                 characters: [{ id: hero.id, standing: true, acted: false }],
             },
         });
@@ -71,7 +64,7 @@ describe("stance toggling", () => {
 
     it("returns a mobile standing character to moving stance", () => {
         const hero = makeCharacterDef("hero");
-        const engine = new GameEngine([], [hero], 1);
+        const engine = createCustomEngine([], [hero], 1);
         engine.loadCharacter(hero.id);
         expect(engine.executeAction({
             type: "stance",
@@ -186,7 +179,7 @@ describe("stance toggling", () => {
         });
         const helper = makeCharacterDef("helper", [prepare]);
         const target = makeCharacterDef("target");
-        const engine = new GameEngine([], [helper, target], 1);
+        const engine = createCustomEngine([], [helper, target], 1);
         engine.loadCharacter(helper.id);
         engine.loadCharacter(target.id);
         expect(engine.executeAction({
@@ -365,7 +358,7 @@ describe("stance toggling", () => {
             traps: [],
         };
         const victim = makeCharacterDef("victim");
-        const engine = new GameEngine([encounter], [victim], 3);
+        const engine = createCustomEngine([encounter], [victim], 3);
         engine.loadCharacter(victim.id);
         engine.loadEncounter(encounter.id);
         expect(observedDuringEnemyPhase).toBeUndefined();
@@ -404,7 +397,7 @@ describe("stance toggling", () => {
             const enemy = makeEnemyDef("attacker", [attack]);
             const encounter = { id: "standing-defense", enemies: [enemy], bindings: [], traps: [] };
             const hero = makeCharacterDef("hero");
-            const engine = new GameEngine([encounter], [hero], seed);
+            const engine = createCustomEngine([encounter], [hero], seed);
             engine.loadCharacter(hero.id);
             engine.loadEncounter(encounter.id);
 

@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { fairy } from "../../src/content/skunk/fairy";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { Random } from "../../src/engine/protected/random";
 import type { iEnemy, iGameState, iMoveEffect } from "../../src/engine/protected/types";
-import type { HitBand } from "../../src/engine/public/types";
+import type { Engine, HitBand } from "../../src/engine/public/types";
 import {
     bindingState,
     buffState,
@@ -38,7 +38,6 @@ function rawState(enemies: iEnemy[], withCharacter = false): iGameState {
             round: 1,
             step: 1,
             phase: "player",
-            outcome: enemies.length === 0 ? "victory" : withCharacter ? "ongoing" : "defeat",
         },
         nextId: {},
         characters: withCharacter ? [makeCharacter()] : [],
@@ -103,7 +102,7 @@ function makeEngine(
     moves: MoveDef[],
     setup?: EncounterDef["setup"],
     seed = 1,
-): GameEngine {
+): Engine {
     const encounter: EncounterDef = {
         id: "fairy-test",
         enemies,
@@ -112,13 +111,13 @@ function makeEngine(
         setup,
     };
     const hero = makeBehavioralCharacter("hero", moves);
-    const engine = new GameEngine([encounter], [hero], seed);
+    const engine = createCustomEngine([encounter], [hero], seed);
     engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }
 
-function cast(engine: GameEngine, move: MoveDef, target: string) {
+function cast(engine: Engine, move: MoveDef, target: string) {
     return execute(engine, {
         type: "move",
         actor: "hero",
@@ -215,7 +214,7 @@ describe("Binding Magic", () => {
             traps: [],
         };
         const hero = makeBehavioralCharacter("hero");
-        const engine = new GameEngine([encounter], [hero], 2);
+        const engine = createCustomEngine([encounter], [hero], 2);
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
@@ -258,7 +257,7 @@ describe("Binding Magic", () => {
             })),
         };
         const hero = makeBehavioralCharacter("hero");
-        const engine = new GameEngine([encounter], [hero], 2);
+        const engine = createCustomEngine([encounter], [hero], 2);
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 

@@ -1,14 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { matsuko } from "../../src/content/characters/matsuko";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { s } from "../../src/engine/protected/status";
 import { gagged, servitude } from "../../src/engine/protected/statuses";
 import type {
     AccuracyProfile,
     ActionInfo,
-    ActionSuccess,
-    PlayerAction,
+    ActionSuccess, Engine, PlayerAction
 } from "../../src/engine/public/types";
 import {
     buffState,
@@ -39,7 +38,7 @@ function loadMatsukoEncounter(options: {
     allies?: ReturnType<typeof makeBehavioralCharacter>[];
     setup?: EncounterDef["setup"];
     seed?: number;
-} = {}): GameEngine {
+} = {}): Engine {
     const encounter: EncounterDef = {
         id: "matsuko-test",
         enemies: options.enemies ?? [durableEnemy()],
@@ -48,20 +47,20 @@ function loadMatsukoEncounter(options: {
         setup: options.setup,
     };
     const allies = options.allies ?? [];
-    const engine = new GameEngine([encounter], [matsuko, ...allies], options.seed ?? 1);
+    const engine = createCustomEngine([encounter], [matsuko, ...allies], options.seed ?? 1);
     engine.loadCharacter(matsuko.id);
     for (const ally of allies) engine.loadCharacter(ally.id);
     engine.loadEncounter(encounter.id);
     return engine;
 }
 
-function action(engine: GameEngine, id: string): ActionInfo {
+function action(engine: Engine, id: string): ActionInfo {
     const result = actionView(engine, matsuko.id).moves.find(({ move }) => move.id === id);
     if (!result) throw new Error(`Expected Matsuko move ${id}`);
     return result;
 }
 
-function expectMoveSet(engine: GameEngine, expected: string[]): void {
+function expectMoveSet(engine: Engine, expected: string[]): void {
     const actual = actionView(engine, matsuko.id).moves.map(({ move }) => move.id);
     expect(actual).toHaveLength(expected.length);
     expect(new Set(actual)).toEqual(new Set(expected));
@@ -354,7 +353,7 @@ describe("Matsuko's dynamic offensive kit", () => {
             setup: empoweredSetup,
         });
         execute(obeyEngine, { type: "move", actor: ally.id, move: allyAction.id, targets: [] });
-        const scenarios: Array<{ engine: GameEngine; action: PlayerAction }> = [
+        const scenarios: Array<{ engine: Engine; action: PlayerAction }> = [
             {
                 engine: stopEngine,
                 action: {

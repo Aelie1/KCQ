@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, StatusDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
-import type { Effect } from "../../src/engine/public/types";
+import type { Effect, Engine } from "../../src/engine/public/types";
 import { actionView } from "../helpers/gameView";
-import {
-    makeBindingDef,
-    makeCharacterDef,
-    makeMove,
-} from "../helpers/helpers";
+import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
 
 interface BindingSetup {
     target: string;
@@ -21,7 +17,7 @@ function setupEscapeScenario(
     actorId: string,
     characterIds: string[],
     bindings: BindingSetup[],
-): GameEngine {
+): Engine {
     const prepare = makeMove("prepare-bindings", "mouth", {
         targetSide: "none",
         targets: 0,
@@ -36,7 +32,7 @@ function setupEscapeScenario(
     const characters = characterIds.map((id) =>
         makeCharacterDef(id, id === actorId ? [prepare] : []),
     );
-    const engine = new GameEngine([], characters, 1);
+    const engine = createCustomEngine([], characters, 1);
     for (const character of characters) {
         engine.loadCharacter(character.id);
     }
@@ -50,7 +46,7 @@ function setupEscapeScenario(
     return engine;
 }
 
-function escapeEffects(engine: GameEngine, actor: string, target: string, binding: string): Effect[] {
+function escapeEffects(engine: Engine, actor: string, target: string, binding: string): Effect[] {
     const option = actionView(engine, actor).escapes.find(
         (candidate) => candidate.target === target && candidate.binding === binding,
     );
@@ -58,7 +54,7 @@ function escapeEffects(engine: GameEngine, actor: string, target: string, bindin
     return option.effects;
 }
 
-function escapeAmount(engine: GameEngine, actor: string, target: string, binding: string): number {
+function escapeAmount(engine: Engine, actor: string, target: string, binding: string): number {
     const effect = escapeEffects(engine, actor, target, binding).find(
         (candidate) => candidate.type === "binding"
             && candidate.target === target
@@ -246,14 +242,14 @@ describe("escape progress", () => {
         ["unknown binding", { type: "escape", actor: "hero", target: "hero", binding: "missing" }, "invalidBinding"],
     ] as const)("rejects an %s", (_label, action, reason) => {
         const hero = makeCharacterDef("hero");
-        const engine = new GameEngine([], [hero], 1);
+        const engine = createCustomEngine([], [hero], 1);
         engine.loadCharacter(hero.id);
 
         expect(engine.executeAction(action)).toEqual({ success: false, reason });
     });
 
     it("omits action information for an invalid actor", () => {
-        expect(new GameEngine([], [], 1).getGameView().actions
+        expect(createCustomEngine([], [], 1).getGameView().actions
             .find(({ id }) => id === "missing")).toBeUndefined();
     });
 });

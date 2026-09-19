@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { hinari } from "../../src/content/characters/hinari";
 import { latexLegs } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { isCharacter, thresholds } from "../../src/engine/protected/helpers";
 import { s } from "../../src/engine/protected/status";
 import { immobilized } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
-import type { ActionInfo, ActionSuccess, DamageEvent } from "../../src/engine/public/types";
+import type { ActionInfo, ActionSuccess, DamageEvent, Engine } from "../../src/engine/public/types";
 import {
     bindingState,
     buffState,
@@ -65,7 +65,7 @@ function loadHinariEncounter(options: {
     setup?: EncounterDef["setup"];
     seed?: number;
     traps?: EncounterDef["traps"];
-} = {}): GameEngine {
+} = {}): Engine {
     const encounter: EncounterDef = {
         id: "hinari-test",
         enemies: options.enemies ?? [durableEnemy()],
@@ -74,7 +74,7 @@ function loadHinariEncounter(options: {
         setup: options.setup,
     };
     const allies = options.allies ?? [];
-    const engine = new GameEngine([encounter], [hinari, ...allies], options.seed ?? 1);
+    const engine = createCustomEngine([encounter], [hinari, ...allies], options.seed ?? 1);
     engine.loadCharacter(hinari.id);
     for (const ally of allies) engine.loadCharacter(ally.id);
     engine.loadEncounter(encounter.id);
@@ -89,11 +89,11 @@ function hinariData(state: iGameState, subspace: number, binding = 0): iEffect[]
     ];
 }
 
-function action(engine: GameEngine, id: string): ActionInfo | undefined {
+function action(engine: Engine, id: string): ActionInfo | undefined {
     return actionView(engine, hinari.id).moves.find(({ move }) => move.id === id);
 }
 
-function moveIds(engine: GameEngine): string[] {
+function moveIds(engine: Engine): string[] {
     return actionView(engine, hinari.id).moves.map(({ move }) => move.id);
 }
 
@@ -374,7 +374,7 @@ describe("Hinari's Store", () => {
         });
     }
 
-    function storeFromAlly(engine: GameEngine) {
+    function storeFromAlly(engine: Engine) {
         return execute(engine, {
             type: "move",
             actor: hinari.id,

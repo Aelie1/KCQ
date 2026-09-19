@@ -1,15 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { isCharacter } from "../../src/engine/protected/helpers";
-import {
-    makeBindingDef,
-    makeCharacterDef,
-    makeEnemyDef,
-    makeMove,
-} from "../helpers/helpers";
+import type { Engine } from "../../src/engine/public/types";
+import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeMove } from "../helpers/helpers";
 
-function engineFor(move: ReturnType<typeof makeMove>): GameEngine {
+function engineFor(move: ReturnType<typeof makeMove>): Engine {
     const encounter: EncounterDef = {
         id: "deferred-effects",
         enemies: [],
@@ -17,7 +13,7 @@ function engineFor(move: ReturnType<typeof makeMove>): GameEngine {
         traps: [],
     };
     const hero = makeCharacterDef("hero", [move]);
-    const engine = new GameEngine([encounter], [hero], 1);
+    const engine = createCustomEngine([encounter], [hero], 1);
     engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
     return engine;
@@ -156,7 +152,7 @@ describe("deferred binding onResolve effects", () => {
             traps: [],
         };
         const hero = makeCharacterDef("hero");
-        const engine = new GameEngine([encounter], [hero], 1);
+        const engine = createCustomEngine([encounter], [hero], 1);
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 

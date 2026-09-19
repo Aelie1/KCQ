@@ -4,14 +4,14 @@ import { queen } from "../../src/content/skunk/queen";
 import { rainmaker } from "../../src/content/skunk/rainmaker";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { isCharacter, isEnemy } from "../../src/engine/protected/helpers";
 import { mixSeed, Random } from "../../src/engine/protected/random";
 import { s } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEffect, iGameState } from "../../src/engine/protected/types";
-import type { ActionSuccess, GameEvent, GameState, HitBand, ModifierSet } from "../../src/engine/public/types";
+import type { ActionSuccess, Engine, GameEvent, GameState, HitBand, ModifierSet } from "../../src/engine/public/types";
 import { execute, makeBehavioralCharacter, makeBehavioralMove } from "../helpers/behavioralHelpers";
 
 const QUEEN_ID = "queen1";
@@ -37,7 +37,7 @@ interface QueenSetup {
     setup?: EncounterDef["setup"];
 }
 
-function loadQueen(options: QueenSetup = {}): GameEngine {
+function loadQueen(options: QueenSetup = {}): Engine {
     const encounter: EncounterDef = {
         id: "queen-test",
         enemies: [queen, ...(options.enemies ?? [])],
@@ -46,7 +46,7 @@ function loadQueen(options: QueenSetup = {}): GameEngine {
         setup: options.setup,
     };
     const characters = options.characters ?? [makeBehavioralCharacter("hero")];
-    const engine = new GameEngine([encounter], characters, options.seed ?? 1);
+    const engine = createCustomEngine([encounter], characters, options.seed ?? 1);
     for (const character of characters) {
         engine.loadCharacter(character.id);
     }
@@ -54,11 +54,11 @@ function loadQueen(options: QueenSetup = {}): GameEngine {
     return engine;
 }
 
-function endTurn(engine: GameEngine): ActionSuccess {
+function endTurn(engine: Engine): ActionSuccess {
     return execute(engine, { type: "endTurn" });
 }
 
-function queenState(engine: GameEngine) {
+function queenState(engine: Engine) {
     const result = engine.getGameView().enemies.find(({ id }) => id === QUEEN_ID);
     if (!result) throw new Error("Expected Queen to be alive");
     return result;
@@ -69,7 +69,7 @@ function enemiesByBaseId(state: GameState, baseId: string) {
     return state.enemies.filter(({ id }) => numericId.test(id));
 }
 
-function queenMoves(engine: GameEngine): string[] {
+function queenMoves(engine: Engine): string[] {
     return queenState(engine).intentions.map(({ move }) => move);
 }
 
@@ -89,11 +89,11 @@ function activeBuff(id: string, modifiers: ModifierSet = {}): iBuff {
     return { id, active: true, modifiers };
 }
 
-function intentionFor(engine: GameEngine, move: string) {
+function intentionFor(engine: Engine, move: string) {
     return queenState(engine).intentions.find((intention) => intention.move === move);
 }
 
-function findSeed(build: (seed: number) => GameEngine, predicate: (engine: GameEngine) => boolean): number {
+function findSeed(build: (seed: number) => Engine, predicate: (engine: Engine) => boolean): number {
     for (let seed = 1; seed <= 2_000; seed++) {
         if (predicate(build(seed))) return seed;
     }

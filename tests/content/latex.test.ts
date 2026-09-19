@@ -1,13 +1,9 @@
 import { describe, expect, it } from "vitest";
-import {
-    latexArms,
-    latexHead,
-    latexLegs,
-    latexTorso,
-} from "../../src/content/skunk/latex";
-import { GameEngine } from "../../src/engine/private/engine";
+import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import type { BindingDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { iEffect } from "../../src/engine/protected/types";
+import type { Engine } from "../../src/engine/public/types";
 import {
     bindingState,
     characterState,
@@ -26,7 +22,7 @@ function setupLatexScenario(
     characterIds: string[],
     bindings: BindingSetup[],
     spreadModifiers: Record<string, number> = {},
-): GameEngine {
+): Engine {
     const prepare = makeBehavioralMove("prepare-latex", "none", {
         targetSide: "none",
         targets: 0,
@@ -63,7 +59,7 @@ function setupLatexScenario(
     const characters = characterIds.map((id, index) =>
         makeBehavioralCharacter(id, index === 0 ? [prepare] : []),
     );
-    const engine = new GameEngine([], characters, 1);
+    const engine = createCustomEngine([], characters, 1);
     for (const character of characters) {
         engine.loadCharacter(character.id);
     }

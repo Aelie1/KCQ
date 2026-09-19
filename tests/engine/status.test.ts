@@ -1,23 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
-import {
-    bound,
-    helpless,
-    immobilized,
-    incapacitated,
-    stunned
-} from "../../src/engine/protected/statuses";
+import { bound, helpless, immobilized, incapacitated, stunned } from "../../src/engine/protected/statuses";
 import { actionView } from "../helpers/gameView";
-import {
-    expectMoveRejection,
-    makeBindingDef,
-    makeCharacterDef,
-    makeMove,
-    setupBoundEngine,
-} from "../helpers/helpers";
+import { expectMoveRejection, makeBindingDef, makeCharacterDef, makeMove, setupBoundEngine } from "../helpers/helpers";
 
 function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: number) {
     const targetBinding = makeBindingDef("target-binding");
@@ -43,7 +31,7 @@ function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: numbe
     });
     const helper = makeCharacterDef("helper", [prepare]);
     const target = makeCharacterDef("target");
-    const engine = new GameEngine([], [helper, target], 1);
+    const engine = createCustomEngine([], [helper, target], 1);
     engine.loadCharacter(helper.id);
     engine.loadCharacter(target.id);
     expect(engine.executeAction({

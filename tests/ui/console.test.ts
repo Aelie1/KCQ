@@ -6,7 +6,8 @@ import { formatAccuracyRow, renderScreen } from "../../src/console/render";
 import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
 import { latexArms } from "../../src/content/skunk/latex";
-import { GameEngine } from "../../src/engine/private/engine";
+import { createCustomEngine } from "../../src/engine/protected/engine";
+import type { Engine } from "../../src/engine/public/types";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { helpless } from "../../src/engine/protected/statuses";
@@ -60,7 +61,7 @@ const state: GameState = {
     encounter: null
 };
 
-const bindingThresholds = new GameEngine([], [], 1).getThresholds();
+const bindingThresholds = createCustomEngine([], [], 1).getThresholds();
 
 const longIntention: Intention = {
     move: "royalMist",
@@ -98,7 +99,7 @@ function renderState(
 }
 
 async function runScriptedConsole(
-    engine: GameEngine,
+    engine: Engine,
     scriptedAnswers: string[],
     initialEvents: GameEvent[] = [],
 ) {
@@ -556,12 +557,12 @@ describe("console formatting", () => {
     });
 
     it("automatically ends the turn after the last available character acts", async () => {
-        const engine = new GameEngine(encounterList, [ko], 8224);
+        const engine = createCustomEngine(encounterList, [ko], 8224);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter("plains_1");
         const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
 
-        expect(engine.getGameState().turn.round).toBe(2);
+        expect(engine.getGameView().turn.round).toBe(2);
         expect(rendered).toContain("skunkette1 — Miss:");
         expect(rendered).not.toMatch(/TARGET\s+MISS\s+GRAZE/);
         expect(rendered).toMatch(/telekinesis on skunkette1: (MISS|GRAZE|HIT|CRIT)/);
@@ -573,7 +574,7 @@ describe("console formatting", () => {
     });
 
     it("puts a single accuracy preview on the move row", async () => {
-        const engine = new GameEngine([oneEnemyEncounter], [ko], 2);
+        const engine = createCustomEngine([oneEnemyEncounter], [ko], 2);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
@@ -600,7 +601,7 @@ describe("console formatting", () => {
     });
 
     it("executes a one-target move immediately when only one valid target exists", async () => {
-        const engine = new GameEngine([oneEnemyEncounter], [ko], 8);
+        const engine = createCustomEngine([oneEnemyEncounter], [ko], 8);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
@@ -611,7 +612,7 @@ describe("console formatting", () => {
     });
 
     it("retains target selection when a one-target move has multiple valid targets", async () => {
-        const engine = new GameEngine([multiEnemyEncounter], [ko], 8224);
+        const engine = createCustomEngine([multiEnemyEncounter], [ko], 8224);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
@@ -636,7 +637,7 @@ describe("console formatting", () => {
         const assistMove = makeMove("assist", "mouth", { targetSide: "player" });
         const hero = makeCharacterDef("hero", [assistMove]);
         const ally = makeCharacterDef("ally");
-        const engine = new GameEngine([oneEnemyEncounter], [hero, ally], 1);
+        const engine = createCustomEngine([oneEnemyEncounter], [hero, ally], 1);
         engine.loadCharacter(hero.id);
         engine.loadCharacter(ally.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
@@ -659,7 +660,7 @@ describe("console formatting", () => {
     it("renumbers the remaining detailed rows during multi-target selection", async () => {
         const sweep = makeMove("sweep", "mouth", { targets: 2 });
         const hero = makeCharacterDef("hero", [sweep]);
-        const engine = new GameEngine([multiEnemyEncounter], [hero], 1);
+        const engine = createCustomEngine([multiEnemyEncounter], [hero], 1);
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
@@ -689,7 +690,7 @@ describe("console formatting", () => {
     it("keeps all-target accuracy rows informational and unnumbered", async () => {
         const allMove = makeMove("all-move", "mouth", { targets: "all" });
         const hero = makeCharacterDef("hero", [allMove]);
-        const engine = new GameEngine([multiEnemyEncounter], [hero], 1);
+        const engine = createCustomEngine([multiEnemyEncounter], [hero], 1);
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
@@ -715,7 +716,7 @@ describe("console formatting", () => {
             isValid: (_move, target) => target?.id === "attacker1" ? "invalidTarget" : undefined,
         });
         const hero = makeCharacterDef("hero", [selectiveMove]);
-        const engine = new GameEngine([multiEnemyEncounter], [hero], 1);
+        const engine = createCustomEngine([multiEnemyEncounter], [hero], 1);
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
@@ -733,7 +734,7 @@ describe("console formatting", () => {
             isValid: () => "invalidTarget",
         });
         const hero = makeCharacterDef("hero", [emptyAllMove]);
-        const engine = new GameEngine([oneEnemyEncounter], [hero], 1);
+        const engine = createCustomEngine([oneEnemyEncounter], [hero], 1);
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
@@ -766,7 +767,7 @@ describe("console formatting", () => {
             },
         };
         const hero = makeCharacterDef("hero");
-        const engine = new GameEngine([encounter], [hero], 1);
+        const engine = createCustomEngine([encounter], [hero], 1);
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
 
@@ -787,7 +788,7 @@ describe("console formatting", () => {
     });
 
     it("replaces stored bindings when a newer encounter event is received", async () => {
-        const engine = new GameEngine(encounterList, [ko], 8224);
+        const engine = createCustomEngine(encounterList, [ko], 8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const events: GameEvent[] = [
@@ -803,7 +804,7 @@ describe("console formatting", () => {
 
     it("shows a fully acted character without assigning it a menu number", async () => {
         const ally = makeCharacterDef("ally");
-        const engine = new GameEngine(encounterList, [ko, ally], 8224);
+        const engine = createCustomEngine(encounterList, [ko, ally], 8224);
         engine.loadCharacter(ko.id);
         engine.loadCharacter(ally.id);
         const events = engine.loadEncounter("plains_1");
@@ -814,7 +815,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("[2] ally  Ready");
         expect(rendered).toContain("[3] End turn");
         expect(rendered).toContain("[4] Quit");
-        expect(engine.getGameState().turn.round).toBe(1);
+        expect(engine.getGameView().turn.round).toBe(1);
     });
 
     it("does not number unavailable characters and ignores them for automatic end turn", async () => {
@@ -835,7 +836,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("Hit: 100%");
         expect(rendered).not.toContain("No target");
         expect(rendered).toContain("No characters available. Ending turn automatically.");
-        expect(engine.getGameState().turn.round).toBe(3);
+        expect(engine.getGameView().turn.round).toBe(3);
     });
 
     it("refreshes stance and bonus-escape menus in place", async () => {
@@ -858,7 +859,7 @@ describe("console formatting", () => {
         expect(escapeAmounts[1]).not.toBe(escapeAmounts[0]);
         expect(rendered).not.toContain("Who should hero free?");
         expect(rendered).not.toContain("Choose a binding on hero.");
-        expect(engine.getGameState().turn.round).toBe(3);
+        expect(engine.getGameView().turn.round).toBe(3);
     });
 
     it("previews every effect for an escape option", async () => {
@@ -875,7 +876,7 @@ describe("console formatting", () => {
     });
 
     it("stays alive while undersized and resumes normal rendering after resize", async () => {
-        const engine = new GameEngine(encounterList, [ko], 8224);
+        const engine = createCustomEngine(encounterList, [ko], 8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const input = new PassThrough();

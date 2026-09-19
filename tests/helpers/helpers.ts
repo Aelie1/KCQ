@@ -1,17 +1,8 @@
 import { expect } from "vitest";
-import { GameEngine } from "../../src/engine/private/engine";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import type {
-    iBinding,
-    iCharacter,
-    iEnemy,
-    iStatus,
-} from "../../src/engine/protected/types";
-import type {
-    BindingLevel,
-    FailureReason,
-    MoveType,
-} from "../../src/engine/public/types";
+import { createCustomEngine } from "../../src/engine/protected/engine";
+import type { iBinding, iCharacter, iEnemy, iStatus } from "../../src/engine/protected/types";
+import type { BindingLevel, Engine, FailureReason, MoveType } from "../../src/engine/public/types";
 import { actionView } from "./gameView";
 
 export { actionView } from "./gameView";
@@ -127,7 +118,6 @@ export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnem
         maxHp: definition.hp,
         currDef: definition.defense,
         intentions: [],
-        preview: [],
         cooldowns: {},
         data: {},
     };
@@ -154,7 +144,7 @@ export function setupBoundEngine(
     const hero = makeCharacterDef("hero", [setupMove, armsMove, mouthMove]);
     const foe = makeEnemyDef("foe", [makeWaitMove()]);
     const encounter: EncounterDef = { id: "bound-test", enemies: [foe], bindings: [], traps: [] };
-    const engine = new GameEngine(
+    const engine = createCustomEngine(
         [encounter, ...additionalEncounters],
         [hero, ...additionalCharacters],
         1,
@@ -174,7 +164,7 @@ export function setupBoundEngine(
 }
 
 export function expectMoveRejection(
-    engine: GameEngine,
+    engine: Engine,
     actor: string,
     move: string,
     target: string,
