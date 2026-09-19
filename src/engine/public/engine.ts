@@ -5,9 +5,8 @@ import {
 } from "../private/combat";
 import { TRAP_MODIFIER } from "../private/constants";
 import { GameEffects } from "../private/effects";
-import { serializeGameState } from "../private/serialize";
+import { serializeGameView } from "../private/serialize";
 import { iValidityInfo } from "../private/types";
-import { getActionView } from "../private/view";
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
 import { findBinding, findCharacter, findEntity, findMove, isValidEntity, thresholds } from "../protected/helpers";
 import { mixSeed, Random } from "../protected/random";
@@ -49,10 +48,7 @@ export class GameEngine {
     }
 
     getGameView(): GameView {
-        return {
-            state: serializeGameState(this.state),
-            actions: getActionView(this.state)
-        };
+        return serializeGameView(this.state);
     }
 
     getThresholds() {

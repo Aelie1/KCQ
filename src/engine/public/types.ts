@@ -2,8 +2,7 @@
  * State
  *******************************************************/
 
-export interface GameView {
-    state: GameState;
+export interface GameView extends GameState {
     actions: ActionView[];
 }
 

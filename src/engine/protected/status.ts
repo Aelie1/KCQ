@@ -41,7 +41,7 @@ export class GameStatus {
             return "actorSkipped";
         }
 
-        if (this.status.hasActed && (type !== "escape" || !this.status.hasBonusEscapes)) {
+        if (this.status.hasActed && ((type && type !== "escape") || !this.status.hasBonusEscapes)) {
             return "actorAlreadyActed";
         }
 
@@ -209,6 +209,15 @@ export function mergeModifiers(target: ModifierSet, source: ModifierSet): void {
     }
 }
 
+export function getStatus(statuses: Map<iEntity, GameStatus>, entity: iEntity): GameStatus {
+    const status = statuses.get(entity);
+
+    if (!status) {
+        throw new Error(`Missing GameStatus for ${entity.id}`);
+    }
+
+    return status;
+}
 
 export function s(definition: StatusDef, value: number): iStatus {
     return { definition, value };
