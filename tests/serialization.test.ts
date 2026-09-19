@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { serializeGameState } from "../src/engine/private/serialize";
-import type { StatusDef } from "../src/engine/protected/definitions";
+import type { EncounterDef, StatusDef } from "../src/engine/protected/definitions";
 import { thresholds } from "../src/engine/protected/helpers";
+import { incapacitated } from "../src/engine/protected/statuses";
 import type { iBuff, iGameState } from "../src/engine/protected/types";
 import { GameEngine } from "../src/engine/public/engine";
 import {
@@ -20,7 +21,7 @@ describe("state serialization and combatant loading", () => {
         const state = new GameEngine([], 1).getGameState();
 
         expect(state).toEqual({
-            turn: { round: 1, step: 1, phase: "player" },
+            turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
             characters: [],
             enemies: [],
             traps: [],
@@ -42,6 +43,63 @@ describe("state serialization and combatant loading", () => {
         });
     });
 
+    it("reports victory when no enemies are present", () => {
+        const engine = new GameEngine([], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
+
+        expect(engine.getGameState().turn.outcome).toBe("victory");
+    });
+
+    it("reports defeat when every player is incapacitated", () => {
+        const capture = makeBindingDef("capture", {
+            easy: [{ definition: incapacitated, value: 1 }],
+        });
+        const encounter: EncounterDef = {
+            id: "defeat-state",
+            enemies: [makeEnemyDef("foe", [makeWaitMove()])],
+            bindings: [capture],
+            traps: [],
+            setup: (state) => state.characters.map((character) => ({
+                type: "binding" as const,
+                source: character,
+                target: character,
+                binding: capture,
+                amount: thresholds.easy,
+            })),
+        };
+        const engine = new GameEngine([encounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
+        engine.loadCharacter(makeCharacterDef("ally"));
+        engine.loadEncounter(encounter.id);
+
+        expect(engine.getGameState().turn.outcome).toBe("defeat");
+    });
+
+    it("reports an ongoing battle while any player remains capable", () => {
+        const capture = makeBindingDef("capture", {
+            easy: [{ definition: incapacitated, value: 1 }],
+        });
+        const encounter: EncounterDef = {
+            id: "ongoing-state",
+            enemies: [makeEnemyDef("foe", [makeWaitMove()])],
+            bindings: [capture],
+            traps: [],
+            setup: (state) => [{
+                type: "binding",
+                source: state.characters[0],
+                target: state.characters[0],
+                binding: capture,
+                amount: thresholds.easy,
+            }],
+        };
+        const engine = new GameEngine([encounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero"));
+        engine.loadCharacter(makeCharacterDef("ally"));
+        engine.loadEncounter(encounter.id);
+
+        expect(engine.getGameState().turn.outcome).toBe("ongoing");
+    });
+
     it("loads definitions into fresh combatant state through an encounter", () => {
         const hero = makeCharacterDef("hero");
         const engine = new GameEngine([multiEnemyEncounter], 1);
@@ -55,7 +113,7 @@ describe("state serialization and combatant loading", () => {
             { type: "encounterLoad", id: multiEnemyEncounter.id, success: true, bindings: [] },
         ]);
         expect(engine.getGameState()).toMatchObject({
-            turn: { round: 1, step: 1, phase: "player" },
+            turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
             characters: [{
                 id: hero.id,
                 acted: false,
@@ -189,7 +247,7 @@ describe("state serialization and combatant loading", () => {
             effects: [],
         }];
         const internalState: iGameState = {
-            turn: { round: 1, step: 1, phase: "player" },
+            turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
             nextId: {},
             characters: [character],
             enemies: [enemy],

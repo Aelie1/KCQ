@@ -98,7 +98,7 @@ describe("turn phases and enemy intentions", () => {
         expect(result.events.at(-1)).toEqual({ type: "phaseChanged", phase: "player" });
 
         const state = engine.getGameState();
-        expect(state.turn).toEqual({ round: 2, step: 1, phase: "player" });
+        expect(state.turn).toEqual({ outcome: "ongoing", round: 2, step: 1, phase: "player" });
         expect(state.characters[0].acted).toBe(false);
         expect(state.characters[0].buffs).toContainEqual(
             expect.objectContaining({ id: "pounce", linkedEntity: enemyId }),

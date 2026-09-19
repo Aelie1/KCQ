@@ -20,7 +20,7 @@ import {
 import { multiEnemyEncounter, oneEnemyEncounter, waitEnemy } from "./testContent";
 
 const state: GameState = {
-    turn: { round: 3, step: 1, phase: "player" },
+    turn: { round: 3, step: 1, phase: "player", outcome: "ongoing" },
     characters: [{
         id: "ko",
         acted: false,
@@ -630,6 +630,80 @@ describe("console formatting", () => {
         expect(secondTargetLines).toHaveLength(1);
         expect(secondTargetLines[0]).toContain("Miss:");
         expect(rendered).toMatch(/telekinesis on attacker1: (MISS|GRAZE|HIT|CRIT)/);
+    });
+
+    it("numbers detailed ally target rows without adding a duplicate list", async () => {
+        const assistMove = makeMove("assist", "mouth", { targetSide: "player" });
+        const engine = new GameEngine([oneEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero", [assistMove]));
+        engine.loadCharacter(makeCharacterDef("ally"));
+        const events = engine.loadEncounter(oneEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "1", "2", "4"], events);
+        const targetScreen = rendered.split("\x1b[2J\x1b[H")
+            .find((screen) => screen.includes("Choose target 1 of 1 for assist."));
+        expect(targetScreen).toBeDefined();
+        const heroLines = targetScreen?.split("\n")
+            .filter((line) => line.includes("[1] hero")) ?? [];
+        const allyLines = targetScreen?.split("\n")
+            .filter((line) => line.includes("[2] ally")) ?? [];
+        expect(heroLines).toHaveLength(1);
+        expect(heroLines[0]).toContain("Hit: 100%");
+        expect(allyLines).toHaveLength(1);
+        expect(allyLines[0]).toContain("Hit: 100%");
+        expect(rendered).toContain("hero used assist on ally: HIT");
+    });
+
+    it("renumbers the remaining detailed rows during multi-target selection", async () => {
+        const sweep = makeMove("sweep", "mouth", { targets: 2 });
+        const engine = new GameEngine([multiEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero", [sweep]));
+        const events = engine.loadEncounter(multiEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(
+            engine,
+            ["1", "1", "2", "1", "3"],
+            events,
+        );
+        const screens = rendered.split("\x1b[2J\x1b[H");
+        const firstTargetScreen = screens.find((screen) =>
+            screen.includes("Choose target 1 of 2 for sweep."));
+        const secondTargetScreen = screens.find((screen) =>
+            screen.includes("Choose target 2 of 2 for sweep."));
+        expect(firstTargetScreen).toBeDefined();
+        expect(secondTargetScreen).toBeDefined();
+        expect(firstTargetScreen?.split("\n")
+            .filter((line) => line.includes("[2] attacker1"))).toHaveLength(1);
+        const remainingTargetLines = secondTargetScreen?.split("\n")
+            .filter((line) => line.includes("[1] foe1")) ?? [];
+        expect(remainingTargetLines).toHaveLength(1);
+        expect(remainingTargetLines[0]).toContain("Hit: 100%");
+        expect(secondTargetScreen).toContain("Selected: attacker1");
+        expect(rendered).toContain("  -> attacker1: HIT");
+        expect(rendered).toContain("  -> foe1: HIT");
+    });
+
+    it("keeps all-target accuracy rows informational and unnumbered", async () => {
+        const allMove = makeMove("all-move", "mouth", { targets: "all" });
+        const engine = new GameEngine([multiEnemyEncounter], 1);
+        engine.loadCharacter(makeCharacterDef("hero", [allMove]));
+        const events = engine.loadEncounter(multiEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(
+            engine,
+            ["1", "1", "2", "5", "3"],
+            events,
+        );
+        const targetScreen = rendered.split("\x1b[2J\x1b[H")
+            .find((screen) => screen.includes("all-move affects every enemy."));
+        expect(targetScreen).toBeDefined();
+        expect(targetScreen?.split("\n").some((line) =>
+            line.includes("foe1") && line.includes("Hit: 100%"))).toBe(true);
+        expect(targetScreen?.split("\n").some((line) =>
+            line.includes("attacker1") && line.includes("Hit: 100%"))).toBe(true);
+        expect(targetScreen).not.toContain("[1] foe1");
+        expect(targetScreen).not.toContain("[2] attacker1");
+        expect(targetScreen).toContain("[1] Confirm");
     });
 
     it("only offers valid entries from a move's published targets", async () => {

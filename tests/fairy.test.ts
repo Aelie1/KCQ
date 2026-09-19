@@ -34,7 +34,12 @@ function scriptedRandom(...values: number[]): Random {
 
 function rawState(enemies: iEnemy[], withCharacter = false): iGameState {
     return {
-        turn: { round: 1, step: 1, phase: "player" },
+        turn: {
+            round: 1,
+            step: 1,
+            phase: "player",
+            outcome: enemies.length === 0 ? "victory" : withCharacter ? "ongoing" : "defeat",
+        },
         nextId: {},
         characters: withCharacter ? [makeCharacter()] : [],
         enemies,

@@ -75,7 +75,7 @@ describe("accuracy", () => {
         const target = makeCharacter("character-target");
         const move = makeAccuracyMove(standardProfile, { targetSide: "player", type: "none" });
         const info = isValidTarget({
-            turn: { round: 1, step: 1, phase: "enemy" },
+            turn: { round: 1, step: 1, phase: "enemy", outcome: "ongoing" },
             nextId: {},
             characters: [target],
             enemies: [actor],
