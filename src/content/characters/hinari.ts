@@ -2,7 +2,7 @@ import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/prot
 import { findBinding, findBuff, isCharacter, isEnemy, thresholds } from "../../engine/protected/helpers";
 import { hobbled } from "../../engine/protected/statuses";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
-import { ActionFailureReason } from "../../engine/public/types";
+import { FailureReason } from "../../engine/public/types";
 import { removeEmpowerment } from "./ko";
 
 const SUBSPACE_MAX = 100;
@@ -125,7 +125,7 @@ const store: MoveDef = {
         }
         return effects;
     },
-    isValid: function (move: MoveDef, target: iEntity | null): ActionFailureReason | undefined {
+    isValid: function (move: MoveDef, target: iEntity | null): FailureReason | undefined {
         if (target !== null &&
             (!isCharacter(target)
                 || target.bindings.length === 0)) {

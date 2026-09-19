@@ -1,10 +1,10 @@
 import { createEngine } from "../engine/public/engine";
 import type {
-    ActionFailureReason,
     ActionInfo,
     AvailabilityInfo,
     EntityId,
     EscapeOptions,
+    FailureReason,
     GameEvent,
     GameState,
     PlayerAction,
@@ -44,7 +44,7 @@ export type SingleFightTermination = "victory" | "defeat" | "maxActions" | "erro
 export interface SingleFightError {
     message: string;
     action?: PlayerAction;
-    reason?: ActionFailureReason;
+    reason?: FailureReason;
 }
 
 export interface ReplaySuccessStep {
@@ -57,7 +57,7 @@ export interface ReplaySuccessStep {
 export interface ReplayFailureStep {
     action: PlayerAction;
     success: false;
-    reason: ActionFailureReason;
+    reason: FailureReason;
 }
 
 export type ReplayStep = ReplaySuccessStep | ReplayFailureStep;

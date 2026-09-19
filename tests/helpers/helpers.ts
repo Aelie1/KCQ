@@ -8,8 +8,8 @@ import type {
 } from "../../src/engine/protected/types";
 import { GameEngine } from "../../src/engine/public/engine";
 import type {
-    ActionFailureReason,
     BindingLevel,
+    FailureReason,
     MoveType,
 } from "../../src/engine/public/types";
 
@@ -175,7 +175,7 @@ export function expectMoveRejection(
     actor: string,
     move: string,
     target: string,
-    reason: ActionFailureReason,
+    reason: FailureReason,
 ) {
     expect(engine.getMoves(actor).find((action) => action.move.id === move)).toMatchObject({
         available: false,

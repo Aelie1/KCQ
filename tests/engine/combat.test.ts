@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { GameEngine } from "../../src/engine/public/engine";
-import type { ActionFailureReason, PlayerAction } from "../../src/engine/public/types";
+import type { FailureReason, PlayerAction } from "../../src/engine/public/types";
 import {
     bindingState,
     buffState,
@@ -23,7 +23,7 @@ function expectMoveRejection(
     actor: string,
     move: string,
     target: string,
-    reason: ActionFailureReason,
+    reason: FailureReason,
 ) {
     expect(engine.getMoves(actor).find((action) => action.move.id === move)).toMatchObject({
         available: false,

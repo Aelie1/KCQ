@@ -13,8 +13,11 @@ import { mixSeed, Random } from "../protected/random";
 import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifier, ignoresTraps, isIncapacitated, isSkipped } from "../protected/status";
 import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import type {
-    AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo,
-    EncounterId, EntityId, EscapeOptions, GameEvent, GameState, PlayerAction, StanceInfo
+    AccuracyResult,
+    ActionInfo, ActionResult, AvailabilityInfo,
+    EncounterId, EntityId, EscapeOptions,
+    FailureReason,
+    GameEvent, GameState, PlayerAction, StanceInfo
 } from "./types";
 
 export function createEngine(seed?: number): GameEngine {
@@ -224,7 +227,7 @@ export class GameEngine {
             const result = canAct(character, "move");
             for (const move of getMoves(character)) {
                 let available = true;
-                let reason: ActionFailureReason = "moveUnavailable";
+                let reason: FailureReason = "moveUnavailable";
                 const targets = getTargets(this.state, character, move);
                 if (result) {
                     available = false;
@@ -433,7 +436,7 @@ export class GameEngine {
                         }
                     }
                     //Redo some checks in case status has changed
-                    let reason: ActionFailureReason | undefined;
+                    let reason: FailureReason | undefined;
 
                     const capability = canAct(actor, action.type);
                     if (capability) {
@@ -568,7 +571,7 @@ export class GameEngine {
                     }
 
                     //Redo some checks in case status has changed
-                    let reason: ActionFailureReason | undefined;
+                    let reason: FailureReason | undefined;
 
                     const capability = canAct(actor, action.type);
                     if (capability) {

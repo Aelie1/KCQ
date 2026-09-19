@@ -177,7 +177,7 @@ export interface ValidTarget {
 export interface InvalidTarget {
     valid: false;
     target: EntityId | null;
-    reason: ActionFailureReason;
+    reason: FailureReason;
 }
 
 /*******************************************************
@@ -262,25 +262,25 @@ export type ModifierId =
 export interface AvailabilityInfo {
     id: EntityId;
     available: boolean;
-    reason?: ActionFailureReason;
+    reason?: FailureReason;
 }
 
 export interface ActionInfo {
     move: Move;
     available: boolean;
     targets: ValidityInfo[];
-    reason?: ActionFailureReason;
+    reason?: FailureReason;
 }
 
 export interface StanceInfo {
     available: boolean;
-    reason?: ActionFailureReason;
+    reason?: FailureReason;
 }
 
 export interface EscapeOptions {
     options: EscapeInfo[];
     assistAllowed: boolean;
-    reason?: ActionFailureReason;
+    reason?: FailureReason;
 }
 
 export interface EscapeInfo {
@@ -333,10 +333,10 @@ export interface ActionSuccess {
 
 export interface ActionFailure {
     success: false;
-    reason: ActionFailureReason;
+    reason: FailureReason;
 }
 
-export type ActionFailureReason =
+export type FailureReason =
     | "invalidActor"
     | "invalidMove"
     | "invalidBinding"
@@ -448,7 +448,7 @@ export interface TrapEvent {
 export interface InterruptEvent {
     type: "actionInterrupted";
     actor: EntityId;
-    reason: ActionFailureReason;
+    reason: FailureReason;
 }
 
 export interface RefreshEvent {

@@ -1,4 +1,4 @@
-import type { AccuracyProfile, ActionFailureReason, BindingLevel, ModifierId, ModifierSet, Move, MoveType, StatusId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingLevel, FailureReason, ModifierId, ModifierSet, Move, MoveType, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo, iTrap } from "./types";
 
@@ -31,7 +31,7 @@ export interface MoveDef extends Move {
     freeOnHit?: boolean;
     modifiers?: ModifierSet;
     resolve: (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]) => iEffect[];
-    isValid?: (move: MoveDef, target: iEntity | null) => ActionFailureReason | undefined;
+    isValid?: (move: MoveDef, target: iEntity | null) => FailureReason | undefined;
 }
 
 export interface PassiveDef {

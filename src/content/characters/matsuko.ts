@@ -3,7 +3,7 @@ import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
 import { iBuff, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
-import { ActionFailureReason } from "../../engine/public/types";
+import { FailureReason } from "../../engine/public/types";
 import { removeEmpowerment } from "./ko";
 
 
@@ -279,7 +279,7 @@ const obey: MoveDef = {
 
         return effects;
     },
-    isValid: function (move: MoveDef, target: iEntity | null): ActionFailureReason | undefined {
+    isValid: function (move: MoveDef, target: iEntity | null): FailureReason | undefined {
         if (target !== null &&
             (!isCharacter(target)
                 || !target.acted
