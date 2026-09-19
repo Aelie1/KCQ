@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hinari } from "../src/content/characters/hinari";
 import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
 import { isCharacter } from "../src/engine/protected/helpers";
+import type { iEffect, iGameState } from "../src/engine/protected/types";
 import { GameEngine } from "../src/engine/public/engine";
 import type { ActionInfo, ActionSuccess, DamageEvent } from "../src/engine/public/types";
 import {
@@ -73,6 +74,14 @@ function loadHinariEncounter(options: {
     return engine;
 }
 
+function hinariData(state: iGameState, subspace: number, binding = 0): iEffect[] {
+    const target = state.characters[0];
+    return [
+        { type: "data", target, name: "subspace", amount: subspace },
+        { type: "data", target, name: "subspaceBinding", amount: binding },
+    ];
+}
+
 function action(engine: GameEngine, id: string): ActionInfo | undefined {
     return engine.getMoves(hinari.id).find(({ move }) => move.id === id);
 }
@@ -97,10 +106,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
     ] as const)("offers %i Rockfall hits at %i Subspace", (subspace, hits, expectedMoves) => {
         const engine = loadHinariEncounter({
             seed: 2,
-            setup: (state) => {
-                state.characters[0].data.subspace = subspace;
-                if (subspace > 0) state.characters[0].data.subspaceBinding = 0;
-            },
+            setup: (state) => hinariData(state, subspace),
         });
 
         expect(moveIds(engine)).toEqual(expectedMoves);
@@ -156,11 +162,15 @@ describe("Hinari's dynamic move set and Rockfall", () => {
     ) => {
         const engine = loadHinariEncounter({
             seed: 2,
-            setup: (state) => {
-                state.characters[0].data.subspace = subspace;
-                if (subspace > 0) state.characters[0].data.subspaceBinding = 0;
-                state.characters[0].buffs.push({ id: "fairyEmpowerment", active: true });
-            },
+            setup: (state) => [
+                ...hinariData(state, subspace),
+                {
+                    type: "buff",
+                    operation: "add",
+                    target: state.characters[0],
+                    buff: { id: "fairyEmpowerment", active: true },
+                },
+            ],
         });
 
         expect(moveIds(engine)).toContain("fairyRockfall");
@@ -186,10 +196,12 @@ describe("Hinari's dynamic move set and Rockfall", () => {
 
     it("does not consume Fairy Empowerment when Hinari uses a normal move", () => {
         const engine = loadHinariEncounter({
-            setup: (state) => state.characters[0].buffs.push({
-                id: "fairyEmpowerment",
-                active: true,
-            }),
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: { id: "fairyEmpowerment", active: true },
+            }],
         });
 
         const result = execute(engine, {
@@ -210,10 +222,10 @@ describe("Hinari's Store", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
             allies: [ally],
-            setup: (state) => state.characters[1].bindings.push(
-                { id: rope.id, definition: rope, value: 30, data: {} },
-                { id: tape.id, definition: tape, value: 20, data: {} },
-            ),
+            setup: (state) => [
+                { type: "binding", source: state.characters[0], target: state.characters[1], binding: rope, amount: 30 },
+                { type: "binding", source: state.characters[0], target: state.characters[1], binding: tape, amount: 20 },
+            ],
         });
 
         const first = execute(engine, {
@@ -254,16 +266,10 @@ describe("Hinari's Store", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
             allies: [ally],
-            setup: (state) => {
-                state.characters[0].data.subspace = 90;
-                state.characters[0].data.subspaceBinding = 0;
-                state.characters[1].bindings.push({
-                    id: tape.id,
-                    definition: tape,
-                    value: 25,
-                    data: {},
-                });
-            },
+            setup: (state) => [
+                ...hinariData(state, 90),
+                { type: "binding", source: state.characters[0], target: state.characters[1], binding: tape, amount: 25 },
+            ],
         });
 
         execute(engine, {
@@ -285,16 +291,10 @@ describe("Hinari's Store", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
             allies: [ally],
-            setup: (state) => {
-                state.characters[0].data.subspace = 100;
-                state.characters[0].data.subspaceBinding = 0;
-                state.characters[1].bindings.push({
-                    id: tape.id,
-                    definition: tape,
-                    value: 10,
-                    data: {},
-                });
-            },
+            setup: (state) => [
+                ...hinariData(state, 100),
+                { type: "binding", source: state.characters[0], target: state.characters[1], binding: tape, amount: 10 },
+            ],
         });
 
         execute(engine, {
@@ -317,12 +317,13 @@ describe("Hinari's Store", () => {
         const bound = makeBehavioralCharacter("bound");
         const engine = loadHinariEncounter({
             allies: [empty, bound],
-            setup: (state) => state.characters[2].bindings.push({
-                id: rope.id,
-                definition: rope,
-                value: 10,
-                data: {},
-            }),
+            setup: (state) => [{
+                type: "binding",
+                source: state.characters[0],
+                target: state.characters[2],
+                binding: rope,
+                amount: 10,
+            }],
         });
 
         expect(action(engine, "store")).toMatchObject({
@@ -391,10 +392,7 @@ describe("Hinari's Brace", () => {
     it("stores only free capacity and lets excess enemy binding overflow onto Hinari", () => {
         const engine = loadHinariEncounter({
             enemies: [enemyTargetingHinari(tape, 25)],
-            setup: (state) => {
-                state.characters[0].data.subspace = 90;
-                state.characters[0].data.subspaceBinding = 0;
-            },
+            setup: (state) => hinariData(state, 90),
         });
         execute(engine, {
             type: "move",
@@ -423,10 +421,7 @@ describe("Hinari's Brace", () => {
         const ally = makeBehavioralCharacter("ally", [bindHinari]);
         const engine = loadHinariEncounter({
             allies: [ally],
-            setup: (state) => {
-                state.characters[0].data.subspace = 10;
-                state.characters[0].data.subspaceBinding = 0;
-            },
+            setup: (state) => hinariData(state, 10),
         });
         execute(engine, {
             type: "move",
@@ -455,10 +450,7 @@ describe("Hinari's Release", () => {
     it("damages an enemy and spends 25 Subspace", () => {
         const engine = loadHinariEncounter({
             seed: 2,
-            setup: (state) => {
-                state.characters[0].data.subspace = 60;
-                state.characters[0].data.subspaceBinding = 1;
-            },
+            setup: (state) => hinariData(state, 60, 1),
         });
 
         const result = execute(engine, {
@@ -480,10 +472,7 @@ describe("Hinari's Release", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
             allies: [ally],
-            setup: (state) => {
-                state.characters[0].data.subspace = 60;
-                state.characters[0].data.subspaceBinding = 1;
-            },
+            setup: (state) => hinariData(state, 60, 1),
         });
 
         execute(engine, {
@@ -501,10 +490,7 @@ describe("Hinari's Release", () => {
     it("clamps low Subspace at zero for both enemy and ally releases", () => {
         const lowSubspace = (withAlly: boolean) => loadHinariEncounter({
             allies: withAlly ? [makeBehavioralCharacter("ally")] : [],
-            setup: (state) => {
-                state.characters[0].data.subspace = 10;
-                state.characters[0].data.subspaceBinding = 0;
-            },
+            setup: (state) => hinariData(state, 10),
         });
         const enemyRelease = lowSubspace(false);
         const allyRelease = lowSubspace(true);

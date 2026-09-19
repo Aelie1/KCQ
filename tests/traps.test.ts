@@ -238,9 +238,13 @@ describe("generic traps through GameEngine", () => {
             1,
             (state) => {
                 const target = state.characters.find(({ id }) => id === targetId)!;
-                target.bindings.push({
-                    id: rope.id, definition: rope, value: 30, data: {},
-                });
+                return [{
+                    type: "binding",
+                    source: target,
+                    target,
+                    binding: rope,
+                    amount: 30,
+                }];
             },
             ["self", "ally"],
         );
@@ -269,9 +273,14 @@ describe("generic traps through GameEngine", () => {
             [],
             1,
             (state) => {
-                state.characters[1].bindings.push({
-                    id: rope.id, definition: rope, value: 30, data: {},
-                });
+                const target = state.characters[1];
+                return [{
+                    type: "binding",
+                    source: target,
+                    target,
+                    binding: rope,
+                    amount: 30,
+                }];
             },
             ["helper", "ally"],
         );

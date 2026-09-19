@@ -8,7 +8,7 @@ import {
 import { trapPuddle } from "../src/content/skunk/puddles";
 import { skunk } from "../src/content/skunk/skunk";
 import type { BindingDef, EncounterDef } from "../src/engine/protected/definitions";
-import type { iGameState } from "../src/engine/protected/types";
+import type { iEffect, iGameState } from "../src/engine/protected/types";
 import { GameEngine } from "../src/engine/public/engine";
 import { makeBindingDef, makeCharacterDef } from "./helpers";
 
@@ -37,8 +37,17 @@ function loadSkunk(options: {
             amount: options.trapAmount ?? 100,
         }],
         setup: (state) => {
-            if (options.hp !== undefined) state.enemies[0].currHp = options.hp;
-            addInitialBindings(state, options.bindings ?? {});
+            const effects: iEffect[] = [];
+            if (options.hp !== undefined) {
+                effects.push({
+                    type: "damage",
+                    source: state.characters[0],
+                    target: state.enemies[0],
+                    amount: state.enemies[0].maxHp - options.hp,
+                });
+            }
+            effects.push(...initialBindingEffects(state, options.bindings ?? {}));
+            return effects;
         },
     };
     const engine = new GameEngine([encounter], options.seed);
@@ -47,22 +56,34 @@ function loadSkunk(options: {
     return engine;
 }
 
-function addInitialBindings(
+function initialBindingEffects(
     state: iGameState,
     byCharacter: Record<string, InitialBinding[]>,
-) {
+): iEffect[] {
+    const effects: iEffect[] = [];
     for (const [characterId, bindings] of Object.entries(byCharacter)) {
         const character = state.characters.find(({ id }) => id === characterId);
         if (!character) throw new Error(`Missing setup character ${characterId}`);
         for (const { definition, value, peak = value } of bindings) {
-            character.bindings.push({
-                id: definition.id,
-                definition,
-                value,
-                data: { ...definition.data, peak },
+            effects.push({
+                type: "binding",
+                source: character,
+                target: character,
+                binding: definition,
+                amount: peak,
             });
+            if (value < peak) {
+                effects.push({
+                    type: "binding",
+                    source: character,
+                    target: character,
+                    binding: definition,
+                    amount: value - peak,
+                });
+            }
         }
     }
+    return effects;
 }
 
 function endTurn(engine: GameEngine) {

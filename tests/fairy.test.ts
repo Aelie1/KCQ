@@ -242,20 +242,22 @@ describe("Binding Magic", () => {
             enemies: [fairy],
             bindings,
             traps: [],
-            setup: (state) => state.characters[0].bindings.push(
-                ...bindings.map((definition) => ({
-                    id: definition.id,
-                    definition,
-                    value: 80,
-                    data: { peak: 80 },
-                })),
-            ),
+            setup: (state) => bindings.map((binding) => ({
+                type: "binding",
+                source: state.characters[0],
+                target: state.characters[0],
+                binding,
+                amount: 80,
+            })),
         };
         const engine = new GameEngine([encounter], 2);
         engine.loadCharacter(makeBehavioralCharacter("hero"));
         engine.loadEncounter(encounter.id);
 
-        expect(enemyState(engine, "fairy1").intentions).toEqual([]);
+        expect(enemyState(engine, "fairy1").intentions.map(({ move }) => move))
+            .not.toContain(BINDING_ID);
+        expect(engine.getGameState().characters[0].bindings)
+            .toEqual(expect.arrayContaining(bindings.map(({ id }) => expect.objectContaining({ id, value: 80 }))));
     });
 });
 
@@ -264,9 +266,12 @@ describe("Healing Magic", () => {
 
     it("heals the selected enemy for 25% of max HP on a normal hit", () => {
         const move = spellMove(healing, "hit");
-        const engine = makeEngine([testEnemy("skunk")], [move], (state) => {
-            state.enemies[0].currHp = 50;
-        });
+        const engine = makeEngine([testEnemy("skunk")], [move], (state) => [{
+            type: "damage",
+            source: state.characters[0],
+            target: state.enemies[0],
+            amount: 50,
+        }]);
 
         const result = cast(engine, move, "skunk1");
 
@@ -278,9 +283,12 @@ describe("Healing Magic", () => {
         const move = spellMove(healing, "crit");
         const enemies = ["skunk", "skunkette", "fairy", "queen", "outsider"]
             .map((id) => testEnemy(id));
-        const engine = makeEngine(enemies, [move], (state) => {
-            for (const enemy of state.enemies) enemy.currHp = 50;
-        });
+        const engine = makeEngine(enemies, [move], (state) => state.enemies.map((enemy) => ({
+            type: "damage",
+            source: state.characters[0],
+            target: enemy,
+            amount: 50,
+        })));
 
         const result = cast(engine, move, "skunk1");
         const healed = result.events.flatMap((event) =>
@@ -296,9 +304,12 @@ describe("Healing Magic", () => {
 
     it("does not heal beyond max HP", () => {
         const move = spellMove(healing, "hit");
-        const engine = makeEngine([testEnemy("skunk")], [move], (state) => {
-            state.enemies[0].currHp = 90;
-        });
+        const engine = makeEngine([testEnemy("skunk")], [move], (state) => [{
+            type: "damage",
+            source: state.characters[0],
+            target: state.enemies[0],
+            amount: 10,
+        }]);
 
         const result = cast(engine, move, "skunk1");
 
@@ -310,8 +321,18 @@ describe("Healing Magic", () => {
         const modifier = vi.fn((_target, _buff, amount: number) => ({ value: amount, effects: [] }));
         const move = spellMove(healing, "hit");
         const engine = makeEngine([testEnemy("skunk")], [move], (state) => {
-            state.enemies[0].currHp = 50;
-            state.enemies[0].buffs.push({ id: "damage-hook", active: true, modifyDamage: modifier });
+            const enemy = state.enemies[0];
+            return [{
+                type: "damage",
+                source: state.characters[0],
+                target: enemy,
+                amount: 50,
+            }, {
+                type: "buff",
+                operation: "add",
+                target: enemy,
+                buff: { id: "damage-hook", active: true, modifyDamage: modifier },
+            }];
         });
 
         cast(engine, move, "skunk1");
@@ -426,9 +447,12 @@ describe("Barrier Magic", () => {
     it("does not consume Barrier when receiving healing or other negative damage", () => {
         const castBarrier = spellMove(barrier, "hit");
         const heal = damageMove("negative-damage", -10);
-        const engine = makeEngine([testEnemy("skunk")], [castBarrier, heal], (state) => {
-            state.enemies[0].currHp = 50;
-        });
+        const engine = makeEngine([testEnemy("skunk")], [castBarrier, heal], (state) => [{
+            type: "damage",
+            source: state.characters[0],
+            target: state.enemies[0],
+            amount: 50,
+        }]);
         cast(engine, castBarrier, "skunk1");
         execute(engine, { type: "endTurn" });
 

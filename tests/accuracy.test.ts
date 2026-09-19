@@ -97,11 +97,34 @@ describe("accuracy", () => {
             bindings: [],
             traps: [],
             setup: (state) => {
-                state.characters[0].bindings = actor.bindings;
-                state.characters[0].buffs = actor.buffs;
-                state.characters[0].standing = actor.standing;
-                state.enemies[0].currDef = target.currDef;
-                state.enemies[0].buffs = target.buffs;
+                const character = state.characters[0];
+                const enemy = state.enemies[0];
+                return [
+                    ...actor.bindings.map((binding) => ({
+                        type: "binding" as const,
+                        source: character,
+                        target: character,
+                        binding: binding.definition,
+                        amount: binding.value,
+                    })),
+                    ...actor.buffs.map((buff) => ({
+                        type: "buff" as const,
+                        operation: "add" as const,
+                        target: character,
+                        buff,
+                    })),
+                    ...(actor.standing ? [{
+                        type: "stance" as const,
+                        actor: character,
+                        stance: "standing" as const,
+                    }] : []),
+                    ...target.buffs.map((buff) => ({
+                        type: "buff" as const,
+                        operation: "add" as const,
+                        target: enemy,
+                        buff,
+                    })),
+                ];
             },
         };
         const engine = new GameEngine([encounter], 1);

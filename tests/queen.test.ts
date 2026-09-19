@@ -9,7 +9,7 @@ import { isCharacter, isEnemy } from "../src/engine/protected/helpers";
 import { mixSeed, Random } from "../src/engine/protected/random";
 import { s } from "../src/engine/protected/status";
 import { incapacitated } from "../src/engine/protected/statuses";
-import type { iBuff, iGameState } from "../src/engine/protected/types";
+import type { iBuff, iEffect, iGameState } from "../src/engine/protected/types";
 import { GameEngine } from "../src/engine/public/engine";
 import type { ActionSuccess, GameEvent, GameState, HitBand, ModifierSet } from "../src/engine/public/types";
 import { execute, makeBehavioralCharacter, makeBehavioralMove } from "./behavioralHelpers";
@@ -34,7 +34,7 @@ interface QueenSetup {
     seed?: number;
     characters?: CharacterDef[];
     enemies?: EnemyDef[];
-    setup?: (state: iGameState) => void;
+    setup?: EncounterDef["setup"];
 }
 
 function loadQueen(options: QueenSetup = {}): GameEngine {
@@ -72,11 +72,16 @@ function queenMoves(engine: GameEngine): string[] {
     return queenState(engine).intentions.map(({ move }) => move);
 }
 
-function setQueenCooldowns(state: iGameState, collar: number, perfume: number) {
+const collarCooldownMove = makeBehavioralMove("skunkCollar");
+const perfumeCooldownMove = makeBehavioralMove("skunkPerfume");
+
+function queenSetupEffects(state: iGameState, collar: number, perfume: number): iEffect[] {
     const actor = state.enemies.find(({ definition }) => definition === queen);
     if (!actor) throw new Error("Expected internal Queen state");
-    actor.cooldowns.skunkCollar = collar;
-    actor.cooldowns.skunkPerfume = perfume;
+    return [
+        { type: "cooldown", target: actor, move: collarCooldownMove, value: collar },
+        { type: "cooldown", target: actor, move: perfumeCooldownMove, value: perfume },
+    ];
 }
 
 function activeBuff(id: string, modifiers: ModifierSet = {}): iBuff {
@@ -245,7 +250,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
                 makeBehavioralCharacter("alpha", [aStrike]),
                 makeBehavioralCharacter("beta", [bStrike]),
             ],
-            setup: (state) => setQueenCooldowns(state, 1, 99),
+            setup: (state) => queenSetupEffects(state, 1, 99),
         });
 
         execute(engine, { type: "move", actor: "alpha", move: aStrike.id, targets: [QUEEN_ID] });
@@ -276,7 +281,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
                 makeBehavioralCharacter("beta", [bStrike]),
                 makeBehavioralCharacter("helper", [incapacitate]),
             ],
-            setup: (state) => setQueenCooldowns(state, 1, 99),
+            setup: (state) => queenSetupEffects(state, 1, 99),
         });
 
         execute(engine, { type: "move", actor: "alpha", move: aStrike.id, targets: [QUEEN_ID] });
@@ -305,7 +310,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
         });
         const engine = loadQueen({
             characters: [makeBehavioralCharacter("hero", [add, remove])],
-            setup: (state) => setQueenCooldowns(state, 1, 1),
+            setup: (state) => queenSetupEffects(state, 1, 1),
         });
 
         execute(engine, { type: "move", actor: "hero", move: add.id, targets: ["hero"] });
@@ -336,7 +341,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
                 makeBehavioralCharacter("beta"),
                 makeBehavioralCharacter("helper", [transform]),
             ],
-            setup: (state) => setQueenCooldowns(state, 1, 99),
+            setup: (state) => queenSetupEffects(state, 1, 99),
         });
 
         execute(engine, { type: "move", actor: "helper", move: transform.id, targets: [] });
@@ -365,14 +370,25 @@ describe("Queen Perfume", () => {
             seed,
             characters: ids.map((id) => makeBehavioralCharacter(id)),
             setup: (state) => {
-                setQueenCooldowns(state, 1, 0);
                 const actor = state.enemies[0];
-                if (options.queenModifiers) actor.buffs.push(activeBuff("queen-modifiers", options.queenModifiers));
+                const effects = queenSetupEffects(state, 1, 0);
+                if (options.queenModifiers) effects.push({
+                    type: "buff",
+                    operation: "add",
+                    target: actor,
+                    buff: activeBuff("queen-modifiers", options.queenModifiers),
+                });
                 for (const character of state.characters) {
                     if (options.characterModifiers) {
-                        character.buffs.push(activeBuff("character-modifiers", options.characterModifiers));
+                        effects.push({
+                            type: "buff",
+                            operation: "add",
+                            target: character,
+                            buff: activeBuff("character-modifiers", options.characterModifiers),
+                        });
                     }
                 }
+                return effects;
             },
         });
     }
@@ -472,8 +488,16 @@ describe("Queen Perfume", () => {
             characters: [makeBehavioralCharacter("hero", playerMoves)],
             enemies: extraEnemies,
             setup: (state) => {
-                setQueenCooldowns(state, 1, 0);
-                for (const enemy of state.enemies.slice(1)) enemy.currHp -= 50;
+                const actor = state.enemies[0];
+                return [
+                    ...queenSetupEffects(state, 1, 0),
+                    ...state.enemies.slice(1).map((target) => ({
+                        type: "damage" as const,
+                        source: actor,
+                        target,
+                        amount: 50,
+                    })),
+                ];
             },
         });
     }
@@ -519,7 +543,7 @@ describe("Queen Perfume", () => {
             seed,
             characters: [makeBehavioralCharacter("hero", [wound])],
             enemies: [skunk],
-            setup: (state) => setQueenCooldowns(state, 1, 0),
+            setup: (state) => queenSetupEffects(state, 1, 0),
         });
         const seed = findSeed(build, (engine) => {
             const preview = intentionFor(engine, "skunkPerfume");
@@ -549,8 +573,13 @@ describe("Queen Perfume", () => {
             characters: [makeBehavioralCharacter("hero", [wound])],
             enemies: extras,
             setup: (state) => {
-                setQueenCooldowns(state, 1, 0);
-                state.enemies.find(({ definition }) => definition === skunk)!.currHp -= 50;
+                const actor = state.enemies[0];
+                const target = state.enemies.find(({ definition }) => definition === skunk);
+                if (!target) throw new Error("Expected setup Skunk state");
+                return [
+                    ...queenSetupEffects(state, 1, 0),
+                    { type: "damage", source: actor, target, amount: 50 },
+                ];
             },
         });
         const seed = findSeed(build, (candidate) =>
@@ -574,18 +603,22 @@ describe("Queen Skunk Gun and AI fallbacks", () => {
             seed,
             characters: [makeBehavioralCharacter("alpha"), makeBehavioralCharacter("beta")],
             setup: (state) => {
-                setQueenCooldowns(state, 2, 2);
+                const effects = queenSetupEffects(state, 2, 2);
                 if (incapacitateFirst) {
-                    state.characters[0].buffs.push({
-                        id: "incapacitated", active: true, statuses: [s(incapacitated, 1)],
+                    effects.push({
+                        type: "buff",
+                        operation: "add",
+                        target: state.characters[0],
+                        buff: { id: "incapacitated", active: true, statuses: [s(incapacitated, 1)] },
                     });
                 }
+                return effects;
             },
         });
     }
 
     it("uses Perfume before Gun when Collar is unavailable and Perfume is ready", () => {
-        const engine = loadQueen({ setup: (state) => setQueenCooldowns(state, 1, 0) });
+        const engine = loadQueen({ setup: (state) => queenSetupEffects(state, 1, 0) });
         expect(queenMoves(engine)).toEqual(["skunkPerfume"]);
     });
 
@@ -598,10 +631,15 @@ describe("Queen Skunk Gun and AI fallbacks", () => {
         const engine = loadQueen({
             characters: [makeBehavioralCharacter("hero")],
             setup: (state) => {
-                setQueenCooldowns(state, 2, 99);
-                state.characters[0].buffs.push({
-                    id: "incapacitated", active: true, statuses: [s(incapacitated, 1)],
-                });
+                return [
+                    ...queenSetupEffects(state, 2, 99),
+                    {
+                        type: "buff",
+                        operation: "add",
+                        target: state.characters[0],
+                        buff: { id: "incapacitated", active: true, statuses: [s(incapacitated, 1)] },
+                    },
+                ];
             },
         });
         expect(queenMoves(engine)).toEqual(["skunkPerfume"]);

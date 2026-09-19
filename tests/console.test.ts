@@ -666,12 +666,14 @@ describe("console formatting", () => {
             bindings: [first, second],
             traps: [],
             setup: (internal) => {
-                internal.characters[0].bindings.push(
-                    { id: firstUnknown.id, definition: firstUnknown, value: 10, data: {} },
-                    { id: second.id, definition: second, value: 10, data: {} },
-                    { id: secondUnknown.id, definition: secondUnknown, value: 10, data: {} },
-                    { id: first.id, definition: first, value: 10, data: {} },
-                );
+                const character = internal.characters[0];
+                return [firstUnknown, second, secondUnknown, first].map((binding) => ({
+                    type: "binding" as const,
+                    source: character,
+                    target: character,
+                    binding,
+                    amount: 10,
+                }));
             },
         };
         const engine = new GameEngine([encounter], 1);

@@ -122,10 +122,10 @@ describe("encounters", () => {
     it("runs setup after spawning enemies and before calculating intentions", () => {
         const calls: string[] = [];
         let enemiesVisibleToSetup: string[] = [];
-        const setupStep = 7;
         const wait = makeWaitMove();
         const enemy = makeEnemyDef("setup-foe", [wait], (state, actor) => {
             calls.push("ai");
+            if (actor.data.setup !== 7) return [];
             return [{
                 type: "move",
                 actor,
@@ -141,7 +141,12 @@ describe("encounters", () => {
             setup: (state) => {
                 calls.push("setup");
                 enemiesVisibleToSetup = state.enemies.map((loaded) => loaded.id);
-                state.turn.step = setupStep;
+                return [{
+                    type: "data",
+                    target: state.enemies[0],
+                    name: "setup",
+                    amount: 7,
+                }];
             },
         };
         const engine = new GameEngine([encounter], 1);
@@ -153,7 +158,6 @@ describe("encounters", () => {
         ]);
         expect(calls).toEqual(["setup", "ai"]);
         expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
-        expect(engine.getGameState().turn.step).toBe(setupStep);
         expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: wait.id,
             targets: [],

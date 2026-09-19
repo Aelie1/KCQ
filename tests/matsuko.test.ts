@@ -137,7 +137,12 @@ describe("Matsuko's dynamic offensive kit", () => {
     it("applies White Flame's Hit bonus to its accuracy preview", () => {
         const normal = loadMatsukoEncounter({ seed: 2 });
         const burnedOut = loadMatsukoEncounter({
-            setup: (state) => state.characters[0].buffs.push({ id: "burnout", active: true }),
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: { id: "burnout", active: true },
+            }],
         });
 
         expect(action(normal, "whiteFlame")).toMatchObject({
@@ -170,7 +175,12 @@ describe("Matsuko's dynamic offensive kit", () => {
         const normal = loadMatsukoEncounter({ seed: 2 });
         const burnedOut = loadMatsukoEncounter({
             seed: 2,
-            setup: (state) => state.characters[0].buffs.push({ id: "burnout", active: true }),
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: { id: "burnout", active: true },
+            }],
         });
 
         expect(action(normal, "phoenixKick")).toMatchObject({
@@ -210,10 +220,12 @@ describe("Matsuko's dynamic offensive kit", () => {
     it("uses Punch as a basic arms attack while burned out", () => {
         const engine = loadMatsukoEncounter({
             seed: 2,
-            setup: (state) => state.characters[0].buffs.push({
-                id: "burnout",
-                active: true,
-            }),
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: { id: "burnout", active: true },
+            }],
         });
 
         expect(action(engine, "punch")).toMatchObject({
@@ -243,10 +255,12 @@ describe("Matsuko's dynamic offensive kit", () => {
     ) => {
         const engine = loadMatsukoEncounter({
             seed: 2,
-            setup: (state) => state.characters[0].buffs.push({
-                id: "fairyEmpowerment",
-                active: true,
-            }),
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: { id: "fairyEmpowerment", active: true },
+            }],
         });
 
         expectMoveSet(engine, [
@@ -296,10 +310,12 @@ describe("Matsuko's dynamic offensive kit", () => {
     it("does not consume Fairy Empowerment when using Immolation", () => {
         const engine = loadMatsukoEncounter({
             seed: 2,
-            setup: (state) => state.characters[0].buffs.push({
-                id: "fairyEmpowerment",
-                active: true,
-            }),
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: { id: "fairyEmpowerment", active: true },
+            }],
         });
 
         const result = execute(engine, {
@@ -316,18 +332,26 @@ describe("Matsuko's dynamic offensive kit", () => {
 
     it("does not consume Fairy Empowerment when using Compulsion moves", () => {
         const empoweredSetup: EncounterDef["setup"] = (state) => {
-            state.characters[0].buffs.push({ id: "fairyEmpowerment", active: true });
+            return [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: { id: "fairyEmpowerment", active: true },
+            }];
         };
         const stopEngine = loadMatsukoEncounter({ setup: empoweredSetup });
         const attackMeEngine = loadMatsukoEncounter({ setup: empoweredSetup });
-        const ally = makeBehavioralCharacter("ally");
+        const allyAction = makeBehavioralMove("ally-action", "none", {
+            targetSide: "none",
+            targets: 0,
+            accuracy: undefined,
+        });
+        const ally = makeBehavioralCharacter("ally", [allyAction]);
         const obeyEngine = loadMatsukoEncounter({
             allies: [ally],
-            setup: (state) => {
-                empoweredSetup?.(state);
-                state.characters[1].acted = true;
-            },
+            setup: empoweredSetup,
         });
+        execute(obeyEngine, { type: "move", actor: ally.id, move: allyAction.id, targets: [] });
         const scenarios: Array<{ engine: GameEngine; action: PlayerAction }> = [
             {
                 engine: stopEngine,
@@ -371,14 +395,16 @@ describe("Matsuko's Compulsion moves", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadMatsukoEncounter({
             allies: [ally],
-            setup: (state) => {
-                state.characters[0].buffs.push({
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: {
                     id: "mouth-restriction",
                     active: true,
                     statuses: [s(gagged, 3)],
-                });
-                state.characters[1].acted = true;
-            },
+                },
+            }],
         });
 
         for (const id of ["obey", "stop", "attackMe"]) {
@@ -452,21 +478,29 @@ describe("Matsuko's Compulsion moves", () => {
     });
 
     it("marks a character with Servitude as an invalid Obey target", () => {
-        const servant = makeBehavioralCharacter("servant");
-        const eligible = makeBehavioralCharacter("eligible");
+        const act = makeBehavioralMove("act", "none", {
+            targetSide: "none",
+            targets: 0,
+            accuracy: undefined,
+        });
+        const servant = makeBehavioralCharacter("servant", [act]);
+        const eligible = makeBehavioralCharacter("eligible", [act]);
         const engine = loadMatsukoEncounter({
             allies: [servant, eligible],
-            setup: (state) => {
-                state.characters[1].acted = true;
-                state.characters[1].buffs.push({
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[1],
+                buff: {
                     id: "servitude",
                     active: true,
                     duration: 2,
                     statuses: [s(servitude, 1)],
-                });
-                state.characters[2].acted = true;
-            },
+                },
+            }],
         });
+        execute(engine, { type: "move", actor: servant.id, move: act.id, targets: [] });
+        execute(engine, { type: "move", actor: eligible.id, move: act.id, targets: [] });
 
         expect(action(engine, "obey")).toMatchObject({
             available: true,

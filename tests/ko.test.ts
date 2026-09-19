@@ -3,7 +3,7 @@ import { ko } from "../src/content/characters/ko";
 import type { CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "../src/engine/protected/definitions";
 import { isCharacter } from "../src/engine/protected/helpers";
 import { bound, gagged, helpless, hobbled, incapacitated } from "../src/engine/protected/statuses";
-import type { iGameState } from "../src/engine/protected/types";
+import type { iEffect, iGameState } from "../src/engine/protected/types";
 import { GameEngine } from "../src/engine/public/engine";
 import {
     buffState,
@@ -35,8 +35,13 @@ function loadKoEncounter(
     return engine;
 }
 
-function empowerKo(state: iGameState): void {
-    state.characters[0].buffs.push({ id: "fairyEmpowerment", active: true });
+function empowerKo(state: iGameState): iEffect[] {
+    return [{
+        type: "buff",
+        operation: "add",
+        target: state.characters[0],
+        buff: { id: "fairyEmpowerment", active: true },
+    }];
 }
 
 function moveIds(engine: GameEngine): string[] {
@@ -108,12 +113,13 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             enemies: [makeBehavioralEnemy()],
             bindings: [restraint],
             traps: [],
-            setup: (state) => state.characters[0].bindings.push({
-                id: restraint.id,
-                definition: restraint,
-                value: 80,
-                data: {},
-            }),
+            setup: (state) => [{
+                type: "binding",
+                source: state.characters[0],
+                target: state.characters[0],
+                binding: restraint,
+                amount: 80,
+            }],
         };
         const engine = new GameEngine([encounter], 1);
         engine.loadCharacter(restrainedKo);
@@ -684,7 +690,7 @@ describe("Ko's Reflect source handling", () => {
                 if (!effect || effect.type !== "buff") {
                     throw new Error("Expected Reflect to create a buff");
                 }
-                actor.buffs.push({ ...effect.buff });
+                return [{ ...effect, buff: { ...effect.buff } }];
             },
         };
         const engine = new GameEngine([encounter], 1);
