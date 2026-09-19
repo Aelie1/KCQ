@@ -48,7 +48,7 @@ export const skunk: EnemyDef = {
                     }
                 }
                 if (!target) {
-                    target = pickTarget(state.characters, rng);
+                    target = pickTarget(validTargets, rng);
                 }
                 if (target) {
                     effects.push({

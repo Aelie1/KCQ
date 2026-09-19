@@ -27,6 +27,9 @@ export function pickValidTarget(entities: iEntity[], rng: Random): iEntity | und
 
 
 export function pickTarget(entities: iEntity[], rng: Random): iEntity | undefined {
+    if (entities.length === 0) {
+        return undefined;
+    }
     const index = rng.int(0, entities.length - 1);
     return entities[index];
 }
