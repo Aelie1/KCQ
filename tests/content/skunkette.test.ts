@@ -340,7 +340,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffAdded", target: "skunkette1", buff: "resistance" },
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
-        expect(ordinaryDefeat.state.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
+        expect(ordinaryDefeat.view.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
         expect(enemyState(engine, LINKED_SKUNKETTE_ID).id).toBe(LINKED_SKUNKETTE_ID);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toMatchObject({
             linkedEntity: LINKED_SKUNKETTE_ID,
@@ -381,7 +381,7 @@ describe("Skunkette behavior through GameEngine", () => {
             })),
             { type: "enemyDefeated", target: LINKED_SKUNKETTE_ID },
         ]);
-        expect(rescue.state.enemies.some(({ id }) => id === LINKED_SKUNKETTE_ID)).toBe(false);
+        expect(rescue.view.enemies.some(({ id }) => id === LINKED_SKUNKETTE_ID)).toBe(false);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toBeUndefined();
         expect(LATEX_BODY_BINDINGS.map((binding) =>
             bindingState(engine, binding.id, SKUNKED_CHARACTER_ID)?.value,
@@ -423,7 +423,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffAdded", target: "skunkette1", buff: "resistance" },
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
-        expect(result.state.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
+        expect(result.view.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
         expect(enemyState(engine, LINKED_SKUNKETTE_ID).id).toBe(LINKED_SKUNKETTE_ID);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toMatchObject({
             linkedEntity: LINKED_SKUNKETTE_ID,

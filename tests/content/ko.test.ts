@@ -199,7 +199,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             binding: restraint.id,
             amount: -20,
         });
-        expect(assistance.state.characters[0].bindings).toEqual([]);
+        expect(assistance.view.characters[0].bindings).toEqual([]);
     });
 
     it.each([
@@ -327,9 +327,9 @@ describe("Ko's normal and Fairy move effects", () => {
             target: "first1",
             amount: 100,
         });
-        expect(result.state.enemies.find(({ id }) => id === "first1")?.currHp)
+        expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp)
             .toBe(400);
-        expect(result.state.enemies.find(({ id }) => id === "second1")?.currHp).toBe(500);
+        expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp).toBe(500);
     });
 
     it("makes Fairy Telekinesis AoE with two half-damage hits and consumes once", () => {
@@ -382,9 +382,9 @@ describe("Ko's normal and Fairy move effects", () => {
             },
         ]));
 
-        expect(result.state.enemies.find(({ id }) => id === "first1")?.currHp)
+        expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp)
             .toBe(356);
-        expect(result.state.enemies.find(({ id }) => id === "second1")?.currHp)
+        expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp)
             .toBe(354);
 
         expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
@@ -541,9 +541,9 @@ describe("Ko's normal and Fairy move effects", () => {
             },
             { type: "enemyDamaged", target: "second1", amount: 20 },
         ]));
-        expect(result.state.enemies.find(({ id }) => id === "first1")?.currHp).toBe(27);
-        expect(result.state.enemies.find(({ id }) => id === "second1")?.currHp).toBe(17);
-        expect(result.state.characters.every(({ bindings }) => bindings.length === 0)).toBe(true);
+        expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp).toBe(27);
+        expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp).toBe(17);
+        expect(result.view.characters.every(({ bindings }) => bindings.length === 0)).toBe(true);
         expect(buffState(engine, "reflect", ko.id)).toBeUndefined();
         expect(buffState(engine, "reflect", "ally")).toBeUndefined();
     });
@@ -644,9 +644,9 @@ describe("Ko's Reflect source handling", () => {
             target: "attacker1",
             amount: 12,
         });
-        expect(result.state.enemies.find(({ id }) => id === "spectator1")?.currHp).toBe(37);
-        expect(result.state.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
-        expect(result.state.characters[0].bindings).toEqual([]);
+        expect(result.view.enemies.find(({ id }) => id === "spectator1")?.currHp).toBe(37);
+        expect(result.view.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
+        expect(result.view.characters[0].bindings).toEqual([]);
         expect(buffState(engine, "reflect", ko.id)).toBeUndefined();
 
         const nextRound = execute(engine, { type: "endTurn" });
@@ -658,7 +658,7 @@ describe("Ko's Reflect source handling", () => {
         });
         expect(nextRound.events.some(({ type }) => type === "bondageBlocked")).toBe(false);
         expect(nextRound.events.some(({ type }) => type === "enemyDamaged")).toBe(false);
-        expect(nextRound.state.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
+        expect(nextRound.view.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
     });
 
     it("does not retaliate against self-sourced trap bondage", () => {

@@ -2,6 +2,20 @@
  * State
  *******************************************************/
 
+export interface GameView {
+    state: GameState;
+    actions: ActionView[];
+}
+
+export interface ActionView {
+    id: EntityId;
+    available: boolean;
+    reason?: FailureReason;
+    moves: ActionInfo[];
+    escapes: EscapeInfo[];
+    stance: StanceInfo;
+}
+
 export interface GameState {
     turn: Turn;
     characters: Character[];
@@ -277,14 +291,9 @@ export interface StanceInfo {
     reason?: FailureReason;
 }
 
-export interface EscapeOptions {
-    options: EscapeInfo[];
-    assistAllowed: boolean;
-    reason?: FailureReason;
-}
-
 export interface EscapeInfo {
-    actor: EntityId;
+    available: boolean;
+    reason?: FailureReason;
     target: EntityId;
     binding: BindingId;
     effects: Effect[];
@@ -327,7 +336,7 @@ export type ActionResult = ActionSuccess | ActionFailure;
 
 export interface ActionSuccess {
     success: true;
-    state: GameState;
+    view: GameView;
     events: GameEvent[];
 }
 

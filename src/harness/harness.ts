@@ -180,7 +180,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             action,
             success: true,
             events: result.events,
-            state: result.state,
+            state: result.view,
         });
 
         const outcome = engine.getGameState().turn.outcome;

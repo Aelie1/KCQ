@@ -32,7 +32,7 @@ export class GameStatus {
         }
     }
 
-    canAct(type: ActionType): FailureReason | undefined {
+    canAct(type?: ActionType): FailureReason | undefined {
         if (this.isIncapacitated()) {
             return "actorIncapacitated";
         }

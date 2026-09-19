@@ -359,8 +359,8 @@ function validTargets(action: ActionInfo): ValidTarget[] {
 function appendResult(logLines: string[], result: ActionResult, previousRound: number): void {
     if (result.success) {
         logLines.push(...formatEvents(result.events));
-        if (result.state.turn.round > previousRound) {
-            logLines.push(`~~~ ROUND ${result.state.turn.round} ~~~`);
+        if (result.view.turn.round > previousRound) {
+            logLines.push(`~~~ ROUND ${result.view.turn.round} ~~~`);
         }
     } else {
         logLines.push(`Action failed: ${result.reason}.`);

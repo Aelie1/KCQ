@@ -430,7 +430,7 @@ describe("move and effect resolution through GameEngine", () => {
             target,
             amount: 3,
         })));
-        expect(result.state.enemies.map(({ id, currHp }) => ({ id, currHp }))).toEqual([
+        expect(result.view.enemies.map(({ id, currHp }) => ({ id, currHp }))).toEqual([
             { id: "first1", currHp: successfulIds.includes("first1") ? 34 : 37 },
             { id: "second1", currHp: successfulIds.includes("second2") ? 34 : 37 },
         ]);
@@ -586,7 +586,7 @@ describe("move and effect resolution through GameEngine", () => {
             { type: "bondageAdded", target: "hero", binding: "defeat-reaction", amount: 1 },
             { type: "enemyDefeated", target: "reactive1" },
         ]);
-        expect(result.state.enemies).toEqual([]);
+        expect(result.view.enemies).toEqual([]);
         expect(bindingState(engine, damageReaction.id)?.value).toBe(1);
         expect(bindingState(engine, defeatReaction.id)?.value).toBe(1);
     });

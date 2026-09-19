@@ -231,7 +231,7 @@ describe("state serialization and combatant loading", () => {
 
         const expected = engine.getGameState();
         expect(expected.characters[0].modifiers).toEqual({ hitarms: -1 });
-        const snapshots = [result.state, engine.getGameState()];
+        const snapshots = [result.view, engine.getGameState()];
 
         for (const snapshot of snapshots) {
             snapshot.turn.round = 999;

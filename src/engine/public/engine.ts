@@ -1,24 +1,19 @@
 import { characterList, encounterList } from "../../content/content";
 import {
-    evaluateIntention, evaluateProfile, evaluateResult, getTargets, isValidTarget, resolveEscape, resolveMove,
-    tickBindings, tickBuffs, tickCooldowns, tickPlayers
+    evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape,
+    resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers
 } from "../private/combat";
 import { TRAP_MODIFIER } from "../private/constants";
 import { GameEffects } from "../private/effects";
-import { serializeEffects, serializeGameState, serializeMove, serializeValidity } from "../private/serialize";
+import { serializeGameState } from "../private/serialize";
 import { iValidityInfo } from "../private/types";
+import { getActionView } from "../private/view";
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
-import { findBinding, findCharacter, findEntity, findMove, getMoves, isValidEntity, thresholds } from "../protected/helpers";
+import { findBinding, findCharacter, findEntity, findMove, isValidEntity, thresholds } from "../protected/helpers";
 import { mixSeed, Random } from "../protected/random";
 import { GameStatus } from "../protected/status";
 import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
-import type {
-    AccuracyResult,
-    ActionInfo, ActionResult, AvailabilityInfo,
-    EncounterId, EntityId, EscapeOptions,
-    FailureReason,
-    GameEvent, GameState, PlayerAction, StanceInfo
-} from "./types";
+import type { AccuracyResult, ActionResult, EncounterId, EntityId, FailureReason, GameEvent, GameView, PlayerAction } from "./types";
 
 export function createEngine(seed?: number): GameEngine {
     return new GameEngine(encounterList, characterList, seed);
@@ -53,8 +48,11 @@ export class GameEngine {
         return this.seed;
     }
 
-    getGameState(): GameState {
-        return serializeGameState(this.state);
+    getGameView(): GameView {
+        return {
+            state: serializeGameState(this.state),
+            actions: getActionView(this.state)
+        };
     }
 
     getThresholds() {
@@ -165,145 +163,6 @@ export class GameEngine {
         return result.getEvents();
     }
 
-    getAvailability(): AvailabilityInfo[] {
-        const info: AvailabilityInfo[] = [];
-        for (const character of this.state.characters) {
-            const status = new GameStatus(character);
-            if (status.isIncapacitated()) {
-                info.push({
-                    id: character.id,
-                    available: false,
-                    reason: "actorIncapacitated"
-                });
-            }
-            else if (status.isSkipped()) {
-                info.push({
-                    id: character.id,
-                    available: false,
-                    reason: "actorSkipped"
-                });
-            }
-            else if (character.acted && !character.bonusEscapes) {
-                info.push({
-                    id: character.id,
-                    available: false,
-                    reason: "actorAlreadyActed"
-                });
-            }
-            else {
-                info.push({
-                    id: character.id,
-                    available: true
-                });
-            }
-        }
-        return info;
-    }
-
-    stanceAvailable(name: EntityId): StanceInfo {
-        const character = findCharacter(this.state, name);
-        if (!character) {
-            return {
-                available: false,
-                reason: "invalidActor"
-            }
-        }
-
-        const status = new GameStatus(character);
-        const result = status.canAct("stance");
-        if (result) {
-            return {
-                available: false,
-                reason: result
-            }
-        }
-        return {
-            available: true
-        }
-    }
-
-    getMoves(actor: EntityId): ActionInfo[] {
-        const actions: ActionInfo[] = [];
-        const character = findCharacter(this.state, actor);
-        if (character) {
-            const status = new GameStatus(character);
-            const result = status.canAct("move");
-            for (const move of getMoves(character)) {
-                let available = true;
-                let reason: FailureReason = "moveUnavailable";
-                const targets = getTargets(this.state, character, status, move);
-                if (result) {
-                    available = false;
-                    reason = result;
-                }
-                else if (!move.alwaysAvailable && !status.canAttack()) {
-                    available = false;
-                    reason = "attackUnavailable";
-                }
-                else if (!status.canUseMoveType(move.type)) {
-                    available = false;
-                    reason = "bindingRestriction";
-                }
-                else if (move.targets !== "all"
-                    && !targets.some(x => x.valid)) {
-                    available = false;
-                    if (targets.length && !targets[0].valid) {
-                        reason = targets[0].reason;
-                    }
-                }
-                if (available) {
-                    actions.push({
-                        move: serializeMove(move),
-                        available: true,
-                        targets: targets.map(serializeValidity)
-                    });
-                } else {
-                    actions.push({
-                        move: serializeMove(move),
-                        available: false,
-                        targets: targets.map(serializeValidity),
-                        reason: reason
-                    });
-                }
-            }
-        }
-        return actions;
-    }
-
-    getEscapes(actor: EntityId): EscapeOptions | null {
-        const character = findCharacter(this.state, actor);
-        if (!character) {
-            return null;
-        }
-
-        const status = new GameStatus(character);
-        const result = status.canAct("escape");
-        if (result) {
-            return {
-                options: [],
-                assistAllowed: false,
-                reason: result
-            }
-        }
-
-        const options: EscapeOptions = { options: [], assistAllowed: status.canAssist() };
-        for (const target of this.state.characters) {
-            if (character !== target && !options.assistAllowed) {
-                continue;
-            }
-            for (const binding of target.bindings) {
-                options.options.push({
-                    actor: actor,
-                    target: target.id,
-                    binding: binding.id,
-                    effects: serializeEffects(resolveEscape(character, status, target, binding))
-                });
-            }
-        }
-
-        return options;
-    }
-
     executeAction(action: PlayerAction): ActionResult {
         const result = new GameEffects(this.state, this.accRng);
         if (this.state.turn.phase !== "player") {
@@ -320,7 +179,7 @@ export class GameEngine {
             return {
                 success: true,
                 events: result.getEvents(),
-                state: this.getGameState(),
+                view: this.getGameView(),
             };
         }
 
@@ -376,13 +235,15 @@ export class GameEngine {
                     }
                     if (move.targetSide === "either" || move.targetSide === "enemy") {
                         for (const enemy of this.state.enemies) {
-                            targetInfo.push(isValidTarget(this.state, actor, status, enemy, move));
+                            const targetStatus = new GameStatus(enemy);
+                            targetInfo.push(isValidTarget(this.state, actor, status, enemy, targetStatus, move));
                         }
                     }
                     if (move.targetSide === "either" || move.targetSide === "player") {
 
                         for (const character of this.state.characters) {
-                            targetInfo.push(isValidTarget(this.state, actor, status, character, move));
+                            const targetStatus = new GameStatus(character);
+                            targetInfo.push(isValidTarget(this.state, actor, status, character, targetStatus, move));
                         }
                     }
                 } else if (move.targets === 0) {
@@ -392,7 +253,7 @@ export class GameEngine {
                             reason: "invalidTargetCount"
                         }
                     }
-                    targetInfo.push(isValidTarget(this.state, actor, status, null, move));
+                    targetInfo.push(isValidTarget(this.state, actor, status, null, null, move));
                 }
                 else {
                     if (new Set(action.targets).size != action.targets.length) {
@@ -404,7 +265,8 @@ export class GameEngine {
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
                         if (targetState) {
-                            const info = isValidTarget(this.state, actor, status, targetState, move);
+                            const targetStatus = new GameStatus(targetState);
+                            const info = isValidTarget(this.state, actor, status, targetState, targetStatus, move);
                             if (info.valid) {
                                 targetInfo.push(info);
                             } else {
@@ -471,7 +333,7 @@ export class GameEngine {
                         return {
                             success: true,
                             events: result.getEvents(),
-                            state: this.getGameState(),
+                            view: this.getGameView(),
                         };
                     }
                 }
@@ -535,7 +397,7 @@ export class GameEngine {
                 return {
                     success: true,
                     events: result.getEvents(),
-                    state: this.getGameState(),
+                    view: this.getGameView(),
                 };
             }
             case "escape": {
@@ -603,7 +465,7 @@ export class GameEngine {
                         return {
                             success: true,
                             events: result.getEvents(),
-                            state: this.getGameState(),
+                            view: this.getGameView(),
                         };
                     }
                 }
@@ -623,7 +485,7 @@ export class GameEngine {
                 return {
                     success: true,
                     events: result.getEvents(),
-                    state: this.getGameState(),
+                    view: this.getGameView(),
                 };
             }
             case "stance": {
@@ -635,7 +497,7 @@ export class GameEngine {
                 return {
                     success: true,
                     events: result.getEvents(),
-                    state: this.getGameState(),
+                    view: this.getGameView(),
                 };
             }
         }

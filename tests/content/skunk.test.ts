@@ -122,7 +122,7 @@ describe("normal Latex Skunk", () => {
         expect(result.events).toContainEqual({
             type: "trapAdded", actor: "skunk1", trap: trapPuddle.id, amount: 10,
         });
-        expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 10 }]);
+        expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 10 }]);
     });
 
     it.each([
@@ -142,7 +142,7 @@ describe("normal Latex Skunk", () => {
             const bondage = result.events.find((event) => event.type === "bondageAdded");
             if (band === "miss") {
                 expect(bondage).toBeUndefined();
-                expect(result.state.characters[0].bindings).toEqual([]);
+                expect(result.view.characters[0].bindings).toEqual([]);
             } else {
                 expect(bondage?.type).toBe("bondageAdded");
                 if (bondage?.type !== "bondageAdded") throw new Error("Expected Spray bondage");
@@ -174,8 +174,8 @@ describe("normal Latex Skunk", () => {
         });
 
         const result = endTurn(engine);
-        const first = result.state.characters.find(({ id }) => id === "first")!;
-        const second = result.state.characters.find(({ id }) => id === "second")!;
+        const first = result.view.characters.find(({ id }) => id === "first")!;
+        const second = result.view.characters.find(({ id }) => id === "second")!;
         expect(first.bindings[0]).toMatchObject({ value: 40, data: { peak: 50 } });
         expect(second.bindings[0]).toMatchObject({ value: 18, data: { peak: 50 } });
         expect(result.events.filter((event) =>
@@ -199,7 +199,7 @@ describe("normal Latex Skunk", () => {
         }]);
 
         const result = endTurn(engine);
-        expect(result.state.characters[0].bindings).toEqual([
+        expect(result.view.characters[0].bindings).toEqual([
             expect.objectContaining({ id: latexHead.id, value: 50, data: { peak: 50 } }),
             expect.objectContaining({ id: latexArms.id, value: 30, data: { peak: 30 } }),
         ]);
@@ -222,7 +222,7 @@ describe("normal Latex Skunk", () => {
         }]);
 
         const result = endTurn(engine);
-        expect(result.state.characters[0].bindings.map(({ id, value, data }) => ({ id, value, peak: data.peak })))
+        expect(result.view.characters[0].bindings.map(({ id, value, data }) => ({ id, value, peak: data.peak })))
             .toEqual([
                 { id: latexHead.id, value: 30, peak: 30 },
                 { id: latexArms.id, value: 50, peak: 50 },
@@ -244,7 +244,7 @@ describe("normal Latex Skunk", () => {
         });
 
         const result = endTurn(engine);
-        const hero = result.state.characters[0];
+        const hero = result.view.characters[0];
         expect(hero.bindings.find(({ id }) => id === latexHead.id)).toMatchObject({
             value: 80,
             data: { peak: 80 },
@@ -254,7 +254,7 @@ describe("normal Latex Skunk", () => {
             linkedEntity: "skunketteHero",
             statuses: [{ id: "incapacitated", value: 1 }],
         }));
-        expect(result.state.enemies.map(({ id }) => id)).toContain("skunketteHero");
+        expect(result.view.enemies.map(({ id }) => id)).toContain("skunketteHero");
     });
 
     it("does not regenerate when no Latex has a recoverable peak", () => {
@@ -273,7 +273,7 @@ describe("normal Latex Skunk", () => {
         }]);
 
         const result = endTurn(engine);
-        expect(result.state.characters[0].bindings[0]).toMatchObject({
+        expect(result.view.characters[0].bindings[0]).toMatchObject({
             value: 20, data: { peak: 50 },
         });
     });
@@ -324,14 +324,14 @@ describe("normal Latex Skunk", () => {
             }]);
 
             const result = endTurn(engine);
-            expect(result.state.enemies.some(({ id }) => id === "skunk1")).toBe(false);
+            expect(result.view.enemies.some(({ id }) => id === "skunk1")).toBe(false);
             expect(result.events).toContainEqual({
                 type: "enemyDefeated", target: "skunk1",
             });
             if (withTrap) {
-                expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 25 }]);
+                expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 25 }]);
             } else {
-                expect(result.state.traps).toEqual([]);
+                expect(result.view.traps).toEqual([]);
             }
         },
     );
@@ -349,9 +349,9 @@ describe("normal Latex Skunk", () => {
         }]);
 
         const result = endTurn(engine);
-        expect(result.state.enemies.some(({ id }) => id === "skunk1")).toBe(false);
+        expect(result.view.enemies.some(({ id }) => id === "skunk1")).toBe(false);
         expect(BODY_LATEX.map(({ id }) => id)).toEqual(
-            result.state.characters[0].bindings.slice(1).map(({ id }) => id),
+            result.view.characters[0].bindings.slice(1).map(({ id }) => id),
         );
     });
 
@@ -368,12 +368,12 @@ describe("normal Latex Skunk", () => {
         }]);
 
         const result = endTurn(engine);
-        expect(result.state.enemies.find(({ id }) => id === "skunk1")).toMatchObject({ currHp: 120 });
+        expect(result.view.enemies.find(({ id }) => id === "skunk1")).toMatchObject({ currHp: 120 });
         expect(result.events).toContainEqual({
             type: "enemyHealed", target: "skunk1", amount: 60,
         });
         expect(BODY_LATEX.map(({ id }) => id)).toEqual(
-            result.state.characters[0].bindings.slice(1).map(({ id }) => id),
+            result.view.characters[0].bindings.slice(1).map(({ id }) => id),
         );
     });
 });

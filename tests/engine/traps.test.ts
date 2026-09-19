@@ -159,8 +159,8 @@ describe("generic traps through GameEngine", () => {
         expect(result.events).toContainEqual({
             type: "trapTriggered", actor: "hero", trap: trap.id, amount: 7,
         });
-        expect(result.state.traps).toEqual([{ id: trap.id, amount: 93 }]);
-        expect(result.state.characters[0].bindings.map(({ id }) => id)).toEqual([
+        expect(result.view.traps).toEqual([{ id: trap.id, amount: 93 }]);
+        expect(result.view.characters[0].bindings.map(({ id }) => id)).toEqual([
             snare.id, attackMarker.id,
         ]);
         expect(result.events.some((event) => event.type === "trapRemoved")).toBe(false);
@@ -218,8 +218,8 @@ describe("generic traps through GameEngine", () => {
                 type: "actionInterrupted", actor: "hero", reason,
             });
             expect(result.events.some((event) => event.type === "moveUsed")).toBe(false);
-            expect(result.state.characters[0].acted).toBe(true);
-            expect(result.state.traps[0].amount).toBe(91);
+            expect(result.view.characters[0].acted).toBe(true);
+            expect(result.view.traps[0].amount).toBe(91);
         },
     );
 
@@ -261,8 +261,8 @@ describe("generic traps through GameEngine", () => {
         expect(result.events.some((event) =>
             event.type.startsWith("bondage") && "binding" in event && event.binding === rope.id,
         )).toBe(false);
-        expect(result.state.characters[0].acted).toBe(true);
-        expect(result.state.traps[0].amount).toBe(94);
+        expect(result.view.characters[0].acted).toBe(true);
+        expect(result.view.traps[0].amount).toBe(94);
     });
 
     it("triggers before a moving assist and then completes the legal escape", () => {
@@ -297,8 +297,8 @@ describe("generic traps through GameEngine", () => {
         expect(result.events.at(-1)).toMatchObject({
             target: "ally", binding: rope.id, amount: expect.any(Number),
         });
-        expect(result.state.characters[1].bindings[0].value).toBeLessThan(30);
-        expect(result.state.traps[0].amount).toBe(96);
+        expect(result.view.characters[1].bindings[0].value).toBeLessThan(30);
+        expect(result.view.traps[0].amount).toBe(96);
     });
 
     it("resolves multiple authored traps independently in catalogue order", () => {
@@ -318,11 +318,11 @@ describe("generic traps through GameEngine", () => {
             { type: "trapTriggered", actor: "hero", trap: first.id, amount: 3 },
             { type: "trapTriggered", actor: "hero", trap: second.id, amount: 5 },
         ]);
-        expect(result.state.traps).toEqual([
+        expect(result.view.traps).toEqual([
             { id: first.id, amount: 97 },
             { id: second.id, amount: 95 },
         ]);
-        expect(result.state.characters[0].bindings.map(({ id }) => id)).toEqual([
+        expect(result.view.characters[0].bindings.map(({ id }) => id)).toEqual([
             firstBinding.id, secondBinding.id,
         ]);
     });
@@ -341,7 +341,7 @@ describe("authored Latex puddles", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected puddle action success");
         const bindings = Object.fromEntries(
-            result.state.characters[0].bindings.map((binding) => [binding.id, binding]),
+            result.view.characters[0].bindings.map((binding) => [binding.id, binding]),
         );
         expect([
             bindings.latexLegs?.value ?? 0,
@@ -349,12 +349,12 @@ describe("authored Latex puddles", () => {
             bindings.latexTorso?.value ?? 0,
             bindings.latexHead?.value ?? 0,
         ]).toEqual(amounts);
-        expect(result.state.characters[0].bindings.map(({ id }) => id)).toEqual(
+        expect(result.view.characters[0].bindings.map(({ id }) => id)).toEqual(
             ["latexLegs", "latexArms", "latexTorso", "latexHead"].slice(0, amounts.filter(Boolean).length),
         );
-        expect(result.state.characters[0].bindings.every((binding) => binding.data.peak === binding.value))
+        expect(result.view.characters[0].bindings.every((binding) => binding.data.peak === binding.value))
             .toBe(true);
-        expect(result.state.traps[0].amount).toBe(100 - consumed);
+        expect(result.view.traps[0].amount).toBe(100 - consumed);
         expect(result.events).toContainEqual({
             type: "trapTriggered", actor: "hero", trap: trapPuddle.id, amount: consumed,
         });
@@ -366,8 +366,8 @@ describe("authored Latex puddles", () => {
         const result = engine.executeAction(attack());
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected puddle action success");
-        expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 0 }]);
-        expect(result.state.characters[0].bindings).toEqual([
+        expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 0 }]);
+        expect(result.view.characters[0].bindings).toEqual([
             expect.objectContaining({ id: "latexLegs", value: 15, data: { peak: 15 } }),
         ]);
         expect(result.events).toContainEqual({

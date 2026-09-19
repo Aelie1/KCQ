@@ -10,55 +10,7 @@ function getIEntitySide(entity: iEntity): EntitySide {
     return (isCharacter(entity)) ? "player" : "enemy";
 }
 
-
-export function getTargets(state: iGameState, actor: iCharacter, status: GameStatus, move: MoveDef): iValidityInfo[] {
-    const result: iValidityInfo[] = [];
-    if (move.targets === 0) {
-        result.push(isValidTarget(state, actor, status, null, move));
-    }
-    else {
-        switch (move.targetSide) {
-            case "none":
-                result.push(isValidTarget(state, actor, status, null, move));
-                break;
-            case "player":
-                for (const target of state.characters) {
-                    result.push(isValidTarget(state, actor, status, target, move));
-                }
-                break;
-            case "enemy":
-                for (const target of state.enemies) {
-                    result.push(isValidTarget(state, actor, status, target, move));
-                }
-                break;
-            case "either":
-                for (const target of state.characters) {
-                    result.push(isValidTarget(state, actor, status, target, move));
-                }
-                for (const target of state.enemies) {
-                    result.push(isValidTarget(state, actor, status, target, move));
-                }
-                break;
-
-        }
-    }
-
-    const validTargets = result.filter(x => x.valid).length;
-    if (move.targets !== "all"
-        && move.targets > 0
-        && move.targets > validTargets) {
-        return [{
-            valid: false,
-            target: null,
-            reason: "invalidTargetCount"
-        }];
-    }
-
-    return result;
-}
-
-export function isValidTarget(state: iGameState, actor: iEntity, status: GameStatus, target: iEntity | null, move: MoveDef): iValidityInfo {
-    let targetStatus = null;
+export function isValidTarget(state: iGameState, actor: iEntity, status: GameStatus, target: iEntity | null, targetStatus: GameStatus | null, move: MoveDef): iValidityInfo {
     if (target === null) {
         if (move.targets !== 0) {
             return {
@@ -82,7 +34,6 @@ export function isValidTarget(state: iGameState, actor: iEntity, status: GameSta
                 reason: "invalidTarget",
             };
         }
-        targetStatus = new GameStatus(target);
         if (isCharacter(target) && targetStatus && targetStatus.isIncapacitated()) {
             return {
                 valid: false,
@@ -435,7 +386,8 @@ function normalizeEffect(effect: iEffect): iEffect {
 export function evaluateIntention(state: iGameState, intention: iIntention, actorStatus: GameStatus): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
     for (const roll of intention.rolls) {
-        const info = isValidTarget(state, intention.actor, actorStatus, roll.target, intention.move.definition);
+        const targetStatus = roll.target ? new GameStatus(roll.target) : null;
+        const info = isValidTarget(state, intention.actor, actorStatus, roll.target, targetStatus, intention.move.definition);
         if (info.valid) {
             if (info.target) {
                 if (info.accuracy) {

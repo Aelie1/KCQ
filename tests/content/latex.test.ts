@@ -87,7 +87,7 @@ describe("latex escape spread through GameEngine", () => {
         const result = execute(engine, {
             type: "escape", actor: "hero", target: "hero", binding: latexHead.id,
         });
-        const escaped = result.state.characters[0].bindings.find(({ id }) => id === latexHead.id);
+        const escaped = result.view.characters[0].bindings.find(({ id }) => id === latexHead.id);
         expect(escaped?.value).toBeLessThan(60);
         expect(escaped?.data).toEqual({ peak: 60 });
     });

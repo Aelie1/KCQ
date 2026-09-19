@@ -9,10 +9,10 @@ import {
     type FightPolicy,
     type PolicyContext,
 } from "../../src/harness/harness";
+import { policies } from "../../src/harness/policies";
 import { firstPolicy } from "../../src/harness/policy/first";
 import { randomPolicy } from "../../src/harness/policy/random";
 import { swingOnlyPolicy } from "../../src/harness/policy/swing-only";
-import { policies } from "../../src/harness/policies";
 
 function stockEncounterId(): string {
     const encounterId = createEngine(1).listEncounters()[0];
@@ -110,7 +110,7 @@ describe("policy-driven single-fight harness", () => {
             expect(expected.success).toBe(true);
             if (step.success && expected.success) {
                 expect(step.events).toEqual(expected.events);
-                expect(step.state).toEqual(expected.state);
+                expect(step.state).toEqual(expected.view);
             }
         }
         const lastStep = result.replay?.steps.at(-1);

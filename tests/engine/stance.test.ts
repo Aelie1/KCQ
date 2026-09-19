@@ -201,7 +201,7 @@ describe("stance toggling", () => {
         expect(assist.events).toEqual([
             expect.objectContaining({ target: target.id, binding: restraint.id }),
         ]);
-        expect(assist.state.characters.find((character) => character.id === helper.id))
+        expect(assist.view.characters.find((character) => character.id === helper.id))
             .toMatchObject({ acted: true, bonusEscapes: 0 });
     });
 

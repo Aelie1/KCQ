@@ -311,8 +311,8 @@ describe("Hinari's Spatial Movement", () => {
             type: "enemyDamaged",
             target: "foe1",
         }));
-        expect(result.state.characters[0].bindings).toEqual([]);
-        expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
+        expect(result.view.characters[0].bindings).toEqual([]);
+        expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
     });
 
     it("skips a guaranteed movement trap while Escaping", () => {
@@ -342,8 +342,8 @@ describe("Hinari's Spatial Movement", () => {
             binding: rope.id,
         }));
         expect(bindingState(engine, rope.id, hinari.id)?.value).toBeLessThan(30);
-        expect(result.state.characters[0].bindings.map(({ id }) => id)).toEqual([rope.id]);
-        expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
+        expect(result.view.characters[0].bindings.map(({ id }) => id)).toEqual([rope.id]);
+        expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
     });
 });
 
