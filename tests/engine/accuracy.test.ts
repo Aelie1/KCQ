@@ -4,6 +4,7 @@ import { effectivenessRange } from "../../src/engine/private/constants";
 import type { EncounterDef, MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { mixSeed, Random } from "../../src/engine/protected/random";
+import { GameStatus } from "../../src/engine/protected/status";
 import type {
     iCharacter,
     iEnemy,
@@ -61,6 +62,24 @@ describe("accuracy", () => {
         return makeEnemy(definition, id);
     }
 
+    function evaluateAccuracyResult(
+        actor: iCharacter,
+        target: iEnemy,
+        move: MoveDef,
+        accuracy: AccuracyProfile,
+        roll: number,
+    ): iTargetInfo {
+        return evaluateResult(
+            actor,
+            new GameStatus(actor),
+            target,
+            new GameStatus(target),
+            move,
+            accuracy,
+            roll,
+        );
+    }
+
     function profileTotal(profile: AccuracyProfile): number {
         return Object.values(profile).reduce((sum, width) => sum + width, 0);
     }
@@ -81,7 +100,7 @@ describe("accuracy", () => {
             enemies: [actor],
             traps: [],
             encounter: null
-        }, actor, target, move);
+        }, actor, new GameStatus(actor), target, move);
         if (!info.valid || !info.accuracy) throw new Error("Expected enemy accuracy profile");
         return info.accuracy;
     }
@@ -342,7 +361,7 @@ describe("accuracy", () => {
         target.buffs.push({ id: "vulnerable", active: true, modifiers: { vulnerability: 3 } });
 
         expect(previewAccuracy(actor, target, move)).toEqual(standardProfile);
-        expect(evaluateResult(actor, target, move, standardProfile, 25)).toEqual({
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 25)).toEqual({
             target,
             band: "hit",
             effectiveness: 0.8 * 1.25 * 1.375,
@@ -359,7 +378,7 @@ describe("accuracy", () => {
         [90, "crit"],
         [100, "crit"],
     ] as const)("maps roll %s to the %s band", (roll, expectedBand) => {
-        expect(evaluateResult(
+        expect(evaluateAccuracyResult(
             makeAccuracyActor(),
             makeAccuracyTarget(),
             makeAccuracyMove(),
@@ -380,14 +399,14 @@ describe("accuracy", () => {
         });
         const actor = makeAccuracyActor();
         const move = makeAccuracyMove();
-        expect(evaluateResult(actor, target, move, standardProfile, 5).effectiveness).toBe(0);
-        expect(evaluateResult(actor, target, move, standardProfile, 10).effectiveness).toBeCloseTo(0.20);
-        expect(evaluateResult(actor, target, move, standardProfile, 17.5).effectiveness).toBeCloseTo(0.35);
-        expect(evaluateResult(actor, target, move, standardProfile, 25).effectiveness).toBeCloseTo(0.80);
-        expect(evaluateResult(actor, target, move, standardProfile, 57.5).effectiveness).toBeCloseTo(0.90);
-        expect(evaluateResult(actor, target, move, standardProfile, 90).effectiveness).toBeCloseTo(1.50);
-        expect(evaluateResult(actor, target, move, standardProfile, 95).effectiveness).toBeCloseTo(1.75);
-        expect(evaluateResult(actor, target, move, standardProfile, 100).effectiveness).toBeCloseTo(2.00);
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 5).effectiveness).toBe(0);
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 10).effectiveness).toBeCloseTo(0.20);
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 17.5).effectiveness).toBeCloseTo(0.35);
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 25).effectiveness).toBeCloseTo(0.80);
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 57.5).effectiveness).toBeCloseTo(0.90);
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 90).effectiveness).toBeCloseTo(1.50);
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 95).effectiveness).toBeCloseTo(1.75);
+        expect(evaluateAccuracyResult(actor, target, move, standardProfile, 100).effectiveness).toBeCloseTo(2.00);
     });
 
     it("produces the same accuracy result from the same seed and action", () => {
@@ -494,7 +513,7 @@ describe("accuracy", () => {
             if (!preview || !preview.valid || !preview.accuracy) {
                 throw new Error(`Expected an accuracy preview for ${target.id}`);
             }
-            return evaluateResult(
+            return evaluateAccuracyResult(
                 makeAccuracyActor(),
                 target,
                 move,
