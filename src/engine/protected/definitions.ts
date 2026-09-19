@@ -76,7 +76,7 @@ export interface EncounterDef {
     enemies: EnemyDef[];
     bindings: BindingDef[];
     traps: TrapSetup[];
-    setup?: (state: iGameState) => void;
+    setup?: (state: iGameState) => iEffect[];
 }
 
 export interface TrapSetup {

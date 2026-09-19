@@ -5,7 +5,7 @@ import { matsuko } from "./content/characters/matsuko";
 import { encounterList } from "./content/content";
 import { GameEngine } from "./engine/public/engine";
 
-const encounterId = "plains_3";
+const encounterId = "forest_3";
 const engine = new GameEngine(encounterList);
 engine.loadCharacter(ko);
 engine.loadCharacter(matsuko);

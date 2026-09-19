@@ -2,7 +2,8 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { isCharacter } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
-import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
+import { fairy } from "./fairy";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { rainmaker } from "./rainmaker";
 import { skunk } from "./skunk";
@@ -18,13 +19,31 @@ const COLLAR_DAMAGE = 50;
 const PERFUME_DURATION = 4;
 const PERFUME_HEAL_RATIO = 0.10;
 
-const WAVE_1_HP_RATIO = 0.8;
-const WAVE_2_HP_RATIO = 0.6;
-const WAVE_3_HP_RATIO = 0.4;
-const WAVE_4_HP_RATIO = 0.2;
+const WAVE_RATIOS = [0.8, 0.6, 0.4, 0.2];
+const WAVE_SUMMONS: {
+    enemy: EnemyDef;
+    hpRatio?: number;
+}[][] = [
+        [{ enemy: skunkette, hpRatio: 0.5 }],
+        [{ enemy: skunkette }],
+        [{ enemy: skunk }],
+        [{ enemy: skunkette }, { enemy: skunk }],
+        [{ enemy: skunk }, { enemy: fairy }],
+        [{ enemy: skunkette }, { enemy: skunk }, { enemy: fairy }],
+    ];
 
-const RAINMAKER_1_HP_RATIO = 2 / 3;
-const RAINMAKER_2_HP_RATIO = 1 / 3;
+
+const RAINMAKER_RATIOS = [2 / 3, 1 / 3];
+const RAINMAKER_SUMMONS: {
+    enemy: EnemyDef;
+    hpRatio?: number;
+    buff?: iBuff;
+}[][] = [
+        [{ enemy: rainmaker, hpRatio: 0.5 }],
+        [{ enemy: rainmaker }],
+        [{ enemy: rainmaker, buff: { id: "shielding", modifiers: { defense: 2 }, active: true } }],
+    ];
+
 
 export const queen: EnemyDef = {
     id: "queen",
@@ -118,53 +137,27 @@ export const queen: EnemyDef = {
         }
         const minHpRatio = (target.data["minHp"] ?? target.maxHp) / target.maxHp;
         const currHpRatio = target.currHp / target.maxHp;
-        if (currHpRatio <= WAVE_1_HP_RATIO && minHpRatio > WAVE_1_HP_RATIO) {
-            effects.push({
-                type: "move",
-                actor: target,
-                move: { definition: callReinforcements, data: { "wave": 1 } },
-                targets: []
-            });
+        for (const ratio of WAVE_RATIOS) {
+            if (currHpRatio <= ratio && minHpRatio > ratio) {
+                target.data["wave"] = (target.data["wave"] ?? 0) + 1;
+                effects.push({
+                    type: "move",
+                    actor: target,
+                    move: { definition: callReinforcements, data: { "wave": target.data["wave"] } },
+                    targets: []
+                });
+            }
         }
-        if (currHpRatio <= WAVE_2_HP_RATIO && minHpRatio > WAVE_2_HP_RATIO) {
-            effects.push({
-                type: "move",
-                actor: target,
-                move: { definition: callReinforcements, data: { "wave": 2 } },
-                targets: []
-            });
-        }
-        if (currHpRatio <= WAVE_3_HP_RATIO && minHpRatio > WAVE_3_HP_RATIO) {
-            effects.push({
-                type: "move",
-                actor: target,
-                move: { definition: callReinforcements, data: { "wave": 3 } },
-                targets: []
-            });
-        }
-        if (currHpRatio <= WAVE_4_HP_RATIO && minHpRatio > WAVE_4_HP_RATIO) {
-            effects.push({
-                type: "move",
-                actor: target,
-                move: { definition: callReinforcements, data: { "wave": 4 } },
-                targets: []
-            });
-        }
-        if (currHpRatio <= RAINMAKER_1_HP_RATIO && minHpRatio > RAINMAKER_1_HP_RATIO) {
-            effects.push({
-                type: "move",
-                actor: target,
-                move: { definition: latexRainmaker, data: { "wave": 1 } },
-                targets: []
-            });
-        }
-        if (currHpRatio <= RAINMAKER_2_HP_RATIO && minHpRatio > RAINMAKER_2_HP_RATIO) {
-            effects.push({
-                type: "move",
-                actor: target,
-                move: { definition: latexRainmaker, data: { "wave": 2 } },
-                targets: []
-            });
+        for (const ratio of RAINMAKER_RATIOS) {
+            if (currHpRatio <= ratio && minHpRatio > ratio) {
+                target.data["rainmaker"] = (target.data["rainmaker"] ?? 0) + 1;
+                effects.push({
+                    type: "move",
+                    actor: target,
+                    move: { definition: latexRainmaker, data: { "wave": target.data["rainmaker"] } },
+                    targets: []
+                });
+            }
         }
         target.data["minHp"] = Math.min((target.data["minHp"] ?? target.maxHp), target.currHp);
         return effects;
@@ -249,47 +242,20 @@ const callReinforcements: MoveDef = {
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
-
         const wave = move.data?.["wave"] ?? 1;
+        const summons = WAVE_SUMMONS[wave - 1] ?? [];
 
-        if (wave === 1) {
+        for (const summon of summons) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
-                definition: skunkette,
-                hpRatio: 0.5
-            });
-        }
-        else if (wave === 2) {
-            effects.push({
-                type: "enemy",
-                operation: "spawn",
-                definition: skunkette,
-            });
-        }
-        else if (wave === 3) {
-            effects.push({
-                type: "enemy",
-                operation: "spawn",
-                definition: skunk,
-            });
-        }
-        else if (wave === 4) {
-            effects.push({
-                type: "enemy",
-                operation: "spawn",
-                definition: skunkette,
-            });
-            effects.push({
-                type: "enemy",
-                operation: "spawn",
-                definition: skunk,
+                definition: summon.enemy,
+                hpRatio: summon.hpRatio
             });
         }
         return effects;
     },
 }
-
 
 const latexRainmaker: MoveDef = {
     id: "latexRainmaker",
@@ -298,29 +264,22 @@ const latexRainmaker: MoveDef = {
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
-
         const wave = move.data?.["wave"] ?? 1;
+        const summons = RAINMAKER_SUMMONS[wave - 1] ?? [];
 
-        if (wave === 1) {
+        for (const summon of summons) {
             effects.push({
                 type: "enemy",
                 operation: "spawn",
-                definition: rainmaker,
-                hpRatio: 0.5
-            });
-        }
-        else if (wave === 2) {
-            effects.push({
-                type: "enemy",
-                operation: "spawn",
-                definition: rainmaker,
+                definition: summon.enemy,
+                hpRatio: summon.hpRatio,
+                buff: summon.buff
             });
         }
 
         return effects;
     },
 }
-
 
 const skunkPerfume: MoveDef = {
     id: "skunkPerfume",

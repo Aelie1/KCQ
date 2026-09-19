@@ -117,7 +117,7 @@ export class GameEngine {
         }
 
         if (encounter.setup) {
-            encounter.setup(this.state);
+            result.fromEffects(encounter.setup(this.state));
         }
 
         this.updateIntentions();
