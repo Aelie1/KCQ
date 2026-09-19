@@ -1,23 +1,23 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
-import { runConsoleClient } from "../src/console/client";
-import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention } from "../src/console/format";
-import { formatAccuracyRow, renderScreen } from "../src/console/render";
-import { ko } from "../src/content/characters/ko";
-import { encounterList } from "../src/content/content";
-import { latexArms } from "../src/content/skunk/latex";
-import type { EncounterDef } from "../src/engine/protected/definitions";
-import { thresholds } from "../src/engine/protected/helpers";
-import { helpless } from "../src/engine/protected/statuses";
-import { GameEngine } from "../src/engine/public/engine";
-import type { GameEvent, GameState, Intention } from "../src/engine/public/types";
+import { runConsoleClient } from "../../src/console/client";
+import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention } from "../../src/console/format";
+import { formatAccuracyRow, renderScreen } from "../../src/console/render";
+import { ko } from "../../src/content/characters/ko";
+import { encounterList } from "../../src/content/content";
+import { latexArms } from "../../src/content/skunk/latex";
+import type { EncounterDef } from "../../src/engine/protected/definitions";
+import { thresholds } from "../../src/engine/protected/helpers";
+import { helpless } from "../../src/engine/protected/statuses";
+import { GameEngine } from "../../src/engine/public/engine";
+import type { GameEvent, GameState, Intention } from "../../src/engine/public/types";
 import {
     makeBindingDef,
     makeCharacterDef,
     makeMove,
     setupBoundEngine,
-} from "./helpers";
-import { multiEnemyEncounter, oneEnemyEncounter, waitEnemy } from "./testContent";
+} from "../helpers/helpers";
+import { multiEnemyEncounter, oneEnemyEncounter, waitEnemy } from "../helpers/testContent";
 
 const state: GameState = {
     turn: { round: 3, step: 1, phase: "player", outcome: "ongoing" },

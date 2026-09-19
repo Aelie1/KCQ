@@ -1,6 +1,6 @@
 import { expect } from "vitest";
-import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
-import { GameEngine } from "../src/engine/public/engine";
+import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { GameEngine } from "../../src/engine/public/engine";
 import type {
     AccuracyProfile,
     ActionSuccess,
@@ -10,7 +10,7 @@ import type {
     Enemy,
     MoveType,
     PlayerAction,
-} from "../src/engine/public/types";
+} from "../../src/engine/public/types";
 
 export function targetAccuracy(
     engine: GameEngine,

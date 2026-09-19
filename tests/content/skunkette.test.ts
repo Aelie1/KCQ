@@ -5,9 +5,9 @@ import {
     latexHead,
     latexLegs,
     latexTorso,
-} from "../src/content/skunk/latex";
-import { skunkette } from "../src/content/skunk/skunkette";
-import { GameEngine } from "../src/engine/public/engine";
+} from "../../src/content/skunk/latex";
+import { skunkette } from "../../src/content/skunk/skunkette";
+import { GameEngine } from "../../src/engine/public/engine";
 import {
     bindingState,
     buffState,
@@ -17,7 +17,7 @@ import {
     makeBehavioralCharacter,
     makeBehavioralEngine,
     makeBehavioralMove,
-} from "./behavioralHelpers";
+} from "../helpers/behavioralHelpers";
 
 const POUNCE_ID = "pounce";
 const SKUNKED_ID = "skunked";

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { latexArms } from "../src/content/skunk/latex";
-import type { BindingDef, MoveDef, StatusDef } from "../src/engine/protected/definitions";
+import { latexArms } from "../../src/content/skunk/latex";
+import type { BindingDef, MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import {
     bindingState,
     characterState,
@@ -10,7 +10,7 @@ import {
     makeBehavioralEngine,
     makeBehavioralMove,
     targetAccuracy,
-} from "./behavioralHelpers";
+} from "../helpers/behavioralHelpers";
 
 function bindingMove(
     id: string,

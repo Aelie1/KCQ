@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ko } from "../src/content/characters/ko";
-import { serializeGameState } from "../src/engine/private/serialize";
-import type { EncounterDef, StatusDef } from "../src/engine/protected/definitions";
-import { thresholds } from "../src/engine/protected/helpers";
-import { incapacitated } from "../src/engine/protected/statuses";
-import type { iBuff, iGameState } from "../src/engine/protected/types";
-import { GameEngine } from "../src/engine/public/engine";
+import { ko } from "../../src/content/characters/ko";
+import { serializeGameState } from "../../src/engine/private/serialize";
+import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
+import { thresholds } from "../../src/engine/protected/helpers";
+import { incapacitated } from "../../src/engine/protected/statuses";
+import type { iBuff, iGameState } from "../../src/engine/protected/types";
+import { GameEngine } from "../../src/engine/public/engine";
 import {
     makeBindingDef,
     makeCharacter,
@@ -14,13 +14,13 @@ import {
     makeEnemyDef,
     makeMove,
     makeWaitMove,
-} from "./helpers";
+} from "../helpers/helpers";
 import {
     multiEnemyEncounter,
     testAlly,
     testCharacterList,
     testHero,
-} from "./testContent";
+} from "../helpers/testContent";
 
 describe("character catalogue", () => {
     it("lists only injected ids and returns a fresh array", () => {

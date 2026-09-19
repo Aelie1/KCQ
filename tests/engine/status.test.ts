@@ -1,22 +1,22 @@
 import { describe, expect, it } from "vitest";
-import { latexArms } from "../src/content/skunk/latex";
-import type { BindingDef } from "../src/engine/protected/definitions";
-import { thresholds } from "../src/engine/protected/helpers";
+import { latexArms } from "../../src/content/skunk/latex";
+import type { BindingDef } from "../../src/engine/protected/definitions";
+import { thresholds } from "../../src/engine/protected/helpers";
 import {
     bound,
     helpless,
     immobilized,
     incapacitated,
     stunned
-} from "../src/engine/protected/statuses";
-import { GameEngine } from "../src/engine/public/engine";
+} from "../../src/engine/protected/statuses";
+import { GameEngine } from "../../src/engine/public/engine";
 import {
     expectMoveRejection,
     makeBindingDef,
     makeCharacterDef,
     makeMove,
     setupBoundEngine,
-} from "./helpers";
+} from "../helpers/helpers";
 
 function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: number) {
     const targetBinding = makeBindingDef("target-binding");

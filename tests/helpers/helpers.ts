@@ -1,17 +1,17 @@
 import { expect } from "vitest";
-import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
+import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import type {
     iBinding,
     iCharacter,
     iEnemy,
     iStatus,
-} from "../src/engine/protected/types";
-import { GameEngine } from "../src/engine/public/engine";
+} from "../../src/engine/protected/types";
+import { GameEngine } from "../../src/engine/public/engine";
 import type {
     ActionFailureReason,
     BindingLevel,
     MoveType,
-} from "../src/engine/public/types";
+} from "../../src/engine/public/types";
 
 const bindingLevels: BindingLevel[] = [
     "none",

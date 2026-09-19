@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { ko } from "../src/content/characters/ko";
-import { encounterList } from "../src/content/content";
-import { plains_1, plains_2 } from "../src/content/skunk/encounters";
-import { trapPuddle } from "../src/content/skunk/puddles";
-import { skunk } from "../src/content/skunk/skunk";
-import { skunkette } from "../src/content/skunk/skunkette";
-import type { EncounterDef } from "../src/engine/protected/definitions";
-import { GameEngine } from "../src/engine/public/engine";
-import { makeEnemyDef, makeWaitMove } from "./helpers";
+import { ko } from "../../src/content/characters/ko";
+import { encounterList } from "../../src/content/content";
+import { plains_1, plains_2 } from "../../src/content/skunk/encounters";
+import { trapPuddle } from "../../src/content/skunk/puddles";
+import { skunk } from "../../src/content/skunk/skunk";
+import { skunkette } from "../../src/content/skunk/skunkette";
+import type { EncounterDef } from "../../src/engine/protected/definitions";
+import { GameEngine } from "../../src/engine/public/engine";
+import { makeEnemyDef, makeWaitMove } from "../helpers/helpers";
 import {
     basicAttackingEnemy,
     multiEnemyEncounter,
@@ -15,7 +15,7 @@ import {
     testCharacterList,
     testHero,
     waitEnemy,
-} from "./testContent";
+} from "../helpers/testContent";
 
 describe("encounters", () => {
     it("lists only ids from the injected catalogue and returns a fresh array", () => {

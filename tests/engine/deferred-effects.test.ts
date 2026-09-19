@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { BindingDef, EncounterDef } from "../src/engine/protected/definitions";
-import { isCharacter } from "../src/engine/protected/helpers";
-import { GameEngine } from "../src/engine/public/engine";
+import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
+import { isCharacter } from "../../src/engine/protected/helpers";
+import { GameEngine } from "../../src/engine/public/engine";
 import {
     makeBindingDef,
     makeCharacterDef,
     makeEnemyDef,
     makeMove,
-} from "./helpers";
+} from "../helpers/helpers";
 
 function engineFor(move: ReturnType<typeof makeMove>): GameEngine {
     const encounter: EncounterDef = {

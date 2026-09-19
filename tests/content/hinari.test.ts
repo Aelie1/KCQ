@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { hinari } from "../src/content/characters/hinari";
-import { latexLegs } from "../src/content/skunk/latex";
-import { trapPuddle } from "../src/content/skunk/puddles";
-import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
-import { isCharacter, thresholds } from "../src/engine/protected/helpers";
-import { s } from "../src/engine/protected/status";
-import { immobilized } from "../src/engine/protected/statuses";
-import type { iEffect, iGameState } from "../src/engine/protected/types";
-import { GameEngine } from "../src/engine/public/engine";
-import type { ActionInfo, ActionSuccess, DamageEvent } from "../src/engine/public/types";
+import { hinari } from "../../src/content/characters/hinari";
+import { latexLegs } from "../../src/content/skunk/latex";
+import { trapPuddle } from "../../src/content/skunk/puddles";
+import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { isCharacter, thresholds } from "../../src/engine/protected/helpers";
+import { s } from "../../src/engine/protected/status";
+import { immobilized } from "../../src/engine/protected/statuses";
+import type { iEffect, iGameState } from "../../src/engine/protected/types";
+import { GameEngine } from "../../src/engine/public/engine";
+import type { ActionInfo, ActionSuccess, DamageEvent } from "../../src/engine/public/types";
 import {
     bindingState,
     buffState,
@@ -18,7 +18,7 @@ import {
     makeBehavioralCharacter,
     makeBehavioralEnemy,
     makeBehavioralMove,
-} from "./behavioralHelpers";
+} from "../helpers/behavioralHelpers";
 
 const rope = makeBehavioralBinding("rope");
 const tape = makeBehavioralBinding("tape");

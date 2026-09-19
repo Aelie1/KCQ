@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { matsuko } from "../src/content/characters/matsuko";
-import type { EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
-import { s } from "../src/engine/protected/status";
-import { gagged, servitude } from "../src/engine/protected/statuses";
-import { GameEngine } from "../src/engine/public/engine";
+import { matsuko } from "../../src/content/characters/matsuko";
+import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { s } from "../../src/engine/protected/status";
+import { gagged, servitude } from "../../src/engine/protected/statuses";
+import { GameEngine } from "../../src/engine/public/engine";
 import type {
     AccuracyProfile,
     ActionInfo,
     ActionSuccess,
     PlayerAction,
-} from "../src/engine/public/types";
+} from "../../src/engine/public/types";
 import {
     buffState,
     characterState,
@@ -18,7 +18,7 @@ import {
     makeBehavioralEnemy,
     makeBehavioralMove,
     targetAccuracy,
-} from "./behavioralHelpers";
+} from "../helpers/behavioralHelpers";
 
 const STANDARD_ACCURACY: AccuracyProfile = {
     miss: 10,

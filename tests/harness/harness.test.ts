@@ -1,18 +1,18 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../src/engine/public/engine";
-import type { ActionInfo, GameState } from "../src/engine/public/types";
+import { createEngine } from "../../src/engine/public/engine";
+import type { ActionInfo, GameState } from "../../src/engine/public/types";
 import {
     createPolicyRandom,
     runSingleFight,
     type FightPolicy,
     type PolicyContext,
-} from "../src/harness/harness";
-import { firstPolicy } from "../src/harness/policy/first";
-import { randomPolicy } from "../src/harness/policy/random";
-import { swingOnlyPolicy } from "../src/harness/policy/swing-only";
-import { policies } from "../src/harness/policies";
+} from "../../src/harness/harness";
+import { firstPolicy } from "../../src/harness/policy/first";
+import { randomPolicy } from "../../src/harness/policy/random";
+import { swingOnlyPolicy } from "../../src/harness/policy/swing-only";
+import { policies } from "../../src/harness/policies";
 
 function stockEncounterId(): string {
     const encounterId = createEngine(1).listEncounters()[0];

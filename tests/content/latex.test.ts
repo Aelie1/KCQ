@@ -4,17 +4,17 @@ import {
     latexHead,
     latexLegs,
     latexTorso,
-} from "../src/content/skunk/latex";
-import type { BindingDef } from "../src/engine/protected/definitions";
-import type { iEffect } from "../src/engine/protected/types";
-import { GameEngine } from "../src/engine/public/engine";
+} from "../../src/content/skunk/latex";
+import type { BindingDef } from "../../src/engine/protected/definitions";
+import type { iEffect } from "../../src/engine/protected/types";
+import { GameEngine } from "../../src/engine/public/engine";
 import {
     bindingState,
     characterState,
     execute,
     makeBehavioralCharacter,
     makeBehavioralMove,
-} from "./behavioralHelpers";
+} from "../helpers/behavioralHelpers";
 
 interface BindingSetup {
     character: string;

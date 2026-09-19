@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { trapPuddle } from "../src/content/skunk/puddles";
-import type { BindingDef, EncounterDef, StatusDef, TrapDef } from "../src/engine/protected/definitions";
-import { GameEngine } from "../src/engine/public/engine";
-import type { PlayerAction } from "../src/engine/public/types";
+import { trapPuddle } from "../../src/content/skunk/puddles";
+import type { BindingDef, EncounterDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
+import { GameEngine } from "../../src/engine/public/engine";
+import type { PlayerAction } from "../../src/engine/public/types";
 import {
     makeBindingDef,
     makeCharacterDef,
     makeMove,
-} from "./helpers";
+} from "../helpers/helpers";
 
 function trapThatConsumes(
     id: string,

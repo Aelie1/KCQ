@@ -1,4 +1,4 @@
-import type { CharacterDef, EncounterDef } from "../src/engine/protected/definitions";
+import type { CharacterDef, EncounterDef } from "../../src/engine/protected/definitions";
 import { makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove } from "./helpers";
 
 export const waitMove = makeWaitMove();

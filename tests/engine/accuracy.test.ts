@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { evaluateResult, isValidTarget } from "../src/engine/private/combat";
-import { effectivenessRange } from "../src/engine/private/constants";
-import type { EncounterDef, MoveDef, StatusDef } from "../src/engine/protected/definitions";
-import { thresholds } from "../src/engine/protected/helpers";
-import { mixSeed, Random } from "../src/engine/protected/random";
+import { evaluateResult, isValidTarget } from "../../src/engine/private/combat";
+import { effectivenessRange } from "../../src/engine/private/constants";
+import type { EncounterDef, MoveDef, StatusDef } from "../../src/engine/protected/definitions";
+import { thresholds } from "../../src/engine/protected/helpers";
+import { mixSeed, Random } from "../../src/engine/protected/random";
 import type {
     iCharacter,
     iEnemy,
     iTargetInfo,
-} from "../src/engine/protected/types";
-import { GameEngine } from "../src/engine/public/engine";
-import type { AccuracyProfile, MoveEvent } from "../src/engine/public/types";
+} from "../../src/engine/protected/types";
+import { GameEngine } from "../../src/engine/public/engine";
+import type { AccuracyProfile, MoveEvent } from "../../src/engine/public/types";
 import {
     makeBinding,
     makeBindingDef,
@@ -20,7 +20,7 @@ import {
     makeEnemyDef,
     makeMove,
     makeWaitMove,
-} from "./helpers";
+} from "../helpers/helpers";
 
 describe("accuracy", () => {
     const standardProfile: AccuracyProfile = {

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import type { MoveDef, StatusDef } from "../src/engine/protected/definitions";
-import type { iBuff, iEnemy, iEntity } from "../src/engine/protected/types";
+import type { MoveDef, StatusDef } from "../../src/engine/protected/definitions";
+import type { iBuff, iEnemy, iEntity } from "../../src/engine/protected/types";
 import {
     buffState,
     characterState,
@@ -12,7 +12,7 @@ import {
     makeBehavioralMove,
     makeEnemyWaitMove,
     targetAccuracy,
-} from "./behavioralHelpers";
+} from "../helpers/behavioralHelpers";
 
 const blinded: StatusDef = {
     id: "blinded",

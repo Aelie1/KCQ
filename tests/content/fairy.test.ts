@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
-import { fairy } from "../src/content/skunk/fairy";
-import { latexArms, latexHead, latexLegs, latexTorso } from "../src/content/skunk/latex";
-import type { EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
-import { Random } from "../src/engine/protected/random";
-import type { iEnemy, iGameState, iMoveEffect } from "../src/engine/protected/types";
-import { GameEngine } from "../src/engine/public/engine";
-import type { HitBand } from "../src/engine/public/types";
+import { fairy } from "../../src/content/skunk/fairy";
+import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
+import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { Random } from "../../src/engine/protected/random";
+import type { iEnemy, iGameState, iMoveEffect } from "../../src/engine/protected/types";
+import { GameEngine } from "../../src/engine/public/engine";
+import type { HitBand } from "../../src/engine/public/types";
 import {
     bindingState,
     buffState,
@@ -15,8 +15,8 @@ import {
     makeBehavioralEnemy,
     makeBehavioralMove,
     makeEnemyWaitMove,
-} from "./behavioralHelpers";
-import { makeCharacter, makeEnemy } from "./helpers";
+} from "../helpers/behavioralHelpers";
+import { makeCharacter, makeEnemy } from "../helpers/helpers";
 
 const BARRIER_ID = "barrierMagic";
 const BINDING_ID = "bindingMagic";

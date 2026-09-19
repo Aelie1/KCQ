@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { latexArms } from "../src/content/skunk/latex";
-import type { BindingDef, StatusDef } from "../src/engine/protected/definitions";
-import { thresholds } from "../src/engine/protected/helpers";
-import { GameEngine } from "../src/engine/public/engine";
-import type { Effect } from "../src/engine/public/types";
+import { latexArms } from "../../src/content/skunk/latex";
+import type { BindingDef, StatusDef } from "../../src/engine/protected/definitions";
+import { thresholds } from "../../src/engine/protected/helpers";
+import { GameEngine } from "../../src/engine/public/engine";
+import type { Effect } from "../../src/engine/public/types";
 import {
     makeBindingDef,
     makeCharacterDef,
     makeMove,
-} from "./helpers";
+} from "../helpers/helpers";
 
 interface BindingSetup {
     target: string;

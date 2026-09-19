@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { skunkette } from "../src/content/skunk/skunkette";
-import { thresholds } from "../src/engine/protected/helpers";
-import { immobilized, vibrating } from "../src/engine/protected/statuses";
-import { GameEngine } from "../src/engine/public/engine";
+import { skunkette } from "../../src/content/skunk/skunkette";
+import { thresholds } from "../../src/engine/protected/helpers";
+import { immobilized, vibrating } from "../../src/engine/protected/statuses";
+import { GameEngine } from "../../src/engine/public/engine";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -10,7 +10,7 @@ import {
     makeMove,
     makeWaitMove,
     setupBoundEngine,
-} from "./helpers";
+} from "../helpers/helpers";
 
 describe("stance toggling", () => {
     it("starts a mobile character in the moving stance", () => {
