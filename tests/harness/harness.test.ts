@@ -195,6 +195,36 @@ describe("policy-driven single-fight harness", () => {
         });
     });
 
+    it("does not let policies mutate stored replay snapshots", () => {
+        const mutatingPolicy: FightPolicy = {
+            id: "mutating",
+            chooseAction(context) {
+                // A policy owns neither the engine state nor the harness's replay history.
+                context.view.turn.step = 999_999;
+                context.view.characters[0].data["corrupted"] = 999;
+
+                return firstPolicy.chooseAction(context);
+            },
+        };
+
+        const expected = runSingleFight({
+            ...fightInput(firstPolicy, 404, 505),
+            maxActions: 2,
+            replay: true,
+        });
+
+        const mutated = runSingleFight({
+            ...fightInput(mutatingPolicy, 404, 505),
+            maxActions: 2,
+            replay: true,
+        });
+
+        expect(mutated.trace).toEqual(expected.trace);
+        expect(mutated.finalState).toEqual(expected.finalState);
+        expect(mutated.replay?.initialState).toEqual(expected.replay?.initialState);
+        expect(mutated.replay?.steps).toEqual(expected.replay?.steps);
+    });
+
     it("captures deterministic replay for identical engine and policy seeds", () => {
         const input = { ...fightInput(randomPolicy, 606, 707), replay: true };
 
