@@ -4,19 +4,19 @@ import type { FightPolicy, PolicyContext } from "../harness";
 export const firstPolicy: FightPolicy = {
     id: "first",
     chooseAction(context: PolicyContext): PlayerAction {
-        for (const character of context.availability) {
-            if (!character.available) {
+        for (const actionView of context.view.actions) {
+            if (!actionView.available) {
                 continue;
             }
 
-            const move = context.getMoves(character.id).find((candidate) => candidate.available);
+            const move = actionView.moves.find((candidate) => candidate.available);
             if (!move) {
                 continue;
             }
 
             return {
                 type: "move",
-                actor: character.id,
+                actor: actionView.id,
                 move: move.move.id,
                 targets: firstTargets(move.move.targets, move.targets),
             };

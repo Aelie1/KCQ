@@ -2,7 +2,11 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
-import type { ActionInfo, GameState, PlayerAction } from "../../src/engine/public/types";
+import type {
+    ActionInfo,
+    ActionView,
+    PlayerAction,
+} from "../../src/engine/public/types";
 import {
     createPolicyRandom,
     runSingleFight,
@@ -44,16 +48,26 @@ function move(id: string, available = true): ActionInfo {
     };
 }
 
-function policyContext(
-    availability: PolicyContext["availability"],
-    moves: Readonly<Record<string, readonly ActionInfo[]>>,
-): PolicyContext {
+function actionView(
+    id: string,
+    values: Partial<Omit<ActionView, "id">> = {},
+): ActionView {
     return {
-        state: createEngine(1).getGameState() as GameState,
-        availability,
-        getMoves: (actor) => moves[actor] ?? [],
-        getEscapes: () => null,
-        stanceAvailable: () => ({ available: false, reason: "moveUnavailable" }),
+        id,
+        available: true,
+        moves: [],
+        escapes: [],
+        stance: { available: false, reason: "moveUnavailable" },
+        ...values,
+    };
+}
+
+function policyContext(actions: ActionView[]): PolicyContext {
+    return {
+        view: {
+            ...createEngine(1).getGameView(),
+            actions,
+        },
         random: createPolicyRandom(1),
     };
 }
@@ -80,7 +94,7 @@ describe("policy-driven single-fight harness", () => {
             expectedEngine.loadCharacter(id);
         }
         expectedEngine.loadEncounter(input.encounterId);
-        const expectedInitialState = expectedEngine.getGameState();
+        const expectedInitialState = expectedEngine.getGameView();
 
         const result = runSingleFight(input);
 
@@ -230,16 +244,16 @@ describe("policy-driven single-fight harness", () => {
     it("preserves first-available character, move, and target ordering", () => {
         const context = policyContext(
             [
-                { id: "unavailable", available: false, reason: "actorAlreadyActed" },
-                { id: "no-moves", available: true },
-                { id: "chosen", available: true },
-                { id: "later", available: true },
+                actionView("unavailable", {
+                    available: false,
+                    reason: "actorAlreadyActed",
+                }),
+                actionView("no-moves", { moves: [move("blocked", false)] }),
+                actionView("chosen", {
+                    moves: [move("first-blocked", false), move("first-available"), move("later")],
+                }),
+                actionView("later", { moves: [move("not-reached")] }),
             ],
-            {
-                "no-moves": [move("blocked", false)],
-                chosen: [move("first-blocked", false), move("first-available"), move("later")],
-                later: [move("not-reached")],
-            },
         );
 
         expect(firstPolicy.chooseAction(context)).toEqual({
@@ -268,8 +282,9 @@ describe("policy-driven single-fight harness", () => {
 
     it("does not substitute another move when a programmed move is unavailable", () => {
         const context = policyContext(
-            [{ id: "ko", available: true }],
-            { ko: [move("telekinesis", false), move("fallback", true)] },
+            [actionView("ko", {
+                moves: [move("telekinesis", false), move("fallback", true)],
+            })],
         );
 
         expect(swingOnlyPolicy.chooseAction(context)).toEqual({ type: "endTurn" });
@@ -281,6 +296,42 @@ describe("policy-driven single-fight harness", () => {
         expect(["victory", "defeat"]).toContain(result.termination);
         expect(result.error).toBeUndefined();
         expect(result.actionCount).toBeGreaterThan(0);
+    });
+
+    it("does not treat an unavailable escape entry as a random candidate", () => {
+        const context = policyContext([
+            actionView("hero", {
+                escapes: [{
+                    available: false,
+                    reason: "escapeUnavailable",
+                    target: "hero",
+                    binding: "rope",
+                    effects: [],
+                }],
+            }),
+        ]);
+
+        expect(randomPolicy.chooseAction(context)).toEqual({ type: "endTurn" });
+    });
+
+    it("can select an available escape entry", () => {
+        const context = policyContext([
+            actionView("hero", {
+                escapes: [{
+                    available: true,
+                    target: "hero",
+                    binding: "rope",
+                    effects: [],
+                }],
+            }),
+        ]);
+
+        expect(randomPolicy.chooseAction(context)).toEqual({
+            type: "escape",
+            actor: "hero",
+            target: "hero",
+            binding: "rope",
+        });
     });
 
     it.each([
@@ -364,7 +415,9 @@ describe("policy-driven single-fight harness", () => {
         );
 
         expect(result.termination).toBe(result.finalState.turn.outcome);
-        expect(source).toContain("engine.getGameState().turn.outcome");
+        expect(source).toContain("view.turn.outcome");
+        expect(source).toContain("engine.getGameView()");
+        expect(source).not.toContain("engine.getGameState()");
         expect(source).not.toMatch(/events.*(?:victory|defeat)|(?:victory|defeat).*events/);
     });
 

@@ -15,31 +15,30 @@ export const randomPolicy: FightPolicy = {
     chooseAction(context: PolicyContext): PlayerAction {
         const candidates: ActionCandidate[] = [];
 
-        for (const character of context.availability) {
-            if (!character.available) {
+        for (const actionView of context.view.actions) {
+            if (!actionView.available) {
                 continue;
             }
 
-            for (const info of context.getMoves(character.id)) {
+            for (const info of actionView.moves) {
                 if (info.available && hasEnoughTargets(info)) {
-                    candidates.push({ type: "move", actor: character.id, info });
+                    candidates.push({ type: "move", actor: actionView.id, info });
                 }
             }
 
-            const escapes = context.getEscapes(character.id);
-            if (escapes && !escapes.reason) {
-                for (const escape of escapes.options) {
+            for (const escape of actionView.escapes) {
+                if (escape.available) {
                     candidates.push({
                         type: "escape",
-                        actor: escape.actor,
+                        actor: actionView.id,
                         target: escape.target,
                         binding: escape.binding,
                     });
                 }
             }
 
-            if (context.stanceAvailable(character.id).available) {
-                candidates.push({ type: "stance", actor: character.id });
+            if (actionView.stance.available) {
+                candidates.push({ type: "stance", actor: actionView.id });
             }
         }
 

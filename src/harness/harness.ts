@@ -1,14 +1,9 @@
 import { createEngine } from "../engine/public/engine";
 import type {
-    ActionInfo,
-    AvailabilityInfo,
-    EntityId,
-    EscapeOptions,
     FailureReason,
     GameEvent,
-    GameState,
+    GameView,
     PlayerAction,
-    StanceInfo,
 } from "../engine/public/types";
 
 export interface PolicyRandom {
@@ -17,11 +12,7 @@ export interface PolicyRandom {
 }
 
 export interface PolicyContext {
-    readonly state: GameState;
-    readonly availability: readonly AvailabilityInfo[];
-    getMoves(actor: EntityId): readonly ActionInfo[];
-    getEscapes(actor: EntityId): EscapeOptions | null;
-    stanceAvailable(actor: EntityId): StanceInfo;
+    readonly view: GameView;
     readonly random: PolicyRandom;
 }
 
@@ -51,7 +42,7 @@ export interface ReplaySuccessStep {
     action: PlayerAction;
     success: true;
     events: GameEvent[];
-    state: GameState;
+    state: GameView;
 }
 
 export interface ReplayFailureStep {
@@ -63,7 +54,7 @@ export interface ReplayFailureStep {
 export type ReplayStep = ReplaySuccessStep | ReplayFailureStep;
 
 export interface FightReplay {
-    initialState: GameState;
+    initialState: GameView;
     steps: ReplayStep[];
 }
 
@@ -73,7 +64,7 @@ export interface SingleFightResult {
     policyId: string;
     policySeed: number;
     termination: SingleFightTermination;
-    finalState: GameState;
+    finalState: GameView;
     actionCount: number;
     trace: PlayerAction[];
     error?: SingleFightError;
@@ -86,6 +77,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     const policyRandom = createPolicyRandom(input.policySeed);
     const trace: PlayerAction[] = [];
     let replay: FightReplay | undefined;
+    let view = engine.getGameView();
 
     const finish = (
         termination: SingleFightTermination,
@@ -96,7 +88,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         policyId: input.policy.id,
         policySeed: input.policySeed,
         termination,
-        finalState: engine.getGameState(),
+        finalState: view,
         actionCount: trace.length,
         trace,
         ...(error ? { error } : {}),
@@ -119,9 +111,12 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             (event) => event.type === "characterLoad" && event.id === id && event.success,
         );
         if (!loaded) {
+            view = engine.getGameView();
             return finish("error", { message: `Failed to load listed character: ${id}` });
         }
     }
+
+    view = engine.getGameView();
 
     if (!engine.listEncounters().includes(input.encounterId)) {
         return finish("error", {
@@ -135,29 +130,28 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             && event.success,
     );
     if (!encounterLoaded) {
+        view = engine.getGameView();
         return finish("error", {
             message: `Failed to load listed encounter: ${input.encounterId}`,
         });
     }
 
+    view = engine.getGameView();
+
     if (input.replay === true) {
         replay = {
-            initialState: engine.getGameState(),
+            initialState: view,
             steps: [],
         };
     }
 
-    while (engine.getGameState().turn.outcome === "ongoing") {
+    while (view.turn.outcome === "ongoing") {
         if (trace.length >= input.maxActions) {
             return finish("maxActions");
         }
 
         const action = cloneAction(input.policy.chooseAction({
-            state: engine.getGameState(),
-            availability: engine.getAvailability(),
-            getMoves: (actor) => engine.getMoves(actor),
-            getEscapes: (actor) => engine.getEscapes(actor),
-            stanceAvailable: (actor) => engine.stanceAvailable(actor),
+            view,
             random: policyRandom,
         }));
 
@@ -183,19 +177,14 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             state: result.view,
         });
 
-        const outcome = engine.getGameState().turn.outcome;
+        view = result.view;
+        const outcome = view.turn.outcome;
         if (outcome !== "ongoing") {
             return finish(outcome);
         }
     }
 
-    const finalOutcome = engine.getGameState().turn.outcome;
-    if (finalOutcome === "ongoing") {
-        return finish("error", {
-            message: "Runner loop exited while the battle outcome was still ongoing",
-        });
-    }
-    return finish(finalOutcome);
+    return finish(view.turn.outcome);
 }
 
 export function createPolicyRandom(seed: number): PolicyRandom {

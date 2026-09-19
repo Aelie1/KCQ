@@ -11,17 +11,17 @@ const programmedMoves: Readonly<Record<string, string>> = {
 export const swingOnlyPolicy: FightPolicy = {
     id: "swing-only",
     chooseAction(context: PolicyContext): PlayerAction {
-        for (const character of context.availability) {
-            if (!character.available) {
+        for (const actionView of context.view.actions) {
+            if (!actionView.available) {
                 continue;
             }
 
-            const programmedMove = programmedMoves[character.id];
+            const programmedMove = programmedMoves[actionView.id];
             if (!programmedMove) {
                 continue;
             }
 
-            const move = context.getMoves(character.id).find(
+            const move = actionView.moves.find(
                 (candidate) => candidate.move.id === programmedMove && candidate.available,
             );
             if (!move) {
@@ -30,7 +30,7 @@ export const swingOnlyPolicy: FightPolicy = {
 
             return {
                 type: "move",
-                actor: character.id,
+                actor: actionView.id,
                 move: programmedMove,
                 targets: firstTargets(move.move.targets, move.targets),
             };
