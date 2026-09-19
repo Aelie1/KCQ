@@ -98,7 +98,7 @@ export class GameEngine {
 
         this.state.enemies.length = 0;
         this.state.traps.length = 0;
-        this.state.nextId.length = 0;
+        this.state.nextId = {};
         this.state.encounter = encounter;
 
         const spawns: iEffect[] = [];

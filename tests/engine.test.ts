@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
+import { encounterList } from "../src/content/content";
+import { plains_1 } from "../src/content/skunk/encounters";
 import { skunkette } from "../src/content/skunk/skunkette";
 import type { StatusDef } from "../src/engine/protected/definitions";
 import { stunned } from "../src/engine/protected/statuses";
 import { GameEngine } from "../src/engine/public/engine";
+import type { PlayerAction } from "../src/engine/public/types";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -23,6 +26,44 @@ function setupAuthoredCombat(): GameEngine {
 }
 
 describe("turn phases and enemy intentions", () => {
+    it("replays an authored encounter identically despite aggressive public queries", () => {
+        const run = (queryBetweenActions: boolean) => {
+            const engine = new GameEngine(encounterList, 123456);
+            engine.loadCharacter(ko);
+            const loadEvents = engine.loadEncounter(plains_1.id);
+            const snapshots = [engine.getGameState()];
+            const results: ReturnType<GameEngine["executeAction"]>[] = [];
+            const actions: PlayerAction[] = [
+                { type: "stance", actor: ko.id },
+                { type: "move", actor: ko.id, move: "telekinesis", targets: ["skunkette1"] },
+                { type: "endTurn" },
+            ];
+            const query = () => {
+                engine.getGameState();
+                engine.getMoves(ko.id);
+                engine.getEscapes(ko.id);
+                engine.getAvailability();
+                engine.stanceAvailable(ko.id);
+            };
+
+            for (const action of actions) {
+                if (queryBetweenActions) {
+                    query();
+                    query();
+                }
+                const result = engine.executeAction(action);
+                expect(result.success).toBe(true);
+                results.push(result);
+                snapshots.push(engine.getGameState());
+                if (queryBetweenActions) query();
+            }
+
+            return { loadEvents, results, snapshots, finalState: engine.getGameState() };
+        };
+
+        expect(run(true)).toEqual(run(false));
+    });
+
     it("executes Skunkette's authored intention between phase changes", () => {
         const engine = setupAuthoredCombat();
         const enemyId = `${skunkette.id}1`;

@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { hinari } from "../src/content/characters/hinari";
+import { latexLegs } from "../src/content/skunk/latex";
+import { trapPuddle } from "../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../src/engine/protected/definitions";
-import { isCharacter } from "../src/engine/protected/helpers";
+import { isCharacter, thresholds } from "../src/engine/protected/helpers";
+import { s } from "../src/engine/protected/status";
+import { immobilized } from "../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../src/engine/protected/types";
 import { GameEngine } from "../src/engine/public/engine";
 import type { ActionInfo, ActionSuccess, DamageEvent } from "../src/engine/public/types";
@@ -59,12 +63,13 @@ function loadHinariEncounter(options: {
     allies?: ReturnType<typeof makeBehavioralCharacter>[];
     setup?: EncounterDef["setup"];
     seed?: number;
+    traps?: EncounterDef["traps"];
 } = {}): GameEngine {
     const encounter: EncounterDef = {
         id: "hinari-test",
         enemies: options.enemies ?? [durableEnemy()],
         bindings: options.bindings ?? [rope, tape],
-        traps: [],
+        traps: options.traps ?? [],
         setup: options.setup,
     };
     const engine = new GameEngine([encounter], options.seed ?? 1);
@@ -217,7 +222,165 @@ describe("Hinari's dynamic move set and Rockfall", () => {
     });
 });
 
+describe("Hinari's Spatial Movement", () => {
+    it("removes the consequences of Hobbled while leaving the binding intact", () => {
+        const ordinary = makeBehavioralCharacter("ordinary");
+        const engine = loadHinariEncounter({
+            allies: [ordinary],
+            bindings: [latexLegs],
+            setup: (state) => [
+                {
+                    type: "binding",
+                    source: state.characters[0],
+                    target: state.characters[0],
+                    binding: latexLegs,
+                    amount: thresholds.extreme,
+                },
+                {
+                    type: "binding",
+                    source: state.characters[0],
+                    target: state.characters[1],
+                    binding: latexLegs,
+                    amount: thresholds.extreme,
+                },
+            ],
+        });
+
+        const hinariState = characterState(engine, hinari.id);
+        const ordinaryState = characterState(engine, ordinary.id);
+        expect(bindingState(engine, latexLegs.id, hinari.id)?.value).toBe(thresholds.extreme);
+        expect(hinariState.modifiers).toEqual({});
+        expect(hinariState.blockedMoveTypes).toEqual([]);
+        expect(ordinaryState.modifiers).toEqual({ defense: -3, traps: -3, hitlegs: -6 });
+        expect(ordinaryState.blockedMoveTypes).toEqual(["legs"]);
+    });
+
+    it("still prevents movement while Immobilized", () => {
+        const engine = loadHinariEncounter({
+            setup: (state) => [{
+                type: "stance",
+                actor: state.characters[0],
+                stance: "standing",
+            }, {
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: {
+                    id: "immobilized",
+                    active: true,
+                    statuses: [s(immobilized, 1)],
+                },
+            }],
+        });
+
+        expect(characterState(engine, hinari.id)).toMatchObject({
+            standing: true,
+            buffs: [expect.objectContaining({
+                id: "immobilized",
+                statuses: [{ id: immobilized.id, value: 1 }],
+            })],
+        });
+        expect(engine.stanceAvailable(hinari.id))
+            .toEqual({ available: false, reason: "actorImmobilized" });
+        expect(engine.executeAction({ type: "stance", actor: hinari.id }))
+            .toEqual({ success: false, reason: "actorImmobilized" });
+    });
+
+    it("skips a guaranteed movement trap while resolving Rockfall", () => {
+        const engine = loadHinariEncounter({
+            seed: 2,
+            traps: [{ definition: trapPuddle, amount: 100 }],
+        });
+        expect(characterState(engine, hinari.id).standing).toBe(false);
+
+        const result = execute(engine, {
+            type: "move",
+            actor: hinari.id,
+            move: "rockfall",
+            targets: ["foe1"],
+        });
+
+        expect(result.events.some(({ type }) => type === "trapTriggered")).toBe(false);
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: "moveUsed",
+            actor: hinari.id,
+            move: "rockfall",
+        }));
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: "enemyDamaged",
+            target: "foe1",
+        }));
+        expect(result.state.characters[0].bindings).toEqual([]);
+        expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
+    });
+
+    it("skips a guaranteed movement trap while Escaping", () => {
+        const engine = loadHinariEncounter({
+            bindings: [rope],
+            traps: [{ definition: trapPuddle, amount: 100 }],
+            setup: (state) => [{
+                type: "binding",
+                source: state.characters[0],
+                target: state.characters[0],
+                binding: rope,
+                amount: 30,
+            }],
+        });
+
+        const result = execute(engine, {
+            type: "escape",
+            actor: hinari.id,
+            target: hinari.id,
+            binding: rope.id,
+        });
+
+        expect(result.events.some(({ type }) => type === "trapTriggered")).toBe(false);
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: "bondageChanged",
+            target: hinari.id,
+            binding: rope.id,
+        }));
+        expect(bindingState(engine, rope.id, hinari.id)?.value).toBeLessThan(30);
+        expect(result.state.characters[0].bindings.map(({ id }) => id)).toEqual([rope.id]);
+        expect(result.state.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
+    });
+});
+
 describe("Hinari's Store", () => {
+    function constrainedStoreEngine(subspace: number, hinariBinding: number, allyBinding = 25) {
+        const ally = makeBehavioralCharacter("ally");
+        return loadHinariEncounter({
+            allies: [ally],
+            bindings: [tape],
+            setup: (state) => [
+                ...hinariData(state, subspace, 0),
+                {
+                    type: "binding",
+                    source: state.characters[0],
+                    target: state.characters[0],
+                    binding: tape,
+                    amount: hinariBinding,
+                },
+                {
+                    type: "binding",
+                    source: state.characters[0],
+                    target: state.characters[1],
+                    binding: tape,
+                    amount: allyBinding,
+                },
+            ],
+        });
+    }
+
+    function storeFromAlly(engine: GameEngine) {
+        return execute(engine, {
+            type: "move",
+            actor: hinari.id,
+            move: "store",
+            targets: ["ally"],
+        });
+    }
+
     it("automatically stores up to 25 from the highest binding and remembers each latest type", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
@@ -310,6 +473,61 @@ describe("Hinari's Store", () => {
             subspace: 100,
             subspaceBinding: 0,
         });
+    });
+
+    it("removes only the body room available when Subspace is full", () => {
+        const initialHinariBinding = thresholds.impossible - 5;
+        const engine = constrainedStoreEngine(100, initialHinariBinding);
+        const beforeAlly = bindingState(engine, tape.id, "ally")!.value;
+        const beforeSubspace = characterState(engine, hinari.id).data.subspace;
+
+        storeFromAlly(engine);
+
+        const afterAlly = bindingState(engine, tape.id, "ally")!.value;
+        const afterHinariBinding = bindingState(engine, tape.id, hinari.id)!.value;
+        const afterSubspace = characterState(engine, hinari.id).data.subspace;
+        const allyRemoved = beforeAlly - afterAlly;
+        const subspaceGained = afterSubspace - beforeSubspace;
+        const bodyBindingGained = afterHinariBinding - initialHinariBinding;
+        expect(allyRemoved).toBe(5);
+        expect(afterHinariBinding).toBe(thresholds.impossible);
+        expect(afterSubspace).toBe(100);
+        expect(allyRemoved).toBe(subspaceGained + bodyBindingGained);
+    });
+
+    it("does not remove ally bondage when full Subspace and the body track have no room", () => {
+        const engine = constrainedStoreEngine(100, thresholds.impossible);
+
+        const result = storeFromAlly(engine);
+
+        expect(result.events).toContainEqual(expect.objectContaining({
+            type: "moveUsed",
+            actor: hinari.id,
+            move: "store",
+        }));
+        expect(bindingState(engine, tape.id, "ally")?.value).toBe(25);
+        expect(bindingState(engine, tape.id, hinari.id)?.value).toBe(thresholds.impossible);
+        expect(characterState(engine, hinari.id).data.subspace).toBe(100);
+    });
+
+    it("conserves bondage across partial Subspace and body-track capacity", () => {
+        const initialHinariBinding = thresholds.impossible - 5;
+        const engine = constrainedStoreEngine(90, initialHinariBinding);
+        const beforeAlly = bindingState(engine, tape.id, "ally")!.value;
+
+        storeFromAlly(engine);
+
+        const afterAlly = bindingState(engine, tape.id, "ally")!.value;
+        const afterHinariBinding = bindingState(engine, tape.id, hinari.id)!.value;
+        const afterSubspace = characterState(engine, hinari.id).data.subspace;
+        const allyRemoved = beforeAlly - afterAlly;
+        const subspaceGained = afterSubspace - 90;
+        const bodyBindingGained = afterHinariBinding - initialHinariBinding;
+        expect(allyRemoved).toBe(15);
+        expect(subspaceGained).toBe(10);
+        expect(bodyBindingGained).toBe(5);
+        expect(afterHinariBinding).toBe(thresholds.impossible);
+        expect(allyRemoved).toBe(subspaceGained + bodyBindingGained);
     });
 
     it("refuses characters with no bindings while keeping bound characters valid", () => {

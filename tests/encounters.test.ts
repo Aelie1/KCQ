@@ -62,7 +62,7 @@ describe("encounters", () => {
         ]);
     });
 
-    it("emits runtime enemy ids and increments them within one engine", () => {
+    it("emits incrementing runtime enemy ids when replacing an encounter", () => {
         const engine = new GameEngine([oneEnemyEncounter], 1);
         engine.loadCharacter(makeCharacterDef("hero"));
 
@@ -70,10 +70,9 @@ describe("encounters", () => {
         const second = engine.loadEncounter(oneEnemyEncounter.id);
 
         expect(first[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
-        expect(second[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}2` });
+        expect(second[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
         expect(engine.getGameState().enemies.map((enemy) => enemy.id)).toEqual([
             `${waitEnemy.id}1`,
-            `${waitEnemy.id}2`,
         ]);
     });
 
