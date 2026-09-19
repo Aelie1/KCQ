@@ -2,28 +2,11 @@ import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/helpers";
 import { GameStatus, getStatus } from "../protected/status";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iStatus, iTrap } from "../protected/types";
-import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, GameView, Move, Status, Trap, ValidityInfo } from "../public/types";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Move, Status, Trap, ValidityInfo } from "../public/types";
 import { evaluateBattleState } from "./combat";
 import type { iValidityInfo } from "./types";
-import { getActionView } from "./view";
 
-export function serializeGameView(state: iGameState): GameView {
-    //First we cache all statuses
-    const statuses = new Map<iEntity, GameStatus>();
-    for (const character of state.characters) {
-        statuses.set(character, new GameStatus(character));
-    }
-    for (const enemy of state.enemies) {
-        statuses.set(enemy, new GameStatus(enemy));
-    }
-
-    return {
-        ...serializeGameState(state, statuses),
-        actions: getActionView(state, statuses)
-    };
-}
-
-function serializeGameState(state: iGameState, statuses: Map<iEntity, GameStatus>): GameState {
+export function serializeGameState(state: iGameState, statuses: Map<iEntity, GameStatus>): GameState {
     return {
         turn: {
             ...state.turn,
