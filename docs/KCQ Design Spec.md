@@ -70,8 +70,9 @@ Enemy intent generation occurs **after** start-of-round effects have ticked, exp
 
 `Stand Still` is a baseline tactical option.
 
-- It consumes the character’s primary action.
+- It is free to toggle any time you have not acted.
 - It grants **two Escape/Assist actions**.
+- The bonus action may not be granted if certain bindings are present.
 - Those two actions may be any combination of self-escape and helping others.
 - They may affect different bindings or different characters.
 - Until the next player phase, the character is easier for hostile effects to hit cleanly.
