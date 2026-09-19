@@ -4,7 +4,7 @@ import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/pr
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
-import { iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
@@ -51,14 +51,16 @@ export const skunkette: EnemyDef = {
             }
         }
 
+        const validTargets = getValidTargets(state.characters);
+
         //2) Pounce if off cooldown and a valid target exists
         {
             if ((actor.cooldowns['pounce'] ?? 0) === 0) {
-                const validCharacters: iCharacter[] = [];
-                for (const character of state.characters) {
-                    const cBuff = findBuff(character, "pounce");
+                const validCharacters: iEntity[] = [];
+                for (const target of validTargets) {
+                    const cBuff = findBuff(target, "pounce");
                     if (!cBuff) {
-                        validCharacters.push(character);
+                        validCharacters.push(target);
                     }
                 }
                 if (validCharacters.length > 0) {
@@ -90,7 +92,7 @@ export const skunkette: EnemyDef = {
                 });
                 return effects;
             } else {
-                const target = pickTarget(state.characters, rng);
+                const target = pickTarget(validTargets, rng);
                 if (target && isCharacter(target)) {
                     const binding = pickBinding(target, bindings, rng);
                     if (binding) {

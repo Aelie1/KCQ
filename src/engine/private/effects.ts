@@ -2,6 +2,7 @@ import { BindingDef, EnemyDef, MoveDef } from "../protected/definitions";
 import { getValidTargets } from "../protected/enemies";
 import { findBinding, findBuff, findEntity, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { Random } from "../protected/random";
+import { GameStatus } from "../protected/status";
 import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, GameEvent, StanceId, TargetInfo } from "../public/types";
 import { evaluateIntention, resolveMove } from "./combat";
@@ -52,12 +53,13 @@ export class GameEffects {
     private refreshPreviews() {
         for (const enemy of this.state.enemies) {
             enemy.preview.length = 0;
+            const status = new GameStatus(enemy);
             for (const intention of enemy.intentions) {
                 const preview = {
                     ...intention,
                     move: { ...intention.move }
                 };
-                const iTargets = evaluateIntention(this.state, preview);
+                const iTargets = evaluateIntention(this.state, preview, status);
                 const targets: TargetInfo[] = [];
                 let effects = resolveMove(this.state, preview.move, preview.actor, iTargets);
                 for (const iTarget of iTargets) {

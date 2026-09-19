@@ -28,13 +28,14 @@ export const skunk: EnemyDef = {
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
+        const validTargets = getValidTargets(state.characters);
 
         //1) Explode if low HP
         {
             if (actor.currHp / actor.maxHp < EXPLOSION_HP_RATIO) {
                 let total = 0;
                 let target = undefined;
-                for (const character of getValidTargets(state.characters)) {
+                for (const character of validTargets) {
                     if (isCharacter(character)) {
                         let amount = 0
                         for (const binding of character.bindings) {
@@ -80,7 +81,7 @@ export const skunk: EnemyDef = {
         {
             let total = 0;
             let target = undefined;
-            for (const character of getValidTargets(state.characters)) {
+            for (const character of validTargets) {
                 if (isCharacter(character)) {
                     let amount = 0
                     for (const binding of character.bindings) {
@@ -110,7 +111,7 @@ export const skunk: EnemyDef = {
 
         //4) Randomly latex spray
         {
-            const target = pickTarget(state.characters, rng);
+            const target = pickTarget(validTargets, rng);
             if (target && isCharacter(target)) {
                 const binding = pickBinding(target, bindings, rng);
                 if (binding) {

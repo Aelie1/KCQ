@@ -231,7 +231,7 @@ export class GameEngine {
             for (const move of getMoves(character)) {
                 let available = true;
                 let reason: FailureReason = "moveUnavailable";
-                const targets = getTargets(this.state, character, move);
+                const targets = getTargets(this.state, character, status, move);
                 if (result) {
                     available = false;
                     reason = result;
@@ -654,7 +654,7 @@ export class GameEngine {
             return result;
         }
 
-        const targets: iTargetInfo[] = evaluateIntention(this.state, intention);
+        const targets: iTargetInfo[] = evaluateIntention(this.state, intention, status);
 
         //Now we have a valid actor, targets and move -- execute the move
         result.addEvent({

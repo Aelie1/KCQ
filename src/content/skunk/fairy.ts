@@ -1,5 +1,5 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
-import { pickBinding, pickTarget } from "../../engine/protected/enemies";
+import { getValidTargets, pickBinding, pickTarget, pickValidTarget } from "../../engine/protected/enemies";
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iCallbackReturn, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
@@ -25,16 +25,17 @@ export const fairy: EnemyDef = {
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
+        const validTargets = getValidTargets(state.enemies);
 
         //0) Determine which moves are valid
         const healFilter = ["skunkette", "skunk"];
-        const healTargets = state.enemies.filter(x => (healFilter.includes(x.definition.id) && x.currHp < x.maxHp));
+        const healTargets = validTargets.filter(x => (isEnemy(x) && healFilter.includes(x.definition.id) && x.currHp < x.maxHp));
 
         const barrierFilter = ["skunkette", "skunk", "queen"];
-        const barrierTargets = state.enemies.filter(x => (barrierFilter.includes(x.definition.id)) && !x.buffs.some(y => y.id === "barrierMagic"));
+        const barrierTargets = validTargets.filter(x => (barrierFilter.includes(x.definition.id)) && !x.buffs.some(y => y.id === "barrierMagic"));
 
         const empowerFilter = ["skunkette", "skunk", "queen"];
-        const empowerTargets = state.enemies.filter(x => (empowerFilter.includes(x.definition.id)));
+        const empowerTargets = validTargets.filter(x => (empowerFilter.includes(x.definition.id)));
 
         type FairyAction = "heal" | "barrier" | "empower";
         const actions: FairyAction[] = [];
@@ -95,7 +96,7 @@ export const fairy: EnemyDef = {
 
 
         //2) If no valid actions, basic attack
-        const target = pickTarget(state.characters, rng);
+        const target = pickValidTarget(state.characters, rng);
         if (target && isCharacter(target)) {
             const binding = pickBinding(target, bindings, rng);
             if (binding) {

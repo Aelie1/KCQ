@@ -15,15 +15,20 @@ export function getValidTargets(entities: iEntity[]): iEntity[] {
     return validTargets;
 }
 
-export function pickTarget(entities: iEntity[], rng: Random): iEntity | undefined {
+export function pickValidTarget(entities: iEntity[], rng: Random): iEntity | undefined {
     const validTargets = getValidTargets(entities);
 
     if (validTargets.length === 0) {
         return undefined;
     }
 
-    const index = rng.int(0, validTargets.length - 1);
-    return validTargets[index];
+    return pickTarget(validTargets, rng);
+}
+
+
+export function pickTarget(entities: iEntity[], rng: Random): iEntity | undefined {
+    const index = rng.int(0, entities.length - 1);
+    return entities[index];
 }
 
 export function pickBinding(target: iCharacter, bindings: BindingDef[], rng: Random): BindingDef | undefined {

@@ -54,22 +54,21 @@ export const queen: EnemyDef = {
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
-
+        const validTargets = getValidTargets(state.characters);
         //1) If no one has a collar and it is off CD, use skunk collar on the person who dealt the most damage to her
         {
-            const targets = getValidTargets(state.characters);
-            if (!targets.some(x => isCharacter(x) && x.bindings.some(x => x.id === latexCollar.id))) {
+            if (!validTargets.some(x => isCharacter(x) && x.bindings.some(x => x.id === latexCollar.id))) {
                 let damage = 0;
                 let target = undefined;
                 if ((actor.cooldowns['skunkCollar'] ?? 0) === 0) {
-                    for (const character of targets) {
+                    for (const character of validTargets) {
                         if ((actor.data[character.id] ?? 0) > damage) {
                             damage = actor.data[character.id];
                             target = character;
                         }
                     }
                     if (target === undefined) {
-                        target = pickTarget(targets, rng);
+                        target = pickTarget(validTargets, rng);
                     }
                     if (target) {
                         effects.push({
@@ -104,7 +103,7 @@ export const queen: EnemyDef = {
 
         //3) Use Skunk Gun on a random target
         {
-            const target = pickTarget(state.characters, rng);
+            const target = pickTarget(validTargets, rng);
             if (target && isCharacter(target)) {
                 const binding = pickBinding(target, bindings, rng);
                 if (binding) {

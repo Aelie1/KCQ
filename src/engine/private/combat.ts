@@ -11,9 +11,8 @@ function getIEntitySide(entity: iEntity): EntitySide {
 }
 
 
-export function getTargets(state: iGameState, actor: iCharacter, move: MoveDef): iValidityInfo[] {
+export function getTargets(state: iGameState, actor: iCharacter, status: GameStatus, move: MoveDef): iValidityInfo[] {
     const result: iValidityInfo[] = [];
-    const status = new GameStatus(actor);
     if (move.targets === 0) {
         result.push(isValidTarget(state, actor, status, null, move));
     }
@@ -433,9 +432,8 @@ function normalizeEffect(effect: iEffect): iEffect {
     }
 }
 
-export function evaluateIntention(state: iGameState, intention: iIntention): iTargetInfo[] {
+export function evaluateIntention(state: iGameState, intention: iIntention, actorStatus: GameStatus): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
-    const actorStatus = new GameStatus(intention.actor);
     for (const roll of intention.rolls) {
         const info = isValidTarget(state, intention.actor, actorStatus, roll.target, intention.move.definition);
         if (info.valid) {
