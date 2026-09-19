@@ -3,11 +3,15 @@ import { getBindingLevel } from "../protected/helpers";
 import { getBlockedMoveTypes, getModifiers } from "../protected/status";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iStatus, iTrap } from "../protected/types";
 import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Move, Status, Trap, ValidityInfo } from "../public/types";
+import { evaluateBattleState } from "./combat";
 import type { iValidityInfo } from "./types";
 
 export function serializeGameState(state: iGameState): GameState {
     return {
-        turn: { ...state.turn },
+        turn: {
+            ...state.turn,
+            outcome: evaluateBattleState(state)
+        },
         characters: state.characters.map(serializeCharacter),
         enemies: state.enemies.map(enemy => serializeEnemy(enemy)),
         traps: state.traps.map(serializeTraps),

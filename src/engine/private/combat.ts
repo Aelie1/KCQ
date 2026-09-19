@@ -2,7 +2,7 @@ import { MoveDef } from "../protected/definitions";
 import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { canMove, getModifier, getModifiers, isIncapacitated, mergeModifiers } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
-import { AccuracyProfile, AccuracyResult, HitBand, type EntitySide } from "../public/types";
+import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
@@ -458,4 +458,16 @@ export function evaluateIntention(state: iGameState, intention: iIntention): iTa
         }
     }
     return targets;
+}
+
+export function evaluateBattleState(state: iGameState): BattleState {
+    if (state.enemies.length === 0) {
+        return "victory";
+    }
+    for (const character of state.characters) {
+        if (!isIncapacitated(character)) {
+            return "ongoing";
+        }
+    }
+    return "defeat";
 }

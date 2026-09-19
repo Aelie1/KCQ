@@ -14,7 +14,10 @@ export interface Turn {
     round: number;
     step: number;
     phase: Phase;
+    outcome: BattleState;
 }
+
+export type BattleState = "ongoing" | "defeat" | "victory";
 
 export type Phase = "player" | "enemy";
 
