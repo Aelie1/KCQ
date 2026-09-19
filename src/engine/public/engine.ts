@@ -1,3 +1,4 @@
+import { encounterList } from "../../content/content";
 import {
     evaluateIntention, evaluateProfile, evaluateResult, getTargets, isValidTarget, resolveEscape, resolveMove,
     tickBindings, tickBuffs, tickCooldowns, tickPlayers
@@ -13,10 +14,12 @@ import { canAct, canAssist, canAttack, canBonusEscape, canUseMoveType, getModifi
 import { iEffect, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import type {
     AccuracyResult, ActionFailureReason, ActionInfo, ActionResult, AvailabilityInfo,
-    EncounterId, EntityId,
-    EscapeOptions, GameEvent, GameState,
-    PlayerAction, StanceInfo
+    EncounterId, EntityId, EscapeOptions, GameEvent, GameState, PlayerAction, StanceInfo
 } from "./types";
+
+export function createEngine(seed?: number): GameEngine {
+    return new GameEngine(encounterList, seed);
+}
 
 export class GameEngine {
     private state: iGameState;

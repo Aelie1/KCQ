@@ -2,7 +2,7 @@ import { runConsoleClient } from "./console/client";
 import { hinari } from "./content/characters/hinari";
 import { ko } from "./content/characters/ko";
 import { matsuko } from "./content/characters/matsuko";
-import { encounterList } from "./engine/public/content";
+import { encounterList } from "./content/content";
 import { GameEngine } from "./engine/public/engine";
 
 const encounterId = "forest_3";

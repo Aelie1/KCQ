@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../src/content/characters/ko";
+import { encounterList } from "../src/content/content";
 import { plains_1 } from "../src/content/skunk/encounters";
 import { skunkette } from "../src/content/skunk/skunkette";
 import type { StatusDef } from "../src/engine/protected/definitions";
 import { stunned } from "../src/engine/protected/statuses";
-import { encounterList } from "../src/engine/public/content";
 import { GameEngine } from "../src/engine/public/engine";
 import type { PlayerAction } from "../src/engine/public/types";
 import {
