@@ -147,9 +147,7 @@ export function formatEvents(events: GameEvent[]): string[] {
             case "bondageBlocked":
                 return [`${event.target} blocked ${event.amount} ${event.binding}.`]
             case "bondageRemoved":
-                return [
-                    `${event.target} escaped ${event.binding} (${Math.abs(event.amount)} removed).`,
-                ];
+                return [`${event.target} escaped ${event.binding} (${Math.abs(event.amount)} removed).`];
             case "phaseChanged":
                 return [event.phase === "enemy" ? "Enemy phase." : "Player phase."];
             case "buffAdded":
@@ -167,9 +165,9 @@ export function formatEvents(events: GameEvent[]): string[] {
             case "cooldownChanged":
                 return [`${event.target}'s ${event.move} cooldown changed to ${event.value}.`];
             case "encounterLoad":
-                return [event.success
-                    ? `Encounter ${event.id} began.`
-                    : `Could not load encounter ${event.id}.`];
+                return [event.success ? `Encounter ${event.id} began.` : `Could not load encounter ${event.id}.`];
+            case "characterLoad":
+                return [event.success ? `Character ${event.id} loaded.` : `Could not load character ${event.id}.`];
             case "trapAdded":
                 return [`${event.actor} created ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
             case "trapRemoved":

@@ -1,4 +1,4 @@
-import { encounterList } from "../../content/content";
+import { characterList, encounterList } from "../../content/content";
 import {
     evaluateIntention, evaluateProfile, evaluateResult, getTargets, isValidTarget, resolveEscape, resolveMove,
     tickBindings, tickBuffs, tickCooldowns, tickPlayers
@@ -18,7 +18,7 @@ import type {
 } from "./types";
 
 export function createEngine(seed?: number): GameEngine {
-    return new GameEngine(encounterList, seed);
+    return new GameEngine(encounterList, characterList, seed);
 }
 
 export class GameEngine {
@@ -27,8 +27,9 @@ export class GameEngine {
     private aiRng: Random;
     private accRng: Random;
     private encounters: EncounterDef[];
+    private characters: CharacterDef[];
 
-    constructor(encounters: EncounterDef[], seed?: number) {
+    constructor(encounters: EncounterDef[], characters: CharacterDef[], seed?: number) {
         this.state = {
             turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
             nextId: {},
@@ -42,6 +43,7 @@ export class GameEngine {
         this.aiRng = new Random(mixSeed(seed, 1));
         this.accRng = new Random(mixSeed(seed, 2));
         this.encounters = encounters;
+        this.characters = characters;
     }
 
     getSeed(): number {
@@ -65,15 +67,25 @@ export class GameEngine {
         }
     }
 
-    listEncounters(): EncounterId[] {
-        const encounterList: EncounterId[] = [];
-        for (const encounter of this.encounters) {
-            encounterList.push(encounter.id);
+    listCharacters(): EntityId[] {
+        const characterList: EntityId[] = [];
+        for (const character of this.characters) {
+            characterList.push(character.id);
         }
-        return encounterList;
+        return characterList;
     }
 
-    loadCharacter(character: CharacterDef) {
+    loadCharacter(id: EntityId): GameEvent[] {
+        const result = new GameEffects(this.state, this.accRng);
+        const character = this.characters.find(x => x.id === id);
+        if (!character) {
+            result.addEvent({
+                type: "characterLoad",
+                id: id,
+                success: false
+            });
+            return result.getEvents();
+        }
         this.state.characters.push({
             id: character.id,
             definition: character,
@@ -84,6 +96,20 @@ export class GameEngine {
             buffs: [],
             data: { ...(character.data ?? {}) },
         });
+        result.addEvent({
+            type: "characterLoad",
+            id: id,
+            success: true
+        });
+        return result.getEvents();
+    }
+
+    listEncounters(): EncounterId[] {
+        const encounterList: EncounterId[] = [];
+        for (const encounter of this.encounters) {
+            encounterList.push(encounter.id);
+        }
+        return encounterList;
     }
 
     loadEncounter(id: EncounterId): GameEvent[] {

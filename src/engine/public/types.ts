@@ -376,7 +376,8 @@ export type GameEvent =
     | RefreshEvent
     | RetargetEvent
     | CancelEvent
-    | WeakenEvent;
+    | WeakenEvent
+    | CharacterEvent;
 
 export interface MoveEvent {
     type: "moveUsed";
@@ -471,6 +472,11 @@ export interface WeakenEvent {
     target: EntityId;
 }
 
+export interface CharacterEvent {
+    type: "characterLoad";
+    id: string;
+    success: boolean;
+}
 
 /*******************************************************
  * Encounters
