@@ -332,7 +332,7 @@ export class GameEngine {
             };
         }
 
-        const status = new GameStatus(actor);
+        let status = new GameStatus(actor);
         const capability = status.canAct(action.type);
         if (capability) {
             return {
@@ -444,6 +444,7 @@ export class GameEngine {
                         }
                     }
                     //Redo some checks in case status has changed
+                    status = new GameStatus(actor);
                     let reason: FailureReason | undefined;
 
                     const capability = status.canAct(action.type);
@@ -579,6 +580,7 @@ export class GameEngine {
                     }
 
                     //Redo some checks in case status has changed
+                    status = new GameStatus(actor);
                     let reason: FailureReason | undefined;
 
                     const capability = status.canAct(action.type);
