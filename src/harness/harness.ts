@@ -5,6 +5,7 @@ import type {
     AvailabilityInfo,
     EntityId,
     EscapeOptions,
+    GameEvent,
     GameState,
     PlayerAction,
     StanceInfo,
@@ -35,6 +36,7 @@ export interface SingleFightInput {
     policySeed: number;
     maxActions: number;
     policy: FightPolicy;
+    replay?: boolean;
 }
 
 export type SingleFightTermination = "victory" | "defeat" | "maxActions" | "error";
@@ -43,6 +45,26 @@ export interface SingleFightError {
     message: string;
     action?: PlayerAction;
     reason?: ActionFailureReason;
+}
+
+export interface ReplaySuccessStep {
+    action: PlayerAction;
+    success: true;
+    events: GameEvent[];
+    state: GameState;
+}
+
+export interface ReplayFailureStep {
+    action: PlayerAction;
+    success: false;
+    reason: ActionFailureReason;
+}
+
+export type ReplayStep = ReplaySuccessStep | ReplayFailureStep;
+
+export interface FightReplay {
+    initialState: GameState;
+    steps: ReplayStep[];
 }
 
 export interface SingleFightResult {
@@ -55,6 +77,7 @@ export interface SingleFightResult {
     actionCount: number;
     trace: PlayerAction[];
     error?: SingleFightError;
+    replay?: FightReplay;
 }
 
 /** Runs one stock encounter, delegating every player decision to the supplied policy. */
@@ -62,6 +85,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     const engine = createEngine(input.engineSeed);
     const policyRandom = createPolicyRandom(input.policySeed);
     const trace: PlayerAction[] = [];
+    let replay: FightReplay | undefined;
 
     const finish = (
         termination: SingleFightTermination,
@@ -76,6 +100,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         actionCount: trace.length,
         trace,
         ...(error ? { error } : {}),
+        ...(replay ? { replay } : {}),
     });
 
     if (!Number.isSafeInteger(input.maxActions) || input.maxActions < 0) {
@@ -115,6 +140,13 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         });
     }
 
+    if (input.replay === true) {
+        replay = {
+            initialState: engine.getGameState(),
+            steps: [],
+        };
+    }
+
     while (engine.getGameState().turn.outcome === "ongoing") {
         if (trace.length >= input.maxActions) {
             return finish("maxActions");
@@ -132,12 +164,24 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         trace.push(action);
         const result = engine.executeAction(action);
         if (!result.success) {
+            replay?.steps.push({
+                action,
+                success: false,
+                reason: result.reason,
+            });
             return finish("error", {
                 message: "The engine rejected a runner-submitted action",
                 action,
                 reason: result.reason,
             });
         }
+
+        replay?.steps.push({
+            action,
+            success: true,
+            events: result.events,
+            state: result.state,
+        });
 
         const outcome = engine.getGameState().turn.outcome;
         if (outcome !== "ongoing") {

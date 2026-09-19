@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
-import type { ActionInfo, GameState } from "../../src/engine/public/types";
+import type { ActionInfo, GameState, PlayerAction } from "../../src/engine/public/types";
 import {
     createPolicyRandom,
     runSingleFight,
@@ -59,6 +59,163 @@ function policyContext(
 }
 
 describe("policy-driven single-fight harness", () => {
+    it("omits replay capture by default and when explicitly disabled", () => {
+        const defaultResult = runSingleFight({ ...fightInput(firstPolicy), maxActions: 1 });
+        const disabledResult = runSingleFight({
+            ...fightInput(firstPolicy),
+            maxActions: 1,
+            replay: false,
+        });
+
+        expect(defaultResult.replay).toBeUndefined();
+        expect(disabledResult.replay).toBeUndefined();
+        expect(defaultResult).not.toHaveProperty("replay");
+        expect(disabledResult).not.toHaveProperty("replay");
+    });
+
+    it("captures the loaded encounter state before the first policy action", () => {
+        const input = { ...fightInput(firstPolicy, 101), maxActions: 1, replay: true };
+        const expectedEngine = createEngine(input.engineSeed);
+        for (const id of expectedEngine.listCharacters()) {
+            expectedEngine.loadCharacter(id);
+        }
+        expectedEngine.loadEncounter(input.encounterId);
+        const expectedInitialState = expectedEngine.getGameState();
+
+        const result = runSingleFight(input);
+
+        expect(result.replay?.initialState).toEqual(expectedInitialState);
+        expect(result.replay?.initialState.encounter?.id).toBe(input.encounterId);
+        expect(result.replay?.initialState.enemies.length).toBeGreaterThan(0);
+        expect(result.replay?.initialState.enemies.every((enemy) => enemy.intentions.length > 0))
+            .toBe(true);
+        expect(result.replay?.initialState.turn.step).toBe(expectedInitialState.turn.step);
+    });
+
+    it("records one factual replay step for every successful submitted action", () => {
+        const input = { ...fightInput(firstPolicy, 202), maxActions: 12, replay: true };
+        const result = runSingleFight(input);
+        const replayEngine = createEngine(input.engineSeed);
+        for (const id of replayEngine.listCharacters()) {
+            replayEngine.loadCharacter(id);
+        }
+        replayEngine.loadEncounter(input.encounterId);
+
+        expect(result.replay).toBeDefined();
+        expect(result.replay?.steps).toHaveLength(result.actionCount);
+        for (const [index, step] of result.replay?.steps.entries() ?? []) {
+            expect(step.action).toEqual(result.trace[index]);
+            expect(step.success).toBe(true);
+            const expected = replayEngine.executeAction(result.trace[index]);
+            expect(expected.success).toBe(true);
+            if (step.success && expected.success) {
+                expect(step.events).toEqual(expected.events);
+                expect(step.state).toEqual(expected.state);
+            }
+        }
+        const lastStep = result.replay?.steps.at(-1);
+        expect(lastStep?.success).toBe(true);
+        if (lastStep?.success) {
+            expect(result.finalState).toEqual(lastStep.state);
+        }
+    });
+
+    it("records endTurn as one step containing its enemy-phase events", () => {
+        const result = runSingleFight({
+            ...fightInput(firstPolicy, 303),
+            maxActions: 20,
+            replay: true,
+        });
+        const endTurnIndex = result.trace.findIndex((action) => action.type === "endTurn");
+        const step = result.replay?.steps[endTurnIndex];
+
+        expect(endTurnIndex).toBeGreaterThanOrEqual(0);
+        expect(step).toMatchObject({ action: { type: "endTurn" }, success: true });
+        if (step?.success) {
+            expect(step.events.filter((event) => event.type === "phaseChanged"))
+                .toHaveLength(2);
+            expect(step.events.some((event) =>
+                event.type === "moveUsed"
+                && result.replay?.initialState.enemies.some((enemy) => enemy.id === event.actor),
+            )).toBe(true);
+        }
+    });
+
+    it("records rejected actions without fabricated events or state", () => {
+        const action: PlayerAction = {
+            type: "move",
+            actor: "not-a-character",
+            move: "not-a-move",
+            targets: [],
+        };
+        const badPolicy: FightPolicy = { id: "bad-replay", chooseAction: () => action };
+        const result = runSingleFight({
+            ...fightInput(badPolicy),
+            maxActions: 1,
+            replay: true,
+        });
+        const step = result.replay?.steps[0];
+
+        expect(result.trace).toEqual([action]);
+        expect(result.finalState).toEqual(result.replay?.initialState);
+        expect(step).toEqual({ action, success: false, reason: "invalidActor" });
+        expect(step).not.toHaveProperty("events");
+        expect(step).not.toHaveProperty("state");
+    });
+
+    it("does not alter gameplay results when replay capture is enabled", () => {
+        const input = fightInput(randomPolicy, 404, 505);
+        const disabled = runSingleFight({ ...input, replay: false });
+        const enabled = runSingleFight({ ...input, replay: true });
+
+        expect({
+            termination: enabled.termination,
+            finalState: enabled.finalState,
+            actionCount: enabled.actionCount,
+            trace: enabled.trace,
+        }).toEqual({
+            termination: disabled.termination,
+            finalState: disabled.finalState,
+            actionCount: disabled.actionCount,
+            trace: disabled.trace,
+        });
+    });
+
+    it("captures deterministic replay for identical engine and policy seeds", () => {
+        const input = { ...fightInput(randomPolicy, 606, 707), replay: true };
+
+        expect(runSingleFight(input).replay).toEqual(runSingleFight(input).replay);
+    });
+
+    it("does not consume policy RNG while capturing replay", () => {
+        const disabledRolls: number[] = [];
+        const enabledRolls: number[] = [];
+        const policy = (rolls: number[]): FightPolicy => ({
+            id: "rng-observer",
+            chooseAction(context) {
+                rolls.push(context.random.next());
+                return firstPolicy.chooseAction(context);
+            },
+        });
+        const baseInput = fightInput(policy(disabledRolls), 808, 909);
+        const disabled = runSingleFight({ ...baseInput, replay: false });
+        const enabled = runSingleFight({
+            ...baseInput,
+            policy: policy(enabledRolls),
+            replay: true,
+        });
+
+        expect(enabledRolls).toEqual(disabledRolls);
+        expect(enabled.trace).toEqual(disabled.trace);
+        expect(enabled.finalState).toEqual(disabled.finalState);
+    });
+
+    it("enables replay capture for CLI-produced fight artifacts", () => {
+        const source = readFileSync(resolve(process.cwd(), "src/harness/main.ts"), "utf8");
+
+        expect(source).toMatch(/runSingleFight\(\{[\s\S]*replay:\s*true[\s\S]*\}\)/);
+    });
+
     it("lets first autonomously complete a real discovered encounter", () => {
         const result = runSingleFight(fightInput(firstPolicy));
 

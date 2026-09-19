@@ -29,6 +29,7 @@ const result = runSingleFight({
     policy,
     policySeed,
     maxActions: DEFAULT_MAX_ACTIONS,
+    replay: true,
 });
 
 const outputDir = path.resolve("harness-output");
