@@ -174,7 +174,7 @@ export async function runConsoleClient(
             const view = engine.getGameView();
             const actorView = view.actions.find((action) => action.id === actorId);
             const options = orderEscapeOptions(
-                actorView?.escapes ?? [],
+                actorView?.escapes.filter((option) => option.available) ?? [],
                 bindingIds,
             );
             if (options.length === 0) {
@@ -222,7 +222,7 @@ export async function runConsoleClient(
 
             const actor = view.characters.find((character) => character.id === characterId);
             if (!actor) return;
-            const escapeAvailable = actorView.escapes.length > 0;
+            const escapeAvailable = actorView.escapes.some((option) => option.available);
             const menu: MenuItem[] = actorView.moves.map((action) => {
                 const targets = action.available
                     ? validTargets(action)

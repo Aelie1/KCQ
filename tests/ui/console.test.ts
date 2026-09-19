@@ -10,7 +10,7 @@ import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { Engine } from "../../src/engine/public/types";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/helpers";
-import { helpless } from "../../src/engine/protected/statuses";
+import { helpless, stunned } from "../../src/engine/protected/statuses";
 import type { GameEvent, GameState, Intention } from "../../src/engine/public/types";
 import {
     makeBindingDef,
@@ -785,6 +785,90 @@ describe("console formatting", () => {
         expect(firstIndex).toBeLessThan(secondIndex);
         expect(secondIndex).toBeLessThan(firstUnknownIndex);
         expect(firstUnknownIndex).toBeLessThan(secondUnknownIndex);
+    });
+
+    it("does not offer escape when every published escape entry is unavailable", async () => {
+        const escapeBlockingBinding = makeBindingDef("escape-blocking", {
+            easy: [{ definition: stunned, value: 1 }],
+        });
+        const { engine } = setupBoundEngine(escapeBlockingBinding, thresholds.easy);
+        const escapes = engine.getGameView().actions
+            .find((action) => action.id === "hero")?.escapes ?? [];
+
+        expect(escapes.length).toBeGreaterThan(0);
+        expect(escapes.every((option) => !option.available)).toBe(true);
+
+        const rendered = await runScriptedConsole(engine, ["1", "4", "7", "3"]);
+
+        expect(rendered).toContain("Escape / assist -- no legal escapes");
+        expect(rendered).not.toContain("Choose an escape for hero.");
+        expect(rendered).not.toContain("[1] hero - escape-blocking");
+    });
+
+    it("shows only legal escapes and preserves their encounter-binding order", async () => {
+        const firstLegal = makeBindingDef("firstLegal");
+        const unavailableAssist = makeBindingDef("unavailableAssist");
+        const encounter: EncounterDef = {
+            id: "mixed-escape-availability",
+            enemies: [waitEnemy],
+            bindings: [firstLegal, latexArms, unavailableAssist],
+            traps: [],
+            setup: (internal) => {
+                const [hero, ally] = internal.characters;
+                return [
+                    {
+                        type: "binding" as const,
+                        source: hero,
+                        target: hero,
+                        binding: latexArms,
+                        amount: thresholds.extreme,
+                    },
+                    {
+                        type: "binding" as const,
+                        source: hero,
+                        target: ally,
+                        binding: unavailableAssist,
+                        amount: thresholds.easy,
+                    },
+                    {
+                        type: "binding" as const,
+                        source: hero,
+                        target: hero,
+                        binding: firstLegal,
+                        amount: thresholds.easy,
+                    },
+                ];
+            },
+        };
+        const hero = makeCharacterDef("hero");
+        const ally = makeCharacterDef("ally");
+        const engine = createCustomEngine([encounter], [hero, ally], 1);
+        engine.loadCharacter(hero.id);
+        engine.loadCharacter(ally.id);
+        const events = engine.loadEncounter(encounter.id);
+        const escapes = engine.getGameView().actions
+            .find((action) => action.id === hero.id)?.escapes ?? [];
+
+        expect(escapes.some((option) => option.available)).toBe(true);
+        expect(escapes.some((option) => !option.available)).toBe(true);
+
+        const rendered = await runScriptedConsole(
+            engine,
+            ["1", "1", "3", "4", "4"],
+            events,
+        );
+        const actionScreen = rendered.split("\x1b[2J\x1b[H")
+            .find((screen) => screen.includes("Choose an action for hero."));
+        const escapeScreen = rendered.split("\x1b[2J\x1b[H")
+            .find((screen) => screen.includes("Choose an escape for hero."));
+
+        expect(actionScreen).toContain("[1] Escape / assist");
+        expect(actionScreen).not.toContain("Escape / assist -- no legal escapes");
+        expect(escapeScreen).toContain("[1] hero - firstLegal");
+        expect(escapeScreen).toContain("[2] hero - latexArms");
+        expect(escapeScreen).not.toMatch(/\[\d+\] ally - unavailableAssist/);
+        expect(escapeScreen?.indexOf("hero - firstLegal"))
+            .toBeLessThan(escapeScreen?.indexOf("hero - latexArms") ?? -1);
     });
 
     it("replaces stored bindings when a newer encounter event is received", async () => {
