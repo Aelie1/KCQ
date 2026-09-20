@@ -5,7 +5,10 @@ import type { BatchSummary, RunReference } from "../../src/harness/summary";
 import { formatBatchSummary } from "../../src/harness/summary-format";
 
 function reference(runIndex: number, termination: RunReference["termination"]): RunReference {
-    return { runIndex, termination, engineSeed: 1000 + runIndex, policySeed: 2000 + runIndex, actionCount: 8, round: 5 };
+    return {
+        runIndex, termination, engineSeed: 1000 + runIndex, policySeed: 2000 + runIndex,
+        actionCount: 8, round: 5, damage: 42, peakBondage: 7, remainingEnemyHp: 10,
+    };
 }
 
 function summaryFixture(): BatchSummary {
@@ -19,6 +22,15 @@ function summaryFixture(): BatchSummary {
             defeat: { count: 1, rate: 0.25 },
             maxActions: { count: 0, rate: 0 },
             error: { count: 0, rate: 0 },
+        },
+        metrics: {
+            runs: 4,
+            winRate: 0.75,
+            meanDecisions: 4.25,
+            meanDamage: 42.5,
+            meanPeakBondage: 7.25,
+            meanEscapes: 0.25,
+            win95: { lower: 0.3006, upper: 0.9544 },
         },
         fightLength: {
             actionCount: { min: 2, median: 3.5, mean: 4.25, p90: 8, max: 8 },
@@ -35,12 +47,15 @@ function summaryFixture(): BatchSummary {
             matsuko: { observations: 4, averageTotalBinding: 3.75, maxTotalBinding: 8 },
             ko: { observations: 4, averageTotalBinding: 5.75, maxTotalBinding: 10 },
         },
-        interestingRuns: {
-            defeats: [reference(3, "defeat")],
-            errors: [],
-            maxActions: [],
-            shortest: null,
-            longest: reference(3, "defeat"),
+        forensicExamples: {
+            shortestDefeat: reference(3, "defeat"),
+            longestDefeat: reference(3, "defeat"),
+            lowestDamageDefeat: reference(3, "defeat"),
+            highestDamageDefeat: reference(3, "defeat"),
+            closestDefeat: reference(3, "defeat"),
+            furthestDefeat: reference(3, "defeat"),
+            timeoutExample: null,
+            errorExample: null,
         },
     };
 }
@@ -139,6 +154,10 @@ describe("batch summary console formatting", () => {
         expect(formatBatchSummary(summaryFixture())).toEqual(expect.arrayContaining([
             "Actions: min 2 / median 3.5 / mean 4.3 / p90 8 / max 8",
             "Rounds:  min 1 / median 2.5 / mean 2.8 / p90 5 / max 5",
+            "Damage:  mean 42.5",
+            "Peak bondage: mean 7.3",
+            "Escapes: mean 0.3",
+            "Win 95%: 30.1%-95.4%",
         ]));
     });
 
@@ -166,29 +185,11 @@ describe("batch summary console formatting", () => {
         ]);
     });
 
-    it("prints defeat references using the recorded zero-based run index and both seeds", () => {
+    it("never prints forensic failure references or seeds", () => {
         const summary = summaryFixture();
-        summary.interestingRuns.defeats.push(reference(0, "defeat"));
-        const lines = formatBatchSummary(summary);
-        expect(lines.slice(lines.indexOf("Defeats:"))).toEqual([
-            "Defeats:",
-            "  run 3  engine 1003  policy 2003  actions 8  round 5",
-            "  run 0  engine 1000  policy 2000  actions 8  round 5",
-        ]);
-    });
-
-    it("prints error and maxActions references when present", () => {
-        const summary = summaryFixture();
-        summary.interestingRuns.errors = [reference(8, "error")];
-        summary.interestingRuns.maxActions = [reference(1, "maxActions")];
-        const lines = formatBatchSummary(summary);
-        expect(lines.slice(lines.indexOf("Errors:"))).toEqual([
-            "Errors:",
-            "  run 8  engine 1008  policy 2008  actions 8  round 5",
-            "",
-            "Max actions:",
-            "  run 1  engine 1001  policy 2001  actions 8  round 5",
-        ]);
+        summary.forensicExamples.errorExample = reference(8, "error");
+        summary.forensicExamples.timeoutExample = reference(1, "maxActions");
+        expect(formatBatchSummary(summary).join("\n")).not.toMatch(/engine 100|policy 200|run 3|Defeats:/);
     });
 
     it("omits empty optional sections and handles absent distributions without junk output", () => {
@@ -201,7 +202,15 @@ describe("batch summary console formatting", () => {
         summary.fightLength = { actionCount: null, round: null };
         summary.actionUsage = { totalMoveActions: 0, moves: {}, escapeActions: 0, stanceActions: 0, endTurnActions: 0 };
         summary.finalParty = {};
-        summary.interestingRuns = { defeats: [], errors: [], maxActions: [], shortest: null, longest: null };
+        summary.metrics = {
+            runs: 0, winRate: 0, meanDecisions: null, meanDamage: null,
+            meanPeakBondage: null, meanEscapes: null, win95: null,
+        };
+        summary.forensicExamples = {
+            shortestDefeat: null, longestDefeat: null, lowestDamageDefeat: null,
+            highestDamageDefeat: null, closestDefeat: null, furthestDefeat: null,
+            timeoutExample: null, errorExample: null,
+        };
 
         const lines = formatBatchSummary(summary);
         expect(lines).toContain("Actions: n/a");

@@ -1,12 +1,16 @@
 import { runConsoleReplay } from "../console/replay";
 import { createEngine } from "../engine/public/engine";
-import { runBatch, type BatchInput } from "./batch";
+import { runBatch } from "./batch";
+import {
+    executePolicyComparison,
+    formatPolicyComparison,
+    type PolicyComparisonProgress,
+} from "./comparison";
 import {
     encounterSets,
     executeEncounterSet,
     type EncounterSetId,
     type EncounterSetProgress,
-    type EncounterSetResult,
 } from "./encounter-sets";
 import { runSingleFight, type FightPolicy, type SingleFightInput } from "./harness";
 import { writeBatchSummary, writeFightResult } from "./output";
@@ -17,8 +21,6 @@ import {
     formatProgressClock,
     formatProgressMetrics,
 } from "./progress";
-import { summarizeBatch, type BatchSummary } from "./summary";
-import { formatBatchSummary } from "./summary-format";
 
 export const launcherDefaults = {
     policySeed: 0,
@@ -36,6 +38,7 @@ export interface LauncherIO {
 export interface LauncherDependencies {
     runSingleFight: typeof runSingleFight;
     runBatch: typeof runBatch;
+    executePolicyComparison: typeof executePolicyComparison;
     executeEncounterSet: typeof executeEncounterSet;
     runConsoleReplay: typeof runConsoleReplay;
     now: () => number;
@@ -44,6 +47,7 @@ export interface LauncherDependencies {
 const defaultDependencies: LauncherDependencies = {
     runSingleFight,
     runBatch,
+    executePolicyComparison,
     executeEncounterSet,
     runConsoleReplay,
     now: () => performance.now(),
@@ -67,6 +71,21 @@ export function resolveNumberedChoice<T extends string>(
     const value = response.trim();
     if (/^[1-9]\d*$/.test(value)) return choices[Number(value) - 1];
     return choices.find((choice) => choice === value);
+}
+
+/** Resolves comma-separated numbered/exact choices, or a/all, preserving display order. */
+export function resolveMultipleChoices<T extends string>(
+    response: string,
+    choices: readonly T[],
+): T[] | undefined {
+    const value = response.trim().toLowerCase();
+    if (value === "a" || value === "all") return [...choices];
+    const requested = response.split(",").map((part) => part.trim()).filter(Boolean);
+    if (requested.length === 0) return undefined;
+    const selected = requested.map((part) => resolveNumberedChoice(part, choices));
+    if (selected.some((choice) => choice === undefined)) return undefined;
+    const wanted = new Set(selected as T[]);
+    return choices.filter((choice) => wanted.has(choice));
 }
 
 export interface IntegerPromptOptions {
@@ -154,22 +173,52 @@ async function runInteractiveBatch(
     policyIds: readonly string[],
 ): Promise<void> {
     const encounterId = await promptNumberedChoice(io, "Encounter", encounters);
-    const policy = await promptPolicy(io, policyIds);
+    const selectedPolicies = await promptPolicies(io, policyIds);
     const masterSeed = await promptInteger(io, "Master seed", { defaultValue: launcherDefaults.masterSeed });
     const runs = await promptInteger(io, "Runs", { defaultValue: launcherDefaults.runs, positive: true });
     const maxActions = await promptInteger(io, "Max actions", {
         defaultValue: launcherDefaults.maxActions,
         positive: true,
     });
-    const input: BatchInput = { encounterId, policy, masterSeed, runs, maxActions, replay: false };
-    printBatchConfiguration(io, input);
-    const progress = createProgressReporter({ now: deps.now, write: (line) => io.write(`${line}\n`) });
-    const batch = deps.runBatch(input, { onProgress: progress.update });
-    const elapsedMs = progress.elapsedMs();
-    const summary = summarizeBatch(batch);
-    const outputPath = writeBatchSummary(input, summary);
-    io.write(`${formatBatchSummary(summary).join("\n")}\n\nWrote ${outputPath}\n`);
-    io.write(`${formatCompletion(runs, elapsedMs)}\n`);
+    io.write(`\nEncounter: ${encounterId}\nPolicies: ${selectedPolicies.map((policy) => policy.id).join(", ")}`
+        + `\nMaster seed: ${masterSeed}\nRuns per policy: ${runs}`
+        + `\nMax actions: ${maxActions}\nTotal fights: ${selectedPolicies.length * runs}\n\n`);
+
+    let latest: PolicyComparisonProgress | undefined;
+    const progress = createProgressReporter({
+        now: deps.now,
+        write: (line) => io.write(`${line}\n`),
+        formatLine(_completed, _total, elapsedMs): string {
+            if (!latest) return "";
+            return `[${formatProgressClock(elapsedMs)}] ${latest.encounterId} / ${latest.policyId}  `
+                + formatProgressMetrics(latest.policyCompleted, latest.policyTotal, elapsedMs);
+        },
+    });
+    const result = deps.executePolicyComparison({
+        encounterId,
+        policies: selectedPolicies,
+        masterSeed,
+        runs,
+        maxActions,
+    }, {
+        now: deps.now,
+        runBatch: deps.runBatch,
+        onProgress(update): void {
+            latest = update;
+            progress.update(update.overallCompleted, update.overallTotal);
+        },
+    });
+    const outputPaths = result.policies.map((entry) => writeBatchSummary({
+        encounterId,
+        policy: selectedPolicies.find((policy) => policy.id === entry.policyId)!,
+        masterSeed,
+        runs,
+        maxActions,
+        replay: false,
+    }, entry.summary));
+    io.write(`${formatPolicyComparison(result).join("\n")}\n\n`);
+    outputPaths.forEach((outputPath) => io.write(`Wrote ${outputPath}\n`));
+    io.write(`${formatCompletion(selectedPolicies.length * runs, result.overallElapsedMs, "fights")}\n`);
 }
 
 async function runInteractiveEncounterSet(
@@ -178,7 +227,7 @@ async function runInteractiveEncounterSet(
     policyIds: readonly string[],
 ): Promise<void> {
     const set = await promptEncounterSet(io);
-    const policy = await promptPolicy(io, policyIds);
+    const selectedPolicies = await promptPolicies(io, policyIds);
     const masterSeed = await promptInteger(io, "Master seed", { defaultValue: launcherDefaults.masterSeed });
     const runsPerEncounter = await promptInteger(io, "Runs per encounter", {
         defaultValue: launcherDefaults.runs,
@@ -189,9 +238,10 @@ async function runInteractiveEncounterSet(
         positive: true,
     });
     const encounterIds = encounterSets[set.id];
-    io.write(`\nEncounter set: ${set.label}\nPolicy: ${policy.id}\nMaster seed: ${masterSeed}`
+    io.write(`\nEncounter set: ${set.label}\nPolicies: ${selectedPolicies.map((policy) => policy.id).join(", ")}`
+        + `\nMaster seed: ${masterSeed}`
         + `\nRuns per encounter: ${runsPerEncounter}\nMax actions: ${maxActions}`
-        + `\nTotal fights: ${encounterIds.length * runsPerEncounter}\n\n`);
+        + `\nTotal fights: ${encounterIds.length * selectedPolicies.length * runsPerEncounter}\n\n`);
 
     let latest: EncounterSetProgress | undefined;
     const progress = createProgressReporter({
@@ -199,15 +249,15 @@ async function runInteractiveEncounterSet(
         write: (line) => io.write(`${line}\n`),
         formatLine(_completed, _total, elapsedMs): string {
             if (!latest) return "";
-            return `[${formatProgressClock(elapsedMs)}] ${latest.encounterId}  `
-                + `${latest.encounterCompleted.toLocaleString("en-US")} / `
-                + `${latest.encounterTotal.toLocaleString("en-US")}\nOverall: `
+            return `[${formatProgressClock(elapsedMs)}] ${latest.encounterId} / ${latest.policyId}  `
+                + `${latest.policyCompleted.toLocaleString("en-US")} / `
+                + `${latest.policyTotal.toLocaleString("en-US")}\nOverall: `
                 + formatProgressMetrics(latest.overallCompleted, latest.overallTotal, elapsedMs);
         },
     });
     const result = deps.executeEncounterSet({
         encounterIds,
-        policy,
+        policies: selectedPolicies,
         masterSeed,
         runsPerEncounter,
         maxActions,
@@ -219,20 +269,26 @@ async function runInteractiveEncounterSet(
             progress.update(update.overallCompleted, update.overallTotal);
         },
         onEncounterComplete(encounter): void {
-            const input: BatchInput = {
-                encounterId: encounter.encounterId,
-                policy,
-                masterSeed,
-                runs: runsPerEncounter,
-                maxActions,
-                replay: false,
-            };
-            const outputPath = writeBatchSummary(input, encounter.summary);
-            io.write(`${formatBatchSummary(encounter.summary).join("\n")}\n\nWrote ${outputPath}\n`);
-            io.write(`${formatCompletion(runsPerEncounter, encounter.elapsedMs)}\n\n`);
+            io.write(`${formatPolicyComparison(encounter.comparison).join("\n")}\n\n`);
+            encounter.comparison.policies.forEach((entry) => {
+                const policy = selectedPolicies.find((candidate) => candidate.id === entry.policyId)!;
+                const outputPath = writeBatchSummary({
+                    encounterId: encounter.encounterId,
+                    policy,
+                    masterSeed,
+                    runs: runsPerEncounter,
+                    maxActions,
+                    replay: false,
+                }, entry.summary);
+                io.write(`Wrote ${outputPath}\n`);
+            });
+            io.write("\n");
         },
     });
-    printSetCompletion(io, set.label, result);
+    const totalFights = encounterIds.length * selectedPolicies.length * runsPerEncounter;
+    io.write(`Encounter set complete: ${set.label}\n${formatCompletion(
+        totalFights, result.elapsedMs, "fights",
+    )}\n`);
 }
 
 async function runInteractiveReplay(
@@ -270,6 +326,19 @@ async function promptPolicy(
 ): Promise<FightPolicy> {
     const id = await promptNumberedChoice(io, "Policy", policyIds);
     return policies[id as keyof typeof policies];
+}
+
+async function promptPolicies(
+    io: LauncherIO,
+    policyIds: readonly string[],
+): Promise<FightPolicy[]> {
+    for (;;) {
+        io.write(`Policies:\n${policyIds.map((id, index) => `[${index + 1}] ${id}`).join("\n")}`
+            + "\n[a] all\n");
+        const ids = resolveMultipleChoices(await io.question("Choice> "), policyIds);
+        if (ids !== undefined) return ids.map((id) => policies[id as keyof typeof policies]);
+        io.write(`Choose numbers from 1 to ${policyIds.length}, comma-separated choices, exact IDs, or a.\n`);
+    }
 }
 
 async function promptNumberedChoice<T extends string>(
@@ -314,31 +383,4 @@ function printFightConfiguration(io: LauncherIO, input: SingleFightInput): void 
     io.write(`\nEncounter: ${input.encounterId}\nEngine seed: ${input.engineSeed}`
         + `\nPolicy: ${input.policy.id}\nPolicy seed: ${input.policySeed}`
         + `\nMax actions: ${input.maxActions}\n\n`);
-}
-
-function printBatchConfiguration(io: LauncherIO, input: BatchInput): void {
-    io.write(`\nEncounter: ${input.encounterId}\nPolicy: ${input.policy.id}`
-        + `\nMaster seed: ${input.masterSeed}\nRuns: ${input.runs}`
-        + `\nMax actions: ${input.maxActions}\n\n`);
-}
-
-function printSetCompletion(io: LauncherIO, label: string, result: EncounterSetResult): void {
-    io.write(`Encounter set complete: ${label}\n`);
-    io.write("Encounter     Victory          Defeat           Median rounds\n");
-    for (const encounter of result.encounters) {
-        const { summary } = encounter;
-        io.write(`${summary.encounterId.padEnd(13)}`
-            + `${formatOutcome(summary.outcomes.victory).padEnd(17)}`
-            + `${formatOutcome(summary.outcomes.defeat).padEnd(17)}`
-            + `${summary.fightLength.round?.median ?? "n/a"}\n`);
-    }
-    io.write(`Total elapsed: ${formatCompletion(
-        result.encounters.reduce((total, encounter) => total + encounter.summary.runCount, 0),
-        result.elapsedMs,
-        "fights",
-    ).replace(/^Completed [^ ]+ fights in /, "")}\n`);
-}
-
-function formatOutcome(outcome: BatchSummary["outcomes"]["victory"]): string {
-    return `${outcome.count.toLocaleString("en-US")} (${(outcome.rate * 100).toFixed(1)}%)`;
 }

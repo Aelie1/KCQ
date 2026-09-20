@@ -1,69 +1,57 @@
 import { describe, expect, it } from "vitest";
-import type {
-    Character,
-    GameView,
-    PlayerAction,
-} from "../../src/engine/public/types";
+import type { Character, Enemy, GameView, PlayerAction } from "../../src/engine/public/types";
 import type { BatchResult, BatchRun } from "../../src/harness/batch";
-import type {
-    FightReplay,
-    SingleFightTermination,
-} from "../../src/harness/harness";
-import { summarizeBatch } from "../../src/harness/summary";
+import type { FightReplay, SingleFightTermination } from "../../src/harness/harness";
+import { summarizeBatch, wilsonScoreInterval } from "../../src/harness/summary";
 
 interface RunFixture {
     runIndex: number;
     termination: SingleFightTermination;
-    round: number;
-    trace: PlayerAction[];
-    bindings: Record<string, number[]>;
+    actionCount: number;
+    damage: number;
+    peakBondage: number;
+    escapes?: number;
+    remainingEnemyHp: number;
+    round?: number;
 }
 
 const endTurn = (): PlayerAction => ({ type: "endTurn" });
-const move = (id: string): PlayerAction => ({
-    type: "move",
-    actor: "ko",
-    move: id,
-    targets: ["enemy"],
-});
 
 function character(id: string, bindingValues: number[]): Character {
     return {
-        id,
-        acted: false,
-        standing: true,
-        bonusEscapes: 0,
+        id, acted: false, standing: true, bonusEscapes: 0,
         bindings: bindingValues.map((value, index) => ({
-            id: `binding-${index}`,
-            value,
-            level: "easy",
-            data: {},
-            status: [],
+            id: `binding-${index}`, value, level: "easy", data: {}, status: [],
         })),
-        buffs: [],
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
+        buffs: [], modifiers: {}, blockedMoveTypes: [], data: {},
     };
 }
 
-function view(round: number, bindings: Record<string, number[]>): GameView {
+function enemy(currHp: number): Enemy {
     return {
-        turn: { round, step: 1, phase: "player", outcome: "ongoing" },
-        characters: Object.entries(bindings).map(([id, values]) => character(id, values)),
-        enemies: [],
-        traps: [],
-        encounter: null,
-        actions: [],
+        id: `enemy-${currHp}`, rank: "enemy", maxHp: 100, currHp, currDef: 0,
+        intentions: [], buffs: [], cooldowns: {},
+    };
+}
+
+function view(fixture: RunFixture): GameView {
+    return {
+        turn: {
+            round: fixture.round ?? 1,
+            step: 1,
+            phase: "player",
+            outcome: fixture.termination === "victory" || fixture.termination === "defeat"
+                ? fixture.termination
+                : "ongoing",
+        },
+        characters: [character("ko", [fixture.peakBondage / 2])],
+        enemies: fixture.remainingEnemyHp === 0 ? [] : [enemy(fixture.remainingEnemyHp)],
+        traps: [], encounter: null, actions: [],
     };
 }
 
 function run(fixture: RunFixture): BatchRun {
-    const finalState = view(fixture.round, fixture.bindings);
-    if (fixture.termination === "victory" || fixture.termination === "defeat") {
-        finalState.turn.outcome = fixture.termination;
-    }
-
+    const trace = Array.from({ length: fixture.actionCount }, endTurn);
     return {
         runIndex: fixture.runIndex,
         engineSeed: 1_000 + fixture.runIndex,
@@ -74,225 +62,139 @@ function run(fixture: RunFixture): BatchRun {
             policyId: "fixture-policy",
             policySeed: 2_000 + fixture.runIndex,
             termination: fixture.termination,
-            finalState,
-            actionCount: fixture.trace.length,
-            trace: fixture.trace,
+            finalState: view(fixture),
+            actionCount: fixture.actionCount,
+            metrics: {
+                decisions: fixture.actionCount,
+                damage: fixture.damage,
+                peakBondage: fixture.peakBondage,
+                escapes: fixture.escapes ?? 0,
+            },
+            trace,
         },
     };
 }
 
-function fixtureBatch(): BatchResult {
-    return {
-        encounterId: "fixture",
-        policyId: "fixture-policy",
-        masterSeed: 99,
-        runs: [
-            run({
-                runIndex: 5,
-                termination: "victory",
-                round: 2,
-                trace: [
-                    move("telekinesis"),
-                    endTurn(),
-                    { type: "stance", actor: "ko" },
-                    move("whiteFlame"),
-                ],
-                bindings: { ko: [2, 3], matsuko: [0] },
-            }),
-            run({
-                runIndex: 3,
-                termination: "defeat",
-                round: 1,
-                trace: [
-                    { type: "escape", actor: "ko", target: "ko", binding: "rope" },
-                    endTurn(),
-                ],
-                bindings: { ko: [10], matsuko: [4] },
-            }),
-            run({
-                runIndex: 8,
-                termination: "error",
-                round: 5,
-                trace: [
-                    move("telekinesis"),
-                    move("telekinesis"),
-                    endTurn(),
-                    endTurn(),
-                    endTurn(),
-                    endTurn(),
-                    endTurn(),
-                    endTurn(),
-                ],
-                bindings: { ko: [1], matsuko: [3] },
-            }),
-            run({
-                runIndex: 1,
-                termination: "maxActions",
-                round: 3,
-                trace: [move("whiteFlame"), endTurn()],
-                bindings: { ko: [7], matsuko: [8] },
-            }),
-        ],
-    };
+function batch(runs: BatchRun[]): BatchResult {
+    return { encounterId: "fixture", policyId: "fixture-policy", masterSeed: 99, runs };
 }
 
-describe("batch summary", () => {
-    it("preserves compact batch identity and counts every outcome", () => {
+function fixtureBatch(): BatchResult {
+    return batch([
+        run({ runIndex: 0, termination: "victory", actionCount: 2, damage: 100, peakBondage: 4, escapes: 0, remainingEnemyHp: 0, round: 2 }),
+        run({ runIndex: 5, termination: "defeat", actionCount: 3, damage: 20, peakBondage: 8, escapes: 1, remainingEnemyHp: 50, round: 3 }),
+        run({ runIndex: 1, termination: "maxActions", actionCount: 4, damage: 40, peakBondage: 12, escapes: 2, remainingEnemyHp: 30, round: 4 }),
+        run({ runIndex: 8, termination: "error", actionCount: 1, damage: 0, peakBondage: 0, escapes: 1, remainingEnemyHp: 90, round: 1 }),
+    ]);
+}
+
+describe("batch summary metrics", () => {
+    it("counts outcomes and computes all comparison means across every run", () => {
         const summary = summarizeBatch(fixtureBatch());
-
         expect(summary).toMatchObject({
-            encounterId: "fixture",
-            policyId: "fixture-policy",
-            masterSeed: 99,
-            runCount: 4,
-        });
-        expect(summary.outcomes).toEqual({
-            victory: { count: 1, rate: 0.25 },
-            defeat: { count: 1, rate: 0.25 },
-            maxActions: { count: 1, rate: 0.25 },
-            error: { count: 1, rate: 0.25 },
-        });
-    });
-
-    it("summarizes action counts with midpoint median and nearest-rank p90", () => {
-        expect(summarizeBatch(fixtureBatch()).fightLength.actionCount).toEqual({
-            min: 2,
-            mean: 4,
-            median: 3,
-            p90: 8,
-            max: 8,
-        });
-    });
-
-    it("summarizes final round numbers", () => {
-        expect(summarizeBatch(fixtureBatch()).fightLength.round).toEqual({
-            min: 1,
-            mean: 2.75,
-            median: 2.5,
-            p90: 5,
-            max: 5,
-        });
-    });
-
-    it("aggregates action usage exclusively from traces", () => {
-        expect(summarizeBatch(fixtureBatch()).actionUsage).toEqual({
-            totalMoveActions: 5,
-            moves: { telekinesis: 3, whiteFlame: 2 },
-            escapeActions: 1,
-            stanceActions: 1,
-            endTurnActions: 9,
-        });
-    });
-
-    it("aggregates final total binding per character", () => {
-        expect(summarizeBatch(fixtureBatch()).finalParty).toEqual({
-            ko: {
-                observations: 4,
-                averageTotalBinding: 5.75,
-                maxTotalBinding: 10,
-            },
-            matsuko: {
-                observations: 4,
-                averageTotalBinding: 3.75,
-                maxTotalBinding: 8,
-            },
-        });
-    });
-
-    it("returns every defeat, error, and max-actions reference", () => {
-        const interesting = summarizeBatch(fixtureBatch()).interestingRuns;
-
-        expect(interesting.defeats).toEqual([{
-            runIndex: 3,
-            engineSeed: 1003,
-            policySeed: 2003,
-            termination: "defeat",
-            actionCount: 2,
-            round: 1,
-        }]);
-        expect(interesting.errors.map(({ runIndex }) => runIndex)).toEqual([8]);
-        expect(interesting.maxActions.map(({ runIndex }) => runIndex)).toEqual([1]);
-    });
-
-    it("returns lightweight shortest and longest references", () => {
-        const interesting = summarizeBatch(fixtureBatch()).interestingRuns;
-
-        expect(interesting.shortest).toMatchObject({ runIndex: 1, actionCount: 2 });
-        expect(interesting.longest).toMatchObject({ runIndex: 8, actionCount: 8 });
-        expect(interesting.shortest).not.toHaveProperty("result");
-        expect(interesting.longest).not.toHaveProperty("replay");
-    });
-
-    it("chooses the lowest run index for both shortest and longest ties", () => {
-        const batch = fixtureBatch();
-        batch.runs = [
-            run({ runIndex: 9, termination: "victory", round: 1, trace: [endTurn()], bindings: {} }),
-            run({ runIndex: 2, termination: "victory", round: 1, trace: [endTurn()], bindings: {} }),
-        ];
-
-        const interesting = summarizeBatch(batch).interestingRuns;
-        expect(interesting.shortest?.runIndex).toBe(2);
-        expect(interesting.longest?.runIndex).toBe(2);
-    });
-
-    it("defines empty-batch rates, distributions, and references", () => {
-        const batch: BatchResult = {
-            encounterId: "empty",
-            policyId: "none",
-            masterSeed: 7,
-            runs: [],
-        };
-
-        expect(summarizeBatch(batch)).toEqual({
-            encounterId: "empty",
-            policyId: "none",
-            masterSeed: 7,
-            runCount: 0,
+            encounterId: "fixture", policyId: "fixture-policy", masterSeed: 99, runCount: 4,
             outcomes: {
-                victory: { count: 0, rate: 0 },
-                defeat: { count: 0, rate: 0 },
-                maxActions: { count: 0, rate: 0 },
-                error: { count: 0, rate: 0 },
+                victory: { count: 1, rate: 0.25 },
+                defeat: { count: 1, rate: 0.25 },
+                maxActions: { count: 1, rate: 0.25 },
+                error: { count: 1, rate: 0.25 },
             },
-            fightLength: { actionCount: null, round: null },
-            actionUsage: {
-                totalMoveActions: 0,
-                moves: {},
-                escapeActions: 0,
-                stanceActions: 0,
-                endTurnActions: 0,
-            },
-            finalParty: {},
-            interestingRuns: {
-                defeats: [],
-                errors: [],
-                maxActions: [],
-                shortest: null,
-                longest: null,
+            metrics: {
+                runs: 4,
+                winRate: 0.25,
+                meanDecisions: 2.5,
+                meanDamage: 40,
+                meanPeakBondage: 6,
+                meanEscapes: 1,
             },
         });
     });
 
-    it("produces the same summary with or without replay data", () => {
-        const withoutReplay = fixtureBatch();
-        const withReplay = structuredClone(withoutReplay);
+    it("keeps existing distributions, action usage, and final-party summaries", () => {
+        const summary = summarizeBatch(fixtureBatch());
+        expect(summary.fightLength.actionCount).toEqual({ min: 1, mean: 2.5, median: 2.5, p90: 4, max: 4 });
+        expect(summary.fightLength.round).toEqual({ min: 1, mean: 2.5, median: 2.5, p90: 4, max: 4 });
+        expect(summary.actionUsage.endTurnActions).toBe(10);
+        expect(summary.finalParty.ko).toEqual({ observations: 4, averageTotalBinding: 3, maxTotalBinding: 6 });
+    });
+
+    it("uses a Wilson 95% interval for ordinary, zero-win, and all-win proportions", () => {
+        expect(wilsonScoreInterval(52, 100)).toEqual({
+            lower: expect.closeTo(0.423165, 5),
+            upper: expect.closeTo(0.615354, 5),
+        });
+        expect(wilsonScoreInterval(0, 10)).toEqual({
+            lower: 0,
+            upper: expect.closeTo(0.277533, 5),
+        });
+        expect(wilsonScoreInterval(10, 10)).toEqual({
+            lower: expect.closeTo(0.722467, 5),
+            upper: 1,
+        });
+        expect(wilsonScoreInterval(0, 0)).toBeNull();
+    });
+
+    it("selects every defeat example by its documented metric", () => {
+        const summary = summarizeBatch(batch([
+            run({ runIndex: 5, termination: "defeat", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
+            run({ runIndex: 3, termination: "defeat", actionCount: 4, damage: 10, peakBondage: 1, remainingEnemyHp: 20 }),
+            run({ runIndex: 8, termination: "defeat", actionCount: 6, damage: 30, peakBondage: 1, remainingEnemyHp: 70 }),
+        ])).forensicExamples;
+
+        expect(summary.shortestDefeat?.runIndex).toBe(5);
+        expect(summary.longestDefeat?.runIndex).toBe(8);
+        expect(summary.lowestDamageDefeat?.runIndex).toBe(3);
+        expect(summary.highestDamageDefeat?.runIndex).toBe(8);
+        expect(summary.closestDefeat?.runIndex).toBe(3);
+        expect(summary.furthestDefeat?.runIndex).toBe(8);
+        expect(summary.closestDefeat).toMatchObject({ damage: 10, peakBondage: 1, remainingEnemyHp: 20 });
+        expect(summary.closestDefeat).not.toHaveProperty("result");
+    });
+
+    it("breaks every defeat-example tie with the lowest run index", () => {
+        const forensic = summarizeBatch(batch([
+            run({ runIndex: 9, termination: "defeat", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
+            run({ runIndex: 2, termination: "defeat", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
+        ])).forensicExamples;
+        for (const name of [
+            "shortestDefeat", "longestDefeat", "lowestDamageDefeat",
+            "highestDamageDefeat", "closestDefeat", "furthestDefeat",
+        ] as const) {
+            expect(forensic[name]?.runIndex).toBe(2);
+        }
+    });
+
+    it("selects the lowest run index for timeout and error examples", () => {
+        const forensic = summarizeBatch(batch([
+            run({ runIndex: 7, termination: "maxActions", actionCount: 1, damage: 0, peakBondage: 0, remainingEnemyHp: 1 }),
+            run({ runIndex: 1, termination: "maxActions", actionCount: 1, damage: 0, peakBondage: 0, remainingEnemyHp: 1 }),
+            run({ runIndex: 8, termination: "error", actionCount: 1, damage: 0, peakBondage: 0, remainingEnemyHp: 1 }),
+            run({ runIndex: 0, termination: "error", actionCount: 1, damage: 0, peakBondage: 0, remainingEnemyHp: 1 }),
+        ])).forensicExamples;
+        expect(forensic.timeoutExample?.runIndex).toBe(1);
+        expect(forensic.errorExample?.runIndex).toBe(0);
+    });
+
+    it("has no unbounded failure arrays and defines empty-batch values without NaN", () => {
+        const summary = summarizeBatch(batch([]));
+        expect(summary.metrics).toEqual({
+            runs: 0, winRate: 0, meanDecisions: null, meanDamage: null,
+            meanPeakBondage: null, meanEscapes: null, win95: null,
+        });
+        expect(summary.fightLength).toEqual({ actionCount: null, round: null });
+        expect(Object.values(summary.forensicExamples).every((value) => value === null)).toBe(true);
+        expect(JSON.stringify(summary)).not.toMatch(/"(?:defeats|errors|maxActions)":\s*\[/);
+    });
+
+    it("is replay-independent and does not mutate batch input", () => {
+        const original = fixtureBatch();
+        const withReplay = structuredClone(original);
         for (const { result } of withReplay.runs) {
-            const replay: FightReplay = {
-                initialState: structuredClone(result.finalState),
-                steps: [],
-            };
+            const replay: FightReplay = { initialState: structuredClone(result.finalState), steps: [] };
             result.replay = replay;
         }
-
-        expect(summarizeBatch(withReplay)).toEqual(summarizeBatch(withoutReplay));
-    });
-
-    it("does not mutate its input", () => {
-        const batch = fixtureBatch();
-        const before = structuredClone(batch);
-
-        summarizeBatch(batch);
-
-        expect(batch).toEqual(before);
+        const before = structuredClone(withReplay);
+        expect(summarizeBatch(withReplay)).toEqual(summarizeBatch(original));
+        expect(withReplay).toEqual(before);
     });
 });

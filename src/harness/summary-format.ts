@@ -1,4 +1,4 @@
-import type { BatchSummary, DistributionSummary, OutcomeMetric, RunReference } from "./summary";
+import type { BatchSummary, DistributionSummary, OutcomeMetric } from "./summary";
 
 /** Plain-text presentation of existing summary values; no statistics are recomputed. */
 export function formatBatchSummary(summary: BatchSummary): string[] {
@@ -13,6 +13,10 @@ export function formatBatchSummary(summary: BatchSummary): string[] {
         "",
         `Actions: ${formatDistribution(summary.fightLength.actionCount)}`,
         `Rounds:  ${formatDistribution(summary.fightLength.round)}`,
+        `Damage:  mean ${formatMean(summary.metrics.meanDamage)}`,
+        `Peak bondage: mean ${formatMean(summary.metrics.meanPeakBondage)}`,
+        `Escapes: mean ${formatMean(summary.metrics.meanEscapes)}`,
+        `Win 95%: ${summary.metrics.win95 === null ? "n/a" : formatInterval(summary.metrics.win95)}`,
         "",
     ];
 
@@ -36,9 +40,6 @@ export function formatBatchSummary(summary: BatchSummary): string[] {
         }));
     }
 
-    appendReferences(lines, "Defeats", summary.interestingRuns.defeats);
-    appendReferences(lines, "Errors", summary.interestingRuns.errors);
-    appendReferences(lines, "Max actions", summary.interestingRuns.maxActions);
     return lines;
 }
 
@@ -52,9 +53,10 @@ function formatDistribution(distribution: DistributionSummary | null): string {
         + ` / mean ${distribution.mean.toFixed(1)} / p90 ${distribution.p90} / max ${distribution.max}`;
 }
 
-function appendReferences(lines: string[], label: string, references: RunReference[]): void {
-    if (references.length === 0) return;
-    lines.push("", `${label}:`, ...references.map((run) =>
-        `  run ${run.runIndex}  engine ${run.engineSeed}  policy ${run.policySeed}`
-        + `  actions ${run.actionCount}  round ${run.round}`));
+function formatMean(value: number | null): string {
+    return value === null ? "n/a" : value.toFixed(1);
+}
+
+function formatInterval(interval: { lower: number; upper: number }): string {
+    return `${(interval.lower * 100).toFixed(1)}%-${(interval.upper * 100).toFixed(1)}%`;
 }

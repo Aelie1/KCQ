@@ -9,6 +9,7 @@ import { runSingleFight } from "../../src/harness/harness";
 import {
     launcherDefaults,
     parseIntegerPrompt,
+    resolveMultipleChoices,
     resolveNumberedChoice,
     runHarnessLauncher,
     type LauncherIO,
@@ -41,27 +42,34 @@ describe("interactive launcher helpers", () => {
         expect(resolveNumberedChoice("3", encounters)).toBeUndefined();
         expect(resolveNumberedChoice("3", policyIds)).toBe("swing-only");
         expect(resolveNumberedChoice("random", policyIds)).toBe("random");
+        expect(resolveMultipleChoices("1,3", policyIds)).toEqual(["first", "swing-only"]);
+        expect(resolveMultipleChoices("a", policyIds)).toEqual(policyIds);
+        expect(resolveMultipleChoices("3,1,3", policyIds)).toEqual(["first", "swing-only"]);
+        expect(resolveMultipleChoices("9", policyIds)).toBeUndefined();
     });
 });
 
 describe("encounter-set execution", () => {
-    it("runs every configured encounter as an independent batch", () => {
+    it("runs every encounter-policy pair and produces one comparison per encounter", () => {
         const seen: string[] = [];
         const fakeRunBatch = vi.fn((input): BatchResult => {
-            seen.push(input.encounterId);
+            seen.push(`${input.encounterId}/${input.policy.id}`);
             return { encounterId: input.encounterId, policyId: input.policy.id, masterSeed: input.masterSeed, runs: [] };
         });
         const result = executeEncounterSet({
             encounterIds: encounterSets.n123,
-            policy: firstPolicy,
+            policies: [policies.first, policies.random],
             masterSeed: 1,
             runsPerEncounter: 0,
             maxActions: 1_000,
         }, { runBatch: fakeRunBatch, now: () => 0 });
 
-        expect(seen).toEqual([...encounterSets.n123]);
+        expect(seen).toEqual(encounterSets.n123.flatMap((encounterId) => [
+            `${encounterId}/first`, `${encounterId}/random`,
+        ]));
         expect(result.encounters.map(({ encounterId }) => encounterId)).toEqual([...encounterSets.n123]);
-        expect(fakeRunBatch).toHaveBeenCalledTimes(3);
+        expect(result.encounters.every(({ comparison }) => comparison.policies.length === 2)).toBe(true);
+        expect(fakeRunBatch).toHaveBeenCalledTimes(6);
     });
 });
 

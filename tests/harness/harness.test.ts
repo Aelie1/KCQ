@@ -9,6 +9,7 @@ import type {
 } from "../../src/engine/public/types";
 import {
     createPolicyRandom,
+    partyTotalBondage,
     runSingleFight,
     type FightPolicy,
     type PolicyContext,
@@ -134,6 +135,38 @@ describe("policy-driven single-fight harness", () => {
         }
     });
 
+    it("collects decisions as actionCount and counts every submitted escape", () => {
+        const result = runSingleFight({
+            ...fightInput(randomPolicy, 77, 1),
+            maxActions: 50,
+            replay: false,
+        });
+        expect(result.metrics.decisions).toBe(result.actionCount);
+        expect(result.metrics.decisions).toBe(result.trace.length);
+        expect(result.metrics.escapes).toBe(result.trace.filter((action) => action.type === "escape").length);
+    });
+
+    it("sums authoritative applied enemyDamaged events as actual damage", () => {
+        const result = runSingleFight({ ...fightInput(firstPolicy, 202), replay: true });
+        const eventDamage = result.replay?.steps.reduce((total, step) => total + (
+            step.success
+                ? step.events.reduce((stepTotal, event) =>
+                    stepTotal + (event.type === "enemyDamaged" ? event.amount : 0), 0)
+                : 0
+        ), 0);
+        expect(result.metrics.damage).toBe(eventDamage);
+        expect(result.metrics.damage).toBeGreaterThan(0);
+    });
+
+    it("takes peak party bondage over the initial and every post-action view", () => {
+        const result = runSingleFight({ ...fightInput(firstPolicy, 303), replay: true });
+        const views = [
+            result.replay!.initialState,
+            ...result.replay!.steps.flatMap((step) => step.success ? [step.state] : []),
+        ];
+        expect(result.metrics.peakBondage).toBe(Math.max(...views.map(partyTotalBondage)));
+    });
+
     it("records endTurn as one step containing its enemy-phase events", () => {
         const result = runSingleFight({
             ...fightInput(firstPolicy, 303),
@@ -186,11 +219,13 @@ describe("policy-driven single-fight harness", () => {
             termination: enabled.termination,
             finalState: enabled.finalState,
             actionCount: enabled.actionCount,
+            metrics: enabled.metrics,
             trace: enabled.trace,
         }).toEqual({
             termination: disabled.termination,
             finalState: disabled.finalState,
             actionCount: disabled.actionCount,
+            metrics: disabled.metrics,
             trace: disabled.trace,
         });
     });

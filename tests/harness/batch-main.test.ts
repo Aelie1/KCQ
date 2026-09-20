@@ -34,6 +34,7 @@ function batchFixture(): BatchResult {
                 termination: "victory",
                 finalState,
                 actionCount,
+                metrics: { decisions: actionCount, damage: 10, peakBondage: 0, escapes: 0 },
                 trace: Array.from({ length: actionCount }, (): PlayerAction => ({ type: "endTurn" })),
             },
         })),
