@@ -1,6 +1,8 @@
 import { runConsoleReplay } from "../console/replay";
 import { createEngine } from "../engine/public/engine";
+import { availableParallelism } from "node:os";
 import { runBatch } from "./batch";
+import { runBatchParallel } from "./parallel-batch";
 import {
     executePolicyComparison,
     formatPolicyComparison,
@@ -27,6 +29,7 @@ export const launcherDefaults = {
     masterSeed: 1,
     runs: 1_000,
     maxActions: 1_000,
+    parallelWorkers: Math.max(1, Math.min(8, availableParallelism() - 1)),
 } as const;
 
 export interface LauncherIO {
@@ -38,6 +41,7 @@ export interface LauncherIO {
 export interface LauncherDependencies {
     runSingleFight: typeof runSingleFight;
     runBatch: typeof runBatch;
+    runBatchParallel: typeof runBatchParallel;
     executePolicyComparison: typeof executePolicyComparison;
     executeEncounterSet: typeof executeEncounterSet;
     runConsoleReplay: typeof runConsoleReplay;
@@ -47,6 +51,7 @@ export interface LauncherDependencies {
 const defaultDependencies: LauncherDependencies = {
     runSingleFight,
     runBatch,
+    runBatchParallel,
     executePolicyComparison,
     executeEncounterSet,
     runConsoleReplay,
@@ -180,9 +185,14 @@ async function runInteractiveBatch(
         defaultValue: launcherDefaults.maxActions,
         positive: true,
     });
+    const workers = await promptInteger(io, "Parallel workers", {
+        defaultValue: launcherDefaults.parallelWorkers,
+        positive: true,
+    });
     io.write(`\nEncounter: ${encounterId}\nPolicies: ${selectedPolicies.map((policy) => policy.id).join(", ")}`
         + `\nMaster seed: ${masterSeed}\nRuns per policy: ${runs}`
-        + `\nMax actions: ${maxActions}\nTotal fights: ${selectedPolicies.length * runs}\n\n`);
+        + `\nMax actions: ${maxActions}\nParallel workers: ${workers}`
+        + `\nTotal fights: ${selectedPolicies.length * runs}\n\n`);
 
     let latest: PolicyComparisonProgress | undefined;
     const progress = createProgressReporter({
@@ -194,15 +204,19 @@ async function runInteractiveBatch(
                 + formatProgressMetrics(latest.policyCompleted, latest.policyTotal, elapsedMs);
         },
     });
-    const result = deps.executePolicyComparison({
+    const result = await deps.executePolicyComparison({
         encounterId,
         policies: selectedPolicies,
         masterSeed,
         runs,
         maxActions,
+        workers,
     }, {
         now: deps.now,
-        runBatch: deps.runBatch,
+        runBatch: (batchInput, executionOptions) => deps.runBatchParallel(batchInput, {
+            workers,
+            onProgress: executionOptions?.onProgress,
+        }),
         onProgress(update): void {
             latest = update;
             progress.update(update.overallCompleted, update.overallTotal);
@@ -237,10 +251,15 @@ async function runInteractiveEncounterSet(
         defaultValue: launcherDefaults.maxActions,
         positive: true,
     });
+    const workers = await promptInteger(io, "Parallel workers", {
+        defaultValue: launcherDefaults.parallelWorkers,
+        positive: true,
+    });
     const encounterIds = encounterSets[set.id];
     io.write(`\nEncounter set: ${set.label}\nPolicies: ${selectedPolicies.map((policy) => policy.id).join(", ")}`
         + `\nMaster seed: ${masterSeed}`
         + `\nRuns per encounter: ${runsPerEncounter}\nMax actions: ${maxActions}`
+        + `\nParallel workers: ${workers}`
         + `\nTotal fights: ${encounterIds.length * selectedPolicies.length * runsPerEncounter}\n\n`);
 
     let latest: EncounterSetProgress | undefined;
@@ -255,15 +274,19 @@ async function runInteractiveEncounterSet(
                 + formatProgressMetrics(latest.overallCompleted, latest.overallTotal, elapsedMs);
         },
     });
-    const result = deps.executeEncounterSet({
+    const result = await deps.executeEncounterSet({
         encounterIds,
         policies: selectedPolicies,
         masterSeed,
         runsPerEncounter,
         maxActions,
+        workers,
     }, {
         now: deps.now,
-        runBatch: deps.runBatch,
+        runBatch: (batchInput, executionOptions) => deps.runBatchParallel(batchInput, {
+            workers,
+            onProgress: executionOptions?.onProgress,
+        }),
         onProgress(update): void {
             latest = update;
             progress.update(update.overallCompleted, update.overallTotal);

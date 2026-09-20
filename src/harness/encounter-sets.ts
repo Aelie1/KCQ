@@ -20,6 +20,7 @@ export interface EncounterSetInput {
     masterSeed: number;
     runsPerEncounter: number;
     maxActions: number;
+    workers?: number;
 }
 
 export interface EncounterSetProgress {
@@ -45,29 +46,34 @@ export interface EncounterSetResult {
 
 export interface EncounterSetExecutionOptions {
     now?: () => number;
-    runBatch?: typeof runBatch;
+    runBatch?: (
+        input: Parameters<typeof runBatch>[0],
+        options: Parameters<typeof runBatch>[1],
+    ) => ReturnType<typeof runBatch> | Promise<ReturnType<typeof runBatch>>;
     onProgress?: (progress: EncounterSetProgress) => void;
     onEncounterComplete?: (result: EncounterSetEncounterResult) => void;
 }
 
 /** Runs every encounter-policy pair as an isolated ordinary batch. */
-export function executeEncounterSet(
+export async function executeEncounterSet(
     input: EncounterSetInput,
     options: EncounterSetExecutionOptions = {},
-): EncounterSetResult {
+): Promise<EncounterSetResult> {
     const now = options.now ?? (() => performance.now());
     const startedAt = now();
     const encounters: EncounterSetEncounterResult[] = [];
     const fightsPerEncounter = input.policies.length * input.runsPerEncounter;
     const overallTotal = input.encounterIds.length * fightsPerEncounter;
 
-    input.encounterIds.forEach((encounterId, encounterIndex) => {
-        const comparison = executePolicyComparison({
+    for (let encounterIndex = 0; encounterIndex < input.encounterIds.length; encounterIndex += 1) {
+        const encounterId = input.encounterIds[encounterIndex];
+        const comparison = await executePolicyComparison({
             encounterId,
             policies: input.policies,
             masterSeed: input.masterSeed,
             runs: input.runsPerEncounter,
             maxActions: input.maxActions,
+            workers: input.workers,
         }, {
             now,
             runBatch: options.runBatch,
@@ -87,7 +93,7 @@ export function executeEncounterSet(
         const result = { encounterId, comparison };
         encounters.push(result);
         options.onEncounterComplete?.(result);
-    });
+    }
 
     return { encounters, elapsedMs: Math.max(0, now() - startedAt) };
 }

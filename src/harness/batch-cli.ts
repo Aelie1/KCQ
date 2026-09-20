@@ -3,7 +3,22 @@ import { getPolicy, policies } from "./policies";
 
 const DEFAULT_MAX_ACTIONS = 1_000;
 const USAGE = "Usage: npm run batch -- <encounterId> <masterSeed> <policy> <runs> [maxActions]"
-    + ` (maxActions defaults to ${DEFAULT_MAX_ACTIONS})`;
+    + ` [workers] (maxActions defaults to ${DEFAULT_MAX_ACTIONS}; workers defaults to 1)`;
+
+export interface BatchCommandArguments {
+    input: BatchInput;
+    workers: number;
+}
+
+/** Extended direct-CLI parser; the first five positional arguments retain their meaning. */
+export function parseBatchCommandArguments(args: readonly string[]): BatchCommandArguments {
+    if (args.length < 4 || args.length > 6) {
+        fail("Expected four required arguments and optional maxActions/workers.");
+    }
+    const input = parseBatchArguments(args.slice(0, 5));
+    const workers = args[5] === undefined ? 1 : parseInteger(args[5], "workers", true);
+    return { input, workers };
+}
 
 export function parseBatchArguments(args: readonly string[]): BatchInput {
     if (args.length < 4 || args.length > 5) {

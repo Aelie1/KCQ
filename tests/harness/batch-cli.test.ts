@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseBatchArguments } from "../../src/harness/batch-cli";
+import { parseBatchArguments, parseBatchCommandArguments } from "../../src/harness/batch-cli";
 import { policies } from "../../src/harness/policies";
 import type { BatchSummary, RunReference } from "../../src/harness/summary";
 import { formatBatchSummary } from "../../src/harness/summary-format";
@@ -61,6 +61,15 @@ function summaryFixture(): BatchSummary {
 }
 
 describe("batch CLI arguments", () => {
+    it("preserves old syntax with one worker and accepts an optional final worker count", () => {
+        expect(parseBatchCommandArguments(["plains_3", "1", "swing-only", "1000", "1000"]))
+            .toMatchObject({ workers: 1, input: { runs: 1000, maxActions: 1000 } });
+        expect(parseBatchCommandArguments(["plains_3", "1", "swing-only", "1000", "1000", "8"]))
+            .toMatchObject({ workers: 8, input: { runs: 1000, maxActions: 1000 } });
+        expect(() => parseBatchCommandArguments(["plains_3", "1", "first", "1", "1000", "0"]))
+            .toThrow(/workers must be a positive safe integer/);
+    });
+
     it("parses the required identity, defaults maxActions, and disables replay", () => {
         expect(parseBatchArguments(["plains_1", "1", "first", "1000"])).toEqual({
             encounterId: "plains_1",

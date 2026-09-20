@@ -30,6 +30,11 @@ describe("interactive launcher helpers", () => {
         expect(parseIntegerPrompt("", "Runs", { defaultValue: launcherDefaults.runs, positive: true }))
             .toBe(1_000);
         expect(parseIntegerPrompt(" -7 ", "Seed")).toBe(-7);
+        expect(parseIntegerPrompt("", "Parallel workers", {
+            defaultValue: launcherDefaults.parallelWorkers,
+            positive: true,
+        })).toBe(launcherDefaults.parallelWorkers);
+        expect(parseIntegerPrompt("8", "Parallel workers", { positive: true })).toBe(8);
         expect(() => parseIntegerPrompt("0", "Runs", { positive: true })).toThrow("positive safe integer");
         expect(() => parseIntegerPrompt("1.5", "Seed")).toThrow("safe integer");
     });
@@ -50,13 +55,13 @@ describe("interactive launcher helpers", () => {
 });
 
 describe("encounter-set execution", () => {
-    it("runs every encounter-policy pair and produces one comparison per encounter", () => {
+    it("runs every encounter-policy pair and produces one comparison per encounter", async () => {
         const seen: string[] = [];
         const fakeRunBatch = vi.fn((input): BatchResult => {
             seen.push(`${input.encounterId}/${input.policy.id}`);
             return { encounterId: input.encounterId, policyId: input.policy.id, masterSeed: input.masterSeed, runs: [] };
         });
-        const result = executeEncounterSet({
+        const result = await executeEncounterSet({
             encounterIds: encounterSets.n123,
             policies: [policies.first, policies.random],
             masterSeed: 1,
@@ -70,6 +75,23 @@ describe("encounter-set execution", () => {
         expect(result.encounters.map(({ encounterId }) => encounterId)).toEqual([...encounterSets.n123]);
         expect(result.encounters.every(({ comparison }) => comparison.policies.length === 2)).toBe(true);
         expect(fakeRunBatch).toHaveBeenCalledTimes(6);
+    });
+
+    it("keeps encounters isolated when their batches use parallel workers", async () => {
+        const result = await executeEncounterSet({
+            encounterIds: ["plains_1", "plains_2"],
+            policies: [firstPolicy],
+            masterSeed: 11,
+            runsPerEncounter: 2,
+            maxActions: 0,
+            workers: 2,
+        });
+        expect(result.encounters.map(({ encounterId }) => encounterId))
+            .toEqual(["plains_1", "plains_2"]);
+        expect(result.encounters.map(({ comparison }) => comparison.parallelWorkers))
+            .toEqual([2, 2]);
+        expect(result.encounters[0].comparison.policies[0].batch.encounterId).toBe("plains_1");
+        expect(result.encounters[1].comparison.policies[0].batch.encounterId).toBe("plains_2");
     });
 });
 

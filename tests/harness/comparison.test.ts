@@ -8,22 +8,24 @@ import { firstPolicy } from "../../src/harness/policy/first";
 import { randomPolicy } from "../../src/harness/policy/random";
 
 describe("policy comparison", () => {
-    it("uses identical engine and policy seed mappings at equal run indexes", () => {
-        const result = executePolicyComparison({
+    it("uses identical engine and policy seed mappings at equal run indexes", async () => {
+        const result = await executePolicyComparison({
             encounterId: "plains_1",
             policies: [firstPolicy, randomPolicy],
             masterSeed: 123,
             runs: 3,
             maxActions: 0,
+            workers: 2,
         });
         const [first, random] = result.policies;
         expect(first.batch.runs.map(({ runIndex, engineSeed, policySeed }) => ({ runIndex, engineSeed, policySeed })))
             .toEqual(random.batch.runs.map(({ runIndex, engineSeed, policySeed }) => ({ runIndex, engineSeed, policySeed })));
+        expect(result.parallelWorkers).toBe(2);
     });
 
-    it("produces one metric row and timing row per policy", () => {
+    it("produces one metric row and timing row per policy", async () => {
         const times = [0, 100, 300, 400, 1_000, 1_200];
-        const result = executePolicyComparison({
+        const result = await executePolicyComparison({
             encounterId: "plains_1",
             policies: [firstPolicy, randomPolicy],
             masterSeed: 1,
@@ -43,12 +45,15 @@ describe("policy comparison", () => {
         expect(output).toContain("Timing:");
         expect(output).toContain("Policy runtime total: 800.0 ms");
         expect(output).toContain("Overall wall time:    1.2 s");
+        expect(output).toContain("Parallel workers:     1");
         expect(output.match(/\| first\s+\|/g)).toHaveLength(2);
         expect(output.match(/\| random\s+\|/g)).toHaveLength(2);
         expect(output).not.toMatch(/engineSeed|policySeed|shortestDefeat/);
+        expect(result.policies[0].summary).not.toHaveProperty("timing");
+        expect(result.policies[0].summary).not.toHaveProperty("parallelWorkers");
     });
 
-    it("reports deterministic policy-aware progress without changing results", () => {
+    it("reports deterministic policy-aware progress without changing results", async () => {
         const updates: string[] = [];
         const input = {
             encounterId: "plains_1",
@@ -57,13 +62,13 @@ describe("policy comparison", () => {
             runs: 2,
             maxActions: 0,
         };
-        const withProgress = executePolicyComparison(input, {
+        const withProgress = await executePolicyComparison(input, {
             now: () => 0,
             onProgress: (progress) => updates.push(
                 `${progress.encounterId}/${progress.policyId}:${progress.policyCompleted}/${progress.policyTotal}:${progress.overallCompleted}/${progress.overallTotal}`,
             ),
         });
-        const withoutProgress = executePolicyComparison(input, { now: () => 0 });
+        const withoutProgress = await executePolicyComparison(input, { now: () => 0 });
 
         expect(updates).toEqual([
             "plains_1/first:1/2:1/4", "plains_1/first:2/2:2/4",
