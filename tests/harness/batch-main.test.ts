@@ -1,0 +1,143 @@
+import fs from "node:fs";
+import path from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { GameView, PlayerAction } from "../../src/engine/public/types";
+import { runBatch, type BatchResult } from "../../src/harness/batch";
+import { runSingleFight } from "../../src/harness/harness";
+import { summarizeBatch } from "../../src/harness/summary";
+import { formatBatchSummary } from "../../src/harness/summary-format";
+
+vi.mock("../../src/harness/batch", () => ({ runBatch: vi.fn() }));
+vi.mock("../../src/harness/harness", () => ({ runSingleFight: vi.fn() }));
+
+const originalArgv = process.argv;
+const originalExitCode = process.exitCode;
+
+function batchFixture(): BatchResult {
+    const finalState: GameView = {
+        turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
+        characters: [], enemies: [], traps: [], encounter: null, actions: [],
+    };
+    return {
+        encounterId: "plains_1",
+        policyId: "first",
+        masterSeed: 1,
+        runs: [1, 1, 2].map((actionCount, runIndex) => ({
+            runIndex,
+            engineSeed: 100 + runIndex,
+            policySeed: 200 + runIndex,
+            result: {
+                encounterId: "plains_1",
+                engineSeed: 100 + runIndex,
+                policyId: "first",
+                policySeed: 200 + runIndex,
+                termination: "victory",
+                finalState,
+                actionCount,
+                trace: Array.from({ length: actionCount }, (): PlayerAction => ({ type: "endTurn" })),
+            },
+        })),
+    };
+}
+
+beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.spyOn(fs, "mkdirSync").mockReturnValue(undefined);
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    process.argv = [process.execPath, "batch-main.ts", "plains_1", "1", "first", "3"];
+    process.exitCode = undefined;
+    vi.mocked(runBatch).mockReturnValue(batchFixture());
+});
+
+afterEach(() => {
+    process.argv = originalArgv;
+    process.exitCode = originalExitCode;
+    vi.restoreAllMocks();
+});
+
+describe("batch CLI entry point", () => {
+    it("runs without replay, saves exactly the factual summary, and prints it with its output path", async () => {
+        const summary = summarizeBatch(batchFixture());
+        await import("../../src/harness/batch-main");
+
+        expect(runBatch).toHaveBeenCalledExactlyOnceWith({
+            encounterId: "plains_1", masterSeed: 1, policy: expect.objectContaining({ id: "first" }),
+            runs: 3, maxActions: 1000, replay: false,
+        });
+        const outputDir = path.resolve("harness-output");
+        const outputPath = path.join(outputDir, "plains_1-first-master-1-runs-3-max-1000-summary.json");
+        expect(fs.mkdirSync).toHaveBeenCalledExactlyOnceWith(outputDir, { recursive: true });
+        expect(fs.writeFileSync).toHaveBeenCalledExactlyOnceWith(outputPath, JSON.stringify(summary, null, 2), "utf8");
+        expect(summary.fightLength.actionCount?.mean).toBe(4 / 3);
+        expect(console.log).toHaveBeenCalledWith(formatBatchSummary(summary).join("\n"));
+        expect(console.log).toHaveBeenCalledWith(`\nWrote ${outputPath}`);
+        expect(console.error).not.toHaveBeenCalled();
+        expect(process.exitCode).toBeUndefined();
+    });
+
+    it("includes the explicit action limit in both the batch input and filename", async () => {
+        process.argv.push("7");
+        await import("../../src/harness/batch-main");
+
+        expect(runBatch).toHaveBeenCalledWith(expect.objectContaining({ maxActions: 7, replay: false }));
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.resolve("harness-output", "plains_1-first-master-1-runs-3-max-7-summary.json"),
+            expect.any(String), "utf8",
+        );
+    });
+
+    it("sanitizes encounter IDs to keep the summary in harness-output", async () => {
+        process.argv[2] = "../odd/encounter";
+        await import("../../src/harness/batch-main");
+
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.resolve("harness-output", ".._odd_encounter-first-master-1-runs-3-max-1000-summary.json"),
+            expect.any(String), "utf8",
+        );
+    });
+
+    it("exits unsuccessfully on invalid arguments without running or writing anything", async () => {
+        process.argv[5] = "0";
+        await import("../../src/harness/batch-main");
+
+        expect(process.exitCode).toBe(1);
+        expect(console.error).toHaveBeenCalledWith(expect.stringContaining("runs must be a positive safe integer"));
+        expect(runBatch).not.toHaveBeenCalled();
+        expect(fs.mkdirSync).not.toHaveBeenCalled();
+        expect(fs.writeFileSync).not.toHaveBeenCalled();
+        expect(console.log).not.toHaveBeenCalled();
+    });
+
+    it("reports file write failures without claiming the artifact was written", async () => {
+        vi.mocked(fs.writeFileSync).mockImplementation(() => { throw new Error("Output is not writable"); });
+        await import("../../src/harness/batch-main");
+
+        expect(process.exitCode).toBe(1);
+        expect(console.error).toHaveBeenCalledWith("Output is not writable");
+        expect(console.log).not.toHaveBeenCalled();
+    });
+
+    it("keeps the existing fight entry point and replay artifact behavior unchanged", async () => {
+        process.argv = [process.execPath, "main.ts", "plains_1", "12345", "first"];
+        const result = { ...batchFixture().runs[0].result, replay: { initialState: batchFixture().runs[0].result.finalState, steps: [] } };
+        vi.mocked(runSingleFight).mockReturnValue(result);
+        await import("../../src/harness/main");
+
+        expect(runSingleFight).toHaveBeenCalledExactlyOnceWith({
+            encounterId: "plains_1", engineSeed: 12345, policy: expect.objectContaining({ id: "first" }),
+            policySeed: 0, maxActions: 1000, replay: true,
+        });
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.resolve("harness-output", "plains_1-engine-12345-first-policy-0.json"),
+            JSON.stringify(result, null, 2), "utf8",
+        );
+        expect(runBatch).not.toHaveBeenCalled();
+        expect(process.exitCode).toBeUndefined();
+        const scripts = JSON.parse(fs.readFileSync(path.resolve("package.json"), "utf8")).scripts;
+        expect(scripts.fight).toBe("tsx src/harness/main.ts");
+        expect(scripts.batch).toBe("tsx src/harness/batch-main.ts");
+    });
+});
