@@ -45,7 +45,7 @@ export class GameEngine implements Engine {
     }
 
     getGameView(): GameView {
-        return structuredClone(this.view);
+        return this.view;
     }
 
     private refreshView() {

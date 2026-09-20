@@ -173,7 +173,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         }
 
         const action = cloneAction(input.policy.chooseAction({
-            view: structuredClone(view),
+            view: view,
             random: policyRandom,
         }));
 

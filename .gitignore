@@ -2,3 +2,5 @@ node_modules
 dist
 coverage
 harness-output
+performance/profiles*
+temp
