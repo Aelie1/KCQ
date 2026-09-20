@@ -63,6 +63,41 @@ export class GameStatus {
         return undefined;
     }
 
+    getModifiers(): ModifierSet {
+        this.modifiers = {};
+        if (this.isStanding) {
+            this.modifiers["defense"] = -2;
+        }
+
+        for (const status of this.statuses) {
+            if (!status.modifiers) {
+                continue;
+            }
+            for (const modifier in status.modifiers) {
+                const id = modifier as ModifierId;
+                const amount = status.modifiers[id];
+                if (amount) {
+                    this.modifiers[id] = (this.modifiers[id] ?? 0) + amount;
+                }
+            }
+        }
+
+        for (const buff of this.buffs) {
+            if (!buff.modifiers) {
+                continue;
+            }
+            for (const modifier in buff.modifiers) {
+                const id = modifier as ModifierId;
+                const amount = buff.modifiers[id];
+                if (amount) {
+                    this.modifiers[id] = (this.modifiers[id] ?? 0) + amount;
+                }
+            }
+        }
+
+        return this.modifiers;
+    }
+
     getModifier(id: ModifierId): number {
         const cached = this.modifiers[id];
         if (cached !== undefined) {

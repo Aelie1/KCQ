@@ -1,8 +1,8 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/helpers";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
-import { modifierIds, type iBinding, type iBuff, type iCharacter, type iEffect, type iEnemy, type iGameState, type iIntention, type iStatus, type iTrap } from "../protected/types";
-import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, ModifierSet, Move, Status, TargetInfo, Trap, ValidityInfo } from "../public/types";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iTrap } from "../protected/types";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "../public/types";
 import { evaluateBattleState, evaluateIntention, resolveMove } from "./combat";
 import type { iValidityInfo } from "./types";
 
@@ -20,22 +20,14 @@ export function serializeGameState(state: iGameState, statuses: StatusMap): Game
 }
 
 function serializeCharacter(character: iCharacter, status: GameStatus): Character {
-    const modifiers: ModifierSet = {};
-    for (const id of modifierIds) {
-        const amount = status.getModifier(id);
-        if (amount !== 0) {
-            modifiers[id] = amount;
-        }
-    }
-
     return {
         id: character.id,
         acted: character.acted,
         standing: character.standing,
         bonusEscapes: character.bonusEscapes,
+        modifiers: status.getModifiers(),
         bindings: character.bindings.map(serializeBinding),
         buffs: character.buffs.filter(x => x.active).map(serializeBuff),
-        modifiers: modifiers,
         blockedMoveTypes: status.getBlockedMoveTypes(),
         data: { ...character.data }
     };

@@ -1,6 +1,6 @@
 import {
     Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect, Enemy, EnemyEffect, EntityId,
-    HitBand, ModifierId, modifierStruct, StanceId, TargetInfo, Trap, TrapEffect, Turn
+    HitBand, StanceId, TargetInfo, Trap, TrapEffect, Turn
 } from "../public/types";
 import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "./definitions";
 
@@ -80,8 +80,6 @@ export type iStatus = {
     definition: StatusDef;
     value: number;
 }
-
-export const modifierIds = Object.keys(modifierStruct) as ModifierId[];
 
 export type iEffect =
     | iDamageEffect
