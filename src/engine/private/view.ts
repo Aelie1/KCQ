@@ -1,7 +1,7 @@
 import { MoveDef } from "../protected/definitions";
 import { getMoves } from "../protected/helpers";
-import { GameStatus, getStatus } from "../protected/status";
-import { iCharacter, iEntity, iGameState } from "../protected/types";
+import { GameStatus, getStatus, StatusMap } from "../protected/status";
+import { iCharacter, iGameState } from "../protected/types";
 import { ActionInfo, ActionView, EscapeInfo, FailureReason, StanceInfo, type GameView } from "../public/types";
 import { isValidTarget, resolveEscape } from "./combat";
 import { serializeEffects, serializeGameState, serializeMove, serializeValidity } from "./serialize";
@@ -9,7 +9,7 @@ import { iValidityInfo } from "./types";
 
 export function getGameView(state: iGameState): GameView {
     //First we cache all statuses
-    const statuses = new Map<iEntity, GameStatus>();
+    const statuses: StatusMap = new Map();
     for (const character of state.characters) {
         statuses.set(character, new GameStatus(character));
     }
@@ -24,14 +24,14 @@ export function getGameView(state: iGameState): GameView {
 }
 
 
-export function getActionView(state: iGameState, statuses: Map<iEntity, GameStatus>): ActionView[] {
+export function getActionView(state: iGameState, statuses: StatusMap): ActionView[] {
     const result: ActionView[] = [];
 
     for (const character of state.characters) {
         const status = getStatus(statuses, character);
         const capability = status.canAct();
         const moves = getMovesList(state, character, statuses);
-        const escapes = getEscapes(state, character, status);
+        const escapes = getEscapes(state, character, statuses);
         const stance = stanceAvailable(character, status);
         result.push({
             id: character.id,
@@ -58,7 +58,7 @@ function stanceAvailable(target: iCharacter, status: GameStatus): StanceInfo {
     }
 }
 
-function getMovesList(state: iGameState, actor: iCharacter, statuses: Map<iEntity, GameStatus>): ActionInfo[] {
+function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap): ActionInfo[] {
     const actions: ActionInfo[] = [];
     const status = getStatus(statuses, actor);
     const result = status.canAct("move");
@@ -103,7 +103,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: Map<iEntit
     return actions;
 }
 
-function getTargets(state: iGameState, actor: iCharacter, statuses: Map<iEntity, GameStatus>, move: MoveDef): iValidityInfo[] {
+function getTargets(state: iGameState, actor: iCharacter, statuses: StatusMap, move: MoveDef): iValidityInfo[] {
     const result: iValidityInfo[] = [];
     const actorStatus = getStatus(statuses, actor);
     if (move.targets === 0) {
@@ -150,19 +150,20 @@ function getTargets(state: iGameState, actor: iCharacter, statuses: Map<iEntity,
     return result;
 }
 
-function getEscapes(state: iGameState, actor: iCharacter, status: GameStatus): EscapeInfo[] {
+function getEscapes(state: iGameState, actor: iCharacter, statuses: StatusMap): EscapeInfo[] {
     const result: EscapeInfo[] = [];
-
-    const capability = status.canAct("escape");
+    const actorStatus = getStatus(statuses, actor);
+    const capability = actorStatus.canAct("escape");
     for (const target of state.characters) {
-        const available = capability ?? ((actor !== target && !status.canAssist()) ? "assistUnavailable" : undefined);
+        const targetStatus = getStatus(statuses, target);
+        const available = capability ?? ((actor !== target && !actorStatus.canAssist()) ? "assistUnavailable" : undefined);
         for (const binding of target.bindings) {
             result.push({
                 available: available ? false : true,
                 reason: available,
                 target: target.id,
                 binding: binding.id,
-                effects: serializeEffects(resolveEscape(actor, status, target, binding))
+                effects: serializeEffects(resolveEscape(actor, actorStatus, target, targetStatus, binding))
             });
         }
     }

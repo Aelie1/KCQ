@@ -1,6 +1,5 @@
 import {
-    Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect, Enemy, EnemyEffect, EntityId, HitBand,
-    StanceId, TargetInfo, Trap, TrapEffect, Turn
+    Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect, Enemy, EnemyEffect, EntityId, HitBand, StanceId, TargetInfo, Trap, TrapEffect, Turn
 } from "../public/types";
 import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "./definitions";
 

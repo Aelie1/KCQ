@@ -1,19 +1,19 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/helpers";
-import { GameStatus, getStatus } from "../protected/status";
-import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iStatus, iTrap } from "../protected/types";
+import { GameStatus, getStatus, StatusMap } from "../protected/status";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iTrap } from "../protected/types";
 import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "../public/types";
 import { evaluateBattleState, evaluateIntention, resolveMove } from "./combat";
 import type { iValidityInfo } from "./types";
 
-export function serializeGameState(state: iGameState, statuses: Map<iEntity, GameStatus>): GameState {
+export function serializeGameState(state: iGameState, statuses: StatusMap): GameState {
     return {
         turn: {
             ...state.turn,
             outcome: evaluateBattleState(state, statuses)
         },
         characters: state.characters.map(x => serializeCharacter(x, getStatus(statuses, x))),
-        enemies: state.enemies.map(x => serializeEnemy(state, x, getStatus(statuses, x))),
+        enemies: state.enemies.map(x => serializeEnemy(state, x, statuses)),
         traps: state.traps.map(serializeTraps),
         encounter: state.encounter ? serializeEncounter(state.encounter) : null
     };
@@ -33,25 +33,25 @@ function serializeCharacter(character: iCharacter, status: GameStatus): Characte
     };
 }
 
-function serializeEnemy(state: iGameState, enemy: iEnemy, status: GameStatus): Enemy {
+function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): Enemy {
     return {
         id: enemy.id,
         rank: enemy.rank,
         maxHp: enemy.maxHp,
         currHp: enemy.currHp,
         currDef: enemy.currDef,
-        intentions: enemy.intentions.map(x => (serializeIntention(state, status, { ...x }))),
+        intentions: enemy.intentions.map(x => (serializeIntention(state, statuses, x))),
         buffs: enemy.buffs.filter(x => x.active).map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
     };
 }
 
-function serializeIntention(state: iGameState, status: GameStatus, intention: iIntention): Intention {
+function serializeIntention(state: iGameState, statuses: StatusMap, intention: iIntention): Intention {
     const preview = {
         ...intention,
         move: { ...intention.move }
     };
-    const iTargets = evaluateIntention(state, preview, status);
+    const iTargets = evaluateIntention(state, preview, getStatus(statuses, intention.actor), statuses);
     const targets: TargetInfo[] = [];
     let effects = resolveMove(state, preview.move, preview.actor, iTargets);
     for (const iTarget of iTargets) {

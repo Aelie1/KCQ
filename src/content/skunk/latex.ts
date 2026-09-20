@@ -90,11 +90,10 @@ export const latexBindings: BindingDef = {
 
         return effects;
     },
-    onEscape(actor: iCharacter, target: iCharacter, binding: iBinding, amount: number): iEffect[] {
+    onEscape(actor: iCharacter, target: iCharacter, binding: iBinding, amount: number, spread: number): iEffect[] {
         const effects: iEffect[] = [];
         const spreadLocation: BindingDef = (actor === target && binding.definition === latexArms) ? latexHead : latexArms;
-        const status = new GameStatus(target);
-        const spreadModifier = status.getModifier("spread") * SPREAD_MODIFIER;
+        const spreadModifier = spread * SPREAD_MODIFIER;
         let spreadAmount = 0;
         if (binding.value >= thresholds.impossible) {
             const spreadRatio = (IMPOSSIBLE_SPREAD_RATIO + IMPOSSIBLE_SPREAD_RATIO

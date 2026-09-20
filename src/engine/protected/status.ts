@@ -209,7 +209,10 @@ export function mergeModifiers(target: ModifierSet, source: ModifierSet): void {
     }
 }
 
-export function getStatus(statuses: Map<iEntity, GameStatus>, entity: iEntity): GameStatus {
+
+export type StatusMap = Map<iEntity, GameStatus>;
+
+export function getStatus(statuses: StatusMap, entity: iEntity): GameStatus {
     const status = statuses.get(entity);
 
     if (!status) {

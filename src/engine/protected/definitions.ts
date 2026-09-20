@@ -45,7 +45,7 @@ export interface BindingDef {
     status?: Partial<Record<BindingLevel, iStatus[]>>;
     data?: Record<string, number>;
     onAdd?: (state: iGameState, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
-    onEscape?: (actor: iCharacter, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
+    onEscape?: (actor: iCharacter, target: iCharacter, binding: iBinding, amount: number, spread: number) => iEffect[];
     onTick?: (target: iCharacter, binding: iBinding) => iEffect[];
 }
 

@@ -476,7 +476,8 @@ export class GameEngine implements Engine {
                 }
 
                 //now we have a valid actor, target, and binding -- execute the escape
-                result.fromEffects(resolveEscape(actor, status, target, binding));
+                const targetStatus = new GameStatus(target);
+                result.fromEffects(resolveEscape(actor, status, target, targetStatus, binding));
                 if (!actor.acted) {
                     actor.acted = true;
                     status = new GameStatus(actor);

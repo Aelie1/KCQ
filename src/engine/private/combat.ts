@@ -1,6 +1,6 @@
 import { MoveDef } from "../protected/definitions";
 import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
-import { GameStatus, getStatus, mergeModifiers } from "../protected/status";
+import { GameStatus, getStatus, mergeModifiers, StatusMap } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
@@ -333,14 +333,14 @@ export function tickBindings(state: iGameState): iEffect[] {
     return effects;
 }
 
-export function resolveEscape(actor: iCharacter, status: GameStatus, target: iCharacter, binding: iBinding): iEffect[] {
+export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target: iCharacter, targetStatus: GameStatus, binding: iBinding): iEffect[] {
     const effects: iEffect[] = [];
     const basePotency = 20;
     const bindingValue = binding.value;
     const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
     const basePenalty = 15;
     let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
-    escapePotency *= 1 + status.getModifier("escape") * BINDING_MODIFIER;
+    escapePotency *= 1 + actorStatus.getModifier("escape") * BINDING_MODIFIER;
     if (actor !== target) {
         escapePotency *= 1.5;
     }
@@ -355,7 +355,7 @@ export function resolveEscape(actor: iCharacter, status: GameStatus, target: iCh
     });
 
     if (binding.definition.onEscape) {
-        effects.push(...binding.definition.onEscape(actor, target, binding, escapePotency));
+        effects.push(...binding.definition.onEscape(actor, target, binding, escapePotency, targetStatus.getModifier("spread")));
     }
 
     return effects;
@@ -383,10 +383,10 @@ function normalizeEffect(effect: iEffect): iEffect {
     }
 }
 
-export function evaluateIntention(state: iGameState, intention: iIntention, actorStatus: GameStatus): iTargetInfo[] {
+export function evaluateIntention(state: iGameState, intention: iIntention, actorStatus: GameStatus, statusMap?: StatusMap): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
     for (const roll of intention.rolls) {
-        const targetStatus = roll.target ? new GameStatus(roll.target) : null;
+        const targetStatus = roll.target ? (statusMap ? getStatus(statusMap, roll.target) : new GameStatus(roll.target)) : null;
         const info = isValidTarget(state, intention.actor, actorStatus, roll.target, targetStatus, intention.move.definition);
         if (info.valid) {
             if (info.target) {
@@ -415,7 +415,7 @@ export function evaluateIntention(state: iGameState, intention: iIntention, acto
     return targets;
 }
 
-export function evaluateBattleState(state: iGameState, statuses: Map<iEntity, GameStatus>): BattleState {
+export function evaluateBattleState(state: iGameState, statuses: StatusMap): BattleState {
     if (state.enemies.length === 0) {
         return "victory";
     }
