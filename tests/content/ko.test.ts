@@ -129,7 +129,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         engine.loadCharacter(restrainedKo.id);
         engine.loadEncounter(encounter.id);
 
-        expect(engine.getGameView().characters[0].blockedMoveTypes).toEqual(["none"]);
+        expect(engine.getGameView().characters[0].blockedMoveTypes).toEqual([]);
         expect(actionView(engine, ko.id).moves.map(({ move, available, reason }) => ({
             move: move.id,
             available,

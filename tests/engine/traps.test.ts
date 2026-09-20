@@ -196,7 +196,7 @@ describe("generic traps through GameEngine", () => {
         (reason) => {
             const restriction = reason === "bindingRestriction"
                 ? { blockedMoveTypes: ["arms" as const] }
-                : { blocksAttack: true };
+                : { flags: ["blocksAttack"] };
             const status: StatusDef = { id: "bound", levels: [{}, restriction] };
             const blocker = makeBindingDef(`${reason}-source`, {
                 easy: [{ definition: status, value: 1 }],
@@ -220,8 +220,8 @@ describe("generic traps through GameEngine", () => {
     );
 
     it.each([
-        ["self", "escapeUnavailable", { blocksEscape: true }],
-        ["ally", "assistUnavailable", { blocksAssist: true }],
+        ["self", "escapeUnavailable", { flags: ["blocksEscape"] }],
+        ["ally", "assistUnavailable", { flags: ["blocksAssist"] }],
     ] as const)("triggers before a %s escape and can interrupt it for %s", (targetId, reason, restriction) => {
         const rope = makeBindingDef("rope");
         const status: StatusDef = { id: "bound", levels: [{}, restriction] };

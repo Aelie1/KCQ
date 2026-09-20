@@ -373,7 +373,7 @@ function normalizeEffect(effect: iEffect): iEffect {
 export function evaluateIntention(state: iGameState, intention: iIntention, actorStatus: GameStatus, statusMap?: StatusMap): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
     for (const roll of intention.rolls) {
-        const targetStatus = roll.target ? (statusMap ? getStatus(statusMap, roll.target) : new GameStatus(roll.target)) : null;
+        const targetStatus = (roll.target && isValidEntity(state, roll.target)) ? (statusMap ? getStatus(statusMap, roll.target) : new GameStatus(roll.target)) : null;
         const info = isValidTarget(state, intention.actor, actorStatus, roll.target, targetStatus, intention.move.definition);
         if (info.valid) {
             if (info.target) {

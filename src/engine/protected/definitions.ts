@@ -1,4 +1,4 @@
-import type { AccuracyProfile, BindingLevel, FailureReason, ModifierId, ModifierSet, Move, MoveType, StatusId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingLevel, FailureReason, ModifierSet, Move, MoveType, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo, iTrap } from "./types";
 
@@ -59,21 +59,21 @@ export interface StatusDef {
     levels: StatusLevelDef[];
 }
 
+export type FlagId =
+    | "blocksAttack"
+    | "blocksEscape"
+    | "blocksAssist"
+    | "blocksBonusEscape"
+    | "blocksMoving"
+    | "skipsTraps"
+    | "skipsTurn"
+    | "incapacitated";
+
 export interface StatusLevelDef {
-    hasActed?: boolean;
-    hasBonusEscapes?: boolean;
-    isStanding?: boolean;
-    modifiers?: Partial<Record<ModifierId, number>>;
+    modifiers?: ModifierSet;
+    flags?: FlagId[];
     allowedMoveTypes?: MoveType[];
     blockedMoveTypes?: MoveType[];
-    blocksAttack?: boolean;
-    blocksEscape?: boolean;
-    blocksAssist?: boolean;
-    blocksBonusEscape?: boolean;
-    blocksMoving?: boolean;
-    skipsTraps?: boolean;
-    skipsTurn?: boolean;
-    incapacitated?: boolean;
 }
 
 export interface EncounterDef {

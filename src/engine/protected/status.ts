@@ -1,37 +1,37 @@
 import { ActionType, FailureReason, ModifierId, ModifierSet, MoveType } from "../public/types";
-import { StatusDef, StatusLevelDef } from "./definitions";
+import { FlagId, StatusDef, StatusLevelDef } from "./definitions";
 import { getBindingLevel, isCharacter } from "./helpers";
-import { iEntity, iStatus } from "./types";
+import { iBuff, iEntity, iStatus } from "./types";
 
 export class GameStatus {
-    private status: StatusLevelDef & { modifiers: ModifierSet };
+    private statuses: StatusLevelDef[];
+    private buffs: iBuff[];
+
+    private modifiers: ModifierSet;
+    private flags: Partial<Record<FlagId, boolean>>;
+    private blockedMoveTypes: Partial<Record<MoveType, boolean>>;
+    private hasActed: boolean | undefined;
+    private hasBonusEscapes: boolean | undefined;
+    private isStanding: boolean | undefined;
 
     constructor(target: iEntity) {
-        this.status = { modifiers: {} };
-        if (isCharacter(target)) {
-            this.status.hasActed = target.acted;
-            this.status.hasBonusEscapes = target.bonusEscapes > 0;
-            this.status.isStanding = target.standing;
-            if (target.standing) {
-                this.status.modifiers["defense"] = -2;
-            }
+        this.modifiers = {};
+        this.flags = {};
+        this.blockedMoveTypes = {};
+        this.statuses = [];
+        for (const status of this.getStatusList(target)) {
+            this.statuses.push(status.definition.levels[status.value]);
         }
-        for (const statusState of this.getStatusList(target)) {
-            const level = statusState.definition.levels[statusState.value];
-            this.mergeStatus(level);
-        }
-
         for (const passive of target.definition.passives) {
             if (passive.status) {
-                this.mergeStatus(passive.status);
+                this.statuses.push(passive.status);
             }
         }
-
-        for (const buff of target.buffs) {
-            if (!buff.modifiers || !buff.active) {
-                continue;
-            }
-            this.mergeModifiers(buff.modifiers)
+        this.buffs = target.buffs.filter(buff => (buff.active && buff.modifiers));
+        if (isCharacter(target)) {
+            this.hasActed = target.acted;
+            this.hasBonusEscapes = target.bonusEscapes > 0;
+            this.isStanding = target.standing;
         }
     }
 
@@ -44,7 +44,7 @@ export class GameStatus {
             return "actorSkipped";
         }
 
-        if (this.status.hasActed && ((type && type !== "escape") || !this.status.hasBonusEscapes)) {
+        if (this.hasActed && ((type && type !== "escape") || !this.hasBonusEscapes)) {
             return "actorAlreadyActed";
         }
 
@@ -55,7 +55,7 @@ export class GameStatus {
                 }
                 break;
             case "stance":
-                if (this.status.isStanding && !this.canMove()) {
+                if (this.isStanding && !this.canMove()) {
                     return "actorImmobilized";
                 }
                 break;
@@ -64,51 +64,106 @@ export class GameStatus {
     }
 
     getModifier(id: ModifierId): number {
-        return this.status.modifiers[id] ?? 0;
-    }
+        const cached = this.modifiers[id];
+        if (cached !== undefined) {
+            return cached;
+        }
 
-    getModifiers(): ModifierSet {
-        return { ...this.status.modifiers };
+        let amount = this.isStanding && id === "defense" ? -2 : 0;
+        for (const status of this.statuses) {
+            if (status.modifiers?.[id]) {
+                amount += status.modifiers?.[id];
+            }
+        }
+
+        for (const buff of this.buffs) {
+            if (buff.modifiers?.[id]) {
+                amount += buff.modifiers?.[id];
+            }
+        }
+
+        this.modifiers[id] = amount;
+        return amount;
     }
 
     getBlockedMoveTypes(): MoveType[] {
-        return this.status.blockedMoveTypes?.filter(type => !this.status.allowedMoveTypes?.includes(type)) ?? [];
-    }
-
-    canAttack(): boolean {
-        return !this.status.blocksAttack;
+        const types: MoveType[] = [];
+        for (const type of ["arms", "mouth", "legs"] as MoveType[]) {
+            if (!this.canUseMoveType(type)) {
+                types.push(type);
+            }
+        }
+        return types;
     }
 
     canUseMoveType(type: MoveType): boolean {
-        return !this.status.blockedMoveTypes?.includes(type) || (this.status.allowedMoveTypes?.includes(type) ?? false);
+        const cached = this.blockedMoveTypes[type];
+        if (cached !== undefined) {
+            return !cached;
+        }
+
+        let blocked = false;
+        for (const status of this.statuses) {
+            if (status.blockedMoveTypes?.includes(type)) {
+                blocked = true;
+            }
+            if (status.allowedMoveTypes?.includes(type)) {
+                this.blockedMoveTypes[type] = false;
+                return true;
+            }
+        }
+
+        this.blockedMoveTypes[type] = blocked;
+        return !blocked;
+    }
+
+    canAttack(): boolean {
+        return !this.hasFlag("blocksAttack");
     }
 
     canEscape(): boolean {
-        return !this.status.blocksEscape;
+        return !this.hasFlag("blocksEscape");
     }
 
     canAssist(): boolean {
-        return !this.status.blocksAssist;
+        return !this.hasFlag("blocksAssist");
     }
 
     canMove(): boolean {
-        return !this.status.blocksMoving;
+        return !this.hasFlag("blocksMoving");
     }
 
     canBonusEscape(): boolean {
-        return !this.status.blocksBonusEscape;
+        return !this.hasFlag("blocksBonusEscape");
     }
 
     isSkipped(): boolean {
-        return this.status.skipsTurn ?? false;
+        return this.hasFlag("skipsTurn");
     }
 
     ignoresTraps(): boolean {
-        return this.status.skipsTraps ?? false;
+        return this.hasFlag("skipsTraps");
     }
 
     isIncapacitated(): boolean {
-        return this.status.incapacitated ?? false;
+        return this.hasFlag("incapacitated");
+    }
+
+    private hasFlag(flag: FlagId): boolean {
+        const cached = this.flags[flag];
+        if (cached !== undefined) {
+            return cached;
+        }
+
+        for (const status of this.statuses) {
+            if (status.flags?.includes(flag)) {
+                this.flags[flag] = true;
+                return true;
+            }
+        }
+
+        this.flags[flag] = false;
+        return false;
     }
 
     private getStatusList(target: iEntity): iStatus[] {
@@ -149,8 +204,8 @@ export class GameStatus {
         for (const modifier in source) {
             const amount = source[modifier as ModifierId];
             if (amount !== undefined) {
-                this.status.modifiers[modifier as ModifierId] =
-                    (this.status.modifiers[modifier as ModifierId] ?? 0) + amount;
+                this.modifiers[modifier as ModifierId] =
+                    (this.modifiers[modifier as ModifierId] ?? 0) + amount;
             }
         }
     }
@@ -163,39 +218,6 @@ export class GameStatus {
         } else if (source.value > target[index].value) {
             target[index] = source;
         }
-    }
-
-    private mergeStatus(source: StatusLevelDef): void {
-        if (source.modifiers) {
-            this.status.modifiers ??= {};
-            this.mergeModifiers(source.modifiers);
-        }
-
-        if (source.allowedMoveTypes) {
-            this.status.allowedMoveTypes ??= [];
-            for (const type of source.allowedMoveTypes) {
-                if (!this.status.allowedMoveTypes.includes(type)) {
-                    this.status.allowedMoveTypes.push(type);
-                }
-            }
-        }
-        if (source.blockedMoveTypes) {
-            this.status.blockedMoveTypes ??= [];
-            for (const type of source.blockedMoveTypes) {
-                if (!this.status.blockedMoveTypes.includes(type)) {
-                    this.status.blockedMoveTypes.push(type);
-                }
-            }
-        }
-
-        if (source.blocksAssist) this.status.blocksAssist = true;
-        if (source.blocksAttack) this.status.blocksAttack = true;
-        if (source.blocksBonusEscape) this.status.blocksBonusEscape = true;
-        if (source.blocksEscape) this.status.blocksEscape = true;
-        if (source.blocksMoving) this.status.blocksMoving = true;
-        if (source.incapacitated) this.status.incapacitated = true;
-        if (source.skipsTraps) this.status.skipsTraps = true;
-        if (source.skipsTurn) this.status.skipsTurn = true;
     }
 }
 

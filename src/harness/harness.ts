@@ -162,7 +162,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
 
     if (input.replay === true) {
         replay = {
-            initialState: view,
+            initialState: structuredClone(view),
             steps: [],
         };
     }
@@ -198,7 +198,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             action,
             success: true,
             events: result.events,
-            state: result.view,
+            state: structuredClone(result.view),
         });
 
         metrics.damage += result.events.reduce(

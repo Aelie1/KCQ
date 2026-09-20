@@ -18,7 +18,7 @@ const ROCKFALL_DAMAGE = 40;
 
 const subspaceMovement: PassiveDef = {
     id: "subspaceMovement",
-    status: { skipsTraps: true },
+    status: { flags: ["skipsTraps"] },
     immunities: [hobbled]
 }
 

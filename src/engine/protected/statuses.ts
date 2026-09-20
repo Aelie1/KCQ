@@ -6,8 +6,8 @@ export const bound: StatusDef = {
         {},
         { modifiers: { hitarms: -2 } },
         { modifiers: { hitarms: -4 } },
-        { modifiers: { hitarms: -6 }, blockedMoveTypes: ["arms"], blocksAssist: true },
-        { modifiers: { hitarms: -8, escape: -1 }, blockedMoveTypes: ["arms"], blocksAssist: true }
+        { modifiers: { hitarms: -6 }, blockedMoveTypes: ["arms"], flags: ["blocksAssist"] },
+        { modifiers: { hitarms: -8, escape: -1 }, blockedMoveTypes: ["arms"], flags: ["blocksAssist"] }
     ]
 };
 
@@ -37,10 +37,10 @@ export const vibrating: StatusDef = {
     id: "vibrating",
     levels: [
         {},
-        { modifiers: { escape: -1 }, blocksBonusEscape: true },
-        { modifiers: { escape: -2 }, blocksBonusEscape: true },
-        { modifiers: { escape: -3 }, blocksBonusEscape: true },
-        { modifiers: { escape: -4 }, blocksBonusEscape: true }
+        { modifiers: { escape: -1 }, flags: ["blocksBonusEscape"] },
+        { modifiers: { escape: -2 }, flags: ["blocksBonusEscape"] },
+        { modifiers: { escape: -3 }, flags: ["blocksBonusEscape"] },
+        { modifiers: { escape: -4 }, flags: ["blocksBonusEscape"] }
     ]
 };
 
@@ -81,7 +81,7 @@ export const immobilized: StatusDef = {
     id: "immobilized",
     levels: [
         {},
-        { blocksMoving: true }
+        { flags: ["blocksMoving"] }
     ]
 };
 
@@ -89,7 +89,9 @@ export const helpless: StatusDef = {
     id: "helpless",
     levels: [
         {},
-        { skipsTurn: true }
+        {
+            flags: ["skipsTurn"]
+        }
     ]
 };
 
@@ -97,7 +99,9 @@ export const incapacitated: StatusDef = {
     id: "incapacitated",
     levels: [
         {},
-        { skipsTurn: true, incapacitated: true }
+        {
+            flags: ["skipsTurn", "incapacitated"]
+        }
     ]
 };
 
@@ -105,7 +109,9 @@ export const stunned: StatusDef = {
     id: "stunned",
     levels: [
         {},
-        { blocksAttack: true, blocksEscape: true, blocksMoving: true }
+        {
+            flags: ["blocksAttack", "blocksEscape", "blocksMoving"]
+        }
     ]
 };
 
@@ -113,6 +119,6 @@ export const servitude: StatusDef = {
     id: "servitude",
     levels: [
         {},
-        { blocksEscape: true }
+        { flags: ["blocksEscape"] }
     ]
 };

@@ -6,7 +6,7 @@ const TELEKINESIS_DAMAGE = 100;
 
 const thousandRestraintsBody: PassiveDef = {
     id: "thousandRestraintsBody",
-    status: { allowedMoveTypes: ["arms", "legs", "mouth"], blocksEscape: true }
+    status: { allowedMoveTypes: ["arms", "legs", "mouth"], flags: ["blocksEscape"] }
 }
 
 export const ko: CharacterDef = {

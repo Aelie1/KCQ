@@ -271,19 +271,21 @@ export type StatusId =
 
 export type ModifierSet = Partial<Record<ModifierId, number>>;
 
-export type ModifierId =
-    | "hitarms"
-    | "hitmouth"
-    | "hitlegs"
-    | "hit"
-    | "defense"
-    | "escape"
-    | "vulnerability"
-    | "potency"
-    | "traps"
-    | "willpower"
-    | "spread"
+export const modifierStruct = {
+    "hitarms": true,
+    "hitmouth": true,
+    "hitlegs": true,
+    "hit": true,
+    "defense": true,
+    "escape": true,
+    "vulnerability": true,
+    "potency": true,
+    "traps": true,
+    "willpower": true,
+    "spread": true,
+}
 
+export type ModifierId = keyof typeof modifierStruct;
 
 export interface ActionInfo {
     move: Move;
