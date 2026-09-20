@@ -66,7 +66,7 @@ describe("batch CLI entry point", () => {
         expect(runBatch).toHaveBeenCalledExactlyOnceWith({
             encounterId: "plains_1", masterSeed: 1, policy: expect.objectContaining({ id: "first" }),
             runs: 3, maxActions: 1000, replay: false,
-        });
+        }, { onProgress: expect.any(Function) });
         const outputDir = path.resolve("harness-output");
         const outputPath = path.join(outputDir, "plains_1-first-master-1-runs-3-max-1000-summary.json");
         expect(fs.mkdirSync).toHaveBeenCalledExactlyOnceWith(outputDir, { recursive: true });
@@ -82,7 +82,10 @@ describe("batch CLI entry point", () => {
         process.argv.push("7");
         await import("../../src/harness/batch-main");
 
-        expect(runBatch).toHaveBeenCalledWith(expect.objectContaining({ maxActions: 7, replay: false }));
+        expect(runBatch).toHaveBeenCalledWith(
+            expect.objectContaining({ maxActions: 7, replay: false }),
+            { onProgress: expect.any(Function) },
+        );
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             path.resolve("harness-output", "plains_1-first-master-1-runs-3-max-7-summary.json"),
             expect.any(String), "utf8",

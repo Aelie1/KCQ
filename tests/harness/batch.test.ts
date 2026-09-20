@@ -101,6 +101,31 @@ describe("batch harness", () => {
         });
     });
 
+    it("reports each completed run with the stable total", () => {
+        const updates: Array<[number, number]> = [];
+        runBatch({
+            encounterId: stockEncounterId(),
+            policy: firstPolicy,
+            masterSeed: 1,
+            runs: 3,
+            maxActions: 1,
+        }, { onProgress: (completed, total) => updates.push([completed, total]) });
+
+        expect(updates).toEqual([[1, 3], [2, 3], [3, 3]]);
+    });
+
+    it("keeps deterministic results identical with and without a progress callback", () => {
+        const input = {
+            encounterId: stockEncounterId(),
+            policy: firstPolicy,
+            masterSeed: 456,
+            runs: 4,
+            maxActions: 5,
+        };
+
+        expect(runBatch(input, { onProgress: () => {} })).toEqual(runBatch(input));
+    });
+
     it.each([
         [Number.NaN, 0, "masterSeed"],
         [1.5, 0, "masterSeed"],

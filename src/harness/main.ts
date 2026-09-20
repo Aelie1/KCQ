@@ -1,6 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
 import { runSingleFight } from "./harness";
+import { writeFightResult } from "./output";
 import { getPolicy } from "./policies";
 
 const DEFAULT_POLICY_SEED = 0;
@@ -23,31 +22,16 @@ if (!policy) {
     fail(`Unknown policy: ${policyId}. Available policies: first, random, swing-only`);
 }
 
-const result = runSingleFight({
+const input = {
     encounterId,
     engineSeed,
     policy,
     policySeed,
     maxActions: DEFAULT_MAX_ACTIONS,
     replay: true,
-});
-
-const outputDir = path.resolve("harness-output");
-fs.mkdirSync(outputDir, { recursive: true });
-
-const filename = [
-    safeFilenamePart(encounterId),
-    `engine-${engineSeed}`,
-    safeFilenamePart(policy.id),
-    `policy-${policySeed}`,
-].join("-") + ".json";
-const outputPath = path.join(outputDir, filename);
-
-fs.writeFileSync(
-    outputPath,
-    JSON.stringify(result, null, 2),
-    "utf8",
-);
+} as const;
+const result = runSingleFight(input);
+const outputPath = writeFightResult(input, result);
 
 console.log(`Wrote ${outputPath}`);
 
@@ -57,10 +41,6 @@ function parseSeed(value: string, name: string): number {
         fail(`${name} must be a safe integer; received ${value}`);
     }
     return parsed;
-}
-
-function safeFilenamePart(value: string): string {
-    return value.replace(/[^a-zA-Z0-9_.-]/g, "_");
 }
 
 function fail(message: string): never {

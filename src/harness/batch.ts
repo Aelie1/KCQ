@@ -27,6 +27,11 @@ export interface BatchResult {
     runs: BatchRun[];
 }
 
+/** Runtime-only hooks. These are deliberately separate from serializable BatchInput. */
+export interface BatchExecutionOptions {
+    onProgress?: (completed: number, total: number) => void;
+}
+
 export interface RunSeeds {
     engineSeed: number;
     policySeed: number;
@@ -55,7 +60,10 @@ export function deriveRunSeeds(masterSeed: number, runIndex: number): RunSeeds {
 }
 
 /** Runs a batch in run-index order using the single-fight harness primitive. */
-export function runBatch(input: BatchInput): BatchResult {
+export function runBatch(
+    input: BatchInput,
+    options: BatchExecutionOptions = {},
+): BatchResult {
     assertSafeInteger(input.masterSeed, "masterSeed");
     assertNonNegativeSafeInteger(input.runs, "runs");
 
@@ -72,6 +80,7 @@ export function runBatch(input: BatchInput): BatchResult {
         });
 
         runs.push({ runIndex, engineSeed, policySeed, result });
+        options.onProgress?.(runIndex + 1, input.runs);
     }
 
     return {

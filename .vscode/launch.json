@@ -20,7 +20,7 @@
             "type": "node",
             "request": "launch",
             "name": "Debug Single Fight",
-            "program": "${workspaceFolder}/dist/harness/main.js",
+            "program": "${workspaceFolder}/dist/harness/launcher-main.js",
             "preLaunchTask": "build",
             "outFiles": [
                 "${workspaceFolder}/dist/**/*.js"

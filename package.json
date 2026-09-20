@@ -9,6 +9,7 @@
         "start": "tsc && node dist/main.js",
         "fight": "tsx src/harness/main.ts",
         "batch": "tsx src/harness/batch-main.ts",
+        "harness": "tsx src/harness/launcher-main.ts",
         "test": "tsc -p tsconfig.test.json && vitest run",
         "coverage": "vitest --coverage",
         "typecheck": "tsc -p tsconfig.build.json --noEmit",
