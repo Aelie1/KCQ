@@ -2,7 +2,7 @@ import { MoveDef } from "../protected/definitions";
 import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
-import { AccuracyProfile, AccuracyResult, BattleState, HitBand, ModifierId, type EntitySide } from "../public/types";
+import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
@@ -69,17 +69,11 @@ function calculateAccuracy(actor: iEntity, actorStatus: GameStatus, target: iEnt
         return null;
     }
 
-    const clamp = (value: number, min: number, max: number): number =>
-        Math.max(min, Math.min(max, value));
-
-    const calcModifier = (status: GameStatus, move: MoveDef, modifier: ModifierId): number =>
-        status.getModifier(modifier) + (move.modifiers?.[modifier] ?? 0);
-
     let hitModifier = 0;
     let defenseModifier = 0;
 
     if ((move.check ?? "accuracy") === "willpower") {
-        hitModifier = calcModifier(actorStatus, move, "willpower") * WILLPOWER_MODIFIER;
+        hitModifier = (actorStatus.getModifier("willpower") + (move.modifiers?.["willpower"] ?? 0)) * WILLPOWER_MODIFIER;
 
         //Ignore target's willpower when you have no target
         if (targetStatus != null) {
@@ -87,20 +81,20 @@ function calculateAccuracy(actor: iEntity, actorStatus: GameStatus, target: iEnt
         }
     }
     else {
-        hitModifier = calcModifier(actorStatus, move, "hit") * HIT_MODIFIER;
+        hitModifier = (actorStatus.getModifier("hit") + (move.modifiers?.["hit"] ?? 0)) * HIT_MODIFIER;
 
         if (isCharacter(actor)) {
             switch (move.type) {
                 case "arms":
-                    hitModifier += calcModifier(actorStatus, move, "hitarms") * HIT_MODIFIER;
+                    hitModifier += (actorStatus.getModifier("hitarms") + (move.modifiers?.["hitarms"] ?? 0)) * HIT_MODIFIER;
                     break;
 
                 case "mouth":
-                    hitModifier += calcModifier(actorStatus, move, "hitmouth") * HIT_MODIFIER;
+                    hitModifier += (actorStatus.getModifier("hitmouth") + (move.modifiers?.["hitmouth"] ?? 0)) * HIT_MODIFIER;
                     break;
 
                 case "legs":
-                    hitModifier += calcModifier(actorStatus, move, "hitlegs") * HIT_MODIFIER;
+                    hitModifier += (actorStatus.getModifier("hitlegs") + (move.modifiers?.["hitlegs"] ?? 0)) * HIT_MODIFIER;
                     break;
             }
         }
@@ -151,20 +145,20 @@ function calculateAccuracy(actor: iEntity, actorStatus: GameStatus, target: iEnt
             critDelta = Math.min(delta, 0) * 0.1;
         }
 
-        crit = clamp(baseCrit + critDelta, 0, 100);
+        crit = Math.max(0, Math.min(100, baseCrit + critDelta));
     }
 
     /*
      * Full hits react directly to accuracy.
      * Mere contact reacts only half as strongly.
      */
-    let fullHit = clamp(baseFullHit + delta, 0, 100);
-    let contact = clamp(baseContact + delta * 0.5, 0, 100);
+    let fullHit = Math.max(0, Math.min(100, baseFullHit + delta));
+    let contact = Math.max(0, Math.min(100, baseContact + delta * 0.5));
 
     // crit must live inside the full hit region.
-    fullHit = clamp(fullHit, crit, 100);
+    fullHit = Math.max(crit, Math.min(100, fullHit));
     // Full hit must live inside the contact region.
-    contact = clamp(contact, fullHit, 100);
+    contact = Math.max(fullHit, Math.min(100, contact));
 
     /*
      * Preserve structural zero-width bands.
