@@ -155,8 +155,12 @@ export class GameStatus {
     }
 
     private mergeModifiers(source: ModifierSet): void {
-        for (const [modifier, amount] of Object.entries(source) as [ModifierId, number][]) {
-            this.status.modifiers[modifier] = (this.status.modifiers[modifier] ?? 0) + amount;
+        for (const modifier in source) {
+            const amount = source[modifier as ModifierId];
+            if (amount !== undefined) {
+                this.status.modifiers[modifier as ModifierId] =
+                    (this.status.modifiers[modifier as ModifierId] ?? 0) + amount;
+            }
         }
     }
 
@@ -204,8 +208,12 @@ export class GameStatus {
 }
 
 export function mergeModifiers(target: ModifierSet, source: ModifierSet): void {
-    for (const [modifier, amount] of Object.entries(source) as [ModifierId, number][]) {
-        target[modifier] = (target[modifier] ?? 0) + amount;
+    for (const modifier in source) {
+        const amount = source[modifier as ModifierId];
+        if (amount !== undefined) {
+            target[modifier as ModifierId] =
+                (target[modifier as ModifierId] ?? 0) + amount;
+        }
     }
 }
 

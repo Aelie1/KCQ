@@ -1,8 +1,8 @@
 import { MoveDef } from "../protected/definitions";
 import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
-import { GameStatus, getStatus, mergeModifiers, StatusMap } from "../protected/status";
+import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
-import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
+import { AccuracyProfile, AccuracyResult, BattleState, HitBand, ModifierId, type EntitySide } from "../public/types";
 import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
@@ -72,47 +72,43 @@ function calculateAccuracy(actor: iEntity, actorStatus: GameStatus, target: iEnt
     const clamp = (value: number, min: number, max: number): number =>
         Math.max(min, Math.min(max, value));
 
-    const actorModifiers = actorStatus.getModifiers();
-    const targetModifiers = targetStatus ? targetStatus.getModifiers() : {};
-
-    if (move.modifiers) {
-        mergeModifiers(actorModifiers, move.modifiers);
-    }
+    const calcModifier = (status: GameStatus, move: MoveDef, modifier: ModifierId): number =>
+        status.getModifier(modifier) + (move.modifiers?.[modifier] ?? 0);
 
     let hitModifier = 0;
     let defenseModifier = 0;
 
     if ((move.check ?? "accuracy") === "willpower") {
-        hitModifier = (actorModifiers.willpower ?? 0) * WILLPOWER_MODIFIER;
+        hitModifier = calcModifier(actorStatus, move, "willpower") * WILLPOWER_MODIFIER;
 
         //Ignore target's willpower when you have no target
-        if (target != null) {
-            defenseModifier = (targetModifiers.willpower ?? 0) * WILLPOWER_MODIFIER;
+        if (targetStatus != null) {
+            defenseModifier = targetStatus.getModifier("willpower") * WILLPOWER_MODIFIER;
         }
     }
     else {
-        hitModifier = (actorModifiers.hit ?? 0) * HIT_MODIFIER;
+        hitModifier = calcModifier(actorStatus, move, "hit") * HIT_MODIFIER;
 
         if (isCharacter(actor)) {
             switch (move.type) {
                 case "arms":
-                    hitModifier += (actorModifiers.hitarms ?? 0) * HIT_MODIFIER;
+                    hitModifier += calcModifier(actorStatus, move, "hitarms") * HIT_MODIFIER;
                     break;
 
                 case "mouth":
-                    hitModifier += (actorModifiers.hitmouth ?? 0) * HIT_MODIFIER;
+                    hitModifier += calcModifier(actorStatus, move, "hitmouth") * HIT_MODIFIER;
                     break;
 
                 case "legs":
-                    hitModifier += (actorModifiers.hitlegs ?? 0) * HIT_MODIFIER;
+                    hitModifier += calcModifier(actorStatus, move, "hitlegs") * HIT_MODIFIER;
                     break;
             }
         }
 
         //Ignore defense when you have no target
-        if (target != null) {
+        if (target != null && targetStatus != null) {
             defenseModifier = (isEnemy(target) ? target.currDef : 0);
-            defenseModifier += (targetModifiers.defense ?? 0) * DEFENSE_MODIFIER;
+            defenseModifier += targetStatus.getModifier("defense") * DEFENSE_MODIFIER;
         }
     }
 
@@ -239,11 +235,8 @@ export function evaluateResult(actor: iEntity, actorStatus: GameStatus, target: 
 export function evaluateProfile(actor: iEntity, status: GameStatus, move: MoveDef, accuracy: AccuracyProfile, roll: number, vulnerability: number): AccuracyResult {
     const order: HitBand[] = ["miss", "graze", "hit", "crit"];
     const result: AccuracyResult = { band: "none", effectiveness: 0 }
-    const modifiers = status.getModifiers();
-    if (move.modifiers) {
-        mergeModifiers(modifiers, move.modifiers);
-    }
-    const potency = modifiers.potency ?? 0;
+        ;
+    const potency = status.getModifier("potency") + (move.modifiers?.["potency"] ?? 0);
 
     let cumulative = 0;
     for (const band of order) {
