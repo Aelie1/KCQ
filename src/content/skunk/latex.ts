@@ -23,10 +23,6 @@ export const latexBindings: BindingDef = {
         if (binding.value > binding.data["peak"]) {
             binding.data["peak"] = binding.value;
         }
-        const status = new GameStatus(target);
-        if (status.isIncapacitated()) {
-            return effects;
-        }
 
         const skunkedDefs = [latexHead, latexArms, latexTorso, latexLegs];
         const bindings = target.bindings.filter(x => skunkedDefs.includes(x.definition));
@@ -35,7 +31,12 @@ export const latexBindings: BindingDef = {
             return effects;
         }
 
-        //We're already Impossible x4, incapacitate the player
+        //We're already Impossible x4, incapacitate the player, if they aren't already
+        const status = new GameStatus(target);
+        if (status.isIncapacitated()) {
+            return effects;
+        }
+
         const skunketteName = "skunkette" + target.id[0].toUpperCase() + target.id.slice(1).toLowerCase();
         const cBuff: iBuff = {
             id: "skunked",

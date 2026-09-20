@@ -1,0 +1,19 @@
+{
+    "buttons": [
+        {
+            "id": "build",
+            "label": "$(tools) Build",
+            "task": "build"
+        },
+        {
+            "id": "perf",
+            "label": "$(pulse) Perf",
+            "task": "perf"
+        },
+        {
+            "id": "profile",
+            "label": "$(graph) Profile",
+            "task": "profile"
+        }
+    ]
+}

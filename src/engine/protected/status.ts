@@ -12,6 +12,9 @@ export class GameStatus {
             this.status.hasActed = target.acted;
             this.status.hasBonusEscapes = target.bonusEscapes > 0;
             this.status.isStanding = target.standing;
+            if (target.standing) {
+                this.status.modifiers["defense"] = -2;
+            }
         }
         for (const statusState of this.getStatusList(target)) {
             const level = statusState.definition.levels[statusState.value];
@@ -121,18 +124,6 @@ export class GameStatus {
                     this.mergeIStatus(statuses, bindingStatus);
                 }
             }
-            if (target.standing) {
-                statuses.push({
-                    definition: {
-                        id: "standing",
-                        levels: [
-                            {},
-                            { modifiers: { defense: -2 } }
-                        ]
-                    },
-                    value: 1
-                });
-            }
         }
         for (const buff of target.buffs) {
             if (!buff.active || !buff.statuses) {
@@ -165,11 +156,12 @@ export class GameStatus {
     }
 
     private mergeIStatus(target: iStatus[], source: iStatus) {
-        const statusState = target.find(x => x.definition === source.definition);
-        if (statusState) {
-            statusState.value = Math.max(statusState.value, source.value);
-        } else {
-            target.push({ definition: source.definition, value: source.value });
+        const index = target.findIndex(x => x.definition === source.definition);
+
+        if (index === -1) {
+            target.push(source);
+        } else if (source.value > target[index].value) {
+            target[index] = source;
         }
     }
 
@@ -196,27 +188,16 @@ export class GameStatus {
             }
         }
 
-        this.status.blocksAssist ||= source.blocksAssist;
-        this.status.blocksAttack ||= source.blocksAttack;
-        this.status.blocksBonusEscape ||= source.blocksBonusEscape;
-        this.status.blocksEscape ||= source.blocksEscape;
-        this.status.blocksMoving ||= source.blocksMoving;
-        this.status.incapacitated ||= source.incapacitated;
-        this.status.skipsTraps ||= source.skipsTraps;
-        this.status.skipsTurn ||= source.skipsTurn;
+        if (source.blocksAssist) this.status.blocksAssist = true;
+        if (source.blocksAttack) this.status.blocksAttack = true;
+        if (source.blocksBonusEscape) this.status.blocksBonusEscape = true;
+        if (source.blocksEscape) this.status.blocksEscape = true;
+        if (source.blocksMoving) this.status.blocksMoving = true;
+        if (source.incapacitated) this.status.incapacitated = true;
+        if (source.skipsTraps) this.status.skipsTraps = true;
+        if (source.skipsTurn) this.status.skipsTurn = true;
     }
 }
-
-export function mergeModifiers(target: ModifierSet, source: ModifierSet): void {
-    for (const modifier in source) {
-        const amount = source[modifier as ModifierId];
-        if (amount !== undefined) {
-            target[modifier as ModifierId] =
-                (target[modifier as ModifierId] ?? 0) + amount;
-        }
-    }
-}
-
 
 export type StatusMap = Map<iEntity, GameStatus>;
 

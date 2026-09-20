@@ -267,7 +267,6 @@ export type StatusId =
     | "helpless"
     | "stunned"
     | "incapacitated"
-    | "standing"
     | "servitude";
 
 export type ModifierSet = Partial<Record<ModifierId, number>>;
