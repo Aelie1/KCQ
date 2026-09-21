@@ -39,7 +39,7 @@ Use these names consistently while discussing the lineage:
 - Arena v1's wiki was open. PvE/Boss/Adventure-looking pages in that wiki are not automatically evidence of the user's own design trajectory; some were community-created.
 - An independent JavaScript implementation of Arena v2 made by another player exists. Treat it as a useful interpretation/automation side branch, not automatically as a main lineage step.
 - Adventure was collaborative. Talyn authored the feats and a substantial amount of the surrounding class/mechanical material. The user's strongest personal authorship/interest is in the scenarios, especially Skunk, Bandit, and Castle. Do not treat every Adventure subsystem as direct evidence of the user's own design intent.
-- Lia's Adventure is much larger than the combat Castle versions but is not a combat game. Use it later to mine rooms, situations, route concepts, traps, prose ideas, etc.; do not let its structure override Adventure/Quest PnP/Quest Castle when reconstructing the combat lineage.
+- Lia's Adventure is much larger than the combat Castle versions but is not a combat game. Use it later to mine rooms, situations, traps, prose ideas, route concepts, etc.; do not let its structure override Adventure/Quest PnP/Quest Castle when reconstructing the combat lineage.
 
 ## Lineage / Main Design Pressures
 
@@ -49,7 +49,7 @@ Use these names consistently while discussing the lineage:
 | **Arena v2** | Fix Arena v1's mechanical/balance problems | Standardized attack slots, 2d10, staged buildup, and an ultimate that rewards accumulated board state created a much cleaner PvP game. |
 | **Adventure** | Most of the community wanted to play subs and had little/no interest in dominating another player | PvE solved an incentive/social problem rather than a flaw in Arena v2's PvP rules. |
 | **Quest PnP** | Adventure sessions were slow and produced substantial player downtime | Strip down the human procedure while making bondage itself the player's defeat/progression system. |
-| **Quest** | Dealing with other people was itself a barrier to play | Computerization made the system reliably playable and gave the rules substantial real testing despite sparse PnP play. |
+| **Quest** | Coordinating with other players was itself a barrier to play | Computerization made the system reliably playable and gave the rules substantial real testing despite sparse PnP play. |
 | **KCQ** | Modern implementation and AI may remove old GM/programming/content burdens | Reconsider ideas that died because of human-GM load, programming cost, or multiplayer downtime—not only ideas that were genuinely unfun. |
 
 
@@ -1365,7 +1365,7 @@ Use two evidence buckets:
 - **Contemporaneous development evidence (especially 2016):** explains what the project felt like while it was active.
 - **Later reception evidence:** tells us what survived, what confused later players, and what had long-term appeal.
 
-Do not retroactively imply that later praise should have caused a revival.
+Later positive reception should not be treated as evidence that the conditions for a revival existed during active development.
 
 ## Strong positive reception existed
 
@@ -1375,11 +1375,11 @@ Multiple players also asked for an editable/downloadable engine or toolkit for m
 
 **Historical lesson:** Quest's core idea did have an audience. The project did not die because nobody wanted the concept.
 
-## But the feedback reaching the developer felt much more negative
+## But the contemporaneous feedback environment felt much more negative
 
-The developer's own later recollection remained that “no one really liked the game other than me,” even though the archive now shows enthusiastic fans.
+The developer later remembered the contemporary response as “no one really liked the game other than me,” even though the surviving archive now shows a number of enthusiastic fans.
 
-This is not a contradiction to resolve by saying the recollection was wrong.
+The discrepancy is useful rather than contradictory: the feedback that was visible and actionable during active development was not necessarily representative of the game's eventual audience.
 
 The actionable feedback visible during development was disproportionately:
 
@@ -1391,7 +1391,7 @@ The actionable feedback visible during development was disproportionately:
 
 Some of the people who liked the design most either commented much later, said little, or discussed their own derivative projects elsewhere.
 
-**Historical lesson:** objective audience interest and the developer's experienced feedback environment can be very different. Motivation depends on the latter.
+**Historical lesson:** objective audience interest and the feedback environment experienced during development can be very different. The latter had a much stronger effect on the developer's motivation at the time.
 
 ---
 
@@ -1447,7 +1447,6 @@ Examples from comments:
 - players did not always understand quickstart/resume behavior.
 
 **Historical lesson:** documentation cannot substitute for an interface that exposes important affordances in context.
-
 **KCQ requirement direction:** critical tactical rules should be visible where they matter:
 - why an action is disabled;
 - what assisting changes;
@@ -1728,9 +1727,9 @@ Castle often did not feel dangerous, but it was unclear whether the problem was:
 - RNG;
 - or some combination.
 
-## Reception did not reward the effort enough
+## Positive feedback was limited during active development
 
-Contemporaneous criticism and confusion were more salient than the enthusiasm that is easier to see retrospectively in ten years of archived comments.
+Contemporaneous criticism and confusion were more salient than the enthusiasm that is easier to see retrospectively in years of archived comments. Sustained playtesting, outside contribution, and positive feedback were also limited, leaving most of the design, implementation, and debugging burden with a single developer.
 
 ## Combined 2016 failure mode
 
@@ -1972,7 +1971,6 @@ The revival notes repeatedly complain that:
 A small cleanup was possible, but many desired improvements pushed toward engine redesign.
 
 ## Reaction hook idea
-
 A collaborator implemented a Latex Orb reaction that could respond to a player spell with Latex Spray and interrupt it.
 
 The proposed proper engine abstraction was:
