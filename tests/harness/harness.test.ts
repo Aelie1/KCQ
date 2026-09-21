@@ -15,9 +15,9 @@ import {
     type PolicyContext,
 } from "../../src/harness/harness";
 import { policies } from "../../src/harness/policies";
+import { basicPolicy } from "../../src/harness/policy/basic";
 import { firstPolicy } from "../../src/harness/policy/first";
 import { randomPolicy } from "../../src/harness/policy/random";
-import { swingOnlyPolicy } from "../../src/harness/policy/swing-only";
 
 function stockEncounterId(): string {
     const encounterId = createEngine(1).listEncounters()[0];
@@ -330,7 +330,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("uses only each programmed swing-only move in a real fight", () => {
-        const result = runSingleFight(fightInput(swingOnlyPolicy));
+        const result = runSingleFight(fightInput(basicPolicy));
         const expectedMoves: Readonly<Record<string, string>> = {
             ko: "telekinesis",
             matsuko: "whiteFlame",
@@ -352,7 +352,7 @@ describe("policy-driven single-fight harness", () => {
             })],
         );
 
-        expect(swingOnlyPolicy.chooseAction(context)).toEqual({ type: "endTurn" });
+        expect(basicPolicy.chooseAction(context)).toEqual({ type: "endTurn" });
     });
 
     it("lets random autonomously drive a real encounter", () => {
@@ -401,7 +401,7 @@ describe("policy-driven single-fight harness", () => {
 
     it.each([
         [firstPolicy, 17],
-        [swingOnlyPolicy, 31],
+        [basicPolicy, 31],
         [randomPolicy, 999],
     ])("replays a policy exactly for identical engine and policy seeds", (policy, policySeed) => {
         const input = fightInput(policy, 24680, policySeed);

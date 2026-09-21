@@ -95,7 +95,15 @@ export class GameStatus {
             }
         }
 
-        return this.modifiers;
+        const result: ModifierSet = {};
+
+        for (const [modifier, amount] of Object.entries(this.modifiers) as [ModifierId, number][]) {
+            if (amount !== 0) {
+                result[modifier] = amount;
+            }
+        }
+
+        return result;
     }
 
     getModifier(id: ModifierId): number {
@@ -233,16 +241,6 @@ export class GameStatus {
             }
         }
         return statuses;
-    }
-
-    private mergeModifiers(source: ModifierSet): void {
-        for (const modifier in source) {
-            const amount = source[modifier as ModifierId];
-            if (amount !== undefined) {
-                this.modifiers[modifier as ModifierId] =
-                    (this.modifiers[modifier as ModifierId] ?? 0) + amount;
-            }
-        }
     }
 
     private mergeIStatus(target: iStatus[], source: iStatus) {

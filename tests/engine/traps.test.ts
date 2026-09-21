@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { trapPuddle } from "../../src/content/skunk/puddles";
-import type { BindingDef, EncounterDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
+import type { BindingDef, EncounterDef, StatusDef, StatusLevelDef, TrapDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import type { Engine, PlayerAction } from "../../src/engine/public/types";
+import type { Engine, FailureReason, PlayerAction } from "../../src/engine/public/types";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
 
 function trapThatConsumes(
@@ -191,11 +191,11 @@ describe("generic traps through GameEngine", () => {
             .toEqual(control.executeAction(attack("hero", rolledMove.id)));
     });
 
-    it.each(["bindingRestriction", "attackUnavailable"] as const)(
+    it.each(["bindingRestriction", "attackUnavailable"] as const satisfies readonly FailureReason[])(
         "commits trap effects and interrupts an attack for %s",
         (reason) => {
-            const restriction = reason === "bindingRestriction"
-                ? { blockedMoveTypes: ["arms" as const] }
+            const restriction: StatusLevelDef = reason === "bindingRestriction"
+                ? { blockedMoveTypes: ["arms"] }
                 : { flags: ["blocksAttack"] };
             const status: StatusDef = { id: "bound", levels: [{}, restriction] };
             const blocker = makeBindingDef(`${reason}-source`, {
@@ -219,10 +219,16 @@ describe("generic traps through GameEngine", () => {
         },
     );
 
-    it.each([
+    const cases = [
         ["self", "escapeUnavailable", { flags: ["blocksEscape"] }],
         ["ally", "assistUnavailable", { flags: ["blocksAssist"] }],
-    ] as const)("triggers before a %s escape and can interrupt it for %s", (targetId, reason, restriction) => {
+    ] satisfies readonly (readonly [
+        string,
+        FailureReason,
+        StatusLevelDef,
+    ])[];
+
+    it.each(cases)("triggers before a %s escape and can interrupt it for %s", (targetId, reason, restriction) => {
         const rope = makeBindingDef("rope");
         const status: StatusDef = { id: "bound", levels: [{}, restriction] };
         const blocker = makeBindingDef(`${reason}-source`, {

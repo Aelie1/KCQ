@@ -10,14 +10,14 @@ import {
     type WorkerFactory,
     type WorkerHandle,
 } from "../../src/harness/parallel-batch";
+import { basicPolicy } from "../../src/harness/policy/basic";
 import { firstPolicy } from "../../src/harness/policy/first";
-import { swingOnlyPolicy } from "../../src/harness/policy/swing-only";
 import { summarizeBatch } from "../../src/harness/summary";
 
 function input(overrides: Partial<BatchInput> = {}): BatchInput {
     return {
         encounterId: "plains_1",
-        policy: swingOnlyPolicy,
+        policy: basicPolicy,
         masterSeed: 123,
         runs: 4,
         maxActions: 12,

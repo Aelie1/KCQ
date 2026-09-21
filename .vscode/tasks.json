@@ -38,13 +38,58 @@
         {
             "label": "perf",
             "type": "shell",
-            "command": "npm run build; node performance/current-bench.cjs plains_1 swing-only 1000; node performance/current-bench.cjs plains_3 swing-only 1000; node performance/current-bench.cjs plains_3 random 300",
+            "command": "npm run build; node performance/current-bench.cjs plains_1 basic 1000; node performance/current-bench.cjs plains_3 basic 1000; node performance/current-bench.cjs plains_3 random 300",
             "problemMatcher": []
         },
         {
             "label": "profile",
             "type": "shell",
-            "command": "npm run build; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains1-swing.cpuprofile performance/current-bench.cjs plains_1 swing-only 1000; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains3-swing.cpuprofile performance/current-bench.cjs plains_3 swing-only 1000; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains3-random.cpuprofile performance/current-bench.cjs plains_3 random 300",
+            "command": "npm run build; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains1-basic.cpuprofile performance/current-bench.cjs plains_1 basic 1000; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains3-basic.cpuprofile performance/current-bench.cjs plains_3 basic 1000; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains3-random.cpuprofile performance/current-bench.cjs plains_3 random 300",
+            "problemMatcher": []
+        },
+        {
+            "label": "balance plains 1",
+            "type": "process",
+            "command": "npm.cmd",
+            "args": [
+                "run",
+                "compare",
+                "--",
+                "plains_1",
+                "12345",
+                "basic,idle",
+                "1000"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "balance plains 2",
+            "type": "process",
+            "command": "npm.cmd",
+            "args": [
+                "run",
+                "compare",
+                "--",
+                "plains_2",
+                "12345",
+                "basic,idle",
+                "1000"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "balance plains 2",
+            "type": "process",
+            "command": "npm.cmd",
+            "args": [
+                "run",
+                "compare",
+                "--",
+                "plains_2",
+                "12345",
+                "basic,idle",
+                "1000"
+            ],
             "problemMatcher": []
         }
     ]

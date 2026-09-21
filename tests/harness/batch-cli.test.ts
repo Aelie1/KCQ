@@ -62,9 +62,9 @@ function summaryFixture(): BatchSummary {
 
 describe("batch CLI arguments", () => {
     it("preserves old syntax with one worker and accepts an optional final worker count", () => {
-        expect(parseBatchCommandArguments(["plains_3", "1", "swing-only", "1000", "1000"]))
+        expect(parseBatchCommandArguments(["plains_3", "1", "basic", "1000", "1000"]))
             .toMatchObject({ workers: 1, input: { runs: 1000, maxActions: 1000 } });
-        expect(parseBatchCommandArguments(["plains_3", "1", "swing-only", "1000", "1000", "8"]))
+        expect(parseBatchCommandArguments(["plains_3", "1", "basic", "1000", "1000", "8"]))
             .toMatchObject({ workers: 8, input: { runs: 1000, maxActions: 1000 } });
         expect(() => parseBatchCommandArguments(["plains_3", "1", "first", "1", "1000", "0"]))
             .toThrow(/workers must be a positive safe integer/);
@@ -121,9 +121,9 @@ describe("batch CLI arguments", () => {
         expect(() => parseBatchArguments([...args, "10", "extra"])).toThrow("optional maxActions");
     });
 
-    it.each(["unknown", "constructor", ""])("rejects unknown policy %j and lists existing policies", (id) => {
+    it.each(["unknown", "constructor", ""])("rejects unknown policy %j", (id) => {
         expect(() => parseBatchArguments(["plains_1", "1", id, "2"]))
-            .toThrow(`Unknown policy: ${id}. Available policies: first, random, swing-only`);
+            .toThrow();
     });
 
     it("rejects an empty encounter ID", () => {

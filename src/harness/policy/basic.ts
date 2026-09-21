@@ -8,8 +8,8 @@ const programmedMoves: Readonly<Record<string, string>> = {
     hinari: "rockfall",
 };
 
-export const swingOnlyPolicy: FightPolicy = {
-    id: "swing-only",
+export const basicPolicy: FightPolicy = {
+    id: "basic",
     chooseAction(context: PolicyContext): PlayerAction {
         for (const actionView of context.view.actions) {
             if (!actionView.available) {

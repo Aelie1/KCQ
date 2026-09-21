@@ -14,8 +14,8 @@ import {
     runHarnessLauncher,
     type LauncherIO,
 } from "../../src/harness/launcher";
-import { firstPolicy } from "../../src/harness/policy/first";
 import { policies } from "../../src/harness/policies";
+import { firstPolicy } from "../../src/harness/policy/first";
 
 describe("interactive launcher helpers", () => {
     it("defines the named encounter sets as extensible data", () => {
@@ -38,19 +38,21 @@ describe("interactive launcher helpers", () => {
         expect(() => parseIntegerPrompt("0", "Runs", { positive: true })).toThrow("positive safe integer");
         expect(() => parseIntegerPrompt("1.5", "Seed")).toThrow("safe integer");
     });
-
-    it("selects encounters and policies by number or exact public ID", () => {
+    it("selects choices by number or exact ID", () => {
         const encounters = ["plains_1", "forest_1"] as const;
-        const policyIds = Object.keys(policies);
+        const choices = ["alpha", "beta", "gamma"] as const;
+
         expect(resolveNumberedChoice("2", encounters)).toBe("forest_1");
         expect(resolveNumberedChoice("plains_1", encounters)).toBe("plains_1");
         expect(resolveNumberedChoice("3", encounters)).toBeUndefined();
-        expect(resolveNumberedChoice("3", policyIds)).toBe("swing-only");
-        expect(resolveNumberedChoice("random", policyIds)).toBe("random");
-        expect(resolveMultipleChoices("1,3", policyIds)).toEqual(["first", "swing-only"]);
-        expect(resolveMultipleChoices("a", policyIds)).toEqual(policyIds);
-        expect(resolveMultipleChoices("3,1,3", policyIds)).toEqual(["first", "swing-only"]);
-        expect(resolveMultipleChoices("9", policyIds)).toBeUndefined();
+
+        expect(resolveNumberedChoice("3", choices)).toBe("gamma");
+        expect(resolveNumberedChoice("beta", choices)).toBe("beta");
+
+        expect(resolveMultipleChoices("1,3", choices)).toEqual(["alpha", "gamma"]);
+        expect(resolveMultipleChoices("a", choices)).toEqual(choices);
+        expect(resolveMultipleChoices("3,1,3", choices)).toEqual(["alpha", "gamma"]);
+        expect(resolveMultipleChoices("9", choices)).toBeUndefined();
     });
 });
 
@@ -104,7 +106,7 @@ describe("replay launcher path", () => {
             write: vi.fn(),
             close,
         };
-        const viewer = vi.fn(async (_input: ConsoleReplayInput) => {});
+        const viewer = vi.fn(async (_input: ConsoleReplayInput) => { });
 
         await runHarnessLauncher(io, { runConsoleReplay: viewer });
 
