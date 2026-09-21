@@ -3,11 +3,23 @@ import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import {
+    ANONYMOUS_PLAYER_ID_KEY,
+    getOrCreateAnonymousPlayerId,
+    type AnonymousIdStorage,
+} from "../../src/web/anonymousPlayer";
+import {
+    sanitizePostHogEvent,
+    type PostHogEventPayload,
+} from "../../src/web/posthogSanitizer";
+import {
     compactStateDigest,
     createBattleTelemetryObserver,
     createGameplayTelemetry,
     type GameplayTelemetry,
 } from "../../src/web/telemetry";
+
+const PLAYER_ID = "10000000-0000-4000-8000-000000000001";
+const OTHER_PLAYER_ID = "20000000-0000-4000-8000-000000000002";
 
 describe("browser gameplay telemetry", () => {
     it("creates a compact digest from public tactical state", () => {
@@ -143,3 +155,178 @@ describe("browser gameplay telemetry", () => {
         expect(() => failingTelemetry.capture("battle_quit", {})).not.toThrow();
     });
 });
+
+describe("PostHog event privacy", () => {
+    it("persists a locally generated anonymous player ID across browser visits", () => {
+        const values = new Map<string, string>();
+        const storage: AnonymousIdStorage = {
+            getItem: (key) => values.get(key) ?? null,
+            setItem: (key, value) => { values.set(key, value); },
+        };
+        const generate = vi.fn(() => PLAYER_ID);
+
+        expect(getOrCreateAnonymousPlayerId(storage, generate)).toBe(PLAYER_ID);
+        expect(values.get(ANONYMOUS_PLAYER_ID_KEY)).toBe(PLAYER_ID);
+        expect(getOrCreateAnonymousPlayerId(storage, () => OTHER_PLAYER_ID)).toBe(PLAYER_ID);
+        expect(generate).toHaveBeenCalledOnce();
+    });
+
+    it("uses different anonymous identities for different browser installations", () => {
+        const first = memoryStorage();
+        const second = memoryStorage();
+
+        expect(getOrCreateAnonymousPlayerId(first, () => PLAYER_ID)).toBe(PLAYER_ID);
+        expect(getOrCreateAnonymousPlayerId(second, () => OTHER_PLAYER_ID)).toBe(OTHER_PLAYER_ID);
+    });
+
+    it.each([
+        ["battle_started", {
+            replay_id: "replay-started",
+            release: "v1.2.3",
+            encounter: "plains_1",
+            seed: 8224,
+            initial_state: { turn: { round: 1 } },
+        }],
+        ["battle_action", {
+            replay_id: "replay-action",
+            sequence: 1,
+            source: "player",
+            action: { type: "endTurn" },
+            success: false,
+            failure_reason: "wrongPhase",
+            state_after: { turn: { round: 1 } },
+        }],
+        ["battle_finished", {
+            replay_id: "replay-finished",
+            outcome: "victory",
+            action_count: 7,
+            final_state: { turn: { outcome: "victory" } },
+        }],
+        ["battle_quit", {
+            replay_id: "replay-quit",
+            action_count: 3,
+            current_state: { turn: { outcome: "ongoing" } },
+        }],
+    ] as const)("preserves gameplay properties for %s", (event, gameplay) => {
+        const payload = postHogPayload(event, gameplay);
+
+        const sanitized = sanitizePostHogEvent(payload, PLAYER_ID);
+
+        expect(sanitized).toMatchObject({
+            uuid: payload.uuid,
+            event,
+            timestamp: payload.timestamp,
+            properties: {
+                token: "project-token",
+                distinct_id: PLAYER_ID,
+                $process_person_profile: false,
+                $geoip_disable: true,
+                ...gameplay,
+            },
+        });
+    });
+
+    it("removes browser, session, device, GeoIP, and SDK metadata", () => {
+        const sanitized = sanitizePostHogEvent(postHogPayload("battle_action", {
+            replay_id: "replay-action",
+            sequence: 1,
+            source: "player",
+            action: { type: "endTurn" },
+            success: true,
+            state_after: {},
+        }), PLAYER_ID);
+
+        expect(sanitized?.properties).toEqual({
+            token: "project-token",
+            distinct_id: PLAYER_ID,
+            $process_person_profile: false,
+            $geoip_disable: true,
+            replay_id: "replay-action",
+            sequence: 1,
+            source: "player",
+            action: { type: "endTurn" },
+            success: true,
+            state_after: {},
+        });
+        expect(sanitized).not.toHaveProperty("$set");
+        expect(sanitized).not.toHaveProperty("$set_once");
+        expect(sanitized).not.toHaveProperty("$unset");
+    });
+
+    it("drops events outside the four gameplay event types", () => {
+        expect(sanitizePostHogEvent(postHogPayload("$pageview", {
+            replay_id: "replay-pageview",
+        }), PLAYER_ID)).toBeNull();
+    });
+
+    it("uses the anonymous player ID across battles without conflating replay IDs", () => {
+        const first = sanitizePostHogEvent(postHogPayload("battle_quit", {
+            replay_id: "replay-one",
+            action_count: 0,
+            current_state: {},
+        }), PLAYER_ID);
+        const second = sanitizePostHogEvent(postHogPayload("battle_quit", {
+            replay_id: "replay-two",
+            action_count: 0,
+            current_state: {},
+        }), PLAYER_ID);
+        const otherInstallation = sanitizePostHogEvent(postHogPayload("battle_quit", {
+            replay_id: "replay-three",
+            action_count: 0,
+            current_state: {},
+        }), OTHER_PLAYER_ID);
+
+        expect(first?.properties.distinct_id).toBe(PLAYER_ID);
+        expect(second?.properties.distinct_id).toBe(PLAYER_ID);
+        expect(first?.properties.replay_id).not.toBe(second?.properties.replay_id);
+        expect(otherInstallation?.properties.distinct_id).toBe(OTHER_PLAYER_ID);
+    });
+});
+
+function memoryStorage(): AnonymousIdStorage {
+    const values = new Map<string, string>();
+    return {
+        getItem: (key) => values.get(key) ?? null,
+        setItem: (key, value) => { values.set(key, value); },
+    };
+}
+
+function postHogPayload(
+    event: string,
+    gameplay: Record<string, unknown>,
+): PostHogEventPayload {
+    return {
+        uuid: "00000000-0000-4000-8000-000000000000",
+        event,
+        timestamp: new Date("2026-09-21T12:00:00Z"),
+        properties: {
+            token: "project-token",
+            distinct_id: "posthog-generated-id",
+            $device_id: "persistent-device-id",
+            $session_id: "session-id",
+            $window_id: "window-id",
+            $browser: "Chrome",
+            $browser_language: "en-US",
+            $browser_language_prefix: "en",
+            $device_type: "Desktop",
+            $session_entry_host: "example.test",
+            $session_entry_pathname: "/game",
+            $session_entry_referrer: "https://referrer.test",
+            $session_entry_referring_domain: "referrer.test",
+            $session_entry_url: "https://example.test/game",
+            $timezone: "America/New_York",
+            $timezone_offset: -240,
+            $geoip_city_name: "Ashburn",
+            $geoip_country_code: "US",
+            $ip: "proxy-ip",
+            $lib: "web",
+            $lib_version: "1.434.4",
+            $config_defaults: "unset",
+            $sdk_debug_retry_queue_size: 0,
+            ...gameplay,
+        },
+        $set: { email: "not-allowed@example.test" },
+        $set_once: { initial_browser: "Chrome" },
+        $unset: ["legacy_property"],
+    };
+}

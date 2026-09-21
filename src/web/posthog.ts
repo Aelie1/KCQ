@@ -1,29 +1,18 @@
 import posthog from "posthog-js";
+import { getOrCreateAnonymousPlayerId } from "./anonymousPlayer";
+import { sanitizePostHogEvent, type PostHogEventPayload } from "./posthogSanitizer";
 import { createGameplayTelemetry } from "./telemetry";
-
-const AUTOMATIC_PROPERTY_DENYLIST = [
-    "$browser",
-    "$browser_version",
-    "$current_url",
-    "$device",
-    "$device_type",
-    "$host",
-    "$os",
-    "$os_version",
-    "$pathname",
-    "$raw_user_agent",
-    "$referrer",
-    "$referring_domain",
-    "$screen_height",
-    "$screen_width",
-    "$viewport_height",
-    "$viewport_width",
-];
 
 export const gameplayTelemetry = createGameplayTelemetry({
     projectToken: import.meta.env.VITE_POSTHOG_PROJECT_TOKEN,
     apiHost: import.meta.env.VITE_POSTHOG_API_HOST,
 }, (projectToken, apiHost) => {
+    const anonymousPlayerId = getOrCreateAnonymousPlayerId(
+        window.localStorage,
+        () => crypto.randomUUID(),
+    );
+    if (!anonymousPlayerId) throw new Error("Anonymous telemetry identity is unavailable.");
+
     posthog.init(projectToken, {
         api_host: apiHost,
         autocapture: false,
@@ -37,10 +26,14 @@ export const gameplayTelemetry = createGameplayTelemetry({
         disable_surveys: true,
         advanced_disable_flags: true,
         disable_persistence: true,
-        ip: false,
+        disableDeviceModel: true,
+        get_device_id: () => anonymousPlayerId,
         save_campaign_params: false,
         save_referrer: false,
-        property_denylist: AUTOMATIC_PROPERTY_DENYLIST,
+        before_send: (event) => sanitizePostHogEvent(
+            event as PostHogEventPayload | null,
+            anonymousPlayerId,
+        ) as typeof event,
     });
     return posthog;
 });
