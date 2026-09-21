@@ -9,6 +9,8 @@
         "src/**/*.ts"
     ],
     "exclude": [
-        "tests"
+        "tests",
+        "src/web/main.ts",
+        "src/web/posthog.ts"
     ]
 }

@@ -7,6 +7,7 @@ import { renderScreen, type ScreenModel } from "../console/render";
 import { encounterList } from "../content/content";
 import type { EncounterDef } from "../engine/protected/definitions";
 import { startBattle } from "./app";
+import { gameplayTelemetry } from "./posthog";
 import {
     browserChoiceForKey,
     browserChoiceLabel,
@@ -203,7 +204,7 @@ function showEncounterSelector(): Promise<EncounterDef> {
 async function start(): Promise<void> {
     while (true) {
         const encounter = await showEncounterSelector();
-        await startBattle(encounter, new BrowserBattleUI());
+        await startBattle(encounter, new BrowserBattleUI(), gameplayTelemetry, __KCQ_RELEASE_TAG__);
     }
 }
 

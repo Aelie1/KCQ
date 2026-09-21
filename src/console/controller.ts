@@ -1,6 +1,7 @@
 import type {
     ActionInfo,
     ActionResult,
+    BattleState,
     BindingId,
     Engine,
     EntityId,
@@ -31,6 +32,16 @@ export interface BattleUI {
     close?(): void | Promise<void>;
 }
 
+export interface BattleObserver {
+    onAction?(
+        action: PlayerAction,
+        result: ActionResult,
+        source: "player" | "automatic",
+    ): void | Promise<void>;
+    onOutcome?(outcome: BattleState): void | Promise<void>;
+    onQuit?(): void | Promise<void>;
+}
+
 interface MenuItem {
     label: string;
     available?: boolean;
@@ -47,6 +58,7 @@ export async function runBattleController(
     encounter: string,
     initialOutput: GameEvent[] | string[] = [],
     ui: BattleUI,
+    observer?: BattleObserver,
 ): Promise<void> {
     const initialEvents = initialOutput.length > 0 && typeof initialOutput[0] !== "string"
         ? initialOutput as GameEvent[]
@@ -59,6 +71,20 @@ export async function runBattleController(
         bindingIds = [...(engine.getGameView().encounter?.bindings ?? [])];
     }
     let running = true;
+    let outcomeReported = false;
+    let quitReported = false;
+
+    const notifyOutcome = (outcome: BattleState): void => {
+        if (outcome === "ongoing" || outcomeReported) return;
+        outcomeReported = true;
+        notifyObserver(() => observer?.onOutcome?.(outcome));
+    };
+
+    const notifyQuit = (): void => {
+        if (quitReported || engine.getGameView().turn.outcome !== "ongoing") return;
+        quitReported = true;
+        notifyObserver(() => observer?.onQuit?.());
+    };
 
     const screen = (actionLines: string[]): ScreenModel => {
         const view = engine.getGameView();
@@ -94,22 +120,25 @@ export async function runBattleController(
         }
     };
 
-    const execute = (action: PlayerAction): boolean => {
+    const execute = (
+        action: PlayerAction,
+        source: "player" | "automatic" = "player",
+    ): boolean => {
         const previousRound = engine.getGameView().turn.round;
         const result = engine.executeAction(action);
         if (result.success) bindingIds = updateEncounterBindings(bindingIds, result.events);
         appendResult(logLines, result, previousRound);
+        notifyObserver(() => observer?.onAction?.(action, result, source));
+        notifyOutcome(result.success
+            ? result.view.turn.outcome
+            : engine.getGameView().turn.outcome);
         if (
             result.success
             && action.type !== "endTurn"
             && !result.view.actions.some((character) => character.available)
         ) {
             logLines.push("No characters available. Ending turn automatically.");
-            appendResult(
-                logLines,
-                engine.executeAction({ type: "endTurn" }),
-                result.view.turn.round,
-            );
+            execute({ type: "endTurn" }, "automatic");
         }
         return result.success;
     };
@@ -314,6 +343,7 @@ export async function runBattleController(
         while (running) {
             const view = engine.getGameView();
             if (view.turn.outcome !== "ongoing") {
+                notifyOutcome(view.turn.outcome);
                 await ui.showFinal?.(screen(finalStateLines(view.turn.outcome)));
                 running = false;
                 continue;
@@ -353,13 +383,24 @@ export async function runBattleController(
             } else if (selectedNumber === endTurnNumber) {
                 execute({ type: "endTurn" });
             } else {
+                notifyQuit();
                 running = false;
             }
         }
     } catch (error: unknown) {
         if (!(error instanceof BattleQuit)) throw error;
+        notifyQuit();
     } finally {
         await ui.close?.();
+    }
+}
+
+function notifyObserver(callback: () => void | Promise<void> | undefined): void {
+    try {
+        const pending = callback();
+        if (pending) void pending.catch(() => undefined);
+    } catch {
+        // Observers are side channels and must never affect battle flow.
     }
 }
 

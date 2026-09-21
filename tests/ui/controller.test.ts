@@ -11,7 +11,13 @@ import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { Engine } from "../../src/engine/public/types";
-import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeWaitMove } from "../helpers/helpers";
+import {
+    makeBindingDef,
+    makeCharacterDef,
+    makeEnemyDef,
+    makeMove,
+    makeWaitMove,
+} from "../helpers/helpers";
 
 describe("shared battle controller", () => {
     it("presents numbered choices through a UI adapter and validates its response", async () => {
@@ -151,5 +157,117 @@ describe("shared battle controller", () => {
 
         expect(choose).toHaveBeenCalledOnce();
         expect(showFinal).not.toHaveBeenCalled();
+    });
+
+    it("notifies the observer after a normal player action", async () => {
+        const wait = makeWaitMove();
+        const hero = makeCharacterDef("hero", [wait]);
+        const encounter: EncounterDef = {
+            id: "observer-player-action",
+            enemies: [makeEnemyDef("foe", [wait])],
+            bindings: [],
+            traps: [],
+        };
+        const engine = createCustomEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
+        const events = engine.loadEncounter(encounter.id);
+        const onAction = vi.fn();
+        let requestCount = 0;
+
+        await runBattleController(engine, encounter.id, events, {
+            choose: async ({ choices }) => {
+                requestCount += 1;
+                const label = requestCount === 1 ? "End turn" : "Quit";
+                const choice = choices.find((candidate) => candidate.label === label);
+                if (!choice) throw new Error(`Missing ${label} choice.`);
+                return choice.number;
+            },
+        }, { onAction });
+
+        expect(onAction).toHaveBeenCalledOnce();
+        expect(onAction).toHaveBeenCalledWith(
+            { type: "endTurn" },
+            expect.objectContaining({ success: true }),
+            "player",
+        );
+    });
+
+    it("reports the controller's automatic end turn separately", async () => {
+        const wait = makeWaitMove();
+        const hero = makeCharacterDef("hero", [wait]);
+        const encounter: EncounterDef = {
+            id: "observer-automatic-action",
+            enemies: [makeEnemyDef("foe", [wait])],
+            bindings: [],
+            traps: [],
+        };
+        const engine = createCustomEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
+        const events = engine.loadEncounter(encounter.id);
+        const onAction = vi.fn();
+        const answers = [1, 1, 3];
+
+        await runBattleController(engine, encounter.id, events, {
+            choose: async () => answers.shift() ?? 3,
+        }, { onAction });
+
+        expect(onAction).toHaveBeenCalledTimes(2);
+        expect(onAction.mock.calls[0]).toEqual([
+            { type: "move", actor: "hero", move: "wait", targets: [] },
+            expect.objectContaining({ success: true }),
+            "player",
+        ]);
+        expect(onAction.mock.calls[1]).toEqual([
+            { type: "endTurn" },
+            expect.objectContaining({ success: true }),
+            "automatic",
+        ]);
+    });
+
+    it("notifies the observer once when an action produces a terminal outcome", async () => {
+        const strike = makeMove("strike", "mouth", {
+            resolve: (state, actor) => [{
+                type: "damage",
+                source: actor,
+                target: state.enemies[0],
+                amount: 100,
+            }],
+        });
+        const wait = makeWaitMove();
+        const hero = makeCharacterDef("hero", [strike]);
+        const encounter: EncounterDef = {
+            id: "observer-outcome",
+            enemies: [makeEnemyDef("foe", [wait])],
+            bindings: [],
+            traps: [],
+        };
+        const engine = createCustomEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
+        const events = engine.loadEncounter(encounter.id);
+        const onOutcome = vi.fn();
+        const answers = [1, 1];
+
+        await runBattleController(engine, encounter.id, events, {
+            choose: async () => answers.shift() ?? 1,
+            showFinal: async () => undefined,
+        }, { onOutcome });
+
+        expect(engine.getGameView().turn.outcome).toBe("victory");
+        expect(onOutcome).toHaveBeenCalledOnce();
+        expect(onOutcome).toHaveBeenCalledWith("victory");
+    });
+
+    it("notifies the observer when an ongoing battle is quit", async () => {
+        const engine = createCustomEngine(encounterList, [ko], 8224);
+        const events = engine.loadCharacter(ko.id);
+        events.push(...engine.loadEncounter("plains_1"));
+        const onQuit = vi.fn();
+
+        await runBattleController(engine, "plains_1", events, {
+            choose: async () => "quit",
+        }, { onQuit });
+
+        expect(engine.getGameView().turn.outcome).toBe("ongoing");
+        expect(onQuit).toHaveBeenCalledOnce();
     });
 });

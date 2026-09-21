@@ -50,6 +50,9 @@ jobs:
 
       - name: Build WebUI
         run: npm run web:build
+        env:
+          VITE_POSTHOG_PROJECT_TOKEN: ${{ vars.POSTHOG_PROJECT_TOKEN }}
+          VITE_POSTHOG_API_HOST: ${{ vars.POSTHOG_API_HOST }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5

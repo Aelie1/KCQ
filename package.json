@@ -16,7 +16,7 @@
         "harness": "tsx src/harness/launcher-main.ts",
         "test": "tsc -p tsconfig.test.json && vitest run",
         "coverage": "vitest --coverage",
-        "typecheck": "tsc -p tsconfig.build.json --noEmit",
+        "typecheck": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.web.json --noEmit",
         "typecheck:test": "tsc -p tsconfig.test.json"
     },
     "repository": {
@@ -38,5 +38,8 @@
         "typescript": "^7.0.2",
         "vite": "^8.2.2",
         "vitest": "^5.0.0"
+    },
+    "dependencies": {
+        "posthog-js": "^1.434.4"
     }
 }
