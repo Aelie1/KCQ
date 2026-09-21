@@ -12,7 +12,7 @@ import {
 } from "../web/telemetry";
 import type { FightReplay, ReplayStep } from "./harness";
 
-const REQUIRED_COLUMNS = [
+export const POSTHOG_REPLAY_COLUMNS = [
     "timestamp",
     "event",
     "replay_id",
@@ -31,6 +31,10 @@ const REQUIRED_COLUMNS = [
     "final_state",
     "current_state",
 ] as const;
+
+export type PostHogReplayColumn = (typeof POSTHOG_REPLAY_COLUMNS)[number];
+
+export type PostHogReplayEventRow = Record<PostHogReplayColumn, string>;
 
 export interface ParsedPostHogAction {
     sequence: number;
@@ -67,9 +71,9 @@ export interface ImportedPostHogReplay {
     terminal?: ParsedPostHogTerminal["type"];
 }
 
-interface CsvRecord {
-    rowNumber: number;
-    values: Record<string, string>;
+interface ReplayRecord {
+    location: string;
+    values: PostHogReplayEventRow;
 }
 
 export function parsePostHogReplayCsv(csv: string): ParsedPostHogReplay {
@@ -83,12 +87,12 @@ export function parsePostHogReplayCsv(csv: string): ParsedPostHogReplay {
     if (duplicateHeaders.length > 0) {
         throw new Error(`PostHog CSV has duplicate columns: ${duplicateHeaders.join(", ")}.`);
     }
-    const missingColumns = REQUIRED_COLUMNS.filter((column) => !header.includes(column));
+    const missingColumns = POSTHOG_REPLAY_COLUMNS.filter((column) => !header.includes(column));
     if (missingColumns.length > 0) {
         throw new Error(`PostHog CSV is missing columns: ${missingColumns.join(", ")}.`);
     }
 
-    const records: CsvRecord[] = table.slice(1).flatMap((row, index) => {
+    const records: ReplayRecord[] = table.slice(1).flatMap((row, index) => {
         if (row.every((value) => value === "")) return [];
         if (row.length !== header.length) {
             throw new Error(
@@ -96,20 +100,37 @@ export function parsePostHogReplayCsv(csv: string): ParsedPostHogReplay {
             );
         }
         return [{
-            rowNumber: index + 2,
-            values: Object.fromEntries(header.map((column, columnIndex) => [
+            location: `CSV row ${index + 2}`,
+            values: Object.fromEntries(POSTHOG_REPLAY_COLUMNS.map((column) => [
                 column,
-                row[columnIndex],
-            ])),
+                row[header.indexOf(column)],
+            ])) as PostHogReplayEventRow,
         }];
     });
 
+    return parseReplayRecords(records, "PostHog CSV");
+}
+
+/** Convert normalized query rows through the same validation used by CSV imports. */
+export function parsePostHogReplayEvents(
+    rows: readonly PostHogReplayEventRow[],
+): ParsedPostHogReplay {
+    return parseReplayRecords(rows.map((values, index) => ({
+        location: `API result row ${index + 1}`,
+        values,
+    })), "PostHog API results");
+}
+
+function parseReplayRecords(
+    records: readonly ReplayRecord[],
+    source: string,
+): ParsedPostHogReplay {
     const replayIds = [...new Set(records
         .map((record) => record.values.replay_id.trim())
         .filter(Boolean))].sort();
-    if (replayIds.length === 0) throw new Error("PostHog CSV contains zero replay IDs.");
+    if (replayIds.length === 0) throw new Error(`${source} has zero replay IDs.`);
     if (replayIds.length > 1) {
-        throw new Error(`PostHog CSV contains multiple replay IDs: ${replayIds.join(", ")}.`);
+        throw new Error(`${source} has multiple replay IDs: ${replayIds.join(", ")}.`);
     }
 
     const replayId = replayIds[0];
@@ -123,7 +144,7 @@ export function parsePostHogReplayCsv(csv: string): ParsedPostHogReplay {
     const unsupported = replayRecords.filter((record) => !supportedEvents.has(record.values.event));
     if (unsupported.length > 0) {
         throw replayError(replayId,
-            `unsupported event ${JSON.stringify(unsupported[0].values.event)} on CSV row ${unsupported[0].rowNumber}`);
+            `unsupported event ${JSON.stringify(unsupported[0].values.event)} on ${unsupported[0].location}`);
     }
 
     const starts = replayRecords.filter((record) => record.values.event === "battle_started");
@@ -132,8 +153,8 @@ export function parsePostHogReplayCsv(csv: string): ParsedPostHogReplay {
     }
     const start = starts[0];
     const encounter = requiredValue(start, "encounter");
-    const seed = parseInteger(requiredValue(start, "seed"), "seed", start.rowNumber);
-    const initialState = parseDigest(requiredValue(start, "initial_state"), "initial_state", start.rowNumber);
+    const seed = parseInteger(requiredValue(start, "seed"), "seed", start.location);
+    const initialState = parseDigest(requiredValue(start, "initial_state"), "initial_state", start.location);
 
     const actions = replayRecords
         .filter((record) => record.values.event === "battle_action")
@@ -141,11 +162,11 @@ export function parsePostHogReplayCsv(csv: string): ParsedPostHogReplay {
             const sequence = parseInteger(
                 requiredValue(record, "sequence"),
                 "sequence",
-                record.rowNumber,
+                record.location,
             );
             if (sequence < 1) {
                 throw replayError(replayId,
-                    `sequence on CSV row ${record.rowNumber} must be a positive integer; received ${sequence}`);
+                    `sequence on ${record.location} must be a positive integer; received ${sequence}`);
             }
             const source = requiredValue(record, "source");
             if (source !== "player" && source !== "automatic") {
@@ -156,7 +177,7 @@ export function parsePostHogReplayCsv(csv: string): ParsedPostHogReplay {
             const success = parseBoolean(
                 requiredValue(record, "success"),
                 "success",
-                record.rowNumber,
+                record.location,
             );
             const failureReason = record.values.failure_reason.trim() || undefined;
             if (!success && !failureReason) {
@@ -164,7 +185,7 @@ export function parsePostHogReplayCsv(csv: string): ParsedPostHogReplay {
                     `failed action at sequence ${sequence} is missing failure_reason`);
             }
             const stateAfter = record.values.state_after.trim()
-                ? parseDigest(record.values.state_after, "state_after", record.rowNumber)
+                ? parseDigest(record.values.state_after, "state_after", record.location)
                 : undefined;
             if (success && !stateAfter) {
                 throw replayError(replayId,
@@ -345,14 +366,14 @@ export function parseCsv(csv: string): string[][] {
     return rows;
 }
 
-function parseTerminal(record: CsvRecord, replayId: string): ParsedPostHogTerminal {
+function parseTerminal(record: ReplayRecord, replayId: string): ParsedPostHogTerminal {
     const type = record.values.event === "battle_finished" ? "finished" : "quit";
     const actionCount = record.values.action_count.trim()
-        ? parseInteger(record.values.action_count, "action_count", record.rowNumber)
+        ? parseInteger(record.values.action_count, "action_count", record.location)
         : undefined;
     if (actionCount !== undefined && actionCount < 0) {
         throw replayError(replayId,
-            `action_count on CSV row ${record.rowNumber} must be non-negative`);
+            `action_count on ${record.location} must be non-negative`);
     }
 
     if (type === "finished") {
@@ -362,7 +383,7 @@ function parseTerminal(record: CsvRecord, replayId: string): ParsedPostHogTermin
                 `battle_finished has invalid outcome ${JSON.stringify(outcome)}`);
         }
         const state = record.values.final_state.trim()
-            ? parseDigest(record.values.final_state, "final_state", record.rowNumber)
+            ? parseDigest(record.values.final_state, "final_state", record.location)
             : undefined;
         return {
             type,
@@ -373,7 +394,7 @@ function parseTerminal(record: CsvRecord, replayId: string): ParsedPostHogTermin
     }
 
     const state = record.values.current_state.trim()
-        ? parseDigest(record.values.current_state, "current_state", record.rowNumber)
+        ? parseDigest(record.values.current_state, "current_state", record.location)
         : undefined;
     return {
         type,
@@ -496,42 +517,42 @@ function isPlayerAction(value: unknown): value is PlayerAction {
     }
 }
 
-function parseDigest(json: string, name: string, rowNumber: number): CompactStateDigest {
+function parseDigest(json: string, name: string, location: string): CompactStateDigest {
     let value: unknown;
     try {
         value = JSON.parse(json);
     } catch (error: unknown) {
-        throw new Error(`Malformed ${name} JSON on CSV row ${rowNumber}: ${errorMessage(error)}.`);
+        throw new Error(`Malformed ${name} JSON on ${location}: ${errorMessage(error)}.`);
     }
     if (!isRecord(value)) {
-        throw new Error(`Invalid ${name} on CSV row ${rowNumber}: expected a JSON object.`);
+        throw new Error(`Invalid ${name} on ${location}: expected a JSON object.`);
     }
     return value as unknown as CompactStateDigest;
 }
 
-function requiredValue(record: CsvRecord, column: string): string {
+function requiredValue(record: ReplayRecord, column: PostHogReplayColumn): string {
     const value = record.values[column].trim();
-    if (!value) throw new Error(`PostHog CSV row ${record.rowNumber} is missing ${column}.`);
+    if (!value) throw new Error(`${record.location} is missing ${column}.`);
     return value;
 }
 
-function parseInteger(value: string, name: string, rowNumber: number): number {
+function parseInteger(value: string, name: string, location: string): number {
     const parsed = Number(value);
     if (!Number.isSafeInteger(parsed)) {
         throw new Error(
-            `PostHog CSV row ${rowNumber} has invalid ${name}; expected a safe integer, received ${JSON.stringify(value)}.`,
+            `${location} has invalid ${name}; expected a safe integer, received ${JSON.stringify(value)}.`,
         );
     }
     return parsed;
 }
 
-function parseBoolean(value: string, name: string, rowNumber: number): boolean {
+function parseBoolean(value: string, name: string, location: string): boolean {
     switch (value.trim().toLowerCase()) {
         case "true": return true;
         case "false": return false;
         default:
             throw new Error(
-                `PostHog CSV row ${rowNumber} has invalid ${name}; expected true or false, received ${JSON.stringify(value)}.`,
+                `${location} has invalid ${name}; expected true or false, received ${JSON.stringify(value)}.`,
             );
     }
 }
