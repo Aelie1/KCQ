@@ -19,14 +19,36 @@ main {
     padding: 1rem;
 }
 
-h1 {
-    margin: 0 0 0.75rem;
+h1,
+h2 {
+    margin: 0;
     font-size: 1rem;
     font-weight: 600;
 }
 
-.screen-scroll {
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.battle-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.battle-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
     max-width: 100%;
+    overflow: auto;
+}
+
+.screen-scroll {
+    flex: 0 0 auto;
     overflow: auto;
 }
 
@@ -36,6 +58,29 @@ pre {
     margin: 0;
     color: #e6edf3;
     font: 14px/1.2 Consolas, "Courier New", monospace;
+}
+
+.battle-log-panel {
+    display: flex;
+    flex: 0 0 28rem;
+    flex-direction: column;
+    height: min(49rem, calc(100vh - 6rem));
+    min-height: 20rem;
+    padding: 0.75rem;
+    border: 1px solid #64748b;
+}
+
+.battle-log-panel h2 {
+    margin-bottom: 0.75rem;
+}
+
+.battle-log {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    white-space: pre-wrap;
 }
 
 .choices {
@@ -64,6 +109,10 @@ button:focus-visible {
 button:disabled {
     cursor: wait;
     opacity: 0.6;
+}
+
+[hidden] {
+    display: none !important;
 }
 
 .status {

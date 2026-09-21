@@ -24,7 +24,16 @@ export interface ScreenModel {
     logLines: string[];
 }
 
-export function renderScreen(model: ScreenModel, width: number, height: number): string {
+export interface RenderScreenOptions {
+    externalLog?: boolean;
+}
+
+export function renderScreen(
+    model: ScreenModel,
+    width: number,
+    height: number,
+    options: RenderScreenOptions = {},
+): string {
     if (width < MIN_TERMINAL_WIDTH || height < MIN_TERMINAL_HEIGHT) {
         return renderTooSmall(width, height);
     }
@@ -46,10 +55,13 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
             leftWidth,
         ),
     ], leftWidth, upperHeight);
-    const enemies = fitPanel(["ENEMIES", "", ...formatEnemies(model.state.enemies, rightWidth)], rightWidth, upperHeight);
+    const enemyHeight = options.externalLog ? contentHeight : upperHeight;
+    const enemies = fitPanel(
+        ["ENEMIES", "", ...formatEnemies(model.state.enemies, rightWidth)],
+        rightWidth,
+        enemyHeight,
+    );
     const actions = fitPanel(["ACTIONS / TARGETING", "", ...model.actionLines], leftWidth, lowerHeight);
-    const wrappedLog = wrapLines(model.logLines, rightWidth);
-    const log = fitPanel(wrappedLog.slice(-lowerHeight), rightWidth, lowerHeight);
 
     const turn = model.state.turn;
     const headerLeft = ` KO-CHAN'S QUEST  ${model.encounter}`;
@@ -61,6 +73,21 @@ export function renderScreen(model: ScreenModel, width: number, height: number):
         formatTrapHeader(model.state.traps, trapWidth),
         headerRight,
     );
+
+    if (options.externalLog) {
+        return [
+            `\u250c${"\u2500".repeat(width - 2)}\u2510`,
+            `\u2502${header}\u2502`,
+            `\u251c${"\u2500".repeat(leftWidth)}\u252c${"\u2500".repeat(rightWidth)}\u2524`,
+            ...joinPanels(party, enemies.slice(0, upperHeight), leftWidth, rightWidth),
+            `\u251c${"\u2500".repeat(leftWidth)}\u2524${" ".repeat(rightWidth)}\u2502`,
+            ...joinPanels(actions, enemies.slice(upperHeight), leftWidth, rightWidth),
+            `\u2514${"\u2500".repeat(leftWidth)}\u2534${"\u2500".repeat(rightWidth)}\u2518`,
+        ].join("\n");
+    }
+
+    const wrappedLog = wrapLines(model.logLines, rightWidth);
+    const log = fitPanel(wrappedLog.slice(-lowerHeight), rightWidth, lowerHeight);
 
     return [
         `┌${"─".repeat(width - 2)}┐`,

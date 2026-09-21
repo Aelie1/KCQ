@@ -260,6 +260,36 @@ describe("console formatting", () => {
         expect(rendered).not.toContain("[Def 0]");
     });
 
+    it("renders an external-log layout with a full-height enemy panel", () => {
+        const enemies = Array.from({ length: 7 }, (_, index) => ({
+            ...state.enemies[0],
+            id: `skunkette${index + 1}`,
+        }));
+        const model = {
+            encounter: "plains_1",
+            seed: 8224,
+            state: { ...state, enemies },
+            availability: [{ id: "ko", available: true }],
+            bindings: ["latexArms"],
+            bindingThresholds,
+            actionLines: ["[1] telekinesis"],
+            logLines: ["External log marker"],
+        };
+
+        const consoleLayout = renderScreen(model, 120, 36);
+        const browserLayout = renderScreen(model, 120, 36, { externalLog: true });
+        const lines = browserLayout.split("\n");
+
+        expect(lines).toHaveLength(36);
+        expect(lines.map((line) => line.length)).toEqual(Array(36).fill(120));
+        expect(browserLayout).toContain("PARTY");
+        expect(browserLayout).toContain("ACTIONS / TARGETING");
+        expect(browserLayout).toContain("skunkette7");
+        expect(browserLayout).not.toContain("External log marker");
+        expect(consoleLayout).not.toContain("skunkette7");
+        expect(consoleLayout).toContain("External log marker");
+    });
+
     it("renders generic trap meters in the header with exact amounts", () => {
         const rendered = renderState(
             { ...state, traps: [{ id: "trapPuddle", amount: 35 }] },

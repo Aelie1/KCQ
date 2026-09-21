@@ -105,11 +105,11 @@ function moveEvent(result: ActionSuccess) {
 
 describe("Hinari's dynamic move set and Rockfall", () => {
     it.each([
-        [0, 4, ["store", "brace", "rockfall"]],
-        [25, 3, ["store", "brace", "rockfall", "release"]],
-        [50, 2, ["store", "brace", "rockfall", "release"]],
-        [75, 1, ["store", "brace", "rockfall", "release"]],
-        [100, 0, ["store", "release"]],
+        [0, 4, ["rockfall", "store", "brace"]],
+        [25, 3, ["rockfall", "store", "brace", "release"]],
+        [50, 2, ["rockfall", "store", "brace", "release"]],
+        [75, 1, ["rockfall", "store", "brace", "release"]],
+        [100, 0, ["release"]],
     ] as const)("offers %i Rockfall hits at %i Subspace", (subspace, hits, expectedMoves) => {
         const engine = loadHinariEncounter({
             seed: 2,
@@ -452,15 +452,56 @@ describe("Hinari's Store", () => {
         });
     });
 
-    it("still relieves an ally at full capacity without replacing the remembered type", () => {
+    it("does not offer Store at full Subspace", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
             allies: [ally],
             setup: (state) => [
                 ...hinariData(state, 100),
-                { type: "binding", source: state.characters[0], target: state.characters[1], binding: tape, amount: 10 },
+                {
+                    type: "binding",
+                    source: state.characters[0],
+                    target: state.characters[1],
+                    binding: tape,
+                    amount: 25,
+                },
             ],
         });
+
+        expect(action(engine, "store")).toBeUndefined();
+        expect(moveIds(engine)).not.toContain("store");
+
+        expect(engine.executeAction({
+            type: "move",
+            actor: hinari.id,
+            move: "store",
+            targets: [ally.id],
+        })).toEqual({
+            success: false,
+            reason: "invalidMove",
+        });
+
+        expect(bindingState(engine, tape.id, ally.id)?.value).toBe(25);
+        expect(characterState(engine, hinari.id).data.subspace).toBe(100);
+    });
+
+    it("still offers Store while Subspace has room", () => {
+        const ally = makeBehavioralCharacter("ally");
+        const engine = loadHinariEncounter({
+            allies: [ally],
+            setup: (state) => [
+                ...hinariData(state, 99),
+                {
+                    type: "binding",
+                    source: state.characters[0],
+                    target: state.characters[1],
+                    binding: tape,
+                    amount: 10,
+                },
+            ],
+        });
+
+        expect(action(engine, "store")).toBeDefined();
 
         execute(engine, {
             type: "move",
@@ -470,46 +511,27 @@ describe("Hinari's Store", () => {
         });
 
         expect(bindingState(engine, tape.id, ally.id)).toBeUndefined();
-        expect(bindingState(engine, tape.id, hinari.id)?.value).toBe(10);
-        expect(characterState(engine, hinari.id).data).toMatchObject({
-            subspace: 100,
-            subspaceBinding: 0,
-        });
-    });
-
-    it("removes only the body room available when Subspace is full", () => {
-        const initialHinariBinding = thresholds.impossible - 5;
-        const engine = constrainedStoreEngine(100, initialHinariBinding);
-        const beforeAlly = bindingState(engine, tape.id, "ally")!.value;
-        const beforeSubspace = characterState(engine, hinari.id).data.subspace;
-
-        storeFromAlly(engine);
-
-        const afterAlly = bindingState(engine, tape.id, "ally")!.value;
-        const afterHinariBinding = bindingState(engine, tape.id, hinari.id)!.value;
-        const afterSubspace = characterState(engine, hinari.id).data.subspace;
-        const allyRemoved = beforeAlly - afterAlly;
-        const subspaceGained = afterSubspace - beforeSubspace;
-        const bodyBindingGained = afterHinariBinding - initialHinariBinding;
-        expect(allyRemoved).toBe(5);
-        expect(afterHinariBinding).toBe(thresholds.impossible);
-        expect(afterSubspace).toBe(100);
-        expect(allyRemoved).toBe(subspaceGained + bodyBindingGained);
-    });
-
-    it("does not remove ally bondage when full Subspace and the body track have no room", () => {
-        const engine = constrainedStoreEngine(100, thresholds.impossible);
-
-        const result = storeFromAlly(engine);
-
-        expect(result.events).toContainEqual(expect.objectContaining({
-            type: "moveUsed",
-            actor: hinari.id,
-            move: "store",
-        }));
-        expect(bindingState(engine, tape.id, "ally")?.value).toBe(25);
-        expect(bindingState(engine, tape.id, hinari.id)?.value).toBe(thresholds.impossible);
+        expect(bindingState(engine, tape.id, hinari.id)?.value).toBe(9);
         expect(characterState(engine, hinari.id).data.subspace).toBe(100);
+    });
+
+    it("offers Store again after Subspace falls below full", () => {
+        const engine = loadHinariEncounter({
+            setup: (state) => hinariData(state, 100),
+        });
+
+        expect(action(engine, "store")).toBeUndefined();
+        expect(action(engine, "release")).toBeDefined();
+
+        execute(engine, {
+            type: "move",
+            actor: hinari.id,
+            move: "release",
+            targets: ["foe1"],
+        });
+
+        expect(characterState(engine, hinari.id).data.subspace).toBe(75);
+        expect(action(engine, "store")).toBeDefined();
     });
 
     it("conserves bondage across partial Subspace and body-track capacity", () => {

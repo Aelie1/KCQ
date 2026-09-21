@@ -26,10 +26,8 @@ export const hinari: CharacterDef = {
     id: "hinari",
     getMoves: function (actor: iCharacter): MoveDef[] {
         const moves: MoveDef[] = [];
-        moves.push(store);
         if (actor.data["subspace"] !== undefined) {
             if (actor.data["subspace"] < SUBSPACE_MAX) {
-                moves.push(brace);
                 const buff = findBuff(actor, "fairyEmpowerment");
                 let baseRocks = 4;
                 let definition = rockfall;
@@ -42,6 +40,8 @@ export const hinari: CharacterDef = {
                     ...definition,
                     baseHits: totalRocks
                 });
+                moves.push(store);
+                moves.push(brace);
             }
             if (actor.data["subspace"] > 0) {
                 moves.push(release);

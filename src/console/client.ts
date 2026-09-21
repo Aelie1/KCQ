@@ -20,14 +20,21 @@ export async function runConsoleClient(
     streams: ConsoleStreams = { input: process.stdin, output: process.stdout },
 ): Promise<void> {
     const rl = createInterface({ input: streams.input, output: streams.output });
+    const display = (screenModel: BattleChoiceRequest["screen"]): void => {
+        const width = streams.output.columns ?? 180;
+        const height = Math.max(1, (streams.output.rows ?? 50) - 1);
+        const screen = renderScreen(screenModel, width, height);
+        streams.output.write(`\x1b[2J\x1b[H${screen}\n`);
+    };
     const ui: BattleUI = {
         choose: async (request: BattleChoiceRequest): Promise<number> => {
-            const width = streams.output.columns ?? 180;
-            const height = Math.max(1, (streams.output.rows ?? 50) - 1);
-            const screen = renderScreen(request.screen, width, height);
-            streams.output.write(`\x1b[2J\x1b[H${screen}\n`);
+            display(request.screen);
             const answer = (await rl.question("> ")).trim();
             return /^\d+$/.test(answer) ? Number(answer) : Number.NaN;
+        },
+        showFinal: async (screen) => {
+            display(screen);
+            await rl.question("Press Enter to exit. ");
         },
         close: () => {
             rl.close();

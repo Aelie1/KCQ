@@ -15,6 +15,9 @@ import { formatAccuracyRow, type ScreenModel } from "./render";
 export interface BattleChoice {
     number: number;
     label: string;
+    available?: boolean;
+    kind?: "endTurn" | "quit";
+    browserLabel?: string;
 }
 
 export interface BattleChoiceRequest {
@@ -23,15 +26,21 @@ export interface BattleChoiceRequest {
 }
 
 export interface BattleUI {
-    choose(request: BattleChoiceRequest): Promise<number>;
+    choose(request: BattleChoiceRequest): Promise<number | "quit">;
+    showFinal?(screen: ScreenModel): Promise<void>;
     close?(): void | Promise<void>;
 }
 
 interface MenuItem {
     label: string;
+    available?: boolean;
+    kind?: BattleChoice["kind"];
+    browserLabel?: string;
     detailLines?: string[];
     select: () => Promise<boolean>;
 }
+
+class BattleQuit extends Error {}
 
 export async function runBattleController(
     engine: Engine,
@@ -75,6 +84,7 @@ export async function runBattleController(
                 screen: screen([...lines, ...(message ? ["", message] : []), "", "Choice>"]),
                 choices,
             });
+            if (choice === "quit") throw new BattleQuit();
             const index = choices.findIndex((candidate) => candidate.number === choice);
             if (index >= 0) return index;
             const numbers = choices.map((candidate) => candidate.number);
@@ -163,6 +173,9 @@ export async function runBattleController(
             ], numberedChoices([
                 ...candidates.map((candidate) => accuracyLines([candidate])[0]),
                 "Back",
+            ], [
+                ...candidates.map((candidate) => candidate.target),
+                "Back",
             ]));
             if (choice === candidates.length) return false;
             selected.push(candidates[choice].target);
@@ -238,6 +251,8 @@ export async function runBattleController(
                     : undefined;
                 return {
                     label: moveLabel(action),
+                    available: action.available,
+                    browserLabel: action.move.id,
                     detailLines,
                     select: async () => {
                         if (!action.available) {
@@ -251,6 +266,8 @@ export async function runBattleController(
             menu.push(
                 {
                     label: `Escape / assist${escapeAvailable ? "" : " -- no legal escapes"}`,
+                    available: escapeAvailable,
+                    browserLabel: "Escape / assist",
                     select: async () => {
                         if (escapeAvailable) return chooseEscape(actor.id);
                         logLines.push("Escape / assist -- no legal escapes.");
@@ -260,6 +277,8 @@ export async function runBattleController(
                 {
                     label: `Change stance -> ${actor.standing ? "moving" : "standing"}`
                         + (actorView.stance.available ? "" : ` -- ${actorView.stance.reason}`),
+                    available: actorView.stance.available,
+                    browserLabel: "Change stance",
                     select: async () => {
                         if (actorView.stance.available) execute({ type: "stance", actor: actor.id });
                         else logLines.push(`Stance change -- ${actorView.stance.reason}.`);
@@ -268,6 +287,7 @@ export async function runBattleController(
                 },
                 {
                     label: "End turn",
+                    kind: "endTurn",
                     select: async () => {
                         execute({ type: "endTurn" });
                         return true;
@@ -285,7 +305,7 @@ export async function runBattleController(
                         `[${index + 1}] ${item.label}`,
                         ...(item.detailLines ?? []).map((line) => `    ${line}`),
                     ]),
-            ], numberedChoices(menu.map((item) => item.label)));
+            ], menuChoices(menu));
             if (await menu[choice].select()) return;
         }
     };
@@ -293,13 +313,9 @@ export async function runBattleController(
     try {
         while (running) {
             const view = engine.getGameView();
-            if (view.enemies.length === 0) {
-                const choice = await choose([
-                    "VICTORY — all enemies have been defeated.",
-                    "",
-                    "[1] Exit",
-                ], numberedChoices(["Exit"]));
-                if (choice === 0) running = false;
+            if (view.turn.outcome !== "ongoing") {
+                await ui.showFinal?.(screen(finalStateLines(view.turn.outcome)));
+                running = false;
                 continue;
             }
 
@@ -324,8 +340,8 @@ export async function runBattleController(
                     : [],
             );
             choices.push(
-                { number: endTurnNumber, label: "End turn" },
-                { number: quitNumber, label: "Quit" },
+                { number: endTurnNumber, label: "End turn", kind: "endTurn" },
+                { number: quitNumber, label: "Quit", kind: "quit" },
             );
             const choice = await choose(
                 ["Choose a character.", "", ...choiceLines],
@@ -340,13 +356,48 @@ export async function runBattleController(
                 running = false;
             }
         }
+    } catch (error: unknown) {
+        if (!(error instanceof BattleQuit)) throw error;
     } finally {
         await ui.close?.();
     }
 }
 
-function numberedChoices(labels: readonly string[]): BattleChoice[] {
-    return labels.map((label, index) => ({ number: index + 1, label }));
+function finalStateLines(outcome: "victory" | "defeat"): string[] {
+    return outcome === "victory"
+        ? [
+            "VICTORY",
+            "",
+            "All enemies have been defeated.",
+            "Use Quit to return to the encounter list.",
+        ]
+        : [
+            "DEFEAT",
+            "",
+            "The party has been incapacitated.",
+            "Use Quit to return to the encounter list.",
+        ];
+}
+
+function numberedChoices(
+    labels: readonly string[],
+    browserLabels: readonly string[] = labels,
+): BattleChoice[] {
+    return labels.map((label, index) => ({
+        number: index + 1,
+        label,
+        ...(browserLabels[index] !== label ? { browserLabel: browserLabels[index] } : {}),
+    }));
+}
+
+function menuChoices(items: readonly MenuItem[]): BattleChoice[] {
+    return items.map((item, index) => ({
+        number: index + 1,
+        label: item.label,
+        ...(item.available === undefined ? {} : { available: item.available }),
+        ...(item.kind === undefined ? {} : { kind: item.kind }),
+        ...(item.browserLabel === undefined ? {} : { browserLabel: item.browserLabel }),
+    }));
 }
 
 function accuracyLines(targets: ValidTarget[]): string[] {
