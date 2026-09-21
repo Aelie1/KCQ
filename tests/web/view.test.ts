@@ -4,11 +4,18 @@ import {
     browserChoiceForKey,
     browserChoiceLabel,
     browserChoiceShortcut,
+    browserTitle,
     getBrowserChoices,
     isLogNearBottom,
 } from "../../src/web/view";
 
 describe("web battle view", () => {
+    it("adds the release tag to the browser title", () => {
+        expect(browserTitle("v0.6")).toBe("Ko-chan's Quest v0.6");
+        expect(browserTitle("  v0.6  ")).toBe("Ko-chan's Quest v0.6");
+        expect(browserTitle("")).toBe("Ko-chan's Quest");
+    });
+
     it("filters unavailable and persistent choices without renumbering", () => {
         const choices: BattleChoice[] = [
             {

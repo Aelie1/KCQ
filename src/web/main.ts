@@ -11,12 +11,19 @@ import {
     browserChoiceForKey,
     browserChoiceLabel,
     browserChoiceShortcut,
+    browserTitle,
     getBrowserChoices,
     isLogNearBottom,
 } from "./view";
 
+declare const __KCQ_RELEASE_TAG__: string;
+
 const SCREEN_WIDTH = 150;
 const SCREEN_HEIGHT = 49;
+
+const appTitle = browserTitle(__KCQ_RELEASE_TAG__);
+document.title = appTitle;
+requiredElement<HTMLHeadingElement>("app-title").textContent = appTitle;
 
 const screenElement = requiredElement<HTMLPreElement>("screen");
 const screenContainer = requiredElement<HTMLDivElement>("screen-container");

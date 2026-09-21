@@ -13,6 +13,11 @@ export interface ScrollPosition {
     scrollHeight: number;
 }
 
+export function browserTitle(releaseTag: string): string {
+    const tag = releaseTag.trim();
+    return tag ? `Ko-chan's Quest ${tag}` : "Ko-chan's Quest";
+}
+
 export function getBrowserChoices(choices: readonly BattleChoice[]): BrowserChoiceSet {
     return {
         choices: choices.filter((choice) =>
