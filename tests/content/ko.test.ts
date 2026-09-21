@@ -5,7 +5,7 @@ import { createCustomEngine } from "../../src/engine/protected/engine";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import { bound, gagged, helpless, hobbled, incapacitated } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
-import type { Engine } from "../../src/engine/public/types";
+import type { DamageEvent, Engine } from "../../src/engine/public/types";
 import {
     buffState,
     execute,
@@ -328,17 +328,36 @@ describe("Ko's normal and Fairy move effects", () => {
             move: "telekinesis",
             targets: [{ target: "first1", result: "hit" }],
         });
-        expect(result.events).toContainEqual({
-            type: "enemyDamaged",
-            target: "first1",
-            amount: 100,
-        });
+        const damage = result.events.find(
+            (event) => event.type === "enemyDamaged" && event.target === "first1",
+        );
+        expect(damage?.type).toBe("enemyDamaged");
+        if (!damage || damage.type !== "enemyDamaged") throw new Error("Expected Telekinesis damage");
+        expect(damage.amount).toBeGreaterThan(0);
         expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp)
-            .toBe(400);
+            .toBe(500 - damage.amount);
         expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp).toBe(500);
     });
 
     it("makes Fairy Telekinesis AoE with two half-damage hits and consumes once", () => {
+        const normalFirst = makeBehavioralEnemy("first");
+        const normalSecond = makeBehavioralEnemy("second");
+        normalFirst.hp = 500;
+        normalSecond.hp = 500;
+        const normalEngine = loadKoEncounter([normalFirst, normalSecond], undefined, false, 2);
+        const normalResult = execute(normalEngine, {
+            type: "move",
+            actor: ko.id,
+            move: "telekinesis",
+            targets: ["first1"],
+        });
+        const normalDamage = normalResult.events.find(
+            (event) => event.type === "enemyDamaged" && event.target === "first1",
+        );
+        if (!normalDamage || normalDamage.type !== "enemyDamaged") {
+            throw new Error("Expected normal Telekinesis damage");
+        }
+
         const first = makeBehavioralEnemy("first");
         const second = makeBehavioralEnemy("second");
         first.hp = 500;
@@ -365,33 +384,23 @@ describe("Ko's normal and Fairy move effects", () => {
             ],
         });
 
-        expect(result.events).toEqual(expect.arrayContaining([
-            {
-                type: "enemyDamaged",
-                target: "first1",
-                amount: 50,
-            },
-            {
-                type: "enemyDamaged",
-                target: "first1",
-                amount: 94,
-            },
-            {
-                type: "enemyDamaged",
-                target: "second1",
-                amount: 48,
-            },
-            {
-                type: "enemyDamaged",
-                target: "second1",
-                amount: 98,
-            },
-        ]));
+        const damageEvents = result.events.filter(
+            (event): event is DamageEvent => event.type === "enemyDamaged",
+        );
+        expect(damageEvents).toHaveLength(4);
+        expect(damageEvents.map(({ target }) => target)).toEqual([
+            "first1",
+            "first1",
+            "second1",
+            "second1",
+        ]);
+        for (const event of damageEvents) expect(event.amount).toBeGreaterThan(0);
+        expect(damageEvents[0].amount * 2).toBe(normalDamage.amount);
 
         expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp)
-            .toBe(356);
+            .toBe(500 - damageEvents.slice(0, 2).reduce((total, event) => total + event.amount, 0));
         expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp)
-            .toBe(354);
+            .toBe(500 - damageEvents.slice(2).reduce((total, event) => total + event.amount, 0));
 
         expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",

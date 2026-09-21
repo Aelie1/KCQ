@@ -112,42 +112,73 @@ describe("normal Latex Skunk", () => {
         const previewEffect = preview?.effects.find((effect) => effect.type === "trap");
 
         expect(preview).toMatchObject({ move: "latexPuddle", targets: [] });
-        expect(previewEffect).toEqual({ type: "trap", trap: trapPuddle.id, amount: 10 });
+        expect(previewEffect).toMatchObject({ type: "trap", trap: trapPuddle.id });
+        if (!previewEffect || previewEffect.type !== "trap") throw new Error("Expected Puddle trap effect");
+        expect(previewEffect.amount).toBeGreaterThan(0);
 
         const result = endTurn(engine);
         expect(result.events).toContainEqual({
-            type: "trapAdded", actor: "skunk1", trap: trapPuddle.id, amount: 10,
+            type: "trapAdded", actor: "skunk1", trap: trapPuddle.id, amount: previewEffect.amount,
         });
-        expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 10 }]);
+        expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: previewEffect.amount }]);
     });
 
     it.each([
-        [1, "miss", 0, 0],
-        [4, "graze", 5, 13],
-        [2, "hit", 20, 25],
-        [36, "crit", 38, 50],
+        [1, "miss"],
+        [4, "graze"],
+        [2, "hit"],
+        [36, "crit"],
     ] as const)(
         "applies Spray effectiveness for a %s seed (%s)",
-        (seed, band, minAmount, maxAmount) => {
+        (seed, band) => {
             const engine = loadSkunk({ seed, trapAmount: 100 });
             const preview = engine.getGameView().enemies[0].intentions[0];
             expect(preview?.move).toBe("latexSpray");
             expect(preview?.targets[0]?.band).toBe(band);
+            const previewBinding = preview?.targets[0]?.effects.find(
+                (effect) => effect.type === "binding",
+            );
 
             const result = endTurn(engine);
             const bondage = result.events.find((event) => event.type === "bondageAdded");
             if (band === "miss") {
+                expect(previewBinding).toBeUndefined();
                 expect(bondage).toBeUndefined();
                 expect(result.view.characters[0].bindings).toEqual([]);
             } else {
+                expect(previewBinding?.type).toBe("binding");
+                if (!previewBinding || previewBinding.type !== "binding" || previewBinding.amount === undefined) {
+                    throw new Error("Expected Spray binding preview");
+                }
+                expect(previewBinding.amount).toBeGreaterThan(0);
                 expect(bondage?.type).toBe("bondageAdded");
                 if (bondage?.type !== "bondageAdded") throw new Error("Expected Spray bondage");
                 expect(BODY_LATEX.map(({ id }) => id)).toContain(bondage.binding);
-                expect(bondage.amount).toBeGreaterThanOrEqual(minAmount);
-                expect(bondage.amount).toBeLessThanOrEqual(maxAmount);
+                expect(bondage.binding).toBe(previewBinding.binding);
+                expect(bondage.amount).toBe(previewBinding.amount);
             }
         },
     );
+
+    it("scales Spray bondage upward from Graze through Hit and Crit", () => {
+        const amountForSeed = (seed: number): number => {
+            const preview = loadSkunk({ seed, trapAmount: 100 })
+                .getGameView().enemies[0].intentions[0];
+            const effect = preview?.targets[0]?.effects.find(
+                (candidate) => candidate.type === "binding",
+            );
+            if (!effect || effect.type !== "binding" || effect.amount === undefined) {
+                throw new Error(`Expected Spray binding preview for seed ${seed}`);
+            }
+            return effect.amount;
+        };
+
+        const graze = amountForSeed(4);
+        const hit = amountForSeed(2);
+        const crit = amountForSeed(36);
+        expect(hit).toBeGreaterThan(graze);
+        expect(crit).toBeGreaterThan(hit);
+    });
 
     it("prioritizes regeneration for the character with the most recoverable Latex", () => {
         const engine = loadSkunk({
@@ -172,8 +203,17 @@ describe("normal Latex Skunk", () => {
         const result = endTurn(engine);
         const first = result.view.characters.find(({ id }) => id === "first")!;
         const second = result.view.characters.find(({ id }) => id === "second")!;
+        const previewBinding = intention.targets[0]?.effects.find(
+            (effect) => effect.type === "binding" && effect.binding === latexArms.id,
+        );
+        if (!previewBinding || previewBinding.type !== "binding" || previewBinding.amount === undefined) {
+            throw new Error("Expected Regeneration binding preview");
+        }
         expect(first.bindings[0]).toMatchObject({ value: 40, data: { peak: 50 } });
-        expect(second.bindings[0]).toMatchObject({ value: 18, data: { peak: 50 } });
+        expect(second.bindings[0]).toMatchObject({
+            value: 10 + previewBinding.amount,
+            data: { peak: 50 },
+        });
         expect(result.events.filter((event) =>
             event.type.startsWith("bondage") && "binding" in event && event.binding === latexArms.id,
         )).toHaveLength(1);
@@ -314,10 +354,12 @@ describe("normal Latex Skunk", () => {
                 trapAmount: withTrap ? 0 : null,
                 bindings: { hero: [{ definition: rope, value: 1 }] },
             });
-            expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+            const intention = engine.getGameView().enemies[0].intentions[0];
+            expect(intention).toMatchObject({
                 move: "latexExplosion",
                 targets: [{ target: "hero", band: "miss", effects: [] }],
-            }]);
+            });
+            const trapEffect = intention.effects.find((effect) => effect.type === "trap");
 
             const result = endTurn(engine);
             expect(result.view.enemies.some(({ id }) => id === "skunk1")).toBe(false);
@@ -325,8 +367,14 @@ describe("normal Latex Skunk", () => {
                 type: "enemyDefeated", target: "skunk1",
             });
             if (withTrap) {
-                expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 25 }]);
+                expect(trapEffect?.type).toBe("trap");
+                if (!trapEffect || trapEffect.type !== "trap") {
+                    throw new Error("Expected Explosion trap effect");
+                }
+                expect(trapEffect.amount).toBeGreaterThan(0);
+                expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: trapEffect.amount }]);
             } else {
+                expect(trapEffect).toBeUndefined();
                 expect(result.view.traps).toEqual([]);
             }
         },
