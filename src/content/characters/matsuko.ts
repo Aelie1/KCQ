@@ -7,15 +7,15 @@ import { FailureReason } from "../../engine/public/types";
 import { removeEmpowerment } from "./ko";
 
 
-const PUNCH_DAMAGE = 100;
+const PUNCH_DAMAGE = 30;
 
-const KICK_DAMAGE = 100;
+const KICK_DAMAGE = 30;
 
-const WHITE_FLAME_DAMAGE = 100;
+const WHITE_FLAME_DAMAGE = 30;
 
-const PHOENIX_KICK_DAMAGE = 100;
+const PHOENIX_KICK_DAMAGE = 30;
 
-const IMMOLATION_DAMAGE = 200;
+const IMMOLATION_DAMAGE = 60;
 
 const OBEY_SERVITUDE_DURATION = 2;
 const OBEY_COMPULSION_COOLDOWN = 3;

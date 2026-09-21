@@ -9,15 +9,15 @@ import { trapPuddle } from "./puddles";
 const SKUNK_HP = 300;
 const SKUNK_DEF = 0;
 
-const SPRAY_DAMAGE = 25;
+const SPRAY_DAMAGE = 30;
 
-const PUDDLE_BASE = 25;
+const PUDDLE_BASE = 30;
 
-const REGENERATION_DAMAGE = 30;
+const REGENERATION_DAMAGE = 40;
 
 const EXPLOSION_HP_RATIO = 0.25;
 const EXPLOSION_HEAL = SKUNK_HP * 0.2;
-const EXPLOSION_DAMAGE = 25;
+const EXPLOSION_DAMAGE = 40;
 
 export const skunk: EnemyDef = {
     id: "skunk",

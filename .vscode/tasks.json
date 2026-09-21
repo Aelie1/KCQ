@@ -78,14 +78,14 @@
             "problemMatcher": []
         },
         {
-            "label": "balance plains 2",
+            "label": "balance plains 3",
             "type": "process",
             "command": "npm.cmd",
             "args": [
                 "run",
                 "compare",
                 "--",
-                "plains_2",
+                "plains_3",
                 "12345",
                 "basic,idle",
                 "1000"

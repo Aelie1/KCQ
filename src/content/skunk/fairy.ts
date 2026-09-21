@@ -9,7 +9,7 @@ import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 const FAIRY_HP = 200;
 const FAIRY_DEF = 0;
 
-const BINDING_MAGIC_DAMAGE = 10;
+const BINDING_MAGIC_DAMAGE = 20;
 
 const HEALING_MAGIC_HP_RATIO = 0.25;
 

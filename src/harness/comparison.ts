@@ -131,6 +131,7 @@ export function formatPolicyComparison(result: PolicyComparisonResult): string[]
             policyId,
             String(metrics.runs),
             formatPercent(metrics.winRate),
+            formatNumber(summary.fightLength.round?.mean ?? null),
             formatNumber(metrics.meanDecisions),
             formatNumber(metrics.meanDamage),
             formatNumber(metrics.meanPeakBondage),
@@ -153,7 +154,7 @@ export function formatPolicyComparison(result: PolicyComparisonResult): string[]
         `===== ${result.encounterId} =====`,
         "",
         ...formatTable(
-            ["policy", "runs", "winRate", "meanDecisions", "meanDamage", "meanPeakBondage", "meanEscapes", "win95"],
+            ["policy", "runs", "winRate", "meanRounds", "meanDecisions", "meanDamage", "meanPeakBondage", "meanEscapes", "win95"],
             metricRows,
         ),
         "",

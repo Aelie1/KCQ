@@ -11,9 +11,8 @@ import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 const SKUNKETTE_HP = 200;
 const SKUNKETTE_DEF = 0;
 
-const SPRAY_DAMAGE = 15;
+const SPRAY_DAMAGE = 30;
 
-const POUNCE_DAMAGE = 15;
 const POUNCE_COOLDOWN = 2;
 
 const MIST_DAMAGE = 10;
@@ -243,7 +242,6 @@ const pounce: MoveDef = {
     id: "pounce",
     targetSide: "player",
     targets: 1,
-    baseDamage: POUNCE_DAMAGE,
     cooldown: POUNCE_COOLDOWN,
     accuracy: {
         miss: 40,

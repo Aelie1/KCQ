@@ -12,9 +12,9 @@ const STORE_REMOVE_AMOUNT = 25;
 const RELEASE_PLAYER_AMOUNT = 50;
 const RELEASE_PLAYER_BINDING = 25;
 const RELEASE_ENEMY_AMOUNT = 25;
-const RELEASE_DAMAGE = 100;
+const RELEASE_DAMAGE = 50;
 
-const ROCKFALL_DAMAGE = 40;
+const ROCKFALL_DAMAGE = 10;
 
 const subspaceMovement: PassiveDef = {
     id: "subspaceMovement",

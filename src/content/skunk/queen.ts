@@ -169,9 +169,9 @@ const skunkGun: MoveDef = {
     targets: 1,
     baseDamage: GUN_DAMAGE,
     accuracy: {
-        miss: 50,
+        miss: 40,
         graze: 25,
-        hit: 24,
+        hit: 34,
         crit: 1
     },
     type: "none",

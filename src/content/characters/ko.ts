@@ -2,7 +2,7 @@ import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/prot
 import { findBuff, isEnemy } from "../../engine/protected/helpers";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 
-const TELEKINESIS_DAMAGE = 100;
+const TELEKINESIS_DAMAGE = 30;
 
 const thousandRestraintsBody: PassiveDef = {
     id: "thousandRestraintsBody",
