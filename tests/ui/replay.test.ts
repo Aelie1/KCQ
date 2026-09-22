@@ -114,7 +114,7 @@ describe("console replay viewer", () => {
         expect(frame).toContain("PARTY");
         expect(frame).toContain("hero [Ready]");
         expect(frame).toContain("rope");
-        expect(frame).toContain("0/0");
+        expect(frame).toContain("0  Easy");
         expect(frame).toContain("ENEMIES");
         expect(frame).toContain("Intent: recorded-intention");
         expect(frame).toMatch(/Recorded \[[-#]+\] 1\/100/);
@@ -127,13 +127,13 @@ describe("console replay viewer", () => {
         expect(frames).toHaveLength(5);
         expectPosition(frames[1], 1, 73);
         expect(frames[1]).toContain("Action: move hero: recorded-strike; targets: [recorded-foe]");
-        expect(frames[1]).toContain("12/0");
+        expect(frames[1]).toContain("12  Easy");
         expect(frames[1]).toContain("recorded-foe took 17 damage.");
         expect(frames[1]).not.toContain("took 32 damage");
         expectPosition(frames[2], 2, 41);
         expect(frames[2]).toContain("Round 2 / PLAYER");
         expect(frames[2]).toContain("Action: endTurn");
-        expect(frames[2]).toContain("24/0");
+        expect(frames[2]).toContain("24  Easy");
         expect(frames[2]).toContain("recorded-foe took 17 damage.");
         expect(frames[2]).toContain("recorded-foe took 32 damage.");
         expectPosition(frames[3], 1, 73);

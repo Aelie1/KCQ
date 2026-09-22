@@ -24,6 +24,7 @@ export type SemanticStyle =
     | "accuracy-poor"
     | "accuracy-very-poor"
     | "phase-separator"
+    | "current-log-action"
     | "transient-highlight";
 
 export interface StyleSpan {
@@ -237,6 +238,9 @@ export function deriveHighlightTargets(events: readonly GameEvent[]): HighlightT
     const targets: HighlightTarget[] = [];
     for (const event of events) {
         switch (event.type) {
+            case "moveUsed":
+                targets.push({ kind: "enemy", entity: event.actor });
+                break;
             case "bondageAdded":
             case "bondageChanged":
             case "bondageRemoved":

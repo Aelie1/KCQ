@@ -37,6 +37,7 @@
             "request": "launch",
             "url": "http://localhost:5173",
             "webRoot": "${workspaceFolder}",
+            "reAttach": true,
             "preLaunchTask": "vite"
         }
     ]

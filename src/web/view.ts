@@ -1,5 +1,5 @@
 import type { BattleChoice } from "../console/controller";
-import type { SemanticStyle, StyledText } from "../console/presentation";
+import type { SemanticStyle, StyledLine, StyledText } from "../console/presentation";
 
 const OVERFLOW_SHORTCUTS = "qwertyuiopasdfghjklzxcvbnm";
 
@@ -40,6 +40,29 @@ export function styledTextParts(styled: StyledText): StyledPart[] {
 
 export function semanticStyleClass(style: SemanticStyle): string {
     return `semantic-${style}`;
+}
+
+export function styledLogText(
+    lines: readonly StyledLine[],
+    limit = lines.length,
+    activeRange?: { start: number; end: number },
+): StyledText {
+    const visible = lines.slice(0, limit);
+    const text = visible.map((line) => line.text).join("\n");
+    const spans: StyledText["spans"] = [];
+    let offset = 0;
+    for (const [index, line] of visible.entries()) {
+        if (line.style) spans.push({ start: offset, end: offset + line.text.length, style: line.style });
+        if (activeRange && index >= activeRange.start && index < activeRange.end) {
+            spans.push({
+                start: offset,
+                end: offset + line.text.length,
+                style: "current-log-action",
+            });
+        }
+        offset += line.text.length + 1;
+    }
+    return { text, spans };
 }
 
 export function browserTitle(releaseTag: string): string {

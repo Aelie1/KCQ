@@ -19,6 +19,7 @@ import {
     getBrowserChoices,
     isLogNearBottom,
     semanticStyleClass,
+    styledLogText,
     styledTextParts,
 } from "./view";
 
@@ -188,22 +189,7 @@ class BrowserBattleUI implements BattleUI {
         activeRange?: { start: number; end: number },
     ): void {
         const followLog = isLogNearBottom(battleLogElement);
-        const visible = lines.slice(0, limit);
-        const text = visible.map((line) => line.text).join("\n");
-        const spans: StyledText["spans"] = [];
-        let offset = 0;
-        for (const [index, line] of visible.entries()) {
-            if (line.style) spans.push({ start: offset, end: offset + line.text.length, style: line.style });
-            if (activeRange && index >= activeRange.start && index < activeRange.end) {
-                spans.push({
-                    start: offset,
-                    end: offset + line.text.length,
-                    style: "transient-highlight",
-                });
-            }
-            offset += line.text.length + 1;
-        }
-        renderStyledElement(battleLogElement, { text, spans });
+        renderStyledElement(battleLogElement, styledLogText(lines, limit, activeRange));
         if (followLog) battleLogElement.scrollTop = battleLogElement.scrollHeight;
     }
 }

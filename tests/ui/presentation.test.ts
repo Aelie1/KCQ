@@ -160,7 +160,7 @@ describe("combat presentation", () => {
                 characters: [{
                     id: "ko", acted: false, standing: true, bonusEscapes: 0,
                     bindings: [{ id: "latexArms", value: 55, level: "extreme", data: {}, status: [] }],
-                    buffs: [], modifiers: {}, blockedMoveTypes: [], data: {},
+                    buffs: [{ id: "focus" }], modifiers: {}, blockedMoveTypes: [], data: {},
                 }],
                 enemies: [{
                     id: "skunk1", rank: "enemy", maxHp: 20, currHp: 20, currDef: 0,
@@ -171,7 +171,7 @@ describe("combat presentation", () => {
                     }],
                     buffs: [], cooldowns: {},
                 }],
-                traps: [], encounter: null,
+                traps: [{ id: "trapPuddle", amount: 35 }], encounter: null,
             },
             availability: [{ id: "ko", available: true }],
             bindings: ["latexArms"],
@@ -181,6 +181,14 @@ describe("combat presentation", () => {
             },
             actionLines: ["skunk1 — Miss: 70%   Hit: 10%   Crit: 5%"],
             logLines: [],
+            highlights: [
+                { kind: "binding", entity: "ko", binding: "latexArms" },
+                { kind: "buff", entity: "ko", buff: "focus" },
+                { kind: "enemy", entity: "skunk1" },
+                { kind: "hp", entity: "skunk1" },
+                { kind: "trap", trap: "trapPuddle" },
+                { kind: "stance", entity: "ko" },
+            ],
         }, 120, 36, { externalLog: true });
         const styledValues = rendered.spans.map((span) => ({
             style: span.style,
@@ -189,9 +197,20 @@ describe("combat presentation", () => {
 
         expect(styledValues).toContainEqual({ style: "intent-crit", value: "CRIT" });
         expect(styledValues.some((entry) =>
-            entry.style === "binding-extreme" && entry.value.includes("55/"))).toBe(true);
+            entry.style === "binding-extreme" && entry.value.includes("55"))).toBe(true);
         expect(styledValues.some((entry) => entry.style === "accuracy-very-poor")).toBe(true);
         expect(styledValues.some((entry) =>
             entry.style.startsWith("actor-") && entry.value === "skunk1")).toBe(true);
+
+        const flashes = styledValues
+            .filter((entry) => entry.style === "transient-highlight")
+            .map((entry) => entry.value);
+        expect(flashes).toContain("ko");
+        expect(flashes).toContain("skunk1");
+        expect(flashes).toContain("[HP: 20/20]");
+        expect(flashes).toContain("Focus");
+        expect(flashes.some((value) => value.startsWith("[") && value.endsWith(" 55"))).toBe(true);
+        expect(flashes.some((value) => value.includes("35/100"))).toBe(true);
+        expect(flashes.every((value) => value.length < 40)).toBe(true);
     });
 });

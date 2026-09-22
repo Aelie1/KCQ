@@ -157,8 +157,9 @@ export function renderStyledScreen(
         for (const binding of character.bindings) {
             const style = bindingSeverityStyle(binding.level);
             if (!style || binding.value <= 0) continue;
+            const displayedValue = bindingValue(binding.value, binding.data["peak"]);
             forEachLine(text, (line, offset) => {
-                if (!line.includes(binding.id) || !line.includes(`${binding.value}/`)) return;
+                if (!line.includes(binding.id) || !line.includes(displayedValue)) return;
                 const barStart = line.indexOf("[", line.indexOf(binding.id) + binding.id.length);
                 const barEnd = line.indexOf("]", barStart);
                 if (barStart >= 0 && barEnd > barStart) {
@@ -169,7 +170,7 @@ export function renderStyledScreen(
                         style,
                     });
                 }
-                const valueStart = line.indexOf(`${binding.value}/`, Math.max(0, barEnd));
+                const valueStart = line.indexOf(displayedValue, Math.max(0, barEnd));
                 const level = titleCase(binding.level);
                 const levelEnd = line.indexOf(level, valueStart) + level.length;
                 if (valueStart >= 0 && levelEnd > valueStart) {
@@ -201,7 +202,7 @@ export function renderStyledScreen(
             addLiteralSpans(text, spans, entry.text, entry.style);
         }
     }
-    applyHighlights(text, spans, model.highlights ?? []);
+    applyHighlights(text, spans, model.highlights ?? [], model);
     return { text, spans };
 }
 
@@ -263,13 +264,13 @@ function formatParty(
             for (const [index, bindingId] of bindingIds.entries()) {
                 const binding = character.bindings.find((candidate) => candidate.id === bindingId);
                 const value = binding?.value ?? 0;
-                const peak = binding?.data["peak"] ?? 0;
+                const peak = binding?.data["peak"];
                 const level = binding ? titleCase(binding.level) : "---";
                 const statuses = binding ? formatBindingStatuses(binding.status) : "";
                 lines.push(
                     `${index === 0 ? prefix : " ".repeat(prefix.length)}`
                     + `${bindingId.padEnd(bindingNameWidth)}  `
-                    + `${bindingBar(value, bindingThresholds)} ${value}/${peak}  ${level}`
+                    + `${bindingBar(value, bindingThresholds)} ${bindingValue(value, peak)}  ${level}`
                     + (statuses ? `    ${statuses}` : ""),
                 );
             }
@@ -568,10 +569,17 @@ export function renderTooSmall(width: number, height: number): string {
         + `${MIN_TERMINAL_WIDTH}x${MIN_TERMINAL_HEIGHT}.`;
 }
 
-function forEachLine(text: string, callback: (line: string, offset: number) => void): void {
+function bindingValue(value: number, peak: number | undefined): string {
+    return peak === undefined ? String(value) : `${value}/${peak}`;
+}
+
+function forEachLine(
+    text: string,
+    callback: (line: string, offset: number, index: number) => void,
+): void {
     let offset = 0;
-    for (const line of text.split("\n")) {
-        callback(line, offset);
+    for (const [index, line] of text.split("\n").entries()) {
+        callback(line, offset, index);
         offset += line.length + 1;
     }
 }
@@ -616,24 +624,162 @@ function applyHighlights(
     text: string,
     spans: StyledText["spans"],
     highlights: readonly HighlightTarget[],
+    modelForHighlights: ScreenModel,
 ): void {
-    const tokens = highlights.flatMap((target) => {
+    for (const target of highlights) {
         switch (target.kind) {
-            case "binding": return [target.binding];
-            case "buff": return [target.buff];
+            case "binding": {
+                const character = modelCharacterBinding(target.entity, target.binding);
+                if (!character) break;
+                const lineRange = entityLineRange(text, modelForHighlights, target.entity);
+                const displayedValue = bindingValue(character.value, character.data["peak"]);
+                forEachLine(text, (line, offset, index) => {
+                    if (lineRange && (index < lineRange.start || index >= lineRange.end)) return;
+                    if (!line.includes(target.binding)) return;
+                    const barStart = line.indexOf("[", line.indexOf(target.binding) + target.binding.length);
+                    const barEnd = line.indexOf("]", barStart);
+                    const valueStart = line.indexOf(displayedValue, Math.max(0, barEnd));
+                    if (barStart < 0 || barEnd < barStart || valueStart < 0) return;
+                    spans.push({
+                        start: offset + barStart,
+                        end: offset + valueStart + displayedValue.length,
+                        style: "transient-highlight",
+                    });
+                });
+                break;
+            }
+            case "buff": {
+                const buffName = displayName(target.buff);
+                const lineRange = entityLineRange(text, modelForHighlights, target.entity);
+                const added = addPanelTokenSpans(
+                    text,
+                    spans,
+                    buffName,
+                    "transient-highlight",
+                    (_line, index) => !lineRange
+                        || (index >= lineRange.start && index < lineRange.end),
+                );
+                if (added === 0) {
+                    addEntityNameHighlight(text, spans, target.entity);
+                }
+                break;
+            }
             case "enemy":
+            case "stance":
+                addEntityNameHighlight(text, spans, target.entity);
+                break;
             case "hp":
-            case "stance": return [target.entity];
-            case "trap": return [target.trap, trapDisplayName(target.trap, 2)];
+                forEachLine(text, (line, offset) => {
+                    const header = `${target.entity} [HP:`;
+                    const entityStart = line.indexOf(header);
+                    if (entityStart < 0) return;
+                    const hpStart = line.indexOf("[HP:", entityStart + target.entity.length);
+                    const hpEnd = line.indexOf("]", hpStart);
+                    if (hpStart >= 0 && hpEnd > hpStart) spans.push({
+                        start: offset + hpStart,
+                        end: offset + hpEnd + 1,
+                        style: "transient-highlight",
+                    });
+                });
+                break;
+            case "trap": {
+                const trap = modelTrap(target.trap);
+                if (!trap) break;
+                const name = trapDisplayName(trap.id, trap.amount);
+                const value = `${formatNumber(trap.amount)}/100`;
+                forEachLine(text, (line, offset) => {
+                    const nameStart = line.indexOf(name);
+                    if (nameStart < 0) return;
+                    const barStart = line.indexOf("[", nameStart + name.length);
+                    const barEnd = line.indexOf("]", barStart);
+                    const valueStart = line.indexOf(value, Math.max(nameStart, barEnd));
+                    const start = barStart >= 0 && barEnd > barStart ? barStart : valueStart;
+                    if (start < 0 || valueStart < 0) return;
+                    spans.push({
+                        start: offset + start,
+                        end: offset + valueStart + value.length,
+                        style: "transient-highlight",
+                    });
+                });
+                break;
+            }
+        }
+    }
+
+    function modelCharacterBinding(entity: EntityId, bindingId: BindingId) {
+        return modelForHighlights.state.characters
+            .find((character) => character.id === entity)?.bindings
+            .find((binding) => binding.id === bindingId);
+    }
+
+    function modelTrap(trapId: string) {
+        return modelForHighlights.state.traps.find((trap) => trap.id === trapId);
+    }
+}
+
+function addPanelTokenSpans(
+    text: string,
+    spans: StyledText["spans"],
+    token: string,
+    style: SemanticStyle,
+    acceptsLine: (line: string, index: number) => boolean,
+): number {
+    let added = 0;
+    forEachLine(text, (line, offset, index) => {
+        if (!acceptsLine(line, index)) return;
+        let start = 0;
+        while ((start = line.indexOf(token, start)) >= 0) {
+            spans.push({ start: offset + start, end: offset + start + token.length, style });
+            added += 1;
+            start += token.length || 1;
         }
     });
+    return added;
+}
+
+function entityLineRange(
+    text: string,
+    model: ScreenModel,
+    entity: EntityId,
+): { start: number; end: number } | undefined {
+    const lines = text.split("\n");
+    const divider = lines.find((line) => line.includes("┬"))?.indexOf("┬") ?? -1;
+    const isCharacter = model.state.characters.some((character) => character.id === entity);
+    const entities = isCharacter
+        ? model.state.characters.map((character) => character.id)
+        : model.state.enemies.map((enemy) => enemy.id);
+    const panelText = (line: string): string => isCharacter
+        ? line.slice(1, divider >= 0 ? divider : line.length)
+        : line.slice(divider + 1, -1);
+    const header = isCharacter ? `${entity} [` : `${entity} [HP:`;
+    const start = lines.findIndex((line) => panelText(line).startsWith(header));
+    if (start < 0) return undefined;
+
+    for (let index = start + 1; index < lines.length; index++) {
+        const panel = panelText(lines[index]);
+        if (entities.some((candidate) => panel.startsWith(
+            isCharacter ? `${candidate} [` : `${candidate} [HP:`,
+        ))) {
+            return { start, end: index };
+        }
+        if ((isCharacter && lines[index].startsWith("├")) || lines[index].startsWith("└")) {
+            return { start, end: index };
+        }
+    }
+    return { start, end: lines.length };
+}
+
+function addEntityNameHighlight(
+    text: string,
+    spans: StyledText["spans"],
+    entity: EntityId,
+): void {
     forEachLine(text, (line, offset) => {
-        if (!tokens.some((token) => line.includes(token))) return;
-        const contentStart = line.startsWith("│") ? 1 : 0;
-        const contentEnd = line.endsWith("│") ? line.length - 1 : line.length;
+        const start = line.indexOf(`${entity} [`);
+        if (start < 0) return;
         spans.push({
-            start: offset + contentStart,
-            end: offset + contentEnd,
+            start: offset + start,
+            end: offset + start + entity.length,
             style: "transient-highlight",
         });
     });
@@ -664,6 +810,7 @@ function ansiCode(style: SemanticStyle): string {
         "accuracy-poor": "38;5;208;1",
         "accuracy-very-poor": "97;41;1",
         "phase-separator": "97;1",
+        "current-log-action": "97;1",
         "transient-highlight": "97;44;1",
     };
     return codes[style] ?? "";

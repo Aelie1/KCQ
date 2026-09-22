@@ -7,6 +7,7 @@ import {
     browserTitle,
     getBrowserChoices,
     isLogNearBottom,
+    styledLogText,
 } from "../../src/web/view";
 
 describe("web battle view", () => {
@@ -54,6 +55,19 @@ describe("web battle view", () => {
         expect(isLogNearBottom({ scrollTop: 476, clientHeight: 500, scrollHeight: 1000 }))
             .toBe(true);
         expect(isLogNearBottom({ scrollTop: 200, clientHeight: 500, scrollHeight: 1000 }))
+            .toBe(false);
+    });
+
+    it("uses static emphasis rather than transient animation for the active log group", () => {
+        const styled = styledLogText([
+            { text: "========== ENEMY PHASE ==========", style: "phase-separator" },
+            { text: "skunk1 used spray.", style: "actor-1" },
+            { text: "  ↳ ko gained latex.", style: "actor-1" },
+        ], 3, { start: 1, end: 3 });
+
+        expect(styled.spans.filter((span) => span.style === "current-log-action"))
+            .toHaveLength(2);
+        expect(styled.spans.some((span) => span.style === "transient-highlight"))
             .toBe(false);
     });
 });

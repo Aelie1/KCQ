@@ -157,6 +157,11 @@ button:disabled {
 .semantic-accuracy-poor { color: #fb923c; font-weight: 800; }
 .semantic-accuracy-very-poor { color: #fff; background: #991b1b; font-weight: 900; }
 
+.semantic-current-log-action {
+    color: #fff;
+    font-weight: 800;
+}
+
 .semantic-transient-highlight {
     animation: combat-flash var(--combat-highlight-duration, 650ms) ease-out;
 }

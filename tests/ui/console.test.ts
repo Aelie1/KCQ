@@ -410,12 +410,12 @@ describe("console formatting", () => {
 
         expect(rendered.indexOf("latexLegs")).toBeLessThan(rendered.indexOf("latexArms"));
         expect(rendered.indexOf("latexArms")).toBeLessThan(rendered.indexOf("latexTorso"));
-        expect(rendered).toContain("latexLegs   [-+-+-+---+-----+----] 0/0  ---");
+        expect(rendered).toContain("latexLegs   [-+-+-+---+-----+----] 0  ---");
         expect(rendered).toContain(
-            "latexArms   [#######--+-----+----] 36/0  Hard    [Bound 3] [Immobilized]",
+            "latexArms   [#######--+-----+----] 36  Hard    [Bound 3] [Immobilized]",
         );
         expect(rendered).toContain(
-            "latexTorso  [#####+---+-----+----] 23/0  Medium    [Gagged 2]",
+            "latexTorso  [#####+---+-----+----] 23  Medium    [Gagged 2]",
         );
         const bindingLines = rendered.split("\n");
         const firstBindingLine = bindingLines.findIndex((line) => line.includes("Bindings:"));
@@ -424,6 +424,25 @@ describe("console formatting", () => {
             .toBe(bindingLines[firstBindingLine].indexOf("latexLegs"));
         expect(rendered).not.toContain("notInEncounter");
         expect(rendered).not.toContain("Status:");
+    });
+
+    it("shows binding peaks only when peak data is defined", () => {
+        const rendered = renderState({
+            ...state,
+            characters: [{
+                ...state.characters[0],
+                bindings: [
+                    { id: "withPeak", value: 36, level: "hard", data: { peak: 58 }, status: [] },
+                    { id: "withoutPeak", value: 36, level: "hard", data: {}, status: [] },
+                    { id: "zeroPeak", value: 12, level: "easy", data: { peak: 0 }, status: [] },
+                ],
+            }],
+        }, [{ id: "ko", available: true }], ["withPeak", "withoutPeak", "zeroPeak"]);
+
+        expect(rendered).toMatch(/withPeak\s+\[[#/+\-]+\] 36\/58  Hard/);
+        expect(rendered).toMatch(/withoutPeak\s+\[[#/+\-]+\] 36  Hard/);
+        expect(rendered).not.toMatch(/withoutPeak\s+\[[#/+\-]+\] 36\/0/);
+        expect(rendered).toMatch(/zeroPeak\s+\[[#/+\-]+\] 12\/0  Easy/);
     });
 
     it("shows Hinari's Subspace resource between action state and stance", () => {
