@@ -1,4 +1,5 @@
 import type { BattleChoice } from "../console/controller";
+import type { SemanticStyle, StyledText } from "../console/presentation";
 
 const OVERFLOW_SHORTCUTS = "qwertyuiopasdfghjklzxcvbnm";
 
@@ -11,6 +12,34 @@ export interface ScrollPosition {
     scrollTop: number;
     clientHeight: number;
     scrollHeight: number;
+}
+
+export interface StyledPart {
+    text: string;
+    styles: SemanticStyle[];
+}
+
+/** Splits potentially overlapping semantic spans without ever emitting ANSI. */
+export function styledTextParts(styled: StyledText): StyledPart[] {
+    const points = new Set([0, styled.text.length]);
+    for (const span of styled.spans) {
+        points.add(Math.max(0, Math.min(styled.text.length, span.start)));
+        points.add(Math.max(0, Math.min(styled.text.length, span.end)));
+    }
+    const sorted = [...points].sort((left, right) => left - right);
+    return sorted.slice(0, -1).map((start, index) => {
+        const end = sorted[index + 1];
+        return {
+            text: styled.text.slice(start, end),
+            styles: [...new Set(styled.spans
+                .filter((span) => span.start <= start && span.end >= end)
+                .map((span) => span.style))],
+        };
+    }).filter((part) => part.text.length > 0);
+}
+
+export function semanticStyleClass(style: SemanticStyle): string {
+    return `semantic-${style}`;
 }
 
 export function browserTitle(releaseTag: string): string {

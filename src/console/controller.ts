@@ -10,7 +10,16 @@ import type {
     PlayerAction,
     ValidTarget,
 } from "../engine/public/types";
-import { formatEffects, formatEvents } from "./format";
+import { formatEffects } from "./format";
+import {
+    ActorStyleRegistry,
+    enemyPlaybackDelay,
+    flattenGroups,
+    formatActionGroups,
+    phaseSeparator,
+    type ActionGroup,
+    type StyledLine,
+} from "./presentation";
 import { formatAccuracyRow, type ScreenModel } from "./render";
 
 export interface BattleChoice {
@@ -26,8 +35,17 @@ export interface BattleChoiceRequest {
     choices: readonly BattleChoice[];
 }
 
+export interface BattlePlaybackRequest {
+    screen: ScreenModel;
+    groups: readonly ActionGroup[];
+    fromLogLine: number;
+    enemyActionCount: number;
+    delayMs: number;
+}
+
 export interface BattleUI {
     choose(request: BattleChoiceRequest): Promise<number | "quit">;
+    playback?(request: BattlePlaybackRequest): Promise<void>;
     showFinal?(screen: ScreenModel): Promise<void>;
     close?(): void | Promise<void>;
 }
@@ -63,9 +81,17 @@ export async function runBattleController(
     const initialEvents = initialOutput.length > 0 && typeof initialOutput[0] !== "string"
         ? initialOutput as GameEvent[]
         : [];
-    const logLines = initialEvents.length > 0
-        ? formatEvents(initialEvents)
-        : [...initialOutput as string[]];
+    const initialView = engine.getGameView();
+    const actorStyles = new ActorStyleRegistry([
+        ...initialView.characters.map((character) => character.id),
+        ...initialView.enemies.map((enemy) => enemy.id),
+    ]);
+    const logEntries: StyledLine[] = initialEvents.length > 0
+        ? flattenGroups(formatActionGroups(undefined, initialEvents, actorStyles))
+        : (initialOutput as string[]).map((text) => ({ text }));
+    if (logEntries.at(-1)?.text !== phaseSeparator("player").text) {
+        logEntries.push(phaseSeparator("player"));
+    }
     let bindingIds = encounterBindings(initialEvents);
     if (bindingIds.length === 0) {
         bindingIds = [...(engine.getGameView().encounter?.bindings ?? [])];
@@ -96,7 +122,9 @@ export async function runBattleController(
             bindings: bindingIds,
             bindingThresholds: engine.getThresholds(),
             actionLines,
-            logLines,
+            logLines: logEntries.map((line) => line.text),
+            logStyles: logEntries,
+            actorStyles: actorStyles.snapshot(),
         };
     };
 
@@ -120,26 +148,35 @@ export async function runBattleController(
         }
     };
 
-    const execute = (
+    const execute = async (
         action: PlayerAction,
         source: "player" | "automatic" = "player",
-    ): boolean => {
+    ): Promise<boolean> => {
         const previousRound = engine.getGameView().turn.round;
         const result = engine.executeAction(action);
         if (result.success) bindingIds = updateEncounterBindings(bindingIds, result.events);
-        appendResult(logLines, result, previousRound);
+        const playback = appendResult(logEntries, result, previousRound, action, actorStyles);
         notifyObserver(() => observer?.onAction?.(action, result, source));
         notifyOutcome(result.success
             ? result.view.turn.outcome
             : engine.getGameView().turn.outcome);
+        if (result.success && ui.playback && playback.groups.length > 0) {
+            await ui.playback({
+                screen: screen([]),
+                groups: playback.groups,
+                fromLogLine: playback.fromLogLine,
+                enemyActionCount: playback.enemyActionCount,
+                delayMs: enemyPlaybackDelay(playback.enemyActionCount),
+            });
+        }
         if (
             result.success
             && result.view.turn.outcome === "ongoing"
             && action.type !== "endTurn"
             && !result.view.actions.some((character) => character.available)
         ) {
-            logLines.push("No characters available. Ending turn automatically.");
-            execute({ type: "endTurn" }, "automatic");
+            logEntries.push({ text: "No characters available. Ending turn automatically." });
+            await execute({ type: "endTurn" }, "automatic");
         }
         return result.success;
     };
@@ -188,7 +225,7 @@ export async function runBattleController(
                     target.target !== null && !selected.includes(target.target),
                 );
             if (candidates.length === 0) {
-                logLines.push(`Action failed: not enough targets for ${move.id}.`);
+                logEntries.push({ text: `Action failed: not enough targets for ${move.id}.` });
                 return false;
             }
 
@@ -247,7 +284,7 @@ export async function runBattleController(
             if (choice === options.length) return false;
 
             const option = options[choice];
-            const success = execute({
+            const success = await execute({
                 type: "escape",
                 actor: actorId,
                 target: option.target,
@@ -286,7 +323,7 @@ export async function runBattleController(
                     detailLines,
                     select: async () => {
                         if (!action.available) {
-                            logLines.push(`${action.move.id} -- ${action.reason}.`);
+                            logEntries.push({ text: `${action.move.id} -- ${action.reason}.` });
                             return false;
                         }
                         return chooseTargets(actor.id, action);
@@ -300,7 +337,7 @@ export async function runBattleController(
                     browserLabel: "Escape / assist",
                     select: async () => {
                         if (escapeAvailable) return chooseEscape(actor.id);
-                        logLines.push("Escape / assist -- no legal escapes.");
+                        logEntries.push({ text: "Escape / assist -- no legal escapes." });
                         return false;
                     },
                 },
@@ -310,8 +347,8 @@ export async function runBattleController(
                     available: actorView.stance.available,
                     browserLabel: "Change stance",
                     select: async () => {
-                        if (actorView.stance.available) execute({ type: "stance", actor: actor.id });
-                        else logLines.push(`Stance change -- ${actorView.stance.reason}.`);
+                        if (actorView.stance.available) await execute({ type: "stance", actor: actor.id });
+                        else logEntries.push({ text: `Stance change -- ${actorView.stance.reason}.` });
                         return false;
                     },
                 },
@@ -319,7 +356,7 @@ export async function runBattleController(
                     label: "End turn",
                     kind: "endTurn",
                     select: async () => {
-                        execute({ type: "endTurn" });
+                        await execute({ type: "endTurn" });
                         return true;
                     },
                 },
@@ -382,7 +419,7 @@ export async function runBattleController(
             if (selectedNumber <= view.actions.length) {
                 await chooseAction(view.actions[selectedNumber - 1].id);
             } else if (selectedNumber === endTurnNumber) {
-                execute({ type: "endTurn" });
+                await execute({ type: "endTurn" });
             } else {
                 notifyQuit();
                 running = false;
@@ -457,15 +494,35 @@ function validTargets(action: ActionInfo): ValidTarget[] {
     );
 }
 
-function appendResult(logLines: string[], result: ActionResult, previousRound: number): void {
+function appendResult(
+    logLines: StyledLine[],
+    result: ActionResult,
+    previousRound: number,
+    action: PlayerAction,
+    registry: ActorStyleRegistry,
+): { groups: ActionGroup[]; fromLogLine: number; enemyActionCount: number } {
+    const fromLogLine = logLines.length;
+    let groups: ActionGroup[] = [];
     if (result.success) {
-        logLines.push(...formatEvents(result.events));
+        groups = formatActionGroups(action, result.events, registry);
+        for (const group of groups) {
+            for (const line of group.lines) {
+                if (line.style === "phase-separator" && logLines.at(-1)?.text === line.text) continue;
+                logLines.push(line);
+            }
+        }
         if (result.view.turn.round > previousRound) {
-            logLines.push(`~~~ ROUND ${result.view.turn.round} ~~~`);
+            logLines.push({ text: `~~~ ROUND ${result.view.turn.round} ~~~` });
         }
     } else {
-        logLines.push(`Action failed: ${result.reason}.`);
+        logLines.push({ text: `Action failed: ${result.reason}.` });
     }
+    return {
+        groups,
+        fromLogLine,
+        enemyActionCount: groups.filter((group) =>
+            group.kind === "action" && group.phase === "enemy").length,
+    };
 }
 
 function moveLabel(action: ActionInfo): string {

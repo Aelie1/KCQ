@@ -192,6 +192,39 @@ describe("shared battle controller", () => {
         );
     });
 
+    it("offers ordered enemy groups through the optional playback seam", async () => {
+        const wait = makeWaitMove();
+        const hero = makeCharacterDef("hero", [wait]);
+        const encounter: EncounterDef = {
+            id: "controller-playback",
+            enemies: [makeEnemyDef("foe", [wait]), makeEnemyDef("foe", [wait])],
+            bindings: [],
+            traps: [],
+        };
+        const engine = createCustomEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
+        const events = engine.loadEncounter(encounter.id);
+        const playbacks: Parameters<NonNullable<BattleUI["playback"]>>[0][] = [];
+        const onAction = vi.fn();
+        let choices = 0;
+
+        await runBattleController(engine, encounter.id, events, {
+            choose: async ({ choices: available }) => {
+                choices += 1;
+                if (choices > 1) return "quit";
+                return available.find((choice) => choice.kind === "endTurn")!.number;
+            },
+            playback: async (request) => { playbacks.push(request); },
+        }, { onAction });
+
+        expect(playbacks).toHaveLength(1);
+        expect(playbacks[0].groups
+            .filter((group) => group.kind === "action" && group.phase === "enemy")
+            .map((group) => group.actor)).toEqual(["foe1", "foe2"]);
+        expect(playbacks[0].enemyActionCount).toBe(2);
+        expect(onAction).toHaveBeenCalledOnce();
+    });
+
     it("reports the controller's automatic end turn separately", async () => {
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [wait]);

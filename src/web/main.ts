@@ -1,9 +1,12 @@
 import {
     type BattleChoice,
     type BattleChoiceRequest,
+    type BattlePlaybackRequest,
     type BattleUI,
 } from "../console/controller";
-import { renderScreen, type ScreenModel } from "../console/render";
+import type { StyledLine, StyledText } from "../console/presentation";
+import { playActionGroups, PRESENTATION_TIMING } from "../console/presentation";
+import { renderStyledScreen, type ScreenModel } from "../console/render";
 import { encounterList } from "../content/content";
 import type { EncounterDef } from "../engine/protected/definitions";
 import { startBattle } from "./app";
@@ -15,6 +18,8 @@ import {
     browserTitle,
     getBrowserChoices,
     isLogNearBottom,
+    semanticStyleClass,
+    styledTextParts,
 } from "./view";
 
 declare const __KCQ_RELEASE_TAG__: string;
@@ -24,6 +29,10 @@ const SCREEN_HEIGHT = 49;
 
 const appTitle = browserTitle(__KCQ_RELEASE_TAG__);
 document.title = appTitle;
+document.documentElement.style.setProperty(
+    "--combat-highlight-duration",
+    `${PRESENTATION_TIMING.highlightMs}ms`,
+);
 requiredElement<HTMLHeadingElement>("app-title").textContent = appTitle;
 
 const screenElement = requiredElement<HTMLPreElement>("screen");
@@ -102,6 +111,30 @@ class BrowserBattleUI implements BattleUI {
         });
     }
 
+    async playback(request: BattlePlaybackRequest): Promise<void> {
+        let visibleLines = request.fromLogLine;
+        let animatedEnemyActions = 0;
+        await playActionGroups(request.groups, request.delayMs, async (group) => {
+            const groupStart = visibleLines;
+            visibleLines += group.lines.length;
+            const isEnemyAction = group.kind === "action" && group.phase === "enemy";
+            this.display(
+                { ...request.screen, highlights: group.highlights },
+                visibleLines,
+                { start: groupStart, end: visibleLines },
+            );
+            if (isEnemyAction) {
+                animatedEnemyActions += 1;
+            } else if (group.kind === "action" && group.highlights.length > 0) {
+                await delay(Math.min(220, PRESENTATION_TIMING.highlightMs));
+            }
+        });
+        if (animatedEnemyActions < request.enemyActionCount) {
+            await delay(request.delayMs * (request.enemyActionCount - animatedEnemyActions));
+        }
+        this.display({ ...request.screen, highlights: [] });
+    }
+
     close(): void {
         this.resolveChoice = undefined;
         this.activeChoices = [];
@@ -126,26 +159,72 @@ class BrowserBattleUI implements BattleUI {
         resolve(choice);
     }
 
-    private display(screen: ScreenModel): void {
+    private display(
+        screen: ScreenModel,
+        logLimit?: number,
+        activeLogRange?: { start: number; end: number },
+    ): void {
         screenContainer.setAttribute("aria-label", "Battle screen");
-        screenElement.textContent = renderScreen(
+        renderStyledElement(screenElement, renderStyledScreen(
             screen,
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
             { externalLog: true },
+        ));
+        this.renderLog(
+            screen.logStyles ?? screen.logLines.map((text) => ({ text })),
+            logLimit,
+            activeLogRange,
         );
-        this.renderLog(screen.logLines);
         statusElement.textContent = "";
         battleLogPanel.hidden = false;
         quitButton.hidden = false;
         quitButton.disabled = false;
     }
 
-    private renderLog(lines: readonly string[]): void {
+    private renderLog(
+        lines: readonly StyledLine[],
+        limit = lines.length,
+        activeRange?: { start: number; end: number },
+    ): void {
         const followLog = isLogNearBottom(battleLogElement);
-        battleLogElement.textContent = lines.join("\n");
+        const visible = lines.slice(0, limit);
+        const text = visible.map((line) => line.text).join("\n");
+        const spans: StyledText["spans"] = [];
+        let offset = 0;
+        for (const [index, line] of visible.entries()) {
+            if (line.style) spans.push({ start: offset, end: offset + line.text.length, style: line.style });
+            if (activeRange && index >= activeRange.start && index < activeRange.end) {
+                spans.push({
+                    start: offset,
+                    end: offset + line.text.length,
+                    style: "transient-highlight",
+                });
+            }
+            offset += line.text.length + 1;
+        }
+        renderStyledElement(battleLogElement, { text, spans });
         if (followLog) battleLogElement.scrollTop = battleLogElement.scrollHeight;
     }
+}
+
+function renderStyledElement(element: HTMLElement, styled: StyledText): void {
+    const fragment = document.createDocumentFragment();
+    for (const part of styledTextParts(styled)) {
+        if (part.styles.length === 0) {
+            fragment.append(document.createTextNode(part.text));
+            continue;
+        }
+        const span = document.createElement("span");
+        span.className = part.styles.map(semanticStyleClass).join(" ");
+        span.textContent = part.text;
+        fragment.append(span);
+    }
+    element.replaceChildren(fragment);
+}
+
+function delay(milliseconds: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function requiredElement<T extends HTMLElement>(id: string): T {

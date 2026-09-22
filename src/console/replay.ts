@@ -2,8 +2,14 @@ import { createInterface } from "node:readline";
 import type { Readable, Writable } from "node:stream";
 import type { PlayerAction, ThresholdInfo } from "../engine/public/types";
 import type { FightReplay } from "../harness/harness";
-import { formatEvents } from "./format";
-import { renderScreen, type ScreenModel } from "./render";
+import {
+    ActorStyleRegistry,
+    flattenGroups,
+    formatActionGroups,
+    phaseSeparator,
+    type StyledLine,
+} from "./presentation";
+import { renderAnsi, renderStyledScreen, type ScreenModel } from "./render";
 
 export interface ConsoleReplayInput {
     replay: FightReplay;
@@ -14,7 +20,7 @@ export interface ConsoleReplayInput {
 
 interface ConsoleStreams {
     input: Readable;
-    output: Writable & { columns?: number; rows?: number };
+    output: Writable & { columns?: number; rows?: number; isTTY?: boolean };
 }
 
 /** Inspects recorded snapshots only; no engine or action execution is needed. */
@@ -28,10 +34,13 @@ export async function runConsoleReplay(
     const draw = (message = ""): void => {
         const model = replayScreenModel(input, position);
         if (message) model.actionLines.push(message);
-        const screen = renderScreen(
-            model,
-            streams.output.columns ?? 180,
-            Math.max(1, (streams.output.rows ?? 50) - 1),
+        const screen = renderAnsi(
+            renderStyledScreen(
+                model,
+                streams.output.columns ?? 180,
+                Math.max(1, (streams.output.rows ?? 50) - 1),
+            ),
+            streams.output.isTTY === true,
         );
         streams.output.write(`\x1b[2J\x1b[H${screen}\n`);
         streams.output.write("> ");
@@ -75,16 +84,20 @@ export async function runConsoleReplay(
 function replayScreenModel(input: ConsoleReplayInput, position: number): ScreenModel {
     const { replay } = input;
     let state = replay.initialState;
-    const logLines: string[] = [];
+    const actorStyles = new ActorStyleRegistry([
+        ...replay.initialState.characters.map((character) => character.id),
+        ...replay.initialState.enemies.map((enemy) => enemy.id),
+    ]);
+    const logEntries: StyledLine[] = [phaseSeparator("player")];
 
     // Rebuild the prefix so backward/forward navigation has identical state and logs.
     for (let index = 0; index < position; index++) {
         const step = replay.steps[index];
         if (step.success) {
             state = step.state;
-            logLines.push(...formatEvents(step.events));
+            logEntries.push(...flattenGroups(formatActionGroups(step.action, step.events, actorStyles)));
         } else {
-            logLines.push(`Action failed: ${step.reason}.`);
+            logEntries.push({ text: `Action failed: ${step.reason}.` });
         }
     }
 
@@ -105,7 +118,9 @@ function replayScreenModel(input: ConsoleReplayInput, position: number): ScreenM
             "[n] next  [p] previous  [q] quit",
             "[start] initial state  [end] final step",
         ],
-        logLines,
+        logLines: logEntries.map((line) => line.text),
+        logStyles: logEntries,
+        actorStyles: actorStyles.snapshot(),
     };
 }
 

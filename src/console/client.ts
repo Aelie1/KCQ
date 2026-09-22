@@ -6,11 +6,11 @@ import {
     type BattleChoiceRequest,
     type BattleUI,
 } from "./controller";
-import { renderScreen } from "./render";
+import { renderAnsi, renderStyledScreen } from "./render";
 
 interface ConsoleStreams {
     input: Readable;
-    output: Writable & { columns?: number; rows?: number };
+    output: Writable & { columns?: number; rows?: number; isTTY?: boolean };
 }
 
 export async function runConsoleClient(
@@ -23,7 +23,10 @@ export async function runConsoleClient(
     const display = (screenModel: BattleChoiceRequest["screen"]): void => {
         const width = streams.output.columns ?? 180;
         const height = Math.max(1, (streams.output.rows ?? 50) - 1);
-        const screen = renderScreen(screenModel, width, height);
+        const screen = renderAnsi(
+            renderStyledScreen(screenModel, width, height),
+            streams.output.isTTY === true,
+        );
         streams.output.write(`\x1b[2J\x1b[H${screen}\n`);
     };
     const ui: BattleUI = {
@@ -35,6 +38,23 @@ export async function runConsoleClient(
         showFinal: async (screen) => {
             display(screen);
             await rl.question("Press Enter to exit. ");
+        },
+        playback: async ({ screen, groups, delayMs, fromLogLine }) => {
+            if (streams.output.isTTY !== true) return;
+            let visibleLines = fromLogLine;
+            for (const group of groups) {
+                visibleLines += group.lines.length;
+                display({
+                    ...screen,
+                    logLines: screen.logLines.slice(0, visibleLines),
+                    logStyles: screen.logStyles?.slice(0, visibleLines),
+                    highlights: group.highlights,
+                });
+                if (group.kind === "action" && group.phase === "enemy") {
+                    await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
+                }
+            }
+            display({ ...screen, highlights: [] });
         },
         close: () => {
             rl.close();

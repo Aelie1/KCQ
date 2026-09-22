@@ -1,5 +1,15 @@
 import type { AccuracyProfile, BindingId, Character, Enemy, EntityId, FailureReason, GameState, ModifierId, MoveType, Status, ThresholdInfo, } from "../engine/public/types";
 import { formatBuff, formatIntention } from "./format";
+import {
+    accuracyQualityStyle,
+    ActorStyleRegistry,
+    bindingSeverityStyle,
+    intentOutcomeStyle,
+    type HighlightTarget,
+    type SemanticStyle,
+    type StyledLine,
+    type StyledText,
+} from "./presentation";
 
 export const MIN_TERMINAL_WIDTH = 120;
 export const MIN_TERMINAL_HEIGHT = 36;
@@ -22,6 +32,9 @@ export interface ScreenModel {
     bindingThresholds: ThresholdInfo;
     actionLines: string[];
     logLines: string[];
+    logStyles?: readonly StyledLine[];
+    actorStyles?: Readonly<Record<EntityId, SemanticStyle>>;
+    highlights?: readonly HighlightTarget[];
 }
 
 export interface RenderScreenOptions {
@@ -113,6 +126,104 @@ export function formatAccuracyRow(label: string, profile: AccuracyProfile | null
     });
     const target = label === "No target" ? "" : `${label} — `;
     return values.length > 0 ? `${target}${values.join("   ")}` : label;
+}
+
+/** Plain text is laid out first; semantic spans are overlaid afterwards so width is exact. */
+export function renderStyledScreen(
+    model: ScreenModel,
+    width: number,
+    height: number,
+    options: RenderScreenOptions = {},
+): StyledText {
+    const text = renderScreen(model, width, height, options);
+    const spans: StyledText["spans"] = [];
+    if (width < MIN_TERMINAL_WIDTH || height < MIN_TERMINAL_HEIGHT) return { text, spans };
+
+    const actorStyles = model.actorStyles ?? new ActorStyleRegistry([
+        ...model.state.characters.map((character) => character.id),
+        ...model.state.enemies.map((enemy) => enemy.id),
+    ]).snapshot();
+    for (const [actor, style] of Object.entries(actorStyles)) {
+        addTokenSpans(text, spans, actor, style);
+    }
+
+    for (const band of ["miss", "graze", "hit", "crit"] as const) {
+        const style = intentOutcomeStyle(band)!;
+        const expression = new RegExp(`\\b${band.toUpperCase()}(?=\\s|$)`, "g");
+        addRegexSpans(text, spans, expression, style);
+    }
+
+    for (const character of model.state.characters) {
+        for (const binding of character.bindings) {
+            const style = bindingSeverityStyle(binding.level);
+            if (!style || binding.value <= 0) continue;
+            forEachLine(text, (line, offset) => {
+                if (!line.includes(binding.id) || !line.includes(`${binding.value}/`)) return;
+                const barStart = line.indexOf("[", line.indexOf(binding.id) + binding.id.length);
+                const barEnd = line.indexOf("]", barStart);
+                if (barStart >= 0 && barEnd > barStart) {
+                    const filledEnd = line.lastIndexOf("#", barEnd) + 1;
+                    if (filledEnd > barStart + 1) spans.push({
+                        start: offset + barStart + 1,
+                        end: offset + filledEnd,
+                        style,
+                    });
+                }
+                const valueStart = line.indexOf(`${binding.value}/`, Math.max(0, barEnd));
+                const level = titleCase(binding.level);
+                const levelEnd = line.indexOf(level, valueStart) + level.length;
+                if (valueStart >= 0 && levelEnd > valueStart) {
+                    spans.push({ start: offset + valueStart, end: offset + levelEnd, style });
+                }
+            });
+        }
+    }
+
+    forEachLine(text, (line, offset) => {
+        const hit = /Hit: ([\d.]+)%/.exec(line);
+        const crit = /Crit: ([\d.]+)%/.exec(line);
+        if (!hit && !crit) return;
+        const profile: AccuracyProfile = {
+            hit: hit ? Number(hit[1]) : 0,
+            crit: crit ? Number(crit[1]) : 0,
+        };
+        const style = accuracyQualityStyle(profile);
+        if (!style) return;
+        const start = Math.max(0, line.search(/(?:Miss|Graze|Hit|Crit):/));
+        const end = Math.max(hit?.index ?? 0, crit?.index ?? 0)
+            + (crit && (crit.index ?? 0) >= (hit?.index ?? 0) ? crit[0].length : hit?.[0].length ?? 0);
+        spans.push({ start: offset + start, end: offset + end, style });
+    });
+
+    if (!options.externalLog) {
+        for (const entry of model.logStyles ?? []) {
+            if (!entry.style || !entry.text) continue;
+            addLiteralSpans(text, spans, entry.text, entry.style);
+        }
+    }
+    applyHighlights(text, spans, model.highlights ?? []);
+    return { text, spans };
+}
+
+export function renderAnsi(styled: StyledText, enabled = true): string {
+    if (!enabled || styled.spans.length === 0) return styled.text;
+    const points = new Set([0, styled.text.length]);
+    for (const span of styled.spans) {
+        points.add(Math.max(0, Math.min(styled.text.length, span.start)));
+        points.add(Math.max(0, Math.min(styled.text.length, span.end)));
+    }
+    const sorted = [...points].sort((a, b) => a - b);
+    let result = "";
+    for (let index = 0; index < sorted.length - 1; index++) {
+        const start = sorted[index];
+        const end = sorted[index + 1];
+        const active = styled.spans.filter((span) => span.start <= start && span.end >= end);
+        const codes = active.map((span) => ansiCode(span.style)).filter(Boolean);
+        result += codes.length > 0
+            ? `\x1b[${codes.join(";")}m${styled.text.slice(start, end)}\x1b[0m`
+            : styled.text.slice(start, end);
+    }
+    return result;
 }
 
 function formatParty(
@@ -455,6 +566,107 @@ function formatNumber(value: number): string {
 export function renderTooSmall(width: number, height: number): string {
     return `Terminal too small: current ${width}x${height}; required `
         + `${MIN_TERMINAL_WIDTH}x${MIN_TERMINAL_HEIGHT}.`;
+}
+
+function forEachLine(text: string, callback: (line: string, offset: number) => void): void {
+    let offset = 0;
+    for (const line of text.split("\n")) {
+        callback(line, offset);
+        offset += line.length + 1;
+    }
+}
+
+function addTokenSpans(
+    text: string,
+    spans: StyledText["spans"],
+    token: string,
+    style: SemanticStyle,
+): void {
+    const escaped = token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    addRegexSpans(text, spans, new RegExp(`(?<![\\w-])${escaped}(?![\\w-])`, "g"), style);
+}
+
+function addRegexSpans(
+    text: string,
+    spans: StyledText["spans"],
+    expression: RegExp,
+    style: SemanticStyle,
+): void {
+    for (const match of text.matchAll(expression)) {
+        const start = match.index;
+        if (start === undefined) continue;
+        spans.push({ start, end: start + match[0].length, style });
+    }
+}
+
+function addLiteralSpans(
+    text: string,
+    spans: StyledText["spans"],
+    value: string,
+    style: SemanticStyle,
+): void {
+    let start = 0;
+    while ((start = text.indexOf(value, start)) >= 0) {
+        spans.push({ start, end: start + value.length, style });
+        start += value.length || 1;
+    }
+}
+
+function applyHighlights(
+    text: string,
+    spans: StyledText["spans"],
+    highlights: readonly HighlightTarget[],
+): void {
+    const tokens = highlights.flatMap((target) => {
+        switch (target.kind) {
+            case "binding": return [target.binding];
+            case "buff": return [target.buff];
+            case "enemy":
+            case "hp":
+            case "stance": return [target.entity];
+            case "trap": return [target.trap, trapDisplayName(target.trap, 2)];
+        }
+    });
+    forEachLine(text, (line, offset) => {
+        if (!tokens.some((token) => line.includes(token))) return;
+        const contentStart = line.startsWith("│") ? 1 : 0;
+        const contentEnd = line.endsWith("│") ? line.length - 1 : line.length;
+        spans.push({
+            start: offset + contentStart,
+            end: offset + contentEnd,
+            style: "transient-highlight",
+        });
+    });
+}
+
+function ansiCode(style: SemanticStyle): string {
+    const actorCodes = [
+        "96", "95", "92", "94", "93", "36", "35", "32",
+        "38;5;117", "38;5;213", "38;5;150", "38;5;215",
+    ];
+    if (style.startsWith("actor-")) {
+        const index = Number(style.slice("actor-".length));
+        return actorCodes[index % actorCodes.length] ?? "37";
+    }
+    const codes: Partial<Record<SemanticStyle, string>> = {
+        "intent-miss": "97",
+        "intent-graze": "93;1",
+        "intent-hit": "38;5;208;1",
+        "intent-crit": "91;1",
+        "binding-easy": "36",
+        "binding-medium": "92",
+        "binding-hard": "93;1",
+        "binding-extreme": "38;5;208;1",
+        "binding-impossible": "91;1",
+        "binding-max": "97;41;1",
+        "accuracy-good": "92",
+        "accuracy-caution": "93",
+        "accuracy-poor": "38;5;208;1",
+        "accuracy-very-poor": "97;41;1",
+        "phase-separator": "97;1",
+        "transient-highlight": "97;44;1",
+    };
+    return codes[style] ?? "";
 }
 /*******************************************************
  * Actions

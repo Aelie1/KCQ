@@ -120,3 +120,49 @@ button:disabled {
     margin: 0.75rem 0 0;
     color: #a8b3c1;
 }
+
+.semantic-actor-0 { color: #67e8f9; }
+.semantic-actor-1 { color: #f0abfc; }
+.semantic-actor-2 { color: #86efac; }
+.semantic-actor-3 { color: #93c5fd; }
+.semantic-actor-4 { color: #fde047; }
+.semantic-actor-5 { color: #5eead4; }
+.semantic-actor-6 { color: #c4b5fd; }
+.semantic-actor-7 { color: #bef264; }
+.semantic-actor-8 { color: #7dd3fc; }
+.semantic-actor-9 { color: #f9a8d4; }
+.semantic-actor-10 { color: #a7f3d0; }
+.semantic-actor-11 { color: #fdba74; }
+
+.semantic-phase-separator {
+    color: #f8fafc;
+    font-weight: 700;
+    text-shadow: 0 0 8px #94a3b8;
+}
+
+.semantic-intent-miss { color: #f8fafc; font-weight: 700; }
+.semantic-intent-graze { color: #fde047; font-weight: 700; }
+.semantic-intent-hit { color: #fb923c; font-weight: 800; text-shadow: 0 0 6px #c2410c; }
+.semantic-intent-crit { color: #f87171; font-weight: 900; text-shadow: 0 0 8px #dc2626; }
+
+.semantic-binding-easy { color: #67e8f9; }
+.semantic-binding-medium { color: #86efac; }
+.semantic-binding-hard { color: #fde047; font-weight: 700; }
+.semantic-binding-extreme { color: #fb923c; font-weight: 800; }
+.semantic-binding-impossible { color: #f87171; font-weight: 900; }
+.semantic-binding-max { color: #fff; background: #991b1b; font-weight: 900; }
+
+.semantic-accuracy-good { color: #86efac; }
+.semantic-accuracy-caution { color: #fde047; font-weight: 700; }
+.semantic-accuracy-poor { color: #fb923c; font-weight: 800; }
+.semantic-accuracy-very-poor { color: #fff; background: #991b1b; font-weight: 900; }
+
+.semantic-transient-highlight {
+    animation: combat-flash var(--combat-highlight-duration, 650ms) ease-out;
+}
+
+@keyframes combat-flash {
+    0% { background: #f8fafc; color: #020617; text-shadow: 0 0 12px #fff; }
+    35% { background: #1d4ed8; color: #fff; }
+    100% { background: transparent; }
+}
