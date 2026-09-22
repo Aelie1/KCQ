@@ -658,7 +658,7 @@ function applyHighlights(
                         && index < lineRange.end
                         && line.includes("Buffs:"))
                     : -1;
-                const added = addPanelTokenSpans(
+                addPanelTokenSpans(
                     text,
                     spans,
                     buffName,
@@ -667,9 +667,6 @@ function applyHighlights(
                         && index >= buffsStart
                         && (!lineRange || index < lineRange.end),
                 );
-                if (added === 0) {
-                    addEntityNameHighlight(text, spans, target.entity);
-                }
                 break;
             }
             case "cooldown": {
@@ -690,10 +687,22 @@ function applyHighlights(
                 );
                 break;
             }
-            case "enemy":
-            case "stance":
-                addEntityNameHighlight(text, spans, target.entity);
+            case "stance": {
+                const character = modelForHighlights.state.characters.find(
+                    (candidate) => candidate.id === target.entity,
+                );
+                if (!character) break;
+                const token = `[${character.standing ? "Standing" : "Moving"}]`;
+                const lineRange = entityLineRange(text, modelForHighlights, target.entity);
+                addPanelTokenSpans(
+                    text,
+                    spans,
+                    token,
+                    "transient-highlight",
+                    (_line, index) => !lineRange || index === lineRange.start,
+                );
                 break;
+            }
             case "hp":
                 forEachLine(text, (line, offset) => {
                     const header = `${target.entity} [HP:`;
@@ -793,22 +802,6 @@ function entityLineRange(
         }
     }
     return { start, end: lines.length };
-}
-
-function addEntityNameHighlight(
-    text: string,
-    spans: StyledText["spans"],
-    entity: EntityId,
-): void {
-    forEachLine(text, (line, offset) => {
-        const start = line.indexOf(`${entity} [`);
-        if (start < 0) return;
-        spans.push({
-            start: offset + start,
-            end: offset + start + entity.length,
-            style: "transient-highlight",
-        });
-    });
 }
 
 function ansiCode(style: SemanticStyle): string {

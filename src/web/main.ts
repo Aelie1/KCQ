@@ -4,7 +4,7 @@ import {
     type BattlePlaybackRequest,
     type BattleUI,
 } from "../console/controller";
-import type { StyledLine, StyledText } from "../console/presentation";
+import type { HighlightTarget, StyledLine, StyledText } from "../console/presentation";
 import { playActionGroups, PRESENTATION_TIMING } from "../console/presentation";
 import { renderStyledScreen, type ScreenModel } from "../console/render";
 import { encounterList } from "../content/content";
@@ -17,6 +17,7 @@ import {
     browserChoiceShortcut,
     browserTitle,
     getBrowserChoices,
+    HighlightTimeline,
     isLogNearBottom,
     semanticStyleClass,
     styledLogText,
@@ -48,6 +49,13 @@ const quitButton = requiredElement<HTMLButtonElement>("quit-battle");
 class BrowserBattleUI implements BattleUI {
     private resolveChoice?: (choice: number | "quit") => void;
     private activeChoices: readonly BattleChoice[] = [];
+    private readonly highlightTimeline = new HighlightTimeline();
+    private highlightTimer?: ReturnType<typeof setTimeout>;
+    private lastDisplay?: {
+        screen: ScreenModel;
+        logLimit?: number;
+        activeLogRange?: { start: number; end: number };
+    };
 
     private readonly handleKeyDown = (event: KeyboardEvent): void => {
         if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
@@ -114,31 +122,26 @@ class BrowserBattleUI implements BattleUI {
 
     async playback(request: BattlePlaybackRequest): Promise<void> {
         let visibleLines = request.fromLogLine;
-        let animatedEnemyActions = 0;
-        await playActionGroups(request.groups, request.delayMs, async (group) => {
+        await playActionGroups(request.groups, request.delayMs, (group) => {
             const groupStart = visibleLines;
             visibleLines += group.lines.length;
-            const isEnemyAction = group.kind === "action" && group.phase === "enemy";
+            this.flash(group.highlights);
             this.display(
-                { ...request.screen, highlights: group.highlights },
+                request.screen,
                 visibleLines,
                 { start: groupStart, end: visibleLines },
             );
-            if (isEnemyAction) {
-                animatedEnemyActions += 1;
-            } else if (group.kind === "action" && group.highlights.length > 0) {
-                await delay(Math.min(440, PRESENTATION_TIMING.highlightMs));
-            }
         });
-        if (animatedEnemyActions < request.enemyActionCount) {
-            await delay(request.delayMs * (request.enemyActionCount - animatedEnemyActions));
-        }
-        this.display({ ...request.screen, highlights: [] });
+        this.display(request.screen);
     }
 
     close(): void {
         this.resolveChoice = undefined;
         this.activeChoices = [];
+        this.highlightTimeline.clear();
+        this.lastDisplay = undefined;
+        if (this.highlightTimer !== undefined) clearTimeout(this.highlightTimer);
+        this.highlightTimer = undefined;
         choicesElement.replaceChildren();
         endTurnButton.hidden = true;
         quitButton.hidden = true;
@@ -165,9 +168,21 @@ class BrowserBattleUI implements BattleUI {
         logLimit?: number,
         activeLogRange?: { start: number; end: number },
     ): void {
+        this.lastDisplay = { screen, logLimit, activeLogRange };
+        this.renderCurrentDisplay();
+    }
+
+    private renderCurrentDisplay(): void {
+        const current = this.lastDisplay;
+        if (!current) return;
+        const { screen, logLimit, activeLogRange } = current;
+        const highlights = [
+            ...(screen.highlights ?? []),
+            ...this.highlightTimeline.active(Date.now()),
+        ];
         screenContainer.setAttribute("aria-label", "Battle screen");
         renderStyledElement(screenElement, renderStyledScreen(
-            screen,
+            { ...screen, highlights },
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
             { externalLog: true },
@@ -181,6 +196,29 @@ class BrowserBattleUI implements BattleUI {
         battleLogPanel.hidden = false;
         quitButton.hidden = false;
         quitButton.disabled = false;
+    }
+
+    private flash(highlights: readonly HighlightTarget[]): void {
+        if (highlights.length === 0) return;
+        const now = Date.now();
+        this.highlightTimeline.add(highlights, now, PRESENTATION_TIMING.highlightMs);
+        this.scheduleHighlightExpiry(now);
+    }
+
+    private scheduleHighlightExpiry(now = Date.now()): void {
+        if (this.highlightTimer !== undefined) clearTimeout(this.highlightTimer);
+        const remaining = this.highlightTimeline.millisecondsUntilExpiry(now);
+        if (remaining === undefined) {
+            this.highlightTimer = undefined;
+            return;
+        }
+        this.highlightTimer = setTimeout(() => {
+            this.highlightTimer = undefined;
+            const currentTime = Date.now();
+            this.highlightTimeline.active(currentTime);
+            this.renderCurrentDisplay();
+            this.scheduleHighlightExpiry(currentTime);
+        }, remaining);
     }
 
     private renderLog(
@@ -207,10 +245,6 @@ function renderStyledElement(element: HTMLElement, styled: StyledText): void {
         fragment.append(span);
     }
     element.replaceChildren(fragment);
-}
-
-function delay(milliseconds: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
 function requiredElement<T extends HTMLElement>(id: string): T {

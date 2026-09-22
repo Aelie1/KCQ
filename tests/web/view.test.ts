@@ -6,6 +6,7 @@ import {
     browserChoiceShortcut,
     browserTitle,
     getBrowserChoices,
+    HighlightTimeline,
     isLogNearBottom,
     styledLogText,
 } from "../../src/web/view";
@@ -69,5 +70,20 @@ describe("web battle view", () => {
             .toHaveLength(2);
         expect(styled.spans.some((span) => span.style === "transient-highlight"))
             .toBe(false);
+    });
+
+    it("lets panel highlights overlap and expire independently", () => {
+        const timeline = new HighlightTimeline();
+        const binding = { kind: "binding" as const, entity: "ko", binding: "latexArms" };
+        const hp = { kind: "hp" as const, entity: "skunk1" };
+
+        timeline.add([binding], 1_000, 1_300);
+        timeline.add([hp], 1_500, 1_300);
+
+        expect(timeline.active(1_500)).toEqual([binding, hp]);
+        expect(timeline.millisecondsUntilExpiry(1_500)).toBe(800);
+        expect(timeline.active(2_300)).toEqual([hp]);
+        expect(timeline.millisecondsUntilExpiry(2_300)).toBe(500);
+        expect(timeline.active(2_800)).toEqual([]);
     });
 });

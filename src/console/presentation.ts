@@ -9,10 +9,10 @@ import type {
 } from "../engine/public/types";
 
 export const PRESENTATION_TIMING = {
-    highlightMs: 1300,
-    enemyPhaseTargetMs: 4200,
-    enemyActionMinMs: 350,
-    enemyActionMaxMs: 1000,
+    highlightMs: 2000,
+    enemyPhaseTargetMs: 3200,
+    enemyActionMinMs: 250,
+    enemyActionMaxMs: 750,
 } as const;
 
 export type SemanticStyle =
@@ -51,7 +51,6 @@ export type HighlightTarget =
     | { kind: "binding"; entity: EntityId; binding: string }
     | { kind: "buff"; entity: EntityId; buff: string }
     | { kind: "cooldown"; entity: EntityId; move: string }
-    | { kind: "enemy"; entity: EntityId }
     | { kind: "hp"; entity: EntityId }
     | { kind: "trap"; trap: string }
     | { kind: "stance"; entity: EntityId };
@@ -261,7 +260,6 @@ export function deriveHighlightTargets(events: readonly GameEvent[]): HighlightT
     for (const event of events) {
         switch (event.type) {
             case "moveUsed":
-                targets.push({ kind: "enemy", entity: event.actor });
                 targets.push({ kind: "cooldown", entity: event.actor, move: event.move });
                 break;
             case "bondageAdded":
@@ -276,8 +274,9 @@ export function deriveHighlightTargets(events: readonly GameEvent[]): HighlightT
                 targets.push({ kind: "buff", entity: event.target, buff: event.buff });
                 break;
             case "enemySpawned":
+                targets.push({ kind: "hp", entity: event.target });
+                break;
             case "enemyDefeated":
-                targets.push({ kind: "enemy", entity: event.target });
                 break;
             case "enemyDamaged":
             case "enemyHealed":

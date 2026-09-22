@@ -1,5 +1,10 @@
 import type { BattleChoice } from "../console/controller";
-import type { SemanticStyle, StyledLine, StyledText } from "../console/presentation";
+import type {
+    HighlightTarget,
+    SemanticStyle,
+    StyledLine,
+    StyledText,
+} from "../console/presentation";
 
 const OVERFLOW_SHORTCUTS = "qwertyuiopasdfghjklzxcvbnm";
 
@@ -17,6 +22,45 @@ export interface ScrollPosition {
 export interface StyledPart {
     text: string;
     styles: SemanticStyle[];
+}
+
+export class HighlightTimeline {
+    private readonly entries = new Map<string, {
+        target: HighlightTarget;
+        expiresAt: number;
+    }>();
+
+    add(targets: readonly HighlightTarget[], now: number, durationMs: number): void {
+        for (const target of targets) {
+            this.entries.set(JSON.stringify(target), {
+                target,
+                expiresAt: now + durationMs,
+            });
+        }
+    }
+
+    active(now: number): HighlightTarget[] {
+        this.prune(now);
+        return [...this.entries.values()].map((entry) => entry.target);
+    }
+
+    millisecondsUntilExpiry(now: number): number | undefined {
+        this.prune(now);
+        if (this.entries.size === 0) return undefined;
+        return Math.max(0, Math.min(
+            ...[...this.entries.values()].map((entry) => entry.expiresAt - now),
+        ));
+    }
+
+    clear(): void {
+        this.entries.clear();
+    }
+
+    private prune(now: number): void {
+        for (const [key, entry] of this.entries) {
+            if (entry.expiresAt <= now) this.entries.delete(key);
+        }
+    }
 }
 
 /** Splits potentially overlapping semantic spans without ever emitting ANSI. */

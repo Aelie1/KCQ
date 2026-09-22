@@ -121,24 +121,23 @@ describe("combat presentation", () => {
             { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
             { type: "stanceChanged", actor: "ko", stance: "standing" },
         ])).toEqual([
-            { kind: "enemy", entity: "skunk1" },
             { kind: "cooldown", entity: "skunk1", move: "pounce" },
             { kind: "binding", entity: "ko", binding: "latexArms" },
             { kind: "buff", entity: "ko", buff: "mist" },
             { kind: "hp", entity: "skunk1" },
-            { kind: "enemy", entity: "skunk2" },
+            { kind: "hp", entity: "skunk2" },
             { kind: "trap", trap: "trapPuddle" },
             { kind: "stance", entity: "ko" },
         ]);
     });
 
     it("paces large phases faster while preserving a readable minimum", () => {
-        expect(PRESENTATION_TIMING.highlightMs).toBe(1300);
+        expect(PRESENTATION_TIMING.highlightMs).toBe(2000);
         expect(enemyPlaybackDelay(0)).toBe(0);
-        expect(enemyPlaybackDelay(1)).toBe(1000);
-        expect(enemyPlaybackDelay(3)).toBe(1000);
+        expect(enemyPlaybackDelay(1)).toBe(750);
+        expect(enemyPlaybackDelay(3)).toBe(750);
         expect(enemyPlaybackDelay(4)).toBeGreaterThan(enemyPlaybackDelay(8));
-        expect(enemyPlaybackDelay(20)).toBe(350);
+        expect(enemyPlaybackDelay(20)).toBe(250);
     });
 
     it("plays enemy actions in event order with an injected delay", async () => {
@@ -170,6 +169,25 @@ describe("combat presentation", () => {
         expect(sequence.slice(0, 4)).toEqual([
             "phase:enemy", "wait:525", "first", "wait:525",
         ]);
+    });
+
+    it("does not delay player action presentation", async () => {
+        const groups = formatActionGroups({
+            type: "move", actor: "ko", move: "strike", targets: ["skunk1"],
+        }, [
+            { type: "moveUsed", actor: "ko", move: "strike", targets: [{ target: "skunk1", result: "hit" }] },
+            { type: "enemyDamaged", target: "skunk1", amount: 10 },
+        ]);
+        const waits: number[] = [];
+
+        await playActionGroups(
+            groups,
+            750,
+            () => undefined,
+            async (milliseconds) => { waits.push(milliseconds); },
+        );
+
+        expect(waits).toEqual([]);
     });
 
     it("adds ANSI only at terminal output and keeps browser/plain text escape-free", () => {
@@ -220,7 +238,6 @@ describe("combat presentation", () => {
             highlights: [
                 { kind: "binding", entity: "ko", binding: "latexArms" },
                 { kind: "buff", entity: "ko", buff: "focus" },
-                { kind: "enemy", entity: "skunk1" },
                 { kind: "hp", entity: "skunk1" },
                 { kind: "trap", trap: "trapPuddle" },
                 { kind: "stance", entity: "ko" },
@@ -241,12 +258,13 @@ describe("combat presentation", () => {
         const flashes = styledValues
             .filter((entry) => entry.style === "transient-highlight")
             .map((entry) => entry.value);
-        expect(flashes).toContain("ko");
-        expect(flashes).toContain("skunk1");
         expect(flashes).toContain("[HP: 20/20]");
+        expect(flashes).toContain("[Standing]");
         expect(flashes).toContain("Focus");
         expect(flashes.some((value) => value.startsWith("[") && value.endsWith(" 55"))).toBe(true);
         expect(flashes.some((value) => value.includes("35/100"))).toBe(true);
+        expect(flashes).not.toContain("ko");
+        expect(flashes).not.toContain("skunk1");
         expect(flashes.every((value) => value.length < 40)).toBe(true);
     });
 
