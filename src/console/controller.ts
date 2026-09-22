@@ -87,10 +87,16 @@ export async function runBattleController(
         ...initialView.enemies.map((enemy) => enemy.id),
     ]);
     const logEntries: StyledLine[] = initialEvents.length > 0
-        ? flattenGroups(formatActionGroups(undefined, initialEvents, actorStyles))
+        ? flattenGroups(formatActionGroups(
+            undefined,
+            initialEvents,
+            actorStyles,
+            initialView.turn.round,
+        ))
         : (initialOutput as string[]).map((text) => ({ text }));
-    if (logEntries.at(-1)?.text !== phaseSeparator("player").text) {
-        logEntries.push(phaseSeparator("player"));
+    const initialPhase = phaseSeparator(initialView.turn.phase, initialView.turn.round);
+    if (logEntries.at(-1)?.text !== initialPhase.text) {
+        logEntries.push(initialPhase);
     }
     let bindingIds = encounterBindings(initialEvents);
     if (bindingIds.length === 0) {
@@ -504,15 +510,12 @@ function appendResult(
     const fromLogLine = logLines.length;
     let groups: ActionGroup[] = [];
     if (result.success) {
-        groups = formatActionGroups(action, result.events, registry);
+        groups = formatActionGroups(action, result.events, registry, previousRound);
         for (const group of groups) {
             for (const line of group.lines) {
                 if (line.style === "phase-separator" && logLines.at(-1)?.text === line.text) continue;
                 logLines.push(line);
             }
-        }
-        if (result.view.turn.round > previousRound) {
-            logLines.push({ text: `~~~ ROUND ${result.view.turn.round} ~~~` });
         }
     } else {
         logLines.push({ text: `Action failed: ${result.reason}.` });

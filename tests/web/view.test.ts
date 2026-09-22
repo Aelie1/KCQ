@@ -60,9 +60,9 @@ describe("web battle view", () => {
 
     it("uses static emphasis rather than transient animation for the active log group", () => {
         const styled = styledLogText([
-            { text: "========== ENEMY PHASE ==========", style: "phase-separator" },
-            { text: "skunk1 used spray.", style: "actor-1" },
-            { text: "  ↳ ko gained latex.", style: "actor-1" },
+            { text: "========== ENEMY PHASE - 1 ==========", style: "phase-separator" },
+            { text: "skunk1 used spray.", style: "actor-enemy" },
+            { text: "  ↳ ko gained latex.", style: "actor-enemy" },
         ], 3, { start: 1, end: 3 });
 
         expect(styled.spans.filter((span) => span.style === "current-log-action"))

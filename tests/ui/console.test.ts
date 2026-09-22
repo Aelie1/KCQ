@@ -616,7 +616,8 @@ describe("console formatting", () => {
         expect(rendered).not.toMatch(/TARGET\s+MISS\s+GRAZE/);
         expect(rendered).toMatch(/telekinesis on skunkette1: (MISS|GRAZE|HIT|CRIT)/);
         expect(rendered).toContain("No characters available. Ending turn automatically.");
-        expect(rendered).toContain("~~~ ROUND 2 ~~~");
+        expect(rendered).toContain("========== PLAYER PHASE - 2 ==========");
+        expect(rendered).not.toContain("~~~ ROUND 2 ~~~");
         expect(rendered).toContain("Seed 8224");
         expect(rendered).toContain("Escape / assist -- no legal escapes");
         expect(rendered).not.toMatch(/unavailable:/i);

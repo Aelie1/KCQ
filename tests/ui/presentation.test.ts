@@ -9,6 +9,7 @@ import {
     formatActionGroups,
     intentOutcomeStyle,
     playActionGroups,
+    PRESENTATION_TIMING,
 } from "../../src/console/presentation";
 import { renderAnsi, renderStyledScreen } from "../../src/console/render";
 import { styledTextParts } from "../../src/web/view";
@@ -33,12 +34,12 @@ describe("combat presentation", () => {
             ["phase", undefined, "player"],
         ]);
         expect(flattenGroups(groups).map((line) => line.text)).toEqual([
-            "========== ENEMY PHASE ==========",
+            "========== ENEMY PHASE - 1 ==========",
             "skunk1 used spray on ko: HIT",
             "  ↳ ko gained 34 latexArms.",
             "  ↳ ko gained 34 latexTorso.",
             "skunk2 used wait.",
-            "========== PLAYER PHASE ==========",
+            "========== PLAYER PHASE - 2 ==========",
         ]);
     });
 
@@ -56,6 +57,19 @@ describe("combat presentation", () => {
             { type: "enemyDefeated", target: "skunk1" },
         ], registry);
         expect(group.lines.map((line) => line.style)).toEqual([first, first, first]);
+    });
+
+    it("uses fixed party colors and one shared enemy color", () => {
+        const registry = new ActorStyleRegistry([
+            "ko", "matsuko", "hinari", "skunk1", "queen1", "rainmaker1",
+        ]);
+
+        expect(registry.styleFor("ko")).toBe("actor-ko");
+        expect(registry.styleFor("matsuko")).toBe("actor-matsuko");
+        expect(registry.styleFor("hinari")).toBe("actor-hinari");
+        expect(registry.styleFor("skunk1")).toBe("actor-enemy");
+        expect(registry.styleFor("queen1")).toBe("actor-enemy");
+        expect(registry.styleFor("rainmaker1")).toBe("actor-enemy");
     });
 
     it("keeps trap interruption events under the attempted player action", () => {
@@ -108,6 +122,7 @@ describe("combat presentation", () => {
     });
 
     it("paces large phases faster while preserving a readable minimum", () => {
+        expect(PRESENTATION_TIMING.highlightMs).toBe(1300);
         expect(enemyPlaybackDelay(0)).toBe(0);
         expect(enemyPlaybackDelay(1)).toBe(1000);
         expect(enemyPlaybackDelay(3)).toBe(1000);
@@ -124,16 +139,26 @@ describe("combat presentation", () => {
         ]);
         const presented: string[] = [];
         const waits: number[] = [];
+        const sequence: string[] = [];
 
         await playActionGroups(
             groups,
             525,
-            (group) => { if (group.actor) presented.push(group.actor); },
-            async (milliseconds) => { waits.push(milliseconds); },
+            (group) => {
+                sequence.push(group.actor ?? `phase:${group.phase}`);
+                if (group.actor) presented.push(group.actor);
+            },
+            async (milliseconds) => {
+                waits.push(milliseconds);
+                sequence.push(`wait:${milliseconds}`);
+            },
         );
 
         expect(presented).toEqual(["first", "second"]);
-        expect(waits).toEqual([525, 525]);
+        expect(waits).toEqual([525, 525, 525]);
+        expect(sequence.slice(0, 4)).toEqual([
+            "phase:enemy", "wait:525", "first", "wait:525",
+        ]);
     });
 
     it("adds ANSI only at terminal output and keeps browser/plain text escape-free", () => {

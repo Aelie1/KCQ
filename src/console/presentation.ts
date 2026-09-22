@@ -9,14 +9,17 @@ import type {
 } from "../engine/public/types";
 
 export const PRESENTATION_TIMING = {
-    highlightMs: 650,
+    highlightMs: 1300,
     enemyPhaseTargetMs: 4200,
     enemyActionMinMs: 350,
     enemyActionMaxMs: 1000,
 } as const;
 
 export type SemanticStyle =
-    | `actor-${number}`
+    | "actor-ko"
+    | "actor-matsuko"
+    | "actor-hinari"
+    | "actor-enemy"
     | `intent-${Exclude<HitBand, "none">}`
     | `binding-${BindingLevel}`
     | "accuracy-good"
@@ -59,12 +62,9 @@ export interface ActionGroup {
     highlights: HighlightTarget[];
 }
 
-const ACTOR_STYLE_COUNT = 12;
-
-/** Assigns stable, distinct-in-roster colors without putting ANSI in model text. */
+/** Assigns fixed party colors and a shared enemy color without putting ANSI in model text. */
 export class ActorStyleRegistry {
     private readonly styles = new Map<EntityId, SemanticStyle>();
-    private next = 0;
 
     constructor(actors: readonly EntityId[] = []) {
         actors.forEach((actor) => this.styleFor(actor));
@@ -73,8 +73,13 @@ export class ActorStyleRegistry {
     styleFor(actor: EntityId): SemanticStyle {
         const existing = this.styles.get(actor);
         if (existing) return existing;
-        const style = `actor-${this.next % ACTOR_STYLE_COUNT}` as SemanticStyle;
-        this.next += 1;
+        const style: SemanticStyle = actor === "ko"
+            ? "actor-ko"
+            : actor === "matsuko"
+                ? "actor-matsuko"
+                : actor === "hinari"
+                    ? "actor-hinari"
+                    : "actor-enemy";
         this.styles.set(actor, style);
         return style;
     }
@@ -118,17 +123,22 @@ export async function playActionGroups(
     present: (group: ActionGroup, index: number) => void | Promise<void>,
     wait: (milliseconds: number) => Promise<void> = defaultDelay,
 ): Promise<void> {
+    const hasEnemyAction = groups.some((group) =>
+        group.kind === "action" && group.phase === "enemy");
     for (const [index, group] of groups.entries()) {
         await present(group, index);
-        if (group.kind === "action" && group.phase === "enemy") {
+        if (
+            (group.kind === "phase" && group.phase === "enemy" && hasEnemyAction)
+            || (group.kind === "action" && group.phase === "enemy")
+        ) {
             await wait(delayMs);
         }
     }
 }
 
-export function phaseSeparator(phase: Phase): StyledLine {
+export function phaseSeparator(phase: Phase, round = 1): StyledLine {
     return {
-        text: `========== ${phase.toUpperCase()} PHASE ==========`,
+        text: `========== ${phase.toUpperCase()} PHASE - ${round} ==========`,
         style: "phase-separator",
     };
 }
@@ -137,10 +147,12 @@ export function formatActionGroups(
     action: PlayerAction | undefined,
     events: readonly GameEvent[],
     registry: ActorStyleRegistry = new ActorStyleRegistry(),
+    startingRound = 1,
 ): ActionGroup[] {
     const groups: ActionGroup[] = [];
     let current: ActionGroup | undefined;
     let phase: Phase = "player";
+    let round = startingRound;
     let sawMoveUsed = false;
     let syntheticInterruptedAction = false;
     const fallbackActor = action && "actor" in action ? action.actor : undefined;
@@ -169,11 +181,12 @@ export function formatActionGroups(
     for (const event of events) {
         if (event.type === "phaseChanged") {
             flush();
+            if (event.phase === "player" && phase === "enemy") round += 1;
             phase = event.phase;
             groups.push({
                 kind: "phase",
                 phase,
-                lines: [phaseSeparator(phase)],
+                lines: [phaseSeparator(phase, round)],
                 highlights: [],
             });
             continue;

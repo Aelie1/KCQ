@@ -39,7 +39,7 @@ export async function runConsoleClient(
             display(screen);
             await rl.question("Press Enter to exit. ");
         },
-        playback: async ({ screen, groups, delayMs, fromLogLine }) => {
+        playback: async ({ screen, groups, delayMs, fromLogLine, enemyActionCount }) => {
             if (streams.output.isTTY !== true) return;
             let visibleLines = fromLogLine;
             for (const group of groups) {
@@ -50,7 +50,10 @@ export async function runConsoleClient(
                     logStyles: screen.logStyles?.slice(0, visibleLines),
                     highlights: group.highlights,
                 });
-                if (group.kind === "action" && group.phase === "enemy") {
+                if (
+                    (group.kind === "phase" && group.phase === "enemy" && enemyActionCount > 0)
+                    || (group.kind === "action" && group.phase === "enemy")
+                ) {
                     await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
                 }
             }

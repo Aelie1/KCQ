@@ -121,18 +121,10 @@ button:disabled {
     color: #a8b3c1;
 }
 
-.semantic-actor-0 { color: #67e8f9; }
-.semantic-actor-1 { color: #f0abfc; }
-.semantic-actor-2 { color: #86efac; }
-.semantic-actor-3 { color: #93c5fd; }
-.semantic-actor-4 { color: #fde047; }
-.semantic-actor-5 { color: #5eead4; }
-.semantic-actor-6 { color: #c4b5fd; }
-.semantic-actor-7 { color: #bef264; }
-.semantic-actor-8 { color: #7dd3fc; }
-.semantic-actor-9 { color: #f9a8d4; }
-.semantic-actor-10 { color: #a7f3d0; }
-.semantic-actor-11 { color: #fdba74; }
+.semantic-actor-ko { color: #c4b5fd; }
+.semantic-actor-matsuko { color: #fbbf24; }
+.semantic-actor-hinari { color: #67e8f9; }
+.semantic-actor-enemy { color: #fca5a5; }
 
 .semantic-phase-separator {
     color: #f8fafc;

@@ -127,7 +127,7 @@ class BrowserBattleUI implements BattleUI {
             if (isEnemyAction) {
                 animatedEnemyActions += 1;
             } else if (group.kind === "action" && group.highlights.length > 0) {
-                await delay(Math.min(220, PRESENTATION_TIMING.highlightMs));
+                await delay(Math.min(440, PRESENTATION_TIMING.highlightMs));
             }
         });
         if (animatedEnemyActions < request.enemyActionCount) {

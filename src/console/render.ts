@@ -786,14 +786,14 @@ function addEntityNameHighlight(
 }
 
 function ansiCode(style: SemanticStyle): string {
-    const actorCodes = [
-        "96", "95", "92", "94", "93", "36", "35", "32",
-        "38;5;117", "38;5;213", "38;5;150", "38;5;215",
-    ];
-    if (style.startsWith("actor-")) {
-        const index = Number(style.slice("actor-".length));
-        return actorCodes[index % actorCodes.length] ?? "37";
-    }
+    const fixedActorCodes: Partial<Record<SemanticStyle, string>> = {
+        "actor-ko": "38;5;183",
+        "actor-matsuko": "38;5;214",
+        "actor-hinari": "96",
+        "actor-enemy": "91",
+    };
+    const fixedActorCode = fixedActorCodes[style];
+    if (fixedActorCode) return fixedActorCode;
     const codes: Partial<Record<SemanticStyle, string>> = {
         "intent-miss": "97",
         "intent-graze": "93;1",

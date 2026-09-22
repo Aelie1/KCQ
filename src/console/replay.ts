@@ -88,14 +88,22 @@ function replayScreenModel(input: ConsoleReplayInput, position: number): ScreenM
         ...replay.initialState.characters.map((character) => character.id),
         ...replay.initialState.enemies.map((enemy) => enemy.id),
     ]);
-    const logEntries: StyledLine[] = [phaseSeparator("player")];
+    const logEntries: StyledLine[] = [
+        phaseSeparator(replay.initialState.turn.phase, replay.initialState.turn.round),
+    ];
 
     // Rebuild the prefix so backward/forward navigation has identical state and logs.
     for (let index = 0; index < position; index++) {
         const step = replay.steps[index];
         if (step.success) {
+            const previousRound = state.turn.round;
             state = step.state;
-            logEntries.push(...flattenGroups(formatActionGroups(step.action, step.events, actorStyles)));
+            logEntries.push(...flattenGroups(formatActionGroups(
+                step.action,
+                step.events,
+                actorStyles,
+                previousRound,
+            )));
         } else {
             logEntries.push({ text: `Action failed: ${step.reason}.` });
         }
