@@ -257,7 +257,7 @@ describe("shared battle controller", () => {
 
         expect(onAction).toHaveBeenCalledOnce();
         expect(onAction).toHaveBeenCalledWith(
-            { type: "move", actor: "hero", move: "strike", targets: ["foe"] },
+            { type: "move", actor: "hero", move: "strike", targets: ["foe1"] },
             expect.objectContaining({ success: true }),
             "player",
         );

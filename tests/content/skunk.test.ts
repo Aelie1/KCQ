@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import { skunk } from "../../src/content/skunk/skunk";
-import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
+import type { BindingDef, EncounterDef, MoveDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
+import { isEnemy } from "../../src/engine/protected/helpers";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type { Engine } from "../../src/engine/public/types";
-import { makeBindingDef, makeCharacterDef } from "../helpers/helpers";
+import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
 
 const BODY_LATEX = [latexHead, latexArms, latexTorso, latexLegs];
 
@@ -22,6 +23,7 @@ function loadSkunk(options: {
     trapAmount?: number | null;
     hp?: number;
     bindings?: Record<string, InitialBinding[]>;
+    moves?: MoveDef[];
 }): Engine {
     const characterIds = options.characterIds ?? ["hero"];
     const encounter: EncounterDef = {
@@ -35,18 +37,13 @@ function loadSkunk(options: {
         setup: (state) => {
             const effects: iEffect[] = [];
             if (options.hp !== undefined) {
-                effects.push({
-                    type: "damage",
-                    source: state.characters[0],
-                    target: state.enemies[0],
-                    amount: state.enemies[0].maxHp - options.hp,
-                });
+                state.enemies[0].currHp = options.hp;
             }
             effects.push(...initialBindingEffects(state, options.bindings ?? {}));
             return effects;
         },
     };
-    const characters = characterIds.map((id) => makeCharacterDef(id));
+    const characters = characterIds.map((id) => makeCharacterDef(id, options.moves));
     const engine = createCustomEngine([encounter], characters, options.seed);
     for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
@@ -342,6 +339,48 @@ describe("normal Latex Skunk", () => {
             move: "latexExplosion",
             targets: [{ target: "first" }],
         }]);
+    });
+
+    it("cancels its old intention and targets the threshold-crossing attacker with Explosion", () => {
+        const crossThreshold = makeMove("cross-threshold", "arms", {
+            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
+                isEnemy(target)
+                    ? [{ type: "damage" as const, source: actor, target, amount: 2 }]
+                    : [],
+            ),
+        });
+        const engine = loadSkunk({
+            seed: 1,
+            hp: 76,
+            characterIds: ["alpha", "beta"],
+            moves: [crossThreshold],
+        });
+        const oldIntention = engine.getGameView().enemies[0].intentions[0];
+        expect(oldIntention).toMatchObject({
+            move: "latexSpray",
+            targets: [{ target: expect.any(String) }],
+        });
+        const oldTarget = oldIntention.targets[0]?.target;
+        const attacker = oldTarget === "alpha" ? "beta" : "alpha";
+
+        const result = engine.executeAction({
+            type: "move",
+            actor: attacker,
+            move: crossThreshold.id,
+            targets: ["skunk1"],
+        });
+
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected threshold-crossing attack to succeed");
+        expect(result.events).toContainEqual({ type: "intentionCancelled", target: "skunk1" });
+        expect(result.view.enemies[0]).toMatchObject({
+            currHp: 74,
+            intentions: [{
+                move: "latexExplosion",
+                targets: [{ target: attacker }],
+            }],
+        });
+        expect(result.view.enemies[0].intentions).toHaveLength(1);
     });
 
     it.each([true, false])(

@@ -136,6 +136,27 @@ export const skunk: EnemyDef = {
         });
         return effects;
 
+    },
+    onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
+        const effects: iEffect[] = [];
+        const oldRatio = (target.currHp + damage) / target.maxHp;
+        const newRatio = target.currHp / target.maxHp;
+        if (target.currHp > 0 && oldRatio >= EXPLOSION_HP_RATIO && newRatio < EXPLOSION_HP_RATIO) {
+            effects.push({
+                type: "intention",
+                operation: "cancel",
+                target: target,
+                amount: 0
+            })
+            effects.push({
+                type: "move",
+                actor: target,
+                targets: [actor],
+                move: { definition: latexExplosion }
+            });
+        }
+
+        return effects;
     }
 }
 
