@@ -13,6 +13,7 @@ import type {
 import { formatEffects } from "./format";
 import {
     ActorStyleRegistry,
+    encounterSeparator,
     enemyPlaybackDelay,
     flattenGroups,
     formatActionGroups,
@@ -87,12 +88,7 @@ export async function runBattleController(
         ...initialView.enemies.map((enemy) => enemy.id),
     ]);
     const logEntries: StyledLine[] = initialEvents.length > 0
-        ? flattenGroups(formatActionGroups(
-            undefined,
-            initialEvents,
-            actorStyles,
-            initialView.turn.round,
-        ))
+        ? initialLogEntries(initialEvents, actorStyles, initialView.turn.round)
         : (initialOutput as string[]).map((text) => ({ text }));
     const initialPhase = phaseSeparator(initialView.turn.phase, initialView.turn.round);
     if (logEntries.at(-1)?.text !== initialPhase.text) {
@@ -446,6 +442,38 @@ function notifyObserver(callback: () => void | Promise<void> | undefined): void 
     } catch {
         // Observers are side channels and must never affect battle flow.
     }
+}
+
+function initialLogEntries(
+    events: readonly GameEvent[],
+    registry: ActorStyleRegistry,
+    round: number,
+): StyledLine[] {
+    let encounterIndex = -1;
+    for (let index = events.length - 1; index >= 0; index--) {
+        const event = events[index];
+        if (event.type === "encounterLoad" && event.success) {
+            encounterIndex = index;
+            break;
+        }
+    }
+    if (encounterIndex < 0) {
+        const visibleEvents = events.filter((event) =>
+            event.type !== "characterLoad" && event.type !== "enemySpawned");
+        return flattenGroups(formatActionGroups(undefined, visibleEvents, registry, round));
+    }
+
+    const encounterEvent = events[encounterIndex];
+    if (encounterEvent.type !== "encounterLoad") return [];
+    return [
+        encounterSeparator(encounterEvent.id),
+        ...flattenGroups(formatActionGroups(
+            undefined,
+            events.slice(encounterIndex + 1),
+            registry,
+            round,
+        )),
+    ];
 }
 
 function finalStateLines(outcome: "victory" | "defeat"): string[] {

@@ -4,6 +4,7 @@ import type { PlayerAction, ThresholdInfo } from "../engine/public/types";
 import type { FightReplay } from "../harness/harness";
 import {
     ActorStyleRegistry,
+    encounterSeparator,
     flattenGroups,
     formatActionGroups,
     phaseSeparator,
@@ -89,6 +90,9 @@ function replayScreenModel(input: ConsoleReplayInput, position: number): ScreenM
         ...replay.initialState.enemies.map((enemy) => enemy.id),
     ]);
     const logEntries: StyledLine[] = [
+        ...(replay.initialState.encounter
+            ? [encounterSeparator(replay.initialState.encounter.id)]
+            : []),
         phaseSeparator(replay.initialState.turn.phase, replay.initialState.turn.round),
     ];
 

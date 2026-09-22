@@ -46,6 +46,13 @@ describe("shared battle controller", () => {
             { number: 3, label: "Quit", kind: "quit" },
         ]);
         expect(requests[0].screen.state.characters.map((character) => character.id)).toEqual(["ko"]);
+        expect(requests[0].screen.logLines.slice(0, 2)).toEqual([
+            "############### Encounter: plains_1 ###############",
+            "========== PLAYER PHASE - 1 ==========",
+        ]);
+        expect(requests[0].screen.logLines.join("\n")).not.toMatch(
+            /Character .* loaded|appeared|Encounter plains_1 began/,
+        );
         expect(requests[1].screen.actionLines).toContain("Enter one of: 1, 2, 3.");
         expect(closed).toBe(true);
     });

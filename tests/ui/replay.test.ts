@@ -111,6 +111,7 @@ describe("console replay viewer", () => {
         expect(frame).not.toContain("Action:");
         expect(frame).toContain("Seed 42 / Round 1 / PLAYER");
         expect(frame).toContain("recorded-encounter");
+        expect(frame).toContain("############### Encounter: recorded-encounter");
         expect(frame).toContain("PARTY");
         expect(frame).toContain("hero [Ready]");
         expect(frame).toContain("rope");

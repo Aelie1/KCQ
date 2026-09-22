@@ -4,6 +4,7 @@ import {
     accuracyQualityStyle,
     bindingSeverityStyle,
     deriveHighlightTargets,
+    encounterSeparator,
     enemyPlaybackDelay,
     flattenGroups,
     formatActionGroups,
@@ -16,6 +17,13 @@ import { styledTextParts } from "../../src/web/view";
 import type { GameEvent } from "../../src/engine/public/types";
 
 describe("combat presentation", () => {
+    it("formats encounter starts as a distinct banner", () => {
+        expect(encounterSeparator("plains_1")).toEqual({
+            text: "############### Encounter: plains_1 ###############",
+            style: "encounter-separator",
+        });
+    });
+
     it("separates phases and groups ordered effects beneath their causal action", () => {
         const events: GameEvent[] = [
             { type: "phaseChanged", phase: "enemy" },

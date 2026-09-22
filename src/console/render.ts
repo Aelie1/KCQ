@@ -835,6 +835,7 @@ function ansiCode(style: SemanticStyle): string {
         "accuracy-caution": "93",
         "accuracy-poor": "38;5;208;1",
         "accuracy-very-poor": "97;41;1",
+        "encounter-separator": "92;1",
         "phase-separator": "97;1",
         "current-log-action": "97;1",
         "transient-highlight": "97;44;1",

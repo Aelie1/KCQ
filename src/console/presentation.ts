@@ -26,6 +26,7 @@ export type SemanticStyle =
     | "accuracy-caution"
     | "accuracy-poor"
     | "accuracy-very-poor"
+    | "encounter-separator"
     | "phase-separator"
     | "current-log-action"
     | "transient-highlight";
@@ -141,6 +142,13 @@ export function phaseSeparator(phase: Phase, round = 1): StyledLine {
     return {
         text: `========== ${phase.toUpperCase()} PHASE - ${round} ==========`,
         style: "phase-separator",
+    };
+}
+
+export function encounterSeparator(encounter: string): StyledLine {
+    return {
+        text: `############### Encounter: ${encounter} ###############`,
+        style: "encounter-separator",
     };
 }
 

@@ -132,6 +132,12 @@ button:disabled {
     text-shadow: 0 0 8px #94a3b8;
 }
 
+.semantic-encounter-separator {
+    color: #a7f3d0;
+    font-weight: 800;
+    text-shadow: 0 0 5px #047857;
+}
+
 .semantic-intent-miss { color: #f8fafc; font-weight: 700; }
 .semantic-intent-graze { color: #fde047; font-weight: 700; }
 .semantic-intent-hit { color: #fb923c; font-weight: 800; text-shadow: 0 0 6px #c2410c; }
