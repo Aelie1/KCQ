@@ -651,17 +651,43 @@ function applyHighlights(
             case "buff": {
                 const buffName = displayName(target.buff);
                 const lineRange = entityLineRange(text, modelForHighlights, target.entity);
+                const lines = text.split("\n");
+                const buffsStart = lineRange
+                    ? lines.findIndex((line, index) =>
+                        index >= lineRange.start
+                        && index < lineRange.end
+                        && line.includes("Buffs:"))
+                    : -1;
                 const added = addPanelTokenSpans(
                     text,
                     spans,
                     buffName,
                     "transient-highlight",
-                    (_line, index) => !lineRange
-                        || (index >= lineRange.start && index < lineRange.end),
+                    (_line, index) => buffsStart >= 0
+                        && index >= buffsStart
+                        && (!lineRange || index < lineRange.end),
                 );
                 if (added === 0) {
                     addEntityNameHighlight(text, spans, target.entity);
                 }
+                break;
+            }
+            case "cooldown": {
+                const enemy = modelForHighlights.state.enemies.find(
+                    (candidate) => candidate.id === target.entity,
+                );
+                const value = enemy?.cooldowns[target.move];
+                if (value === undefined || value <= 0) break;
+                const token = `[${displayName(target.move)} ${value}]`;
+                const lineRange = entityLineRange(text, modelForHighlights, target.entity);
+                addPanelTokenSpans(
+                    text,
+                    spans,
+                    token,
+                    "transient-highlight",
+                    (_line, index) => !lineRange
+                        || (index >= lineRange.start && index < lineRange.end),
+                );
                 break;
             }
             case "enemy":

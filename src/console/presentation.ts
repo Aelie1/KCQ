@@ -49,6 +49,7 @@ export interface StyledLine {
 export type HighlightTarget =
     | { kind: "binding"; entity: EntityId; binding: string }
     | { kind: "buff"; entity: EntityId; buff: string }
+    | { kind: "cooldown"; entity: EntityId; move: string }
     | { kind: "enemy"; entity: EntityId }
     | { kind: "hp"; entity: EntityId }
     | { kind: "trap"; trap: string }
@@ -253,6 +254,7 @@ export function deriveHighlightTargets(events: readonly GameEvent[]): HighlightT
         switch (event.type) {
             case "moveUsed":
                 targets.push({ kind: "enemy", entity: event.actor });
+                targets.push({ kind: "cooldown", entity: event.actor, move: event.move });
                 break;
             case "bondageAdded":
             case "bondageChanged":
@@ -273,6 +275,9 @@ export function deriveHighlightTargets(events: readonly GameEvent[]): HighlightT
             case "enemyHealed":
             case "damageBlocked":
                 targets.push({ kind: "hp", entity: event.target });
+                break;
+            case "cooldownChanged":
+                targets.push({ kind: "cooldown", entity: event.target, move: event.move });
                 break;
             case "trapAdded":
             case "trapRemoved":

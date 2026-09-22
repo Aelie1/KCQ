@@ -105,6 +105,7 @@ describe("combat presentation", () => {
 
     it("derives transient targets from state-changing events", () => {
         expect(deriveHighlightTargets([
+            { type: "moveUsed", actor: "skunk1", move: "pounce", targets: [] },
             { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 10 },
             { type: "buffAdded", target: "ko", buff: "mist" },
             { type: "enemyHealed", target: "skunk1", amount: 5 },
@@ -112,6 +113,8 @@ describe("combat presentation", () => {
             { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
             { type: "stanceChanged", actor: "ko", stance: "standing" },
         ])).toEqual([
+            { kind: "enemy", entity: "skunk1" },
+            { kind: "cooldown", entity: "skunk1", move: "pounce" },
             { kind: "binding", entity: "ko", binding: "latexArms" },
             { kind: "buff", entity: "ko", buff: "mist" },
             { kind: "hp", entity: "skunk1" },
@@ -237,5 +240,48 @@ describe("combat presentation", () => {
         expect(flashes.some((value) => value.startsWith("[") && value.endsWith(" 55"))).toBe(true);
         expect(flashes.some((value) => value.includes("35/100"))).toBe(true);
         expect(flashes.every((value) => value.length < 40)).toBe(true);
+    });
+
+    it("aligns cooldown and buff highlights to their owning enemy", () => {
+        const enemy = (id: string, withBuff = false) => ({
+            id,
+            rank: "enemy" as const,
+            maxHp: 200,
+            currHp: 200,
+            currDef: 0,
+            intentions: [{ move: "latexSpray", targets: [], effects: [] }],
+            buffs: withBuff ? [{ id: "pounce" }] : [],
+            cooldowns: { pounce: 1 },
+        });
+        const rendered = renderStyledScreen({
+            encounter: "cooldowns",
+            seed: 1,
+            state: {
+                turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
+                characters: [],
+                enemies: [
+                    enemy("skunkette1"),
+                    enemy("skunkette2"),
+                    enemy("skunkette3", true),
+                ],
+                traps: [],
+                encounter: null,
+            },
+            availability: [],
+            bindings: [],
+            bindingThresholds: { max: 100, thresholds: {} },
+            actionLines: [],
+            logLines: [],
+            highlights: [
+                { kind: "cooldown", entity: "skunkette2", move: "pounce" },
+                { kind: "buff", entity: "skunkette3", buff: "pounce" },
+            ],
+        }, 120, 49, { externalLog: true });
+        const flashes = rendered.spans
+            .filter((span) => span.style === "transient-highlight")
+            .map((span) => rendered.text.slice(span.start, span.end));
+
+        expect(flashes.filter((value) => value === "[Pounce 1]")).toHaveLength(1);
+        expect(flashes.filter((value) => value === "Pounce")).toHaveLength(1);
     });
 });
