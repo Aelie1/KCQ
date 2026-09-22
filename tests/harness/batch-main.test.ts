@@ -44,6 +44,8 @@ function batchFixture(): BatchResult {
 beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 21, 21, 15, 4));
     vi.spyOn(fs, "mkdirSync").mockReturnValue(undefined);
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => { });
     vi.spyOn(console, "log").mockImplementation(() => { });
@@ -57,10 +59,11 @@ afterEach(() => {
     process.argv = originalArgv;
     process.exitCode = originalExitCode;
     vi.restoreAllMocks();
+    vi.useRealTimers();
 });
 
 describe("batch CLI entry point", () => {
-    it("runs without replay, saves exactly the factual summary, and prints it with its output path", async () => {
+    it("runs without replay, saves exactly the factual summary, and prints a compact save notice", async () => {
         const summary = summarizeBatch(batchFixture());
         await import("../../src/harness/cli/batch-main");
 
@@ -69,17 +72,35 @@ describe("batch CLI entry point", () => {
             runs: 3, maxActions: 1000, replay: false,
         }, { onProgress: expect.any(Function) });
         const outputDir = path.resolve("harness-output");
-        const outputPath = path.join(outputDir, "plains_1-first-master-1-runs-3-max-1000-summary.json");
-        expect(fs.mkdirSync).toHaveBeenCalledExactlyOnceWith(outputDir, { recursive: true });
-        expect(fs.writeFileSync).toHaveBeenCalledExactlyOnceWith(outputPath, JSON.stringify(summary, null, 2), "utf8");
+        const runDir = path.join(outputDir, "2026-09-21_21-15-04_1_level_1_policy");
+        const outputPath = path.join(runDir, "plains_1-first.json");
+        expect(fs.mkdirSync).toHaveBeenNthCalledWith(1, outputDir, { recursive: true });
+        expect(fs.mkdirSync).toHaveBeenNthCalledWith(2, runDir);
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.join(runDir, "run.json"), expect.any(String), "utf8",
+        );
+        expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, JSON.stringify(summary, null, 2), "utf8");
+        const manifestCall = vi.mocked(fs.writeFileSync).mock.calls.find(([file]) => file === path.join(runDir, "run.json"));
+        expect(JSON.parse(manifestCall?.[1] as string)).toEqual({
+            startedAt: expect.stringMatching(/^2026-09-21T21:15:04[+-]\d{2}:\d{2}$/),
+            masterSeed: 1,
+            runsPerEncounter: 3,
+            maxActions: 1_000,
+            parallelWorkers: 1,
+            encounters: ["plains_1"],
+            policies: ["first"],
+        });
         expect(summary.fightLength.actionCount?.mean).toBe(4 / 3);
         expect(console.log).toHaveBeenCalledWith(formatBatchSummary(summary).join("\n"));
-        expect(console.log).toHaveBeenCalledWith(`\nWrote ${outputPath}`);
+        expect(console.log).toHaveBeenCalledWith(
+            "Saved 1 summary to:\nharness-output/2026-09-21_21-15-04_1_level_1_policy/",
+        );
+        expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining("Wrote "));
         expect(console.error).not.toHaveBeenCalled();
         expect(process.exitCode).toBeUndefined();
     });
 
-    it("includes the explicit action limit in both the batch input and filename", async () => {
+    it("includes the explicit action limit in the manifest but not the simplified filename", async () => {
         process.argv.push("7");
         await import("../../src/harness/cli/batch-main");
 
@@ -88,9 +109,15 @@ describe("batch CLI entry point", () => {
             { onProgress: expect.any(Function) },
         );
         expect(fs.writeFileSync).toHaveBeenCalledWith(
-            path.resolve("harness-output", "plains_1-first-master-1-runs-3-max-7-summary.json"),
+            path.resolve(
+                "harness-output",
+                "2026-09-21_21-15-04_1_level_1_policy",
+                "plains_1-first.json",
+            ),
             expect.any(String), "utf8",
         );
+        const manifestCall = vi.mocked(fs.writeFileSync).mock.calls.find(([file]) => String(file).endsWith("run.json"));
+        expect(JSON.parse(manifestCall?.[1] as string)).toMatchObject({ maxActions: 7 });
     });
 
     it("sanitizes encounter IDs to keep the summary in harness-output", async () => {
@@ -98,7 +125,11 @@ describe("batch CLI entry point", () => {
         await import("../../src/harness/cli/batch-main");
 
         expect(fs.writeFileSync).toHaveBeenCalledWith(
-            path.resolve("harness-output", ".._odd_encounter-first-master-1-runs-3-max-1000-summary.json"),
+            path.resolve(
+                "harness-output",
+                "2026-09-21_21-15-04_1_level_1_policy",
+                ".._odd_encounter-first.json",
+            ),
             expect.any(String), "utf8",
         );
     });

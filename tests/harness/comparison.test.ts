@@ -23,7 +23,7 @@ describe("policy comparison", () => {
         expect(result.parallelWorkers).toBe(2);
     });
 
-    it("produces one metric row and timing row per policy", async () => {
+    it("includes mean timing in each policy metric row without a second timing table", async () => {
         const times = [0, 100, 300, 400, 1_000, 1_200];
         const result = await executePolicyComparison({
             encounterId: "plains_1",
@@ -42,12 +42,14 @@ describe("policy comparison", () => {
         expect(output).toContain("===== plains_1 =====");
         expect(output).toContain("meanDecisions");
         expect(output).toContain("meanPeakBondage");
-        expect(output).toContain("Timing:");
-        expect(output).toContain("Policy runtime total: 800.0 ms");
-        expect(output).toContain("Overall wall time:    1.2 s");
-        expect(output).toContain("Parallel workers:     1");
-        expect(output.match(/\| first\s+\|/g)).toHaveLength(2);
-        expect(output.match(/\| random\s+\|/g)).toHaveLength(2);
+        expect(output).toContain("ms/run");
+        expect(output).not.toContain("Timing:");
+        expect(output).not.toContain("runtime");
+        expect(output).not.toContain("share");
+        expect(output.match(/\| first\s+\|/g)).toHaveLength(1);
+        expect(output.match(/\| random\s+\|/g)).toHaveLength(1);
+        expect(output).toMatch(/\| first\s+\|[^\n]*\| 100\.0\s+\|/);
+        expect(output).toMatch(/\| random\s+\|[^\n]*\| 300\.0\s+\|/);
         expect(output).not.toMatch(/engineSeed|policySeed|shortestDefeat/);
         expect(result.policies[0].summary).not.toHaveProperty("timing");
         expect(result.policies[0].summary).not.toHaveProperty("parallelWorkers");

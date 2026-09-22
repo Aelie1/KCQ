@@ -2,7 +2,7 @@ import { runConsoleReplay } from "../../console/replay";
 import { createEngine } from "../../engine/public/engine";
 import { availableParallelism } from "node:os";
 import { runBatch } from "../batch/batch";
-import { runBatchParallel } from "../batch/parallel-batch";
+import { effectiveWorkerCount, runBatchParallel } from "../batch/parallel-batch";
 import {
     executePolicyComparison,
     formatPolicyComparison,
@@ -15,7 +15,12 @@ import {
     type EncounterSetProgress,
 } from "../batch/encounter-sets";
 import { runSingleFight, type FightPolicy, type SingleFightInput } from "../harness";
-import { writeBatchSummary, writeFightResult } from "../output";
+import {
+    createBatchRunOutput,
+    formatSavedSummaries,
+    writeBatchSummary,
+    writeFightResult,
+} from "../output";
 import { policies } from "../policies";
 import {
     createProgressReporter,
@@ -46,6 +51,7 @@ export interface LauncherDependencies {
     executeEncounterSet: typeof executeEncounterSet;
     runConsoleReplay: typeof runConsoleReplay;
     now: () => number;
+    wallClockNow: () => Date;
 }
 
 const defaultDependencies: LauncherDependencies = {
@@ -56,6 +62,7 @@ const defaultDependencies: LauncherDependencies = {
     executeEncounterSet,
     runConsoleReplay,
     now: () => performance.now(),
+    wallClockNow: () => new Date(),
 };
 
 const setChoices: ReadonlyArray<{
@@ -193,6 +200,14 @@ async function runInteractiveBatch(
         + `\nMaster seed: ${masterSeed}\nRuns per policy: ${runs}`
         + `\nMax actions: ${maxActions}\nParallel workers: ${workers}`
         + `\nTotal fights: ${selectedPolicies.length * runs}\n\n`);
+    const output = createBatchRunOutput({
+        masterSeed,
+        runsPerEncounter: runs,
+        maxActions,
+        parallelWorkers: effectiveWorkerCount(workers, runs),
+        encounters: [encounterId],
+        policies: selectedPolicies.map((policy) => policy.id),
+    }, { now: deps.wallClockNow });
 
     let latest: PolicyComparisonProgress | undefined;
     const progress = createProgressReporter({
@@ -222,17 +237,17 @@ async function runInteractiveBatch(
             progress.update(update.overallCompleted, update.overallTotal);
         },
     });
-    const outputPaths = result.policies.map((entry) => writeBatchSummary({
+    result.policies.forEach((entry) => writeBatchSummary({
         encounterId,
         policy: selectedPolicies.find((policy) => policy.id === entry.policyId)!,
         masterSeed,
         runs,
         maxActions,
         replay: false,
-    }, entry.summary));
+    }, entry.summary, output.directoryPath));
     io.write(`${formatPolicyComparison(result).join("\n")}\n\n`);
-    outputPaths.forEach((outputPath) => io.write(`Wrote ${outputPath}\n`));
     io.write(`${formatCompletion(selectedPolicies.length * runs, result.overallElapsedMs, "fights")}\n`);
+    io.write(`${formatSavedSummaries(result.policies.length, output.directoryPath)}\n`);
 }
 
 async function runInteractiveEncounterSet(
@@ -261,6 +276,14 @@ async function runInteractiveEncounterSet(
         + `\nRuns per encounter: ${runsPerEncounter}\nMax actions: ${maxActions}`
         + `\nParallel workers: ${workers}`
         + `\nTotal fights: ${encounterIds.length * selectedPolicies.length * runsPerEncounter}\n\n`);
+    const output = createBatchRunOutput({
+        masterSeed,
+        runsPerEncounter,
+        maxActions,
+        parallelWorkers: effectiveWorkerCount(workers, runsPerEncounter),
+        encounters: encounterIds,
+        policies: selectedPolicies.map((policy) => policy.id),
+    }, { now: deps.wallClockNow });
 
     let latest: EncounterSetProgress | undefined;
     const progress = createProgressReporter({
@@ -295,22 +318,28 @@ async function runInteractiveEncounterSet(
             io.write(`${formatPolicyComparison(encounter.comparison).join("\n")}\n\n`);
             encounter.comparison.policies.forEach((entry) => {
                 const policy = selectedPolicies.find((candidate) => candidate.id === entry.policyId)!;
-                const outputPath = writeBatchSummary({
+                writeBatchSummary({
                     encounterId: encounter.encounterId,
                     policy,
                     masterSeed,
                     runs: runsPerEncounter,
                     maxActions,
                     replay: false,
-                }, entry.summary);
-                io.write(`Wrote ${outputPath}\n`);
+                }, entry.summary, output.directoryPath);
             });
-            io.write("\n");
+            io.write(`${formatCompletion(
+                selectedPolicies.length * runsPerEncounter,
+                encounter.comparison.overallElapsedMs,
+                "fights",
+            )}\n\n`);
         },
     });
     const totalFights = encounterIds.length * selectedPolicies.length * runsPerEncounter;
     io.write(`Encounter set complete: ${set.label}\n${formatCompletion(
         totalFights, result.elapsedMs, "fights",
+    )}\n${formatSavedSummaries(
+        encounterIds.length * selectedPolicies.length,
+        output.directoryPath,
     )}\n`);
 }
 

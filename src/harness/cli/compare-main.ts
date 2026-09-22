@@ -1,5 +1,8 @@
 import { executePolicyComparison, formatPolicyComparison } from "../batch/comparison";
+import { effectiveWorkerCount } from "../batch/parallel-batch";
+import { createBatchRunOutput, formatSavedSummaries, writeBatchSummary } from "../output";
 import { getPolicy, policies } from "../policies";
+import { formatCompletion } from "./progress";
 
 const DEFAULT_MAX_ACTIONS = 1_000;
 const DEFAULT_WORKERS = 8;
@@ -44,6 +47,14 @@ async function main(): Promise<void> {
         }
         return policy;
     });
+    const output = createBatchRunOutput({
+        masterSeed,
+        runsPerEncounter: runs,
+        maxActions,
+        parallelWorkers: effectiveWorkerCount(workers, runs),
+        encounters: [encounterId],
+        policies: selectedPolicies.map((policy) => policy.id),
+    });
 
     const result = await executePolicyComparison({
         encounterId,
@@ -53,8 +64,21 @@ async function main(): Promise<void> {
         maxActions,
         workers,
     });
+    result.policies.forEach((entry) => {
+        const policy = selectedPolicies.find((candidate) => candidate.id === entry.policyId)!;
+        writeBatchSummary({
+            encounterId,
+            policy,
+            masterSeed,
+            runs,
+            maxActions,
+            replay: false,
+        }, entry.summary, output.directoryPath);
+    });
 
     console.log(formatPolicyComparison(result).join("\n"));
+    console.log(formatCompletion(selectedPolicies.length * runs, result.overallElapsedMs, "fights"));
+    console.log(formatSavedSummaries(result.policies.length, output.directoryPath));
 }
 
 function parseInteger(value: string, name: string, positive = false): number {

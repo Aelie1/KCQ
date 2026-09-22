@@ -113,5 +113,11 @@ function escapeAction(actor: string, option: EscapeInfo): PlayerAction {
 }
 
 export const basic50Policy = makeBasicEscapePolicy(50);
+export const basic45Policy = makeBasicEscapePolicy(45);
+export const basic40Policy = makeBasicEscapePolicy(40);
+export const basic35Policy = makeBasicEscapePolicy(35);
 export const basic30Policy = makeBasicEscapePolicy(30);
+export const basic25Policy = makeBasicEscapePolicy(25);
 export const basic20Policy = makeBasicEscapePolicy(20);
+export const basic15Policy = makeBasicEscapePolicy(15);
+export const basic10Policy = makeBasicEscapePolicy(10);

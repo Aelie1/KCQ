@@ -125,7 +125,7 @@ export async function executePolicyComparison(
 }
 
 export function formatPolicyComparison(result: PolicyComparisonResult): string[] {
-    const metricRows = result.policies.map(({ policyId, summary }) => {
+    const metricRows = result.policies.map(({ policyId, summary, timing }) => {
         const metrics = summary.metrics;
         return [
             policyId,
@@ -136,34 +136,20 @@ export function formatPolicyComparison(result: PolicyComparisonResult): string[]
             formatNumber(metrics.meanDamage),
             formatNumber(metrics.meanPeakBondage),
             formatNumber(metrics.meanEscapes),
+            formatMeanRuntime(timing.meanPerRunMs),
             metrics.win95 === null
                 ? "n/a"
                 : `${formatPercent(metrics.win95.lower)}-${formatPercent(metrics.win95.upper)}`,
         ];
     });
 
-    const runtimeTotal = result.policyRuntimeTotalMs;
-    const timingRows = result.policies.map(({ policyId, timing }) => [
-        policyId,
-        formatRuntime(timing.runtimeMs),
-        timing.meanPerRunMs === null ? "n/a" : `${timing.meanPerRunMs.toFixed(3)} ms`,
-        runtimeTotal === 0 ? "0.0%" : formatPercent(timing.runtimeMs / runtimeTotal),
-    ]);
-
     return [
         `===== ${result.encounterId} =====`,
         "",
         ...formatTable(
-            ["policy", "runs", "winRate", "meanRounds", "meanDecisions", "meanDamage", "meanPeakBondage", "meanEscapes", "win95"],
+            ["policy", "runs", "winRate", "meanRounds", "meanDecisions", "meanDamage", "meanPeakBondage", "meanEscapes", "ms/run", "win95"],
             metricRows,
         ),
-        "",
-        "Timing:",
-        ...formatTable(["policy", "runtime", "meanPerRun", "share"], timingRows),
-        "",
-        `Policy runtime total: ${formatRuntime(result.policyRuntimeTotalMs)}`,
-        `Overall wall time:    ${formatRuntime(result.overallElapsedMs)}`,
-        `Parallel workers:     ${result.parallelWorkers}`,
     ];
 }
 
@@ -182,6 +168,11 @@ function formatPercent(value: number): string {
 
 function formatNumber(value: number | null): string {
     return value === null ? "n/a" : value.toFixed(1);
+}
+
+function formatMeanRuntime(value: number | null): string {
+    if (value === null) return "n/a";
+    return value < 10 ? value.toFixed(2) : value.toFixed(1);
 }
 
 function formatTable(headers: readonly string[], rows: readonly string[][]): string[] {

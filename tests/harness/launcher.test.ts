@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { ConsoleReplayInput } from "../../src/console/replay";
 import type { BatchResult } from "../../src/harness/batch/batch";
@@ -94,6 +96,68 @@ describe("encounter-set execution", () => {
             .toEqual([2, 2]);
         expect(result.encounters[0].comparison.policies[0].batch.encounterId).toBe("plains_1");
         expect(result.encounters[1].comparison.policies[0].batch.encounterId).toBe("plains_2");
+    });
+
+    it("prints compact per-encounter and aggregate output while saving every summary", async () => {
+        const answers = ["3", "n", "first", "", "", "", "", "5"];
+        const write = vi.fn();
+        const io: LauncherIO = {
+            question: vi.fn(async () => answers.shift() ?? ""),
+            write,
+            close: vi.fn(),
+        };
+        const mkdir = vi.spyOn(fs, "mkdirSync").mockReturnValue(undefined);
+        const writeFile = vi.spyOn(fs, "writeFileSync").mockImplementation(() => { });
+        let writeCalls: Array<Parameters<typeof fs.writeFileSync>> = [];
+
+        try {
+            await runHarnessLauncher(io, {
+                now: () => 100,
+                wallClockNow: () => new Date(2026, 8, 21, 21, 3, 32),
+                runBatchParallel: async (input): Promise<BatchResult> => ({
+                    encounterId: input.encounterId,
+                    policyId: input.policy.id,
+                    masterSeed: input.masterSeed,
+                    runs: [],
+                }),
+            });
+        } finally {
+            writeCalls = [...writeFile.mock.calls];
+            mkdir.mockRestore();
+            writeFile.mockRestore();
+        }
+
+        const output = write.mock.calls.map(([text]) => text).join("");
+        expect(output).toContain("ms/run");
+        expect(output).not.toContain("Timing:");
+        expect(output).not.toContain("Wrote ");
+        expect(output.match(/Completed 1,000 fights/g)).toHaveLength(3);
+        expect(output).toContain("Encounter set complete: Normal 1-3");
+        expect(output).toContain("Completed 3,000 fights");
+        expect(output).toContain(
+            "Saved 3 summaries to:\n"
+            + "harness-output/2026-09-21_21-03-32_3_levels_1_policy/",
+        );
+        expect(writeCalls).toHaveLength(4);
+        expect(writeCalls.every(([, , encoding]) => encoding === "utf8")).toBe(true);
+        const runDir = path.resolve(
+            "harness-output",
+            "2026-09-21_21-03-32_3_levels_1_policy",
+        );
+        const writtenPaths = writeCalls.map(([file]) => String(file));
+        const summaryPaths = writtenPaths.filter((file) => !file.endsWith("run.json"));
+        expect(new Set(summaryPaths.map((file) => path.dirname(file)))).toEqual(new Set([runDir]));
+        expect(summaryPaths.map((file) => path.basename(file)).sort())
+            .toEqual(["plains_1-first.json", "plains_2-first.json", "plains_3-first.json"]);
+        const manifestCall = writeCalls.find(([file]) => String(file).endsWith("run.json"));
+        expect(JSON.parse(manifestCall?.[1] as string)).toMatchObject({
+            masterSeed: launcherDefaults.masterSeed,
+            runsPerEncounter: launcherDefaults.runs,
+            maxActions: launcherDefaults.maxActions,
+            parallelWorkers: launcherDefaults.parallelWorkers,
+            encounters: ["plains_1", "plains_2", "plains_3"],
+            policies: ["first"],
+        });
     });
 });
 
