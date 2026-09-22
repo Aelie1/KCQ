@@ -1,12 +1,16 @@
-import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
+import type { PlayerAction } from "../../src/engine/public/types";
 import type { FightReplay } from "../../src/harness/harness";
+import { runSingleFight } from "../../src/harness/harness";
+import { firstPolicy } from "../../src/harness/policy/first";
 import {
     POSTHOG_REPLAY_COLUMNS,
     parsePostHogReplayEvents,
+    reconstructFightReplay,
     type PostHogReplayEventRow,
 } from "../../src/harness/posthog-replay";
 import {
@@ -119,26 +123,39 @@ describe("PostHog replay API", () => {
 });
 
 describe("PostHog replay archive sync", () => {
-    it("skips archived replay IDs, fetches only missing fights, writes once, and is idempotent", async () => {
+    it("skips complete archives while rechecking provisional archives and fetching new fights", async () => {
         const directory = await temporaryDirectory();
-        await writeFile(join(directory, "filename-is-not-the-identity.json"), JSON.stringify({
-            format: 1,
-            replayId: "already-there",
-        }));
+        await writeFile(
+            join(directory, "filename-is-not-the-identity.json"),
+            JSON.stringify(makeArchive("complete", makeReplayRows("complete"), "quit")),
+        );
+        await writeArchivedReplay(
+            directory,
+            makeArchive("provisional", makeReplayRows("provisional")),
+        );
         const client = new FakeClient([
-            metadata("already-there"),
+            metadata("complete"),
+            metadata("provisional"),
             metadata("new-replay"),
         ], new Map([
+            ["provisional", makeReplayRows("provisional")],
             ["new-replay", makeReplayRows("new-replay")],
         ]));
 
         const first = await syncPostHogReplays({ client, replaysDirectory: directory });
 
-        expect(client.fetched).toEqual(["new-replay"]);
-        expect(first).toMatchObject({ found: 2, unchanged: 1, failed: [] });
+        expect(client.fetched).toEqual(["provisional", "new-replay"]);
+        expect(first).toMatchObject({
+            found: 3,
+            completeArchives: 1,
+            provisionalArchives: 1,
+            newFights: 1,
+            unchanged: 2,
+            failed: [],
+        });
         expect(first.added).toHaveLength(1);
         const archiveNames = (await readdir(directory)).filter((name) => name.endsWith(".json"));
-        expect(archiveNames).toHaveLength(2);
+        expect(archiveNames).toHaveLength(3);
         const addedArchive = JSON.parse(await readFile(
             join(directory, first.added[0].filename),
             "utf8",
@@ -158,18 +175,116 @@ describe("PostHog replay archive sync", () => {
 
         client.fetched.length = 0;
         const second = await syncPostHogReplays({ client, replaysDirectory: directory });
-        expect(second).toEqual({ found: 2, unchanged: 2, added: [], failed: [] });
-        expect(client.fetched).toEqual([]);
+        expect(second).toMatchObject({
+            found: 3,
+            completeArchives: 1,
+            provisionalArchives: 2,
+            newFights: 0,
+            unchanged: 3,
+            added: [],
+            updated: [],
+            failed: [],
+        });
+        expect(client.fetched).toEqual(["provisional", "new-replay"]);
         expect((await readdir(directory)).filter((name) => name.endsWith(".json")))
-            .toHaveLength(2);
+            .toHaveLength(3);
     });
 
-    it("does not archive a divergence and continues with later fights", async () => {
+    it.each(["finished", "quit", "abandoned"] as const)(
+        "atomically updates a provisional replay that becomes %s and then skips it",
+        async (terminal) => {
+            const directory = await temporaryDirectory();
+            const replayId = `${terminal}-replay`;
+            const initialRows = makeReplayRows(replayId);
+            const filename = await writeArchivedReplay(
+                directory,
+                makeArchive(replayId, initialRows),
+            );
+            const terminalRows = terminal === "finished"
+                ? makeFinishedReplayRows(replayId)
+                : makeReplayRows(replayId, {
+                    actions: [{ type: "endTurn" }],
+                    terminal,
+                });
+            const client = new FakeClient([metadata(replayId)], new Map([
+                [replayId, terminalRows],
+            ]));
+
+            const first = await syncPostHogReplays({ client, replaysDirectory: directory });
+
+            expect(first.updated).toHaveLength(1);
+            expect(first.updated[0]).toMatchObject({
+                replayId,
+                filename,
+                status: terminal === "finished" ? expect.stringMatching(/victory|defeat/u) : terminal,
+            });
+            expect(first.added).toEqual([]);
+            expect((await readdir(directory)).filter((name) => name.endsWith(".json")))
+                .toEqual([filename]);
+            expect((await readArchives(directory))[0].terminal).toBe(terminal);
+
+            client.fetched.length = 0;
+            const second = await syncPostHogReplays({ client, replaysDirectory: directory });
+            expect(second).toMatchObject({
+                completeArchives: 1,
+                provisionalArchives: 0,
+                unchanged: 1,
+                added: [],
+                updated: [],
+                failed: [],
+            });
+            expect(client.fetched).toEqual([]);
+        },
+    );
+
+    it("updates a longer incomplete replay but does not rewrite it when unchanged", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "growing-replay";
+        const filename = await writeArchivedReplay(
+            directory,
+            makeArchive(replayId, makeReplayRows(replayId)),
+        );
+        const longerRows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }],
+        });
+        const client = new FakeClient([metadata(replayId)], new Map([
+            [replayId, longerRows],
+        ]));
+
+        const first = await syncPostHogReplays({ client, replaysDirectory: directory });
+        expect(first.updated).toEqual([expect.objectContaining({
+            replayId,
+            status: "incomplete",
+            previousActionCount: 0,
+            actionCount: 1,
+            filename,
+        })]);
+        const path = join(directory, filename);
+        const modifiedAfterUpdate = (await stat(path)).mtimeMs;
+        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        const second = await syncPostHogReplays({ client, replaysDirectory: directory });
+        expect(second.updated).toEqual([]);
+        expect(second.unchangedProvisional).toEqual([{
+            replayId,
+            encounter: "plains_1",
+            actionCount: 1,
+        }]);
+        expect((await stat(path)).mtimeMs).toBe(modifiedAfterUpdate);
+        expect((await readArchives(directory))[0]).not.toHaveProperty("terminal");
+    });
+
+    it("leaves a valid provisional archive untouched after divergence and continues", async () => {
         const directory = await temporaryDirectory();
         const divergentRows = makeReplayRows("bad-replay");
         const state = JSON.parse(divergentRows[0].initial_state);
         state.turn.round = 999;
         divergentRows[0].initial_state = JSON.stringify(state);
+        const badFilename = await writeArchivedReplay(
+            directory,
+            makeArchive("bad-replay", makeReplayRows("bad-replay")),
+        );
+        const originalBadArchive = await readFile(join(directory, badFilename), "utf8");
         const client = new FakeClient([
             metadata("bad-replay"),
             metadata("good-replay"),
@@ -190,7 +305,10 @@ describe("PostHog replay archive sync", () => {
         });
         expect(result.failed[0].message).toMatch(/Replay bad-replay: initial_state diverged: \$\.turn\.round/);
         const archives = await readArchives(directory);
-        expect(archives.map((archive) => archive.replayId)).toEqual(["good-replay"]);
+        expect(archives.map((archive) => archive.replayId).sort())
+            .toEqual(["bad-replay", "good-replay"]);
+        expect(await readFile(join(directory, badFilename), "utf8"))
+            .toBe(originalBadArchive);
     });
 
     it("uses exclusive collision-safe filenames", async () => {
@@ -241,9 +359,17 @@ class FakeClient implements PostHogReplayClient {
     }
 }
 
-function makeReplayRows(replayId: string): PostHogReplayEventRow[] {
-    const replay = emptyFightReplay();
-    return [{
+interface ReplayRowsOptions {
+    actions?: PlayerAction[];
+    terminal?: "finished" | "quit" | "abandoned";
+}
+
+function makeReplayRows(
+    replayId: string,
+    options: ReplayRowsOptions = {},
+): PostHogReplayEventRow[] {
+    const engine = loadedEngine();
+    const rows: PostHogReplayEventRow[] = [{
         ...emptyRow(),
         timestamp: "2026-09-21T12:00:00.000Z",
         event: "battle_started",
@@ -251,15 +377,92 @@ function makeReplayRows(replayId: string): PostHogReplayEventRow[] {
         release: "test-release",
         encounter: "plains_1",
         seed: "12345",
-        initial_state: JSON.stringify(compactStateDigest(replay.initialState)),
+        initial_state: JSON.stringify(compactStateDigest(engine.getGameView())),
     }];
+    for (const [index, action] of (options.actions ?? []).entries()) {
+        const result = engine.executeAction(structuredClone(action));
+        rows.push({
+            ...emptyRow(),
+            timestamp: `2026-09-21T12:00:${String(index + 1).padStart(2, "0")}.000Z`,
+            event: "battle_action",
+            replay_id: replayId,
+            sequence: String(index + 1),
+            source: "player",
+            action: JSON.stringify(action),
+            success: String(result.success),
+            failure_reason: result.success ? "" : result.reason,
+            state_after: JSON.stringify(compactStateDigest(
+                result.success ? result.view : engine.getGameView(),
+            )),
+        });
+    }
+    if (options.terminal) {
+        const view = engine.getGameView();
+        const finished = options.terminal === "finished";
+        if (finished && view.turn.outcome === "ongoing") {
+            throw new Error("Synthetic finished replay has an ongoing outcome.");
+        }
+        rows.push({
+            ...emptyRow(),
+            timestamp: "2026-09-21T12:59:59.000Z",
+            event: finished ? "battle_finished" : `battle_${options.terminal}`,
+            replay_id: replayId,
+            outcome: finished ? view.turn.outcome : "",
+            action_count: String(options.actions?.length ?? 0),
+            final_state: finished ? JSON.stringify(compactStateDigest(view)) : "",
+            current_state: finished ? "" : JSON.stringify(compactStateDigest(view)),
+        });
+    }
+    return rows;
 }
 
 function emptyFightReplay(): FightReplay {
+    const engine = loadedEngine();
+    return { initialState: structuredClone(engine.getGameView()), steps: [] };
+}
+
+function loadedEngine() {
     const engine = createEngine(12345);
     for (const id of engine.listCharacters()) engine.loadCharacter(id);
     engine.loadEncounter("plains_1");
-    return { initialState: structuredClone(engine.getGameView()), steps: [] };
+    return engine;
+}
+
+function makeFinishedReplayRows(replayId: string): PostHogReplayEventRow[] {
+    const result = runSingleFight({
+        encounterId: "plains_1",
+        engineSeed: 12345,
+        policySeed: 0,
+        maxActions: 1_000,
+        policy: firstPolicy,
+    });
+    if (result.termination !== "victory" && result.termination !== "defeat") {
+        throw new Error(`Synthetic fight did not terminate: ${result.termination}.`);
+    }
+    return makeReplayRows(replayId, {
+        actions: result.trace,
+        terminal: "finished",
+    });
+}
+
+function makeArchive(
+    replayId: string,
+    rows: PostHogReplayEventRow[],
+    terminalOverride?: ArchivedReplay["terminal"],
+): ArchivedReplay {
+    const imported = reconstructFightReplay(parsePostHogReplayEvents(rows));
+    return {
+        format: 1,
+        replayId,
+        release: imported.release,
+        encounter: imported.encounter,
+        seed: imported.seed,
+        startedAt: "2026-09-21T12:00:00.000Z",
+        anonymousPlayerId: "anonymous-player",
+        sessionId: "kcq-session",
+        ...(terminalOverride ? { terminal: terminalOverride } : {}),
+        replay: imported.replay,
+    };
 }
 
 function emptyRow(): PostHogReplayEventRow {

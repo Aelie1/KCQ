@@ -9,13 +9,20 @@ export type TelemetryEvent =
     | "battle_started"
     | "battle_action"
     | "battle_finished"
-    | "battle_quit";
+    | "battle_quit"
+    | "battle_abandoned";
+
+export interface TelemetryCaptureOptions {
+    send_instantly?: boolean;
+    transport?: "sendBeacon";
+}
 
 export interface GameplayTelemetry {
     readonly enabled: boolean;
     capture(
         event: TelemetryEvent,
         properties: Record<string, unknown>,
+        options?: TelemetryCaptureOptions,
     ): void | Promise<void>;
 }
 
@@ -25,7 +32,18 @@ export interface TelemetryConfig {
 }
 
 export interface TelemetrySink {
-    capture(event: string, properties: Record<string, unknown>): unknown;
+    capture(
+        event: string,
+        properties: Record<string, unknown>,
+        options?: TelemetryCaptureOptions,
+    ): unknown;
+}
+
+export type BattleLifecycleState = "active" | "finished" | "quit" | "abandoned";
+
+export interface BattleTelemetryObserver extends BattleObserver {
+    readonly lifecycleState: BattleLifecycleState;
+    onPageHide(event: { persisted: boolean }): void;
 }
 
 export interface CompactStateDigest {
@@ -64,9 +82,9 @@ export function createGameplayTelemetry(
         const sink = initialize(projectToken, apiHost);
         return {
             enabled: true,
-            capture: (event, properties) => {
+            capture: (event, properties, options) => {
                 try {
-                    sink.capture(event, properties);
+                    sink.capture(event, properties, options);
                 } catch {
                     // Telemetry delivery must never affect gameplay.
                 }
@@ -117,14 +135,19 @@ export function createBattleTelemetryObserver(options: {
     seed: number;
     initialView: GameView;
     getCurrentView: () => GameView;
-}): BattleObserver {
+}): BattleTelemetryObserver {
     let actionCount = 0;
-    let finished = false;
-    let quit = false;
+    let lifecycleState: BattleLifecycleState = "active";
 
-    const capture = (event: TelemetryEvent, properties: Record<string, unknown>): void => {
+    const capture = (
+        event: TelemetryEvent,
+        properties: Record<string, unknown>,
+        captureOptions?: TelemetryCaptureOptions,
+    ): void => {
         try {
-            const pending = options.telemetry.capture(event, properties);
+            const pending = captureOptions
+                ? options.telemetry.capture(event, properties, captureOptions)
+                : options.telemetry.capture(event, properties);
             if (pending) void pending.catch(() => undefined);
         } catch {
             // A telemetry implementation is never allowed to interrupt a battle.
@@ -140,6 +163,9 @@ export function createBattleTelemetryObserver(options: {
     });
 
     return {
+        get lifecycleState() {
+            return lifecycleState;
+        },
         onAction: (action, result, source) => {
             actionCount += 1;
             capture("battle_action", {
@@ -155,8 +181,8 @@ export function createBattleTelemetryObserver(options: {
             });
         },
         onOutcome: (outcome) => {
-            if (outcome === "ongoing" || finished) return;
-            finished = true;
+            if (outcome === "ongoing" || lifecycleState !== "active") return;
+            lifecycleState = "finished";
             capture("battle_finished", {
                 replay_id: options.replayId,
                 outcome,
@@ -165,12 +191,25 @@ export function createBattleTelemetryObserver(options: {
             });
         },
         onQuit: () => {
-            if (finished || quit) return;
-            quit = true;
+            if (lifecycleState !== "active") return;
+            lifecycleState = "quit";
             capture("battle_quit", {
                 replay_id: options.replayId,
                 action_count: actionCount,
                 current_state: compactStateDigest(options.getCurrentView()),
+            });
+        },
+        onPageHide: (event) => {
+            if (event.persisted || lifecycleState !== "active") return;
+            if (options.getCurrentView().turn.outcome !== "ongoing") return;
+            lifecycleState = "abandoned";
+            capture("battle_abandoned", {
+                replay_id: options.replayId,
+                action_count: actionCount,
+                current_state: compactStateDigest(options.getCurrentView()),
+            }, {
+                send_instantly: true,
+                transport: "sendBeacon",
             });
         },
     };

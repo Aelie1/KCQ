@@ -6,6 +6,7 @@ import type { Engine, GameEvent } from "../engine/public/types";
 import {
     createBattleTelemetryObserver,
     disabledTelemetry,
+    type BattleTelemetryObserver,
     type GameplayTelemetry,
 } from "./telemetry";
 
@@ -45,11 +46,33 @@ export async function startBattle(
         initialView: battle.engine.getGameView(),
         getCurrentView: () => battle.engine.getGameView(),
     });
-    await runBattleController(
-        battle.engine,
-        battle.encounterId,
-        battle.loadEvents,
-        ui,
-        observer,
-    );
+    const detachLifecycle = attachBattlePageLifecycle(observer);
+    try {
+        await runBattleController(
+            battle.engine,
+            battle.encounterId,
+            battle.loadEvents,
+            ui,
+            observer,
+        );
+    } finally {
+        detachLifecycle();
+    }
+}
+
+export interface PageLifecycleTarget {
+    addEventListener(type: "pagehide", listener: (event: PageTransitionEvent) => void): void;
+    removeEventListener(type: "pagehide", listener: (event: PageTransitionEvent) => void): void;
+}
+
+export function attachBattlePageLifecycle(
+    observer: BattleTelemetryObserver,
+    target: PageLifecycleTarget | undefined = typeof window === "undefined" ? undefined : window,
+): () => void {
+    if (!target) return () => undefined;
+    const onPageHide = (event: PageTransitionEvent): void => {
+        observer.onPageHide({ persisted: event.persisted });
+    };
+    target.addEventListener("pagehide", onPageHide);
+    return () => target.removeEventListener("pagehide", onPageHide);
 }

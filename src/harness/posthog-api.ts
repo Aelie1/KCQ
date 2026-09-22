@@ -110,7 +110,7 @@ export class PostHogApiClient implements PostHogReplayClient {
             SELECT
                 ${selection}
             FROM events
-            WHERE event IN ('battle_started', 'battle_action', 'battle_finished', 'battle_quit')
+            WHERE event IN ('battle_started', 'battle_action', 'battle_finished', 'battle_quit', 'battle_abandoned')
               AND toString(properties.replay_id) = ${hogQlString(replayId)}
             ORDER BY timestamp, uuid
             LIMIT ${QUERY_LIMIT}

@@ -38,6 +38,11 @@ const GAMEPLAY_PROPERTIES: Record<TelemetryEvent, readonly string[]> = {
         "action_count",
         "current_state",
     ],
+    battle_abandoned: [
+        "replay_id",
+        "action_count",
+        "current_state",
+    ],
 };
 
 export function sanitizePostHogEvent(

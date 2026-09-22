@@ -16,12 +16,33 @@ async function main(): Promise<void> {
     });
 
     process.stdout.write(`${result.found} fights found\n`);
-    process.stdout.write(`${result.unchanged} already archived\n`);
+    process.stdout.write(`${result.completeArchives} complete archives\n`);
+    process.stdout.write(`${result.provisionalArchives} provisional archives\n`);
+    process.stdout.write(`${result.newFights} new fights\n`);
     if (result.added.length > 0) {
         process.stdout.write("\nAdded:\n");
         for (const replay of result.added) {
             process.stdout.write(
-                `  ${replay.encounter}  ${shortId(replay.replayId)}  ${replay.outcome}  ${replay.actionCount} actions\n`,
+                `  ${replay.encounter}  ${shortId(replay.replayId)}  ${replay.status}  ${replay.actionCount} actions\n`,
+            );
+        }
+    }
+    if (result.updated.length > 0) {
+        process.stdout.write("\nUpdated:\n");
+        for (const replay of result.updated) {
+            const count = replay.previousActionCount === replay.actionCount
+                ? `${replay.actionCount} actions`
+                : `${replay.previousActionCount} -> ${replay.actionCount} actions`;
+            process.stdout.write(
+                `  ${replay.encounter}  ${shortId(replay.replayId)}  ${replay.status}  ${count}\n`,
+            );
+        }
+    }
+    if (result.unchangedProvisional.length > 0) {
+        process.stdout.write("\nUnchanged provisional:\n");
+        for (const replay of result.unchangedProvisional) {
+            process.stdout.write(
+                `  ${replay.encounter}  ${shortId(replay.replayId)}  ${replay.actionCount} actions\n`,
             );
         }
     }
@@ -37,6 +58,7 @@ async function main(): Promise<void> {
 
     process.stdout.write(
         `\nAdded ${result.added.length}.\n`
+        + `Updated ${result.updated.length}.\n`
         + `${result.unchanged} unchanged.\n`
         + `${result.failed.length} failed.\n`,
     );

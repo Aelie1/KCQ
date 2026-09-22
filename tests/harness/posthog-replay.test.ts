@@ -207,6 +207,28 @@ describe("PostHog CSV replay import", () => {
         if (last?.success) expect(last.state.turn.outcome).toBe("ongoing");
     });
 
+    it("parses and validates battle_abandoned with an ongoing outcome", () => {
+        const fixture = makeFixture({ terminal: "abandoned" });
+        const imported = importPostHogReplayCsv(toCsv(fixture.rows));
+
+        expect(imported.terminal).toBe("abandoned");
+        const last = imported.replay.steps.at(-1);
+        expect(last?.success).toBe(true);
+        if (last?.success) expect(last.state.turn.outcome).toBe("ongoing");
+
+        const abandoned = fixture.rows.find((row) => row.event === "battle_abandoned")!;
+        abandoned.action_count = "99";
+        expect(() => importPostHogReplayCsv(toCsv(fixture.rows)))
+            .toThrow("terminal action_count expected 99, reconstructed 2");
+
+        abandoned.action_count = "2";
+        const state = JSON.parse(abandoned.current_state);
+        state.turn.round = 999;
+        abandoned.current_state = JSON.stringify(state);
+        expect(() => importPostHogReplayCsv(toCsv(fixture.rows)))
+            .toThrow(/current_state diverged: \$\.turn\.round/);
+    });
+
     it("stores independent snapshots that later mutations cannot retroactively change", () => {
         const imported = importPostHogReplayCsv(toCsv(makeFixture().rows));
         const first = imported.replay.steps[0];
@@ -239,7 +261,7 @@ interface FixtureOptions {
     seed?: number;
     prettyJson?: boolean;
     actions?: Array<{ source: "player" | "automatic"; action: PlayerAction }>;
-    terminal?: "finished" | "quit";
+    terminal?: "finished" | "quit" | "abandoned";
 }
 
 function makeFixture(options: FixtureOptions = {}): {
@@ -300,9 +322,10 @@ function makeFixture(options: FixtureOptions = {}): {
             final_state: stringify(finalState),
         });
     } else {
+        const terminal = options.terminal ?? "quit";
         rows.push({
             ...emptyRow(),
-            event: "battle_quit",
+            event: terminal === "abandoned" ? "battle_abandoned" : "battle_quit",
             replay_id: REPLAY_ID,
             action_count: `${recordedActions.length}.0`,
             current_state: stringify(finalState),

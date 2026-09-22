@@ -154,6 +154,96 @@ describe("browser gameplay telemetry", () => {
         }, () => ({ capture: () => { throw new Error("offline"); } }));
         expect(() => failingTelemetry.capture("battle_quit", {})).not.toThrow();
     });
+
+    it("reports pagehide abandonment once with current state using sendBeacon", () => {
+        const engine = createCustomEngine(encounterList, [ko], 8224);
+        engine.loadCharacter(ko.id);
+        engine.loadEncounter("plains_1");
+        const capture = vi.fn();
+        const observer = createBattleTelemetryObserver({
+            telemetry: { enabled: true, capture },
+            replayId: "replay-abandoned",
+            release: "test",
+            encounter: "plains_1",
+            seed: engine.getSeed(),
+            initialView: engine.getGameView(),
+            getCurrentView: () => engine.getGameView(),
+        });
+        const action = { type: "endTurn" as const };
+        observer.onAction?.(action, engine.executeAction(action), "player");
+
+        observer.onPageHide({ persisted: false });
+        observer.onPageHide({ persisted: false });
+
+        expect(observer.lifecycleState).toBe("abandoned");
+        expect(capture.mock.calls.filter(([event]) => event === "battle_abandoned"))
+            .toEqual([["battle_abandoned", {
+                replay_id: "replay-abandoned",
+                action_count: 1,
+                current_state: compactStateDigest(engine.getGameView()),
+            }, {
+                send_instantly: true,
+                transport: "sendBeacon",
+            }]]);
+    });
+
+    it("does not abandon finished, explicitly quit, or bfcache battles", () => {
+        const makeObserver = (replayId: string) => {
+            const engine = createCustomEngine(encounterList, [ko], 8224);
+            engine.loadCharacter(ko.id);
+            engine.loadEncounter("plains_1");
+            const capture = vi.fn();
+            return {
+                capture,
+                observer: createBattleTelemetryObserver({
+                    telemetry: { enabled: true, capture },
+                    replayId,
+                    release: "test",
+                    encounter: "plains_1",
+                    seed: engine.getSeed(),
+                    initialView: engine.getGameView(),
+                    getCurrentView: () => engine.getGameView(),
+                }),
+            };
+        };
+        const finished = makeObserver("finished");
+        finished.observer.onOutcome?.("victory");
+        finished.observer.onPageHide({ persisted: false });
+        const quit = makeObserver("quit");
+        quit.observer.onQuit?.();
+        quit.observer.onPageHide({ persisted: false });
+        const cached = makeObserver("cached");
+        cached.observer.onPageHide({ persisted: true });
+
+        expect(finished.observer.lifecycleState).toBe("finished");
+        expect(quit.observer.lifecycleState).toBe("quit");
+        expect(cached.observer.lifecycleState).toBe("active");
+        for (const capture of [finished.capture, quit.capture, cached.capture]) {
+            expect(capture.mock.calls.some(([event]) => event === "battle_abandoned"))
+                .toBe(false);
+        }
+    });
+
+    it("swallows telemetry failures while reporting abandonment", () => {
+        const engine = createCustomEngine(encounterList, [ko], 8224);
+        engine.loadCharacter(ko.id);
+        engine.loadEncounter("plains_1");
+        const observer = createBattleTelemetryObserver({
+            telemetry: {
+                enabled: true,
+                capture: () => { throw new Error("beacon unavailable"); },
+            },
+            replayId: "failure",
+            release: "test",
+            encounter: "plains_1",
+            seed: engine.getSeed(),
+            initialView: engine.getGameView(),
+            getCurrentView: () => engine.getGameView(),
+        });
+
+        expect(() => observer.onPageHide({ persisted: false })).not.toThrow();
+        expect(observer.lifecycleState).toBe("abandoned");
+    });
 });
 
 describe("PostHog event privacy", () => {
@@ -207,6 +297,11 @@ describe("PostHog event privacy", () => {
             action_count: 3,
             current_state: { turn: { outcome: "ongoing" } },
         }],
+        ["battle_abandoned", {
+            replay_id: "replay-abandoned",
+            action_count: 4,
+            current_state: { turn: { outcome: "ongoing" } },
+        }],
     ] as const)("preserves gameplay properties for %s", (event, gameplay) => {
         const payload = postHogPayload(event, gameplay);
 
@@ -253,7 +348,7 @@ describe("PostHog event privacy", () => {
         expect(sanitized).not.toHaveProperty("$unset");
     });
 
-    it("drops events outside the four gameplay event types", () => {
+    it("drops events outside the five gameplay event types", () => {
         expect(sanitizePostHogEvent(postHogPayload("$pageview", {
             replay_id: "replay-pageview",
         }), PLAYER_ID)).toBeNull();

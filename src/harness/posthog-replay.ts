@@ -45,12 +45,18 @@ export interface ParsedPostHogAction {
     stateAfter?: CompactStateDigest;
 }
 
-export interface ParsedPostHogTerminal {
-    type: "finished" | "quit";
-    outcome?: BattleState;
-    actionCount?: number;
-    state?: CompactStateDigest;
-}
+export type ParsedPostHogTerminal =
+    | {
+        type: "finished";
+        outcome: Exclude<BattleState, "ongoing">;
+        actionCount?: number;
+        state?: CompactStateDigest;
+    }
+    | {
+        type: "quit" | "abandoned";
+        actionCount?: number;
+        state?: CompactStateDigest;
+    };
 
 export interface ParsedPostHogReplay {
     replayId: string;
@@ -140,6 +146,7 @@ function parseReplayRecords(
         "battle_action",
         "battle_finished",
         "battle_quit",
+        "battle_abandoned",
     ]);
     const unsupported = replayRecords.filter((record) => !supportedEvents.has(record.values.event));
     if (unsupported.length > 0) {
@@ -216,10 +223,12 @@ function parseReplayRecords(
     }
 
     const terminalRecords = replayRecords.filter((record) =>
-        record.values.event === "battle_finished" || record.values.event === "battle_quit");
+        record.values.event === "battle_finished"
+        || record.values.event === "battle_quit"
+        || record.values.event === "battle_abandoned");
     if (terminalRecords.length > 1) {
         throw replayError(replayId,
-            `expected at most one battle_finished/battle_quit row; found ${terminalRecords.length}`);
+            `expected at most one terminal event row; found ${terminalRecords.length}`);
     }
     const terminal = terminalRecords[0]
         ? parseTerminal(terminalRecords[0], replayId)
@@ -367,7 +376,11 @@ export function parseCsv(csv: string): string[][] {
 }
 
 function parseTerminal(record: ReplayRecord, replayId: string): ParsedPostHogTerminal {
-    const type = record.values.event === "battle_finished" ? "finished" : "quit";
+    const type = record.values.event === "battle_finished"
+        ? "finished"
+        : record.values.event === "battle_quit"
+            ? "quit"
+            : "abandoned";
     const actionCount = record.values.action_count.trim()
         ? parseInteger(record.values.action_count, "action_count", record.location)
         : undefined;
