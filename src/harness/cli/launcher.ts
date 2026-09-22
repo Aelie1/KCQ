@@ -1,8 +1,7 @@
+import { availableParallelism } from "node:os";
 import { runConsoleReplay } from "../../console/replay";
 import { createEngine } from "../../engine/public/engine";
-import { availableParallelism } from "node:os";
 import { runBatch } from "../batch/batch";
-import { effectiveWorkerCount, runBatchParallel } from "../batch/parallel-batch";
 import {
     executePolicyComparison,
     formatPolicyComparison,
@@ -14,6 +13,7 @@ import {
     type EncounterSetId,
     type EncounterSetProgress,
 } from "../batch/encounter-sets";
+import { effectiveWorkerCount, runBatchParallel } from "../batch/parallel-batch";
 import { runSingleFight, type FightPolicy, type SingleFightInput } from "../harness";
 import {
     createBatchRunOutput,
@@ -70,10 +70,10 @@ const setChoices: ReadonlyArray<{
     id: EncounterSetId;
     label: string;
 }> = [
-    { key: "n", id: "n123", label: "Normal 1-3" },
-    { key: "h", id: "h123", label: "Hard 1-3" },
-    { key: "a", id: "all6", label: "All 6" },
-];
+        { key: "n", id: "n123", label: "Normal 1-3" },
+        { key: "h", id: "h123", label: "Hard 1-3" },
+        { key: "a", id: "all6", label: "All 6" },
+    ];
 
 /** Resolves either a displayed 1-based number or an exact listed ID. */
 export function resolveNumberedChoice<T extends string>(
@@ -128,7 +128,7 @@ export async function runHarnessLauncher(
     const encounters = createEngine(0).listEncounters();
     const policyIds = Object.keys(policies);
 
-    for (;;) {
+    for (; ;) {
         io.write("\nKCQ HARNESS\n\n[1] Run single fight\n[2] Run one encounter batch\n"
             + "[3] Run encounter set\n[4] Replay fight\n[5] Quit\n\n");
         const choice = (await io.question("Choice> ")).trim().toLowerCase();
@@ -196,10 +196,7 @@ async function runInteractiveBatch(
         defaultValue: launcherDefaults.parallelWorkers,
         positive: true,
     });
-    io.write(`\nEncounter: ${encounterId}\nPolicies: ${selectedPolicies.map((policy) => policy.id).join(", ")}`
-        + `\nMaster seed: ${masterSeed}\nRuns per policy: ${runs}`
-        + `\nMax actions: ${maxActions}\nParallel workers: ${workers}`
-        + `\nTotal fights: ${selectedPolicies.length * runs}\n\n`);
+    io.write(`\n[Encounter: ${encounterId}] [Seed: ${masterSeed}] [Workers: ${workers}]\n\n`);
     const output = createBatchRunOutput({
         masterSeed,
         runsPerEncounter: runs,
@@ -271,11 +268,7 @@ async function runInteractiveEncounterSet(
         positive: true,
     });
     const encounterIds = encounterSets[set.id];
-    io.write(`\nEncounter set: ${set.label}\nPolicies: ${selectedPolicies.map((policy) => policy.id).join(", ")}`
-        + `\nMaster seed: ${masterSeed}`
-        + `\nRuns per encounter: ${runsPerEncounter}\nMax actions: ${maxActions}`
-        + `\nParallel workers: ${workers}`
-        + `\nTotal fights: ${encounterIds.length * selectedPolicies.length * runsPerEncounter}\n\n`);
+    io.write(`\n[Encounter set: ${set.label}] [Seed: ${masterSeed}] [Workers: ${workers}]\n\n`);
     const output = createBatchRunOutput({
         masterSeed,
         runsPerEncounter,
@@ -384,7 +377,7 @@ async function promptPolicies(
     io: LauncherIO,
     policyIds: readonly string[],
 ): Promise<FightPolicy[]> {
-    for (;;) {
+    for (; ;) {
         io.write(`Policies:\n${policyIds.map((id, index) => `[${index + 1}] ${id}`).join("\n")}`
             + "\n[a] all\n");
         const ids = resolveMultipleChoices(await io.question("Choice> "), policyIds);
@@ -398,7 +391,7 @@ async function promptNumberedChoice<T extends string>(
     label: string,
     choices: readonly T[],
 ): Promise<T> {
-    for (;;) {
+    for (; ;) {
         io.write(`${label}:\n${choices.map((choice, index) => `[${index + 1}] ${choice}`).join("\n")}\n`);
         const selected = resolveNumberedChoice(await io.question("Choice> "), choices);
         if (selected !== undefined) return selected;
@@ -407,7 +400,7 @@ async function promptNumberedChoice<T extends string>(
 }
 
 async function promptEncounterSet(io: LauncherIO): Promise<(typeof setChoices)[number]> {
-    for (;;) {
+    for (; ;) {
         io.write(`Encounter set:\n${setChoices.map((choice) => `[${choice.key}] ${choice.label}`).join("\n")}\n`);
         const response = (await io.question("Choice> ")).trim().toLowerCase();
         const selected = setChoices.find((choice) => choice.key === response || choice.id === response);
@@ -422,7 +415,7 @@ async function promptInteger(
     options: IntegerPromptOptions,
 ): Promise<number> {
     const defaultText = options.defaultValue === undefined ? "" : ` [${options.defaultValue}]`;
-    for (;;) {
+    for (; ;) {
         try {
             return parseIntegerPrompt(await io.question(`${name}${defaultText}> `), name, options);
         } catch (error: unknown) {

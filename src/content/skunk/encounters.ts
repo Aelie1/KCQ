@@ -19,7 +19,7 @@ export const plains_2: EncounterDef = {
     enemies: [skunkette, skunkette, skunk, skunk],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
-        { definition: trapPuddle, amount: 0 }
+        { definition: trapPuddle, amount: 50 }
     ]
 }
 
