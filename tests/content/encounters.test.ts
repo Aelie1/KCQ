@@ -190,7 +190,7 @@ describe("encounters", () => {
         expect(plains_2.enemies.map(({ id }) => id)).toEqual([
             skunkette.id, skunkette.id, skunk.id, skunk.id,
         ]);
-        expect(plains_2.traps).toEqual([{ definition: trapPuddle, amount: 0 }]);
+        expect(plains_2.traps).toEqual([{ definition: trapPuddle, amount: 50 }]);
 
         const engine = createCustomEngine(encounterList, [ko], 8224);
         engine.loadCharacter(ko.id);
@@ -209,7 +209,7 @@ describe("encounters", () => {
             bindings: plains_2.bindings.map(({ id }) => id),
             traps: [trapPuddle.id],
         });
-        expect(state.traps).toEqual([{ id: trapPuddle.id, amount: 0 }]);
+        expect(state.traps).toEqual([{ id: trapPuddle.id, amount: 50 }]);
         expect(state.enemies.map(({ id }) => id)).toEqual([
             "skunkette1", "skunkette2", "skunk1", "skunk2",
         ]);

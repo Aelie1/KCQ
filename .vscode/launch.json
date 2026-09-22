@@ -33,7 +33,7 @@
         },
         {
             "name": "Debug Web",
-            "type": "pwa-chrome",
+            "type": "firefox",
             "request": "launch",
             "url": "http://localhost:5173",
             "webRoot": "${workspaceFolder}",
