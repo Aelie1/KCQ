@@ -2,12 +2,6 @@ name: Deploy WebUI to GitHub Pages
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: Branch, tag, or commit SHA to deploy
-        required: true
-        default: master
-        type: string
 
 permissions:
   contents: read
@@ -26,11 +20,19 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
-      - name: Check out requested ref
+      - name: Check out repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.ref }}
+          ref: master
           fetch-depth: 0
+
+      - name: Check out latest release tag
+        shell: bash
+        run: |
+          release_tag="$(git describe --tags --abbrev=0)"
+          echo "Deploying $release_tag"
+          git checkout --detach "$release_tag"
+          echo "KCQ_RELEASE_TAG=$release_tag" >> "$GITHUB_ENV"
 
       - name: Set up Node.js
         uses: actions/setup-node@v6
@@ -40,13 +42,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Detect release tag
-        shell: bash
-        run: |
-          if release_tag=$(git describe --tags --exact-match HEAD 2>/dev/null); then
-            echo "KCQ_RELEASE_TAG=$release_tag" >> "$GITHUB_ENV"
-          fi
 
       - name: Build WebUI
         run: npm run web:build
