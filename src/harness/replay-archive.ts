@@ -1,5 +1,4 @@
 import { randomUUID } from "node:crypto";
-import { isDeepStrictEqual } from "node:util";
 import {
     mkdir,
     open,
@@ -10,6 +9,7 @@ import {
     writeFile,
 } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
+import { isDeepStrictEqual } from "node:util";
 import type { BattleState } from "../engine/public/types";
 import type { FightReplay } from "./harness";
 import type {

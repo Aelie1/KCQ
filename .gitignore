@@ -5,3 +5,5 @@ coverage
 harness-output
 performance/profiles*
 temp
+.env
+replays

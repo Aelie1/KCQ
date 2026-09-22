@@ -51,7 +51,7 @@ interface MenuItem {
     select: () => Promise<boolean>;
 }
 
-class BattleQuit extends Error {}
+class BattleQuit extends Error { }
 
 export async function runBattleController(
     engine: Engine,
@@ -134,6 +134,7 @@ export async function runBattleController(
             : engine.getGameView().turn.outcome);
         if (
             result.success
+            && result.view.turn.outcome === "ongoing"
             && action.type !== "endTurn"
             && !result.view.actions.some((character) => character.available)
         ) {

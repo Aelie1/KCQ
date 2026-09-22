@@ -244,15 +244,24 @@ describe("shared battle controller", () => {
         const engine = createCustomEngine([encounter], [hero], 1);
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
+        const onAction = vi.fn();
         const onOutcome = vi.fn();
         const answers = [1, 1];
 
         await runBattleController(engine, encounter.id, events, {
             choose: async () => answers.shift() ?? 1,
             showFinal: async () => undefined,
-        }, { onOutcome });
+        }, { onAction, onOutcome });
 
         expect(engine.getGameView().turn.outcome).toBe("victory");
+
+        expect(onAction).toHaveBeenCalledOnce();
+        expect(onAction).toHaveBeenCalledWith(
+            { type: "move", actor: "hero", move: "strike", targets: ["foe"] },
+            expect.objectContaining({ success: true }),
+            "player",
+        );
+
         expect(onOutcome).toHaveBeenCalledOnce();
         expect(onOutcome).toHaveBeenCalledWith("victory");
     });

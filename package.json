@@ -15,7 +15,7 @@
         "compare": "tsx src/harness/compare-main.ts",
         "harness": "tsx src/harness/launcher-main.ts",
         "replay:csv": "npm run build --silent && node dist/harness/replay-csv-main.js",
-        "get-replays": "npm run build --silent && node dist/harness/get-replays-main.js",
+        "get-replays": "npm run build --silent && node --env-file=.env dist/harness/get-replays-main.js",
         "test": "tsc -p tsconfig.test.json && vitest run",
         "coverage": "vitest --coverage",
         "typecheck": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.web.json --noEmit",
