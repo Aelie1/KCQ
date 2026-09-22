@@ -1,10 +1,10 @@
 import { performance } from "node:perf_hooks";
+import type { FightPolicy } from "../harness";
 import { runBatch } from "./batch";
 import {
     executePolicyComparison,
     type PolicyComparisonResult,
 } from "./comparison";
-import type { FightPolicy } from "./harness";
 
 export const encounterSets = {
     n123: ["plains_1", "plains_2", "plains_3"],

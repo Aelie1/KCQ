@@ -12,19 +12,19 @@ import {
     parsePostHogReplayEvents,
     reconstructFightReplay,
     type PostHogReplayEventRow,
-} from "../../src/harness/posthog-replay";
+} from "../../src/harness/replay/posthog-replay";
 import {
     PostHogApiClient,
     parseQueryResponse,
     postHogConfigFromEnvironment,
     type PostHogReplayClient,
     type RemoteReplayMetadata,
-} from "../../src/harness/posthog-api";
+} from "../../src/harness/replay/posthog-api";
 import {
     syncPostHogReplays,
     writeArchivedReplay,
     type ArchivedReplay,
-} from "../../src/harness/replay-archive";
+} from "../../src/harness/replay/replay-archive";
 import { compactStateDigest } from "../../src/web/telemetry";
 
 const temporaryDirectories: string[] = [];

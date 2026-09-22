@@ -1,9 +1,9 @@
 import { parseBatchCommandArguments } from "./batch-cli";
-import { writeBatchSummary } from "./output";
-import { runBatchParallel } from "./parallel-batch";
+import { writeBatchSummary } from "../output";
+import { runBatchParallel } from "../batch/parallel-batch";
 import { createProgressReporter, formatCompletion } from "./progress";
-import { summarizeBatch } from "./summary";
-import { formatBatchSummary } from "./summary-format";
+import { summarizeBatch } from "../batch/summary";
+import { formatBatchSummary } from "../batch/summary-format";
 
 async function main(): Promise<void> {
     const { input, workers } = parseBatchCommandArguments(process.argv.slice(2));

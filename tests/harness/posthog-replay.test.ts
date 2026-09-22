@@ -5,7 +5,7 @@ import {
     importPostHogReplayCsv,
     parseCsv,
     parsePostHogReplayCsv,
-} from "../../src/harness/posthog-replay";
+} from "../../src/harness/replay/posthog-replay";
 import { runSingleFight } from "../../src/harness/harness";
 import { firstPolicy } from "../../src/harness/policy/first";
 import { compactStateDigest } from "../../src/web/telemetry";

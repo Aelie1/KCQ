@@ -2,8 +2,8 @@ import { resolve } from "node:path";
 import {
     PostHogApiClient,
     postHogConfigFromEnvironment,
-} from "./posthog-api";
-import { syncPostHogReplays } from "./replay-archive";
+} from "../replay/posthog-api";
+import { syncPostHogReplays } from "../replay/replay-archive";
 
 async function main(): Promise<void> {
     const config = postHogConfigFromEnvironment(process.env);

@@ -8,34 +8,30 @@ const programmedMoves: Readonly<Record<string, string>> = {
     hinari: "rockfall",
 };
 
+export function chooseBasicAction(context: PolicyContext): PlayerAction {
+    for (const actionView of context.view.actions) {
+        if (!actionView.available) continue;
+
+        const programmedMove = programmedMoves[actionView.id];
+        if (!programmedMove) continue;
+
+        const move = actionView.moves.find(
+            candidate => candidate.move.id === programmedMove && candidate.available,
+        );
+        if (!move) continue;
+
+        return {
+            type: "move",
+            actor: actionView.id,
+            move: programmedMove,
+            targets: firstTargets(move.move.targets, move.targets),
+        };
+    }
+
+    return { type: "endTurn" };
+}
+
 export const basicPolicy: FightPolicy = {
     id: "basic",
-    chooseAction(context: PolicyContext): PlayerAction {
-        for (const actionView of context.view.actions) {
-            if (!actionView.available) {
-                continue;
-            }
-
-            const programmedMove = programmedMoves[actionView.id];
-            if (!programmedMove) {
-                continue;
-            }
-
-            const move = actionView.moves.find(
-                (candidate) => candidate.move.id === programmedMove && candidate.available,
-            );
-            if (!move) {
-                continue;
-            }
-
-            return {
-                type: "move",
-                actor: actionView.id,
-                move: programmedMove,
-                targets: firstTargets(move.move.targets, move.targets),
-            };
-        }
-
-        return { type: "endTurn" };
-    },
+    chooseAction: chooseBasicAction,
 };

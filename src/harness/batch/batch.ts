@@ -2,7 +2,7 @@ import {
     runSingleFight,
     type FightPolicy,
     type SingleFightResult,
-} from "./harness";
+} from "../harness";
 
 export interface BatchInput {
     encounterId: string;

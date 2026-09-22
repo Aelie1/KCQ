@@ -1,5 +1,6 @@
 import path from "node:path";
 import { Worker } from "node:worker_threads";
+import { getPolicy } from "../policies";
 import {
     runBatch,
     type BatchExecutionOptions,
@@ -8,7 +9,6 @@ import {
     type BatchRun,
 } from "./batch";
 import type { BatchWorkerInput, BatchWorkerMessage } from "./batch-worker";
-import { getPolicy } from "./policies";
 
 export interface ParallelBatchExecutionOptions extends BatchExecutionOptions {
     workers: number;

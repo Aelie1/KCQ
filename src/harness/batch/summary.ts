@@ -1,5 +1,5 @@
+import type { SingleFightTermination } from "../harness";
 import type { BatchResult, BatchRun } from "./batch";
-import type { SingleFightTermination } from "./harness";
 
 export interface OutcomeMetric {
     count: number;

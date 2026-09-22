@@ -1,6 +1,6 @@
-import { runSingleFight } from "./harness";
-import { writeFightResult } from "./output";
-import { getPolicy } from "./policies";
+import { runSingleFight } from "../harness";
+import { writeFightResult } from "../output";
+import { getPolicy } from "../policies";
 
 const DEFAULT_POLICY_SEED = 0;
 const DEFAULT_MAX_ACTIONS = 1_000;

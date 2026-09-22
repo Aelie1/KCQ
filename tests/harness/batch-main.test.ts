@@ -2,12 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameView, PlayerAction } from "../../src/engine/public/types";
-import { runBatch, type BatchResult } from "../../src/harness/batch";
+import { runBatch, type BatchResult } from "../../src/harness/batch/batch";
+import { summarizeBatch } from "../../src/harness/batch/summary";
+import { formatBatchSummary } from "../../src/harness/batch/summary-format";
 import { runSingleFight } from "../../src/harness/harness";
-import { summarizeBatch } from "../../src/harness/summary";
-import { formatBatchSummary } from "../../src/harness/summary-format";
 
-vi.mock("../../src/harness/batch", () => ({ runBatch: vi.fn() }));
+vi.mock("../../src/harness/batch/batch", () => ({ runBatch: vi.fn() }));
 vi.mock("../../src/harness/harness", () => ({ runSingleFight: vi.fn() }));
 
 const originalArgv = process.argv;
@@ -45,9 +45,9 @@ beforeEach(() => {
     vi.resetModules();
     vi.clearAllMocks();
     vi.spyOn(fs, "mkdirSync").mockReturnValue(undefined);
-    vi.spyOn(fs, "writeFileSync").mockImplementation(() => {});
-    vi.spyOn(console, "log").mockImplementation(() => {});
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(fs, "writeFileSync").mockImplementation(() => { });
+    vi.spyOn(console, "log").mockImplementation(() => { });
+    vi.spyOn(console, "error").mockImplementation(() => { });
     process.argv = [process.execPath, "batch-main.ts", "plains_1", "1", "first", "3"];
     process.exitCode = undefined;
     vi.mocked(runBatch).mockReturnValue(batchFixture());
@@ -62,7 +62,7 @@ afterEach(() => {
 describe("batch CLI entry point", () => {
     it("runs without replay, saves exactly the factual summary, and prints it with its output path", async () => {
         const summary = summarizeBatch(batchFixture());
-        await import("../../src/harness/batch-main");
+        await import("../../src/harness/cli/batch-main");
 
         expect(runBatch).toHaveBeenCalledExactlyOnceWith({
             encounterId: "plains_1", masterSeed: 1, policy: expect.objectContaining({ id: "first" }),
@@ -81,7 +81,7 @@ describe("batch CLI entry point", () => {
 
     it("includes the explicit action limit in both the batch input and filename", async () => {
         process.argv.push("7");
-        await import("../../src/harness/batch-main");
+        await import("../../src/harness/cli/batch-main");
 
         expect(runBatch).toHaveBeenCalledWith(
             expect.objectContaining({ maxActions: 7, replay: false }),
@@ -95,7 +95,7 @@ describe("batch CLI entry point", () => {
 
     it("sanitizes encounter IDs to keep the summary in harness-output", async () => {
         process.argv[2] = "../odd/encounter";
-        await import("../../src/harness/batch-main");
+        await import("../../src/harness/cli/batch-main");
 
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             path.resolve("harness-output", ".._odd_encounter-first-master-1-runs-3-max-1000-summary.json"),
@@ -105,7 +105,7 @@ describe("batch CLI entry point", () => {
 
     it("exits unsuccessfully on invalid arguments without running or writing anything", async () => {
         process.argv[5] = "0";
-        await import("../../src/harness/batch-main");
+        await import("../../src/harness/cli/batch-main");
 
         expect(process.exitCode).toBe(1);
         expect(console.error).toHaveBeenCalledWith(expect.stringContaining("runs must be a positive safe integer"));
@@ -117,7 +117,7 @@ describe("batch CLI entry point", () => {
 
     it("reports file write failures without claiming the artifact was written", async () => {
         vi.mocked(fs.writeFileSync).mockImplementation(() => { throw new Error("Output is not writable"); });
-        await import("../../src/harness/batch-main");
+        await import("../../src/harness/cli/batch-main");
 
         expect(process.exitCode).toBe(1);
         expect(console.error).toHaveBeenCalledWith("Output is not writable");
@@ -128,7 +128,7 @@ describe("batch CLI entry point", () => {
         process.argv = [process.execPath, "main.ts", "plains_1", "12345", "first"];
         const result = { ...batchFixture().runs[0].result, replay: { initialState: batchFixture().runs[0].result.finalState, steps: [] } };
         vi.mocked(runSingleFight).mockReturnValue(result);
-        await import("../../src/harness/main");
+        await import("../../src/harness/cli/fight-main");
 
         expect(runSingleFight).toHaveBeenCalledExactlyOnceWith({
             encounterId: "plains_1", engineSeed: 12345, policy: expect.objectContaining({ id: "first" }),
@@ -141,7 +141,7 @@ describe("batch CLI entry point", () => {
         expect(runBatch).not.toHaveBeenCalled();
         expect(process.exitCode).toBeUndefined();
         const scripts = JSON.parse(fs.readFileSync(path.resolve("package.json"), "utf8")).scripts;
-        expect(scripts.fight).toBe("tsx src/harness/main.ts");
-        expect(scripts.batch).toBe("tsx src/harness/batch-main.ts");
+        expect(scripts.fight).toBe("tsx src/harness/cli/fight-main.ts");
+        expect(scripts.batch).toBe("tsx src/harness/cli/batch-main.ts");
     });
 });

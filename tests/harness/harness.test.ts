@@ -290,7 +290,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("enables replay capture for CLI-produced fight artifacts", () => {
-        const source = readFileSync(resolve(process.cwd(), "src/harness/main.ts"), "utf8");
+        const source = readFileSync(resolve(process.cwd(), "src/harness/cli/fight-main.ts"), "utf8");
 
         expect(source).toMatch(/replay:\s*true/);
     });
@@ -530,7 +530,7 @@ describe("policy-driven single-fight harness", () => {
             .toBe(true);
         const boundaryViolations = imports.filter((specifier) =>
             /(?:content|engine\/(?:private|protected))\//.test(specifier)
-            || (specifier.includes("console/") && specifier !== "../console/replay"));
+            || (specifier.includes("console/") && !specifier.endsWith("/console/replay")));
         expect(boundaryViolations).toEqual([]);
     });
 });

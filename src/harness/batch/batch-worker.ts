@@ -1,7 +1,7 @@
 import { parentPort, workerData } from "node:worker_threads";
+import { runSingleFight } from "../harness";
+import { getPolicy } from "../policies";
 import { deriveRunSeeds, type BatchRun } from "./batch";
-import { runSingleFight } from "./harness";
-import { getPolicy } from "./policies";
 
 export interface BatchWorkerInput {
     encounterId: string;

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { parseBatchArguments, parseBatchCommandArguments } from "../../src/harness/batch-cli";
+import { parseBatchArguments, parseBatchCommandArguments } from "../../src/harness/cli/batch-cli";
+import type { BatchSummary, RunReference } from "../../src/harness/batch/summary";
+import { formatBatchSummary } from "../../src/harness/batch/summary-format";
 import { policies } from "../../src/harness/policies";
-import type { BatchSummary, RunReference } from "../../src/harness/summary";
-import { formatBatchSummary } from "../../src/harness/summary-format";
 
 function reference(runIndex: number, termination: RunReference["termination"]): RunReference {
     return {

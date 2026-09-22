@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ConsoleReplayInput } from "../../src/console/replay";
-import type { BatchResult } from "../../src/harness/batch";
+import type { BatchResult } from "../../src/harness/batch/batch";
 import {
     encounterSets,
     executeEncounterSet,
-} from "../../src/harness/encounter-sets";
+} from "../../src/harness/batch/encounter-sets";
 import { runSingleFight } from "../../src/harness/harness";
 import {
     launcherDefaults,
@@ -13,7 +13,7 @@ import {
     resolveNumberedChoice,
     runHarnessLauncher,
     type LauncherIO,
-} from "../../src/harness/launcher";
+} from "../../src/harness/cli/launcher";
 import { policies } from "../../src/harness/policies";
 import { firstPolicy } from "../../src/harness/policy/first";
 

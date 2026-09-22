@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { Character, Enemy, GameView, PlayerAction } from "../../src/engine/public/types";
-import type { BatchResult, BatchRun } from "../../src/harness/batch";
+import type { BatchResult, BatchRun } from "../../src/harness/batch/batch";
+import { summarizeBatch, wilsonScoreInterval } from "../../src/harness/batch/summary";
 import type { FightReplay, SingleFightTermination } from "../../src/harness/harness";
-import { summarizeBatch, wilsonScoreInterval } from "../../src/harness/summary";
 
 interface RunFixture {
     runIndex: number;

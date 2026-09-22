@@ -1,5 +1,5 @@
-import { executePolicyComparison, formatPolicyComparison } from "./comparison";
-import { getPolicy, policies } from "./policies";
+import { executePolicyComparison, formatPolicyComparison } from "../batch/comparison";
+import { getPolicy, policies } from "../policies";
 
 const DEFAULT_MAX_ACTIONS = 1_000;
 const DEFAULT_WORKERS = 8;

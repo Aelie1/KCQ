@@ -1,8 +1,8 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { runConsoleReplay } from "../console/replay";
-import { createEngine } from "../engine/public/engine";
-import { importPostHogReplayCsv } from "./posthog-replay";
+import { runConsoleReplay } from "../../console/replay";
+import { createEngine } from "../../engine/public/engine";
+import { importPostHogReplayCsv } from "../replay/posthog-replay";
 
 async function main(): Promise<void> {
     const arguments_ = process.argv.slice(2);

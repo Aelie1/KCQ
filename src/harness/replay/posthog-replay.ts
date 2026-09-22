@@ -1,16 +1,16 @@
 import { isDeepStrictEqual } from "node:util";
-import { createEngine } from "../engine/public/engine";
+import { createEngine } from "../../engine/public/engine";
 import type {
     BattleState,
     Engine,
     GameView,
     PlayerAction,
-} from "../engine/public/types";
+} from "../../engine/public/types";
 import {
     compactStateDigest,
     type CompactStateDigest,
-} from "../web/telemetry";
-import type { FightReplay, ReplayStep } from "./harness";
+} from "../../web/telemetry";
+import type { FightReplay, ReplayStep } from "../harness";
 
 export const POSTHOG_REPLAY_COLUMNS = [
     "timestamp",

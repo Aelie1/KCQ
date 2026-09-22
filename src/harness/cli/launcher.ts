@@ -1,22 +1,22 @@
-import { runConsoleReplay } from "../console/replay";
-import { createEngine } from "../engine/public/engine";
+import { runConsoleReplay } from "../../console/replay";
+import { createEngine } from "../../engine/public/engine";
 import { availableParallelism } from "node:os";
-import { runBatch } from "./batch";
-import { runBatchParallel } from "./parallel-batch";
+import { runBatch } from "../batch/batch";
+import { runBatchParallel } from "../batch/parallel-batch";
 import {
     executePolicyComparison,
     formatPolicyComparison,
     type PolicyComparisonProgress,
-} from "./comparison";
+} from "../batch/comparison";
 import {
     encounterSets,
     executeEncounterSet,
     type EncounterSetId,
     type EncounterSetProgress,
-} from "./encounter-sets";
-import { runSingleFight, type FightPolicy, type SingleFightInput } from "./harness";
-import { writeBatchSummary, writeFightResult } from "./output";
-import { policies } from "./policies";
+} from "../batch/encounter-sets";
+import { runSingleFight, type FightPolicy, type SingleFightInput } from "../harness";
+import { writeBatchSummary, writeFightResult } from "../output";
+import { policies } from "../policies";
 import {
     createProgressReporter,
     formatCompletion,

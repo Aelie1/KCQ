@@ -1,7 +1,7 @@
 import { EventEmitter } from "node:events";
 import { describe, expect, it } from "vitest";
-import { runBatch, type BatchInput, type BatchRun } from "../../src/harness/batch";
-import type { BatchWorkerInput, BatchWorkerMessage } from "../../src/harness/batch-worker";
+import { runBatch, type BatchInput, type BatchRun } from "../../src/harness/batch/batch";
+import type { BatchWorkerInput, BatchWorkerMessage } from "../../src/harness/batch/batch-worker";
 import {
     assembleParallelBatchResult,
     effectiveWorkerCount,
@@ -9,10 +9,10 @@ import {
     runBatchParallel,
     type WorkerFactory,
     type WorkerHandle,
-} from "../../src/harness/parallel-batch";
+} from "../../src/harness/batch/parallel-batch";
+import { summarizeBatch } from "../../src/harness/batch/summary";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { firstPolicy } from "../../src/harness/policy/first";
-import { summarizeBatch } from "../../src/harness/summary";
 
 function input(overrides: Partial<BatchInput> = {}): BatchInput {
     return {

@@ -3,7 +3,7 @@ import { createEngine } from "../../src/engine/public/engine";
 import {
     deriveRunSeeds,
     runBatch,
-} from "../../src/harness/batch";
+} from "../../src/harness/batch/batch";
 import { runSingleFight } from "../../src/harness/harness";
 import { firstPolicy } from "../../src/harness/policy/first";
 
@@ -123,7 +123,7 @@ describe("batch harness", () => {
             maxActions: 5,
         };
 
-        expect(runBatch(input, { onProgress: () => {} })).toEqual(runBatch(input));
+        expect(runBatch(input, { onProgress: () => { } })).toEqual(runBatch(input));
     });
 
     it.each([

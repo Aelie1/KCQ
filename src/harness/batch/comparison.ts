@@ -1,6 +1,6 @@
 import { performance } from "node:perf_hooks";
+import type { FightPolicy } from "../harness";
 import { runBatch, type BatchResult } from "./batch";
-import type { FightPolicy } from "./harness";
 import { effectiveWorkerCount, runBatchParallel } from "./parallel-batch";
 import { summarizeBatch, type BatchSummary } from "./summary";
 

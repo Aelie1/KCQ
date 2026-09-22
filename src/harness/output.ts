@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import type { BatchInput } from "./batch";
+import type { BatchInput } from "./batch/batch";
+import type { BatchSummary } from "./batch/summary";
 import type { SingleFightInput, SingleFightResult } from "./harness";
-import type { BatchSummary } from "./summary";
 
 export function batchSummaryFilename(input: BatchInput): string {
     return [

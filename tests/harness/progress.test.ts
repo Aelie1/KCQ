@@ -7,7 +7,7 @@ import {
     formatEta,
     formatProgressClock,
     formatProgressMetrics,
-} from "../../src/harness/progress";
+} from "../../src/harness/cli/progress";
 
 describe("batch runtime presentation", () => {
     it("formats elapsed time and ETA without adding them to deterministic data", () => {

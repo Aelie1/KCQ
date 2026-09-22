@@ -1,5 +1,5 @@
-import type { BatchInput } from "./batch";
-import { getPolicy, policies } from "./policies";
+import type { BatchInput } from "../batch/batch";
+import { getPolicy, policies } from "../policies";
 
 const DEFAULT_MAX_ACTIONS = 1_000;
 const USAGE = "Usage: npm run batch -- <encounterId> <masterSeed> <policy> <runs> [maxActions]"

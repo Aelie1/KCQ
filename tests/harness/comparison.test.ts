@@ -3,7 +3,7 @@ import {
     executePolicyComparison,
     formatPolicyComparison,
     formatRuntime,
-} from "../../src/harness/comparison";
+} from "../../src/harness/batch/comparison";
 import { firstPolicy } from "../../src/harness/policy/first";
 import { randomPolicy } from "../../src/harness/policy/random";
 
