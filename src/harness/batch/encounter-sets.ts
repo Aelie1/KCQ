@@ -2,6 +2,11 @@ import { performance } from "node:perf_hooks";
 import type { FightPolicy } from "../harness";
 import { runBatch } from "./batch";
 import {
+    BatchWorkerPool,
+    effectiveWorkerCount,
+    type BatchWorkerRunner,
+} from "./parallel-batch";
+import {
     executePolicyComparison,
     type PolicyComparisonResult,
 } from "./comparison";
@@ -52,6 +57,8 @@ export interface EncounterSetExecutionOptions {
     ) => ReturnType<typeof runBatch> | Promise<ReturnType<typeof runBatch>>;
     onProgress?: (progress: EncounterSetProgress) => void;
     onEncounterComplete?: (result: EncounterSetEncounterResult) => void;
+    /** A caller-owned pool, reused by every encounter and policy. */
+    pool?: BatchWorkerRunner;
 }
 
 /** Runs every encounter-policy pair as an isolated ordinary batch. */
@@ -64,36 +71,48 @@ export async function executeEncounterSet(
     const encounters: EncounterSetEncounterResult[] = [];
     const fightsPerEncounter = input.policies.length * input.runsPerEncounter;
     const overallTotal = input.encounterIds.length * fightsPerEncounter;
+    const parallelWorkers = effectiveWorkerCount(input.workers ?? 1, input.runsPerEncounter);
+    const ownedPool = options.runBatch === undefined
+        && options.pool === undefined
+        && parallelWorkers > 1
+        ? new BatchWorkerPool(parallelWorkers)
+        : undefined;
+    const pool = options.pool ?? ownedPool;
 
-    for (let encounterIndex = 0; encounterIndex < input.encounterIds.length; encounterIndex += 1) {
-        const encounterId = input.encounterIds[encounterIndex];
-        const comparison = await executePolicyComparison({
-            encounterId,
-            policies: input.policies,
-            masterSeed: input.masterSeed,
-            runs: input.runsPerEncounter,
-            maxActions: input.maxActions,
-            workers: input.workers,
-        }, {
-            now,
-            runBatch: options.runBatch,
-            onProgress(progress): void {
-                options.onProgress?.({
-                    encounterId,
-                    policyId: progress.policyId,
-                    encounterIndex,
-                    encounterCount: input.encounterIds.length,
-                    policyCompleted: progress.policyCompleted,
-                    policyTotal: progress.policyTotal,
-                    overallCompleted: (encounterIndex * fightsPerEncounter) + progress.overallCompleted,
-                    overallTotal,
-                });
-            },
-        });
-        const result = { encounterId, comparison };
-        encounters.push(result);
-        options.onEncounterComplete?.(result);
+    try {
+        for (let encounterIndex = 0; encounterIndex < input.encounterIds.length; encounterIndex += 1) {
+            const encounterId = input.encounterIds[encounterIndex];
+            const comparison = await executePolicyComparison({
+                encounterId,
+                policies: input.policies,
+                masterSeed: input.masterSeed,
+                runs: input.runsPerEncounter,
+                maxActions: input.maxActions,
+                workers: input.workers,
+            }, {
+                now,
+                runBatch: options.runBatch,
+                pool,
+                onProgress(progress): void {
+                    options.onProgress?.({
+                        encounterId,
+                        policyId: progress.policyId,
+                        encounterIndex,
+                        encounterCount: input.encounterIds.length,
+                        policyCompleted: progress.policyCompleted,
+                        policyTotal: progress.policyTotal,
+                        overallCompleted: (encounterIndex * fightsPerEncounter) + progress.overallCompleted,
+                        overallTotal,
+                    });
+                },
+            });
+            const result = { encounterId, comparison };
+            encounters.push(result);
+            options.onEncounterComplete?.(result);
+        }
+
+        return { encounters, elapsedMs: Math.max(0, now() - startedAt) };
+    } finally {
+        await ownedPool?.close();
     }
-
-    return { encounters, elapsedMs: Math.max(0, now() - startedAt) };
 }

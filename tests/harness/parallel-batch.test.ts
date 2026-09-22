@@ -1,9 +1,14 @@
 import { EventEmitter } from "node:events";
 import { describe, expect, it } from "vitest";
-import { runBatch, type BatchInput, type BatchRun } from "../../src/harness/batch/batch";
-import type { BatchWorkerInput, BatchWorkerMessage } from "../../src/harness/batch/batch-worker";
+import { runBatch, type BatchInput } from "../../src/harness/batch/batch";
+import { executeBatchWorkerInput } from "../../src/harness/batch/batch-worker-job";
+import type {
+    BatchWorkerRequest,
+    BatchWorkerResponse,
+} from "../../src/harness/batch/batch-worker-protocol";
 import {
     assembleParallelBatchResult,
+    BatchWorkerPool,
     effectiveWorkerCount,
     partitionRunIndexes,
     runBatchParallel,
@@ -13,6 +18,7 @@ import {
 import { summarizeBatch } from "../../src/harness/batch/summary";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { firstPolicy } from "../../src/harness/policy/first";
+import { randomPolicy } from "../../src/harness/policy/random";
 
 function input(overrides: Partial<BatchInput> = {}): BatchInput {
     return {
@@ -29,30 +35,64 @@ function input(overrides: Partial<BatchInput> = {}): BatchInput {
 class FakeWorker extends EventEmitter implements WorkerHandle {
     exited = false;
     terminated = false;
+    shutdown = false;
+    readonly jobIds: number[] = [];
+
+    constructor(
+        private readonly delay: (request: Extract<BatchWorkerRequest, { type: "run" }>) => number = () => 0,
+        private readonly fail: (request: Extract<BatchWorkerRequest, { type: "run" }>) => string | undefined = () => undefined,
+    ) {
+        super();
+    }
+
+    postMessage(message: BatchWorkerRequest): void {
+        if (message.type === "shutdown") {
+            this.shutdown = true;
+            setTimeout(() => this.exit(0), 0);
+            return;
+        }
+
+        this.jobIds.push(message.jobId);
+        setTimeout(() => {
+            if (this.terminated || this.exited) return;
+            const failure = this.fail(message);
+            if (failure) {
+                this.emit("error", new Error(failure));
+                return;
+            }
+            try {
+                const runs = executeBatchWorkerInput(message.input, (completedDelta) => {
+                    this.emit("message", {
+                        type: "progress",
+                        jobId: message.jobId,
+                        completedDelta,
+                    } satisfies BatchWorkerResponse);
+                });
+                this.emit("message", {
+                    type: "result",
+                    jobId: message.jobId,
+                    runs,
+                } satisfies BatchWorkerResponse);
+            } catch (error: unknown) {
+                this.emit("message", {
+                    type: "error",
+                    jobId: message.jobId,
+                    message: error instanceof Error ? error.message : String(error),
+                } satisfies BatchWorkerResponse);
+            }
+        }, this.delay(message));
+    }
 
     terminate(): Promise<number> {
         this.terminated = true;
-        if (!this.exited) {
-            this.exited = true;
-            this.emit("exit", 1);
-        }
+        this.exit(1);
         return Promise.resolve(1);
     }
 
-    complete(runs: BatchRun[], delayMs = 0): void {
-        setTimeout(() => {
-            if (this.terminated) return;
-            this.emit("message", { type: "progress", completedDelta: runs.length } satisfies BatchWorkerMessage);
-            this.emit("message", { type: "result", runs } satisfies BatchWorkerMessage);
-            this.exited = true;
-            this.emit("exit", 0);
-        }, delayMs);
-    }
-
-    fail(message: string, delayMs = 0): void {
-        setTimeout(() => {
-            if (!this.terminated) this.emit("error", new Error(message));
-        }, delayMs);
+    private exit(code: number): void {
+        if (this.exited) return;
+        this.exited = true;
+        this.emit("exit", code);
     }
 }
 
@@ -75,26 +115,62 @@ describe("parallel batch execution", () => {
             .toEqual(summarizeBatch(synchronous).forensicExamples);
     }, 20_000);
 
-    it("sorts explicitly out-of-order worker completion into global run-index order", async () => {
-        const batchInput = input({ runs: 4, replay: false });
-        const reference = runBatch(batchInput);
-        const workers: FakeWorker[] = [];
-        const factory: WorkerFactory = (workerInput) => {
+    it("keeps real persistent workers deterministic across sequential jobs", async () => {
+        const pool = new BatchWorkerPool(2);
+        const jobs = [
+            input({ runs: 2, policy: firstPolicy, encounterId: "plains_1", replay: false }),
+            input({ runs: 2, policy: randomPolicy, encounterId: "plains_1", replay: false }),
+            input({ runs: 2, policy: firstPolicy, encounterId: "plains_2", replay: false }),
+        ];
+        try {
+            for (const job of jobs) {
+                expect(await runBatchParallel(job, { workers: 2, pool })).toEqual(runBatch(job));
+            }
+        } finally {
+            await pool.close();
+        }
+    }, 20_000);
+
+    it("reuses one fixed set of workers across policies and encounters", async () => {
+        const created: FakeWorker[] = [];
+        const factory: WorkerFactory = () => {
             const worker = new FakeWorker();
+            created.push(worker);
+            return worker;
+        };
+        const pool = new BatchWorkerPool(2, { createWorker: factory });
+        const jobs = [
+            input({ policy: firstPolicy, encounterId: "plains_1", replay: false }),
+            input({ policy: randomPolicy, encounterId: "plains_1", replay: false }),
+            input({ policy: firstPolicy, encounterId: "plains_2", replay: false }),
+        ];
+
+        try {
+            for (const job of jobs) {
+                expect(await runBatchParallel(job, { workers: 2, pool })).toEqual(runBatch(job));
+            }
+        } finally {
+            await pool.close();
+        }
+
+        expect(created).toHaveLength(2);
+        expect(created.every((worker) => worker.jobIds.length === 3)).toBe(true);
+        expect(created.every((worker) => worker.shutdown && worker.exited)).toBe(true);
+    });
+
+    it("sorts out-of-order worker completion into global run-index order", async () => {
+        const batchInput = input({ runs: 4, replay: false });
+        const workers: FakeWorker[] = [];
+        const factory: WorkerFactory = () => {
+            const worker = new FakeWorker((request) => request.input.runIndexes[0] === 0 ? 20 : 0);
             workers.push(worker);
-            const runs = workerInput.runIndexes.map((runIndex) => reference.runs[runIndex]);
-            worker.complete(runs, workerInput.runIndexes[0] === 0 ? 20 : 0);
             return worker;
         };
 
-        const result = await runBatchParallel(
-            batchInput,
-            { workers: 2 },
-            { createWorker: factory },
-        );
-        expect(result).toEqual(reference);
+        const result = await runBatchParallel(batchInput, { workers: 2 }, { createWorker: factory });
+        expect(result).toEqual(runBatch(batchInput));
         expect(result.runs.map(({ runIndex }) => runIndex)).toEqual([0, 1, 2, 3]);
-        expect(workers.every((worker) => worker.exited && !worker.terminated)).toBe(true);
+        expect(workers.every((worker) => worker.shutdown && worker.exited)).toBe(true);
     });
 
     it("rejects missing/duplicate assembled indexes instead of fabricating runs", () => {
@@ -110,31 +186,29 @@ describe("parallel batch execution", () => {
         expect(partitionRunIndexes(8, 3)).toEqual([[0, 3, 6], [1, 4, 7], [2, 5]]);
     });
 
-    it("handles zero runs without spawning workers", async () => {
+    it("handles zero runs and workers=1 without spawning workers", async () => {
         let spawned = 0;
-        const result = await runBatchParallel(input({ runs: 0 }), { workers: 8 }, {
-            createWorker: () => {
-                spawned += 1;
-                throw new Error("must not spawn");
-            },
-        });
-        expect(result).toEqual(runBatch(input({ runs: 0 })));
+        const factory: WorkerFactory = () => {
+            spawned += 1;
+            throw new Error("must not spawn");
+        };
+        expect(await runBatchParallel(input({ runs: 0 }), { workers: 8 }, { createWorker: factory }))
+            .toEqual(runBatch(input({ runs: 0 })));
+        expect(await runBatchParallel(input({ runs: 1 }), { workers: 1 }, { createWorker: factory }))
+            .toEqual(runBatch(input({ runs: 1 })));
         expect(spawned).toBe(0);
         expect(effectiveWorkerCount(8, 0)).toBe(0);
     });
 
     it("clamps requested workers to runs", async () => {
         const batchInput = input({ runs: 2, replay: false });
-        const reference = runBatch(batchInput);
         let spawned = 0;
-        const factory: WorkerFactory = (workerInput) => {
+        const factory: WorkerFactory = () => {
             spawned += 1;
-            const worker = new FakeWorker();
-            worker.complete(workerInput.runIndexes.map((runIndex) => reference.runs[runIndex]));
-            return worker;
+            return new FakeWorker();
         };
         expect(await runBatchParallel(batchInput, { workers: 8 }, { createWorker: factory }))
-            .toEqual(reference);
+            .toEqual(runBatch(batchInput));
         expect(spawned).toBe(2);
         expect(effectiveWorkerCount(8, 2)).toBe(2);
     });
@@ -148,34 +222,41 @@ describe("parallel batch execution", () => {
         },
     );
 
-    it("aggregates progress to the exact total without affecting deterministic results", async () => {
+    it("counts progress exactly across repeated jobs", async () => {
+        const pool = new BatchWorkerPool(2, { createWorker: () => new FakeWorker() });
         const updates: Array<[number, number]> = [];
         const batchInput = input({ runs: 5, replay: false });
-        const withProgress = await runBatchParallel(batchInput, {
-            workers: 2,
-            onProgress: (completed, total) => updates.push([completed, total]),
-        });
-        const withoutProgress = await runBatchParallel(batchInput, { workers: 2 });
-        expect(updates.at(-1)).toEqual([5, 5]);
-        expect(updates.every(([, total]) => total === 5)).toBe(true);
-        expect(withProgress).toEqual(withoutProgress);
-    }, 20_000);
+        try {
+            for (let job = 0; job < 2; job += 1) {
+                await runBatchParallel(batchInput, {
+                    workers: 2,
+                    pool,
+                    onProgress: (completed, total) => updates.push([completed, total]),
+                });
+            }
+        } finally {
+            await pool.close();
+        }
+        expect(updates.filter(([completed, total]) => completed === total)).toEqual([[5, 5], [5, 5]]);
+        expect(updates.every(([completed, total]) => completed <= total && total === 5)).toBe(true);
+    });
 
-    it("rejects worker crashes as infrastructure failures and terminates the pool", async () => {
+    it("rejects worker crashes with job context and leaves no unresolved close", async () => {
         const created: FakeWorker[] = [];
-        const factory: WorkerFactory = (workerInput: BatchWorkerInput) => {
-            const worker = new FakeWorker();
-            created.push(worker);
-            if (workerInput.runIndexes[0] === 0) worker.fail("synthetic crash");
-            return worker;
-        };
+        const pool = new BatchWorkerPool(2, {
+            createWorker: () => {
+                const worker = new FakeWorker(
+                    () => 0,
+                    (request) => request.input.runIndexes[0] === 0 ? "synthetic crash" : undefined,
+                );
+                created.push(worker);
+                return worker;
+            },
+        });
 
-        await expect(runBatchParallel(
-            input({ replay: false }),
-            { workers: 2 },
-            { createWorker: factory },
-        )).rejects.toThrow(/Worker infrastructure failure.*synthetic crash/);
-        expect(created).toHaveLength(2);
+        await expect(runBatchParallel(input({ replay: false }), { workers: 2, pool }))
+            .rejects.toThrow(/Worker infrastructure failure.*job 1.*run indexes.*synthetic crash/);
+        await expect(pool.close()).resolves.toBeUndefined();
         expect(created.every((worker) => worker.terminated)).toBe(true);
     });
 

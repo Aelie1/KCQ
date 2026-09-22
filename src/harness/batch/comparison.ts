@@ -1,7 +1,12 @@
 import { performance } from "node:perf_hooks";
 import type { FightPolicy } from "../harness";
 import { runBatch, type BatchResult } from "./batch";
-import { effectiveWorkerCount, runBatchParallel } from "./parallel-batch";
+import {
+    BatchWorkerPool,
+    effectiveWorkerCount,
+    runBatchParallel,
+    type BatchWorkerRunner,
+} from "./parallel-batch";
 import { summarizeBatch, type BatchSummary } from "./summary";
 
 export interface PolicyComparisonInput {
@@ -55,6 +60,8 @@ export interface PolicyComparisonExecutionOptions {
     ) => BatchResult | Promise<BatchResult>;
     onProgress?: (progress: PolicyComparisonProgress) => void;
     onPolicyComplete?: (entry: PolicyComparisonEntry) => void;
+    /** A caller-owned pool, used to extend worker lifetime across comparisons. */
+    pool?: BatchWorkerRunner;
 }
 
 /** Runs policies sequentially over the same deterministic run-index seed corpus. */
@@ -65,63 +72,74 @@ export async function executePolicyComparison(
     const now = options.now ?? (() => performance.now());
     const requestedWorkers = input.workers ?? 1;
     const parallelWorkers = effectiveWorkerCount(requestedWorkers, input.runs);
+    const ownedPool = options.runBatch === undefined
+        && options.pool === undefined
+        && parallelWorkers > 1
+        ? new BatchWorkerPool(parallelWorkers)
+        : undefined;
+    const pool = options.pool ?? ownedPool;
     const executeBatch = options.runBatch ?? ((batchInput, executionOptions) =>
         runBatchParallel(batchInput, {
             workers: requestedWorkers,
+            pool,
             onProgress: executionOptions?.onProgress,
         }));
     const startedAt = now();
     const entries: PolicyComparisonEntry[] = [];
     const overallTotal = input.policies.length * input.runs;
 
-    for (let policyIndex = 0; policyIndex < input.policies.length; policyIndex += 1) {
-        const policy = input.policies[policyIndex];
-        const policyStartedAt = now();
-        const batch = await executeBatch({
+    try {
+        for (let policyIndex = 0; policyIndex < input.policies.length; policyIndex += 1) {
+            const policy = input.policies[policyIndex];
+            const policyStartedAt = now();
+            const batch = await executeBatch({
+                encounterId: input.encounterId,
+                policy,
+                masterSeed: input.masterSeed,
+                runs: input.runs,
+                maxActions: input.maxActions,
+                replay: false,
+            }, {
+                onProgress(policyCompleted, policyTotal): void {
+                    options.onProgress?.({
+                        encounterId: input.encounterId,
+                        policyId: policy.id,
+                        policyIndex,
+                        policyCount: input.policies.length,
+                        policyCompleted,
+                        policyTotal,
+                        overallCompleted: (policyIndex * input.runs) + policyCompleted,
+                        overallTotal,
+                    });
+                },
+            });
+            const runtimeMs = Math.max(0, now() - policyStartedAt);
+            const entry: PolicyComparisonEntry = {
+                policyId: policy.id,
+                batch,
+                summary: summarizeBatch(batch),
+                timing: {
+                    runtimeMs,
+                    meanPerRunMs: input.runs === 0 ? null : runtimeMs / input.runs,
+                },
+            };
+            entries.push(entry);
+            options.onPolicyComplete?.(entry);
+        }
+
+        return {
             encounterId: input.encounterId,
-            policy,
             masterSeed: input.masterSeed,
             runs: input.runs,
             maxActions: input.maxActions,
-            replay: false,
-        }, {
-            onProgress(policyCompleted, policyTotal): void {
-                options.onProgress?.({
-                    encounterId: input.encounterId,
-                    policyId: policy.id,
-                    policyIndex,
-                    policyCount: input.policies.length,
-                    policyCompleted,
-                    policyTotal,
-                    overallCompleted: (policyIndex * input.runs) + policyCompleted,
-                    overallTotal,
-                });
-            },
-        });
-        const runtimeMs = Math.max(0, now() - policyStartedAt);
-        const entry: PolicyComparisonEntry = {
-            policyId: policy.id,
-            batch,
-            summary: summarizeBatch(batch),
-            timing: {
-                runtimeMs,
-                meanPerRunMs: input.runs === 0 ? null : runtimeMs / input.runs,
-            },
+            parallelWorkers,
+            policies: entries,
+            policyRuntimeTotalMs: entries.reduce((total, entry) => total + entry.timing.runtimeMs, 0),
+            overallElapsedMs: Math.max(0, now() - startedAt),
         };
-        entries.push(entry);
-        options.onPolicyComplete?.(entry);
+    } finally {
+        await ownedPool?.close();
     }
-
-    return {
-        encounterId: input.encounterId,
-        masterSeed: input.masterSeed,
-        runs: input.runs,
-        maxActions: input.maxActions,
-        parallelWorkers,
-        policies: entries,
-        policyRuntimeTotalMs: entries.reduce((total, entry) => total + entry.timing.runtimeMs, 0),
-        overallElapsedMs: Math.max(0, now() - startedAt),
-    };
 }
 
 export function formatPolicyComparison(result: PolicyComparisonResult): string[] {
