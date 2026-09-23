@@ -322,16 +322,7 @@ export function tickBindings(state: iGameState): iEffect[] {
 
 export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target: iCharacter, targetStatus: GameStatus, binding: iBinding): iEffect[] {
     const effects: iEffect[] = [];
-    const basePotency = 20;
-    const bindingValue = binding.value;
-    const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
-    const basePenalty = 15;
-    let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
-    escapePotency *= 1 + actorStatus.getModifier("escape") * BINDING_MODIFIER;
-    if (actor !== target) {
-        escapePotency *= 1.5;
-    }
-    escapePotency = Math.ceil(escapePotency);
+    const escapePotency = getEscapePotency(binding.value, actorStatus.getModifier("escape"), (actor !== target ? 1.5 : 1));
 
     effects.push({
         type: "binding",
@@ -346,6 +337,18 @@ export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target
     }
 
     return effects;
+}
+
+export function getEscapePotency(value: number, escapeModifier: number, assistModifier: number) {
+    const basePotency = 20;
+    const bindingValue = value;
+    const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
+    const basePenalty = 15;
+    let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
+    escapePotency *= 1 + escapeModifier * BINDING_MODIFIER;
+    escapePotency *= assistModifier;
+    escapePotency = Math.ceil(escapePotency);
+    return escapePotency;
 }
 
 export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iEffect[] {

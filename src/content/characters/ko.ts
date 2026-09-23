@@ -14,7 +14,7 @@ export const ko: CharacterDef = {
     getMoves: function (actor: iCharacter): MoveDef[] {
         const buff = findBuff(actor, "fairyEmpowerment");
         if (buff) {
-            return [fairyTelekinesis, fairyStarlightBindings, fairyReflect, fairyEmpowerment];
+            return [telekinesis, fairyTelekinesis, starlightBindings, fairyStarlightBindings, reflect, fairyReflect, fairyTransformation, fairyEmpowerment];
         }
         else {
             return [telekinesis, starlightBindings, reflect, fairyTransformation];
@@ -73,7 +73,7 @@ const starlightBindings: MoveDef = {
         const effects: iEffect[] = [];
 
         const buff: iBuff = {
-            id: "starlightBindings",
+            id: move.definition.id,
             duration: 3,
             active: true,
             modifiers: {
@@ -115,29 +115,20 @@ const reflect: MoveDef = {
     type: "mouth",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
-        const newTargets: iEntity[] = [];
-        if (targets.length === 0) {
-            newTargets.push(actor);
-        }
-        else {
-            newTargets.push(...targets.map(x => x.target));
-        }
 
         const buff: iBuff = {
-            id: "reflect",
+            id: move.definition.id,
             active: true,
             duration: 1,
             modifyBinding: reflectCallback
         }
 
-        for (const target of newTargets) {
-            effects.push({
-                type: "buff",
-                target: target,
-                buff: buff,
-                operation: "add"
-            });
-        }
+        effects.push({
+            type: "buff",
+            target: actor,
+            buff: buff,
+            operation: "add"
+        });
 
         return effects;
     }
@@ -146,7 +137,6 @@ const reflect: MoveDef = {
 const fairyReflect: MoveDef = {
     ...reflect,
     id: "fairyReflect",
-    targets: "all",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects = reflect.resolve(state, actor, move, targets);
         effects.push(...removeEmpowerment(actor));
@@ -259,7 +249,9 @@ function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, 
             target: actor,
             amount: amount
         })
-        newAmount = 0;
+        if (buff.id === "fairyReflect") {
+            newAmount = 0;
+        }
     }
     return { value: newAmount, effects: effects };
 }

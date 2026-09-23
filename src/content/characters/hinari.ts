@@ -1,3 +1,4 @@
+import { getEscapePotency } from "../../engine/private/combat";
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { findBinding, findBuff, isCharacter, isEnemy, thresholds } from "../../engine/protected/helpers";
 import { hobbled } from "../../engine/protected/statuses";
@@ -8,6 +9,7 @@ import { removeEmpowerment } from "./ko";
 const SUBSPACE_MAX = 100;
 
 const STORE_REMOVE_AMOUNT = 25;
+const STORE_REMOVE_MODIFIER = 2;
 
 const RELEASE_PLAYER_AMOUNT = 50;
 const RELEASE_PLAYER_BINDING = 25;
@@ -28,18 +30,23 @@ export const hinari: CharacterDef = {
         const moves: MoveDef[] = [];
         if (actor.data["subspace"] !== undefined) {
             if (actor.data["subspace"] < SUBSPACE_MAX) {
+                {
+                    const baseRocks = 4;
+                    const totalRocks = baseRocks - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / baseRocks));
+                    moves.push({
+                        ...rockfall,
+                        baseHits: totalRocks
+                    });
+                }
                 const buff = findBuff(actor, "fairyEmpowerment");
-                let baseRocks = 4;
-                let definition = rockfall;
-                if (buff) {
-                    baseRocks *= 1.5;
-                    definition = fairyRockfall;
-                };
-                const totalRocks = baseRocks - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / baseRocks));
-                moves.push({
-                    ...definition,
-                    baseHits: totalRocks
-                });
+                {
+                    const baseRocks = 6;
+                    const totalRocks = baseRocks - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / baseRocks));
+                    moves.push({
+                        ...fairyRockfall,
+                        baseHits: totalRocks
+                    });
+                }
                 moves.push(store);
                 moves.push(brace);
             }
@@ -78,12 +85,13 @@ const store: MoveDef = {
                 if (highestBinding) {
                     const actorBinding = findBinding(actor, highestBinding.id);
                     const bindingRoom = Math.max(0, thresholds.impossible - (actorBinding?.value ?? 0));
-                    let removeAmount = Math.min(highest, STORE_REMOVE_AMOUNT);
-                    let spreadAmount = Math.max(0, removeAmount + actor.data["subspace"] - SUBSPACE_MAX);
-                    const subspaceAmount = removeAmount - spreadAmount;
-                    if (spreadAmount > bindingRoom) {
-                        removeAmount -= (spreadAmount - bindingRoom);
-                        spreadAmount = bindingRoom;
+                    let removeAmount = Math.min(highest, getEscapePotency(STORE_REMOVE_AMOUNT, 1, STORE_REMOVE_MODIFIER));
+                    let overflowAmount = Math.max(0, STORE_REMOVE_AMOUNT + actor.data["subspace"] - SUBSPACE_MAX);
+                    const subspaceAmount = STORE_REMOVE_AMOUNT - overflowAmount;
+                    if (overflowAmount > bindingRoom) {
+                        const excess = overflowAmount - bindingRoom;
+                        removeAmount = Math.max(0, removeAmount - excess);;
+                        overflowAmount = bindingRoom;
                     }
                     const bindingId = state.encounter.bindings.findIndex(x => x.id === highestBinding.id);
                     const currentBindingId = actor.data["subspaceBinding"] ?? 0;
@@ -111,13 +119,13 @@ const store: MoveDef = {
                             });
                         }
                     }
-                    if (spreadAmount) {
+                    if (overflowAmount) {
                         effects.push({
                             type: "binding",
                             source: actor,
                             target: actor,
                             binding: highestBinding,
-                            amount: spreadAmount
+                            amount: overflowAmount
                         });
                     }
                 }

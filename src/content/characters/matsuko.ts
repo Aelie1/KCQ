@@ -20,7 +20,7 @@ const IMMOLATION_DAMAGE = 60;
 const OBEY_SERVITUDE_DURATION = 2;
 const OBEY_COMPULSION_COOLDOWN = 3;
 
-const STOP_COMPULSION_COOLDOWN = 3;
+const STOP_COMPULSION_COOLDOWN = 5;
 const STOP_BOSS_WEAKEN = 0.25;
 
 const ATTACKME_COMPULSION_COOLDOWN = 2;
@@ -36,7 +36,7 @@ export const matsuko: CharacterDef = {
         else {
             const buff = findBuff(actor, "fairyEmpowerment");
             if (buff) {
-                moves.push(...[fairyWhiteFlame, fairyPhoenixKick, immolation]);
+                moves.push(...[whiteFlame, fairyWhiteFlame, phoenixKick, fairyPhoenixKick, immolation]);
             }
             else {
                 moves.push(...[whiteFlame, phoenixKick, immolation]);
