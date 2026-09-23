@@ -5,6 +5,13 @@ import type {
     GameView,
     PlayerAction,
 } from "../engine/public/types";
+import {
+    coreMetricCollectorFactories,
+    MetricCollectorSet,
+    type CoreMetricResults,
+    type MetricCollectorFactory,
+    type MetricCollectorResults,
+} from "./metrics";
 
 export interface PolicyRandom {
     next(): number;
@@ -28,6 +35,8 @@ export interface SingleFightInput {
     maxActions: number;
     policy: FightPolicy;
     replay?: boolean;
+    /** Additional per-fight collectors. Core collectors always run first. */
+    metricCollectors?: readonly MetricCollectorFactory[];
 }
 
 export type SingleFightTermination = "victory" | "defeat" | "maxActions" | "error";
@@ -79,6 +88,8 @@ export interface SingleFightResult {
     finalState: GameView;
     actionCount: number;
     metrics: FightMetrics;
+    /** Additive, independently collected metrics from the public event/state boundary. */
+    collectorMetrics?: CoreMetricResults & MetricCollectorResults;
     trace: PlayerAction[];
     error?: SingleFightError;
     replay?: FightReplay;
@@ -91,29 +102,39 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     const trace: PlayerAction[] = [];
     let replay: FightReplay | undefined;
     let view = engine.getGameView();
-    const metrics: FightMetrics = {
-        decisions: 0,
-        damage: 0,
-        peakBondage: partyTotalBondage(view),
-        escapes: 0,
-    };
+    const collectors = new MetricCollectorSet([
+        ...coreMetricCollectorFactories,
+        ...(input.metricCollectors ?? []),
+    ]);
 
     const finish = (
         termination: SingleFightTermination,
         error?: SingleFightError,
-    ): SingleFightResult => ({
-        encounterId: input.encounterId,
-        engineSeed: input.engineSeed,
-        policyId: input.policy.id,
-        policySeed: input.policySeed,
-        termination,
-        finalState: view,
-        actionCount: trace.length,
-        metrics: { ...metrics, decisions: trace.length },
-        trace,
-        ...(error ? { error } : {}),
-        ...(replay ? { replay } : {}),
-    });
+    ): SingleFightResult => {
+        collectors.onFightEnd({ termination, view, actionCount: trace.length });
+        const collectorMetrics = collectors.getResults() as CoreMetricResults
+            & MetricCollectorResults;
+        const metrics: FightMetrics = {
+            decisions: collectorMetrics.resolution.actionsObserved,
+            damage: collectorMetrics.damage.dealt,
+            peakBondage: collectorMetrics.bondage.party.peakTotal,
+            escapes: collectorMetrics.escapes.attempts,
+        };
+        return {
+            encounterId: input.encounterId,
+            engineSeed: input.engineSeed,
+            policyId: input.policy.id,
+            policySeed: input.policySeed,
+            termination,
+            finalState: view,
+            actionCount: trace.length,
+            metrics,
+            collectorMetrics,
+            trace,
+            ...(error ? { error } : {}),
+            ...(replay ? { replay } : {}),
+        };
+    };
 
     if (!Number.isSafeInteger(input.maxActions) || input.maxActions < 0) {
         return finish("error", {
@@ -137,8 +158,6 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     }
 
     view = engine.getGameView();
-    metrics.peakBondage = Math.max(metrics.peakBondage, partyTotalBondage(view));
-
     if (!engine.listEncounters().includes(input.encounterId)) {
         return finish("error", {
             message: `Unknown encounter ID: ${input.encounterId}`,
@@ -158,7 +177,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     }
 
     view = engine.getGameView();
-    metrics.peakBondage = Math.max(metrics.peakBondage, partyTotalBondage(view));
+    collectors.onFightStart({ view });
 
     if (input.replay === true) {
         replay = {
@@ -178,9 +197,14 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         }));
 
         trace.push(action);
-        metrics.decisions = trace.length;
-        if (action.type === "escape") metrics.escapes += 1;
+        const before = view;
         const result = engine.executeAction(action);
+        collectors.onAction({
+            actionIndex: trace.length,
+            action,
+            before,
+            result,
+        });
         if (!result.success) {
             replay?.steps.push({
                 action,
@@ -201,13 +225,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             state: structuredClone(result.view),
         });
 
-        metrics.damage += result.events.reduce(
-            (total, event) => total + (event.type === "enemyDamaged" ? event.amount : 0),
-            0,
-        );
-
         view = result.view;
-        metrics.peakBondage = Math.max(metrics.peakBondage, partyTotalBondage(view));
         const outcome = view.turn.outcome;
         if (outcome !== "ongoing") {
             return finish(outcome);
