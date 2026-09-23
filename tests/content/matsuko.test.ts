@@ -268,14 +268,16 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
 
         expectMoveSet(engine, [
+            "whiteFlame",
             "fairyWhiteFlame",
+            "phoenixKick",
             "fairyPhoenixKick",
             "immolation",
             "obey",
             "stop",
             "attackMe",
         ]);
-        expect(actionView(engine, matsuko.id).moves.some(({ move }) => move.id === normalMove)).toBe(false);
+        expect(actionView(engine, matsuko.id).moves.some(({ move }) => move.id === normalMove)).toBe(true);
         expect(targetAccuracy(engine, matsuko.id, fairyMove, "foe1")).toEqual({
             miss: 0,
             graze: 5,
@@ -325,6 +327,32 @@ describe("Matsuko's dynamic offensive kit", () => {
             "attackMe",
         ]);
     });
+
+    it.each(["whiteFlame", "phoenixKick"] as const)(
+        "banks Fairy Empowerment when using normal %s",
+        (normalMove) => {
+            const engine = loadMatsukoEncounter({
+                seed: 2,
+                setup: (state) => [{
+                    type: "buff",
+                    operation: "add",
+                    target: state.characters[0],
+                    buff: { id: "fairyEmpowerment", active: true },
+                }],
+            });
+
+            execute(engine, {
+                type: "move",
+                actor: matsuko.id,
+                move: normalMove,
+                targets: ["foe1"],
+            });
+
+            expect(buffState(engine, "fairyEmpowerment", matsuko.id)).toBeDefined();
+            expect(actionView(engine, matsuko.id).moves.map(({ move }) => move.id))
+                .toEqual(expect.arrayContaining(["fairyWhiteFlame", "fairyPhoenixKick"]));
+        },
+    );
 
     it("does not consume Fairy Empowerment when using Immolation", () => {
         const engine = loadMatsukoEncounter({
@@ -559,7 +587,7 @@ describe("Matsuko's Compulsion moves", () => {
         expect(result.events).toContainEqual({ type: "intentionCancelled", target: "caster1" });
         expect(engine.getGameView().enemies[0].intentions).toEqual([]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
-        expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 3 });
+        expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 5 });
         expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
 
         execute(engine, {
@@ -611,7 +639,7 @@ describe("Matsuko's Compulsion moves", () => {
             ({ targets }) => targets[0]?.band,
         )).toEqual(["graze", "graze"]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
-        expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 3 });
+        expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 5 });
     });
 
     it("retargets compatible intentions across enemies without changing other shapes", () => {

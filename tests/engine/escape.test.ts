@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
+import { getEscapePotency } from "../../src/engine/private/combat";
 import type { BindingDef, StatusDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
@@ -105,7 +106,7 @@ describe("escape progress", () => {
             [
                 { target: "penalized-helper", binding: modifierBinding, amount: thresholds.easy },
                 { target: "target", binding: modifierBinding, amount: thresholds.easy },
-                { target: "target", binding: targetBinding, amount: thresholds.medium },
+                { target: "target", binding: targetBinding, amount: thresholds.hard },
             ],
         );
 
@@ -130,6 +131,45 @@ describe("escape progress", () => {
 
         expect(penalizedAssist).toBeLessThan(unpenalizedAssist);
         expect(penalizedAssist).toBeGreaterThan(penalizedSelfEscape);
+    });
+
+    it("caps escape and onEscape spread at the binding's remaining value", () => {
+        const spread = makeBindingDef("spread");
+        const restraint: BindingDef = {
+            ...makeBindingDef("rope"),
+            onEscape: (actor, target, _binding, amount) => [{
+                type: "binding",
+                source: target,
+                target: actor,
+                binding: spread,
+                amount: Math.ceil(amount / 2),
+            }],
+        };
+        const engine = setupEscapeScenario(
+            "helper",
+            ["helper", "target"],
+            [{ target: "target", binding: restraint, amount: 10 }],
+        );
+
+        expect(getEscapePotency(10, 0, 1.5)).toBe(10);
+        expect(escapeEffects(engine, "helper", "target", restraint.id)).toEqual([
+            { type: "binding", target: "target", binding: restraint.id, amount: -10 },
+            { type: "binding", target: "helper", binding: spread.id, amount: 5 },
+        ]);
+
+        const result = engine.executeAction({
+            type: "escape",
+            actor: "helper",
+            target: "target",
+            binding: restraint.id,
+        });
+        expect(result).toMatchObject({
+            success: true,
+            events: [
+                { type: "bondageRemoved", target: "target", binding: restraint.id, amount: -10 },
+                { type: "bondageAdded", target: "helper", binding: spread.id, amount: 5 },
+            ],
+        });
     });
 
     it("reports and applies escape progress through the public API", () => {

@@ -7,6 +7,7 @@ import { bound, gagged, helpless, hobbled, incapacitated } from "../../src/engin
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type { DamageEvent, Engine } from "../../src/engine/public/types";
 import {
+    bindingState,
     buffState,
     execute,
     makeBehavioralBinding,
@@ -268,22 +269,18 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         ]);
     });
 
-    it("exposes only Fairy variants while empowered", () => {
+    it("offers normal and Fairy moves while empowered", () => {
         const engine = loadKoEncounter(undefined, empowerKo);
         expectMoveSet(engine, [
+            "telekinesis",
             "fairyTelekinesis",
+            "starlightBindings",
             "fairyStarlightBindings",
+            "reflect",
             "fairyReflect",
+            "fairyTransformation",
             "fairyEmpowerment",
         ]);
-        for (const normalMove of [
-            "telekinesis",
-            "starlightBindings",
-            "reflect",
-            "fairyTransformation",
-        ]) {
-            expect(moveIds(engine)).not.toContain(normalMove);
-        }
     });
 
     it("rejects moves that are not in Ko's current dynamic move set", () => {
@@ -296,12 +293,13 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         })).toEqual({ success: false, reason: "invalidMove" });
 
         const empowered = loadKoEncounter(undefined, empowerKo);
-        expect(empowered.executeAction({
+        execute(empowered, {
             type: "move",
             actor: ko.id,
             move: "telekinesis",
             targets: ["foe1"],
-        })).toEqual({ success: false, reason: "invalidMove" });
+        });
+        expect(buffState(empowered, "fairyEmpowerment", ko.id)).toBeDefined();
     });
 });
 
@@ -434,7 +432,7 @@ describe("Ko's normal and Fairy move effects", () => {
 
         for (const enemy of engine.getGameView().enemies) {
             expect(enemy.buffs).toContainEqual(expect.objectContaining({
-                id: "starlightBindings",
+                id: "fairyStarlightBindings",
                 modifiers: { defense: -2, hit: -2 },
             }));
         }
@@ -503,9 +501,13 @@ describe("Ko's normal and Fairy move effects", () => {
             ]),
         });
         expectMoveSet(engine, [
+            "telekinesis",
             "fairyTelekinesis",
+            "starlightBindings",
             "fairyStarlightBindings",
+            "reflect",
             "fairyReflect",
+            "fairyTransformation",
             "fairyEmpowerment",
         ]);
 
@@ -519,7 +521,7 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(engine.getGameView().characters[0].modifiers).toEqual({});
     });
 
-    it("lets each Fairy Reflect target independently retaliate against its source", () => {
+    it("lets Fairy Reflect protect Ko while an ally receives its binding", () => {
         const first = enemyTargetingCharacter("first", bindingMove("first-rope", 10), 0);
         const second = enemyTargetingCharacter("second", bindingMove("second-rope", 20), 1);
         const engine = loadKoEncounter([first, second], empowerKo, true);
@@ -530,8 +532,8 @@ describe("Ko's normal and Fairy move effects", () => {
             targets: [],
         });
 
-        expect(buffState(engine, "reflect", ko.id)).toMatchObject({ duration: 1 });
-        expect(buffState(engine, "reflect", "ally")).toMatchObject({ duration: 1 });
+        expect(buffState(engine, "fairyReflect", ko.id)).toMatchObject({ duration: 1 });
+        expect(buffState(engine, "fairyReflect", "ally")).toBeUndefined();
         expect(fairyReflect.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
@@ -549,18 +551,18 @@ describe("Ko's normal and Fairy move effects", () => {
             },
             { type: "enemyDamaged", target: "first1", amount: 10 },
             {
-                type: "bondageBlocked",
+                type: "bondageAdded",
                 target: "ally",
                 binding: "second-rope",
                 amount: 20,
             },
-            { type: "enemyDamaged", target: "second1", amount: 20 },
         ]));
         expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp).toBe(27);
-        expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp).toBe(17);
-        expect(result.view.characters.every(({ bindings }) => bindings.length === 0)).toBe(true);
-        expect(buffState(engine, "reflect", ko.id)).toBeUndefined();
-        expect(buffState(engine, "reflect", "ally")).toBeUndefined();
+        expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp).toBe(37);
+        expect(bindingState(engine, "first-rope", ko.id)).toBeUndefined();
+        expect(bindingState(engine, "second-rope", "ally")?.value).toBe(20);
+        expect(buffState(engine, "fairyReflect", ko.id)).toBeUndefined();
+        expect(buffState(engine, "fairyReflect", "ally")).toBeUndefined();
     });
 
     it("spreads Fairy Empowerment to an ally instead of re-empowering Ko", () => {
@@ -591,9 +593,13 @@ describe("Ko's normal and Fairy move effects", () => {
         engine.loadEncounter(encounter.id);
         expect(actionView(engine, ally.id).moves.map(({ move }) => move.id)).toEqual([allyNormal.id]);
         expectMoveSet(engine, [
+            "telekinesis",
             "fairyTelekinesis",
+            "starlightBindings",
             "fairyStarlightBindings",
+            "reflect",
             "fairyReflect",
+            "fairyTransformation",
             "fairyEmpowerment",
         ]);
 
@@ -634,7 +640,7 @@ describe("Ko's normal and Fairy move effects", () => {
 });
 
 describe("Ko's Reflect source handling", () => {
-    it("blocks enemy bondage, consumes itself, and damages the actual source", () => {
+    it("accepts enemy bondage, consumes itself, and damages the actual source", () => {
         const spectator = makeBehavioralEnemy("spectator", [makeEnemyWaitMove()]);
         const attacker = makeBehavioralEnemy("attacker", [bindingMove("enemy-rope", 12)]);
         const engine = loadKoEncounter([spectator, attacker]);
@@ -649,7 +655,7 @@ describe("Ko's Reflect source handling", () => {
         const result = execute(engine, { type: "endTurn" });
 
         expect(result.events).toContainEqual({
-            type: "bondageBlocked",
+            type: "bondageAdded",
             target: ko.id,
             binding: "enemy-rope",
             amount: 12,
@@ -661,12 +667,12 @@ describe("Ko's Reflect source handling", () => {
         });
         expect(result.view.enemies.find(({ id }) => id === "spectator1")?.currHp).toBe(37);
         expect(result.view.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
-        expect(result.view.characters[0].bindings).toEqual([]);
+        expect(bindingState(engine, "enemy-rope", ko.id)?.value).toBe(12);
         expect(buffState(engine, "reflect", ko.id)).toBeUndefined();
 
         const nextRound = execute(engine, { type: "endTurn" });
         expect(nextRound.events).toContainEqual({
-            type: "bondageAdded",
+            type: "bondageChanged",
             target: ko.id,
             binding: "enemy-rope",
             amount: 12,
@@ -674,6 +680,7 @@ describe("Ko's Reflect source handling", () => {
         expect(nextRound.events.some(({ type }) => type === "bondageBlocked")).toBe(false);
         expect(nextRound.events.some(({ type }) => type === "enemyDamaged")).toBe(false);
         expect(nextRound.view.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
+        expect(bindingState(engine, "enemy-rope", ko.id)?.value).toBe(24);
     });
 
     it("does not retaliate against self-sourced trap bondage", () => {

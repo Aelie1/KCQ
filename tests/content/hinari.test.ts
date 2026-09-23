@@ -181,7 +181,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
         });
 
         expect(moveIds(engine)).toContain("fairyRockfall");
-        expect(moveIds(engine)).not.toContain("rockfall");
+        expect(moveIds(engine)).toContain("rockfall");
 
         const result = execute(engine, {
             type: "move",
@@ -383,7 +383,28 @@ describe("Hinari's Store", () => {
         });
     }
 
-    it("automatically stores up to 25 from the highest binding and remembers each latest type", () => {
+    it("uses twice normal severity-scaled potency at Impossible without Hinari's escape modifier", () => {
+        const ally = makeBehavioralCharacter("ally");
+        const engine = loadHinariEncounter({
+            allies: [ally],
+            setup: (state) => [
+                { type: "binding", source: state.characters[0], target: state.characters[1], binding: tape, amount: 80 },
+                {
+                    type: "buff",
+                    operation: "add",
+                    target: state.characters[0],
+                    buff: { id: "escapePenalty", active: true, modifiers: { escape: -5 } },
+                },
+            ],
+        });
+
+        storeFromAlly(engine);
+
+        expect(bindingState(engine, tape.id, ally.id)?.value).toBe(70);
+        expect(characterState(engine, hinari.id).data.subspace).toBe(25);
+    });
+
+    it("stores from the highest binding using scaled potency and remembers each latest type", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
             allies: [ally],
@@ -400,12 +421,12 @@ describe("Hinari's Store", () => {
             targets: [ally.id],
         });
         expect(first.events).toContainEqual({
-            type: "bondageChanged",
+            type: "bondageRemoved",
             target: ally.id,
             binding: rope.id,
-            amount: -25,
+            amount: -30,
         });
-        expect(bindingState(engine, rope.id, ally.id)?.value).toBe(5);
+        expect(bindingState(engine, rope.id, ally.id)).toBeUndefined();
         expect(bindingState(engine, tape.id, ally.id)?.value).toBe(20);
         expect(characterState(engine, hinari.id).data).toMatchObject({
             subspace: 25,
@@ -419,10 +440,10 @@ describe("Hinari's Store", () => {
             move: "store",
             targets: [ally.id],
         });
-        expect(bindingState(engine, rope.id, ally.id)?.value).toBe(5);
+        expect(bindingState(engine, rope.id, ally.id)).toBeUndefined();
         expect(bindingState(engine, tape.id, ally.id)).toBeUndefined();
         expect(characterState(engine, hinari.id).data).toMatchObject({
-            subspace: 45,
+            subspace: 50,
             subspaceBinding: 1,
         });
     });
@@ -444,7 +465,7 @@ describe("Hinari's Store", () => {
             targets: [ally.id],
         });
 
-        expect(bindingState(engine, tape.id, ally.id)).toBeUndefined();
+        expect(bindingState(engine, tape.id, ally.id)?.value).toBe(15);
         expect(bindingState(engine, tape.id, hinari.id)?.value).toBe(15);
         expect(characterState(engine, hinari.id).data).toMatchObject({
             subspace: 100,
@@ -510,8 +531,8 @@ describe("Hinari's Store", () => {
             targets: [ally.id],
         });
 
-        expect(bindingState(engine, tape.id, ally.id)).toBeUndefined();
-        expect(bindingState(engine, tape.id, hinari.id)?.value).toBe(9);
+        expect(bindingState(engine, tape.id, ally.id)?.value).toBe(9);
+        expect(bindingState(engine, tape.id, hinari.id)?.value).toBe(24);
         expect(characterState(engine, hinari.id).data.subspace).toBe(100);
     });
 
@@ -534,7 +555,7 @@ describe("Hinari's Store", () => {
         expect(action(engine, "store")).toBeDefined();
     });
 
-    it("conserves bondage across partial Subspace and body-track capacity", () => {
+    it("limits removal to Subspace room while applying the fixed overflow to Hinari", () => {
         const initialHinariBinding = thresholds.impossible - 5;
         const engine = constrainedStoreEngine(90, initialHinariBinding);
         const beforeAlly = bindingState(engine, tape.id, "ally")!.value;
@@ -547,11 +568,10 @@ describe("Hinari's Store", () => {
         const allyRemoved = beforeAlly - afterAlly;
         const subspaceGained = afterSubspace - 90;
         const bodyBindingGained = afterHinariBinding - initialHinariBinding;
-        expect(allyRemoved).toBe(15);
+        expect(allyRemoved).toBe(10);
         expect(subspaceGained).toBe(10);
-        expect(bodyBindingGained).toBe(5);
-        expect(afterHinariBinding).toBe(thresholds.impossible);
-        expect(allyRemoved).toBe(subspaceGained + bodyBindingGained);
+        expect(bodyBindingGained).toBe(6);
+        expect(afterHinariBinding).toBe(thresholds.impossible + 1);
     });
 
     it("refuses characters with no bindings while keeping bound characters valid", () => {
@@ -689,7 +709,7 @@ describe("Hinari's Brace", () => {
 });
 
 describe("Hinari's Release", () => {
-    it("damages an enemy and spends 25 Subspace", () => {
+    it("debuffs an enemy and spends 25 Subspace", () => {
         const engine = loadHinariEncounter({
             seed: 2,
             setup: (state) => hinariData(state, 60, 1),
@@ -702,11 +722,12 @@ describe("Hinari's Release", () => {
             targets: ["foe1"],
         });
 
-        expect(result.events).toContainEqual(expect.objectContaining({
-            type: "enemyDamaged",
-            target: "foe1",
-        }));
-        expect(engine.getGameView().enemies[0].currHp).toBeLessThan(2_000);
+        expect(result.events).toContainEqual({ type: "buffAdded", target: "foe1", buff: "subspaceClutter" });
+        expect(buffState(engine, "subspaceClutter", "foe1")).toMatchObject({
+            duration: 2,
+            modifiers: { defense: -1, hit: -1 },
+        });
+        expect(engine.getGameView().enemies[0].currHp).toBe(2_000);
         expect(characterState(engine, hinari.id).data.subspace).toBe(35);
     });
 
@@ -729,10 +750,10 @@ describe("Hinari's Release", () => {
         expect(characterState(engine, hinari.id).data.subspace).toBe(10);
     });
 
-    it("clamps low Subspace at zero for both enemy and ally releases", () => {
+    it("spends the minimum available Subspace and scales friendly Release", () => {
         const lowSubspace = (withAlly: boolean) => loadHinariEncounter({
             allies: withAlly ? [makeBehavioralCharacter("ally")] : [],
-            setup: (state) => hinariData(state, 10),
+            setup: (state) => hinariData(state, 25),
         });
         const enemyRelease = lowSubspace(false);
         const allyRelease = lowSubspace(true);
@@ -752,7 +773,7 @@ describe("Hinari's Release", () => {
 
         expect(characterState(enemyRelease, hinari.id).data.subspace).toBe(0);
         expect(characterState(allyRelease, hinari.id).data.subspace).toBe(0);
-        expect(bindingState(allyRelease, rope.id, "ally")?.value).toBe(10);
+        expect(bindingState(allyRelease, rope.id, "ally")?.value).toBe(13);
         expect(action(enemyRelease, "release")).toBeUndefined();
         expect(action(allyRelease, "release")).toBeUndefined();
     });
