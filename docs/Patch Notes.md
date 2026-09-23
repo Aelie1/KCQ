@@ -1,11 +1,5 @@
 # Ko-chan's Quest Patch Notes
 
-Patch notes are maintained for public builds after version 7.2.
-
-## 0.7.2 — 2026-09-22
-
-- First public version
-
 ## 0.7.3 — 2026-09-23
 
 ### Balance
@@ -22,3 +16,7 @@ Patch notes are maintained for public builds after version 7.2.
 - Escape potency can no longer exceed the amount of binding actually present.
 - Escape spread effects now use the amount actually removed.
 - Fixed cases where an escape/stand sequence could leave the player stuck with no valid follow-up escape.
+
+## 0.7.2 — 2026-09-22
+
+- First public version
