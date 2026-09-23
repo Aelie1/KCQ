@@ -484,9 +484,7 @@ export class GameEngine implements Engine {
                     const hasFollowUpEscape = status.canEscape()
                         && !status.isIncapacitated()
                         && !status.isSkipped()
-                        && this.state.characters.some((candidate) =>
-                            candidate.bindings.length > 0
-                            && (candidate === actor || status.canAssist()));
+                        && this.state.characters.some(x => x.bindings.length > 0 && (x === actor || status.canAssist()));
                     if (actor.standing && status.canBonusEscape() && hasFollowUpEscape) {
                         actor.bonusEscapes++;
                     }
