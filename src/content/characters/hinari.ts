@@ -12,9 +12,7 @@ const STORE_REMOVE_AMOUNT = 25;
 const STORE_REMOVE_MODIFIER = 2;
 
 const RELEASE_PLAYER_AMOUNT = 50;
-const RELEASE_PLAYER_BINDING = 25;
 const RELEASE_ENEMY_AMOUNT = 25;
-const RELEASE_DAMAGE = 50;
 
 const ROCKFALL_DAMAGE = 10;
 
@@ -39,7 +37,7 @@ export const hinari: CharacterDef = {
                     });
                 }
                 const buff = findBuff(actor, "fairyEmpowerment");
-                {
+                if (buff) {
                     const baseRocks = 6;
                     const totalRocks = baseRocks - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / baseRocks));
                     moves.push({
@@ -85,7 +83,7 @@ const store: MoveDef = {
                 if (highestBinding) {
                     const actorBinding = findBinding(actor, highestBinding.id);
                     const bindingRoom = Math.max(0, thresholds.impossible - (actorBinding?.value ?? 0));
-                    let removeAmount = Math.min(highest, getEscapePotency(STORE_REMOVE_AMOUNT, 1, STORE_REMOVE_MODIFIER));
+                    let removeAmount = Math.min(highest, getEscapePotency(STORE_REMOVE_AMOUNT, highest, 0, STORE_REMOVE_MODIFIER));
                     let overflowAmount = Math.max(0, STORE_REMOVE_AMOUNT + actor.data["subspace"] - SUBSPACE_MAX);
                     const subspaceAmount = STORE_REMOVE_AMOUNT - overflowAmount;
                     if (overflowAmount > bindingRoom) {
@@ -210,7 +208,6 @@ const release: MoveDef = {
     id: "release",
     targetSide: "either",
     targets: 1,
-    baseDamage: RELEASE_DAMAGE,
     type: "arms",
     accuracy: {
         graze: 25,
@@ -224,12 +221,23 @@ const release: MoveDef = {
         }
         for (const target of targets) {
             if (isEnemy(target.target)) {
+                const buff: iBuff = {
+                    id: "subspaceClutter",
+                    duration: 2,
+                    active: true,
+                    modifiers: {
+                        defense: -1,
+                        hit: -1,
+                    }
+                }
+
                 effects.push({
-                    type: "damage",
-                    source: actor,
+                    type: "buff",
                     target: target.target,
-                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
+                    buff: buff,
+                    operation: "add"
                 });
+
                 effects.push({
                     type: "data",
                     target: actor,
@@ -239,20 +247,21 @@ const release: MoveDef = {
             }
             else {
                 const binding = state.encounter.bindings[actor.data["subspaceBinding"]];
-                const bindingAmount = actor.data["subspace"] ?? 0;
+                const subspaceAmount = Math.min(actor.data["subspace"] ?? 0, RELEASE_PLAYER_AMOUNT);
+                const bindingAmount = Math.ceil(subspaceAmount / 2);
                 if (binding) {
                     effects.push({
                         type: "binding",
                         source: actor,
                         target: target.target,
                         binding: binding,
-                        amount: Math.min(bindingAmount, RELEASE_PLAYER_BINDING)
+                        amount: bindingAmount
                     });
                     effects.push({
                         type: "data",
                         target: actor,
                         name: "subspace",
-                        amount: -RELEASE_PLAYER_AMOUNT
+                        amount: -subspaceAmount
                     });
                 }
             }

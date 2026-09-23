@@ -3,7 +3,7 @@ import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/he
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
-import { BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
+import { BASE_ESCAPE_PENALTY, BASE_ESCAPE_POTENCY, BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
 function getIEntitySide(entity: iEntity): EntitySide {
@@ -322,7 +322,7 @@ export function tickBindings(state: iGameState): iEffect[] {
 
 export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target: iCharacter, targetStatus: GameStatus, binding: iBinding): iEffect[] {
     const effects: iEffect[] = [];
-    const escapePotency = getEscapePotency(binding.value, actorStatus.getModifier("escape"), (actor !== target ? 1.5 : 1));
+    const escapePotency = getEscapePotency(BASE_ESCAPE_POTENCY, binding.value, actorStatus.getModifier("escape"), (actor !== target ? 1.5 : 1));
 
     effects.push({
         type: "binding",
@@ -339,11 +339,11 @@ export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target
     return effects;
 }
 
-export function getEscapePotency(value: number, escapeModifier: number, assistModifier: number) {
-    const basePotency = 20;
+export function getEscapePotency(base: number, value: number, escapeModifier: number, assistModifier: number) {
+    const basePotency = base;
     const bindingValue = value;
     const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
-    const basePenalty = 15;
+    const basePenalty = BASE_ESCAPE_PENALTY;
     let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
     escapePotency *= 1 + escapeModifier * BINDING_MODIFIER;
     escapePotency *= assistModifier;
