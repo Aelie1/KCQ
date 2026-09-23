@@ -48,7 +48,7 @@ export const hinari: CharacterDef = {
                 moves.push(store);
                 moves.push(brace);
             }
-            if (actor.data["subspace"] > 0) {
+            if (actor.data["subspace"] >= RELEASE_ENEMY_AMOUNT) {
                 moves.push(release);
             }
         }
