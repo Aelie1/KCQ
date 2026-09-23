@@ -155,6 +155,30 @@ describe("stance toggling", () => {
         });
     });
 
+    it("does not wait for a bonus escape after the first escape removes the last binding", () => {
+        const restraint = makeBindingDef("rope");
+        const { engine, hero } = setupBoundEngine(restraint, thresholds.easy);
+        expect(engine.executeAction({
+            type: "stance",
+            actor: hero.id,
+        }).success).toBe(true);
+
+        const result = engine.executeAction({
+            type: "escape",
+            actor: hero.id,
+            target: hero.id,
+            binding: restraint.id,
+        });
+
+        expect(result).toMatchObject({
+            success: true,
+            view: {
+                characters: [{ id: hero.id, acted: true, bonusEscapes: 0, bindings: [] }],
+                actions: [{ id: hero.id, available: false, reason: "actorAlreadyActed", escapes: [] }],
+            },
+        });
+    });
+
     it("allows the bonus escape to assist another character", () => {
         const restraint = makeBindingDef("rope");
         const prepare = makeMove("prepare", "mouth", {

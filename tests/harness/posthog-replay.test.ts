@@ -111,16 +111,40 @@ describe("PostHog CSV replay import", () => {
             .toThrow("multiple replay IDs: replay-other, replay-synthetic");
     });
 
-    it("rejects missing and duplicate action sequences", () => {
+    it("rejects missing action sequences", () => {
         const missing = makeFixture();
         actionRow(missing.rows, 2).sequence = "3.0";
         expect(() => importPostHogReplayCsv(toCsv(missing.rows)))
             .toThrow("missing action sequence 2; next sequence is 3");
+    });
 
-        const duplicate = makeFixture();
-        actionRow(duplicate.rows, 2).sequence = "1.0";
-        expect(() => importPostHogReplayCsv(toCsv(duplicate.rows)))
-            .toThrow("duplicate action sequence: 1");
+    it("selects the duplicate sequence candidate that forms a valid replay chain", () => {
+        const fixture = makeFixture();
+        const valid = actionRow(fixture.rows, 1);
+        const invalid: ExportRow = {
+            ...valid,
+            action: JSON.stringify({
+                type: "move",
+                actor: "missing-actor",
+                move: "missing-move",
+                targets: [],
+            }),
+        };
+        fixture.rows.splice(fixture.rows.indexOf(valid), 0, invalid);
+
+        const imported = importPostHogReplayCsv(toCsv(fixture.rows));
+
+        expect(imported.replay.steps.map((step) => step.action)).toEqual(fixture.actions);
+    });
+
+    it("deduplicates identical action sequence records", () => {
+        const fixture = makeFixture();
+        fixture.rows.push({ ...actionRow(fixture.rows, 1) });
+
+        const imported = importPostHogReplayCsv(toCsv(fixture.rows));
+
+        expect(imported.replay.steps.map((step) => step.action)).toEqual(fixture.actions);
+        expect(imported.replay.steps).toHaveLength(fixture.actions.length);
     });
 
     it("stops on initial state divergence with a useful structural difference", () => {

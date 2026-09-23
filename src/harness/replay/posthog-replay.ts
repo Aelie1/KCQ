@@ -65,6 +65,8 @@ export interface ParsedPostHogReplay {
     seed: number;
     initialState: CompactStateDigest;
     actions: ParsedPostHogAction[];
+    /** Alternate records for a sequence, retained until replay-chain validation. */
+    actionCandidates?: ParsedPostHogAction[][];
     terminal?: ParsedPostHogTerminal;
 }
 
@@ -163,7 +165,7 @@ function parseReplayRecords(
     const seed = parseInteger(requiredValue(start, "seed"), "seed", start.location);
     const initialState = parseDigest(requiredValue(start, "initial_state"), "initial_state", start.location);
 
-    const actions = replayRecords
+    const actionRecords = replayRecords
         .filter((record) => record.values.event === "battle_action")
         .map((record): ParsedPostHogAction => {
             const sequence = parseInteger(
@@ -209,18 +211,23 @@ function parseReplayRecords(
         })
         .sort((left, right) => left.sequence - right.sequence);
 
-    const duplicateSequences = duplicates(actions.map((action) => action.sequence));
-    if (duplicateSequences.length > 0) {
-        throw replayError(replayId,
-            `duplicate action sequence${duplicateSequences.length === 1 ? "" : "s"}: ${duplicateSequences.join(", ")}`);
-    }
-    for (let index = 0; index < actions.length; index++) {
-        const expected = index + 1;
-        if (actions[index].sequence !== expected) {
-            throw replayError(replayId,
-                `missing action sequence ${expected}; next sequence is ${actions[index].sequence}`);
+    const actionCandidates: ParsedPostHogAction[][] = [];
+    for (const action of actionRecords) {
+        const candidates = actionCandidates.at(-1);
+        if (!candidates || candidates[0].sequence !== action.sequence) {
+            actionCandidates.push([action]);
+        } else if (!candidates.some((candidate) => isDeepStrictEqual(candidate, action))) {
+            candidates.push(action);
         }
     }
+    for (let index = 0; index < actionCandidates.length; index++) {
+        const expected = index + 1;
+        if (actionCandidates[index][0].sequence !== expected) {
+            throw replayError(replayId,
+                `missing action sequence ${expected}; next sequence is ${actionCandidates[index][0].sequence}`);
+        }
+    }
+    const actions = actionCandidates.map((candidates) => candidates[0]);
 
     const terminalRecords = replayRecords.filter((record) =>
         record.values.event === "battle_finished"
@@ -241,11 +248,28 @@ function parseReplayRecords(
         seed,
         initialState,
         actions,
+        ...(actionCandidates.some((candidates) => candidates.length > 1)
+            ? { actionCandidates }
+            : {}),
         ...(terminal === undefined ? {} : { terminal }),
     };
 }
 
 export function reconstructFightReplay(parsed: ParsedPostHogReplay): ImportedPostHogReplay {
+    const candidateGroups = parsed.actionCandidates
+        ?? parsed.actions.map((action) => [action]);
+    let firstError: unknown;
+    for (const actions of candidateSelections(candidateGroups)) {
+        try {
+            return reconstructCandidate({ ...parsed, actions });
+        } catch (error: unknown) {
+            firstError ??= error;
+        }
+    }
+    throw firstError ?? replayError(parsed.replayId, "no valid action sequence candidates");
+}
+
+function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogReplay {
     const engine = createEngine(parsed.seed);
     loadStockBattle(engine, parsed.encounter, parsed.replayId);
 
@@ -309,6 +333,22 @@ export function reconstructFightReplay(parsed: ParsedPostHogReplay): ImportedPos
         },
         ...(parsed.terminal === undefined ? {} : { terminal: parsed.terminal.type }),
     };
+}
+
+function* candidateSelections(
+    groups: readonly (readonly ParsedPostHogAction[])[],
+    index = 0,
+    selected: ParsedPostHogAction[] = [],
+): Generator<ParsedPostHogAction[]> {
+    if (index === groups.length) {
+        yield [...selected];
+        return;
+    }
+    for (const candidate of groups[index]) {
+        selected.push(candidate);
+        yield* candidateSelections(groups, index + 1, selected);
+        selected.pop();
+    }
 }
 
 export function importPostHogReplayCsv(csv: string): ImportedPostHogReplay {
