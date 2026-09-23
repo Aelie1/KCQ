@@ -16,6 +16,7 @@ import type {
     PostHogReplayClient,
     RemoteReplayMetadata,
 } from "./posthog-api";
+import type { PostHogReplayEventRow } from "./posthog-replay";
 import {
     parsePostHogReplayEvents,
     reconstructFightReplay,
@@ -78,7 +79,10 @@ export interface ReplaySyncResult {
 export interface ReplaySyncOptions {
     client: PostHogReplayClient;
     replaysDirectory: string;
+    now?: () => Date;
 }
+
+const ABANDON_AFTER_MS = 6 * 60 * 60 * 1_000;
 
 interface ArchiveEntry {
     filename: string;
@@ -112,6 +116,9 @@ export async function syncPostHogReplays(
             assertMetadataMatches(metadata, parsed);
             const imported = reconstructFightReplay(parsed);
             const archive = createArchive(metadata, imported);
+            if (!archive.terminal && isStaleReplay(rows, (options.now ?? (() => new Date()))())) {
+                archive.terminal = "abandoned";
+            }
             const summary = summarizeArchive(archive);
 
             if (!existing) {
@@ -159,6 +166,18 @@ export async function syncPostHogReplays(
         unchangedProvisional,
         failed,
     };
+}
+
+function isStaleReplay(rows: readonly PostHogReplayEventRow[], now: Date): boolean {
+    let newestEventTime = -Infinity;
+    for (const row of rows) {
+        const eventTime = Date.parse(row.timestamp);
+        if (!Number.isFinite(eventTime)) {
+            throw new Error(`Replay ${row.replay_id}: invalid event timestamp ${JSON.stringify(row.timestamp)}.`);
+        }
+        newestEventTime = Math.max(newestEventTime, eventTime);
+    }
+    return now.getTime() - newestEventTime >= ABANDON_AFTER_MS;
 }
 
 export async function findArchivedReplayIds(directory: string): Promise<Set<string>> {
