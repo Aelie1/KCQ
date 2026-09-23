@@ -322,7 +322,7 @@ export function tickBindings(state: iGameState): iEffect[] {
 
 export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target: iCharacter, targetStatus: GameStatus, binding: iBinding): iEffect[] {
     const effects: iEffect[] = [];
-    const escapePotency = getEscapePotency(BASE_ESCAPE_POTENCY, binding.value, actorStatus.getModifier("escape"), (actor !== target ? 1.5 : 1));
+    const escapePotency = getEscapePotency(binding.value, actorStatus.getModifier("escape"), (actor !== target ? 1.5 : 1));
 
     effects.push({
         type: "binding",
@@ -339,15 +339,15 @@ export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target
     return effects;
 }
 
-export function getEscapePotency(base: number, value: number, escapeModifier: number, assistModifier: number) {
-    const basePotency = base;
+export function getEscapePotency(value: number, escapeModifier: number, assistModifier: number) {
+    const basePotency = BASE_ESCAPE_POTENCY;
     const bindingValue = value;
     const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
     const basePenalty = BASE_ESCAPE_PENALTY;
     let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
     escapePotency *= 1 + escapeModifier * BINDING_MODIFIER;
     escapePotency *= assistModifier;
-    escapePotency = Math.ceil(escapePotency);
+    escapePotency = Math.min(value, Math.ceil(escapePotency));
     return escapePotency;
 }
 

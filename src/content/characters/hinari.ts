@@ -1,6 +1,6 @@
 import { getEscapePotency } from "../../engine/private/combat";
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
-import { findBinding, findBuff, isCharacter, isEnemy, thresholds } from "../../engine/protected/helpers";
+import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { hobbled } from "../../engine/protected/statuses";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
@@ -81,16 +81,10 @@ const store: MoveDef = {
                     }
                 }
                 if (highestBinding) {
-                    const actorBinding = findBinding(actor, highestBinding.id);
-                    const bindingRoom = Math.max(0, thresholds.impossible - (actorBinding?.value ?? 0));
-                    let removeAmount = Math.min(highest, getEscapePotency(STORE_REMOVE_AMOUNT, highest, 0, STORE_REMOVE_MODIFIER));
-                    let overflowAmount = Math.max(0, STORE_REMOVE_AMOUNT + actor.data["subspace"] - SUBSPACE_MAX);
+                    const subspaceRoom = SUBSPACE_MAX - actor.data["subspace"];
+                    const removeAmount = Math.min(highest, getEscapePotency(highest, 0, STORE_REMOVE_MODIFIER), subspaceRoom);
+                    const overflowAmount = Math.max(0, STORE_REMOVE_AMOUNT - subspaceRoom);
                     const subspaceAmount = STORE_REMOVE_AMOUNT - overflowAmount;
-                    if (overflowAmount > bindingRoom) {
-                        const excess = overflowAmount - bindingRoom;
-                        removeAmount = Math.max(0, removeAmount - excess);;
-                        overflowAmount = bindingRoom;
-                    }
                     const bindingId = state.encounter.bindings.findIndex(x => x.id === highestBinding.id);
                     const currentBindingId = actor.data["subspaceBinding"] ?? 0;
                     effects.push({
