@@ -1,6 +1,6 @@
 import type { BindingId, BindingLevel, BuffId, EntityId, MoveId, TrapId } from "../public/types";
 import type { MoveDef } from "./definitions";
-import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iTrap } from "./types";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iTrap } from "./types";
 
 export function isValidEntity(state: iGameState, entity: iEntity): boolean {
     if (isCharacter(entity)) {
@@ -84,4 +84,19 @@ export function findBinding(entity: iCharacter, id: BindingId): iBinding | undef
 
 export function findBuff(entity: iEntity, id: BuffId): iBuff | undefined {
     return entity.buffs.find(buff => buff.id === id);
+}
+
+export function basicDamageEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    const effects: iEffect[] = [];
+    for (const target of targets) {
+        if (isEnemy(target.target)) {
+            effects.push({
+                type: "damage",
+                source: actor,
+                target: target.target,
+                amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
+            });
+        }
+    }
+    return effects;
 }

@@ -1,6 +1,6 @@
 import { getEscapePotency } from "../../engine/private/combat";
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
-import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { hobbled } from "../../engine/protected/statuses";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
@@ -173,18 +173,7 @@ const rockfall: MoveDef = {
         crit: 10
     },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
-        for (const target of targets) {
-            if (isEnemy(target.target)) {
-                effects.push({
-                    type: "damage",
-                    source: actor,
-                    target: target.target,
-                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
-                });
-            }
-        }
-        return effects;
+        return basicDamageEffect(actor, move, targets);
     }
 }
 
