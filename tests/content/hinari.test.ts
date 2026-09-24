@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hinari } from "../../src/content/characters/hinari";
+import { EMPOWERMENT_BUFF } from "../../src/content/characters/ko";
 import { latexLegs } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
@@ -175,7 +176,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
                     type: "buff",
                     operation: "add",
                     target: state.characters[0],
-                    buff: { id: "fairyEmpowerment", active: true },
+                    buff: { id: EMPOWERMENT_BUFF, active: true },
                 },
             ],
         });
@@ -194,9 +195,9 @@ describe("Hinari's dynamic move set and Rockfall", () => {
         expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: hinari.id,
-            buff: "fairyEmpowerment",
+            buff: EMPOWERMENT_BUFF,
         }]);
-        expect(buffState(engine, "fairyEmpowerment", hinari.id)).toBeUndefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, hinari.id)).toBeUndefined();
         expect(moveIds(engine)).toContain("rockfall");
         expect(moveIds(engine)).not.toContain("fairyRockfall");
     });
@@ -207,7 +208,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
                 type: "buff",
                 operation: "add",
                 target: state.characters[0],
-                buff: { id: "fairyEmpowerment", active: true },
+                buff: { id: EMPOWERMENT_BUFF, active: true },
             }],
         });
 
@@ -219,7 +220,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
         });
 
         expect(result.events.some(({ type }) => type === "buffRemoved")).toBe(false);
-        expect(buffState(engine, "fairyEmpowerment", hinari.id)).toBeDefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, hinari.id)).toBeDefined();
         expect(moveIds(engine)).toContain("fairyRockfall");
     });
 });

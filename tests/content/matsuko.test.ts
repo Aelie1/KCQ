@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { EMPOWERMENT_BUFF } from "../../src/content/characters/ko";
 import { matsuko } from "../../src/content/characters/matsuko";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
@@ -275,7 +276,7 @@ describe("Matsuko's dynamic offensive kit", () => {
                 type: "buff",
                 operation: "add",
                 target: state.characters[0],
-                buff: { id: "fairyEmpowerment", active: true },
+                buff: { id: EMPOWERMENT_BUFF, active: true },
             }],
         });
 
@@ -326,9 +327,9 @@ describe("Matsuko's dynamic offensive kit", () => {
         expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: matsuko.id,
-            buff: "fairyEmpowerment",
+            buff: EMPOWERMENT_BUFF,
         }]);
-        expect(buffState(engine, "fairyEmpowerment", matsuko.id)).toBeUndefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, matsuko.id)).toBeUndefined();
         expectMoveSet(engine, [
             "whiteFlame",
             "phoenixKick",
@@ -348,7 +349,7 @@ describe("Matsuko's dynamic offensive kit", () => {
                     type: "buff",
                     operation: "add",
                     target: state.characters[0],
-                    buff: { id: "fairyEmpowerment", active: true },
+                    buff: { id: EMPOWERMENT_BUFF, active: true },
                 }],
             });
 
@@ -359,7 +360,7 @@ describe("Matsuko's dynamic offensive kit", () => {
                 targets: ["foe1"],
             });
 
-            expect(buffState(engine, "fairyEmpowerment", matsuko.id)).toBeDefined();
+            expect(buffState(engine, EMPOWERMENT_BUFF, matsuko.id)).toBeDefined();
             expect(actionView(engine, matsuko.id).moves.map(({ move }) => move.id))
                 .toEqual(expect.arrayContaining(["fairyWhiteFlame", "fairyPhoenixKick"]));
         },
@@ -372,7 +373,7 @@ describe("Matsuko's dynamic offensive kit", () => {
                 type: "buff",
                 operation: "add",
                 target: state.characters[0],
-                buff: { id: "fairyEmpowerment", active: true },
+                buff: { id: EMPOWERMENT_BUFF, active: true },
             }],
         });
 
@@ -384,7 +385,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
 
         expect(result.events.some(({ type }) => type === "buffRemoved")).toBe(false);
-        expect(buffState(engine, "fairyEmpowerment", matsuko.id)).toBeDefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, matsuko.id)).toBeDefined();
         expectMoveSet(engine, ["punch", "kick", "obey", "stop", "attackMe"]);
     });
 
@@ -394,7 +395,7 @@ describe("Matsuko's dynamic offensive kit", () => {
                 type: "buff",
                 operation: "add",
                 target: state.characters[0],
-                buff: { id: "fairyEmpowerment", active: true },
+                buff: { id: EMPOWERMENT_BUFF, active: true },
             }];
         };
         const stopEngine = loadMatsukoEncounter({ setup: empoweredSetup });
@@ -443,7 +444,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         for (const { engine, action: playerAction } of scenarios) {
             const result = execute(engine, playerAction);
             expect(result.events.some(({ type }) => type === "buffRemoved")).toBe(false);
-            expect(buffState(engine, "fairyEmpowerment", matsuko.id)).toBeDefined();
+            expect(buffState(engine, EMPOWERMENT_BUFF, matsuko.id)).toBeDefined();
         }
     });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ko } from "../../src/content/characters/ko";
+import { EMPOWERMENT_BUFF, ko, TRANSFORMATION_BUFF } from "../../src/content/characters/ko";
 import type { CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { isCharacter } from "../../src/engine/protected/helpers";
@@ -45,7 +45,7 @@ function empowerKo(state: iGameState): iEffect[] {
         type: "buff",
         operation: "add",
         target: state.characters[0],
-        buff: { id: "fairyEmpowerment", active: true },
+        buff: { id: EMPOWERMENT_BUFF, active: true },
     }];
 }
 
@@ -299,7 +299,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             move: "telekinesis",
             targets: ["foe1"],
         });
-        expect(buffState(empowered, "fairyEmpowerment", ko.id)).toBeDefined();
+        expect(buffState(empowered, EMPOWERMENT_BUFF, ko.id)).toBeDefined();
     });
 });
 
@@ -403,9 +403,9 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
-            buff: "fairyEmpowerment",
+            buff: EMPOWERMENT_BUFF,
         }]);
-        expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, ko.id)).toBeUndefined();
 
         expectMoveSet(engine, [
             "telekinesis",
@@ -439,9 +439,9 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
-            buff: "fairyEmpowerment",
+            buff: EMPOWERMENT_BUFF,
         }]);
-        expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, ko.id)).toBeUndefined();
         expectMoveSet(engine, [
             "telekinesis",
             "starlightBindings",
@@ -493,11 +493,11 @@ describe("Ko's normal and Fairy move effects", () => {
             modifiers: { defense: 3 },
             buffs: expect.arrayContaining([
                 expect.objectContaining({
-                    id: "fairyTransformation",
+                    id: TRANSFORMATION_BUFF,
                     duration: 3,
                     modifiers: { defense: 3 },
                 }),
-                expect.objectContaining({ id: "fairyEmpowerment" }),
+                expect.objectContaining({ id: EMPOWERMENT_BUFF }),
             ]),
         });
         expectMoveSet(engine, [
@@ -512,12 +512,12 @@ describe("Ko's normal and Fairy move effects", () => {
         ]);
 
         execute(engine, { type: "endTurn" });
-        expect(buffState(engine, "fairyTransformation", ko.id)).toMatchObject({ duration: 2 });
+        expect(buffState(engine, TRANSFORMATION_BUFF, ko.id)).toMatchObject({ duration: 2 });
         expect(engine.getGameView().characters[0].modifiers).toEqual({ defense: 3 });
         execute(engine, { type: "endTurn" });
-        expect(buffState(engine, "fairyTransformation", ko.id)).toMatchObject({ duration: 1 });
+        expect(buffState(engine, TRANSFORMATION_BUFF, ko.id)).toMatchObject({ duration: 1 });
         execute(engine, { type: "endTurn" });
-        expect(buffState(engine, "fairyTransformation", ko.id)).toBeUndefined();
+        expect(buffState(engine, TRANSFORMATION_BUFF, ko.id)).toBeUndefined();
         expect(engine.getGameView().characters[0].modifiers).toEqual({});
     });
 
@@ -537,9 +537,9 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(fairyReflect.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
-            buff: "fairyEmpowerment",
+            buff: EMPOWERMENT_BUFF,
         }]);
-        expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, ko.id)).toBeUndefined();
 
         const result = execute(engine, { type: "endTurn" });
         expect(result.events).toEqual(expect.arrayContaining([
@@ -577,7 +577,7 @@ describe("Ko's normal and Fairy move effects", () => {
         const ally: CharacterDef = {
             ...makeBehavioralCharacter("ally"),
             getMoves: (actor) => actor.buffs.some(
-                ({ id, active }) => id === "fairyEmpowerment" && active,
+                ({ id, active }) => id === EMPOWERMENT_BUFF && active,
             ) ? [allyFairy] : [allyNormal],
         };
         const encounter: EncounterDef = {
@@ -613,18 +613,18 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
-            buff: "fairyEmpowerment",
+            buff: EMPOWERMENT_BUFF,
         }]);
-        expect(buffState(engine, "fairyEmpowerment", ko.id)).toBeUndefined();
-        expect(buffState(engine, "fairyEmpowerment", "ally")).toBeDefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, ko.id)).toBeUndefined();
+        expect(buffState(engine, EMPOWERMENT_BUFF, "ally")).toBeDefined();
         expect(engine.getGameView().characters[0].buffs
-            .filter(({ id }) => id === "fairyEmpowerment")).toHaveLength(0);
+            .filter(({ id }) => id === EMPOWERMENT_BUFF)).toHaveLength(0);
         expect(engine.getGameView().characters[1].buffs
-            .filter(({ id }) => id === "fairyEmpowerment")).toHaveLength(1);
-        expect(buffState(engine, "fairyTransformation", ko.id)).toMatchObject({
+            .filter(({ id }) => id === EMPOWERMENT_BUFF)).toHaveLength(1);
+        expect(buffState(engine, TRANSFORMATION_BUFF, ko.id)).toMatchObject({
             modifiers: { defense: 3 },
         });
-        expect(buffState(engine, "fairyTransformation", "ally")).toMatchObject({
+        expect(buffState(engine, TRANSFORMATION_BUFF, "ally")).toMatchObject({
             modifiers: { defense: 2 },
         });
         expect(engine.getGameView().characters.map(({ modifiers }) => modifiers))

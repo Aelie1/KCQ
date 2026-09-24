@@ -6,12 +6,11 @@ import { formatAccuracyRow, renderScreen } from "../../src/console/render";
 import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
 import { latexArms } from "../../src/content/skunk/latex";
-import { createCustomEngine } from "../../src/engine/protected/engine";
-import type { Engine } from "../../src/engine/public/types";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
+import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { helpless, stunned } from "../../src/engine/protected/statuses";
-import type { GameEvent, GameState, Intention } from "../../src/engine/public/types";
+import type { Engine, GameEvent, GameState, Intention } from "../../src/engine/public/types";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -659,7 +658,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("[3] reflect [mouth; no target]   adds reflect");
         expect(rendered).toContain(
             "[4] fairyTransformation [mouth; no target]   "
-            + "adds fairyTransformation (Def +3) | adds fairyEmpowerment",
+            + "adds transformation (Def +3) | adds empowerment",
         );
         expect(rendered).not.toContain("Miss:");
     });
