@@ -5,7 +5,7 @@ if (!encounterId || !policyId || !runsText) {
     throw new Error("usage: node .perf/current-bench.cjs <encounter> <policy> <runs> [maxActions] [seed]");
 }
 
-const { runBatch } = require("../dist/harness/batch.js");
+const { runBatch } = require("../dist/harness/batch/batch.js");
 const { getPolicy } = require("../dist/harness/policies.js");
 const policy = getPolicy(policyId);
 if (!policy) throw new Error(`unknown policy ${policyId}`);

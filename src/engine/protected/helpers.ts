@@ -1,4 +1,4 @@
-import type { BindingId, BindingLevel, BuffId, EntityId, MoveId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingId, BindingLevel, BuffId, EntityId, MoveId, TrapId } from "../public/types";
 import type { MoveDef } from "./definitions";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iTrap } from "./types";
 
@@ -86,10 +86,17 @@ export function findBuff(entity: iEntity, id: BuffId): iBuff | undefined {
     return entity.buffs.find(buff => buff.id === id);
 }
 
+export const basicPlayerAccuracy: AccuracyProfile = {
+    miss: 10,
+    graze: 15,
+    hit: 65,
+    crit: 10
+}
+
 export function basicDamageEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
     const effects: iEffect[] = [];
     for (const target of targets) {
-        if (isEnemy(target.target)) {
+        if (isEnemy(target.target) && target.effectiveness > 0) {
             effects.push({
                 type: "damage",
                 source: actor,
@@ -107,7 +114,7 @@ export function basicBindingEffect(actor: iEntity, move: iMove, targets: iTarget
         return effects;
     }
     for (const target of targets) {
-        if (isCharacter(target.target)) {
+        if (isCharacter(target.target) && target.effectiveness > 0) {
             effects.push({
                 type: "binding",
                 source: actor,

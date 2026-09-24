@@ -15,7 +15,7 @@ export function targetAccuracy(
     const action = actionView(engine, actor).moves.find((candidate) => candidate.move.id === move);
     const info = action?.targets.find((candidate) => candidate.target === target);
     if (!info || !info.valid) throw new Error(`Expected ${String(target)} to be a valid target`);
-    return info.accuracy;
+    return info.damage;
 }
 
 export function makeBehavioralMove(

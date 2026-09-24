@@ -154,10 +154,10 @@ describe("accuracy", () => {
         const info = actionView(engine, actor.id).moves
             .find(({ move: candidate }) => candidate.id === move.id)
             ?.targets.find(({ target }) => target !== null);
-        if (!info || !info.valid || !info.accuracy) {
+        if (!info || !info.valid || !info.damage) {
             throw new Error("Expected a valid target with an accuracy profile");
         }
-        return info.accuracy;
+        return info.damage;
     }
 
     function moveUsed(result: ReturnType<Engine["executeAction"]>): MoveEvent {
@@ -511,14 +511,14 @@ describe("accuracy", () => {
             ?.targets ?? [];
         const expected = referenceTargets.map((target) => {
             const preview = previews.find(({ target: id }) => id === target.id);
-            if (!preview || !preview.valid || !preview.accuracy) {
+            if (!preview || !preview.valid || !preview.damage) {
                 throw new Error(`Expected an accuracy preview for ${target.id}`);
             }
             return evaluateAccuracyResult(
                 makeAccuracyActor(),
                 target,
                 move,
-                preview.accuracy,
+                preview.damage,
                 referenceRng.accuracy(),
             );
         });

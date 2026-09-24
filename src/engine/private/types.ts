@@ -1,17 +1,23 @@
 import { GameStatus } from "../protected/status";
 import { iEffect, iEnemy, iEntity } from "../protected/types";
-import { AccuracyProfile, EnemyEffect, FailureReason, InvalidTarget, ValidTarget } from "../public/types";
+import { AccuracyProfile, EnemyEffect, FailureReason, PreviewProfile } from "../public/types";
 
 export type iValidityInfo = iValidTarget | iInvalidTarget;
+export type iPreviewInfo = iMovePreview | iInvalidTarget;
 
-interface iValidTarget extends Omit<ValidTarget, "target"> {
+export interface iMovePreview extends Omit<iValidTarget, "accuracy"> {
+    effects: iEffect[];
+    damage?: PreviewProfile;
+}
+
+interface iValidTarget {
     valid: true;
     target: iEntity | null;
     status: GameStatus | null;
     accuracy: AccuracyProfile | null;
 }
 
-interface iInvalidTarget extends Omit<InvalidTarget, "target"> {
+interface iInvalidTarget {
     valid: false;
     target: iEntity | null;
     reason: FailureReason;

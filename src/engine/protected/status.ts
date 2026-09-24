@@ -95,15 +95,14 @@ export class GameStatus {
             }
         }
 
-        const result: ModifierSet = {};
-
-        for (const [modifier, amount] of Object.entries(this.modifiers) as [ModifierId, number][]) {
-            if (amount !== 0) {
-                result[modifier] = amount;
+        for (const modifier in this.modifiers) {
+            const id = modifier as ModifierId;
+            if (this.modifiers[id] === 0) {
+                delete this.modifiers[id];
             }
         }
 
-        return result;
+        return this.modifiers;
     }
 
     getModifier(id: ModifierId): number {

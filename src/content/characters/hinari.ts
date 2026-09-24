@@ -1,6 +1,6 @@
 import { getEscapePotency } from "../../engine/private/combat";
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
-import { basicDamageEffect, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { hobbled } from "../../engine/protected/statuses";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
@@ -166,12 +166,7 @@ const rockfall: MoveDef = {
     targets: 1,
     baseDamage: ROCKFALL_DAMAGE,
     type: "arms",
-    accuracy: {
-        miss: 10,
-        graze: 15,
-        hit: 65,
-        crit: 10
-    },
+    accuracy: basicPlayerAccuracy,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         return basicDamageEffect(actor, move, targets);
     }
@@ -192,11 +187,6 @@ const release: MoveDef = {
     targetSide: "either",
     targets: 1,
     type: "arms",
-    accuracy: {
-        graze: 25,
-        hit: 65,
-        crit: 10
-    },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects: iEffect[] = [];
         if (typeof actor.data["subspace"] !== "number" || actor.data["subspaceBinding"] === undefined || !state.encounter) {

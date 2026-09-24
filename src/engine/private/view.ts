@@ -2,10 +2,11 @@ import { MoveDef } from "../protected/definitions";
 import { getMoves } from "../protected/helpers";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iCharacter, iGameState } from "../protected/types";
-import { ActionInfo, ActionView, EscapeInfo, FailureReason, StanceInfo, type GameView } from "../public/types";
-import { isValidTarget, resolveEscape } from "./combat";
-import { serializeEffects, serializeGameState, serializeMove, serializeValidity } from "./serialize";
-import { iValidityInfo } from "./types";
+import { ActionInfo, ActionView, EscapeInfo, FailureReason, PreviewProfile, StanceInfo, type GameView } from "../public/types";
+import { isValidTarget, resolveEscape, resolveMove } from "./combat";
+import { DAMAGE_BANDS, EFFECTIVENESS_MODIFIER, effectivenessRange } from "./constants";
+import { serializeEffects, serializeGameState, serializeMove, serializePreview } from "./serialize";
+import { iPreviewInfo, iValidityInfo } from "./types";
 
 export function getGameView(state: iGameState): GameView {
     //First we cache all statuses
@@ -65,7 +66,6 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
     for (const move of getMoves(actor)) {
         let available = true;
         let reason: FailureReason = "moveUnavailable";
-        const targets = getTargets(state, actor, statuses, move);
         if (result) {
             available = false;
             reason = result;
@@ -78,24 +78,29 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
             available = false;
             reason = "bindingRestriction";
         }
-        else if (move.targets !== "all"
-            && !targets.some(x => x.valid)) {
-            available = false;
-            if (targets.length && !targets[0].valid) {
-                reason = targets[0].reason;
-            }
-        }
         if (available) {
+            const targets = getTargets(state, actor, statuses, move);
+            if (move.targets !== "all" && !targets.some(x => x.valid)) {
+                if (targets.length && !targets[0].valid) {
+                    reason = targets[0].reason;
+                }
+                actions.push({
+                    move: serializeMove(move),
+                    available: false,
+                    targets: [],
+                    reason: reason
+                });
+            }
             actions.push({
                 move: serializeMove(move),
                 available: true,
-                targets: targets.map(serializeValidity)
+                targets: targets.map(serializePreview)
             });
         } else {
             actions.push({
                 move: serializeMove(move),
                 available: false,
-                targets: targets.map(serializeValidity),
+                targets: [],
                 reason: reason
             });
         }
@@ -103,7 +108,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
     return actions;
 }
 
-function getTargets(state: iGameState, actor: iCharacter, statuses: StatusMap, move: MoveDef): iValidityInfo[] {
+function getTargets(state: iGameState, actor: iCharacter, statuses: StatusMap, move: MoveDef): iPreviewInfo[] {
     const result: iValidityInfo[] = [];
     const actorStatus = getStatus(statuses, actor);
     if (move.targets === 0) {
@@ -136,6 +141,7 @@ function getTargets(state: iGameState, actor: iCharacter, statuses: StatusMap, m
         }
     }
 
+
     const validTargets = result.filter(x => x.valid).length;
     if (move.targets !== "all"
         && move.targets > 0
@@ -146,9 +152,49 @@ function getTargets(state: iGameState, actor: iCharacter, statuses: StatusMap, m
             reason: "invalidTargetCount"
         }];
     }
+    const potency = getStatus(statuses, actor).getModifier("potency") + (move.modifiers?.potency ?? 0);
 
-    return result;
+    return result.map(x => addDamagePreviews(state, actor, potency, move, x));
 }
+
+
+function addDamagePreviews(state: iGameState, actor: iCharacter, potency: number, move: MoveDef, info: iValidityInfo): iPreviewInfo {
+    if (!info.valid) {
+        return info;
+    }
+
+    const effects = resolveMove(state, { definition: move }, actor, info.target ? [{ band: "none", effectiveness: 0, target: info.target }] : []);
+
+    //this is a damage move, load up a preview object
+    if (info.accuracy && move.baseDamage && info.target) {
+
+        const damage: PreviewProfile = {};
+        if (info.accuracy.miss) {
+            damage.miss = { chance: info.accuracy.miss, min: 0, max: 0 };
+        }
+        const vulnerability = info.status?.getModifier("vulnerability") ?? 0;
+        const modifier = (1 + potency * EFFECTIVENESS_MODIFIER) * (1 + vulnerability * EFFECTIVENESS_MODIFIER);
+        for (const band of DAMAGE_BANDS) {
+            if (info.accuracy[band]) {
+                const min = Math.ceil(effectivenessRange[band][0] * move.baseDamage * modifier);
+                const max = Math.ceil(effectivenessRange[band][1] * move.baseDamage * modifier);
+                damage[band] = { chance: info.accuracy[band], min: min, max: max };
+            }
+        }
+        return {
+            ...info,
+            effects,
+            damage
+        };
+    }
+
+    //this isnt a damage move, resolve it to get it's effects
+    return {
+        ...info,
+        effects
+    }
+}
+
 
 function getEscapes(state: iGameState, actor: iCharacter, statuses: StatusMap): EscapeInfo[] {
     const result: EscapeInfo[] = [];

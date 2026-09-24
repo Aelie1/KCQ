@@ -9,6 +9,7 @@ export const HIT_MODIFIER = 10;
 export const WILLPOWER_MODIFIER = 10;
 export const TRAP_MODIFIER = 5;
 export const TRAP_MAX = 100;
+export const DAMAGE_BANDS = ["graze", "hit", "crit"] as const;
 
 
 export const effectivenessRange: Record<HitBand, [number, number]> = {

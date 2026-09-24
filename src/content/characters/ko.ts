@@ -1,5 +1,5 @@
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
-import { basicDamageEffect, findBuff, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, basicPlayerAccuracy, findBuff, isEnemy } from "../../engine/protected/helpers";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 
 const TELEKINESIS_DAMAGE = 30;
@@ -29,12 +29,7 @@ const telekinesis: MoveDef = {
     targets: 1,
     baseDamage: TELEKINESIS_DAMAGE,
     type: "mouth",
-    accuracy: {
-        miss: 10,
-        graze: 15,
-        hit: 65,
-        crit: 10
-    },
+    accuracy: basicPlayerAccuracy,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         return basicDamageEffect(actor, move, targets);
     }

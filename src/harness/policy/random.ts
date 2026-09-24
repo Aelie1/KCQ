@@ -2,7 +2,7 @@ import type {
     ActionInfo,
     EntityId,
     PlayerAction,
-    ValidityInfo,
+    PreviewInfo,
 } from "../../engine/public/types";
 import type { FightPolicy, PolicyContext, PolicyRandom } from "../harness";
 
@@ -73,7 +73,7 @@ function hasEnoughTargets(info: ActionInfo): boolean {
 
 function randomTargets(
     targetCount: number | "all",
-    candidates: readonly ValidityInfo[],
+    candidates: readonly PreviewInfo[],
     random: PolicyRandom,
 ): string[] {
     if (targetCount === 0 || targetCount === "all") {
@@ -90,7 +90,7 @@ function randomTargets(
     return selected;
 }
 
-function validTargetIds(candidates: readonly ValidityInfo[]): string[] {
+function validTargetIds(candidates: readonly PreviewInfo[]): string[] {
     return [...new Set(candidates
         .filter((candidate) => candidate.valid && candidate.target !== null)
         .map((candidate) => candidate.target as string))];

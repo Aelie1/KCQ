@@ -1,4 +1,4 @@
-import type { PlayerAction, ValidityInfo } from "../../engine/public/types";
+import type { PlayerAction, PreviewInfo } from "../../engine/public/types";
 import type { FightPolicy, PolicyContext } from "../harness";
 
 export const firstPolicy: FightPolicy = {
@@ -28,7 +28,7 @@ export const firstPolicy: FightPolicy = {
 
 export function firstTargets(
     targetCount: number | "all",
-    candidates: readonly ValidityInfo[],
+    candidates: readonly PreviewInfo[],
 ): string[] {
     if (targetCount === 0 || targetCount === "all") {
         return [];

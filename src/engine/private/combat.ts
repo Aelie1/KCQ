@@ -228,9 +228,8 @@ export function evaluateResult(actor: iEntity, actorStatus: GameStatus, target: 
 
 export function evaluateProfile(actor: iEntity, status: GameStatus, move: MoveDef, accuracy: AccuracyProfile, roll: number, vulnerability: number): AccuracyResult {
     const order: HitBand[] = ["miss", "graze", "hit", "crit"];
-    const result: AccuracyResult = { band: "none", effectiveness: 0 }
-        ;
-    const potency = status.getModifier("potency") + (move.modifiers?.["potency"] ?? 0);
+    const result: AccuracyResult = { band: "none", effectiveness: 0 };
+    const potency = status.getModifier("potency") + (move.modifiers?.potency ?? 0);
 
     let cumulative = 0;
     for (const band of order) {

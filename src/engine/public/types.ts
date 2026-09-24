@@ -193,12 +193,13 @@ export interface AccuracyResult {
 
 export type TargetCount = number | "all"
 
-export type ValidityInfo = ValidTarget | InvalidTarget;
+export type PreviewInfo = ValidTarget | InvalidTarget;
 
 export interface ValidTarget {
     valid: true;
     target: EntityId | null;
-    accuracy: AccuracyProfile | null;
+    damage?: PreviewProfile;
+    effects: Effect[];
 }
 
 export interface InvalidTarget {
@@ -206,6 +207,14 @@ export interface InvalidTarget {
     target: EntityId | null;
     reason: FailureReason;
 }
+
+export interface BandPreview {
+    chance: number;
+    min: number;
+    max: number;
+}
+
+export type PreviewProfile = Partial<Record<HitBand, BandPreview>>;
 
 /*******************************************************
  * Bindings
@@ -287,7 +296,7 @@ export type ModifierId =
 export interface ActionInfo {
     move: Move;
     available: boolean;
-    targets: ValidityInfo[];
+    targets: PreviewInfo[];
     reason?: FailureReason;
 }
 

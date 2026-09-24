@@ -1,4 +1,4 @@
-import type { AccuracyProfile, BindingId, Character, Enemy, EntityId, FailureReason, GameState, ModifierId, MoveType, Status, ThresholdInfo, } from "../engine/public/types";
+import type { AccuracyProfile, BindingId, Character, Enemy, EntityId, FailureReason, GameState, ModifierId, MoveType, PreviewProfile, Status, ThresholdInfo, } from "../engine/public/types";
 import { formatBuff, formatIntention } from "./format";
 import {
     accuracyQualityStyle,
@@ -113,7 +113,7 @@ export function renderScreen(
     ].join("\n");
 }
 
-export function formatAccuracyRow(label: string, profile: AccuracyProfile | null): string {
+export function formatAccuracyRow(label: string, profile: PreviewProfile | undefined): string {
     const bands: readonly [keyof AccuracyProfile, string][] = [
         ["miss", "Miss"],
         ["graze", "Graze"],
@@ -121,7 +121,7 @@ export function formatAccuracyRow(label: string, profile: AccuracyProfile | null
         ["crit", "Crit"],
     ];
     const values = bands.flatMap(([key, display]) => {
-        const percentage = profile?.[key];
+        const percentage = profile?.[key]?.chance;
         return percentage === undefined ? [] : [`${display}: ${formatNumber(percentage)}%`];
     });
     const target = label === "No target" ? "" : `${label} — `;

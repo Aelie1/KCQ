@@ -2,9 +2,9 @@ import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/helpers";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iTrap } from "../protected/types";
-import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, Status, TargetInfo, Trap, ValidityInfo } from "../public/types";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, PreviewInfo, Status, TargetInfo, Trap } from "../public/types";
 import { evaluateBattleState, evaluateIntention, resolveMove } from "./combat";
-import type { iValidityInfo } from "./types";
+import { iPreviewInfo } from "./types";
 
 export function serializeGameState(state: iGameState, statuses: StatusMap): GameState {
     return {
@@ -158,7 +158,7 @@ export function serializeMove(move: MoveDef): Move {
     };
 }
 
-export function serializeValidity(info: iValidityInfo): ValidityInfo {
+export function serializePreview(info: iPreviewInfo): PreviewInfo {
     const target = info.target === null ? null : info.target.id;
 
     if (!info.valid) {
@@ -172,7 +172,8 @@ export function serializeValidity(info: iValidityInfo): ValidityInfo {
     return {
         valid: true,
         target,
-        accuracy: info.accuracy
+        damage: info.damage,
+        effects: serializeEffects(info.effects)
     };
 }
 

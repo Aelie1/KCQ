@@ -517,7 +517,7 @@ function accuracyLines(targets: ValidTarget[]): string[] {
     return targets.map((target) =>
         formatAccuracyRow(
             target.target ?? "No target",
-            target.accuracy,
+            target.damage,
         ),
     );
 }

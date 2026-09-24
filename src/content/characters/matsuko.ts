@@ -1,5 +1,5 @@
 import { CharacterDef, MoveDef } from "../../engine/protected/definitions";
-import { basicDamageEffect, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
 import { iBuff, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
@@ -57,12 +57,7 @@ const punch: MoveDef = {
     targets: 1,
     baseDamage: PUNCH_DAMAGE,
     type: "arms",
-    accuracy: {
-        miss: 10,
-        graze: 15,
-        hit: 65,
-        crit: 10
-    },
+    accuracy: basicPlayerAccuracy,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         return basicDamageEffect(actor, move, targets);
     }
@@ -74,12 +69,7 @@ const kick: MoveDef = {
     targets: 1,
     baseDamage: KICK_DAMAGE,
     type: "legs",
-    accuracy: {
-        miss: 10,
-        graze: 15,
-        hit: 65,
-        crit: 10
-    },
+    accuracy: basicPlayerAccuracy,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         return basicDamageEffect(actor, move, targets);
     }
@@ -91,12 +81,7 @@ const whiteFlame: MoveDef = {
     targets: 1,
     baseDamage: WHITE_FLAME_DAMAGE,
     type: "arms",
-    accuracy: {
-        miss: 10,
-        graze: 15,
-        hit: 65,
-        crit: 10
-    },
+    accuracy: basicPlayerAccuracy,
     modifiers: { hit: 2 },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         return basicDamageEffect(actor, move, targets);
@@ -123,12 +108,7 @@ const phoenixKick: MoveDef = {
     targets: 1,
     baseDamage: PHOENIX_KICK_DAMAGE,
     type: "legs",
-    accuracy: {
-        miss: 10,
-        graze: 15,
-        hit: 65,
-        crit: 10
-    },
+    accuracy: basicPlayerAccuracy,
     modifiers: { potency: 2 },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         return basicDamageEffect(actor, move, targets);
@@ -155,12 +135,7 @@ const immolation: MoveDef = {
     targets: "all",
     baseDamage: IMMOLATION_DAMAGE,
     type: "none",
-    accuracy: {
-        miss: 10,
-        graze: 15,
-        hit: 65,
-        crit: 10
-    },
+    accuracy: basicPlayerAccuracy,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
         const effects = basicDamageEffect(actor, move, targets);
 
