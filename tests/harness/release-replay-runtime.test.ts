@@ -54,7 +54,7 @@ describe("release replay runtime", () => {
     it("reports a missing release tag without falling back to current source", async () => {
         const rows = await fixture();
         await expect(new ReleaseReplayRuntime(root, false).reconstruct(rows, "missing-kcq-release"))
-            .rejects.toThrow(/cannot resolve Git tag/u);
+            .rejects.toThrow(/^Replay release missing-kcq-release: cannot resolve Git tag\.$/u);
     });
 
     it.skipIf(!hasTag)("routes archive sync through the recorded release", async () => {

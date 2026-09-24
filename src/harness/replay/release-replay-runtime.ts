@@ -39,9 +39,6 @@ export class ReleaseReplayRuntime {
         try {
             imported = JSON.parse(output);
         } catch {
-            if (!this.#fetchMissingTags) {
-                throw new Error(`Replay release ${release}: cannot resolve Git tag.`);
-            }
             throw new Error(`Replay runtime ${release} returned invalid JSON.`);
         }
         if (!isImportedReplay(imported) || imported.release !== release) {
@@ -73,6 +70,9 @@ export class ReleaseReplayRuntime {
                 "rev-parse", "--verify", `refs/tags/${release}^{commit}`,
             ], this.#root)).trim();
         } catch {
+            if (!this.#fetchMissingTags) {
+                throw new Error(`Replay release ${release}: cannot resolve Git tag.`);
+            }
             try {
                 await runProcess("git", ["fetch", "--no-tags", "origin", "tag", release], this.#root);
                 commit = (await runProcess("git", [
