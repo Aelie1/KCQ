@@ -27,7 +27,7 @@ function addBuffMove(
         targetSide: "none",
         alwaysAvailable: true,
         freeOnHit: true,
-        resolve: (state) => [{
+        resolve: (state) => (target === "hero" ? state.characters[0] : state.enemies[0]) ? [{
             type: "buff",
             target: target === "hero" ? state.characters[0] : state.enemies[0],
             buff: {
@@ -37,7 +37,7 @@ function addBuffMove(
                 statuses: [{ definition: blinded, value: 1 }],
             },
             operation: "add",
-        }],
+        }] : [],
     });
 }
 
@@ -179,7 +179,7 @@ describe("buff behavior through GameEngine", () => {
         const addAll = makeBehavioralMove("add-all", "mouth", {
             targets: 0,
             targetSide: "none",
-            resolve: (state) => [
+            resolve: (state) => state.enemies[0] ? [
                 {
                     type: "buff",
                     target: state.characters[0],
@@ -198,7 +198,7 @@ describe("buff behavior through GameEngine", () => {
                     buff: { id: "third", active: true, duration: 1 },
                     operation: "add",
                 },
-            ],
+            ] : [],
         });
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("hero", [addAll]),
@@ -266,6 +266,7 @@ describe("buff status integration through GameEngine", () => {
         const add = addBuffMove("blind-self", "hero", 3, "blindness");
         const attack = makeBehavioralMove("accuracy-check", "mouth", {
             accuracy: { miss: 20, hit: 80 },
+            baseDamage: 10,
         });
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("hero", [add, attack]),
@@ -286,10 +287,12 @@ describe("buff status integration through GameEngine", () => {
         const granted = makeBehavioralMove("buff-granted", "arms");
         const accuracyCheck = makeBehavioralMove("accuracy-check", "mouth", {
             accuracy: { miss: 20, hit: 80 },
+            baseDamage: 10,
         });
         const addPending = makeBehavioralMove("add-pending", "mouth", {
             targetSide: "none",
             targets: 0,
+            freeOnHit: true,
             resolve: (state) => [{
                 type: "buff",
                 target: state.characters[0],

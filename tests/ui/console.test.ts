@@ -599,9 +599,17 @@ describe("console formatting", () => {
     });
 
     it("formats defined accuracy bands on one line and omits missing bands", () => {
-        expect(formatAccuracyRow("foe", { miss: 10, graze: 15, hit: 65, crit: 10 }))
+        expect(formatAccuracyRow("foe", {
+            miss: { chance: 10, min: 0, max: 0 },
+            graze: { chance: 15, min: 2, max: 5 },
+            hit: { chance: 65, min: 8, max: 10 },
+            crit: { chance: 10, min: 15, max: 20 },
+        }))
             .toBe("foe — Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%");
-        expect(formatAccuracyRow("No target", { miss: 60, hit: 40 }))
+        expect(formatAccuracyRow("No target", {
+            miss: { chance: 60, min: 0, max: 0 },
+            hit: { chance: 40, min: 8, max: 10 },
+        }))
             .toBe("Miss: 60%   Hit: 40%");
     });
 
@@ -684,7 +692,7 @@ describe("console formatting", () => {
     });
 
     it("numbers detailed ally target rows without adding a duplicate list", async () => {
-        const assistMove = makeMove("assist", "mouth", { targetSide: "player" });
+        const assistMove = makeMove("assist", "mouth", { targetSide: "player", baseDamage: 10 });
         const hero = makeCharacterDef("hero", [assistMove]);
         const ally = makeCharacterDef("ally");
         const engine = createCustomEngine([oneEnemyEncounter], [hero, ally], 1);
@@ -708,7 +716,7 @@ describe("console formatting", () => {
     });
 
     it("renumbers the remaining detailed rows during multi-target selection", async () => {
-        const sweep = makeMove("sweep", "mouth", { targets: 2 });
+        const sweep = makeMove("sweep", "mouth", { targets: 2, baseDamage: 10 });
         const hero = makeCharacterDef("hero", [sweep]);
         const engine = createCustomEngine([multiEnemyEncounter], [hero], 1);
         engine.loadCharacter(hero.id);
@@ -738,7 +746,7 @@ describe("console formatting", () => {
     });
 
     it("keeps all-target accuracy rows informational and unnumbered", async () => {
-        const allMove = makeMove("all-move", "mouth", { targets: "all" });
+        const allMove = makeMove("all-move", "mouth", { targets: "all", baseDamage: 10 });
         const hero = makeCharacterDef("hero", [allMove]);
         const engine = createCustomEngine([multiEnemyEncounter], [hero], 1);
         engine.loadCharacter(hero.id);
@@ -967,8 +975,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("[2] ally  Ready");
         expect(rendered).toContain("Choose an action for ally.");
         expect(rendered).not.toContain("Choose an action for hero.");
-        expect(rendered).toContain("Hit: 100%");
-        expect(rendered).not.toContain("No target");
+        expect(rendered).toContain("[1] player-wait [mouth; no target]   No target");
         expect(rendered).toContain("No characters available. Ending turn automatically.");
         expect(engine.getGameView().turn.round).toBe(3);
     });

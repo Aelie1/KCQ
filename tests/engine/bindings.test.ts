@@ -17,13 +17,13 @@ function bindingMove(
         targets: 0,
         alwaysAvailable: true,
         freeOnHit: true,
-        resolve: (state, actor) => [{
+        resolve: (state, actor) => state.characters[targetIndex] ? [{
             type: "binding",
             source: actor,
             target: state.characters[targetIndex],
             binding,
             amount,
-        }],
+        }] : [],
     });
 }
 
@@ -186,6 +186,7 @@ describe("binding levels and effective statuses through GameEngine", () => {
         const applyBoth = makeBehavioralMove("apply-both", "mouth", {
             targetSide: "none",
             targets: 0,
+            freeOnHit: true,
             resolve: (state, actor) => [
                 { type: "binding", source: actor, target: state.characters[0], binding: weak, amount: 10 },
                 { type: "binding", source: actor, target: state.characters[0], binding: strong, amount: 10 },
@@ -193,6 +194,7 @@ describe("binding levels and effective statuses through GameEngine", () => {
         });
         const attack = makeBehavioralMove("accuracy-check", "mouth", {
             accuracy: { miss: 20, hit: 80 },
+            baseDamage: 10,
         });
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("hero", [applyBoth, attack]),

@@ -349,6 +349,29 @@ describe("Hinari's Spatial Movement", () => {
 });
 
 describe("Hinari's Store", () => {
+    it("previews the strongest binding separately for each target", () => {
+        const ropeAlly = makeBehavioralCharacter("rope-ally");
+        const tapeAlly = makeBehavioralCharacter("tape-ally");
+        const engine = loadHinariEncounter({
+            allies: [ropeAlly, tapeAlly],
+            setup: (state) => [
+                { type: "binding", source: state.characters[0], target: state.characters[1], binding: rope, amount: 30 },
+                { type: "binding", source: state.characters[0], target: state.characters[1], binding: tape, amount: 20 },
+                { type: "binding", source: state.characters[0], target: state.characters[2], binding: tape, amount: 10 },
+            ],
+        });
+        const targets = action(engine, "store")?.targets;
+
+        expect(targets?.find(({ target }) => target === ropeAlly.id)).toEqual({
+            valid: true, target: ropeAlly.id, damage: undefined,
+            effects: [{ type: "binding", target: ropeAlly.id, binding: rope.id, amount: -30 }],
+        });
+        expect(targets?.find(({ target }) => target === tapeAlly.id)).toEqual({
+            valid: true, target: tapeAlly.id, damage: undefined,
+            effects: [{ type: "binding", target: tapeAlly.id, binding: tape.id, amount: -10 }],
+        });
+    });
+
     function constrainedStoreEngine(subspace: number, hinariBinding: number, allyBinding = 25) {
         const ally = makeBehavioralCharacter("ally");
         return loadHinariEncounter({
@@ -593,7 +616,7 @@ describe("Hinari's Store", () => {
             targets: expect.arrayContaining([
                 { valid: false, target: hinari.id, reason: "invalidTarget" },
                 { valid: false, target: empty.id, reason: "invalidTarget" },
-                { valid: true, target: bound.id, accuracy: null },
+                expect.objectContaining({ valid: true, target: bound.id, effects: [{ type: "binding", target: bound.id, binding: rope.id, amount: -10 }] }),
             ]),
         });
         expect(engine.executeAction({
@@ -709,6 +732,31 @@ describe("Hinari's Brace", () => {
 });
 
 describe("Hinari's Release", () => {
+    it("previews enemy clutter and state-scaled ally binding without an accuracy roll", () => {
+        const build = (subspace: number) => loadHinariEncounter({
+            allies: [makeBehavioralCharacter("ally")],
+            setup: (state) => hinariData(state, subspace, 1),
+        });
+        const low = build(25);
+        const high = build(60);
+        const target = (engine: Engine, id: string) => action(engine, "release")?.targets.find((entry) => entry.target === id);
+
+        expect(target(low, "ally")).toEqual({
+            valid: true, target: "ally", damage: undefined,
+            effects: [{ type: "binding", target: "ally", binding: tape.id, amount: 13 }],
+        });
+        expect(target(high, "ally")).toEqual({
+            valid: true, target: "ally", damage: undefined,
+            effects: [{ type: "binding", target: "ally", binding: tape.id, amount: 25 }],
+        });
+        expect(target(low, "foe1")).toEqual({
+            valid: true, target: "foe1", damage: undefined,
+            effects: [{ type: "buff", target: "foe1", buff: "subspaceClutter", effects: { defense: -1, hit: -1 }, operation: "add" }],
+        });
+        const result = execute(low, { type: "move", actor: hinari.id, move: "release", targets: ["foe1"] });
+        expect(moveEvent(result).targets).toEqual([{ target: "foe1", result: "none" }]);
+    });
+
     it("debuffs an enemy and spends 25 Subspace", () => {
         const engine = loadHinariEncounter({
             seed: 2,

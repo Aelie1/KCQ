@@ -17,6 +17,7 @@ import {
     makeBehavioralEnemy,
     makeBehavioralMove,
     targetAccuracy,
+    targetPreview,
 } from "../helpers/behavioralHelpers";
 import { actionView } from "../helpers/gameView";
 
@@ -155,7 +156,6 @@ describe("Matsuko's dynamic offensive kit", () => {
         expect(targetAccuracy(burnedOut, matsuko.id, "punch", "foe1"))
             .toEqual(STANDARD_ACCURACY);
         expect(targetAccuracy(normal, matsuko.id, "whiteFlame", "foe1")).toEqual({
-            miss: 0,
             graze: 5,
             hit: 83,
             crit: 12,
@@ -194,6 +194,18 @@ describe("Matsuko's dynamic offensive kit", () => {
             .toEqual(STANDARD_ACCURACY);
         expect(targetAccuracy(burnedOut, matsuko.id, "kick", "foe1"))
             .toEqual(STANDARD_ACCURACY);
+        expect(targetPreview(burnedOut, matsuko.id, "kick", "foe1").damage).toEqual({
+            miss: { chance: 10, min: 0, max: 0 },
+            graze: { chance: 15, min: 6, max: 15 },
+            hit: { chance: 65, min: 24, max: 30 },
+            crit: { chance: 10, min: 45, max: 60 },
+        });
+        expect(targetPreview(normal, matsuko.id, "phoenixKick", "foe1").damage).toEqual({
+            miss: { chance: 10, min: 0, max: 0 },
+            graze: { chance: 15, min: 8, max: 19 },
+            hit: { chance: 65, min: 30, max: 38 },
+            crit: { chance: 10, min: 57, max: 75 },
+        });
 
         const phoenix = execute(normal, {
             type: "move",
@@ -279,7 +291,6 @@ describe("Matsuko's dynamic offensive kit", () => {
         ]);
         expect(actionView(engine, matsuko.id).moves.some(({ move }) => move.id === normalMove)).toBe(true);
         expect(targetAccuracy(engine, matsuko.id, fairyMove, "foe1")).toEqual({
-            miss: 0,
             graze: 5,
             hit: 83,
             crit: 12,
@@ -476,7 +487,7 @@ describe("Matsuko's Compulsion moves", () => {
             available: false,
             reason: "invalidTargetCount",
             move: { id: "obey", type: "mouth", targetSide: "player", targets: 1 },
-            targets: [{ valid: false, target: null, reason: "invalidTargetCount" }],
+            targets: [],
         });
 
         execute(engine, {
@@ -490,7 +501,12 @@ describe("Matsuko's Compulsion moves", () => {
             available: true,
             targets: expect.arrayContaining([
                 { valid: false, target: matsuko.id, reason: "invalidTarget" },
-                { valid: true, target: ally.id, accuracy: null },
+                expect.objectContaining({
+                    valid: true, target: ally.id, effects: [
+                        expect.objectContaining({ type: "buff", target: ally.id, buff: "servitude", operation: "add" }),
+                        expect.objectContaining({ type: "buff", target: matsuko.id, buff: "compulsionCD", operation: "add" }),
+                    ]
+                }),
             ]),
         });
 
@@ -553,7 +569,12 @@ describe("Matsuko's Compulsion moves", () => {
             available: true,
             targets: expect.arrayContaining([
                 { valid: false, target: servant.id, reason: "invalidTarget" },
-                { valid: true, target: eligible.id, accuracy: null },
+                expect.objectContaining({
+                    valid: true, target: eligible.id, effects: [
+                        expect.objectContaining({ type: "buff", target: eligible.id, buff: "servitude", operation: "add" }),
+                        expect.objectContaining({ type: "buff", target: matsuko.id, buff: "compulsionCD", operation: "add" }),
+                    ]
+                }),
             ]),
         });
     });

@@ -313,7 +313,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 type: victimMove.type,
             },
             available: false,
-            targets: [{ target: null, valid: true, accuracy: null }],
+            targets: [],
             reason: "actorIncapacitated",
         });
 
@@ -393,7 +393,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 type: victimMove.type,
             },
             available: true,
-            targets: [{ target: null, valid: true, accuracy: null }],
+            targets: [{ target: null, valid: true, damage: undefined, effects: [] }],
         });
     });
 
@@ -556,7 +556,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const prepare = makeBehavioralMove("prepare-mist", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state, actor) => [
+            resolve: (state, actor) => state.characters.length < 2 ? [] : [
                 {
                     type: "binding",
                     source: actor,

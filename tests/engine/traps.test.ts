@@ -84,21 +84,21 @@ describe("generic traps through GameEngine", () => {
             targets: 0,
             accuracy: undefined,
             freeOnHit: true,
-            resolve: (state, actor) => [{ type: "trap", actor, trap: state.traps[0], amount: 1.2 }],
+            resolve: (state, actor) => state.traps[0] ? [{ type: "trap", actor, trap: state.traps[0], amount: 1.2 }] : [],
         });
         const fill = makeMove("fill", "none", {
             targetSide: "none",
             targets: 0,
             accuracy: undefined,
             freeOnHit: true,
-            resolve: (state, actor) => [{ type: "trap", actor, trap: state.traps[0], amount: 200 }],
+            resolve: (state, actor) => state.traps[0] ? [{ type: "trap", actor, trap: state.traps[0], amount: 200 }] : [],
         });
         const remove = makeMove("remove", "none", {
             targetSide: "none",
             targets: 0,
             accuracy: undefined,
             freeOnHit: true,
-            resolve: (state, actor) => [{ type: "trap", actor, trap: state.traps[0], amount: -200.8 }],
+            resolve: (state, actor) => state.traps[0] ? [{ type: "trap", actor, trap: state.traps[0], amount: -200.8 }] : [],
         });
         const engine = makeTrapEngine([{ definition: trap, amount: 0 }], [add, fill, remove]);
         engine.executeAction({ type: "stance", actor: "hero" });

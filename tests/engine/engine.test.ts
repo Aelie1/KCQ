@@ -147,7 +147,7 @@ describe("turn phases and enemy intentions", () => {
         const stunEnemy = makeMove("stun-enemy", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state) => [{
+            resolve: (state) => state.enemies[0] ? [{
                 type: "buff",
                 target: state.enemies[0],
                 buff: {
@@ -156,7 +156,7 @@ describe("turn phases and enemy intentions", () => {
                     statuses: [{ definition: stunned, value: 1 }],
                 },
                 operation: "add",
-            }],
+            }] : [],
         });
         const foe = makeEnemyDef("foe", [threat]);
         const encounter = { id: "cancel-intention", enemies: [foe], bindings: [], traps: [] };

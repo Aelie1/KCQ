@@ -90,6 +90,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
                     targets: [],
                     reason: reason
                 });
+                continue;
             }
             actions.push({
                 move: serializeMove(move),

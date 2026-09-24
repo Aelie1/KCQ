@@ -27,6 +27,8 @@ function setupLatexScenario(
         targetSide: "none",
         targets: 0,
         resolve: (state, actor) => {
+            if (bindings.some(({ character }) => !state.characters.some(({ id }) => id === character))
+                || Object.keys(spreadModifiers).some((id) => !state.characters.some((character) => character.id === id))) return [];
             const effects: iEffect[] = [];
             for (const setup of bindings) {
                 const target = state.characters.find(({ id }) => id === setup.character);

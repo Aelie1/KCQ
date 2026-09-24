@@ -38,6 +38,7 @@ describe("accuracy", () => {
     ): MoveDef {
         return makeMove("accuracy-move", "arms", {
             accuracy: { ...accuracy },
+            baseDamage: 20,
             ...overrides,
         });
     }
@@ -157,7 +158,7 @@ describe("accuracy", () => {
         if (!info || !info.valid || !info.damage) {
             throw new Error("Expected a valid target with an accuracy profile");
         }
-        return info.damage;
+        return Object.fromEntries(Object.entries(info.damage).map(([band, preview]) => [band, preview.chance]));
     }
 
     function moveUsed(result: ReturnType<Engine["executeAction"]>): MoveEvent {
@@ -194,7 +195,7 @@ describe("accuracy", () => {
             makeAccuracyMove(),
         );
 
-        expect(result).toEqual({ miss: 0, graze: 0, hit: 86, crit: 14 });
+        expect(result).toEqual({ hit: 86, crit: 14 });
         expect(result.crit).toBe(standardProfile.crit! + 4);
     });
 
@@ -250,7 +251,6 @@ describe("accuracy", () => {
         );
 
         expect(characterAttack).toEqual({
-            miss: 0,
             graze: 5,
             hit: 83,
             crit: 12,
@@ -291,7 +291,7 @@ describe("accuracy", () => {
         );
 
         expect(noCrit.crit).toBe(5);
-        expect(extremePenalty.crit).toBe(0);
+        expect(extremePenalty.crit).toBeUndefined();
         expect(Object.values(extremePenalty).every((width) => width >= 0)).toBe(true);
     });
 
@@ -349,7 +349,7 @@ describe("accuracy", () => {
             makeAccuracyMove({ miss: 90, hit: 1, crit: 9 }),
         );
 
-        expect(result).toEqual({ miss: 99, hit: 0, crit: 1 });
+        expect(result).toEqual({ miss: 99, crit: 1 });
         expect(Object.values(result).every((width) => width >= 0)).toBe(true);
         expect(profileTotal(result)).toBe(100);
     });
@@ -490,6 +490,9 @@ describe("accuracy", () => {
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
+        const previews = actionView(engine, hero.id).moves
+            .find(({ move: candidate }) => candidate.id === move.id)
+            ?.targets ?? [];
         const result = engine.executeAction({
             type: "move",
             actor: hero.id,
@@ -506,9 +509,6 @@ describe("accuracy", () => {
             makeEnemy(lowDefense, `${lowDefense.id}1`),
             makeEnemy(highDefense, `${highDefense.id}1`),
         ];
-        const previews = actionView(engine, hero.id).moves
-            .find(({ move: candidate }) => candidate.id === move.id)
-            ?.targets ?? [];
         const expected = referenceTargets.map((target) => {
             const preview = previews.find(({ target: id }) => id === target.id);
             if (!preview || !preview.valid || !preview.damage) {
@@ -518,7 +518,7 @@ describe("accuracy", () => {
                 makeAccuracyActor(),
                 target,
                 move,
-                preview.damage,
+                Object.fromEntries(Object.entries(preview.damage).map(([band, value]) => [band, value.chance])),
                 referenceRng.accuracy(),
             );
         });
@@ -562,6 +562,7 @@ describe("accuracy", () => {
             const engine = createCustomEngine([encounter], [hero], seed);
             engine.loadCharacter(hero.id);
             engine.loadEncounter(encounter.id);
+            resolved.length = 0;
             return moveUsed(engine.executeAction({
                 type: "move",
                 actor: hero.id,
@@ -583,8 +584,9 @@ describe("accuracy", () => {
             targetSide: "none",
             targets: 0,
             resolve: (_state, _actor, move, targets) => {
-                resolutions++;
                 expect(targets).toEqual([]);
+                if (move.band === undefined) return [];
+                resolutions++;
                 expect(move.band).toBe("hit");
                 return [];
             },

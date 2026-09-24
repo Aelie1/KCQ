@@ -1,7 +1,7 @@
 import { expect } from "vitest";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import type { AccuracyProfile, ActionSuccess, Binding, Buff, Character, Enemy, Engine, MoveType, PlayerAction } from "../../src/engine/public/types";
+import type { AccuracyProfile, ActionSuccess, Binding, Buff, Character, Enemy, Engine, MoveType, PlayerAction, ValidTarget } from "../../src/engine/public/types";
 import { actionView } from "./gameView";
 
 export { actionView } from "./gameView";
@@ -12,10 +12,16 @@ export function targetAccuracy(
     move: string,
     target: string | null,
 ): AccuracyProfile | null {
+    const info = targetPreview(engine, actor, move, target);
+    if (!info.damage) return null;
+    return Object.fromEntries(Object.entries(info.damage).map(([band, preview]) => [band, preview.chance]));
+}
+
+export function targetPreview(engine: Engine, actor: string, move: string, target: string | null): ValidTarget {
     const action = actionView(engine, actor).moves.find((candidate) => candidate.move.id === move);
     const info = action?.targets.find((candidate) => candidate.target === target);
     if (!info || !info.valid) throw new Error(`Expected ${String(target)} to be a valid target`);
-    return info.damage;
+    return info;
 }
 
 export function makeBehavioralMove(

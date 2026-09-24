@@ -261,7 +261,8 @@ describe("move validation and player actions", () => {
         expect(action.targets).toContainEqual({
             target: enemyId,
             valid: true,
-            accuracy: expect.any(Object),
+            damage: expect.any(Object),
+            effects: expect.any(Array),
         });
 
         const result = engine.executeAction({

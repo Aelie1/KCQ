@@ -184,7 +184,7 @@ describe("stance toggling", () => {
         const prepare = makeMove("prepare", "mouth", {
             targetSide: "none",
             targets: 0,
-            resolve: (state, actor) => [
+            resolve: (state, actor) => state.characters.length < 2 ? [] : [
                 {
                     type: "binding" as const,
                     source: actor,

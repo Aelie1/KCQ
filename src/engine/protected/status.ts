@@ -8,6 +8,7 @@ export class GameStatus {
     private buffs: iBuff[];
 
     private modifiers: ModifierSet;
+    private calculated: Partial<Record<ModifierId, boolean>>;
     private flags: Partial<Record<FlagId, boolean>>;
     private blockedMoveTypes: Partial<Record<MoveType, boolean>>;
     private hasActed: boolean | undefined;
@@ -16,6 +17,7 @@ export class GameStatus {
 
     constructor(target: iEntity) {
         this.modifiers = {};
+        this.calculated = {};
         this.flags = {};
         this.blockedMoveTypes = {};
         this.statuses = [];
@@ -95,20 +97,13 @@ export class GameStatus {
             }
         }
 
-        for (const modifier in this.modifiers) {
-            const id = modifier as ModifierId;
-            if (this.modifiers[id] === 0) {
-                delete this.modifiers[id];
-            }
-        }
-
         return this.modifiers;
     }
 
     getModifier(id: ModifierId): number {
-        const cached = this.modifiers[id];
+        const cached = this.calculated[id];
         if (cached !== undefined) {
-            return cached;
+            return this.modifiers[id] ?? 0;
         }
 
         let amount = this.isStanding && id === "defense" ? -2 : 0;
@@ -124,7 +119,10 @@ export class GameStatus {
             }
         }
 
-        this.modifiers[id] = amount;
+        if (amount !== 0) {
+            this.modifiers[id] = amount;
+        }
+        this.calculated[id] = true;
         return amount;
     }
 

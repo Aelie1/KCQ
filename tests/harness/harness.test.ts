@@ -42,8 +42,8 @@ function move(id: string, available = true): ActionInfo {
         move: { id, targetSide: "enemy", targets: 1, type: "arms" },
         available,
         targets: [
-            { valid: true, target: "enemy-1", damage: null },
-            { valid: true, target: "enemy-2", damage: null },
+            { valid: true, target: "enemy-1", effects: [] },
+            { valid: true, target: "enemy-2", effects: [] },
         ],
         ...(available ? {} : { reason: "moveUnavailable" as const }),
     };
