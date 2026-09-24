@@ -1,6 +1,6 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
-import { isCharacter } from "../../engine/protected/helpers";
+import { basicBindingEffect, isCharacter } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
 import { fairy } from "./fairy";
@@ -74,7 +74,7 @@ export const queen: EnemyDef = {
                         effects.push({
                             type: "move",
                             actor: actor,
-                            move: { definition: skunkCollar },
+                            move: { definition: skunkCollar, binding: latexCollar },
                             targets: [target]
                         });
                         return effects;
@@ -176,26 +176,7 @@ const skunkGun: MoveDef = {
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
-        if (targets.length === 0) {
-            return effects;
-        }
-
-        const target = targets[0];
-        if (!move.binding) {
-            return effects;
-        }
-
-        if (isCharacter(target.target)) {
-            effects.push({
-                type: "binding",
-                source: actor,
-                target: target.target,
-                binding: move.binding,
-                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
-            });
-        }
-        return effects;
+        return basicBindingEffect(actor, move, targets);
     },
 };
 
@@ -213,23 +194,7 @@ const skunkCollar: MoveDef = {
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
-        if (targets.length === 0) {
-            return effects;
-        }
-
-        const target = targets[0];
-
-        if (isCharacter(target.target)) {
-            effects.push({
-                type: "binding",
-                source: actor,
-                target: target.target,
-                binding: latexCollar,
-                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
-            });
-        }
-        return effects;
+        return basicBindingEffect(actor, move, targets);
     },
 
 };

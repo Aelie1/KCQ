@@ -1,6 +1,6 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
-import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
+import { basicBindingEffect, findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
@@ -217,24 +217,7 @@ const latexSpray: MoveDef = {
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        if (targets.length === 0) {
-            return [];
-        }
-        const effects: iEffect[] = [];
-        const target = targets[0];
-        if (!move.binding) {
-            return effects;
-        }
-        if (isCharacter(target.target)) {
-            effects.push({
-                type: "binding",
-                source: actor,
-                target: target.target,
-                binding: move.binding,
-                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
-            });
-        }
-        return effects;
+        return basicBindingEffect(actor, move, targets);
     }
 };
 

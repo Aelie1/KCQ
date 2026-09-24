@@ -100,3 +100,22 @@ export function basicDamageEffect(actor: iEntity, move: iMove, targets: iTargetI
     }
     return effects;
 }
+
+export function basicBindingEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    const effects: iEffect[] = [];
+    if (!move.binding) {
+        return effects;
+    }
+    for (const target of targets) {
+        if (isCharacter(target.target)) {
+            effects.push({
+                type: "binding",
+                source: actor,
+                target: target.target,
+                binding: move.binding,
+                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
+            });
+        }
+    }
+    return effects;
+}

@@ -1,6 +1,6 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
-import { findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicBindingEffect, findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
@@ -173,26 +173,7 @@ const latexSpray: MoveDef = {
     },
     type: "none",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
-        if (targets.length === 0) {
-            return effects;
-        }
-
-        const target = targets[0];
-        if (!move.binding) {
-            return effects;
-        }
-
-        if (isCharacter(target.target)) {
-            effects.push({
-                type: "binding",
-                source: actor,
-                target: target.target,
-                binding: move.binding,
-                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
-            });
-        }
-        return effects;
+        return basicBindingEffect(actor, move, targets);
     },
 };
 

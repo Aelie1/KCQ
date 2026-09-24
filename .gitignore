@@ -7,3 +7,4 @@ performance/profiles*
 temp
 .env
 replays
+*.patch
