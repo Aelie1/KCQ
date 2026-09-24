@@ -21,15 +21,24 @@ import {
     type RemoteReplayMetadata,
 } from "../../src/harness/replay/posthog-api";
 import {
-    syncPostHogReplays,
+    syncPostHogReplays as syncWithReleaseRuntime,
     writeArchivedReplay,
     type ArchivedReplay,
+    type ReplaySyncOptions,
 } from "../../src/harness/replay/replay-archive";
 import { compactStateDigest } from "../../src/web/telemetry";
 
 const temporaryDirectories: string[] = [];
 const RECENT_NOW = new Date("2026-09-21T13:00:00.000Z");
 const STALE_NOW = new Date("2026-09-22T00:00:00.000Z");
+
+// Archive behavior uses a synthetic current-engine release; runtime selection has separate tests.
+function syncPostHogReplays(options: ReplaySyncOptions) {
+    return syncWithReleaseRuntime({
+        ...options,
+        reconstruct: async (rows) => reconstructFightReplay(parsePostHogReplayEvents(rows)),
+    });
+}
 
 afterEach(async () => {
     await Promise.all(temporaryDirectories.splice(0).map((directory) =>

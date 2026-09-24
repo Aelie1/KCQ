@@ -1,0 +1,40 @@
+[
+  {
+    "timestamp": "2026-09-24T12:00:00.000Z",
+    "event": "battle_started",
+    "replay_id": "4d819c56-3a53-429c-9fbf-e5fe6de87f1a",
+    "sequence": "",
+    "release": "0.7.3",
+    "encounter": "forest_1",
+    "seed": "3404664372",
+    "source": "",
+    "action": "",
+    "success": "",
+    "failure_reason": "",
+    "initial_state": "{\"turn\":{\"round\":1,\"step\":1,\"phase\":\"player\",\"outcome\":\"ongoing\"},\"characters\":[{\"id\":\"ko\",\"acted\":false,\"standing\":false,\"bonusEscapes\":0,\"bindings\":[],\"buffs\":[],\"data\":{}},{\"id\":\"matsuko\",\"acted\":false,\"standing\":false,\"bonusEscapes\":0,\"bindings\":[],\"buffs\":[],\"data\":{}},{\"id\":\"hinari\",\"acted\":false,\"standing\":false,\"bonusEscapes\":0,\"bindings\":[],\"buffs\":[],\"data\":{\"subspace\":0,\"subspaceMax\":100}}],\"enemies\":[{\"id\":\"skunkette1\",\"currHp\":200,\"buffs\":[]},{\"id\":\"skunkette2\",\"currHp\":200,\"buffs\":[]},{\"id\":\"skunkette3\",\"currHp\":200,\"buffs\":[]},{\"id\":\"fairy1\",\"currHp\":200,\"buffs\":[]}],\"traps\":[{\"id\":\"trapPuddle\",\"amount\":0}]}",
+    "state_after": "",
+    "outcome": "",
+    "action_count": "",
+    "final_state": "",
+    "current_state": ""
+  },
+  {
+    "timestamp": "2026-09-24T12:00:01.000Z",
+    "event": "battle_action",
+    "replay_id": "4d819c56-3a53-429c-9fbf-e5fe6de87f1a",
+    "sequence": "1",
+    "release": "",
+    "encounter": "",
+    "seed": "",
+    "source": "player",
+    "action": "{\"actor\":\"ko\",\"move\":\"fairyTransformation\",\"targets\":[],\"type\":\"move\"}",
+    "success": "true",
+    "failure_reason": "",
+    "initial_state": "",
+    "state_after": "{\"turn\":{\"round\":1,\"step\":2,\"phase\":\"player\",\"outcome\":\"ongoing\"},\"characters\":[{\"id\":\"ko\",\"acted\":true,\"standing\":false,\"bonusEscapes\":0,\"bindings\":[],\"buffs\":[{\"id\":\"fairyTransformation\",\"duration\":3},{\"id\":\"fairyEmpowerment\"}],\"data\":{}},{\"id\":\"matsuko\",\"acted\":false,\"standing\":false,\"bonusEscapes\":0,\"bindings\":[],\"buffs\":[],\"data\":{}},{\"id\":\"hinari\",\"acted\":false,\"standing\":false,\"bonusEscapes\":0,\"bindings\":[],\"buffs\":[],\"data\":{\"subspace\":0,\"subspaceMax\":100}}],\"enemies\":[{\"id\":\"skunkette1\",\"currHp\":200,\"buffs\":[]},{\"id\":\"skunkette2\",\"currHp\":200,\"buffs\":[]},{\"id\":\"skunkette3\",\"currHp\":200,\"buffs\":[]},{\"id\":\"fairy1\",\"currHp\":200,\"buffs\":[]}],\"traps\":[{\"id\":\"trapPuddle\",\"amount\":0}]}",
+    "outcome": "",
+    "action_count": "",
+    "final_state": "",
+    "current_state": ""
+  }
+]

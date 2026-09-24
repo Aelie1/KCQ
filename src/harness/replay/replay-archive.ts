@@ -17,10 +17,8 @@ import type {
     RemoteReplayMetadata,
 } from "./posthog-api";
 import type { PostHogReplayEventRow } from "./posthog-replay";
-import {
-    parsePostHogReplayEvents,
-    reconstructFightReplay,
-} from "./posthog-replay";
+import type { ImportedPostHogReplay } from "./posthog-replay";
+import { ReleaseReplayRuntime } from "./release-replay-runtime";
 
 export type ArchivedReplayTerminal = "finished" | "quit" | "abandoned";
 
@@ -80,6 +78,7 @@ export interface ReplaySyncOptions {
     client: PostHogReplayClient;
     replaysDirectory: string;
     now?: () => Date;
+    reconstruct?: (rows: readonly PostHogReplayEventRow[], release: string) => Promise<ImportedPostHogReplay>;
 }
 
 const ABANDON_AFTER_MS = 6 * 60 * 60 * 1_000;
@@ -106,15 +105,17 @@ export async function syncPostHogReplays(
     const updated: UpdatedReplay[] = [];
     const unchangedProvisional: UnchangedProvisionalReplay[] = [];
     const failed: FailedReplay[] = [];
+    const runtime = options.reconstruct ? undefined : new ReleaseReplayRuntime();
 
     for (const metadata of remote) {
         const existing = archived.get(metadata.replayId);
         if (existing?.archive.terminal) continue;
         try {
             const rows = await options.client.fetchReplayEvents(metadata.replayId);
-            const parsed = parsePostHogReplayEvents(rows);
-            assertMetadataMatches(metadata, parsed);
-            const imported = reconstructFightReplay(parsed);
+            const imported = await (options.reconstruct
+                ? options.reconstruct(rows, metadata.release)
+                : runtime!.reconstruct(rows, metadata.release));
+            assertMetadataMatches(metadata, imported);
             const archive = createArchive(metadata, imported);
             if (!archive.terminal && isStaleReplay(rows, (options.now ?? (() => new Date()))())) {
                 archive.terminal = "abandoned";
@@ -277,7 +278,7 @@ function parseArchive(value: unknown, filename: string): ArchivedReplay {
 
 function createArchive(
     metadata: RemoteReplayMetadata,
-    imported: ReturnType<typeof reconstructFightReplay>,
+    imported: ImportedPostHogReplay,
 ): ArchivedReplay {
     return {
         format: 1,
@@ -354,7 +355,7 @@ function uniqueRemoteReplays(remote: readonly RemoteReplayMetadata[]): RemoteRep
 
 function assertMetadataMatches(
     metadata: RemoteReplayMetadata,
-    parsed: ReturnType<typeof parsePostHogReplayEvents>,
+    parsed: ImportedPostHogReplay,
 ): void {
     const comparisons: Array<[string, unknown, unknown]> = [
         ["replay ID", metadata.replayId, parsed.replayId],
