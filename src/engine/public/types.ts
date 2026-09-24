@@ -198,6 +198,7 @@ export type PreviewInfo = ValidTarget | InvalidTarget;
 export interface ValidTarget {
     valid: true;
     target: EntityId | null;
+    accuracy?: AccuracyProfile;
     damage?: PreviewProfile;
     effects: Effect[];
 }

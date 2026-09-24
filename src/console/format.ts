@@ -48,6 +48,39 @@ export function formatEffects(effects: Effect[], includeTarget = false): string[
     });
 }
 
+/** Compact, single-line wording for engine-provided move previews. */
+export function formatPreviewEffects(effects: readonly Effect[]): string {
+    return effects.map((effect) => {
+        let value: string;
+        switch (effect.type) {
+            case "damage":
+                value = effect.amount > 0 ? `${effect.amount} damage` : `${-effect.amount} healing`;
+                break;
+            case "binding":
+                value = `${effect.binding} ${effect.amount === undefined ? "+??" : signed(effect.amount)}`;
+                break;
+            case "buff": {
+                const modifiers = Object.entries(effect.effects ?? {})
+                    .map(([key, amount]) => `(${modifierLabel(key as ModifierId)} ${signed(amount)})`)
+                    .join(" ");
+                value = `${effect.operation === "add" ? "adds" : "removes"} ${effect.buff}`
+                    + (modifiers ? ` ${modifiers}` : "");
+                break;
+            }
+            case "enemy":
+                value = `${effect.target} spawned`;
+                break;
+            case "trap":
+                value = `${effect.amount} ${effect.trap} created`;
+                break;
+            case "move":
+                value = `${effect.move} used`;
+                break;
+        }
+        return value;
+    }).join(" | ");
+}
+
 export function formatBuff(buff: Buff): string {
     const details: string[] = [];
 

@@ -4,6 +4,9 @@ import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove
 
 const TELEKINESIS_DAMAGE = 30;
 
+export const TRANSFORMATION_BUFF = "transformation";
+export const EMPOWERMENT_BUFF = "empowerment";
+
 const thousandRestraintsBody: PassiveDef = {
     id: "thousandRestraintsBody",
     status: { allowedMoveTypes: ["arms", "legs", "mouth"], flags: ["blocksEscape"] }
@@ -12,7 +15,7 @@ const thousandRestraintsBody: PassiveDef = {
 export const ko: CharacterDef = {
     id: "ko",
     getMoves: function (actor: iCharacter): MoveDef[] {
-        const buff = findBuff(actor, "fairyEmpowerment");
+        const buff = findBuff(actor, EMPOWERMENT_BUFF);
         if (buff) {
             return [telekinesis, fairyTelekinesis, starlightBindings, fairyStarlightBindings, reflect, fairyReflect, fairyTransformation, fairyEmpowerment];
         }
@@ -137,7 +140,7 @@ const fairyTransformation: MoveDef = {
         const effects: iEffect[] = [];
 
         const transformBuff: iBuff = {
-            id: "fairyTransformation",
+            id: TRANSFORMATION_BUFF,
             active: true,
             duration: 3,
             modifiers: {
@@ -152,10 +155,10 @@ const fairyTransformation: MoveDef = {
             operation: "add"
         })
 
-        const fairyBuff = findBuff(actor, "fairyEmpowerment");
+        const fairyBuff = findBuff(actor, EMPOWERMENT_BUFF);
         if (!fairyBuff) {
             const newBuff = {
-                id: "fairyEmpowerment",
+                id: EMPOWERMENT_BUFF,
                 active: true,
             }
 
@@ -180,7 +183,7 @@ const fairyEmpowerment: MoveDef = {
         effects.push(...removeEmpowerment(actor));
 
         const transformBuff: iBuff = {
-            id: "fairyTransformation",
+            id: TRANSFORMATION_BUFF,
             active: true,
             duration: 2,
             modifiers: {
@@ -188,7 +191,7 @@ const fairyEmpowerment: MoveDef = {
             }
         }
         const empowerBuff = {
-            id: "fairyEmpowerment",
+            id: EMPOWERMENT_BUFF,
             active: true,
         }
 
@@ -242,7 +245,7 @@ function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, 
 
 export function removeEmpowerment(actor: iEntity): iEffect[] {
     const effects: iEffect[] = [];
-    const fairyBuff = findBuff(actor, "fairyEmpowerment");
+    const fairyBuff = findBuff(actor, EMPOWERMENT_BUFF);
     if (fairyBuff) {
         effects.push({
             type: "buff",

@@ -4,7 +4,7 @@ import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy 
 import { hobbled } from "../../engine/protected/statuses";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
-import { removeEmpowerment } from "./ko";
+import { EMPOWERMENT_BUFF, removeEmpowerment } from "./ko";
 
 const SUBSPACE_MAX = 100;
 
@@ -36,7 +36,7 @@ export const hinari: CharacterDef = {
                         baseHits: totalRocks
                     });
                 }
-                const buff = findBuff(actor, "fairyEmpowerment");
+                const buff = findBuff(actor, EMPOWERMENT_BUFF);
                 if (buff) {
                     const baseRocks = 6;
                     const totalRocks = baseRocks - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / baseRocks));

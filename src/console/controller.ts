@@ -10,7 +10,7 @@ import type {
     PlayerAction,
     ValidTarget,
 } from "../engine/public/types";
-import { formatEffects } from "./format";
+import { formatEffects, formatPreviewEffects } from "./format";
 import {
     ActorStyleRegistry,
     encounterSeparator,
@@ -21,7 +21,7 @@ import {
     type ActionGroup,
     type StyledLine,
 } from "./presentation";
-import { formatAccuracyRow, type ScreenModel } from "./render";
+import { formatAccuracyRow, formatSuccessRow, type ScreenModel } from "./render";
 
 export interface BattleChoice {
     number: number;
@@ -191,7 +191,7 @@ export async function runBattleController(
         }
 
         if (move.targets === "all") {
-            const lines = accuracyLines(targets);
+            const lines = previewLines(targets);
             const selection = await choose([
                 `${move.id} affects every ${move.targetSide}.`,
                 "",
@@ -231,7 +231,7 @@ export async function runBattleController(
                 return false;
             }
 
-            const choiceLines = accuracyLines(candidates)
+            const choiceLines = previewLines(candidates)
                 .map((line, index) => `[${index + 1}] ${line}`);
             choiceLines.push(`[${choiceLines.length + 1}] Back`);
             const choice = await choose([
@@ -240,7 +240,7 @@ export async function runBattleController(
                 "",
                 ...choiceLines,
             ], numberedChoices([
-                ...candidates.map((candidate) => accuracyLines([candidate])[0]),
+                ...candidates.map((candidate) => previewLine(candidate)),
                 "Back",
             ], [
                 ...candidates.map((candidate) => candidate.target),
@@ -314,9 +314,8 @@ export async function runBattleController(
                 const targets = action.available
                     ? validTargets(action)
                     : [];
-                const detailLines = action.available && (action.move.targets === 0
-                    || (action.move.targets === 1 && targets.length === 1))
-                    ? accuracyLines(targets)
+                const detailLines = action.available
+                    ? moveDetailLines(action, targets)
                     : undefined;
                 return {
                     label: moveLabel(action),
@@ -513,13 +512,28 @@ function menuChoices(items: readonly MenuItem[]): BattleChoice[] {
     }));
 }
 
-function accuracyLines(targets: ValidTarget[]): string[] {
-    return targets.map((target) =>
-        formatAccuracyRow(
-            target.target ?? "No target",
-            target.damage,
-        ),
-    );
+function previewLine(target: ValidTarget): string {
+    const damage = formatAccuracyRow(target.target ?? "No target", target.damage);
+    const effects = formatPreviewEffects(target.effects);
+    return effects ? `${damage}${target.damage ? " | " : " — "}${effects}` : damage;
+}
+
+function previewLines(targets: ValidTarget[]): string[] {
+    return targets.map(previewLine);
+}
+
+function moveDetailLines(action: ActionInfo, targets: ValidTarget[]): string[] | undefined {
+    if (action.move.targets === 0) {
+        const preview = targets[0];
+        if (!preview) return undefined;
+        if (preview.accuracy) return [formatSuccessRow(preview.accuracy)];
+        const effects = formatPreviewEffects(preview.effects);
+        return effects ? [effects] : undefined;
+    }
+    if (action.move.targets === 1 && targets.length === 1) {
+        return [targets[0].target ?? ""];
+    }
+    return undefined;
 }
 
 function validTargets(action: ActionInfo): ValidTarget[] {

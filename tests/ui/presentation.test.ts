@@ -233,7 +233,10 @@ describe("combat presentation", () => {
                 max: 100,
                 thresholds: { easy: 10, medium: 20, hard: 35, extreme: 50, impossible: 70, max: 100 },
             },
-            actionLines: ["skunk1 — Miss: 70%   Hit: 10%   Crit: 5%"],
+            actionLines: [
+                "skunk1 — Miss: 70%  Hit: 10% (8–10)  Crit: 5% (15–20)",
+                "Success: 65%",
+            ],
             logLines: [],
             highlights: [
                 { kind: "binding", entity: "ko", binding: "latexArms" },
@@ -252,6 +255,9 @@ describe("combat presentation", () => {
         expect(styledValues.some((entry) =>
             entry.style === "binding-extreme" && entry.value.includes("55"))).toBe(true);
         expect(styledValues.some((entry) => entry.style === "accuracy-very-poor")).toBe(true);
+        expect(styledValues).toContainEqual({ style: "accuracy-good", value: "Success: 65%" });
+        expect(styledValues.filter((entry) => entry.style.startsWith("accuracy-"))
+            .every((entry) => !entry.value.includes("("))).toBe(true);
         expect(styledValues.some((entry) =>
             entry.style.startsWith("actor-") && entry.value === "skunk1")).toBe(true);
 

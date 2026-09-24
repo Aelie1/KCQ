@@ -33,7 +33,7 @@ describe("public move previews", () => {
                 move: { id: "selective", type: "arms", targetSide: "enemy", targets: 1 },
                 available: true,
                 targets: [
-                    { valid: true, target: "foe1", damage: undefined, effects: [] },
+                    { valid: true, target: "foe1", accuracy: { hit: 100 }, damage: undefined, effects: [] },
                     { valid: false, target: "foe2", reason: "invalidTarget" },
                 ],
             },
@@ -76,6 +76,7 @@ describe("public move previews", () => {
 
         expect(preview(engine, strike.id, "foe1")).toEqual({
             valid: true, target: "foe1",
+            accuracy: { miss: 10, graze: 15, hit: 65, crit: 10 },
             damage: {
                 miss: { chance: 10, min: 0, max: 0 },
                 graze: { chance: 15, min: 3, max: 7 },
@@ -86,6 +87,7 @@ describe("public move previews", () => {
         });
         expect(preview(engine, strike.id, "foe2")).toEqual({
             valid: true, target: "foe2",
+            accuracy: { miss: 10, graze: 15, hit: 65, crit: 10 },
             damage: {
                 miss: { chance: 10, min: 0, max: 0 },
                 graze: { chance: 15, min: 4, max: 8 },

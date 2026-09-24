@@ -121,11 +121,18 @@ export function formatAccuracyRow(label: string, profile: PreviewProfile | undef
         ["crit", "Crit"],
     ];
     const values = bands.flatMap(([key, display]) => {
-        const percentage = profile?.[key]?.chance;
-        return percentage === undefined ? [] : [`${display}: ${formatNumber(percentage)}%`];
+        const band = profile?.[key];
+        if (!band) return [];
+        const range = key === "miss" ? "" : ` (${formatNumber(band.min)}–${formatNumber(band.max)})`;
+        return [`${display}: ${formatNumber(band.chance)}%${range}`];
     });
     const target = label === "No target" ? "" : `${label} — `;
-    return values.length > 0 ? `${target}${values.join("   ")}` : label;
+    return values.length > 0 ? `${target}${values.join("  ")}` : label;
+}
+
+export function formatSuccessRow(profile: AccuracyProfile): string {
+    const success = (profile.graze ?? 0) + (profile.hit ?? 0) + (profile.crit ?? 0);
+    return `Success: ${formatNumber(success)}%`;
 }
 
 /** Plain text is laid out first; semantic spans are overlaid afterwards so width is exact. */
@@ -181,19 +188,21 @@ export function renderStyledScreen(
     }
 
     forEachLine(text, (line, offset) => {
+        const success = /Success: ([\d.]+)%/.exec(line);
         const hit = /Hit: ([\d.]+)%/.exec(line);
         const crit = /Crit: ([\d.]+)%/.exec(line);
-        if (!hit && !crit) return;
+        if (!success && !hit && !crit) return;
         const profile: AccuracyProfile = {
-            hit: hit ? Number(hit[1]) : 0,
+            hit: success ? Number(success[1]) : hit ? Number(hit[1]) : 0,
             crit: crit ? Number(crit[1]) : 0,
         };
         const style = accuracyQualityStyle(profile);
         if (!style) return;
-        const start = Math.max(0, line.search(/(?:Miss|Graze|Hit|Crit):/));
-        const end = Math.max(hit?.index ?? 0, crit?.index ?? 0)
-            + (crit && (crit.index ?? 0) >= (hit?.index ?? 0) ? crit[0].length : hit?.[0].length ?? 0);
-        spans.push({ start: offset + start, end: offset + end, style });
+        const expression = /(?:Miss|Graze|Hit|Crit|Success): [\d.]+%/g;
+        for (const match of line.matchAll(expression)) {
+            const start = match.index ?? 0;
+            spans.push({ start: offset + start, end: offset + start + match[0].length, style });
+        }
     });
 
     if (!options.externalLog) {

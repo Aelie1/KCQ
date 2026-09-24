@@ -4,7 +4,7 @@ import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
 import { iBuff, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
-import { removeEmpowerment } from "./ko";
+import { EMPOWERMENT_BUFF, removeEmpowerment } from "./ko";
 
 
 const PUNCH_DAMAGE = 30;
@@ -34,7 +34,7 @@ export const matsuko: CharacterDef = {
             moves.push(...[punch, kick]);
         }
         else {
-            const buff = findBuff(actor, "fairyEmpowerment");
+            const buff = findBuff(actor, EMPOWERMENT_BUFF);
             if (buff) {
                 moves.push(...[whiteFlame, fairyWhiteFlame, phoenixKick, fairyPhoenixKick, immolation]);
             }

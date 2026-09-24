@@ -1,7 +1,7 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { runConsoleClient } from "../../src/console/client";
-import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention } from "../../src/console/format";
+import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention, formatPreviewEffects } from "../../src/console/format";
 import { formatAccuracyRow, renderScreen } from "../../src/console/render";
 import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
@@ -605,12 +605,24 @@ describe("console formatting", () => {
             hit: { chance: 65, min: 8, max: 10 },
             crit: { chance: 10, min: 15, max: 20 },
         }))
-            .toBe("foe — Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%");
+            .toBe("foe — Miss: 10%  Graze: 15% (2–5)  Hit: 65% (8–10)  Crit: 10% (15–20)");
         expect(formatAccuracyRow("No target", {
             miss: { chance: 60, min: 0, max: 0 },
             hit: { chance: 40, min: 8, max: 10 },
         }))
-            .toBe("Miss: 60%   Hit: 40%");
+            .toBe("Miss: 60%  Hit: 40% (8–10)");
+    });
+
+    it("keeps engine IDs and modifier keys intact in compact effect previews", () => {
+        expect(formatPreviewEffects([
+            { type: "binding", target: "ko", binding: "latexLegs", amount: -25 },
+            { type: "binding", target: "ko", binding: "subspaceClutter", amount: 25 },
+            { type: "buff", target: "ko", buff: "whiteFlame", operation: "add", effects: { defense: -1, hit: -1 } },
+            { type: "buff", target: "ko", buff: "fairyTransformation", operation: "remove" },
+        ])).toBe(
+            "latexLegs -25 | subspaceClutter +25 | adds whiteFlame (Def -1) (Hit -1)"
+            + " | removes fairyTransformation",
+        );
     });
 
     it("automatically ends the turn after the last available character acts", async () => {
@@ -620,7 +632,7 @@ describe("console formatting", () => {
         const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
 
         expect(engine.getGameView().turn.round).toBe(2);
-        expect(rendered).toContain("skunkette1 — Miss:");
+        expect(rendered).toContain("[1] telekinesis [mouth; 1 enemy]");
         expect(rendered).not.toMatch(/TARGET\s+MISS\s+GRAZE/);
         expect(rendered).toMatch(/telekinesis on skunkette1: (MISS|GRAZE|HIT|CRIT)/);
         expect(rendered).toContain("No characters available. Ending turn automatically.");
@@ -631,7 +643,7 @@ describe("console formatting", () => {
         expect(rendered).not.toMatch(/unavailable:/i);
     });
 
-    it("puts a single accuracy preview on the move row", async () => {
+    it("keeps the main move menu compact", async () => {
         const engine = createCustomEngine([oneEnemyEncounter], [ko], 2);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
@@ -639,11 +651,37 @@ describe("console formatting", () => {
         const rendered = await runScriptedConsole(engine, ["1", "7", "3"], events);
 
         expect(rendered).toContain(
-            "[1] telekinesis [mouth; 1 enemy]   foe1 — Miss: 10%   Graze: 15%   Hit: 65%   Crit: 10%",
+            "[1] telekinesis [mouth; 1 enemy]   foe1",
         );
         expect(rendered).toContain(
             "[2] starlightBindings [mouth; 1 enemy]   foe1",
         );
+        expect(rendered).toContain("[3] reflect [mouth; no target]   adds reflect");
+        expect(rendered).toContain(
+            "[4] fairyTransformation [mouth; no target]   "
+            + "adds fairyTransformation (Def +3) | adds fairyEmpowerment",
+        );
+        expect(rendered).not.toContain("Miss:");
+    });
+
+    it("shows targetless accuracy as a success rate without a redundant target label", async () => {
+        const throwOff = makeMove("throwOff", "none", {
+            targetSide: "none",
+            targets: 0,
+            accuracy: { miss: 35, hit: 65 },
+        });
+        const engine = createCustomEngine(
+            [oneEnemyEncounter],
+            [makeCharacterDef("hero", [throwOff])],
+            1,
+        );
+        engine.loadCharacter("hero");
+        const events = engine.loadEncounter(oneEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "5", "3"], events);
+
+        expect(rendered).toContain("[1] throwOff [none; no target]   Success: 65%");
+        expect(rendered).not.toContain("no target]   No target");
     });
 
     it("omits accuracy from move rows that have a failure reason", async () => {
@@ -685,10 +723,28 @@ describe("console formatting", () => {
         const secondTargetLines = targetScreen?.split("\n")
             .filter((line) => line.includes("[2] attacker1")) ?? [];
         expect(firstTargetLines).toHaveLength(1);
-        expect(firstTargetLines[0]).toContain("Miss:");
+        expect(firstTargetLines[0]).toContain("Miss: 10%  Graze: 15% (6–15)  Hit: 65% (24–30)  Crit: 10% (45–60)");
         expect(secondTargetLines).toHaveLength(1);
-        expect(secondTargetLines[0]).toContain("Miss:");
+        expect(secondTargetLines[0]).toContain("Miss: 10%  Graze: 15% (6–15)  Hit: 65% (24–30)  Crit: 10% (45–60)");
         expect(rendered).toMatch(/telekinesis on attacker1: (MISS|GRAZE|HIT|CRIT)/);
+    });
+
+    it("shows pure effect previews on one row per selectable target", async () => {
+        const engine = createCustomEngine([multiEnemyEncounter], [ko], 8224);
+        engine.loadCharacter(ko.id);
+        const events = engine.loadEncounter(multiEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "2", "3", "8", "3"], events);
+        const targetScreen = rendered.split("\x1b[2J\x1b[H")
+            .find((screen) => screen.includes("Choose target 1 of 1 for starlightBindings."));
+        expect(targetScreen).toBeDefined();
+        for (const [number, target] of [[1, "foe1"], [2, "attacker1"]] as const) {
+            const rows = targetScreen?.split("\n")
+                .filter((line) => line.includes(`[${number}] ${target} —`)) ?? [];
+            expect(rows).toHaveLength(1);
+            expect(rows[0]).toContain("adds starlightBindings (Def -2) (Hit -2)");
+        }
+        expect(targetScreen).not.toContain("    + ");
     });
 
     it("numbers detailed ally target rows without adding a duplicate list", async () => {
@@ -745,7 +801,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("  -> foe1: HIT");
     });
 
-    it("keeps all-target accuracy rows informational and unnumbered", async () => {
+    it("keeps all-target preview rows informational and unnumbered", async () => {
         const allMove = makeMove("all-move", "mouth", { targets: "all", baseDamage: 10 });
         const hero = makeCharacterDef("hero", [allMove]);
         const engine = createCustomEngine([multiEnemyEncounter], [hero], 1);
@@ -767,6 +823,45 @@ describe("console formatting", () => {
         expect(targetScreen).not.toContain("[1] foe1");
         expect(targetScreen).not.toContain("[2] attacker1");
         expect(targetScreen).toContain("[1] Confirm");
+    });
+
+    it("shows each all-target damage band from that target's engine preview", async () => {
+        const allMove = makeMove("all-move", "mouth", {
+            targets: "all",
+            baseDamage: 10,
+            accuracy: { miss: 10, graze: 15, hit: 65, crit: 10 },
+            resolve: (_state, _actor, _move, targets) => targets.map(({ target }) => ({
+                type: "buff" as const,
+                target,
+                buff: { id: "burnout", active: true },
+                operation: "add" as const,
+            })),
+        });
+        const encounter: EncounterDef = {
+            ...multiEnemyEncounter,
+            id: "vulnerable-all-target",
+            setup: (state) => [{
+                type: "buff",
+                target: state.enemies[1],
+                operation: "add",
+                buff: { id: "vulnerable", active: true, modifiers: { vulnerability: 2 } },
+            }],
+        };
+        const engine = createCustomEngine([encounter], [makeCharacterDef("hero", [allMove])], 1);
+        engine.loadCharacter("hero");
+        const events = engine.loadEncounter(encounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "1", "2", "5", "3"], events);
+        const targetScreen = rendered.split("\x1b[2J\x1b[H")
+            .find((screen) => screen.includes("all-move affects every enemy."));
+        expect(targetScreen).toContain(
+            "foe1 — Miss: 10%  Graze: 15% (2–5)  Hit: 65% (8–10)  Crit: 10% (15–20) | adds burnout",
+        );
+        expect(targetScreen).toContain(
+            "attacker1 — Miss: 10%  Graze: 15% (3–7)  Hit: 65% (10–13)  Crit: 10% (19–25) | adds burnout",
+        );
+        expect(targetScreen).toContain("[1] Confirm");
+        expect(targetScreen).toContain("[2] Back");
     });
 
     it("only offers valid entries from a move's published targets", async () => {
@@ -975,7 +1070,8 @@ describe("console formatting", () => {
         expect(rendered).toContain("[2] ally  Ready");
         expect(rendered).toContain("Choose an action for ally.");
         expect(rendered).not.toContain("Choose an action for hero.");
-        expect(rendered).toContain("[1] player-wait [mouth; no target]   No target");
+        expect(rendered).toContain("[1] player-wait [mouth; no target]   Success: 100%");
+        expect(rendered).not.toContain("no target]   No target");
         expect(rendered).toContain("No characters available. Ending turn automatically.");
         expect(engine.getGameView().turn.round).toBe(3);
     });

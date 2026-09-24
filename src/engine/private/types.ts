@@ -5,7 +5,7 @@ import { AccuracyProfile, EnemyEffect, FailureReason, PreviewProfile } from "../
 export type iValidityInfo = iValidTarget | iInvalidTarget;
 export type iPreviewInfo = iMovePreview | iInvalidTarget;
 
-export interface iMovePreview extends Omit<iValidTarget, "accuracy"> {
+export interface iMovePreview extends iValidTarget {
     effects: iEffect[];
     damage?: PreviewProfile;
 }

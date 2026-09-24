@@ -172,6 +172,7 @@ export function serializePreview(info: iPreviewInfo): PreviewInfo {
     return {
         valid: true,
         target,
+        ...(info.accuracy ? { accuracy: info.accuracy } : {}),
         damage: info.damage,
         effects: serializeEffects(info.effects)
     };
