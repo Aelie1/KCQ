@@ -1,10 +1,11 @@
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
-import { findBinding, findCharacter, findEntity, findMove, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
+import { findBinding, findCharacter, findEntity, findMove, isValidEntity, thresholds } from "../protected/helpers";
 import { mixSeed, Random } from "../protected/random";
 import { GameStatus, StatusMap } from "../protected/status";
 import { iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import type { AccuracyResult, ActionResult, ActionView, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, ThresholdInfo, TrapEvent } from "../public/types";
 import {
+    applyCooldowns,
     evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape,
     resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers
 } from "./combat";
@@ -111,6 +112,7 @@ export class GameEngine implements Engine {
             bonusEscapes: 0,
             bindings: [],
             buffs: [],
+            cooldowns: {},
             data: { ...(character.data ?? {}) },
         });
         this.refreshView();
@@ -230,6 +232,13 @@ export class GameEngine implements Engine {
                     return {
                         success: false,
                         reason: "invalidMove"
+                    };
+                }
+
+                if (actor.cooldowns[move.id] > 0) {
+                    return {
+                        success: false,
+                        reason: "cooldownIncomplete"
                     };
                 }
 
@@ -442,6 +451,7 @@ export class GameEngine implements Engine {
                 if (move.freeOnHit !== true || anyHits === false) {
                     actor.acted = true;
                 }
+                applyCooldowns(actor, move);
                 this.state.turn.step++;
                 this.refreshView();
                 result.push({
@@ -625,11 +635,7 @@ export class GameEngine implements Engine {
         effects.merge(moveResults.effects);
         moveEvent.effects = effects.getEvents();
 
-        if (move.definition.cooldown) {
-            if (isEnemy(intention.actor)) {
-                intention.actor.cooldowns[move.definition.id] = move.definition.cooldown;
-            }
-        }
+        applyCooldowns(intention.actor, move.definition);
         return moveEvent;
     }
 
@@ -658,6 +664,7 @@ export class GameEngine implements Engine {
             result.merge(tickBindings(this.state));
             this.state.turn.phase = "enemy";
         } else {
+            tickCooldowns(this.state.characters);
             tickCooldowns(this.state.enemies);
             result.merge(tickBuffs(this.state));
             result.merge(tickPlayers(this.state));

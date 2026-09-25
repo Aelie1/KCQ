@@ -185,7 +185,7 @@ const skunkCollar: MoveDef = {
     targetSide: "player",
     targets: 1,
     baseDamage: COLLAR_DAMAGE,
-    cooldown: 3,
+    cooldown: { "skunkCollar": 3 },
     accuracy: {
         miss: 60,
         graze: 25,
@@ -255,7 +255,7 @@ const skunkPerfume: MoveDef = {
         hit: 40,
     },
     check: "willpower",
-    cooldown: 5,
+    cooldown: { "skunkPerfume": 5 },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         const type = move.data?.["type"] ?? 0;

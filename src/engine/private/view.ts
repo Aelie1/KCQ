@@ -65,6 +65,10 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
             available = false;
             reason = result;
         }
+        else if (actor.cooldowns[move.id] > 0) {
+            available = false;
+            reason = "cooldownIncomplete";
+        }
         else if (!move.alwaysAvailable && !status.canAttack()) {
             available = false;
             reason = "attackUnavailable";

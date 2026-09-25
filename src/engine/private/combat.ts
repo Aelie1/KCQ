@@ -1,7 +1,7 @@
 import { MoveDef } from "../protected/definitions";
 import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
-import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iMoveResult, iTargetInfo } from "../protected/types";
+import { iBinding, iCharacter, iEffect, iEntity, iGameState, iIntention, iMove, iMoveResult, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
 import { BASE_ESCAPE_PENALTY, BASE_ESCAPE_POTENCY, BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
@@ -282,11 +282,19 @@ export function tickBuffs(state: iGameState): iEffect[] {
     return effects;
 }
 
-export function tickCooldowns(enemies: iEnemy[]) {
-    for (const enemy of enemies) {
-        for (const [moveId, cooldown] of Object.entries(enemy.cooldowns)) {
+export function applyCooldowns(actor: iEntity, move: MoveDef) {
+    if (move.cooldown) {
+        for (const cooldown in move.cooldown) {
+            actor.cooldowns[cooldown] = Math.max(actor.cooldowns[cooldown] ?? 0, move.cooldown[cooldown]);
+        }
+    }
+}
+
+export function tickCooldowns(entities: iEntity[]) {
+    for (const entity of entities) {
+        for (const [moveId, cooldown] of Object.entries(entity.cooldowns)) {
             if (cooldown > 0) {
-                enemy.cooldowns[moveId]--;
+                entity.cooldowns[moveId]--;
             }
         }
     }

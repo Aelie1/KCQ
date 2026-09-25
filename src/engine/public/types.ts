@@ -60,6 +60,7 @@ export interface Character {
     bonusEscapes: number;
     bindings: Binding[];
     buffs: Buff[];
+    cooldowns: Record<MoveId, number>;
     modifiers: ModifierSet;
     blockedMoveTypes: MoveType[];
     data: Record<string, number>;
@@ -381,7 +382,8 @@ export type FailureReason =
     | "attackUnavailable"
     | "assistUnavailable"
     | "escapeUnavailable"
-    | "bindingRestriction";
+    | "bindingRestriction"
+    | "cooldownIncomplete";
 
 
 

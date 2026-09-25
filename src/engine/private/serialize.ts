@@ -28,6 +28,7 @@ function serializeCharacter(character: iCharacter, status: GameStatus): Characte
         modifiers: status.getModifiers(),
         bindings: character.bindings.map(serializeBinding),
         buffs: character.buffs.filter(x => x.active).map(serializeBuff),
+        cooldowns: { ...character.cooldowns },
         blockedMoveTypes: status.getBlockedMoveTypes(),
         data: { ...character.data }
     };

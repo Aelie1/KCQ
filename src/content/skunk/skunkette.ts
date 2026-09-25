@@ -155,7 +155,7 @@ export const skunkette: EnemyDef = {
                     type: "cooldown",
                     target: target,
                     move: pounce,
-                    value: pounce.cooldown ?? 0
+                    value: pounce.cooldown?.["pounce"] ?? 0
                 });
             } else {
                 const character = findCharacter(state, pounceBuff.linkedEntity);
@@ -225,7 +225,7 @@ const pounce: MoveDef = {
     id: "pounce",
     targetSide: "player",
     targets: 1,
-    cooldown: POUNCE_COOLDOWN,
+    cooldown: { "pounce": POUNCE_COOLDOWN },
     accuracy: {
         miss: 40,
         hit: 50,
@@ -389,7 +389,7 @@ const throwOff: MoveDef = {
                         type: "cooldown",
                         target: enemy,
                         move: pounce,
-                        value: pounce.cooldown ?? 0
+                        value: pounce.cooldown?.["pounce"] ?? 0
                     });
                 }
             }

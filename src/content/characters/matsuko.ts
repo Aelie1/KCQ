@@ -25,6 +25,8 @@ const STOP_BOSS_WEAKEN = 0.25;
 
 const ATTACKME_COMPULSION_COOLDOWN = 2;
 
+const DEFAULT_COMPULSION_COOLDOWN = 2;
+
 export const matsuko: CharacterDef = {
     id: "matsuko",
     getMoves: function (actor: iCharacter): MoveDef[] {
@@ -42,10 +44,7 @@ export const matsuko: CharacterDef = {
                 moves.push(...[whiteFlame, phoenixKick, immolation]);
             }
         }
-        const compulsionBuff = findBuff(actor, "compulsionCD");
-        if (!compulsionBuff) {
-            moves.push(...[obey, stop, attackMe]);
-        }
+        moves.push(...[obey, stop, attackMe]);
         return moves;
     },
     passives: []
@@ -160,6 +159,11 @@ const obey: MoveDef = {
     targets: 1,
     type: "mouth",
     freeOnHit: true,
+    cooldown: {
+        "stop": DEFAULT_COMPULSION_COOLDOWN,
+        "obey": OBEY_COMPULSION_COOLDOWN,
+        "attackMe": DEFAULT_COMPULSION_COOLDOWN
+    },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
@@ -189,19 +193,6 @@ const obey: MoveDef = {
             }
         }
 
-        const cooldownBuff: iBuff = {
-            id: "compulsionCD",
-            active: true,
-            duration: OBEY_COMPULSION_COOLDOWN,
-        }
-
-        result.effects.push({
-            type: "buff",
-            target: actor,
-            buff: cooldownBuff,
-            operation: "add"
-        });
-
         return result;
     },
     isValid: function (move: MoveDef, target: iEntity | null): FailureReason | undefined {
@@ -220,12 +211,13 @@ const stop: MoveDef = {
     targets: 1,
     type: "mouth",
     freeOnHit: true,
+    cooldown: {
+        "stop": STOP_COMPULSION_COOLDOWN,
+        "obey": DEFAULT_COMPULSION_COOLDOWN,
+        "attackMe": DEFAULT_COMPULSION_COOLDOWN
+    },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
-
-        if (!isCharacter(actor)) {
-            return result;
-        }
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
@@ -242,19 +234,6 @@ const stop: MoveDef = {
             }
         }
 
-        const cooldownBuff: iBuff = {
-            id: "compulsionCD",
-            active: true,
-            duration: STOP_COMPULSION_COOLDOWN,
-        }
-
-        result.effects.push({
-            type: "buff",
-            target: actor,
-            buff: cooldownBuff,
-            operation: "add"
-        });
-
         return result;
     }
 }
@@ -265,6 +244,11 @@ const attackMe: MoveDef = {
     targets: "all",
     type: "mouth",
     freeOnHit: true,
+    cooldown: {
+        "stop": DEFAULT_COMPULSION_COOLDOWN,
+        "obey": DEFAULT_COMPULSION_COOLDOWN,
+        "attackMe": ATTACKME_COMPULSION_COOLDOWN
+    },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
@@ -286,19 +270,6 @@ const attackMe: MoveDef = {
                 });
             }
         }
-
-        const cooldownBuff: iBuff = {
-            id: "compulsionCD",
-            active: true,
-            duration: ATTACKME_COMPULSION_COOLDOWN,
-        }
-
-        result.effects.push({
-            type: "buff",
-            target: actor,
-            buff: cooldownBuff,
-            operation: "add"
-        });
 
         return result;
     }
