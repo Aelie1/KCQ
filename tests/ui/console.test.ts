@@ -709,6 +709,21 @@ describe("console formatting", () => {
         expect(rendered).not.toContain("Miss:");
     });
 
+    it("accepts the displayed qwerty shortcut for an eighth move", async () => {
+        const hero = makeCharacterDef("hero", Array.from({ length: 8 }, (_, index) =>
+            makeMove(`move${index + 1}`, "none", {
+                targetSide: "none", targets: 0, accuracy: undefined,
+            })));
+        const engine = createCustomEngine([oneEnemyEncounter], [hero], 1);
+        engine.loadCharacter(hero.id);
+        const events = engine.loadEncounter(oneEnemyEncounter.id);
+
+        const rendered = await runScriptedConsole(engine, ["1", "q", "quit"], events);
+
+        expect(rendered).toContain("[q] move8");
+        expect(rendered).toContain("hero used move8.");
+    });
+
     it("shows targetless accuracy as a success rate without a redundant target label", async () => {
         const throwOff = makeMove("throwOff", "none", {
             targetSide: "none",
@@ -906,7 +921,7 @@ describe("console formatting", () => {
             "attacker1 — Miss: 10%  Graze: 15% (3–7)  Hit: 65% (10–13)  Crit: 10% (19–25) | adds burnout",
         );
         expect(targetScreen).toContain("[1] Confirm");
-        expect(targetScreen).toContain("[2] Back");
+        expect(targetScreen).toContain("[~] Back");
     });
 
     it("only offers valid entries from a move's published targets", async () => {
@@ -971,7 +986,7 @@ describe("console formatting", () => {
 
         const rendered = await runScriptedConsole(
             engine,
-            ["1", "1", "5", "4", "3"],
+            ["1", "8", "~", "~", "3"],
             events,
         );
 
@@ -1052,7 +1067,7 @@ describe("console formatting", () => {
 
         const rendered = await runScriptedConsole(
             engine,
-            ["1", "1", "3", "4", "4"],
+            ["1", "8", "~", "~", "4"],
             events,
         );
         const actionScreen = rendered.split("\x1b[2J\x1b[H")
@@ -1060,7 +1075,7 @@ describe("console formatting", () => {
         const escapeScreen = rendered.split("\x1b[2J\x1b[H")
             .find((screen) => screen.includes("Choose an escape for hero."));
 
-        expect(actionScreen).toContain("[1] Escape / assist");
+        expect(actionScreen).toContain("[8] Escape / assist");
         expect(actionScreen).not.toContain("Escape / assist -- no legal escapes");
         expect(escapeScreen).toContain("[1] hero - firstLegal");
         expect(escapeScreen).toContain("[2] hero - latexArms");
@@ -1095,8 +1110,8 @@ describe("console formatting", () => {
 
         expect(rendered).toContain("[-] ko  -- actorAlreadyActed");
         expect(rendered).toContain("[2] ally  Ready");
-        expect(rendered).toContain("[3] End turn");
-        expect(rendered).toContain("[4] Quit");
+        expect(rendered).toContain("[0] End turn");
+        expect(rendered).toContain("[-] Quit");
         expect(engine.getGameView().turn.round).toBe(1);
     });
 
@@ -1127,7 +1142,7 @@ describe("console formatting", () => {
 
         const rendered = await runScriptedConsole(
             engine,
-            ["1", "5", "4", "1", "1", "3"],
+            ["1", "9", "8", "1", "1", "3"],
         );
 
         expect(rendered).toContain("Change stance -> standing");
@@ -1149,7 +1164,7 @@ describe("console formatting", () => {
 
         const rendered = await runScriptedConsole(
             engine,
-            ["1", "4", "2", "7", "3"],
+            ["1", "8", "~", "~", "3"],
         );
 
         expect(rendered).toContain("[1] hero - latexArms");

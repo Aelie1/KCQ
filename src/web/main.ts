@@ -87,7 +87,7 @@ class BrowserBattleUI implements BattleUI {
         endTurnButton.disabled = false;
         if (browserChoices.endTurn) {
             endTurnButton.dataset.choice = String(browserChoices.endTurn.number);
-            endTurnButton.textContent = "[0] End Turn";
+            endTurnButton.textContent = `[${browserChoiceShortcut(browserChoices.endTurn)}] End Turn`;
         } else {
             delete endTurnButton.dataset.choice;
         }

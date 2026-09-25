@@ -1,5 +1,34 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.8.0 — 2026-09-25
+
+### Action Previews
+- Move previews now show expected damage ranges for each hit band, including Potency, Vulnerability, and other combat modifiers.
+- Target selection now previews non-damage effects such as bindings, buffs, healing, traps, and spawned enemies.
+- Targetless actions can now preview their effects or success chance directly.
+- Move-level effects are now represented separately from target-specific effects instead of being duplicated across target previews.
+
+### Combat Log / Events
+- Reworked the combat event system to preserve causal relationships between actions and their results.
+- Moves now keep separate result stacks for each evaluated target, with move-wide effects stored separately.
+- Multi-hit moves now display each hit immediately followed by the effects caused by that hit.
+- Triggered effects such as damage reactions, linked buffs, defeats, cooldown changes, and other follow-up effects now remain grouped with the action that caused them.
+- Phase changes, stance changes, escapes, character loads, and encounter loads now own their resulting effects instead of emitting unrelated flat events.
+- Misses are preserved as evaluated target results with no resulting effects.
+- Combat presentation and highlighting were updated to understand the new event hierarchy.
+
+### Presentation
+- Accuracy previews now include both result chances and their corresponding damage ranges.
+- Pure-effect moves now show compact effect descriptions in the action UI.
+- Targetless accuracy checks are displayed as a single success chance.
+- Fairy Transformation and Fairy Empowerment buff names were simplified to `transformation` and `empowerment`.
+
+### Fixes
+- Fixed triggered traps reporting that they consumed zero trap strength.
+- Fixed move-level effects disappearing from action previews.
+- Fixed preview ownership that could duplicate move-wide effects across multiple targets.
+- Fixed several event consumers to preserve target-specific effect ordering after the event-system overhaul.
+
 ## 0.7.3 — 2026-09-23
 
 ### Balance

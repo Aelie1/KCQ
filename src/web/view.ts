@@ -1,12 +1,11 @@
 import type { BattleChoice } from "../console/controller";
+import { choiceForKey, choiceShortcut } from "../console/shortcuts";
 import type {
     HighlightTarget,
     SemanticStyle,
     StyledLine,
     StyledText,
 } from "../console/presentation";
-
-const OVERFLOW_SHORTCUTS = "qwertyuiopasdfghjklzxcvbnm";
 
 export interface BrowserChoiceSet {
     choices: BattleChoice[];
@@ -132,20 +131,14 @@ export function browserChoiceLabel(choice: BattleChoice): string {
 }
 
 export function browserChoiceShortcut(choice: BattleChoice): string {
-    if (choice.kind === "endTurn") return "0";
-    if (choice.number >= 1 && choice.number <= 9) return String(choice.number);
-    return OVERFLOW_SHORTCUTS[choice.number - 10] ?? String(choice.number);
+    return choiceShortcut(choice);
 }
 
 export function browserChoiceForKey(
     key: string,
     choices: readonly BattleChoice[],
 ): number | undefined {
-    return choices.find((choice) =>
-        choice.available !== false
-        && choice.kind !== "quit"
-        && browserChoiceShortcut(choice) === key.toLowerCase(),
-    )?.number;
+    return choiceForKey(key, choices);
 }
 
 export function isLogNearBottom(position: ScrollPosition, tolerance = 24): boolean {

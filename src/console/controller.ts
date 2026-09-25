@@ -22,12 +22,14 @@ import {
     type StyledLine,
 } from "./presentation";
 import { formatAccuracyRow, formatSuccessRow, type ScreenModel } from "./render";
+import { choiceShortcut, numberedShortcut } from "./shortcuts";
 
 export interface BattleChoice {
     number: number;
     label: string;
     available?: boolean;
-    kind?: "endTurn" | "quit";
+    kind?: "endTurn" | "quit" | "escape" | "stance" | "back";
+    shortcut?: string;
     browserLabel?: string;
 }
 
@@ -143,10 +145,11 @@ export async function runBattleController(
             if (choice === "quit") throw new BattleQuit();
             const index = choices.findIndex((candidate) => candidate.number === choice);
             if (index >= 0) return index;
-            const numbers = choices.map((candidate) => candidate.number);
-            message = numbers.length > 1
-                ? `Enter one of: ${numbers.join(", ")}.`
-                : `Enter ${numbers[0]}.`;
+            const shortcuts = choices.filter((candidate) => candidate.kind !== "quit")
+                .map(choiceShortcut);
+            message = shortcuts.length > 1
+                ? `Enter one of: ${shortcuts.join(", ")}.`
+                : `Enter ${shortcuts[0]}.`;
         }
     };
 
@@ -192,14 +195,14 @@ export async function runBattleController(
 
         if (move.targets === "all") {
             const lines = previewLines(targets);
+            const choices = numberedChoices(["Confirm", "Back"]);
             const selection = await choose([
                 `${move.id} affects every ${move.targetSide}.`,
                 "",
                 ...lines,
                 "",
-                "[1] Confirm",
-                "[2] Back",
-            ], numberedChoices(["Confirm", "Back"]));
+                ...choices.map((choice) => `[${choiceShortcut(choice)}] ${choice.label}`),
+            ], choices);
             if (selection === 0) {
                 return execute({ type: "move", actor, move: move.id, targets: [] });
             }
@@ -231,21 +234,21 @@ export async function runBattleController(
                 return false;
             }
 
-            const choiceLines = previewLines(candidates)
-                .map((line, index) => `[${index + 1}] ${line}`);
-            choiceLines.push(`[${choiceLines.length + 1}] Back`);
-            const choice = await choose([
-                `Choose target ${selected.length + 1} of ${move.targets} for ${move.id}.`,
-                ...(selected.length ? [`Selected: ${selected.join(", ")}`] : []),
-                "",
-                ...choiceLines,
-            ], numberedChoices([
+            const choices = numberedChoices([
                 ...candidates.map((candidate) => previewLine(candidate)),
                 "Back",
             ], [
                 ...candidates.map((candidate) => candidate.target),
                 "Back",
-            ]));
+            ]);
+            const choiceLines = choices.map((choice) =>
+                `[${choiceShortcut(choice)}] ${choice.label}`);
+            const choice = await choose([
+                `Choose target ${selected.length + 1} of ${move.targets} for ${move.id}.`,
+                ...(selected.length ? [`Selected: ${selected.join(", ")}`] : []),
+                "",
+                ...choiceLines,
+            ], choices);
             if (choice === candidates.length) return false;
             selected.push(candidates[choice].target);
         }
@@ -262,27 +265,29 @@ export async function runBattleController(
                 bindingIds,
             );
             if (options.length === 0) {
+                const choices = numberedChoices(["Back"]);
                 await choose([
                     `No legal escape options remain for ${actorId}.`,
                     "",
-                    "[1] Back",
-                ], numberedChoices(["Back"]));
+                    `[${choiceShortcut(choices[0])}] Back`,
+                ], choices);
                 return false;
             }
 
+            const choices = numberedChoices([
+                ...options.map((option) => `${option.target} - ${option.binding}`),
+                "Back",
+            ]);
             const choiceLines = options.flatMap((option, index) => [
-                `[${index + 1}] ${option.target} - ${option.binding}`,
+                `[${choiceShortcut(choices[index])}] ${option.target} - ${option.binding}`,
                 ...formatEffects(option.effects, true).map((effect) => `     ${effect}`),
             ]);
-            choiceLines.push(`[${options.length + 1}] Back`);
+            choiceLines.push(`[${choiceShortcut(choices[options.length])}] Back`);
             const choice = await choose([
                 `Choose an escape for ${actorId}.`,
                 "",
                 ...choiceLines,
-            ], numberedChoices([
-                ...options.map((option) => `${option.target} - ${option.binding}`),
-                "Back",
-            ]));
+            ], choices);
             if (choice === options.length) return false;
 
             const option = options[choice];
@@ -335,6 +340,7 @@ export async function runBattleController(
                 {
                     label: `Escape / assist${escapeAvailable ? "" : " -- no legal escapes"}`,
                     available: escapeAvailable,
+                    kind: "escape",
                     browserLabel: "Escape / assist",
                     select: async () => {
                         if (escapeAvailable) return chooseEscape(actor.id);
@@ -346,6 +352,7 @@ export async function runBattleController(
                     label: `Change stance -> ${actor.standing ? "moving" : "standing"}`
                         + (actorView.stance.available ? "" : ` -- ${actorView.stance.reason}`),
                     available: actorView.stance.available,
+                    kind: "stance",
                     browserLabel: "Change stance",
                     select: async () => {
                         if (actorView.stance.available) await execute({ type: "stance", actor: actor.id });
@@ -361,19 +368,20 @@ export async function runBattleController(
                         return true;
                     },
                 },
-                { label: "Back", select: async () => true },
+                { label: "Back", kind: "back", select: async () => true },
             );
 
+            const choices = menuChoices(menu);
             const choice = await choose([
                 `Choose an action for ${actor.id}.`,
                 "",
                 ...menu.flatMap((item, index) => item.detailLines?.length === 1
-                    ? [`[${index + 1}] ${item.label}   ${item.detailLines[0]}`]
+                    ? [`[${choiceShortcut(choices[index])}] ${item.label}   ${item.detailLines[0]}`]
                     : [
-                        `[${index + 1}] ${item.label}`,
+                        `[${choiceShortcut(choices[index])}] ${item.label}`,
                         ...(item.detailLines ?? []).map((line) => `    ${line}`),
                     ]),
-            ], menuChoices(menu));
+            ], choices);
             if (await menu[choice].select()) return;
         }
     };
@@ -388,20 +396,22 @@ export async function runBattleController(
                 continue;
             }
 
+            const endTurnNumber = view.actions.length + 1;
+            const quitNumber = view.actions.length + 2;
+            const endTurnChoice: BattleChoice = { number: endTurnNumber, label: "End turn", kind: "endTurn" };
+            const quitChoice: BattleChoice = { number: quitNumber, label: "Quit", kind: "quit" };
             const characterLines = view.actions.map((character, index) => {
                 const stateCharacter = view.characters.find((candidate) => candidate.id === character.id);
                 if (!character.available) {
                     return `[-] ${character.id}  -- ${character.reason}`;
                 }
-                return `[${index + 1}] ${character.id}`
+                return `[${choiceShortcut({ number: index + 1, label: character.id })}] ${character.id}`
                     + (stateCharacter ? `  ${stateCharacter.acted ? "Acted" : "Ready"}` : "");
             });
-            const endTurnNumber = view.actions.length + 1;
-            const quitNumber = view.actions.length + 2;
             const choiceLines = [
                 ...characterLines,
-                `[${endTurnNumber}] End turn`,
-                `[${quitNumber}] Quit`,
+                `[${choiceShortcut(endTurnChoice)}] End turn`,
+                `[${choiceShortcut(quitChoice)}] Quit`,
             ];
             const choices: BattleChoice[] = view.actions.flatMap((character, index) =>
                 character.available
@@ -409,8 +419,8 @@ export async function runBattleController(
                     : [],
             );
             choices.push(
-                { number: endTurnNumber, label: "End turn", kind: "endTurn" },
-                { number: quitNumber, label: "Quit", kind: "quit" },
+                endTurnChoice,
+                quitChoice,
             );
             const choice = await choose(
                 ["Choose a character.", "", ...choiceLines],
@@ -498,16 +508,19 @@ function numberedChoices(
     return labels.map((label, index) => ({
         number: index + 1,
         label,
+        ...(label === "Back" ? { kind: "back" as const } : {}),
         ...(browserLabels[index] !== label ? { browserLabel: browserLabels[index] } : {}),
     }));
 }
 
 function menuChoices(items: readonly MenuItem[]): BattleChoice[] {
+    let ordinaryNumber = 0;
     return items.map((item, index) => ({
         number: index + 1,
         label: item.label,
         ...(item.available === undefined ? {} : { available: item.available }),
         ...(item.kind === undefined ? {} : { kind: item.kind }),
+        ...((item.kind === undefined) ? { shortcut: numberedShortcut(++ordinaryNumber, 7) } : {}),
         ...(item.browserLabel === undefined ? {} : { browserLabel: item.browserLabel }),
     }));
 }

@@ -7,6 +7,7 @@ import {
     type BattleUI,
 } from "./controller";
 import { renderAnsi, renderStyledScreen } from "./render";
+import { choiceShortcut } from "./shortcuts";
 
 interface ConsoleStreams {
     input: Readable;
@@ -30,9 +31,14 @@ export async function runConsoleClient(
         streams.output.write(`\x1b[2J\x1b[H${screen}\n`);
     };
     const ui: BattleUI = {
-        choose: async (request: BattleChoiceRequest): Promise<number> => {
+        choose: async (request: BattleChoiceRequest): Promise<number | "quit"> => {
             display(request.screen);
-            const answer = (await rl.question("> ")).trim();
+            const answer = (await rl.question("> ")).trim().toLowerCase();
+            if (answer === "quit") return "quit";
+            const shortcut = request.choices.find((choice) =>
+                choice.available !== false && choice.kind !== "quit"
+                && choiceShortcut(choice) === answer);
+            if (shortcut) return shortcut.number;
             return /^\d+$/.test(answer) ? Number(answer) : Number.NaN;
         },
         showFinal: async (screen) => {

@@ -52,7 +52,9 @@ describe("shared battle controller", () => {
         expect(requests[0].screen.logLines.join("\n")).not.toMatch(
             /Character .* loaded|appeared|Encounter plains_1 began/,
         );
-        expect(requests[1].screen.actionLines).toContain("Enter one of: 1, 2, 3.");
+        expect(requests[0].screen.actionLines).toContain("[0] End turn");
+        expect(requests[0].screen.actionLines).toContain("[-] Quit");
+        expect(requests[1].screen.actionLines).toContain("Enter one of: 1, 0.");
         expect(closed).toBe(true);
     });
 
@@ -76,6 +78,51 @@ describe("shared battle controller", () => {
             choice.label.startsWith("Change stance"))?.browserLabel,
         ).toBe("Change stance");
         expect(close).toHaveBeenCalledOnce();
+    });
+
+    it("matches action and target labels to pinned and overflow button shortcuts", async () => {
+        const hero = makeCharacterDef("hero", Array.from({ length: 11 }, (_, index) =>
+            makeMove(`move${index + 1}`)));
+        const encounter: EncounterDef = {
+            id: "shortcut-menu",
+            enemies: Array.from({ length: 10 }, (_, index) =>
+                makeEnemyDef(`foe${index + 1}`, [makeWaitMove()])),
+            bindings: [],
+            traps: [],
+        };
+        const engine = createCustomEngine([encounter], [hero], 8224);
+        const events = [engine.loadCharacter(hero.id), engine.loadEncounter(encounter.id)];
+        const requests: BattleChoiceRequest[] = [];
+        await runBattleController(engine, encounter.id, events, {
+            choose: async (request) => {
+                requests.push(request);
+                return requests.length <= 2 ? 1 : "quit";
+            },
+        });
+
+        const actionLines = requests[1].screen.actionLines;
+        expect(actionLines).toEqual(expect.arrayContaining([
+            expect.stringContaining("[1] move1"),
+            expect.stringContaining("[7] move7"),
+            expect.stringContaining("[q] move8"),
+            expect.stringContaining("[w] move9"),
+            expect.stringContaining("[e] move10"),
+            expect.stringContaining("[r] move11"),
+            expect.stringContaining("[8] Escape / assist"),
+            expect.stringContaining("[9] Change stance"),
+            "[0] End turn",
+            "[~] Back",
+        ]));
+        expect(requests[1].choices.map((choice) => choice.shortcut ?? choice.kind))
+            .toEqual(["1", "2", "3", "4", "5", "6", "7", "q", "w", "e", "r",
+                "escape", "stance", "endTurn", "back"]);
+
+        const targetLines = requests[2].screen.actionLines;
+        expect(targetLines).toEqual(expect.arrayContaining([
+            expect.stringContaining("[9] foe9"),
+            expect.stringContaining("[q] foe10"),
+            "[~] Back",
+        ]));
     });
 
     it("renders victory from the public outcome without requesting a choice", async () => {
