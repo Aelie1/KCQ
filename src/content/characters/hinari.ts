@@ -87,27 +87,24 @@ const store: MoveDef = {
                     const subspaceAmount = STORE_REMOVE_AMOUNT - overflowAmount;
                     const bindingId = state.encounter.bindings.findIndex(x => x.id === highestBinding.id);
                     const currentBindingId = actor.data["subspaceBinding"] ?? 0;
-                    result.targets.push({
+                    const effects: iEffect[] = [];
+                    effects.push({
+                        type: "binding",
+                        source: actor,
                         target: target.target,
-                        result: target.band,
-                        effects: [{
-                            type: "binding",
-                            source: actor,
-                            target: target.target,
-                            binding: highestBinding,
-                            amount: -removeAmount
-                        }]
+                        binding: highestBinding,
+                        amount: -removeAmount
                     });
 
                     if (subspaceAmount) {
-                        result.effects.push({
+                        effects.push({
                             type: "data",
                             target: actor,
                             name: "subspace",
                             amount: subspaceAmount
                         });
                         if (bindingId >= 0) {
-                            result.effects.push({
+                            effects.push({
                                 type: "data",
                                 target: actor,
                                 name: "subspaceBinding",
@@ -116,7 +113,7 @@ const store: MoveDef = {
                         }
                     }
                     if (overflowAmount) {
-                        result.effects.push({
+                        effects.push({
                             type: "binding",
                             source: actor,
                             target: actor,
@@ -124,6 +121,12 @@ const store: MoveDef = {
                             amount: overflowAmount
                         });
                     }
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: effects
+                    });
+
                 }
             }
         }
@@ -216,14 +219,13 @@ const release: MoveDef = {
                         target: target.target,
                         buff: buff,
                         operation: "add"
+                    },
+                    {
+                        type: "data",
+                        target: actor,
+                        name: "subspace",
+                        amount: -RELEASE_ENEMY_AMOUNT
                     }]
-                });
-
-                result.effects.push({
-                    type: "data",
-                    target: actor,
-                    name: "subspace",
-                    amount: -RELEASE_ENEMY_AMOUNT
                 });
             }
             else {
@@ -240,13 +242,13 @@ const release: MoveDef = {
                             target: target.target,
                             binding: binding,
                             amount: bindingAmount
+                        },
+                        {
+                            type: "data",
+                            target: actor,
+                            name: "subspace",
+                            amount: -subspaceAmount
                         }]
-                    });
-                    result.effects.push({
-                        type: "data",
-                        target: actor,
-                        name: "subspace",
-                        amount: -subspaceAmount
                     });
                 }
             }

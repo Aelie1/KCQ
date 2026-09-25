@@ -80,6 +80,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
         }
         if (available) {
             const targets = getTargets(state, actor, statuses, move);
+            const effects = resolveMove(state, { definition: move }, actor, []);
             if (move.targets !== "all" && !targets.some(x => x.valid)) {
                 if (targets.length && !targets[0].valid) {
                     reason = targets[0].reason;
@@ -88,6 +89,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
                     move: serializeMove(move),
                     available: false,
                     targets: [],
+                    effects: serializeEffects(effects.effects),
                     reason: reason
                 });
                 continue;
@@ -95,13 +97,15 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
             actions.push({
                 move: serializeMove(move),
                 available: true,
-                targets: targets.map(serializePreview)
+                targets: targets.map(serializePreview),
+                effects: serializeEffects(effects.effects),
             });
         } else {
             actions.push({
                 move: serializeMove(move),
                 available: false,
                 targets: [],
+                effects: [],
                 reason: reason
             });
         }
@@ -184,7 +188,7 @@ function addDamagePreviews(state: iGameState, actor: iCharacter, potency: number
         }
         return {
             ...info,
-            effects: (effects.targets.find(x => x.target === info.target)?.effects) ?? [],
+            effects: effects.targets.find(x => x.target === info.target)?.effects ?? [],
             damage
         };
     }
@@ -192,7 +196,7 @@ function addDamagePreviews(state: iGameState, actor: iCharacter, potency: number
     //this isnt a damage move, resolve it to get it's effects
     return {
         ...info,
-        effects: (effects.targets.find(x => x.target === info.target)?.effects) ?? []
+        effects: effects.targets.find(x => x.target === info.target)?.effects ?? []
     }
 }
 

@@ -304,6 +304,7 @@ export interface ActionInfo {
     move: Move;
     available: boolean;
     targets: PreviewInfo[];
+    effects: Effect[];
     reason?: FailureReason;
 }
 

@@ -1,3 +1,4 @@
+import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { EMPOWERMENT_BUFF } from "../../src/content/characters/ko";
 import { matsuko } from "../../src/content/characters/matsuko";
@@ -69,7 +70,7 @@ function expectMoveSet(engine: Engine, expected: string[]): void {
 }
 
 function damageAmount(result: ActionSuccess, target: string): number {
-    const event = result.events.find(
+    const event = resolvedEvents(result.events).find(
         (candidate) => candidate.type === "enemyDamaged" && candidate.target === target,
     );
     if (!event || event.type !== "enemyDamaged") {
@@ -118,7 +119,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
 
         expect(result.events[0]).toMatchObject({
-            type: "moveUsed",
+            type: "useMove",
             actor: matsuko.id,
             move: "immolation",
             targets: [
@@ -130,7 +131,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         const critDamage = damageAmount(result, "second1");
         expect(hitDamage).toBeGreaterThan(0);
         expect(critDamage).toBeGreaterThan(hitDamage);
-        expect(result.events).toContainEqual({
+        expect(resolvedEvents(result.events)).toContainEqual({
             type: "buffAdded",
             target: matsuko.id,
             buff: "burnout",
@@ -169,7 +170,7 @@ describe("Matsuko's dynamic offensive kit", () => {
             targets: ["foe1"],
         });
         expect(result.events[0]).toMatchObject({
-            type: "moveUsed",
+            type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
         expect(damageAmount(result, "foe1")).toBeGreaterThan(0);
@@ -222,11 +223,11 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
 
         expect(phoenix.events[0]).toMatchObject({
-            type: "moveUsed",
+            type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
         expect(ordinary.events[0]).toMatchObject({
-            type: "moveUsed",
+            type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
         expect(damageAmount(ordinary, "foe1")).toBeGreaterThan(0);
@@ -256,7 +257,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
 
         expect(result.events[0]).toMatchObject({
-            type: "moveUsed",
+            type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
         expect(damageAmount(result, "foe1")).toBeGreaterThan(0);
@@ -320,11 +321,11 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
 
         expect(result.events[0]).toMatchObject({
-            type: "moveUsed",
+            type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
         expect(damageAmount(result, "foe1")).toBeGreaterThan(damageAmount(baselineResult, "foe1"));
-        expect(result.events.filter(({ type }) => type === "buffRemoved")).toEqual([{
+        expect(resolvedEvents(result.events).filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: matsuko.id,
             buff: EMPOWERMENT_BUFF,
@@ -384,7 +385,7 @@ describe("Matsuko's dynamic offensive kit", () => {
             targets: [],
         });
 
-        expect(result.events.some(({ type }) => type === "buffRemoved")).toBe(false);
+        expect(resolvedEvents(result.events).some(({ type }) => type === "buffRemoved")).toBe(false);
         expect(buffState(engine, EMPOWERMENT_BUFF, matsuko.id)).toBeDefined();
         expectMoveSet(engine, ["punch", "kick", "obey", "stop", "attackMe"]);
     });
@@ -443,7 +444,7 @@ describe("Matsuko's dynamic offensive kit", () => {
 
         for (const { engine, action: playerAction } of scenarios) {
             const result = execute(engine, playerAction);
-            expect(result.events.some(({ type }) => type === "buffRemoved")).toBe(false);
+            expect(resolvedEvents(result.events).some(({ type }) => type === "buffRemoved")).toBe(false);
             expect(buffState(engine, EMPOWERMENT_BUFF, matsuko.id)).toBeDefined();
         }
     });
@@ -518,7 +519,7 @@ describe("Matsuko's Compulsion moves", () => {
             targets: [ally.id],
         });
 
-        expect(result.events).toEqual(expect.arrayContaining([
+        expect(resolvedEvents(result.events)).toEqual(expect.arrayContaining([
             { type: "buffAdded", target: ally.id, buff: "servitude" },
             { type: "actionRefreshed", target: ally.id },
             { type: "buffAdded", target: matsuko.id, buff: "compulsionCD" },
@@ -606,7 +607,7 @@ describe("Matsuko's Compulsion moves", () => {
             targets: ["caster1"],
         });
 
-        expect(result.events).toContainEqual({ type: "intentionCancelled", target: "caster1" });
+        expect(resolvedEvents(result.events)).toContainEqual({ type: "intentionCancelled", target: "caster1" });
         expect(engine.getGameView().enemies[0].intentions).toEqual([]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
         expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 5 });
@@ -655,7 +656,7 @@ describe("Matsuko's Compulsion moves", () => {
             targets: ["boss1"],
         });
 
-        expect(result.events).toContainEqual({ type: "intentionWeakened", target: "boss1" });
+        expect(resolvedEvents(result.events)).toContainEqual({ type: "intentionWeakened", target: "boss1" });
         expect(engine.getGameView().enemies[0].intentions).toHaveLength(2);
         expect(engine.getGameView().enemies[0].intentions.map(
             ({ targets }) => targets[0]?.band,
@@ -747,7 +748,7 @@ describe("Matsuko's Compulsion moves", () => {
             targetless1: [],
             hostile1: ["first1"],
         });
-        expect(result.events.filter(({ type }) => type === "targetChanged")).toEqual([
+        expect(resolvedEvents(result.events).filter(({ type }) => type === "targetChanged")).toEqual([
             { type: "targetChanged", target: "first1", destination: matsuko.id },
             { type: "targetChanged", target: "second1", destination: matsuko.id },
         ]);

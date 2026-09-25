@@ -1,3 +1,4 @@
+import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { evaluateResult, isValidTarget } from "../../src/engine/private/combat";
 import { effectivenessRange } from "../../src/engine/private/constants";
@@ -34,7 +35,7 @@ describe("accuracy", () => {
 
     function makeAccuracyMove(
         accuracy: AccuracyProfile = standardProfile,
-        overrides: Partial<MoveDef> = {},
+        overrides: Parameters<typeof makeMove>[2] = {},
     ): MoveDef {
         return makeMove("accuracy-move", "arms", {
             accuracy: { ...accuracy },
@@ -163,8 +164,8 @@ describe("accuracy", () => {
 
     function moveUsed(result: ReturnType<Engine["executeAction"]>): MoveEvent {
         if (!result.success) throw new Error(`Expected action success, got ${result.reason}`);
-        const event = result.events.find(
-            (candidate): candidate is MoveEvent => candidate.type === "moveUsed",
+        const event = resolvedEvents(result.events).find(
+            (candidate): candidate is MoveEvent => candidate.type === "useMove",
         );
         if (!event) throw new Error("Expected moveUsed event");
         return event;
@@ -526,7 +527,7 @@ describe("accuracy", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected all-target move to succeed");
         expect(result.events[0]).toMatchObject({
-            type: "moveUsed",
+            type: "useMove",
             targets: expected.map((target) => ({
                 target: target.target.id,
                 result: target.band,
@@ -614,7 +615,7 @@ describe("accuracy", () => {
         });
         expect(zeroResult).toMatchObject({
             success: true,
-            events: [{ type: "moveUsed", targets: [] }],
+            events: [{ type: "useMove", targets: [] }],
         });
         expect(moveUsed(zeroResult).targets).toEqual([]);
         expect(resolutions).toBe(1);

@@ -49,15 +49,23 @@ describe("public move previews", () => {
         const strike = makeMove("strike", "arms", {
             baseDamage: 11,
             accuracy: { miss: 10, graze: 15, hit: 65, crit: 10 },
-            resolve: (_state, actor, move, targets) => [
-                ...basicDamageEffect(actor, move, targets),
-                ...targets.map(({ target }) => ({
-                    type: "buff" as const,
-                    target,
-                    buff: { id: `mark-${target.id}`, active: true },
-                    operation: "add" as const,
-                })),
-            ],
+            resolve: (_state, actor, move, targets) => {
+                const result = basicDamageEffect(actor, move, targets);
+                for (const target of targets) {
+                    let stack = result.targets.find((entry) => entry.target === target.target);
+                    if (!stack) {
+                        stack = { target: target.target, result: target.band, effects: [] };
+                        result.targets.push(stack);
+                    }
+                    stack.effects.push({
+                        type: "buff",
+                        target: stack.target,
+                        buff: { id: `mark-${stack.target.id}`, active: true },
+                        operation: "add",
+                    });
+                }
+                return result;
+            },
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
@@ -107,8 +115,8 @@ describe("public move previews", () => {
         const damageTarget: iTargetInfo = { target: makeEnemy(enemy), band: "none", effectiveness: 0 };
         const bindingTarget: iTargetInfo = { target, band: "none", effectiveness: 0 };
 
-        expect(basicDamageEffect(actor, { definition: damageMove }, [damageTarget])).toEqual([]);
-        expect(basicBindingEffect(actor, { definition: makeMove("bind"), binding }, [bindingTarget])).toEqual([]);
+        expect(basicDamageEffect(actor, { definition: damageMove }, [damageTarget])).toEqual({ effects: [], targets: [] });
+        expect(basicBindingEffect(actor, { definition: makeMove("bind"), binding }, [bindingTarget])).toEqual({ effects: [], targets: [] });
     });
 
     it("skips target probes when the actor has already acted", () => {

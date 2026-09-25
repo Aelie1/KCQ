@@ -100,7 +100,7 @@ function renderState(
 async function runScriptedConsole(
     engine: Engine,
     scriptedAnswers: string[],
-    initialEvents: GameEvent[] = [],
+    initialEvents: GameEvent[] | GameEvent = [],
 ) {
     const input = new PassThrough();
     const output = Object.assign(new PassThrough(), { columns: 180, rows: 50 });
@@ -115,7 +115,7 @@ async function runScriptedConsole(
         }
     });
 
-    await runConsoleClient(engine, "plains_1", initialEvents, { input, output });
+    await runConsoleClient(engine, "plains_1", Array.isArray(initialEvents) ? initialEvents : [initialEvents], { input, output });
     expect(answers).toEqual([]);
     return rendered;
 }
@@ -158,9 +158,10 @@ describe("console formatting", () => {
 
     it("turns action events into readable log lines", () => {
         expect(formatEvents([
-            { type: "moveUsed", actor: "ko", move: "telekinesis", targets: [{ target: "foe1", result: "hit" }] },
-            { type: "enemyDamaged", target: "foe1", amount: 10 },
-            { type: "enemyDefeated", target: "foe1" },
+            { type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [{ target: "foe1", result: "hit", effects: [
+                { type: "enemyDamaged", target: "foe1", amount: 10 },
+                { type: "enemyDefeated", target: "foe1" },
+            ] }] },
         ])).toEqual([
             "ko used telekinesis on foe1: HIT",
             "foe1 took 10 damage.",
@@ -219,9 +220,12 @@ describe("console formatting", () => {
 
     it("formats structured trap-trigger and interruption events", () => {
         expect(formatEvents([
-            { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
-            { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
+            { type: "useMove", actor: "ko", move: "telekinesis", targets: [], effects: [
+                { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
+                { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
+            ] },
         ])).toEqual([
+            "ko used telekinesis.",
             "ko triggered 10 trapPuddles.",
             "ko's action was interrupted due to bindingRestriction.",
         ]);
@@ -1028,8 +1032,8 @@ describe("console formatting", () => {
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const events: GameEvent[] = [
-            { type: "encounterLoad", id: "old", success: true, bindings: ["oldBinding"] },
-            { type: "encounterLoad", id: "new", success: true, bindings: ["latexHead"] },
+            { type: "loadEncounter", id: "old", success: true, bindings: ["oldBinding"], effects: [] },
+            { type: "loadEncounter", id: "new", success: true, bindings: ["latexHead"], effects: [] },
         ];
 
         const rendered = await runScriptedConsole(engine, ["3"], events);

@@ -37,12 +37,13 @@ describe("encounters", () => {
         const engine = createCustomEngine([oneEnemyEncounter], testCharacterList, 1);
         engine.loadCharacter(testHero.id);
 
-        expect(engine.loadEncounter(plains_1.id)).toEqual([{
-            type: "encounterLoad",
+        expect(engine.loadEncounter(plains_1.id)).toEqual({
+            type: "loadEncounter",
             id: plains_1.id,
             success: false,
             bindings: [],
-        }]);
+            effects: [],
+        });
         expect(engine.getGameView().enemies).toEqual([]);
     });
 
@@ -51,18 +52,19 @@ describe("encounters", () => {
         engine.loadCharacter(testHero.id);
         const before = engine.getGameView();
 
-        expect(engine.loadEncounter("missing-encounter")).toEqual([{
-            type: "encounterLoad",
+        expect(engine.loadEncounter("missing-encounter")).toEqual({
+            type: "loadEncounter",
             id: "missing-encounter",
             success: false,
             bindings: [],
-        }]);
+            effects: [],
+        });
         expect(engine.getGameView()).toEqual(before);
 
-        expect(engine.loadEncounter(oneEnemyEncounter.id)).toEqual([
-            { type: "enemySpawned", target: `${waitEnemy.id}1` },
-            { type: "encounterLoad", id: oneEnemyEncounter.id, success: true, bindings: [] },
-        ]);
+        expect(engine.loadEncounter(oneEnemyEncounter.id)).toEqual({
+            type: "loadEncounter", id: oneEnemyEncounter.id, success: true, bindings: [],
+            effects: [{ type: "enemySpawned", target: `${waitEnemy.id}1` }],
+        });
     });
 
     it("emits incrementing runtime enemy ids when replacing an encounter", () => {
@@ -72,8 +74,8 @@ describe("encounters", () => {
         const first = engine.loadEncounter(oneEnemyEncounter.id);
         const second = engine.loadEncounter(oneEnemyEncounter.id);
 
-        expect(first[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
-        expect(second[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
+        expect(first.effects[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
+        expect(second.effects[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
         expect(engine.getGameView().enemies.map((enemy) => enemy.id)).toEqual([
             `${waitEnemy.id}1`,
         ]);
@@ -83,7 +85,7 @@ describe("encounters", () => {
         const loadFirstEnemy = () => {
             const engine = createCustomEngine([oneEnemyEncounter], testCharacterList, 1);
             engine.loadCharacter(testHero.id);
-            return engine.loadEncounter(oneEnemyEncounter.id)[0];
+            return engine.loadEncounter(oneEnemyEncounter.id).effects[0];
         };
 
         expect(loadFirstEnemy()).toEqual({
@@ -102,11 +104,13 @@ describe("encounters", () => {
 
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
-        expect(events).toEqual([
-            { type: "enemySpawned", target: "foe1" },
-            { type: "enemySpawned", target: "attacker1" },
-            { type: "encounterLoad", id: multiEnemyEncounter.id, success: true, bindings: [] },
-        ]);
+        expect(events).toEqual({
+            type: "loadEncounter", id: multiEnemyEncounter.id, success: true, bindings: [],
+            effects: [
+                { type: "enemySpawned", target: "foe1" },
+                { type: "enemySpawned", target: "attacker1" },
+            ],
+        });
         expect(engine.getGameView().enemies).toEqual([
             expect.objectContaining({
                 id: "foe1",
@@ -154,10 +158,10 @@ describe("encounters", () => {
         const engine = createCustomEngine([encounter], testCharacterList, 1);
         engine.loadCharacter(testHero.id);
 
-        expect(engine.loadEncounter(encounter.id)).toEqual([
-            { type: "enemySpawned", target: `${enemy.id}1` },
-            { type: "encounterLoad", id: encounter.id, success: true, bindings: [] },
-        ]);
+        expect(engine.loadEncounter(encounter.id)).toEqual({
+            type: "loadEncounter", id: encounter.id, success: true, bindings: [],
+            effects: [{ type: "enemySpawned", target: `${enemy.id}1` }],
+        });
         expect(calls).toEqual(["setup", "ai"]);
         expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
         expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
@@ -173,13 +177,13 @@ describe("encounters", () => {
 
         const events = engine.loadEncounter(plains_1.id);
 
-        expect(events.at(-1)).toEqual({
-            type: "encounterLoad",
+        expect(events).toMatchObject({
+            type: "loadEncounter",
             id: plains_1.id,
             success: true,
             bindings: plains_1.bindings.map(({ id }) => id),
         });
-        expect(events.filter((event) => event.type === "enemySpawned"))
+        expect(events.effects.filter((event) => event.type === "enemySpawned"))
             .toHaveLength(plains_1.enemies.length);
         expect(engine.getGameView().enemies).toHaveLength(plains_1.enemies.length);
     });
@@ -197,8 +201,8 @@ describe("encounters", () => {
         const events = engine.loadEncounter(plains_2.id);
         const state = engine.getGameView();
 
-        expect(events.at(-1)).toEqual({
-            type: "encounterLoad",
+        expect(events).toMatchObject({
+            type: "loadEncounter",
             id: plains_2.id,
             success: true,
             bindings: plains_2.bindings.map(({ id }) => id),

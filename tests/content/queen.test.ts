@@ -1,3 +1,4 @@
+import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { queen } from "../../src/content/skunk/queen";
@@ -101,7 +102,7 @@ function findSeed(build: (seed: number) => Engine, predicate: (engine: Engine) =
 }
 
 function moveEvents(events: GameEvent[], actor: string) {
-    return events.filter((event) => event.type === "moveUsed" && event.actor === actor);
+    return events.filter((event) => event.type === "useMove" && event.actor === actor);
 }
 
 describe("Queen HP threshold reinforcements", () => {
@@ -145,7 +146,7 @@ describe("Queen HP threshold reinforcements", () => {
 
         const phase = endTurn(engine);
         expect(moveEvents(phase.events, QUEEN_ID)).toHaveLength(7);
-        expect(phase.events.filter(({ type }) => type === "enemySpawned")).toHaveLength(7);
+        expect(resolvedEvents(phase.events).filter(({ type }) => type === "enemySpawned")).toHaveLength(7);
         expect(enemiesByBaseId(phase.view, "skunkette").map(({ currHp }) => currHp).sort((a, b) => a - b))
             .toEqual([100, 200, 200]);
         expect(enemiesByBaseId(phase.view, "rainmaker").map(({ currHp }) => currHp).sort((a, b) => a - b))
@@ -216,7 +217,7 @@ describe("Queen HP threshold reinforcements", () => {
         execute(engine, { type: "move", actor: "hero", move: lower.id, targets: [QUEEN_ID] });
         const secondPhase = endTurn(engine);
 
-        expect(secondPhase.events.filter((event) => event.type === "enemySpawned" && event.target.startsWith("skunkette")))
+        expect(resolvedEvents(secondPhase.events).filter((event) => event.type === "enemySpawned" && event.target.startsWith("skunkette")))
             .toHaveLength(0);
         expect(enemiesByBaseId(secondPhase.view, "skunkette")).toHaveLength(1);
     });
@@ -594,7 +595,7 @@ describe("Queen Perfume", () => {
         execute(engine, { type: "move", actor: "hero", move: wound.id, targets: ["skunkette1"] });
         const phase = endTurn(engine);
         expect(phase.view.enemies.find(({ id }) => id === "skunkette1")?.currHp).toBe(200);
-        expect(phase.events).toContainEqual({ type: "enemyHealed", target: "skunkette1", amount: 10 });
+        expect(resolvedEvents(phase.events)).toContainEqual({ type: "enemyHealed", target: "skunkette1", amount: 10 });
     });
 });
 

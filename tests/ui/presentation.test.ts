@@ -26,12 +26,13 @@ describe("combat presentation", () => {
 
     it("separates phases and groups ordered effects beneath their causal action", () => {
         const events: GameEvent[] = [
-            { type: "phaseChanged", phase: "enemy" },
-            { type: "moveUsed", actor: "skunk1", move: "spray", targets: [{ target: "ko", result: "hit" }] },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 34 },
-            { type: "bondageChanged", target: "ko", binding: "latexTorso", amount: 34 },
-            { type: "moveUsed", actor: "skunk2", move: "wait", targets: [] },
-            { type: "phaseChanged", phase: "player" },
+            { type: "changePhase", phase: "enemy", effects: [] },
+            { type: "useMove", actor: "skunk1", move: "spray", effects: [], targets: [{ target: "ko", result: "hit", effects: [
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 34 },
+                { type: "bondageChanged", target: "ko", binding: "latexTorso", amount: 34 },
+            ] }] },
+            { type: "useMove", actor: "skunk2", move: "wait", targets: [], effects: [] },
+            { type: "changePhase", phase: "player", effects: [] },
         ];
 
         const groups = formatActionGroups({ type: "endTurn" }, events);
@@ -60,9 +61,10 @@ describe("combat presentation", () => {
         const [group] = formatActionGroups({
             type: "move", actor: "ko", move: "strike", targets: ["skunk1"],
         }, [
-            { type: "moveUsed", actor: "ko", move: "strike", targets: [{ target: "skunk1", result: "crit" }] },
-            { type: "enemyDamaged", target: "skunk1", amount: 20 },
-            { type: "enemyDefeated", target: "skunk1" },
+            { type: "useMove", actor: "ko", move: "strike", effects: [], targets: [{ target: "skunk1", result: "crit", effects: [
+                { type: "enemyDamaged", target: "skunk1", amount: 20 },
+                { type: "enemyDefeated", target: "skunk1" },
+            ] }] },
         ], registry);
         expect(group.lines.map((line) => line.style)).toEqual([first, first, first]);
     });
@@ -84,9 +86,11 @@ describe("combat presentation", () => {
         const [group] = formatActionGroups({
             type: "move", actor: "ko", move: "telekinesis", targets: ["skunk1"],
         }, [
-            { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 20 },
-            { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
+            { type: "useMove", actor: "ko", move: "telekinesis", targets: [], effects: [
+                { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 20 },
+                { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
+            ] },
         ]);
 
         expect(group.lines.map((line) => line.text)).toEqual([
@@ -113,13 +117,14 @@ describe("combat presentation", () => {
 
     it("derives transient targets from state-changing events", () => {
         expect(deriveHighlightTargets([
-            { type: "moveUsed", actor: "skunk1", move: "pounce", targets: [] },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 10 },
-            { type: "buffAdded", target: "ko", buff: "mist" },
-            { type: "enemyHealed", target: "skunk1", amount: 5 },
-            { type: "enemySpawned", target: "skunk2" },
-            { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
-            { type: "changeStance", actor: "ko", stance: "standing" },
+            { type: "useMove", actor: "skunk1", move: "pounce", targets: [], effects: [
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 10 },
+                { type: "buffAdded", target: "ko", buff: "mist" },
+                { type: "enemyHealed", target: "skunk1", amount: 5 },
+                { type: "enemySpawned", target: "skunk2" },
+                { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
+            ] },
+            { type: "changeStance", actor: "ko", effects: [{ type: "stanceSet", actor: "ko", stance: "standing" }] },
         ])).toEqual([
             { kind: "cooldown", entity: "skunk1", move: "pounce" },
             { kind: "binding", entity: "ko", binding: "latexArms" },
@@ -142,10 +147,10 @@ describe("combat presentation", () => {
 
     it("plays enemy actions in event order with an injected delay", async () => {
         const groups = formatActionGroups({ type: "endTurn" }, [
-            { type: "phaseChanged", phase: "enemy" },
-            { type: "moveUsed", actor: "first", move: "a", targets: [] },
-            { type: "moveUsed", actor: "second", move: "b", targets: [] },
-            { type: "phaseChanged", phase: "player" },
+            { type: "changePhase", phase: "enemy", effects: [] },
+            { type: "useMove", actor: "first", move: "a", targets: [], effects: [] },
+            { type: "useMove", actor: "second", move: "b", targets: [], effects: [] },
+            { type: "changePhase", phase: "player", effects: [] },
         ]);
         const presented: string[] = [];
         const waits: number[] = [];
@@ -175,8 +180,9 @@ describe("combat presentation", () => {
         const groups = formatActionGroups({
             type: "move", actor: "ko", move: "strike", targets: ["skunk1"],
         }, [
-            { type: "moveUsed", actor: "ko", move: "strike", targets: [{ target: "skunk1", result: "hit" }] },
-            { type: "enemyDamaged", target: "skunk1", amount: 10 },
+            { type: "useMove", actor: "ko", move: "strike", effects: [], targets: [{ target: "skunk1", result: "hit", effects: [
+                { type: "enemyDamaged", target: "skunk1", amount: 10 },
+            ] }] },
         ]);
         const waits: number[] = [];
 

@@ -148,9 +148,8 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     }
 
     for (const id of engine.listCharacters()) {
-        const loaded = engine.loadCharacter(id).some(
-            (event) => event.type === "characterLoad" && event.id === id && event.success,
-        );
+        const event = engine.loadCharacter(id);
+        const loaded = event.type === "loadCharacter" && event.id === id && event.success;
         if (!loaded) {
             view = engine.getGameView();
             return finish("error", { message: `Failed to load listed character: ${id}` });
@@ -164,11 +163,9 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         });
     }
 
-    const encounterLoaded = engine.loadEncounter(input.encounterId).some(
-        (event) => event.type === "encounterLoad"
-            && event.id === input.encounterId
-            && event.success,
-    );
+    const encounterEvent = engine.loadEncounter(input.encounterId);
+    const encounterLoaded = encounterEvent.type === "loadEncounter"
+        && encounterEvent.id === input.encounterId && encounterEvent.success;
     if (!encounterLoaded) {
         view = engine.getGameView();
         return finish("error", {

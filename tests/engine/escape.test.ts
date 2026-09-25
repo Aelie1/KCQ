@@ -165,10 +165,10 @@ describe("escape progress", () => {
         });
         expect(result).toMatchObject({
             success: true,
-            events: [
+            events: [{ type: "useEscape", actor: "helper", target: "target", effects: [
                 { type: "bondageRemoved", target: "target", binding: restraint.id, amount: -10 },
                 { type: "bondageAdded", target: "helper", binding: spread.id, amount: 5 },
-            ],
+            ] }],
         });
     });
 
@@ -198,12 +198,12 @@ describe("escape progress", () => {
 
         expect(result).toMatchObject({
             success: true,
-            events: [{
+            events: [{ type: "useEscape", actor: "hero", target: "hero", effects: [{
                 type: "bondageChanged",
                 target: "hero",
                 binding: restraint.id,
                 amount: -amount,
-            }],
+            }] }],
         });
         expect(engine.getGameView().characters[0].bindings[0].value).toBe(before - amount);
         expect(engine.getGameView().characters[0].acted).toBe(true);
@@ -255,7 +255,7 @@ describe("escape progress", () => {
 
         expect(result).toMatchObject({
             success: true,
-            events: [
+            events: [{ type: "useEscape", actor: "hero", target: "hero", effects: [
                 {
                     type: "bondageChanged",
                     target: "hero",
@@ -268,7 +268,7 @@ describe("escape progress", () => {
                     binding: "latexHead",
                     amount: 5,
                 },
-            ],
+            ] }],
         });
         expect(engine.getGameView().characters[0].bindings).toEqual([
             expect.objectContaining({ id: "latexArms", value: 12 }),

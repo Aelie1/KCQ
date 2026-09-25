@@ -1,3 +1,4 @@
+import { resolvedEvents } from "../helpers/events";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -150,7 +151,7 @@ describe("policy-driven single-fight harness", () => {
         const result = runSingleFight({ ...fightInput(firstPolicy, 202), replay: true });
         const eventDamage = result.replay?.steps.reduce((total, step) => total + (
             step.success
-                ? step.events.reduce((stepTotal, event) =>
+                ? resolvedEvents(step.events).reduce((stepTotal, event) =>
                     stepTotal + (event.type === "enemyDamaged" ? event.amount : 0), 0)
                 : 0
         ), 0);
@@ -179,10 +180,10 @@ describe("policy-driven single-fight harness", () => {
         expect(endTurnIndex).toBeGreaterThanOrEqual(0);
         expect(step).toMatchObject({ action: { type: "endTurn" }, success: true });
         if (step?.success) {
-            expect(step.events.filter((event) => event.type === "phaseChanged"))
+            expect(resolvedEvents(step.events).filter((event) => event.type === "changePhase"))
                 .toHaveLength(2);
-            expect(step.events.some((event) =>
-                event.type === "moveUsed"
+            expect(resolvedEvents(step.events).some((event) =>
+                event.type === "useMove"
                 && result.replay?.initialState.enemies.some((enemy) => enemy.id === event.actor),
             )).toBe(true);
         }

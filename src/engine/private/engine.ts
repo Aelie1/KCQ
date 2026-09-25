@@ -3,7 +3,7 @@ import { findBinding, findCharacter, findEntity, findMove, isValidEntity, thresh
 import { mixSeed, Random } from "../protected/random";
 import { GameStatus } from "../protected/status";
 import { iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
-import type { AccuracyResult, ActionResult, EncounterEvent, EncounterId, Engine, EntityId, FailureReason, GameEvent, GameView, MoveEvent, PlayerAction, ThresholdInfo } from "../public/types";
+import type { AccuracyResult, ActionResult, EncounterEvent, EncounterId, Engine, EntityId, FailureReason, GameEvent, GameView, MoveEvent, PlayerAction, ThresholdInfo, TrapEvent } from "../public/types";
 import {
     evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape,
     resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers
@@ -300,13 +300,15 @@ export class GameEngine implements Engine {
                         const roll = Math.max(0, this.accRng.accuracy() + status.getModifier("traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
-                            effects.addEvent({
+                            const triggered: TrapEvent = {
                                 type: "trapTriggered",
                                 actor: actor.id,
                                 trap: trap.id,
-                                amount: origValue - trap.amount
-                            });
+                                amount: 0
+                            };
+                            effects.addEvent(triggered);
                             effects.merge(trap.definition.onTrigger(actor, trap, roll));
+                            triggered.amount = origValue - trap.amount;
                         }
                     }
                     //Redo some checks in case status has changed
@@ -458,13 +460,15 @@ export class GameEngine implements Engine {
                         const roll = Math.max(0, this.accRng.accuracy() + status.getModifier("traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
-                            effects.addEvent({
+                            const triggered: TrapEvent = {
                                 type: "trapTriggered",
                                 actor: actor.id,
                                 trap: trap.id,
-                                amount: origValue - trap.amount
-                            });
+                                amount: 0
+                            };
+                            effects.addEvent(triggered);
                             effects.merge(trap.definition.onTrigger(actor, trap, roll));
+                            triggered.amount = origValue - trap.amount;
                         }
                     }
 

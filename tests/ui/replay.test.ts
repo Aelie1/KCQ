@@ -60,12 +60,16 @@ function replayInput(): ConsoleReplayInput {
             steps: [{
                 action: { type: "move", actor: "hero", move: "recorded-strike", targets: ["recorded-foe"] },
                 success: true,
-                events: [{ type: "enemyDamaged", target: "recorded-foe", amount: 17 }],
+                events: [{ type: "useMove", actor: "hero", move: "recorded-strike", effects: [], targets: [{ target: "recorded-foe", result: "hit", effects: [
+                    { type: "enemyDamaged", target: "recorded-foe", amount: 17 },
+                ] }] }],
                 state: recordedState(1, 73, 12),
             }, {
                 action: { type: "endTurn" },
                 success: true,
-                events: [{ type: "enemyDamaged", target: "recorded-foe", amount: 32 }],
+                events: [{ type: "changePhase", phase: "enemy", effects: [
+                    { type: "enemyDamaged", target: "recorded-foe", amount: 32 },
+                ] }],
                 state: recordedState(2, 41, 24),
             }],
         },

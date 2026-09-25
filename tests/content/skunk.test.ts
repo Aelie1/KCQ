@@ -1,3 +1,4 @@
+import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
@@ -114,7 +115,7 @@ describe("normal Latex Skunk", () => {
         expect(previewEffect.amount).toBeGreaterThan(0);
 
         const result = endTurn(engine);
-        expect(result.events).toContainEqual({
+        expect(resolvedEvents(result.events)).toContainEqual({
             type: "trapAdded", actor: "skunk1", trap: trapPuddle.id, amount: previewEffect.amount,
         });
         expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: previewEffect.amount }]);
@@ -137,7 +138,7 @@ describe("normal Latex Skunk", () => {
             );
 
             const result = endTurn(engine);
-            const bondage = result.events.find((event) => event.type === "bondageAdded");
+            const bondage = resolvedEvents(result.events).find((event) => event.type === "bondageAdded");
             if (band === "miss") {
                 expect(previewBinding).toBeUndefined();
                 expect(bondage).toBeUndefined();
@@ -211,7 +212,7 @@ describe("normal Latex Skunk", () => {
             value: 10 + previewBinding.amount,
             data: { peak: 50 },
         });
-        expect(result.events.filter((event) =>
+        expect(resolvedEvents(result.events).filter((event) =>
             event.type.startsWith("bondage") && "binding" in event && event.binding === latexArms.id,
         )).toHaveLength(1);
     });
@@ -372,7 +373,7 @@ describe("normal Latex Skunk", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected threshold-crossing attack to succeed");
-        expect(result.events).toContainEqual({ type: "intentionCancelled", target: "skunk1" });
+        expect(resolvedEvents(result.events)).toContainEqual({ type: "intentionCancelled", target: "skunk1" });
         expect(result.view.enemies[0]).toMatchObject({
             currHp: 74,
             intentions: [{
@@ -402,7 +403,7 @@ describe("normal Latex Skunk", () => {
 
             const result = endTurn(engine);
             expect(result.view.enemies.some(({ id }) => id === "skunk1")).toBe(false);
-            expect(result.events).toContainEqual({
+            expect(resolvedEvents(result.events)).toContainEqual({
                 type: "enemyDefeated", target: "skunk1",
             });
             if (withTrap) {
@@ -452,7 +453,7 @@ describe("normal Latex Skunk", () => {
 
         const result = endTurn(engine);
         expect(result.view.enemies.find(({ id }) => id === "skunk1")).toMatchObject({ currHp: 120 });
-        expect(result.events).toContainEqual({
+        expect(resolvedEvents(result.events)).toContainEqual({
             type: "enemyHealed", target: "skunk1", amount: 60,
         });
         expect(BODY_LATEX.map(({ id }) => id)).toEqual(

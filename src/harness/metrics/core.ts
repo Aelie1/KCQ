@@ -3,6 +3,7 @@ import type {
     GameEvent,
     GameView,
     HitBand,
+    LeafEvent,
 } from "../../engine/public/types";
 import type {
     MetricActionObservation,
@@ -154,6 +155,12 @@ export const coreMetricCollectorFactories: readonly MetricCollectorFactory[] = [
     createLimitationsCollector,
 ];
 
+function leafEvents(events: readonly GameEvent[]): LeafEvent[] {
+    return events.flatMap((event) => event.type === "useMove"
+        ? [...event.targets.flatMap((target) => target.effects), ...event.effects]
+        : event.effects);
+}
+
 export function createOutcomeCollector(): MetricCollector<OutcomeMetrics> {
     let result: OutcomeMetrics = { termination: null, win: false, loss: false };
     return {
@@ -233,7 +240,7 @@ export function createBondageCollector(): MetricCollector<BondageMetrics> {
     };
 
     const observeEvents = (events: readonly GameEvent[]): void => {
-        for (const event of events) {
+        for (const event of leafEvents(events)) {
             if (event.type !== "bondageChanged" && event.type !== "bondageAdded"
                 && event.type !== "bondageRemoved") continue;
             const tracks = getOrCreate(knownTracks, event.target, () => new Set<string>());
@@ -301,7 +308,7 @@ export function createDamageCollector(): MetricCollector<DamageMetrics> {
         id: "damage",
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of result.events) {
+            for (const event of leafEvents(result.events)) {
                 if (event.type !== "enemyDamaged") continue;
                 dealt += event.amount;
                 increment(dealtByTarget, event.target, event.amount);
@@ -323,7 +330,7 @@ export function createMoveUsageCollector(): MetricCollector<MoveUsageMetrics> {
         onAction({ result }) {
             if (!result.success) return;
             for (const event of result.events) {
-                if (event.type !== "moveUsed") continue;
+                if (event.type !== "useMove") continue;
                 addMoveUsage(playerIds.has(event.actor) ? player : enemy, event.actor, event.move);
             }
         },
@@ -343,7 +350,7 @@ export function createAccuracyCollector(): MetricCollector<AccuracyMetrics> {
         onAction({ result }) {
             if (!result.success) return;
             for (const event of result.events) {
-                if (event.type !== "moveUsed") continue;
+                if (event.type !== "useMove") continue;
                 const counts = playerIds.has(event.actor) ? player : enemy;
                 for (const target of event.targets) counts[target.result] += 1;
             }
@@ -402,7 +409,7 @@ export function createTrapCollector(): MetricCollector<TrapMetrics> {
         onFightStart: ({ view }) => observe(view),
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of result.events) {
+            for (const event of leafEvents(result.events)) {
                 if (event.type !== "trapAdded" && event.type !== "trapRemoved"
                     && event.type !== "trapTriggered") continue;
                 const track = getTrapTrack(tracks, event.trap);
@@ -509,7 +516,7 @@ function emptyAccuracyCounts(): AccuracyCounts {
 }
 
 function hasSuccessfulEscape(events: readonly GameEvent[], target: string, binding: string): boolean {
-    return events.some((event) =>
+    return leafEvents(events).some((event) =>
         (event.type === "bondageChanged" || event.type === "bondageRemoved")
         && event.target === target
         && event.binding === binding

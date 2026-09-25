@@ -190,10 +190,12 @@ describe("metric collector framework", () => {
 
         collector.onFightStart?.({ view: initial });
         collector.onAction?.(successfulAction(initial, after, [
-            { type: "bondageChanged", target: "hero", binding: "rope", amount: 8 },
-            { type: "bondageChanged", target: "hero", binding: "rope", amount: -9 },
-            { type: "bondageAdded", target: "hero", binding: "slime", amount: 4 },
-            { type: "bondageAdded", target: "ally", binding: "rope", amount: 3 },
+            { type: "useMove", actor: "enemy-1", move: "bind", targets: [], effects: [
+                { type: "bondageChanged", target: "hero", binding: "rope", amount: 8 },
+                { type: "bondageChanged", target: "hero", binding: "rope", amount: -9 },
+                { type: "bondageAdded", target: "hero", binding: "slime", amount: 4 },
+                { type: "bondageAdded", target: "ally", binding: "rope", amount: 3 },
+            ] },
         ]));
         collector.onFightEnd?.({ termination: "maxActions", view: after, actionCount: 1 });
 
@@ -224,23 +226,26 @@ describe("metric collector framework", () => {
         const initial = view({ characters: [character("hero")] });
         const events: GameEvent[] = [
             {
-                type: "moveUsed",
+                type: "useMove",
                 actor: "hero",
                 move: "strike",
+                effects: [],
                 targets: [
-                    { target: "enemy-1", result: "hit" },
-                    { target: "enemy-2", result: "crit" },
+                    { target: "enemy-1", result: "hit", effects: [
+                        { type: "enemyDamaged", target: "enemy-1", amount: 7 },
+                        { type: "enemyDamaged", target: "enemy-1", amount: 3 },
+                    ] },
+                    { target: "enemy-2", result: "crit", effects: [] },
                 ],
             },
-            { type: "enemyDamaged", target: "enemy-1", amount: 7 },
-            { type: "enemyDamaged", target: "enemy-1", amount: 3 },
             {
-                type: "moveUsed",
+                type: "useMove",
                 actor: "enemy-1",
                 move: "spray",
+                effects: [],
                 targets: [
-                    { target: "hero", result: "miss" },
-                    { target: "hero", result: "graze" },
+                    { target: "hero", result: "miss", effects: [] },
+                    { target: "hero", result: "graze", effects: [] },
                 ],
             },
         ];
@@ -276,14 +281,18 @@ describe("metric collector framework", () => {
         collector.onAction?.(successfulAction(
             state,
             state,
-            [{ type: "bondageChanged", target: "hero", binding: "rope", amount: -4 }],
+            [{ type: "useEscape", actor: "hero", target: "hero", effects: [
+                { type: "bondageChanged", target: "hero", binding: "rope", amount: -4 },
+            ] }],
             { type: "escape", actor: "hero", target: "hero", binding: "rope" },
             1,
         ));
         collector.onAction?.(successfulAction(
             state,
             state,
-            [{ type: "bondageRemoved", target: "hero", binding: "slime", amount: -2 }],
+            [{ type: "useEscape", actor: "ally", target: "hero", effects: [
+                { type: "bondageRemoved", target: "hero", binding: "slime", amount: -2 },
+            ] }],
             { type: "escape", actor: "ally", target: "hero", binding: "slime" },
             2,
         ));
@@ -311,8 +320,10 @@ describe("metric collector framework", () => {
         const after = view({ traps: [{ id: "trapPuddle", amount: 8 }] });
         collector.onFightStart?.({ view: initial });
         collector.onAction?.(successfulAction(initial, after, [
-            { type: "trapAdded", actor: "enemy-1", trap: "trapPuddle", amount: 3 },
-            { type: "trapTriggered", actor: "hero", trap: "trapPuddle", amount: 2 },
+            { type: "changePhase", phase: "enemy", effects: [
+                { type: "trapAdded", actor: "enemy-1", trap: "trapPuddle", amount: 3 },
+                { type: "trapTriggered", actor: "hero", trap: "trapPuddle", amount: 2 },
+            ] },
         ]));
 
         expect(collector.getResult()).toEqual({

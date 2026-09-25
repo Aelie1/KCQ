@@ -1,3 +1,4 @@
+import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
@@ -70,9 +71,9 @@ describe("turn phases and enemy intentions", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected endTurn to succeed");
 
-        expect(result.events[0]).toEqual({ type: "phaseChanged", phase: "enemy" });
-        expect(result.events[1]).toEqual({
-            type: "moveUsed",
+        expect(result.events[0]).toMatchObject({ type: "changePhase", phase: "enemy" });
+        expect(result.events[1]).toMatchObject({
+            type: "useMove",
             actor: enemyId,
             move: preview.move,
             targets: preview.targets.map(({ target, band: band }) => ({
@@ -80,17 +81,17 @@ describe("turn phases and enemy intentions", () => {
                 result: band,
             })),
         });
-        expect(result.events).toContainEqual({
+        expect(resolvedEvents(result.events)).toContainEqual({
             type: "buffAdded",
             target: ko.id,
             buff: "pounce",
         });
-        expect(result.events).toContainEqual({
+        expect(resolvedEvents(result.events)).toContainEqual({
             type: "buffAdded",
             target: enemyId,
             buff: "pounce",
         });
-        expect(result.events.at(-1)).toEqual({ type: "phaseChanged", phase: "player" });
+        expect(result.events.at(-1)).toMatchObject({ type: "changePhase", phase: "player" });
 
         const state = engine.getGameView();
         expect(state.turn).toEqual({ outcome: "ongoing", round: 2, step: 1, phase: "player" });
@@ -124,8 +125,8 @@ describe("turn phases and enemy intentions", () => {
         const endTurn = engine.executeAction({ type: "endTurn" });
         expect(endTurn.success).toBe(true);
         if (!endTurn.success) throw new Error("Expected endTurn to succeed");
-        expect(endTurn.events[0]).toEqual({ type: "phaseChanged", phase: "enemy" });
-        expect(endTurn.events.at(-1)).toEqual({ type: "phaseChanged", phase: "player" });
+        expect(endTurn.events[0]).toMatchObject({ type: "changePhase", phase: "enemy" });
+        expect(endTurn.events.at(-1)).toMatchObject({ type: "changePhase", phase: "player" });
         expect(engine.getGameView()).toMatchObject({
             turn: { round: 2, step: 1, phase: "player" },
             characters: [{ acted: false }],
@@ -176,7 +177,7 @@ describe("turn phases and enemy intentions", () => {
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected the enemy phase to resolve");
-        expect(result.events.filter(({ type }) => type === "moveUsed")).toEqual([]);
+        expect(resolvedEvents(result.events).filter(({ type }) => type === "useMove")).toEqual([]);
         expect(engine.getGameView().characters[0].bindings).toEqual([]);
     });
 
@@ -229,8 +230,8 @@ describe("turn phases and enemy intentions", () => {
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected the enemy phase to resolve");
-        expect(result.events).toContainEqual({
-            type: "moveUsed",
+        expect(result.events.find((event) => event.type === "useMove")).toMatchObject({
+            type: "useMove",
             actor: "watcher1",
             move: threat.id,
             targets: [],
@@ -261,8 +262,8 @@ describe("enemy intention previews", () => {
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected endTurn to succeed");
-        const moveEvent = result.events.find(
-            (event) => event.type === "moveUsed" && event.actor === enemyId,
+        const moveEvent = resolvedEvents(result.events).find(
+            (event) => event.type === "useMove" && event.actor === enemyId,
         );
 
         expect(preview.move).toBe(enemyMove.id);
@@ -383,8 +384,8 @@ describe("enemy intention previews", () => {
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected endTurn to succeed");
-        expect(result.events).toContainEqual({
-            type: "moveUsed",
+        expect(result.events.find((event) => event.type === "useMove")).toMatchObject({
+            type: "useMove",
             actor: "foe1",
             move: enemyMove.id,
             targets: [{
@@ -407,8 +408,8 @@ describe("enemy intention previews", () => {
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected endTurn to succeed");
-        expect(result.events).toContainEqual(expect.objectContaining({
-            type: "moveUsed",
+        expect(resolvedEvents(result.events)).toContainEqual(expect.objectContaining({
+            type: "useMove",
             actor: enemyId,
             move: enemyMove.id,
         }));

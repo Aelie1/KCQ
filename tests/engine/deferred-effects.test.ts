@@ -1,3 +1,4 @@
+import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
@@ -46,7 +47,7 @@ describe("deferred binding onResolve effects", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected deferred move success");
-        expect(result.events.filter((event) => event.type.startsWith("bondage"))).toEqual([
+        expect(resolvedEvents(result.events).filter((event) => event.type.startsWith("bondage"))).toEqual([
             { type: "bondageAdded", target: "hero", binding: original.id, amount: 4 },
             { type: "bondageAdded", target: "hero", binding: first.id, amount: 2 },
             { type: "bondageAdded", target: "hero", binding: second.id, amount: 3 },
@@ -86,7 +87,7 @@ describe("deferred binding onResolve effects", () => {
         expect(result.view.characters[0].bindings).toEqual([
             expect.objectContaining({ id: replacement.id, value: 5 }),
         ]);
-        expect(result.events.some((event) =>
+        expect(resolvedEvents(result.events).some((event) =>
             event.type.startsWith("bondage") && "binding" in event && event.binding === placeholder.id,
         )).toBe(false);
     });
@@ -120,7 +121,7 @@ describe("deferred binding onResolve effects", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected generated move success");
-        expect(result.events.filter((event) => event.type.startsWith("bondage"))).toEqual([
+        expect(resolvedEvents(result.events).filter((event) => event.type.startsWith("bondage"))).toEqual([
             { type: "bondageAdded", target: "hero", binding: generated.id, amount: 6 },
             { type: "bondageAdded", target: "hero", binding: downstream.id, amount: 6 },
         ]);

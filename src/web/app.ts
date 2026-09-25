@@ -18,10 +18,10 @@ export interface PreparedBattle {
 
 export function createBattle(encounter: EncounterDef): PreparedBattle {
     const engine = createEngine();
-    const loadEvents = characterList.flatMap((character) =>
+    const loadEvents = characterList.map((character) =>
         engine.loadCharacter(character.id),
     );
-    loadEvents.push(...engine.loadEncounter(encounter.id));
+    loadEvents.push(engine.loadEncounter(encounter.id));
 
     return {
         engine,

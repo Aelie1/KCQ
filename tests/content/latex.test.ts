@@ -3,7 +3,7 @@ import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/s
 import type { BindingDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { iEffect } from "../../src/engine/protected/types";
-import type { Engine } from "../../src/engine/public/types";
+import type { ActionSuccess, Engine, LeafEvent } from "../../src/engine/public/types";
 import {
     bindingState,
     characterState,
@@ -16,6 +16,11 @@ interface BindingSetup {
     character: string;
     binding: BindingDef;
     amount: number;
+}
+
+function expectEscapeEffects(result: ActionSuccess, effects: LeafEvent[]): void {
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0]).toMatchObject({ type: "useEscape", effects });
 }
 
 function setupLatexScenario(
@@ -114,7 +119,7 @@ describe("latex escape spread through GameEngine", () => {
             binding: latexHead.id,
         });
 
-        expect(plainResult.events).toEqual([{
+        expectEscapeEffects(plainResult, [{
             type: "bondageRemoved",
             target: "hero",
             binding: latexHead.id,
@@ -122,7 +127,7 @@ describe("latex escape spread through GameEngine", () => {
         }]);
         expect(characterState(plain).bindings).toEqual([]);
 
-        expect(boostedResult.events).toEqual([
+        expectEscapeEffects(boostedResult, [
             {
                 type: "bondageRemoved",
                 target: "hero",
@@ -179,7 +184,7 @@ describe("latex escape spread through GameEngine", () => {
             binding: latexHead.id,
         });
 
-        expect(result.events).toEqual([
+        expectEscapeEffects(result, [
             {
                 type: "bondageChanged",
                 target: "hero",
@@ -210,7 +215,7 @@ describe("latex escape spread through GameEngine", () => {
             binding: latexLegs.id,
         });
 
-        expect(result.events).toEqual([
+        expectEscapeEffects(result, [
             {
                 type: "bondageChanged",
                 target: "hero",
@@ -239,7 +244,7 @@ describe("latex escape spread through GameEngine", () => {
             binding: latexHead.id,
         });
 
-        expect(result.events).toEqual([
+        expectEscapeEffects(result, [
             {
                 type: "bondageChanged",
                 target: "victim",
@@ -276,7 +281,7 @@ describe("latex escape spread through GameEngine", () => {
             binding: latexHead.id,
         });
 
-        expect(result.events).toEqual([
+        expectEscapeEffects(result, [
             {
                 type: "bondageChanged",
                 target: "hero",
@@ -325,7 +330,7 @@ describe("latex escape spread through GameEngine", () => {
             binding: latexHead.id,
         });
 
-        expect(result.events).toEqual([
+        expectEscapeEffects(result, [
             {
                 type: "bondageChanged",
                 target: "hero",

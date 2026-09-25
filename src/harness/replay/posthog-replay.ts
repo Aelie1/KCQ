@@ -482,12 +482,12 @@ function loadStockBattle(engine: Engine, encounter: string, replayId: string): v
         throw replayError(replayId, `unknown encounter ${JSON.stringify(encounter)}`);
     }
     for (const id of engine.listCharacters()) {
-        const loaded = engine.loadCharacter(id).some((event) =>
-            event.type === "characterLoad" && event.id === id && event.success);
+        const event = engine.loadCharacter(id);
+        const loaded = event.type === "loadCharacter" && event.id === id && event.success;
         if (!loaded) throw replayError(replayId, `failed to load stock character ${id}`);
     }
-    const loaded = engine.loadEncounter(encounter).some((event) =>
-        event.type === "encounterLoad" && event.id === encounter && event.success);
+    const event = engine.loadEncounter(encounter);
+    const loaded = event.type === "loadEncounter" && event.id === encounter && event.success;
     if (!loaded) throw replayError(replayId, `failed to load encounter ${encounter}`);
 }
 

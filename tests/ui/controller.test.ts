@@ -22,8 +22,7 @@ import {
 describe("shared battle controller", () => {
     it("presents numbered choices through a UI adapter and validates its response", async () => {
         const engine = createCustomEngine(encounterList, [ko], 8224);
-        const events = engine.loadCharacter(ko.id);
-        events.push(...engine.loadEncounter("plains_1"));
+        const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const requests: BattleChoiceRequest[] = [];
         const answers = [99, 3];
         let closed = false;
@@ -59,8 +58,7 @@ describe("shared battle controller", () => {
 
     it("allows a UI adapter to quit from any active menu", async () => {
         const engine = createCustomEngine(encounterList, [ko], 8224);
-        const events = engine.loadCharacter(ko.id);
-        events.push(...engine.loadEncounter("plains_1"));
+        const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const requests: BattleChoiceRequest[] = [];
         const close = vi.fn();
         const ui: BattleUI = {
@@ -86,7 +84,7 @@ describe("shared battle controller", () => {
         const choose = vi.fn(async () => "quit" as const);
         const finalScreens: BattleChoiceRequest["screen"][] = [];
 
-        await runBattleController(engine, "empty", events, {
+        await runBattleController(engine, "empty", [events], {
             choose,
             showFinal: async (screen) => {
                 finalScreens.push(screen);
@@ -129,7 +127,7 @@ describe("shared battle controller", () => {
         const choose = vi.fn(async () => "quit" as const);
         const finalScreens: BattleChoiceRequest["screen"][] = [];
 
-        await runBattleController(engine, encounter.id, events, {
+        await runBattleController(engine, encounter.id, [events], {
             choose,
             showFinal: async (screen) => {
                 finalScreens.push(screen);
@@ -181,7 +179,7 @@ describe("shared battle controller", () => {
         const onAction = vi.fn();
         let requestCount = 0;
 
-        await runBattleController(engine, encounter.id, events, {
+        await runBattleController(engine, encounter.id, [events], {
             choose: async ({ choices }) => {
                 requestCount += 1;
                 const label = requestCount === 1 ? "End turn" : "Quit";
@@ -215,7 +213,7 @@ describe("shared battle controller", () => {
         const onAction = vi.fn();
         let choices = 0;
 
-        await runBattleController(engine, encounter.id, events, {
+        await runBattleController(engine, encounter.id, [events], {
             choose: async ({ choices: available }) => {
                 choices += 1;
                 if (choices > 1) return "quit";
@@ -247,7 +245,7 @@ describe("shared battle controller", () => {
         const onAction = vi.fn();
         const answers = [1, 1, 3];
 
-        await runBattleController(engine, encounter.id, events, {
+        await runBattleController(engine, encounter.id, [events], {
             choose: async () => answers.shift() ?? 3,
         }, { onAction });
 
@@ -288,7 +286,7 @@ describe("shared battle controller", () => {
         const onOutcome = vi.fn();
         const answers = [1, 1];
 
-        await runBattleController(engine, encounter.id, events, {
+        await runBattleController(engine, encounter.id, [events], {
             choose: async () => answers.shift() ?? 1,
             showFinal: async () => undefined,
         }, { onAction, onOutcome });
@@ -308,8 +306,7 @@ describe("shared battle controller", () => {
 
     it("notifies the observer when an ongoing battle is quit", async () => {
         const engine = createCustomEngine(encounterList, [ko], 8224);
-        const events = engine.loadCharacter(ko.id);
-        events.push(...engine.loadEncounter("plains_1"));
+        const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const onQuit = vi.fn();
 
         await runBattleController(engine, "plains_1", events, {

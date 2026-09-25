@@ -451,19 +451,19 @@ function initialLogEntries(
     let encounterIndex = -1;
     for (let index = events.length - 1; index >= 0; index--) {
         const event = events[index];
-        if (event.type === "encounterLoad" && event.success) {
+        if (event.type === "loadEncounter" && event.success) {
             encounterIndex = index;
             break;
         }
     }
     if (encounterIndex < 0) {
         const visibleEvents = events.filter((event) =>
-            event.type !== "characterLoad" && event.type !== "enemySpawned");
+            event.type !== "loadCharacter");
         return flattenGroups(formatActionGroups(undefined, visibleEvents, registry, round));
     }
 
     const encounterEvent = events[encounterIndex];
-    if (encounterEvent.type !== "encounterLoad") return [];
+    if (encounterEvent.type !== "loadEncounter") return [];
     return [
         encounterSeparator(encounterEvent.id),
         ...flattenGroups(formatActionGroups(
@@ -587,7 +587,7 @@ function encounterBindings(events: GameEvent[]): BindingId[] {
 function updateEncounterBindings(current: BindingId[], events: GameEvent[]): BindingId[] {
     let bindings = current;
     for (const event of events) {
-        if (event.type === "encounterLoad" && event.success) bindings = [...event.bindings];
+        if (event.type === "loadEncounter" && event.success) bindings = [...event.bindings];
     }
     return bindings;
 }

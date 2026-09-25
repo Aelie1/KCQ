@@ -1,4 +1,5 @@
 import type { Buff, Effect, GameEvent, Intention, ModifierId } from "../engine/public/types";
+import { eventEntries } from "./eventEntries";
 
 export function formatEffect(effect: Effect, includeTarget = false): string {
     const target = includeTarget && "target" in effect ? `${effect.target} ` : "";
@@ -147,9 +148,9 @@ function formatIntentionLine(prefix: string, value: string, width?: number): str
 }
 
 export function formatEvents(events: GameEvent[]): string[] {
-    return events.flatMap((event) => {
+    return eventEntries(events).flatMap((event) => {
         switch (event.type) {
-            case "moveUsed": {
+            case "useMove": {
                 if (event.targets.length === 0) {
                     return [`${event.actor} used ${event.move}.`];
                 }
@@ -181,7 +182,7 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [`${event.target} blocked ${event.amount} ${event.binding}.`]
             case "bondageRemoved":
                 return [`${event.target} escaped ${event.binding} (${Math.abs(event.amount)} removed).`];
-            case "phaseChanged":
+            case "changePhase":
                 return [event.phase === "enemy" ? "Enemy phase." : "Player phase."];
             case "buffAdded":
                 return [`${event.target} gained ${event.buff}.`];
@@ -193,13 +194,13 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [`${event.target} appeared.`];
             case "enemyDefeated":
                 return [`${event.target} was defeated.`];
-            case "stanceChanged":
+            case "stanceSet":
                 return [`${event.actor} changed stance to ${event.stance}.`];
             case "cooldownChanged":
                 return [`${event.target}'s ${event.move} cooldown changed to ${event.value}.`];
-            case "encounterLoad":
+            case "loadEncounter":
                 return [event.success ? `Encounter ${event.id} began.` : `Could not load encounter ${event.id}.`];
-            case "characterLoad":
+            case "loadCharacter":
                 return [event.success ? `Character ${event.id} loaded.` : `Could not load character ${event.id}.`];
             case "trapAdded":
                 return [`${event.actor} created ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
@@ -217,6 +218,9 @@ export function formatEvents(events: GameEvent[]): string[] {
                 return [`${event.target}'s action was weakened.`];
             case "targetChanged":
                 return [`${event.target}'s action's target was changed to ${event.destination}.`];
+            case "useEscape":
+            case "changeStance":
+                return [];
         }
     });
 }

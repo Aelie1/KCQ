@@ -1,7 +1,7 @@
 import { expect } from "vitest";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import type { iBinding, iCharacter, iEnemy, iStatus } from "../../src/engine/protected/types";
+import type { iBinding, iCharacter, iEffect, iEnemy, iMoveResult, iStatus } from "../../src/engine/protected/types";
 import type { BindingLevel, Engine, FailureReason, MoveType } from "../../src/engine/public/types";
 import { actionView } from "./gameView";
 
@@ -31,19 +31,36 @@ export function makeBindingDef(
     return { id, status: statusMap(entries), data: {} };
 }
 
+type TestMoveOverrides = Partial<Omit<MoveDef, "resolve">> & {
+    resolve?: (...args: Parameters<MoveDef["resolve"]>) => iMoveResult | iEffect[];
+};
+
 export function makeMove(
     id: string,
     type: MoveType = "mouth",
-    overrides: Partial<MoveDef> = {},
+    overrides: TestMoveOverrides = {},
 ): MoveDef {
+    const { resolve, ...rest } = overrides;
     return {
         id,
         targetSide: "enemy",
         targets: 1,
         type,
         accuracy: { hit: 100 },
-        resolve: () => [],
-        ...overrides,
+        ...rest,
+        resolve: (state, actor, move, targets) => {
+            const result = resolve?.(state, actor, move, targets) ?? [];
+            if (!Array.isArray(result)) return result;
+            const stacks = targets.map(({ target, band }) => ({ target, result: band, effects: [] as iEffect[] }));
+            const effects: iEffect[] = [];
+            for (const effect of result) {
+                const stack = stacks.length === 1 ? stacks[0]
+                    : stacks.find((entry) => "target" in effect && effect.target === entry.target);
+                if (stack) stack.effects.push(effect);
+                else effects.push(effect);
+            }
+            return { effects, targets: stacks };
+        },
     };
 }
 

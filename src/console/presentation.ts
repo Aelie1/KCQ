@@ -3,10 +3,12 @@ import type {
     BindingLevel,
     EntityId,
     GameEvent,
+    LeafEvent,
     HitBand,
     Phase,
     PlayerAction,
 } from "../engine/public/types";
+import { eventEntries } from "./eventEntries";
 
 export const PRESENTATION_TIMING = {
     highlightMs: 2000,
@@ -186,8 +188,8 @@ export function formatActionGroups(
         beginAction(action.actor, `${action.actor} tried to escape ${action.binding} on ${action.target}.`);
     }
 
-    for (const event of events) {
-        if (event.type === "phaseChanged") {
+    for (const event of eventEntries(events)) {
+        if (event.type === "changePhase") {
             flush();
             if (event.phase === "player" && phase === "enemy") round += 1;
             phase = event.phase;
@@ -200,9 +202,12 @@ export function formatActionGroups(
             continue;
         }
 
-        if (event.type === "moveUsed") {
+        if (event.type === "useMove") {
             sawMoveUsed = true;
-            const group = beginAction(event.actor, formatEvent(event));
+            const interrupted = event.effects.some((effect) => effect.type === "actionInterrupted");
+            const group = beginAction(event.actor, interrupted
+                ? `${event.actor} attempted ${event.move}.`
+                : formatEvent(event));
             if (event.targets.length > 1) {
                 const style = registry.styleFor(event.actor);
                 group.lines.push(...event.targets.map((target) => ({
@@ -210,7 +215,7 @@ export function formatActionGroups(
                     style,
                 })));
             }
-            group.highlights.push(...deriveHighlightTargets([event]));
+            group.highlights.push({ kind: "cooldown", entity: event.actor, move: event.move });
             continue;
         }
 
@@ -244,7 +249,7 @@ export function formatActionGroups(
             const isConsequence = current.kind === "action" && current.lines.length > 0;
             current.lines.push({ text: `${isConsequence ? "  ↳ " : ""}${line}`, style });
         }
-        current.highlights.push(...deriveHighlightTargets([event]));
+        if (!("effects" in event)) current.highlights.push(...deriveHighlightTargets([event]));
     }
 
     flush();
@@ -255,11 +260,11 @@ export function flattenGroups(groups: readonly ActionGroup[]): StyledLine[] {
     return groups.flatMap((group) => group.lines);
 }
 
-export function deriveHighlightTargets(events: readonly GameEvent[]): HighlightTarget[] {
+export function deriveHighlightTargets(events: readonly (GameEvent | LeafEvent)[]): HighlightTarget[] {
     const targets: HighlightTarget[] = [];
-    for (const event of events) {
+    for (const event of events.flatMap((entry) => "effects" in entry ? eventEntries([entry]) : [entry])) {
         switch (event.type) {
-            case "moveUsed":
+            case "useMove":
                 targets.push({ kind: "cooldown", entity: event.actor, move: event.move });
                 break;
             case "bondageAdded":
@@ -291,7 +296,7 @@ export function deriveHighlightTargets(events: readonly GameEvent[]): HighlightT
             case "trapTriggered":
                 targets.push({ kind: "trap", trap: event.trap });
                 break;
-            case "stanceChanged":
+            case "stanceSet":
                 targets.push({ kind: "stance", entity: event.actor });
                 break;
         }
@@ -299,9 +304,9 @@ export function deriveHighlightTargets(events: readonly GameEvent[]): HighlightT
     return uniqueHighlights(targets);
 }
 
-export function formatEvent(event: GameEvent): string {
+export function formatEvent(event: GameEvent | LeafEvent): string {
     switch (event.type) {
-        case "moveUsed":
+        case "useMove":
             if (event.targets.length === 0) return `${event.actor} used ${event.move}.`;
             if (event.targets.length === 1) {
                 const target = event.targets[0];
@@ -318,16 +323,16 @@ export function formatEvent(event: GameEvent): string {
                 : `${event.target} removed ${Math.abs(event.amount)} ${event.binding}.`;
         case "bondageBlocked": return `${event.target} blocked ${event.amount} ${event.binding}.`;
         case "bondageRemoved": return `${event.target} escaped ${event.binding} (${Math.abs(event.amount)} removed).`;
-        case "phaseChanged": return phaseSeparator(event.phase).text;
+        case "changePhase": return phaseSeparator(event.phase).text;
         case "buffAdded": return `${event.target} gained ${event.buff}.`;
         case "buffRemoved": return `${event.buff} expired on ${event.target}.`;
         case "buffUpdated": return `${event.buff} refreshed on ${event.target}.`;
         case "enemySpawned": return `${event.target} appeared.`;
         case "enemyDefeated": return `${event.target} was defeated.`;
-        case "stanceChanged": return `${event.actor} changed stance to ${event.stance}.`;
+        case "stanceSet": return `${event.actor} changed stance to ${event.stance}.`;
         case "cooldownChanged": return `${event.target}'s ${event.move} cooldown changed to ${event.value}.`;
-        case "encounterLoad": return event.success ? `Encounter ${event.id} began.` : `Could not load encounter ${event.id}.`;
-        case "characterLoad": return event.success ? `Character ${event.id} loaded.` : `Could not load character ${event.id}.`;
+        case "loadEncounter": return event.success ? `Encounter ${event.id} began.` : `Could not load encounter ${event.id}.`;
+        case "loadCharacter": return event.success ? `Character ${event.id} loaded.` : `Could not load character ${event.id}.`;
         case "trapAdded": return `${event.actor} created ${event.amount} ${plural(event.trap, event.amount)}.`;
         case "trapRemoved": return `${event.actor} removed ${event.amount} ${plural(event.trap, event.amount)}.`;
         case "trapTriggered": return `${event.actor} triggered ${event.amount} ${plural(event.trap, event.amount)}.`;
@@ -336,6 +341,8 @@ export function formatEvent(event: GameEvent): string {
         case "intentionCancelled": return `${event.target}'s action was cancelled.`;
         case "intentionWeakened": return `${event.target}'s action was weakened.`;
         case "targetChanged": return `${event.target}'s action's target was changed to ${event.destination}.`;
+        case "useEscape":
+        case "changeStance": return "";
     }
 }
 

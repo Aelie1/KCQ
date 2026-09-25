@@ -29,11 +29,12 @@ describe("character catalogue", () => {
         };
         const engine = createCustomEngine([], [catalogued], 1);
 
-        expect(engine.loadCharacter(catalogued.id)).toEqual([{
-            type: "characterLoad",
+        expect(engine.loadCharacter(catalogued.id)).toEqual({
+            type: "loadCharacter",
             id: catalogued.id,
             success: true,
-        }]);
+            effects: [],
+        });
         expect(engine.getGameView().characters).toEqual([
             expect.objectContaining({ id: catalogued.id, data: { marker: 7 } }),
         ]);
@@ -43,22 +44,24 @@ describe("character catalogue", () => {
         const engine = createCustomEngine([], testCharacterList, 1);
         const before = engine.getGameView().characters;
 
-        expect(engine.loadCharacter("missing-character")).toEqual([{
-            type: "characterLoad",
+        expect(engine.loadCharacter("missing-character")).toEqual({
+            type: "loadCharacter",
             id: "missing-character",
             success: false,
-        }]);
+            effects: [],
+        });
         expect(engine.getGameView().characters).toEqual(before);
     });
 
     it("cannot load a repository definition that was not injected", () => {
         const engine = createCustomEngine([], testCharacterList, 1);
 
-        expect(engine.loadCharacter(ko.id)).toEqual([{
-            type: "characterLoad",
+        expect(engine.loadCharacter(ko.id)).toEqual({
+            type: "loadCharacter",
             id: ko.id,
             success: false,
-        }]);
+            effects: [],
+        });
         expect(engine.getGameView().characters).toEqual([]);
     });
 });
@@ -160,11 +163,13 @@ describe("state serialization and combatant loading", () => {
 
         const events = engine.loadEncounter(multiEnemyEncounter.id);
 
-        expect(events).toEqual([
-            { type: "enemySpawned", target: "foe1" },
-            { type: "enemySpawned", target: "attacker1" },
-            { type: "encounterLoad", id: multiEnemyEncounter.id, success: true, bindings: [] },
-        ]);
+        expect(events).toEqual({
+            type: "loadEncounter", id: multiEnemyEncounter.id, success: true, bindings: [],
+            effects: [
+                { type: "enemySpawned", target: "foe1" },
+                { type: "enemySpawned", target: "attacker1" },
+            ],
+        });
         expect(engine.getGameView()).toMatchObject({
             turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
             characters: [{
