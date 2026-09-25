@@ -527,7 +527,7 @@ function moveDetailLines(action: ActionInfo, targets: ValidTarget[]): string[] |
         const preview = targets[0];
         if (!preview) return undefined;
         if (preview.accuracy) return [formatSuccessRow(preview.accuracy)];
-        const effects = formatPreviewEffects(preview.effects);
+        const effects = formatPreviewEffects([...preview.effects, ...action.effects]);
         return effects ? [effects] : undefined;
     }
     if (action.move.targets === 1 && targets.length === 1) {

@@ -32,6 +32,7 @@ describe("public move previews", () => {
             {
                 move: { id: "selective", type: "arms", targetSide: "enemy", targets: 1 },
                 available: true,
+                effects: [],
                 targets: [
                     { valid: true, target: "foe1", accuracy: { hit: 100 }, damage: undefined, effects: [] },
                     { valid: false, target: "foe2", reason: "invalidTarget" },
@@ -40,6 +41,7 @@ describe("public move previews", () => {
             {
                 move: { id: "impossible", type: "arms", targetSide: "enemy", targets: 1 },
                 available: false, reason: "invalidTargetCount",
+                effects: [],
                 targets: [],
             },
         ]);
@@ -164,7 +166,7 @@ describe("public move previews", () => {
 
         expect(actionView(engine, "hero").moves).toEqual([{
             move: { id: strike.id, type: "arms", targetSide: "enemy", targets: 1 },
-            available: false, reason, targets: [],
+            available: false, reason, targets: [], effects: [],
         }]);
         expect(probes).toBe(0);
     });

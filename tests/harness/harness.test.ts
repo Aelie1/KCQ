@@ -42,6 +42,7 @@ function move(id: string, available = true): ActionInfo {
     return {
         move: { id, targetSide: "enemy", targets: 1, type: "arms" },
         available,
+        effects: [],
         targets: [
             { valid: true, target: "enemy-1", effects: [] },
             { valid: true, target: "enemy-2", effects: [] },

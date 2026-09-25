@@ -321,6 +321,7 @@ describe("Skunkette behavior through GameEngine", () => {
             },
             available: false,
             targets: [],
+            effects: [],
             reason: "actorIncapacitated",
         });
 
@@ -389,6 +390,7 @@ describe("Skunkette behavior through GameEngine", () => {
             },
             available: true,
             targets: [{ target: null, valid: true, damage: undefined, effects: [] }],
+            effects: [],
         });
     });
 

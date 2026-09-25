@@ -49,6 +49,10 @@ export function makeMove(
         accuracy: { hit: 100 },
         ...rest,
         resolve: (state, actor, move, targets) => {
+            // Targeted test moves written for the old resolver have no move-level preview effects.
+            if ((rest.targets ?? 1) !== 0 && targets.length === 0) {
+                return { effects: [], targets: [] };
+            }
             const result = resolve?.(state, actor, move, targets) ?? [];
             if (!Array.isArray(result)) return result;
             const stacks = targets.map(({ target, band }) => ({ target, result: band, effects: [] as iEffect[] }));

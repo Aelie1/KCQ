@@ -490,6 +490,7 @@ describe("Matsuko's Compulsion moves", () => {
             reason: "invalidTargetCount",
             move: { id: "obey", type: "mouth", targetSide: "player", targets: 1 },
             targets: [],
+            effects: [{ type: "buff", target: matsuko.id, buff: "compulsionCD", effects: undefined, operation: "add" }],
         });
 
         execute(engine, {
@@ -501,12 +502,12 @@ describe("Matsuko's Compulsion moves", () => {
         expect(characterState(engine, ally.id).acted).toBe(true);
         expect(action(engine, "obey")).toMatchObject({
             available: true,
+            effects: [{ type: "buff", target: matsuko.id, buff: "compulsionCD", operation: "add" }],
             targets: expect.arrayContaining([
                 { valid: false, target: matsuko.id, reason: "invalidTarget" },
                 expect.objectContaining({
                     valid: true, target: ally.id, effects: [
                         expect.objectContaining({ type: "buff", target: ally.id, buff: "servitude", operation: "add" }),
-                        expect.objectContaining({ type: "buff", target: matsuko.id, buff: "compulsionCD", operation: "add" }),
                     ]
                 }),
             ]),
@@ -569,12 +570,12 @@ describe("Matsuko's Compulsion moves", () => {
 
         expect(action(engine, "obey")).toMatchObject({
             available: true,
+            effects: [{ type: "buff", target: matsuko.id, buff: "compulsionCD", operation: "add" }],
             targets: expect.arrayContaining([
                 { valid: false, target: servant.id, reason: "invalidTarget" },
                 expect.objectContaining({
                     valid: true, target: eligible.id, effects: [
                         expect.objectContaining({ type: "buff", target: eligible.id, buff: "servitude", operation: "add" }),
-                        expect.objectContaining({ type: "buff", target: matsuko.id, buff: "compulsionCD", operation: "add" }),
                     ]
                 }),
             ]),
