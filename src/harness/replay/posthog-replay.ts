@@ -299,14 +299,14 @@ function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogRepla
                 parsed,
                 "state_after",
                 recorded.stateAfter!,
-                compactStateDigest(result.view),
+                compactStateDigest(result.actions),
                 recorded,
             );
             steps.push({
                 action: cloneAction(action),
                 success: true,
-                events: structuredClone(result.events),
-                state: structuredClone(result.view),
+                events: structuredClone(result.frames),
+                state: structuredClone(result.actions),
             });
         } else {
             if (result.reason !== recorded.failureReason) {

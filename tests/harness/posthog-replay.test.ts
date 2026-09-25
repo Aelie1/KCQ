@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
 import type { Engine, PlayerAction } from "../../src/engine/public/types";
+import { runSingleFight } from "../../src/harness/harness";
+import { firstPolicy } from "../../src/harness/policy/first";
 import {
     importPostHogReplayCsv,
     parseCsv,
     parsePostHogReplayCsv,
 } from "../../src/harness/replay/posthog-replay";
-import { runSingleFight } from "../../src/harness/harness";
-import { firstPolicy } from "../../src/harness/policy/first";
 import { compactStateDigest } from "../../src/web/telemetry";
 
 const HEADERS = [
@@ -330,7 +330,7 @@ function makeFixture(options: FixtureOptions = {}): {
             success: result.success ? "True" : "False",
             failure_reason: result.success ? "" : result.reason,
             state_after: stringify(result.success
-                ? compactStateDigest(result.view)
+                ? compactStateDigest(result.actions)
                 : compactStateDigest(engine.getGameView())),
         });
     });

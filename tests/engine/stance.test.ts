@@ -1,9 +1,9 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { immobilized, vibrating } from "../../src/engine/protected/statuses";
+import { resolvedEvents } from "../helpers/events";
 import { actionView } from "../helpers/gameView";
 import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove, setupBoundEngine } from "../helpers/helpers";
 
@@ -49,9 +49,11 @@ describe("stance toggling", () => {
 
         expect(result).toMatchObject({
             success: true,
-            events: [{ type: "changeStance", actor: hero.id, effects: [
-                { type: "stanceSet", actor: hero.id, stance: "standing" },
-            ] }],
+            events: [{
+                type: "changeStance", actor: hero.id, effects: [
+                    { type: "stanceSet", actor: hero.id, stance: "standing" },
+                ]
+            }],
             view: {
                 turn: { step: 2 },
                 characters: [{ id: hero.id, standing: true, acted: false }],
@@ -81,9 +83,11 @@ describe("stance toggling", () => {
 
         expect(result).toMatchObject({
             success: true,
-            events: [{ type: "changeStance", actor: hero.id, effects: [
-                { type: "stanceSet", actor: hero.id, stance: "moving" },
-            ] }],
+            events: [{
+                type: "changeStance", actor: hero.id, effects: [
+                    { type: "stanceSet", actor: hero.id, stance: "moving" },
+                ]
+            }],
             view: { characters: [{ id: hero.id, standing: false, acted: false }] },
         });
         expect(engine.getGameView().characters[0].standing).toBe(false);
@@ -238,11 +242,11 @@ describe("stance toggling", () => {
 
         expect(assist.success).toBe(true);
         if (!assist.success) throw new Error("Expected bonus assistance to succeed");
-        expect(assist.events).toMatchObject([{ type: "useEscape", actor: helper.id, target: target.id }]);
-        expect(assist.events[0].effects).toEqual([
+        expect(assist.frames).toMatchObject([{ type: "useEscape", actor: helper.id, target: target.id }]);
+        expect(assist.frames[0].effects).toEqual([
             expect.objectContaining({ target: target.id, binding: restraint.id }),
         ]);
-        expect(assist.view.characters.find((character) => character.id === helper.id))
+        expect(assist.actions.characters.find((character) => character.id === helper.id))
             .toMatchObject({ acted: true, bonusEscapes: 0 });
     });
 
@@ -398,7 +402,7 @@ describe("stance toggling", () => {
         if (!result.success) throw new Error("Expected the round transition to succeed");
 
         expect(observedDuringEnemyPhase).toEqual({ active: false, standing: false });
-        expect(resolvedEvents(result.events)).toContainEqual({
+        expect(resolvedEvents(result.frames)).toContainEqual({
             type: "stanceSet",
             actor: "victim",
             stance: "standing",

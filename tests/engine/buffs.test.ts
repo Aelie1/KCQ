@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it, vi } from "vitest";
 import type { MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import type { iBuff, iEnemy, iEntity } from "../../src/engine/protected/types";
@@ -6,6 +5,7 @@ import {
     buffState, characterState, enemyState, execute, makeBehavioralCharacter,
     makeBehavioralEnemy, makeBehavioralEngine, makeBehavioralMove, makeEnemyWaitMove, targetAccuracy,
 } from "../helpers/behavioralHelpers";
+import { resolvedEvents } from "../helpers/events";
 import { actionView } from "../helpers/gameView";
 
 const blinded: StatusDef = {
@@ -56,7 +56,7 @@ describe("buff behavior through GameEngine", () => {
             targets: [],
         });
 
-        expect(result.events).toEqual([{
+        expect(result.frames).toEqual([{
             type: "useMove", actor: "hero", move: add.id, targets: [],
             effects: [{ type: "buffAdded", target: "foe1", buff: "test-buff" }],
         }]);
@@ -126,7 +126,7 @@ describe("buff behavior through GameEngine", () => {
             targets: [],
         });
 
-        expect(result.events[0].effects[0]).toEqual({
+        expect(result.frames[0].effects[0]).toEqual({
             type: "buffUpdated",
             target: "hero",
             buff: "replaceable",
@@ -143,7 +143,7 @@ describe("buff behavior through GameEngine", () => {
 
         execute(engine, { type: "move", actor: "hero", move: add.id, targets: [] });
         const firstTurn = execute(engine, { type: "endTurn" });
-        expect(resolvedEvents(firstTurn.events)).not.toContainEqual({
+        expect(resolvedEvents(firstTurn.frames)).not.toContainEqual({
             type: "buffRemoved",
             target: "hero",
             buff: "temporary",
@@ -151,7 +151,7 @@ describe("buff behavior through GameEngine", () => {
         expect(buffState(engine, "temporary")?.duration).toBe(1);
 
         const secondTurn = execute(engine, { type: "endTurn" });
-        expect(resolvedEvents(secondTurn.events)).toContainEqual({
+        expect(resolvedEvents(secondTurn.frames)).toContainEqual({
             type: "buffRemoved",
             target: "hero",
             buff: "temporary",
@@ -207,7 +207,7 @@ describe("buff behavior through GameEngine", () => {
         execute(engine, { type: "move", actor: "hero", move: addAll.id, targets: [] });
 
         const turn = execute(engine, { type: "endTurn" });
-        expect(resolvedEvents(turn.events).filter((event) => event.type === "buffRemoved")).toEqual([
+        expect(resolvedEvents(turn.frames).filter((event) => event.type === "buffRemoved")).toEqual([
             { type: "buffRemoved", target: "hero", buff: "first" },
             { type: "buffRemoved", target: "hero", buff: "second" },
             { type: "buffRemoved", target: "foe1", buff: "third" },
@@ -253,7 +253,7 @@ describe("buff behavior through GameEngine", () => {
             move: remove.id,
             targets: [],
         });
-        expect(result.events[0].effects[0]).toEqual({
+        expect(result.frames[0].effects[0]).toEqual({
             type: "buffRemoved",
             target: "hero",
             buff: "linked",
@@ -408,8 +408,8 @@ describe("buff modifyDamage integration through GameEngine", () => {
         expect(inactive).not.toHaveBeenCalled();
         expect(active).toHaveBeenCalledOnce();
         expect(active.mock.calls[0][2]).toBe(10);
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "damageBlocked", target: "foe1", amount: 3 });
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "enemyDamaged", target: "foe1", amount: 7 });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "damageBlocked", target: "foe1", amount: 3 });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "enemyDamaged", target: "foe1", amount: 7 });
     });
 
     it("processes multiple damage modifiers in buff order", () => {
@@ -438,8 +438,8 @@ describe("buff modifyDamage integration through GameEngine", () => {
 
         expect(subtract.mock.calls[0][2]).toBe(10);
         expect(halve.mock.calls[0][2]).toBe(8);
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "damageBlocked", target: "foe1", amount: 6 });
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "enemyDamaged", target: "foe1", amount: 4 });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "damageBlocked", target: "foe1", amount: 6 });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "enemyDamaged", target: "foe1", amount: 4 });
         expect(enemyState(engine).currHp).toBe(33);
     });
 

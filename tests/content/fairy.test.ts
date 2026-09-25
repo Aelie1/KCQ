@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it, vi } from "vitest";
 import { fairy } from "../../src/content/skunk/fairy";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
@@ -17,6 +16,7 @@ import {
     makeBehavioralMove,
     makeEnemyWaitMove,
 } from "../helpers/behavioralHelpers";
+import { resolvedEvents } from "../helpers/events";
 import { makeCharacter, makeEnemy } from "../helpers/helpers";
 
 const BARRIER_ID = "barrierMagic";
@@ -233,7 +233,7 @@ describe("Binding Magic", () => {
 
         const result = execute(engine, { type: "endTurn" });
 
-        expect(resolvedEvents(result.events)).toContainEqual({
+        expect(resolvedEvents(result.frames)).toContainEqual({
             type: "bondageAdded",
             target: "hero",
             binding: preview.binding,
@@ -283,7 +283,7 @@ describe("Healing Magic", () => {
 
         const result = cast(engine, move, "skunk1");
 
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "enemyHealed", target: "skunk1", amount: 25 });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "enemyHealed", target: "skunk1", amount: 25 });
         expect(enemyState(engine, "skunk1").currHp).toBe(75);
     });
 
@@ -299,7 +299,7 @@ describe("Healing Magic", () => {
         })));
 
         const result = cast(engine, move, "skunk1");
-        const healed = resolvedEvents(result.events).flatMap((event) =>
+        const healed = resolvedEvents(result.frames).flatMap((event) =>
             event.type === "enemyHealed" ? [event.target] : []);
 
         expect(healed).toEqual(["skunk1", "skunkette1", "fairy1"]);
@@ -321,7 +321,7 @@ describe("Healing Magic", () => {
 
         const result = cast(engine, move, "skunk1");
 
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "enemyHealed", target: "skunk1", amount: 10 });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "enemyHealed", target: "skunk1", amount: 10 });
         expect(enemyState(engine, "skunk1").currHp).toBe(100);
     });
 
@@ -377,8 +377,8 @@ describe("Barrier Magic", () => {
         expect(buffState(engine, BARRIER_ID, "skunk1")).toBeUndefined();
         const result = cast(engine, strike, "skunk1");
 
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "enemyDamaged", target: "skunk1", amount: 7 });
-        expect(resolvedEvents(result.events).some((event) => event.type === "damageBlocked")).toBe(false);
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "enemyDamaged", target: "skunk1", amount: 7 });
+        expect(resolvedEvents(result.frames).some((event) => event.type === "damageBlocked")).toBe(false);
         expect(enemyState(engine, "skunk1").currHp).toBe(93);
     });
 
@@ -391,7 +391,7 @@ describe("Barrier Magic", () => {
 
         const result = cast(engine, strike, "skunk1");
 
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "damageBlocked", target: "skunk1", amount: 7 });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "damageBlocked", target: "skunk1", amount: 7 });
         expect(enemyState(engine, "skunk1").currHp).toBe(100);
         expect(buffState(engine, BARRIER_ID, "skunk1")?.duration).toBe(1);
     });
@@ -407,10 +407,10 @@ describe("Barrier Magic", () => {
         const second = cast(engine, strike, "skunk1");
         const third = cast(engine, strike, "skunk1");
 
-        expect(resolvedEvents(first.events)).toContainEqual({ type: "damageBlocked", target: "skunk1", amount: 7 });
-        expect(resolvedEvents(second.events)).toContainEqual({ type: "damageBlocked", target: "skunk1", amount: 7 });
-        expect(resolvedEvents(second.events)).toContainEqual({ type: "buffRemoved", target: "skunk1", buff: BARRIER_ID });
-        expect(resolvedEvents(third.events)).toContainEqual({ type: "enemyDamaged", target: "skunk1", amount: 7 });
+        expect(resolvedEvents(first.frames)).toContainEqual({ type: "damageBlocked", target: "skunk1", amount: 7 });
+        expect(resolvedEvents(second.frames)).toContainEqual({ type: "damageBlocked", target: "skunk1", amount: 7 });
+        expect(resolvedEvents(second.frames)).toContainEqual({ type: "buffRemoved", target: "skunk1", buff: BARRIER_ID });
+        expect(resolvedEvents(third.frames)).toContainEqual({ type: "enemyDamaged", target: "skunk1", amount: 7 });
         expect(enemyState(engine, "skunk1").currHp).toBe(93);
         expect(buffState(engine, BARRIER_ID, "skunk1")).toBeUndefined();
     });
@@ -425,7 +425,7 @@ describe("Barrier Magic", () => {
         expect(buffState(engine, BARRIER_ID, "skunk1")?.duration).toBe(1);
         const expired = execute(engine, { type: "endTurn" });
 
-        expect(resolvedEvents(expired.events)).toContainEqual({
+        expect(resolvedEvents(expired.frames)).toContainEqual({
             type: "buffRemoved",
             target: "skunk1",
             buff: BARRIER_ID,
@@ -444,7 +444,7 @@ describe("Barrier Magic", () => {
         expect(buffState(engine, BARRIER_ID, "skunk1")?.duration).toBe(1);
         const elapsed = execute(engine, { type: "endTurn" });
 
-        expect(resolvedEvents(elapsed.events)).toContainEqual({
+        expect(resolvedEvents(elapsed.frames)).toContainEqual({
             type: "buffRemoved",
             target: "skunk1",
             buff: BARRIER_ID,
@@ -480,8 +480,8 @@ describe("Empowering Magic", () => {
 
         const result = cast(engine, move, "queen1");
 
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "buffAdded", target: "queen1", buff: EMPOWER_ID });
-        expect(resolvedEvents(result.events)).not.toContainEqual({ type: "buffAdded", target: "skunk1", buff: EMPOWER_ID });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "buffAdded", target: "queen1", buff: EMPOWER_ID });
+        expect(resolvedEvents(result.frames)).not.toContainEqual({ type: "buffAdded", target: "skunk1", buff: EMPOWER_ID });
     });
 
     it("applies its crit buff to all intended eligible enemies", () => {
@@ -491,7 +491,7 @@ describe("Empowering Magic", () => {
         const engine = makeEngine(enemies, [move]);
 
         const result = cast(engine, move, "skunk1");
-        const buffed = resolvedEvents(result.events).flatMap((event) =>
+        const buffed = resolvedEvents(result.frames).flatMap((event) =>
             event.type === "buffAdded" && event.buff === EMPOWER_ID ? [event.target] : []);
 
         expect(buffed).toEqual(["skunk1", "skunkette1", "fairy1", "queen1"]);

@@ -3,7 +3,8 @@
  *******************************************************/
 export interface Engine {
     getSeed(): number;
-    getGameView(): GameView;
+    getActionView(): ActionView[];
+    getGameState(): GameState;
     getThresholds(): ThresholdInfo;
     listCharacters(): EntityId[];
     loadCharacter(id: EntityId): GameEvent;
@@ -358,8 +359,8 @@ export type ActionResult = ActionSuccess | ActionFailure;
 
 export interface ActionSuccess {
     success: true;
-    view: GameView;
-    events: GameEvent[];
+    actions: ActionView[];
+    frames: EventFrame[];
 }
 
 export interface ActionFailure {
@@ -391,6 +392,11 @@ export type FailureReason =
 /*******************************************************
  * Events
  ********************************************************/
+
+export interface EventFrame {
+    state: GameState;
+    event: GameEvent;
+}
 
 export type GameEvent =
     | MoveEvent

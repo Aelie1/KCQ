@@ -176,7 +176,7 @@ export function createBattleTelemetryObserver(options: {
                 success: result.success,
                 ...failureProperties(result),
                 state_after: compactStateDigest(
-                    result.success ? result.view : options.getCurrentView(),
+                    result.success ? result.actions : options.getCurrentView(),
                 ),
             });
         },

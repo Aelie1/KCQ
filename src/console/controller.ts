@@ -159,11 +159,11 @@ export async function runBattleController(
     ): Promise<boolean> => {
         const previousRound = engine.getGameView().turn.round;
         const result = engine.executeAction(action);
-        if (result.success) bindingIds = updateEncounterBindings(bindingIds, result.events);
+        if (result.success) bindingIds = updateEncounterBindings(bindingIds, result.frames);
         const playback = appendResult(logEntries, result, previousRound, action, actorStyles);
         notifyObserver(() => observer?.onAction?.(action, result, source));
         notifyOutcome(result.success
-            ? result.view.turn.outcome
+            ? result.actions.turn.outcome
             : engine.getGameView().turn.outcome);
         if (result.success && ui.playback && playback.groups.length > 0) {
             await ui.playback({
@@ -176,9 +176,9 @@ export async function runBattleController(
         }
         if (
             result.success
-            && result.view.turn.outcome === "ongoing"
+            && result.actions.turn.outcome === "ongoing"
             && action.type !== "endTurn"
-            && !result.view.actions.some((character) => character.available)
+            && !result.actions.actions.some((character) => character.available)
         ) {
             logEntries.push({ text: "No characters available. Ending turn automatically." });
             await execute({ type: "endTurn" }, "automatic");
@@ -565,7 +565,7 @@ function appendResult(
     const fromLogLine = logLines.length;
     let groups: ActionGroup[] = [];
     if (result.success) {
-        groups = formatActionGroups(action, result.events, registry, previousRound);
+        groups = formatActionGroups(action, result.frames, registry, previousRound);
         for (const group of groups) {
             for (const line of group.lines) {
                 if (line.style === "phase-separator" && logLines.at(-1)?.text === line.text) continue;

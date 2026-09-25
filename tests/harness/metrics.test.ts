@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
+import { createEngine } from "../../src/engine/public/engine";
 import type {
     Character,
     GameEvent,
     GameView,
     PlayerAction,
 } from "../../src/engine/public/types";
-import { createEngine } from "../../src/engine/public/engine";
 import { runSingleFight } from "../../src/harness/harness";
 import {
     createAccuracyCollector,
@@ -17,8 +17,8 @@ import {
     createOutcomeCollector,
     createResolutionCollector,
     createTrapCollector,
-    metricLimitations,
     MetricCollectorSet,
+    metricLimitations,
     type MetricActionObservation,
     type MetricCollector,
 } from "../../src/harness/metrics";
@@ -86,7 +86,7 @@ function successfulAction(
         actionIndex,
         action,
         before,
-        result: { success: true, view: after, events },
+        result: { success: true, actions: after, frames: events },
     };
 }
 
@@ -190,12 +190,14 @@ describe("metric collector framework", () => {
 
         collector.onFightStart?.({ view: initial });
         collector.onAction?.(successfulAction(initial, after, [
-            { type: "useMove", actor: "enemy-1", move: "bind", targets: [], effects: [
-                { type: "bondageChanged", target: "hero", binding: "rope", amount: 8 },
-                { type: "bondageChanged", target: "hero", binding: "rope", amount: -9 },
-                { type: "bondageAdded", target: "hero", binding: "slime", amount: 4 },
-                { type: "bondageAdded", target: "ally", binding: "rope", amount: 3 },
-            ] },
+            {
+                type: "useMove", actor: "enemy-1", move: "bind", targets: [], effects: [
+                    { type: "bondageChanged", target: "hero", binding: "rope", amount: 8 },
+                    { type: "bondageChanged", target: "hero", binding: "rope", amount: -9 },
+                    { type: "bondageAdded", target: "hero", binding: "slime", amount: 4 },
+                    { type: "bondageAdded", target: "ally", binding: "rope", amount: 3 },
+                ]
+            },
         ]));
         collector.onFightEnd?.({ termination: "maxActions", view: after, actionCount: 1 });
 
@@ -231,10 +233,12 @@ describe("metric collector framework", () => {
                 move: "strike",
                 effects: [],
                 targets: [
-                    { target: "enemy-1", result: "hit", effects: [
-                        { type: "enemyDamaged", target: "enemy-1", amount: 7 },
-                        { type: "enemyDamaged", target: "enemy-1", amount: 3 },
-                    ] },
+                    {
+                        target: "enemy-1", result: "hit", effects: [
+                            { type: "enemyDamaged", target: "enemy-1", amount: 7 },
+                            { type: "enemyDamaged", target: "enemy-1", amount: 3 },
+                        ]
+                    },
                     { target: "enemy-2", result: "crit", effects: [] },
                 ],
             },
@@ -281,18 +285,22 @@ describe("metric collector framework", () => {
         collector.onAction?.(successfulAction(
             state,
             state,
-            [{ type: "useEscape", actor: "hero", target: "hero", effects: [
-                { type: "bondageChanged", target: "hero", binding: "rope", amount: -4 },
-            ] }],
+            [{
+                type: "useEscape", actor: "hero", target: "hero", effects: [
+                    { type: "bondageChanged", target: "hero", binding: "rope", amount: -4 },
+                ]
+            }],
             { type: "escape", actor: "hero", target: "hero", binding: "rope" },
             1,
         ));
         collector.onAction?.(successfulAction(
             state,
             state,
-            [{ type: "useEscape", actor: "ally", target: "hero", effects: [
-                { type: "bondageRemoved", target: "hero", binding: "slime", amount: -2 },
-            ] }],
+            [{
+                type: "useEscape", actor: "ally", target: "hero", effects: [
+                    { type: "bondageRemoved", target: "hero", binding: "slime", amount: -2 },
+                ]
+            }],
             { type: "escape", actor: "ally", target: "hero", binding: "slime" },
             2,
         ));
@@ -320,10 +328,12 @@ describe("metric collector framework", () => {
         const after = view({ traps: [{ id: "trapPuddle", amount: 8 }] });
         collector.onFightStart?.({ view: initial });
         collector.onAction?.(successfulAction(initial, after, [
-            { type: "changePhase", phase: "enemy", effects: [
-                { type: "trapAdded", actor: "enemy-1", trap: "trapPuddle", amount: 3 },
-                { type: "trapTriggered", actor: "hero", trap: "trapPuddle", amount: 2 },
-            ] },
+            {
+                type: "changePhase", phase: "enemy", effects: [
+                    { type: "trapAdded", actor: "enemy-1", trap: "trapPuddle", amount: 3 },
+                    { type: "trapTriggered", actor: "hero", trap: "trapPuddle", amount: 2 },
+                ]
+            },
         ]));
 
         expect(collector.getResult()).toEqual({

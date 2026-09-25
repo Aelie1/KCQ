@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { evaluateResult, isValidTarget } from "../../src/engine/private/combat";
 import { effectivenessRange } from "../../src/engine/private/constants";
@@ -13,6 +12,7 @@ import type {
     iTargetInfo,
 } from "../../src/engine/protected/types";
 import type { AccuracyProfile, Engine, MoveEvent } from "../../src/engine/public/types";
+import { resolvedEvents } from "../helpers/events";
 import { actionView } from "../helpers/gameView";
 import {
     makeBinding,
@@ -164,7 +164,7 @@ describe("accuracy", () => {
 
     function moveUsed(result: ReturnType<Engine["executeAction"]>): MoveEvent {
         if (!result.success) throw new Error(`Expected action success, got ${result.reason}`);
-        const event = resolvedEvents(result.events).find(
+        const event = resolvedEvents(result.frames).find(
             (candidate): candidate is MoveEvent => candidate.type === "useMove",
         );
         if (!event) throw new Error("Expected moveUsed event");
@@ -526,7 +526,7 @@ describe("accuracy", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected all-target move to succeed");
-        expect(result.events[0]).toMatchObject({
+        expect(result.frames[0]).toMatchObject({
             type: "useMove",
             targets: expected.map((target) => ({
                 target: target.target.id,

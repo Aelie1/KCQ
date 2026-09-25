@@ -218,11 +218,11 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         replay?.steps.push({
             action,
             success: true,
-            events: result.events,
-            state: structuredClone(result.view),
+            events: result.frames,
+            state: structuredClone(result.actions),
         });
 
-        view = result.view;
+        view = result.actions;
         const outcome = view.turn.outcome;
         if (outcome !== "ongoing") {
             return finish(outcome);

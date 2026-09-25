@@ -6,11 +6,9 @@ import type {
     LeafEvent,
 } from "../../engine/public/types";
 import type {
-    MetricActionObservation,
     MetricCollector,
     MetricCollectorFactory,
-    MetricFightEnd,
-    MetricFightStart,
+    MetricFightEnd
 } from "./collector";
 
 export interface OutcomeMetrics {
@@ -259,10 +257,10 @@ export function createBondageCollector(): MetricCollector<BondageMetrics> {
         onFightStart: ({ view }) => observe(view),
         onAction: ({ result }) => {
             if (!result.success) return;
-            observeEvents(result.events);
+            observeEvents(result.frames);
             // The public post-action view is authoritative and also reconciles
             // changes that do not currently emit a bondage event.
-            observe(result.view);
+            observe(result.actions);
         },
         onFightEnd: ({ view }) => observe(view),
         getResult() {
@@ -308,7 +306,7 @@ export function createDamageCollector(): MetricCollector<DamageMetrics> {
         id: "damage",
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of leafEvents(result.events)) {
+            for (const event of leafEvents(result.frames)) {
                 if (event.type !== "enemyDamaged") continue;
                 dealt += event.amount;
                 increment(dealtByTarget, event.target, event.amount);
@@ -329,7 +327,7 @@ export function createMoveUsageCollector(): MetricCollector<MoveUsageMetrics> {
         },
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of result.events) {
+            for (const event of result.frames) {
                 if (event.type !== "useMove") continue;
                 addMoveUsage(playerIds.has(event.actor) ? player : enemy, event.actor, event.move);
             }
@@ -349,7 +347,7 @@ export function createAccuracyCollector(): MetricCollector<AccuracyMetrics> {
         },
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of result.events) {
+            for (const event of result.frames) {
                 if (event.type !== "useMove") continue;
                 const counts = playerIds.has(event.actor) ? player : enemy;
                 for (const target of event.targets) counts[target.result] += 1;
@@ -374,7 +372,7 @@ export function createEscapeCollector(): MetricCollector<EscapeMetrics> {
             actor.attempts += 1;
             const assist = action.actor !== action.target;
             if (assist) assistAttempts += 1;
-            if (!result.success || !hasSuccessfulEscape(result.events, action.target, action.binding)) {
+            if (!result.success || !hasSuccessfulEscape(result.frames, action.target, action.binding)) {
                 return;
             }
             successes += 1;
@@ -409,7 +407,7 @@ export function createTrapCollector(): MetricCollector<TrapMetrics> {
         onFightStart: ({ view }) => observe(view),
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of leafEvents(result.events)) {
+            for (const event of leafEvents(result.frames)) {
                 if (event.type !== "trapAdded" && event.type !== "trapRemoved"
                     && event.type !== "trapTriggered") continue;
                 const track = getTrapTrack(tracks, event.trap);
@@ -430,7 +428,7 @@ export function createTrapCollector(): MetricCollector<TrapMetrics> {
                     totals.triggeredAmount += event.amount;
                 }
             }
-            observe(result.view);
+            observe(result.actions);
         },
         onFightEnd: ({ view }) => observe(view),
         getResult: () => ({ totals: { ...totals }, tracks: Object.fromEntries(tracks) }),
@@ -465,7 +463,7 @@ export function createIncapacitationCollector(): MetricCollector<IncapacitationM
         id: "incapacitations",
         onFightStart: ({ view }) => observe(view, 0),
         onAction: ({ actionIndex, result }) => {
-            if (result.success) observe(result.view, actionIndex);
+            if (result.success) observe(result.actions, actionIndex);
         },
         onFightEnd: ({ actionCount, view }) => observe(view, actionCount),
         getResult: () => ({

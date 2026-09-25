@@ -1,21 +1,24 @@
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
-import { findBinding, findCharacter, findEntity, findMove, isValidEntity, thresholds } from "../protected/helpers";
+import { findBinding, findCharacter, findEntity, findMove, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { mixSeed, Random } from "../protected/random";
-import { GameStatus } from "../protected/status";
+import { GameStatus, StatusMap } from "../protected/status";
 import { iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
-import type { AccuracyResult, ActionResult, EncounterEvent, EncounterId, Engine, EntityId, FailureReason, GameEvent, GameView, MoveEvent, PlayerAction, ThresholdInfo, TrapEvent } from "../public/types";
+import type { AccuracyResult, ActionResult, ActionView, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, ThresholdInfo, TrapEvent } from "../public/types";
 import {
     evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape,
     resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers
 } from "./combat";
 import { TRAP_MODIFIER } from "./constants";
 import { GameEffects } from "./effects";
+import { serializeGameState } from "./serialize";
 import { iValidityInfo } from "./types";
-import { getGameView } from "./view";
+import { getActionView, getStatusMap } from "./view";
 
 export class GameEngine implements Engine {
     private state: iGameState;
-    private view: GameView;
+    private statuses: StatusMap;
+    private viewState: GameState;
+    private viewActions: ActionView[];
     private seed: number;
     private aiRng: Random;
     private accRng: Random;
@@ -31,7 +34,9 @@ export class GameEngine implements Engine {
             traps: [],
             encounter: null
         };
-        this.view = getGameView(this.state);
+        this.statuses = getStatusMap(this.state);
+        this.viewState = serializeGameState(this.state, this.statuses);
+        this.viewActions = getActionView(this.state, this.statuses);
         seed ??= Math.floor(Math.random() * 0x100000000);
         this.seed = seed;
         this.aiRng = new Random(mixSeed(seed, 1));
@@ -44,12 +49,26 @@ export class GameEngine implements Engine {
         return this.seed;
     }
 
-    getGameView(): GameView {
-        return this.view;
+    getActionView(): ActionView[] {
+        return this.viewActions;
+    }
+
+    getGameState(): GameState {
+        return this.viewState;
     }
 
     private refreshView() {
-        this.view = getGameView(this.state);
+        this.refreshState();
+        this.refreshActions();
+    }
+
+    private refreshState() {
+        this.statuses = getStatusMap(this.state);
+        this.viewState = serializeGameState(this.state, this.statuses);
+    }
+
+    private refreshActions() {
+        this.viewActions = getActionView(this.state, this.statuses);
     }
 
     getThresholds(): ThresholdInfo {
@@ -166,7 +185,7 @@ export class GameEngine implements Engine {
     }
 
     executeAction(action: PlayerAction): ActionResult {
-        const result: GameEvent[] = [];
+        const result: EventFrame[] = [];
         const effects = new GameEffects(this.state, this.accRng);
         if (this.state.turn.phase !== "player") {
             return {
@@ -179,11 +198,11 @@ export class GameEngine implements Engine {
             result.push(...this.executeEnemyPhase());
             result.push(this.advancePhase());
 
-            this.refreshView();
+            this.refreshActions();
             return {
                 success: true,
-                events: result,
-                view: this.getGameView(),
+                frames: result,
+                actions: this.getActionView(),
             };
         }
 
@@ -338,16 +357,19 @@ export class GameEngine implements Engine {
                         this.state.turn.step++;
                         this.refreshView();
                         result.push({
-                            type: "useMove",
-                            actor: action.actor,
-                            move: action.move,
-                            targets: [],
-                            effects: effects.getEvents()
+                            event: {
+                                type: "useMove",
+                                actor: action.actor,
+                                move: action.move,
+                                targets: [],
+                                effects: effects.getEvents()
+                            },
+                            state: this.getGameState()
                         });
                         return {
                             success: true,
-                            events: result,
-                            view: this.getGameView(),
+                            frames: result,
+                            actions: this.getActionView(),
                         };
                     }
                 }
@@ -416,17 +438,20 @@ export class GameEngine implements Engine {
                 }
                 effects.merge(moveResults.effects);
                 moveEvent.effects = effects.getEvents();
-                result.push(moveEvent);
 
                 if (move.freeOnHit !== true || anyHits === false) {
                     actor.acted = true;
                 }
                 this.state.turn.step++;
                 this.refreshView();
+                result.push({
+                    event: moveEvent,
+                    state: this.getGameState()
+                });
                 return {
                     success: true,
-                    events: result,
-                    view: this.getGameView(),
+                    frames: result,
+                    actions: this.getActionView(),
                 };
             }
             case "escape": {
@@ -495,15 +520,17 @@ export class GameEngine implements Engine {
                         this.state.turn.step++;
                         this.refreshView();
                         result.push({
-                            type: "useEscape",
-                            actor: actor.id,
-                            target: target.id,
-                            effects: effects.getEvents(),
+                            event: {
+                                type: "useEscape",
+                                actor: actor.id,
+                                target: target.id,
+                                effects: effects.getEvents(),
+                            }, state: this.getGameState()
                         });
                         return {
                             success: true,
-                            events: result,
-                            view: this.getGameView(),
+                            frames: result,
+                            actions: this.getActionView(),
                         };
                     }
                 }
@@ -524,15 +551,17 @@ export class GameEngine implements Engine {
                 this.state.turn.step++;
                 this.refreshView();
                 result.push({
-                    type: "useEscape",
-                    actor: actor.id,
-                    target: target.id,
-                    effects: effects.getEvents(),
+                    event: {
+                        type: "useEscape",
+                        actor: actor.id,
+                        target: target.id,
+                        effects: effects.getEvents(),
+                    }, state: this.getGameState()
                 });
                 return {
                     success: true,
-                    events: result,
-                    view: this.getGameView(),
+                    frames: result,
+                    actions: this.getActionView(),
                 };
             }
             case "stance": {
@@ -544,14 +573,16 @@ export class GameEngine implements Engine {
                 this.state.turn.step++;
                 this.refreshView();
                 result.push({
-                    type: "changeStance",
-                    actor: actor.id,
-                    effects: effects.getEvents(),
+                    event: {
+                        type: "changeStance",
+                        actor: actor.id,
+                        effects: effects.getEvents(),
+                    }, state: this.getGameState()
                 });
                 return {
                     success: true,
-                    events: result,
-                    view: this.getGameView(),
+                    frames: result,
+                    actions: this.getActionView(),
                 };
             }
         }
@@ -593,22 +624,25 @@ export class GameEngine implements Engine {
         }
         effects.merge(moveResults.effects);
         moveEvent.effects = effects.getEvents();
-        this.state.turn.step++;
+
+        if (move.definition.cooldown) {
+            if (isEnemy(intention.actor)) {
+                intention.actor.cooldowns[move.definition.id] = move.definition.cooldown;
+            }
+        }
         return moveEvent;
     }
 
-    private executeEnemyPhase(): GameEvent[] {
-        const result: GameEvent[] = [];
+    private executeEnemyPhase(): EventFrame[] {
+        const result: EventFrame[] = [];
         for (const enemy of [...this.state.enemies]) {
             for (const intention of enemy.intentions) {
                 if (isValidEntity(this.state, enemy)) {
                     const event = this.executeEnemyAction(intention);
                     if (event) {
-                        result.push(event);
-                    }
-                    const move = intention.move.definition;
-                    if (move.cooldown) {
-                        enemy.cooldowns[move.id] = move.cooldown;
+                        this.state.turn.step++;
+                        this.refreshState();
+                        result.push({ event: event, state: this.getGameState() });
                     }
                 }
             }
@@ -617,7 +651,7 @@ export class GameEngine implements Engine {
         return result;
     }
 
-    private advancePhase(): GameEvent {
+    private advancePhase(): EventFrame {
         const result = new GameEffects(this.state, this.accRng);
 
         if (this.state.turn.phase === "player") {
@@ -632,10 +666,14 @@ export class GameEngine implements Engine {
             this.state.turn.step = 1;
             this.state.turn.round++;
         }
+        this.refreshState();
         return {
-            type: "changePhase",
-            phase: this.state.turn.phase,
-            effects: result.getEvents()
+            event: {
+                type: "changePhase",
+                phase: this.state.turn.phase,
+                effects: result.getEvents()
+            },
+            state: this.getGameState()
         };
 
     }

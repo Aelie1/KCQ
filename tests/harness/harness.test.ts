@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -19,6 +18,7 @@ import { policies } from "../../src/harness/policies";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { firstPolicy } from "../../src/harness/policy/first";
 import { randomPolicy } from "../../src/harness/policy/random";
+import { resolvedEvents } from "../helpers/events";
 
 function stockEncounterId(): string {
     const encounterId = createEngine(1).listEncounters()[0];
@@ -126,8 +126,8 @@ describe("policy-driven single-fight harness", () => {
             const expected = replayEngine.executeAction(result.trace[index]);
             expect(expected.success).toBe(true);
             if (step.success && expected.success) {
-                expect(step.events).toEqual(expected.events);
-                expect(step.state).toEqual(expected.view);
+                expect(step.events).toEqual(expected.frames);
+                expect(step.state).toEqual(expected.actions);
             }
         }
         const lastStep = result.replay?.steps.at(-1);

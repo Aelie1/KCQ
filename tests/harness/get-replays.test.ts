@@ -8,18 +8,18 @@ import type { FightReplay } from "../../src/harness/harness";
 import { runSingleFight } from "../../src/harness/harness";
 import { firstPolicy } from "../../src/harness/policy/first";
 import {
-    POSTHOG_REPLAY_COLUMNS,
-    parsePostHogReplayEvents,
-    reconstructFightReplay,
-    type PostHogReplayEventRow,
-} from "../../src/harness/replay/posthog-replay";
-import {
     PostHogApiClient,
     parseQueryResponse,
     postHogConfigFromEnvironment,
     type PostHogReplayClient,
     type RemoteReplayMetadata,
 } from "../../src/harness/replay/posthog-api";
+import {
+    POSTHOG_REPLAY_COLUMNS,
+    parsePostHogReplayEvents,
+    reconstructFightReplay,
+    type PostHogReplayEventRow,
+} from "../../src/harness/replay/posthog-replay";
 import {
     syncPostHogReplays as syncWithReleaseRuntime,
     writeArchivedReplay,
@@ -424,7 +424,7 @@ class FakeClient implements PostHogReplayClient {
     constructor(
         readonly remote: RemoteReplayMetadata[],
         readonly rows: Map<string, PostHogReplayEventRow[]>,
-    ) {}
+    ) { }
 
     async discoverReplays(): Promise<RemoteReplayMetadata[]> {
         return structuredClone(this.remote);
@@ -471,7 +471,7 @@ function makeReplayRows(
             success: String(result.success),
             failure_reason: result.success ? "" : result.reason,
             state_after: JSON.stringify(compactStateDigest(
-                result.success ? result.view : engine.getGameView(),
+                result.success ? result.actions : engine.getGameView(),
             )),
         });
     }

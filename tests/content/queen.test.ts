@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { queen } from "../../src/content/skunk/queen";
@@ -14,6 +13,7 @@ import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEffect, iGameState } from "../../src/engine/protected/types";
 import type { ActionSuccess, Engine, GameEvent, GameState, HitBand, ModifierSet } from "../../src/engine/public/types";
 import { execute, makeBehavioralCharacter, makeBehavioralMove } from "../helpers/behavioralHelpers";
+import { resolvedEvents } from "../helpers/events";
 
 const QUEEN_ID = "queen1";
 const BODY_LATEX = [latexHead, latexArms, latexTorso, latexLegs];
@@ -125,7 +125,7 @@ describe("Queen HP threshold reinforcements", () => {
 
         const result = endTurn(engine);
         for (const [baseId, hpValues] of Object.entries(expected)) {
-            expect(enemiesByBaseId(result.view, baseId).map(({ currHp }) => currHp).sort((a, b) => a - b))
+            expect(enemiesByBaseId(result.actions, baseId).map(({ currHp }) => currHp).sort((a, b) => a - b))
                 .toEqual([...hpValues].sort((a, b) => a - b));
         }
     });
@@ -138,22 +138,22 @@ describe("Queen HP threshold reinforcements", () => {
         const hit = execute(engine, {
             type: "move", actor: "hero", move: devastate.id, targets: [QUEEN_ID],
         });
-        expect(hit.view.enemies.find(({ id }) => id === QUEEN_ID)?.currHp).toBe(1);
+        expect(hit.actions.enemies.find(({ id }) => id === QUEEN_ID)?.currHp).toBe(1);
         expect(queenMoves(engine)).toHaveLength(7);
         expect(queenMoves(engine)).toContain(ordinary.move);
         expect(queenMoves(engine).filter((move) => move === "callReinforcements")).toHaveLength(4);
         expect(queenMoves(engine).filter((move) => move === "latexRainmaker")).toHaveLength(2);
 
         const phase = endTurn(engine);
-        expect(moveEvents(phase.events, QUEEN_ID)).toHaveLength(7);
-        expect(resolvedEvents(phase.events).filter(({ type }) => type === "enemySpawned")).toHaveLength(7);
-        expect(enemiesByBaseId(phase.view, "skunkette").map(({ currHp }) => currHp).sort((a, b) => a - b))
+        expect(moveEvents(phase.frames, QUEEN_ID)).toHaveLength(7);
+        expect(resolvedEvents(phase.frames).filter(({ type }) => type === "enemySpawned")).toHaveLength(7);
+        expect(enemiesByBaseId(phase.actions, "skunkette").map(({ currHp }) => currHp).sort((a, b) => a - b))
             .toEqual([100, 200, 200]);
-        expect(enemiesByBaseId(phase.view, "rainmaker").map(({ currHp }) => currHp).sort((a, b) => a - b))
+        expect(enemiesByBaseId(phase.actions, "rainmaker").map(({ currHp }) => currHp).sort((a, b) => a - b))
             .toEqual([100, 200]);
-        expect(enemiesByBaseId(phase.view, "skunk").map(({ currHp }) => currHp).sort((a, b) => a - b))
+        expect(enemiesByBaseId(phase.actions, "skunk").map(({ currHp }) => currHp).sort((a, b) => a - b))
             .toEqual([300, 300]);
-        expect(new Set(phase.view.enemies.map(({ id }) => id)).size).toBe(phase.view.enemies.length);
+        expect(new Set(phase.actions.enemies.map(({ id }) => id)).size).toBe(phase.actions.enemies.length);
     });
 
     it("produces the same threshold roster from one hit or partitioned damage", () => {
@@ -166,7 +166,7 @@ describe("Queen HP threshold reinforcements", () => {
             for (const move of moves) {
                 execute(engine, { type: "move", actor: "hero", move: move.id, targets: [QUEEN_ID] });
             }
-            return endTurn(engine).view.enemies
+            return endTurn(engine).actions.enemies
                 .filter(({ id }) => id !== QUEEN_ID)
                 .map(({ id, currHp, maxHp }) => ({ kind: id.replace(/\d+$/, ""), currHp, maxHp }))
                 .sort((a, b) => `${a.kind}:${a.currHp}`.localeCompare(`${b.kind}:${b.currHp}`));
@@ -185,7 +185,7 @@ describe("Queen HP threshold reinforcements", () => {
         execute(engine, { type: "move", actor: "hero", move: heal.id, targets: [QUEEN_ID] });
         expect(queenState(engine).currHp).toBe(700);
 
-        expect(enemiesByBaseId(endTurn(engine).view, "skunkette")).toHaveLength(1);
+        expect(enemiesByBaseId(endTurn(engine).actions, "skunkette")).toHaveLength(1);
     });
 
     it("fires a threshold once even after healing above it and reaching it again", () => {
@@ -217,9 +217,9 @@ describe("Queen HP threshold reinforcements", () => {
         execute(engine, { type: "move", actor: "hero", move: lower.id, targets: [QUEEN_ID] });
         const secondPhase = endTurn(engine);
 
-        expect(resolvedEvents(secondPhase.events).filter((event) => event.type === "enemySpawned" && event.target.startsWith("skunkette")))
+        expect(resolvedEvents(secondPhase.frames).filter((event) => event.type === "enemySpawned" && event.target.startsWith("skunkette")))
             .toHaveLength(0);
-        expect(enemiesByBaseId(secondPhase.view, "skunkette")).toHaveLength(1);
+        expect(enemiesByBaseId(secondPhase.actions, "skunkette")).toHaveLength(1);
     });
 
     it("keeps newly spawned reinforcements idle until their following enemy phase", () => {
@@ -228,13 +228,13 @@ describe("Queen HP threshold reinforcements", () => {
         execute(engine, { type: "move", actor: "hero", move: cross.id, targets: [QUEEN_ID] });
 
         const spawnPhase = endTurn(engine);
-        const reinforcement = enemiesByBaseId(spawnPhase.view, "skunkette")[0];
+        const reinforcement = enemiesByBaseId(spawnPhase.actions, "skunkette")[0];
         expect(reinforcement).toBeDefined();
-        expect(moveEvents(spawnPhase.events, reinforcement.id)).toEqual([]);
+        expect(moveEvents(spawnPhase.frames, reinforcement.id)).toEqual([]);
         expect(reinforcement.intentions).toHaveLength(1);
 
         const followingPhase = endTurn(engine);
-        expect(moveEvents(followingPhase.events, reinforcement.id)).toHaveLength(1);
+        expect(moveEvents(followingPhase.frames, reinforcement.id)).toHaveLength(1);
     });
 });
 
@@ -357,7 +357,7 @@ describe("Queen Collar targeting, priority, and lifecycle", () => {
     it("puts Collar on cooldown after use", () => {
         const engine = loadQueen({ seed: 2 });
         const result = endTurn(engine);
-        expect(result.view.enemies.find(({ id }) => id === QUEEN_ID)?.cooldowns.skunkCollar).toBe(2);
+        expect(result.actions.enemies.find(({ id }) => id === QUEEN_ID)?.cooldowns.skunkCollar).toBe(2);
         expect(queenMoves(engine)).not.toContain("skunkCollar");
     });
 });
@@ -517,12 +517,12 @@ describe("Queen Perfume", () => {
         const extras = [skunk, skunkette, rainmaker];
         const engine = healingPerfumeEngine(healingSeed(extras), [], extras);
         const result = endTurn(engine);
-        const byPrefix = (prefix: string) => result.view.enemies.find(({ id }) => id.startsWith(prefix));
+        const byPrefix = (prefix: string) => result.actions.enemies.find(({ id }) => id.startsWith(prefix));
 
         expect(byPrefix("skunk1")).toMatchObject({ currHp: 280, maxHp: 300 });
         expect(byPrefix("skunkette1")).toMatchObject({ currHp: 170, maxHp: 200 });
         expect(byPrefix("rainmaker1")).toMatchObject({ currHp: 150, maxHp: 200 });
-        expect(result.view.enemies.every(({ currHp, maxHp }) => currHp <= maxHp)).toBe(true);
+        expect(result.actions.enemies.every(({ currHp, maxHp }) => currHp <= maxHp)).toBe(true);
     });
 
     it("keeps healing mode fixed when the battlefield changes before execution", () => {
@@ -535,8 +535,8 @@ describe("Queen Perfume", () => {
         execute(engine, { type: "move", actor: "hero", move: healSkunk.id, targets: ["skunk1"] });
         const phase = endTurn(engine);
 
-        expect(phase.view.enemies.find(({ id }) => id === "skunk1")?.currHp).toBe(skunk.hp);
-        expect(phase.view.characters[0].buffs).not.toContainEqual(expect.objectContaining({ id: "skunkPerfume" }));
+        expect(phase.actions.enemies.find(({ id }) => id === "skunk1")?.currHp).toBe(skunk.hp);
+        expect(phase.actions.characters[0].buffs).not.toContainEqual(expect.objectContaining({ id: "skunkPerfume" }));
     });
 
     it("keeps a chosen debuff mode when a Skunk becomes damaged before execution", () => {
@@ -562,8 +562,8 @@ describe("Queen Perfume", () => {
         expect(intentionFor(engine, "skunkPerfume")).toEqual(before);
         const phase = endTurn(engine);
 
-        expect(phase.view.enemies.find(({ id }) => id === "skunk1")?.currHp).toBe(skunk.hp - 20);
-        expect(phase.view.characters[0].buffs.find(({ id }) => id === "skunkPerfume")?.modifiers)
+        expect(phase.actions.enemies.find(({ id }) => id === "skunk1")?.currHp).toBe(skunk.hp - 20);
+        expect(phase.actions.characters[0].buffs.find(({ id }) => id === "skunkPerfume")?.modifiers)
             .toEqual(expectedModifiers);
     });
 
@@ -594,8 +594,8 @@ describe("Queen Perfume", () => {
 
         execute(engine, { type: "move", actor: "hero", move: wound.id, targets: ["skunkette1"] });
         const phase = endTurn(engine);
-        expect(phase.view.enemies.find(({ id }) => id === "skunkette1")?.currHp).toBe(200);
-        expect(resolvedEvents(phase.events)).toContainEqual({ type: "enemyHealed", target: "skunkette1", amount: 10 });
+        expect(phase.actions.enemies.find(({ id }) => id === "skunkette1")?.currHp).toBe(200);
+        expect(resolvedEvents(phase.frames)).toContainEqual({ type: "enemyHealed", target: "skunkette1", amount: 10 });
     });
 });
 
@@ -663,7 +663,7 @@ describe("Queen Skunk Gun and AI fallbacks", () => {
         expect(bindingEffect?.type === "binding" ? BODY_LATEX.map(({ id }) => id) : []).toContain(
             bindingEffect?.type === "binding" ? bindingEffect.binding : "missing",
         );
-        const hitState = endTurn(hit).view;
+        const hitState = endTurn(hit).actions;
         const hitTarget = hitPreview?.targets[0]?.target;
         expect(hitState.characters.find(({ id }) => id === hitTarget)?.bindings)
             .toContainEqual(expect.objectContaining({ id: bindingEffect?.type === "binding" ? bindingEffect.binding : "" }));
@@ -671,7 +671,7 @@ describe("Queen Skunk Gun and AI fallbacks", () => {
         const miss = gunEngine(missSeed);
         const missPreview = intentionFor(miss, "skunkGun");
         expect(missPreview?.targets[0]).toMatchObject({ band: "miss", effects: [] });
-        expect(endTurn(miss).view.characters.every(({ bindings }) => bindings.length === 0)).toBe(true);
+        expect(endTurn(miss).actions.characters.every(({ bindings }) => bindings.length === 0)).toBe(true);
     });
 });
 
@@ -693,7 +693,7 @@ describe("Queen public invariants and determinism", () => {
                 type: "move", actor: "hero", move: strike.id, targets: [QUEEN_ID],
             });
             const phase = endTurn(engine);
-            return { attack: attack.events, phase: phase.events, state: phase.view };
+            return { attack: attack.frames, phase: phase.frames, state: phase.actions };
         };
 
         expect(run()).toEqual(run());

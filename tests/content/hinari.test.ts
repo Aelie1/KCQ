@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { hinari } from "../../src/content/characters/hinari";
 import { EMPOWERMENT_BUFF } from "../../src/content/characters/ko";
@@ -21,6 +20,7 @@ import {
     makeBehavioralEnemy,
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
+import { resolvedEvents } from "../helpers/events";
 import { actionView } from "../helpers/gameView";
 
 const rope = makeBehavioralBinding("rope");
@@ -100,7 +100,7 @@ function moveIds(engine: Engine): string[] {
 }
 
 function moveEvent(result: ActionSuccess) {
-    const event = resolvedEvents(result.events).find(({ type }) => type === "useMove");
+    const event = resolvedEvents(result.frames).find(({ type }) => type === "useMove");
     if (!event || event.type !== "useMove") throw new Error("Expected moveUsed event");
     return event;
 }
@@ -144,7 +144,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
             targets: ["foe1"],
         });
         const rolls = moveEvent(result).targets;
-        const damage = resolvedEvents(result.events).filter(
+        const damage = resolvedEvents(result.frames).filter(
             (event): event is DamageEvent => event.type === "enemyDamaged",
         );
 
@@ -193,7 +193,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
         });
 
         expect(moveEvent(result).targets).toHaveLength(hits);
-        expect(resolvedEvents(result.events).filter(({ type }) => type === "buffRemoved")).toEqual([{
+        expect(resolvedEvents(result.frames).filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: hinari.id,
             buff: EMPOWERMENT_BUFF,
@@ -220,7 +220,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
             targets: [],
         });
 
-        expect(resolvedEvents(result.events).some(({ type }) => type === "buffRemoved")).toBe(false);
+        expect(resolvedEvents(result.frames).some(({ type }) => type === "buffRemoved")).toBe(false);
         expect(buffState(engine, EMPOWERMENT_BUFF, hinari.id)).toBeDefined();
         expect(moveIds(engine)).toContain("fairyRockfall");
     });
@@ -304,18 +304,18 @@ describe("Hinari's Spatial Movement", () => {
             targets: ["foe1"],
         });
 
-        expect(resolvedEvents(result.events).some(({ type }) => type === "trapTriggered")).toBe(false);
-        expect(resolvedEvents(result.events)).toContainEqual(expect.objectContaining({
+        expect(resolvedEvents(result.frames).some(({ type }) => type === "trapTriggered")).toBe(false);
+        expect(resolvedEvents(result.frames)).toContainEqual(expect.objectContaining({
             type: "useMove",
             actor: hinari.id,
             move: "rockfall",
         }));
-        expect(resolvedEvents(result.events)).toContainEqual(expect.objectContaining({
+        expect(resolvedEvents(result.frames)).toContainEqual(expect.objectContaining({
             type: "enemyDamaged",
             target: "foe1",
         }));
-        expect(result.view.characters[0].bindings).toEqual([]);
-        expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
+        expect(result.actions.characters[0].bindings).toEqual([]);
+        expect(result.actions.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
     });
 
     it("skips a guaranteed movement trap while Escaping", () => {
@@ -338,15 +338,15 @@ describe("Hinari's Spatial Movement", () => {
             binding: rope.id,
         });
 
-        expect(resolvedEvents(result.events).some(({ type }) => type === "trapTriggered")).toBe(false);
-        expect(resolvedEvents(result.events)).toContainEqual(expect.objectContaining({
+        expect(resolvedEvents(result.frames).some(({ type }) => type === "trapTriggered")).toBe(false);
+        expect(resolvedEvents(result.frames)).toContainEqual(expect.objectContaining({
             type: "bondageChanged",
             target: hinari.id,
             binding: rope.id,
         }));
         expect(bindingState(engine, rope.id, hinari.id)?.value).toBeLessThan(30);
-        expect(result.view.characters[0].bindings.map(({ id }) => id)).toEqual([rope.id]);
-        expect(result.view.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
+        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual([rope.id]);
+        expect(result.actions.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
     });
 });
 
@@ -445,7 +445,7 @@ describe("Hinari's Store", () => {
             move: "store",
             targets: [ally.id],
         });
-        expect(resolvedEvents(first.events)).toContainEqual({
+        expect(resolvedEvents(first.frames)).toContainEqual({
             type: "bondageRemoved",
             target: ally.id,
             binding: rope.id,
@@ -641,7 +641,7 @@ describe("Hinari's Brace", () => {
             targets: [],
         });
 
-        expect(resolvedEvents(result.events)).toContainEqual({
+        expect(resolvedEvents(result.frames)).toContainEqual({
             type: "buffAdded",
             target: hinari.id,
             buff: "brace",
@@ -662,7 +662,7 @@ describe("Hinari's Brace", () => {
 
         const result = execute(engine, { type: "endTurn" });
 
-        expect(resolvedEvents(result.events)).toContainEqual({
+        expect(resolvedEvents(result.frames)).toContainEqual({
             type: "bondageBlocked",
             target: hinari.id,
             binding: tape.id,
@@ -690,7 +690,7 @@ describe("Hinari's Brace", () => {
 
         const result = execute(engine, { type: "endTurn" });
 
-        expect(resolvedEvents(result.events)).toContainEqual({
+        expect(resolvedEvents(result.frames)).toContainEqual({
             type: "bondageBlocked",
             target: hinari.id,
             binding: tape.id,
@@ -756,9 +756,11 @@ describe("Hinari's Release", () => {
             effects: [{ type: "buff", target: "foe1", buff: "subspaceClutter", effects: { defense: -1, hit: -1 }, operation: "add" }],
         });
         const result = execute(low, { type: "move", actor: hinari.id, move: "release", targets: ["foe1"] });
-        expect(moveEvent(result).targets).toEqual([{ target: "foe1", result: "none", effects: [
-            { type: "buffAdded", target: "foe1", buff: "subspaceClutter" },
-        ] }]);
+        expect(moveEvent(result).targets).toEqual([{
+            target: "foe1", result: "none", effects: [
+                { type: "buffAdded", target: "foe1", buff: "subspaceClutter" },
+            ]
+        }]);
     });
 
     it("debuffs an enemy and spends 25 Subspace", () => {
@@ -774,7 +776,7 @@ describe("Hinari's Release", () => {
             targets: ["foe1"],
         });
 
-        expect(resolvedEvents(result.events)).toContainEqual({ type: "buffAdded", target: "foe1", buff: "subspaceClutter" });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "buffAdded", target: "foe1", buff: "subspaceClutter" });
         expect(buffState(engine, "subspaceClutter", "foe1")).toMatchObject({
             duration: 2,
             modifiers: { defense: -1, hit: -1 },

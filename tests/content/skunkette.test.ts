@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { skunkette } from "../../src/content/skunk/skunkette";
@@ -14,6 +13,7 @@ import {
     makeBehavioralEngine,
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
+import { resolvedEvents } from "../helpers/events";
 import { actionView } from "../helpers/gameView";
 
 const POUNCE_ID = "pounce";
@@ -25,8 +25,8 @@ const SKUNKED_CHARACTER_ID = "victim";
 const LINKED_SKUNKETTE_ID = "skunketteVictim";
 
 function moveEffects(result: ActionSuccess, target?: string): LeafEvent[] {
-    expect(result.events).toHaveLength(1);
-    const event = result.events[0];
+    expect(result.frames).toHaveLength(1);
+    const event = result.frames[0];
     if (event.type !== "useMove") throw new Error("Expected useMove event");
     if (target === undefined) return event.effects;
     const stack = event.targets.find((entry) => entry.target === target);
@@ -117,7 +117,7 @@ describe("Skunkette behavior through GameEngine", () => {
         (seed, enemyHit, statusIds) => {
             const { engine, pounceTurn } = setupPounce(seed);
 
-            expect(pounceTurn.events[1]).toMatchObject({
+            expect(pounceTurn.frames[1]).toMatchObject({
                 type: "useMove",
                 actor: "skunkette1",
                 move: POUNCE_ID,
@@ -136,7 +136,7 @@ describe("Skunkette behavior through GameEngine", () => {
 
     it("adds the linked Spray binding on a sufficiently strong Pounce crit", () => {
         const { engine, pounceTurn } = setupPounce(64);
-        const bindingEvent = resolvedEvents(pounceTurn.events).find(
+        const bindingEvent = resolvedEvents(pounceTurn.frames).find(
             (event) => event.type === "bondageAdded",
         );
 
@@ -237,7 +237,7 @@ describe("Skunkette behavior through GameEngine", () => {
             move: THROW_OFF_ID,
             targets: [],
         });
-        expect(missResult.events).toEqual([{
+        expect(missResult.frames).toEqual([{
             type: "useMove", actor: "victim", move: THROW_OFF_ID, targets: [], effects: [],
         }]);
         expect(buffState(missed, POUNCE_ID, "victim")).toBeDefined();
@@ -337,7 +337,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffAdded", target: "skunkette1", buff: "resistance" },
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
-        expect(ordinaryDefeat.view.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
+        expect(ordinaryDefeat.actions.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
         expect(enemyState(engine, LINKED_SKUNKETTE_ID).id).toBe(LINKED_SKUNKETTE_ID);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toMatchObject({
             linkedEntity: LINKED_SKUNKETTE_ID,
@@ -372,7 +372,7 @@ describe("Skunkette behavior through GameEngine", () => {
             })),
             { type: "enemyDefeated", target: LINKED_SKUNKETTE_ID },
         ]);
-        expect(rescue.view.enemies.some(({ id }) => id === LINKED_SKUNKETTE_ID)).toBe(false);
+        expect(rescue.actions.enemies.some(({ id }) => id === LINKED_SKUNKETTE_ID)).toBe(false);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toBeUndefined();
         expect(LATEX_BODY_BINDINGS.map((binding) =>
             bindingState(engine, binding.id, SKUNKED_CHARACTER_ID)?.value,
@@ -409,7 +409,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffAdded", target: "skunkette1", buff: "resistance" },
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
-        expect(result.view.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
+        expect(result.actions.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
         expect(enemyState(engine, LINKED_SKUNKETTE_ID).id).toBe(LINKED_SKUNKETTE_ID);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toMatchObject({
             linkedEntity: LINKED_SKUNKETTE_ID,
@@ -489,13 +489,13 @@ describe("Skunkette behavior through GameEngine", () => {
         const before = bindingState(engine, bindingEffect.binding, bindingEffect.target)?.value ?? 0;
         const fallbackTurn = execute(engine, { type: "endTurn" });
 
-        expect(fallbackTurn.events.find((event) => event.type === "useMove")).toMatchObject({
+        expect(fallbackTurn.frames.find((event) => event.type === "useMove")).toMatchObject({
             type: "useMove",
             actor: "skunkette1",
             move: "latexSpray",
             targets: [{ target: bindingEffect.target, result: intention.targets[0].band }],
         });
-        expect(resolvedEvents(fallbackTurn.events)).toContainEqual(expect.objectContaining({
+        expect(resolvedEvents(fallbackTurn.frames)).toContainEqual(expect.objectContaining({
             type: before === 0 ? "bondageAdded" : "bondageChanged",
             target: bindingEffect.target,
             binding: bindingEffect.binding,
@@ -642,15 +642,18 @@ describe("Skunkette behavior through GameEngine", () => {
 
         const result = execute(engine, { type: "endTurn" });
 
-        expect(result.events).toMatchObject([
+        expect(result.frames).toMatchObject([
             { type: "changePhase", phase: "enemy", effects: [] },
-            { type: "useMove", actor: "skunkette1", move: LATEX_MIST_ID,
-                targets: [{ target: "hero", result: "crit", effects: existingBindings.map((binding) => ({
-                type: "bondageChanged" as const,
-                target: "hero",
-                binding: binding.id,
-                amount: 10,
-                })) }],
+            {
+                type: "useMove", actor: "skunkette1", move: LATEX_MIST_ID,
+                targets: [{
+                    target: "hero", result: "crit", effects: existingBindings.map((binding) => ({
+                        type: "bondageChanged" as const,
+                        target: "hero",
+                        binding: binding.id,
+                        amount: 10,
+                    }))
+                }],
                 effects: [{ type: "buffAdded", target: "hero", buff: LATEX_MIST_ID }],
             },
             { type: "changePhase", phase: "player", effects: [] },

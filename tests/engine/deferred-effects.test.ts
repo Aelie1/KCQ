@@ -1,9 +1,9 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import type { Engine } from "../../src/engine/public/types";
+import { resolvedEvents } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeMove } from "../helpers/helpers";
 
 function engineFor(move: ReturnType<typeof makeMove>): Engine {
@@ -47,12 +47,12 @@ describe("deferred binding onResolve effects", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected deferred move success");
-        expect(resolvedEvents(result.events).filter((event) => event.type.startsWith("bondage"))).toEqual([
+        expect(resolvedEvents(result.frames).filter((event) => event.type.startsWith("bondage"))).toEqual([
             { type: "bondageAdded", target: "hero", binding: original.id, amount: 4 },
             { type: "bondageAdded", target: "hero", binding: first.id, amount: 2 },
             { type: "bondageAdded", target: "hero", binding: second.id, amount: 3 },
         ]);
-        expect(result.view.characters[0].bindings.map(({ id }) => id)).toEqual([
+        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual([
             original.id, first.id, second.id,
         ]);
     });
@@ -84,10 +84,10 @@ describe("deferred binding onResolve effects", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected replacement move success");
-        expect(result.view.characters[0].bindings).toEqual([
+        expect(result.actions.characters[0].bindings).toEqual([
             expect.objectContaining({ id: replacement.id, value: 5 }),
         ]);
-        expect(resolvedEvents(result.events).some((event) =>
+        expect(resolvedEvents(result.frames).some((event) =>
             event.type.startsWith("bondage") && "binding" in event && event.binding === placeholder.id,
         )).toBe(false);
     });
@@ -121,11 +121,11 @@ describe("deferred binding onResolve effects", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected generated move success");
-        expect(resolvedEvents(result.events).filter((event) => event.type.startsWith("bondage"))).toEqual([
+        expect(resolvedEvents(result.frames).filter((event) => event.type.startsWith("bondage"))).toEqual([
             { type: "bondageAdded", target: "hero", binding: generated.id, amount: 6 },
             { type: "bondageAdded", target: "hero", binding: downstream.id, amount: 6 },
         ]);
-        expect(result.view.characters[0].bindings.map(({ id }) => id)).toEqual([
+        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual([
             generated.id, downstream.id,
         ]);
     });

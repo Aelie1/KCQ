@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { EMPOWERMENT_BUFF, ko, TRANSFORMATION_BUFF } from "../../src/content/characters/ko";
 import type { CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
@@ -17,6 +16,7 @@ import {
     makeBehavioralMove,
     makeEnemyWaitMove,
 } from "../helpers/behavioralHelpers";
+import { resolvedEvents } from "../helpers/events";
 import { actionView } from "../helpers/gameView";
 
 function loadKoEncounter(
@@ -201,13 +201,13 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             target: ko.id,
             binding: restraint.id,
         });
-        expect(resolvedEvents(assistance.events)).toContainEqual({
+        expect(resolvedEvents(assistance.frames)).toContainEqual({
             type: "bondageRemoved",
             target: ko.id,
             binding: restraint.id,
             amount: -20,
         });
-        expect(assistance.view.characters[0].bindings).toEqual([]);
+        expect(assistance.actions.characters[0].bindings).toEqual([]);
     });
 
     it.each([
@@ -321,21 +321,21 @@ describe("Ko's normal and Fairy move effects", () => {
             targets: ["first1"],
         });
 
-        expect(result.events[0]).toMatchObject({
+        expect(result.frames[0]).toMatchObject({
             type: "useMove",
             actor: ko.id,
             move: "telekinesis",
             targets: [{ target: "first1", result: "hit" }],
         });
-        const damage = resolvedEvents(result.events).find(
+        const damage = resolvedEvents(result.frames).find(
             (event) => event.type === "enemyDamaged" && event.target === "first1",
         );
         expect(damage?.type).toBe("enemyDamaged");
         if (!damage || damage.type !== "enemyDamaged") throw new Error("Expected Telekinesis damage");
         expect(damage.amount).toBeGreaterThan(0);
-        expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp)
+        expect(result.actions.enemies.find(({ id }) => id === "first1")?.currHp)
             .toBe(500 - damage.amount);
-        expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp).toBe(500);
+        expect(result.actions.enemies.find(({ id }) => id === "second1")?.currHp).toBe(500);
     });
 
     it("makes Fairy Telekinesis AoE with two half-damage hits and consumes once", () => {
@@ -350,7 +350,7 @@ describe("Ko's normal and Fairy move effects", () => {
             move: "telekinesis",
             targets: ["first1"],
         });
-        const normalDamage = resolvedEvents(normalResult.events).find(
+        const normalDamage = resolvedEvents(normalResult.frames).find(
             (event) => event.type === "enemyDamaged" && event.target === "first1",
         );
         if (!normalDamage || normalDamage.type !== "enemyDamaged") {
@@ -373,7 +373,7 @@ describe("Ko's normal and Fairy move effects", () => {
             targets: [],
         });
 
-        expect(result.events[0]).toMatchObject({
+        expect(result.frames[0]).toMatchObject({
             type: "useMove",
             targets: [
                 { target: "first1", result: "hit" },
@@ -383,7 +383,7 @@ describe("Ko's normal and Fairy move effects", () => {
             ],
         });
 
-        const damageEvents = resolvedEvents(result.events).filter(
+        const damageEvents = resolvedEvents(result.frames).filter(
             (event): event is DamageEvent => event.type === "enemyDamaged",
         );
         expect(damageEvents).toHaveLength(4);
@@ -396,12 +396,12 @@ describe("Ko's normal and Fairy move effects", () => {
         for (const event of damageEvents) expect(event.amount).toBeGreaterThan(0);
         expect(damageEvents[0].amount * 2).toBe(normalDamage.amount);
 
-        expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp)
+        expect(result.actions.enemies.find(({ id }) => id === "first1")?.currHp)
             .toBe(500 - damageEvents.slice(0, 2).reduce((total, event) => total + event.amount, 0));
-        expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp)
+        expect(result.actions.enemies.find(({ id }) => id === "second1")?.currHp)
             .toBe(500 - damageEvents.slice(2).reduce((total, event) => total + event.amount, 0));
 
-        expect(resolvedEvents(result.events).filter(({ type }) => type === "buffRemoved")).toEqual([{
+        expect(resolvedEvents(result.frames).filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
             buff: EMPOWERMENT_BUFF,
@@ -437,7 +437,7 @@ describe("Ko's normal and Fairy move effects", () => {
                 modifiers: { defense: -2, hit: -2 },
             }));
         }
-        expect(resolvedEvents(result.events).filter(({ type }) => type === "buffRemoved")).toEqual([{
+        expect(resolvedEvents(result.frames).filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
             buff: EMPOWERMENT_BUFF,
@@ -535,7 +535,7 @@ describe("Ko's normal and Fairy move effects", () => {
 
         expect(buffState(engine, "fairyReflect", ko.id)).toMatchObject({ duration: 1 });
         expect(buffState(engine, "fairyReflect", "ally")).toBeUndefined();
-        expect(resolvedEvents(fairyReflect.events).filter(({ type }) => type === "buffRemoved")).toEqual([{
+        expect(resolvedEvents(fairyReflect.frames).filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
             buff: EMPOWERMENT_BUFF,
@@ -543,7 +543,7 @@ describe("Ko's normal and Fairy move effects", () => {
         expect(buffState(engine, EMPOWERMENT_BUFF, ko.id)).toBeUndefined();
 
         const result = execute(engine, { type: "endTurn" });
-        expect(resolvedEvents(result.events)).toEqual(expect.arrayContaining([
+        expect(resolvedEvents(result.frames)).toEqual(expect.arrayContaining([
             {
                 type: "bondageBlocked",
                 target: ko.id,
@@ -558,8 +558,8 @@ describe("Ko's normal and Fairy move effects", () => {
                 amount: 20,
             },
         ]));
-        expect(result.view.enemies.find(({ id }) => id === "first1")?.currHp).toBe(27);
-        expect(result.view.enemies.find(({ id }) => id === "second1")?.currHp).toBe(37);
+        expect(result.actions.enemies.find(({ id }) => id === "first1")?.currHp).toBe(27);
+        expect(result.actions.enemies.find(({ id }) => id === "second1")?.currHp).toBe(37);
         expect(bindingState(engine, "first-rope", ko.id)).toBeUndefined();
         expect(bindingState(engine, "second-rope", "ally")?.value).toBe(20);
         expect(buffState(engine, "fairyReflect", ko.id)).toBeUndefined();
@@ -611,7 +611,7 @@ describe("Ko's normal and Fairy move effects", () => {
             targets: [],
         });
 
-        expect(resolvedEvents(result.events).filter(({ type }) => type === "buffRemoved")).toEqual([{
+        expect(resolvedEvents(result.frames).filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: ko.id,
             buff: EMPOWERMENT_BUFF,
@@ -655,32 +655,32 @@ describe("Ko's Reflect source handling", () => {
 
         const result = execute(engine, { type: "endTurn" });
 
-        expect(resolvedEvents(result.events)).toContainEqual({
+        expect(resolvedEvents(result.frames)).toContainEqual({
             type: "bondageAdded",
             target: ko.id,
             binding: "enemy-rope",
             amount: 12,
         });
-        expect(resolvedEvents(result.events)).toContainEqual({
+        expect(resolvedEvents(result.frames)).toContainEqual({
             type: "enemyDamaged",
             target: "attacker1",
             amount: 12,
         });
-        expect(result.view.enemies.find(({ id }) => id === "spectator1")?.currHp).toBe(37);
-        expect(result.view.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
+        expect(result.actions.enemies.find(({ id }) => id === "spectator1")?.currHp).toBe(37);
+        expect(result.actions.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
         expect(bindingState(engine, "enemy-rope", ko.id)?.value).toBe(12);
         expect(buffState(engine, "reflect", ko.id)).toBeUndefined();
 
         const nextRound = execute(engine, { type: "endTurn" });
-        expect(resolvedEvents(nextRound.events)).toContainEqual({
+        expect(resolvedEvents(nextRound.frames)).toContainEqual({
             type: "bondageChanged",
             target: ko.id,
             binding: "enemy-rope",
             amount: 12,
         });
-        expect(resolvedEvents(nextRound.events).some(({ type }) => type === "bondageBlocked")).toBe(false);
-        expect(resolvedEvents(nextRound.events).some(({ type }) => type === "enemyDamaged")).toBe(false);
-        expect(nextRound.view.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
+        expect(resolvedEvents(nextRound.frames).some(({ type }) => type === "bondageBlocked")).toBe(false);
+        expect(resolvedEvents(nextRound.frames).some(({ type }) => type === "enemyDamaged")).toBe(false);
+        expect(nextRound.actions.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
         expect(bindingState(engine, "enemy-rope", ko.id)?.value).toBe(24);
     });
 
@@ -729,14 +729,14 @@ describe("Ko's Reflect source handling", () => {
             targets: [],
         });
 
-        expect(resolvedEvents(result.events)).toContainEqual({
+        expect(resolvedEvents(result.frames)).toContainEqual({
             type: "bondageAdded",
             target: ko.id,
             binding: trapBinding.id,
             amount: 10,
         });
-        expect(resolvedEvents(result.events).some(({ type }) => type === "bondageBlocked")).toBe(false);
-        expect(resolvedEvents(result.events).some(({ type }) => type === "enemyDamaged")).toBe(false);
+        expect(resolvedEvents(result.frames).some(({ type }) => type === "bondageBlocked")).toBe(false);
+        expect(resolvedEvents(result.frames).some(({ type }) => type === "enemyDamaged")).toBe(false);
         expect(buffState(engine, "reflect", ko.id)).toMatchObject({ duration: 1 });
     });
 });

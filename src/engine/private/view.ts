@@ -2,13 +2,13 @@ import { MoveDef } from "../protected/definitions";
 import { getMoves } from "../protected/helpers";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iCharacter, iGameState } from "../protected/types";
-import { ActionInfo, ActionView, EscapeInfo, FailureReason, PreviewProfile, StanceInfo, type GameView } from "../public/types";
+import { ActionInfo, ActionView, EscapeInfo, FailureReason, PreviewProfile, StanceInfo } from "../public/types";
 import { isValidTarget, resolveEscape, resolveMove } from "./combat";
 import { DAMAGE_BANDS, EFFECTIVENESS_MODIFIER, effectivenessRange } from "./constants";
-import { serializeEffects, serializeGameState, serializeMove, serializePreview } from "./serialize";
+import { serializeEffects, serializeMove, serializePreview } from "./serialize";
 import { iPreviewInfo, iValidityInfo } from "./types";
 
-export function getGameView(state: iGameState): GameView {
+export function getStatusMap(state: iGameState): StatusMap {
     //First we cache all statuses
     const statuses: StatusMap = new Map();
     for (const character of state.characters) {
@@ -17,13 +17,8 @@ export function getGameView(state: iGameState): GameView {
     for (const enemy of state.enemies) {
         statuses.set(enemy, new GameStatus(enemy));
     }
-
-    return {
-        ...serializeGameState(state, statuses),
-        actions: getActionView(state, statuses)
-    };
+    return statuses;
 }
-
 
 export function getActionView(state: iGameState, statuses: StatusMap): ActionView[] {
     const result: ActionView[] = [];

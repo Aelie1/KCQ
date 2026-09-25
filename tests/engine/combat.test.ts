@@ -1,4 +1,3 @@
-import { resolvedEvents } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { skunkette } from "../../src/content/skunk/skunkette";
@@ -8,6 +7,7 @@ import {
     bindingState, buffState, execute, makeBehavioralBinding, makeBehavioralEngine, makeBehavioralCharacter as makeCharacterDef,
     makeBehavioralEnemy as makeEnemyDef, makeBehavioralMove as makeMove, makeEnemyWaitMove as makeWaitMove, targetAccuracy,
 } from "../helpers/behavioralHelpers";
+import { resolvedEvents } from "../helpers/events";
 import { actionView } from "../helpers/gameView";
 
 const AUTHORED_HIT_SEED = 2;
@@ -141,15 +141,17 @@ describe("move validation and player actions", () => {
                     type: "useMove",
                     actor: hero.id,
                     move: strike.id,
-                    targets: [{ target: foeId, result: "hit", effects: [
-                        { type: "enemyDamaged", target: foeId, amount: damage },
-                    ] }],
+                    targets: [{
+                        target: foeId, result: "hit", effects: [
+                            { type: "enemyDamaged", target: foeId, amount: damage },
+                        ]
+                    }],
                     effects: [],
                 },
             ],
         });
         if (!result.success) throw new Error("Expected strike to succeed");
-        expect(resolvedEvents(result.events)).not.toContainEqual({ type: "enemyDefeated", target: foeId });
+        expect(resolvedEvents(result.frames)).not.toContainEqual({ type: "enemyDefeated", target: foeId });
         expect(engine.getGameView().enemies.map((enemy) => enemy.id)).toEqual([foeId]);
         expect(engine.getGameView().enemies[0].currHp).toBe(foe.hp - damage);
         expect(engine.getGameView().characters[0].acted).toBe(true);
@@ -191,10 +193,12 @@ describe("move validation and player actions", () => {
                     type: "useMove",
                     actor: hero.id,
                     move: strike.id,
-                    targets: [{ target: foeId, result: "hit", effects: [
-                        { type: "enemyDamaged", target: foeId, amount: lethalDamage },
-                        { type: "enemyDefeated", target: foeId },
-                    ] }],
+                    targets: [{
+                        target: foeId, result: "hit", effects: [
+                            { type: "enemyDamaged", target: foeId, amount: lethalDamage },
+                            { type: "enemyDefeated", target: foeId },
+                        ]
+                    }],
                     effects: [],
                 },
             ],
@@ -218,13 +222,13 @@ describe("move validation and player actions", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected Telekinesis to succeed");
 
-        expect(result.events[0]).toMatchObject({
+        expect(result.frames[0]).toMatchObject({
             type: "useMove",
             actor: ko.id,
             move: move.id,
             targets: [{ target: enemyId, result: "hit" }],
         });
-        const damageEvent = resolvedEvents(result.events).find((event) => event.type === "enemyDamaged");
+        const damageEvent = resolvedEvents(result.frames).find((event) => event.type === "enemyDamaged");
         if (!damageEvent || !("amount" in damageEvent)) {
             throw new Error("Expected Telekinesis to deal damage");
         }
@@ -280,13 +284,13 @@ describe("move validation and player actions", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected Fairy Telekinesis to succeed");
 
-        expect(result.events[0]).toMatchObject({
+        expect(result.frames[0]).toMatchObject({
             type: "useMove",
             actor: ko.id,
             move: move.id,
             targets: [{ target: enemyId, result: "hit" }, { target: enemyId, result: "crit" }],
         });
-        const damageEvents = resolvedEvents(result.events).filter((event) => event.type === "enemyDamaged");
+        const damageEvents = resolvedEvents(result.frames).filter((event) => event.type === "enemyDamaged");
         let totalDamage = 0;
         for (const damageEvent of damageEvents) {
             if (!damageEvent || damageEvent.type !== "enemyDamaged") {
@@ -351,7 +355,7 @@ describe("move validation and player actions", () => {
             targets: [],
         });
 
-        expect(result.events).toEqual([{
+        expect(result.frames).toEqual([{
             type: "useMove", actor: "hero", move: rally.id, effects: [],
             targets: [
                 { target: "hero", result: "none", effects: [{ type: "buffAdded", target: "hero", buff: "rallied" }] },
@@ -411,12 +415,12 @@ describe("move and effect resolution through GameEngine", () => {
             move: move.id,
             targets: [],
         });
-        const moveEvent = result.events[0];
+        const moveEvent = result.frames[0];
         if (moveEvent.type !== "useMove") throw new Error("Expected moveUsed event");
         const successfulIds = moveEvent.targets
             .filter(({ result: band }) => band !== "miss")
             .map(({ target }) => target);
-        const damageEvents = resolvedEvents(result.events).filter((event) => event.type === "enemyDamaged");
+        const damageEvents = resolvedEvents(result.frames).filter((event) => event.type === "enemyDamaged");
 
         expect(moveEvent.targets.map(({ result: band }) => band)).toContain("miss");
         expect(successfulIds.length).toBeGreaterThan(0);
@@ -425,7 +429,7 @@ describe("move and effect resolution through GameEngine", () => {
             target,
             amount: 3,
         })));
-        expect(result.view.enemies.map(({ id, currHp }) => ({ id, currHp }))).toEqual([
+        expect(result.actions.enemies.map(({ id, currHp }) => ({ id, currHp }))).toEqual([
             { id: "first1", currHp: successfulIds.includes("first1") ? 34 : 37 },
             { id: "second1", currHp: successfulIds.includes("second2") ? 34 : 37 },
         ]);
@@ -482,7 +486,7 @@ describe("move and effect resolution through GameEngine", () => {
             targets: [],
         });
 
-        expect(result.events).toEqual([{
+        expect(result.frames).toEqual([{
             type: "useMove", actor: "hero", move: "chain", targets: [], effects: [
                 { type: "bondageAdded", target: "hero", binding: "trigger", amount: 1 },
                 { type: "bondageAdded", target: "hero", binding: "chained", amount: 2 },
@@ -531,7 +535,7 @@ describe("move and effect resolution through GameEngine", () => {
         });
 
         expect(receivedSource).toBe("hero");
-        expect(result.events[0].type === "useMove" && result.events[0].targets[0].effects).toEqual([
+        expect(result.frames[0].type === "useMove" && result.frames[0].targets[0].effects).toEqual([
             { type: "enemyDamaged", target: "reactive1", amount: 4 },
             { type: "bondageAdded", target: "hero", binding: "damage-reaction", amount: 1 },
         ]);
@@ -576,13 +580,13 @@ describe("move and effect resolution through GameEngine", () => {
             targets: ["reactive1"],
         });
 
-        expect(result.events[0].type === "useMove" && result.events[0].targets[0].effects).toEqual([
+        expect(result.frames[0].type === "useMove" && result.frames[0].targets[0].effects).toEqual([
             { type: "enemyDamaged", target: "reactive1", amount: 5 },
             { type: "bondageAdded", target: "hero", binding: "damage-reaction", amount: 1 },
             { type: "bondageAdded", target: "hero", binding: "defeat-reaction", amount: 1 },
             { type: "enemyDefeated", target: "reactive1" },
         ]);
-        expect(result.view.enemies).toEqual([]);
+        expect(result.actions.enemies).toEqual([]);
         expect(bindingState(engine, damageReaction.id)?.value).toBe(1);
         expect(bindingState(engine, defeatReaction.id)?.value).toBe(1);
     });
