@@ -95,6 +95,7 @@ export type iEffect =
     | iBindingEffect
     | iBuffEffect
     | iEnemyEffect
+    | iDefeatEffect
     | iCooldownEffect
     | iTrapEffect
     | iStanceEffect
@@ -128,6 +129,11 @@ interface iEnemyEffect extends Omit<EnemyEffect, "target"> {
     id?: EntityId;
     buff?: iBuff;
     hpRatio?: number;
+}
+
+interface iDefeatEffect extends Omit<EnemyEffect, "target"> {
+    operation: "defeat";
+    target: iEnemy;
 }
 
 interface iCooldownEffect {

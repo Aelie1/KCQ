@@ -23,14 +23,14 @@ interface iInvalidTarget {
     reason: FailureReason;
 }
 
-interface iCheckEffect extends Omit<EnemyEffect, "target"> {
+interface iCheckEffect extends Omit<EnemyEffect, "target" | "operation"> {
     operation: "check";
     target: iEnemy;
 }
 
-interface iDefeatEffect extends Omit<EnemyEffect, "target"> {
-    operation: "defeat";
+interface iRemoveEffect extends Omit<EnemyEffect, "target" | "operation"> {
+    operation: "remove";
     target: iEnemy;
 }
 
-export type iEngineEffect = iEffect | iCheckEffect | iDefeatEffect;
+export type iEngineEffect = iEffect | iCheckEffect | iRemoveEffect;

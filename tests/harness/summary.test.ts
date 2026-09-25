@@ -23,7 +23,7 @@ function character(id: string, bindingValues: number[]): Character {
         bindings: bindingValues.map((value, index) => ({
             id: `binding-${index}`, value, level: "easy", data: {}, status: [],
         })),
-        buffs: [], modifiers: {}, blockedMoveTypes: [], data: {},
+        buffs: [], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
     };
 }
 

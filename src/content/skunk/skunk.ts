@@ -305,10 +305,9 @@ const latexExplosion: MoveDef = {
             }
             if (isEnemy(actor)) {
                 result.effects.push({
-                    type: "damage",
-                    source: actor,
+                    type: "enemy",
                     target: actor,
-                    amount: 999
+                    operation: "defeat"
                 });
             }
             return result;
@@ -345,10 +344,9 @@ const latexExplosion: MoveDef = {
             } else {
                 if (isEnemy(actor)) {
                     result.effects.push({
-                        type: "damage",
-                        source: actor,
+                        type: "enemy",
                         target: actor,
-                        amount: 999
+                        operation: "defeat"
                     });
                 }
             }

@@ -330,7 +330,7 @@ export async function runBattleController(
                     ? moveDetailLines(action, targets)
                     : undefined;
                 return {
-                    label: moveLabel(action),
+                    label: moveLabel(action, actor.cooldowns[action.move.id]),
                     available: action.available,
                     browserLabel: action.move.id,
                     detailLines,
@@ -590,14 +590,17 @@ function appendResult(
     };
 }
 
-function moveLabel(action: ActionInfo): string {
+function moveLabel(action: ActionInfo, cooldown: number | undefined): string {
     const target = action.move.targets === "all"
         ? `all ${action.move.targetSide} targets`
         : action.move.targets === 0
             ? "no target"
             : `${action.move.targets} ${action.move.targetSide}`;
+    const cooldownLabel = cooldown !== undefined && cooldown > 0
+        ? ` [CD: ${cooldown}]`
+        : "";
     const availability = action.available ? "" : ` -- ${action.reason}`;
-    return `${action.move.id} [${action.move.type}; ${target}]${availability}`;
+    return `${action.move.id}${cooldownLabel} [${action.move.type}; ${target}]${availability}`;
 }
 
 function encounterBindings(events: GameEvent[]): BindingId[] {

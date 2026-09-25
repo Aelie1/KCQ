@@ -11,7 +11,7 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
         case "buff":
             return `${target}${effect.buff} added`;
         case "enemy":
-            return `${effect.target} spawned`;
+            return (effect.operation === "spawn") ? `${effect.target} spawned` : `${effect.target} defeated`;
         case "trap":
             return `${target}${effect.amount} ${effect.trap} created`;
         case "move":
@@ -173,77 +173,77 @@ export function formatEvents(events: GameEvent[]): string[] {
 }
 
 function formatEventLines(event: GameEvent | LeafEvent): string[] {
-        switch (event.type) {
-            case "useMove": {
-                if (event.targets.length === 0) {
-                    return [`${event.actor} used ${event.move}.`];
-                }
-                if (event.targets.length === 1) {
-                    const target = event.targets[0];
-                    if (target.result === "none") {
-                        return [`${event.actor} used ${event.move} on ${target.target}.`];
-                    }
-                    return [
-                        `${event.actor} used ${event.move} on ${target.target}: ${target.result.toUpperCase()}`,
-                    ];
-                }
+    switch (event.type) {
+        case "useMove": {
+            if (event.targets.length === 0) {
                 return [`${event.actor} used ${event.move}.`];
             }
-            case "enemyDamaged":
-                return [`${event.target} took ${event.amount} damage.`];
-            case "enemyHealed":
-                return [`${event.target} healed ${event.amount} damage.`];
-            case "damageBlocked":
-                return [`${event.target} blocked ${event.amount} damage.`];
-            case "bondageAdded":
-            case "bondageChanged":
-                return event.amount >= 0
-                    ? [`${event.target} gained ${event.amount} ${event.binding}.`]
-                    : [`${event.target} removed ${Math.abs(event.amount)} ${event.binding}.`];
-            case "bondageBlocked":
-                return [`${event.target} blocked ${event.amount} ${event.binding}.`]
-            case "bondageRemoved":
-                return [`${event.target} escaped ${event.binding} (${Math.abs(event.amount)} removed).`];
-            case "changePhase":
-                return [event.phase === "enemy" ? "Enemy phase." : "Player phase."];
-            case "buffAdded":
-                return [`${event.target} gained ${event.buff}.`];
-            case "buffRemoved":
-                return [`${event.buff} expired on ${event.target}.`];
-            case "buffUpdated":
-                return [`${event.buff} refreshed on ${event.target}.`];
-            case "enemySpawned":
-                return [`${event.target} appeared.`];
-            case "enemyDefeated":
-                return [`${event.target} was defeated.`];
-            case "stanceSet":
-                return [`${event.actor} changed stance to ${event.stance}.`];
-            case "cooldownChanged":
-                return [`${event.target}'s ${event.move} cooldown changed to ${event.value}.`];
-            case "loadEncounter":
-                return [event.success ? `Encounter ${event.id} began.` : `Could not load encounter ${event.id}.`];
-            case "loadCharacter":
-                return [event.success ? `Character ${event.id} loaded.` : `Could not load character ${event.id}.`];
-            case "trapAdded":
-                return [`${event.actor} created ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
-            case "trapRemoved":
-                return [`${event.actor} removed ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
-            case "trapTriggered":
-                return [`${event.actor} triggered ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
-            case "actionInterrupted":
-                return [`${event.actor}'s action was interrupted due to ${event.reason}.`];
-            case "actionRefreshed":
-                return [`${event.target}'s action was refreshed.`];
-            case "intentionCancelled":
-                return [`${event.target}'s action was cancelled.`];
-            case "intentionWeakened":
-                return [`${event.target}'s action was weakened.`];
-            case "targetChanged":
-                return [`${event.target}'s action's target was changed to ${event.destination}.`];
-            case "useEscape":
-            case "changeStance":
-                return [];
+            if (event.targets.length === 1) {
+                const target = event.targets[0];
+                if (target.result === "none") {
+                    return [`${event.actor} used ${event.move} on ${target.target}.`];
+                }
+                return [
+                    `${event.actor} used ${event.move} on ${target.target}: ${target.result.toUpperCase()}`,
+                ];
+            }
+            return [`${event.actor} used ${event.move}.`];
         }
+        case "enemyDamaged":
+            return [`${event.target} took ${event.amount} damage.`];
+        case "enemyHealed":
+            return [`${event.target} healed ${event.amount} damage.`];
+        case "damageBlocked":
+            return [`${event.target} blocked ${event.amount} damage.`];
+        case "bondageAdded":
+        case "bondageChanged":
+            return event.amount >= 0
+                ? [`${event.target} gained ${event.amount} ${event.binding}.`]
+                : [`${event.target} removed ${Math.abs(event.amount)} ${event.binding}.`];
+        case "bondageBlocked":
+            return [`${event.target} blocked ${event.amount} ${event.binding}.`]
+        case "bondageRemoved":
+            return [`${event.target} escaped ${event.binding} (${Math.abs(event.amount)} removed).`];
+        case "changePhase":
+            return [event.phase === "enemy" ? "Enemy phase." : "Player phase."];
+        case "buffAdded":
+            return [`${event.target} gained ${event.buff}.`];
+        case "buffRemoved":
+            return [`${event.buff} expired on ${event.target}.`];
+        case "buffUpdated":
+            return [`${event.buff} refreshed on ${event.target}.`];
+        case "enemySpawned":
+            return [`${event.target} appeared.`];
+        case "enemyDefeated":
+            return [`${event.target} was defeated.`];
+        case "stanceSet":
+            return [`${event.actor} changed stance to ${event.stance}.`];
+        case "cooldownChanged":
+            return [`${event.target}'s ${event.move} cooldown changed to ${event.value}.`];
+        case "loadEncounter":
+            return [event.success ? `Encounter ${event.id} began.` : `Could not load encounter ${event.id}.`];
+        case "loadCharacter":
+            return [event.success ? `Character ${event.id} loaded.` : `Could not load character ${event.id}.`];
+        case "trapAdded":
+            return [`${event.actor} created ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
+        case "trapRemoved":
+            return [`${event.actor} removed ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
+        case "trapTriggered":
+            return [`${event.actor} triggered ${event.amount} ${event.trap}${event.amount > 1 ? 's' : ''}.`];
+        case "actionInterrupted":
+            return [`${event.actor}'s action was interrupted due to ${event.reason}.`];
+        case "actionRefreshed":
+            return [`${event.target}'s action was refreshed.`];
+        case "intentionCancelled":
+            return [`${event.target}'s action was cancelled.`];
+        case "intentionWeakened":
+            return [`${event.target}'s action was weakened.`];
+        case "targetChanged":
+            return [`${event.target}'s action's target was changed to ${event.destination}.`];
+        case "useEscape":
+        case "changeStance":
+            return [];
+    }
 }
 
 function signed(value: number): string {

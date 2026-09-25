@@ -142,6 +142,7 @@ export interface BuffEffect {
 export interface EnemyEffect {
     type: "enemy";
     target: EntityId;
+    operation: "spawn" | "defeat";
 }
 
 export interface TrapEffect {

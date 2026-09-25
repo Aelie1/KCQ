@@ -179,6 +179,64 @@ describe("shared battle controller", () => {
         ]));
     });
 
+    it("shows positive move cooldowns without hiding moves or replacing availability reasons", async () => {
+        const ready = makeMove("ready", "none", {
+            targetSide: "none", targets: 0, accuracy: undefined,
+        });
+        const coolingTwo = makeMove("coolingTwo", "none", {
+            targetSide: "none", targets: 0, accuracy: undefined,
+        });
+        const coolingFour = makeMove("coolingFour", "none", {
+            targetSide: "none", targets: 0, accuracy: undefined,
+        });
+        const zero = makeMove("zero", "none", {
+            targetSide: "none", targets: 0, accuracy: undefined,
+        });
+        const trigger = makeMove("trigger", "none", {
+            freeOnHit: true,
+            cooldown: { coolingTwo: 2, coolingFour: 4, zero: 0 },
+        });
+        const hero = makeCharacterDef("hero", [ready, coolingTwo, coolingFour, zero, trigger]);
+        const encounter: EncounterDef = {
+            id: "cooldown-menu",
+            enemies: [makeEnemyDef("foe", [makeWaitMove()])],
+            bindings: [],
+            traps: [],
+        };
+        const engine = createCustomEngine([encounter], [hero], 1);
+        const events = [engine.loadCharacter(hero.id), engine.loadEncounter(encounter.id)];
+        expect(engine.executeAction({
+            type: "move", actor: hero.id, move: trigger.id, targets: ["foe1"],
+        }).success).toBe(true);
+
+        const requests: BattleChoiceRequest[] = [];
+        await runBattleController(engine, encounter.id, events, {
+            choose: async (request) => {
+                requests.push(request);
+                return requests.length === 1 ? 1 : "quit";
+            },
+        });
+
+        const actionLines = requests[1].screen.actionLines;
+        expect(actionLines).toContain("[1] ready [none; no target]");
+        expect(actionLines).toContain(
+            "[2] coolingTwo [CD: 2] [none; no target] -- cooldownIncomplete",
+        );
+        expect(actionLines).toContain(
+            "[3] coolingFour [CD: 4] [none; no target] -- cooldownIncomplete",
+        );
+        expect(actionLines).toContain("[4] zero [none; no target]");
+        expect(actionLines.join("\n")).not.toContain("zero [CD:");
+
+        expect(requests[1].choices.find((choice) => choice.label.startsWith("coolingTwo")))
+            .toMatchObject({ available: false });
+        expect(requests[1].screen.state.characters[0].cooldowns).toEqual({
+            coolingTwo: 2,
+            coolingFour: 4,
+            zero: 0,
+        });
+    });
+
     it("renders victory from the public outcome without requesting a choice", async () => {
         const engine = createCustomEngine([], [ko], 8224);
         const events = engine.loadCharacter(ko.id);

@@ -92,6 +92,9 @@ export class GameEffects {
                         case "defeat":
                             this.defeatEnemy(effect.target);
                             break;
+                        case "remove":
+                            this.removeEnemy(effect.target);
+                            break;
                     }
                     break;
                 case "cooldown":
@@ -325,7 +328,7 @@ export class GameEffects {
         if (target.currHp <= 0) {
             this.effects.push({
                 type: "enemy",
-                operation: "defeat",
+                operation: "remove",
                 target: target
             });
 
@@ -336,6 +339,18 @@ export class GameEffects {
     }
 
     private defeatEnemy(target: iEnemy) {
+        this.effects.push({
+            type: "enemy",
+            operation: "remove",
+            target: target
+        });
+
+        if (target.definition.onDefeat) {
+            this.stack(target.definition.onDefeat(this.state, target));
+        }
+    }
+
+    private removeEnemy(target: iEnemy) {
         this.addEvent({
             type: "enemyDefeated",
             target: target.id,
