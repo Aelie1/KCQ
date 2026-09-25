@@ -316,6 +316,7 @@ describe("move validation and player actions", () => {
             bonusEscapes: 0,
             bindings: [],
             buffs: [],
+            cooldowns: {},
             data: {}
         });
         const moves = actionView(engine, ko.id).moves.map(({ move, available }) => ({ move, available }));

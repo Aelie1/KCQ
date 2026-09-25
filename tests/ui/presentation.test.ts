@@ -291,7 +291,7 @@ describe("combat presentation", () => {
                 characters: [{
                     id: "ko", acted: false, standing: true, bonusEscapes: 0,
                     bindings: [{ id: "latexArms", value: 55, level: "extreme", data: {}, status: [] }],
-                    buffs: [{ id: "focus" }], modifiers: {}, blockedMoveTypes: [], data: {},
+                    buffs: [{ id: "focus" }], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
                 }],
                 enemies: [{
                     id: "skunk1", rank: "enemy", maxHp: 20, currHp: 20, currDef: 0,

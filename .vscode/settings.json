@@ -1,0 +1,31 @@
+{
+    "files.watcherExclude": {
+        "**/.replay-runtimes/**": true,
+        "**/replays": true,
+    },
+    "search.exclude": {
+        "**/.replay-runtimes/**": true,
+        "**/replays": true,
+        "**/dist": true,
+        "**/dist-web": true,
+        "**/harness-output": true,
+    },
+    "files.exclude": {
+        "**/.replay-runtimes/**": true,
+        "**/replays": true,
+        "**/.env": true,
+        "**/.github": true,
+        "**/.gitignore": true,
+        "**/coverage": true,
+        "**/dist": true,
+        "**/dist-web": true,
+        "**/harness-output": true,
+        "**/node_modules": true,
+        "**/package*.json": true,
+        "**/performance": true,
+        "**/temp": true,
+        "**/tsconfig*": true,
+        "**/vitest.config.mts": true,
+        "**/vite.config.mts": true
+    },
+}

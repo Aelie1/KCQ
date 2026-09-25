@@ -205,7 +205,10 @@ describe("generic traps through GameEngine", () => {
             });
             const trap = trapThatConsumes(`${reason}-trap`, 9, blocker);
             const move = makeMove("arms-action", "arms", {
-                targetSide: "none", targets: 0, accuracy: undefined,
+                targetSide: "none",
+                targets: 0,
+                accuracy: undefined,
+                cooldown: { "arms-action": 3 },
             });
             const engine = makeTrapEngine([{ definition: trap, amount: 100 }], [move]);
 
@@ -219,6 +222,7 @@ describe("generic traps through GameEngine", () => {
             expect(result.frames[0].event.effects.map(({ type }) => type).indexOf("trapTriggered"))
                 .toBeLessThan(result.frames[0].event.effects.map(({ type }) => type).indexOf("actionInterrupted"));
             expect(result.frames.at(-1)!.state.characters[0].acted).toBe(true);
+            expect(result.frames.at(-1)!.state.characters[0].cooldowns).toEqual({});
             expect(result.frames.at(-1)!.state.traps[0].amount).toBe(91);
         },
     );

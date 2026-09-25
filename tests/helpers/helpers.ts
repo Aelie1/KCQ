@@ -93,6 +93,7 @@ export function makeCharacter(
         bonusEscapes: 0,
         bindings,
         buffs: [],
+        cooldowns: {},
         data: {},
     };
 }

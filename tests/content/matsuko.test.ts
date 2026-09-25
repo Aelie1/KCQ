@@ -490,7 +490,7 @@ describe("Matsuko's Compulsion moves", () => {
             reason: "invalidTargetCount",
             move: { id: "obey", type: "mouth", targetSide: "player", targets: 1 },
             targets: [],
-            effects: [{ type: "buff", target: matsuko.id, buff: "compulsionCD", effects: undefined, operation: "add" }],
+            effects: [],
         });
 
         execute(engine, {
@@ -502,7 +502,7 @@ describe("Matsuko's Compulsion moves", () => {
         expect(characterState(engine, ally.id).acted).toBe(true);
         expect(action(engine, "obey")).toMatchObject({
             available: true,
-            effects: [{ type: "buff", target: matsuko.id, buff: "compulsionCD", operation: "add" }],
+            effects: [],
             targets: expect.arrayContaining([
                 { valid: false, target: matsuko.id, reason: "invalidTarget" },
                 expect.objectContaining({
@@ -523,7 +523,6 @@ describe("Matsuko's Compulsion moves", () => {
         expect(resolvedEvents(result.frames)).toEqual(expect.arrayContaining([
             { type: "buffAdded", target: ally.id, buff: "servitude" },
             { type: "actionRefreshed", target: ally.id },
-            { type: "buffAdded", target: matsuko.id, buff: "compulsionCD" },
         ]));
         expect(characterState(engine, ally.id).acted).toBe(false);
         expect(buffState(engine, "servitude", ally.id)).toMatchObject({
@@ -531,8 +530,18 @@ describe("Matsuko's Compulsion moves", () => {
             statuses: [{ id: "servitude", value: 1 }],
         });
         expect(characterState(engine, matsuko.id).acted).toBe(false);
-        expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 3 });
-        expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
+        expect(characterState(engine, matsuko.id).cooldowns).toEqual({
+            stop: 2,
+            obey: 3,
+            attackMe: 2,
+        });
+        expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation", "obey", "stop", "attackMe"]);
+        for (const id of ["obey", "stop", "attackMe"]) {
+            expect(action(engine, id)).toMatchObject({
+                available: false,
+                reason: "cooldownIncomplete",
+            });
+        }
 
         execute(engine, {
             type: "move",
@@ -570,7 +579,7 @@ describe("Matsuko's Compulsion moves", () => {
 
         expect(action(engine, "obey")).toMatchObject({
             available: true,
-            effects: [{ type: "buff", target: matsuko.id, buff: "compulsionCD", operation: "add" }],
+            effects: [],
             targets: expect.arrayContaining([
                 { valid: false, target: servant.id, reason: "invalidTarget" },
                 expect.objectContaining({
@@ -611,8 +620,12 @@ describe("Matsuko's Compulsion moves", () => {
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "caster1" });
         expect(engine.getGameState().enemies[0].intentions).toEqual([]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
-        expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 5 });
-        expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
+        expect(characterState(engine, matsuko.id).cooldowns).toEqual({
+            stop: 5,
+            obey: 2,
+            attackMe: 2,
+        });
+        expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation", "obey", "stop", "attackMe"]);
 
         execute(engine, {
             type: "move",
@@ -663,7 +676,11 @@ describe("Matsuko's Compulsion moves", () => {
             ({ targets }) => targets[0]?.band,
         )).toEqual(["graze", "graze"]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
-        expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 5 });
+        expect(characterState(engine, matsuko.id).cooldowns).toEqual({
+            stop: 5,
+            obey: 2,
+            attackMe: 2,
+        });
     });
 
     it("retargets compatible intentions across enemies without changing other shapes", () => {
@@ -754,8 +771,12 @@ describe("Matsuko's Compulsion moves", () => {
             { type: "targetChanged", target: "second1", destination: matsuko.id },
         ]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
-        expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 2 });
-        expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
+        expect(characterState(engine, matsuko.id).cooldowns).toEqual({
+            stop: 2,
+            obey: 2,
+            attackMe: 2,
+        });
+        expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation", "obey", "stop", "attackMe"]);
 
         execute(engine, {
             type: "move",

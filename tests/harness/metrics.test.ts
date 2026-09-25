@@ -43,6 +43,7 @@ function character(
                 : [],
         })),
         buffs: [],
+        cooldowns: {},
         modifiers: {},
         blockedMoveTypes: [],
         data: {},
