@@ -188,7 +188,8 @@ export function formatActionGroups(
         beginAction(action.actor, `${action.actor} tried to escape ${action.binding} on ${action.target}.`);
     }
 
-    for (const event of eventEntries(events)) {
+    for (const event of events.flatMap((entry) =>
+        entry.type === "useMove" ? [entry] : eventEntries([entry]))) {
         if (event.type === "changePhase") {
             flush();
             if (event.phase === "player" && phase === "enemy") round += 1;
@@ -208,14 +209,26 @@ export function formatActionGroups(
             const group = beginAction(event.actor, interrupted
                 ? `${event.actor} attempted ${event.move}.`
                 : formatEvent(event));
-            if (event.targets.length > 1) {
-                const style = registry.styleFor(event.actor);
-                group.lines.push(...event.targets.map((target) => ({
-                    text: `  -> ${target.target}: ${target.result.toUpperCase()}`,
-                    style,
-                })));
-            }
+            const style = registry.styleFor(event.actor);
             group.highlights.push({ kind: "cooldown", entity: event.actor, move: event.move });
+            const appendEffect = (effect: LeafEvent, prefix: string): void => {
+                if (effect.type === "enemySpawned") registry.styleFor(effect.target);
+                const line = formatEvent(effect);
+                if (line) group.lines.push({ text: `${prefix}${line}`, style });
+                group.highlights.push(...deriveHighlightTargets([effect]));
+            };
+            if (event.targets.length > 1) {
+                for (const target of event.targets) {
+                    const result = target.result === "none" ? "" : `: ${target.result.toUpperCase()}`;
+                    group.lines.push({ text: `  -> ${target.target}${result}`, style });
+                    for (const effect of target.effects) appendEffect(effect, "    ↳ ");
+                }
+            } else {
+                for (const target of event.targets) {
+                    for (const effect of target.effects) appendEffect(effect, "  ↳ ");
+                }
+            }
+            for (const effect of event.effects) appendEffect(effect, "  ↳ ");
             continue;
         }
 
@@ -310,6 +323,7 @@ export function formatEvent(event: GameEvent | LeafEvent): string {
             if (event.targets.length === 0) return `${event.actor} used ${event.move}.`;
             if (event.targets.length === 1) {
                 const target = event.targets[0];
+                if (target.result === "none") return `${event.actor} used ${event.move} on ${target.target}.`;
                 return `${event.actor} used ${event.move} on ${target.target}: ${target.result.toUpperCase()}`;
             }
             return `${event.actor} used ${event.move}.`;

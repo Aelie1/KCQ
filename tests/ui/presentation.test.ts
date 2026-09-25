@@ -14,7 +14,7 @@ import {
 } from "../../src/console/presentation";
 import { renderAnsi, renderStyledScreen } from "../../src/console/render";
 import type { GameEvent } from "../../src/engine/public/types";
-import { styledTextParts } from "../../src/web/view";
+import { styledLogText, styledTextParts } from "../../src/web/view";
 
 describe("combat presentation", () => {
     it("formats encounter starts as a distinct banner", () => {
@@ -49,6 +49,77 @@ describe("combat presentation", () => {
             "  ↳ ko gained 34 latexTorso.",
             "skunk2 used wait.",
             "========== PLAYER PHASE - 2 ==========",
+        ]);
+    });
+
+    it("renders each Rockfall target stack before the next result and move-level effects last", () => {
+        const [group] = formatActionGroups({
+            type: "move", actor: "hinari", move: "rockfall", targets: ["skunkette1"],
+        }, [{
+            type: "useMove", actor: "hinari", move: "rockfall",
+            targets: [
+                { target: "skunkette1", result: "graze", effects: [
+                    { type: "enemyDamaged", target: "skunkette1", amount: 5 },
+                ] },
+                { target: "skunkette1", result: "hit", effects: [
+                    { type: "enemyDamaged", target: "skunkette1", amount: 10 },
+                ] },
+                { target: "skunkette1", result: "hit", effects: [
+                    { type: "enemyDamaged", target: "skunkette1", amount: 9 },
+                ] },
+                { target: "skunkette1", result: "graze", effects: [
+                    { type: "enemyDamaged", target: "skunkette1", amount: 5 },
+                ] },
+            ],
+            effects: [{ type: "buffAdded", target: "hinari", buff: "focus" }],
+        }]);
+        const expected = [
+            "hinari used rockfall.",
+            "  -> skunkette1: GRAZE",
+            "    ↳ skunkette1 took 5 damage.",
+            "  -> skunkette1: HIT",
+            "    ↳ skunkette1 took 10 damage.",
+            "  -> skunkette1: HIT",
+            "    ↳ skunkette1 took 9 damage.",
+            "  -> skunkette1: GRAZE",
+            "    ↳ skunkette1 took 5 damage.",
+            "  ↳ hinari gained focus.",
+        ];
+        expect(group.lines.map((line) => line.text)).toEqual(expected);
+        expect(styledTextParts(styledLogText(group.lines)).map((part) => part.text).join(""))
+            .toBe(expected.join("\n"));
+    });
+
+    it("omits the NONE label for a single target move", () => {
+        const [group] = formatActionGroups(undefined, [{
+            type: "useMove", actor: "hinari", move: "store",
+            targets: [{ target: "hinari", result: "none", effects: [] }],
+            effects: [],
+        }]);
+        expect(group.lines.map((line) => line.text)).toEqual([
+            "hinari used store on hinari.",
+        ]);
+    });
+
+    it("keeps empty misses, none results, and cross-entity effects in their target stacks", () => {
+        const [group] = formatActionGroups(undefined, [{
+            type: "useMove", actor: "ko", move: "sweep",
+            targets: [
+                { target: "skunk1", result: "miss", effects: [] },
+                { target: "skunk3", result: "none", effects: [] },
+                { target: "skunk2", result: "hit", effects: [
+                    { type: "enemyDamaged", target: "skunk1", amount: 4 },
+                ] },
+            ],
+            effects: [{ type: "buffAdded", target: "ko", buff: "focus" }],
+        }]);
+        expect(group.lines.map((line) => line.text)).toEqual([
+            "ko used sweep.",
+            "  -> skunk1: MISS",
+            "  -> skunk3",
+            "  -> skunk2: HIT",
+            "    ↳ skunk1 took 4 damage.",
+            "  ↳ ko gained focus.",
         ]);
     });
 

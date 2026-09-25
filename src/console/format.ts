@@ -1,4 +1,4 @@
-import type { Buff, Effect, GameEvent, Intention, ModifierId } from "../engine/public/types";
+import type { Buff, Effect, GameEvent, Intention, LeafEvent, ModifierId } from "../engine/public/types";
 import { eventEntries } from "./eventEntries";
 
 export function formatEffect(effect: Effect, includeTarget = false): string {
@@ -148,7 +148,31 @@ function formatIntentionLine(prefix: string, value: string, width?: number): str
 }
 
 export function formatEvents(events: GameEvent[]): string[] {
-    return eventEntries(events).flatMap((event) => {
+    return events.flatMap((event) => {
+        if (event.type !== "useMove") return eventEntries([event]).flatMap(formatEventLines);
+
+        const lines = formatEventLines(event);
+        if (event.targets.length > 1) {
+            return [
+                lines[0],
+                ...event.targets.flatMap((target) => [
+                    `  -> ${target.target}${target.result === "none" ? "" : `: ${target.result.toUpperCase()}`}`,
+                    ...target.effects.flatMap((effect) =>
+                        formatEventLines(effect).map((line) => `    ↳ ${line}`)),
+                ]),
+                ...event.effects.flatMap((effect) =>
+                    formatEventLines(effect).map((line) => `  ↳ ${line}`)),
+            ];
+        }
+        return [
+            ...lines,
+            ...event.targets.flatMap((target) => target.effects.flatMap(formatEventLines)),
+            ...event.effects.flatMap(formatEventLines),
+        ];
+    });
+}
+
+function formatEventLines(event: GameEvent | LeafEvent): string[] {
         switch (event.type) {
             case "useMove": {
                 if (event.targets.length === 0) {
@@ -156,16 +180,14 @@ export function formatEvents(events: GameEvent[]): string[] {
                 }
                 if (event.targets.length === 1) {
                     const target = event.targets[0];
+                    if (target.result === "none") {
+                        return [`${event.actor} used ${event.move} on ${target.target}.`];
+                    }
                     return [
                         `${event.actor} used ${event.move} on ${target.target}: ${target.result.toUpperCase()}`,
                     ];
                 }
-                return [
-                    `${event.actor} used ${event.move}.`,
-                    ...event.targets.map(
-                        (target) => `  -> ${target.target}: ${target.result.toUpperCase()}`,
-                    ),
-                ];
+                return [`${event.actor} used ${event.move}.`];
             }
             case "enemyDamaged":
                 return [`${event.target} took ${event.amount} damage.`];
@@ -222,7 +244,6 @@ export function formatEvents(events: GameEvent[]): string[] {
             case "changeStance":
                 return [];
         }
-    });
 }
 
 function signed(value: number): string {

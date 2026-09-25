@@ -169,6 +169,48 @@ describe("console formatting", () => {
         ]);
     });
 
+    it("formats multi-target results with their own effects before move-level effects", () => {
+        expect(formatEvents([{
+            type: "useMove", actor: "hinari", move: "rockfall",
+            targets: [
+                { target: "skunkette1", result: "graze", effects: [
+                    { type: "enemyDamaged", target: "skunkette1", amount: 5 },
+                ] },
+                { target: "skunkette1", result: "hit", effects: [
+                    { type: "enemyDamaged", target: "skunkette1", amount: 10 },
+                ] },
+            ],
+            effects: [{ type: "buffAdded", target: "hinari", buff: "focus" }],
+        }])).toEqual([
+            "hinari used rockfall.",
+            "  -> skunkette1: GRAZE",
+            "    ↳ skunkette1 took 5 damage.",
+            "  -> skunkette1: HIT",
+            "    ↳ skunkette1 took 10 damage.",
+            "  ↳ hinari gained focus.",
+        ]);
+    });
+
+    it("omits NONE from single and multi-target move lines", () => {
+        expect(formatEvents([{
+            type: "useMove", actor: "hinari", move: "store",
+            targets: [{ target: "hinari", result: "none", effects: [] }],
+            effects: [],
+        }, {
+            type: "useMove", actor: "ko", move: "sweep",
+            targets: [
+                { target: "skunk1", result: "none", effects: [] },
+                { target: "skunk2", result: "hit", effects: [] },
+            ],
+            effects: [],
+        }])).toEqual([
+            "hinari used store on hinari.",
+            "ko used sweep.",
+            "  -> skunk1",
+            "  -> skunk2: HIT",
+        ]);
+    });
+
     it("describes serialized buff effects", () => {
         expect(formatBuff({
             id: "pounce",

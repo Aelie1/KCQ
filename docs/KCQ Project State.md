@@ -1,10 +1,10 @@
 # KCQ Project State
 
-**Last updated:** 2026-09-24
+**Last updated:** 2026-09-25
 **Status:** Draft — intended for periodic refresh as the project changes
 **Repository:** `Aelie1/KCQ`
-**Current repository baseline:** `master`, commit `73c5a66`
-**Current public release:** `0.7.3` (2026-09-23)
+**Current repository baseline:** `master`, 0.8.0 release candidate
+**Current public release:** `0.8.0` (2026-09-25)
 
 This document describes **where KCQ is now, what has been established, and what direction the project is taking**.
 
@@ -142,15 +142,17 @@ Forest expands the current playable encounter set beyond the original three-figh
 
 # 6. Current Public/Web State
 
-KCQ is now browser-playable.
+KCQ is browser-playable.
 
 The first public version was:
 
 **0.7.2 — 2026-09-22**
 
-The current published patch level documented in the repository is:
+The current release is:
 
-**0.7.3 — 2026-09-23**
+**0.8.0 — 2026-09-25**
+
+0.8.0 is primarily an engine/event-model milestone. It replaces the old flat combat-event stream with explicit causal ownership and updates the public presentation and downstream consumers to use that structure.
 
 The browser UI currently provides:
 
@@ -165,6 +167,7 @@ The browser UI currently provides:
 * a separate scrolling combat log;
 * semantic actor/effect styling;
 * battle-state highlighting and timed presentation;
+* causal combat-log presentation, including per-hit effects for multihit moves;
 * shared presentation/controller code with the console implementation.
 
 The browser UI remains deliberately utilitarian.
@@ -181,12 +184,9 @@ Therefore:
 
 **public release state and current repository state may differ.**
 
-As of 2026-09-24, `master` contains additional work after the 0.7.3 patch notes, including:
+The 0.8.0 release captures the completed event-model revamp, its consumer migrations, the richer action/damage preview work, and the causal combat-log presentation. After the release is tagged, later `master` work may again move ahead of the public build.
 
-* richer damage/action previews;
-* presentation improvements;
-* additional testing/fixes;
-* the new `Game Rules.md`.
+The web build's release identifier is injected from the release tag selected by the deployment workflow. The `package.json` version is not used as the KCQ gameplay/replay release identifier.
 
 When discussing current implementation details, use `master`.
 
@@ -374,66 +374,58 @@ Those judgments remain useful even when there is no perfect automated player.
 
 # 13. Immediate Development Sequence
 
-The current planned sequence is:
+The event-model milestone is complete. The current sequence is now:
 
-1. **Event revamp / causal combat log**
-2. **Smart harness policy / board evaluation**
-3. **Further balance work using the smarter harness**
+1. **Completed: event revamp / causal combat log**
+2. **Current: Smart harness policy / board evaluation**
+3. **Next: further balance work using the smarter harness**
 
-This ordering is intentional.
+This ordering remains intentional.
 
-The current event model works, but presentation and downstream consumers sometimes have to reconstruct causality from a flat stream of events. That becomes increasingly awkward for multihit moves, nested effects, telemetry, replay inspection, and richer action analysis.
+The event revamp established the causal structure needed by presentation, replay inspection, telemetry, and richer action analysis before investing heavily in the next generation of harness reasoning.
 
-The event revamp should therefore happen **before** investing heavily in the next generation of harness reasoning.
-
-Once that foundation is cleaner, the next major testing milestone is a Smart policy capable of evaluating actual character kits and tactical board state.
+The next major testing milestone is therefore a Smart policy capable of evaluating actual character kits and tactical board state.
 
 The resulting policy should then be used for another substantial balance pass.
 
 ---
 
-# 14. Current Priority: Event Revamp / Causal Combat Log
+# 14. Completed Milestone: Event Revamp / Causal Combat Log
 
-The next planned implementation work is the **event revamp**.
+The event revamp is complete for 0.8.0.
 
-The goal is to make combat-event causality explicit rather than forcing presentation code and other consumers to infer relationships after the fact.
+Combat-event causality is now explicit instead of requiring downstream consumers to reconstruct relationships from a flat stream.
 
-Current direction:
+The established model is:
 
-* preserve a small, intentional event hierarchy rather than introducing arbitrary recursive events;
-* `moveUsed` should own ordered move-result entries plus move-level leaf events;
-* individual move results may own the leaf effects caused by that hit/target result;
-* escapes and triggered traps may likewise own the events they directly cause;
-* ordinary effects remain simple leaf events;
-* preserve chronological causality.
+* only the engine produces top-level game events;
+* concrete state changes/results are leaf events owned by the game event that caused them;
+* `useMove` owns ordered target-result entries plus separate move-level leaf effects;
+* each evaluated target result owns the leaf effects causally produced by that result, even when an effect's recipient is somebody else;
+* misses remain represented as evaluated target results with empty effect stacks;
+* `useEscape`, `changePhase`, `changeStance`, `loadCharacter`, and `loadEncounter` likewise own the leaf effects they cause;
+* the actual stance mutation is represented separately as `stanceSet`;
+* phase-boundary effects are attached to `changePhase`;
+* traps report `trapTriggered` before the leaves produced by the trap;
+* target-result effects resolve before move-level effects in the canonical move-processing order.
 
-The motivating example is multihit combat.
-
-A move such as Rockfall should naturally be representable as:
+The motivating multihit case now presents naturally as:
 
 **Hit → Damage → Hit → Damage**
 
-rather than emitting all hit results first and all resulting damage afterward, leaving presentation code to pair them back together.
+rather than emitting all hit results first and all resulting damage afterward. The console/browser presentation now preserves that causal grouping, so callbacks and secondary effects appear under the specific hit that caused them.
 
-The revamped event model should benefit:
+The migration covered engine consumers, previews, console/browser presentation, harness metrics and replay, serialization, fixtures, and tests. Two localized regressions were found during migration and fixed: trap-trigger consumption reporting and missing move-level effects in action previews.
 
-* console presentation;
-* browser presentation;
-* telemetry;
-* replays;
-* tests;
-* debugging;
-* future Smart-policy/action analysis.
+The completed 0.8.0 candidate passes **1,224 tests across 84 test files**, with build and web TypeScript checks also clean.
 
-A canonical flatten/walk mechanism should remain available for consumers that want a simple flat event stream.
-
-This is intended as an **engine/event-model cleanup**, not a balance change.
+This was an **engine/event-model cleanup**, not a balance change.
 
 ---
 
-# 15. Next After Event Revamp: Smart Harness
+# 15. Current Priority: Smart Harness
 
-After the event revamp, the next major harness task is a policy that can actually understand the game board and character kits.
+With the event revamp complete, the current major harness task is a policy that can actually understand the game board and character kits.
 
 The current Trello direction is a **Smart policy using move previews / EV scoring**.
 
@@ -501,20 +493,21 @@ The Smart policy should add another reference point rather than replacing simple
 
 # 17. Current Development Position
 
-The project has just completed a cluster of work around:
+The project has now completed a cluster of work around:
 
 * public deployment;
 * telemetry/replay collection;
 * first major balance adjustments;
-* action/damage previews;
-* combat presentation;
+* richer action/damage previews;
+* the 0.8.0 causal event model;
+* causal console/browser combat presentation;
 * durable game-rule documentation.
 
 The immediate planned work is now:
 
-**event model cleanup → Smart harness → further balance**
+**Smart harness → further balance**
 
-This sequence should be treated as current project intent even if Trello's list positions or card states temporarily lag behind it.
+The event revamp should be treated as a completed foundation rather than an outstanding prerequisite. This sequence should be treated as current project intent even if Trello's list positions or card states temporarily lag behind it.
 
 ---
 
@@ -668,15 +661,15 @@ Obsolete. The current content catalogue contains six encounters: three Plains an
 
 ### “The current milestone is 0.5.”
 
-Obsolete. The current documented public release is 0.7.3.
+Obsolete. The current documented public release is 0.8.0.
 
 ### “The harness is still just a simple single-fight runner.”
 
 Obsolete. The project now has batch comparison, multiple policy families, parallel infrastructure, metrics, replay capture, and replay analysis tooling.
 
-### “Smart harness work is the immediate next task.”
+### “The event revamp is still the immediate next task.”
 
-Obsolete. The event revamp comes first; Smart harness work and further balancing follow it.
+Obsolete. The event revamp is complete in 0.8.0. Smart harness work is now the current major development priority, followed by another balance pass.
 
 ### “BQ1 policy architecture should be recreated directly.”
 
