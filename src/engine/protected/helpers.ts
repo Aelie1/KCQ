@@ -1,6 +1,6 @@
 import type { AccuracyProfile, BindingId, BindingLevel, BuffId, EntityId, MoveId, TrapId } from "../public/types";
 import type { MoveDef } from "./definitions";
-import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iTargetInfo, iTrap } from "./types";
+import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iMove, iMoveResult, iTargetInfo, iTrap } from "./types";
 
 export function isValidEntity(state: iGameState, entity: iEntity): boolean {
     if (isCharacter(entity)) {
@@ -93,36 +93,44 @@ export const basicPlayerAccuracy: AccuracyProfile = {
     crit: 10
 }
 
-export function basicDamageEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-    const effects: iEffect[] = [];
+export function basicDamageEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+    const result: iMoveResult = { effects: [], targets: [] };
     for (const target of targets) {
         if (isEnemy(target.target) && target.effectiveness > 0) {
-            effects.push({
-                type: "damage",
-                source: actor,
+            result.targets.push({
                 target: target.target,
-                amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
+                result: target.band,
+                effects: [{
+                    type: "damage",
+                    source: actor,
+                    target: target.target,
+                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
+                }]
             });
         }
     }
-    return effects;
+    return result;
 }
 
-export function basicBindingEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-    const effects: iEffect[] = [];
+export function basicBindingEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+    const result: iMoveResult = { effects: [], targets: [] };
     if (!move.binding) {
-        return effects;
+        return result;
     }
     for (const target of targets) {
         if (isCharacter(target.target) && target.effectiveness > 0) {
-            effects.push({
-                type: "binding",
-                source: actor,
+            result.targets.push({
                 target: target.target,
-                binding: move.binding,
-                amount: (move.definition.baseDamage ?? 1) * target.effectiveness
+                result: target.band,
+                effects: [{
+                    type: "binding",
+                    source: actor,
+                    target: target.target,
+                    binding: move.binding,
+                    amount: (move.definition.baseDamage ?? 1) * target.effectiveness
+                }]
             });
         }
     }
-    return effects;
+    return result;
 }

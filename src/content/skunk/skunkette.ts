@@ -4,7 +4,7 @@ import { basicBindingEffect, findBuff, findCharacter, findEnemy, isCharacter } f
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
-import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iStatus, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
@@ -216,7 +216,7 @@ const latexSpray: MoveDef = {
         crit: 3
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);
     }
 };
@@ -232,22 +232,23 @@ const pounce: MoveDef = {
         crit: 10
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {
-            return effects;
+            return result;
         }
         const target = targets[0].target;
         const effectiveness = targets[0].effectiveness;
+        const band = targets[0].band;
         if (!isCharacter(target)) {
-            return effects;
+            return result;
         }
         const buff = findBuff(target, "pounce");
         if (buff) {
             //we can't pounce someone that's already pounced
-            return effects;
+            return result;
         }
-
+        const effects: iEffect[] = [];
         if (effectiveness < 0.875) {
             effects.push(...createPounceBuffs(target, actor, 1, false));
         }
@@ -272,8 +273,13 @@ const pounce: MoveDef = {
                 targets: [target]
             });
         }
+        result.targets.push({
+            target: target,
+            result: band,
+            effects: effects
+        })
 
-        return effects;
+        return result;
     }
 };
 
@@ -288,11 +294,11 @@ const latexMist: MoveDef = {
         crit: 5
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
 
         if (move.roll === undefined) {
-            return effects;
+            return result;
         }
 
         //1) Add spread buff to everyone based on the common roll
@@ -305,7 +311,7 @@ const latexMist: MoveDef = {
             duration: 1
         }
         for (const character of getValidTargets(state.characters)) {
-            effects.push({
+            result.effects.push({
                 target: character,
                 type: "buff",
                 buff: buff,
@@ -315,6 +321,7 @@ const latexMist: MoveDef = {
 
         //2) Individual players get additional bondage based on their roll
         for (const target of targets) {
+            const effects: iEffect[] = [];
             const character = target.target;
             if (target.band === "hit" && isCharacter(character) && character.bindings.length > 0) {
                 const index = effectivenessInt(target.effectiveness, 0, character.bindings.length - 1);
@@ -338,9 +345,14 @@ const latexMist: MoveDef = {
                     });
                 }
             }
+            result.targets.push({
+                target: target.target,
+                result: target.band,
+                effects: effects
+            })
         }
 
-        return effects;
+        return result;
     }
 }
 
@@ -355,15 +367,15 @@ const throwOff: MoveDef = {
         hit: 60
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
-        if (move.band === "miss") {
-            return effects;
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+        if (!move.band || move.band === "miss") {
+            return result;
         }
 
         const pounceBuff = findBuff(actor, "pounce");
         if (pounceBuff) {
-            effects.push({
+            result.effects.push({
                 type: "buff",
                 target: actor,
                 buff: pounceBuff,
@@ -373,7 +385,7 @@ const throwOff: MoveDef = {
             if (pounceBuff.linkedEntity) {
                 const enemy = findEnemy(state, pounceBuff.linkedEntity)
                 if (enemy) {
-                    effects.push({
+                    result.effects.push({
                         type: "cooldown",
                         target: enemy,
                         move: pounce,
@@ -382,7 +394,7 @@ const throwOff: MoveDef = {
                 }
             }
         }
-        return effects;
+        return result;
     }
 };
 

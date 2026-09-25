@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-    ActorStyleRegistry,
     accuracyQualityStyle,
+    ActorStyleRegistry,
     bindingSeverityStyle,
     deriveHighlightTargets,
     encounterSeparator,
@@ -13,8 +13,8 @@ import {
     PRESENTATION_TIMING,
 } from "../../src/console/presentation";
 import { renderAnsi, renderStyledScreen } from "../../src/console/render";
-import { styledTextParts } from "../../src/web/view";
 import type { GameEvent } from "../../src/engine/public/types";
+import { styledTextParts } from "../../src/web/view";
 
 describe("combat presentation", () => {
     it("formats encounter starts as a distinct banner", () => {
@@ -119,7 +119,7 @@ describe("combat presentation", () => {
             { type: "enemyHealed", target: "skunk1", amount: 5 },
             { type: "enemySpawned", target: "skunk2" },
             { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
-            { type: "stanceChanged", actor: "ko", stance: "standing" },
+            { type: "changeStance", actor: "ko", stance: "standing" },
         ])).toEqual([
             { kind: "cooldown", entity: "skunk1", move: "pounce" },
             { kind: "binding", entity: "ko", binding: "latexArms" },

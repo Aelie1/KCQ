@@ -1,7 +1,7 @@
 import { MoveDef } from "../protected/definitions";
 import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
-import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iTargetInfo } from "../protected/types";
+import { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMove, iMoveResult, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
 import { BASE_ESCAPE_PENALTY, BASE_ESCAPE_POTENCY, BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
@@ -350,25 +350,39 @@ export function getEscapePotency(value: number, escapeModifier: number, assistMo
     return escapePotency;
 }
 
-export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iEffect[] {
-    const successfulTargets = targets.filter(
-        target => target.band !== "miss"
+export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iMoveResult {
+    const successfulTargets = targets.filter(target => target.band !== "miss");
+    const result: iMoveResult = move.definition.resolve(state, actor, move, successfulTargets);
+    result.effects.forEach(normalizeEffect);
+    for (const target of result.targets) {
+        target.effects.forEach(normalizeEffect);
+    }
+    const unsuccessfulTargets = targets.filter(target => target.band === "miss");
+    for (const target of unsuccessfulTargets) {
+        result.targets.push({
+            target: target.target,
+            result: target.band,
+            effects: []
+        });
+    }
+    result.targets.sort((a, b) =>
+        targets.findIndex(x => x.target === a.target) -
+        targets.findIndex(x => x.target === b.target)
     );
-    const effects: iEffect[] = move.definition.resolve(state, actor, move, successfulTargets);
-    return effects.map(normalizeEffect);
+    return result;
 }
 
-function normalizeEffect(effect: iEffect): iEffect {
+function normalizeEffect(effect: iEffect) {
     switch (effect.type) {
         case "binding":
         case "damage":
         case "trap":
-            return {
-                ...effect,
-                ...(effect.amount !== undefined ? { amount: Math.ceil(effect.amount) } : {})
-            };
+            if (effect.amount !== undefined) {
+                effect.amount = Math.ceil(effect.amount);
+            }
+            return;
         default:
-            return effect;
+            return;
     }
 }
 

@@ -184,7 +184,7 @@ function addDamagePreviews(state: iGameState, actor: iCharacter, potency: number
         }
         return {
             ...info,
-            effects,
+            effects: (effects.targets.find(x => x.target === info.target)?.effects) ?? [],
             damage
         };
     }
@@ -192,7 +192,7 @@ function addDamagePreviews(state: iGameState, actor: iCharacter, potency: number
     //this isnt a damage move, resolve it to get it's effects
     return {
         ...info,
-        effects
+        effects: (effects.targets.find(x => x.target === info.target)?.effects) ?? []
     }
 }
 

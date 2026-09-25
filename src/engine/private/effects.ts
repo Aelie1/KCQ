@@ -3,12 +3,12 @@ import { getValidTargets } from "../protected/enemies";
 import { findBinding, findBuff, findEntity, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
 import { Random } from "../protected/random";
 import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
-import { BondageEvent, EntityId, GameEvent, StanceId } from "../public/types";
+import { BondageEvent, EntityId, LeafEvent, StanceId } from "../public/types";
 import { TRAP_MAX } from "./constants";
 import { iEngineEffect } from "./types";
 
 export class GameEffects {
-    private events: GameEvent[];
+    private events: LeafEvent[];
     private effects: iEngineEffect[];
     private state: iGameState;
     private rng: Random;
@@ -20,21 +20,20 @@ export class GameEffects {
         this.rng = rng;
     }
 
-    getEvents(): GameEvent[] {
+    getEvents(): LeafEvent[] {
         return [...this.events];
     }
 
-    addEvent(event: GameEvent) {
+    addEvent(event: LeafEvent) {
         this.events.push(event);
     }
 
-    fromResult(other: GameEffects) {
-        this.events.push(...other.events);
-        this.stack(other.effects);
-        this.resolve();
+    clear() {
+        this.events.length = 0;
+        this.effects.length = 0;
     }
 
-    fromEffects(other: iEngineEffect[]) {
+    merge(other: iEngineEffect[]) {
         this.stack(other);
         this.resolve();
     }
@@ -427,7 +426,7 @@ export class GameEffects {
             case "standing":
                 if (!target.standing) {
                     this.addEvent({
-                        type: "stanceChanged",
+                        type: "stanceSet",
                         actor: target.id,
                         stance: stance
                     });
@@ -437,7 +436,7 @@ export class GameEffects {
             case "moving":
                 if (target.standing) {
                     this.addEvent({
-                        type: "stanceChanged",
+                        type: "stanceSet",
                         actor: target.id,
                         stance: stance
                     });

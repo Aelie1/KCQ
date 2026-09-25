@@ -1,6 +1,6 @@
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { basicDamageEffect, basicPlayerAccuracy, findBuff, isEnemy } from "../../engine/protected/helpers";
-import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 
 const TELEKINESIS_DAMAGE = 30;
 
@@ -33,7 +33,7 @@ const telekinesis: MoveDef = {
     baseDamage: TELEKINESIS_DAMAGE,
     type: "mouth",
     accuracy: basicPlayerAccuracy,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
 }
@@ -44,10 +44,10 @@ const fairyTelekinesis: MoveDef = {
     targets: "all",
     baseDamage: TELEKINESIS_DAMAGE / 2,
     baseHits: 2,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects = telekinesis.resolve(state, actor, move, targets);
-        effects.push(...removeEmpowerment(actor));
-        return effects;
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result = telekinesis.resolve(state, actor, move, targets);
+        result.effects.push(...removeEmpowerment(actor));
+        return result;
     }
 }
 
@@ -56,8 +56,8 @@ const starlightBindings: MoveDef = {
     targetSide: "enemy",
     targets: 1,
     type: "mouth",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
 
         const buff: iBuff = {
             id: move.definition.id,
@@ -71,15 +71,19 @@ const starlightBindings: MoveDef = {
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                effects.push({
-                    type: "buff",
+                result.targets.push({
                     target: target.target,
-                    buff: buff,
-                    operation: "add"
+                    result: target.band,
+                    effects: [{
+                        type: "buff",
+                        target: target.target,
+                        buff: buff,
+                        operation: "add"
+                    }]
                 });
             }
         }
-        return effects;
+        return result;
     }
 }
 
@@ -87,10 +91,10 @@ const fairyStarlightBindings: MoveDef = {
     ...starlightBindings,
     id: "fairyStarlightBindings",
     targets: "all",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects = starlightBindings.resolve(state, actor, move, targets);
-        effects.push(...removeEmpowerment(actor));
-        return effects;
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result = starlightBindings.resolve(state, actor, move, targets);
+        result.effects.push(...removeEmpowerment(actor));
+        return result;
     }
 
 }
@@ -100,8 +104,8 @@ const reflect: MoveDef = {
     targetSide: "player",
     targets: 0,
     type: "mouth",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
 
         const buff: iBuff = {
             id: move.definition.id,
@@ -110,24 +114,24 @@ const reflect: MoveDef = {
             modifyBinding: reflectCallback
         }
 
-        effects.push({
+        result.effects.push({
             type: "buff",
             target: actor,
             buff: buff,
             operation: "add"
         });
 
-        return effects;
+        return result;
     }
 }
 
 const fairyReflect: MoveDef = {
     ...reflect,
     id: "fairyReflect",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects = reflect.resolve(state, actor, move, targets);
-        effects.push(...removeEmpowerment(actor));
-        return effects;
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result = reflect.resolve(state, actor, move, targets);
+        result.effects.push(...removeEmpowerment(actor));
+        return result;
     }
 }
 
@@ -136,8 +140,8 @@ const fairyTransformation: MoveDef = {
     targetSide: "player",
     targets: 0,
     type: "mouth",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
 
         const transformBuff: iBuff = {
             id: TRANSFORMATION_BUFF,
@@ -148,7 +152,7 @@ const fairyTransformation: MoveDef = {
             }
         }
 
-        effects.push({
+        result.effects.push({
             type: "buff",
             target: actor,
             buff: transformBuff,
@@ -162,7 +166,7 @@ const fairyTransformation: MoveDef = {
                 active: true,
             }
 
-            effects.push({
+            result.effects.push({
                 type: "buff",
                 target: actor,
                 buff: newBuff,
@@ -170,7 +174,7 @@ const fairyTransformation: MoveDef = {
             })
         }
 
-        return effects;
+        return result;
     }
 }
 
@@ -178,9 +182,9 @@ const fairyEmpowerment: MoveDef = {
     ...fairyTransformation,
     id: "fairyEmpowerment",
     targets: "all",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects = fairyTransformation.resolve(state, actor, move, targets);
-        effects.push(...removeEmpowerment(actor));
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result = fairyTransformation.resolve(state, actor, move, targets);
+        result.effects.push(...removeEmpowerment(actor));
 
         const transformBuff: iBuff = {
             id: TRANSFORMATION_BUFF,
@@ -195,25 +199,28 @@ const fairyEmpowerment: MoveDef = {
             active: true,
         }
 
-        for (const { target } of targets) {
-            if (target !== actor) {
-                effects.push({
-                    type: "buff",
-                    target: target,
-                    buff: transformBuff,
-                    operation: "add"
-                });
-
-                effects.push({
-                    type: "buff",
-                    target: target,
-                    buff: empowerBuff,
-                    operation: "add"
+        for (const target of targets) {
+            if (target.target !== actor) {
+                result.targets.push({
+                    target: target.target,
+                    result: target.band,
+                    effects: [{
+                        type: "buff",
+                        target: target.target,
+                        buff: transformBuff,
+                        operation: "add"
+                    },
+                    {
+                        type: "buff",
+                        target: target.target,
+                        buff: empowerBuff,
+                        operation: "add"
+                    }]
                 });
             }
         }
 
-        return effects;
+        return result;
     }
 }
 

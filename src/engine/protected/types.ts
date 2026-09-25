@@ -63,6 +63,15 @@ export interface iMove {
     data?: Record<string, number>;
 }
 
+export interface iMoveResult {
+    effects: iEffect[];
+    targets: {
+        target: iEntity;
+        result: HitBand;
+        effects: iEffect[];
+    }[];
+}
+
 export interface iTargetInfo extends Omit<TargetInfo, "target" | "effects"> {
     target: iEntity;
     effectiveness: number;

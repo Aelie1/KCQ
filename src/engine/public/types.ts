@@ -6,9 +6,9 @@ export interface Engine {
     getGameView(): GameView;
     getThresholds(): ThresholdInfo;
     listCharacters(): EntityId[];
-    loadCharacter(id: EntityId): GameEvent[];
+    loadCharacter(id: EntityId): GameEvent;
     listEncounters(): EncounterId[];
-    loadEncounter(id: EncounterId): GameEvent[];
+    loadEncounter(id: EncounterId): GameEvent;
     executeAction(action: PlayerAction): ActionResult;
 }
 
@@ -217,6 +217,12 @@ export interface BandPreview {
 
 export type PreviewProfile = Partial<Record<HitBand, BandPreview>>;
 
+interface MoveResult {
+    target: EntityId,
+    result: HitBand
+    effects: LeafEvent[];
+}
+
 /*******************************************************
  * Bindings
  *******************************************************/
@@ -387,30 +393,66 @@ export type FailureReason =
 
 export type GameEvent =
     | MoveEvent
-    | DamageEvent
-    | BondageEvent
+    | EscapeEvent
     | PhaseEvent
-    | BuffEvent
-    | EnemyEvent
-    | StanceEvent
+    | StanceChangeEvent
     | EncounterEvent
-    | CooldownEvent
-    | TrapEvent
-    | InterruptEvent
-    | RefreshEvent
-    | RetargetEvent
-    | CancelEvent
-    | WeakenEvent
     | CharacterEvent;
 
+export type LeafEvent =
+    | DamageEvent
+    | BondageEvent
+    | BuffEvent
+    | EnemyEvent
+    | StanceSetEvent
+    | InterruptEvent
+    | RefreshEvent
+    | CooldownEvent
+    | TrapEvent
+    | RetargetEvent
+    | CancelEvent
+    | WeakenEvent;
+
 export interface MoveEvent {
-    type: "moveUsed";
+    type: "useMove";
     actor: EntityId;
     move: MoveId;
-    targets: {
-        target: EntityId,
-        result: HitBand
-    }[];
+    effects: LeafEvent[];
+    targets: MoveResult[];
+}
+
+export interface EscapeEvent {
+    type: "useEscape";
+    actor: EntityId;
+    target: EntityId;
+    effects: LeafEvent[];
+}
+
+export interface PhaseEvent {
+    type: "changePhase";
+    phase: Phase;
+    effects: LeafEvent[];
+}
+
+export interface StanceChangeEvent {
+    type: "changeStance";
+    actor: EntityId;
+    effects: LeafEvent[];
+}
+
+export interface EncounterEvent {
+    type: "loadEncounter";
+    id: string;
+    success: boolean;
+    bindings: BindingId[];
+    effects: LeafEvent[];
+}
+
+export interface CharacterEvent {
+    type: "loadCharacter";
+    id: string;
+    success: boolean;
+    effects: LeafEvent[];
 }
 
 export interface DamageEvent {
@@ -426,11 +468,6 @@ export interface BondageEvent {
     amount: number;
 }
 
-export interface PhaseEvent {
-    type: "phaseChanged";
-    phase: Phase;
-}
-
 export interface BuffEvent {
     type: "buffAdded" | "buffRemoved" | "buffUpdated";
     target: EntityId;
@@ -442,15 +479,8 @@ export interface EnemyEvent {
     target: EntityId;
 }
 
-export interface EncounterEvent {
-    type: "encounterLoad";
-    id: string;
-    success: boolean;
-    bindings: BindingId[];
-}
-
-export interface StanceEvent {
-    type: "stanceChanged";
+export interface StanceSetEvent {
+    type: "stanceSet";
     actor: EntityId;
     stance: StanceId;
 }
@@ -494,12 +524,6 @@ export interface CancelEvent {
 export interface WeakenEvent {
     type: "intentionWeakened";
     target: EntityId;
-}
-
-export interface CharacterEvent {
-    type: "characterLoad";
-    id: string;
-    success: boolean;
 }
 
 /*******************************************************

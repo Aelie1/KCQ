@@ -1,7 +1,7 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
-import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
+import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const RAINMAKER_HP = 200;
@@ -37,18 +37,18 @@ const latexRain: MoveDef = {
         hit: 50,
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
         if (targets.length === 0) {
-            return effects;
+            return result;
         }
 
         for (const target of targets) {
             if (isCharacter(target.target)) {
                 const count = effectivenessInt(target.effectiveness, 1, bindings.length);
                 const start = effectivenessInt(target.effectiveness / bindings.length, 0, bindings.length - 1);
-
+                const effects: iEffect[] = [];
                 for (let i = 0; i < count; i++) {
                     const index = (start + i) % bindings.length
                     const binding = bindings[index];
@@ -60,8 +60,13 @@ const latexRain: MoveDef = {
                         amount: (move.definition.baseDamage ?? 1) * target.effectiveness
                     });
                 }
+                result.targets.push({
+                    target: target.target,
+                    result: target.band,
+                    effects: effects
+                });
             }
         }
-        return effects;
+        return result;
     },
 };

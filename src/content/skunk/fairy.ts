@@ -2,7 +2,7 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget, pickValidTarget } from "../../engine/protected/enemies";
 import { basicBindingEffect, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
-import { iBuff, iCallbackReturn, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iCallbackReturn, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { HitBand } from "../../engine/public/types";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
@@ -126,7 +126,7 @@ const bindingMagic: MoveDef = {
         crit: 10
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);
     },
 };
@@ -141,36 +141,43 @@ const healingMagic: MoveDef = {
         crit: 5
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {
-            return effects;
+            return result;
         }
 
         const target = targets[0];
-        if (target.band === "hit") {
+        if (target.band === "hit" || target.band === "crit") {
 
             if (isEnemy(target.target)) {
-                effects.push({
-                    type: "damage",
-                    source: actor,
+                result.targets.push({
                     target: target.target,
-                    amount: -HEALING_MAGIC_HP_RATIO * target.target.maxHp
-                });
-            }
-        } else if (target.band === "crit") {
-            const filter = ["skunkette", "skunk", "fairy"];
-            const enemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
-            for (const enemy of enemies) {
-                effects.push({
-                    type: "damage",
-                    source: actor,
-                    target: enemy,
-                    amount: -HEALING_MAGIC_HP_RATIO * enemy.maxHp
+                    result: target.band,
+                    effects: [{
+                        type: "damage",
+                        source: actor,
+                        target: target.target,
+                        amount: -HEALING_MAGIC_HP_RATIO * target.target.maxHp
+                    }]
                 });
             }
         }
-        return effects;
+        if (target.band === "crit") {
+            const filter = ["skunkette", "skunk", "fairy"];
+            const enemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
+            for (const enemy of enemies) {
+                if (enemy !== target.target) {
+                    result.effects.push({
+                        type: "damage",
+                        source: actor,
+                        target: enemy,
+                        amount: -HEALING_MAGIC_HP_RATIO * enemy.maxHp
+                    });
+                }
+            }
+        }
+        return result;
     },
 };
 
@@ -183,10 +190,10 @@ const empoweringMagic: MoveDef = {
         crit: 5
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {
-            return effects;
+            return result;
         }
 
         const buff = {
@@ -197,29 +204,36 @@ const empoweringMagic: MoveDef = {
         }
 
         const target = targets[0];
-        if (target.band === "hit") {
+        if (target.band === "hit" || target.band === "crit") {
 
             if (isEnemy(target.target)) {
-                effects.push({
-                    type: "buff",
+                result.targets.push({
                     target: target.target,
-                    buff: buff,
-                    operation: "add"
-                });
-            }
-        } else if (target.band === "crit") {
-            const filter = ["skunkette", "skunk", "fairy", "queen"];
-            const enemies = state.enemies.filter(x => (filter.includes(x.definition.id)));
-            for (const enemy of enemies) {
-                effects.push({
-                    type: "buff",
-                    target: enemy,
-                    buff: buff,
-                    operation: "add"
+                    result: target.band,
+                    effects: [{
+                        type: "buff",
+                        target: target.target,
+                        buff: buff,
+                        operation: "add"
+                    }]
                 });
             }
         }
-        return effects;
+        if (target.band === "crit") {
+            const filter = ["skunkette", "skunk", "fairy", "queen"];
+            const enemies = state.enemies.filter(x => (filter.includes(x.definition.id)));
+            for (const enemy of enemies) {
+                if (enemy !== target.target) {
+                    result.effects.push({
+                        type: "buff",
+                        target: enemy,
+                        buff: buff,
+                        operation: "add"
+                    });
+                }
+            }
+        }
+        return result;
     }
 };
 
@@ -233,10 +247,10 @@ const barrierMagic: MoveDef = {
         crit: 5
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {
-            return effects;
+            return result;
         }
 
         const durationByBand: Record<HitBand, number> = {
@@ -259,14 +273,18 @@ const barrierMagic: MoveDef = {
         const target = targets[0];
 
         if (isEnemy(target.target)) {
-            effects.push({
-                type: "buff",
+            result.targets.push({
                 target: target.target,
-                buff: buff,
-                operation: "add"
+                result: target.band,
+                effects: [{
+                    type: "buff",
+                    target: target.target,
+                    buff: buff,
+                    operation: "add"
+                }]
             });
         }
-        return effects;
+        return result;
     }
 };
 

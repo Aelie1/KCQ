@@ -53,16 +53,15 @@ function serializeIntention(state: iGameState, statuses: StatusMap, intention: i
     };
     const iTargets = evaluateIntention(state, preview, getStatus(statuses, intention.actor), statuses);
     const targets: TargetInfo[] = [];
-    let effects = resolveMove(state, preview.move, preview.actor, iTargets);
+    const result = resolveMove(state, preview.move, preview.actor, iTargets);
     for (const iTarget of iTargets) {
-        const tEffects = effects.filter(x => "target" in x && x.target === iTarget.target);
-        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(tEffects) });
-        effects = effects.filter(x => !("target" in x) || x.target !== iTarget.target);
+        const effects = (result.targets.find(x => x.target === iTarget.target)?.effects) ?? [];
+        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(effects) });
     }
     return {
         move: intention.move.definition.id,
         targets: targets,
-        effects: serializeEffects(effects)
+        effects: serializeEffects(result.effects)
     };
 }
 

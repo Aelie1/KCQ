@@ -2,7 +2,7 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { basicBindingEffect, findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
-import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
+import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 
@@ -172,7 +172,7 @@ const latexSpray: MoveDef = {
         crit: 3
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);
     },
 };
@@ -188,22 +188,22 @@ const latexPuddle: MoveDef = {
         crit: 5
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
 
         const trap = findTrap(state, trapPuddle.id);
         if (!trap) {
-            return effects;
+            return result;
         }
 
-        effects.push({
+        result.effects.push({
             type: "trap",
             actor: actor,
             trap: trap,
             amount: (move.definition.baseDamage ?? 1) * (move.effectiveness ?? 0)
         });
 
-        return effects;
+        return result;
     }
 }
 
@@ -219,51 +219,63 @@ const latexRegeneration: MoveDef = {
     },
     baseDamage: REGENERATION_DAMAGE,
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {
-            return effects;
+            return result;
         }
         const target = targets[0];
 
         switch (target.band) {
             case "graze":
                 if (isCharacter(target.target) && move.binding) {
-                    effects.push({
-                        type: "binding",
-                        source: actor,
+                    result.targets.push({
                         target: target.target,
-                        binding: move.binding,
-                        amount: (move.definition.baseDamage ?? 1) * target.effectiveness,
-                        onResolve: regenerateCallback
+                        result: target.band,
+                        effects: [{
+                            type: "binding",
+                            source: actor,
+                            target: target.target,
+                            binding: move.binding,
+                            amount: (move.definition.baseDamage ?? 1) * target.effectiveness,
+                            onResolve: regenerateCallback
+                        }]
                     });
                 }
                 break;
             case "hit":
                 if (isCharacter(target.target) && move.binding) {
-                    effects.push({
-                        type: "binding",
-                        source: actor,
+                    result.targets.push({
                         target: target.target,
-                        binding: move.binding,
-                        onResolve: regenerateCallback
+                        result: target.band,
+                        effects: [{
+                            type: "binding",
+                            source: actor,
+                            target: target.target,
+                            binding: move.binding,
+                            onResolve: regenerateCallback
+                        }]
                     });
                 }
                 break;
             case "crit":
                 if (isCharacter(target.target)) {
-                    effects.push({
-                        type: "binding",
-                        source: actor,
+                    result.targets.push({
                         target: target.target,
-                        binding: latexBindings,
-                        onResolve: regenerateCallback
+                        result: target.band,
+                        effects: [{
+                            type: "binding",
+                            source: actor,
+                            target: target.target,
+                            binding: latexBindings,
+                            onResolve: regenerateCallback
+                        }]
                     });
                 }
                 break;
         }
 
-        return effects;
+        return result;
     }
 }
 
@@ -279,12 +291,12 @@ const latexExplosion: MoveDef = {
         crit: 3
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {
             const trap = findTrap(state, trapPuddle.id);
             if (trap) {
-                effects.push({
+                result.effects.push({
                     type: "trap",
                     actor: actor,
                     trap: trap,
@@ -292,20 +304,21 @@ const latexExplosion: MoveDef = {
                 });
             }
             if (isEnemy(actor)) {
-                effects.push({
+                result.effects.push({
                     type: "damage",
                     source: actor,
                     target: actor,
                     amount: 999
                 });
             }
-            return effects;
+            return result;
         }
 
         const target = targets[0];
 
         if (isCharacter(target.target)) {
             const bindings = [latexHead, latexArms, latexTorso, latexLegs];
+            const effects: iEffect[] = [];
             for (const binding of bindings) {
                 effects.push({
                     type: "binding",
@@ -315,9 +328,14 @@ const latexExplosion: MoveDef = {
                     amount: (move.definition.baseDamage ?? 1) * target.effectiveness
                 });
             }
+            result.targets.push({
+                target: target.target,
+                result: target.band,
+                effects: effects
+            });
             if (target.band === "crit") {
                 if (isEnemy(actor)) {
-                    effects.push({
+                    result.effects.push({
                         type: "damage",
                         source: actor,
                         target: actor,
@@ -326,7 +344,7 @@ const latexExplosion: MoveDef = {
                 }
             } else {
                 if (isEnemy(actor)) {
-                    effects.push({
+                    result.effects.push({
                         type: "damage",
                         source: actor,
                         target: actor,
@@ -335,7 +353,7 @@ const latexExplosion: MoveDef = {
                 }
             }
         }
-        return effects;
+        return result;
     },
 };
 

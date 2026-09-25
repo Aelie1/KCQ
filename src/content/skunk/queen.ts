@@ -2,7 +2,7 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { basicBindingEffect, isCharacter } from "../../engine/protected/helpers";
 import { Random } from "../../engine/protected/random";
-import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { fairy } from "./fairy";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { rainmaker } from "./rainmaker";
@@ -175,7 +175,7 @@ const skunkGun: MoveDef = {
         crit: 1
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);
     },
 };
@@ -193,7 +193,7 @@ const skunkCollar: MoveDef = {
         crit: 1
     },
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);
     },
 
@@ -204,20 +204,20 @@ const callReinforcements: MoveDef = {
     targetSide: "none",
     targets: 0,
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         const wave = move.data?.["wave"] ?? 1;
         const summons = WAVE_SUMMONS[wave - 1] ?? [];
 
         for (const summon of summons) {
-            effects.push({
+            result.effects.push({
                 type: "enemy",
                 operation: "spawn",
                 definition: summon.enemy,
                 hpRatio: summon.hpRatio
             });
         }
-        return effects;
+        return result;
     },
 }
 
@@ -226,13 +226,13 @@ const latexRainmaker: MoveDef = {
     targetSide: "none",
     targets: 0,
     type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         const wave = move.data?.["wave"] ?? 1;
         const summons = RAINMAKER_SUMMONS[wave - 1] ?? [];
 
         for (const summon of summons) {
-            effects.push({
+            result.effects.push({
                 type: "enemy",
                 operation: "spawn",
                 definition: summon.enemy,
@@ -241,7 +241,7 @@ const latexRainmaker: MoveDef = {
             });
         }
 
-        return effects;
+        return result;
     },
 }
 
@@ -256,8 +256,8 @@ const skunkPerfume: MoveDef = {
     },
     check: "willpower",
     cooldown: 5,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
         const type = move.data?.["type"] ?? 0;
 
         switch (type) {
@@ -269,11 +269,15 @@ const skunkPerfume: MoveDef = {
                     duration: PERFUME_DURATION,
                 }
                 for (const target of targets) {
-                    effects.push({
-                        type: "buff",
-                        operation: "add",
-                        buff: defBuff,
-                        target: target.target
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: [{
+                            type: "buff",
+                            operation: "add",
+                            buff: defBuff,
+                            target: target.target
+                        }]
                     });
                 }
                 break;
@@ -285,11 +289,15 @@ const skunkPerfume: MoveDef = {
                     duration: PERFUME_DURATION,
                 }
                 for (const target of targets) {
-                    effects.push({
-                        type: "buff",
-                        operation: "add",
-                        buff: escBuff,
-                        target: target.target
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: [{
+                            type: "buff",
+                            operation: "add",
+                            buff: escBuff,
+                            target: target.target
+                        }]
                     });
                 }
                 break;
@@ -298,7 +306,7 @@ const skunkPerfume: MoveDef = {
                 const filter = ["skunkette", "skunk", "fairy"];
                 const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
                 for (const enemy of damagedEnemies) {
-                    effects.push({
+                    result.effects.push({
                         type: "damage",
                         source: actor,
                         target: enemy,
@@ -308,6 +316,6 @@ const skunkPerfume: MoveDef = {
                 break;
         }
 
-        return effects;
+        return result;
     },
 }

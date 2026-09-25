@@ -2,7 +2,7 @@ import { CharacterDef, MoveDef } from "../../engine/protected/definitions";
 import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
-import { iBuff, iCharacter, iEffect, iEntity, iGameState, iMove, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iCharacter, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
 import { EMPOWERMENT_BUFF, removeEmpowerment } from "./ko";
 
@@ -58,7 +58,7 @@ const punch: MoveDef = {
     baseDamage: PUNCH_DAMAGE,
     type: "arms",
     accuracy: basicPlayerAccuracy,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
 }
@@ -70,7 +70,7 @@ const kick: MoveDef = {
     baseDamage: KICK_DAMAGE,
     type: "legs",
     accuracy: basicPlayerAccuracy,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
 }
@@ -83,7 +83,7 @@ const whiteFlame: MoveDef = {
     type: "arms",
     accuracy: basicPlayerAccuracy,
     modifiers: { hit: 2 },
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
 }
@@ -95,10 +95,10 @@ const fairyWhiteFlame: MoveDef = {
         ...whiteFlame.modifiers,
         potency: 2,
     },
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects = whiteFlame.resolve(state, actor, move, targets);
-        effects.push(...removeEmpowerment(actor));
-        return effects;
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result = whiteFlame.resolve(state, actor, move, targets);
+        result.effects.push(...removeEmpowerment(actor));
+        return result;
     }
 }
 
@@ -110,7 +110,7 @@ const phoenixKick: MoveDef = {
     type: "legs",
     accuracy: basicPlayerAccuracy,
     modifiers: { potency: 2 },
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
 }
@@ -122,10 +122,10 @@ const fairyPhoenixKick: MoveDef = {
         ...phoenixKick.modifiers,
         hit: 2,
     },
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects = phoenixKick.resolve(state, actor, move, targets);
-        effects.push(...removeEmpowerment(actor));
-        return effects;
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result = phoenixKick.resolve(state, actor, move, targets);
+        result.effects.push(...removeEmpowerment(actor));
+        return result;
     }
 }
 
@@ -136,21 +136,21 @@ const immolation: MoveDef = {
     baseDamage: IMMOLATION_DAMAGE,
     type: "none",
     accuracy: basicPlayerAccuracy,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects = basicDamageEffect(actor, move, targets);
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result = basicDamageEffect(actor, move, targets);
 
         const burnoutBuff: iBuff = {
             id: "burnout",
             active: true,
         }
 
-        effects.push({
+        result.effects.push({
             type: "buff",
             target: actor,
             buff: burnoutBuff,
             operation: "add"
         });
-        return effects;
+        return result;
     }
 }
 
@@ -160,8 +160,8 @@ const obey: MoveDef = {
     targets: 1,
     type: "mouth",
     freeOnHit: true,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
 
         const servitudeBuff: iBuff = {
             id: "servitude",
@@ -172,15 +172,19 @@ const obey: MoveDef = {
 
         for (const target of targets) {
             if (isCharacter(target.target)) {
-                effects.push({
-                    type: "buff",
+                result.targets.push({
                     target: target.target,
-                    buff: servitudeBuff,
-                    operation: "add"
-                });
-                effects.push({
-                    type: "refresh",
-                    target: target.target,
+                    result: target.band,
+                    effects: [{
+                        type: "buff",
+                        target: target.target,
+                        buff: servitudeBuff,
+                        operation: "add"
+                    },
+                    {
+                        type: "refresh",
+                        target: target.target,
+                    }]
                 });
             }
         }
@@ -191,14 +195,14 @@ const obey: MoveDef = {
             duration: OBEY_COMPULSION_COOLDOWN,
         }
 
-        effects.push({
+        result.effects.push({
             type: "buff",
             target: actor,
             buff: cooldownBuff,
             operation: "add"
         });
 
-        return effects;
+        return result;
     },
     isValid: function (move: MoveDef, target: iEntity | null): FailureReason | undefined {
         if (target !== null &&
@@ -216,20 +220,24 @@ const stop: MoveDef = {
     targets: 1,
     type: "mouth",
     freeOnHit: true,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
 
         if (!isCharacter(actor)) {
-            return effects;
+            return result;
         }
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                effects.push({
-                    type: "intention",
-                    operation: "cancel",
+                result.targets.push({
                     target: target.target,
-                    amount: STOP_BOSS_WEAKEN
+                    result: target.band,
+                    effects: [{
+                        type: "intention",
+                        operation: "cancel",
+                        target: target.target,
+                        amount: STOP_BOSS_WEAKEN
+                    }]
                 });
             }
         }
@@ -240,14 +248,14 @@ const stop: MoveDef = {
             duration: STOP_COMPULSION_COOLDOWN,
         }
 
-        effects.push({
+        result.effects.push({
             type: "buff",
             target: actor,
             buff: cooldownBuff,
             operation: "add"
         });
 
-        return effects;
+        return result;
     }
 }
 
@@ -257,20 +265,24 @@ const attackMe: MoveDef = {
     targets: "all",
     type: "mouth",
     freeOnHit: true,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iEffect[] {
-        const effects: iEffect[] = [];
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
 
         if (!isCharacter(actor)) {
-            return effects;
+            return result;
         }
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                effects.push({
-                    type: "intention",
-                    operation: "target",
+                result.targets.push({
                     target: target.target,
-                    destination: actor,
+                    result: target.band,
+                    effects: [{
+                        type: "intention",
+                        operation: "target",
+                        target: target.target,
+                        destination: actor,
+                    }]
                 });
             }
         }
@@ -281,14 +293,14 @@ const attackMe: MoveDef = {
             duration: ATTACKME_COMPULSION_COOLDOWN,
         }
 
-        effects.push({
+        result.effects.push({
             type: "buff",
             target: actor,
             buff: cooldownBuff,
             operation: "add"
         });
 
-        return effects;
+        return result;
     }
 }
 
