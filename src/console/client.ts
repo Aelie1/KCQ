@@ -45,13 +45,16 @@ export async function runConsoleClient(
             display(screen);
             await rl.question("Press Enter to exit. ");
         },
-        playback: async ({ screen, groups, delayMs, fromLogLine, enemyActionCount }) => {
+        playback: async ({ screen, groups, delayMs, fromLogLine, enemyActionCount, finalActions }) => {
             if (streams.output.isTTY !== true) return;
             let visibleLines = fromLogLine;
+            let visibleState = screen.state;
             for (const group of groups) {
                 visibleLines += group.lines.length;
+                visibleState = group.state ?? visibleState;
                 display({
                     ...screen,
+                    state: visibleState,
                     logLines: screen.logLines.slice(0, visibleLines),
                     logStyles: screen.logStyles?.slice(0, visibleLines),
                     highlights: group.highlights,
@@ -63,7 +66,7 @@ export async function runConsoleClient(
                     await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
                 }
             }
-            display({ ...screen, highlights: [] });
+            display({ ...screen, state: visibleState, availability: finalActions, highlights: [] });
         },
         close: () => {
             rl.close();

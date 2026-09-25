@@ -122,17 +122,19 @@ class BrowserBattleUI implements BattleUI {
 
     async playback(request: BattlePlaybackRequest): Promise<void> {
         let visibleLines = request.fromLogLine;
+        let visibleState = request.screen.state;
         await playActionGroups(request.groups, request.delayMs, (group) => {
             const groupStart = visibleLines;
             visibleLines += group.lines.length;
+            visibleState = group.state ?? visibleState;
             this.flash(group.highlights);
             this.display(
-                request.screen,
+                { ...request.screen, state: visibleState },
                 visibleLines,
                 { start: groupStart, end: visibleLines },
             );
         });
-        this.display(request.screen);
+        this.display({ ...request.screen, state: visibleState, availability: request.finalActions });
     }
 
     close(): void {

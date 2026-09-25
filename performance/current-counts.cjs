@@ -5,8 +5,8 @@ const runs = Number(runsText);
 const counts = {
     gameStatusConstructions: 0,
     refreshViewCalls: 0,
-    gameViewConstructions: 0,
-    engineGetGameViewCalls: 0,
+    actionViewConstructions: 0,
+    engineGetGameStateCalls: 0,
     targetEvaluations: 0,
     intentionEvaluations: 0,
     intentionPreviewEvaluations: 0,
@@ -55,10 +55,10 @@ combatModule.resolveMove = function countedResolveMove(...args) {
 };
 
 const viewModule = require("../dist/engine/private/view.js");
-const originalGetGameView = viewModule.getGameView;
-viewModule.getGameView = function countedGetGameView(...args) {
-    counts.gameViewConstructions++;
-    return originalGetGameView(...args);
+const originalGetActionView = viewModule.getActionView;
+viewModule.getActionView = function countedGetActionView(...args) {
+    counts.actionViewConstructions++;
+    return originalGetActionView(...args);
 };
 
 const engineModule = require("../dist/engine/private/engine.js");
@@ -67,23 +67,25 @@ engineModule.GameEngine.prototype.refreshView = function countedRefreshView(...a
     counts.refreshViewCalls++;
     return originalRefreshView.apply(this, args);
 };
-const originalEngineGetGameView = engineModule.GameEngine.prototype.getGameView;
-engineModule.GameEngine.prototype.getGameView = function countedEngineGetGameView(...args) {
-    counts.engineGetGameViewCalls++;
-    return originalEngineGetGameView.apply(this, args);
+const originalEngineGetGameState = engineModule.GameEngine.prototype.getGameState;
+engineModule.GameEngine.prototype.getGameState = function countedEngineGetGameState(...args) {
+    counts.engineGetGameStateCalls++;
+    return originalEngineGetGameState.apply(this, args);
 };
 
 const originalStructuredClone = globalThis.structuredClone;
 globalThis.structuredClone = function countedStructuredClone(...args) {
     const value = args[0];
-    if (value && typeof value === "object" && value.turn && Array.isArray(value.actions)) {
+    if (value && typeof value === "object" && value.turn && Array.isArray(value.enemies)) {
         counts.structuredCloneJsonBytes += Buffer.byteLength(JSON.stringify(value));
         counts.clonedEnemies += value.enemies.length;
         counts.clonedIntentions += value.enemies.reduce((sum, enemy) => sum + enemy.intentions.length, 0);
         counts.clonedBindings += value.characters.reduce((sum, character) => sum + character.bindings.length, 0);
-        counts.clonedMoves += value.actions.reduce((sum, action) => sum + action.moves.length, 0);
-        counts.clonedMoveTargetEntries += value.actions.reduce((sum, action) => sum + action.moves.reduce((moveSum, move) => moveSum + move.targets.length, 0), 0);
-        counts.clonedEscapeEntries += value.actions.reduce((sum, action) => sum + action.escapes.length, 0);
+    } else if (Array.isArray(value) && value.every((action) => action && Array.isArray(action.moves))) {
+        counts.structuredCloneJsonBytes += Buffer.byteLength(JSON.stringify(value));
+        counts.clonedMoves += value.reduce((sum, action) => sum + action.moves.length, 0);
+        counts.clonedMoveTargetEntries += value.reduce((sum, action) => sum + action.moves.reduce((moveSum, move) => moveSum + move.targets.length, 0), 0);
+        counts.clonedEscapeEntries += value.reduce((sum, action) => sum + action.escapes.length, 0);
     }
     const started = performance.now();
     const result = originalStructuredClone(...args);

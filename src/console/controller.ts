@@ -1,5 +1,6 @@
 import type {
     ActionInfo,
+    ActionView,
     ActionResult,
     BattleState,
     BindingId,
@@ -7,6 +8,7 @@ import type {
     EntityId,
     EscapeInfo,
     GameEvent,
+    GameState,
     PlayerAction,
     ValidTarget,
 } from "../engine/public/types";
@@ -40,6 +42,7 @@ export interface BattleChoiceRequest {
 
 export interface BattlePlaybackRequest {
     screen: ScreenModel;
+    finalActions: ActionView[];
     groups: readonly ActionGroup[];
     fromLogLine: number;
     enemyActionCount: number;
@@ -84,21 +87,23 @@ export async function runBattleController(
     const initialEvents = initialOutput.length > 0 && typeof initialOutput[0] !== "string"
         ? initialOutput as GameEvent[]
         : [];
-    const initialView = engine.getGameView();
+    let visibleState: GameState = engine.getGameState();
+    let currentActions: ActionView[] = engine.getActionView();
+    const initialState = visibleState;
     const actorStyles = new ActorStyleRegistry([
-        ...initialView.characters.map((character) => character.id),
-        ...initialView.enemies.map((enemy) => enemy.id),
+        ...initialState.characters.map((character) => character.id),
+        ...initialState.enemies.map((enemy) => enemy.id),
     ]);
     const logEntries: StyledLine[] = initialEvents.length > 0
-        ? initialLogEntries(initialEvents, actorStyles, initialView.turn.round)
+        ? initialLogEntries(initialEvents, actorStyles, initialState.turn.round)
         : (initialOutput as string[]).map((text) => ({ text }));
-    const initialPhase = phaseSeparator(initialView.turn.phase, initialView.turn.round);
+    const initialPhase = phaseSeparator(initialState.turn.phase, initialState.turn.round);
     if (logEntries.at(-1)?.text !== initialPhase.text) {
         logEntries.push(initialPhase);
     }
     let bindingIds = encounterBindings(initialEvents);
     if (bindingIds.length === 0) {
-        bindingIds = [...(engine.getGameView().encounter?.bindings ?? [])];
+        bindingIds = [...(visibleState.encounter?.bindings ?? [])];
     }
     let running = true;
     let outcomeReported = false;
@@ -111,18 +116,17 @@ export async function runBattleController(
     };
 
     const notifyQuit = (): void => {
-        if (quitReported || engine.getGameView().turn.outcome !== "ongoing") return;
+        if (quitReported || visibleState.turn.outcome !== "ongoing") return;
         quitReported = true;
         notifyObserver(() => observer?.onQuit?.());
     };
 
     const screen = (actionLines: string[]): ScreenModel => {
-        const view = engine.getGameView();
         return {
             encounter,
             seed: engine.getSeed(),
-            state: view,
-            availability: view.actions,
+            state: visibleState,
+            availability: currentActions,
             bindings: bindingIds,
             bindingThresholds: engine.getThresholds(),
             actionLines,
@@ -157,28 +161,32 @@ export async function runBattleController(
         action: PlayerAction,
         source: "player" | "automatic" = "player",
     ): Promise<boolean> => {
-        const previousRound = engine.getGameView().turn.round;
+        const previousRound = visibleState.turn.round;
         const result = engine.executeAction(action);
-        if (result.success) bindingIds = updateEncounterBindings(bindingIds, result.frames);
+        if (result.success) bindingIds = updateEncounterBindings(bindingIds, result.frames.map((frame) => frame.event));
         const playback = appendResult(logEntries, result, previousRound, action, actorStyles);
         notifyObserver(() => observer?.onAction?.(action, result, source));
-        notifyOutcome(result.success
-            ? result.actions.turn.outcome
-            : engine.getGameView().turn.outcome);
+        const finalState = result.success ? result.frames.at(-1)?.state ?? visibleState : visibleState;
+        notifyOutcome(finalState.turn.outcome);
         if (result.success && ui.playback && playback.groups.length > 0) {
             await ui.playback({
                 screen: screen([]),
+                finalActions: result.actions,
                 groups: playback.groups,
                 fromLogLine: playback.fromLogLine,
                 enemyActionCount: playback.enemyActionCount,
                 delayMs: enemyPlaybackDelay(playback.enemyActionCount),
             });
         }
+        if (result.success) {
+            visibleState = finalState;
+            currentActions = result.actions;
+        }
         if (
             result.success
-            && result.actions.turn.outcome === "ongoing"
+            && visibleState.turn.outcome === "ongoing"
             && action.type !== "endTurn"
-            && !result.actions.actions.some((character) => character.available)
+            && !currentActions.some((character) => character.available)
         ) {
             logEntries.push({ text: "No characters available. Ending turn automatically." });
             await execute({ type: "endTurn" }, "automatic");
@@ -258,8 +266,7 @@ export async function runBattleController(
 
     const chooseEscape = async (actorId: EntityId): Promise<boolean> => {
         while (true) {
-            const view = engine.getGameView();
-            const actorView = view.actions.find((action) => action.id === actorId);
+            const actorView = currentActions.find((action) => action.id === actorId);
             const options = orderEscapeOptions(
                 actorView?.escapes.filter((option) => option.available) ?? [],
                 bindingIds,
@@ -299,7 +306,7 @@ export async function runBattleController(
             });
             if (!success) return false;
 
-            const actor = engine.getGameView().characters.find(
+            const actor = visibleState.characters.find(
                 (character) => character.id === actorId,
             );
             if (!actor || actor.bonusEscapes === 0) return true;
@@ -308,8 +315,8 @@ export async function runBattleController(
 
     const chooseAction = async (characterId: EntityId): Promise<void> => {
         while (true) {
-            const view = engine.getGameView();
-            const actorView = view.actions.find((action) => action.id === characterId);
+            const view = visibleState;
+            const actorView = currentActions.find((action) => action.id === characterId);
             if (!actorView?.available) return;
 
             const actor = view.characters.find((character) => character.id === characterId);
@@ -388,7 +395,7 @@ export async function runBattleController(
 
     try {
         while (running) {
-            const view = engine.getGameView();
+            const view = visibleState;
             if (view.turn.outcome !== "ongoing") {
                 notifyOutcome(view.turn.outcome);
                 await ui.showFinal?.(screen(finalStateLines(view.turn.outcome)));
@@ -396,11 +403,11 @@ export async function runBattleController(
                 continue;
             }
 
-            const endTurnNumber = view.actions.length + 1;
-            const quitNumber = view.actions.length + 2;
+            const endTurnNumber = currentActions.length + 1;
+            const quitNumber = currentActions.length + 2;
             const endTurnChoice: BattleChoice = { number: endTurnNumber, label: "End turn", kind: "endTurn" };
             const quitChoice: BattleChoice = { number: quitNumber, label: "Quit", kind: "quit" };
-            const characterLines = view.actions.map((character, index) => {
+            const characterLines = currentActions.map((character, index) => {
                 const stateCharacter = view.characters.find((candidate) => candidate.id === character.id);
                 if (!character.available) {
                     return `[-] ${character.id}  -- ${character.reason}`;
@@ -413,7 +420,7 @@ export async function runBattleController(
                 `[${choiceShortcut(endTurnChoice)}] End turn`,
                 `[${choiceShortcut(quitChoice)}] Quit`,
             ];
-            const choices: BattleChoice[] = view.actions.flatMap((character, index) =>
+            const choices: BattleChoice[] = currentActions.flatMap((character, index) =>
                 character.available
                     ? [{ number: index + 1, label: character.id }]
                     : [],
@@ -427,8 +434,8 @@ export async function runBattleController(
                 choices,
             );
             const selectedNumber = choices[choice].number;
-            if (selectedNumber <= view.actions.length) {
-                await chooseAction(view.actions[selectedNumber - 1].id);
+            if (selectedNumber <= currentActions.length) {
+                await chooseAction(currentActions[selectedNumber - 1].id);
             } else if (selectedNumber === endTurnNumber) {
                 await execute({ type: "endTurn" });
             } else {

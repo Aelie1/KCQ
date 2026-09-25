@@ -21,7 +21,7 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/gameView";
+import { actionView } from "../helpers/actionView";
 
 const rope = makeBehavioralBinding("rope");
 const tape = makeBehavioralBinding("tape");
@@ -153,7 +153,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
         expect(damage).toHaveLength(rolls.filter(({ result: band }) => band !== "miss").length);
         expect(damage.length).toBeGreaterThan(1);
         expect(new Set(damage.map(({ amount }) => amount)).size).toBeGreaterThan(1);
-        expect(engine.getGameView().enemies[0].currHp).toBe(
+        expect(engine.getGameState().enemies[0].currHp).toBe(
             2_000 - damage.reduce((total, { amount }) => total + amount, 0),
         );
     });
@@ -314,8 +314,8 @@ describe("Hinari's Spatial Movement", () => {
             type: "enemyDamaged",
             target: "foe1",
         }));
-        expect(result.actions.characters[0].bindings).toEqual([]);
-        expect(result.actions.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
+        expect(result.frames.at(-1)!.state.characters[0].bindings).toEqual([]);
+        expect(result.frames.at(-1)!.state.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
     });
 
     it("skips a guaranteed movement trap while Escaping", () => {
@@ -345,8 +345,8 @@ describe("Hinari's Spatial Movement", () => {
             binding: rope.id,
         }));
         expect(bindingState(engine, rope.id, hinari.id)?.value).toBeLessThan(30);
-        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual([rope.id]);
-        expect(result.actions.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
+        expect(result.frames.at(-1)!.state.characters[0].bindings.map(({ id }) => id)).toEqual([rope.id]);
+        expect(result.frames.at(-1)!.state.traps).toEqual([{ id: trapPuddle.id, amount: 100 }]);
     });
 });
 
@@ -781,7 +781,7 @@ describe("Hinari's Release", () => {
             duration: 2,
             modifiers: { defense: -1, hit: -1 },
         });
-        expect(engine.getGameView().enemies[0].currHp).toBe(2_000);
+        expect(engine.getGameState().enemies[0].currHp).toBe(2_000);
         expect(characterState(engine, hinari.id).data.subspace).toBe(35);
     });
 

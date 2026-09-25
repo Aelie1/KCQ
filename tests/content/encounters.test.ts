@@ -7,7 +7,7 @@ import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { actionView } from "../helpers/gameView";
+import { actionView } from "../helpers/actionView";
 import { makeEnemyDef, makeWaitMove } from "../helpers/helpers";
 import {
     basicAttackingEnemy,
@@ -44,13 +44,13 @@ describe("encounters", () => {
             bindings: [],
             effects: [],
         });
-        expect(engine.getGameView().enemies).toEqual([]);
+        expect(engine.getGameState().enemies).toEqual([]);
     });
 
     it("does not mutate combat state or consume an entity id for an unknown id", () => {
         const engine = createCustomEngine([oneEnemyEncounter], testCharacterList, 1);
         engine.loadCharacter(testHero.id);
-        const before = engine.getGameView();
+        const before = engine.getGameState();
 
         expect(engine.loadEncounter("missing-encounter")).toEqual({
             type: "loadEncounter",
@@ -59,7 +59,7 @@ describe("encounters", () => {
             bindings: [],
             effects: [],
         });
-        expect(engine.getGameView()).toEqual(before);
+        expect(engine.getGameState()).toEqual(before);
 
         expect(engine.loadEncounter(oneEnemyEncounter.id)).toEqual({
             type: "loadEncounter", id: oneEnemyEncounter.id, success: true, bindings: [],
@@ -76,7 +76,7 @@ describe("encounters", () => {
 
         expect(first.effects[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
         expect(second.effects[0]).toEqual({ type: "enemySpawned", target: `${waitEnemy.id}1` });
-        expect(engine.getGameView().enemies.map((enemy) => enemy.id)).toEqual([
+        expect(engine.getGameState().enemies.map((enemy) => enemy.id)).toEqual([
             `${waitEnemy.id}1`,
         ]);
     });
@@ -111,7 +111,7 @@ describe("encounters", () => {
                 { type: "enemySpawned", target: "attacker1" },
             ],
         });
-        expect(engine.getGameView().enemies).toEqual([
+        expect(engine.getGameState().enemies).toEqual([
             expect.objectContaining({
                 id: "foe1",
                 maxHp: waitEnemy.hp,
@@ -164,7 +164,7 @@ describe("encounters", () => {
         });
         expect(calls).toEqual(["setup", "ai"]);
         expect(enemiesVisibleToSetup).toEqual([`${enemy.id}1`]);
-        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: wait.id,
             targets: [],
             effects: [],
@@ -185,7 +185,7 @@ describe("encounters", () => {
         });
         expect(events.effects.filter((event) => event.type === "enemySpawned"))
             .toHaveLength(plains_1.enemies.length);
-        expect(engine.getGameView().enemies).toHaveLength(plains_1.enemies.length);
+        expect(engine.getGameState().enemies).toHaveLength(plains_1.enemies.length);
     });
 
     it("catalogues and loads plains_2 with Skunks, puddles, and valid intentions", () => {
@@ -199,7 +199,7 @@ describe("encounters", () => {
         const engine = createCustomEngine(encounterList, [ko], 8224);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(plains_2.id);
-        const state = engine.getGameView();
+        const state = engine.getGameState();
 
         expect(events).toMatchObject({
             type: "loadEncounter",

@@ -54,7 +54,7 @@ for (const row of rows.sort((a, b) => b.inclusiveMs - a.inclusiveMs).slice(0, 50
     console.log(`${row.selfMs.toFixed(1)}ms\t${row.selfPct.toFixed(2)}%\t${row.inclusiveMs.toFixed(1)}ms\t${row.inclusivePct.toFixed(2)}%\t${row.key}`);
 }
 console.log("SELECTED");
-const selected = /structuredClone|refreshView|getGameView|GameStatus|mergeStatus|mergeModifiers|getStatusList|getActionView|getMovesList|getTargets|getEscapes|isValidTarget|calculateAccuracy|evaluateIntention|serializeIntention|serializeGameState|resolveMove|chooseAction|partyTotalBondage|cloneAction|deriveRunSeeds|summar/i;
+const selected = /structuredClone|refreshView|getGameState|GameStatus|mergeStatus|mergeModifiers|getStatusList|getActionView|getMovesList|getTargets|getEscapes|isValidTarget|calculateAccuracy|evaluateIntention|serializeIntention|serializeGameState|resolveMove|chooseAction|partyTotalBondage|cloneAction|deriveRunSeeds|summar/i;
 for (const row of rows.filter((candidate) => selected.test(candidate.key)).sort((a, b) => b.inclusiveMs - a.inclusiveMs)) {
     console.log(`${row.selfMs.toFixed(1)}ms\t${row.selfPct.toFixed(2)}%\t${row.inclusiveMs.toFixed(1)}ms\t${row.inclusivePct.toFixed(2)}%\t${row.key}`);
 }

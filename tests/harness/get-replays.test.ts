@@ -456,7 +456,7 @@ function makeReplayRows(
         release: "test-release",
         encounter: "plains_1",
         seed: "12345",
-        initial_state: JSON.stringify(compactStateDigest(engine.getGameView())),
+        initial_state: JSON.stringify(compactStateDigest(engine.getGameState())),
     }];
     for (const [index, action] of (options.actions ?? []).entries()) {
         const result = engine.executeAction(structuredClone(action));
@@ -471,12 +471,12 @@ function makeReplayRows(
             success: String(result.success),
             failure_reason: result.success ? "" : result.reason,
             state_after: JSON.stringify(compactStateDigest(
-                result.success ? result.actions : engine.getGameView(),
+                result.success ? result.frames.at(-1)!.state : engine.getGameState(),
             )),
         });
     }
     if (options.terminal) {
-        const view = engine.getGameView();
+        const view = engine.getGameState();
         const finished = options.terminal === "finished";
         if (finished && view.turn.outcome === "ongoing") {
             throw new Error("Synthetic finished replay has an ongoing outcome.");
@@ -497,7 +497,7 @@ function makeReplayRows(
 
 function emptyFightReplay(): FightReplay {
     const engine = loadedEngine();
-    return { initialState: structuredClone(engine.getGameView()), steps: [] };
+    return { initialState: structuredClone(engine.getGameState()), initialActions: structuredClone(engine.getActionView()), steps: [] };
 }
 
 function loadedEngine() {

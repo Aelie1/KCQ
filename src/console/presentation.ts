@@ -3,6 +3,8 @@ import type {
     BindingLevel,
     EntityId,
     GameEvent,
+    EventFrame,
+    GameState,
     LeafEvent,
     HitBand,
     Phase,
@@ -63,6 +65,7 @@ export interface ActionGroup {
     phase?: Phase;
     lines: StyledLine[];
     highlights: HighlightTarget[];
+    state?: GameState;
 }
 
 /** Assigns fixed party colors and a shared enemy color without putting ANSI in model text. */
@@ -155,7 +158,7 @@ export function encounterSeparator(encounter: string): StyledLine {
 
 export function formatActionGroups(
     action: PlayerAction | undefined,
-    events: readonly GameEvent[],
+    events: readonly (GameEvent | EventFrame)[],
     registry: ActorStyleRegistry = new ActorStyleRegistry(),
     startingRound = 1,
 ): ActionGroup[] {
@@ -188,81 +191,86 @@ export function formatActionGroups(
         beginAction(action.actor, `${action.actor} tried to escape ${action.binding} on ${action.target}.`);
     }
 
-    for (const event of events.flatMap((entry) =>
-        entry.type === "useMove" ? [entry] : eventEntries([entry]))) {
-        if (event.type === "changePhase") {
-            flush();
-            if (event.phase === "player" && phase === "enemy") round += 1;
-            phase = event.phase;
-            groups.push({
-                kind: "phase",
-                phase,
-                lines: [phaseSeparator(phase, round)],
-                highlights: [],
-            });
-            continue;
-        }
-
-        if (event.type === "useMove") {
-            sawMoveUsed = true;
-            const interrupted = event.effects.some((effect) => effect.type === "actionInterrupted");
-            const group = beginAction(event.actor, interrupted
-                ? `${event.actor} attempted ${event.move}.`
-                : formatEvent(event));
-            const style = registry.styleFor(event.actor);
-            group.highlights.push({ kind: "cooldown", entity: event.actor, move: event.move });
-            const appendEffect = (effect: LeafEvent, prefix: string): void => {
-                if (effect.type === "enemySpawned") registry.styleFor(effect.target);
-                const line = formatEvent(effect);
-                if (line) group.lines.push({ text: `${prefix}${line}`, style });
-                group.highlights.push(...deriveHighlightTargets([effect]));
-            };
-            if (event.targets.length > 1) {
-                for (const target of event.targets) {
-                    const result = target.result === "none" ? "" : `: ${target.result.toUpperCase()}`;
-                    group.lines.push({ text: `  -> ${target.target}${result}`, style });
-                    for (const effect of target.effects) appendEffect(effect, "    ↳ ");
-                }
-            } else {
-                for (const target of event.targets) {
-                    for (const effect of target.effects) appendEffect(effect, "  ↳ ");
-                }
+    for (const frame of events) {
+        const topLevel = "event" in frame ? frame.event : frame;
+        const frameState = "event" in frame ? frame.state : undefined;
+        for (const event of topLevel.type === "useMove" ? [topLevel] : eventEntries([topLevel])) {
+            if (event.type === "changePhase") {
+                flush();
+                if (event.phase === "player" && phase === "enemy") round += 1;
+                phase = event.phase;
+                groups.push({
+                    kind: "phase",
+                    phase,
+                    lines: [phaseSeparator(phase, round)],
+                    highlights: [],
+                    ...(frameState ? { state: frameState } : {}),
+                });
+                continue;
             }
-            for (const effect of event.effects) appendEffect(effect, "  ↳ ");
-            continue;
-        }
 
-        if (!current && fallbackActor) beginAction(fallbackActor);
-        if (!current) {
-            current = { kind: "system", phase, lines: [], highlights: [] };
-        }
-        if (event.type === "enemySpawned") registry.styleFor(event.target);
+            if (event.type === "useMove") {
+                sawMoveUsed = true;
+                const interrupted = event.effects.some((effect) => effect.type === "actionInterrupted");
+                const group = beginAction(event.actor, interrupted
+                    ? `${event.actor} attempted ${event.move}.`
+                    : formatEvent(event));
+                const style = registry.styleFor(event.actor);
+                group.highlights.push({ kind: "cooldown", entity: event.actor, move: event.move });
+                const appendEffect = (effect: LeafEvent, prefix: string): void => {
+                    if (effect.type === "enemySpawned") registry.styleFor(effect.target);
+                    const line = formatEvent(effect);
+                    if (line) group.lines.push({ text: `${prefix}${line}`, style });
+                    group.highlights.push(...deriveHighlightTargets([effect]));
+                };
+                if (event.targets.length > 1) {
+                    for (const target of event.targets) {
+                        const result = target.result === "none" ? "" : `: ${target.result.toUpperCase()}`;
+                        group.lines.push({ text: `  -> ${target.target}${result}`, style });
+                        for (const effect of target.effects) appendEffect(effect, "    ↳ ");
+                    }
+                } else {
+                    for (const target of event.targets) {
+                        for (const effect of target.effects) appendEffect(effect, "  ↳ ");
+                    }
+                }
+                for (const effect of event.effects) appendEffect(effect, "  ↳ ");
+                continue;
+            }
 
-        if (
-            event.type === "actionInterrupted"
-            && action?.type === "move"
-            && !sawMoveUsed
-            && current.kind === "action"
-            && !syntheticInterruptedAction
-        ) {
-            const style = registry.styleFor(action.actor);
-            current.lines = [
-                { text: `${action.actor} attempted ${action.move}.`, style },
-                ...current.lines.map((existing) => ({
-                    ...existing,
-                    text: existing.text.startsWith("  ↳ ") ? existing.text : `  ↳ ${existing.text}`,
-                })),
-            ];
-            syntheticInterruptedAction = true;
-        }
+            if (!current && fallbackActor) beginAction(fallbackActor);
+            if (!current) {
+                current = { kind: "system", phase, lines: [], highlights: [] };
+            }
+            if (event.type === "enemySpawned") registry.styleFor(event.target);
 
-        const line = formatEvent(event);
-        if (line) {
-            const style = current.actor ? registry.styleFor(current.actor) : undefined;
-            const isConsequence = current.kind === "action" && current.lines.length > 0;
-            current.lines.push({ text: `${isConsequence ? "  ↳ " : ""}${line}`, style });
+            if (
+                event.type === "actionInterrupted"
+                && action?.type === "move"
+                && !sawMoveUsed
+                && current.kind === "action"
+                && !syntheticInterruptedAction
+            ) {
+                const style = registry.styleFor(action.actor);
+                current.lines = [
+                    { text: `${action.actor} attempted ${action.move}.`, style },
+                    ...current.lines.map((existing) => ({
+                        ...existing,
+                        text: existing.text.startsWith("  ↳ ") ? existing.text : `  ↳ ${existing.text}`,
+                    })),
+                ];
+                syntheticInterruptedAction = true;
+            }
+
+            const line = formatEvent(event);
+            if (line) {
+                const style = current.actor ? registry.styleFor(current.actor) : undefined;
+                const isConsequence = current.kind === "action" && current.lines.length > 0;
+                current.lines.push({ text: `${isConsequence ? "  ↳ " : ""}${line}`, style });
+            }
+            if (!("effects" in event)) current.highlights.push(...deriveHighlightTargets([event]));
         }
-        if (!("effects" in event)) current.highlights.push(...deriveHighlightTargets([event]));
+        if (frameState && current) current.state = frameState;
     }
 
     flush();

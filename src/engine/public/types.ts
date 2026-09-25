@@ -17,10 +17,6 @@ export interface Engine {
  * State
  *******************************************************/
 
-export interface GameView extends GameState {
-    actions: ActionView[];
-}
-
 export interface ActionView {
     id: EntityId;
     available: boolean;

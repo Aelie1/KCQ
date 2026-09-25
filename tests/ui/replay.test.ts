@@ -1,8 +1,7 @@
 import { PassThrough, Readable } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
 import { runConsoleReplay, type ConsoleReplayInput } from "../../src/console/replay";
-import type { GameView, PlayerAction } from "../../src/engine/public/types";
-import type { FightReplay } from "../../src/harness/harness";
+import type { ActionView, GameState, PlayerAction } from "../../src/engine/public/types";
 
 // Fail if viewing ever acquires a runtime dependency on simulation or the runner.
 vi.mock("../../src/engine/private/engine", () => {
@@ -14,7 +13,7 @@ vi.mock("../../src/harness/harness", () => {
 
 const clearScreen = "\x1b[2J\x1b[H";
 
-function recordedState(round: number, hp: number, binding: number): GameView {
+function recordedState(round: number, hp: number, binding: number): GameState {
     return {
         turn: { round, step: 1, phase: "player", outcome: "ongoing" },
         characters: [{
@@ -40,15 +39,12 @@ function recordedState(round: number, hp: number, binding: number): GameView {
         }],
         traps: [{ id: "recordedTrap", amount: round }],
         encounter: { id: "recorded-encounter", enemies: ["recorded-foe"], bindings: ["rope"], traps: ["recordedTrap"] },
-        actions: [{
-            id: "hero",
-            available: true,
-            moves: [],
-            escapes: [],
-            stance: { available: true },
-        }],
     };
 }
+
+const recordedActions: ActionView[] = [{
+    id: "hero", available: true, moves: [], escapes: [], stance: { available: true },
+}];
 
 function replayInput(): ConsoleReplayInput {
     return {
@@ -57,20 +53,23 @@ function replayInput(): ConsoleReplayInput {
         bindingThresholds: { max: 100, thresholds: { easy: 10, hard: 30 } },
         replay: {
             initialState: recordedState(1, 90, 0),
+            initialActions: recordedActions,
             steps: [{
                 action: { type: "move", actor: "hero", move: "recorded-strike", targets: ["recorded-foe"] },
                 success: true,
-                events: [{ type: "useMove", actor: "hero", move: "recorded-strike", effects: [], targets: [{ target: "recorded-foe", result: "hit", effects: [
+                frames: [{ event: { type: "useMove", actor: "hero", move: "recorded-strike", effects: [], targets: [{ target: "recorded-foe", result: "hit", effects: [
                     { type: "enemyDamaged", target: "recorded-foe", amount: 17 },
-                ] }] }],
+                ] }] }, state: recordedState(1, 73, 12) }],
                 state: recordedState(1, 73, 12),
+                actions: recordedActions,
             }, {
                 action: { type: "endTurn" },
                 success: true,
-                events: [{ type: "changePhase", phase: "enemy", effects: [
+                frames: [{ event: { type: "changePhase", phase: "enemy", effects: [
                     { type: "enemyDamaged", target: "recorded-foe", amount: 32 },
-                ] }],
+                ] }, state: recordedState(2, 41, 24) }],
                 state: recordedState(2, 41, 24),
+                actions: recordedActions,
             }],
         },
     };
@@ -107,6 +106,29 @@ function freezeReplay(value: unknown): void {
 }
 
 describe("console replay viewer", () => {
+    it("reads the recorded event and state shape from a historical release", async () => {
+        const input = replayInput();
+        if (!("initialActions" in input.replay)) throw new Error("Expected current replay fixture");
+        const current = input.replay;
+        const historical: ConsoleReplayInput = {
+            ...input,
+            replay: {
+                initialState: { ...current.initialState, actions: current.initialActions },
+                steps: current.steps.map((step) => step.success
+                    ? {
+                        action: step.action, success: true as const,
+                        events: step.frames.map((frame) => frame.event),
+                        state: { ...step.state, actions: step.actions },
+                    }
+                    : step),
+            },
+        };
+
+        const frames = await viewReplay(historical, ["n", "q"]);
+        expectPosition(frames[1], 1, 73);
+        expect(frames[1]).toContain("recorded-foe took 17 damage.");
+    });
+
     it("starts at the recorded initial state with metadata and the normal panels", async () => {
         const [frame] = await viewReplay(replayInput(), ["quit"]);
 
@@ -205,7 +227,7 @@ describe("console replay viewer", () => {
 
     it("views frozen replay data without mutation or access to the simulation engine", async () => {
         const input = replayInput();
-        const before: FightReplay = structuredClone(input.replay);
+        const before = structuredClone(input.replay);
         freezeReplay(input);
 
         const frames = await viewReplay(input, ["n", "n", "p", "start", "end", "q"]);

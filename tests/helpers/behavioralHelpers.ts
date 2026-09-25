@@ -3,9 +3,9 @@ import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { iEffect, iMoveResult } from "../../src/engine/protected/types";
 import type { AccuracyProfile, ActionSuccess, Binding, Buff, Character, Enemy, Engine, MoveType, PlayerAction, ValidTarget } from "../../src/engine/public/types";
-import { actionView } from "./gameView";
+import { actionView } from "./actionView";
 
-export { actionView } from "./gameView";
+export { actionView } from "./actionView";
 
 export function targetAccuracy(
     engine: Engine,
@@ -128,13 +128,13 @@ export function execute(engine: Engine, action: PlayerAction): ActionSuccess {
 }
 
 export function characterState(engine: Engine, id = "hero"): Character {
-    const character = engine.getGameView().characters.find((entry) => entry.id === id);
+    const character = engine.getGameState().characters.find((entry) => entry.id === id);
     if (!character) throw new Error(`Expected character ${id}`);
     return character;
 }
 
 export function enemyState(engine: Engine, id = "foe1"): Enemy {
-    const enemy = engine.getGameView().enemies.find((entry) => entry.id === id);
+    const enemy = engine.getGameState().enemies.find((entry) => entry.id === id);
     if (!enemy) throw new Error(`Expected enemy ${id}`);
     return enemy;
 }
@@ -154,7 +154,7 @@ export function buffState(
     buffId: string,
     entityId = "hero",
 ): Buff | undefined {
-    const state = engine.getGameView();
+    const state = engine.getGameState();
     const entity = state.characters.find(({ id }) => id === entityId)
         ?? state.enemies.find(({ id }) => id === entityId);
     if (!entity) throw new Error(`Expected entity ${entityId}`);

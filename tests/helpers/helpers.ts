@@ -3,9 +3,9 @@ import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { iBinding, iCharacter, iEffect, iEnemy, iMoveResult, iStatus } from "../../src/engine/protected/types";
 import type { BindingLevel, Engine, FailureReason, MoveType } from "../../src/engine/public/types";
-import { actionView } from "./gameView";
+import { actionView } from "./actionView";
 
-export { actionView } from "./gameView";
+export { actionView } from "./actionView";
 
 const bindingLevels: BindingLevel[] = [
     "none",

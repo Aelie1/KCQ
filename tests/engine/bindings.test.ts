@@ -43,12 +43,12 @@ describe("binding behavior through GameEngine", () => {
         ];
         const engine = makeBehavioralEngine([makeBehavioralCharacter("hero", moves)]);
 
-        expect(use(engine, "hero", "add-75").frames).toEqual([{
+        expect(use(engine, "hero", "add-75").frames.map((frame) => frame.event)).toEqual([{
             type: "useMove", actor: "hero", move: "add-75", targets: [],
             effects: [{ type: "bondageAdded", target: "hero", binding: "rope", amount: 75 }],
         }]);
 
-        expect(use(engine, "hero", "add-20").frames[0].effects[0]).toEqual({
+        expect(use(engine, "hero", "add-20").frames[0].event.effects[0]).toEqual({
             type: "bondageChanged",
             target: "hero",
             binding: "rope",
@@ -56,7 +56,7 @@ describe("binding behavior through GameEngine", () => {
         });
         expect(bindingState(engine, "rope")?.value).toBe(82);
 
-        expect(use(engine, "hero", "add-1000").frames[0].effects[0]).toEqual({
+        expect(use(engine, "hero", "add-1000").frames[0].event.effects[0]).toEqual({
             type: "bondageChanged",
             target: "hero",
             binding: "rope",
@@ -64,7 +64,7 @@ describe("binding behavior through GameEngine", () => {
         });
         expect(bindingState(engine, "rope")).toMatchObject({ value: 100, level: "impossible" });
 
-        expect(use(engine, "hero", "remove-7").frames[0].effects[0]).toEqual({
+        expect(use(engine, "hero", "remove-7").frames[0].event.effects[0]).toEqual({
             type: "bondageChanged",
             target: "hero",
             binding: "rope",
@@ -72,7 +72,7 @@ describe("binding behavior through GameEngine", () => {
         });
         expect(bindingState(engine, "rope")?.value).toBe(93);
 
-        expect(use(engine, "hero", "remove-all").frames[0].effects[0]).toEqual({
+        expect(use(engine, "hero", "remove-all").frames[0].event.effects[0]).toEqual({
             type: "bondageRemoved",
             target: "hero",
             binding: "rope",
@@ -88,7 +88,7 @@ describe("binding behavior through GameEngine", () => {
             makeBehavioralCharacter("hero", [remove]),
         ]);
 
-        expect(use(engine, "hero", remove.id).frames).toEqual([{
+        expect(use(engine, "hero", remove.id).frames.map((frame) => frame.event)).toEqual([{
             type: "useMove", actor: "hero", move: remove.id, targets: [], effects: [],
         }]);
         expect(characterState(engine).bindings).toEqual([]);

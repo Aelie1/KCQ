@@ -91,7 +91,7 @@ function endTurn(engine: Engine) {
 describe("normal Latex Skunk", () => {
     it("loads its authored identity, stats, and a usable intention", () => {
         const engine = loadSkunk({ seed: 1 });
-        const enemy = engine.getGameView().enemies[0];
+        const enemy = engine.getGameState().enemies[0];
 
         expect(skunk.id).toBe("skunk");
         expect(enemy).toMatchObject({
@@ -106,7 +106,7 @@ describe("normal Latex Skunk", () => {
 
     it("creates puddles with a no-target move using its accuracy effectiveness", () => {
         const engine = loadSkunk({ seed: 16, trapAmount: 0 });
-        const preview = engine.getGameView().enemies[0].intentions[0];
+        const preview = engine.getGameState().enemies[0].intentions[0];
         const previewEffect = preview?.effects.find((effect) => effect.type === "trap");
 
         expect(preview).toMatchObject({ move: "latexPuddle", targets: [] });
@@ -118,7 +118,7 @@ describe("normal Latex Skunk", () => {
         expect(resolvedEvents(result.frames)).toContainEqual({
             type: "trapAdded", actor: "skunk1", trap: trapPuddle.id, amount: previewEffect.amount,
         });
-        expect(result.actions.traps).toEqual([{ id: trapPuddle.id, amount: previewEffect.amount }]);
+        expect(result.frames.at(-1)!.state.traps).toEqual([{ id: trapPuddle.id, amount: previewEffect.amount }]);
     });
 
     it.each([
@@ -130,7 +130,7 @@ describe("normal Latex Skunk", () => {
         "applies Spray effectiveness for a %s seed (%s)",
         (seed, band) => {
             const engine = loadSkunk({ seed, trapAmount: 100 });
-            const preview = engine.getGameView().enemies[0].intentions[0];
+            const preview = engine.getGameState().enemies[0].intentions[0];
             expect(preview?.move).toBe("latexSpray");
             expect(preview?.targets[0]?.band).toBe(band);
             const previewBinding = preview?.targets[0]?.effects.find(
@@ -142,7 +142,7 @@ describe("normal Latex Skunk", () => {
             if (band === "miss") {
                 expect(previewBinding).toBeUndefined();
                 expect(bondage).toBeUndefined();
-                expect(result.actions.characters[0].bindings).toEqual([]);
+                expect(result.frames.at(-1)!.state.characters[0].bindings).toEqual([]);
             } else {
                 expect(previewBinding?.type).toBe("binding");
                 if (!previewBinding || previewBinding.type !== "binding" || previewBinding.amount === undefined) {
@@ -161,7 +161,7 @@ describe("normal Latex Skunk", () => {
     it("scales Spray bondage upward from Graze through Hit and Crit", () => {
         const amountForSeed = (seed: number): number => {
             const preview = loadSkunk({ seed, trapAmount: 100 })
-                .getGameView().enemies[0].intentions[0];
+                .getGameState().enemies[0].intentions[0];
             const effect = preview?.targets[0]?.effects.find(
                 (candidate) => candidate.type === "binding",
             );
@@ -187,7 +187,7 @@ describe("normal Latex Skunk", () => {
                 second: [{ definition: latexArms, value: 10, peak: 50 }],
             },
         });
-        const intention = engine.getGameView().enemies[0].intentions[0];
+        const intention = engine.getGameState().enemies[0].intentions[0];
 
         expect(intention).toMatchObject({
             move: "latexRegeneration",
@@ -199,8 +199,8 @@ describe("normal Latex Skunk", () => {
         });
 
         const result = endTurn(engine);
-        const first = result.actions.characters.find(({ id }) => id === "first")!;
-        const second = result.actions.characters.find(({ id }) => id === "second")!;
+        const first = result.frames.at(-1)!.state.characters.find(({ id }) => id === "first")!;
+        const second = result.frames.at(-1)!.state.characters.find(({ id }) => id === "second")!;
         const previewBinding = intention.targets[0]?.effects.find(
             (effect) => effect.type === "binding" && effect.binding === latexArms.id,
         );
@@ -227,13 +227,13 @@ describe("normal Latex Skunk", () => {
                 ],
             },
         });
-        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: "latexRegeneration",
             targets: [{ target: "hero", band: "hit" }],
         }]);
 
         const result = endTurn(engine);
-        expect(result.actions.characters[0].bindings).toEqual([
+        expect(result.frames.at(-1)!.state.characters[0].bindings).toEqual([
             expect.objectContaining({ id: latexHead.id, value: 50, data: { peak: 50 } }),
             expect.objectContaining({ id: latexArms.id, value: 30, data: { peak: 30 } }),
         ]);
@@ -250,13 +250,13 @@ describe("normal Latex Skunk", () => {
                 ],
             },
         });
-        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: "latexRegeneration",
             targets: [{ target: "hero", band: "crit" }],
         }]);
 
         const result = endTurn(engine);
-        expect(result.actions.characters[0].bindings.map(({ id, value, data }) => ({ id, value, peak: data.peak })))
+        expect(result.frames.at(-1)!.state.characters[0].bindings.map(({ id, value, data }) => ({ id, value, peak: data.peak })))
             .toEqual([
                 { id: latexHead.id, value: 30, peak: 30 },
                 { id: latexArms.id, value: 50, peak: 50 },
@@ -278,7 +278,7 @@ describe("normal Latex Skunk", () => {
         });
 
         const result = endTurn(engine);
-        const hero = result.actions.characters[0];
+        const hero = result.frames.at(-1)!.state.characters[0];
         expect(hero.bindings.find(({ id }) => id === latexHead.id)).toMatchObject({
             value: 80,
             data: { peak: 80 },
@@ -288,12 +288,12 @@ describe("normal Latex Skunk", () => {
             linkedEntity: "skunketteHero",
             statuses: [{ id: "incapacitated", value: 1 }],
         }));
-        expect(result.actions.enemies.map(({ id }) => id)).toContain("skunketteHero");
+        expect(result.frames.at(-1)!.state.enemies.map(({ id }) => id)).toContain("skunketteHero");
     });
 
     it("does not regenerate when no Latex has a recoverable peak", () => {
         const engine = loadSkunk({ seed: 1 });
-        expect(engine.getGameView().enemies[0].intentions[0]?.move).toBe("latexSpray");
+        expect(engine.getGameState().enemies[0].intentions[0]?.move).toBe("latexSpray");
     });
 
     it("leaves recoverable Latex unchanged when Regeneration misses", () => {
@@ -301,13 +301,13 @@ describe("normal Latex Skunk", () => {
             seed: 16,
             bindings: { hero: [{ definition: latexHead, value: 20, peak: 50 }] },
         });
-        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: "latexRegeneration",
             targets: [{ target: "hero", band: "miss", effects: [] }],
         }]);
 
         const result = endTurn(engine);
-        expect(result.actions.characters[0].bindings[0]).toMatchObject({
+        expect(result.frames.at(-1)!.state.characters[0].bindings[0]).toMatchObject({
             value: 20, data: { peak: 50 },
         });
     });
@@ -324,7 +324,7 @@ describe("normal Latex Skunk", () => {
             },
         });
 
-        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: "latexExplosion",
             targets: [{ target: "moreBound" }],
         }]);
@@ -336,7 +336,7 @@ describe("normal Latex Skunk", () => {
             hp: 60,
             characterIds: ["first", "second"],
         });
-        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: "latexExplosion",
             targets: [{ target: "first" }],
         }]);
@@ -356,7 +356,7 @@ describe("normal Latex Skunk", () => {
             characterIds: ["alpha", "beta"],
             moves: [crossThreshold],
         });
-        const oldIntention = engine.getGameView().enemies[0].intentions[0];
+        const oldIntention = engine.getGameState().enemies[0].intentions[0];
         expect(oldIntention).toMatchObject({
             move: "latexSpray",
             targets: [{ target: expect.any(String) }],
@@ -374,14 +374,14 @@ describe("normal Latex Skunk", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected threshold-crossing attack to succeed");
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "skunk1" });
-        expect(result.actions.enemies[0]).toMatchObject({
+        expect(result.frames.at(-1)!.state.enemies[0]).toMatchObject({
             currHp: 74,
             intentions: [{
                 move: "latexExplosion",
                 targets: [{ target: attacker }],
             }],
         });
-        expect(result.actions.enemies[0].intentions).toHaveLength(1);
+        expect(result.frames.at(-1)!.state.enemies[0].intentions).toHaveLength(1);
     });
 
     it.each([true, false])(
@@ -394,7 +394,7 @@ describe("normal Latex Skunk", () => {
                 trapAmount: withTrap ? 0 : null,
                 bindings: { hero: [{ definition: rope, value: 1 }] },
             });
-            const intention = engine.getGameView().enemies[0].intentions[0];
+            const intention = engine.getGameState().enemies[0].intentions[0];
             expect(intention).toMatchObject({
                 move: "latexExplosion",
                 targets: [{ target: "hero", band: "miss", effects: [] }],
@@ -402,7 +402,7 @@ describe("normal Latex Skunk", () => {
             const trapEffect = intention.effects.find((effect) => effect.type === "trap");
 
             const result = endTurn(engine);
-            expect(result.actions.enemies.some(({ id }) => id === "skunk1")).toBe(false);
+            expect(result.frames.at(-1)!.state.enemies.some(({ id }) => id === "skunk1")).toBe(false);
             expect(resolvedEvents(result.frames)).toContainEqual({
                 type: "enemyDefeated", target: "skunk1",
             });
@@ -412,10 +412,10 @@ describe("normal Latex Skunk", () => {
                     throw new Error("Expected Explosion trap effect");
                 }
                 expect(trapEffect.amount).toBeGreaterThan(0);
-                expect(result.actions.traps).toEqual([{ id: trapPuddle.id, amount: trapEffect.amount }]);
+                expect(result.frames.at(-1)!.state.traps).toEqual([{ id: trapPuddle.id, amount: trapEffect.amount }]);
             } else {
                 expect(trapEffect).toBeUndefined();
-                expect(result.actions.traps).toEqual([]);
+                expect(result.frames.at(-1)!.state.traps).toEqual([]);
             }
         },
     );
@@ -427,15 +427,15 @@ describe("normal Latex Skunk", () => {
             hp: 60,
             bindings: { hero: [{ definition: rope, value: 1 }] },
         });
-        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: "latexExplosion",
             targets: [{ target: "hero", band: "hit" }],
         }]);
 
         const result = endTurn(engine);
-        expect(result.actions.enemies.some(({ id }) => id === "skunk1")).toBe(false);
+        expect(result.frames.at(-1)!.state.enemies.some(({ id }) => id === "skunk1")).toBe(false);
         expect(BODY_LATEX.map(({ id }) => id)).toEqual(
-            result.actions.characters[0].bindings.slice(1).map(({ id }) => id),
+            result.frames.at(-1)!.state.characters[0].bindings.slice(1).map(({ id }) => id),
         );
     });
 
@@ -446,18 +446,18 @@ describe("normal Latex Skunk", () => {
             hp: 60,
             bindings: { hero: [{ definition: rope, value: 1 }] },
         });
-        expect(engine.getGameView().enemies[0].intentions).toMatchObject([{
+        expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
             move: "latexExplosion",
             targets: [{ target: "hero", band: "crit" }],
         }]);
 
         const result = endTurn(engine);
-        expect(result.actions.enemies.find(({ id }) => id === "skunk1")).toMatchObject({ currHp: 120 });
+        expect(result.frames.at(-1)!.state.enemies.find(({ id }) => id === "skunk1")).toMatchObject({ currHp: 120 });
         expect(resolvedEvents(result.frames)).toContainEqual({
             type: "enemyHealed", target: "skunk1", amount: 60,
         });
         expect(BODY_LATEX.map(({ id }) => id)).toEqual(
-            result.actions.characters[0].bindings.slice(1).map(({ id }) => id),
+            result.frames.at(-1)!.state.characters[0].bindings.slice(1).map(({ id }) => id),
         );
     });
 });

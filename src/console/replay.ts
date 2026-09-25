@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline";
 import type { Readable, Writable } from "node:stream";
-import type { PlayerAction, ThresholdInfo } from "../engine/public/types";
+import type { ActionView, GameEvent, GameState, PlayerAction, ThresholdInfo } from "../engine/public/types";
 import type { FightReplay } from "../harness/harness";
 import {
     ActorStyleRegistry,
@@ -13,10 +13,19 @@ import {
 import { renderAnsi, renderStyledScreen, type ScreenModel } from "./render";
 
 export interface ConsoleReplayInput {
-    replay: FightReplay;
+    replay: FightReplay | HistoricalFightReplay;
     encounter: string;
     seed: number;
     bindingThresholds: ThresholdInfo;
+}
+
+/** Release runtimes before the frame API retain their own recorded replay shape. */
+interface HistoricalFightReplay {
+    initialState: GameState & { actions: ActionView[] };
+    steps: Array<
+        | { action: PlayerAction; success: true; events: GameEvent[]; state: GameState & { actions: ActionView[] } }
+        | { action: PlayerAction; success: false; reason: string }
+    >;
 }
 
 interface ConsoleStreams {
@@ -85,6 +94,7 @@ export async function runConsoleReplay(
 function replayScreenModel(input: ConsoleReplayInput, position: number): ScreenModel {
     const { replay } = input;
     let state = replay.initialState;
+    let actions = "initialActions" in replay ? replay.initialActions : replay.initialState.actions;
     const actorStyles = new ActorStyleRegistry([
         ...replay.initialState.characters.map((character) => character.id),
         ...replay.initialState.enemies.map((enemy) => enemy.id),
@@ -102,9 +112,10 @@ function replayScreenModel(input: ConsoleReplayInput, position: number): ScreenM
         if (step.success) {
             const previousRound = state.turn.round;
             state = step.state;
+            actions = "actions" in step ? step.actions : step.state.actions;
             logEntries.push(...flattenGroups(formatActionGroups(
                 step.action,
-                step.events,
+                "frames" in step ? step.frames : step.events,
                 actorStyles,
                 previousRound,
             )));
@@ -118,7 +129,7 @@ function replayScreenModel(input: ConsoleReplayInput, position: number): ScreenM
         encounter: input.encounter,
         seed: input.seed,
         state,
-        availability: state.actions,
+        availability: actions,
         bindings: replay.initialState.encounter?.bindings ?? [],
         bindingThresholds: input.bindingThresholds,
         actionLines: [

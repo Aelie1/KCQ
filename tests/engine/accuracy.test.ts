@@ -12,8 +12,8 @@ import type {
     iTargetInfo,
 } from "../../src/engine/protected/types";
 import type { AccuracyProfile, Engine, MoveEvent } from "../../src/engine/public/types";
-import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/gameView";
+import { resolvedEvents, resultDetails } from "../helpers/events";
+import { actionView } from "../helpers/actionView";
 import {
     makeBinding,
     makeBindingDef,
@@ -526,7 +526,7 @@ describe("accuracy", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected all-target move to succeed");
-        expect(result.frames[0]).toMatchObject({
+        expect(result.frames[0].event).toMatchObject({
             type: "useMove",
             targets: expected.map((target) => ({
                 target: target.target.id,
@@ -613,9 +613,9 @@ describe("accuracy", () => {
             move: zeroTarget.id,
             targets: [],
         });
-        expect(zeroResult).toMatchObject({
+        expect(resultDetails(zeroResult)).toMatchObject({
             success: true,
-            events: [{ type: "useMove", targets: [] }],
+            eventSequence: [{ type: "useMove", targets: [] }],
         });
         expect(moveUsed(zeroResult).targets).toEqual([]);
         expect(resolutions).toBe(1);

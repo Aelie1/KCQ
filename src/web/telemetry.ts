@@ -1,7 +1,7 @@
 import type { BattleObserver } from "../console/controller";
 import type {
     ActionResult,
-    GameView,
+    GameState,
     PlayerAction,
 } from "../engine/public/types";
 
@@ -47,7 +47,7 @@ export interface BattleTelemetryObserver extends BattleObserver {
 }
 
 export interface CompactStateDigest {
-    turn: GameView["turn"];
+    turn: GameState["turn"];
     characters: Array<{
         id: string;
         acted: boolean;
@@ -95,7 +95,7 @@ export function createGameplayTelemetry(
     }
 }
 
-export function compactStateDigest(view: GameView): CompactStateDigest {
+export function compactStateDigest(view: GameState): CompactStateDigest {
     return {
         turn: {
             round: view.turn.round,
@@ -133,8 +133,8 @@ export function createBattleTelemetryObserver(options: {
     release: string;
     encounter: string;
     seed: number;
-    initialView: GameView;
-    getCurrentView: () => GameView;
+    initialState: GameState;
+    getCurrentState: () => GameState;
 }): BattleTelemetryObserver {
     let actionCount = 0;
     let lifecycleState: BattleLifecycleState = "active";
@@ -159,7 +159,7 @@ export function createBattleTelemetryObserver(options: {
         release: options.release,
         encounter: options.encounter,
         seed: options.seed,
-        initial_state: compactStateDigest(options.initialView),
+        initial_state: compactStateDigest(options.initialState),
     });
 
     return {
@@ -176,7 +176,9 @@ export function createBattleTelemetryObserver(options: {
                 success: result.success,
                 ...failureProperties(result),
                 state_after: compactStateDigest(
-                    result.success ? result.actions : options.getCurrentView(),
+                    result.success
+                        ? result.frames.at(-1)?.state ?? options.getCurrentState()
+                        : options.getCurrentState(),
                 ),
             });
         },
@@ -187,7 +189,7 @@ export function createBattleTelemetryObserver(options: {
                 replay_id: options.replayId,
                 outcome,
                 action_count: actionCount,
-                final_state: compactStateDigest(options.getCurrentView()),
+                final_state: compactStateDigest(options.getCurrentState()),
             });
         },
         onQuit: () => {
@@ -196,17 +198,17 @@ export function createBattleTelemetryObserver(options: {
             capture("battle_quit", {
                 replay_id: options.replayId,
                 action_count: actionCount,
-                current_state: compactStateDigest(options.getCurrentView()),
+                current_state: compactStateDigest(options.getCurrentState()),
             });
         },
         onPageHide: (event) => {
             if (event.persisted || lifecycleState !== "active") return;
-            if (options.getCurrentView().turn.outcome !== "ongoing") return;
+            if (options.getCurrentState().turn.outcome !== "ongoing") return;
             lifecycleState = "abandoned";
             capture("battle_abandoned", {
                 replay_id: options.replayId,
                 action_count: actionCount,
-                current_state: compactStateDigest(options.getCurrentView()),
+                current_state: compactStateDigest(options.getCurrentState()),
             }, {
                 send_instantly: true,
                 transport: "sendBeacon",
@@ -215,7 +217,7 @@ export function createBattleTelemetryObserver(options: {
     };
 }
 
-function compactBuff(buff: GameView["characters"][number]["buffs"][number]): {
+function compactBuff(buff: GameState["characters"][number]["buffs"][number]): {
     id: string;
     duration?: number;
 } {

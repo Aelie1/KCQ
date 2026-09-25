@@ -3,7 +3,7 @@ import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, StatusDef, StatusLevelDef, TrapDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { Engine, FailureReason, PlayerAction } from "../../src/engine/public/types";
-import { resolvedEvents } from "../helpers/events";
+import { resolvedEvents, resultDetails } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
 
 function trapThatConsumes(
@@ -65,17 +65,17 @@ describe("generic traps through GameEngine", () => {
             { definition: second, amount: 34 },
         ]);
 
-        expect(engine.getGameView().traps).toEqual([
+        expect(engine.getGameState().traps).toEqual([
             { id: first.id, amount: 12 },
             { id: second.id, amount: 34 },
         ]);
-        expect(engine.getGameView().encounter).toEqual({
+        expect(engine.getGameState().encounter).toEqual({
             id: "trap-test",
             enemies: [],
             bindings: [],
             traps: [first.id, second.id],
         });
-        expect(engine.getGameView().traps[0]).not.toHaveProperty("definition");
+        expect(engine.getGameState().traps[0]).not.toHaveProperty("definition");
     });
 
     it("normalizes generated amounts, caps additions, and clamps removals at zero", () => {
@@ -105,9 +105,9 @@ describe("generic traps through GameEngine", () => {
         engine.executeAction({ type: "stance", actor: "hero" });
 
         const added = engine.executeAction(attack("hero", add.id));
-        expect(added).toMatchObject({
+        expect(resultDetails(added)).toMatchObject({
             success: true,
-            view: { traps: [{ id: trap.id, amount: 2 }] },
+            finalState: { traps: [{ id: trap.id, amount: 2 }] },
         });
         if (!added.success) throw new Error("Expected add action to succeed");
         expect(resolvedEvents(added.frames)).toContainEqual({
@@ -115,9 +115,9 @@ describe("generic traps through GameEngine", () => {
         });
 
         const filled = engine.executeAction(attack("hero", fill.id));
-        expect(filled).toMatchObject({
+        expect(resultDetails(filled)).toMatchObject({
             success: true,
-            view: { traps: [{ id: trap.id, amount: 100 }] },
+            finalState: { traps: [{ id: trap.id, amount: 100 }] },
         });
         if (!filled.success) throw new Error("Expected fill action to succeed");
         expect(resolvedEvents(filled.frames)).toContainEqual({
@@ -125,9 +125,9 @@ describe("generic traps through GameEngine", () => {
         });
 
         const removed = engine.executeAction(attack("hero", remove.id));
-        expect(removed).toMatchObject({
+        expect(resultDetails(removed)).toMatchObject({
             success: true,
-            view: { traps: [{ id: trap.id, amount: 0 }] },
+            finalState: { traps: [{ id: trap.id, amount: 0 }] },
         });
         if (!removed.success) throw new Error("Expected remove action to succeed");
         expect(resolvedEvents(removed.frames).some((event) => event.type === "trapRemoved")).toBe(false);
@@ -150,15 +150,15 @@ describe("generic traps through GameEngine", () => {
         const result = engine.executeAction(attack());
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected action success");
-        expect(result.frames.map(({ type }) => type)).toEqual(["useMove"]);
-        expect(result.frames[0].effects.map(({ type }) => type)).toEqual([
+        expect(result.frames.map((frame) => frame.event).map(({ type }) => type)).toEqual(["useMove"]);
+        expect(result.frames[0].event.effects.map(({ type }) => type)).toEqual([
             "trapTriggered", "bondageAdded", "bondageAdded",
         ]);
         expect(resolvedEvents(result.frames)).toContainEqual({
             type: "trapTriggered", actor: "hero", trap: trap.id, amount: 7,
         });
-        expect(result.actions.traps).toEqual([{ id: trap.id, amount: 93 }]);
-        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual([
+        expect(result.frames.at(-1)!.state.traps).toEqual([{ id: trap.id, amount: 93 }]);
+        expect(result.frames.at(-1)!.state.characters[0].bindings.map(({ id }) => id)).toEqual([
             snare.id, attackMarker.id,
         ]);
         expect(resolvedEvents(result.frames).some((event) => event.type === "trapRemoved")).toBe(false);
@@ -170,9 +170,9 @@ describe("generic traps through GameEngine", () => {
         expect(engine.executeAction({ type: "stance", actor: "hero" }).success).toBe(true);
 
         const result = engine.executeAction(attack());
-        expect(result).toMatchObject({ success: true, view: { traps: [{ amount: 100 }] } });
+        expect(resultDetails(result)).toMatchObject({ success: true, finalState: { traps: [{ amount: 100 }] } });
         if (!result.success) throw new Error("Expected action success");
-        expect(result.frames.map(({ type }) => type)).toEqual(["useMove"]);
+        expect(result.frames.map((frame) => frame.event).map(({ type }) => type)).toEqual(["useMove"]);
     });
 
     it("rejects invalid commands before traps without mutating state or consuming RNG", () => {
@@ -184,11 +184,11 @@ describe("generic traps through GameEngine", () => {
         const build = () => makeTrapEngine([{ definition: trap, amount: 100 }], [rolledMove], 12345);
         const challenged = build();
         const control = build();
-        const before = challenged.getGameView();
+        const before = challenged.getGameState();
 
         expect(challenged.executeAction(attack("hero", "missing")))
             .toEqual({ success: false, reason: "invalidMove" });
-        expect(challenged.getGameView()).toEqual(before);
+        expect(challenged.getGameState()).toEqual(before);
         expect(challenged.executeAction(attack("hero", rolledMove.id)))
             .toEqual(control.executeAction(attack("hero", rolledMove.id)));
     });
@@ -215,11 +215,11 @@ describe("generic traps through GameEngine", () => {
             expect(resolvedEvents(result.frames)).toContainEqual({
                 type: "actionInterrupted", actor: "hero", reason,
             });
-            expect(result.frames).toMatchObject([{ type: "useMove", actor: "hero", move: move.id, targets: [] }]);
-            expect(result.frames[0].effects.map(({ type }) => type).indexOf("trapTriggered"))
-                .toBeLessThan(result.frames[0].effects.map(({ type }) => type).indexOf("actionInterrupted"));
-            expect(result.actions.characters[0].acted).toBe(true);
-            expect(result.actions.traps[0].amount).toBe(91);
+            expect(result.frames.map((frame) => frame.event)).toMatchObject([{ type: "useMove", actor: "hero", move: move.id, targets: [] }]);
+            expect(result.frames[0].event.effects.map(({ type }) => type).indexOf("trapTriggered"))
+                .toBeLessThan(result.frames[0].event.effects.map(({ type }) => type).indexOf("actionInterrupted"));
+            expect(result.frames.at(-1)!.state.characters[0].acted).toBe(true);
+            expect(result.frames.at(-1)!.state.traps[0].amount).toBe(91);
         },
     );
 
@@ -267,8 +267,8 @@ describe("generic traps through GameEngine", () => {
         expect(resolvedEvents(result.frames).some((event) =>
             event.type.startsWith("bondage") && "binding" in event && event.binding === rope.id,
         )).toBe(false);
-        expect(result.actions.characters[0].acted).toBe(true);
-        expect(result.actions.traps[0].amount).toBe(94);
+        expect(result.frames.at(-1)!.state.characters[0].acted).toBe(true);
+        expect(result.frames.at(-1)!.state.traps[0].amount).toBe(94);
     });
 
     it("triggers before a moving assist and then completes the legal escape", () => {
@@ -297,15 +297,15 @@ describe("generic traps through GameEngine", () => {
         });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected assist success");
-        expect(result.frames.map(({ type }) => type)).toEqual(["useEscape"]);
-        expect(result.frames[0].effects.map(({ type }) => type)).toEqual([
+        expect(result.frames.map((frame) => frame.event).map(({ type }) => type)).toEqual(["useEscape"]);
+        expect(result.frames[0].event.effects.map(({ type }) => type)).toEqual([
             "trapTriggered", "bondageAdded", "bondageChanged",
         ]);
-        expect(result.frames[0].effects.at(-1)).toMatchObject({
+        expect(result.frames[0].event.effects.at(-1)).toMatchObject({
             target: "ally", binding: rope.id, amount: expect.any(Number),
         });
-        expect(result.actions.characters[1].bindings[0].value).toBeLessThan(30);
-        expect(result.actions.traps[0].amount).toBe(96);
+        expect(result.frames.at(-1)!.state.characters[1].bindings[0].value).toBeLessThan(30);
+        expect(result.frames.at(-1)!.state.traps[0].amount).toBe(96);
     });
 
     it("resolves multiple authored traps independently in catalogue order", () => {
@@ -325,11 +325,11 @@ describe("generic traps through GameEngine", () => {
             { type: "trapTriggered", actor: "hero", trap: first.id, amount: 3 },
             { type: "trapTriggered", actor: "hero", trap: second.id, amount: 5 },
         ]);
-        expect(result.actions.traps).toEqual([
+        expect(result.frames.at(-1)!.state.traps).toEqual([
             { id: first.id, amount: 97 },
             { id: second.id, amount: 95 },
         ]);
-        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual([
+        expect(result.frames.at(-1)!.state.characters[0].bindings.map(({ id }) => id)).toEqual([
             firstBinding.id, secondBinding.id,
         ]);
     });
@@ -348,7 +348,7 @@ describe("authored Latex puddles", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected puddle action success");
         const bindings = Object.fromEntries(
-            result.actions.characters[0].bindings.map((binding) => [binding.id, binding]),
+            result.frames.at(-1)!.state.characters[0].bindings.map((binding) => [binding.id, binding]),
         );
         expect([
             bindings.latexLegs?.value ?? 0,
@@ -356,12 +356,12 @@ describe("authored Latex puddles", () => {
             bindings.latexTorso?.value ?? 0,
             bindings.latexHead?.value ?? 0,
         ]).toEqual(amounts);
-        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual(
+        expect(result.frames.at(-1)!.state.characters[0].bindings.map(({ id }) => id)).toEqual(
             ["latexLegs", "latexArms", "latexTorso", "latexHead"].slice(0, amounts.filter(Boolean).length),
         );
-        expect(result.actions.characters[0].bindings.every((binding) => binding.data.peak === binding.value))
+        expect(result.frames.at(-1)!.state.characters[0].bindings.every((binding) => binding.data.peak === binding.value))
             .toBe(true);
-        expect(result.actions.traps[0].amount).toBe(100 - consumed);
+        expect(result.frames.at(-1)!.state.traps[0].amount).toBe(100 - consumed);
         expect(resolvedEvents(result.frames)).toContainEqual({
             type: "trapTriggered", actor: "hero", trap: trapPuddle.id, amount: consumed,
         });
@@ -373,8 +373,8 @@ describe("authored Latex puddles", () => {
         const result = engine.executeAction(attack());
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected puddle action success");
-        expect(result.actions.traps).toEqual([{ id: trapPuddle.id, amount: 0 }]);
-        expect(result.actions.characters[0].bindings).toEqual([
+        expect(result.frames.at(-1)!.state.traps).toEqual([{ id: trapPuddle.id, amount: 0 }]);
+        expect(result.frames.at(-1)!.state.characters[0].bindings).toEqual([
             expect.objectContaining({ id: "latexLegs", value: 15, data: { peak: 15 } }),
         ]);
         expect(resolvedEvents(result.frames)).toContainEqual({

@@ -64,11 +64,11 @@ The engine owns:
 * action results;
 * victory and defeat.
 
-UI, harnesses, and other consumers should interact through the public game view/action interface rather than reproducing engine rules.
+UI, harnesses, and other consumers should interact through the public state, action, and event-frame interfaces rather than reproducing engine rules.
 
 The basic flow is conceptually:
 
-**GameView → PlayerAction → ActionResult**
+**GameState + ActionView[] → PlayerAction → ActionResult (EventFrame[] + ActionView[])**
 
 The harness is deliberately treated as another consumer of the engine rather than as a privileged simulation layer.
 

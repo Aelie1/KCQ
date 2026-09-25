@@ -3,8 +3,8 @@ import { skunkette } from "../../src/content/skunk/skunkette";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { immobilized, vibrating } from "../../src/engine/protected/statuses";
-import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/gameView";
+import { resolvedEvents, resultDetails } from "../helpers/events";
+import { actionView } from "../helpers/actionView";
 import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove, setupBoundEngine } from "../helpers/helpers";
 
 describe("stance toggling", () => {
@@ -13,7 +13,7 @@ describe("stance toggling", () => {
         const engine = createCustomEngine([], [hero], 1);
         engine.loadCharacter(hero.id);
 
-        expect(engine.getGameView().characters[0]).toMatchObject({
+        expect(engine.getGameState().characters[0]).toMatchObject({
             id: "hero",
             standing: false,
         });
@@ -31,7 +31,7 @@ describe("stance toggling", () => {
         });
 
         expect(result).toEqual({ success: false, reason: "invalidActor" });
-        expect(engine.getGameView().actions
+        expect(engine.getActionView()
             .find(({ id }) => id === "invalid-actor")).toBeUndefined();
     });
 
@@ -47,14 +47,14 @@ describe("stance toggling", () => {
         expect(actionView(engine, hero.id).stance).toEqual({ available: true });
         const result = engine.executeAction({ type: "stance", actor: hero.id });
 
-        expect(result).toMatchObject({
+        expect(resultDetails(result)).toMatchObject({
             success: true,
-            events: [{
+            eventSequence: [{
                 type: "changeStance", actor: hero.id, effects: [
                     { type: "stanceSet", actor: hero.id, stance: "standing" },
                 ]
             }],
-            view: {
+            finalState: {
                 turn: { step: 2 },
                 characters: [{ id: hero.id, standing: true, acted: false }],
             },
@@ -81,16 +81,16 @@ describe("stance toggling", () => {
             actor: hero.id,
         });
 
-        expect(result).toMatchObject({
+        expect(resultDetails(result)).toMatchObject({
             success: true,
-            events: [{
+            eventSequence: [{
                 type: "changeStance", actor: hero.id, effects: [
                     { type: "stanceSet", actor: hero.id, stance: "moving" },
                 ]
             }],
-            view: { characters: [{ id: hero.id, standing: false, acted: false }] },
+            finalState: { characters: [{ id: hero.id, standing: false, acted: false }] },
         });
-        expect(engine.getGameView().characters[0].standing).toBe(false);
+        expect(engine.getGameState().characters[0].standing).toBe(false);
     });
 
     it("cannot return to moving stance while immobilized", () => {
@@ -109,7 +109,7 @@ describe("stance toggling", () => {
             type: "stance",
             actor: hero.id,
         })).toEqual({ success: false, reason: "actorImmobilized" });
-        expect(engine.getGameView().characters[0]).toMatchObject({
+        expect(engine.getGameState().characters[0]).toMatchObject({
             standing: true,
             acted: false,
         });
@@ -130,9 +130,9 @@ describe("stance toggling", () => {
         }).success).toBe(true);
 
         const first = engine.executeAction(escape);
-        expect(first).toMatchObject({
+        expect(resultDetails(first)).toMatchObject({
             success: true,
-            view: { characters: [{ id: hero.id, acted: true, bonusEscapes: 1 }] },
+            finalState: { characters: [{ id: hero.id, acted: true, bonusEscapes: 1 }] },
         });
         expect(actionView(engine, hero.id)).toMatchObject({ available: true });
         expect(actionView(engine, hero.id).moves.every(
@@ -143,9 +143,9 @@ describe("stance toggling", () => {
         );
 
         const second = engine.executeAction(escape);
-        expect(second).toMatchObject({
+        expect(resultDetails(second)).toMatchObject({
             success: true,
-            view: { characters: [{ id: hero.id, acted: true, bonusEscapes: 0 }] },
+            finalState: { characters: [{ id: hero.id, acted: true, bonusEscapes: 0 }] },
         });
         expect(actionView(engine, hero.id)).toMatchObject({
             available: false,
@@ -179,12 +179,12 @@ describe("stance toggling", () => {
             binding: restraint.id,
         });
 
-        expect(result).toMatchObject({
+        expect(resultDetails(result)).toMatchObject({
             success: true,
-            view: {
+            finalState: {
                 characters: [{ id: hero.id, acted: true, bonusEscapes: 0, bindings: [] }],
-                actions: [{ id: hero.id, available: false, reason: "actorAlreadyActed", escapes: [] }],
             },
+            actions: [{ id: hero.id, available: false, reason: "actorAlreadyActed", escapes: [] }],
         });
     });
 
@@ -242,11 +242,11 @@ describe("stance toggling", () => {
 
         expect(assist.success).toBe(true);
         if (!assist.success) throw new Error("Expected bonus assistance to succeed");
-        expect(assist.frames).toMatchObject([{ type: "useEscape", actor: helper.id, target: target.id }]);
-        expect(assist.frames[0].effects).toEqual([
+        expect(assist.frames.map((frame) => frame.event)).toMatchObject([{ type: "useEscape", actor: helper.id, target: target.id }]);
+        expect(assist.frames[0].event.effects).toEqual([
             expect.objectContaining({ target: target.id, binding: restraint.id }),
         ]);
-        expect(assist.actions.characters.find((character) => character.id === helper.id))
+        expect(assist.frames.at(-1)!.state.characters.find((character) => character.id === helper.id))
             .toMatchObject({ acted: true, bonusEscapes: 0 });
     });
 
@@ -268,9 +268,9 @@ describe("stance toggling", () => {
         }).success).toBe(true);
 
         const first = engine.executeAction(escape);
-        expect(first).toMatchObject({
+        expect(resultDetails(first)).toMatchObject({
             success: true,
-            view: { characters: [{ id: hero.id, acted: true, bonusEscapes: 0 }] },
+            finalState: { characters: [{ id: hero.id, acted: true, bonusEscapes: 0 }] },
         });
         expect(engine.executeAction(escape)).toEqual({
             success: false,
@@ -291,7 +291,7 @@ describe("stance toggling", () => {
             target: hero.id,
             binding: restraint.id,
         }).success).toBe(true);
-        expect(engine.getGameView().characters[0]).toMatchObject({
+        expect(engine.getGameState().characters[0]).toMatchObject({
             standing: true,
             acted: true,
             bonusEscapes: 1,
@@ -299,7 +299,7 @@ describe("stance toggling", () => {
 
         expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
 
-        expect(engine.getGameView().characters[0]).toMatchObject({
+        expect(engine.getGameState().characters[0]).toMatchObject({
             standing: false,
             acted: false,
             bonusEscapes: 0,
@@ -349,12 +349,12 @@ describe("stance toggling", () => {
 
         expect(engine.executeAction({ type: "endTurn" }).success).toBe(true);
 
-        expect(engine.getGameView().characters[0]).toMatchObject({
+        expect(engine.getGameState().characters[0]).toMatchObject({
             standing: true,
             acted: false,
             bonusEscapes: 0,
         });
-        expect(engine.getGameView().characters[0].bindings
+        expect(engine.getGameState().characters[0].bindings
             .find((binding) => binding.id === immobilizingBinding.id)?.status)
             .toEqual([{ id: immobilized.id, value: 1 }]);
     });
@@ -407,14 +407,14 @@ describe("stance toggling", () => {
             actor: "victim",
             stance: "standing",
         });
-        expect(engine.getGameView().characters[0]).toMatchObject({
+        expect(engine.getGameState().characters[0]).toMatchObject({
             standing: true,
             buffs: [expect.objectContaining({
                 id: "pounce",
                 statuses: expect.arrayContaining([{ id: "immobilized", value: 1 }]),
             })],
         });
-        expect(engine.getGameView().characters[0].buffs[0]).not.toHaveProperty("active");
+        expect(engine.getGameState().characters[0].buffs[0]).not.toHaveProperty("active");
     });
 
     it("applies exactly -20 defense while standing through enemy accuracy resolution", () => {
@@ -435,9 +435,9 @@ describe("stance toggling", () => {
             engine.loadCharacter(hero.id);
             engine.loadEncounter(encounter.id);
 
-            expect(engine.getGameView().enemies[0].intentions[0]?.targets[0].band).toBe("miss");
+            expect(engine.getGameState().enemies[0].intentions[0]?.targets[0].band).toBe("miss");
             expect(engine.executeAction({ type: "stance", actor: "hero" }).success).toBe(true);
-            expect(engine.getGameView().enemies[0].intentions[0]?.targets[0].band)
+            expect(engine.getGameState().enemies[0].intentions[0]?.targets[0].band)
                 .toBe(standingResult);
         }
     });
@@ -460,6 +460,6 @@ describe("stance toggling", () => {
             available: false,
             reason: "actorAlreadyActed",
         });
-        expect(engine.getGameView().characters[0].standing).toBe(false);
+        expect(engine.getGameState().characters[0].standing).toBe(false);
     });
 });

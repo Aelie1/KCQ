@@ -1,3 +1,4 @@
+import { resultDetails } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
 import { getEscapePotency } from "../../src/engine/private/combat";
@@ -5,7 +6,7 @@ import type { BindingDef, StatusDef } from "../../src/engine/protected/definitio
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import type { Effect, Engine } from "../../src/engine/public/types";
-import { actionView } from "../helpers/gameView";
+import { actionView } from "../helpers/actionView";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
 
 interface BindingSetup {
@@ -163,9 +164,9 @@ describe("escape progress", () => {
             target: "target",
             binding: restraint.id,
         });
-        expect(result).toMatchObject({
+        expect(resultDetails(result)).toMatchObject({
             success: true,
-            events: [{ type: "useEscape", actor: "helper", target: "target", effects: [
+            eventSequence: [{ type: "useEscape", actor: "helper", target: "target", effects: [
                 { type: "bondageRemoved", target: "target", binding: restraint.id, amount: -10 },
                 { type: "bondageAdded", target: "helper", binding: spread.id, amount: 5 },
             ] }],
@@ -179,7 +180,7 @@ describe("escape progress", () => {
             ["hero"],
             [{ target: "hero", binding: restraint, amount: thresholds.hard }],
         );
-        const before = engine.getGameView().characters[0].bindings[0].value;
+        const before = engine.getGameState().characters[0].bindings[0].value;
         const amount = escapeAmount(engine, "hero", "hero", restraint.id);
 
         expect(escapeEffects(engine, "hero", "hero", restraint.id)).toEqual([{
@@ -196,18 +197,18 @@ describe("escape progress", () => {
             binding: restraint.id,
         });
 
-        expect(result).toMatchObject({
+        expect(resultDetails(result)).toMatchObject({
             success: true,
-            events: [{ type: "useEscape", actor: "hero", target: "hero", effects: [{
+            eventSequence: [{ type: "useEscape", actor: "hero", target: "hero", effects: [{
                 type: "bondageChanged",
                 target: "hero",
                 binding: restraint.id,
                 amount: -amount,
             }] }],
         });
-        expect(engine.getGameView().characters[0].bindings[0].value).toBe(before - amount);
-        expect(engine.getGameView().characters[0].acted).toBe(true);
-        expect(engine.getGameView().turn.step).toBe(2);
+        expect(engine.getGameState().characters[0].bindings[0].value).toBe(before - amount);
+        expect(engine.getGameState().characters[0].acted).toBe(true);
+        expect(engine.getGameState().turn.step).toBe(2);
         expect(actionView(engine, "hero").escapes).toEqual([
             expect.objectContaining({
                 available: false,
@@ -253,9 +254,9 @@ describe("escape progress", () => {
             binding: latexArms.id,
         });
 
-        expect(result).toMatchObject({
+        expect(resultDetails(result)).toMatchObject({
             success: true,
-            events: [{ type: "useEscape", actor: "hero", target: "hero", effects: [
+            eventSequence: [{ type: "useEscape", actor: "hero", target: "hero", effects: [
                 {
                     type: "bondageChanged",
                     target: "hero",
@@ -270,7 +271,7 @@ describe("escape progress", () => {
                 },
             ] }],
         });
-        expect(engine.getGameView().characters[0].bindings).toEqual([
+        expect(engine.getGameState().characters[0].bindings).toEqual([
             expect.objectContaining({ id: "latexArms", value: 12 }),
             expect.objectContaining({ id: "latexHead", value: 5 }),
         ]);
@@ -289,7 +290,7 @@ describe("escape progress", () => {
     });
 
     it("omits action information for an invalid actor", () => {
-        expect(createCustomEngine([], [], 1).getGameView().actions
+        expect(createCustomEngine([], [], 1).getActionView()
             .find(({ id }) => id === "missing")).toBeUndefined();
     });
 });

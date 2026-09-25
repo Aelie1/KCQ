@@ -67,10 +67,8 @@ function actionView(
 
 function policyContext(actions: ActionView[]): PolicyContext {
     return {
-        view: {
-            ...createEngine(1).getGameView(),
-            actions,
-        },
+        state: createEngine(1).getGameState(),
+        actions,
         random: createPolicyRandom(1),
     };
 }
@@ -97,7 +95,7 @@ describe("policy-driven single-fight harness", () => {
             expectedEngine.loadCharacter(id);
         }
         expectedEngine.loadEncounter(input.encounterId);
-        const expectedInitialState = expectedEngine.getGameView();
+        const expectedInitialState = expectedEngine.getGameState();
 
         const result = runSingleFight(input);
 
@@ -126,8 +124,9 @@ describe("policy-driven single-fight harness", () => {
             const expected = replayEngine.executeAction(result.trace[index]);
             expect(expected.success).toBe(true);
             if (step.success && expected.success) {
-                expect(step.events).toEqual(expected.frames);
-                expect(step.state).toEqual(expected.actions);
+                expect(step.frames).toEqual(expected.frames);
+                expect(step.state).toEqual(expected.frames.at(-1)?.state);
+                expect(step.actions).toEqual(expected.actions);
             }
         }
         const lastStep = result.replay?.steps.at(-1);
@@ -152,7 +151,7 @@ describe("policy-driven single-fight harness", () => {
         const result = runSingleFight({ ...fightInput(firstPolicy, 202), replay: true });
         const eventDamage = result.replay?.steps.reduce((total, step) => total + (
             step.success
-                ? resolvedEvents(step.events).reduce((stepTotal, event) =>
+                ? resolvedEvents(step.frames).reduce((stepTotal, event) =>
                     stepTotal + (event.type === "enemyDamaged" ? event.amount : 0), 0)
                 : 0
         ), 0);
@@ -181,9 +180,9 @@ describe("policy-driven single-fight harness", () => {
         expect(endTurnIndex).toBeGreaterThanOrEqual(0);
         expect(step).toMatchObject({ action: { type: "endTurn" }, success: true });
         if (step?.success) {
-            expect(resolvedEvents(step.events).filter((event) => event.type === "changePhase"))
+            expect(resolvedEvents(step.frames).filter((event) => event.type === "changePhase"))
                 .toHaveLength(2);
-            expect(resolvedEvents(step.events).some((event) =>
+            expect(resolvedEvents(step.frames).some((event) =>
                 event.type === "useMove"
                 && result.replay?.initialState.enemies.some((enemy) => enemy.id === event.actor),
             )).toBe(true);
@@ -237,8 +236,8 @@ describe("policy-driven single-fight harness", () => {
             id: "mutating",
             chooseAction(context) {
                 // A policy owns neither the engine state nor the harness's replay history.
-                context.view.turn.step = 999_999;
-                context.view.characters[0].data["corrupted"] = 999;
+                context.state.turn.step = 999_999;
+                context.state.characters[0].data["corrupted"] = 999;
 
                 return firstPolicy.chooseAction(context);
             },
@@ -483,8 +482,8 @@ describe("policy-driven single-fight harness", () => {
 
         expect(result.termination).toBe(result.finalState.turn.outcome);
         expect(source).toContain("view.turn.outcome");
-        expect(source).toContain("engine.getGameView()");
-        expect(source).not.toContain("engine.getGameState()");
+        expect(source).toContain("engine.getGameState()");
+        expect(source).toContain("engine.getActionView()");
         expect(source).not.toMatch(/events.*(?:victory|defeat)|(?:victory|defeat).*events/);
     });
 

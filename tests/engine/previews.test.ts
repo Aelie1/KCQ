@@ -4,7 +4,7 @@ import { createCustomEngine } from "../../src/engine/protected/engine";
 import { basicBindingEffect, basicDamageEffect } from "../../src/engine/protected/helpers";
 import type { iTargetInfo } from "../../src/engine/protected/types";
 import type { Engine, ValidTarget } from "../../src/engine/public/types";
-import { actionView } from "../helpers/gameView";
+import { actionView } from "../helpers/actionView";
 import { makeBindingDef, makeCharacter, makeCharacterDef, makeEnemy, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
 
 function preview(engine: Engine, moveId: string, targetId: string): ValidTarget {

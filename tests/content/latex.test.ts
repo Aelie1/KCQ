@@ -20,7 +20,7 @@ interface BindingSetup {
 
 function expectEscapeEffects(result: ActionSuccess, effects: LeafEvent[]): void {
     expect(result.frames).toHaveLength(1);
-    expect(result.frames[0]).toMatchObject({ type: "useEscape", effects });
+    expect(result.frames[0].event).toMatchObject({ type: "useEscape", effects });
 }
 
 function setupLatexScenario(
@@ -90,7 +90,7 @@ describe("latex escape spread through GameEngine", () => {
         const result = execute(engine, {
             type: "escape", actor: "hero", target: "hero", binding: latexHead.id,
         });
-        const escaped = result.actions.characters[0].bindings.find(({ id }) => id === latexHead.id);
+        const escaped = result.frames.at(-1)!.state.characters[0].bindings.find(({ id }) => id === latexHead.id);
         expect(escaped?.value).toBeLessThan(60);
         expect(escaped?.data).toEqual({ peak: 60 });
     });

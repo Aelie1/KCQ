@@ -1,7 +1,7 @@
 import type {
     Character,
     GameEvent,
-    GameView,
+    GameState,
     HitBand,
     LeafEvent,
 } from "../../engine/public/types";
@@ -203,7 +203,7 @@ export function createBondageCollector(): MetricCollector<BondageMetrics> {
     const currentTracks = new Map<string, Map<string, number>>();
     const peakTracks = new Map<string, Map<string, number>>();
     const peakTotals = new Map<string, number>();
-    let finalView: GameView | undefined;
+    let finalView: GameState | undefined;
     let partyPeak = 0;
 
     const updatePeaks = (): void => {
@@ -221,7 +221,7 @@ export function createBondageCollector(): MetricCollector<BondageMetrics> {
         partyPeak = Math.max(partyPeak, partyTotal);
     };
 
-    const observe = (view: GameView): void => {
+    const observe = (view: GameState): void => {
         finalView = view;
         for (const character of view.characters) {
             const tracks = getOrCreate(knownTracks, character.id, () => new Set<string>());
@@ -257,10 +257,11 @@ export function createBondageCollector(): MetricCollector<BondageMetrics> {
         onFightStart: ({ view }) => observe(view),
         onAction: ({ result }) => {
             if (!result.success) return;
-            observeEvents(result.frames);
-            // The public post-action view is authoritative and also reconciles
-            // changes that do not currently emit a bondage event.
-            observe(result.actions);
+            for (const frame of result.frames) {
+                observeEvents([frame.event]);
+                // The public frame state also reconciles changes without bondage events.
+                observe(frame.state);
+            }
         },
         onFightEnd: ({ view }) => observe(view),
         getResult() {
@@ -306,7 +307,7 @@ export function createDamageCollector(): MetricCollector<DamageMetrics> {
         id: "damage",
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of leafEvents(result.frames)) {
+            for (const event of leafEvents(result.frames.map((frame) => frame.event))) {
                 if (event.type !== "enemyDamaged") continue;
                 dealt += event.amount;
                 increment(dealtByTarget, event.target, event.amount);
@@ -327,7 +328,7 @@ export function createMoveUsageCollector(): MetricCollector<MoveUsageMetrics> {
         },
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of result.frames) {
+            for (const event of result.frames.map((frame) => frame.event)) {
                 if (event.type !== "useMove") continue;
                 addMoveUsage(playerIds.has(event.actor) ? player : enemy, event.actor, event.move);
             }
@@ -347,7 +348,7 @@ export function createAccuracyCollector(): MetricCollector<AccuracyMetrics> {
         },
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of result.frames) {
+            for (const event of result.frames.map((frame) => frame.event)) {
                 if (event.type !== "useMove") continue;
                 const counts = playerIds.has(event.actor) ? player : enemy;
                 for (const target of event.targets) counts[target.result] += 1;
@@ -372,7 +373,7 @@ export function createEscapeCollector(): MetricCollector<EscapeMetrics> {
             actor.attempts += 1;
             const assist = action.actor !== action.target;
             if (assist) assistAttempts += 1;
-            if (!result.success || !hasSuccessfulEscape(result.frames, action.target, action.binding)) {
+            if (!result.success || !hasSuccessfulEscape(result.frames.map((frame) => frame.event), action.target, action.binding)) {
                 return;
             }
             successes += 1;
@@ -391,7 +392,7 @@ export function createEscapeCollector(): MetricCollector<EscapeMetrics> {
 export function createTrapCollector(): MetricCollector<TrapMetrics> {
     const tracks = new Map<string, TrapTrackMetrics>();
     const totals = emptyTrapEventTotals();
-    const observe = (view: GameView): void => {
+    const observe = (view: GameState): void => {
         const current = new Map(view.traps.map((trap) => [trap.id, trap.amount]));
         for (const trap of view.traps) {
             const track = getTrapTrack(tracks, trap.id);
@@ -407,28 +408,30 @@ export function createTrapCollector(): MetricCollector<TrapMetrics> {
         onFightStart: ({ view }) => observe(view),
         onAction({ result }) {
             if (!result.success) return;
-            for (const event of leafEvents(result.frames)) {
-                if (event.type !== "trapAdded" && event.type !== "trapRemoved"
-                    && event.type !== "trapTriggered") continue;
-                const track = getTrapTrack(tracks, event.trap);
-                if (event.type === "trapAdded") {
-                    track.added += 1;
-                    track.addedAmount += event.amount;
-                    totals.added += 1;
-                    totals.addedAmount += event.amount;
-                } else if (event.type === "trapRemoved") {
-                    track.removed += 1;
-                    track.removedAmount += event.amount;
-                    totals.removed += 1;
-                    totals.removedAmount += event.amount;
-                } else {
-                    track.triggered += 1;
-                    track.triggeredAmount += event.amount;
-                    totals.triggered += 1;
-                    totals.triggeredAmount += event.amount;
+            for (const frame of result.frames) {
+                for (const event of leafEvents([frame.event])) {
+                    if (event.type !== "trapAdded" && event.type !== "trapRemoved"
+                        && event.type !== "trapTriggered") continue;
+                    const track = getTrapTrack(tracks, event.trap);
+                    if (event.type === "trapAdded") {
+                        track.added += 1;
+                        track.addedAmount += event.amount;
+                        totals.added += 1;
+                        totals.addedAmount += event.amount;
+                    } else if (event.type === "trapRemoved") {
+                        track.removed += 1;
+                        track.removedAmount += event.amount;
+                        totals.removed += 1;
+                        totals.removedAmount += event.amount;
+                    } else {
+                        track.triggered += 1;
+                        track.triggeredAmount += event.amount;
+                        totals.triggered += 1;
+                        totals.triggeredAmount += event.amount;
+                    }
                 }
+                observe(frame.state);
             }
-            observe(result.actions);
         },
         onFightEnd: ({ view }) => observe(view),
         getResult: () => ({ totals: { ...totals }, tracks: Object.fromEntries(tracks) }),
@@ -441,7 +444,7 @@ export function createIncapacitationCollector(): MetricCollector<IncapacitationM
     let occurrences = 0;
     let first: IncapacitationPoint | null = null;
 
-    const observe = (view: GameView, action: number): void => {
+    const observe = (view: GameState, action: number): void => {
         const current = new Set(
             view.characters.filter(isIncapacitated).map((character) => character.id),
         );
@@ -463,7 +466,9 @@ export function createIncapacitationCollector(): MetricCollector<IncapacitationM
         id: "incapacitations",
         onFightStart: ({ view }) => observe(view, 0),
         onAction: ({ actionIndex, result }) => {
-            if (result.success) observe(result.actions, actionIndex);
+            if (result.success) {
+                for (const frame of result.frames) observe(frame.state, actionIndex);
+            }
         },
         onFightEnd: ({ actionCount, view }) => observe(view, actionCount),
         getResult: () => ({

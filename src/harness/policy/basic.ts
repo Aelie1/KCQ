@@ -9,7 +9,7 @@ const programmedMoves: Readonly<Record<string, string>> = {
 };
 
 export function chooseBasicAction(context: PolicyContext): PlayerAction {
-    for (const actionView of context.view.actions) {
+    for (const actionView of context.actions) {
         if (!actionView.available) continue;
 
         const programmedMove = programmedMoves[actionView.id];

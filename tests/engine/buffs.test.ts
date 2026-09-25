@@ -6,7 +6,7 @@ import {
     makeBehavioralEnemy, makeBehavioralEngine, makeBehavioralMove, makeEnemyWaitMove, targetAccuracy,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/gameView";
+import { actionView } from "../helpers/actionView";
 
 const blinded: StatusDef = {
     id: "blinded",
@@ -56,7 +56,7 @@ describe("buff behavior through GameEngine", () => {
             targets: [],
         });
 
-        expect(result.frames).toEqual([{
+        expect(result.frames.map((frame) => frame.event)).toEqual([{
             type: "useMove", actor: "hero", move: add.id, targets: [],
             effects: [{ type: "buffAdded", target: "foe1", buff: "test-buff" }],
         }]);
@@ -126,7 +126,7 @@ describe("buff behavior through GameEngine", () => {
             targets: [],
         });
 
-        expect(result.frames[0].effects[0]).toEqual({
+        expect(result.frames[0].event.effects[0]).toEqual({
             type: "buffUpdated",
             target: "hero",
             buff: "replaceable",
@@ -253,7 +253,7 @@ describe("buff behavior through GameEngine", () => {
             move: remove.id,
             targets: [],
         });
-        expect(result.frames[0].effects[0]).toEqual({
+        expect(result.frames[0].event.effects[0]).toEqual({
             type: "buffRemoved",
             target: "hero",
             buff: "linked",

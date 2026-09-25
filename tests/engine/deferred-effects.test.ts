@@ -52,7 +52,7 @@ describe("deferred binding onResolve effects", () => {
             { type: "bondageAdded", target: "hero", binding: first.id, amount: 2 },
             { type: "bondageAdded", target: "hero", binding: second.id, amount: 3 },
         ]);
-        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual([
+        expect(result.frames.at(-1)!.state.characters[0].bindings.map(({ id }) => id)).toEqual([
             original.id, first.id, second.id,
         ]);
     });
@@ -84,7 +84,7 @@ describe("deferred binding onResolve effects", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected replacement move success");
-        expect(result.actions.characters[0].bindings).toEqual([
+        expect(result.frames.at(-1)!.state.characters[0].bindings).toEqual([
             expect.objectContaining({ id: replacement.id, value: 5 }),
         ]);
         expect(resolvedEvents(result.frames).some((event) =>
@@ -125,7 +125,7 @@ describe("deferred binding onResolve effects", () => {
             { type: "bondageAdded", target: "hero", binding: generated.id, amount: 6 },
             { type: "bondageAdded", target: "hero", binding: downstream.id, amount: 6 },
         ]);
-        expect(result.actions.characters[0].bindings.map(({ id }) => id)).toEqual([
+        expect(result.frames.at(-1)!.state.characters[0].bindings.map(({ id }) => id)).toEqual([
             generated.id, downstream.id,
         ]);
     });
@@ -157,7 +157,7 @@ describe("deferred binding onResolve effects", () => {
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
-        const effect = engine.getGameView().enemies[0].intentions[0]?.targets[0]?.effects[0];
+        const effect = engine.getGameState().enemies[0].intentions[0]?.targets[0]?.effects[0];
         expect(effect).toEqual({
             type: "binding", target: "hero", binding: placeholder.id, amount: undefined,
         });

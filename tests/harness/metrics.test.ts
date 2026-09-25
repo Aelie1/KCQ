@@ -3,7 +3,7 @@ import { createEngine } from "../../src/engine/public/engine";
 import type {
     Character,
     GameEvent,
-    GameView,
+    GameState,
     PlayerAction,
 } from "../../src/engine/public/types";
 import { runSingleFight } from "../../src/harness/harness";
@@ -51,10 +51,10 @@ function character(
 
 function view(values: {
     round?: number;
-    outcome?: GameView["turn"]["outcome"];
+    outcome?: GameState["turn"]["outcome"];
     characters?: Character[];
-    traps?: GameView["traps"];
-} = {}): GameView {
+    traps?: GameState["traps"];
+} = {}): GameState {
     return {
         turn: {
             round: values.round ?? 1,
@@ -71,13 +71,12 @@ function view(values: {
             bindings: ["rope", "slime"],
             traps: ["trapPuddle"],
         },
-        actions: [],
     };
 }
 
 function successfulAction(
-    before: GameView,
-    after: GameView,
+    before: GameState,
+    after: GameState,
     events: GameEvent[],
     action: PlayerAction = { type: "endTurn" },
     actionIndex = 1,
@@ -86,7 +85,9 @@ function successfulAction(
         actionIndex,
         action,
         before,
-        result: { success: true, actions: after, frames: events },
+        result: { success: true, actions: [], frames: (events.length ? events : [
+            { type: "changePhase", phase: after.turn.phase, effects: [] } as GameEvent,
+        ]).map((event) => ({ event, state: after })) },
     };
 }
 

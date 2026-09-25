@@ -30,8 +30,8 @@ function chooseRescueAction(
     actorId: string,
     threshold: number,
 ): PlayerAction | undefined {
-    const actor = context.view.characters.find(character => character.id === actorId);
-    const actionView = context.view.actions.find(action => action.id === actorId);
+    const actor = context.state.characters.find(character => character.id === actorId);
+    const actionView = context.actions.find(action => action.id === actorId);
 
     if (!actor || !actionView?.available) return undefined;
 
@@ -94,7 +94,7 @@ function bindingValue(
     context: PolicyContext,
     option: EscapeInfo,
 ): number {
-    const target = context.view.characters.find(
+    const target = context.state.characters.find(
         character => character.id === option.target,
     );
 

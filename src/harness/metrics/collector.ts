@@ -1,13 +1,13 @@
 import type {
     ActionResult,
-    GameView,
+    GameState,
     PlayerAction,
 } from "../../engine/public/types";
 import type { SingleFightTermination } from "../harness";
 
 /** The loaded encounter state, before the policy submits its first action. */
 export interface MetricFightStart {
-    readonly view: GameView;
+    readonly view: GameState;
 }
 
 /** One policy submission and the public result returned by the engine. */
@@ -15,14 +15,14 @@ export interface MetricActionObservation {
     /** One-based position in the submitted action trace. */
     readonly actionIndex: number;
     readonly action: PlayerAction;
-    readonly before: GameView;
+    readonly before: GameState;
     readonly result: ActionResult;
 }
 
 /** The terminal harness state, including timeout and runner-error terminations. */
 export interface MetricFightEnd {
     readonly termination: SingleFightTermination;
-    readonly view: GameView;
+    readonly view: GameState;
     readonly actionCount: number;
 }
 

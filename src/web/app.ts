@@ -43,8 +43,8 @@ export async function startBattle(
         release,
         encounter: battle.encounterId,
         seed: battle.engine.getSeed(),
-        initialView: battle.engine.getGameView(),
-        getCurrentView: () => battle.engine.getGameView(),
+        initialState: battle.engine.getGameState(),
+        getCurrentState: () => battle.engine.getGameState(),
     });
     const detachLifecycle = attachBattlePageLifecycle(observer);
     try {

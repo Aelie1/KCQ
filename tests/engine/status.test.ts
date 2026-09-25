@@ -4,7 +4,7 @@ import type { BindingDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { bound, helpless, immobilized, incapacitated, stunned } from "../../src/engine/protected/statuses";
-import { actionView } from "../helpers/gameView";
+import { actionView } from "../helpers/actionView";
 import { expectMoveRejection, makeBindingDef, makeCharacterDef, makeMove, setupBoundEngine } from "../helpers/helpers";
 
 function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: number) {
@@ -128,7 +128,7 @@ describe("move and escape restrictions", () => {
                 setupBoundEngine(latexArms, value);
             const actions = actionView(engine, hero.id).moves;
 
-            expect(engine.getGameView().characters[0].bindings
+            expect(engine.getGameState().characters[0].bindings
                 .find((binding) => binding.id === latexArms.id)?.status).toContainEqual({
                     id: bound.id,
                     value: boundValue,

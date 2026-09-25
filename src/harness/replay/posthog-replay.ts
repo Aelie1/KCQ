@@ -3,7 +3,7 @@ import { createEngine } from "../../engine/public/engine";
 import type {
     BattleState,
     Engine,
-    GameView,
+    GameState,
     PlayerAction,
 } from "../../engine/public/types";
 import {
@@ -273,7 +273,8 @@ function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogRepla
     const engine = createEngine(parsed.seed);
     loadStockBattle(engine, parsed.encounter, parsed.replayId);
 
-    const initialState = structuredClone(engine.getGameView());
+    const initialState = structuredClone(engine.getGameState());
+    const initialActions = structuredClone(engine.getActionView());
     assertStateMatches(
         parsed,
         "initial_state",
@@ -299,14 +300,15 @@ function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogRepla
                 parsed,
                 "state_after",
                 recorded.stateAfter!,
-                compactStateDigest(result.actions),
+                compactStateDigest(result.frames.at(-1)?.state ?? engine.getGameState()),
                 recorded,
             );
             steps.push({
                 action: cloneAction(action),
                 success: true,
-                events: structuredClone(result.frames),
-                state: structuredClone(result.actions),
+                frames: structuredClone(result.frames),
+                state: structuredClone(result.frames.at(-1)?.state ?? engine.getGameState()),
+                actions: structuredClone(result.actions),
             });
         } else {
             if (result.reason !== recorded.failureReason) {
@@ -321,7 +323,7 @@ function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogRepla
         }
     }
 
-    validateTerminal(parsed, engine.getGameView());
+    validateTerminal(parsed, engine.getGameState());
     return {
         replayId: parsed.replayId,
         release: parsed.release,
@@ -329,6 +331,7 @@ function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogRepla
         seed: parsed.seed,
         replay: {
             initialState,
+            initialActions,
             steps,
         },
         ...(parsed.terminal === undefined ? {} : { terminal: parsed.terminal.type }),
@@ -456,7 +459,7 @@ function parseTerminal(record: ReplayRecord, replayId: string): ParsedPostHogTer
     };
 }
 
-function validateTerminal(parsed: ParsedPostHogReplay, finalView: GameView): void {
+function validateTerminal(parsed: ParsedPostHogReplay, finalView: GameState): void {
     const terminal = parsed.terminal;
     if (!terminal) return;
     if (terminal.actionCount !== undefined && terminal.actionCount !== parsed.actions.length) {

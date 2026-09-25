@@ -1,8 +1,9 @@
 import { createEngine } from "../engine/public/engine";
 import type {
     FailureReason,
-    GameEvent,
-    GameView,
+    ActionView,
+    EventFrame,
+    GameState,
     PlayerAction,
 } from "../engine/public/types";
 import {
@@ -19,7 +20,8 @@ export interface PolicyRandom {
 }
 
 export interface PolicyContext {
-    readonly view: GameView;
+    readonly state: GameState;
+    readonly actions: ActionView[];
     readonly random: PolicyRandom;
 }
 
@@ -50,8 +52,9 @@ export interface SingleFightError {
 export interface ReplaySuccessStep {
     action: PlayerAction;
     success: true;
-    events: GameEvent[];
-    state: GameView;
+    frames: EventFrame[];
+    state: GameState;
+    actions: ActionView[];
 }
 
 export interface ReplayFailureStep {
@@ -63,7 +66,8 @@ export interface ReplayFailureStep {
 export type ReplayStep = ReplaySuccessStep | ReplayFailureStep;
 
 export interface FightReplay {
-    initialState: GameView;
+    initialState: GameState;
+    initialActions: ActionView[];
     steps: ReplayStep[];
 }
 
@@ -85,7 +89,7 @@ export interface SingleFightResult {
     policyId: string;
     policySeed: number;
     termination: SingleFightTermination;
-    finalState: GameView;
+    finalState: GameState;
     actionCount: number;
     metrics: FightMetrics;
     /** Additive, independently collected metrics from the public event/state boundary. */
@@ -101,7 +105,8 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     const policyRandom = createPolicyRandom(input.policySeed);
     const trace: PlayerAction[] = [];
     let replay: FightReplay | undefined;
-    let view = engine.getGameView();
+    let view = engine.getGameState();
+    let actions = engine.getActionView();
     const collectors = new MetricCollectorSet([
         ...coreMetricCollectorFactories,
         ...(input.metricCollectors ?? []),
@@ -151,12 +156,12 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         const event = engine.loadCharacter(id);
         const loaded = event.type === "loadCharacter" && event.id === id && event.success;
         if (!loaded) {
-            view = engine.getGameView();
+            view = engine.getGameState();
             return finish("error", { message: `Failed to load listed character: ${id}` });
         }
     }
 
-    view = engine.getGameView();
+    view = engine.getGameState();
     if (!engine.listEncounters().includes(input.encounterId)) {
         return finish("error", {
             message: `Unknown encounter ID: ${input.encounterId}`,
@@ -167,18 +172,20 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     const encounterLoaded = encounterEvent.type === "loadEncounter"
         && encounterEvent.id === input.encounterId && encounterEvent.success;
     if (!encounterLoaded) {
-        view = engine.getGameView();
+        view = engine.getGameState();
         return finish("error", {
             message: `Failed to load listed encounter: ${input.encounterId}`,
         });
     }
 
-    view = engine.getGameView();
+    view = engine.getGameState();
+    actions = engine.getActionView();
     collectors.onFightStart({ view });
 
     if (input.replay === true) {
         replay = {
             initialState: structuredClone(view),
+            initialActions: structuredClone(actions),
             steps: [],
         };
     }
@@ -189,7 +196,8 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         }
 
         const action = cloneAction(input.policy.chooseAction({
-            view: view,
+            state: view,
+            actions,
             random: policyRandom,
         }));
 
@@ -218,11 +226,13 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         replay?.steps.push({
             action,
             success: true,
-            events: result.frames,
-            state: structuredClone(result.actions),
+            frames: structuredClone(result.frames),
+            state: structuredClone(result.frames.at(-1)?.state ?? engine.getGameState()),
+            actions: structuredClone(result.actions),
         });
 
-        view = result.actions;
+        view = result.frames.at(-1)?.state ?? engine.getGameState();
+        actions = result.actions;
         const outcome = view.turn.outcome;
         if (outcome !== "ongoing") {
             return finish(outcome);
@@ -232,7 +242,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
     return finish(view.turn.outcome);
 }
 
-export function partyTotalBondage(view: GameView): number {
+export function partyTotalBondage(view: GameState): number {
     return view.characters.reduce(
         (partyTotal, character) => partyTotal + character.bindings.reduce(
             (characterTotal, binding) => characterTotal + binding.value,

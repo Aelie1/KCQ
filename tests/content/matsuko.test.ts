@@ -21,7 +21,7 @@ import {
     targetPreview,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/gameView";
+import { actionView } from "../helpers/actionView";
 
 const STANDARD_ACCURACY: AccuracyProfile = {
     miss: 10,
@@ -118,7 +118,7 @@ describe("Matsuko's dynamic offensive kit", () => {
             targets: [],
         });
 
-        expect(result.frames[0]).toMatchObject({
+        expect(result.frames[0].event).toMatchObject({
             type: "useMove",
             actor: matsuko.id,
             move: "immolation",
@@ -169,7 +169,7 @@ describe("Matsuko's dynamic offensive kit", () => {
             move: "whiteFlame",
             targets: ["foe1"],
         });
-        expect(result.frames[0]).toMatchObject({
+        expect(result.frames[0].event).toMatchObject({
             type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
@@ -222,11 +222,11 @@ describe("Matsuko's dynamic offensive kit", () => {
             targets: ["foe1"],
         });
 
-        expect(phoenix.frames[0]).toMatchObject({
+        expect(phoenix.frames[0].event).toMatchObject({
             type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
-        expect(ordinary.frames[0]).toMatchObject({
+        expect(ordinary.frames[0].event).toMatchObject({
             type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
@@ -256,7 +256,7 @@ describe("Matsuko's dynamic offensive kit", () => {
             targets: ["foe1"],
         });
 
-        expect(result.frames[0]).toMatchObject({
+        expect(result.frames[0].event).toMatchObject({
             type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
@@ -320,7 +320,7 @@ describe("Matsuko's dynamic offensive kit", () => {
             targets: ["foe1"],
         });
 
-        expect(result.frames[0]).toMatchObject({
+        expect(result.frames[0].event).toMatchObject({
             type: "useMove",
             targets: [{ target: "foe1", result: "hit" }],
         });
@@ -594,7 +594,7 @@ describe("Matsuko's Compulsion moves", () => {
         }));
         const engine = loadMatsukoEncounter({ enemies: [enemy] });
 
-        expect(engine.getGameView().enemies[0].intentions.map(({ move }) => move))
+        expect(engine.getGameState().enemies[0].intentions.map(({ move }) => move))
             .toEqual([first.id, second.id]);
         expect(action(engine, "stop")).toMatchObject({
             available: true,
@@ -609,7 +609,7 @@ describe("Matsuko's Compulsion moves", () => {
         });
 
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "caster1" });
-        expect(engine.getGameView().enemies[0].intentions).toEqual([]);
+        expect(engine.getGameState().enemies[0].intentions).toEqual([]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
         expect(buffState(engine, "compulsionCD", matsuko.id)).toMatchObject({ duration: 5 });
         expectMoveSet(engine, ["whiteFlame", "phoenixKick", "immolation"]);
@@ -646,7 +646,7 @@ describe("Matsuko's Compulsion moves", () => {
         }));
         const engine = loadMatsukoEncounter({ enemies: [boss], seed: 4 });
 
-        expect(engine.getGameView().enemies[0].intentions.map(
+        expect(engine.getGameState().enemies[0].intentions.map(
             ({ targets }) => targets[0]?.band,
         )).toEqual(["hit", "hit"]);
 
@@ -658,8 +658,8 @@ describe("Matsuko's Compulsion moves", () => {
         });
 
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionWeakened", target: "boss1" });
-        expect(engine.getGameView().enemies[0].intentions).toHaveLength(2);
-        expect(engine.getGameView().enemies[0].intentions.map(
+        expect(engine.getGameState().enemies[0].intentions).toHaveLength(2);
+        expect(engine.getGameState().enemies[0].intentions.map(
             ({ targets }) => targets[0]?.band,
         )).toEqual(["graze", "graze"]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
@@ -717,7 +717,7 @@ describe("Matsuko's Compulsion moves", () => {
             allies: [ally],
         });
         const intentionTargets = () => Object.fromEntries(
-            engine.getGameView().enemies.map((enemy) => [
+            engine.getGameState().enemies.map((enemy) => [
                 enemy.id,
                 enemy.intentions[0]?.targets.map(({ target }) => target) ?? [],
             ]),

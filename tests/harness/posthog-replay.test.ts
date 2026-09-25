@@ -295,7 +295,7 @@ function makeFixture(options: FixtureOptions = {}): {
 } {
     const seed = options.seed ?? 12345;
     const engine = loadedEngine(seed, "plains_1");
-    const initialDigest = compactStateDigest(engine.getGameView());
+    const initialDigest = compactStateDigest(engine.getGameState());
     const defaultActions = [
         { source: "player" as const, action: firstAvailableMove(engine) },
         { source: "automatic" as const, action: { type: "endTurn" } as const },
@@ -330,18 +330,18 @@ function makeFixture(options: FixtureOptions = {}): {
             success: result.success ? "True" : "False",
             failure_reason: result.success ? "" : result.reason,
             state_after: stringify(result.success
-                ? compactStateDigest(result.actions)
-                : compactStateDigest(engine.getGameView())),
+                ? compactStateDigest(result.frames.at(-1)!.state)
+                : compactStateDigest(engine.getGameState())),
         });
     });
 
-    const finalState = compactStateDigest(engine.getGameView());
+    const finalState = compactStateDigest(engine.getGameState());
     if ((options.terminal ?? "quit") === "finished") {
         rows.push({
             ...emptyRow(),
             event: "battle_finished",
             replay_id: REPLAY_ID,
-            outcome: engine.getGameView().turn.outcome,
+            outcome: engine.getGameState().turn.outcome,
             action_count: `${recordedActions.length}.0`,
             final_state: stringify(finalState),
         });
@@ -371,7 +371,7 @@ function loadedEngine(seed: number, encounter: string): Engine {
 }
 
 function firstAvailableMove(engine: Engine): PlayerAction {
-    for (const actor of engine.getGameView().actions) {
+    for (const actor of engine.getActionView()) {
         for (const option of actor.moves) {
             if (!option.available) continue;
             const targets = option.targets

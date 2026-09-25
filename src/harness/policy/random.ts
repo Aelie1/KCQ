@@ -15,7 +15,7 @@ export const randomPolicy: FightPolicy = {
     chooseAction(context: PolicyContext): PlayerAction {
         const candidates: ActionCandidate[] = [];
 
-        for (const actionView of context.view.actions) {
+        for (const actionView of context.actions) {
             if (!actionView.available) {
                 continue;
             }

@@ -16,17 +16,19 @@ for (let runIndex = 0; runIndex < runs; runIndex++) {
     const engine = createEngine(engineSeed);
     for (const id of engine.listCharacters()) engine.loadCharacter(id);
     engine.loadEncounter(encounterId);
-    let view = engine.getGameView();
+    let state = engine.getGameState();
+    let actions = engine.getActionView();
     let count = 0;
-    while (view.turn.outcome === "ongoing" && count < maxActions) {
-        const action = chooseSwingOnly(view);
+    while (state.turn.outcome === "ongoing" && count < maxActions) {
+        const action = chooseSwingOnly(actions);
         const result = engine.executeAction(action);
         if (!result.success) throw new Error(`rejected action: ${result.reason}`);
-        view = result.view;
+        state = result.frames.at(-1)?.state ?? engine.getGameState();
+        actions = result.actions;
         count++;
     }
     decisions += count;
-    const termination = view.turn.outcome === "ongoing" ? "maxActions" : view.turn.outcome;
+    const termination = state.turn.outcome === "ongoing" ? "maxActions" : state.turn.outcome;
     terminations[termination] = (terminations[termination] ?? 0) + 1;
 }
 const elapsedMs = performance.now() - started;
@@ -36,9 +38,9 @@ console.log(JSON.stringify({
     decisionsPerSecond: decisions / (elapsedMs / 1000), decisions, terminations,
 }));
 
-function chooseSwingOnly(view) {
+function chooseSwingOnly(actions) {
     const programmedMoves = { ko: "telekinesis", matsuko: "whiteFlame", hinari: "rockfall" };
-    for (const actionView of view.actions) {
+    for (const actionView of actions) {
         if (!actionView.available) continue;
         const moveId = programmedMoves[actionView.id];
         const info = actionView.moves.find((candidate) => candidate.move.id === moveId && candidate.available);

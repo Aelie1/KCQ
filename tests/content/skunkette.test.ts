@@ -14,7 +14,7 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/gameView";
+import { actionView } from "../helpers/actionView";
 
 const POUNCE_ID = "pounce";
 const SKUNKED_ID = "skunked";
@@ -26,7 +26,7 @@ const LINKED_SKUNKETTE_ID = "skunketteVictim";
 
 function moveEffects(result: ActionSuccess, target?: string): LeafEvent[] {
     expect(result.frames).toHaveLength(1);
-    const event = result.frames[0];
+    const event = result.frames[0].event;
     if (event.type !== "useMove") throw new Error("Expected useMove event");
     if (target === undefined) return event.effects;
     const stack = event.targets.find((entry) => entry.target === target);
@@ -117,7 +117,7 @@ describe("Skunkette behavior through GameEngine", () => {
         (seed, enemyHit, statusIds) => {
             const { engine, pounceTurn } = setupPounce(seed);
 
-            expect(pounceTurn.frames[1]).toMatchObject({
+            expect(pounceTurn.frames[1].event).toMatchObject({
                 type: "useMove",
                 actor: "skunkette1",
                 move: POUNCE_ID,
@@ -225,7 +225,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
         expect(buffState(engine, POUNCE_ID, "victim")).toBeUndefined();
-        expect(engine.getGameView().enemies).toEqual([]);
+        expect(engine.getGameState().enemies).toEqual([]);
     });
 
     it("keeps Pounce on a Throw Off miss and removes both sides on a hit", () => {
@@ -237,7 +237,7 @@ describe("Skunkette behavior through GameEngine", () => {
             move: THROW_OFF_ID,
             targets: [],
         });
-        expect(missResult.frames).toEqual([{
+        expect(missResult.frames.map((frame) => frame.event)).toEqual([{
             type: "useMove", actor: "victim", move: THROW_OFF_ID, targets: [], effects: [],
         }]);
         expect(buffState(missed, POUNCE_ID, "victim")).toBeDefined();
@@ -337,7 +337,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffAdded", target: "skunkette1", buff: "resistance" },
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
-        expect(ordinaryDefeat.actions.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
+        expect(ordinaryDefeat.frames.at(-1)!.state.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
         expect(enemyState(engine, LINKED_SKUNKETTE_ID).id).toBe(LINKED_SKUNKETTE_ID);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toMatchObject({
             linkedEntity: LINKED_SKUNKETTE_ID,
@@ -372,7 +372,7 @@ describe("Skunkette behavior through GameEngine", () => {
             })),
             { type: "enemyDefeated", target: LINKED_SKUNKETTE_ID },
         ]);
-        expect(rescue.actions.enemies.some(({ id }) => id === LINKED_SKUNKETTE_ID)).toBe(false);
+        expect(rescue.frames.at(-1)!.state.enemies.some(({ id }) => id === LINKED_SKUNKETTE_ID)).toBe(false);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toBeUndefined();
         expect(LATEX_BODY_BINDINGS.map((binding) =>
             bindingState(engine, binding.id, SKUNKED_CHARACTER_ID)?.value,
@@ -409,7 +409,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffAdded", target: "skunkette1", buff: "resistance" },
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
-        expect(result.actions.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
+        expect(result.frames.at(-1)!.state.enemies.some(({ id }) => id === "skunkette1")).toBe(false);
         expect(enemyState(engine, LINKED_SKUNKETTE_ID).id).toBe(LINKED_SKUNKETTE_ID);
         expect(buffState(engine, SKUNKED_ID, SKUNKED_CHARACTER_ID)).toMatchObject({
             linkedEntity: LINKED_SKUNKETTE_ID,
@@ -463,7 +463,7 @@ describe("Skunkette behavior through GameEngine", () => {
         // use priority #3 because there is no Pounce relationship and its cooldown remains active.
         execute(engine, { type: "endTurn" });
 
-        const state = engine.getGameView();
+        const state = engine.getGameState();
         const intention = enemyState(engine, "skunkette1").intentions[0];
         const bindingEffect = intention?.targets[0]?.effects.find(
             (effect) => effect.type === "binding",
@@ -489,7 +489,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const before = bindingState(engine, bindingEffect.binding, bindingEffect.target)?.value ?? 0;
         const fallbackTurn = execute(engine, { type: "endTurn" });
 
-        expect(fallbackTurn.frames.find((event) => event.type === "useMove")).toMatchObject({
+        expect(fallbackTurn.frames.map((frame) => frame.event).find((event) => event.type === "useMove")).toMatchObject({
             type: "useMove",
             actor: "skunkette1",
             move: "latexSpray",
@@ -642,7 +642,7 @@ describe("Skunkette behavior through GameEngine", () => {
 
         const result = execute(engine, { type: "endTurn" });
 
-        expect(result.frames).toMatchObject([
+        expect(result.frames.map((frame) => frame.event)).toMatchObject([
             { type: "changePhase", phase: "enemy", effects: [] },
             {
                 type: "useMove", actor: "skunkette1", move: LATEX_MIST_ID,
@@ -667,6 +667,6 @@ describe("Skunkette behavior through GameEngine", () => {
             duration: 1,
         });
         expect(buffState(engine, SKUNKED_ID)).toBeUndefined();
-        expect(engine.getGameView().enemies.map(({ id }) => id)).toEqual(["skunkette1"]);
+        expect(engine.getGameState().enemies.map(({ id }) => id)).toEqual(["skunkette1"]);
     });
 });

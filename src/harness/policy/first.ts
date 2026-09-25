@@ -4,7 +4,7 @@ import type { FightPolicy, PolicyContext } from "../harness";
 export const firstPolicy: FightPolicy = {
     id: "first",
     chooseAction(context: PolicyContext): PlayerAction {
-        for (const actionView of context.view.actions) {
+        for (const actionView of context.actions) {
             if (!actionView.available) {
                 continue;
             }

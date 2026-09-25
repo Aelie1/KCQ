@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { GameView, PlayerAction } from "../../src/engine/public/types";
+import type { GameState, PlayerAction } from "../../src/engine/public/types";
 import { runBatch, type BatchResult } from "../../src/harness/batch/batch";
 import { summarizeBatch } from "../../src/harness/batch/summary";
 import { formatBatchSummary } from "../../src/harness/batch/summary-format";
@@ -14,9 +14,9 @@ const originalArgv = process.argv;
 const originalExitCode = process.exitCode;
 
 function batchFixture(): BatchResult {
-    const finalState: GameView = {
+    const finalState: GameState = {
         turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
-        characters: [], enemies: [], traps: [], encounter: null, actions: [],
+        characters: [], enemies: [], traps: [], encounter: null,
     };
     return {
         encounterId: "plains_1",
@@ -157,7 +157,7 @@ describe("batch CLI entry point", () => {
 
     it("keeps the existing fight entry point and replay artifact behavior unchanged", async () => {
         process.argv = [process.execPath, "main.ts", "plains_1", "12345", "first"];
-        const result = { ...batchFixture().runs[0].result, replay: { initialState: batchFixture().runs[0].result.finalState, steps: [] } };
+        const result = { ...batchFixture().runs[0].result, replay: { initialState: batchFixture().runs[0].result.finalState, initialActions: [], steps: [] } };
         vi.mocked(runSingleFight).mockReturnValue(result);
         await import("../../src/harness/cli/fight-main");
 

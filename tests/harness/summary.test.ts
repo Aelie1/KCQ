@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Character, Enemy, GameView, PlayerAction } from "../../src/engine/public/types";
+import type { Character, Enemy, GameState, PlayerAction } from "../../src/engine/public/types";
 import type { BatchResult, BatchRun } from "../../src/harness/batch/batch";
 import { summarizeBatch, wilsonScoreInterval } from "../../src/harness/batch/summary";
 import type { FightReplay, SingleFightTermination } from "../../src/harness/harness";
@@ -34,7 +34,7 @@ function enemy(currHp: number): Enemy {
     };
 }
 
-function view(fixture: RunFixture): GameView {
+function view(fixture: RunFixture): GameState {
     return {
         turn: {
             round: fixture.round ?? 1,
@@ -46,7 +46,7 @@ function view(fixture: RunFixture): GameView {
         },
         characters: [character("ko", [fixture.peakBondage / 2])],
         enemies: fixture.remainingEnemyHp === 0 ? [] : [enemy(fixture.remainingEnemyHp)],
-        traps: [], encounter: null, actions: [],
+        traps: [], encounter: null,
     };
 }
 
@@ -190,7 +190,7 @@ describe("batch summary metrics", () => {
         const original = fixtureBatch();
         const withReplay = structuredClone(original);
         for (const { result } of withReplay.runs) {
-            const replay: FightReplay = { initialState: structuredClone(result.finalState), steps: [] };
+            const replay: FightReplay = { initialState: structuredClone(result.finalState), initialActions: [], steps: [] };
             result.replay = replay;
         }
         const before = structuredClone(withReplay);

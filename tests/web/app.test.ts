@@ -13,7 +13,7 @@ describe("web battle application", () => {
     it("loads the full character list in order for every selectable encounter", () => {
         for (const encounter of encounterList) {
             const battle = createBattle(encounter);
-            const view = battle.engine.getGameView();
+            const view = battle.engine.getGameState();
 
             expect(view.characters.map((character) => character.id)).toEqual(
                 characterList.map((character) => character.id),
@@ -31,10 +31,10 @@ describe("web battle application", () => {
 
         first.engine.executeAction({ type: "endTurn" });
 
-        expect(first.engine.getGameView().turn.round).toBeGreaterThan(
-            second.engine.getGameView().turn.round,
+        expect(first.engine.getGameState().turn.round).toBeGreaterThan(
+            second.engine.getGameState().turn.round,
         );
-        expect(second.engine.getGameView().turn.round).toBe(1);
+        expect(second.engine.getGameState().turn.round).toBe(1);
     });
 
     it("returns after the shared controller exits", async () => {

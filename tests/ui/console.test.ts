@@ -676,7 +676,7 @@ describe("console formatting", () => {
         const events = engine.loadEncounter("plains_1");
         const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
 
-        expect(engine.getGameView().turn.round).toBe(2);
+        expect(engine.getGameState().turn.round).toBe(2);
         expect(rendered).toContain("[1] telekinesis [mouth; 1 enemy]");
         expect(rendered).not.toMatch(/TARGET\s+MISS\s+GRAZE/);
         expect(rendered).toMatch(/telekinesis on skunkette1: (MISS|GRAZE|HIT|CRIT)/);
@@ -1005,7 +1005,7 @@ describe("console formatting", () => {
             easy: [{ definition: stunned, value: 1 }],
         });
         const { engine } = setupBoundEngine(escapeBlockingBinding, thresholds.easy);
-        const escapes = engine.getGameView().actions
+        const escapes = engine.getActionView()
             .find((action) => action.id === "hero")?.escapes ?? [];
 
         expect(escapes.length).toBeGreaterThan(0);
@@ -1059,7 +1059,7 @@ describe("console formatting", () => {
         engine.loadCharacter(hero.id);
         engine.loadCharacter(ally.id);
         const events = engine.loadEncounter(encounter.id);
-        const escapes = engine.getGameView().actions
+        const escapes = engine.getActionView()
             .find((action) => action.id === hero.id)?.escapes ?? [];
 
         expect(escapes.some((option) => option.available)).toBe(true);
@@ -1112,7 +1112,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("[2] ally  Ready");
         expect(rendered).toContain("[0] End turn");
         expect(rendered).toContain("[-] Quit");
-        expect(engine.getGameView().turn.round).toBe(1);
+        expect(engine.getGameState().turn.round).toBe(1);
     });
 
     it("does not number unavailable characters and ignores them for automatic end turn", async () => {
@@ -1133,7 +1133,7 @@ describe("console formatting", () => {
         expect(rendered).toContain("[1] player-wait [mouth; no target]   Success: 100%");
         expect(rendered).not.toContain("no target]   No target");
         expect(rendered).toContain("No characters available. Ending turn automatically.");
-        expect(engine.getGameView().turn.round).toBe(3);
+        expect(engine.getGameState().turn.round).toBe(3);
     });
 
     it("refreshes stance and bonus-escape menus in place", async () => {
@@ -1156,7 +1156,7 @@ describe("console formatting", () => {
         expect(escapeAmounts[1]).not.toBe(escapeAmounts[0]);
         expect(rendered).not.toContain("Who should hero free?");
         expect(rendered).not.toContain("Choose a binding on hero.");
-        expect(engine.getGameView().turn.round).toBe(3);
+        expect(engine.getGameState().turn.round).toBe(3);
     });
 
     it("previews every effect for an escape option", async () => {

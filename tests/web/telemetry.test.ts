@@ -26,7 +26,7 @@ describe("browser gameplay telemetry", () => {
         const engine = createCustomEngine(encounterList, [ko], 8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
-        const view = engine.getGameView();
+        const view = engine.getGameState();
         view.characters[0].data = { subspace: 4, subspaceMax: 10 };
         view.characters[0].bindings = [{
             id: "rope",
@@ -95,8 +95,8 @@ describe("browser gameplay telemetry", () => {
             release: "v1.2.3",
             encounter: "plains_1",
             seed: engine.getSeed(),
-            initialView: engine.getGameView(),
-            getCurrentView: () => engine.getGameView(),
+            initialState: engine.getGameState(),
+            getCurrentState: () => engine.getGameState(),
         });
         const action = { type: "endTurn" as const };
         const result = engine.executeAction(action);
@@ -138,8 +138,8 @@ describe("browser gameplay telemetry", () => {
             release: "v1.2.3",
             encounter: "plains_1",
             seed: engine.getSeed(),
-            initialView: engine.getGameView(),
-            getCurrentView: () => engine.getGameView(),
+            initialState: engine.getGameState(),
+            getCurrentState: () => engine.getGameState(),
         });
         quitObserver.onQuit?.();
         expect(quitCapture).toHaveBeenLastCalledWith("battle_quit", {
@@ -166,8 +166,8 @@ describe("browser gameplay telemetry", () => {
             release: "test",
             encounter: "plains_1",
             seed: engine.getSeed(),
-            initialView: engine.getGameView(),
-            getCurrentView: () => engine.getGameView(),
+            initialState: engine.getGameState(),
+            getCurrentState: () => engine.getGameState(),
         });
         const action = { type: "endTurn" as const };
         observer.onAction?.(action, engine.executeAction(action), "player");
@@ -180,7 +180,7 @@ describe("browser gameplay telemetry", () => {
             .toEqual([["battle_abandoned", {
                 replay_id: "replay-abandoned",
                 action_count: 1,
-                current_state: compactStateDigest(engine.getGameView()),
+                current_state: compactStateDigest(engine.getGameState()),
             }, {
                 send_instantly: true,
                 transport: "sendBeacon",
@@ -201,8 +201,8 @@ describe("browser gameplay telemetry", () => {
                     release: "test",
                     encounter: "plains_1",
                     seed: engine.getSeed(),
-                    initialView: engine.getGameView(),
-                    getCurrentView: () => engine.getGameView(),
+                    initialState: engine.getGameState(),
+                    getCurrentState: () => engine.getGameState(),
                 }),
             };
         };
@@ -237,8 +237,8 @@ describe("browser gameplay telemetry", () => {
             release: "test",
             encounter: "plains_1",
             seed: engine.getSeed(),
-            initialView: engine.getGameView(),
-            getCurrentView: () => engine.getGameView(),
+            initialState: engine.getGameState(),
+            getCurrentState: () => engine.getGameState(),
         });
 
         expect(() => observer.onPageHide({ persisted: false })).not.toThrow();

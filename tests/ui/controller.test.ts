@@ -11,6 +11,7 @@ import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { Engine } from "../../src/engine/public/types";
+import { playActionGroups } from "../../src/console/presentation";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -20,6 +21,59 @@ import {
 } from "../helpers/helpers";
 
 describe("shared battle controller", () => {
+    it("presents each enemy's frame state during End Turn playback", async () => {
+        const restraint = makeBindingDef("restraint");
+        const bind = makeMove("bind", "none", {
+            targetSide: "none",
+            targets: 0,
+            accuracy: undefined,
+            resolve: (state, actor) => [{
+                type: "binding", source: actor, target: state.characters[0],
+                binding: restraint, amount: 5,
+            }],
+        });
+        const hero = makeCharacterDef("hero");
+        const encounter: EncounterDef = {
+            id: "frame-playback",
+            enemies: [makeEnemyDef("foeA", [bind]), makeEnemyDef("foeB", [bind]), makeEnemyDef("foeC", [bind])],
+            bindings: [restraint], traps: [],
+        };
+        const engine = createCustomEngine([encounter], [hero], 1);
+        engine.loadCharacter(hero.id);
+        const loaded = engine.loadEncounter(encounter.id);
+        const visibleBindings: number[] = [];
+        let submittedFrames: ReturnType<Engine["executeAction"]> | undefined;
+        let choices = 0;
+
+        await runBattleController(engine, encounter.id, [loaded], {
+            choose: async ({ choices: available }) => {
+                if (choices++ > 0) return "quit";
+                return available.find((choice) => choice.kind === "endTurn")!.number;
+            },
+            playback: async (request) => {
+                expect(request.screen.state.characters[0].bindings).toEqual([]);
+                let visibleState = request.screen.state;
+                await playActionGroups(request.groups, 0, (group) => {
+                    visibleState = group.state ?? visibleState;
+                    if (group.kind === "action" && group.phase === "enemy") {
+                        visibleBindings.push(visibleState.characters[0].bindings[0]?.value ?? 0);
+                    }
+                }, async () => undefined);
+            },
+        }, { onAction: (_action, result) => { submittedFrames = result; } });
+
+        expect(visibleBindings).toEqual([5, 10, 15]);
+        expect(engine.getGameState().characters[0].bindings[0].value).toBe(15);
+        expect(submittedFrames?.success).toBe(true);
+        if (submittedFrames?.success) {
+            expect(submittedFrames.frames.map(({ event }) => event.type)).toEqual([
+                "changePhase", "useMove", "useMove", "useMove", "changePhase",
+            ]);
+            expect(submittedFrames.frames.slice(1, 4).map(({ state }) =>
+                state.characters[0].bindings[0]?.value)).toEqual(visibleBindings);
+            expect(submittedFrames.actions).toEqual(engine.getActionView());
+        }
+    });
     it("presents numbered choices through a UI adapter and validates its response", async () => {
         const engine = createCustomEngine(encounterList, [ko], 8224);
         const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
@@ -181,7 +235,7 @@ describe("shared battle controller", () => {
             },
         });
 
-        expect(engine.getGameView().turn.outcome).toBe("defeat");
+        expect(engine.getGameState().turn.outcome).toBe("defeat");
         expect(choose).not.toHaveBeenCalled();
         expect(finalScreens[0].actionLines).toContain("DEFEAT");
         expect(finalScreens[0].actionLines).toContain("The party has been incapacitated.");
@@ -192,9 +246,9 @@ describe("shared battle controller", () => {
         base.loadCharacter(ko.id);
         const engine = new Proxy(base, {
             get(target, property) {
-                if (property === "getGameView") {
+                if (property === "getGameState") {
                     return () => {
-                        const view = target.getGameView();
+                        const view = target.getGameState();
                         return { ...view, turn: { ...view.turn, outcome: "ongoing" as const } };
                     };
                 }
@@ -338,7 +392,7 @@ describe("shared battle controller", () => {
             showFinal: async () => undefined,
         }, { onAction, onOutcome });
 
-        expect(engine.getGameView().turn.outcome).toBe("victory");
+        expect(engine.getGameState().turn.outcome).toBe("victory");
 
         expect(onAction).toHaveBeenCalledOnce();
         expect(onAction).toHaveBeenCalledWith(
@@ -360,7 +414,7 @@ describe("shared battle controller", () => {
             choose: async () => "quit",
         }, { onQuit });
 
-        expect(engine.getGameView().turn.outcome).toBe("ongoing");
+        expect(engine.getGameState().turn.outcome).toBe("ongoing");
         expect(onQuit).toHaveBeenCalledOnce();
     });
 });
