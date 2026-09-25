@@ -326,15 +326,7 @@ export class GameEffects {
 
     private checkEnemy(target: iEnemy) {
         if (target.currHp <= 0) {
-            this.effects.push({
-                type: "enemy",
-                operation: "remove",
-                target: target
-            });
-
-            if (target.definition.onDefeat) {
-                this.stack(target.definition.onDefeat(this.state, target));
-            }
+            this.defeatEnemy(target);
         }
     }
 

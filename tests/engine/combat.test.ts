@@ -3,12 +3,12 @@ import { ko } from "../../src/content/characters/ko";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { Engine, FailureReason, PlayerAction } from "../../src/engine/public/types";
+import { actionView } from "../helpers/actionView";
 import {
     bindingState, buffState, execute, makeBehavioralBinding, makeBehavioralEngine, makeBehavioralCharacter as makeCharacterDef,
     makeBehavioralEnemy as makeEnemyDef, makeBehavioralMove as makeMove, makeEnemyWaitMove as makeWaitMove, targetAccuracy,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents, resultDetails } from "../helpers/events";
-import { actionView } from "../helpers/actionView";
 
 const AUTHORED_HIT_SEED = 2;
 
@@ -589,6 +589,49 @@ describe("move and effect resolution through GameEngine", () => {
         ]);
         expect(result.frames.at(-1)!.state.enemies).toEqual([]);
         expect(bindingState(engine, damageReaction.id)?.value).toBe(1);
+        expect(bindingState(engine, defeatReaction.id)?.value).toBe(1);
+    });
+
+    it("resolves onDefeat before removing an explicitly defeated enemy", () => {
+        const defeatReaction = makeBehavioralBinding("defeat-reaction");
+        const defeat = makeMove("defeat", "arms", {
+            resolve: (state) => [{
+                type: "enemy",
+                operation: "defeat",
+                target: state.enemies[0],
+            }],
+        });
+        const foe = makeEnemyDef("reactive", [makeWaitMove()]);
+        let presentDuringOnDefeat = false;
+
+        foe.onDefeat = (state, target) => {
+            presentDuringOnDefeat = state.enemies.includes(target);
+            return [{
+                type: "binding",
+                source: target,
+                target: state.characters[0],
+                binding: defeatReaction,
+                amount: 1,
+            }];
+        };
+
+        const engine = makeBehavioralEngine([
+            makeCharacterDef("hero", [defeat]),
+        ], [foe]);
+
+        const result = execute(engine, {
+            type: "move",
+            actor: "hero",
+            move: defeat.id,
+            targets: ["reactive1"],
+        });
+
+        expect(presentDuringOnDefeat).toBe(true);
+        expect(result.frames[0].event.type === "useMove" && result.frames[0].event.targets[0].effects).toEqual([
+            { type: "bondageAdded", target: "hero", binding: "defeat-reaction", amount: 1 },
+            { type: "enemyDefeated", target: "reactive1" },
+        ]);
+        expect(result.frames.at(-1)!.state.enemies).toEqual([]);
         expect(bindingState(engine, defeatReaction.id)?.value).toBe(1);
     });
 });
