@@ -164,6 +164,7 @@ export interface Move {
     id: string;
     targetSide: EntitySide;
     targets: TargetCount;
+    hits?: number;
     type: MoveType;
     binding?: BindingId;
 }

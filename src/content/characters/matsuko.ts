@@ -15,7 +15,7 @@ const WHITE_FLAME_DAMAGE = 30;
 
 const PHOENIX_KICK_DAMAGE = 30;
 
-const IMMOLATION_DAMAGE = 60;
+const IMMOLATION_DAMAGE = 75;
 
 const OBEY_SERVITUDE_DURATION = 2;
 const OBEY_COMPULSION_COOLDOWN = 3;
@@ -90,10 +90,7 @@ const whiteFlame: MoveDef = {
 const fairyWhiteFlame: MoveDef = {
     ...whiteFlame,
     id: "fairyWhiteFlame",
-    modifiers: {
-        ...whiteFlame.modifiers,
-        potency: 2,
-    },
+    targets: "all",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = whiteFlame.resolve(state, actor, move, targets);
         result.effects.push(...removeEmpowerment(actor));
@@ -117,10 +114,7 @@ const phoenixKick: MoveDef = {
 const fairyPhoenixKick: MoveDef = {
     ...phoenixKick,
     id: "fairyPhoenixKick",
-    modifiers: {
-        ...phoenixKick.modifiers,
-        hit: 2,
-    },
+    baseHits: 2,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = phoenixKick.resolve(state, actor, move, targets);
         result.effects.push(...removeEmpowerment(actor));
@@ -138,6 +132,18 @@ const immolation: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = basicDamageEffect(actor, move, targets);
 
+        if (!isCharacter(actor)) {
+            return result;
+        }
+        for (const binding of actor.bindings) {
+            result.effects.push({
+                type: "binding",
+                binding: binding.definition,
+                source: actor,
+                target: actor,
+                amount: -Math.ceil(binding.value / 2)
+            });
+        }
         const burnoutBuff: iBuff = {
             id: "burnout",
             active: true,

@@ -155,6 +155,7 @@ export function serializeMove(move: MoveDef): Move {
         id: move.id,
         targetSide: move.targetSide,
         targets: move.targets,
+        hits: move.baseHits,
         type: move.type
     };
 }

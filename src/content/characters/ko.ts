@@ -1,11 +1,14 @@
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
-import { basicDamageEffect, basicPlayerAccuracy, findBuff, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 
 const TELEKINESIS_DAMAGE = 30;
 
 export const TRANSFORMATION_BUFF = "transformation";
+export const TRANSFORMATION_COOLDOWN = 3;
+
 export const EMPOWERMENT_BUFF = "empowerment";
+
 
 const thousandRestraintsBody: PassiveDef = {
     id: "thousandRestraintsBody",
@@ -16,12 +19,19 @@ export const ko: CharacterDef = {
     id: "ko",
     getMoves: function (actor: iCharacter): MoveDef[] {
         const buff = findBuff(actor, EMPOWERMENT_BUFF);
+        const moves: MoveDef[] = [];
         if (buff) {
-            return [telekinesis, fairyTelekinesis, starlightBindings, fairyStarlightBindings, reflect, fairyReflect, fairyTransformation, fairyEmpowerment];
+            moves.push(...[telekinesis, fairyTelekinesis, starlightBindings, fairyStarlightBindings, reflect, fairyReflect, fairyTransformation, fairyEmpowerment]);
         }
         else {
-            return [telekinesis, starlightBindings, reflect, fairyTransformation];
+            moves.push(...[telekinesis, starlightBindings, reflect, fairyTransformation]);
         }
+
+        if ((actor.data["denialUsed"] ?? 0) === 0) {
+            moves.push(powerOfDenial);
+        }
+
+        return moves;
     },
     passives: [thousandRestraintsBody]
 };
@@ -140,6 +150,7 @@ const fairyTransformation: MoveDef = {
     targetSide: "player",
     targets: 0,
     type: "mouth",
+    cooldown: { "fairyTransformation": TRANSFORMATION_COOLDOWN },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
@@ -182,6 +193,7 @@ const fairyEmpowerment: MoveDef = {
     ...fairyTransformation,
     id: "fairyEmpowerment",
     targets: "all",
+    cooldown: { "fairyEmpowerment": TRANSFORMATION_COOLDOWN },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = fairyTransformation.resolve(state, actor, move, targets);
         result.effects.push(...removeEmpowerment(actor));
@@ -224,6 +236,74 @@ const fairyEmpowerment: MoveDef = {
     }
 }
 
+const powerOfDenial: MoveDef = {
+    id: "powerOfDenial",
+    targetSide: "either",
+    targets: 1,
+    type: "mouth",
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+
+        for (const target of targets) {
+            if (isCharacter(target.target)) {
+                let highest = 0;
+                let highestBinding;
+                for (const binding of target.target.bindings) {
+                    if (binding.value > highest) {
+                        highest = binding.value;
+                        highestBinding = binding.definition;
+                    }
+                }
+                if (highestBinding) {
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: [{
+                            type: "binding",
+                            source: actor,
+                            target: target.target,
+                            binding: highestBinding,
+                            amount: -highest
+                        }]
+                    });
+                }
+            }
+            if (isEnemy(target.target)) {
+                result.targets.push({
+                    target: target.target,
+                    result: target.band,
+                    effects: [{
+                        type: "enemy",
+                        operation: "defeat",
+                        target: target.target,
+                    }]
+                });
+            }
+        }
+
+        result.effects.push({
+            type: "data",
+            target: actor,
+            name: "denialUsed",
+            amount: 1
+        });
+
+        return result;
+    },
+    isValid: function (move: MoveDef, target: iEntity | null) {
+        if (!target) {
+            return undefined;
+        }
+        if (isEnemy(target) && target.rank === "boss") {
+            return "invalidTarget";
+        }
+        if (isCharacter(target) && target.bindings.length === 0) {
+            return "invalidTarget";
+        }
+        return undefined;
+    },
+}
+
 function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
     const effects: iEffect[] = [];
     let newAmount = amount;
@@ -245,6 +325,8 @@ function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, 
         })
         if (buff.id === "fairyReflect") {
             newAmount = 0;
+        } else {
+            newAmount = Math.floor(newAmount / 2);
         }
     }
     return { value: newAmount, effects: effects };

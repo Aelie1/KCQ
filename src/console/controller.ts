@@ -1,7 +1,7 @@
 import type {
     ActionInfo,
-    ActionView,
     ActionResult,
+    ActionView,
     BattleState,
     BindingId,
     Engine,
@@ -330,7 +330,7 @@ export async function runBattleController(
                     ? moveDetailLines(action, targets)
                     : undefined;
                 return {
-                    label: moveLabel(action, actor.cooldowns[action.move.id]),
+                    label: moveLabel(action, actor.cooldowns[action.move.id], action.move.hits),
                     available: action.available,
                     browserLabel: action.move.id,
                     detailLines,
@@ -590,7 +590,7 @@ function appendResult(
     };
 }
 
-function moveLabel(action: ActionInfo, cooldown: number | undefined): string {
+function moveLabel(action: ActionInfo, cooldown: number | undefined, hits: number | undefined): string {
     const target = action.move.targets === "all"
         ? `all ${action.move.targetSide} targets`
         : action.move.targets === 0
@@ -599,8 +599,11 @@ function moveLabel(action: ActionInfo, cooldown: number | undefined): string {
     const cooldownLabel = cooldown !== undefined && cooldown > 0
         ? ` [CD: ${cooldown}]`
         : "";
+    const hitsLabel = hits !== undefined && hits > 0
+        ? `; ${hits} hits`
+        : "";
     const availability = action.available ? "" : ` -- ${action.reason}`;
-    return `${action.move.id}${cooldownLabel} [${action.move.type}; ${target}]${availability}`;
+    return `${action.move.id}${cooldownLabel} [${action.move.type}; ${target}${hitsLabel}]${availability}`;
 }
 
 function encounterBindings(events: GameEvent[]): BindingId[] {

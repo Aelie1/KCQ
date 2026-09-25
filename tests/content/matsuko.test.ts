@@ -10,6 +10,7 @@ import type {
     ActionInfo,
     ActionSuccess, Engine, PlayerAction
 } from "../../src/engine/public/types";
+import { actionView } from "../helpers/actionView";
 import {
     buffState,
     characterState,
@@ -21,7 +22,6 @@ import {
     targetPreview,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/actionView";
 
 const STANDARD_ACCURACY: AccuracyProfile = {
     miss: 10,
@@ -263,14 +263,80 @@ describe("Matsuko's dynamic offensive kit", () => {
         expect(damageAmount(result, "foe1")).toBeGreaterThan(0);
     });
 
-    it.each([
-        ["fairyWhiteFlame", "whiteFlame", "punch"],
-        ["fairyPhoenixKick", "phoenixKick", "kick"],
-    ] as const)("uses %s with both Hit and Potency bonuses, consumes once, and restores %s", (
-        fairyMove,
-        normalMove,
-        basicMove,
-    ) => {
+    it("uses Fairy White Flame against every enemy and consumes Fairy Empowerment", () => {
+        const engine = loadMatsukoEncounter({
+            enemies: [durableEnemy("first"), durableEnemy("second")],
+            seed: 2,
+            setup: (state) => [{
+                type: "buff",
+                operation: "add",
+                target: state.characters[0],
+                buff: { id: EMPOWERMENT_BUFF, active: true },
+            }],
+        });
+
+        expectMoveSet(engine, [
+            "whiteFlame",
+            "fairyWhiteFlame",
+            "phoenixKick",
+            "fairyPhoenixKick",
+            "immolation",
+            "obey",
+            "stop",
+            "attackMe",
+        ]);
+
+        expect(action(engine, "fairyWhiteFlame")).toMatchObject({
+            available: true,
+            move: {
+                type: "arms",
+                targetSide: "enemy",
+                targets: "all",
+            },
+            targets: [
+                { valid: true, target: "first1" },
+                { valid: true, target: "second1" },
+            ],
+        });
+        expect(targetAccuracy(engine, matsuko.id, "fairyWhiteFlame", "first1")).toEqual({
+            graze: 5,
+            hit: 83,
+            crit: 12,
+        });
+
+        const result = execute(engine, {
+            type: "move",
+            actor: matsuko.id,
+            move: "fairyWhiteFlame",
+            targets: [],
+        });
+
+        expect(result.frames[0].event).toMatchObject({
+            type: "useMove",
+            targets: [
+                { target: "first1" },
+                { target: "second1" },
+            ],
+        });
+        expect(damageAmount(result, "first1")).toBeGreaterThan(0);
+        expect(damageAmount(result, "second1")).toBeGreaterThan(0);
+        expect(resolvedEvents(result.frames).filter(({ type }) => type === "buffRemoved")).toEqual([{
+            type: "buffRemoved",
+            target: matsuko.id,
+            buff: EMPOWERMENT_BUFF,
+        }]);
+        expect(buffState(engine, EMPOWERMENT_BUFF, matsuko.id)).toBeUndefined();
+        expectMoveSet(engine, [
+            "whiteFlame",
+            "phoenixKick",
+            "immolation",
+            "obey",
+            "stop",
+            "attackMe",
+        ]);
+    });
+
+    it("uses Fairy Phoenix Kick twice against one enemy and consumes Fairy Empowerment", () => {
         const engine = loadMatsukoEncounter({
             seed: 2,
             setup: (state) => [{
@@ -291,40 +357,37 @@ describe("Matsuko's dynamic offensive kit", () => {
             "stop",
             "attackMe",
         ]);
-        expect(actionView(engine, matsuko.id).moves.some(({ move }) => move.id === normalMove)).toBe(true);
-        expect(targetAccuracy(engine, matsuko.id, fairyMove, "foe1")).toEqual({
-            graze: 5,
-            hit: 83,
-            crit: 12,
+
+        expect(action(engine, "fairyPhoenixKick")).toMatchObject({
+            available: true,
+            move: {
+                type: "legs",
+                targetSide: "enemy",
+                targets: 1,
+                hits: 2,
+            },
         });
+        expect(targetAccuracy(engine, matsuko.id, "fairyPhoenixKick", "foe1"))
+            .toEqual(STANDARD_ACCURACY);
 
         const result = execute(engine, {
             type: "move",
             actor: matsuko.id,
-            move: fairyMove,
-            targets: ["foe1"],
-        });
-        const baseline = loadMatsukoEncounter({
-            seed: 2,
-            setup: (state) => [{
-                type: "buff",
-                operation: "add",
-                target: state.characters[0],
-                buff: { id: "burnout", active: true },
-            }],
-        });
-        const baselineResult = execute(baseline, {
-            type: "move",
-            actor: matsuko.id,
-            move: basicMove,
+            move: "fairyPhoenixKick",
             targets: ["foe1"],
         });
 
-        expect(result.frames[0].event).toMatchObject({
+        const event = result.frames[0].event;
+        expect(event).toMatchObject({
             type: "useMove",
-            targets: [{ target: "foe1", result: "hit" }],
         });
-        expect(damageAmount(result, "foe1")).toBeGreaterThan(damageAmount(baselineResult, "foe1"));
+        if (event.type !== "useMove") {
+            throw new Error("Expected Fairy Phoenix Kick move event");
+        }
+
+        expect(event.targets).toHaveLength(2);
+        expect(event.targets.map(({ target }) => target)).toEqual(["foe1", "foe1"]);
+
         expect(resolvedEvents(result.frames).filter(({ type }) => type === "buffRemoved")).toEqual([{
             type: "buffRemoved",
             target: matsuko.id,

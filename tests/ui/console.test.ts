@@ -159,10 +159,14 @@ describe("console formatting", () => {
 
     it("turns action events into readable log lines", () => {
         expect(formatEvents([
-            { type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [{ target: "foe1", result: "hit", effects: [
-                { type: "enemyDamaged", target: "foe1", amount: 10 },
-                { type: "enemyDefeated", target: "foe1" },
-            ] }] },
+            {
+                type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [{
+                    target: "foe1", result: "hit", effects: [
+                        { type: "enemyDamaged", target: "foe1", amount: 10 },
+                        { type: "enemyDefeated", target: "foe1" },
+                    ]
+                }]
+            },
         ])).toEqual([
             "ko used telekinesis on foe1: HIT",
             "foe1 took 10 damage.",
@@ -174,12 +178,16 @@ describe("console formatting", () => {
         expect(formatEvents([{
             type: "useMove", actor: "hinari", move: "rockfall",
             targets: [
-                { target: "skunkette1", result: "graze", effects: [
-                    { type: "enemyDamaged", target: "skunkette1", amount: 5 },
-                ] },
-                { target: "skunkette1", result: "hit", effects: [
-                    { type: "enemyDamaged", target: "skunkette1", amount: 10 },
-                ] },
+                {
+                    target: "skunkette1", result: "graze", effects: [
+                        { type: "enemyDamaged", target: "skunkette1", amount: 5 },
+                    ]
+                },
+                {
+                    target: "skunkette1", result: "hit", effects: [
+                        { type: "enemyDamaged", target: "skunkette1", amount: 10 },
+                    ]
+                },
             ],
             effects: [{ type: "buffAdded", target: "hinari", buff: "focus" }],
         }])).toEqual([
@@ -263,10 +271,12 @@ describe("console formatting", () => {
 
     it("formats structured trap-trigger and interruption events", () => {
         expect(formatEvents([
-            { type: "useMove", actor: "ko", move: "telekinesis", targets: [], effects: [
-                { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
-                { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
-            ] },
+            {
+                type: "useMove", actor: "ko", move: "telekinesis", targets: [], effects: [
+                    { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
+                    { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
+                ]
+            },
         ])).toEqual([
             "ko used telekinesis.",
             "ko triggered 10 trapPuddles.",
@@ -694,7 +704,7 @@ describe("console formatting", () => {
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(oneEnemyEncounter.id);
 
-        const rendered = await runScriptedConsole(engine, ["1", "7", "3"], events);
+        const rendered = await runScriptedConsole(engine, ["1", "8", "3"], events);
 
         expect(rendered).toContain(
             "[1] telekinesis [mouth; 1 enemy]   foe1",

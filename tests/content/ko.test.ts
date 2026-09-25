@@ -6,6 +6,7 @@ import { isCharacter } from "../../src/engine/protected/helpers";
 import { bound, gagged, helpless, hobbled, incapacitated } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type { DamageEvent, Engine } from "../../src/engine/public/types";
+import { actionView } from "../helpers/actionView";
 import {
     bindingState,
     buffState,
@@ -17,7 +18,6 @@ import {
     makeEnemyWaitMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/actionView";
 
 function loadKoEncounter(
     enemies: EnemyDef[] = [makeBehavioralEnemy("foe")],
@@ -267,6 +267,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             "starlightBindings",
             "reflect",
             "fairyTransformation",
+            "powerOfDenial"
         ]);
     });
 
@@ -281,6 +282,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             "fairyReflect",
             "fairyTransformation",
             "fairyEmpowerment",
+            "powerOfDenial"
         ]);
     });
 
@@ -413,6 +415,7 @@ describe("Ko's normal and Fairy move effects", () => {
             "starlightBindings",
             "reflect",
             "fairyTransformation",
+            "powerOfDenial"
         ]);
     });
 
@@ -448,6 +451,7 @@ describe("Ko's normal and Fairy move effects", () => {
             "starlightBindings",
             "reflect",
             "fairyTransformation",
+            "powerOfDenial"
         ]);
     });
 
@@ -510,6 +514,7 @@ describe("Ko's normal and Fairy move effects", () => {
             "fairyReflect",
             "fairyTransformation",
             "fairyEmpowerment",
+            "powerOfDenial"
         ]);
 
         execute(engine, { type: "endTurn" });
@@ -602,6 +607,7 @@ describe("Ko's normal and Fairy move effects", () => {
             "fairyReflect",
             "fairyTransformation",
             "fairyEmpowerment",
+            "powerOfDenial"
         ]);
 
         const result = execute(engine, {
@@ -636,6 +642,7 @@ describe("Ko's normal and Fairy move effects", () => {
             "starlightBindings",
             "reflect",
             "fairyTransformation",
+            "powerOfDenial"
         ]);
     });
 });
@@ -659,7 +666,7 @@ describe("Ko's Reflect source handling", () => {
             type: "bondageAdded",
             target: ko.id,
             binding: "enemy-rope",
-            amount: 12,
+            amount: 6,
         });
         expect(resolvedEvents(result.frames)).toContainEqual({
             type: "enemyDamaged",
@@ -668,7 +675,7 @@ describe("Ko's Reflect source handling", () => {
         });
         expect(result.frames.at(-1)!.state.enemies.find(({ id }) => id === "spectator1")?.currHp).toBe(37);
         expect(result.frames.at(-1)!.state.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
-        expect(bindingState(engine, "enemy-rope", ko.id)?.value).toBe(12);
+        expect(bindingState(engine, "enemy-rope", ko.id)?.value).toBe(6);
         expect(buffState(engine, "reflect", ko.id)).toBeUndefined();
 
         const nextRound = execute(engine, { type: "endTurn" });
@@ -681,7 +688,7 @@ describe("Ko's Reflect source handling", () => {
         expect(resolvedEvents(nextRound.frames).some(({ type }) => type === "bondageBlocked")).toBe(false);
         expect(resolvedEvents(nextRound.frames).some(({ type }) => type === "enemyDamaged")).toBe(false);
         expect(nextRound.frames.at(-1)!.state.enemies.find(({ id }) => id === "attacker1")?.currHp).toBe(25);
-        expect(bindingState(engine, "enemy-rope", ko.id)?.value).toBe(24);
+        expect(bindingState(engine, "enemy-rope", ko.id)?.value).toBe(18);
     });
 
     it("does not retaliate against self-sourced trap bondage", () => {
