@@ -215,8 +215,14 @@ function replayScreenModel(
 
 interface ScoredDecisionCandidate {
     action: PlayerAction;
-    components: { expectedDamage: number; [name: string]: number };
+    components: Record<string, ScoredDecisionComponent>;
     total: number;
+}
+
+interface ScoredDecisionComponent {
+    raw: number;
+    weight: number;
+    score: number;
 }
 
 interface ScoredDecision {
@@ -258,7 +264,14 @@ function isScoredCandidate(value: unknown): value is ScoredDecisionCandidate {
         && isPlayerAction(value.action)
         && typeof value.total === "number"
         && isRecord(value.components)
-        && typeof value.components.expectedDamage === "number";
+        && Object.values(value.components).every(isScoredComponent);
+}
+
+function isScoredComponent(value: unknown): value is ScoredDecisionComponent {
+    return isRecord(value)
+        && typeof value.raw === "number"
+        && typeof value.weight === "number"
+        && typeof value.score === "number";
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -286,13 +299,22 @@ function formatScoredDecision(
     );
     const hasTie = tiedIndexes.length > 1;
     const fixedLines = 3 + (hasTie ? 1 : 0);
-    const pageSize = Math.max(1, Math.floor((capacity - fixedLines) / 2));
-    const maximumOffset = Math.max(0, decision.candidates.length - pageSize);
+    const candidateLineCapacity = Math.max(1, capacity - fixedLines);
+    const maximumOffset = Math.max(0, decision.candidates.length - 1);
     const offset = Math.min(Math.max(0, requestedOffset), maximumOffset);
-    const visible = decision.candidates.slice(offset, offset + pageSize);
-    const end = offset + visible.length;
+    const visible: Array<{ index: number; lines: string[] }> = [];
+    let usedLines = 0;
+    for (let index = offset; index < decision.candidates.length; index += 1) {
+        const candidate = decision.candidates[index];
+        const candidateLines = formatScoredCandidate(candidate, index, selectedIndex);
+        if (visible.length > 0
+            && usedLines + candidateLines.length > candidateLineCapacity) break;
+        visible.push({ index, lines: candidateLines });
+        usedLines += candidateLines.length;
+    }
+    const end = visible.at(-1)?.index ?? offset;
     const lines = [
-        `${policyId.toUpperCase()} DECISION  Candidates ${offset + 1}-${end} / ${decision.candidates.length}`,
+        `${policyId.toUpperCase()} DECISION  Candidates ${offset + 1}-${end + 1} / ${decision.candidates.length}`,
         `Selected: candidate #${selectedIndex + 1}`,
     ];
 
@@ -302,16 +324,24 @@ function formatScoredDecision(
         );
     }
 
-    visible.forEach((candidate, visibleIndex) => {
-        const index = offset + visibleIndex;
-        const marker = index === selectedIndex ? "*" : " ";
-        lines.push(
-            `${marker} #${index + 1} expectedDamage=${formatScore(candidate.components.expectedDamage)} total=${formatScore(candidate.total)}`,
-            `    ${describeAction(candidate.action)}`,
-        );
-    });
+    for (const candidate of visible) lines.push(...candidate.lines);
     lines.push("[j] more  [k] back  [d] close");
     return lines;
+}
+
+function formatScoredCandidate(
+    candidate: ScoredDecisionCandidate,
+    index: number,
+    selectedIndex: number,
+): string[] {
+    const marker = index === selectedIndex ? "*" : " ";
+    return [
+        `${marker} #${index + 1} total=${formatScore(candidate.total)}`,
+        ...Object.entries(candidate.components).map(([id, component]) =>
+            `    ${id}: raw=${formatScore(component.raw)} weight=${formatScore(component.weight)} score=${formatScore(component.score)}`
+        ),
+        `    ${describeAction(candidate.action)}`,
+    ];
 }
 
 function sameAction(left: PlayerAction, right: PlayerAction): boolean {

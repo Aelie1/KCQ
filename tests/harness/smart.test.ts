@@ -17,9 +17,12 @@ import { runBatch } from "../../src/harness/batch/batch";
 import { getPolicy, policies } from "../../src/harness/policies";
 import {
     evaluateSmartDecision,
+    expectedDamageScorer,
     generateSmartCandidates,
+    smartScorers,
     smartPolicy,
     type SmartDecision,
+    type SmartScorer,
 } from "../../src/harness/policy/smart";
 import { firstPolicy } from "../../src/harness/policy/first";
 import { createEngine } from "../../src/engine/public/engine";
@@ -199,7 +202,107 @@ describe("Smart 1 candidate generation", () => {
     });
 });
 
-describe("Smart 1 expected direct enemy damage", () => {
+describe("Smart 2 composable scoring", () => {
+    it("retains raw values and weights, sums contributions, and selects by combined total", () => {
+        const fixture = context([view("hero", {
+            moves: [
+                move("largest-individual", 0, [target(null)]),
+                move("best-combined", 0, [target(null)]),
+            ],
+        })]);
+        const impact: SmartScorer = {
+            id: "impact",
+            weight: 1,
+            prepare: () => ({ action }) => action.type === "move"
+                ? (action.move === "largest-individual" ? 10 : 8)
+                : 0,
+        };
+        const neutral: SmartScorer = {
+            id: "neutral",
+            weight: 0,
+            prepare: () => () => 4,
+        };
+        const danger: SmartScorer = {
+            id: "danger",
+            weight: -1,
+            prepare: () => ({ action }) => action.type === "move"
+                ? (action.move === "largest-individual" ? 5 : 1)
+                : 0,
+        };
+
+        const decision = evaluateSmartDecision(fixture, [impact, neutral, danger]);
+
+        expect(Object.keys(decision.candidates[0].components)).toEqual([
+            "impact",
+            "neutral",
+            "danger",
+        ]);
+        expect(decision.candidates[0].components).toEqual({
+            impact: { raw: 10, weight: 1, score: 10 },
+            neutral: { raw: 4, weight: 0, score: 0 },
+            danger: { raw: 5, weight: -1, score: -5 },
+        });
+        expect(scores(decision)).toEqual([5, 7, 0]);
+        expect(decision.selected.action).toMatchObject({ move: "best-combined" });
+
+        const reweighted = evaluateSmartDecision(fixture, [
+            impact,
+            neutral,
+            { ...danger, weight: 0 },
+        ]);
+        expect(reweighted.candidates[0].components.danger).toEqual({
+            raw: 5,
+            weight: 0,
+            score: 0,
+        });
+        expect(scores(reweighted)).toEqual([10, 8, 0]);
+        expect(reweighted.selected.action).toMatchObject({ move: "largest-individual" });
+    });
+
+    it("rejects duplicate component IDs before producing an ambiguous breakdown", () => {
+        const duplicate: SmartScorer = { id: "same", weight: 1, prepare: () => () => 0 };
+        expect(() => evaluateSmartDecision(context([]), [duplicate, duplicate]))
+            .toThrow("Duplicate Smart scorer ID: same");
+    });
+
+    it("prepares every scorer once per decision rather than once per candidate", () => {
+        let preparations = 0;
+        let evaluations = 0;
+        const scorer: SmartScorer = {
+            id: "prepared",
+            weight: 1,
+            prepare: (preparedContext) => {
+                preparations += 1;
+                const enemyCount = preparedContext.state.enemies.length;
+                return () => {
+                    evaluations += 1;
+                    return enemyCount;
+                };
+            },
+        };
+        const fixture = context([view("hero", {
+            moves: [
+                move("one", 0, [target(null)]),
+                move("two", 0, [target(null)]),
+            ],
+        })]);
+
+        const decision = evaluateSmartDecision(fixture, [scorer]);
+
+        expect(decision.candidates).toHaveLength(3);
+        expect(preparations).toBe(1);
+        expect(evaluations).toBe(3);
+        expect(scores(decision)).toEqual([3, 3, 3]);
+    });
+
+    it("registers expected damage as the sole production scorer at weight 1", () => {
+        expect(smartScorers).toEqual([expectedDamageScorer]);
+        expect(expectedDamageScorer.id).toBe("expectedDamage");
+        expect(expectedDamageScorer.weight).toBe(1);
+    });
+});
+
+describe("Smart 2 expected direct enemy damage", () => {
     it("uses probability times band midpoint, sums bands, and scales by hits", () => {
         const strike = move("strike", 1, [target("enemy-1", {
             damage: {
@@ -214,7 +317,9 @@ describe("Smart 1 expected direct enemy damage", () => {
 
         // Per hit: .25*0 + .50*10 + .25*30 = 12.5; two hits = 25.
         expect(scores(decision)).toEqual([25, 0]);
-        expect(decision.candidates[0].components).toEqual({ expectedDamage: 25 });
+        expect(decision.candidates[0].components).toEqual({
+            expectedDamage: { raw: 25, weight: 1, score: 25 },
+        });
     });
 
     it("sums only the selected targets for explicit multi-target actions", () => {
@@ -300,7 +405,7 @@ describe("Smart 1 expected direct enemy damage", () => {
     });
 });
 
-describe("Smart 1 selection and integration", () => {
+describe("Smart 2 selection and integration", () => {
     it("selects the highest score and breaks ties by enumeration order", () => {
         const decision = evaluateSmartDecision(context([
             view("hero", {
@@ -338,9 +443,42 @@ describe("Smart 1 selection and integration", () => {
         expect(first.candidates).toHaveLength(2);
         expect(first.candidates.every((candidate) =>
             typeof candidate.total === "number"
-            && typeof candidate.components.expectedDamage === "number",
+            && typeof candidate.components.expectedDamage.raw === "number"
+            && candidate.components.expectedDamage.weight === 1
+            && candidate.components.expectedDamage.score === candidate.total,
         )).toBe(true);
         expect(smartPolicy.chooseAction(fixture)).toEqual(first.selected.action);
+    });
+
+    it("preserves representative Smart 1 scores and choices with the default scorer", () => {
+        const multiHit = move("multi-hit", 1, [target("enemy-1", {
+            damage: { hit: { chance: 100, min: 4, max: 4 } },
+        })]);
+        multiHit.move.hits = 3;
+        const fixture = context([view("hero", {
+            moves: [
+                move("single", 1, [target("enemy-1", {
+                    damage: { hit: { chance: 100, min: 9, max: 9 } },
+                })]),
+                move("all", "all", [
+                    target("enemy-1", { damage: { hit: { chance: 100, min: 2, max: 2 } } }),
+                    target("enemy-2", { damage: { hit: { chance: 100, min: 3, max: 3 } } }),
+                ]),
+                multiHit,
+                move("utility", 0, [target(null)]),
+                move("later-tie", 1, [target("enemy-2", {
+                    damage: { hit: { chance: 100, min: 12, max: 12 } },
+                })]),
+            ],
+        })]);
+
+        const decision = evaluateSmartDecision(fixture);
+
+        // These are the pre-refactor Smart 1 EVs: single, AoE, multihit, utility,
+        // equal-scoring later candidate, and the final end-turn fallback.
+        expect(scores(decision)).toEqual([9, 5, 12, 0, 12, 0]);
+        expect(decision.selected).toBe(decision.candidates[2]);
+        expect(decision.selected.action).toMatchObject({ move: "multi-hit" });
     });
 
     it("registers smart and completes a real stock encounter without rejected actions", () => {
@@ -391,11 +529,31 @@ describe("Smart 1 selection and integration", () => {
             const decision = step.policyDecision?.diagnostics as SmartDecision;
             expect(decision.candidates.length).toBeGreaterThan(0);
             expect(decision.candidates.every((candidate) =>
-                typeof candidate.components.expectedDamage === "number"
-                && candidate.total === candidate.components.expectedDamage,
+                typeof candidate.components.expectedDamage.raw === "number"
+                && candidate.components.expectedDamage.weight === 1
+                && candidate.total === candidate.components.expectedDamage.score,
             )).toBe(true);
             expect(step.action).toEqual(decision.selected.action);
         }
+    });
+
+    it("executes the same actions with replay diagnostics enabled", () => {
+        const encounterId = createEngine(1).listEncounters()[0];
+        if (!encounterId) throw new Error("The stock encounter catalogue is empty");
+        const input = {
+            encounterId,
+            engineSeed: 8642,
+            policySeed: 9753,
+            maxActions: 1_000,
+            policy: smartPolicy,
+        };
+
+        const ordinary = runSingleFight(input);
+        const recorded = runSingleFight({ ...input, replay: true });
+
+        expect(recorded.trace).toEqual(ordinary.trace);
+        expect(recorded.termination).toBe(ordinary.termination);
+        expect(recorded.finalState).toEqual(ordinary.finalState);
     });
 
     it("does not evaluate or retain detailed decisions in ordinary fights or batches", () => {
@@ -405,9 +563,9 @@ describe("Smart 1 selection and integration", () => {
         const observedSmart: FightPolicy = {
             ...smartPolicy,
             id: "observed-smart",
-            evaluateDecision(context) {
+            evaluateDecision(context, chosenAction) {
                 detailedEvaluations += 1;
-                return smartPolicy.evaluateDecision!(context);
+                return smartPolicy.evaluateDecision!(context, chosenAction);
             },
         };
 

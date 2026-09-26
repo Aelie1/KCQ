@@ -187,7 +187,10 @@ describe("console replay viewer", () => {
             effects: [],
             targets: [],
             hits: 1,
-            components: { expectedDamage: total },
+            components: {
+                impact: { raw: total + 2, weight: 1, score: total + 2 },
+                penalty: { raw: 2, weight: -1, score: -2 },
+            },
             total,
         }));
         step.policyDecision = {
@@ -195,21 +198,30 @@ describe("console replay viewer", () => {
             diagnostics: { candidates, selected: candidates[0] },
         };
 
-        const frames = await viewReplay(input, ["n", "d", "j", "j", "d", "q"]);
+        const frames = await viewReplay(
+            input,
+            ["n", "d", "j", "j", "j", "j", "d", "q"],
+        );
 
         expect(frames[1]).toContain("[d] decision details");
-        expect(frames[2]).toContain("SMART DECISION  Candidates 1-4 / 6");
+        expect(frames[2]).toContain("SMART DECISION  Candidates 1-2 / 6");
         expect(frames[2]).toContain("Selected: candidate #1");
         expect(frames[2]).toContain("Tie-break: 2 candidates at 10; stable order chose #1.");
-        expect(frames[2]).toContain("* #1 expectedDamage=10 total=10");
-        expect(frames[2].indexOf("#1 expectedDamage")).toBeLessThan(
-            frames[2].indexOf("#2 expectedDamage"),
+        expect(frames[2]).toContain("* #1 total=10");
+        expect(frames[2]).toContain("impact: raw=12 weight=1 score=12");
+        expect(frames[2]).toContain("penalty: raw=2 weight=-1 score=-2");
+        expect(frames[2].indexOf("impact: raw=12")).toBeLessThan(
+            frames[2].indexOf("penalty: raw=2"),
         );
-        expect(frames[3]).toContain("SMART DECISION  Candidates 2-5 / 6");
-        expect(frames[4]).toContain("SMART DECISION  Candidates 3-6 / 6");
-        expect(frames[4]).toContain("#6 expectedDamage=10 total=10");
-        expect(frames[4]).toContain("move hero: candidate-6; targets: [recorded-foe]");
-        expect(frames[5]).toContain("Action: move hero: recorded-strike");
+        expect(frames[3]).toContain("SMART DECISION  Candidates 2-3 / 6");
+        expect(frames[4]).toContain("SMART DECISION  Candidates 3-4 / 6");
+        expect(frames[5]).toContain("SMART DECISION  Candidates 4-5 / 6");
+        expect(frames[6]).toContain("SMART DECISION  Candidates 5-6 / 6");
+        expect(frames[6]).toContain("#6 total=10");
+        expect(frames[6]).toContain("impact: raw=12 weight=1 score=12");
+        expect(frames[6]).toContain("penalty: raw=2 weight=-1 score=-2");
+        expect(frames[6]).toContain("move hero: candidate-6; targets: [recorded-foe]");
+        expect(frames[7]).toContain("Action: move hero: recorded-strike");
     });
 
     it("clamps both boundaries and supports start/end without quitting on a terminal outcome", async () => {
@@ -354,5 +366,44 @@ describe("console replay viewer", () => {
         expect(frames[1]).toContain("Action: move hero: recorded-strike");
         expect(frames[1]).toContain("[n] next  [p] previous  [q] quit");
         expect(frames[1]).toContain("[start] initial state  [end] final step");
+    });
+
+    it("shows every component vertically at the minimum supported terminal width", async () => {
+        const input = replayInput();
+        if (!("initialActions" in input.replay)) throw new Error("Expected current replay fixture");
+        const step = input.replay.steps[0];
+        if (!step) throw new Error("Expected a replay step");
+        const candidate = {
+            action: step.action,
+            components: {
+                alpha: { raw: 12.5, weight: 1, score: 12.5 },
+                neutral: { raw: 99, weight: 0, score: 0 },
+                negativeAdjustment: { raw: 2.5, weight: -1, score: -2.5 },
+            },
+            total: 10,
+        };
+        step.policyDecision = {
+            policyId: "smart",
+            diagnostics: { candidates: [candidate], selected: candidate },
+        };
+
+        const frames = await viewReplay(
+            input,
+            ["n", "d", "q"],
+            { columns: 120, rows: 37 },
+        );
+        const details = frames[2];
+
+        expect(details).toContain("* #1 total=10");
+        expect(details).toContain("alpha: raw=12.5 weight=1 score=12.5");
+        expect(details).toContain("neutral: raw=99 weight=0 score=0");
+        expect(details).toContain(
+            "negativeAdjustment: raw=2.5 weight=-1 score=-2.5",
+        );
+        expect(details.indexOf("alpha: raw")).toBeLessThan(details.indexOf("neutral: raw"));
+        expect(details.indexOf("neutral: raw")).toBeLessThan(
+            details.indexOf("negativeAdjustment: raw"),
+        );
+        expect(details).toContain("[j] more  [k] back  [d] close");
     });
 });

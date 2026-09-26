@@ -18,13 +18,23 @@ export interface SmartCandidate {
     readonly hits: number;
 }
 
-/**
- * The index signature lets later Smart cards add named components without
- * changing the decision/candidate architecture.
- */
+/** One scorer's native value, configured multiplier, and weighted contribution. */
+export interface SmartScoreComponent {
+    readonly raw: number;
+    readonly weight: number;
+    readonly score: number;
+}
+
+/** Named components retain scorer registration order for diagnostics. */
 export interface SmartScoreComponents {
-    readonly expectedDamage: number;
-    readonly [name: string]: number;
+    readonly [name: string]: SmartScoreComponent;
+}
+
+/** A pure scoring dimension evaluated from public policy context and preview data. */
+export interface SmartScorer {
+    readonly id: string;
+    readonly weight: number;
+    prepare(context: PolicyContext): (candidate: SmartCandidate) => number;
 }
 
 export interface ScoredSmartCandidate extends SmartCandidate {
@@ -36,6 +46,19 @@ export interface SmartDecision {
     readonly candidates: readonly ScoredSmartCandidate[];
     readonly selected: ScoredSmartCandidate;
 }
+
+/** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
+export const expectedDamageScorer: SmartScorer = {
+    id: "expectedDamage",
+    weight: 1,
+    prepare(context) {
+        const enemyIds = new Set(context.state.enemies.map((enemy) => enemy.id));
+        return (candidate) => expectedEnemyDamage(candidate, enemyIds);
+    },
+};
+
+/** Production scorer registration order. Later Smart cards can extend this list. */
+export const smartScorers: readonly SmartScorer[] = [expectedDamageScorer];
 
 /** Enumerates legal primary actions in stable public action-view order. */
 export function generateSmartCandidates(context: PolicyContext): SmartCandidate[] {
@@ -67,14 +90,35 @@ export function generateSmartCandidates(context: PolicyContext): SmartCandidate[
 }
 
 /** Evaluates all candidates without executing actions or consuming policy RNG. */
-export function evaluateSmartDecision(context: PolicyContext): SmartDecision {
-    const enemyIds = new Set(context.state.enemies.map((enemy) => enemy.id));
+export function evaluateSmartDecision(
+    context: PolicyContext,
+    scorers: readonly SmartScorer[] = smartScorers,
+): SmartDecision {
+    assertUniqueScorerIds(scorers);
+    const preparedScorers = scorers.map((scorer) => ({
+        id: scorer.id,
+        weight: scorer.weight,
+        evaluate: scorer.prepare(context),
+    }));
     const candidates = generateSmartCandidates(context).map((candidate) => {
-        const expectedDamage = expectedEnemyDamage(candidate, enemyIds);
+        const componentEntries = preparedScorers.map((scorer) => {
+            const raw = scorer.evaluate(candidate);
+            const component: SmartScoreComponent = {
+                raw,
+                weight: scorer.weight,
+                score: raw * scorer.weight,
+            };
+            return [scorer.id, component] as const;
+        });
+        const components: SmartScoreComponents = Object.fromEntries(componentEntries);
+        const total = componentEntries.reduce(
+            (sum, [, component]) => sum + component.score,
+            0,
+        );
         return {
             ...candidate,
-            components: { expectedDamage },
-            total: expectedDamage,
+            components,
+            total,
         };
     });
 
@@ -94,14 +138,25 @@ export const smartPolicy: FightPolicy = {
     chooseAction(context) {
         return evaluateSmartDecision(context).selected.action;
     },
-    evaluateDecision(context) {
+    evaluateDecision(context, chosenAction) {
         const decision = evaluateSmartDecision(context);
         return {
-            action: decision.selected.action,
+            // Replay evaluation is observational; chooseAction remains authoritative.
+            action: chosenAction,
             diagnostics: decision,
         };
     },
 };
+
+function assertUniqueScorerIds(scorers: readonly SmartScorer[]): void {
+    const ids = new Set<string>();
+    for (const scorer of scorers) {
+        if (ids.has(scorer.id)) {
+            throw new Error(`Duplicate Smart scorer ID: ${scorer.id}`);
+        }
+        ids.add(scorer.id);
+    }
+}
 
 function moveCandidates(actor: string, info: ActionInfo): SmartCandidate[] {
     const validTargets = uniqueValidTargets(info.targets);
