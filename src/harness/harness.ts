@@ -1,8 +1,8 @@
 import { createEngine } from "../engine/public/engine";
 import type {
-    FailureReason,
     ActionView,
     EventFrame,
+    FailureReason,
     GameState,
     PlayerAction,
 } from "../engine/public/types";
@@ -32,7 +32,10 @@ export interface FightPolicy {
      * Optional expensive/inspectable evaluation used only while recording a
      * single-fight replay. Ordinary fights and batches use chooseAction only.
      */
-    evaluateDecision?(context: PolicyContext): PolicyDecisionEvaluation;
+    evaluateDecision?(
+        context: PolicyContext,
+        chosenAction: PlayerAction,
+    ): PolicyDecisionEvaluation;
 }
 
 export interface PolicyDecisionEvaluation {
@@ -218,12 +221,12 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             actions,
             random: policyRandom,
         };
+        const action = cloneAction(input.policy.chooseAction(context));
+
         const evaluated = replay && input.policy.evaluateDecision
-            ? input.policy.evaluateDecision(context)
+            ? input.policy.evaluateDecision(context, action)
             : undefined;
-        const action = cloneAction(
-            evaluated?.action ?? input.policy.chooseAction(context),
-        );
+
         const policyDecision: ReplayPolicyDecision | undefined = evaluated
             ? {
                 policyId: input.policy.id,
