@@ -31,6 +31,13 @@ export interface ArchivedReplayStepTelemetry {
 export interface ArchivedReplay {
     format: 1;
     replayId: string;
+    battleOutcome?: ReplayArchiveStatus;
+    totalRounds?: number;
+    totalDecisions?: number;
+    totalElapsedTime?: string;
+    totalAfkTime?: string;
+    /** Accepted only for archives written by the brief numeric-summary version. */
+    totalElapsedMs?: number;
     release: string;
     encounter: string;
     seed: number;
@@ -58,6 +65,7 @@ export interface AddedReplay {
     decisionCount?: number;
     rounds?: number;
     elapsedMs?: number;
+    afkMs?: number;
     filename: string;
 }
 
@@ -129,7 +137,7 @@ export async function syncPostHogReplays(
 
     for (const metadata of remote) {
         const existing = archived.get(metadata.replayId);
-        if (existing?.archive.terminal && hasCompleteTimingMetadata(existing.archive)) {
+        if (existing?.archive.terminal && hasCompleteArchiveMetadata(existing.archive)) {
             skippedCompleteArchives += 1;
             continue;
         }
@@ -139,10 +147,11 @@ export async function syncPostHogReplays(
                 ? options.reconstruct(rows, metadata.release)
                 : runtime!.reconstruct(rows, metadata.release));
             assertMetadataMatches(metadata, imported);
-            const archive = createArchive(metadata, imported);
-            if (!archive.terminal && isStaleReplay(rows, (options.now ?? (() => new Date()))())) {
-                archive.terminal = "abandoned";
-            }
+            const terminal = imported.terminal
+                ?? (isStaleReplay(rows, (options.now ?? (() => new Date()))())
+                    ? "abandoned"
+                    : undefined);
+            const archive = createArchive(metadata, imported, terminal);
             const summary = summarizeArchive(archive);
 
             if (!existing) {
@@ -301,10 +310,27 @@ function parseArchive(value: unknown, filename: string): ArchivedReplay {
 function createArchive(
     metadata: RemoteReplayMetadata,
     imported: ImportedPostHogReplay,
+    terminal: ArchivedReplayTerminal | undefined,
 ): ArchivedReplay {
+    const summary = deriveArchiveSummary({
+        replay: imported.replay,
+        terminal,
+        startedAt: imported.startedAt,
+        endedAt: imported.endedAt,
+        stepTelemetry: imported.stepTelemetry,
+    });
     return {
         format: 1,
         replayId: imported.replayId,
+        battleOutcome: summary.battleOutcome,
+        totalRounds: summary.totalRounds,
+        totalDecisions: summary.totalDecisions,
+        ...(summary.totalElapsedTime === undefined
+            ? {}
+            : { totalElapsedTime: summary.totalElapsedTime }),
+        ...(summary.totalAfkTime === undefined
+            ? {}
+            : { totalAfkTime: summary.totalAfkTime }),
         release: imported.release,
         encounter: imported.encounter,
         seed: imported.seed,
@@ -314,24 +340,14 @@ function createArchive(
             ? { anonymousPlayerId: metadata.anonymousPlayerId }
             : {}),
         ...(metadata.sessionId ? { sessionId: metadata.sessionId } : {}),
-        ...(imported.terminal ? { terminal: imported.terminal } : {}),
+        ...(terminal ? { terminal } : {}),
         stepTelemetry: imported.stepTelemetry,
         replay: imported.replay,
     };
 }
 
 function summarizeArchive(archive: ArchivedReplay): Omit<AddedReplay, "filename"> {
-    const finalState = archive.replay.steps.reduce(
-        (state, step) => step.success ? step.state : state,
-        archive.replay.initialState,
-    );
-    const status: ReplayArchiveStatus = archive.terminal === "abandoned"
-        ? "abandoned"
-        : archive.terminal === "quit"
-            ? "quit"
-            : archive.terminal === undefined
-                ? "incomplete"
-                : finalState.turn.outcome;
+    const summary = deriveArchiveSummary(archive);
     return {
         replayId: archive.replayId,
         ...(archive.anonymousPlayerId ? { anonymousPlayerId: archive.anonymousPlayerId } : {}),
@@ -341,16 +357,12 @@ function summarizeArchive(archive: ArchivedReplay): Omit<AddedReplay, "filename"
         startedAt: archive.startedAt,
         ...(archive.endedAt ? { endedAt: archive.endedAt } : {}),
         encounter: archive.encounter,
-        status,
+        status: summary.battleOutcome,
         actionCount: archive.replay.steps.length,
-        ...(archive.stepTelemetry
-            ? { decisionCount: archive.stepTelemetry.filter((step) => step.source === "player").length }
-            : {}),
-        ...(typeof finalState.turn.round === "number" ? { rounds: finalState.turn.round } : {}),
-        ...(archive.endedAt
-            ? { elapsedMs: timestampMilliseconds(archive.endedAt, `Replay ${archive.replayId} endedAt`)
-                - timestampMilliseconds(archive.startedAt, `Replay ${archive.replayId} startedAt`) }
-            : {}),
+        ...(summary.totalDecisions === undefined ? {} : { decisionCount: summary.totalDecisions }),
+        ...(summary.totalRounds === undefined ? {} : { rounds: summary.totalRounds }),
+        ...(summary.elapsedMs === undefined ? {} : { elapsedMs: summary.elapsedMs }),
+        ...(summary.afkMs === undefined ? {} : { afkMs: summary.afkMs }),
     };
 }
 
@@ -440,9 +452,15 @@ function assertMetadataMatches(
     }
 }
 
-function hasCompleteTimingMetadata(archive: ArchivedReplay): boolean {
+function hasCompleteArchiveMetadata(archive: ArchivedReplay): boolean {
     if (archive.stepTelemetry === undefined) return false;
-    return archive.terminal === "abandoned" || archive.endedAt !== undefined;
+    const timingComplete = archive.terminal === "abandoned" || archive.endedAt !== undefined;
+    const summaryComplete = archive.battleOutcome !== undefined
+        && archive.totalRounds !== undefined
+        && archive.totalDecisions !== undefined
+        && (archive.endedAt === undefined
+            || (archive.totalElapsedTime !== undefined && archive.totalAfkTime !== undefined));
+    return timingComplete && summaryComplete;
 }
 
 function validateArchiveTiming(archive: ArchivedReplay, filename: string): void {
@@ -456,7 +474,10 @@ function validateArchiveTiming(archive: ArchivedReplay, filename: string): void 
         ended = timestampMilliseconds(archive.endedAt, `${prefix} endedAt`);
         if (ended < started) throw new Error(`${prefix}: endedAt precedes startedAt.`);
     }
-    if (archive.stepTelemetry === undefined) return;
+    if (archive.stepTelemetry === undefined) {
+        validateArchiveSummary(archive, prefix);
+        return;
+    }
     if (!Array.isArray(archive.stepTelemetry)
         || archive.stepTelemetry.length !== archive.replay.steps.length) {
         throw new Error(
@@ -481,6 +502,126 @@ function validateArchiveTiming(archive: ArchivedReplay, filename: string): void 
             throw new Error(`${prefix}: stepTelemetry entry ${index + 1} occurs after endedAt.`);
         }
         previous = current;
+    }
+    validateArchiveSummary(archive, prefix);
+}
+
+interface ArchiveSummarySource {
+    replay: FightReplay;
+    terminal?: ArchivedReplayTerminal;
+    startedAt: string;
+    endedAt?: string;
+    stepTelemetry?: readonly ArchivedReplayStepTelemetry[];
+}
+
+interface DerivedArchiveSummary {
+    battleOutcome: ReplayArchiveStatus;
+    totalRounds: number;
+    totalDecisions?: number;
+    totalElapsedTime?: string;
+    totalAfkTime?: string;
+    elapsedMs?: number;
+    afkMs?: number;
+    wallElapsedMs?: number;
+}
+
+function deriveArchiveSummary(archive: ArchiveSummarySource): DerivedArchiveSummary {
+    const finalState = archive.replay.steps.reduce(
+        (state, step) => step.success ? step.state : state,
+        archive.replay.initialState,
+    );
+    const battleOutcome: ReplayArchiveStatus = archive.terminal === "abandoned"
+        ? "abandoned"
+        : archive.terminal === "quit"
+            ? "quit"
+            : archive.terminal === undefined
+                ? "incomplete"
+                : finalState.turn.outcome;
+    const wallElapsedMs = archive.endedAt === undefined
+        ? undefined
+        : timestampMilliseconds(archive.endedAt, "Archive endedAt")
+            - timestampMilliseconds(archive.startedAt, "Archive startedAt");
+    const afkMs = wallElapsedMs === undefined || archive.stepTelemetry === undefined
+        ? undefined
+        : interActionAfkMilliseconds(archive.stepTelemetry);
+    const elapsedMs = wallElapsedMs === undefined || afkMs === undefined
+        ? undefined
+        : wallElapsedMs - afkMs;
+    return {
+        battleOutcome,
+        totalRounds: finalState.turn.round,
+        ...(archive.stepTelemetry === undefined
+            ? {}
+            : { totalDecisions: archive.stepTelemetry.filter((step) => step.source === "player").length }),
+        ...(elapsedMs === undefined || afkMs === undefined || wallElapsedMs === undefined
+            ? {}
+            : {
+                elapsedMs,
+                afkMs,
+                wallElapsedMs,
+                totalElapsedTime: formatElapsedSummary(elapsedMs, afkMs),
+                totalAfkTime: formatElapsedTime(afkMs),
+            }),
+    };
+}
+
+const MAX_ACTIVE_INTER_ACTION_GAP_MS = 2 * 60 * 1_000;
+
+function interActionAfkMilliseconds(
+    stepTelemetry: readonly ArchivedReplayStepTelemetry[],
+): number {
+    let afkMs = 0;
+    for (let index = 1; index < stepTelemetry.length; index++) {
+        const previous = timestampMilliseconds(
+            stepTelemetry[index - 1].timestamp,
+            `Archive stepTelemetry entry ${index}`,
+        );
+        const current = timestampMilliseconds(
+            stepTelemetry[index].timestamp,
+            `Archive stepTelemetry entry ${index + 1}`,
+        );
+        afkMs += Math.max(0, current - previous - MAX_ACTIVE_INTER_ACTION_GAP_MS);
+    }
+    return afkMs;
+}
+
+function formatElapsedSummary(elapsedMs: number, afkMs: number): string {
+    const elapsed = formatElapsedTime(elapsedMs);
+    return afkMs > 0 ? `${elapsed} (+${formatElapsedTime(afkMs)} afk)` : elapsed;
+}
+
+function formatElapsedTime(milliseconds: number): string {
+    const totalSeconds = Math.floor(milliseconds / 1_000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}m${String(seconds).padStart(2, "0")}s`;
+}
+
+function validateArchiveSummary(archive: ArchivedReplay, prefix: string): void {
+    const fields = [
+        archive.battleOutcome,
+        archive.totalRounds,
+        archive.totalDecisions,
+        archive.totalElapsedTime,
+        archive.totalAfkTime,
+        archive.totalElapsedMs,
+    ];
+    if (fields.every((field) => field === undefined)) return;
+    const expected = deriveArchiveSummary(archive);
+    const legacyElapsedTime = expected.wallElapsedMs === undefined
+        ? undefined
+        : formatElapsedTime(expected.wallElapsedMs);
+    if (archive.battleOutcome !== expected.battleOutcome
+        || archive.totalRounds !== expected.totalRounds
+        || archive.totalDecisions !== expected.totalDecisions
+        || (archive.totalElapsedTime !== undefined
+            && archive.totalElapsedTime !== expected.totalElapsedTime
+            && archive.totalElapsedTime !== legacyElapsedTime)
+        || (archive.totalAfkTime !== undefined
+            && archive.totalAfkTime !== expected.totalAfkTime)
+        || (archive.totalElapsedMs !== undefined
+            && archive.totalElapsedMs !== expected.wallElapsedMs)) {
+        throw new Error(`${prefix}: top-level replay summary does not match replay data.`);
     }
 }
 

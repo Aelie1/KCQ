@@ -100,7 +100,12 @@ function formatCounts(replay: AddedReplay): string {
 
 function formatRoundsAndElapsed(replay: AddedReplay): string {
     const rounds = replay.rounds === undefined ? "" : `  ${replay.rounds} rounds`;
-    const elapsed = replay.elapsedMs === undefined ? "" : `  ${formatDuration(replay.elapsedMs)}`;
+    const afk = replay.afkMs === undefined || replay.afkMs === 0
+        ? ""
+        : ` (+${formatDuration(replay.afkMs)} afk)`;
+    const elapsed = replay.elapsedMs === undefined
+        ? ""
+        : `  ${formatDuration(replay.elapsedMs)}${afk}`;
     return `${rounds}${elapsed}`;
 }
 

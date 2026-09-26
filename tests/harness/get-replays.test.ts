@@ -242,6 +242,9 @@ describe("PostHog replay archive sync", () => {
         expect(addedArchive).toMatchObject({
             format: 1,
             replayId: "new-replay",
+            battleOutcome: "incomplete",
+            totalRounds: 1,
+            totalDecisions: 0,
             release: "test-release",
             encounter: "plains_1",
             seed: 12345,
@@ -251,6 +254,13 @@ describe("PostHog replay archive sync", () => {
             stepTelemetry: [],
             replay: { steps: [] },
         });
+        expect(Object.keys(addedArchive).slice(0, 5)).toEqual([
+            "format",
+            "replayId",
+            "battleOutcome",
+            "totalRounds",
+            "totalDecisions",
+        ]);
         expect(addedArchive).not.toHaveProperty("terminal");
         expect(addedArchive).not.toHaveProperty("endedAt");
 
@@ -279,7 +289,17 @@ describe("PostHog replay archive sync", () => {
             terminal: "quit",
         });
         const current = makeArchive(replayId, rows);
-        const { endedAt: _endedAt, stepTelemetry: _stepTelemetry, ...legacy } = current;
+        const {
+            endedAt: _endedAt,
+            stepTelemetry: _stepTelemetry,
+            battleOutcome: _battleOutcome,
+            totalRounds: _totalRounds,
+            totalDecisions: _totalDecisions,
+            totalElapsedTime: _totalElapsedTime,
+            totalAfkTime: _totalAfkTime,
+            totalElapsedMs: _legacyTotalElapsedMs,
+            ...legacy
+        } = current;
         const filename = await writeArchivedReplay(directory, legacy);
         const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
 
@@ -289,6 +309,13 @@ describe("PostHog replay archive sync", () => {
         expect(first.updated).toEqual([expect.objectContaining({ replayId, filename })]);
         const [backfilled] = await readArchives(directory);
         expect(backfilled.endedAt).toBe("2026-09-21T12:59:59.000Z");
+        expect(backfilled).toMatchObject({
+            battleOutcome: "quit",
+            totalRounds: 2,
+            totalDecisions: 1,
+            totalElapsedTime: "59m59s",
+            totalAfkTime: "0m00s",
+        });
         expect(backfilled.stepTelemetry).toEqual([{
             timestamp: "2026-09-21T12:00:01.000Z",
             source: "player",
@@ -299,6 +326,29 @@ describe("PostHog replay archive sync", () => {
         expect(client.fetched).toEqual([]);
         expect(second.updated).toEqual([]);
         expect(second.unchanged).toBe(1);
+    });
+
+    it("caps inter-action elapsed time at two minutes and reports the excess as AFK", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "afk-replay";
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
+            terminal: "quit",
+        });
+        rows.find((row) => row.sequence === "1")!.timestamp = "2026-09-21T12:01:00.000Z";
+        rows.find((row) => row.sequence === "2")!.timestamp = "2026-09-21T12:06:00.000Z";
+        rows.find((row) => row.event === "battle_quit")!.timestamp = "2026-09-21T12:10:00.000Z";
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+
+        const result = await syncPostHogReplays({ client, replaysDirectory: directory });
+
+        expect(result.failed).toEqual([]);
+        const [archive] = await readArchives(directory);
+        expect(archive).toMatchObject({
+            totalElapsedTime: "7m00s (+3m00s afk)",
+            totalAfkTime: "3m00s",
+        });
+        expect(result.added[0]).toMatchObject({ elapsedMs: 420_000, afkMs: 180_000 });
     });
 
     it("skips a completed archive that already contains aligned timing metadata", async () => {
@@ -327,6 +377,8 @@ describe("PostHog replay archive sync", () => {
             ...archive,
             stepTelemetry: [{ timestamp: "2026-09-21T11:59:59.000Z", source: "player" }],
         })).rejects.toThrow("stepTelemetry entry 1 precedes startedAt");
+        await expect(writeArchivedReplay(directory, { ...archive, totalRounds: 999 }))
+            .rejects.toThrow("top-level replay summary does not match replay data");
     });
 
     it.each(["finished", "quit", "abandoned"] as const)(
@@ -599,9 +651,24 @@ function makeArchive(
 ): ArchivedReplay {
     const imported = reconstructFightReplay(parsePostHogReplayEvents(rows));
     const terminal = terminalOverride ?? imported.terminal;
+    const finalState = imported.replay.steps.reduce(
+        (state, step) => step.success ? step.state : state,
+        imported.replay.initialState,
+    );
+    const battleOutcome = terminal === "abandoned"
+        ? "abandoned"
+        : terminal === "quit"
+            ? "quit"
+            : terminal === undefined
+                ? "incomplete"
+                : finalState.turn.outcome;
     return {
         format: 1,
         replayId,
+        battleOutcome,
+        totalRounds: finalState.turn.round,
+        totalDecisions: imported.stepTelemetry.filter((step) => step.source === "player").length,
+        ...archiveElapsedSummary(imported),
         release: imported.release,
         encounter: imported.encounter,
         seed: imported.seed,
@@ -612,6 +679,32 @@ function makeArchive(
         ...(terminal ? { terminal } : {}),
         stepTelemetry: imported.stepTelemetry,
         replay: imported.replay,
+    };
+}
+
+function formatElapsedTime(milliseconds: number): string {
+    const totalSeconds = Math.floor(milliseconds / 1_000);
+    return `${Math.floor(totalSeconds / 60)}m${String(totalSeconds % 60).padStart(2, "0")}s`;
+}
+
+function archiveElapsedSummary(imported: ReturnType<typeof reconstructFightReplay>): {
+    totalElapsedTime?: string;
+    totalAfkTime?: string;
+} {
+    if (!imported.endedAt) return {};
+    let afkMs = 0;
+    for (let index = 1; index < imported.stepTelemetry.length; index++) {
+        const gap = Date.parse(imported.stepTelemetry[index].timestamp)
+            - Date.parse(imported.stepTelemetry[index - 1].timestamp);
+        afkMs += Math.max(0, gap - 2 * 60 * 1_000);
+    }
+    const wallElapsedMs = Date.parse(imported.endedAt) - Date.parse(imported.startedAt);
+    const elapsed = formatElapsedTime(wallElapsedMs - afkMs);
+    return {
+        totalElapsedTime: afkMs > 0
+            ? `${elapsed} (+${formatElapsedTime(afkMs)} afk)`
+            : elapsed,
+        totalAfkTime: formatElapsedTime(afkMs),
     };
 }
 
