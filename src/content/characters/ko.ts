@@ -5,7 +5,9 @@ import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove
 const TELEKINESIS_DAMAGE = 30;
 
 export const TRANSFORMATION_BUFF = "transformation";
-export const TRANSFORMATION_COOLDOWN = 3;
+const TRANSFORMATION_COOLDOWN = 3;
+
+const DENIAL_BUFF = "exhausted"
 
 function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
     const effects: iEffect[] = [];
@@ -310,19 +312,20 @@ const powerOfDenial: MoveDef = {
             }
         }
 
+        const denialBuff: iBuff = {
+            id: DENIAL_BUFF,
+            active: true,
+            moveList: { blockedMoves: [powerOfDenial] }
+        }
+
         result.effects.push({
-            type: "data",
+            type: "buff",
             target: actor,
-            name: "denialUsed",
-            amount: 1
+            buff: denialBuff,
+            operation: "add"
         });
 
         return result;
-    },
-    isValid: function (move: MoveDef, actor: iEntity) {
-        if ((actor.data["denialUsed"] ?? 0) > 0) {
-            return "insufficientResource";
-        }
     },
     isValidTarget: function (move: MoveDef, target: iEntity | null) {
         if (!target) {
