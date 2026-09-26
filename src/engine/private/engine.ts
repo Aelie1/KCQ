@@ -256,13 +256,23 @@ export class GameEngine implements Engine {
                     };
                 }
 
+                if (move.isValid) {
+                    const reason = move.isValid(move, actor);
+                    if (reason) {
+                        return {
+                            success: false,
+                            reason: reason
+                        };
+                    }
+                }
+
                 const targetInfo: iValidityInfo[] = [];
 
                 if (move.targets === "all") {
                     if (action.targets.length !== 0) {
                         return {
                             success: false,
-                            reason: "invalidTargetCount"
+                            reason: "insufficientTargets"
                         }
                     }
                     if (move.targetSide === "either" || move.targetSide === "enemy") {
@@ -282,7 +292,7 @@ export class GameEngine implements Engine {
                     if (action.targets.length !== 0) {
                         return {
                             success: false,
-                            reason: "invalidTargetCount"
+                            reason: "insufficientTargets"
                         }
                     }
                     targetInfo.push(isValidTarget(this.state, actor, status, null, null, move));
@@ -317,7 +327,7 @@ export class GameEngine implements Engine {
                     if (targetInfo.length != move.targets) {
                         return {
                             success: false,
-                            reason: "invalidTargetCount"
+                            reason: "insufficientTargets"
                         };
                     }
                 }
@@ -356,6 +366,10 @@ export class GameEngine implements Engine {
                         reason = "bindingRestriction";
                     }
 
+                    if (!reason && move.isValid) {
+                        reason = move.isValid(move, actor);
+                    }
+
                     if (reason) {
                         effects.addEvent({
                             type: "actionInterrupted",
@@ -386,7 +400,7 @@ export class GameEngine implements Engine {
                 const iMove: iMove = { definition: move };
                 const targets: iTargetInfo[] = [];
                 let anyHits: boolean = false;
-                const totalHits = move.baseHits ?? 1;
+                const totalHits = move.getHits?.(actor, move) ?? move.baseHits ?? 1;
 
                 for (const target of targetInfo) {
                     if (target.valid) {

@@ -77,6 +77,14 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
             available = false;
             reason = "bindingRestriction";
         }
+        else if (move.isValid) {
+            const validReason = move.isValid(move, actor);
+            if (validReason) {
+                available = false;
+                reason = validReason;
+            }
+        }
+
         if (available) {
             const targets = getTargets(state, actor, statuses, move);
             const effects = resolveMove(state, { definition: move }, actor, []);
@@ -85,7 +93,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
                     reason = targets[0].reason;
                 }
                 actions.push({
-                    move: serializeMove(move),
+                    move: serializeMove(actor, move),
                     available: false,
                     targets: [],
                     effects: serializeEffects(effects.effects),
@@ -94,14 +102,14 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
                 continue;
             }
             actions.push({
-                move: serializeMove(move),
+                move: serializeMove(actor, move),
                 available: true,
                 targets: targets.map(serializePreview),
                 effects: serializeEffects(effects.effects),
             });
         } else {
             actions.push({
-                move: serializeMove(move),
+                move: serializeMove(actor, move),
                 available: false,
                 targets: [],
                 effects: [],
@@ -153,7 +161,7 @@ function getTargets(state: iGameState, actor: iCharacter, statuses: StatusMap, m
         return [{
             valid: false,
             target: null,
-            reason: "invalidTargetCount"
+            reason: "insufficientTargets"
         }];
     }
     const potency = getStatus(statuses, actor).getModifier("potency") + (move.modifiers?.potency ?? 0);

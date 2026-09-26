@@ -2,11 +2,13 @@ import type { AccuracyProfile, BindingLevel, FailureReason, ModifierSet, Move, M
 import type { Random } from "./random";
 import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
 
+export const EMPOWERMENT_BUFF = "empowerment";
 
 export interface CharacterDef {
     id: string;
-    getMoves: (actor: iCharacter) => MoveDef[];
+    moves: MoveDef[];
     passives: PassiveDef[];
+    empoweredMoves: MoveDef[];
     data?: Record<string, number>;
 }
 
@@ -22,16 +24,19 @@ export interface EnemyDef {
 }
 
 export interface MoveDef extends Move {
+    index?: number;
     accuracy?: AccuracyProfile;
-    check?: "accuracy" | "willpower"
+    check?: "accuracy" | "willpower";
     alwaysAvailable?: boolean;
     baseDamage?: number;
     baseHits?: number;
     cooldown?: Record<MoveId, number>;
     freeOnHit?: boolean;
     modifiers?: ModifierSet;
+    getHits?: (actor: iEntity, move: MoveDef) => number;
     resolve: (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]) => iMoveResult;
-    isValid?: (move: MoveDef, target: iEntity | null) => FailureReason | undefined;
+    isValid?: (move: MoveDef, actor: iEntity) => FailureReason | undefined;
+    isValidTarget?: (move: MoveDef, target: iEntity | null) => FailureReason | undefined;
 }
 
 export interface PassiveDef {

@@ -2,9 +2,9 @@ import { CharacterDef, MoveDef } from "../../engine/protected/definitions";
 import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
-import { iBuff, iCharacter, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
+import { iBuff, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
-import { EMPOWERMENT_BUFF, removeEmpowerment } from "./ko";
+import { removeEmpowerment } from "./ko";
 
 
 const PUNCH_DAMAGE = 30;
@@ -29,31 +29,9 @@ const ATTACKME_COMPULSION_COOLDOWN = 2;
 
 const DEFAULT_COMPULSION_COOLDOWN = 2;
 
-export const matsuko: CharacterDef = {
-    id: "matsuko",
-    getMoves: function (actor: iCharacter): MoveDef[] {
-        const moves: MoveDef[] = [];
-        const burnoutBuff = findBuff(actor, "burnout");
-        if (burnoutBuff) {
-            moves.push(...[punch, kick]);
-        }
-        else {
-            const buff = findBuff(actor, EMPOWERMENT_BUFF);
-            if (buff) {
-                moves.push(...[whiteFlame, fairyWhiteFlame, phoenixKick, fairyPhoenixKick, immolation]);
-            }
-            else {
-                moves.push(...[whiteFlame, phoenixKick, immolation]);
-            }
-        }
-        moves.push(...[obey, stop, attackMe]);
-        return moves;
-    },
-    passives: []
-};
-
 const punch: MoveDef = {
     id: "punch",
+    index: 1,
     targetSide: "enemy",
     targets: 1,
     baseDamage: PUNCH_DAMAGE,
@@ -66,6 +44,7 @@ const punch: MoveDef = {
 
 const kick: MoveDef = {
     id: "kick",
+    index: 2,
     targetSide: "enemy",
     targets: 1,
     baseDamage: KICK_DAMAGE,
@@ -78,6 +57,7 @@ const kick: MoveDef = {
 
 const whiteFlame: MoveDef = {
     id: "whiteFlame",
+    index: 3,
     targetSide: "enemy",
     targets: 1,
     baseDamage: WHITE_FLAME_DAMAGE,
@@ -92,6 +72,7 @@ const whiteFlame: MoveDef = {
 const fairyWhiteFlame: MoveDef = {
     ...whiteFlame,
     id: "fairyWhiteFlame",
+    index: 4,
     targets: "all",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = whiteFlame.resolve(state, actor, move, targets);
@@ -102,6 +83,7 @@ const fairyWhiteFlame: MoveDef = {
 
 const phoenixKick: MoveDef = {
     id: "phoenixKick",
+    index: 5,
     targetSide: "enemy",
     targets: 1,
     baseDamage: PHOENIX_KICK_DAMAGE,
@@ -116,6 +98,7 @@ const phoenixKick: MoveDef = {
 const fairyPhoenixKick: MoveDef = {
     ...phoenixKick,
     id: "fairyPhoenixKick",
+    index: 6,
     baseHits: 2,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = phoenixKick.resolve(state, actor, move, targets);
@@ -126,6 +109,7 @@ const fairyPhoenixKick: MoveDef = {
 
 const immolation: MoveDef = {
     id: "immolation",
+    index: 7,
     targetSide: "enemy",
     targets: "all",
     baseDamage: IMMOLATION_DAMAGE,
@@ -149,6 +133,7 @@ const immolation: MoveDef = {
         const burnoutBuff: iBuff = {
             id: IMMOLATION_BUFF,
             active: true,
+            moveList: { addedMoves: [punch, kick], blockedMoves: [whiteFlame, fairyWhiteFlame, phoenixKick, fairyPhoenixKick, immolation] }
         }
 
         result.effects.push({
@@ -163,6 +148,7 @@ const immolation: MoveDef = {
 
 const obey: MoveDef = {
     id: "obey",
+    index: 8,
     targetSide: "player",
     targets: 1,
     type: "mouth",
@@ -203,11 +189,8 @@ const obey: MoveDef = {
 
         return result;
     },
-    isValid: function (move: MoveDef, target: iEntity | null): FailureReason | undefined {
-        if (target !== null &&
-            (!isCharacter(target)
-                || !target.acted
-                || findBuff(target, "servitude"))) {
+    isValidTarget: function (move: MoveDef, target: iEntity | null): FailureReason | undefined {
+        if (target !== null && (!isCharacter(target) || !target.acted || findBuff(target, "servitude"))) {
             return "invalidTarget";
         }
     }
@@ -215,6 +198,7 @@ const obey: MoveDef = {
 
 const stop: MoveDef = {
     id: "stop",
+    index: 9,
     targetSide: "enemy",
     targets: 1,
     type: "mouth",
@@ -248,6 +232,7 @@ const stop: MoveDef = {
 
 const attackMe: MoveDef = {
     id: "attackMe",
+    index: 10,
     targetSide: "enemy",
     targets: "all",
     type: "mouth",
@@ -283,3 +268,9 @@ const attackMe: MoveDef = {
     }
 }
 
+export const matsuko: CharacterDef = {
+    id: "matsuko",
+    moves: [whiteFlame, phoenixKick, immolation, obey, stop, attackMe],
+    empoweredMoves: [fairyWhiteFlame, fairyPhoenixKick],
+    passives: []
+};

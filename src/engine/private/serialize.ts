@@ -1,8 +1,8 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/helpers";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
-import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iGameState, iIntention, iStatus, iTrap } from "../protected/types";
-import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, PreviewInfo, Status, TargetInfo, Trap } from "../public/types";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMoveListModifier, iStatus, iTrap } from "../protected/types";
+import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, MoveListModifier, PreviewInfo, Status, TargetInfo, Trap } from "../public/types";
 import { evaluateBattleState, evaluateIntention, resolveMove } from "./combat";
 import { iPreviewInfo } from "./types";
 
@@ -86,6 +86,7 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 target: effect.target.id,
                 buff: effect.buff.id,
                 effects: effect.buff.modifiers,
+                moveList: serializeMoveList(effect.buff.moveList),
                 operation: effect.operation
             }
         case "damage":
@@ -120,8 +121,19 @@ function serializeBuff(buff: iBuff): Buff {
         duration: buff.duration,
         statuses: buff.statuses?.map(serializeStatus),
         modifiers: { ...buff.modifiers },
+        moveList: serializeMoveList(buff.moveList),
         linkedEntity: buff.linkedEntity
     };
+}
+
+function serializeMoveList(list: iMoveListModifier | undefined): MoveListModifier | undefined {
+    if (!list) {
+        return undefined;
+    }
+    return {
+        addedMoves: list.addedMoves?.map(x => x.id),
+        blockedMoves: list.blockedMoves?.map(x => x.id)
+    }
 }
 
 function serializeBinding(binding: iBinding): Binding {
@@ -150,12 +162,12 @@ function serializeStatus(status: iStatus): Status {
     };
 }
 
-export function serializeMove(move: MoveDef): Move {
+export function serializeMove(actor: iEntity, move: MoveDef): Move {
     return {
         id: move.id,
         targetSide: move.targetSide,
         targets: move.targets,
-        hits: move.baseHits,
+        hits: move.getHits?.(actor, move) ?? move.baseHits,
         type: move.type
     };
 }

@@ -1,5 +1,5 @@
 import type { AccuracyProfile, BindingId, BindingLevel, BuffId, EntityId, MoveId, TrapId } from "../public/types";
-import type { MoveDef } from "./definitions";
+import { type MoveDef } from "./definitions";
 import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iMove, iMoveResult, iTargetInfo, iTrap } from "./types";
 
 export function isValidEntity(state: iGameState, entity: iEntity): boolean {
@@ -49,13 +49,17 @@ export function getBindingLevel(binding: iBinding): BindingLevel {
 }
 
 export function getMoves(target: iCharacter): MoveDef[] {
-    const moves: MoveDef[] = [...target.definition.getMoves(target)];
+    const moves: MoveDef[] = [...target.definition.moves];
+    const blockedMoves: MoveDef[] = [];
     for (const buff of target.buffs) {
-        if (buff.active && buff.addedMoves) {
-            moves.push(...buff.addedMoves);
+        if (buff.active) {
+            if (buff.moveList) {
+                moves.push(...(buff.moveList.addedMoves ?? []));
+                blockedMoves.push(...(buff.moveList.blockedMoves ?? []));
+            }
         }
     }
-    return moves;
+    return moves.filter(x => !blockedMoves.includes(x)).sort((a, b) => ((a.index ?? 99) - (b.index ?? 99)));
 }
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {

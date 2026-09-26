@@ -429,7 +429,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
         statuses: tStatus,
         modifiers: tModifiers,
         active: active,
-        addedMoves: [throwOff],
+        moveList: { addedMoves: [throwOff] },
         linkedEntity: enemy.id
     }
 

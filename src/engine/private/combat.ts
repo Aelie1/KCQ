@@ -43,8 +43,8 @@ export function isValidTarget(state: iGameState, actor: iEntity, status: GameSta
         }
     }
 
-    if (move.isValid) {
-        const reason = move.isValid(move, target);
+    if (move.isValidTarget) {
+        const reason = move.isValidTarget(move, target);
         if (reason) {
             return {
                 valid: false,

@@ -97,11 +97,17 @@ export interface TargetInfo {
  * Buffs
  *******************************************************/
 
+export interface MoveListModifier {
+    addedMoves?: MoveId[];
+    blockedMoves?: MoveId[];
+}
+
 export interface Buff {
     id: BuffId;
     duration?: number;
     statuses?: Status[];
     modifiers?: ModifierSet;
+    moveList?: MoveListModifier;
     linkedEntity?: EntityId;
 }
 
@@ -136,6 +142,7 @@ export interface BuffEffect {
     target: EntityId;
     buff: BuffId;
     effects?: ModifierSet;
+    moveList?: MoveListModifier;
     operation: "add" | "remove";
 }
 
@@ -372,7 +379,6 @@ export type FailureReason =
     | "invalidMove"
     | "invalidBinding"
     | "invalidTarget"
-    | "invalidTargetCount"
     | "duplicateTargets"
     | "wrongPhase"
     | "actorAlreadyActed"
@@ -385,7 +391,9 @@ export type FailureReason =
     | "assistUnavailable"
     | "escapeUnavailable"
     | "bindingRestriction"
-    | "cooldownIncomplete";
+    | "cooldownIncomplete"
+    | "insufficientResource"
+    | "insufficientTargets";
 
 
 

@@ -1,10 +1,10 @@
 import { getEscapePotency } from "../../engine/private/combat";
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
-import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, basicPlayerAccuracy, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { hobbled } from "../../engine/protected/statuses";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
-import { EMPOWERMENT_BUFF, removeEmpowerment } from "./ko";
+import { removeEmpowerment } from "./ko";
 
 const SUBSPACE_MAX = 100;
 
@@ -17,57 +17,104 @@ const RELEASE_BUFF = "subspaceClutter";
 
 const ROCKFALL_DAMAGE = 10;
 
+function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
+    const effects: iEffect[] = [];
+    let newAmount = amount;
+    if (isEnemy(actor) && buff.duration && buff.duration > 0 && state.encounter) {
+        buff.duration--;
+        if (buff.duration === 0) {
+            effects.push({
+                type: "buff",
+                target: target,
+                buff: buff,
+                operation: "remove"
+            });
+        }
+
+        const spreadAmount = Math.max(0, newAmount + target.data["subspace"] - SUBSPACE_MAX);
+        const subspaceAmount = newAmount - spreadAmount;
+
+        if (subspaceAmount) {
+            effects.push({
+                type: "data",
+                target: target,
+                name: "subspace",
+                amount: subspaceAmount
+            });
+            const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
+            const currentBindingId = target.data["subspaceBinding"] ?? 0;
+            if (bindingId >= 0) {
+                effects.push({
+                    type: "data",
+                    target: target,
+                    name: "subspaceBinding",
+                    amount: bindingId - currentBindingId
+                });
+            }
+        }
+
+        newAmount = spreadAmount;
+
+    }
+    return { value: newAmount, effects: effects };
+}
+
 const subspaceMovement: PassiveDef = {
     id: "subspaceMovement",
     status: { flags: ["skipsTraps"] },
     immunities: [hobbled]
 }
 
-export const hinari: CharacterDef = {
-    id: "hinari",
-    getMoves: function (actor: iCharacter): MoveDef[] {
-        const moves: MoveDef[] = [];
-        if (actor.data["subspace"] !== undefined) {
-            if (actor.data["subspace"] < SUBSPACE_MAX) {
-                {
-                    const baseRocks = 4;
-                    const totalRocks = baseRocks - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / baseRocks));
-                    moves.push({
-                        ...rockfall,
-                        baseHits: totalRocks
-                    });
-                }
-                const buff = findBuff(actor, EMPOWERMENT_BUFF);
-                if (buff) {
-                    const baseRocks = 6;
-                    const totalRocks = baseRocks - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / baseRocks));
-                    moves.push({
-                        ...fairyRockfall,
-                        baseHits: totalRocks
-                    });
-                }
-                moves.push(store);
-                moves.push(brace);
-            }
-            if (actor.data["subspace"] >= RELEASE_ENEMY_AMOUNT) {
-                moves.push(release);
-            }
-        }
-        return moves;
-    },
-    passives: [subspaceMovement],
-    data: { "subspace": 0, "subspaceMax": SUBSPACE_MAX }
-};
 
+const rockfall: MoveDef = {
+    id: "rockfall",
+    index: 1,
+    targetSide: "enemy",
+    targets: 1,
+    baseDamage: ROCKFALL_DAMAGE,
+    type: "arms",
+    accuracy: basicPlayerAccuracy,
+    baseHits: 4,
+    getHits: function (actor: iEntity, move: MoveDef): number {
+        if (actor.data["subspace"] === undefined) {
+            return move.baseHits ?? 1;
+        }
+        return (move.baseHits ?? 1) - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / (move.baseHits ?? 1)));
+    },
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        return basicDamageEffect(actor, move, targets);
+    },
+    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+        if (actor.data["subspace"] === undefined) {
+            return "invalidActor";
+        }
+        if (actor.data["subspace"] === SUBSPACE_MAX) {
+            return "insufficientResource";
+        }
+    }
+}
+
+const fairyRockfall: MoveDef = {
+    ...rockfall,
+    id: "fairyRockfall",
+    index: 2,
+    baseHits: 6,
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result = rockfall.resolve(state, actor, move, targets);
+        result.effects.push(...removeEmpowerment(actor));
+        return result;
+    }
+}
 
 const store: MoveDef = {
     id: "store",
+    index: 3,
     targetSide: "player",
     targets: 1,
     type: "arms",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
-        if (typeof actor.data["subspace"] !== "number" || isEnemy(actor) || !state.encounter) {
+        if (actor.data["subspace"] === undefined || isEnemy(actor) || !state.encounter) {
             return result;
         }
 
@@ -133,7 +180,15 @@ const store: MoveDef = {
         }
         return result;
     },
-    isValid: function (move: MoveDef, target: iEntity | null): FailureReason | undefined {
+    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+        if (actor.data["subspace"] === undefined) {
+            return "invalidActor";
+        }
+        if (actor.data["subspace"] === SUBSPACE_MAX) {
+            return "insufficientResource";
+        }
+    },
+    isValidTarget: function (move: MoveDef, target: iEntity | null): FailureReason | undefined {
         if (target !== null &&
             (!isCharacter(target)
                 || target.bindings.length === 0)) {
@@ -145,6 +200,7 @@ const store: MoveDef = {
 
 const brace: MoveDef = {
     id: "brace",
+    index: 4,
     targetSide: "none",
     targets: 0,
     type: "none",
@@ -165,39 +221,26 @@ const brace: MoveDef = {
             operation: "add"
         });
         return result;
-    }
-}
-
-const rockfall: MoveDef = {
-    id: "rockfall",
-    targetSide: "enemy",
-    targets: 1,
-    baseDamage: ROCKFALL_DAMAGE,
-    type: "arms",
-    accuracy: basicPlayerAccuracy,
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        return basicDamageEffect(actor, move, targets);
-    }
-}
-
-const fairyRockfall: MoveDef = {
-    ...rockfall,
-    id: "fairyRockfall",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        const result = rockfall.resolve(state, actor, move, targets);
-        result.effects.push(...removeEmpowerment(actor));
-        return result;
+    },
+    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+        if (actor.data["subspace"] === undefined) {
+            return "invalidActor";
+        }
+        if (actor.data["subspace"] === SUBSPACE_MAX) {
+            return "insufficientResource";
+        }
     }
 }
 
 const release: MoveDef = {
     id: "release",
+    index: 5,
     targetSide: "either",
     targets: 1,
     type: "arms",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
-        if (typeof actor.data["subspace"] !== "number" || actor.data["subspaceBinding"] === undefined || !state.encounter) {
+        if (actor.data["subspace"] === undefined || actor.data["subspaceBinding"] === undefined || !state.encounter) {
             return result;
         }
         for (const target of targets) {
@@ -255,47 +298,22 @@ const release: MoveDef = {
             }
         }
         return result;
+    },
+    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+        if (actor.data["subspace"] === undefined) {
+            return "invalidActor";
+        }
+        if (actor.data["subspace"] < RELEASE_ENEMY_AMOUNT) {
+            return "insufficientResource";
+        }
     }
 }
 
-function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
-    const effects: iEffect[] = [];
-    let newAmount = amount;
-    if (isEnemy(actor) && buff.duration && buff.duration > 0 && state.encounter) {
-        buff.duration--;
-        if (buff.duration === 0) {
-            effects.push({
-                type: "buff",
-                target: target,
-                buff: buff,
-                operation: "remove"
-            });
-        }
 
-        const spreadAmount = Math.max(0, newAmount + target.data["subspace"] - SUBSPACE_MAX);
-        const subspaceAmount = newAmount - spreadAmount;
-
-        if (subspaceAmount) {
-            effects.push({
-                type: "data",
-                target: target,
-                name: "subspace",
-                amount: subspaceAmount
-            });
-            const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
-            const currentBindingId = target.data["subspaceBinding"] ?? 0;
-            if (bindingId >= 0) {
-                effects.push({
-                    type: "data",
-                    target: target,
-                    name: "subspaceBinding",
-                    amount: bindingId - currentBindingId
-                });
-            }
-        }
-
-        newAmount = spreadAmount;
-
-    }
-    return { value: newAmount, effects: effects };
-}
+export const hinari: CharacterDef = {
+    id: "hinari",
+    moves: [rockfall, store, brace, release],
+    passives: [subspaceMovement],
+    empoweredMoves: [fairyRockfall],
+    data: { "subspace": 0, "subspaceMax": SUBSPACE_MAX }
+};

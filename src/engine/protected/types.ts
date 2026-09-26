@@ -41,10 +41,15 @@ export interface iIntentionRoll {
     roll: number;
 }
 
-export interface iBuff extends Omit<Buff, "statuses"> {
+export interface iMoveListModifier {
+    addedMoves?: MoveDef[];
+    blockedMoves?: MoveDef[];
+}
+
+export interface iBuff extends Omit<Buff, "statuses" | "moveList"> {
     active: boolean;
     statuses?: iStatus[];
-    addedMoves?: MoveDef[];
+    moveList?: iMoveListModifier;
     modifyDamage?: (target: iEnemy, buff: iBuff, amount: number) => iCallbackReturn;
     modifyBinding?: (state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number) => iCallbackReturn;
 }
