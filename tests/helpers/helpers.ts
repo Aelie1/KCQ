@@ -77,7 +77,7 @@ export function makeWaitMove(): MoveDef {
 }
 
 export function makeCharacterDef(id: string, moves: MoveDef[] = []): CharacterDef {
-    return { id, getMoves: () => moves, passives: [] };
+    return { id, moves, empoweredMoves: [], passives: [] };
 }
 
 export function makeCharacter(

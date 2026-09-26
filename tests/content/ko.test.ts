@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { EMPOWERMENT_BUFF, ko, TRANSFORMATION_BUFF } from "../../src/content/characters/ko";
-import type { CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "../../src/engine/protected/definitions";
+import { ko, TRANSFORMATION_BUFF } from "../../src/content/characters/ko";
+import { EMPOWERMENT_BUFF, type CharacterDef, type EncounterDef, type EnemyDef, type MoveDef, type StatusDef, type TrapDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import { bound, gagged, helpless, hobbled, incapacitated } from "../../src/engine/protected/statuses";
@@ -46,7 +46,11 @@ function empowerKo(state: iGameState): iEffect[] {
         type: "buff",
         operation: "add",
         target: state.characters[0],
-        buff: { id: EMPOWERMENT_BUFF, active: true },
+        buff: {
+            id: EMPOWERMENT_BUFF,
+            active: true,
+            moveList: { addedMoves: ko.empoweredMoves },
+        },
     }];
 }
 
@@ -113,7 +117,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
                 targetSide: "none",
                 targets: 0,
             }));
-        const restrainedKo = { ...ko, getMoves: () => moves };
+        const restrainedKo = { ...ko, moves, empoweredMoves: [] };
         const encounter: EncounterDef = {
             id: "restrained-ko",
             enemies: [makeBehavioralEnemy()],
@@ -582,9 +586,8 @@ describe("Ko's normal and Fairy move effects", () => {
         });
         const ally: CharacterDef = {
             ...makeBehavioralCharacter("ally"),
-            getMoves: (actor) => actor.buffs.some(
-                ({ id, active }) => id === EMPOWERMENT_BUFF && active,
-            ) ? [allyFairy] : [allyNormal],
+            moves: [allyNormal],
+            empoweredMoves: [allyFairy],
         };
         const encounter: EncounterDef = {
             id: "fairy-spread",
@@ -636,7 +639,10 @@ describe("Ko's normal and Fairy move effects", () => {
         });
         expect(engine.getGameState().characters.map(({ modifiers }) => modifiers))
             .toEqual([{ defense: 3 }, { defense: 2 }]);
-        expect(actionView(engine, ally.id).moves.map(({ move }) => move.id)).toEqual([allyFairy.id]);
+        expect(actionView(engine, ally.id).moves.map(({ move }) => move.id)).toEqual([
+            allyNormal.id,
+            allyFairy.id,
+        ]);
         expectMoveSet(engine, [
             "telekinesis",
             "starlightBindings",
@@ -715,7 +721,7 @@ describe("Ko's Reflect source handling", () => {
             traps: [{ definition: trap, amount: 100 }],
             setup: (state) => {
                 const actor = state.characters[0];
-                const reflect = ko.getMoves(actor).find(({ id }) => id === "reflect");
+                const reflect = ko.moves.find(({ id }) => id === "reflect");
                 if (!reflect) throw new Error("Expected Ko's Reflect definition");
                 const effect = reflect.resolve(state, actor, { definition: reflect }, []).effects
                     .find((candidate) => candidate.type === "buff");

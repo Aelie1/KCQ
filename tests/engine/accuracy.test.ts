@@ -149,7 +149,7 @@ describe("accuracy", () => {
                 ];
             },
         };
-        const character = { ...actor.definition, getMoves: () => [move] };
+        const character = { ...actor.definition, moves: [move], empoweredMoves: [] };
         const engine = createCustomEngine([encounter], [character], 1);
         engine.loadCharacter(character.id);
         engine.loadEncounter(encounter.id);

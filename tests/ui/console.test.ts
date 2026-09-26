@@ -959,7 +959,7 @@ describe("console formatting", () => {
 
     it("only offers valid entries from a move's published targets", async () => {
         const selectiveMove = makeMove("selective", "mouth", {
-            isValid: (_move, target) => target?.id === "attacker1" ? "invalidTarget" : undefined,
+            isValidTarget: (_move, target) => target?.id === "attacker1" ? "invalidTarget" : undefined,
         });
         const hero = makeCharacterDef("hero", [selectiveMove]);
         const engine = createCustomEngine([multiEnemyEncounter], [hero], 1);
@@ -977,7 +977,7 @@ describe("console formatting", () => {
     it("allows confirmation of an all-target move with no valid entity targets", async () => {
         const emptyAllMove = makeMove("empty-all", "mouth", {
             targets: "all",
-            isValid: () => "invalidTarget",
+            isValidTarget: () => "invalidTarget",
         });
         const hero = makeCharacterDef("hero", [emptyAllMove]);
         const engine = createCustomEngine([oneEnemyEncounter], [hero], 1);

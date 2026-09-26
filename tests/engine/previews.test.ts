@@ -17,10 +17,10 @@ function preview(engine: Engine, moveId: string, targetId: string): ValidTarget 
 describe("public move previews", () => {
     it("keeps target-specific failures and publishes one unavailable row when no target is valid", () => {
         const selective = makeMove("selective", "arms", {
-            isValid: (_move, target) => target?.id === "foe2" ? "invalidTarget" : undefined,
+            isValidTarget: (_move, target) => target?.id === "foe2" ? "invalidTarget" : undefined,
         });
         const impossible = makeMove("impossible", "arms", {
-            isValid: () => "invalidTarget",
+            isValidTarget: () => "invalidTarget",
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter = { id: "target-validity", enemies: [foe, foe], bindings: [], traps: [] };
@@ -30,7 +30,7 @@ describe("public move previews", () => {
 
         expect(actionView(engine, "hero").moves).toEqual([
             {
-                move: { id: "selective", type: "arms", targetSide: "enemy", targets: 1 },
+                move: { id: "selective", type: "arms", targetSide: "enemy", targets: 1, hits: undefined },
                 available: true,
                 effects: [],
                 targets: [
@@ -39,8 +39,8 @@ describe("public move previews", () => {
                 ],
             },
             {
-                move: { id: "impossible", type: "arms", targetSide: "enemy", targets: 1 },
-                available: false, reason: "invalidTargetCount",
+                move: { id: "impossible", type: "arms", targetSide: "enemy", targets: 1, hits: undefined },
+                available: false, reason: "insufficientTargets",
                 effects: [],
                 targets: [],
             },

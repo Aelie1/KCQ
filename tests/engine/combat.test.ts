@@ -76,7 +76,7 @@ describe("move validation and player actions", () => {
         [
             "wrong target count",
             { type: "move", actor: "hero", move: "legal", targets: [] },
-            "invalidTargetCount",
+            "insufficientTargets",
         ],
         [
             "wrong target side",
@@ -91,12 +91,12 @@ describe("move validation and player actions", () => {
         [
             "explicit target for a targetless move",
             { type: "move", actor: "hero", move: "targetless", targets: ["foe1"] },
-            "invalidTargetCount",
+            "insufficientTargets",
         ],
         [
             "explicit target for an all-target move",
             { type: "move", actor: "hero", move: "all-targets", targets: ["foe1"] },
-            "invalidTargetCount",
+            "insufficientTargets",
         ],
     ] as const)("rejects an %s without consuming the action", (_label, action, reason) => {
         const { engine } = validationEngine();
@@ -308,17 +308,7 @@ describe("move validation and player actions", () => {
     it("reports authored moves without leaking their executable functions", () => {
         const engine = setupAuthoredCombat();
 
-        const definitions = ko.getMoves({
-            id: ko.id,
-            definition: ko,
-            acted: false,
-            standing: false,
-            bonusEscapes: 0,
-            bindings: [],
-            buffs: [],
-            cooldowns: {},
-            data: {}
-        });
+        const definitions = ko.moves;
         const moves = actionView(engine, ko.id).moves.map(({ move, available }) => ({ move, available }));
         expect(moves).toEqual(definitions.map((definition) => ({
             move: {

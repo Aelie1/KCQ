@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { EMPOWERMENT_BUFF } from "../../src/content/characters/ko";
+import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
 import { matsuko } from "../../src/content/characters/matsuko";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import { s } from "../../src/engine/protected/status";
 import { gagged, servitude } from "../../src/engine/protected/statuses";
+import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type {
     AccuracyProfile,
     ActionInfo,
@@ -87,6 +88,27 @@ function playerThreat(id: string, accuracy?: AccuracyProfile): MoveDef {
     });
 }
 
+function burnoutEffects(state: iGameState): iEffect[] {
+    const actor = state.characters[0];
+    const immolation = matsuko.moves.find(({ id }) => id === "immolation");
+    if (!immolation) throw new Error("Expected Matsuko's Immolation definition");
+    return immolation.resolve(state, actor, { definition: immolation }, []).effects
+        .filter((effect) => effect.type === "buff" && effect.buff.id === "burnout");
+}
+
+function empowermentEffect(state: iGameState): iEffect {
+    return {
+        type: "buff",
+        operation: "add",
+        target: state.characters[0],
+        buff: {
+            id: EMPOWERMENT_BUFF,
+            active: true,
+            moveList: { addedMoves: matsuko.empoweredMoves },
+        },
+    };
+}
+
 describe("Matsuko's dynamic offensive kit", () => {
     it("uses Immolation against every enemy, gains Burnout, and retains Compulsion moves", () => {
         const engine = loadMatsukoEncounter({
@@ -143,12 +165,7 @@ describe("Matsuko's dynamic offensive kit", () => {
     it("applies White Flame's Hit bonus to its accuracy preview", () => {
         const normal = loadMatsukoEncounter({ seed: 2 });
         const burnedOut = loadMatsukoEncounter({
-            setup: (state) => [{
-                type: "buff",
-                operation: "add",
-                target: state.characters[0],
-                buff: { id: "burnout", active: true },
-            }],
+            setup: burnoutEffects,
         });
 
         expect(action(normal, "whiteFlame")).toMatchObject({
@@ -180,12 +197,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         const normal = loadMatsukoEncounter({ seed: 2 });
         const burnedOut = loadMatsukoEncounter({
             seed: 2,
-            setup: (state) => [{
-                type: "buff",
-                operation: "add",
-                target: state.characters[0],
-                buff: { id: "burnout", active: true },
-            }],
+            setup: burnoutEffects,
         });
 
         expect(action(normal, "phoenixKick")).toMatchObject({
@@ -237,12 +249,7 @@ describe("Matsuko's dynamic offensive kit", () => {
     it("uses Punch as a basic arms attack while burned out", () => {
         const engine = loadMatsukoEncounter({
             seed: 2,
-            setup: (state) => [{
-                type: "buff",
-                operation: "add",
-                target: state.characters[0],
-                buff: { id: "burnout", active: true },
-            }],
+            setup: burnoutEffects,
         });
 
         expect(action(engine, "punch")).toMatchObject({
@@ -267,12 +274,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         const engine = loadMatsukoEncounter({
             enemies: [durableEnemy("first"), durableEnemy("second")],
             seed: 2,
-            setup: (state) => [{
-                type: "buff",
-                operation: "add",
-                target: state.characters[0],
-                buff: { id: EMPOWERMENT_BUFF, active: true },
-            }],
+            setup: (state) => [empowermentEffect(state)],
         });
 
         expectMoveSet(engine, [
@@ -339,12 +341,7 @@ describe("Matsuko's dynamic offensive kit", () => {
     it("uses Fairy Phoenix Kick twice against one enemy and consumes Fairy Empowerment", () => {
         const engine = loadMatsukoEncounter({
             seed: 2,
-            setup: (state) => [{
-                type: "buff",
-                operation: "add",
-                target: state.characters[0],
-                buff: { id: EMPOWERMENT_BUFF, active: true },
-            }],
+            setup: (state) => [empowermentEffect(state)],
         });
 
         expectMoveSet(engine, [
@@ -409,12 +406,7 @@ describe("Matsuko's dynamic offensive kit", () => {
         (normalMove) => {
             const engine = loadMatsukoEncounter({
                 seed: 2,
-                setup: (state) => [{
-                    type: "buff",
-                    operation: "add",
-                    target: state.characters[0],
-                    buff: { id: EMPOWERMENT_BUFF, active: true },
-                }],
+                setup: (state) => [empowermentEffect(state)],
             });
 
             execute(engine, {
@@ -433,12 +425,7 @@ describe("Matsuko's dynamic offensive kit", () => {
     it("does not consume Fairy Empowerment when using Immolation", () => {
         const engine = loadMatsukoEncounter({
             seed: 2,
-            setup: (state) => [{
-                type: "buff",
-                operation: "add",
-                target: state.characters[0],
-                buff: { id: EMPOWERMENT_BUFF, active: true },
-            }],
+            setup: (state) => [empowermentEffect(state)],
         });
 
         const result = execute(engine, {
@@ -454,14 +441,7 @@ describe("Matsuko's dynamic offensive kit", () => {
     });
 
     it("does not consume Fairy Empowerment when using Compulsion moves", () => {
-        const empoweredSetup: EncounterDef["setup"] = (state) => {
-            return [{
-                type: "buff",
-                operation: "add",
-                target: state.characters[0],
-                buff: { id: EMPOWERMENT_BUFF, active: true },
-            }];
-        };
+        const empoweredSetup: EncounterDef["setup"] = (state) => [empowermentEffect(state)];
         const stopEngine = loadMatsukoEncounter({ setup: empoweredSetup });
         const attackMeEngine = loadMatsukoEncounter({ setup: empoweredSetup });
         const allyAction = makeBehavioralMove("ally-action", "none", {
@@ -550,7 +530,7 @@ describe("Matsuko's Compulsion moves", () => {
 
         expect(action(engine, "obey")).toEqual({
             available: false,
-            reason: "invalidTargetCount",
+            reason: "insufficientTargets",
             move: { id: "obey", type: "mouth", targetSide: "player", targets: 1 },
             targets: [],
             effects: [],

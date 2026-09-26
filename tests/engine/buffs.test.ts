@@ -303,7 +303,7 @@ describe("buff status integration through GameEngine", () => {
                     duration: 1,
                     statuses: [{ definition: blinded, value: 1 }],
                     modifiers: { hit: -1 },
-                    addedMoves: [granted],
+                    moveList: { addedMoves: [granted] },
                 },
                 operation: "add",
             }],

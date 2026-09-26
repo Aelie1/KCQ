@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hinari } from "../../src/content/characters/hinari";
-import { EMPOWERMENT_BUFF } from "../../src/content/characters/ko";
+import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
 import { latexLegs } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
@@ -107,19 +107,28 @@ function moveEvent(result: ActionSuccess) {
 
 describe("Hinari's dynamic move set and Rockfall", () => {
     it.each([
-        [0, 4, ["rockfall", "store", "brace"]],
-        [25, 3, ["rockfall", "store", "brace", "release"]],
-        [50, 2, ["rockfall", "store", "brace", "release"]],
-        [75, 1, ["rockfall", "store", "brace", "release"]],
-        [100, 0, ["release"]],
-    ] as const)("offers %i Rockfall hits at %i Subspace", (subspace, hits, expectedMoves) => {
+        [0, 4],
+        [25, 3],
+        [50, 2],
+        [75, 1],
+        [100, 0],
+    ] as const)("offers %i Subspace as %i Rockfall hits", (subspace, hits) => {
         const engine = loadHinariEncounter({
             seed: 2,
             setup: (state) => hinariData(state, subspace),
         });
 
-        expect(moveIds(engine)).toEqual(expectedMoves);
+        expect(moveIds(engine)).toEqual(["rockfall", "store", "brace", "release"]);
         expect(characterState(engine, hinari.id).data.subspace).toBe(subspace);
+        expect(action(engine, "rockfall")).toMatchObject({
+            available: hits > 0,
+            move: { hits },
+            ...(hits === 0 ? { reason: "insufficientResource" } : {}),
+        });
+        expect(action(engine, "release")).toMatchObject({
+            available: subspace >= 25,
+            ...(subspace < 25 ? { reason: "insufficientResource" } : {}),
+        });
 
         if (hits > 0) {
             const result = execute(engine, {
@@ -130,8 +139,10 @@ describe("Hinari's dynamic move set and Rockfall", () => {
             });
             expect(moveEvent(result).targets).toHaveLength(hits);
         } else {
-            expect(action(engine, "rockfall")).toBeUndefined();
-            expect(action(engine, "brace")).toBeUndefined();
+            expect(action(engine, "brace")).toMatchObject({
+                available: false,
+                reason: "insufficientResource",
+            });
         }
     });
 
@@ -177,7 +188,11 @@ describe("Hinari's dynamic move set and Rockfall", () => {
                     type: "buff",
                     operation: "add",
                     target: state.characters[0],
-                    buff: { id: EMPOWERMENT_BUFF, active: true },
+                    buff: {
+                        id: EMPOWERMENT_BUFF,
+                        active: true,
+                        moveList: { addedMoves: hinari.empoweredMoves },
+                    },
                 },
             ],
         });
@@ -209,7 +224,11 @@ describe("Hinari's dynamic move set and Rockfall", () => {
                 type: "buff",
                 operation: "add",
                 target: state.characters[0],
-                buff: { id: EMPOWERMENT_BUFF, active: true },
+                buff: {
+                    id: EMPOWERMENT_BUFF,
+                    active: true,
+                    moveList: { addedMoves: hinari.empoweredMoves },
+                },
             }],
         });
 
@@ -514,8 +533,10 @@ describe("Hinari's Store", () => {
             ],
         });
 
-        expect(action(engine, "store")).toBeUndefined();
-        expect(moveIds(engine)).not.toContain("store");
+        expect(action(engine, "store")).toMatchObject({
+            available: false,
+            reason: "insufficientResource",
+        });
 
         expect(engine.executeAction({
             type: "move",
@@ -524,7 +545,7 @@ describe("Hinari's Store", () => {
             targets: [ally.id],
         })).toEqual({
             success: false,
-            reason: "invalidMove",
+            reason: "insufficientResource",
         });
 
         expect(bindingState(engine, tape.id, ally.id)?.value).toBe(25);
@@ -566,8 +587,11 @@ describe("Hinari's Store", () => {
             setup: (state) => hinariData(state, 100),
         });
 
-        expect(action(engine, "store")).toBeUndefined();
-        expect(action(engine, "release")).toBeDefined();
+        expect(action(engine, "store")).toMatchObject({
+            available: false,
+            reason: "insufficientResource",
+        });
+        expect(action(engine, "release")).toMatchObject({ available: true });
 
         execute(engine, {
             type: "move",
@@ -828,7 +852,13 @@ describe("Hinari's Release", () => {
         expect(characterState(enemyRelease, hinari.id).data.subspace).toBe(0);
         expect(characterState(allyRelease, hinari.id).data.subspace).toBe(0);
         expect(bindingState(allyRelease, rope.id, "ally")?.value).toBe(13);
-        expect(action(enemyRelease, "release")).toBeUndefined();
-        expect(action(allyRelease, "release")).toBeUndefined();
+        expect(action(enemyRelease, "release")).toMatchObject({
+            available: false,
+            reason: "actorAlreadyActed",
+        });
+        expect(action(allyRelease, "release")).toMatchObject({
+            available: false,
+            reason: "actorAlreadyActed",
+        });
     });
 });
