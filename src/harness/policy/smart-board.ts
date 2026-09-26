@@ -1,5 +1,6 @@
 import type {
     ActionView,
+    BindingId,
     BindingLevel,
     Character,
     Effect,
@@ -30,6 +31,11 @@ export interface SmartIncomingBindingAssessment {
     readonly unknownEffects: number;
 }
 
+/** Committed public binding pressure retained at its target track. */
+export interface SmartIncomingBindingTrackAssessment extends SmartIncomingBindingAssessment {
+    readonly bindingId: BindingId;
+}
+
 export interface SmartCharacterAssessment {
     readonly id: EntityId;
     readonly totalBinding: number;
@@ -51,11 +57,13 @@ export interface SmartCharacterAssessment {
     readonly availableAssists: number;
     readonly availableEscapesAndAssists: number;
     readonly incomingBinding: SmartIncomingBindingAssessment;
+    readonly incomingBindings: readonly SmartIncomingBindingTrackAssessment[];
     readonly threateningEnemyIds: readonly EntityId[];
 }
 
 export interface SmartEnemyTargetAssessment extends SmartIncomingBindingAssessment {
     readonly characterId: EntityId;
+    readonly bindings: readonly SmartIncomingBindingTrackAssessment[];
 }
 
 export interface SmartEnemyAssessment {
@@ -189,6 +197,7 @@ function assessCharacter(
             known: incoming.known,
             unknownEffects: incoming.unknownEffects,
         },
+        incomingBindings: bindingTracks(incoming.bindings),
         threateningEnemyIds: [...incoming.enemyIds],
     };
 }
@@ -196,7 +205,7 @@ function assessCharacter(
 function assessEnemy(enemy: Enemy, state: GameState): SmartEnemyAssessment {
     const characterIds = new Set(state.characters.map(({ id }) => id));
     const targetedIds = new Set<EntityId>();
-    const bindingByTarget = new Map<EntityId, MutableIncoming>();
+    const bindingByTarget = new Map<EntityId, MutableIncomingTarget>();
     const traps: SmartTrapAssessment[] = [];
 
     for (const intention of enemy.intentions) {
@@ -210,7 +219,12 @@ function assessEnemy(enemy: Enemy, state: GameState): SmartEnemyAssessment {
     const bindingTargets = state.characters.flatMap(({ id }) => {
         const incoming = bindingByTarget.get(id);
         return incoming
-            ? [{ characterId: id, known: incoming.known, unknownEffects: incoming.unknownEffects }]
+            ? [{
+                characterId: id,
+                known: incoming.known,
+                unknownEffects: incoming.unknownEffects,
+                bindings: bindingTracks(incoming.bindings),
+            }]
             : [];
     });
     const incomingTraps = aggregateTraps(traps);
@@ -232,15 +246,21 @@ function assessEnemy(enemy: Enemy, state: GameState): SmartEnemyAssessment {
 function collectThreatEffects(
     effects: readonly Effect[],
     characterIds: ReadonlySet<EntityId>,
-    bindingByTarget: Map<EntityId, MutableIncoming>,
+    bindingByTarget: Map<EntityId, MutableIncomingTarget>,
     traps: SmartTrapAssessment[],
 ): void {
     for (const effect of effects) {
         if (effect.type === "binding" && characterIds.has(effect.target)) {
             if (effect.amount === undefined) {
-                incomingFor(bindingByTarget, effect.target).unknownEffects += 1;
+                const target = incomingTargetFor(bindingByTarget, effect.target);
+                const binding = incomingFor(target.bindings, effect.binding);
+                target.unknownEffects += 1;
+                binding.unknownEffects += 1;
             } else if (effect.amount > 0) {
-                incomingFor(bindingByTarget, effect.target).known += effect.amount;
+                const target = incomingTargetFor(bindingByTarget, effect.target);
+                const binding = incomingFor(target.bindings, effect.binding);
+                target.known += effect.amount;
+                binding.known += effect.amount;
             }
         } else if (effect.type === "trap" && effect.amount > 0) {
             traps.push({ id: effect.trap, amount: effect.amount });
@@ -300,7 +320,11 @@ interface MutableIncoming {
     unknownEffects: number;
 }
 
-interface IncomingCharacter extends MutableIncoming {
+interface MutableIncomingTarget extends MutableIncoming {
+    bindings: Map<BindingId, MutableIncoming>;
+}
+
+interface IncomingCharacter extends MutableIncomingTarget {
     enemyIds: EntityId[];
 }
 
@@ -315,6 +339,11 @@ function aggregateIncomingByCharacter(
             if (!incoming) continue;
             incoming.known += target.known;
             incoming.unknownEffects += target.unknownEffects;
+            for (const binding of target.bindings) {
+                const track = incomingFor(incoming.bindings, binding.bindingId);
+                track.known += binding.known;
+                track.unknownEffects += binding.unknownEffects;
+            }
             incoming.enemyIds.push(enemy.id);
         }
     }
@@ -374,8 +403,8 @@ function countAtOrAbove(
 }
 
 function incomingFor(
-    byTarget: Map<EntityId, MutableIncoming>,
-    target: EntityId,
+    byTarget: Map<string, MutableIncoming>,
+    target: string,
 ): MutableIncoming {
     let incoming = byTarget.get(target);
     if (!incoming) {
@@ -385,8 +414,26 @@ function incomingFor(
     return incoming;
 }
 
+function incomingTargetFor(
+    byTarget: Map<EntityId, MutableIncomingTarget>,
+    target: EntityId,
+): MutableIncomingTarget {
+    let incoming = byTarget.get(target);
+    if (!incoming) {
+        incoming = { known: 0, unknownEffects: 0, bindings: new Map() };
+        byTarget.set(target, incoming);
+    }
+    return incoming;
+}
+
 function emptyIncomingCharacter(): IncomingCharacter {
-    return { known: 0, unknownEffects: 0, enemyIds: [] };
+    return { known: 0, unknownEffects: 0, bindings: new Map(), enemyIds: [] };
+}
+
+function bindingTracks(
+    bindings: ReadonlyMap<BindingId, MutableIncoming>,
+): SmartIncomingBindingTrackAssessment[] {
+    return [...bindings].map(([bindingId, incoming]) => ({ bindingId, ...incoming }));
 }
 
 function sum<T>(values: readonly T[], select: (value: T) => number): number {

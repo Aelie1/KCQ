@@ -76,6 +76,7 @@ function context(gameState: GameState, actions: ActionView[]): PolicyContext {
     return {
         state: gameState,
         actions,
+        thresholds: { thresholds: { impossible: 80 }, max: 100 },
         random: {
             next: () => { throw new Error("board assessment must not consume policy random"); },
             integer: () => { throw new Error("board assessment must not consume policy random"); },
@@ -276,8 +277,17 @@ describe("Smart 3 intention and trap pressure", () => {
             unknownIncomingBindingEffects: 1,
             targetedCharacterIds: ["hero", "ally"],
             bindingTargets: [
-                { characterId: "hero", known: 5, unknownEffects: 1 },
-                { characterId: "ally", known: 3, unknownEffects: 0 },
+                {
+                    characterId: "hero", known: 5, unknownEffects: 1,
+                    bindings: [
+                        { bindingId: "rope", known: 5, unknownEffects: 0 },
+                        { bindingId: "mystery", known: 0, unknownEffects: 1 },
+                    ],
+                },
+                {
+                    characterId: "ally", known: 3, unknownEffects: 0,
+                    bindings: [{ bindingId: "web", known: 3, unknownEffects: 0 }],
+                },
             ],
             incomingTraps: [{ id: "puddle", amount: 4 }],
             totalIncomingTrapAmount: 4,
@@ -287,8 +297,14 @@ describe("Smart 3 intention and trap pressure", () => {
             unknownIncomingBindingEffects: 1,
             targetedCharacterIds: ["hero", "ally"],
             bindingTargets: [
-                { characterId: "hero", known: 2, unknownEffects: 0 },
-                { characterId: "ally", known: 0, unknownEffects: 1 },
+                {
+                    characterId: "hero", known: 2, unknownEffects: 0,
+                    bindings: [{ bindingId: "silk", known: 2, unknownEffects: 0 }],
+                },
+                {
+                    characterId: "ally", known: 0, unknownEffects: 1,
+                    bindings: [{ bindingId: "unknown", known: 0, unknownEffects: 1 }],
+                },
             ],
             incomingTraps: [
                 { id: "puddle", amount: 1 },
@@ -309,6 +325,24 @@ describe("Smart 3 intention and trap pressure", () => {
                 threateningEnemyIds: ["first", "second"],
             },
         ]);
+        expect(board.characters.map(({ id, incomingBindings }) => ({ id, incomingBindings })))
+            .toEqual([
+                {
+                    id: "hero",
+                    incomingBindings: [
+                        { bindingId: "rope", known: 5, unknownEffects: 0 },
+                        { bindingId: "mystery", known: 0, unknownEffects: 1 },
+                        { bindingId: "silk", known: 2, unknownEffects: 0 },
+                    ],
+                },
+                {
+                    id: "ally",
+                    incomingBindings: [
+                        { bindingId: "web", known: 3, unknownEffects: 0 },
+                        { bindingId: "unknown", known: 0, unknownEffects: 1 },
+                    ],
+                },
+            ]);
         expect(board.party).toMatchObject({
             totalKnownIncomingBinding: 10,
             unknownIncomingBindingEffects: 2,

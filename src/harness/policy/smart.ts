@@ -1,8 +1,11 @@
 import type {
     ActionInfo,
+    BindingId,
     Effect,
+    EntityId,
     EscapeInfo,
     PlayerAction,
+    ThresholdInfo,
     ValidTarget,
 } from "../../engine/public/types";
 import type { FightPolicy, PolicyContext } from "../harness";
@@ -57,6 +60,20 @@ export interface SmartDecision {
     readonly selected: ScoredSmartCandidate;
 }
 
+export interface BindingRecoveryBreakdown {
+    readonly baselineDebt: number;
+    readonly escapedDebt: number;
+    readonly recoveryGain: number;
+    readonly selectedProjectedValue: number;
+    readonly selectedDebt: number;
+    readonly urgency: number;
+    readonly raw: number;
+}
+
+/** Tunable Smart-policy heuristic constants; neither is an engine rule. */
+export const RECOVERY_DEBT_CURVE_A = 1.5;
+export const BINDING_RECOVERY_WEIGHT = 0.75;
+
 /** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
 export const expectedDamageScorer: SmartScorer = {
     id: "expectedDamage",
@@ -67,8 +84,50 @@ export const expectedDamageScorer: SmartScorer = {
     },
 };
 
+/** Values an escape by the reduction in projected whole-party recovery debt. */
+export const bindingRecoveryScorer: SmartScorer = {
+    id: "bindingRecovery",
+    weight: BINDING_RECOVERY_WEIGHT,
+    prepare(context, board) {
+        const evaluate = prepareBindingRecovery(context, board);
+        return (candidate) => evaluate(candidate).raw;
+    },
+};
+
 /** Production scorer registration order. Later Smart cards can extend this list. */
-export const smartScorers: readonly SmartScorer[] = [expectedDamageScorer];
+export const smartScorers: readonly SmartScorer[] = [
+    expectedDamageScorer,
+    bindingRecoveryScorer,
+];
+
+/**
+ * Convex estimate of the effort to recover one binding track. This is a Smart
+ * policy heuristic, not a game mechanic.
+ */
+export function recoveryDebt(value: number, thresholds: ThresholdInfo): number {
+    const impossible = thresholds.thresholds.impossible;
+    const maximum = thresholds.max;
+    if (impossible === undefined || impossible <= 0 || maximum <= 0) return 0;
+
+    const clamped = clamp(value, 0, maximum);
+    if (clamped <= impossible) {
+        return clamped
+            + RECOVERY_DEBT_CURVE_A * clamped ** 3 / impossible ** 2;
+    }
+
+    const debtAtImpossible = impossible + RECOVERY_DEBT_CURVE_A * impossible;
+    const slopeAtImpossible = 1 + 3 * RECOVERY_DEBT_CURVE_A;
+    return debtAtImpossible + (clamped - impossible) * slopeAtImpossible;
+}
+
+/** Exposes the scorer's formula breakdown for focused tests and diagnostics. */
+export function evaluateBindingRecovery(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    candidate: SmartCandidate,
+): BindingRecoveryBreakdown {
+    return prepareBindingRecovery(context, board)(candidate);
+}
 
 /** Enumerates legal primary actions in stable public action-view order. */
 export function generateSmartCandidates(context: PolicyContext): SmartCandidate[] {
@@ -158,6 +217,162 @@ export const smartPolicy: FightPolicy = {
         };
     },
 };
+
+type BindingBoard = Map<EntityId, Map<BindingId, number>>;
+
+function prepareBindingRecovery(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+): (candidate: SmartCandidate) => BindingRecoveryBreakdown {
+    const characterIds = new Set(context.state.characters.map(({ id }) => id));
+    const current = currentBindingBoard(context);
+    const baseline = cloneBindingBoard(current);
+    applyKnownIncoming(baseline, board, context.thresholds.max);
+    const baselineDebt = totalRecoveryDebt(baseline, context.thresholds);
+
+    return (candidate) => {
+        if (candidate.action.type !== "escape") {
+            return emptyBindingRecovery();
+        }
+
+        const escaped = cloneBindingBoard(current);
+        for (const effect of candidate.effects) {
+            if (effect.type !== "binding" || effect.amount === undefined
+                || !characterIds.has(effect.target)) continue;
+            addBinding(
+                escaped,
+                effect.target,
+                effect.binding,
+                effect.amount,
+                context.thresholds.max,
+            );
+        }
+        applyKnownIncoming(escaped, board, context.thresholds.max);
+
+        const escapedDebt = totalRecoveryDebt(escaped, context.thresholds);
+        const recoveryGain = baselineDebt - escapedDebt;
+        const selectedCurrent = bindingValue(
+            current,
+            candidate.action.target,
+            candidate.action.binding,
+        );
+        const selectedIncoming = knownIncoming(
+            board,
+            candidate.action.target,
+            candidate.action.binding,
+        );
+        const selectedProjectedValue = clamp(
+            selectedCurrent + selectedIncoming,
+            0,
+            context.thresholds.max,
+        );
+        const selectedDebt = recoveryDebt(selectedProjectedValue, context.thresholds);
+        const impossible = context.thresholds.thresholds.impossible;
+        const debtAtImpossible = impossible === undefined
+            ? 0
+            : recoveryDebt(impossible, context.thresholds);
+        const urgency = debtAtImpossible > 0 ? 1 + selectedDebt / debtAtImpossible : 1;
+
+        return {
+            baselineDebt,
+            escapedDebt,
+            recoveryGain,
+            selectedProjectedValue,
+            selectedDebt,
+            urgency,
+            raw: recoveryGain * urgency,
+        };
+    };
+}
+
+function currentBindingBoard(context: PolicyContext): BindingBoard {
+    return new Map(context.state.characters.map((character) => [
+        character.id,
+        new Map(character.bindings.map((binding) => [binding.id, binding.value])),
+    ]));
+}
+
+function cloneBindingBoard(board: BindingBoard): BindingBoard {
+    return new Map([...board].map(([characterId, bindings]) => [
+        characterId,
+        new Map(bindings),
+    ]));
+}
+
+function applyKnownIncoming(
+    projected: BindingBoard,
+    board: SmartBoardAssessment,
+    maximum: number,
+): void {
+    for (const character of board.characters) {
+        for (const binding of character.incomingBindings) {
+            addBinding(
+                projected,
+                character.id,
+                binding.bindingId,
+                binding.known,
+                maximum,
+            );
+        }
+    }
+}
+
+function addBinding(
+    board: BindingBoard,
+    characterId: EntityId,
+    bindingId: BindingId,
+    amount: number,
+    maximum: number,
+): void {
+    const bindings = board.get(characterId);
+    if (!bindings) return;
+    bindings.set(
+        bindingId,
+        clamp((bindings.get(bindingId) ?? 0) + amount, 0, maximum),
+    );
+}
+
+function bindingValue(
+    board: BindingBoard,
+    characterId: EntityId,
+    bindingId: BindingId,
+): number {
+    return board.get(characterId)?.get(bindingId) ?? 0;
+}
+
+function knownIncoming(
+    board: SmartBoardAssessment,
+    characterId: EntityId,
+    bindingId: BindingId,
+): number {
+    return board.characters.find(({ id }) => id === characterId)
+        ?.incomingBindings.find((binding) => binding.bindingId === bindingId)
+        ?.known ?? 0;
+}
+
+function totalRecoveryDebt(board: BindingBoard, thresholds: ThresholdInfo): number {
+    let total = 0;
+    for (const bindings of board.values()) {
+        for (const value of bindings.values()) total += recoveryDebt(value, thresholds);
+    }
+    return total;
+}
+
+function emptyBindingRecovery(): BindingRecoveryBreakdown {
+    return {
+        baselineDebt: 0,
+        escapedDebt: 0,
+        recoveryGain: 0,
+        selectedProjectedValue: 0,
+        selectedDebt: 0,
+        urgency: 1,
+        raw: 0,
+    };
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+    return Math.min(maximum, Math.max(minimum, value));
+}
 
 function assertUniqueScorerIds(scorers: readonly SmartScorer[]): void {
     const ids = new Set<string>();

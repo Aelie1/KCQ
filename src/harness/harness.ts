@@ -5,6 +5,7 @@ import type {
     FailureReason,
     GameState,
     PlayerAction,
+    ThresholdInfo,
 } from "../engine/public/types";
 import {
     coreMetricCollectorFactories,
@@ -22,6 +23,7 @@ export interface PolicyRandom {
 export interface PolicyContext {
     readonly state: GameState;
     readonly actions: ActionView[];
+    readonly thresholds: ThresholdInfo;
     readonly random: PolicyRandom;
 }
 
@@ -123,6 +125,7 @@ export interface SingleFightResult {
 /** Runs one stock encounter, delegating every player decision to the supplied policy. */
 export function runSingleFight(input: SingleFightInput): SingleFightResult {
     const engine = createEngine(input.engineSeed);
+    const thresholds = engine.getThresholds();
     const policyRandom = createPolicyRandom(input.policySeed);
     const trace: PlayerAction[] = [];
     let replay: FightReplay | undefined;
@@ -219,6 +222,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
         const context: PolicyContext = {
             state: view,
             actions,
+            thresholds,
             random: policyRandom,
         };
         const action = cloneAction(input.policy.chooseAction(context));

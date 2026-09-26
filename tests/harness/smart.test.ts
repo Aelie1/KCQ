@@ -16,6 +16,7 @@ import {
 import { runBatch } from "../../src/harness/batch/batch";
 import { getPolicy, policies } from "../../src/harness/policies";
 import {
+    bindingRecoveryScorer,
     evaluateSmartDecision,
     expectedDamageScorer,
     generateSmartCandidates,
@@ -105,6 +106,7 @@ function context(actions: ActionView[], gameState = state()): PolicyContext {
     return {
         state: gameState,
         actions,
+        thresholds: { thresholds: { impossible: 80 }, max: 100 },
         random: {
             next: () => { throw new Error("Smart must not consume policy random"); },
             integer: () => { throw new Error("Smart must not consume policy random"); },
@@ -295,10 +297,12 @@ describe("Smart 2 composable scoring", () => {
         expect(scores(decision)).toEqual([3, 3, 3]);
     });
 
-    it("registers expected damage as the sole production scorer at weight 1", () => {
-        expect(smartScorers).toEqual([expectedDamageScorer]);
+    it("registers expected damage and binding recovery in stable order", () => {
+        expect(smartScorers).toEqual([expectedDamageScorer, bindingRecoveryScorer]);
         expect(expectedDamageScorer.id).toBe("expectedDamage");
         expect(expectedDamageScorer.weight).toBe(1);
+        expect(bindingRecoveryScorer.id).toBe("bindingRecovery");
+        expect(bindingRecoveryScorer.weight).toBe(0.75);
     });
 });
 
@@ -319,6 +323,7 @@ describe("Smart 2 expected direct enemy damage", () => {
         expect(scores(decision)).toEqual([25, 0]);
         expect(decision.candidates[0].components).toEqual({
             expectedDamage: { raw: 25, weight: 1, score: 25 },
+            bindingRecovery: { raw: 0, weight: 0.75, score: 0 },
         });
     });
 
@@ -445,6 +450,8 @@ describe("Smart 2 selection and integration", () => {
             typeof candidate.total === "number"
             && typeof candidate.components.expectedDamage.raw === "number"
             && candidate.components.expectedDamage.weight === 1
+            && candidate.components.bindingRecovery.raw === 0
+            && candidate.components.bindingRecovery.weight === 0.75
             && candidate.components.expectedDamage.score === candidate.total,
         )).toBe(true);
         expect(smartPolicy.chooseAction(fixture)).toEqual(first.selected.action);
@@ -535,7 +542,10 @@ describe("Smart 2 selection and integration", () => {
             expect(decision.candidates.every((candidate) =>
                 typeof candidate.components.expectedDamage.raw === "number"
                 && candidate.components.expectedDamage.weight === 1
-                && candidate.total === candidate.components.expectedDamage.score,
+                && typeof candidate.components.bindingRecovery.raw === "number"
+                && candidate.components.bindingRecovery.weight === 0.75
+                && candidate.total === candidate.components.expectedDamage.score
+                    + candidate.components.bindingRecovery.score,
             )).toBe(true);
             expect(step.action).toEqual(decision.selected.action);
         }
@@ -560,23 +570,9 @@ describe("Smart 2 selection and integration", () => {
         expect(recorded.finalState).toEqual(ordinary.finalState);
     });
 
-    it("matches the pre-board expected-damage policy on a fixed stock encounter and seed", () => {
+    it("leaves expected-damage scoring unchanged when recovery scoring is added", () => {
         const encounterId = createEngine(1).listEncounters()[0];
         if (!encounterId) throw new Error("The stock encounter catalogue is empty");
-        const smart2Reference: FightPolicy = {
-            id: "smart-2-reference",
-            chooseAction(referenceContext) {
-                const candidates = generateSmartCandidates(referenceContext);
-                // Smart 2 supplied only context. The production expected-damage scorer
-                // deliberately ignores Smart 3's additional prepared board argument.
-                const score = expectedDamageScorer.prepare(referenceContext, undefined as never);
-                let selected = candidates[0];
-                for (let index = 1; index < candidates.length; index += 1) {
-                    if (score(candidates[index]) > score(selected)) selected = candidates[index];
-                }
-                return selected.action;
-            },
-        };
         const input = {
             encounterId,
             engineSeed: 8642,
@@ -584,12 +580,29 @@ describe("Smart 2 selection and integration", () => {
             maxActions: 1_000,
         };
 
-        const smart2 = runSingleFight({ ...input, policy: smart2Reference });
-        const smart3 = runSingleFight({ ...input, policy: smartPolicy });
+        const result = runSingleFight({ ...input, policy: smartPolicy, replay: true });
 
-        expect(smart3.trace).toEqual(smart2.trace);
-        expect(smart3.termination).toBe(smart2.termination);
-        expect(smart3.finalState).toEqual(smart2.finalState);
+        let beforeState = result.replay!.initialState;
+        let beforeActions = result.replay!.initialActions;
+        for (const step of result.replay?.steps ?? []) {
+            const decision = step.policyDecision?.diagnostics as SmartDecision;
+            const score = expectedDamageScorer.prepare(
+                {
+                    state: beforeState,
+                    actions: beforeActions,
+                    thresholds: createEngine(1).getThresholds(),
+                    random: createPolicyRandom(1),
+                },
+                decision.board,
+            );
+            for (const candidate of decision.candidates) {
+                expect(candidate.components.expectedDamage.raw).toBe(score(candidate));
+            }
+            if (step.success) {
+                beforeState = step.state;
+                beforeActions = step.actions;
+            }
+        }
     });
 
     it("does not evaluate or retain detailed decisions in ordinary fights or batches", () => {

@@ -66,14 +66,32 @@ function actionView(
 }
 
 function policyContext(actions: ActionView[]): PolicyContext {
+    const engine = createEngine(1);
     return {
-        state: createEngine(1).getGameState(),
+        state: engine.getGameState(),
         actions,
+        thresholds: engine.getThresholds(),
         random: createPolicyRandom(1),
     };
 }
 
 describe("policy-driven single-fight harness", () => {
+    it("supplies public engine thresholds to policy contexts", () => {
+        let observed: PolicyContext["thresholds"] | undefined;
+        const policy: FightPolicy = {
+            id: "threshold-observer",
+            chooseAction(context) {
+                observed = context.thresholds;
+                return { type: "endTurn" };
+            },
+        };
+        const engineSeed = 31415;
+
+        runSingleFight({ ...fightInput(policy, engineSeed), maxActions: 1 });
+
+        expect(observed).toEqual(createEngine(engineSeed).getThresholds());
+    });
+
     it("omits replay capture by default and when explicitly disabled", () => {
         const defaultResult = runSingleFight({ ...fightInput(firstPolicy), maxActions: 1 });
         const disabledResult = runSingleFight({
