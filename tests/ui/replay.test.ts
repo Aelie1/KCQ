@@ -171,6 +171,47 @@ describe("console replay viewer", () => {
         expect(frames[4]).toBe(frames[2]);
     });
 
+    it("pages through every recorded Smart candidate with scores, selection, and tie-break", async () => {
+        const input = replayInput();
+        if (!("initialActions" in input.replay)) throw new Error("Expected current replay fixture");
+        const step = input.replay.steps[0];
+        if (!step) throw new Error("Expected a replay step");
+        const totals = [10, 8, 6, 4, 2, 10];
+        const candidates = totals.map((total, index) => ({
+            action: {
+                type: "move" as const,
+                actor: "hero",
+                move: `candidate-${index + 1}`,
+                targets: ["recorded-foe"],
+            },
+            effects: [],
+            targets: [],
+            hits: 1,
+            components: { expectedDamage: total },
+            total,
+        }));
+        step.policyDecision = {
+            policyId: "smart",
+            diagnostics: { candidates, selected: candidates[0] },
+        };
+
+        const frames = await viewReplay(input, ["n", "d", "j", "j", "d", "q"]);
+
+        expect(frames[1]).toContain("[d] decision details");
+        expect(frames[2]).toContain("SMART DECISION  Candidates 1-4 / 6");
+        expect(frames[2]).toContain("Selected: candidate #1");
+        expect(frames[2]).toContain("Tie-break: 2 candidates at 10; stable order chose #1.");
+        expect(frames[2]).toContain("* #1 expectedDamage=10 total=10");
+        expect(frames[2].indexOf("#1 expectedDamage")).toBeLessThan(
+            frames[2].indexOf("#2 expectedDamage"),
+        );
+        expect(frames[3]).toContain("SMART DECISION  Candidates 2-5 / 6");
+        expect(frames[4]).toContain("SMART DECISION  Candidates 3-6 / 6");
+        expect(frames[4]).toContain("#6 expectedDamage=10 total=10");
+        expect(frames[4]).toContain("move hero: candidate-6; targets: [recorded-foe]");
+        expect(frames[5]).toContain("Action: move hero: recorded-strike");
+    });
+
     it("clamps both boundaries and supports start/end without quitting on a terminal outcome", async () => {
         const input = replayInput();
         const lastStep = input.replay.steps[1];

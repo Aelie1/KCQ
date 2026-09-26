@@ -4,11 +4,13 @@ import { basic10Policy, basic15Policy, basic20Policy, basic25Policy, basic30Poli
 import { firstPolicy } from "./policy/first";
 import { idlePolicy } from "./policy/idle";
 import { randomPolicy } from "./policy/random";
+import { smartPolicy } from "./policy/smart";
 
 export const policies = {
     first: firstPolicy,
     idle: idlePolicy,
     random: randomPolicy,
+    smart: smartPolicy,
     basic: basicPolicy,
     basic50: basic50Policy,
     basic45: basic45Policy,

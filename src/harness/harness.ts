@@ -28,6 +28,22 @@ export interface PolicyContext {
 export interface FightPolicy {
     readonly id: string;
     chooseAction(context: PolicyContext): PlayerAction;
+    /**
+     * Optional expensive/inspectable evaluation used only while recording a
+     * single-fight replay. Ordinary fights and batches use chooseAction only.
+     */
+    evaluateDecision?(context: PolicyContext): PolicyDecisionEvaluation;
+}
+
+export interface PolicyDecisionEvaluation {
+    readonly action: PlayerAction;
+    /** Must be structured-cloneable so the replay owns its diagnostic data. */
+    readonly diagnostics: unknown;
+}
+
+export interface ReplayPolicyDecision {
+    readonly policyId: string;
+    readonly diagnostics: unknown;
 }
 
 export interface SingleFightInput {
@@ -55,12 +71,14 @@ export interface ReplaySuccessStep {
     frames: EventFrame[];
     state: GameState;
     actions: ActionView[];
+    policyDecision?: ReplayPolicyDecision;
 }
 
 export interface ReplayFailureStep {
     action: PlayerAction;
     success: false;
     reason: FailureReason;
+    policyDecision?: ReplayPolicyDecision;
 }
 
 export type ReplayStep = ReplaySuccessStep | ReplayFailureStep;
@@ -195,11 +213,23 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             return finish("maxActions");
         }
 
-        const action = cloneAction(input.policy.chooseAction({
+        const context: PolicyContext = {
             state: view,
             actions,
             random: policyRandom,
-        }));
+        };
+        const evaluated = replay && input.policy.evaluateDecision
+            ? input.policy.evaluateDecision(context)
+            : undefined;
+        const action = cloneAction(
+            evaluated?.action ?? input.policy.chooseAction(context),
+        );
+        const policyDecision: ReplayPolicyDecision | undefined = evaluated
+            ? {
+                policyId: input.policy.id,
+                diagnostics: structuredClone(evaluated.diagnostics),
+            }
+            : undefined;
 
         trace.push(action);
         const before = view;
@@ -215,6 +245,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
                 action,
                 success: false,
                 reason: result.reason,
+                ...(policyDecision ? { policyDecision } : {}),
             });
             return finish("error", {
                 message: "The engine rejected a runner-submitted action",
@@ -229,6 +260,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             frames: structuredClone(result.frames),
             state: structuredClone(result.frames.at(-1)?.state ?? engine.getGameState()),
             actions: structuredClone(result.actions),
+            ...(policyDecision ? { policyDecision } : {}),
         });
 
         view = result.frames.at(-1)?.state ?? engine.getGameState();
