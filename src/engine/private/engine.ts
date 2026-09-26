@@ -1,5 +1,6 @@
 import { type CharacterDef, type EncounterDef } from "../protected/definitions";
-import { findBinding, findCharacter, findEntity, findMove, isValidEntity, thresholds } from "../protected/helpers";
+import { findBinding, findCharacter, findEntity, findMove, isValidEntity } from "../protected/helpers";
+import { thresholds } from "../protected/mechanics";
 import { mixSeed, Random } from "../protected/random";
 import { GameStatus, StatusMap } from "../protected/status";
 import { iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";

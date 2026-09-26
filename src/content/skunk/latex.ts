@@ -1,5 +1,6 @@
 import { BindingDef } from "../../engine/protected/definitions";
-import { findBinding, findBuff, thresholds } from "../../engine/protected/helpers";
+import { findBinding, findBuff } from "../../engine/protected/helpers";
+import { thresholds } from "../../engine/protected/mechanics";
 import { GameStatus, s } from "../../engine/protected/status";
 import { bound, breathless, gagged, hobbled, incapacitated, submissive, vibrating } from "../../engine/protected/statuses";
 import { iBinding, iBuff, iCharacter, iEffect, iGameState } from "../../engine/protected/types";

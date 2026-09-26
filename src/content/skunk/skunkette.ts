@@ -1,6 +1,7 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
-import { basicBindingEffect, findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
+import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
+import { basicBindingEffect } from "../../engine/protected/mechanics";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";

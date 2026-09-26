@@ -1,12 +1,11 @@
-import { resultDetails } from "../helpers/events";
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
-import { getEscapePotency } from "../../src/engine/private/combat";
 import type { BindingDef, StatusDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { thresholds } from "../../src/engine/protected/helpers";
+import { getEscapePotency, thresholds } from "../../src/engine/protected/mechanics";
 import type { Effect, Engine } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
+import { resultDetails } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
 
 interface BindingSetup {
@@ -166,10 +165,12 @@ describe("escape progress", () => {
         });
         expect(resultDetails(result)).toMatchObject({
             success: true,
-            eventSequence: [{ type: "useEscape", actor: "helper", target: "target", effects: [
-                { type: "bondageRemoved", target: "target", binding: restraint.id, amount: -10 },
-                { type: "bondageAdded", target: "helper", binding: spread.id, amount: 5 },
-            ] }],
+            eventSequence: [{
+                type: "useEscape", actor: "helper", target: "target", effects: [
+                    { type: "bondageRemoved", target: "target", binding: restraint.id, amount: -10 },
+                    { type: "bondageAdded", target: "helper", binding: spread.id, amount: 5 },
+                ]
+            }],
         });
     });
 
@@ -199,12 +200,14 @@ describe("escape progress", () => {
 
         expect(resultDetails(result)).toMatchObject({
             success: true,
-            eventSequence: [{ type: "useEscape", actor: "hero", target: "hero", effects: [{
-                type: "bondageChanged",
-                target: "hero",
-                binding: restraint.id,
-                amount: -amount,
-            }] }],
+            eventSequence: [{
+                type: "useEscape", actor: "hero", target: "hero", effects: [{
+                    type: "bondageChanged",
+                    target: "hero",
+                    binding: restraint.id,
+                    amount: -amount,
+                }]
+            }],
         });
         expect(engine.getGameState().characters[0].bindings[0].value).toBe(before - amount);
         expect(engine.getGameState().characters[0].acted).toBe(true);
@@ -256,20 +259,22 @@ describe("escape progress", () => {
 
         expect(resultDetails(result)).toMatchObject({
             success: true,
-            eventSequence: [{ type: "useEscape", actor: "hero", target: "hero", effects: [
-                {
-                    type: "bondageChanged",
-                    target: "hero",
-                    binding: "latexArms",
-                    amount: -18,
-                },
-                {
-                    type: "bondageAdded",
-                    target: "hero",
-                    binding: "latexHead",
-                    amount: 5,
-                },
-            ] }],
+            eventSequence: [{
+                type: "useEscape", actor: "hero", target: "hero", effects: [
+                    {
+                        type: "bondageChanged",
+                        target: "hero",
+                        binding: "latexArms",
+                        amount: -18,
+                    },
+                    {
+                        type: "bondageAdded",
+                        target: "hero",
+                        binding: "latexHead",
+                        amount: 5,
+                    },
+                ]
+            }],
         });
         expect(engine.getGameState().characters[0].bindings).toEqual([
             expect.objectContaining({ id: "latexArms", value: 12 }),

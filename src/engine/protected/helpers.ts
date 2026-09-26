@@ -1,6 +1,7 @@
-import type { AccuracyProfile, BindingId, BindingLevel, BuffId, EntityId, MoveId, TrapId } from "../public/types";
+import type { BindingId, BuffId, EntityId, MoveId, TrapId } from "../public/types";
 import { type MoveDef } from "./definitions";
-import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iMove, iMoveResult, iTargetInfo, iTrap } from "./types";
+import { getMoves } from "./mechanics";
+import type { iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iTrap } from "./types";
 
 export function isValidEntity(state: iGameState, entity: iEntity): boolean {
     if (isCharacter(entity)) {
@@ -17,49 +18,6 @@ export function isCharacter(entity: iEntity): entity is iCharacter {
 
 export function isEnemy(entity: iEntity): entity is iEnemy {
     return "currHp" in entity;
-}
-
-export const thresholds: Record<BindingLevel, number> = {
-    none: 0,
-    easy: 10,
-    medium: 20,
-    hard: 30,
-    extreme: 50,
-    impossible: 80,
-    max: 100
-};
-
-export function getBindingLevel(binding: iBinding): BindingLevel {
-    if (binding.value >= thresholds.impossible) {
-        return "impossible";
-    }
-    else if (binding.value >= thresholds.extreme) {
-        return "extreme";
-    }
-    else if (binding.value >= thresholds.hard) {
-        return "hard";
-    }
-    else if (binding.value >= thresholds.medium) {
-        return "medium";
-    }
-    else if (binding.value >= thresholds.easy) {
-        return "easy";
-    }
-    return "none";
-}
-
-export function getMoves(target: iCharacter): MoveDef[] {
-    const moves: MoveDef[] = [...target.definition.moves];
-    const blockedMoves: MoveDef[] = [];
-    for (const buff of target.buffs) {
-        if (buff.active) {
-            if (buff.moveList) {
-                moves.push(...(buff.moveList.addedMoves ?? []));
-                blockedMoves.push(...(buff.moveList.blockedMoves ?? []));
-            }
-        }
-    }
-    return moves.filter(x => !blockedMoves.includes(x)).sort((a, b) => ((a.index ?? 99) - (b.index ?? 99)));
 }
 
 export function findCharacter(state: iGameState, id: EntityId): iCharacter | undefined {
@@ -90,51 +48,3 @@ export function findBuff(entity: iEntity, id: BuffId): iBuff | undefined {
     return entity.buffs.find(buff => buff.id === id);
 }
 
-export const basicPlayerAccuracy: AccuracyProfile = {
-    miss: 10,
-    graze: 15,
-    hit: 65,
-    crit: 10
-}
-
-export function basicDamageEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-    const result: iMoveResult = { effects: [], targets: [] };
-    for (const target of targets) {
-        if (isEnemy(target.target) && target.effectiveness > 0) {
-            result.targets.push({
-                target: target.target,
-                result: target.band,
-                effects: [{
-                    type: "damage",
-                    source: actor,
-                    target: target.target,
-                    amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
-                }]
-            });
-        }
-    }
-    return result;
-}
-
-export function basicBindingEffect(actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-    const result: iMoveResult = { effects: [], targets: [] };
-    if (!move.binding) {
-        return result;
-    }
-    for (const target of targets) {
-        if (isCharacter(target.target) && target.effectiveness > 0) {
-            result.targets.push({
-                target: target.target,
-                result: target.band,
-                effects: [{
-                    type: "binding",
-                    source: actor,
-                    target: target.target,
-                    binding: move.binding,
-                    amount: (move.definition.baseDamage ?? 1) * target.effectiveness
-                }]
-            });
-        }
-    }
-    return result;
-}

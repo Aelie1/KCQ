@@ -1,5 +1,6 @@
 import { CharacterDef, MoveDef } from "../../engine/protected/definitions";
-import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, basicPlayerAccuracy } from "../../engine/protected/mechanics";
 import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
 import { iBuff, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";

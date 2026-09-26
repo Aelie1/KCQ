@@ -1,6 +1,7 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget, pickValidTarget } from "../../engine/protected/enemies";
-import { basicBindingEffect, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicBindingEffect } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iCallbackReturn, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { HitBand } from "../../engine/public/types";

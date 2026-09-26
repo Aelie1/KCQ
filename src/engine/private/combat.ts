@@ -1,9 +1,10 @@
 import { MoveDef } from "../protected/definitions";
-import { isCharacter, isEnemy, isValidEntity, thresholds } from "../protected/helpers";
+import { isCharacter, isEnemy, isValidEntity } from "../protected/helpers";
+import { getEscapePotency } from "../protected/mechanics";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEntity, iGameState, iIntention, iMove, iMoveResult, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
-import { BASE_ESCAPE_PENALTY, BASE_ESCAPE_POTENCY, BINDING_MODIFIER, DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
+import { DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
 function getIEntitySide(entity: iEntity): EntitySide {
@@ -344,18 +345,6 @@ export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target
     }
 
     return effects;
-}
-
-export function getEscapePotency(value: number, escapeModifier: number, assistModifier: number) {
-    const basePotency = BASE_ESCAPE_POTENCY;
-    const bindingValue = value;
-    const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
-    const basePenalty = BASE_ESCAPE_PENALTY;
-    let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
-    escapePotency *= 1 + escapeModifier * BINDING_MODIFIER;
-    escapePotency *= assistModifier;
-    escapePotency = Math.min(value, Math.ceil(escapePotency));
-    return escapePotency;
 }
 
 export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iMoveResult {

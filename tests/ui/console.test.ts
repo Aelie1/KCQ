@@ -8,7 +8,7 @@ import { encounterList } from "../../src/content/content";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { thresholds } from "../../src/engine/protected/helpers";
+import { thresholds } from "../../src/engine/protected/mechanics";
 import { helpless, stunned } from "../../src/engine/protected/statuses";
 import type { Engine, GameEvent, GameState, Intention } from "../../src/engine/public/types";
 import {

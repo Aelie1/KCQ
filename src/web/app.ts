@@ -1,8 +1,5 @@
 import { runBattleController, type BattleUI } from "../console/controller";
-import { characterList } from "../content/content";
-import type { EncounterDef } from "../engine/protected/definitions";
-import { createEngine } from "../engine/public/engine";
-import type { Engine, GameEvent } from "../engine/public/types";
+import type { EncounterId, Engine, GameEvent } from "../engine/public/types";
 import {
     createBattleTelemetryObserver,
     disabledTelemetry,
@@ -16,27 +13,29 @@ export interface PreparedBattle {
     loadEvents: GameEvent[];
 }
 
-export function createBattle(encounter: EncounterDef): PreparedBattle {
-    const engine = createEngine();
-    const loadEvents = characterList.map((character) =>
-        engine.loadCharacter(character.id),
+export function createBattle(engine: Engine, encounterId: EncounterId): PreparedBattle {
+
+    const loadEvents = engine.listCharacters().map(id =>
+        engine.loadCharacter(id)
     );
-    loadEvents.push(engine.loadEncounter(encounter.id));
+
+    loadEvents.push(engine.loadEncounter(encounterId));
 
     return {
         engine,
-        encounterId: encounter.id,
+        encounterId,
         loadEvents,
     };
 }
 
 export async function startBattle(
-    encounter: EncounterDef,
+    engine: Engine,
+    encounter: EncounterId,
     ui: BattleUI,
     telemetry: GameplayTelemetry = disabledTelemetry,
     release = "",
 ): Promise<void> {
-    const battle = createBattle(encounter);
+    const battle = createBattle(engine, encounter);
     const observer = createBattleTelemetryObserver({
         telemetry,
         replayId: crypto.randomUUID(),

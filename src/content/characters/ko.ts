@@ -1,5 +1,6 @@
 import { BindingDef, CharacterDef, EMPOWERMENT_BUFF, MoveDef, PassiveDef } from "../../engine/protected/definitions";
-import { basicDamageEffect, basicPlayerAccuracy, findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, basicPlayerAccuracy } from "../../engine/protected/mechanics";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 
 const TELEKINESIS_DAMAGE = 30;

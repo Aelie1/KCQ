@@ -3,7 +3,7 @@ import { evaluateResult, isValidTarget } from "../../src/engine/private/combat";
 import { effectivenessRange } from "../../src/engine/private/constants";
 import type { EncounterDef, MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { thresholds } from "../../src/engine/protected/helpers";
+import { thresholds } from "../../src/engine/protected/mechanics";
 import { mixSeed, Random } from "../../src/engine/protected/random";
 import { GameStatus } from "../../src/engine/protected/status";
 import type {
@@ -12,8 +12,8 @@ import type {
     iTargetInfo,
 } from "../../src/engine/protected/types";
 import type { AccuracyProfile, Engine, MoveEvent } from "../../src/engine/public/types";
-import { resolvedEvents, resultDetails } from "../helpers/events";
 import { actionView } from "../helpers/actionView";
+import { resolvedEvents, resultDetails } from "../helpers/events";
 import {
     makeBinding,
     makeBindingDef,

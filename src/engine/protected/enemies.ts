@@ -1,5 +1,6 @@
 import type { BindingDef } from "./definitions";
-import { findBinding, thresholds } from "./helpers";
+import { findBinding } from "./helpers";
+import { thresholds } from "./mechanics";
 import { Random } from "./random";
 import { GameStatus } from "./status";
 import type { iCharacter, iEntity } from "./types";

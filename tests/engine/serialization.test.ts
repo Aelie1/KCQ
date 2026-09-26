@@ -3,7 +3,7 @@ import { ko } from "../../src/content/characters/ko";
 import { serializeGameState } from "../../src/engine/private/serialize";
 import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { thresholds } from "../../src/engine/protected/helpers";
+import { thresholds } from "../../src/engine/protected/mechanics";
 import { GameStatus } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEntity, iGameState } from "../../src/engine/protected/types";

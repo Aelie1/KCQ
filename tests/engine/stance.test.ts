@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { thresholds } from "../../src/engine/protected/helpers";
+import { thresholds } from "../../src/engine/protected/mechanics";
 import { immobilized, vibrating } from "../../src/engine/protected/statuses";
-import { resolvedEvents, resultDetails } from "../helpers/events";
 import { actionView } from "../helpers/actionView";
+import { resolvedEvents, resultDetails } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove, setupBoundEngine } from "../helpers/helpers";
 
 describe("stance toggling", () => {

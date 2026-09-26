@@ -1,6 +1,7 @@
 import { ActionType, FailureReason, ModifierId, ModifierSet, MoveType } from "../public/types";
 import { FlagId, StatusDef, StatusLevelDef } from "./definitions";
-import { getBindingLevel, isCharacter } from "./helpers";
+import { isCharacter } from "./helpers";
+import { getBindingLevel } from "./mechanics";
 import { iBuff, iEntity, iStatus } from "./types";
 
 export class GameStatus {

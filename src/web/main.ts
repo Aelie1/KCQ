@@ -7,8 +7,8 @@ import {
 import type { HighlightTarget, StyledLine, StyledText } from "../console/presentation";
 import { playActionGroups, PRESENTATION_TIMING } from "../console/presentation";
 import { renderStyledScreen, type ScreenModel } from "../console/render";
-import { encounterList } from "../content/content";
-import type { EncounterDef } from "../engine/protected/definitions";
+import { createEngine } from "../engine/public/engine";
+import { EncounterId } from "../engine/public/types";
 import { startBattle } from "./app";
 import { gameplayTelemetry } from "./posthog";
 import {
@@ -255,7 +255,7 @@ function requiredElement<T extends HTMLElement>(id: string): T {
     return element as T;
 }
 
-function showEncounterSelector(): Promise<EncounterDef> {
+function showEncounterSelector(list: EncounterId[]): Promise<EncounterId> {
     screenContainer.setAttribute("aria-label", "Encounter selector");
     screenElement.textContent = "Choose encounter:";
     battleLogElement.textContent = "";
@@ -265,8 +265,8 @@ function showEncounterSelector(): Promise<EncounterDef> {
     statusElement.textContent = "";
     choicesElement.replaceChildren();
 
-    return new Promise<EncounterDef>((resolve) => {
-        const selectEncounter = (encounter: EncounterDef): void => {
+    return new Promise<EncounterId>((resolve) => {
+        const selectEncounter = (encounter: EncounterId): void => {
             document.removeEventListener("keydown", handleKeyDown);
             for (const candidate of choicesElement.querySelectorAll("button")) {
                 candidate.disabled = true;
@@ -275,7 +275,7 @@ function showEncounterSelector(): Promise<EncounterDef> {
         };
         const handleKeyDown = (event: KeyboardEvent): void => {
             if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
-            const index = encounterList.findIndex((_, candidateIndex) =>
+            const index = list.findIndex((_, candidateIndex) =>
                 browserChoiceShortcut({
                     number: candidateIndex + 1,
                     label: "",
@@ -283,19 +283,19 @@ function showEncounterSelector(): Promise<EncounterDef> {
             );
             if (index < 0) return;
             event.preventDefault();
-            selectEncounter(encounterList[index]);
+            selectEncounter(list[index]);
         };
 
         document.addEventListener("keydown", handleKeyDown);
-        encounterList.forEach((encounter, index) => {
+        list.forEach((encounter, index) => {
             const shortcut = browserChoiceShortcut({
                 number: index + 1,
-                label: encounter.id,
+                label: encounter,
             });
             const button = document.createElement("button");
             button.type = "button";
-            button.textContent = `[${shortcut}] ${encounter.id}`;
-            button.dataset.encounter = encounter.id;
+            button.textContent = `[${shortcut}] ${encounter}`;
+            button.dataset.encounter = encounter;
             button.addEventListener("click", () => selectEncounter(encounter), { once: true });
             choicesElement.append(button);
         });
@@ -303,9 +303,10 @@ function showEncounterSelector(): Promise<EncounterDef> {
 }
 
 async function start(): Promise<void> {
+    const engine = createEngine();
     while (true) {
-        const encounter = await showEncounterSelector();
-        await startBattle(encounter, new BrowserBattleUI(), gameplayTelemetry, __KCQ_RELEASE_TAG__);
+        const encounter = await showEncounterSelector(engine.listEncounters());
+        await startBattle(engine, encounter, new BrowserBattleUI(), gameplayTelemetry, __KCQ_RELEASE_TAG__);
     }
 }
 

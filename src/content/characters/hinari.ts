@@ -1,6 +1,6 @@
-import { getEscapePotency } from "../../engine/private/combat";
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
-import { basicDamageEffect, basicPlayerAccuracy, isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { isCharacter, isEnemy } from "../../engine/protected/helpers";
+import { basicDamageEffect, basicPlayerAccuracy, getEscapePotency } from "../../engine/protected/mechanics";
 import { hobbled } from "../../engine/protected/statuses";
 import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";

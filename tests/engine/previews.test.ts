@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { basicBindingEffect, basicDamageEffect } from "../../src/engine/protected/helpers";
+import { basicBindingEffect, basicDamageEffect } from "../../src/engine/protected/mechanics";
 import type { iTargetInfo } from "../../src/engine/protected/types";
 import type { Engine, ValidTarget } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";

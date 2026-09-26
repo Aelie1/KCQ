@@ -1,5 +1,5 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
-import { getBindingLevel } from "../protected/helpers";
+import { getBindingLevel } from "../protected/mechanics";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMoveListModifier, iStatus, iTrap } from "../protected/types";
 import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, MoveListModifier, PreviewInfo, Status, TargetInfo, Trap } from "../public/types";

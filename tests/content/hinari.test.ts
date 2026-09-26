@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { hinari } from "../../src/content/characters/hinari";
-import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
 import { latexLegs } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { isCharacter, thresholds } from "../../src/engine/protected/helpers";
+import { isCharacter } from "../../src/engine/protected/helpers";
+import { thresholds } from "../../src/engine/protected/mechanics";
 import { s } from "../../src/engine/protected/status";
 import { immobilized } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type { ActionInfo, ActionSuccess, DamageEvent, Engine } from "../../src/engine/public/types";
+import { actionView } from "../helpers/actionView";
 import {
     bindingState,
     buffState,
@@ -21,7 +23,6 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/actionView";
 
 const rope = makeBehavioralBinding("rope");
 const tape = makeBehavioralBinding("tape");

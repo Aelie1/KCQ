@@ -1,5 +1,5 @@
 import { MoveDef } from "../protected/definitions";
-import { getMoves } from "../protected/helpers";
+import { getMoves } from "../protected/mechanics";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iCharacter, iGameState } from "../protected/types";
 import { ActionInfo, ActionView, EscapeInfo, FailureReason, PreviewProfile, StanceInfo } from "../public/types";

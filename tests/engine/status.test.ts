@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { BindingDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine } from "../../src/engine/protected/engine";
-import { thresholds } from "../../src/engine/protected/helpers";
+import { thresholds } from "../../src/engine/protected/mechanics";
 import { bound, helpless, immobilized, incapacitated, stunned } from "../../src/engine/protected/statuses";
 import { actionView } from "../helpers/actionView";
 import { expectMoveRejection, makeBindingDef, makeCharacterDef, makeMove, setupBoundEngine } from "../helpers/helpers";
