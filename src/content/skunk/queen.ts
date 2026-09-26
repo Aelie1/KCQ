@@ -18,6 +18,8 @@ const COLLAR_DAMAGE = 50;
 
 const PERFUME_DURATION = 4;
 const PERFUME_HEAL_RATIO = 0.10;
+const DEFENSE_BUFF = "defensePerfume";
+const ESCAPE_BUFF = "escapePerfume";
 
 const WAVE_RATIOS = [0.8, 0.6, 0.4, 0.2];
 const WAVE_SUMMONS: {
@@ -263,7 +265,7 @@ const skunkPerfume: MoveDef = {
         switch (type) {
             case 0:  //Defense perfume
                 const defBuff = {
-                    id: "defensePerfume",
+                    id: DEFENSE_BUFF,
                     active: false,
                     modifiers: { defense: -2 },
                     duration: PERFUME_DURATION,
@@ -283,7 +285,7 @@ const skunkPerfume: MoveDef = {
                 break;
             case 1:  //Escape perfume
                 const escBuff = {
-                    id: "escapePerfume",
+                    id: ESCAPE_BUFF,
                     active: false,
                     modifiers: { escape: -2 },
                     duration: PERFUME_DURATION,

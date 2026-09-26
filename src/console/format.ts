@@ -109,9 +109,11 @@ export function formatIntention(intention: Intention, width?: number): string[] 
     const lines = [`  Intent: ${intention.move}`];
 
     for (const target of intention.targets) {
-        const effects = formatEffects(target.effects).join(", ");
         const prefix = `    ${target.target.padEnd(12)} ${target.band.toUpperCase().padEnd(6)}`;
-        lines.push(...formatIntentionLine(`${prefix} `, effects, width));
+        lines.push(prefix);
+        for (const effect of formatEffects(target.effects, true)) {
+            lines.push(...formatIntentionLine("      + ", effect, width));
+        }
     }
 
     for (const effect of formatEffects(intention.effects, true)) {

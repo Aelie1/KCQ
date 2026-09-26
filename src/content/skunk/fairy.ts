@@ -197,7 +197,7 @@ const empoweringMagic: MoveDef = {
         }
 
         const buff = {
-            id: "empoweringMagic",
+            id: move.definition.id,
             duration: EMPOWERING_MAGIC_DURATION,
             modifiers: { potency: EMPOWERING_MAGIC_POTENCY },
             active: false,
@@ -264,7 +264,7 @@ const barrierMagic: MoveDef = {
         const duration = durationByBand[targets[0].band];
 
         const buff = {
-            id: "barrierMagic",
+            id: move.definition.id,
             duration: duration,
             active: false,
             modifyDamage: barrierCallback

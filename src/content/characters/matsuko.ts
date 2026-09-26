@@ -16,8 +16,10 @@ const WHITE_FLAME_DAMAGE = 30;
 const PHOENIX_KICK_DAMAGE = 30;
 
 const IMMOLATION_DAMAGE = 75;
+const IMMOLATION_BUFF = "burnout";
 
-const OBEY_SERVITUDE_DURATION = 2;
+const OBEY_BUFF = "servitude";
+const OBEY_BUFF_DURATION = 2;
 const OBEY_COMPULSION_COOLDOWN = 3;
 
 const STOP_COMPULSION_COOLDOWN = 5;
@@ -145,7 +147,7 @@ const immolation: MoveDef = {
             });
         }
         const burnoutBuff: iBuff = {
-            id: "burnout",
+            id: IMMOLATION_BUFF,
             active: true,
         }
 
@@ -174,8 +176,8 @@ const obey: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
 
         const servitudeBuff: iBuff = {
-            id: "servitude",
-            duration: OBEY_SERVITUDE_DURATION,
+            id: OBEY_BUFF,
+            duration: OBEY_BUFF_DURATION,
             active: true,
             statuses: [s(servitude, 1)]
         }

@@ -122,27 +122,49 @@ async function runScriptedConsole(
 }
 
 describe("console formatting", () => {
-    it("formats intentions with target-attached and top-level effects", () => {
+    it("formats each target's effects beneath that target and keeps move-wide effects last", () => {
         expect(formatIntention({
             move: "royalMist",
-            targets: [{ target: "ko", band: "graze", effects: [] }],
+            targets: [
+                {
+                    target: "ko",
+                    band: "crit",
+                    effects: [{ type: "buff", target: "ko", buff: "latexMist", operation: "add" }],
+                },
+                { target: "matsuko", band: "hit", effects: [] },
+                {
+                    target: "hinari",
+                    band: "miss",
+                    effects: [{ type: "buff", target: "hinari", buff: "latexMist", operation: "add" }],
+                },
+            ],
             effects: [{ type: "buff", target: "queen", buff: "puddle", operation: "add" }],
         })).toEqual([
             "  Intent: royalMist",
-            "    ko           GRAZE ",
+            "    ko           CRIT  ",
+            "      + ko latexMist added",
+            "    matsuko      HIT   ",
+            "    hinari       MISS  ",
+            "      + hinari latexMist added",
             "    + queen puddle added",
         ]);
     });
 
-    it("wraps long intention effects beneath the effect column without losing content", () => {
-        const lines = formatIntention(longIntention, 59);
-        const effectColumn = lines[1].indexOf("latexMist");
+    it("wraps target effects beneath the effect column without losing content", () => {
+        const width = 27;
+        const lines = formatIntention(longIntention, width);
+        const effectLines = lines.slice(2);
+        const effectColumn = "      + ".length;
 
         expect(lines.length).toBeGreaterThan(2);
-        expect(lines[1]).toContain("ko           CRIT");
-        for (const continuation of lines.slice(2)) {
-            expect(continuation.slice(0, effectColumn)).toBe(" ".repeat(effectColumn));
-            expect(continuation).not.toContain("ko           CRIT");
+        expect(lines[1]).toBe("    ko           CRIT  ");
+        expect(effectLines[0]).toMatch(/^      \+ /);
+        expect(effectLines.some((line) => line.startsWith(" ".repeat(effectColumn)) && !line.startsWith("      + ")))
+            .toBe(true);
+        for (const line of effectLines) {
+            expect(line.length).toBeLessThanOrEqual(width);
+            expect(line.slice(0, effectColumn)).toMatch(/^(?:      \+ | {8})$/);
+            expect(line).not.toContain("ko           CRIT");
         }
         for (const effect of ["latexMist", "latexTorso", "latexHead", "latexArms", "latexLegs"] as const) {
             expect(lines.join("\n")).toContain(effect);
@@ -340,9 +362,9 @@ describe("console formatting", () => {
         expect(lines.map((line) => line.length)).toEqual(Array(36).fill(120));
         expect(browserLayout).toContain("PARTY");
         expect(browserLayout).toContain("ACTIONS / TARGETING");
-        expect(browserLayout).toContain("skunkette7");
+        expect(browserLayout).toContain("skunkette6");
         expect(browserLayout).not.toContain("External log marker");
-        expect(consoleLayout).not.toContain("skunkette7");
+        expect(consoleLayout).not.toContain("skunkette6");
         expect(consoleLayout).toContain("External log marker");
     });
 
@@ -932,7 +954,7 @@ describe("console formatting", () => {
             "attacker1 — Miss: 10%  Graze: 15% (3–7)  Hit: 65% (10–13)  Crit: 10% (19–25) | adds burnout",
         );
         expect(targetScreen).toContain("[1] Confirm");
-        expect(targetScreen).toContain("[~] Back");
+        expect(targetScreen).toContain("[=] Back");
     });
 
     it("only offers valid entries from a move's published targets", async () => {
@@ -997,7 +1019,7 @@ describe("console formatting", () => {
 
         const rendered = await runScriptedConsole(
             engine,
-            ["1", "8", "~", "~", "3"],
+            ["1", "8", "=", "=", "3"],
             events,
         );
 
@@ -1078,7 +1100,7 @@ describe("console formatting", () => {
 
         const rendered = await runScriptedConsole(
             engine,
-            ["1", "8", "~", "~", "4"],
+            ["1", "8", "=", "=", "4"],
             events,
         );
         const actionScreen = rendered.split("\x1b[2J\x1b[H")
@@ -1175,7 +1197,7 @@ describe("console formatting", () => {
 
         const rendered = await runScriptedConsole(
             engine,
-            ["1", "8", "~", "~", "3"],
+            ["1", "8", "=", "=", "3"],
         );
 
         expect(rendered).toContain("[1] hero - latexArms");

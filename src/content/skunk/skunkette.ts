@@ -6,7 +6,7 @@ import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
-import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
+import { latexArms, latexHead, latexLegs, latexTorso, SKUNKED_BUFF } from "./latex";
 
 const SKUNKETTE_HP = 200;
 const SKUNKETTE_DEF = 0;
@@ -14,6 +14,7 @@ const SKUNKETTE_DEF = 0;
 const SPRAY_DAMAGE = 30;
 
 const POUNCE_COOLDOWN = 2;
+export const POUNCE_BUFF = "pounce";
 
 const MIST_DAMAGE = 10;
 const MIST_SPREAD = 5;
@@ -21,6 +22,7 @@ const MIST_SPREAD = 5;
 const RESISTANCE_HP_THRESHOLD = 0.4;
 const RESISTANCE_POTENCY = -3;
 const RESISTANCE_DEFENSE = -1;
+const RESISTANCE_BUFF = "resistance";
 
 export const skunkette: EnemyDef = {
     id: "skunkette",
@@ -34,7 +36,7 @@ export const skunkette: EnemyDef = {
 
         //1) Spray an existing pounced character
         {
-            const buff = findBuff(actor, "pounce");
+            const buff = findBuff(actor, POUNCE_BUFF);
             if (buff && buff.linkedEntity) {
                 const target = findCharacter(state, buff.linkedEntity);
                 if (target) {
@@ -57,7 +59,7 @@ export const skunkette: EnemyDef = {
             if ((actor.cooldowns['pounce'] ?? 0) === 0) {
                 const validCharacters: iEntity[] = [];
                 for (const target of validTargets) {
-                    const cBuff = findBuff(target, "pounce");
+                    const cBuff = findBuff(target, POUNCE_BUFF);
                     if (!cBuff) {
                         validCharacters.push(target);
                     }
@@ -121,10 +123,10 @@ export const skunkette: EnemyDef = {
     onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
         const effects: iEffect[] = [];
         if (target.currHp / target.maxHp < RESISTANCE_HP_THRESHOLD) {
-            const resistBuff = findBuff(target, "resistance");
+            const resistBuff = findBuff(target, RESISTANCE_BUFF);
             if (!resistBuff) {
                 const tBuff = {
-                    id: "resistance",
+                    id: RESISTANCE_BUFF,
                     active: true,
                     modifiers: {
                         potency: RESISTANCE_POTENCY,
@@ -140,7 +142,7 @@ export const skunkette: EnemyDef = {
             }
         }
 
-        const pounceBuff = findBuff(target, "pounce");
+        const pounceBuff = findBuff(target, POUNCE_BUFF);
         if (pounceBuff && pounceBuff.linkedEntity) {
             const newLevel = (pounceBuff.modifiers?.hit ?? 1) / 2 - 1;
             if (newLevel === 0) {
@@ -168,7 +170,7 @@ export const skunkette: EnemyDef = {
     },
     onDefeat(state: iGameState, target: iEnemy): iEffect[] {
         const effects: iEffect[] = [];
-        const pounceBuff = findBuff(target, "pounce");
+        const pounceBuff = findBuff(target, POUNCE_BUFF);
         if (pounceBuff) {
             effects.push({
                 type: "buff",
@@ -178,7 +180,7 @@ export const skunkette: EnemyDef = {
                 linked: true
             });
         }
-        const skunkedBuff = findBuff(target, "skunked");
+        const skunkedBuff = findBuff(target, SKUNKED_BUFF);
         if (skunkedBuff && skunkedBuff.linkedEntity) {
             effects.push({
                 type: "buff",
@@ -243,7 +245,7 @@ const pounce: MoveDef = {
         if (!isCharacter(target)) {
             return result;
         }
-        const buff = findBuff(target, "pounce");
+        const buff = findBuff(target, POUNCE_BUFF);
         if (buff) {
             //we can't pounce someone that's already pounced
             return result;
@@ -289,7 +291,7 @@ const latexMist: MoveDef = {
     targets: "all",
     baseDamage: MIST_DAMAGE,
     accuracy: {
-        miss: 70,
+        graze: 70,
         hit: 25,
         crit: 5
     },
@@ -305,24 +307,23 @@ const latexMist: MoveDef = {
         const modifiers: ModifierSet = { "spread": Math.ceil(move.roll * MIST_SPREAD) };
 
         const buff: iBuff = {
-            id: "latexMist",
+            id: move.definition.id,
             modifiers: modifiers,
             active: false,
             duration: 1
-        }
-        for (const character of getValidTargets(state.characters)) {
-            result.effects.push({
-                target: character,
-                type: "buff",
-                buff: buff,
-                operation: "add"
-            });
         }
 
         //2) Individual players get additional bondage based on their roll
         for (const target of targets) {
             const effects: iEffect[] = [];
             const character = target.target;
+            effects.push({
+                target: target.target,
+                type: "buff",
+                buff: buff,
+                operation: "add"
+            });
+
             if (target.band === "hit" && isCharacter(character) && character.bindings.length > 0) {
                 const index = effectivenessInt(target.effectiveness, 0, character.bindings.length - 1);
                 const binding = character.bindings[index];
@@ -373,7 +374,7 @@ const throwOff: MoveDef = {
             return result;
         }
 
-        const pounceBuff = findBuff(actor, "pounce");
+        const pounceBuff = findBuff(actor, POUNCE_BUFF);
         if (pounceBuff) {
             result.effects.push({
                 type: "buff",
@@ -424,7 +425,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
     }
 
     const cBuff: iBuff = {
-        id: "pounce",
+        id: POUNCE_BUFF,
         statuses: tStatus,
         modifiers: tModifiers,
         active: active,
@@ -433,7 +434,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
     }
 
     const eBuff: iBuff = {
-        id: "pounce",
+        id: POUNCE_BUFF,
         modifiers: aModifiers,
         active: active,
         linkedEntity: character.id

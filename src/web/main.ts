@@ -26,7 +26,7 @@ import {
 
 declare const __KCQ_RELEASE_TAG__: string;
 
-const SCREEN_WIDTH = 150;
+const SCREEN_WIDTH = 160;
 const SCREEN_HEIGHT = 49;
 
 const appTitle = browserTitle(__KCQ_RELEASE_TAG__);

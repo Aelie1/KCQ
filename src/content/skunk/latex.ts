@@ -3,9 +3,10 @@ import { findBinding, findBuff, thresholds } from "../../engine/protected/helper
 import { GameStatus, s } from "../../engine/protected/status";
 import { bound, breathless, gagged, hobbled, incapacitated, submissive, vibrating } from "../../engine/protected/statuses";
 import { iBinding, iBuff, iCharacter, iEffect, iGameState } from "../../engine/protected/types";
-import { skunkette } from "./skunkette";
+import { POUNCE_BUFF, skunkette } from "./skunkette";
 
 const COLLAR_BINDING = 10;
+export const SKUNKED_BUFF = "skunked";
 
 const SPREAD_MODIFIER = 0.1;
 const HARD_SPREAD_RATIO = 0.25;
@@ -39,20 +40,20 @@ export const latexBindings: BindingDef = {
 
         const skunketteName = "skunkette" + target.id[0].toUpperCase() + target.id.slice(1).toLowerCase();
         const cBuff: iBuff = {
-            id: "skunked",
+            id: SKUNKED_BUFF,
             statuses: [s(incapacitated, 1)],
             linkedEntity: skunketteName,
             active: true
         }
 
         const eBuff: iBuff = {
-            id: "skunked",
+            id: SKUNKED_BUFF,
             linkedEntity: target.id,
             active: true
         }
 
 
-        const pounceBuff = findBuff(target, "pounce");
+        const pounceBuff = findBuff(target, POUNCE_BUFF);
         if (pounceBuff) {
             effects.push({
                 type: "buff",

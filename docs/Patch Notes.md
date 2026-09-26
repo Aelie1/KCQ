@@ -1,5 +1,35 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.8.1 — 2026-09-25
+
+### Player Cooldowns
+
+* Added first-class cooldown support for player moves.
+* Moves can now apply cooldowns to themselves or to other related moves.
+* Moves on cooldown remain visible in the action list and display their remaining cooldown.
+* Player cooldown state is now exposed through the public game state and ticks alongside enemy cooldowns.
+* Matsuko's Compulsions now use the normal cooldown system instead of a hidden cooldown buff.
+* Using a Compulsion applies a 2-turn cooldown to the other Compulsions, while Obey, Stop, and Attack Me have self-cooldowns of 3, 5, and 2 respectively.
+
+### Ko-chan
+
+* Added **Power of Denial**, a single-use move that can completely remove a character's strongest binding or instantly defeat a non-boss enemy.
+* Normal Reflect now halves incoming binding, rounded down, while still retaliating for the original amount.
+* Fairy Reflect continues to completely negate the incoming binding.
+* Fairy Transformation and Fairy Empowerment now have 3-turn cooldowns.
+
+### Matsuko
+
+* Immolation damage increased from 60 to 75.
+* Immolation now removes half of each binding currently affecting Matsuko.
+* Fairy White Flame now attacks all enemies instead of receiving a Potency bonus.
+* Fairy Phoenix Kick now attacks twice instead of receiving a Hit bonus.
+
+### Engine / Presentation
+
+* Action menus now display the number of hits for multi-hit moves.
+* Cooldown failures now use the normal action-availability system instead of hiding affected moves.
+
 ## 0.8.0 — 2026-09-25
 
 ### Action Previews

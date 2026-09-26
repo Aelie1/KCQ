@@ -4,6 +4,7 @@ import {
     type BattleChoiceRequest,
     type BattleUI,
 } from "../../src/console/controller";
+import { playActionGroups } from "../../src/console/presentation";
 import { ko } from "../../src/content/characters/ko";
 import { encounterList } from "../../src/content/content";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
@@ -11,7 +12,6 @@ import { createCustomEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/helpers";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { Engine } from "../../src/engine/public/types";
-import { playActionGroups } from "../../src/console/presentation";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -165,7 +165,7 @@ describe("shared battle controller", () => {
             expect.stringContaining("[8] Escape / assist"),
             expect.stringContaining("[9] Change stance"),
             "[0] End turn",
-            "[~] Back",
+            "[=] Back",
         ]));
         expect(requests[1].choices.map((choice) => choice.shortcut ?? choice.kind))
             .toEqual(["1", "2", "3", "4", "5", "6", "7", "q", "w", "e", "r",
@@ -175,7 +175,7 @@ describe("shared battle controller", () => {
         expect(targetLines).toEqual(expect.arrayContaining([
             expect.stringContaining("[9] foe9"),
             expect.stringContaining("[q] foe10"),
-            "[~] Back",
+            "[=] Back",
         ]));
     });
 

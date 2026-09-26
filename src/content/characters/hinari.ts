@@ -13,6 +13,7 @@ const STORE_REMOVE_MODIFIER = 2;
 
 const RELEASE_PLAYER_AMOUNT = 50;
 const RELEASE_ENEMY_AMOUNT = 25;
+const RELEASE_BUFF = "subspaceClutter";
 
 const ROCKFALL_DAMAGE = 10;
 
@@ -151,7 +152,7 @@ const brace: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
 
         const buff: iBuff = {
-            id: "brace",
+            id: move.definition.id,
             active: true,
             duration: 1,
             modifyBinding: braceCallback
@@ -202,7 +203,7 @@ const release: MoveDef = {
         for (const target of targets) {
             if (isEnemy(target.target)) {
                 const buff: iBuff = {
-                    id: "subspaceClutter",
+                    id: RELEASE_BUFF,
                     duration: 2,
                     active: true,
                     modifiers: {

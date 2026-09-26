@@ -36,11 +36,11 @@ describe("web battle view", () => {
         expect(result.choices.map((choice) => choice.number)).toEqual([7, 11]);
         expect(result.choices.map(browserChoiceLabel)).toEqual(["throwOff", "Back"]);
         expect(result.endTurn?.number).toBe(10);
-        expect(result.choices.map(browserChoiceShortcut)).toEqual(["7", "~"]);
+        expect(result.choices.map(browserChoiceShortcut)).toEqual(["7", "="]);
         expect(result.endTurn && browserChoiceShortcut(result.endTurn)).toBe("0");
         expect(browserChoiceShortcut(choices[4])).toBe("-");
         expect(browserChoiceForKey("7", choices)).toBe(7);
-        expect(browserChoiceForKey("~", choices)).toBe(11);
+        expect(browserChoiceForKey("=", choices)).toBe(11);
         expect(browserChoiceForKey("0", choices)).toBe(10);
         expect(browserChoiceForKey("8", choices)).toBeUndefined();
         expect(browserChoiceForKey("e", choices)).toBeUndefined();

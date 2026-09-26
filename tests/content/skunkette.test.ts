@@ -3,6 +3,7 @@ import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "../../
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { createCustomEngine } from "../../src/engine/protected/engine";
 import type { ActionSuccess, LeafEvent } from "../../src/engine/public/types";
+import { actionView } from "../helpers/actionView";
 import {
     bindingState,
     buffState,
@@ -14,7 +15,6 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/actionView";
 
 const POUNCE_ID = "pounce";
 const SKUNKED_ID = "skunked";
@@ -543,7 +543,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(bindingState(engine, latexLegs.id)?.value).toBeGreaterThan(0);
     });
 
-    it("uses independent target rolls and one shared spread modifier for Latex Mist", () => {
+    it("gives Latex Mist on graze and adds bondage only on stronger hits", () => {
         const prepare = makeBehavioralMove("prepare-mist", "mouth", {
             targetSide: "none",
             targets: 0,
@@ -582,7 +582,7 @@ describe("Skunkette behavior through GameEngine", () => {
         const preview = enemyState(engine, "skunkette1").intentions[0];
         expect(preview?.move).toBe(LATEX_MIST_ID);
         expect(preview?.targets.map(({ target, band: result }) => ({ target, result }))).toEqual([
-            { target: "first", result: "miss" },
+            { target: "first", result: "graze" },
             { target: "second", result: "hit" },
         ]);
 
@@ -647,14 +647,14 @@ describe("Skunkette behavior through GameEngine", () => {
             {
                 type: "useMove", actor: "skunkette1", move: LATEX_MIST_ID,
                 targets: [{
-                    target: "hero", result: "crit", effects: existingBindings.map((binding) => ({
+                    target: "hero", result: "crit", effects: [{ type: "buffAdded", target: "hero", buff: LATEX_MIST_ID }, ...existingBindings.map((binding) => ({
                         type: "bondageChanged" as const,
                         target: "hero",
                         binding: binding.id,
                         amount: 10,
-                    }))
+                    }))]
                 }],
-                effects: [{ type: "buffAdded", target: "hero", buff: LATEX_MIST_ID }],
+                effects: [],
             },
             { type: "changePhase", phase: "player", effects: [] },
         ]);

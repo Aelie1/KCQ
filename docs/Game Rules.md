@@ -24,7 +24,7 @@ Ending the player phase performs the following sequence:
 1. Binding end-of-turn effects tick.
 2. Phase changes to Enemy.
 3. Enemies execute their committed intentions.
-4. Enemy cooldowns tick.
+4. Cooldowns tick.
 5. Buff durations tick.
 6. Player action states and stances reset.
 7. Enemies generate intentions for the next round.

@@ -3,8 +3,8 @@
 **Last updated:** 2026-09-25
 **Status:** Draft — intended for periodic refresh as the project changes
 **Repository:** `Aelie1/KCQ`
-**Current repository baseline:** `master`, 0.8.0 release candidate
-**Current public release:** `0.8.0` (2026-09-25)
+**Current repository baseline:** `master`, 0.8.1 release candidate
+**Current public release:** `0.8.1` (2026-09-25)
 
 This document describes **where KCQ is now, what has been established, and what direction the project is taking**.
 
@@ -150,9 +150,9 @@ The first public version was:
 
 The current release is:
 
-**0.8.0 — 2026-09-25**
+**0.8.1 — 2026-09-25**
 
-0.8.0 is primarily an engine/event-model milestone. It replaces the old flat combat-event stream with explicit causal ownership and updates the public presentation and downstream consumers to use that structure.
+0.8.1 is a mechanics and character-balance follow-up to the 0.8.0 event-model release. It introduces first-class player move cooldowns and applies them to existing character mechanics, while also making another focused pass over Ko-chan and Matsuko's kits.
 
 The browser UI currently provides:
 
@@ -313,22 +313,17 @@ Basic does not use most of the characters' kits.
 
 # 11. Recent Balance Changes
 
-The current 0.7.3 balance patch includes several significant adjustments:
+The 0.8.1 balance pass makes several additional changes to the current character kits:
 
-* Fairy Empowerment can be retained while using ordinary moves.
-* Normal Reflect retaliates but no longer negates incoming binding.
-* Fairy Reflect retains the binding-negation version.
-* Matsuko's Stop cooldown increased to 5 turns.
-* Hinari's Store now scales with binding severity.
-* Store is constrained by available Subspace.
-* Store retains a fixed 25-Subspace cost, with overflow applied to Hinari.
-* Hinari's offensive Release became a debuff rather than a heavy-damage attack.
-* Friendly Release scales with Subspace released.
-* Escape potency cannot exceed remaining binding.
-* Escape spread uses the amount actually removed.
-* an escape/Standing edge case that could leave no valid follow-up was fixed.
+* Ko-chan gains Power of Denial, a single-use ability capable of removing a character's strongest binding or defeating a non-boss enemy.
+* Normal Reflect now halves incoming binding while retaining its retaliation; Fairy Reflect still negates the binding completely.
+* Fairy Transformation and Fairy Empowerment now have cooldowns.
+* Matsuko's Compulsions now use the general move-cooldown system, including cross-cooldowns between related Compulsions.
+* Immolation damage increased from 60 to 75 and now removes half of Matsuko's current bindings.
+* Fairy White Flame is now an all-enemy attack rather than a Potency-enhanced attack.
+* Fairy Phoenix Kick now attacks twice rather than receiving a Hit bonus.
 
-These changes were aimed primarily at removing obvious dominant or pathological behaviors rather than producing final character balance.
+These remain targeted kit adjustments rather than a claim of final balance. Full-kit evaluation remains one of the primary goals of the planned Smart harness.
 
 ---
 
@@ -503,7 +498,9 @@ The project has now completed a cluster of work around:
 * causal console/browser combat presentation;
 * durable game-rule documentation.
 
-The immediate planned work is now:
+Following the 0.8.0 event-model milestone, 0.8.1 added general player cooldown support and another focused character-kit balance pass.
+
+The immediate planned work remains:
 
 **Smart harness → further balance**
 
