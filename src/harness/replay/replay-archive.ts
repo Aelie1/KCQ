@@ -16,8 +16,7 @@ import type {
     PostHogReplayClient,
     RemoteReplayMetadata,
 } from "./posthog-api";
-import type { PostHogReplayEventRow } from "./posthog-replay";
-import type { ImportedPostHogReplay } from "./posthog-replay";
+import type { ImportedPostHogReplay, PostHogReplayEventRow } from "./posthog-replay";
 import { ReleaseReplayRuntime } from "./release-replay-runtime";
 import { timestampMilliseconds } from "./replay-timestamp";
 
@@ -47,6 +46,7 @@ export interface ArchivedReplay {
     sessionId?: string;
     terminal?: ArchivedReplayTerminal;
     /** One-to-one with replay.steps, in exactly the same order. */
+    timingUnavailable?: boolean;
     stepTelemetry?: ArchivedReplayStepTelemetry[];
     replay: FightReplay;
 }
@@ -137,7 +137,7 @@ export async function syncPostHogReplays(
 
     for (const metadata of remote) {
         const existing = archived.get(metadata.replayId);
-        if (existing?.archive.terminal && hasCompleteArchiveMetadata(existing.archive)) {
+        if (existing?.archive.terminal && (existing.archive.timingUnavailable || hasCompleteArchiveMetadata(existing.archive))) {
             skippedCompleteArchives += 1;
             continue;
         }
@@ -540,7 +540,7 @@ function deriveArchiveSummary(archive: ArchiveSummarySource): DerivedArchiveSumm
     const wallElapsedMs = archive.endedAt === undefined
         ? undefined
         : timestampMilliseconds(archive.endedAt, "Archive endedAt")
-            - timestampMilliseconds(archive.startedAt, "Archive startedAt");
+        - timestampMilliseconds(archive.startedAt, "Archive startedAt");
     const afkMs = wallElapsedMs === undefined || archive.stepTelemetry === undefined
         ? undefined
         : interActionAfkMilliseconds(archive.stepTelemetry);
