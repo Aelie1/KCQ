@@ -73,6 +73,7 @@ export interface BindingRecoveryBreakdown {
 /** Tunable Smart-policy heuristic constants; neither is an engine rule. */
 export const RECOVERY_DEBT_CURVE_A = 1.5;
 export const BINDING_RECOVERY_WEIGHT = 0.75;
+export const FINISHER_PRESSURE_WEIGHT = 1;
 
 /** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
 export const expectedDamageScorer: SmartScorer = {
@@ -94,10 +95,31 @@ export const bindingRecoveryScorer: SmartScorer = {
     },
 };
 
+/** Rewards expected damage applied to enemies near defeat. This is a policy heuristic. */
+export const finisherPressureScorer: SmartScorer = {
+    id: "finisherPressure",
+    weight: FINISHER_PRESSURE_WEIGHT,
+    prepare(context) {
+        const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
+        return (candidate) => {
+            if (candidate.action.type !== "move") return 0;
+
+            let total = 0;
+            for (const enemy of livingEnemies) {
+                const damage = expectedDamageToEnemy(candidate, enemy.id);
+                if (damage <= 0) continue;
+                total += damage * Math.min(damage / enemy.currHp, 1);
+            }
+            return total;
+        };
+    },
+};
+
 /** Production scorer registration order. Later Smart cards can extend this list. */
 export const smartScorers: readonly SmartScorer[] = [
     expectedDamageScorer,
     bindingRecoveryScorer,
+    finisherPressureScorer,
 ];
 
 /**
@@ -516,6 +538,32 @@ function damageEffects(effects: readonly Effect[], enemyIds: ReadonlySet<string>
         if (effect.type === "damage" && enemyIds.has(effect.target)) {
             total += effect.amount;
         }
+    }
+    return total;
+}
+
+function expectedDamageToEnemy(candidate: SmartCandidate, enemyId: EntityId): number {
+    let total = damageEffectsToEnemy(candidate.effects, enemyId);
+
+    for (const target of candidate.targets) {
+        let perHit = damageEffectsToEnemy(target.effects, enemyId);
+        if (target.target === enemyId) {
+            for (const band of Object.values(target.damage ?? {})) {
+                if (band !== undefined) {
+                    perHit += (band.chance / 100) * ((band.min + band.max) / 2);
+                }
+            }
+        }
+        total += perHit * candidate.hits;
+    }
+
+    return total;
+}
+
+function damageEffectsToEnemy(effects: readonly Effect[], enemyId: EntityId): number {
+    let total = 0;
+    for (const effect of effects) {
+        if (effect.type === "damage" && effect.target === enemyId) total += effect.amount;
     }
     return total;
 }

@@ -19,6 +19,7 @@ import {
     bindingRecoveryScorer,
     evaluateSmartDecision,
     expectedDamageScorer,
+    finisherPressureScorer,
     generateSmartCandidates,
     smartScorers,
     smartPolicy,
@@ -297,12 +298,18 @@ describe("Smart 2 composable scoring", () => {
         expect(scores(decision)).toEqual([3, 3, 3]);
     });
 
-    it("registers expected damage and binding recovery in stable order", () => {
-        expect(smartScorers).toEqual([expectedDamageScorer, bindingRecoveryScorer]);
+    it("registers the production scorers in stable order", () => {
+        expect(smartScorers).toEqual([
+            expectedDamageScorer,
+            bindingRecoveryScorer,
+            finisherPressureScorer,
+        ]);
         expect(expectedDamageScorer.id).toBe("expectedDamage");
         expect(expectedDamageScorer.weight).toBe(1);
         expect(bindingRecoveryScorer.id).toBe("bindingRecovery");
         expect(bindingRecoveryScorer.weight).toBe(0.75);
+        expect(finisherPressureScorer.id).toBe("finisherPressure");
+        expect(finisherPressureScorer.weight).toBe(1);
     });
 });
 
@@ -317,13 +324,15 @@ describe("Smart 2 expected direct enemy damage", () => {
         })]);
         strike.move.hits = 2;
 
-        const decision = evaluateSmartDecision(context([view("hero", { moves: [strike] })]));
+        const decision = evaluateSmartDecision(
+            context([view("hero", { moves: [strike] })]),
+            [expectedDamageScorer],
+        );
 
         // Per hit: .25*0 + .50*10 + .25*30 = 12.5; two hits = 25.
         expect(scores(decision)).toEqual([25, 0]);
         expect(decision.candidates[0].components).toEqual({
             expectedDamage: { raw: 25, weight: 1, score: 25 },
-            bindingRecovery: { raw: 0, weight: 0.75, score: 0 },
         });
     });
 
@@ -336,7 +345,7 @@ describe("Smart 2 expected direct enemy damage", () => {
                     target("enemy-3", { damage: { hit: { chance: 100, min: 11, max: 11 } } }),
                 ])],
             }),
-        ]));
+        ]), [expectedDamageScorer]);
 
         expect(scores(decision)).toEqual([7, 13, 16, 0]);
         expect(decision.selected.action).toMatchObject({ targets: ["enemy-2", "enemy-3"] });
@@ -351,7 +360,7 @@ describe("Smart 2 expected direct enemy damage", () => {
                     target("enemy-3", { damage: { hit: { chance: 100, min: 7, max: 7 } } }),
                 ])],
             }),
-        ]));
+        ]), [expectedDamageScorer]);
 
         expect(decision.candidates[0].action).toMatchObject({ targets: [] });
         expect(scores(decision)).toEqual([10, 0]);
@@ -380,7 +389,7 @@ describe("Smart 2 expected direct enemy damage", () => {
                 ],
             }],
         });
-        const decision = evaluateSmartDecision(context([escapeView]));
+        const decision = evaluateSmartDecision(context([escapeView]), [expectedDamageScorer]);
 
         // Move-level 5 occurs once; target-level 2 occurs for each of 3 hits.
         expect(scores(decision)).toEqual([11, 4, 0]);
@@ -404,7 +413,7 @@ describe("Smart 2 expected direct enemy damage", () => {
                     effects: [{ type: "binding", target: "hero", binding: "rope", amount: -3 }],
                 }],
             }),
-        ]));
+        ]), [expectedDamageScorer]);
 
         expect(scores(decision)).toEqual([0, 0, 0]);
     });
@@ -452,7 +461,10 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.expectedDamage.weight === 1
             && candidate.components.bindingRecovery.raw === 0
             && candidate.components.bindingRecovery.weight === 0.75
-            && candidate.components.expectedDamage.score === candidate.total,
+            && typeof candidate.components.finisherPressure.raw === "number"
+            && candidate.components.finisherPressure.weight === 1
+            && candidate.total === candidate.components.expectedDamage.score
+                + candidate.components.finisherPressure.score,
         )).toBe(true);
         expect(smartPolicy.chooseAction(fixture)).toEqual(first.selected.action);
     });
@@ -479,7 +491,7 @@ describe("Smart 2 selection and integration", () => {
             ],
         })]);
 
-        const decision = evaluateSmartDecision(fixture);
+        const decision = evaluateSmartDecision(fixture, [expectedDamageScorer]);
 
         // These are the pre-refactor Smart 1 EVs: single, AoE, multihit, utility,
         // equal-scoring later candidate, and the final end-turn fallback.
@@ -544,8 +556,11 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.expectedDamage.weight === 1
                 && typeof candidate.components.bindingRecovery.raw === "number"
                 && candidate.components.bindingRecovery.weight === 0.75
+                && typeof candidate.components.finisherPressure.raw === "number"
+                && candidate.components.finisherPressure.weight === 1
                 && candidate.total === candidate.components.expectedDamage.score
-                    + candidate.components.bindingRecovery.score,
+                    + candidate.components.bindingRecovery.score
+                    + candidate.components.finisherPressure.score,
             )).toBe(true);
             expect(step.action).toEqual(decision.selected.action);
         }
