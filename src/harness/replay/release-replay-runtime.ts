@@ -3,7 +3,12 @@ import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import type { ImportedPostHogReplay, PostHogReplayEventRow } from "./posthog-replay";
+import {
+    enrichImportedReplayTelemetry,
+    parsePostHogReplayEvents,
+    type ImportedPostHogReplay,
+    type PostHogReplayEventRow,
+} from "./posthog-replay";
 
 interface RuntimeMarker {
     commit: string;
@@ -44,7 +49,7 @@ export class ReleaseReplayRuntime {
         if (!isImportedReplay(imported) || imported.release !== release) {
             throw new Error(`Replay runtime ${release} returned an invalid or mismatched replay.`);
         }
-        return imported;
+        return enrichImportedReplayTelemetry(imported, parsePostHogReplayEvents(rows));
     }
 
     async #runtime(release: string): Promise<string> {

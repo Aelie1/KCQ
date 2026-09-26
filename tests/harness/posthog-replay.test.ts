@@ -58,6 +58,12 @@ describe("PostHog CSV replay import", () => {
             terminal: "quit",
         });
         expect(imported.replay.steps.map((step) => step.action)).toEqual(fixture.actions);
+        expect(imported.startedAt).toBe("2026-09-21 12:00:00+00:00");
+        expect(imported.endedAt).toBe("2026-09-21 13:00:00+00:00");
+        expect(imported.stepTelemetry).toEqual([
+            { timestamp: "2026-09-21 12:00:01+00:00", source: "player" },
+            { timestamp: "2026-09-21 12:00:02+00:00", source: "automatic" },
+        ]);
         expect(imported.replay.steps).toHaveLength(2);
         expect(imported.replay.steps.filter((step) => step.action.type === "endTurn"))
             .toHaveLength(1);
@@ -123,6 +129,8 @@ describe("PostHog CSV replay import", () => {
         const valid = actionRow(fixture.rows, 1);
         const invalid: ExportRow = {
             ...valid,
+            timestamp: "2026-09-21 12:00:00.500+00:00",
+            source: "automatic",
             action: JSON.stringify({
                 type: "move",
                 actor: "missing-actor",
@@ -135,6 +143,10 @@ describe("PostHog CSV replay import", () => {
         const imported = importPostHogReplayCsv(toCsv(fixture.rows));
 
         expect(imported.replay.steps.map((step) => step.action)).toEqual(fixture.actions);
+        expect(imported.stepTelemetry[0]).toEqual({
+            timestamp: valid.timestamp,
+            source: "player",
+        });
     });
 
     it("deduplicates identical action sequence records", () => {
@@ -231,6 +243,42 @@ describe("PostHog CSV replay import", () => {
         if (last?.success) expect(last.state.turn.outcome).toBe("ongoing");
     });
 
+    it("does not invent an end timestamp for a replay without a terminal event", () => {
+        const fixture = makeFixture({ terminal: null });
+        const imported = importPostHogReplayCsv(toCsv(fixture.rows));
+
+        expect(imported).not.toHaveProperty("terminal");
+        expect(imported).not.toHaveProperty("endedAt");
+        expect(imported.stepTelemetry).toHaveLength(imported.replay.steps.length);
+    });
+
+    it("rejects malformed and out-of-order wall-clock timestamps", () => {
+        const malformed = makeFixture();
+        actionRow(malformed.rows, 1).timestamp = "not-a-timestamp";
+        expect(() => importPostHogReplayCsv(toCsv(malformed.rows)))
+            .toThrow(/invalid timestamp "not-a-timestamp"/u);
+
+        const beforeStart = makeFixture();
+        actionRow(beforeStart.rows, 1).timestamp = "2026-09-21 11:59:59+00:00";
+        expect(() => importPostHogReplayCsv(toCsv(beforeStart.rows)))
+            .toThrow("action timestamp at sequence 1 precedes battle start");
+
+        const decreasing = makeFixture();
+        actionRow(decreasing.rows, 2).timestamp = "2026-09-21 12:00:00.500+00:00";
+        expect(() => importPostHogReplayCsv(toCsv(decreasing.rows)))
+            .toThrow("action timestamp at sequence 2 precedes the previous action");
+
+        const terminalBeforeStart = makeFixture();
+        terminalBeforeStart.rows.at(-1)!.timestamp = "2026-09-21 11:59:59+00:00";
+        expect(() => importPostHogReplayCsv(toCsv(terminalBeforeStart.rows)))
+            .toThrow("terminal timestamp precedes battle start");
+
+        const afterTerminal = makeFixture();
+        afterTerminal.rows.at(-1)!.timestamp = "2026-09-21 12:00:01.500+00:00";
+        expect(() => importPostHogReplayCsv(toCsv(afterTerminal.rows)))
+            .toThrow("action timestamp at sequence 2 occurs after the terminal event");
+    });
+
     it("parses and validates battle_abandoned with an ongoing outcome", () => {
         const fixture = makeFixture({ terminal: "abandoned" });
         const imported = importPostHogReplayCsv(toCsv(fixture.rows));
@@ -285,7 +333,7 @@ interface FixtureOptions {
     seed?: number;
     prettyJson?: boolean;
     actions?: Array<{ source: "player" | "automatic"; action: PlayerAction }>;
-    terminal?: "finished" | "quit" | "abandoned";
+    terminal?: "finished" | "quit" | "abandoned" | null;
 }
 
 function makeFixture(options: FixtureOptions = {}): {
@@ -336,9 +384,12 @@ function makeFixture(options: FixtureOptions = {}): {
     });
 
     const finalState = compactStateDigest(engine.getGameState());
-    if ((options.terminal ?? "quit") === "finished") {
+    if (options.terminal === null) {
+        // Intentionally leave the replay provisional.
+    } else if ((options.terminal ?? "quit") === "finished") {
         rows.push({
             ...emptyRow(),
+            timestamp: "2026-09-21 13:00:00+00:00",
             event: "battle_finished",
             replay_id: REPLAY_ID,
             outcome: engine.getGameState().turn.outcome,
@@ -349,6 +400,7 @@ function makeFixture(options: FixtureOptions = {}): {
         const terminal = options.terminal ?? "quit";
         rows.push({
             ...emptyRow(),
+            timestamp: "2026-09-21 13:00:00+00:00",
             event: terminal === "abandoned" ? "battle_abandoned" : "battle_quit",
             replay_id: REPLAY_ID,
             action_count: `${recordedActions.length}.0`,

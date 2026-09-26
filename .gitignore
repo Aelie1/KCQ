@@ -6,6 +6,6 @@ harness-output
 performance/profiles*
 temp
 .env
-replays
+replays*
 .replay-runtimes/
 *.patch

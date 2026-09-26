@@ -11,6 +11,7 @@ import {
     type CompactStateDigest,
 } from "../../web/telemetry";
 import type { FightReplay, ReplayStep } from "../harness";
+import { timestampMilliseconds } from "./replay-timestamp";
 
 export const POSTHOG_REPLAY_COLUMNS = [
     "timestamp",
@@ -38,6 +39,7 @@ export type PostHogReplayEventRow = Record<PostHogReplayColumn, string>;
 
 export interface ParsedPostHogAction {
     sequence: number;
+    timestamp: string;
     source: "player" | "automatic";
     action: PlayerAction;
     success: boolean;
@@ -48,12 +50,14 @@ export interface ParsedPostHogAction {
 export type ParsedPostHogTerminal =
     | {
         type: "finished";
+        timestamp: string;
         outcome: Exclude<BattleState, "ongoing">;
         actionCount?: number;
         state?: CompactStateDigest;
     }
     | {
         type: "quit" | "abandoned";
+        timestamp: string;
         actionCount?: number;
         state?: CompactStateDigest;
     };
@@ -63,6 +67,7 @@ export interface ParsedPostHogReplay {
     release: string;
     encounter: string;
     seed: number;
+    startedAt: string;
     initialState: CompactStateDigest;
     actions: ParsedPostHogAction[];
     /** Alternate records for a sequence, retained until replay-chain validation. */
@@ -75,8 +80,16 @@ export interface ImportedPostHogReplay {
     release: string;
     encounter: string;
     seed: number;
+    startedAt: string;
+    stepTelemetry: ReplayStepTelemetry[];
+    endedAt?: string;
     replay: FightReplay;
     terminal?: ParsedPostHogTerminal["type"];
+}
+
+export interface ReplayStepTelemetry {
+    timestamp: string;
+    source: "player" | "automatic";
 }
 
 interface ReplayRecord {
@@ -161,6 +174,7 @@ function parseReplayRecords(
         throw replayError(replayId, `expected exactly one battle_started row; found ${starts.length}`);
     }
     const start = starts[0];
+    const startedAt = parseRecordTimestamp(start);
     const encounter = requiredValue(start, "encounter");
     const seed = parseInteger(requiredValue(start, "seed"), "seed", start.location);
     const initialState = parseDigest(requiredValue(start, "initial_state"), "initial_state", start.location);
@@ -168,6 +182,7 @@ function parseReplayRecords(
     const actionRecords = replayRecords
         .filter((record) => record.values.event === "battle_action")
         .map((record): ParsedPostHogAction => {
+            const timestamp = parseRecordTimestamp(record);
             const sequence = parseInteger(
                 requiredValue(record, "sequence"),
                 "sequence",
@@ -202,6 +217,7 @@ function parseReplayRecords(
             }
             return {
                 sequence,
+                timestamp,
                 source,
                 action,
                 success,
@@ -246,6 +262,7 @@ function parseReplayRecords(
         release: start.values.release,
         encounter,
         seed,
+        startedAt,
         initialState,
         actions,
         ...(actionCandidates.some((candidates) => candidates.length > 1)
@@ -324,11 +341,15 @@ function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogRepla
     }
 
     validateTerminal(parsed, engine.getGameState());
+    validateReplayTiming(parsed);
     return {
         replayId: parsed.replayId,
         release: parsed.release,
         encounter: parsed.encounter,
         seed: parsed.seed,
+        startedAt: parsed.startedAt,
+        stepTelemetry: parsed.actions.map(({ timestamp, source }) => ({ timestamp, source })),
+        ...(parsed.terminal === undefined ? {} : { endedAt: parsed.terminal.timestamp }),
         replay: {
             initialState,
             initialActions,
@@ -419,6 +440,7 @@ export function parseCsv(csv: string): string[][] {
 }
 
 function parseTerminal(record: ReplayRecord, replayId: string): ParsedPostHogTerminal {
+    const timestamp = parseRecordTimestamp(record);
     const type = record.values.event === "battle_finished"
         ? "finished"
         : record.values.event === "battle_quit"
@@ -443,6 +465,7 @@ function parseTerminal(record: ReplayRecord, replayId: string): ParsedPostHogTer
             : undefined;
         return {
             type,
+            timestamp,
             outcome,
             ...(actionCount === undefined ? {} : { actionCount }),
             ...(state === undefined ? {} : { state }),
@@ -454,9 +477,85 @@ function parseTerminal(record: ReplayRecord, replayId: string): ParsedPostHogTer
         : undefined;
     return {
         type,
+        timestamp,
         ...(actionCount === undefined ? {} : { actionCount }),
         ...(state === undefined ? {} : { state }),
     };
+}
+
+/** Add current telemetry metadata to a replay reconstructed by a historical engine runtime. */
+export function enrichImportedReplayTelemetry(
+    imported: ImportedPostHogReplay,
+    parsed: ParsedPostHogReplay,
+): ImportedPostHogReplay {
+    if (imported.replay.steps.length !== parsed.actions.length) {
+        throw replayError(parsed.replayId,
+            `telemetry has ${parsed.actions.length} actions, reconstructed replay has ${imported.replay.steps.length} steps`);
+    }
+    const groups = parsed.actionCandidates ?? parsed.actions.map((action) => [action]);
+    const actions = imported.replay.steps.map((step, index) => {
+        const matches = groups[index].filter((candidate) => {
+            if (!isDeepStrictEqual(candidate.action, step.action) || candidate.success !== step.success) {
+                return false;
+            }
+            if (!step.success) return candidate.failureReason === step.reason;
+            return candidate.stateAfter !== undefined
+                && isDeepStrictEqual(candidate.stateAfter, compactStateDigest(step.state));
+        });
+        if (matches.length === 0) {
+            throw replayError(parsed.replayId,
+                `could not align reconstructed step ${index + 1} with its battle_action row`);
+        }
+        return matches[0];
+    });
+    const selected = { ...parsed, actions };
+    validateReplayTiming(selected);
+    return {
+        ...imported,
+        startedAt: parsed.startedAt,
+        stepTelemetry: actions.map(({ timestamp, source }) => ({ timestamp, source })),
+        ...(parsed.terminal === undefined ? {} : { endedAt: parsed.terminal.timestamp }),
+    };
+}
+
+function validateReplayTiming(parsed: ParsedPostHogReplay): void {
+    const started = timestampMilliseconds(parsed.startedAt, `Replay ${parsed.replayId} battle_started`);
+    const ended = parsed.terminal === undefined
+        ? undefined
+        : timestampMilliseconds(parsed.terminal.timestamp,
+            `Replay ${parsed.replayId} ${terminalEventName(parsed.terminal.type)}`);
+    if (ended !== undefined && ended < started) {
+        throw replayError(parsed.replayId, "terminal timestamp precedes battle start");
+    }
+    let previous = started;
+    for (const action of parsed.actions) {
+        const current = timestampMilliseconds(action.timestamp,
+            `Replay ${parsed.replayId} battle_action sequence ${action.sequence}`);
+        if (current < started) {
+            throw replayError(parsed.replayId,
+                `action timestamp at sequence ${action.sequence} precedes battle start`);
+        }
+        if (current < previous) {
+            throw replayError(parsed.replayId,
+                `action timestamp at sequence ${action.sequence} precedes the previous action`);
+        }
+        if (ended !== undefined && current > ended) {
+            throw replayError(parsed.replayId,
+                `action timestamp at sequence ${action.sequence} occurs after the terminal event`);
+        }
+        previous = current;
+    }
+}
+
+function terminalEventName(type: ParsedPostHogTerminal["type"]): string {
+    return type === "finished" ? "battle_finished" : `battle_${type}`;
+}
+
+function parseRecordTimestamp(record: ReplayRecord): string {
+    const timestamp = record.values.timestamp;
+    if (!timestamp) throw new Error(`${record.location} is missing timestamp.`);
+    timestampMilliseconds(timestamp, record.location);
+    return timestamp;
 }
 
 function validateTerminal(parsed: ParsedPostHogReplay, finalView: GameState): void {

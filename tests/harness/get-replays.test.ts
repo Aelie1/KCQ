@@ -206,7 +206,7 @@ describe("PostHog replay archive sync", () => {
         const directory = await temporaryDirectory();
         await writeFile(
             join(directory, "filename-is-not-the-identity.json"),
-            JSON.stringify(makeArchive("complete", makeReplayRows("complete"), "quit")),
+            JSON.stringify(makeArchive("complete", makeReplayRows("complete", { terminal: "quit" }))),
         );
         await writeArchivedReplay(
             directory,
@@ -248,9 +248,11 @@ describe("PostHog replay archive sync", () => {
             startedAt: "2026-09-21T12:00:00.000Z",
             anonymousPlayerId: "anonymous-player",
             sessionId: "kcq-session",
+            stepTelemetry: [],
             replay: { steps: [] },
         });
         expect(addedArchive).not.toHaveProperty("terminal");
+        expect(addedArchive).not.toHaveProperty("endedAt");
 
         client.fetched.length = 0;
         const second = await syncPostHogReplays({ client, replaysDirectory: directory, now: () => RECENT_NOW });
@@ -267,6 +269,64 @@ describe("PostHog replay archive sync", () => {
         expect(client.fetched).toEqual(["provisional", "new-replay"]);
         expect((await readdir(directory)).filter((name) => name.endsWith(".json")))
             .toHaveLength(3);
+    });
+
+    it("backfills one completed legacy archive in place, then skips it", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "legacy-complete";
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }],
+            terminal: "quit",
+        });
+        const current = makeArchive(replayId, rows);
+        const { endedAt: _endedAt, stepTelemetry: _stepTelemetry, ...legacy } = current;
+        const filename = await writeArchivedReplay(directory, legacy);
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+
+        const first = await syncPostHogReplays({ client, replaysDirectory: directory });
+
+        expect(client.fetched).toEqual([replayId]);
+        expect(first.updated).toEqual([expect.objectContaining({ replayId, filename })]);
+        const [backfilled] = await readArchives(directory);
+        expect(backfilled.endedAt).toBe("2026-09-21T12:59:59.000Z");
+        expect(backfilled.stepTelemetry).toEqual([{
+            timestamp: "2026-09-21T12:00:01.000Z",
+            source: "player",
+        }]);
+
+        client.fetched.length = 0;
+        const second = await syncPostHogReplays({ client, replaysDirectory: directory });
+        expect(client.fetched).toEqual([]);
+        expect(second.updated).toEqual([]);
+        expect(second.unchanged).toBe(1);
+    });
+
+    it("skips a completed archive that already contains aligned timing metadata", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "timed-complete";
+        const rows = makeReplayRows(replayId, { terminal: "quit" });
+        await writeArchivedReplay(directory, makeArchive(replayId, rows));
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+
+        const result = await syncPostHogReplays({ client, replaysDirectory: directory });
+
+        expect(client.fetched).toEqual([]);
+        expect(result.unchanged).toBe(1);
+        expect(result.updated).toEqual([]);
+    });
+
+    it("rejects archive step telemetry that is not aligned with replay steps", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "misaligned-archive";
+        const rows = makeReplayRows(replayId, { actions: [{ type: "endTurn" }] });
+        const archive = makeArchive(replayId, rows);
+
+        await expect(writeArchivedReplay(directory, { ...archive, stepTelemetry: [] }))
+            .rejects.toThrow("stepTelemetry must have one entry per replay step in the same order");
+        await expect(writeArchivedReplay(directory, {
+            ...archive,
+            stepTelemetry: [{ timestamp: "2026-09-21T11:59:59.000Z", source: "player" }],
+        })).rejects.toThrow("stepTelemetry entry 1 precedes startedAt");
     });
 
     it.each(["finished", "quit", "abandoned"] as const)(
@@ -344,11 +404,11 @@ describe("PostHog replay archive sync", () => {
 
         const second = await syncPostHogReplays({ client, replaysDirectory: directory, now: () => RECENT_NOW });
         expect(second.updated).toEqual([]);
-        expect(second.unchangedProvisional).toEqual([{
+        expect(second.unchangedProvisional).toEqual([expect.objectContaining({
             replayId,
             encounter: "plains_1",
             actionCount: 1,
-        }]);
+        })]);
         expect((await stat(path)).mtimeMs).toBe(modifiedAfterUpdate);
         expect((await readArchives(directory))[0]).not.toHaveProperty("terminal");
     });
@@ -399,6 +459,7 @@ describe("PostHog replay archive sync", () => {
             encounter: "plains_1",
             seed: 12345,
             startedAt: "2026-09-21T12:00:00.000Z",
+            anonymousPlayerId: "a8ab0723-player",
             replay,
         };
 
@@ -411,10 +472,17 @@ describe("PostHog replay archive sync", () => {
             replayId: "abcdefgh-second",
         });
 
-        expect(first).toBe("2026-09-21_plains_1_abcdefgh.json");
-        expect(second).toBe("2026-09-21_plains_1_abcdefgh_2.json");
+        const withoutPlayer = await writeArchivedReplay(directory, {
+            ...common,
+            anonymousPlayerId: undefined,
+            replayId: "ijklmnop-third",
+        });
+
+        expect(first).toBe("2026-09-21_p-a8ab0723_plains_1_abcdefgh.json");
+        expect(second).toBe("2026-09-21_p-a8ab0723_plains_1_abcdefgh_2.json");
+        expect(withoutPlayer).toBe("2026-09-21_plains_1_ijklmnop.json");
         expect((await readArchives(directory)).map((archive) => archive.replayId).sort())
-            .toEqual(["abcdefgh-first", "abcdefgh-second"]);
+            .toEqual(["abcdefgh-first", "abcdefgh-second", "ijklmnop-third"]);
     });
 });
 
@@ -530,16 +598,19 @@ function makeArchive(
     terminalOverride?: ArchivedReplay["terminal"],
 ): ArchivedReplay {
     const imported = reconstructFightReplay(parsePostHogReplayEvents(rows));
+    const terminal = terminalOverride ?? imported.terminal;
     return {
         format: 1,
         replayId,
         release: imported.release,
         encounter: imported.encounter,
         seed: imported.seed,
-        startedAt: "2026-09-21T12:00:00.000Z",
+        startedAt: imported.startedAt,
+        ...(imported.endedAt ? { endedAt: imported.endedAt } : {}),
         anonymousPlayerId: "anonymous-player",
         sessionId: "kcq-session",
-        ...(terminalOverride ? { terminal: terminalOverride } : {}),
+        ...(terminal ? { terminal } : {}),
+        stepTelemetry: imported.stepTelemetry,
         replay: imported.replay,
     };
 }
