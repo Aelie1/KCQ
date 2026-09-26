@@ -48,6 +48,12 @@ function summaryFixture(): BatchSummary {
             ko: { observations: 4, averageTotalBinding: 5.75, maxTotalBinding: 10 },
         },
         forensicExamples: {
+            shortestVictory: reference(0, "victory"),
+            longestVictory: reference(2, "victory"),
+            lowestDamageVictory: reference(0, "victory"),
+            highestDamageVictory: reference(2, "victory"),
+            closestVictory: reference(0, "victory"),
+            furthestVictory: reference(2, "victory"),
             shortestDefeat: reference(3, "defeat"),
             longestDefeat: reference(3, "defeat"),
             lowestDamageDefeat: reference(3, "defeat"),
@@ -216,6 +222,8 @@ describe("batch summary console formatting", () => {
             meanPeakBondage: null, meanEscapes: null, win95: null,
         };
         summary.forensicExamples = {
+            shortestVictory: null, longestVictory: null, lowestDamageVictory: null,
+            highestDamageVictory: null, closestVictory: null, furthestVictory: null,
             shortestDefeat: null, longestDefeat: null, lowestDamageDefeat: null,
             highestDamageDefeat: null, closestDefeat: null, furthestDefeat: null,
             timeoutExample: null, errorExample: null,

@@ -71,6 +71,12 @@ export interface RunReference {
 
 /** Fixed-size forensic examples. No field grows with the number of failures. */
 export interface ForensicExamples {
+    shortestVictory: RunReference | null;
+    longestVictory: RunReference | null;
+    lowestDamageVictory: RunReference | null;
+    highestDamageVictory: RunReference | null;
+    closestVictory: RunReference | null;
+    furthestVictory: RunReference | null;
     shortestDefeat: RunReference | null;
     longestDefeat: RunReference | null;
     lowestDamageDefeat: RunReference | null;
@@ -146,6 +152,12 @@ export function summarizeBatch(batch: BatchResult): BatchSummary {
     };
     const characterAggregates = new Map<string, MutableCharacterAggregate>();
     const forensicExamples: ForensicExamples = {
+        shortestVictory: null,
+        longestVictory: null,
+        lowestDamageVictory: null,
+        highestDamageVictory: null,
+        closestVictory: null,
+        furthestVictory: null,
         shortestDefeat: null,
         longestDefeat: null,
         lowestDamageDefeat: null,
@@ -170,6 +182,14 @@ export function summarizeBatch(batch: BatchResult): BatchSummary {
         aggregateFinalParty(characterAggregates, result.finalState.characters);
 
         const reference = toRunReference(run);
+        if (result.termination === "victory") {
+            forensicExamples.shortestVictory = prefer(reference, forensicExamples.shortestVictory, "actionCount", "low");
+            forensicExamples.longestVictory = prefer(reference, forensicExamples.longestVictory, "actionCount", "high");
+            forensicExamples.lowestDamageVictory = prefer(reference, forensicExamples.lowestDamageVictory, "damage", "low");
+            forensicExamples.highestDamageVictory = prefer(reference, forensicExamples.highestDamageVictory, "damage", "high");
+            forensicExamples.closestVictory = prefer(reference, forensicExamples.closestVictory, "remainingEnemyHp", "low");
+            forensicExamples.furthestVictory = prefer(reference, forensicExamples.furthestVictory, "remainingEnemyHp", "high");
+        }
         if (result.termination === "defeat") {
             forensicExamples.shortestDefeat = prefer(reference, forensicExamples.shortestDefeat, "actionCount", "low");
             forensicExamples.longestDefeat = prefer(reference, forensicExamples.longestDefeat, "actionCount", "high");

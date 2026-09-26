@@ -139,6 +139,7 @@ describe("batch summary metrics", () => {
             run({ runIndex: 5, termination: "defeat", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
             run({ runIndex: 3, termination: "defeat", actionCount: 4, damage: 10, peakBondage: 1, remainingEnemyHp: 20 }),
             run({ runIndex: 8, termination: "defeat", actionCount: 6, damage: 30, peakBondage: 1, remainingEnemyHp: 70 }),
+            run({ runIndex: 0, termination: "victory", actionCount: 1, damage: 0, peakBondage: 1, remainingEnemyHp: 0 }),
         ])).forensicExamples;
 
         expect(summary.shortestDefeat?.runIndex).toBe(5);
@@ -151,6 +152,64 @@ describe("batch summary metrics", () => {
         expect(summary.closestDefeat).not.toHaveProperty("result");
     });
 
+    it("selects every victory example with the corresponding defeat metric", () => {
+        const summary = summarizeBatch(batch([
+            run({ runIndex: 5, termination: "victory", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
+            run({ runIndex: 3, termination: "victory", actionCount: 4, damage: 10, peakBondage: 1, remainingEnemyHp: 20 }),
+            run({ runIndex: 8, termination: "victory", actionCount: 6, damage: 30, peakBondage: 1, remainingEnemyHp: 70 }),
+            run({ runIndex: 0, termination: "defeat", actionCount: 10, damage: 100, peakBondage: 1, remainingEnemyHp: 100 }),
+        ])).forensicExamples;
+
+        expect(summary.shortestVictory?.runIndex).toBe(5);
+        expect(summary.longestVictory?.runIndex).toBe(8);
+        expect(summary.lowestDamageVictory?.runIndex).toBe(3);
+        expect(summary.highestDamageVictory?.runIndex).toBe(8);
+        expect(summary.closestVictory?.runIndex).toBe(3);
+        expect(summary.furthestVictory?.runIndex).toBe(8);
+        expect(summary.closestVictory).toMatchObject({
+            runIndex: 3,
+            engineSeed: 1_003,
+            policySeed: 2_003,
+            termination: "victory",
+            damage: 10,
+            peakBondage: 1,
+            remainingEnemyHp: 20,
+        });
+        expect(summary.closestVictory).not.toHaveProperty("result");
+    });
+
+    it("leaves all victory examples null when there are no victories", () => {
+        const forensic = summarizeBatch(batch([
+            run({ runIndex: 1, termination: "defeat", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
+        ])).forensicExamples;
+
+        for (const name of [
+            "shortestVictory", "longestVictory", "lowestDamageVictory",
+            "highestDamageVictory", "closestVictory", "furthestVictory",
+        ] as const) {
+            expect(forensic[name]).toBeNull();
+        }
+    });
+
+    it("retains one rare victory in every victory example slot", () => {
+        const forensic = summarizeBatch(batch([
+            run({ runIndex: 999, termination: "victory", actionCount: 7, damage: 100, peakBondage: 6, remainingEnemyHp: 0, round: 4 }),
+            run({ runIndex: 1, termination: "defeat", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
+        ])).forensicExamples;
+
+        for (const name of [
+            "shortestVictory", "longestVictory", "lowestDamageVictory",
+            "highestDamageVictory", "closestVictory", "furthestVictory",
+        ] as const) {
+            expect(forensic[name]).toMatchObject({
+                runIndex: 999,
+                engineSeed: 1_999,
+                policySeed: 2_999,
+                termination: "victory",
+            });
+        }
+    });
+
     it("breaks every defeat-example tie with the lowest run index", () => {
         const forensic = summarizeBatch(batch([
             run({ runIndex: 9, termination: "defeat", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
@@ -159,6 +218,19 @@ describe("batch summary metrics", () => {
         for (const name of [
             "shortestDefeat", "longestDefeat", "lowestDamageDefeat",
             "highestDamageDefeat", "closestDefeat", "furthestDefeat",
+        ] as const) {
+            expect(forensic[name]?.runIndex).toBe(2);
+        }
+    });
+
+    it("breaks every victory-example tie with the lowest run index", () => {
+        const forensic = summarizeBatch(batch([
+            run({ runIndex: 9, termination: "victory", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
+            run({ runIndex: 2, termination: "victory", actionCount: 2, damage: 20, peakBondage: 1, remainingEnemyHp: 50 }),
+        ])).forensicExamples;
+        for (const name of [
+            "shortestVictory", "longestVictory", "lowestDamageVictory",
+            "highestDamageVictory", "closestVictory", "furthestVictory",
         ] as const) {
             expect(forensic[name]?.runIndex).toBe(2);
         }
