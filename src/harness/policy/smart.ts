@@ -6,6 +6,12 @@ import type {
     ValidTarget,
 } from "../../engine/public/types";
 import type { FightPolicy, PolicyContext } from "../harness";
+import {
+    assessSmartBoard,
+    type SmartBoardAssessment,
+} from "./smart-board";
+
+export * from "./smart-board";
 
 /** Public-preview data retained beside an action so scoring stays inspectable. */
 export interface SmartCandidate {
@@ -34,7 +40,10 @@ export interface SmartScoreComponents {
 export interface SmartScorer {
     readonly id: string;
     readonly weight: number;
-    prepare(context: PolicyContext): (candidate: SmartCandidate) => number;
+    prepare(
+        context: PolicyContext,
+        board: SmartBoardAssessment,
+    ): (candidate: SmartCandidate) => number;
 }
 
 export interface ScoredSmartCandidate extends SmartCandidate {
@@ -43,6 +52,7 @@ export interface ScoredSmartCandidate extends SmartCandidate {
 }
 
 export interface SmartDecision {
+    readonly board: SmartBoardAssessment;
     readonly candidates: readonly ScoredSmartCandidate[];
     readonly selected: ScoredSmartCandidate;
 }
@@ -95,10 +105,11 @@ export function evaluateSmartDecision(
     scorers: readonly SmartScorer[] = smartScorers,
 ): SmartDecision {
     assertUniqueScorerIds(scorers);
+    const board = assessSmartBoard(context);
     const preparedScorers = scorers.map((scorer) => ({
         id: scorer.id,
         weight: scorer.weight,
-        evaluate: scorer.prepare(context),
+        evaluate: scorer.prepare(context, board),
     }));
     const candidates = generateSmartCandidates(context).map((candidate) => {
         const componentEntries = preparedScorers.map((scorer) => {
@@ -130,7 +141,7 @@ export function evaluateSmartDecision(
         }
     }
 
-    return { candidates, selected };
+    return { board, candidates, selected };
 }
 
 export const smartPolicy: FightPolicy = {

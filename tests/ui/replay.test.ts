@@ -58,21 +58,112 @@ function replayInput(): ConsoleReplayInput {
             steps: [{
                 action: { type: "move", actor: "hero", move: "recorded-strike", targets: ["recorded-foe"] },
                 success: true,
-                frames: [{ event: { type: "useMove", actor: "hero", move: "recorded-strike", effects: [], targets: [{ target: "recorded-foe", result: "hit", effects: [
-                    { type: "enemyDamaged", target: "recorded-foe", amount: 17 },
-                ] }] }, state: recordedState(1, 73, 12) }],
+                frames: [{
+                    event: {
+                        type: "useMove", actor: "hero", move: "recorded-strike", effects: [], targets: [{
+                            target: "recorded-foe", result: "hit", effects: [
+                                { type: "enemyDamaged", target: "recorded-foe", amount: 17 },
+                            ]
+                        }]
+                    }, state: recordedState(1, 73, 12)
+                }],
                 state: recordedState(1, 73, 12),
                 actions: recordedActions,
             }, {
                 action: { type: "endTurn" },
                 success: true,
-                frames: [{ event: { type: "changePhase", phase: "enemy", effects: [
-                    { type: "enemyDamaged", target: "recorded-foe", amount: 32 },
-                ] }, state: recordedState(2, 41, 24) }],
+                frames: [{
+                    event: {
+                        type: "changePhase", phase: "enemy", effects: [
+                            { type: "enemyDamaged", target: "recorded-foe", amount: 32 },
+                        ]
+                    }, state: recordedState(2, 41, 24)
+                }],
                 state: recordedState(2, 41, 24),
                 actions: recordedActions,
             }],
         },
+    };
+}
+
+function smartBoardDiagnostic(): Record<string, unknown> {
+    return {
+        party: {
+            totalCharacters: 2,
+            availableActors: 1,
+            spentActors: 0,
+            skippedActors: 0,
+            incapacitatedActors: 1,
+            unavailableActors: 0,
+            totalAvailableMoves: 2,
+            totalAvailableEscapes: 1,
+            totalAvailableAssists: 0,
+            totalAvailableEscapesAndAssists: 1,
+            totalBlockedMoveTypes: 1,
+            charactersWithBonusEscapes: 1,
+            standingCharacters: 1,
+            totalBinding: 31,
+            peakBinding: 20,
+            peakBindingLevel: "extreme",
+            hardOrWorseBindings: 2,
+            extremeOrWorseBindings: 1,
+            impossibleOrMaxBindings: 0,
+            totalKnownIncomingBinding: 12,
+            unknownIncomingBindingEffects: 1,
+            currentTraps: [{ id: "recordedTrap", amount: 3 }],
+            totalCurrentTrapAmount: 3,
+            incomingTraps: [{ id: "incomingSnare", amount: 4 }],
+            totalIncomingTrapAmount: 4,
+        },
+        characters: [{
+            id: "hero",
+            totalBinding: 20,
+            peakBinding: 20,
+            peakBindingLevel: "extreme",
+            hardOrWorseBindings: 1,
+            extremeOrWorseBindings: 1,
+            impossibleOrMaxBindings: 0,
+            blockedMoveTypes: ["arms"],
+            standing: true,
+            acted: true,
+            bonusEscapes: 1,
+            capability: "available",
+            availableMoves: 2,
+            availableEscapesAndAssists: 1,
+            incomingBinding: { known: 8, unknownEffects: 1 },
+            threateningEnemyIds: ["recorded-foe"],
+        }, {
+            id: "ally-with-a-long-name",
+            totalBinding: 11,
+            peakBinding: 11,
+            peakBindingLevel: "hard",
+            hardOrWorseBindings: 1,
+            extremeOrWorseBindings: 0,
+            impossibleOrMaxBindings: 0,
+            blockedMoveTypes: [],
+            standing: false,
+            acted: false,
+            bonusEscapes: 0,
+            capability: "incapacitated",
+            capabilityReason: "actorIncapacitated",
+            availableMoves: 0,
+            availableEscapesAndAssists: 0,
+            incomingBinding: { known: 4, unknownEffects: 0 },
+            threateningEnemyIds: ["recorded-foe"],
+        }],
+        enemies: [{
+            id: "recorded-foe",
+            rank: "enemy",
+            totalKnownIncomingBinding: 12,
+            unknownIncomingBindingEffects: 1,
+            targetedCharacterIds: ["hero", "ally-with-a-long-name"],
+            bindingTargets: [
+                { characterId: "hero", known: 8, unknownEffects: 1 },
+                { characterId: "ally-with-a-long-name", known: 4, unknownEffects: 0 },
+            ],
+            incomingTraps: [{ id: "incomingSnare", amount: 4 }],
+            totalIncomingTrapAmount: 4,
+        }],
     };
 }
 
@@ -222,6 +313,88 @@ describe("console replay viewer", () => {
         expect(frames[6]).toContain("penalty: raw=2 weight=-1 score=-2");
         expect(frames[6]).toContain("move hero: candidate-6; targets: [recorded-foe]");
         expect(frames[7]).toContain("Action: move hero: recorded-strike");
+    });
+
+    it("summarizes and independently pages Smart board diagnostics at minimum width", async () => {
+        const input = replayInput();
+        if (!("initialActions" in input.replay)) throw new Error("Expected current replay fixture");
+        const step = input.replay.steps[0];
+        if (!step) throw new Error("Expected a replay step");
+        const candidate = {
+            action: step.action,
+            components: { expectedDamage: { raw: 17, weight: 1, score: 17 } },
+            total: 17,
+        };
+        step.policyDecision = {
+            policyId: "smart",
+            diagnostics: {
+                board: smartBoardDiagnostic(),
+                candidates: [candidate],
+                selected: candidate,
+            },
+        };
+
+        const commands = [
+            "n", "d", "b",
+            ...Array.from({ length: 10 }, () => "j"),
+            ...Array.from({ length: 15 }, () => "j"),
+            "b", "q",
+        ];
+        const frames = await viewReplay(input, commands, { columns: 120, rows: 37 });
+        const candidateView = frames[2];
+        const firstBoardPage = frames[3];
+        const characterPage = frames[13];
+        const enemyPage = frames[28];
+        const returnedCandidateView = frames[29];
+
+        expect(candidateView).toContain("Board: binding=31 peak=20/extreme");
+        expect(candidateView).toContain("incoming=12 known + 1 unknown");
+        expect(candidateView).toContain("Actors: 1/2 available");
+        expect(candidateView).toContain("incapacitated=1");
+        expect(candidateView).toContain("[b] board");
+
+        expect(firstBoardPage).toContain("SMART BOARD  Lines 1-7");
+        expect(firstBoardPage).toContain("Party binding: total=31 peak=20/extreme");
+        expect(firstBoardPage).toContain("Action economy: available=1/2");
+        expect(characterPage).toContain("Character hero");
+        expect(characterPage).toContain("incoming binding: 8 known + 1 unknown");
+        expect(enemyPage).toContain("Enemy recorded-foe (enemy)");
+        expect(enemyPage).toContain("binding target hero: 8 known + 1 unknown");
+        expect(enemyPage).toContain("[b] candidates");
+        expect(returnedCandidateView).toContain("* #1 total=17");
+        expect(returnedCandidateView).toContain("expectedDamage: raw=17 weight=1 score=17");
+    });
+
+    it("opens Smart board diagnostics directly with b", async () => {
+        const input = replayInput();
+        if (!("initialActions" in input.replay)) throw new Error("Expected current replay fixture");
+
+        const step = input.replay.steps[0];
+        if (!step) throw new Error("Expected a replay step");
+
+        const candidate = {
+            action: step.action,
+            components: {
+                expectedDamage: { raw: 17, weight: 1, score: 17 },
+            },
+            total: 17,
+        };
+
+        step.policyDecision = {
+            policyId: "smart",
+            diagnostics: {
+                board: smartBoardDiagnostic(),
+                candidates: [candidate],
+                selected: candidate,
+            },
+        };
+
+        const frames = await viewReplay(input, ["n", "b", "q"]);
+
+        expect(frames[2]).toContain("SMART BOARD");
+        expect(frames[2]).not.toContain(
+            "No Smart board assessment is recorded for this step.",
+        );
     });
 
     it("clamps both boundaries and supports start/end without quitting on a terminal outcome", async () => {

@@ -527,6 +527,10 @@ describe("Smart 2 selection and integration", () => {
         for (const step of result.replay?.steps ?? []) {
             expect(step.policyDecision?.policyId).toBe("smart");
             const decision = step.policyDecision?.diagnostics as SmartDecision;
+            expect(decision.board.party.totalCharacters).toBeGreaterThan(0);
+            expect(decision.board.characters).toHaveLength(
+                decision.board.party.totalCharacters,
+            );
             expect(decision.candidates.length).toBeGreaterThan(0);
             expect(decision.candidates.every((candidate) =>
                 typeof candidate.components.expectedDamage.raw === "number"
@@ -554,6 +558,38 @@ describe("Smart 2 selection and integration", () => {
         expect(recorded.trace).toEqual(ordinary.trace);
         expect(recorded.termination).toBe(ordinary.termination);
         expect(recorded.finalState).toEqual(ordinary.finalState);
+    });
+
+    it("matches the pre-board expected-damage policy on a fixed stock encounter and seed", () => {
+        const encounterId = createEngine(1).listEncounters()[0];
+        if (!encounterId) throw new Error("The stock encounter catalogue is empty");
+        const smart2Reference: FightPolicy = {
+            id: "smart-2-reference",
+            chooseAction(referenceContext) {
+                const candidates = generateSmartCandidates(referenceContext);
+                // Smart 2 supplied only context. The production expected-damage scorer
+                // deliberately ignores Smart 3's additional prepared board argument.
+                const score = expectedDamageScorer.prepare(referenceContext, undefined as never);
+                let selected = candidates[0];
+                for (let index = 1; index < candidates.length; index += 1) {
+                    if (score(candidates[index]) > score(selected)) selected = candidates[index];
+                }
+                return selected.action;
+            },
+        };
+        const input = {
+            encounterId,
+            engineSeed: 8642,
+            policySeed: 9753,
+            maxActions: 1_000,
+        };
+
+        const smart2 = runSingleFight({ ...input, policy: smart2Reference });
+        const smart3 = runSingleFight({ ...input, policy: smartPolicy });
+
+        expect(smart3.trace).toEqual(smart2.trace);
+        expect(smart3.termination).toBe(smart2.termination);
+        expect(smart3.finalState).toEqual(smart2.finalState);
     });
 
     it("does not evaluate or retain detailed decisions in ordinary fights or batches", () => {

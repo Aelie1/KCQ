@@ -35,6 +35,7 @@ interface ConsoleStreams {
 
 interface ReplayScreenOptions {
     showDecisionDetails: boolean;
+    showBoardDetails: boolean;
     decisionOffset: number;
     actionLineCapacity: number;
 }
@@ -47,12 +48,14 @@ export async function runConsoleReplay(
     const rl = createInterface({ input: streams.input, output: streams.output });
     let position = 0;
     let showDecisionDetails = false;
+    let showBoardDetails = false;
     let decisionOffset = 0;
 
     const draw = (message = ""): void => {
         const screenHeight = Math.max(1, (streams.output.rows ?? 50) - 1);
         const model = replayScreenModel(input, position, {
             showDecisionDetails,
+            showBoardDetails,
             decisionOffset,
             actionLineCapacity: actionLineCapacity(screenHeight),
         });
@@ -80,40 +83,60 @@ export async function runConsoleReplay(
                 case "next":
                     position = Math.min(position + 1, input.replay.steps.length);
                     showDecisionDetails = false;
+                    showBoardDetails = false;
                     decisionOffset = 0;
                     break;
                 case "p":
                 case "previous":
                     position = Math.max(position - 1, 0);
                     showDecisionDetails = false;
+                    showBoardDetails = false;
                     decisionOffset = 0;
                     break;
                 case "start":
                     position = 0;
                     showDecisionDetails = false;
+                    showBoardDetails = false;
                     decisionOffset = 0;
                     break;
                 case "end":
                     position = input.replay.steps.length;
                     showDecisionDetails = false;
+                    showBoardDetails = false;
                     decisionOffset = 0;
                     break;
                 case "d":
                 case "details":
                     if (currentScoredDecision(input.replay, position)) {
                         showDecisionDetails = !showDecisionDetails;
+                        showBoardDetails = false;
                         decisionOffset = 0;
                     } else {
                         message = "No scored policy decision is recorded for this step.";
                     }
                     break;
+                case "b":
+                case "board": {
+                    const decision = currentScoredDecision(input.replay, position);
+                    if (decision?.board) {
+                        showDecisionDetails = true;
+                        showBoardDetails = !showBoardDetails;
+                        decisionOffset = 0;
+                    } else {
+                        message = "No Smart board assessment is recorded for this step.";
+                    }
+                    break;
+                }
                 case "j":
                 case "more": {
                     const decision = currentScoredDecision(input.replay, position);
                     if (showDecisionDetails && decision) {
+                        const maximumOffset = showBoardDetails && decision.board
+                            ? Math.max(0, boardDetailLines(decision.board).length - 1)
+                            : Math.max(0, decision.candidates.length - 1);
                         decisionOffset = Math.min(
                             decisionOffset + 1,
-                            Math.max(0, decision.candidates.length - 1),
+                            maximumOffset,
                         );
                     } else {
                         message = "Open decision details with d first.";
@@ -183,12 +206,19 @@ function replayScreenModel(
     const policyDecision = replayPolicyDecision(step);
     const scoredDecision = scoredPolicyDecision(policyDecision);
     const actionLines = options.showDecisionDetails && scoredDecision
-        ? formatScoredDecision(
-            policyDecision?.policyId ?? "policy",
-            scoredDecision,
-            options.decisionOffset,
-            options.actionLineCapacity,
-        )
+        ? options.showBoardDetails && scoredDecision.board
+            ? formatBoardDecision(
+                policyDecision?.policyId ?? "policy",
+                scoredDecision.board,
+                options.decisionOffset,
+                options.actionLineCapacity,
+            )
+            : formatScoredDecision(
+                policyDecision?.policyId ?? "policy",
+                scoredDecision,
+                options.decisionOffset,
+                options.actionLineCapacity,
+            )
         : [
             `REPLAY  Step ${position} / ${replay.steps.length}`,
             step ? `Action: ${describeAction(step.action)}` : "Initial replay state.",
@@ -228,6 +258,75 @@ interface ScoredDecisionComponent {
 interface ScoredDecision {
     candidates: ScoredDecisionCandidate[];
     selected: ScoredDecisionCandidate;
+    board?: BoardDiagnostic;
+}
+
+interface BoardPartyDiagnostic {
+    totalCharacters: number;
+    availableActors: number;
+    spentActors: number;
+    skippedActors: number;
+    incapacitatedActors: number;
+    unavailableActors: number;
+    totalAvailableMoves: number;
+    totalAvailableEscapesAndAssists: number;
+    totalBlockedMoveTypes: number;
+    charactersWithBonusEscapes: number;
+    standingCharacters: number;
+    totalBinding: number;
+    peakBinding: number;
+    peakBindingLevel: string;
+    hardOrWorseBindings: number;
+    extremeOrWorseBindings: number;
+    impossibleOrMaxBindings: number;
+    totalKnownIncomingBinding: number;
+    unknownIncomingBindingEffects: number;
+    currentTraps: TrapDiagnostic[];
+    totalCurrentTrapAmount: number;
+    incomingTraps: TrapDiagnostic[];
+    totalIncomingTrapAmount: number;
+}
+
+interface TrapDiagnostic {
+    id: string;
+    amount: number;
+}
+
+interface BoardCharacterDiagnostic {
+    id: string;
+    totalBinding: number;
+    peakBinding: number;
+    peakBindingLevel: string;
+    hardOrWorseBindings: number;
+    extremeOrWorseBindings: number;
+    impossibleOrMaxBindings: number;
+    blockedMoveTypes: string[];
+    standing: boolean;
+    acted: boolean;
+    bonusEscapes: number;
+    capability: string;
+    capabilityReason?: string;
+    availableMoves: number;
+    availableEscapesAndAssists: number;
+    incomingBinding: { known: number; unknownEffects: number };
+    threateningEnemyIds: string[];
+}
+
+interface BoardEnemyDiagnostic {
+    id: string;
+    rank: string;
+    totalKnownIncomingBinding: number;
+    unknownIncomingBindingEffects: number;
+    targetedCharacterIds: string[];
+    bindingTargets: Array<{ characterId: string; known: number; unknownEffects: number }>;
+    incomingTraps: TrapDiagnostic[];
+    totalIncomingTrapAmount: number;
+}
+
+interface BoardDiagnostic {
+    party: BoardPartyDiagnostic;
+    characters: BoardCharacterDiagnostic[];
+    enemies: BoardEnemyDiagnostic[];
 }
 
 function replayPolicyDecision(
@@ -256,7 +355,77 @@ function scoredPolicyDecision(
     return {
         candidates: value.candidates,
         selected: value.selected,
+        ...(isBoardDiagnostic(value.board) ? { board: value.board } : {}),
     };
+}
+
+function isBoardDiagnostic(value: unknown): value is BoardDiagnostic {
+    if (!isRecord(value) || !isRecord(value.party)
+        || !Array.isArray(value.characters) || !Array.isArray(value.enemies)) return false;
+    const party = value.party;
+    return hasNumbers(party, [
+        "totalCharacters", "availableActors", "spentActors", "skippedActors",
+        "incapacitatedActors", "unavailableActors", "totalAvailableMoves",
+        "totalAvailableEscapesAndAssists", "totalBlockedMoveTypes",
+        "charactersWithBonusEscapes", "standingCharacters", "totalBinding",
+        "peakBinding", "hardOrWorseBindings", "extremeOrWorseBindings",
+        "impossibleOrMaxBindings", "totalKnownIncomingBinding",
+        "unknownIncomingBindingEffects", "totalCurrentTrapAmount", "totalIncomingTrapAmount",
+    ])
+        && typeof party.peakBindingLevel === "string"
+        && Array.isArray(party.currentTraps) && party.currentTraps.every(isTrapDiagnostic)
+        && Array.isArray(party.incomingTraps) && party.incomingTraps.every(isTrapDiagnostic)
+        && value.characters.every(isBoardCharacterDiagnostic)
+        && value.enemies.every(isBoardEnemyDiagnostic);
+}
+
+function isBoardCharacterDiagnostic(value: unknown): value is BoardCharacterDiagnostic {
+    return isRecord(value)
+        && typeof value.id === "string"
+        && typeof value.peakBindingLevel === "string"
+        && typeof value.standing === "boolean"
+        && typeof value.acted === "boolean"
+        && typeof value.capability === "string"
+        && (value.capabilityReason === undefined || typeof value.capabilityReason === "string")
+        && hasNumbers(value, [
+            "totalBinding", "peakBinding", "hardOrWorseBindings",
+            "extremeOrWorseBindings", "impossibleOrMaxBindings", "bonusEscapes",
+            "availableMoves", "availableEscapesAndAssists",
+        ])
+        && Array.isArray(value.blockedMoveTypes)
+        && value.blockedMoveTypes.every((item) => typeof item === "string")
+        && Array.isArray(value.threateningEnemyIds)
+        && value.threateningEnemyIds.every((item) => typeof item === "string")
+        && isIncomingDiagnostic(value.incomingBinding);
+}
+
+function isBoardEnemyDiagnostic(value: unknown): value is BoardEnemyDiagnostic {
+    return isRecord(value)
+        && typeof value.id === "string"
+        && typeof value.rank === "string"
+        && hasNumbers(value, [
+            "totalKnownIncomingBinding", "unknownIncomingBindingEffects",
+            "totalIncomingTrapAmount",
+        ])
+        && Array.isArray(value.targetedCharacterIds)
+        && value.targetedCharacterIds.every((item) => typeof item === "string")
+        && Array.isArray(value.bindingTargets)
+        && value.bindingTargets.every((target) => isRecord(target)
+            && typeof target.characterId === "string" && isIncomingDiagnostic(target))
+        && Array.isArray(value.incomingTraps)
+        && value.incomingTraps.every(isTrapDiagnostic);
+}
+
+function isIncomingDiagnostic(value: unknown): value is { known: number; unknownEffects: number } {
+    return isRecord(value) && hasNumbers(value, ["known", "unknownEffects"]);
+}
+
+function isTrapDiagnostic(value: unknown): value is TrapDiagnostic {
+    return isRecord(value) && typeof value.id === "string" && typeof value.amount === "number";
+}
+
+function hasNumbers(value: Record<string, unknown>, keys: readonly string[]): boolean {
+    return keys.every((key) => typeof value[key] === "number");
 }
 
 function isScoredCandidate(value: unknown): value is ScoredDecisionCandidate {
@@ -298,7 +467,8 @@ function formatScoredDecision(
         candidate.total === bestScore ? [index] : [],
     );
     const hasTie = tiedIndexes.length > 1;
-    const fixedLines = 3 + (hasTie ? 1 : 0);
+    const boardSummary = decision.board ? formatBoardSummary(decision.board.party) : [];
+    const fixedLines = 3 + boardSummary.length + (hasTie ? 1 : 0);
     const candidateLineCapacity = Math.max(1, capacity - fixedLines);
     const maximumOffset = Math.max(0, decision.candidates.length - 1);
     const offset = Math.min(Math.max(0, requestedOffset), maximumOffset);
@@ -316,6 +486,7 @@ function formatScoredDecision(
     const lines = [
         `${policyId.toUpperCase()} DECISION  Candidates ${offset + 1}-${end + 1} / ${decision.candidates.length}`,
         `Selected: candidate #${selectedIndex + 1}`,
+        ...boardSummary,
     ];
 
     if (hasTie) {
@@ -325,8 +496,91 @@ function formatScoredDecision(
     }
 
     for (const candidate of visible) lines.push(...candidate.lines);
-    lines.push("[j] more  [k] back  [d] close");
+    lines.push(decision.board
+        ? "[j] more  [k] back  [b] board  [d] close"
+        : "[j] more  [k] back  [d] close");
     return lines;
+}
+
+function formatBoardSummary(party: BoardPartyDiagnostic): string[] {
+    return [
+        `Board: binding=${party.totalBinding} peak=${party.peakBinding}/${party.peakBindingLevel}; incoming=${formatIncoming(party.totalKnownIncomingBinding, party.unknownIncomingBindingEffects)}; traps=${party.totalCurrentTrapAmount}+${party.totalIncomingTrapAmount} incoming`,
+        `Actors: ${party.availableActors}/${party.totalCharacters} available; spent=${party.spentActors} skipped=${party.skippedActors} incapacitated=${party.incapacitatedActors}; moves=${party.totalAvailableMoves} escape/assist=${party.totalAvailableEscapesAndAssists}`,
+    ];
+}
+
+function formatBoardDecision(
+    policyId: string,
+    board: BoardDiagnostic,
+    requestedOffset: number,
+    capacity: number,
+): string[] {
+    const details = boardDetailLines(board);
+    const detailCapacity = Math.max(1, capacity - 2);
+    const maximumOffset = Math.max(0, details.length - 1);
+    const offset = Math.min(Math.max(0, requestedOffset), maximumOffset);
+    const visible = details.slice(offset, offset + detailCapacity);
+    const end = offset + visible.length;
+    return [
+        `${policyId.toUpperCase()} BOARD  Lines ${offset + 1}-${end} / ${details.length}`,
+        ...visible,
+        "[j] more  [k] back  [b] candidates  [d] close",
+    ];
+}
+
+function boardDetailLines(board: BoardDiagnostic): string[] {
+    const { party } = board;
+    const lines = [
+        `Party binding: total=${party.totalBinding} peak=${party.peakBinding}/${party.peakBindingLevel}`,
+        `  severity: hard+=${party.hardOrWorseBindings} extreme+=${party.extremeOrWorseBindings} impossible/max=${party.impossibleOrMaxBindings}`,
+        `Party incoming: binding=${formatIncoming(party.totalKnownIncomingBinding, party.unknownIncomingBindingEffects)} traps=${party.totalIncomingTrapAmount}`,
+        `Action economy: available=${party.availableActors}/${party.totalCharacters} spent=${party.spentActors} skipped=${party.skippedActors} incapacitated=${party.incapacitatedActors} unavailable=${party.unavailableActors}`,
+        `  moves=${party.totalAvailableMoves} escape/assist=${party.totalAvailableEscapesAndAssists} blocked-types=${party.totalBlockedMoveTypes}`,
+        `  bonus-escape characters=${party.charactersWithBonusEscapes} standing=${party.standingCharacters}`,
+        `Current traps: total=${party.totalCurrentTrapAmount}`,
+        ...party.currentTraps.map((trap) => `  trap ${trap.id}: ${trap.amount}`),
+        `Incoming traps: total=${party.totalIncomingTrapAmount}`,
+        ...party.incomingTraps.map((trap) => `  trap ${trap.id}: +${trap.amount}`),
+    ];
+
+    for (const character of board.characters) {
+        lines.push(
+            `Character ${character.id}`,
+            `  binding: total=${character.totalBinding} peak=${character.peakBinding}/${character.peakBindingLevel}`,
+            `  severity: hard+=${character.hardOrWorseBindings} extreme+=${character.extremeOrWorseBindings} impossible/max=${character.impossibleOrMaxBindings}`,
+            `  action: ${character.capability}${character.capabilityReason ? ` (${character.capabilityReason})` : ""}; acted=${yesNo(character.acted)} standing=${yesNo(character.standing)} bonusEscapes=${character.bonusEscapes}`,
+            `  available: moves=${character.availableMoves} escape/assist=${character.availableEscapesAndAssists}`,
+            `  incoming binding: ${formatIncoming(character.incomingBinding.known, character.incomingBinding.unknownEffects)}`,
+        );
+        for (const type of character.blockedMoveTypes) lines.push(`  blocked move type: ${type}`);
+        for (const enemyId of character.threateningEnemyIds) lines.push(`  threatening enemy: ${enemyId}`);
+    }
+
+    for (const enemy of board.enemies) {
+        lines.push(
+            `Enemy ${enemy.id} (${enemy.rank})`,
+            `  incoming binding: ${formatIncoming(enemy.totalKnownIncomingBinding, enemy.unknownIncomingBindingEffects)}`,
+            `  incoming traps: ${enemy.totalIncomingTrapAmount}`,
+        );
+        for (const characterId of enemy.targetedCharacterIds) {
+            lines.push(`  visible target: ${characterId}`);
+        }
+        for (const target of enemy.bindingTargets) {
+            lines.push(
+                `  binding target ${target.characterId}: ${formatIncoming(target.known, target.unknownEffects)}`,
+            );
+        }
+        for (const trap of enemy.incomingTraps) lines.push(`  trap ${trap.id}: +${trap.amount}`);
+    }
+    return lines;
+}
+
+function formatIncoming(known: number, unknownEffects: number): string {
+    return `${known} known${unknownEffects > 0 ? ` + ${unknownEffects} unknown` : ""}`;
+}
+
+function yesNo(value: boolean): string {
+    return value ? "yes" : "no";
 }
 
 function formatScoredCandidate(
