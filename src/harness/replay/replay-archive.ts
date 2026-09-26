@@ -543,7 +543,7 @@ function deriveArchiveSummary(archive: ArchiveSummarySource): DerivedArchiveSumm
         - timestampMilliseconds(archive.startedAt, "Archive startedAt");
     const afkMs = wallElapsedMs === undefined || archive.stepTelemetry === undefined
         ? undefined
-        : interActionAfkMilliseconds(archive.stepTelemetry);
+        : interActionAfkMilliseconds(archive.startedAt, archive.stepTelemetry);
     const elapsedMs = wallElapsedMs === undefined || afkMs === undefined
         ? undefined
         : wallElapsedMs - afkMs;
@@ -568,20 +568,29 @@ function deriveArchiveSummary(archive: ArchiveSummarySource): DerivedArchiveSumm
 const MAX_ACTIVE_INTER_ACTION_GAP_MS = 2 * 60 * 1_000;
 
 function interActionAfkMilliseconds(
+    startedAt: string,
     stepTelemetry: readonly ArchivedReplayStepTelemetry[],
 ): number {
     let afkMs = 0;
-    for (let index = 1; index < stepTelemetry.length; index++) {
-        const previous = timestampMilliseconds(
-            stepTelemetry[index - 1].timestamp,
-            `Archive stepTelemetry entry ${index}`,
-        );
+    let previous = timestampMilliseconds(
+        startedAt,
+        "Archive startedAt",
+    );
+
+    for (const [index, step] of stepTelemetry.entries()) {
         const current = timestampMilliseconds(
-            stepTelemetry[index].timestamp,
+            step.timestamp,
             `Archive stepTelemetry entry ${index + 1}`,
         );
-        afkMs += Math.max(0, current - previous - MAX_ACTIVE_INTER_ACTION_GAP_MS);
+
+        afkMs += Math.max(
+            0,
+            current - previous - MAX_ACTIVE_INTER_ACTION_GAP_MS,
+        );
+
+        previous = current;
     }
+
     return afkMs;
 }
 

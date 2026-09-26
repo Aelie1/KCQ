@@ -536,6 +536,84 @@ describe("PostHog replay archive sync", () => {
         expect((await readArchives(directory)).map((archive) => archive.replayId).sort())
             .toEqual(["abcdefgh-first", "abcdefgh-second", "ijklmnop-third"]);
     });
+
+    it("counts excess time before the first action as AFK", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "initial-afk-replay";
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }],
+            terminal: "quit",
+        });
+
+        rows.find((row) => row.sequence === "1")!.timestamp =
+            "2026-09-21T12:36:00.000Z";
+        rows.find((row) => row.event === "battle_quit")!.timestamp =
+            "2026-09-21T12:37:00.000Z";
+
+        const client = new FakeClient(
+            [metadata(replayId)],
+            new Map([[replayId, rows]]),
+        );
+
+        const result = await syncPostHogReplays({
+            client,
+            replaysDirectory: directory,
+        });
+
+        expect(result.failed).toEqual([]);
+
+        const [archive] = await readArchives(directory);
+
+        // 36-minute initial gap - 2 minutes allowed active time = 34 minutes AFK.
+        expect(archive).toMatchObject({
+            totalElapsedTime: "3m00s (+34m00s afk)",
+            totalAfkTime: "34m00s",
+        });
+
+        expect(result.added[0]).toMatchObject({
+            elapsedMs: 180_000,
+            afkMs: 2_040_000,
+        });
+    });
+
+    it("skips a completed archive explicitly marked timing unavailable", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "legacy-no-timing";
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }],
+            terminal: "quit",
+        });
+
+        const archive = makeArchive(replayId, rows);
+
+        const legacy: ArchivedReplay = {
+            ...archive,
+            timingUnavailable: true,
+            endedAt: undefined,
+            stepTelemetry: undefined,
+            totalDecisions: undefined,
+            totalElapsedTime: undefined,
+            totalAfkTime: undefined,
+            totalElapsedMs: undefined,
+        };
+
+        await writeArchivedReplay(directory, legacy);
+
+        const client = new FakeClient(
+            [metadata(replayId)],
+            new Map([[replayId, rows]]),
+        );
+
+        const result = await syncPostHogReplays({
+            client,
+            replaysDirectory: directory,
+        });
+
+        expect(client.fetched).toEqual([]);
+        expect(result.updated).toEqual([]);
+        expect(result.failed).toEqual([]);
+        expect(result.unchanged).toBe(1);
+    });
 });
 
 class FakeClient implements PostHogReplayClient {
