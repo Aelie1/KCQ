@@ -52,7 +52,7 @@ export interface PassiveReference {
 
 export interface BindingReference {
     id: BindingId;
-    status?: Partial<Record<BindingLevel, StatusLevelReference>>;
+    status?: Partial<Record<BindingLevel, StatusLevelReference[]>>;
 }
 
 export interface TrapReference {
