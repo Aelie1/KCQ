@@ -387,6 +387,7 @@ describe("Smart generic linked-threat targeting", () => {
         expect(Object.keys(first.candidates[0].components)).toEqual([
             "expectedDamage",
             "linkedThreat",
+            "incomingThreat",
             "bindingRecovery",
             "bindingMoveAccess",
             "pressureSourceProgress",

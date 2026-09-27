@@ -18,6 +18,8 @@ import type { FightPolicy, PolicyContext } from "../harness";
 import {
     assessSmartBoard,
     type SmartBoardAssessment,
+    type SmartEnemyAssessment,
+    type SmartEnemyTargetAssessment,
 } from "./smart-board";
 import {
     addBinding,
@@ -169,6 +171,26 @@ export interface LinkedThreatBreakdown {
     readonly raw: number;
 }
 
+export interface IncomingThreatEnemyBreakdown {
+    readonly enemyId: EntityId;
+    readonly baselineDebt: number;
+    readonly projectedDebt: number;
+    readonly threat: number;
+    readonly expectedDamage: number;
+    readonly currentHp: number;
+    readonly progressFraction: number;
+    readonly contribution: number;
+    readonly bindingTargets: readonly SmartEnemyTargetAssessment[];
+    readonly unknownIncomingBindingEffects: number;
+    readonly totalIncomingTrapAmount: number;
+}
+
+export interface IncomingThreatBreakdown {
+    /** Living enemies whose known committed binding pressure increases recovery debt. */
+    readonly enemies: readonly IncomingThreatEnemyBreakdown[];
+    readonly raw: number;
+}
+
 /** Tunable Smart-policy heuristic constants; none is an engine rule. */
 export const BINDING_RECOVERY_WEIGHT = 0.75;
 export const BINDING_MOVE_ACCESS_WEIGHT = 20;
@@ -177,6 +199,7 @@ export const FINISHER_PRESSURE_WEIGHT = 1;
 export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
 export const RESERVE_SPENDING_WEIGHT = 1;
 export const LINKED_THREAT_WEIGHT = 40;
+export const INCOMING_THREAT_WEIGHT = 1;
 
 /** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
 export const expectedDamageScorer: SmartScorer = {
@@ -197,6 +220,23 @@ export const linkedThreatScorer: SmartScorer = {
     },
     prepareDetailed(context) {
         const evaluate = prepareLinkedThreat(context);
+        return (candidate) => {
+            const diagnostics = evaluate(candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
+    },
+};
+
+/** Values damage progress against enemies with known committed binding pressure. */
+export const incomingThreatScorer: SmartScorer = {
+    id: "incomingThreat",
+    weight: INCOMING_THREAT_WEIGHT,
+    prepare(context, board) {
+        const evaluate = prepareIncomingThreat(context, board);
+        return (candidate) => evaluate(candidate).raw;
+    },
+    prepareDetailed(context, board) {
+        const evaluate = prepareIncomingThreat(context, board);
         return (candidate) => {
             const diagnostics = evaluate(candidate);
             return { raw: diagnostics.raw, diagnostics };
@@ -281,6 +321,7 @@ export const reserveSpendingScorer: SmartScorer = {
 export const smartScorers: readonly SmartScorer[] = [
     expectedDamageScorer,
     linkedThreatScorer,
+    incomingThreatScorer,
     bindingRecoveryScorer,
     bindingMoveAccessScorer,
     pressureSourceProgressScorer,
@@ -337,6 +378,15 @@ export function evaluateLinkedThreat(
     candidate: SmartCandidate,
 ): LinkedThreatBreakdown {
     return prepareLinkedThreat(context)(candidate);
+}
+
+/** Exposes known incoming binding threat and offensive progress for diagnostics. */
+export function evaluateIncomingThreat(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    candidate: SmartCandidate,
+): IncomingThreatBreakdown {
+    return prepareIncomingThreat(context, board)(candidate);
 }
 
 function prepareExpectedEnemyDamage(
@@ -418,6 +468,56 @@ function prepareLinkedThreat(
         }
 
         return { enemies, raw };
+    };
+}
+
+function prepareIncomingThreat(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+): (candidate: SmartCandidate) => IncomingThreatBreakdown {
+    const current = currentBindingBoard(context.state.characters);
+    const baselineDebt = totalRecoveryDebt(current, context.thresholds);
+    const assessmentsById = new Map(board.enemies.map((enemy) => [enemy.id, enemy] as const));
+    const threats = context.state.enemies.flatMap((enemy) => {
+        if (enemy.currHp <= 0) return [];
+        const assessment = assessmentsById.get(enemy.id);
+        if (assessment === undefined) return [];
+
+        const projected = cloneBindingBoard(current);
+        applyEnemyKnownIncoming(projected, assessment, context.thresholds.max);
+        const projectedDebt = totalRecoveryDebt(projected, context.thresholds);
+        const threat = Math.max(0, projectedDebt - baselineDebt);
+        return threat > 0 ? [{ enemy, assessment, projectedDebt, threat }] : [];
+    });
+
+    return (candidate) => {
+        const enemies: IncomingThreatEnemyBreakdown[] = threats.map(({
+            enemy,
+            assessment,
+            projectedDebt,
+            threat,
+        }) => {
+            const expectedDamage = expectedDamageToEnemy(candidate, enemy.id);
+            const progressFraction = clamp(expectedDamage / enemy.currHp, 0, 1);
+            const contribution = threat * progressFraction;
+            return {
+                enemyId: enemy.id,
+                baselineDebt,
+                projectedDebt,
+                threat,
+                expectedDamage,
+                currentHp: enemy.currHp,
+                progressFraction,
+                contribution,
+                bindingTargets: assessment.bindingTargets,
+                unknownIncomingBindingEffects: assessment.unknownIncomingBindingEffects,
+                totalIncomingTrapAmount: assessment.totalIncomingTrapAmount,
+            };
+        });
+        return {
+            enemies,
+            raw: enemies.reduce((total, enemy) => total + enemy.contribution, 0),
+        };
     };
 }
 
@@ -883,6 +983,24 @@ function applyKnownIncoming(
             addBinding(
                 projected,
                 character.id,
+                binding.bindingId,
+                binding.known,
+                maximum,
+            );
+        }
+    }
+}
+
+function applyEnemyKnownIncoming(
+    projected: BindingBoard,
+    enemy: SmartEnemyAssessment,
+    maximum: number,
+): void {
+    for (const target of enemy.bindingTargets) {
+        for (const binding of target.bindings) {
+            addBinding(
+                projected,
+                target.characterId,
                 binding.bindingId,
                 binding.known,
                 maximum,
