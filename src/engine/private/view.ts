@@ -87,8 +87,8 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
             actions.push({
                 move: serializeMove(actor, move),
                 available: reason === undefined,
-                reason: reason,
-                targets: targets.map(serializePreview),
+                ...(reason !== undefined ? { reason } : {}),
+                targets: reason !== undefined ? [] : targets.map(serializePreview),
                 effects: serializeEffects(effects.effects),
             });
         } else {
