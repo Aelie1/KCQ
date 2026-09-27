@@ -94,15 +94,25 @@ export class PostHogApiClient implements PostHogReplayClient {
                 max(timestamp) AS latest_event_at,
                 replaceOne(argMaxIf(event, timestamp, event IN ('battle_finished', 'battle_quit', 'battle_abandoned')), 'battle_', '') AS terminal,
                 greatest(
-                    1,
-                    maxIf(JSONExtractInt(properties.state_after, 'turn', 'round'), event = 'battle_action'),
-                    maxIf(JSONExtractInt(properties.final_state, 'turn', 'round'), event = 'battle_finished'),
-                    maxIf(JSONExtractInt(properties.current_state, 'turn', 'round'), event IN ('battle_quit', 'battle_abandoned'))
+                    greatest(
+                        1,
+                        maxIf(
+                            JSONExtractInt(properties.state_after, 'turn', 'round'),
+                            event = 'battle_action'
+                        )
+                    ),
+                    greatest(
+                        maxIf(
+                            JSONExtractInt(properties.final_state, 'turn', 'round'),
+                            event = 'battle_finished'
+                        ),
+                        maxIf(
+                            JSONExtractInt(properties.current_state, 'turn', 'round'),
+                            event IN ('battle_quit', 'battle_abandoned')
+                        )
+                    )
                 ) AS current_round,
-                greatest(
-                    countIf(event = 'battle_action'),
-                    maxIf(toInt64OrZero(toString(properties.action_count)), event IN ('battle_finished', 'battle_quit', 'battle_abandoned'))
-                ) AS action_count
+                countIf(event = 'battle_action') AS action_count
             FROM events
             WHERE event IN ('battle_started', 'battle_action', 'battle_finished', 'battle_quit', 'battle_abandoned')
               AND notEmpty(toString(properties.replay_id))
