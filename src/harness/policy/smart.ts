@@ -70,10 +70,24 @@ export interface BindingRecoveryBreakdown {
     readonly raw: number;
 }
 
-/** Tunable Smart-policy heuristic constants; neither is an engine rule. */
+export interface FutureMoveOptionsCharacterBreakdown {
+    readonly characterId: EntityId;
+    readonly gainedMoveIds: readonly string[];
+    readonly lostMoveIds: readonly string[];
+}
+
+export interface FutureMoveOptionsBreakdown {
+    readonly characters: readonly FutureMoveOptionsCharacterBreakdown[];
+    readonly gainedOptions: number;
+    readonly lostOptions: number;
+    readonly raw: number;
+}
+
+/** Tunable Smart-policy heuristic constants; none is an engine rule. */
 export const RECOVERY_DEBT_CURVE_A = 1.5;
 export const BINDING_RECOVERY_WEIGHT = 0.75;
 export const FINISHER_PRESSURE_WEIGHT = 1;
+export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
 
 /** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
 export const expectedDamageScorer: SmartScorer = {
@@ -91,6 +105,16 @@ export const bindingRecoveryScorer: SmartScorer = {
     weight: BINDING_RECOVERY_WEIGHT,
     prepare(context, board) {
         const evaluate = prepareBindingRecovery(context, board);
+        return (candidate) => evaluate(candidate).raw;
+    },
+};
+
+/** Coarsely values declarative gains and losses in future move-list membership. */
+export const futureMoveOptionsScorer: SmartScorer = {
+    id: "futureMoveOptions",
+    weight: FUTURE_MOVE_OPTIONS_WEIGHT,
+    prepare(context) {
+        const evaluate = prepareFutureMoveOptions(context);
         return (candidate) => evaluate(candidate).raw;
     },
 };
@@ -120,6 +144,7 @@ export const smartScorers: readonly SmartScorer[] = [
     expectedDamageScorer,
     bindingRecoveryScorer,
     finisherPressureScorer,
+    futureMoveOptionsScorer,
 ];
 
 /**
@@ -149,6 +174,14 @@ export function evaluateBindingRecovery(
     candidate: SmartCandidate,
 ): BindingRecoveryBreakdown {
     return prepareBindingRecovery(context, board)(candidate);
+}
+
+/** Exposes the future-move option delta for focused tests and diagnostics. */
+export function evaluateFutureMoveOptions(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): FutureMoveOptionsBreakdown {
+    return prepareFutureMoveOptions(context)(candidate);
 }
 
 /** Enumerates legal primary actions in stable public action-view order. */
@@ -253,41 +286,26 @@ function prepareBindingRecovery(
     const baselineDebt = totalRecoveryDebt(baseline, context.thresholds);
 
     return (candidate) => {
-        if (candidate.action.type !== "escape") {
-            return emptyBindingRecovery();
-        }
-
         const escaped = cloneBindingBoard(current);
-        for (const effect of candidate.effects) {
-            if (effect.type !== "binding" || effect.amount === undefined
-                || !characterIds.has(effect.target)) continue;
-            addBinding(
-                escaped,
-                effect.target,
-                effect.binding,
-                effect.amount,
-                context.thresholds.max,
-            );
-        }
+        applyCandidateBindingEffects(
+            escaped,
+            candidate,
+            characterIds,
+            context.thresholds.max,
+        );
         applyKnownIncoming(escaped, board, context.thresholds.max);
 
         const escapedDebt = totalRecoveryDebt(escaped, context.thresholds);
         const recoveryGain = baselineDebt - escapedDebt;
-        const selectedCurrent = bindingValue(
-            current,
-            candidate.action.target,
-            candidate.action.binding,
-        );
-        const selectedIncoming = knownIncoming(
-            board,
-            candidate.action.target,
-            candidate.action.binding,
-        );
-        const selectedProjectedValue = clamp(
-            selectedCurrent + selectedIncoming,
-            0,
-            context.thresholds.max,
-        );
+        const selected = candidate.action.type === "escape"
+            ? {
+                characterId: candidate.action.target,
+                bindingId: candidate.action.binding,
+            }
+            : worstRelievedBinding(baseline, escaped, context.thresholds);
+        const selectedProjectedValue = selected === undefined
+            ? 0
+            : bindingValue(baseline, selected.characterId, selected.bindingId);
         const selectedDebt = recoveryDebt(selectedProjectedValue, context.thresholds);
         const impossible = context.thresholds.thresholds.impossible;
         const debtAtImpossible = impossible === undefined
@@ -305,6 +323,60 @@ function prepareBindingRecovery(
             raw: recoveryGain * urgency,
         };
     };
+}
+
+function applyCandidateBindingEffects(
+    projected: BindingBoard,
+    candidate: SmartCandidate,
+    characterIds: ReadonlySet<EntityId>,
+    maximum: number,
+): void {
+    applyBindingEffects(projected, candidate.effects, characterIds, maximum);
+    for (const target of candidate.targets) {
+        for (let hit = 0; hit < candidate.hits; hit += 1) {
+            applyBindingEffects(projected, target.effects, characterIds, maximum);
+        }
+    }
+}
+
+function applyBindingEffects(
+    projected: BindingBoard,
+    effects: readonly Effect[],
+    characterIds: ReadonlySet<EntityId>,
+    maximum: number,
+): void {
+    for (const effect of effects) {
+        if (effect.type !== "binding" || effect.amount === undefined
+            || !characterIds.has(effect.target)) continue;
+        addBinding(
+            projected,
+            effect.target,
+            effect.binding,
+            effect.amount,
+            maximum,
+        );
+    }
+}
+
+function worstRelievedBinding(
+    baseline: BindingBoard,
+    projected: BindingBoard,
+    thresholds: ThresholdInfo,
+): { characterId: EntityId; bindingId: BindingId } | undefined {
+    let selected: { characterId: EntityId; bindingId: BindingId } | undefined;
+    let selectedDebt = -Infinity;
+
+    for (const [characterId, bindings] of baseline) {
+        for (const [bindingId, value] of bindings) {
+            if (bindingValue(projected, characterId, bindingId) >= value) continue;
+            const debt = recoveryDebt(value, thresholds);
+            if (debt > selectedDebt) {
+                selected = { characterId, bindingId };
+                selectedDebt = debt;
+            }
+        }
+    }
+    return selected;
 }
 
 function currentBindingBoard(context: PolicyContext): BindingBoard {
@@ -362,16 +434,6 @@ function bindingValue(
     return board.get(characterId)?.get(bindingId) ?? 0;
 }
 
-function knownIncoming(
-    board: SmartBoardAssessment,
-    characterId: EntityId,
-    bindingId: BindingId,
-): number {
-    return board.characters.find(({ id }) => id === characterId)
-        ?.incomingBindings.find((binding) => binding.bindingId === bindingId)
-        ?.known ?? 0;
-}
-
 function totalRecoveryDebt(board: BindingBoard, thresholds: ThresholdInfo): number {
     let total = 0;
     for (const bindings of board.values()) {
@@ -380,16 +442,69 @@ function totalRecoveryDebt(board: BindingBoard, thresholds: ThresholdInfo): numb
     return total;
 }
 
-function emptyBindingRecovery(): BindingRecoveryBreakdown {
-    return {
-        baselineDebt: 0,
-        escapedDebt: 0,
-        recoveryGain: 0,
-        selectedProjectedValue: 0,
-        selectedDebt: 0,
-        urgency: 1,
-        raw: 0,
+function prepareFutureMoveOptions(
+    context: PolicyContext,
+): (candidate: SmartCandidate) => FutureMoveOptionsBreakdown {
+    const characterIds = new Set(context.state.characters.map(({ id }) => id));
+    const currentMoves = new Map<EntityId, Set<string>>(
+        context.actions
+            .filter(({ id }) => characterIds.has(id))
+            .map((view) => [view.id, new Set(view.moves.map(({ move }) => move.id))]),
+    );
+
+    return (candidate) => {
+        const changes = new Map<EntityId, {
+            added: Set<string>;
+            blocked: Set<string>;
+        }>();
+        collectMoveListEffects(candidate.effects, characterIds, changes);
+        for (const target of candidate.targets) {
+            collectMoveListEffects(target.effects, characterIds, changes);
+        }
+
+        const characters: FutureMoveOptionsCharacterBreakdown[] = [];
+        let gainedOptions = 0;
+        let lostOptions = 0;
+        for (const [characterId, { added, blocked }] of changes) {
+            const before = currentMoves.get(characterId) ?? new Set<string>();
+            const after = new Set([...before, ...added]);
+            for (const moveId of blocked) after.delete(moveId);
+
+            const gainedMoveIds = [...after].filter((moveId) => !before.has(moveId));
+            const lostMoveIds = [...before].filter((moveId) => !after.has(moveId));
+            gainedOptions += gainedMoveIds.length;
+            lostOptions += lostMoveIds.length;
+            characters.push({ characterId, gainedMoveIds, lostMoveIds });
+        }
+
+        return {
+            characters,
+            gainedOptions,
+            lostOptions,
+            raw: gainedOptions - lostOptions,
+        };
     };
+}
+
+function collectMoveListEffects(
+    effects: readonly Effect[],
+    characterIds: ReadonlySet<EntityId>,
+    changes: Map<EntityId, { added: Set<string>; blocked: Set<string> }>,
+): void {
+    for (const effect of effects) {
+        // Removing a move-list buff cannot be reconstructed exactly from the
+        // public view, so remove operations are deliberately ignored for now.
+        if (effect.type !== "buff" || effect.operation !== "add"
+            || effect.moveList === undefined || !characterIds.has(effect.target)) continue;
+
+        let change = changes.get(effect.target);
+        if (change === undefined) {
+            change = { added: new Set(), blocked: new Set() };
+            changes.set(effect.target, change);
+        }
+        for (const moveId of effect.moveList.addedMoves ?? []) change.added.add(moveId);
+        for (const moveId of effect.moveList.blockedMoves ?? []) change.blocked.add(moveId);
+    }
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
