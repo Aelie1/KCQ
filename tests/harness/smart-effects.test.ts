@@ -9,6 +9,7 @@ import type {
     GameState,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
+import { createEmptyContentLibrary } from "../helpers/library";
 import {
     assessSmartBoard,
     evaluateBindingRecovery,
@@ -93,6 +94,7 @@ function context(
         state,
         actions,
         thresholds,
+        library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("Smart effects scoring must not use random"); },
             integer: () => { throw new Error("Smart effects scoring must not use random"); },

@@ -7,6 +7,7 @@ import type {
     GameState,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
+import { createEmptyContentLibrary } from "../helpers/library";
 import {
     assessSmartBoard,
     evaluateSmartDecision,
@@ -77,6 +78,7 @@ function context(gameState: GameState, actions: ActionView[]): PolicyContext {
         state: gameState,
         actions,
         thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("board assessment must not consume policy random"); },
             integer: () => { throw new Error("board assessment must not consume policy random"); },

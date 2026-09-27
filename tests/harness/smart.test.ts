@@ -16,6 +16,7 @@ import {
 import { runBatch } from "../../src/harness/batch/batch";
 import { getPolicy, policies } from "../../src/harness/policies";
 import {
+    bindingMoveAccessScorer,
     bindingRecoveryScorer,
     evaluateSmartDecision,
     expectedDamageScorer,
@@ -31,6 +32,7 @@ import {
 } from "../../src/harness/policy/smart";
 import { firstPolicy } from "../../src/harness/policy/first";
 import { createEngine } from "../../src/engine/public/engine";
+import { createEmptyContentLibrary } from "../helpers/library";
 
 function character(id: string): Character {
     return {
@@ -111,6 +113,7 @@ function context(actions: ActionView[], gameState = state()): PolicyContext {
         state: gameState,
         actions,
         thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("Smart must not consume policy random"); },
             integer: () => { throw new Error("Smart must not consume policy random"); },
@@ -305,6 +308,7 @@ describe("Smart 2 composable scoring", () => {
         expect(smartScorers).toEqual([
             expectedDamageScorer,
             bindingRecoveryScorer,
+            bindingMoveAccessScorer,
             pressureSourceProgressScorer,
             finisherPressureScorer,
             futureMoveOptionsScorer,
@@ -314,6 +318,8 @@ describe("Smart 2 composable scoring", () => {
         expect(expectedDamageScorer.weight).toBe(1);
         expect(bindingRecoveryScorer.id).toBe("bindingRecovery");
         expect(bindingRecoveryScorer.weight).toBe(0.75);
+        expect(bindingMoveAccessScorer.id).toBe("bindingMoveAccess");
+        expect(bindingMoveAccessScorer.weight).toBe(20);
         expect(pressureSourceProgressScorer.id).toBe("pressureSourceProgress");
         expect(pressureSourceProgressScorer.weight).toBe(1);
         expect(finisherPressureScorer.id).toBe("finisherPressure");
@@ -473,6 +479,8 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.expectedDamage.weight === 1
             && candidate.components.bindingRecovery.raw === 0
             && candidate.components.bindingRecovery.weight === 0.75
+            && candidate.components.bindingMoveAccess.raw === 0
+            && candidate.components.bindingMoveAccess.weight === 20
             && candidate.components.pressureSourceProgress.raw === 0
             && candidate.components.pressureSourceProgress.weight === 1
             && typeof candidate.components.finisherPressure.raw === "number"
@@ -483,6 +491,7 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.reserveSpending.weight === 1
             && candidate.total === candidate.components.expectedDamage.score
                 + candidate.components.bindingRecovery.score
+                + candidate.components.bindingMoveAccess.score
                 + candidate.components.pressureSourceProgress.score
                 + candidate.components.finisherPressure.score
                 + candidate.components.futureMoveOptions.score
@@ -578,6 +587,8 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.expectedDamage.weight === 1
                 && typeof candidate.components.bindingRecovery.raw === "number"
                 && candidate.components.bindingRecovery.weight === 0.75
+                && typeof candidate.components.bindingMoveAccess.raw === "number"
+                && candidate.components.bindingMoveAccess.weight === 20
                 && typeof candidate.components.pressureSourceProgress.raw === "number"
                 && candidate.components.pressureSourceProgress.weight === 1
                 && typeof candidate.components.finisherPressure.raw === "number"
@@ -588,6 +599,7 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.reserveSpending.weight === 1
                 && candidate.total === candidate.components.expectedDamage.score
                     + candidate.components.bindingRecovery.score
+                    + candidate.components.bindingMoveAccess.score
                     + candidate.components.pressureSourceProgress.score
                     + candidate.components.finisherPressure.score
                     + candidate.components.futureMoveOptions.score
@@ -637,6 +649,7 @@ describe("Smart 2 selection and integration", () => {
                     state: beforeState,
                     actions: beforeActions,
                     thresholds: createEngine(1).getThresholds(),
+                    library: createEmptyContentLibrary(),
                     random: createPolicyRandom(1),
                 },
                 decision.board,

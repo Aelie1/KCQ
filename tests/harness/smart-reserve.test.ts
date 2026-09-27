@@ -9,6 +9,7 @@ import type {
     GameState,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
+import { createEmptyContentLibrary } from "../helpers/library";
 import {
     evaluateReserveSpending,
     evaluateSmartDecision,
@@ -88,6 +89,7 @@ function context(
             move("future-option"),
         ])],
         thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("Reserve scoring must not use random"); },
             integer: () => { throw new Error("Reserve scoring must not use random"); },

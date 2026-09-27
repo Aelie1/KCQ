@@ -1,11 +1,15 @@
 import type {
     ActionInfo,
     BindingId,
+    BindingLevel,
     Effect,
     Enemy,
     EntityId,
     EscapeInfo,
+    MoveId,
+    MoveType,
     PlayerAction,
+    StatusId,
     ThresholdInfo,
     ValidTarget,
 } from "../../engine/public/types";
@@ -122,6 +126,19 @@ export interface FutureMoveOptionsBreakdown {
     readonly raw: number;
 }
 
+export interface BindingMoveAccessCharacterBreakdown {
+    readonly characterId: EntityId;
+    readonly gainedMoveIds: readonly MoveId[];
+    readonly lostMoveIds: readonly MoveId[];
+}
+
+export interface BindingMoveAccessBreakdown {
+    readonly characters: readonly BindingMoveAccessCharacterBreakdown[];
+    readonly gainedMoves: number;
+    readonly lostMoves: number;
+    readonly raw: number;
+}
+
 export interface ReserveSpendingBreakdown {
     readonly lostOptions: number;
     readonly offensiveValue: number;
@@ -132,6 +149,7 @@ export interface ReserveSpendingBreakdown {
 
 /** Tunable Smart-policy heuristic constants; none is an engine rule. */
 export const BINDING_RECOVERY_WEIGHT = 0.75;
+export const BINDING_MOVE_ACCESS_WEIGHT = 20;
 export const PRESSURE_SOURCE_PROGRESS_WEIGHT = 1;
 export const FINISHER_PRESSURE_WEIGHT = 1;
 export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
@@ -153,6 +171,23 @@ export const bindingRecoveryScorer: SmartScorer = {
     prepare(context, board) {
         const evaluate = prepareBindingRecovery(context, board);
         return (candidate) => evaluate(candidate).raw;
+    },
+};
+
+/** Values binding-threshold changes that alter access to currently present moves. */
+export const bindingMoveAccessScorer: SmartScorer = {
+    id: "bindingMoveAccess",
+    weight: BINDING_MOVE_ACCESS_WEIGHT,
+    prepare(context) {
+        const evaluate = prepareBindingMoveAccess(context);
+        return (candidate) => evaluate(candidate).raw;
+    },
+    prepareDetailed(context) {
+        const evaluate = prepareBindingMoveAccess(context);
+        return (candidate) => {
+            const diagnostics = evaluate(candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
     },
 };
 
@@ -206,6 +241,7 @@ export const reserveSpendingScorer: SmartScorer = {
 export const smartScorers: readonly SmartScorer[] = [
     expectedDamageScorer,
     bindingRecoveryScorer,
+    bindingMoveAccessScorer,
     pressureSourceProgressScorer,
     finisherPressureScorer,
     futureMoveOptionsScorer,
@@ -219,6 +255,14 @@ export function evaluateBindingRecovery(
     candidate: SmartCandidate,
 ): BindingRecoveryBreakdown {
     return prepareBindingRecovery(context, board)(candidate);
+}
+
+/** Exposes binding-derived move access changes for focused tests and diagnostics. */
+export function evaluateBindingMoveAccess(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): BindingMoveAccessBreakdown {
+    return prepareBindingMoveAccess(context)(candidate);
 }
 
 /** Exposes recurring-source progress and its per-source contributions. */
@@ -449,6 +493,132 @@ function prepareBindingRecovery(
             raw: recoveryGain * urgency,
         };
     };
+}
+
+function prepareBindingMoveAccess(
+    context: PolicyContext,
+): (candidate: SmartCandidate) => BindingMoveAccessBreakdown {
+    const characterIds = new Set(context.state.characters.map(({ id }) => id));
+    const current = currentBindingBoard(context.state.characters);
+    const currentMoves = new Map<EntityId, MoveId[]>(
+        context.actions
+            .filter(({ id }) => characterIds.has(id))
+            .map((view) => [
+                view.id,
+                [...new Set(view.moves.map(({ move }) => move.id))],
+            ]),
+    );
+    const currentRestrictions = bindingMoveTypeRestrictions(context, current);
+
+    return (candidate) => {
+        const projected = cloneBindingBoard(current);
+        applyCandidateBindingEffects(
+            projected,
+            candidate,
+            characterIds,
+            context.thresholds.max,
+        );
+        const projectedRestrictions = bindingMoveTypeRestrictions(context, projected);
+
+        const characters: BindingMoveAccessCharacterBreakdown[] = [];
+        let gainedMoves = 0;
+        let lostMoves = 0;
+        for (const character of context.state.characters) {
+            const before = currentRestrictions.get(character.id) ?? new Set<MoveType>();
+            const after = projectedRestrictions.get(character.id) ?? new Set<MoveType>();
+            const gainedMoveIds: MoveId[] = [];
+            const lostMoveIds: MoveId[] = [];
+
+            for (const moveId of currentMoves.get(character.id) ?? []) {
+                const moveType = context.library.moves[moveId]?.type;
+                if (moveType === undefined) continue;
+                if (before.has(moveType) && !after.has(moveType)) gainedMoveIds.push(moveId);
+                if (!before.has(moveType) && after.has(moveType)) lostMoveIds.push(moveId);
+            }
+
+            gainedMoves += gainedMoveIds.length;
+            lostMoves += lostMoveIds.length;
+            characters.push({
+                characterId: character.id,
+                gainedMoveIds,
+                lostMoveIds,
+            });
+        }
+
+        return {
+            characters,
+            gainedMoves,
+            lostMoves,
+            raw: gainedMoves - lostMoves,
+        };
+    };
+}
+
+function bindingMoveTypeRestrictions(
+    context: PolicyContext,
+    board: BindingBoard,
+): Map<EntityId, Set<MoveType>> {
+    return new Map(context.state.characters.map((character) => {
+        const characterReference = context.library.characters[character.id];
+        const passives = (characterReference?.passives ?? [])
+            .map((passiveId) => context.library.passives[passiveId])
+            .filter((passive) => passive !== undefined);
+        const immunities = new Set(passives.flatMap((passive) => passive.immunities ?? []));
+        const statusLevels = new Map<StatusId, number>();
+
+        for (const [bindingId, value] of board.get(character.id) ?? []) {
+            const level = bindingLevel(value, context.thresholds);
+            for (const status of context.library.bindings[bindingId]?.status?.[level] ?? []) {
+                if (immunities.has(status.id)) continue;
+                const previous = statusLevels.get(status.id);
+                if (previous === undefined || status.level > previous) {
+                    statusLevels.set(status.id, status.level);
+                }
+            }
+        }
+
+        const blocked = new Set<MoveType>();
+        const allowed = new Set<MoveType>();
+        for (const [statusId, level] of statusLevels) {
+            collectMoveTypeRules(
+                context.library.statuses[statusId]?.modifiers[level],
+                blocked,
+                allowed,
+            );
+        }
+        for (const passive of passives) {
+            collectMoveTypeRules(passive.status, blocked, allowed);
+        }
+        for (const type of allowed) blocked.delete(type);
+        return [character.id, blocked] as const;
+    }));
+}
+
+function collectMoveTypeRules(
+    reference: {
+        allowedMoveTypes?: MoveType[];
+        blockedMoveTypes?: MoveType[];
+    } | undefined,
+    blocked: Set<MoveType>,
+    allowed: Set<MoveType>,
+): void {
+    for (const type of reference?.blockedMoveTypes ?? []) blocked.add(type);
+    for (const type of reference?.allowedMoveTypes ?? []) allowed.add(type);
+}
+
+function bindingLevel(value: number, thresholds: ThresholdInfo): BindingLevel {
+    const levels: readonly BindingLevel[] = [
+        "impossible",
+        "extreme",
+        "hard",
+        "medium",
+        "easy",
+    ];
+    for (const level of levels) {
+        const threshold = thresholds.thresholds[level];
+        if (threshold !== undefined && value >= threshold) return level;
+    }
+    return "none";
 }
 
 function preparePressureSourceProgress(

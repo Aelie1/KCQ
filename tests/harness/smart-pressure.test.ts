@@ -8,6 +8,7 @@ import type {
     ValidTarget,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
+import { createEmptyContentLibrary } from "../helpers/library";
 import {
     assessSmartBoard,
     evaluatePressureSourceProgress,
@@ -50,6 +51,7 @@ function context(characters: Character[], actions: ActionView[] = []): PolicyCon
         state,
         actions,
         thresholds,
+        library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("pressure scoring must not consume policy random"); },
             integer: () => { throw new Error("pressure scoring must not consume policy random"); },

@@ -10,6 +10,7 @@ import type {
     PreviewInfo,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
+import { createEmptyContentLibrary } from "../helpers/library";
 import {
     evaluateSmartDecision,
     type ScoredSmartCandidate,
@@ -98,6 +99,7 @@ function context(
         state,
         actions,
         thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("finisher scoring must not consume policy random"); },
             integer: () => { throw new Error("finisher scoring must not consume policy random"); },

@@ -1,4 +1,5 @@
 import { createEngine } from "../engine/public/engine";
+import type { ContentLibrary } from "../engine/public/library";
 import type {
     ActionView,
     EventFrame,
@@ -24,6 +25,7 @@ export interface PolicyContext {
     readonly state: GameState;
     readonly actions: ActionView[];
     readonly thresholds: ThresholdInfo;
+    readonly library: ContentLibrary;
     readonly random: PolicyRandom;
 }
 
@@ -126,6 +128,7 @@ export interface SingleFightResult {
 export function runSingleFight(input: SingleFightInput): SingleFightResult {
     const engine = createEngine(input.engineSeed);
     const thresholds = engine.getThresholds();
+    const library = engine.getLibrary();
     const policyRandom = createPolicyRandom(input.policySeed);
     const trace: PlayerAction[] = [];
     let replay: FightReplay | undefined;
@@ -223,6 +226,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             state: view,
             actions,
             thresholds,
+            library,
             random: policyRandom,
         };
         const action = cloneAction(input.policy.chooseAction(context));

@@ -19,6 +19,7 @@ import { basicPolicy } from "../../src/harness/policy/basic";
 import { firstPolicy } from "../../src/harness/policy/first";
 import { randomPolicy } from "../../src/harness/policy/random";
 import { resolvedEvents } from "../helpers/events";
+import { createEmptyContentLibrary } from "../helpers/library";
 
 function stockEncounterId(): string {
     const encounterId = createEngine(1).listEncounters()[0];
@@ -71,6 +72,7 @@ function policyContext(actions: ActionView[]): PolicyContext {
         state: engine.getGameState(),
         actions,
         thresholds: engine.getThresholds(),
+        library: engine.getLibrary(),
         random: createPolicyRandom(1),
     };
 }
@@ -90,6 +92,24 @@ describe("policy-driven single-fight harness", () => {
         runSingleFight({ ...fightInput(policy, engineSeed), maxActions: 1 });
 
         expect(observed).toEqual(createEngine(engineSeed).getThresholds());
+    });
+
+    it("supplies the same public content library snapshot to every policy context", () => {
+        const observed: PolicyContext["library"][] = [];
+        const policy: FightPolicy = {
+            id: "library-observer",
+            chooseAction(context) {
+                observed.push(context.library);
+                return { type: "endTurn" };
+            },
+        };
+        const engineSeed = 27182;
+
+        runSingleFight({ ...fightInput(policy, engineSeed), maxActions: 2 });
+
+        expect(observed).toHaveLength(2);
+        expect(observed[0]).toBe(observed[1]);
+        expect(observed[0]).toEqual(createEngine(engineSeed).getLibrary());
     });
 
     it("omits replay capture by default and when explicitly disabled", () => {

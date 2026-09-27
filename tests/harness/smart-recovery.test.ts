@@ -9,6 +9,7 @@ import type {
     GameState,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
+import { createEmptyContentLibrary } from "../helpers/library";
 import {
     assessSmartBoard,
     BINDING_RECOVERY_WEIGHT,
@@ -87,6 +88,7 @@ function context(
         state,
         actions,
         thresholds,
+        library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("recovery scoring must not consume policy random"); },
             integer: () => { throw new Error("recovery scoring must not consume policy random"); },
