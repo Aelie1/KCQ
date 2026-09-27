@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import type { ActionSuccess, LeafEvent } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import {
@@ -517,9 +517,9 @@ describe("Skunkette behavior through GameEngine", () => {
                 amount: 80,
             })),
         });
-        const encounter = { id: "select-latex", enemies: [skunkette], bindings: [], traps: [] };
+        const encounter = { id: "select-latex", enemies: [skunkette.id], bindings: [], traps: [] };
         const hero = makeBehavioralCharacter("hero", [prepare]);
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [skunkette] });
         engine.loadCharacter(hero.id);
         execute(engine, {
             type: "move",
@@ -570,10 +570,10 @@ describe("Skunkette behavior through GameEngine", () => {
                 })),
             ],
         });
-        const encounter = { id: "mist", enemies: [skunkette], bindings: [], traps: [] };
+        const encounter = { id: "mist", enemies: [skunkette.id], bindings: [], traps: [] };
         const first = makeBehavioralCharacter("first", [prepare]);
         const second = makeBehavioralCharacter("second");
-        const engine = createCustomEngine([encounter], [first, second], 23);
+        const engine = createTestEngine([encounter], [first, second], 23, { enemies: [skunkette] });
         engine.loadCharacter(first.id);
         engine.loadCharacter(second.id);
         execute(engine, { type: "move", actor: "first", move: prepare.id, targets: [] });
@@ -623,9 +623,9 @@ describe("Skunkette behavior through GameEngine", () => {
                 },
             ],
         });
-        const encounter = { id: "mist-crit", enemies: [skunkette], bindings: [], traps: [] };
+        const encounter = { id: "mist-crit", enemies: [skunkette.id], bindings: [], traps: [] };
         const hero = makeBehavioralCharacter("hero", [prepare]);
-        const engine = createCustomEngine([encounter], [hero], 428);
+        const engine = createTestEngine([encounter], [hero], 428, { enemies: [skunkette] });
         engine.loadCharacter(hero.id);
         execute(engine, {
             type: "move",

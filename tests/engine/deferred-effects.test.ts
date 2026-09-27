@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import type { Engine } from "../../src/engine/public/types";
 import { resolvedEvents } from "../helpers/events";
@@ -14,7 +14,7 @@ function engineFor(move: ReturnType<typeof makeMove>): Engine {
         traps: [],
     };
     const hero = makeCharacterDef("hero", [move]);
-    const engine = createCustomEngine([encounter], [hero], 1);
+    const engine = createTestEngine([encounter], [hero], 1);
     engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
     return engine;
@@ -148,12 +148,12 @@ describe("deferred binding onResolve effects", () => {
         const enemy = makeEnemyDef("previewer", [deferred]);
         const encounter: EncounterDef = {
             id: "deferred-preview",
-            enemies: [enemy],
+            enemies: [enemy.id],
             bindings: [placeholder],
             traps: [],
         };
         const hero = makeCharacterDef("hero");
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [enemy] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 

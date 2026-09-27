@@ -2,17 +2,17 @@ import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { serializeGameState } from "../../src/engine/private/serialize";
 import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { GameStatus } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEntity, iGameState } from "../../src/engine/protected/types";
 import { makeBindingDef, makeCharacter, makeCharacterDef, makeEnemy, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
-import { multiEnemyEncounter, testAlly, testCharacterList, testHero } from "../helpers/testContent";
+import { multiEnemyEncounter, testAlly, testCharacterList, testEnemyList, testHero } from "../helpers/testContent";
 
 describe("character catalogue", () => {
     it("lists only injected ids and returns a fresh array", () => {
-        const engine = createCustomEngine([], testCharacterList, 1);
+        const engine = createTestEngine([], testCharacterList, 1);
 
         const listedIds = engine.listCharacters();
         expect(listedIds).toEqual([testHero.id, testAlly.id]);
@@ -27,7 +27,7 @@ describe("character catalogue", () => {
             ...makeCharacterDef("catalogued"),
             data: { marker: 7 },
         };
-        const engine = createCustomEngine([], [catalogued], 1);
+        const engine = createTestEngine([], [catalogued], 1);
 
         expect(engine.loadCharacter(catalogued.id)).toEqual({
             type: "loadCharacter",
@@ -41,7 +41,7 @@ describe("character catalogue", () => {
     });
 
     it("rejects an unknown id without mutating character state", () => {
-        const engine = createCustomEngine([], testCharacterList, 1);
+        const engine = createTestEngine([], testCharacterList, 1);
         const before = engine.getGameState().characters;
 
         expect(engine.loadCharacter("missing-character")).toEqual({
@@ -54,7 +54,7 @@ describe("character catalogue", () => {
     });
 
     it("cannot load a repository definition that was not injected", () => {
-        const engine = createCustomEngine([], testCharacterList, 1);
+        const engine = createTestEngine([], testCharacterList, 1);
 
         expect(engine.loadCharacter(ko.id)).toEqual({
             type: "loadCharacter",
@@ -68,7 +68,7 @@ describe("character catalogue", () => {
 
 describe("state serialization and combatant loading", () => {
     it("starts with an empty public player phase", () => {
-        const state = createCustomEngine([], [], 1).getGameState();
+        const state = createTestEngine([], [], 1).getGameState();
 
         expect(state).toEqual({
             turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
@@ -77,12 +77,12 @@ describe("state serialization and combatant loading", () => {
             traps: [],
             encounter: null,
         });
-        expect(createCustomEngine([], [], 1).getActionView()).toEqual([]);
+        expect(createTestEngine([], [], 1).getActionView()).toEqual([]);
         expect(state).not.toHaveProperty("nextEntityId");
     });
 
     it("publishes the current binding thresholds through the public API", () => {
-        expect(createCustomEngine([], [], 1).getThresholds()).toEqual({
+        expect(createTestEngine([], [], 1).getThresholds()).toEqual({
             thresholds: {
                 easy: 10,
                 medium: 20,
@@ -96,7 +96,7 @@ describe("state serialization and combatant loading", () => {
 
     it("reports victory when no enemies are present", () => {
         const hero = makeCharacterDef("hero");
-        const engine = createCustomEngine([], [hero], 1);
+        const engine = createTestEngine([], [hero], 1);
         engine.loadCharacter(hero.id);
 
         expect(engine.getGameState().turn.outcome).toBe("victory");
@@ -106,9 +106,10 @@ describe("state serialization and combatant loading", () => {
         const capture = makeBindingDef("capture", {
             easy: [{ definition: incapacitated, value: 1 }],
         });
+        const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
             id: "defeat-state",
-            enemies: [makeEnemyDef("foe", [makeWaitMove()])],
+            enemies: [foe.id],
             bindings: [capture],
             traps: [],
             setup: (state) => state.characters.map((character) => ({
@@ -121,7 +122,7 @@ describe("state serialization and combatant loading", () => {
         };
         const hero = makeCharacterDef("hero");
         const ally = makeCharacterDef("ally");
-        const engine = createCustomEngine([encounter], [hero, ally], 1);
+        const engine = createTestEngine([encounter], [hero, ally], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadCharacter(ally.id);
         engine.loadEncounter(encounter.id);
@@ -133,9 +134,10 @@ describe("state serialization and combatant loading", () => {
         const capture = makeBindingDef("capture", {
             easy: [{ definition: incapacitated, value: 1 }],
         });
+        const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
             id: "ongoing-state",
-            enemies: [makeEnemyDef("foe", [makeWaitMove()])],
+            enemies: [foe.id],
             bindings: [capture],
             traps: [],
             setup: (state) => [{
@@ -148,7 +150,7 @@ describe("state serialization and combatant loading", () => {
         };
         const hero = makeCharacterDef("hero");
         const ally = makeCharacterDef("ally");
-        const engine = createCustomEngine([encounter], [hero, ally], 1);
+        const engine = createTestEngine([encounter], [hero, ally], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadCharacter(ally.id);
         engine.loadEncounter(encounter.id);
@@ -158,7 +160,7 @@ describe("state serialization and combatant loading", () => {
 
     it("loads definitions into fresh combatant state through an encounter", () => {
         const hero = makeCharacterDef("hero");
-        const engine = createCustomEngine([multiEnemyEncounter], [hero], 1);
+        const engine = createTestEngine([multiEnemyEncounter], [hero], 1, { enemies: testEnemyList });
         engine.loadCharacter(hero.id);
 
         const events = engine.loadEncounter(multiEnemyEncounter.id);
@@ -210,8 +212,8 @@ describe("state serialization and combatant loading", () => {
         });
         const hero = makeCharacterDef("hero", [prepare]);
         const enemy = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "serialization", enemies: [enemy], bindings: [], traps: [] };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const encounter = { id: "serialization", enemies: [enemy.id], bindings: [], traps: [] };
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [enemy] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
         const result = engine.executeAction({

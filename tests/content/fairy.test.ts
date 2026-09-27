@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { fairy } from "../../src/content/skunk/fairy";
+import { skunkette } from "../../src/content/skunk/skunkette";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { Random } from "../../src/engine/protected/random";
 import type { iEnemy, iGameState, iMoveEffect } from "../../src/engine/protected/types";
 import type { Engine, HitBand } from "../../src/engine/public/types";
@@ -106,13 +107,13 @@ function makeEngine(
 ): Engine {
     const encounter: EncounterDef = {
         id: "fairy-test",
-        enemies,
+        enemies: enemies.map(enemy => enemy.id),
         bindings: [],
         traps: [],
         setup,
     };
     const hero = makeBehavioralCharacter("hero", moves);
-    const engine = createCustomEngine([encounter], [hero], seed);
+    const engine = createTestEngine([encounter], [hero], seed, { enemies });
     engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
     return engine;
@@ -210,12 +211,12 @@ describe("Binding Magic", () => {
     it("executes the selected binding through the enemy phase", () => {
         const encounter: EncounterDef = {
             id: "fairy-binding-test",
-            enemies: [fairy],
+            enemies: [fairy.id],
             bindings: [latexHead, latexArms, latexTorso, latexLegs],
             traps: [],
         };
         const hero = makeBehavioralCharacter("hero");
-        const engine = createCustomEngine([encounter], [hero], 2);
+        const engine = createTestEngine([encounter], [hero], 2, { enemies: [fairy, skunkette] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
@@ -246,7 +247,7 @@ describe("Binding Magic", () => {
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
         const encounter: EncounterDef = {
             id: "fairy-fully-bound-test",
-            enemies: [fairy],
+            enemies: [fairy.id],
             bindings,
             traps: [],
             setup: (state) => bindings.map((binding) => ({
@@ -258,7 +259,7 @@ describe("Binding Magic", () => {
             })),
         };
         const hero = makeBehavioralCharacter("hero");
-        const engine = createCustomEngine([encounter], [hero], 2);
+        const engine = createTestEngine([encounter], [hero], 2, { enemies: [fairy, skunkette] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BattleUI } from "../../src/console/controller";
-import { characterList, encounterList } from "../../src/content/content";
+import { contentCatalog } from "../../src/content/content";
 import { createEngine } from "../../src/engine/public/engine";
 import {
     attachBattlePageLifecycle,
@@ -12,13 +12,13 @@ import type { BattleTelemetryObserver } from "../../src/web/telemetry";
 
 describe("web battle application", () => {
     it("loads the full character list in order for every selectable encounter", () => {
-        for (const encounter of encounterList) {
+        for (const encounter of contentCatalog.encounters) {
             const engine = createEngine();
             const battle = createBattle(engine, encounter.id);
             const view = battle.engine.getGameState();
 
             expect(view.characters.map((character) => character.id)).toEqual(
-                characterList.map((character) => character.id),
+                contentCatalog.characters.map((character) => character.id),
             );
             expect(view.encounter?.id).toBe(encounter.id);
             expect(battle.encounterId).toBe(encounter.id);
@@ -37,7 +37,7 @@ describe("web battle application", () => {
         };
         const engine = createEngine();
 
-        await expect(startBattle(engine, encounterList[0].id, ui)).resolves.toBeUndefined();
+        await expect(startBattle(engine, contentCatalog.encounters[0].id, ui)).resolves.toBeUndefined();
         expect(close).toHaveBeenCalledOnce();
     });
 

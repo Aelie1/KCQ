@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import type { Engine, FailureReason, PlayerAction } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import {
@@ -32,8 +32,8 @@ function expectMoveRejection(
 }
 
 function setupAuthoredCombat(): Engine {
-    const encounter = { id: "authored-skunkette", enemies: [skunkette], bindings: [], traps: [] };
-    const engine = createCustomEngine([encounter], [ko], AUTHORED_HIT_SEED);
+    const encounter = { id: "authored-skunkette", enemies: [skunkette.id], bindings: [], traps: [] };
+    const engine = createTestEngine([encounter], [ko], AUTHORED_HIT_SEED, { enemies: [skunkette] });
     engine.loadCharacter(ko.id);
     engine.loadEncounter(encounter.id);
     return engine;
@@ -50,8 +50,8 @@ describe("move validation and player actions", () => {
         const twoTargets = makeMove("two-targets", "mouth", { targets: 2 });
         const hero = makeCharacterDef("hero", [legal, targetless, allTargets, twoTargets]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "validation", enemies: [foe], bindings: [], traps: [] };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const encounter = { id: "validation", enemies: [foe.id], bindings: [], traps: [] };
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
         return { engine, hero, legal, targetless, allTargets, twoTargets, foeId: `${foe.id}1` };
@@ -122,8 +122,8 @@ describe("move validation and player actions", () => {
         });
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "nonlethal-damage", enemies: [foe], bindings: [], traps: [] };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const encounter = { id: "nonlethal-damage", enemies: [foe.id], bindings: [], traps: [] };
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
         const foeId = `${foe.id}1`;
@@ -173,8 +173,8 @@ describe("move validation and player actions", () => {
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         foe.hp = enemyHp;
-        const encounter = { id: "lethal-damage", enemies: [foe], bindings: [], traps: [] };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const encounter = { id: "lethal-damage", enemies: [foe.id], bindings: [], traps: [] };
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
         const foeId = `${foe.id}1`;
@@ -241,8 +241,8 @@ describe("move validation and player actions", () => {
     it("exposes, targets, and executes Ko's authored Fairy Telekinesis", () => {
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         foe.hp = 500;
-        const encounter = { id: "fairy-telekinesis", enemies: [foe], bindings: [], traps: [] };
-        const engine = createCustomEngine([encounter], [ko], AUTHORED_HIT_SEED);
+        const encounter = { id: "fairy-telekinesis", enemies: [foe.id], bindings: [], traps: [] };
+        const engine = createTestEngine([encounter], [ko], AUTHORED_HIT_SEED, { enemies: [foe] });
         engine.loadCharacter(ko.id);
         engine.loadEncounter(encounter.id);
         const enemyId = "foe1";

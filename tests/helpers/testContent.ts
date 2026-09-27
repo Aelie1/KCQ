@@ -13,14 +13,14 @@ export const basicAttackingEnemy = makeEnemyDef("attacker", [basicAttack]);
 
 export const oneEnemyEncounter: EncounterDef = {
     id: "one-enemy",
-    enemies: [waitEnemy],
+    enemies: [waitEnemy.id],
     bindings: [],
     traps: [],
 };
 
 export const multiEnemyEncounter: EncounterDef = {
     id: "multi-enemy",
-    enemies: [waitEnemy, basicAttackingEnemy],
+    enemies: [waitEnemy.id, basicAttackingEnemy.id],
     bindings: [],
     traps: [],
 };
@@ -30,3 +30,5 @@ export const testHero = makeCharacterDef("hero");
 export const testAlly = makeCharacterDef("ally");
 
 export const testCharacterList: CharacterDef[] = [testHero, testAlly];
+
+export const testEnemyList = [waitEnemy, basicAttackingEnemy];

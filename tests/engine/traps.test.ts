@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, StatusDef, StatusLevelDef, TrapDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import type { Engine, FailureReason, PlayerAction } from "../../src/engine/public/types";
 import { resolvedEvents, resultDetails } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
@@ -46,7 +46,7 @@ function makeTrapEngine(
         setup,
     };
     const characters = characterIds.map((id) => makeCharacterDef(id, moves));
-    const engine = createCustomEngine([encounter], characters, seed);
+    const engine = createTestEngine([encounter], characters, seed);
     for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;

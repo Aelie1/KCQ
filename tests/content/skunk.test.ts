@@ -2,8 +2,9 @@ import { describe, expect, it } from "vitest";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import { skunk } from "../../src/content/skunk/skunk";
+import { skunkette } from "../../src/content/skunk/skunkette";
 import type { BindingDef, EncounterDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { isEnemy } from "../../src/engine/protected/helpers";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type { Engine } from "../../src/engine/public/types";
@@ -29,7 +30,7 @@ function loadSkunk(options: {
     const characterIds = options.characterIds ?? ["hero"];
     const encounter: EncounterDef = {
         id: "skunk-test",
-        enemies: [skunk],
+        enemies: [skunk.id],
         bindings: BODY_LATEX,
         traps: options.trapAmount === null ? [] : [{
             definition: trapPuddle,
@@ -45,7 +46,7 @@ function loadSkunk(options: {
         },
     };
     const characters = characterIds.map((id) => makeCharacterDef(id, options.moves));
-    const engine = createCustomEngine([encounter], characters, options.seed);
+    const engine = createTestEngine([encounter], characters, options.seed, { enemies: [skunk, skunkette] });
     for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;
@@ -99,7 +100,7 @@ describe("normal Latex Skunk", () => {
             maxHp: 300,
             currHp: 300,
             currDef: 0,
-            intentions: [{ move: "latexSpray" }],
+            intentions: [{ move: "latexShower" }],
         });
         expect(enemy.intentions[0]?.targets).toHaveLength(1);
     });
@@ -131,7 +132,7 @@ describe("normal Latex Skunk", () => {
         (seed, band) => {
             const engine = loadSkunk({ seed, trapAmount: 100 });
             const preview = engine.getGameState().enemies[0].intentions[0];
-            expect(preview?.move).toBe("latexSpray");
+            expect(preview?.move).toBe("latexShower");
             expect(preview?.targets[0]?.band).toBe(band);
             const previewBinding = preview?.targets[0]?.effects.find(
                 (effect) => effect.type === "binding",
@@ -293,7 +294,7 @@ describe("normal Latex Skunk", () => {
 
     it("does not regenerate when no Latex has a recoverable peak", () => {
         const engine = loadSkunk({ seed: 1 });
-        expect(engine.getGameState().enemies[0].intentions[0]?.move).toBe("latexSpray");
+        expect(engine.getGameState().enemies[0].intentions[0]?.move).toBe("latexShower");
     });
 
     it("leaves recoverable Latex unchanged when Regeneration misses", () => {
@@ -358,7 +359,7 @@ describe("normal Latex Skunk", () => {
         });
         const oldIntention = engine.getGameState().enemies[0].intentions[0];
         expect(oldIntention).toMatchObject({
-            move: "latexSpray",
+            move: "latexShower",
             targets: [{ target: expect.any(String) }],
         });
         const oldTarget = oldIntention.targets[0]?.target;

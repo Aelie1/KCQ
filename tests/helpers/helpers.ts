@@ -1,6 +1,6 @@
 import { expect } from "vitest";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "./testCatalog";
 import type { iBinding, iCharacter, iEffect, iEnemy, iMoveResult, iStatus } from "../../src/engine/protected/types";
 import type { BindingLevel, Engine, FailureReason, MoveType } from "../../src/engine/public/types";
 import { actionView } from "./actionView";
@@ -121,6 +121,7 @@ export function makeEnemyDef(
         hp: 37,
         defense: 0,
         passives: [],
+        moves,
         ai: ai ?? ((state, actor) => [{
             type: "move",
             actor,
@@ -150,6 +151,7 @@ export function setupBoundEngine(
     amount: number,
     additionalEncounters: EncounterDef[] = [],
     additionalCharacters: CharacterDef[] = [],
+    additionalEnemies: EnemyDef[] = [],
 ) {
     const setupMove = makeMove("apply-binding", "mouth", {
         targetSide: "player",
@@ -165,11 +167,12 @@ export function setupBoundEngine(
     const mouthMove = makeMove("mouth-move", "mouth");
     const hero = makeCharacterDef("hero", [setupMove, armsMove, mouthMove]);
     const foe = makeEnemyDef("foe", [makeWaitMove()]);
-    const encounter: EncounterDef = { id: "bound-test", enemies: [foe], bindings: [], traps: [] };
-    const engine = createCustomEngine(
+    const encounter: EncounterDef = { id: "bound-test", enemies: [foe.id], bindings: [], traps: [] };
+    const engine = createTestEngine(
         [encounter, ...additionalEncounters],
         [hero, ...additionalCharacters],
         1,
+        { enemies: [foe, ...additionalEnemies] },
     );
     engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);

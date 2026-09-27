@@ -4,8 +4,9 @@ import { queen } from "../../src/content/skunk/queen";
 import { rainmaker } from "../../src/content/skunk/rainmaker";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
+import { fairy } from "../../src/content/skunk/fairy";
 import type { CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { isCharacter, isEnemy } from "../../src/engine/protected/helpers";
 import { mixSeed, Random } from "../../src/engine/protected/random";
 import { s } from "../../src/engine/protected/status";
@@ -39,15 +40,18 @@ interface QueenSetup {
 }
 
 function loadQueen(options: QueenSetup = {}): Engine {
+    const enemies = [queen, ...(options.enemies ?? [])];
     const encounter: EncounterDef = {
         id: "queen-test",
-        enemies: [queen, ...(options.enemies ?? [])],
+        enemies: enemies.map(enemy => enemy.id),
         bindings: [latexCollar, ...BODY_LATEX],
         traps: [],
         setup: options.setup,
     };
     const characters = options.characters ?? [makeBehavioralCharacter("hero")];
-    const engine = createCustomEngine([encounter], characters, options.seed ?? 1);
+    const engine = createTestEngine([encounter], characters, options.seed ?? 1, {
+        enemies: [...enemies, skunkette, skunk, fairy, rainmaker],
+    });
     for (const character of characters) {
         engine.loadCharacter(character.id);
     }

@@ -6,9 +6,10 @@ import {
 } from "../../src/console/controller";
 import { playActionGroups } from "../../src/console/presentation";
 import { ko } from "../../src/content/characters/ko";
-import { encounterList } from "../../src/content/content";
+import { contentCatalog } from "../../src/content/content";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
+import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { Engine } from "../../src/engine/public/types";
@@ -33,12 +34,13 @@ describe("shared battle controller", () => {
             }],
         });
         const hero = makeCharacterDef("hero");
+        const enemies = [makeEnemyDef("foeA", [bind]), makeEnemyDef("foeB", [bind]), makeEnemyDef("foeC", [bind])];
         const encounter: EncounterDef = {
             id: "frame-playback",
-            enemies: [makeEnemyDef("foeA", [bind]), makeEnemyDef("foeB", [bind]), makeEnemyDef("foeC", [bind])],
+            enemies: enemies.map(enemy => enemy.id),
             bindings: [restraint], traps: [],
         };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies });
         engine.loadCharacter(hero.id);
         const loaded = engine.loadEncounter(encounter.id);
         const visibleBindings: number[] = [];
@@ -75,7 +77,7 @@ describe("shared battle controller", () => {
         }
     });
     it("presents numbered choices through a UI adapter and validates its response", async () => {
-        const engine = createCustomEngine(encounterList, [ko], 8224);
+        const engine = createCatalogEngine(contentCatalog, 8224);
         const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const requests: BattleChoiceRequest[] = [];
         const answers = [99, 3];
@@ -113,7 +115,7 @@ describe("shared battle controller", () => {
     });
 
     it("allows a UI adapter to quit from any active menu", async () => {
-        const engine = createCustomEngine(encounterList, [ko], 8224);
+        const engine = createCatalogEngine(contentCatalog, 8224);
         const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const requests: BattleChoiceRequest[] = [];
         const close = vi.fn();
@@ -137,14 +139,15 @@ describe("shared battle controller", () => {
     it("matches action and target labels to pinned and overflow button shortcuts", async () => {
         const hero = makeCharacterDef("hero", Array.from({ length: 11 }, (_, index) =>
             makeMove(`move${index + 1}`)));
+        const enemies = Array.from({ length: 10 }, (_, index) =>
+            makeEnemyDef(`foe${index + 1}`, [makeWaitMove()]));
         const encounter: EncounterDef = {
             id: "shortcut-menu",
-            enemies: Array.from({ length: 10 }, (_, index) =>
-                makeEnemyDef(`foe${index + 1}`, [makeWaitMove()])),
+            enemies: enemies.map(enemy => enemy.id),
             bindings: [],
             traps: [],
         };
-        const engine = createCustomEngine([encounter], [hero], 8224);
+        const engine = createTestEngine([encounter], [hero], 8224, { enemies });
         const events = [engine.loadCharacter(hero.id), engine.loadEncounter(encounter.id)];
         const requests: BattleChoiceRequest[] = [];
         await runBattleController(engine, encounter.id, events, {
@@ -197,13 +200,14 @@ describe("shared battle controller", () => {
             cooldown: { coolingTwo: 2, coolingFour: 4, zero: 0 },
         });
         const hero = makeCharacterDef("hero", [ready, coolingTwo, coolingFour, zero, trigger]);
+        const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
             id: "cooldown-menu",
-            enemies: [makeEnemyDef("foe", [makeWaitMove()])],
+            enemies: [foe.id],
             bindings: [],
             traps: [],
         };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         const events = [engine.loadCharacter(hero.id), engine.loadEncounter(encounter.id)];
         expect(engine.executeAction({
             type: "move", actor: hero.id, move: trigger.id, targets: ["foe1"],
@@ -238,7 +242,7 @@ describe("shared battle controller", () => {
     });
 
     it("renders victory from the public outcome without requesting a choice", async () => {
-        const engine = createCustomEngine([], [ko], 8224);
+        const engine = createTestEngine([], [ko], 8224);
         const events = engine.loadCharacter(ko.id);
         const choose = vi.fn(async () => "quit" as const);
         const finalScreens: BattleChoiceRequest["screen"][] = [];
@@ -266,9 +270,10 @@ describe("shared battle controller", () => {
         const capture = makeBindingDef("capture", {
             easy: [{ definition: incapacitated, value: 1 }],
         });
+        const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
             id: "defeat-state",
-            enemies: [makeEnemyDef("foe", [makeWaitMove()])],
+            enemies: [foe.id],
             bindings: [capture],
             traps: [],
             setup: (state) => state.characters.map((character) => ({
@@ -280,7 +285,7 @@ describe("shared battle controller", () => {
             })),
         };
         const hero = makeCharacterDef("hero");
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
         const choose = vi.fn(async () => "quit" as const);
@@ -300,7 +305,7 @@ describe("shared battle controller", () => {
     });
 
     it("continues interaction when outcome is ongoing even if no enemies are visible", async () => {
-        const base = createCustomEngine([], [ko], 8224);
+        const base = createTestEngine([], [ko], 8224);
         base.loadCharacter(ko.id);
         const engine = new Proxy(base, {
             get(target, property) {
@@ -326,13 +331,14 @@ describe("shared battle controller", () => {
     it("notifies the observer after a normal player action", async () => {
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [wait]);
+        const foe = makeEnemyDef("foe", [wait]);
         const encounter: EncounterDef = {
             id: "observer-player-action",
-            enemies: [makeEnemyDef("foe", [wait])],
+            enemies: [foe.id],
             bindings: [],
             traps: [],
         };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
         const onAction = vi.fn();
@@ -359,13 +365,14 @@ describe("shared battle controller", () => {
     it("offers ordered enemy groups through the optional playback seam", async () => {
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [wait]);
+        const foe = makeEnemyDef("foe", [wait]);
         const encounter: EncounterDef = {
             id: "controller-playback",
-            enemies: [makeEnemyDef("foe", [wait]), makeEnemyDef("foe", [wait])],
+            enemies: [foe.id, foe.id],
             bindings: [],
             traps: [],
         };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
         const playbacks: Parameters<NonNullable<BattleUI["playback"]>>[0][] = [];
@@ -392,13 +399,14 @@ describe("shared battle controller", () => {
     it("reports the controller's automatic end turn separately", async () => {
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [wait]);
+        const foe = makeEnemyDef("foe", [wait]);
         const encounter: EncounterDef = {
             id: "observer-automatic-action",
-            enemies: [makeEnemyDef("foe", [wait])],
+            enemies: [foe.id],
             bindings: [],
             traps: [],
         };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
         const onAction = vi.fn();
@@ -432,13 +440,14 @@ describe("shared battle controller", () => {
         });
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [strike]);
+        const foe = makeEnemyDef("foe", [wait]);
         const encounter: EncounterDef = {
             id: "observer-outcome",
-            enemies: [makeEnemyDef("foe", [wait])],
+            enemies: [foe.id],
             bindings: [],
             traps: [],
         };
-        const engine = createCustomEngine([encounter], [hero], 1);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
         const onAction = vi.fn();
@@ -464,7 +473,7 @@ describe("shared battle controller", () => {
     });
 
     it("notifies the observer when an ongoing battle is quit", async () => {
-        const engine = createCustomEngine(encounterList, [ko], 8224);
+        const engine = createCatalogEngine(contentCatalog, 8224);
         const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const onQuit = vi.fn();
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
 import { matsuko } from "../../src/content/characters/matsuko";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { s } from "../../src/engine/protected/status";
 import { gagged, servitude } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
@@ -43,15 +43,16 @@ function loadMatsukoEncounter(options: {
     setup?: EncounterDef["setup"];
     seed?: number;
 } = {}): Engine {
+    const enemies = options.enemies ?? [durableEnemy()];
     const encounter: EncounterDef = {
         id: "matsuko-test",
-        enemies: options.enemies ?? [durableEnemy()],
+        enemies: enemies.map(enemy => enemy.id),
         bindings: [],
         traps: [],
         setup: options.setup,
     };
     const allies = options.allies ?? [];
-    const engine = createCustomEngine([encounter], [matsuko, ...allies], options.seed ?? 1);
+    const engine = createTestEngine([encounter], [matsuko, ...allies], options.seed ?? 1, { enemies });
     engine.loadCharacter(matsuko.id);
     for (const ally of allies) engine.loadCharacter(ally.id);
     engine.loadEncounter(encounter.id);

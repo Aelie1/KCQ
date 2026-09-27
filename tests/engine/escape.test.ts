@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { BindingDef, StatusDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { getEscapePotency, thresholds } from "../../src/engine/protected/mechanics";
 import type { Effect, Engine } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
@@ -33,7 +33,7 @@ function setupEscapeScenario(
     const characters = characterIds.map((id) =>
         makeCharacterDef(id, id === actorId ? [prepare] : []),
     );
-    const engine = createCustomEngine([], characters, 1);
+    const engine = createTestEngine([], characters, 1);
     for (const character of characters) {
         engine.loadCharacter(character.id);
     }
@@ -288,14 +288,14 @@ describe("escape progress", () => {
         ["unknown binding", { type: "escape", actor: "hero", target: "hero", binding: "missing" }, "invalidBinding"],
     ] as const)("rejects an %s", (_label, action, reason) => {
         const hero = makeCharacterDef("hero");
-        const engine = createCustomEngine([], [hero], 1);
+        const engine = createTestEngine([], [hero], 1);
         engine.loadCharacter(hero.id);
 
         expect(engine.executeAction(action)).toEqual({ success: false, reason });
     });
 
     it("omits action information for an invalid actor", () => {
-        expect(createCustomEngine([], [], 1).getActionView()
+        expect(createTestEngine([], [], 1).getActionView()
             .find(({ id }) => id === "missing")).toBeUndefined();
     });
 });

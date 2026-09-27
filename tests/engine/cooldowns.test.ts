@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import type { Engine } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import {
@@ -14,12 +14,12 @@ function makeCooldownEngine(moves: MoveDef[], enemy?: EnemyDef): Engine {
     const foe = enemy ?? makeEnemyDef("foe", [makeWaitMove()]);
     const encounter = {
         id: "cooldown-test",
-        enemies: [foe],
+        enemies: [foe.id],
         bindings: [],
         traps: [],
     };
     const hero = makeCharacterDef("hero", moves);
-    const engine = createCustomEngine([encounter], [hero], 1);
+    const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
     engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
     return engine;

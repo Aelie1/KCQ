@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { BindingDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { bound, helpless, immobilized, incapacitated, stunned } from "../../src/engine/protected/statuses";
 import { actionView } from "../helpers/actionView";
@@ -31,7 +31,7 @@ function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: numbe
     });
     const helper = makeCharacterDef("helper", [prepare]);
     const target = makeCharacterDef("target");
-    const engine = createCustomEngine([], [helper, target], 1);
+    const engine = createTestEngine([], [helper, target], 1);
     engine.loadCharacter(helper.id);
     engine.loadCharacter(target.id);
     expect(engine.executeAction({

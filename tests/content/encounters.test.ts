@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
-import { encounterList } from "../../src/content/content";
+import { contentCatalog } from "../../src/content/content";
 import { plains_1, plains_2 } from "../../src/content/skunk/encounters";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
+import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { actionView } from "../helpers/actionView";
 import { makeEnemyDef, makeWaitMove } from "../helpers/helpers";
 import {
@@ -14,6 +15,7 @@ import {
     multiEnemyEncounter,
     oneEnemyEncounter,
     testCharacterList,
+    testEnemyList,
     testHero,
     waitEnemy,
 } from "../helpers/testContent";
@@ -21,7 +23,7 @@ import {
 describe("encounters", () => {
     it("lists only ids from the injected catalogue and returns a fresh array", () => {
         const catalogue = [oneEnemyEncounter, multiEnemyEncounter];
-        const engine = createCustomEngine(catalogue, testCharacterList, 1);
+        const engine = createTestEngine(catalogue, testCharacterList, 1, { enemies: testEnemyList });
 
         const listedIds = engine.listEncounters();
         expect(listedIds).toEqual(catalogue.map((encounter) => encounter.id));
@@ -34,7 +36,7 @@ describe("encounters", () => {
     });
 
     it("searches only the injected catalogue", () => {
-        const engine = createCustomEngine([oneEnemyEncounter], testCharacterList, 1);
+        const engine = createTestEngine([oneEnemyEncounter], testCharacterList, 1, { enemies: testEnemyList });
         engine.loadCharacter(testHero.id);
 
         expect(engine.loadEncounter(plains_1.id)).toEqual({
@@ -48,7 +50,7 @@ describe("encounters", () => {
     });
 
     it("does not mutate combat state or consume an entity id for an unknown id", () => {
-        const engine = createCustomEngine([oneEnemyEncounter], testCharacterList, 1);
+        const engine = createTestEngine([oneEnemyEncounter], testCharacterList, 1, { enemies: testEnemyList });
         engine.loadCharacter(testHero.id);
         const before = engine.getGameState();
 
@@ -68,7 +70,7 @@ describe("encounters", () => {
     });
 
     it("emits incrementing runtime enemy ids when replacing an encounter", () => {
-        const engine = createCustomEngine([oneEnemyEncounter], testCharacterList, 1);
+        const engine = createTestEngine([oneEnemyEncounter], testCharacterList, 1, { enemies: testEnemyList });
         engine.loadCharacter(testHero.id);
 
         const first = engine.loadEncounter(oneEnemyEncounter.id);
@@ -83,7 +85,7 @@ describe("encounters", () => {
 
     it("starts enemy numbering at one for each engine instance", () => {
         const loadFirstEnemy = () => {
-            const engine = createCustomEngine([oneEnemyEncounter], testCharacterList, 1);
+            const engine = createTestEngine([oneEnemyEncounter], testCharacterList, 1, { enemies: testEnemyList });
             engine.loadCharacter(testHero.id);
             return engine.loadEncounter(oneEnemyEncounter.id).effects[0];
         };
@@ -99,7 +101,7 @@ describe("encounters", () => {
     });
 
     it("loads every enemy in a multi-enemy encounter through the public API", () => {
-        const engine = createCustomEngine([multiEnemyEncounter], testCharacterList, 1);
+        const engine = createTestEngine([multiEnemyEncounter], testCharacterList, 1, { enemies: testEnemyList });
         engine.loadCharacter(testHero.id);
 
         const events = engine.loadEncounter(multiEnemyEncounter.id);
@@ -141,7 +143,7 @@ describe("encounters", () => {
         });
         const encounter: EncounterDef = {
             id: "test-setup",
-            enemies: [enemy],
+            enemies: [enemy.id],
             bindings: [],
             traps: [],
             setup: (state) => {
@@ -155,7 +157,7 @@ describe("encounters", () => {
                 }];
             },
         };
-        const engine = createCustomEngine([encounter], testCharacterList, 1);
+        const engine = createTestEngine([encounter], testCharacterList, 1, { enemies: [enemy] });
         engine.loadCharacter(testHero.id);
 
         expect(engine.loadEncounter(encounter.id)).toEqual({
@@ -172,7 +174,7 @@ describe("encounters", () => {
     });
 
     it("loads the authored catalogue when it is explicitly injected", () => {
-        const engine = createCustomEngine(encounterList, [ko], 8224);
+        const engine = createCatalogEngine(contentCatalog, 8224);
         engine.loadCharacter(ko.id);
 
         const events = engine.loadEncounter(plains_1.id);
@@ -189,14 +191,14 @@ describe("encounters", () => {
     });
 
     it("catalogues and loads plains_2 with Skunks, puddles, and valid intentions", () => {
-        expect(encounterList).toContain(plains_2);
+        expect(contentCatalog.encounters).toContain(plains_2);
         expect(plains_2.id).toBe("plains_2");
-        expect(plains_2.enemies.map(({ id }) => id)).toEqual([
+        expect(plains_2.enemies).toEqual([
             skunkette.id, skunkette.id, skunk.id, skunk.id,
         ]);
         expect(plains_2.traps).toEqual([{ definition: trapPuddle, amount: 50 }]);
 
-        const engine = createCustomEngine(encounterList, [ko], 8224);
+        const engine = createCatalogEngine(contentCatalog, 8224);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(plains_2.id);
         const state = engine.getGameState();

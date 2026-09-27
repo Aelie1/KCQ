@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { basicBindingEffect, basicDamageEffect } from "../../src/engine/protected/mechanics";
 import type { iTargetInfo } from "../../src/engine/protected/types";
 import type { Engine, ValidTarget } from "../../src/engine/public/types";
@@ -23,8 +23,8 @@ describe("public move previews", () => {
             isValidTarget: () => "invalidTarget",
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "target-validity", enemies: [foe, foe], bindings: [], traps: [] };
-        const engine = createCustomEngine([encounter], [makeCharacterDef("hero", [selective, impossible])], 1);
+        const encounter = { id: "target-validity", enemies: [foe.id, foe.id], bindings: [], traps: [] };
+        const engine = createTestEngine([encounter], [makeCharacterDef("hero", [selective, impossible])], 1, { enemies: [foe] });
         engine.loadCharacter("hero");
         engine.loadEncounter(encounter.id);
 
@@ -72,7 +72,7 @@ describe("public move previews", () => {
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
             id: "preview-bands",
-            enemies: [foe, foe],
+            enemies: [foe.id, foe.id],
             bindings: [],
             traps: [],
             setup: (state) => [
@@ -80,7 +80,7 @@ describe("public move previews", () => {
                 { type: "buff", target: state.enemies[1], operation: "add", buff: { id: "vulnerable", active: true, modifiers: { vulnerability: 2 } } },
             ],
         };
-        const engine = createCustomEngine([encounter], [makeCharacterDef("hero", [strike])], 1);
+        const engine = createTestEngine([encounter], [makeCharacterDef("hero", [strike])], 1, { enemies: [foe] });
         engine.loadCharacter("hero");
         engine.loadEncounter(encounter.id);
 
@@ -128,8 +128,8 @@ describe("public move previews", () => {
         });
         const wait = makeMove("wait", "none", { targetSide: "none", targets: 0, accuracy: undefined });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "already-acted-preview", enemies: [foe, foe], bindings: [], traps: [] };
-        const engine = createCustomEngine([encounter], [makeCharacterDef("hero", [strike, wait])], 1);
+        const encounter = { id: "already-acted-preview", enemies: [foe.id, foe.id], bindings: [], traps: [] };
+        const engine = createTestEngine([encounter], [makeCharacterDef("hero", [strike, wait])], 1, { enemies: [foe] });
         engine.loadCharacter("hero");
         engine.loadEncounter(encounter.id);
         expect(probes).toBe(2);
@@ -153,14 +153,14 @@ describe("public move previews", () => {
         };
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
-            id: `restricted-${reason}`, enemies: [foe], bindings: [], traps: [],
+            id: `restricted-${reason}`, enemies: [foe.id], bindings: [], traps: [],
             setup: (state) => [{
                 type: "buff", target: state.characters[0], operation: "add", buff: {
                     id: "restriction", active: true, statuses: [{ definition: restriction, value: 1 }],
                 }
             }],
         };
-        const engine = createCustomEngine([encounter], [makeCharacterDef("hero", [strike])], 1);
+        const engine = createTestEngine([encounter], [makeCharacterDef("hero", [strike])], 1, { enemies: [foe] });
         engine.loadCharacter("hero");
         engine.loadEncounter(encounter.id);
 

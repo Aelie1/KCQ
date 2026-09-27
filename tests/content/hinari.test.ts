@@ -4,7 +4,7 @@ import { latexLegs } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { s } from "../../src/engine/protected/status";
@@ -69,15 +69,16 @@ function loadHinariEncounter(options: {
     seed?: number;
     traps?: EncounterDef["traps"];
 } = {}): Engine {
+    const enemies = options.enemies ?? [durableEnemy()];
     const encounter: EncounterDef = {
         id: "hinari-test",
-        enemies: options.enemies ?? [durableEnemy()],
+        enemies: enemies.map(enemy => enemy.id),
         bindings: options.bindings ?? [rope, tape],
         traps: options.traps ?? [],
         setup: options.setup,
     };
     const allies = options.allies ?? [];
-    const engine = createCustomEngine([encounter], [hinari, ...allies], options.seed ?? 1);
+    const engine = createTestEngine([encounter], [hinari, ...allies], options.seed ?? 1, { enemies });
     engine.loadCharacter(hinari.id);
     for (const ally of allies) engine.loadCharacter(ally.id);
     engine.loadEncounter(encounter.id);

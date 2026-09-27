@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import type { BindingDef } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createTestEngine } from "../helpers/testCatalog";
 import type { iEffect } from "../../src/engine/protected/types";
 import type { ActionSuccess, Engine, LeafEvent } from "../../src/engine/public/types";
 import {
@@ -66,7 +66,7 @@ function setupLatexScenario(
     const characters = characterIds.map((id, index) =>
         makeBehavioralCharacter(id, index === 0 ? [prepare] : []),
     );
-    const engine = createCustomEngine([], characters, 1);
+    const engine = createTestEngine([], characters, 1);
     for (const character of characters) {
         engine.loadCharacter(character.id);
     }
