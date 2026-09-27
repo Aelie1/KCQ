@@ -59,51 +59,35 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
     const status = getStatus(statuses, actor);
     const result = status.canAct("move");
     for (const move of getMoves(actor)) {
-        let available = true;
-        let reason: FailureReason = "moveUnavailable";
+        let reason: FailureReason | undefined;
         if (result) {
-            available = false;
             reason = result;
         }
         else if (actor.cooldowns[move.id] > 0) {
-            available = false;
             reason = "cooldownIncomplete";
         }
         else if (!move.alwaysAvailable && !status.canAttack()) {
-            available = false;
             reason = "attackUnavailable";
         }
         else if (!status.canUseMoveType(move.type)) {
-            available = false;
             reason = "bindingRestriction";
         }
         else if (move.isValid) {
-            const validReason = move.isValid(move, actor);
-            if (validReason) {
-                available = false;
-                reason = validReason;
-            }
+            reason = move.isValid(move, actor);
         }
 
-        if (available) {
+        if (!reason) {
             const targets = getTargets(state, actor, statuses, move);
             const effects = resolveMove(state, { definition: move }, actor, []);
             if (move.targets !== "all" && !targets.some(x => x.valid)) {
                 if (targets.length && !targets[0].valid) {
                     reason = targets[0].reason;
                 }
-                actions.push({
-                    move: serializeMove(actor, move),
-                    available: false,
-                    targets: [],
-                    effects: serializeEffects(effects.effects),
-                    reason: reason
-                });
-                continue;
             }
             actions.push({
                 move: serializeMove(actor, move),
-                available: true,
+                available: reason === undefined,
+                reason: reason,
                 targets: targets.map(serializePreview),
                 effects: serializeEffects(effects.effects),
             });
