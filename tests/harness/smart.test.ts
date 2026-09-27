@@ -22,6 +22,7 @@ import {
     finisherPressureScorer,
     futureMoveOptionsScorer,
     generateSmartCandidates,
+    reserveSpendingScorer,
     smartScorers,
     smartPolicy,
     type SmartDecision,
@@ -305,6 +306,7 @@ describe("Smart 2 composable scoring", () => {
             bindingRecoveryScorer,
             finisherPressureScorer,
             futureMoveOptionsScorer,
+            reserveSpendingScorer,
         ]);
         expect(expectedDamageScorer.id).toBe("expectedDamage");
         expect(expectedDamageScorer.weight).toBe(1);
@@ -314,6 +316,8 @@ describe("Smart 2 composable scoring", () => {
         expect(finisherPressureScorer.weight).toBe(1);
         expect(futureMoveOptionsScorer.id).toBe("futureMoveOptions");
         expect(futureMoveOptionsScorer.weight).toBe(20);
+        expect(reserveSpendingScorer.id).toBe("reserveSpending");
+        expect(reserveSpendingScorer.weight).toBe(1);
     });
 });
 
@@ -469,10 +473,13 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.finisherPressure.weight === 1
             && candidate.components.futureMoveOptions.raw === 0
             && candidate.components.futureMoveOptions.weight === 20
+            && candidate.components.reserveSpending.raw === 0
+            && candidate.components.reserveSpending.weight === 1
             && candidate.total === candidate.components.expectedDamage.score
                 + candidate.components.bindingRecovery.score
                 + candidate.components.finisherPressure.score
-                + candidate.components.futureMoveOptions.score,
+                + candidate.components.futureMoveOptions.score
+                + candidate.components.reserveSpending.score,
         )).toBe(true);
         expect(smartPolicy.chooseAction(fixture)).toEqual(first.selected.action);
     });
@@ -568,10 +575,13 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.finisherPressure.weight === 1
                 && typeof candidate.components.futureMoveOptions.raw === "number"
                 && candidate.components.futureMoveOptions.weight === 20
+                && typeof candidate.components.reserveSpending.raw === "number"
+                && candidate.components.reserveSpending.weight === 1
                 && candidate.total === candidate.components.expectedDamage.score
                     + candidate.components.bindingRecovery.score
                     + candidate.components.finisherPressure.score
-                    + candidate.components.futureMoveOptions.score,
+                    + candidate.components.futureMoveOptions.score
+                    + candidate.components.reserveSpending.score,
             )).toBe(true);
             expect(step.action).toEqual(decision.selected.action);
         }

@@ -2,6 +2,7 @@ import type {
     ActionInfo,
     BindingId,
     Effect,
+    Enemy,
     EntityId,
     EscapeInfo,
     PlayerAction,
@@ -83,19 +84,27 @@ export interface FutureMoveOptionsBreakdown {
     readonly raw: number;
 }
 
+export interface ReserveSpendingBreakdown {
+    readonly lostOptions: number;
+    readonly offensiveValue: number;
+    readonly expectedKills: number;
+    readonly offensiveJustification: number;
+    readonly raw: number;
+}
+
 /** Tunable Smart-policy heuristic constants; none is an engine rule. */
 export const RECOVERY_DEBT_CURVE_A = 1.5;
 export const BINDING_RECOVERY_WEIGHT = 0.75;
 export const FINISHER_PRESSURE_WEIGHT = 1;
 export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
+export const RESERVE_SPENDING_WEIGHT = 1;
 
 /** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
 export const expectedDamageScorer: SmartScorer = {
     id: "expectedDamage",
     weight: 1,
     prepare(context) {
-        const enemyIds = new Set(context.state.enemies.map((enemy) => enemy.id));
-        return (candidate) => expectedEnemyDamage(candidate, enemyIds);
+        return prepareExpectedEnemyDamage(context);
     },
 };
 
@@ -124,18 +133,17 @@ export const finisherPressureScorer: SmartScorer = {
     id: "finisherPressure",
     weight: FINISHER_PRESSURE_WEIGHT,
     prepare(context) {
-        const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
-        return (candidate) => {
-            if (candidate.action.type !== "move") return 0;
+        return prepareFinisherPressure(context);
+    },
+};
 
-            let total = 0;
-            for (const enemy of livingEnemies) {
-                const damage = expectedDamageToEnemy(candidate, enemy.id);
-                if (damage <= 0) continue;
-                total += damage * Math.min(damage / enemy.currHp, 1);
-            }
-            return total;
-        };
+/** Cancels offense that does not justify permanently spending future options. */
+export const reserveSpendingScorer: SmartScorer = {
+    id: "reserveSpending",
+    weight: RESERVE_SPENDING_WEIGHT,
+    prepare(context) {
+        const evaluate = prepareReserveSpending(context);
+        return (candidate) => evaluate(candidate).raw;
     },
 };
 
@@ -145,6 +153,7 @@ export const smartScorers: readonly SmartScorer[] = [
     bindingRecoveryScorer,
     finisherPressureScorer,
     futureMoveOptionsScorer,
+    reserveSpendingScorer,
 ];
 
 /**
@@ -182,6 +191,67 @@ export function evaluateFutureMoveOptions(
     candidate: SmartCandidate,
 ): FutureMoveOptionsBreakdown {
     return prepareFutureMoveOptions(context)(candidate);
+}
+
+/** Exposes the reserve-spending formula for focused tests and diagnostics. */
+export function evaluateReserveSpending(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): ReserveSpendingBreakdown {
+    return prepareReserveSpending(context)(candidate);
+}
+
+function prepareExpectedEnemyDamage(
+    context: PolicyContext,
+): (candidate: SmartCandidate) => number {
+    const enemyIds = new Set(context.state.enemies.map((enemy) => enemy.id));
+    return (candidate) => expectedEnemyDamage(candidate, enemyIds);
+}
+
+function prepareFinisherPressure(
+    context: PolicyContext,
+): (candidate: SmartCandidate) => number {
+    const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
+    return (candidate) => finisherPressure(candidate, livingEnemies);
+}
+
+function prepareReserveSpending(
+    context: PolicyContext,
+): (candidate: SmartCandidate) => ReserveSpendingBreakdown {
+    const evaluateFutureOptions = prepareFutureMoveOptions(context);
+    const evaluateExpectedDamage = prepareExpectedEnemyDamage(context);
+    const evaluateFinisherPressure = prepareFinisherPressure(context);
+    const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
+
+    return (candidate) => {
+        const lostOptions = evaluateFutureOptions(candidate).lostOptions;
+        if (lostOptions === 0) {
+            return {
+                lostOptions,
+                offensiveValue: 0,
+                expectedKills: 0,
+                offensiveJustification: 0,
+                raw: 0,
+            };
+        }
+
+        const offensiveValue = evaluateExpectedDamage(candidate)
+            + evaluateFinisherPressure(candidate);
+        const expectedKills = livingEnemies.filter((enemy) =>
+            expectedDamageToEnemy(candidate, enemy.id) >= enemy.currHp
+        ).length;
+        const offensiveJustification = clamp(expectedKills / 2, 0, 1);
+
+        return {
+            lostOptions,
+            offensiveValue,
+            expectedKills,
+            offensiveJustification,
+            raw: offensiveValue === 0 || offensiveJustification === 1
+                ? 0
+                : -offensiveValue * (1 - offensiveJustification),
+        };
+    };
 }
 
 /** Enumerates legal primary actions in stable public action-view order. */
@@ -644,6 +714,21 @@ function expectedEnemyDamage(
         total += perHit * candidate.hits;
     }
 
+    return total;
+}
+
+function finisherPressure(
+    candidate: SmartCandidate,
+    livingEnemies: readonly Enemy[],
+): number {
+    if (candidate.action.type !== "move") return 0;
+
+    let total = 0;
+    for (const enemy of livingEnemies) {
+        const damage = expectedDamageToEnemy(candidate, enemy.id);
+        if (damage <= 0) continue;
+        total += damage * Math.min(damage / enemy.currHp, 1);
+    }
     return total;
 }
 
