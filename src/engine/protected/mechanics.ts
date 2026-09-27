@@ -1,4 +1,4 @@
-import type { AccuracyProfile, BindingLevel } from "../public/types";
+import type { AccuracyProfile, BindingLevel, MoveId } from "../public/types";
 import type { MoveDef } from "./definitions";
 import { isCharacter, isEnemy } from "./helpers";
 import type { iBinding, iCharacter, iEntity, iMove, iMoveResult, iTargetInfo } from "./types";
@@ -46,6 +46,10 @@ export function getBindingLevel(binding: iBinding): BindingLevel {
         return "easy";
     }
     return "none";
+}
+
+export function findMove(entity: iCharacter, id: MoveId): MoveDef | undefined {
+    return getMoves(entity).find(move => move.id === id);
 }
 
 export function getMoves(target: iCharacter): MoveDef[] {

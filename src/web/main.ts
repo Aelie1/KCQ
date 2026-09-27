@@ -303,8 +303,8 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterId> {
 }
 
 async function start(): Promise<void> {
-    const engine = createEngine();
     while (true) {
+        const engine = createEngine();
         const encounter = await showEncounterSelector(engine.listEncounters());
         await startBattle(engine, encounter, new BrowserBattleUI(), gameplayTelemetry, __KCQ_RELEASE_TAG__);
     }

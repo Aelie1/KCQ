@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BattleUI } from "../../src/console/controller";
 import { characterList, encounterList } from "../../src/content/content";
+import { createEngine } from "../../src/engine/public/engine";
 import {
     attachBattlePageLifecycle,
     createBattle,
@@ -12,7 +13,8 @@ import type { BattleTelemetryObserver } from "../../src/web/telemetry";
 describe("web battle application", () => {
     it("loads the full character list in order for every selectable encounter", () => {
         for (const encounter of encounterList) {
-            const battle = createBattle(encounter);
+            const engine = createEngine();
+            const battle = createBattle(engine, encounter.id);
             const view = battle.engine.getGameState();
 
             expect(view.characters.map((character) => character.id)).toEqual(
@@ -21,20 +23,6 @@ describe("web battle application", () => {
             expect(view.encounter?.id).toBe(encounter.id);
             expect(battle.encounterId).toBe(encounter.id);
         }
-    });
-
-    it("creates a fresh engine and game state for every battle", () => {
-        const first = createBattle(encounterList[0]);
-        const second = createBattle(encounterList[0]);
-
-        expect(first.engine).not.toBe(second.engine);
-
-        first.engine.executeAction({ type: "endTurn" });
-
-        expect(first.engine.getGameState().turn.round).toBeGreaterThan(
-            second.engine.getGameState().turn.round,
-        );
-        expect(second.engine.getGameState().turn.round).toBe(1);
     });
 
     it("returns after the shared controller exits", async () => {
@@ -47,8 +35,9 @@ describe("web battle application", () => {
             },
             close,
         };
+        const engine = createEngine();
 
-        await expect(startBattle(encounterList[0], ui)).resolves.toBeUndefined();
+        await expect(startBattle(engine, encounterList[0].id, ui)).resolves.toBeUndefined();
         expect(close).toHaveBeenCalledOnce();
     });
 
