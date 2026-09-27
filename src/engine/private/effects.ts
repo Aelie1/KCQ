@@ -1,22 +1,24 @@
-import { BindingDef, EnemyDef, MoveDef } from "../protected/definitions";
+import { BindingDef, MoveDef } from "../protected/definitions";
 import { getValidTargets } from "../protected/enemies";
 import { findBinding, findBuff, findEntity, isEnemy, isValidEntity } from "../protected/helpers";
 import { thresholds } from "../protected/mechanics";
 import { Random } from "../protected/random";
-import { iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
+import { ContentCatalog, iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, LeafEvent, StanceId } from "../public/types";
 import { TRAP_MAX } from "./constants";
 import { iEngineEffect } from "./types";
 
 export class GameEffects {
+    private catalog: ContentCatalog;
     private events: LeafEvent[];
     private effects: iEngineEffect[];
     private state: iGameState;
     private rng: Random;
 
-    constructor(state: iGameState, rng: Random) {
+    constructor(catalog: ContentCatalog, state: iGameState, rng: Random) {
         this.events = [];
         this.effects = [];
+        this.catalog = catalog;
         this.state = state;
         this.rng = rng;
     }
@@ -353,7 +355,11 @@ export class GameEffects {
         return;
     };
 
-    private spawnEnemy(definition: EnemyDef, options?: { buff?: iBuff; id?: EntityId; hp?: number }) {
+    private spawnEnemy(id: EntityId, options?: { buff?: iBuff; id?: EntityId; hp?: number }) {
+        const definition = this.catalog.enemies.find(x => x.id === id);
+        if (!definition) {
+            throw new Error(`Unknown enemy definition: ${id}`);
+        }
         if (!options?.id) {
             this.state.nextId[definition.id] = (this.state.nextId[definition.id] ?? 0) + 1;
         }

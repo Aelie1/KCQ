@@ -98,7 +98,7 @@ function serializeEffect(effect: iEffect): Effect | undefined {
         case "enemy":
             return {
                 type: effect.type,
-                target: (effect.operation === "spawn") ? effect.definition.id : effect.target.id,
+                target: (effect.operation === "spawn") ? effect.definition : effect.target.id,
                 operation: effect.operation
             }
         case "trap":
@@ -196,7 +196,7 @@ export function serializePreview(info: iPreviewInfo): PreviewInfo {
 function serializeEncounter(encounter: EncounterDef): Encounter {
     return {
         id: encounter.id,
-        enemies: encounter.enemies.map(x => x.id),
+        enemies: [...encounter.enemies],
         bindings: encounter.bindings.map(x => x.id),
         traps: encounter.traps.map(x => x.definition.id)
     }

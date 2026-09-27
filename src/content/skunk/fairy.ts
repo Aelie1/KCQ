@@ -5,6 +5,7 @@ import { basicBindingEffect } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iCallbackReturn, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { HitBand } from "../../engine/public/types";
+import { FAIRY_ID } from "./constants";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const FAIRY_HP = 200;
@@ -211,7 +212,7 @@ export const barrierMagic: MoveDef = {
 };
 
 export const fairy: EnemyDef = {
-    id: "fairy",
+    id: FAIRY_ID,
     rank: "enemy",
     hp: FAIRY_HP,
     defense: FAIRY_DEF,

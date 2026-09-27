@@ -7,7 +7,8 @@ import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
-import { latexArms, latexHead, latexLegs, latexTorso, SKUNKED_BUFF } from "./latex";
+import { POUNCE_BUFF, SKUNKED_BUFF, SKUNKETTE_ID } from "./constants";
+import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const SKUNKETTE_HP = 200;
 const SKUNKETTE_DEF = 0;
@@ -15,8 +16,6 @@ const SKUNKETTE_DEF = 0;
 const SPRAY_DAMAGE = 30;
 
 const POUNCE_COOLDOWN = 2;
-export const POUNCE_BUFF = "pounce";
-
 const MIST_DAMAGE = 10;
 const MIST_SPREAD = 5;
 
@@ -282,7 +281,7 @@ export const throwOff: MoveDef = {
 
 
 export const skunkette: EnemyDef = {
-    id: "skunkette",
+    id: SKUNKETTE_ID,
     rank: "enemy",
     hp: SKUNKETTE_HP,
     defense: SKUNKETTE_DEF,

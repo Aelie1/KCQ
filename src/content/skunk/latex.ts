@@ -4,10 +4,9 @@ import { thresholds } from "../../engine/protected/mechanics";
 import { GameStatus, s } from "../../engine/protected/status";
 import { bound, breathless, gagged, hobbled, incapacitated, submissive, vibrating } from "../../engine/protected/statuses";
 import { iBinding, iBuff, iCharacter, iEffect, iGameState } from "../../engine/protected/types";
-import { POUNCE_BUFF, skunkette } from "./skunkette";
+import { POUNCE_BUFF, SKUNKED_BUFF, SKUNKETTE_ID } from "./constants";
 
 const COLLAR_BINDING = 10;
-export const SKUNKED_BUFF = "skunked";
 
 const SPREAD_MODIFIER = 0.1;
 const HARD_SPREAD_RATIO = 0.25;
@@ -86,7 +85,7 @@ export const latexBindings: BindingDef = {
         effects.push({
             type: "enemy",
             operation: "spawn",
-            definition: skunkette,
+            definition: SKUNKETTE_ID,
             id: skunketteName,
             buff: eBuff,
         });

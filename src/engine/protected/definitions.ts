@@ -75,7 +75,7 @@ export interface StatusLevelDef {
 
 export interface EncounterDef {
     id: EncounterId;
-    enemies: EnemyDef[];
+    enemies: EntityId[];
     bindings: BindingDef[];
     traps: TrapSetup[];
     setup?: (state: iGameState) => iEffect[];

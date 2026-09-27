@@ -2,6 +2,7 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
+import { RAINMAKER_ID } from "./constants";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const RAINMAKER_HP = 200;
@@ -55,7 +56,7 @@ export const latexRain: MoveDef = {
 };
 
 export const rainmaker: EnemyDef = {
-    id: "rainmaker",
+    id: RAINMAKER_ID,
     rank: "minion",
     hp: RAINMAKER_HP,
     defense: RAINMAKER_DEF,

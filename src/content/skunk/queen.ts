@@ -4,11 +4,9 @@ import { isCharacter } from "../../engine/protected/helpers";
 import { basicBindingEffect } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
-import { fairy } from "./fairy";
+import { EntityId } from "../../engine/public/types";
+import { FAIRY_ID, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
-import { rainmaker } from "./rainmaker";
-import { skunk } from "./skunk";
-import { skunkette } from "./skunkette";
 
 const QUEEN_HP = 750;
 const QUEEN_DEF = 2;
@@ -24,27 +22,27 @@ const ESCAPE_BUFF = "escapePerfume";
 
 const WAVE_RATIOS = [0.8, 0.6, 0.4, 0.2];
 const WAVE_SUMMONS: {
-    enemy: EnemyDef;
+    enemy: EntityId;
     hpRatio?: number;
 }[][] = [
-        [{ enemy: skunkette, hpRatio: 0.5 }],
-        [{ enemy: skunkette }],
-        [{ enemy: skunk }],
-        [{ enemy: skunkette }, { enemy: skunk }],
-        [{ enemy: skunk }, { enemy: fairy }],
-        [{ enemy: skunkette }, { enemy: skunk }, { enemy: fairy }],
+        [{ enemy: SKUNKETTE_ID, hpRatio: 0.5 }],
+        [{ enemy: SKUNKETTE_ID }],
+        [{ enemy: SKUNK_ID }],
+        [{ enemy: SKUNKETTE_ID }, { enemy: SKUNK_ID }],
+        [{ enemy: SKUNK_ID }, { enemy: FAIRY_ID }],
+        [{ enemy: SKUNKETTE_ID }, { enemy: SKUNK_ID }, { enemy: FAIRY_ID }],
     ];
 
 
 const RAINMAKER_RATIOS = [2 / 3, 1 / 3];
 const RAINMAKER_SUMMONS: {
-    enemy: EnemyDef;
+    enemy: EntityId;
     hpRatio?: number;
     buff?: iBuff;
 }[][] = [
-        [{ enemy: rainmaker, hpRatio: 0.5 }],
-        [{ enemy: rainmaker }],
-        [{ enemy: rainmaker, buff: { id: "shielding", modifiers: { defense: 2 }, active: true } }],
+        [{ enemy: RAINMAKER_ID, hpRatio: 0.5 }],
+        [{ enemy: RAINMAKER_ID }],
+        [{ enemy: RAINMAKER_ID, buff: { id: "shielding", modifiers: { defense: 2 }, active: true } }],
     ];
 
 export const skunkGun: MoveDef = {
@@ -207,7 +205,7 @@ export const skunkPerfume: MoveDef = {
 }
 
 export const queen: EnemyDef = {
-    id: "queen",
+    id: QUEEN_ID,
     rank: "boss",
     hp: QUEEN_HP,
     defense: QUEEN_DEF,

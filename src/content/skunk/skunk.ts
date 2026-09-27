@@ -4,6 +4,7 @@ import { findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protec
 import { basicBindingEffect } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
+import { SKUNK_ID } from "./constants";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 
@@ -268,7 +269,7 @@ export const latexExplosion: MoveDef = {
 };
 
 export const skunk: EnemyDef = {
-    id: "skunk",
+    id: SKUNK_ID,
     rank: "enemy",
     hp: SKUNK_HP,
     defense: SKUNK_DEF,

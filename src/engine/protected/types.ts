@@ -141,7 +141,7 @@ interface iBuffEffect extends Omit<BuffEffect, "target" | "buff" | "effects"> {
 
 interface iEnemyEffect extends Omit<EnemyEffect, "target"> {
     operation: "spawn";
-    definition: EnemyDef;
+    definition: EntityId;
     id?: EntityId;
     buff?: iBuff;
     hpRatio?: number;

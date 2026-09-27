@@ -1,0 +1,8 @@
+export const SKUNKED_BUFF = "skunked";
+export const POUNCE_BUFF = "pounce";
+export const SKUNKETTE_ID = "skunkette";
+export const SKUNK_ID = "skunk";
+export const FAIRY_ID = "fairy";
+export const RAINMAKER_ID = "rainmaker";
+export const QUEEN_ID = "queen";
+

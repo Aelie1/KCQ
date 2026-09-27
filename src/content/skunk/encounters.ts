@@ -1,22 +1,19 @@
 import { EncounterDef } from "../../engine/protected/definitions";
 import { iEffect, iGameState } from "../../engine/protected/types";
-import { fairy } from "./fairy";
+import { FAIRY_ID, QUEEN_ID, SKUNK_ID, SKUNKETTE_ID } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
-import { queen } from "./queen";
-import { skunk } from "./skunk";
-import { skunkette } from "./skunkette";
 
 export const plains_1: EncounterDef = {
     id: "plains_1",
-    enemies: [skunkette, skunkette, skunkette],
+    enemies: [SKUNKETTE_ID, SKUNKETTE_ID, SKUNKETTE_ID],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: []
 }
 
 export const plains_2: EncounterDef = {
     id: "plains_2",
-    enemies: [skunkette, skunkette, skunk, skunk],
+    enemies: [SKUNKETTE_ID, SKUNKETTE_ID, SKUNK_ID, SKUNK_ID],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
         { definition: trapPuddle, amount: 50 }
@@ -25,7 +22,7 @@ export const plains_2: EncounterDef = {
 
 export const plains_3: EncounterDef = {
     id: "plains_3",
-    enemies: [queen],
+    enemies: [QUEEN_ID],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
         { definition: trapPuddle, amount: 0 }
@@ -34,7 +31,7 @@ export const plains_3: EncounterDef = {
 
 export const forest_1: EncounterDef = {
     id: "forest_1",
-    enemies: [skunkette, skunkette, skunkette, fairy],
+    enemies: [SKUNKETTE_ID, SKUNKETTE_ID, SKUNKETTE_ID, FAIRY_ID],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
         { definition: trapPuddle, amount: 0 }
@@ -43,7 +40,7 @@ export const forest_1: EncounterDef = {
 
 export const forest_2: EncounterDef = {
     id: "forest_2",
-    enemies: [skunkette, skunkette, skunk, skunk, fairy],
+    enemies: [SKUNKETTE_ID, SKUNKETTE_ID, SKUNK_ID, SKUNK_ID, FAIRY_ID],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
         { definition: trapPuddle, amount: 50 }
@@ -52,7 +49,7 @@ export const forest_2: EncounterDef = {
 
 export const forest_3: EncounterDef = {
     id: "forest_3",
-    enemies: [skunkette, skunkette, queen, fairy],
+    enemies: [SKUNKETTE_ID, SKUNKETTE_ID, QUEEN_ID, FAIRY_ID],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
         { definition: trapPuddle, amount: 100 }

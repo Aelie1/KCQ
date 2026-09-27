@@ -98,7 +98,7 @@ export class GameEngine implements Engine {
     }
 
     loadCharacter(id: EntityId): GameEvent {
-        const result = new GameEffects(this.state, this.accRng);
+        const result = new GameEffects(this.catalog, this.state, this.accRng);
         const character = this.catalog.characters.find(x => x.id === id);
         if (!character) {
             return {
@@ -137,7 +137,7 @@ export class GameEngine implements Engine {
     }
 
     loadEncounter(id: EncounterId): GameEvent {
-        const effects = new GameEffects(this.state, this.accRng);
+        const effects = new GameEffects(this.catalog, this.state, this.accRng);
         const encounter = this.catalog.encounters.find(x => x.id === id);
         if (!encounter) {
             return {
@@ -192,7 +192,7 @@ export class GameEngine implements Engine {
 
     executeAction(action: PlayerAction): ActionResult {
         const result: EventFrame[] = [];
-        const effects = new GameEffects(this.state, this.accRng);
+        const effects = new GameEffects(this.catalog, this.state, this.accRng);
         if (this.state.turn.phase !== "player") {
             return {
                 success: false,
@@ -453,7 +453,7 @@ export class GameEngine implements Engine {
                     effects: [],
                     targets: []
                 }
-                const targetResults: GameEffects = new GameEffects(this.state, this.accRng);
+                const targetResults: GameEffects = new GameEffects(this.catalog, this.state, this.accRng);
                 for (const target of moveResults.targets) {
                     targetResults.clear();
                     targetResults.merge(target.effects);
@@ -617,7 +617,7 @@ export class GameEngine implements Engine {
     }
 
     private executeEnemyAction(intention: iIntention): GameEvent | undefined {
-        const effects = new GameEffects(this.state, this.accRng);
+        const effects = new GameEffects(this.catalog, this.state, this.accRng);
         const actor = intention.actor;
         const move = intention.move;
         if (!actor) {
@@ -640,7 +640,7 @@ export class GameEngine implements Engine {
             effects: [],
             targets: []
         }
-        const targetResults: GameEffects = new GameEffects(this.state, this.accRng);
+        const targetResults: GameEffects = new GameEffects(this.catalog, this.state, this.accRng);
         for (const target of moveResults.targets) {
             targetResults.clear();
             targetResults.merge(target.effects);
@@ -676,7 +676,7 @@ export class GameEngine implements Engine {
     }
 
     private advancePhase(): EventFrame {
-        const result = new GameEffects(this.state, this.accRng);
+        const result = new GameEffects(this.catalog, this.state, this.accRng);
 
         if (this.state.turn.phase === "player") {
             result.merge(tickBindings(this.state));
@@ -704,7 +704,7 @@ export class GameEngine implements Engine {
     }
 
     private updateIntentions() {
-        const result = new GameEffects(this.state, this.accRng);
+        const result = new GameEffects(this.catalog, this.state, this.accRng);
         for (const enemy of this.state.enemies) {
             enemy.intentions.length = 0;
         }
