@@ -1,5 +1,5 @@
-import { ActionType, FailureReason, ModifierId, ModifierSet, MoveType } from "../public/types";
-import { FlagId, StatusDef, StatusLevelDef } from "./definitions";
+import { ActionType, FailureReason, FlagId, ModifierId, ModifierSet, MoveType } from "../public/types";
+import { StatusDef, StatusLevelDef } from "./definitions";
 import { isCharacter } from "./helpers";
 import { getBindingLevel } from "./mechanics";
 import { iBuff, iEntity, iStatus } from "./types";

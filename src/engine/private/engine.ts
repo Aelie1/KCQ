@@ -1,9 +1,9 @@
-import { type CharacterDef, type EncounterDef } from "../protected/definitions";
 import { findBinding, findCharacter, findEntity, isValidEntity } from "../protected/helpers";
 import { findMove, thresholds } from "../protected/mechanics";
 import { mixSeed, Random } from "../protected/random";
 import { GameStatus, StatusMap } from "../protected/status";
-import { iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
+import { ContentCatalog, iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
+import { ContentLibrary } from "../public/library";
 import type { AccuracyResult, ActionResult, ActionView, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, ThresholdInfo, TrapEvent } from "../public/types";
 import {
     applyCooldowns,
@@ -12,6 +12,7 @@ import {
 } from "./combat";
 import { TRAP_MODIFIER } from "./constants";
 import { GameEffects } from "./effects";
+import { serializeLibrary } from "./library";
 import { serializeGameState } from "./serialize";
 import { iValidityInfo } from "./types";
 import { getActionView, getStatusMap } from "./view";
@@ -24,10 +25,9 @@ export class GameEngine implements Engine {
     private seed: number;
     private aiRng: Random;
     private accRng: Random;
-    private encounters: EncounterDef[];
-    private characters: CharacterDef[];
+    private catalog: ContentCatalog;
 
-    constructor(encounters: EncounterDef[], characters: CharacterDef[], seed?: number) {
+    constructor(catalog: ContentCatalog, seed?: number) {
         this.state = {
             turn: { round: 1, step: 1, phase: "player" },
             nextId: {},
@@ -43,12 +43,15 @@ export class GameEngine implements Engine {
         this.seed = seed;
         this.aiRng = new Random(mixSeed(seed, 1));
         this.accRng = new Random(mixSeed(seed, 2));
-        this.encounters = encounters;
-        this.characters = characters;
+        this.catalog = catalog;
     }
 
     getSeed(): number {
         return this.seed;
+    }
+
+    getLibrary(): ContentLibrary {
+        return serializeLibrary(this.catalog);
     }
 
     getActionView(): ActionView[] {
@@ -88,7 +91,7 @@ export class GameEngine implements Engine {
 
     listCharacters(): EntityId[] {
         const characterList: EntityId[] = [];
-        for (const character of this.characters) {
+        for (const character of this.catalog.characters) {
             characterList.push(character.id);
         }
         return characterList;
@@ -96,7 +99,7 @@ export class GameEngine implements Engine {
 
     loadCharacter(id: EntityId): GameEvent {
         const result = new GameEffects(this.state, this.accRng);
-        const character = this.characters.find(x => x.id === id);
+        const character = this.catalog.characters.find(x => x.id === id);
         if (!character) {
             return {
                 type: "loadCharacter",
@@ -127,7 +130,7 @@ export class GameEngine implements Engine {
 
     listEncounters(): EncounterId[] {
         const encounterList: EncounterId[] = [];
-        for (const encounter of this.encounters) {
+        for (const encounter of this.catalog.encounters) {
             encounterList.push(encounter.id);
         }
         return encounterList;
@@ -135,7 +138,7 @@ export class GameEngine implements Engine {
 
     loadEncounter(id: EncounterId): GameEvent {
         const effects = new GameEffects(this.state, this.accRng);
-        const encounter = this.encounters.find(x => x.id === id);
+        const encounter = this.catalog.encounters.find(x => x.id === id);
         if (!encounter) {
             return {
                 type: "loadEncounter",

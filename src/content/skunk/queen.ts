@@ -47,6 +47,164 @@ const RAINMAKER_SUMMONS: {
         [{ enemy: rainmaker, buff: { id: "shielding", modifiers: { defense: 2 }, active: true } }],
     ];
 
+export const skunkGun: MoveDef = {
+    id: "skunkGun",
+    targetSide: "player",
+    targets: 1,
+    baseDamage: GUN_DAMAGE,
+    accuracy: {
+        miss: 40,
+        graze: 25,
+        hit: 34,
+        crit: 1
+    },
+    type: "none",
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        return basicBindingEffect(actor, move, targets);
+    },
+};
+
+export const skunkCollar: MoveDef = {
+    id: "skunkCollar",
+    targetSide: "player",
+    targets: 1,
+    baseDamage: COLLAR_DAMAGE,
+    cooldown: { "skunkCollar": 3 },
+    accuracy: {
+        miss: 60,
+        graze: 25,
+        hit: 14,
+        crit: 1
+    },
+    type: "none",
+    bindings: [latexCollar],
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        return basicBindingEffect(actor, move, targets);
+    },
+
+};
+
+export const callReinforcements: MoveDef = {
+    id: "callReinforcements",
+    targetSide: "none",
+    targets: 0,
+    type: "none",
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+        const wave = move.data?.["wave"] ?? 1;
+        const summons = WAVE_SUMMONS[wave - 1] ?? [];
+
+        for (const summon of summons) {
+            result.effects.push({
+                type: "enemy",
+                operation: "spawn",
+                definition: summon.enemy,
+                hpRatio: summon.hpRatio
+            });
+        }
+        return result;
+    },
+}
+
+export const latexRainmaker: MoveDef = {
+    id: "latexRainmaker",
+    targetSide: "none",
+    targets: 0,
+    type: "none",
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+        const wave = move.data?.["wave"] ?? 1;
+        const summons = RAINMAKER_SUMMONS[wave - 1] ?? [];
+
+        for (const summon of summons) {
+            result.effects.push({
+                type: "enemy",
+                operation: "spawn",
+                definition: summon.enemy,
+                hpRatio: summon.hpRatio,
+                buff: summon.buff
+            });
+        }
+
+        return result;
+    },
+}
+
+export const skunkPerfume: MoveDef = {
+    id: "skunkPerfume",
+    targetSide: "player",
+    targets: "all",
+    type: "none",
+    accuracy: {
+        miss: 60,
+        hit: 40,
+    },
+    check: "willpower",
+    cooldown: { "skunkPerfume": 5 },
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+        const type = move.data?.["type"] ?? 0;
+
+        switch (type) {
+            case 0:  //Defense perfume
+                const defBuff = {
+                    id: DEFENSE_BUFF,
+                    active: false,
+                    modifiers: { defense: -2 },
+                    duration: PERFUME_DURATION,
+                }
+                for (const target of targets) {
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: [{
+                            type: "buff",
+                            operation: "add",
+                            buff: defBuff,
+                            target: target.target
+                        }]
+                    });
+                }
+                break;
+            case 1:  //Escape perfume
+                const escBuff = {
+                    id: ESCAPE_BUFF,
+                    active: false,
+                    modifiers: { escape: -2 },
+                    duration: PERFUME_DURATION,
+                }
+                for (const target of targets) {
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: [{
+                            type: "buff",
+                            operation: "add",
+                            buff: escBuff,
+                            target: target.target
+                        }]
+                    });
+                }
+                break;
+
+            case 2:  //Heal perfume
+                const filter = ["skunkette", "skunk", "fairy"];
+                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
+                for (const enemy of damagedEnemies) {
+                    result.effects.push({
+                        type: "damage",
+                        source: actor,
+                        target: enemy,
+                        amount: -PERFUME_HEAL_RATIO * enemy.maxHp
+                    });
+                }
+                break;
+        }
+
+        return result;
+    },
+}
 
 export const queen: EnemyDef = {
     id: "queen",
@@ -54,6 +212,7 @@ export const queen: EnemyDef = {
     hp: QUEEN_HP,
     defense: QUEEN_DEF,
     passives: [],
+    moves: [skunkGun, skunkPerfume, callReinforcements, latexRainmaker, skunkCollar],
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
@@ -164,161 +323,4 @@ export const queen: EnemyDef = {
         target.data["minHp"] = Math.min((target.data["minHp"] ?? target.maxHp), target.currHp);
         return effects;
     }
-}
-
-const skunkGun: MoveDef = {
-    id: "skunkGun",
-    targetSide: "player",
-    targets: 1,
-    baseDamage: GUN_DAMAGE,
-    accuracy: {
-        miss: 40,
-        graze: 25,
-        hit: 34,
-        crit: 1
-    },
-    type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        return basicBindingEffect(actor, move, targets);
-    },
-};
-
-const skunkCollar: MoveDef = {
-    id: "skunkCollar",
-    targetSide: "player",
-    targets: 1,
-    baseDamage: COLLAR_DAMAGE,
-    cooldown: { "skunkCollar": 3 },
-    accuracy: {
-        miss: 60,
-        graze: 25,
-        hit: 14,
-        crit: 1
-    },
-    type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        return basicBindingEffect(actor, move, targets);
-    },
-
-};
-
-const callReinforcements: MoveDef = {
-    id: "callReinforcements",
-    targetSide: "none",
-    targets: 0,
-    type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        const result: iMoveResult = { effects: [], targets: [] };
-        const wave = move.data?.["wave"] ?? 1;
-        const summons = WAVE_SUMMONS[wave - 1] ?? [];
-
-        for (const summon of summons) {
-            result.effects.push({
-                type: "enemy",
-                operation: "spawn",
-                definition: summon.enemy,
-                hpRatio: summon.hpRatio
-            });
-        }
-        return result;
-    },
-}
-
-const latexRainmaker: MoveDef = {
-    id: "latexRainmaker",
-    targetSide: "none",
-    targets: 0,
-    type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        const result: iMoveResult = { effects: [], targets: [] };
-        const wave = move.data?.["wave"] ?? 1;
-        const summons = RAINMAKER_SUMMONS[wave - 1] ?? [];
-
-        for (const summon of summons) {
-            result.effects.push({
-                type: "enemy",
-                operation: "spawn",
-                definition: summon.enemy,
-                hpRatio: summon.hpRatio,
-                buff: summon.buff
-            });
-        }
-
-        return result;
-    },
-}
-
-const skunkPerfume: MoveDef = {
-    id: "skunkPerfume",
-    targetSide: "player",
-    targets: "all",
-    type: "none",
-    accuracy: {
-        miss: 60,
-        hit: 40,
-    },
-    check: "willpower",
-    cooldown: { "skunkPerfume": 5 },
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        const result: iMoveResult = { effects: [], targets: [] };
-        const type = move.data?.["type"] ?? 0;
-
-        switch (type) {
-            case 0:  //Defense perfume
-                const defBuff = {
-                    id: DEFENSE_BUFF,
-                    active: false,
-                    modifiers: { defense: -2 },
-                    duration: PERFUME_DURATION,
-                }
-                for (const target of targets) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
-                            type: "buff",
-                            operation: "add",
-                            buff: defBuff,
-                            target: target.target
-                        }]
-                    });
-                }
-                break;
-            case 1:  //Escape perfume
-                const escBuff = {
-                    id: ESCAPE_BUFF,
-                    active: false,
-                    modifiers: { escape: -2 },
-                    duration: PERFUME_DURATION,
-                }
-                for (const target of targets) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
-                            type: "buff",
-                            operation: "add",
-                            buff: escBuff,
-                            target: target.target
-                        }]
-                    });
-                }
-                break;
-
-            case 2:  //Heal perfume
-                const filter = ["skunkette", "skunk", "fairy"];
-                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
-                for (const enemy of damagedEnemies) {
-                    result.effects.push({
-                        type: "damage",
-                        source: actor,
-                        target: enemy,
-                        amount: -PERFUME_HEAL_RATIO * enemy.maxHp
-                    });
-                }
-                break;
-        }
-
-        return result;
-    },
 }

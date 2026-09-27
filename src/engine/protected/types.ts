@@ -2,7 +2,18 @@ import {
     Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect, Enemy, EnemyEffect, EntityId,
     HitBand, StanceId, TargetInfo, Trap, TrapEffect, Turn
 } from "../public/types";
-import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, StatusDef, TrapDef } from "./definitions";
+import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, TrapDef } from "./definitions";
+
+export interface ContentCatalog {
+    characters: CharacterDef[];
+    enemies: EnemyDef[];
+    moves: MoveDef[];
+    passives: PassiveDef[];
+    bindings: BindingDef[];
+    traps: TrapDef[];
+    statuses: StatusDef[];
+    encounters: EncounterDef[];
+}
 
 export type iEntity = iCharacter | iEnemy;
 

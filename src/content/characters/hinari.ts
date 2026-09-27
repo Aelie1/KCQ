@@ -59,14 +59,14 @@ function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, bu
     return { value: newAmount, effects: effects };
 }
 
-const subspaceMovement: PassiveDef = {
+export const subspaceMovement: PassiveDef = {
     id: "subspaceMovement",
     status: { flags: ["skipsTraps"] },
     immunities: [hobbled]
 }
 
 
-const rockfall: MoveDef = {
+export const rockfall: MoveDef = {
     id: "rockfall",
     index: 1,
     targetSide: "enemy",
@@ -94,7 +94,7 @@ const rockfall: MoveDef = {
     }
 }
 
-const fairyRockfall: MoveDef = {
+export const fairyRockfall: MoveDef = {
     ...rockfall,
     id: "fairyRockfall",
     index: 2,
@@ -106,7 +106,7 @@ const fairyRockfall: MoveDef = {
     }
 }
 
-const store: MoveDef = {
+export const store: MoveDef = {
     id: "store",
     index: 3,
     targetSide: "player",
@@ -198,7 +198,7 @@ const store: MoveDef = {
 
 }
 
-const brace: MoveDef = {
+export const brace: MoveDef = {
     id: "brace",
     index: 4,
     targetSide: "none",
@@ -232,7 +232,7 @@ const brace: MoveDef = {
     }
 }
 
-const release: MoveDef = {
+export const release: MoveDef = {
     id: "release",
     index: 5,
     targetSide: "either",
@@ -313,7 +313,7 @@ const release: MoveDef = {
 export const hinari: CharacterDef = {
     id: "hinari",
     moves: [rockfall, store, brace, release],
-    passives: [subspaceMovement],
     empoweredMoves: [fairyRockfall],
+    passives: [subspaceMovement],
     data: { "subspace": 0, "subspaceMax": SUBSPACE_MAX }
 };

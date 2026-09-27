@@ -1,7 +1,7 @@
 import { GameEngine } from "../private/engine";
 import type { Engine } from "../public/types";
-import type { CharacterDef, EncounterDef } from "./definitions";
+import { ContentCatalog } from "./types";
 
-export function createCustomEngine(encounters: EncounterDef[], characters: CharacterDef[], seed?: number): Engine {
-    return new GameEngine(encounters, characters, seed);
+export function createCustomEngine(catalog: ContentCatalog, seed?: number): Engine {
+    return new GameEngine(catalog, seed);
 }

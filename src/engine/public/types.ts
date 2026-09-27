@@ -1,8 +1,11 @@
+import { ContentLibrary } from "./library";
+
 /*******************************************************
  * Engine
  *******************************************************/
 export interface Engine {
     getSeed(): number;
+    getLibrary(): ContentLibrary;
     getActionView(): ActionView[];
     getGameState(): GameState;
     getThresholds(): ThresholdInfo;
@@ -48,6 +51,8 @@ export type Phase = "player" | "enemy";
 export type EntityId = string;
 
 export type EntitySide = "either" | "player" | "enemy" | "none";
+
+export type PassiveId = string
 
 /*******************************************************
  * Characters
@@ -307,6 +312,16 @@ export type ModifierId =
     | "traps"
     | "willpower"
     | "spread";
+
+export type FlagId = "blocksAttack" |
+    "blocksEscape" |
+    "blocksAssist" |
+    "blocksBonusEscape" |
+    "blocksMoving" |
+    "skipsTraps" |
+    "skipsTurn" |
+    "incapacitated";
+
 
 export interface ActionInfo {
     move: Move;

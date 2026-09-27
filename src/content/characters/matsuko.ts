@@ -30,7 +30,7 @@ const ATTACKME_COMPULSION_COOLDOWN = 2;
 
 const DEFAULT_COMPULSION_COOLDOWN = 2;
 
-const punch: MoveDef = {
+export const punch: MoveDef = {
     id: "punch",
     index: 1,
     targetSide: "enemy",
@@ -43,7 +43,7 @@ const punch: MoveDef = {
     }
 }
 
-const kick: MoveDef = {
+export const kick: MoveDef = {
     id: "kick",
     index: 2,
     targetSide: "enemy",
@@ -56,7 +56,7 @@ const kick: MoveDef = {
     }
 }
 
-const whiteFlame: MoveDef = {
+export const whiteFlame: MoveDef = {
     id: "whiteFlame",
     index: 3,
     targetSide: "enemy",
@@ -70,7 +70,7 @@ const whiteFlame: MoveDef = {
     }
 }
 
-const fairyWhiteFlame: MoveDef = {
+export const fairyWhiteFlame: MoveDef = {
     ...whiteFlame,
     id: "fairyWhiteFlame",
     index: 4,
@@ -82,7 +82,7 @@ const fairyWhiteFlame: MoveDef = {
     }
 }
 
-const phoenixKick: MoveDef = {
+export const phoenixKick: MoveDef = {
     id: "phoenixKick",
     index: 5,
     targetSide: "enemy",
@@ -96,7 +96,7 @@ const phoenixKick: MoveDef = {
     }
 }
 
-const fairyPhoenixKick: MoveDef = {
+export const fairyPhoenixKick: MoveDef = {
     ...phoenixKick,
     id: "fairyPhoenixKick",
     index: 6,
@@ -108,7 +108,7 @@ const fairyPhoenixKick: MoveDef = {
     }
 }
 
-const immolation: MoveDef = {
+export const immolation: MoveDef = {
     id: "immolation",
     index: 7,
     targetSide: "enemy",
@@ -147,7 +147,7 @@ const immolation: MoveDef = {
     }
 }
 
-const obey: MoveDef = {
+export const obey: MoveDef = {
     id: "obey",
     index: 8,
     targetSide: "player",
@@ -197,7 +197,7 @@ const obey: MoveDef = {
     }
 }
 
-const stop: MoveDef = {
+export const stop: MoveDef = {
     id: "stop",
     index: 9,
     targetSide: "enemy",
@@ -231,7 +231,7 @@ const stop: MoveDef = {
     }
 }
 
-const attackMe: MoveDef = {
+export const attackMe: MoveDef = {
     id: "attackMe",
     index: 10,
     targetSide: "enemy",

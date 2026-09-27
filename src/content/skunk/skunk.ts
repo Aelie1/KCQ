@@ -10,7 +10,7 @@ import { trapPuddle } from "./puddles";
 const SKUNK_HP = 300;
 const SKUNK_DEF = 0;
 
-const SPRAY_DAMAGE = 30;
+const SHOWER_DAMAGE = 30;
 
 const PUDDLE_BASE = 30;
 
@@ -20,12 +20,260 @@ const EXPLOSION_HP_RATIO = 0.25;
 const EXPLOSION_HEAL = SKUNK_HP * 0.2;
 const EXPLOSION_DAMAGE = 40;
 
+function regenerateCallback(effect: iEffect): iEffect[] {
+    const effects: iEffect[] = [];
+    if (effect.type != "binding") {
+        return effects;
+    }
+
+    if (effect.binding === latexBindings) {
+        for (const binding of effect.target.bindings) {
+            if (binding.value < binding.data["peak"]) {
+                effects.push({
+                    type: "binding",
+                    source: effect.source,
+                    target: effect.target,
+                    binding: binding.definition,
+                    amount: binding.data["peak"] - binding.value
+                });
+            }
+        }
+        return effects;
+    }
+
+    if (effect.amount) {
+        const binding = findBinding(effect.target, effect.binding.id)
+        if (binding && binding.value < binding.data["peak"]) {
+            effects.push({
+                type: "binding",
+                source: effect.source,
+                target: effect.target,
+                binding: binding.definition,
+                amount: Math.min(effect.amount, binding.data["peak"] - binding.value)
+            });
+        }
+        effect.amount = undefined;
+        return effects;
+    }
+
+    const binding = findBinding(effect.target, effect.binding.id)
+    if (binding && binding.value < binding.data["peak"]) {
+        effects.push({
+            type: "binding",
+            source: effect.source,
+            target: effect.target,
+            binding: binding.definition,
+            amount: binding.data["peak"] - binding.value
+        });
+    }
+    return effects;
+}
+
+export const latexShower: MoveDef = {
+    id: "latexShower",
+    targetSide: "player",
+    targets: 1,
+    baseDamage: SHOWER_DAMAGE,
+    accuracy: {
+        miss: 50,
+        graze: 20,
+        hit: 27,
+        crit: 3
+    },
+    type: "none",
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        return basicBindingEffect(actor, move, targets);
+    },
+};
+
+export const latexPuddle: MoveDef = {
+    id: "latexPuddle",
+    targetSide: "none",
+    targets: 0,
+    baseDamage: PUDDLE_BASE,
+    accuracy: {
+        graze: 45,
+        hit: 50,
+        crit: 5
+    },
+    type: "none",
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+
+        const trap = findTrap(state, trapPuddle.id);
+        if (!trap) {
+            return result;
+        }
+
+        result.effects.push({
+            type: "trap",
+            actor: actor,
+            trap: trap,
+            amount: (move.definition.baseDamage ?? 1) * (move.effectiveness ?? 0)
+        });
+
+        return result;
+    }
+}
+
+export const latexRegeneration: MoveDef = {
+    id: "latexRegeneration",
+    targetSide: "player",
+    targets: 1,
+    accuracy: {
+        miss: 50,
+        graze: 30,
+        hit: 15,
+        crit: 5
+    },
+    baseDamage: REGENERATION_DAMAGE,
+    type: "none",
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+        if (targets.length === 0) {
+            return result;
+        }
+        const target = targets[0];
+
+        switch (target.band) {
+            case "graze":
+                if (isCharacter(target.target) && move.binding) {
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: [{
+                            type: "binding",
+                            source: actor,
+                            target: target.target,
+                            binding: move.binding,
+                            amount: (move.definition.baseDamage ?? 1) * target.effectiveness,
+                            onResolve: regenerateCallback
+                        }]
+                    });
+                }
+                break;
+            case "hit":
+                if (isCharacter(target.target) && move.binding) {
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: [{
+                            type: "binding",
+                            source: actor,
+                            target: target.target,
+                            binding: move.binding,
+                            onResolve: regenerateCallback
+                        }]
+                    });
+                }
+                break;
+            case "crit":
+                if (isCharacter(target.target)) {
+                    result.targets.push({
+                        target: target.target,
+                        result: target.band,
+                        effects: [{
+                            type: "binding",
+                            source: actor,
+                            target: target.target,
+                            binding: latexBindings,
+                            onResolve: regenerateCallback
+                        }]
+                    });
+                }
+                break;
+        }
+
+        return result;
+    }
+}
+
+export const latexExplosion: MoveDef = {
+    id: "latexExplosion",
+    targetSide: "player",
+    targets: 1,
+    baseDamage: EXPLOSION_DAMAGE,
+    accuracy: {
+        miss: 50,
+        graze: 30,
+        hit: 17,
+        crit: 3
+    },
+    type: "none",
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+        if (targets.length === 0) {
+            const trap = findTrap(state, trapPuddle.id);
+            if (trap) {
+                result.effects.push({
+                    type: "trap",
+                    actor: actor,
+                    trap: trap,
+                    amount: PUDDLE_BASE
+                });
+            }
+            if (isEnemy(actor)) {
+                result.effects.push({
+                    type: "enemy",
+                    target: actor,
+                    operation: "defeat"
+                });
+            }
+            return result;
+        }
+
+        const target = targets[0];
+
+        if (isCharacter(target.target)) {
+            const bindings = [latexHead, latexArms, latexTorso, latexLegs];
+            const effects: iEffect[] = [];
+            for (const binding of bindings) {
+                effects.push({
+                    type: "binding",
+                    source: actor,
+                    target: target.target,
+                    binding: binding,
+                    amount: (move.definition.baseDamage ?? 1) * target.effectiveness
+                });
+            }
+            result.targets.push({
+                target: target.target,
+                result: target.band,
+                effects: effects
+            });
+            if (target.band === "crit") {
+                if (isEnemy(actor)) {
+                    result.effects.push({
+                        type: "damage",
+                        source: actor,
+                        target: actor,
+                        amount: -EXPLOSION_HEAL
+                    });
+                }
+            } else {
+                if (isEnemy(actor)) {
+                    result.effects.push({
+                        type: "enemy",
+                        target: actor,
+                        operation: "defeat"
+                    });
+                }
+            }
+        }
+        return result;
+    },
+};
+
 export const skunk: EnemyDef = {
     id: "skunk",
     rank: "enemy",
     hp: SKUNK_HP,
     defense: SKUNK_DEF,
     passives: [],
+    moves: [latexShower, latexPuddle, latexRegeneration, latexExplosion],
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
@@ -120,7 +368,7 @@ export const skunk: EnemyDef = {
                         type: "move",
                         actor: actor,
                         targets: [target],
-                        move: { definition: latexSpray, binding: binding }
+                        move: { definition: latexShower, binding: binding }
                     });
                     return effects;
                 }
@@ -160,248 +408,3 @@ export const skunk: EnemyDef = {
         return effects;
     }
 }
-
-const latexSpray: MoveDef = {
-    id: "latexSpray",
-    targetSide: "player",
-    targets: 1,
-    baseDamage: SPRAY_DAMAGE,
-    accuracy: {
-        miss: 50,
-        graze: 20,
-        hit: 27,
-        crit: 3
-    },
-    type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        return basicBindingEffect(actor, move, targets);
-    },
-};
-
-const latexPuddle: MoveDef = {
-    id: "latexPuddle",
-    targetSide: "none",
-    targets: 0,
-    baseDamage: PUDDLE_BASE,
-    accuracy: {
-        graze: 45,
-        hit: 50,
-        crit: 5
-    },
-    type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        const result: iMoveResult = { effects: [], targets: [] };
-
-        const trap = findTrap(state, trapPuddle.id);
-        if (!trap) {
-            return result;
-        }
-
-        result.effects.push({
-            type: "trap",
-            actor: actor,
-            trap: trap,
-            amount: (move.definition.baseDamage ?? 1) * (move.effectiveness ?? 0)
-        });
-
-        return result;
-    }
-}
-
-const latexRegeneration: MoveDef = {
-    id: "latexRegeneration",
-    targetSide: "player",
-    targets: 1,
-    accuracy: {
-        miss: 50,
-        graze: 30,
-        hit: 15,
-        crit: 5
-    },
-    baseDamage: REGENERATION_DAMAGE,
-    type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        const result: iMoveResult = { effects: [], targets: [] };
-        if (targets.length === 0) {
-            return result;
-        }
-        const target = targets[0];
-
-        switch (target.band) {
-            case "graze":
-                if (isCharacter(target.target) && move.binding) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
-                            type: "binding",
-                            source: actor,
-                            target: target.target,
-                            binding: move.binding,
-                            amount: (move.definition.baseDamage ?? 1) * target.effectiveness,
-                            onResolve: regenerateCallback
-                        }]
-                    });
-                }
-                break;
-            case "hit":
-                if (isCharacter(target.target) && move.binding) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
-                            type: "binding",
-                            source: actor,
-                            target: target.target,
-                            binding: move.binding,
-                            onResolve: regenerateCallback
-                        }]
-                    });
-                }
-                break;
-            case "crit":
-                if (isCharacter(target.target)) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
-                            type: "binding",
-                            source: actor,
-                            target: target.target,
-                            binding: latexBindings,
-                            onResolve: regenerateCallback
-                        }]
-                    });
-                }
-                break;
-        }
-
-        return result;
-    }
-}
-
-const latexExplosion: MoveDef = {
-    id: "latexExplosion",
-    targetSide: "player",
-    targets: 1,
-    baseDamage: EXPLOSION_DAMAGE,
-    accuracy: {
-        miss: 50,
-        graze: 30,
-        hit: 17,
-        crit: 3
-    },
-    type: "none",
-    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        const result: iMoveResult = { effects: [], targets: [] };
-        if (targets.length === 0) {
-            const trap = findTrap(state, trapPuddle.id);
-            if (trap) {
-                result.effects.push({
-                    type: "trap",
-                    actor: actor,
-                    trap: trap,
-                    amount: PUDDLE_BASE
-                });
-            }
-            if (isEnemy(actor)) {
-                result.effects.push({
-                    type: "enemy",
-                    target: actor,
-                    operation: "defeat"
-                });
-            }
-            return result;
-        }
-
-        const target = targets[0];
-
-        if (isCharacter(target.target)) {
-            const bindings = [latexHead, latexArms, latexTorso, latexLegs];
-            const effects: iEffect[] = [];
-            for (const binding of bindings) {
-                effects.push({
-                    type: "binding",
-                    source: actor,
-                    target: target.target,
-                    binding: binding,
-                    amount: (move.definition.baseDamage ?? 1) * target.effectiveness
-                });
-            }
-            result.targets.push({
-                target: target.target,
-                result: target.band,
-                effects: effects
-            });
-            if (target.band === "crit") {
-                if (isEnemy(actor)) {
-                    result.effects.push({
-                        type: "damage",
-                        source: actor,
-                        target: actor,
-                        amount: -EXPLOSION_HEAL
-                    });
-                }
-            } else {
-                if (isEnemy(actor)) {
-                    result.effects.push({
-                        type: "enemy",
-                        target: actor,
-                        operation: "defeat"
-                    });
-                }
-            }
-        }
-        return result;
-    },
-};
-
-function regenerateCallback(effect: iEffect): iEffect[] {
-    const effects: iEffect[] = [];
-    if (effect.type != "binding") {
-        return effects;
-    }
-
-    if (effect.binding === latexBindings) {
-        for (const binding of effect.target.bindings) {
-            if (binding.value < binding.data["peak"]) {
-                effects.push({
-                    type: "binding",
-                    source: effect.source,
-                    target: effect.target,
-                    binding: binding.definition,
-                    amount: binding.data["peak"] - binding.value
-                });
-            }
-        }
-        return effects;
-    }
-
-    if (effect.amount) {
-        const binding = findBinding(effect.target, effect.binding.id)
-        if (binding && binding.value < binding.data["peak"]) {
-            effects.push({
-                type: "binding",
-                source: effect.source,
-                target: effect.target,
-                binding: binding.definition,
-                amount: Math.min(effect.amount, binding.data["peak"] - binding.value)
-            });
-        }
-        effect.amount = undefined;
-        return effects;
-    }
-
-    const binding = findBinding(effect.target, effect.binding.id)
-    if (binding && binding.value < binding.data["peak"]) {
-        effects.push({
-            type: "binding",
-            source: effect.source,
-            target: effect.target,
-            binding: binding.definition,
-            amount: binding.data["peak"] - binding.value
-        });
-    }
-    return effects;
-}
-

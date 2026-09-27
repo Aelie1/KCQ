@@ -52,12 +52,12 @@ export function removeEmpowerment(actor: iEntity): iEffect[] {
     return effects;
 }
 
-const thousandRestraintsBody: PassiveDef = {
+export const thousandRestraintsBody: PassiveDef = {
     id: "thousandRestraintsBody",
     status: { allowedMoveTypes: ["arms", "legs", "mouth"], flags: ["blocksEscape"] }
 }
 
-const telekinesis: MoveDef = {
+export const telekinesis: MoveDef = {
     id: "telekinesis",
     index: 1,
     targetSide: "enemy",
@@ -70,7 +70,7 @@ const telekinesis: MoveDef = {
     }
 }
 
-const fairyTelekinesis: MoveDef = {
+export const fairyTelekinesis: MoveDef = {
     ...telekinesis,
     id: "fairyTelekinesis",
     index: 2,
@@ -84,7 +84,7 @@ const fairyTelekinesis: MoveDef = {
     }
 }
 
-const starlightBindings: MoveDef = {
+export const starlightBindings: MoveDef = {
     id: "starlightBindings",
     index: 3,
     targetSide: "enemy",
@@ -121,7 +121,7 @@ const starlightBindings: MoveDef = {
     }
 }
 
-const fairyStarlightBindings: MoveDef = {
+export const fairyStarlightBindings: MoveDef = {
     ...starlightBindings,
     id: "fairyStarlightBindings",
     index: 4,
@@ -134,7 +134,7 @@ const fairyStarlightBindings: MoveDef = {
 
 }
 
-const reflect: MoveDef = {
+export const reflect: MoveDef = {
     id: "reflect",
     index: 5,
     targetSide: "player",
@@ -161,7 +161,7 @@ const reflect: MoveDef = {
     }
 }
 
-const fairyReflect: MoveDef = {
+export const fairyReflect: MoveDef = {
     ...reflect,
     id: "fairyReflect",
     index: 6,
@@ -172,7 +172,7 @@ const fairyReflect: MoveDef = {
     }
 }
 
-const fairyTransformation: MoveDef = {
+export const fairyTransformation: MoveDef = {
     id: "fairyTransformation",
     index: 7,
     targetSide: "player",
@@ -218,7 +218,7 @@ const fairyTransformation: MoveDef = {
     }
 }
 
-const fairyEmpowerment: MoveDef = {
+export const fairyEmpowerment: MoveDef = {
     ...fairyTransformation,
     id: "fairyEmpowerment",
     index: 8,
@@ -267,7 +267,7 @@ const fairyEmpowerment: MoveDef = {
     }
 }
 
-const powerOfDenial: MoveDef = {
+export const powerOfDenial: MoveDef = {
     id: "powerOfDenial",
     index: 9,
     targetSide: "either",

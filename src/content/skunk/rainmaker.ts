@@ -9,25 +9,7 @@ const RAINMAKER_DEF = 0;
 
 const RAIN_DAMAGE = 10;
 
-export const rainmaker: EnemyDef = {
-    id: "rainmaker",
-    rank: "minion",
-    hp: RAINMAKER_HP,
-    defense: RAINMAKER_DEF,
-    passives: [],
-    ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
-        const effects: iMoveEffect[] = [];
-        effects.push({
-            type: "move",
-            actor: actor,
-            move: { definition: latexRain },
-            targets: [state.characters[0]]
-        });
-        return effects;
-    }
-}
-
-const latexRain: MoveDef = {
+export const latexRain: MoveDef = {
     id: "latexRain",
     targetSide: "player",
     targets: "all",
@@ -37,6 +19,7 @@ const latexRain: MoveDef = {
         hit: 50,
     },
     type: "none",
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
@@ -70,3 +53,22 @@ const latexRain: MoveDef = {
         return result;
     },
 };
+
+export const rainmaker: EnemyDef = {
+    id: "rainmaker",
+    rank: "minion",
+    hp: RAINMAKER_HP,
+    defense: RAINMAKER_DEF,
+    passives: [],
+    moves: [latexRain],
+    ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
+        const effects: iMoveEffect[] = [];
+        effects.push({
+            type: "move",
+            actor: actor,
+            move: { definition: latexRain },
+            targets: [state.characters[0]]
+        });
+        return effects;
+    }
+}

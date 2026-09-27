@@ -1,11 +1,11 @@
-import type { AccuracyProfile, BindingLevel, FailureReason, ModifierSet, Move, MoveId, MoveType, StatusId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingId, BindingLevel, EncounterId, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
 
 export const EMPOWERMENT_BUFF = "empowerment";
 
 export interface CharacterDef {
-    id: string;
+    id: EntityId;
     moves: MoveDef[];
     passives: PassiveDef[];
     empoweredMoves: MoveDef[];
@@ -13,11 +13,12 @@ export interface CharacterDef {
 }
 
 export interface EnemyDef {
-    id: string;
+    id: EntityId;
     rank: "minion" | "enemy" | "boss";
     hp: number;
     defense: number;
     passives: PassiveDef[];
+    moves: MoveDef[];
     ai: (state: iGameState, actor: iEnemy, rng: Random) => iMoveEffect[];
     onDamage?: (state: iGameState, actor: iEntity, target: iEnemy, damage: number) => iEffect[];
     onDefeat?: (state: iGameState, target: iEnemy) => iEffect[];
@@ -33,6 +34,7 @@ export interface MoveDef extends Move {
     cooldown?: Record<MoveId, number>;
     freeOnHit?: boolean;
     modifiers?: ModifierSet;
+    bindings?: BindingDef[];
     getHits?: (actor: iEntity, move: MoveDef) => number;
     resolve: (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]) => iMoveResult;
     isValid?: (move: MoveDef, actor: iEntity) => FailureReason | undefined;
@@ -40,13 +42,13 @@ export interface MoveDef extends Move {
 }
 
 export interface PassiveDef {
-    id: string;
+    id: PassiveId;
     status?: StatusLevelDef;
     immunities?: StatusDef[];
 }
 
 export interface BindingDef {
-    id: string;
+    id: BindingId;
     status?: Partial<Record<BindingLevel, iStatus[]>>;
     data?: Record<string, number>;
     onAdd?: (state: iGameState, target: iCharacter, binding: iBinding, amount: number) => iEffect[];
@@ -64,16 +66,6 @@ export interface StatusDef {
     levels: StatusLevelDef[];
 }
 
-export type FlagId =
-    | "blocksAttack"
-    | "blocksEscape"
-    | "blocksAssist"
-    | "blocksBonusEscape"
-    | "blocksMoving"
-    | "skipsTraps"
-    | "skipsTurn"
-    | "incapacitated";
-
 export interface StatusLevelDef {
     modifiers?: ModifierSet;
     flags?: FlagId[];
@@ -82,7 +74,7 @@ export interface StatusLevelDef {
 }
 
 export interface EncounterDef {
-    id: string;
+    id: EncounterId;
     enemies: EnemyDef[];
     bindings: BindingDef[];
     traps: TrapSetup[];
