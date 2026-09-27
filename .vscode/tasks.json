@@ -114,6 +114,21 @@
                 "1000"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "balance smart",
+            "type": "process",
+            "command": "npm.cmd",
+            "args": [
+                "run",
+                "compare",
+                "--",
+                "plains_1,plains_2,plains_3,forest_1,forest_2,forest_3",
+                "25",
+                "smart",
+                "1000"
+            ],
+            "problemMatcher": []
         }
     ]
 }

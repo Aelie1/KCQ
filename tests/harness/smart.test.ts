@@ -23,6 +23,7 @@ import {
     finisherPressureScorer,
     futureMoveOptionsScorer,
     generateSmartCandidates,
+    linkedThreatScorer,
     pressureSourceProgressScorer,
     reserveSpendingScorer,
     smartScorers,
@@ -307,6 +308,7 @@ describe("Smart 2 composable scoring", () => {
     it("registers the production scorers in stable order", () => {
         expect(smartScorers).toEqual([
             expectedDamageScorer,
+            linkedThreatScorer,
             bindingRecoveryScorer,
             bindingMoveAccessScorer,
             pressureSourceProgressScorer,
@@ -316,6 +318,8 @@ describe("Smart 2 composable scoring", () => {
         ]);
         expect(expectedDamageScorer.id).toBe("expectedDamage");
         expect(expectedDamageScorer.weight).toBe(1);
+        expect(linkedThreatScorer.id).toBe("linkedThreat");
+        expect(linkedThreatScorer.weight).toBe(40);
         expect(bindingRecoveryScorer.id).toBe("bindingRecovery");
         expect(bindingRecoveryScorer.weight).toBe(0.75);
         expect(bindingMoveAccessScorer.id).toBe("bindingMoveAccess");
@@ -477,6 +481,8 @@ describe("Smart 2 selection and integration", () => {
             typeof candidate.total === "number"
             && typeof candidate.components.expectedDamage.raw === "number"
             && candidate.components.expectedDamage.weight === 1
+            && candidate.components.linkedThreat.raw === 0
+            && candidate.components.linkedThreat.weight === 40
             && candidate.components.bindingRecovery.raw === 0
             && candidate.components.bindingRecovery.weight === 0.75
             && candidate.components.bindingMoveAccess.raw === 0
@@ -490,6 +496,7 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.reserveSpending.raw === 0
             && candidate.components.reserveSpending.weight === 1
             && candidate.total === candidate.components.expectedDamage.score
+                + candidate.components.linkedThreat.score
                 + candidate.components.bindingRecovery.score
                 + candidate.components.bindingMoveAccess.score
                 + candidate.components.pressureSourceProgress.score
@@ -585,6 +592,8 @@ describe("Smart 2 selection and integration", () => {
             expect(decision.candidates.every((candidate) =>
                 typeof candidate.components.expectedDamage.raw === "number"
                 && candidate.components.expectedDamage.weight === 1
+                && typeof candidate.components.linkedThreat.raw === "number"
+                && candidate.components.linkedThreat.weight === 40
                 && typeof candidate.components.bindingRecovery.raw === "number"
                 && candidate.components.bindingRecovery.weight === 0.75
                 && typeof candidate.components.bindingMoveAccess.raw === "number"
@@ -598,6 +607,7 @@ describe("Smart 2 selection and integration", () => {
                 && typeof candidate.components.reserveSpending.raw === "number"
                 && candidate.components.reserveSpending.weight === 1
                 && candidate.total === candidate.components.expectedDamage.score
+                    + candidate.components.linkedThreat.score
                     + candidate.components.bindingRecovery.score
                     + candidate.components.bindingMoveAccess.score
                     + candidate.components.pressureSourceProgress.score

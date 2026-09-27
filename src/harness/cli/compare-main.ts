@@ -1,4 +1,5 @@
-import { executePolicyComparison, formatPolicyComparison } from "../batch/comparison";
+import { formatEncounterComparisons, formatPolicyComparison } from "../batch/comparison";
+import { executeEncounterSet } from "../batch/encounter-sets";
 import { effectiveWorkerCount } from "../batch/parallel-batch";
 import { createBatchRunOutput, formatSavedSummaries, writeBatchSummary } from "../output";
 import { getPolicy, policies } from "../policies";
@@ -9,7 +10,7 @@ const DEFAULT_WORKERS = 8;
 
 async function main(): Promise<void> {
     const [
-        encounterId,
+        encounterArg,
         masterSeedArg,
         policyArg,
         runsArg,
@@ -17,12 +18,17 @@ async function main(): Promise<void> {
         workersArg,
     ] = process.argv.slice(2);
 
-    if (!encounterId || !masterSeedArg || !policyArg || !runsArg) {
+    if (!encounterArg || !masterSeedArg || !policyArg || !runsArg) {
         fail(
-            "Usage: npm run compare -- <encounterId> <masterSeed> <policies> <runs> "
+            "Usage: npm run compare -- <encounters> <masterSeed> <policies> <runs> "
             + "[maxActions] [workers]",
         );
     }
+
+    const encounterIds = encounterArg
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean);
 
     const masterSeed = parseInteger(masterSeedArg, "masterSeed");
     const runs = parseInteger(runsArg, "runs", true);
@@ -52,33 +58,51 @@ async function main(): Promise<void> {
         runsPerEncounter: runs,
         maxActions,
         parallelWorkers: effectiveWorkerCount(workers, runs),
-        encounters: [encounterId],
+        encounters: encounterIds,
         policies: selectedPolicies.map((policy) => policy.id),
     });
 
-    const result = await executePolicyComparison({
-        encounterId,
+    const result = await executeEncounterSet({
+        encounterIds,
         policies: selectedPolicies,
         masterSeed,
-        runs,
+        runsPerEncounter: runs,
         maxActions,
         workers,
     });
-    result.policies.forEach((entry) => {
-        const policy = selectedPolicies.find((candidate) => candidate.id === entry.policyId)!;
-        writeBatchSummary({
-            encounterId,
-            policy,
-            masterSeed,
-            runs,
-            maxActions,
-            replay: false,
-        }, entry.summary, output.directoryPath);
-    });
+    for (const encounter of result.encounters) {
+        encounter.comparison.policies.forEach((entry) => {
+            const policy = selectedPolicies.find(
+                (candidate) => candidate.id === entry.policyId,
+            )!;
 
-    console.log(formatPolicyComparison(result).join("\n"));
-    console.log(formatCompletion(selectedPolicies.length * runs, result.overallElapsedMs, "fights"));
-    console.log(formatSavedSummaries(result.policies.length, output.directoryPath));
+            writeBatchSummary({
+                encounterId: encounter.encounterId,
+                policy,
+                masterSeed,
+                runs,
+                maxActions,
+                replay: false,
+            }, entry.summary, output.directoryPath);
+        });
+    }
+
+    const comparisons = result.encounters.map(({ comparison }) => comparison);
+
+    console.log(
+        comparisons.length === 1
+            ? formatPolicyComparison(comparisons[0]).join("\n")
+            : formatEncounterComparisons(comparisons).join("\n"),
+    );
+    console.log(formatCompletion(
+        encounterIds.length * selectedPolicies.length * runs,
+        result.elapsedMs,
+        "fights",
+    ));
+    console.log(formatSavedSummaries(
+        encounterIds.length * selectedPolicies.length,
+        output.directoryPath,
+    ));
 }
 
 function parseInteger(value: string, name: string, positive = false): number {

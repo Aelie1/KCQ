@@ -29,6 +29,11 @@
             "id": "balance-plains-3",
             "label": "$(beaker) N3 Balance",
             "task": "balance plains 3"
+        },
+        {
+            "id": "balance-smart",
+            "label": "$(thinking) Smart Balance",
+            "task": "balance smart"
         }
     ]
 }

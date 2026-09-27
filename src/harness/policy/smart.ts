@@ -2,6 +2,7 @@ import type {
     ActionInfo,
     BindingId,
     BindingLevel,
+    Buff,
     Effect,
     Enemy,
     EntityId,
@@ -147,6 +148,27 @@ export interface ReserveSpendingBreakdown {
     readonly raw: number;
 }
 
+export interface LinkedThreatCharacterBreakdown {
+    readonly characterId: EntityId;
+    readonly severity: number;
+    readonly linkedBuffIds: readonly string[];
+}
+
+export interface LinkedThreatEnemyBreakdown {
+    readonly enemyId: EntityId;
+    readonly totalSeverity: number;
+    readonly expectedDamage: number;
+    readonly currentHp: number;
+    readonly progressFraction: number;
+    readonly contribution: number;
+    readonly linkedCharacters: readonly LinkedThreatCharacterBreakdown[];
+}
+
+export interface LinkedThreatBreakdown {
+    readonly enemies: readonly LinkedThreatEnemyBreakdown[];
+    readonly raw: number;
+}
+
 /** Tunable Smart-policy heuristic constants; none is an engine rule. */
 export const BINDING_RECOVERY_WEIGHT = 0.75;
 export const BINDING_MOVE_ACCESS_WEIGHT = 20;
@@ -154,6 +176,7 @@ export const PRESSURE_SOURCE_PROGRESS_WEIGHT = 1;
 export const FINISHER_PRESSURE_WEIGHT = 1;
 export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
 export const RESERVE_SPENDING_WEIGHT = 1;
+export const LINKED_THREAT_WEIGHT = 40;
 
 /** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
 export const expectedDamageScorer: SmartScorer = {
@@ -161,6 +184,23 @@ export const expectedDamageScorer: SmartScorer = {
     weight: 1,
     prepare(context) {
         return prepareExpectedEnemyDamage(context);
+    },
+};
+
+/** Values progress toward defeating enemies linked to harmful character buffs. */
+export const linkedThreatScorer: SmartScorer = {
+    id: "linkedThreat",
+    weight: LINKED_THREAT_WEIGHT,
+    prepare(context) {
+        const evaluate = prepareLinkedThreat(context);
+        return (candidate) => evaluate(candidate).raw;
+    },
+    prepareDetailed(context) {
+        const evaluate = prepareLinkedThreat(context);
+        return (candidate) => {
+            const diagnostics = evaluate(candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
     },
 };
 
@@ -240,6 +280,7 @@ export const reserveSpendingScorer: SmartScorer = {
 /** Production scorer registration order. Later Smart cards can extend this list. */
 export const smartScorers: readonly SmartScorer[] = [
     expectedDamageScorer,
+    linkedThreatScorer,
     bindingRecoveryScorer,
     bindingMoveAccessScorer,
     pressureSourceProgressScorer,
@@ -290,11 +331,142 @@ export function evaluateReserveSpending(
     return prepareReserveSpending(context)(candidate);
 }
 
+/** Exposes linked-enemy severity and damage progress for focused diagnostics. */
+export function evaluateLinkedThreat(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): LinkedThreatBreakdown {
+    return prepareLinkedThreat(context)(candidate);
+}
+
 function prepareExpectedEnemyDamage(
     context: PolicyContext,
 ): (candidate: SmartCandidate) => number {
     const enemyIds = new Set(context.state.enemies.map((enemy) => enemy.id));
     return (candidate) => expectedEnemyDamage(candidate, enemyIds);
+}
+
+function prepareLinkedThreat(
+    context: PolicyContext,
+): (candidate: SmartCandidate) => LinkedThreatBreakdown {
+    const livingEnemies = new Map(
+        context.state.enemies
+            .filter(({ currHp }) => currHp > 0)
+            .map((enemy) => [enemy.id, enemy] as const),
+    );
+    const linkedCharacters = new Map<EntityId, LinkedThreatCharacterBreakdown[]>();
+
+    for (const character of context.state.characters) {
+        const passiveIds = context.library.characters[character.id]?.passives ?? [];
+        const immunities = new Set(passiveIds.flatMap(
+            (passiveId) => context.library.passives[passiveId]?.immunities ?? [],
+        ));
+        const relationships = new Map<EntityId, { severity: number; buffIds: string[] }>();
+
+        for (const buff of character.buffs) {
+            if (buff.linkedEntity === undefined || !livingEnemies.has(buff.linkedEntity)) {
+                continue;
+            }
+            const severity = linkedBuffSeverity(buff, context, immunities);
+            if (severity === 0) continue;
+
+            const relationship = relationships.get(buff.linkedEntity) ?? {
+                severity: 0,
+                buffIds: [],
+            };
+            relationship.severity = Math.max(relationship.severity, severity);
+            if (!relationship.buffIds.includes(buff.id)) relationship.buffIds.push(buff.id);
+            relationships.set(buff.linkedEntity, relationship);
+        }
+
+        for (const [enemyId, relationship] of relationships) {
+            const characters = linkedCharacters.get(enemyId) ?? [];
+            characters.push({
+                characterId: character.id,
+                severity: relationship.severity,
+                linkedBuffIds: relationship.buffIds,
+            });
+            linkedCharacters.set(enemyId, characters);
+        }
+    }
+
+    return (candidate) => {
+        const enemies: LinkedThreatEnemyBreakdown[] = [];
+        let raw = 0;
+
+        for (const enemy of livingEnemies.values()) {
+            const characters = linkedCharacters.get(enemy.id);
+            if (characters === undefined) continue;
+
+            const totalSeverity = characters.reduce(
+                (sum, character) => sum + character.severity,
+                0,
+            );
+            const expectedDamage = expectedDamageToEnemy(candidate, enemy.id);
+            const progressFraction = clamp(expectedDamage / enemy.currHp, 0, 1);
+            const contribution = totalSeverity * progressFraction;
+            raw += contribution;
+            enemies.push({
+                enemyId: enemy.id,
+                totalSeverity,
+                expectedDamage,
+                currentHp: enemy.currHp,
+                progressFraction,
+                contribution,
+                linkedCharacters: characters,
+            });
+        }
+
+        return { enemies, raw };
+    };
+}
+
+function linkedBuffSeverity(
+    buff: Buff,
+    context: PolicyContext,
+    immunities: ReadonlySet<StatusId>,
+): number {
+    let severity = modifierSeverity(buff.modifiers);
+    if ((buff.moveList?.blockedMoves?.length ?? 0) > 0) severity = Math.max(severity, 1);
+
+    for (const status of buff.statuses ?? []) {
+        if (immunities.has(status.id)) continue;
+        const level = context.library.statuses[status.id]?.modifiers[status.value];
+        if (level === undefined) continue;
+
+        const flags = new Set(level.flags ?? []);
+        if (flags.has("incapacitated") || flags.has("skipsTurn")) {
+            severity = Math.max(severity, 4);
+        } else if (flags.has("blocksAttack") || flags.has("blocksEscape")) {
+            severity = Math.max(severity, 3);
+        } else if (flags.has("blocksMoving") || (level.blockedMoveTypes?.length ?? 0) > 0) {
+            severity = Math.max(severity, 2);
+        } else if (flags.has("blocksAssist") || flags.has("blocksBonusEscape")) {
+            severity = Math.max(severity, 1);
+        }
+        severity = Math.max(severity, modifierSeverity(level.modifiers));
+    }
+
+    return severity;
+}
+
+function modifierSeverity(modifiers: Buff["modifiers"]): number {
+    const harmfulWhenNegative = [
+        "hit",
+        "hitarms",
+        "hitmouth",
+        "hitlegs",
+        "defense",
+        "escape",
+        "potency",
+        "traps",
+        "willpower",
+    ] as const;
+    const harmfulWhenPositive = ["vulnerability", "spread"] as const;
+
+    if (harmfulWhenNegative.some((id) => (modifiers?.[id] ?? 0) < 0)) return 1;
+    if (harmfulWhenPositive.some((id) => (modifiers?.[id] ?? 0) > 0)) return 1;
+    return 0;
 }
 
 function prepareFinisherPressure(

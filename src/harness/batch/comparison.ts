@@ -171,6 +171,49 @@ export function formatPolicyComparison(result: PolicyComparisonResult): string[]
     ];
 }
 
+export function formatEncounterComparisons(
+    results: readonly PolicyComparisonResult[],
+): string[] {
+    const rows = results.flatMap((result) =>
+        result.policies.map(({ policyId, summary, timing }) => {
+            const metrics = summary.metrics;
+
+            return [
+                result.encounterId,
+                policyId,
+                String(metrics.runs),
+                formatPercent(metrics.winRate),
+                formatNumber(summary.fightLength.round?.mean ?? null),
+                formatNumber(metrics.meanDecisions),
+                formatNumber(metrics.meanDamage),
+                formatNumber(metrics.meanPeakBondage),
+                formatNumber(metrics.meanEscapes),
+                formatMeanRuntime(timing.meanPerRunMs),
+                metrics.win95 === null
+                    ? "n/a"
+                    : `${formatPercent(metrics.win95.lower)}-${formatPercent(metrics.win95.upper)}`,
+            ];
+        })
+    );
+
+    return formatTable(
+        [
+            "level",
+            "policy",
+            "runs",
+            "winRate",
+            "meanRounds",
+            "meanDecisions",
+            "meanDamage",
+            "meanPeakBondage",
+            "meanEscapes",
+            "ms/run",
+            "win95",
+        ],
+        rows,
+    );
+}
+
 export function formatRuntime(milliseconds: number): string {
     const value = Math.max(0, milliseconds);
     if (value < 1_000) return `${value.toFixed(1)} ms`;
