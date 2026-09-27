@@ -21,7 +21,7 @@ function recordedState(round: number, hp: number, binding: number): GameState {
             acted: false,
             standing: true,
             bonusEscapes: 0,
-            bindings: [{ id: "rope", value: binding, level: "easy", data: {}, status: [] }],
+            bindings: [{ id: "rope", value: binding, level: "easy", data: {}, status: [], tickEffects: [] }],
             buffs: [],
             cooldowns: {},
             data: {},

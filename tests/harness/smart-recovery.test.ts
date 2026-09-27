@@ -21,7 +21,7 @@ import {
 const thresholds = { thresholds: { impossible: 80 }, max: 100 } as const;
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "hard", data: {}, status: [] };
+    return { id, value, level: "hard", data: {}, status: [], tickEffects: [] };
 }
 
 function character(id: string, bindings: Binding[] = []): Character {
@@ -222,16 +222,18 @@ describe("Smart 4 recovery-debt formula", () => {
     it("scores the complete preview rather than only selected-binding removal", () => {
         const fixture = context(
             [character("hero", [binding("selected", 80)])],
-            [actionView("hero", { escapes: [
-                {
-                    available: true, target: "hero", binding: "selected",
-                    effects: escapeEffects(10, 2),
-                },
-                {
-                    available: true, target: "hero", binding: "selected",
-                    effects: escapeEffects(10, 20),
-                },
-            ] })],
+            [actionView("hero", {
+                escapes: [
+                    {
+                        available: true, target: "hero", binding: "selected",
+                        effects: escapeEffects(10, 2),
+                    },
+                    {
+                        available: true, target: "hero", binding: "selected",
+                        effects: escapeEffects(10, 20),
+                    },
+                ]
+            })],
         );
         const decision = evaluateSmartDecision(fixture);
 
@@ -276,26 +278,28 @@ describe("Smart 4 assist decisions", () => {
     it("chooses an assist when its preview removes more severe recovery debt", () => {
         const self = character("helper", [binding("selected", 30)]);
         const ally = character("ally", [binding("selected", 80)]);
-        const fixture = context([self, ally], [actionView("helper", { escapes: [
-            {
-                available: true,
-                target: "helper",
-                binding: "selected",
-                effects: [
-                    { type: "binding", target: "helper", binding: "selected", amount: -18 },
-                    { type: "binding", target: "helper", binding: "splash", amount: 5 },
-                ],
-            },
-            {
-                available: true,
-                target: "ally",
-                binding: "selected",
-                effects: [
-                    { type: "binding", target: "ally", binding: "selected", amount: -10 },
-                    { type: "binding", target: "helper", binding: "splash", amount: 12 },
-                ],
-            },
-        ] })]);
+        const fixture = context([self, ally], [actionView("helper", {
+            escapes: [
+                {
+                    available: true,
+                    target: "helper",
+                    binding: "selected",
+                    effects: [
+                        { type: "binding", target: "helper", binding: "selected", amount: -18 },
+                        { type: "binding", target: "helper", binding: "splash", amount: 5 },
+                    ],
+                },
+                {
+                    available: true,
+                    target: "ally",
+                    binding: "selected",
+                    effects: [
+                        { type: "binding", target: "ally", binding: "selected", amount: -10 },
+                        { type: "binding", target: "helper", binding: "splash", amount: 12 },
+                    ],
+                },
+            ]
+        })]);
 
         expect(evaluateSmartDecision(fixture).selected.action).toEqual({
             type: "escape", actor: "helper", target: "ally", binding: "selected",
@@ -308,23 +312,25 @@ describe("Smart 4 assist decisions", () => {
                 character("helper", [binding("selected", 30)]),
                 character("ally", [binding("selected", 80)]),
             ],
-            [actionView("helper", { escapes: [
-                {
-                    available: true,
-                    target: "helper",
-                    binding: "selected",
-                    effects: escapeEffects(30, 1, "helper", "helper"),
-                },
-                {
-                    available: true,
-                    target: "ally",
-                    binding: "selected",
-                    effects: [
-                        { type: "binding", target: "ally", binding: "selected", amount: -10 },
-                        { type: "binding", target: "helper", binding: "splash", amount: 50 },
-                    ],
-                },
-            ] })],
+            [actionView("helper", {
+                escapes: [
+                    {
+                        available: true,
+                        target: "helper",
+                        binding: "selected",
+                        effects: escapeEffects(30, 1, "helper", "helper"),
+                    },
+                    {
+                        available: true,
+                        target: "ally",
+                        binding: "selected",
+                        effects: [
+                            { type: "binding", target: "ally", binding: "selected", amount: -10 },
+                            { type: "binding", target: "helper", binding: "splash", amount: 50 },
+                        ],
+                    },
+                ]
+            })],
         );
 
         expect(evaluateSmartDecision(fixture).selected.action).toEqual({

@@ -82,7 +82,7 @@ export interface iTargetInfo extends Omit<TargetInfo, "target" | "effects"> {
     effectiveness: number;
 }
 
-export interface iBinding extends Omit<Binding, "level" | "status"> {
+export interface iBinding extends Omit<Binding, "level" | "status" | "tickEffects"> {
     definition: BindingDef;
 }
 

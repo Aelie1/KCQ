@@ -26,7 +26,7 @@ function serializeCharacter(character: iCharacter, status: GameStatus): Characte
         standing: character.standing,
         bonusEscapes: character.bonusEscapes,
         modifiers: status.getModifiers(),
-        bindings: character.bindings.map(serializeBinding),
+        bindings: character.bindings.map(x => serializeBinding(character, x)),
         buffs: character.buffs.filter(x => x.active).map(serializeBuff),
         cooldowns: { ...character.cooldowns },
         blockedMoveTypes: status.getBlockedMoveTypes(),
@@ -136,7 +136,7 @@ function serializeMoveList(list: iMoveListModifier | undefined): MoveListModifie
     }
 }
 
-function serializeBinding(binding: iBinding): Binding {
+function serializeBinding(target: iCharacter, binding: iBinding): Binding {
     const level = getBindingLevel(binding);
     const status = binding.definition.status;
     return {
@@ -144,7 +144,8 @@ function serializeBinding(binding: iBinding): Binding {
         data: { ...binding.data },
         value: binding.value,
         level: level,
-        status: status ? (status[level] ?? []).map(serializeStatus) : []
+        status: status ? (status[level] ?? []).map(serializeStatus) : [],
+        tickEffects: serializeEffects(binding.definition.onTick?.(target, binding) ?? [])
     };
 }
 

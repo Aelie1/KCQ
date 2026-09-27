@@ -41,6 +41,7 @@ function character(
             status: binding.incapacitated
                 ? [{ id: "incapacitated", value: 1 }]
                 : [],
+            tickEffects: []
         })),
         buffs: [],
         cooldowns: {},
@@ -86,9 +87,11 @@ function successfulAction(
         actionIndex,
         action,
         before,
-        result: { success: true, actions: [], frames: (events.length ? events : [
-            { type: "changePhase", phase: after.turn.phase, effects: [] } as GameEvent,
-        ]).map((event) => ({ event, state: after })) },
+        result: {
+            success: true, actions: [], frames: (events.length ? events : [
+                { type: "changePhase", phase: after.turn.phase, effects: [] } as GameEvent,
+            ]).map((event) => ({ event, state: after }))
+        },
     };
 }
 

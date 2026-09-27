@@ -27,10 +27,14 @@ describe("combat presentation", () => {
     it("separates phases and groups ordered effects beneath their causal action", () => {
         const events: GameEvent[] = [
             { type: "changePhase", phase: "enemy", effects: [] },
-            { type: "useMove", actor: "skunk1", move: "spray", effects: [], targets: [{ target: "ko", result: "hit", effects: [
-                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 34 },
-                { type: "bondageChanged", target: "ko", binding: "latexTorso", amount: 34 },
-            ] }] },
+            {
+                type: "useMove", actor: "skunk1", move: "spray", effects: [], targets: [{
+                    target: "ko", result: "hit", effects: [
+                        { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 34 },
+                        { type: "bondageChanged", target: "ko", binding: "latexTorso", amount: 34 },
+                    ]
+                }]
+            },
             { type: "useMove", actor: "skunk2", move: "wait", targets: [], effects: [] },
             { type: "changePhase", phase: "player", effects: [] },
         ];
@@ -58,18 +62,26 @@ describe("combat presentation", () => {
         }, [{
             type: "useMove", actor: "hinari", move: "rockfall",
             targets: [
-                { target: "skunkette1", result: "graze", effects: [
-                    { type: "enemyDamaged", target: "skunkette1", amount: 5 },
-                ] },
-                { target: "skunkette1", result: "hit", effects: [
-                    { type: "enemyDamaged", target: "skunkette1", amount: 10 },
-                ] },
-                { target: "skunkette1", result: "hit", effects: [
-                    { type: "enemyDamaged", target: "skunkette1", amount: 9 },
-                ] },
-                { target: "skunkette1", result: "graze", effects: [
-                    { type: "enemyDamaged", target: "skunkette1", amount: 5 },
-                ] },
+                {
+                    target: "skunkette1", result: "graze", effects: [
+                        { type: "enemyDamaged", target: "skunkette1", amount: 5 },
+                    ]
+                },
+                {
+                    target: "skunkette1", result: "hit", effects: [
+                        { type: "enemyDamaged", target: "skunkette1", amount: 10 },
+                    ]
+                },
+                {
+                    target: "skunkette1", result: "hit", effects: [
+                        { type: "enemyDamaged", target: "skunkette1", amount: 9 },
+                    ]
+                },
+                {
+                    target: "skunkette1", result: "graze", effects: [
+                        { type: "enemyDamaged", target: "skunkette1", amount: 5 },
+                    ]
+                },
             ],
             effects: [{ type: "buffAdded", target: "hinari", buff: "focus" }],
         }]);
@@ -107,9 +119,11 @@ describe("combat presentation", () => {
             targets: [
                 { target: "skunk1", result: "miss", effects: [] },
                 { target: "skunk3", result: "none", effects: [] },
-                { target: "skunk2", result: "hit", effects: [
-                    { type: "enemyDamaged", target: "skunk1", amount: 4 },
-                ] },
+                {
+                    target: "skunk2", result: "hit", effects: [
+                        { type: "enemyDamaged", target: "skunk1", amount: 4 },
+                    ]
+                },
             ],
             effects: [{ type: "buffAdded", target: "ko", buff: "focus" }],
         }]);
@@ -132,10 +146,14 @@ describe("combat presentation", () => {
         const [group] = formatActionGroups({
             type: "move", actor: "ko", move: "strike", targets: ["skunk1"],
         }, [
-            { type: "useMove", actor: "ko", move: "strike", effects: [], targets: [{ target: "skunk1", result: "crit", effects: [
-                { type: "enemyDamaged", target: "skunk1", amount: 20 },
-                { type: "enemyDefeated", target: "skunk1" },
-            ] }] },
+            {
+                type: "useMove", actor: "ko", move: "strike", effects: [], targets: [{
+                    target: "skunk1", result: "crit", effects: [
+                        { type: "enemyDamaged", target: "skunk1", amount: 20 },
+                        { type: "enemyDefeated", target: "skunk1" },
+                    ]
+                }]
+            },
         ], registry);
         expect(group.lines.map((line) => line.style)).toEqual([first, first, first]);
     });
@@ -157,11 +175,13 @@ describe("combat presentation", () => {
         const [group] = formatActionGroups({
             type: "move", actor: "ko", move: "telekinesis", targets: ["skunk1"],
         }, [
-            { type: "useMove", actor: "ko", move: "telekinesis", targets: [], effects: [
-                { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
-                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 20 },
-                { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
-            ] },
+            {
+                type: "useMove", actor: "ko", move: "telekinesis", targets: [], effects: [
+                    { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 10 },
+                    { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 20 },
+                    { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
+                ]
+            },
         ]);
 
         expect(group.lines.map((line) => line.text)).toEqual([
@@ -188,13 +208,15 @@ describe("combat presentation", () => {
 
     it("derives transient targets from state-changing events", () => {
         expect(deriveHighlightTargets([
-            { type: "useMove", actor: "skunk1", move: "pounce", targets: [], effects: [
-                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 10 },
-                { type: "buffAdded", target: "ko", buff: "mist" },
-                { type: "enemyHealed", target: "skunk1", amount: 5 },
-                { type: "enemySpawned", target: "skunk2" },
-                { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
-            ] },
+            {
+                type: "useMove", actor: "skunk1", move: "pounce", targets: [], effects: [
+                    { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 10 },
+                    { type: "buffAdded", target: "ko", buff: "mist" },
+                    { type: "enemyHealed", target: "skunk1", amount: 5 },
+                    { type: "enemySpawned", target: "skunk2" },
+                    { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
+                ]
+            },
             { type: "changeStance", actor: "ko", effects: [{ type: "stanceSet", actor: "ko", stance: "standing" }] },
         ])).toEqual([
             { kind: "cooldown", entity: "skunk1", move: "pounce" },
@@ -251,9 +273,13 @@ describe("combat presentation", () => {
         const groups = formatActionGroups({
             type: "move", actor: "ko", move: "strike", targets: ["skunk1"],
         }, [
-            { type: "useMove", actor: "ko", move: "strike", effects: [], targets: [{ target: "skunk1", result: "hit", effects: [
-                { type: "enemyDamaged", target: "skunk1", amount: 10 },
-            ] }] },
+            {
+                type: "useMove", actor: "ko", move: "strike", effects: [], targets: [{
+                    target: "skunk1", result: "hit", effects: [
+                        { type: "enemyDamaged", target: "skunk1", amount: 10 },
+                    ]
+                }]
+            },
         ]);
         const waits: number[] = [];
 
@@ -290,7 +316,7 @@ describe("combat presentation", () => {
                 turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
                 characters: [{
                     id: "ko", acted: false, standing: true, bonusEscapes: 0,
-                    bindings: [{ id: "latexArms", value: 55, level: "extreme", data: {}, status: [] }],
+                    bindings: [{ id: "latexArms", value: 55, level: "extreme", data: {}, status: [], tickEffects: [] }],
                     buffs: [{ id: "focus" }], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
                 }],
                 enemies: [{

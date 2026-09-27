@@ -34,6 +34,7 @@ describe("browser gameplay telemetry", () => {
             level: "easy",
             data: { hidden: 3 },
             status: [{ id: "bound", value: 1 }],
+            tickEffects: []
         }];
         view.characters[0].buffs = [{
             id: "focused",
@@ -182,9 +183,9 @@ describe("browser gameplay telemetry", () => {
                 action_count: 1,
                 current_state: compactStateDigest(engine.getGameState()),
             }, {
-                send_instantly: true,
-                transport: "sendBeacon",
-            }]]);
+                    send_instantly: true,
+                    transport: "sendBeacon",
+                }]]);
     });
 
     it("does not abandon finished, explicitly quit, or bfcache battles", () => {

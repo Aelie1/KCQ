@@ -22,7 +22,7 @@ import {
 const thresholds = { thresholds: { impossible: 80 }, max: 100 } as const;
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "hard", data: {}, status: [] };
+    return { id, value, level: "hard", data: {}, status: [], tickEffects: [] };
 }
 
 function character(id: string, bindings: Binding[] = []): Character {

@@ -21,7 +21,7 @@ function character(id: string, bindingValues: number[]): Character {
     return {
         id, acted: false, standing: true, bonusEscapes: 0,
         bindings: bindingValues.map((value, index) => ({
-            id: `binding-${index}`, value, level: "easy", data: {}, status: [],
+            id: `binding-${index}`, value, level: "easy", data: {}, status: [], tickEffects: [],
         })),
         buffs: [], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
     };

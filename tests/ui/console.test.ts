@@ -32,6 +32,7 @@ const state: GameState = {
             level: "extreme",
             data: {},
             status: [{ id: "bound", value: 3 }],
+            tickEffects: []
         }],
         buffs: [],
         cooldowns: {},
@@ -459,7 +460,7 @@ describe("console formatting", () => {
             characters: [{
                 ...state.characters[0],
                 bindings: [
-                    { id: "notInEncounter", value: 100, level: "max", data: {}, status: [] },
+                    { id: "notInEncounter", value: 100, level: "max", data: {}, status: [], tickEffects: [] },
                     {
                         id: "latexArms",
                         value: 36,
@@ -469,6 +470,7 @@ describe("console formatting", () => {
                             { id: "bound", value: 3 },
                             { id: "immobilized", value: 1 },
                         ],
+                        tickEffects: []
                     },
                     {
                         id: "latexTorso",
@@ -476,6 +478,7 @@ describe("console formatting", () => {
                         level: "medium",
                         data: {},
                         status: [{ id: "gagged", value: 2 }],
+                        tickEffects: []
                     },
                 ],
             }],
@@ -510,9 +513,9 @@ describe("console formatting", () => {
             characters: [{
                 ...state.characters[0],
                 bindings: [
-                    { id: "withPeak", value: 36, level: "hard", data: { peak: 58 }, status: [] },
-                    { id: "withoutPeak", value: 36, level: "hard", data: {}, status: [] },
-                    { id: "zeroPeak", value: 12, level: "easy", data: { peak: 0 }, status: [] },
+                    { id: "withPeak", value: 36, level: "hard", data: { peak: 58 }, status: [], tickEffects: [] },
+                    { id: "withoutPeak", value: 36, level: "hard", data: {}, status: [], tickEffects: [] },
+                    { id: "zeroPeak", value: 12, level: "easy", data: { peak: 0 }, status: [], tickEffects: [] },
                 ],
             }],
         }, [{ id: "ko", available: true }], ["withPeak", "withoutPeak", "zeroPeak"]);

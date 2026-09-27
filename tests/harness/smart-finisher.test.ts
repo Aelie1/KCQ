@@ -29,7 +29,7 @@ function enemy(id: string, currHp: number, maxHp = currHp): Enemy {
 }
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "impossible", data: {}, status: [] };
+    return { id, value, level: "impossible", data: {}, status: [], tickEffects: [] };
 }
 
 function character(bindings: Binding[] = []): Character {
@@ -115,10 +115,12 @@ describe("Smart finisher pressure", () => {
     it("prefers equal damage against lower absolute remaining HP", () => {
         const fixture = context(
             [enemy("enemyA", 50), enemy("enemyB", 200)],
-            [actionView({ moves: [move("strike", [
-                target("enemyA", 25),
-                target("enemyB", 25),
-            ])] })],
+            [actionView({
+                moves: [move("strike", [
+                    target("enemyA", 25),
+                    target("enemyB", 25),
+                ])]
+            })],
         );
         const decision = evaluateSmartDecision(fixture);
         const [againstA, againstB] = attackCandidates(fixture);
@@ -133,10 +135,12 @@ describe("Smart finisher pressure", () => {
     it("characterizes the forest Fairy regression values", () => {
         const fixture = context(
             [enemy("fairy", 51), enemy("skunk", 186)],
-            [actionView({ moves: [move("strike", [
-                target("fairy", 32.5),
-                target("skunk", 32.5),
-            ])] })],
+            [actionView({
+                moves: [move("strike", [
+                    target("fairy", 32.5),
+                    target("skunk", 32.5),
+                ])]
+            })],
         );
         const decision = evaluateSmartDecision(fixture);
         const [fairy, skunk] = attackCandidates(fixture);
@@ -164,10 +168,12 @@ describe("Smart finisher pressure", () => {
         const hitPoints = [100, 80, 40, 20, 10];
         const fixture = context(
             hitPoints.map((hp) => enemy(`enemy-${hp}`, hp)),
-            [actionView({ moves: [move(
-                "strike",
-                hitPoints.map((hp) => target(`enemy-${hp}`, 20)),
-            )] })],
+            [actionView({
+                moves: [move(
+                    "strike",
+                    hitPoints.map((hp) => target(`enemy-${hp}`, 20)),
+                )]
+            })],
         );
 
         expect(attackCandidates(fixture).map(
@@ -178,10 +184,12 @@ describe("Smart finisher pressure", () => {
     it("uses absolute HP rather than percentage health", () => {
         const fixture = context(
             [enemy("enemyA", 177, 200), enemy("enemyB", 231, 300)],
-            [actionView({ moves: [move("strike", [
-                target("enemyA", 20),
-                target("enemyB", 20),
-            ])] })],
+            [actionView({
+                moves: [move("strike", [
+                    target("enemyA", 20),
+                    target("enemyB", 20),
+                ])]
+            })],
         );
         const decision = evaluateSmartDecision(fixture);
         const [againstA, againstB] = attackCandidates(fixture);
@@ -194,10 +202,12 @@ describe("Smart finisher pressure", () => {
     it("sums multi-target pressure independently per enemy", () => {
         const [candidate] = attackCandidates(context(
             [enemy("enemyA", 25), enemy("enemyB", 100)],
-            [actionView({ moves: [move("sweep", [
-                target("enemyA", 20),
-                target("enemyB", 20),
-            ], 2)] })],
+            [actionView({
+                moves: [move("sweep", [
+                    target("enemyA", 20),
+                    target("enemyB", 20),
+                ], 2)]
+            })],
         ));
 
         expect(candidate.components.expectedDamage.raw).toBe(40);
@@ -253,12 +263,14 @@ describe("Smart finisher pressure", () => {
     it("returns zero for escapes and end turn even without a living damage target", () => {
         const fixture = context(
             [enemy("defeated", 0, 20)],
-            [actionView({ escapes: [{
-                available: true,
-                target: "hero",
-                binding: "selected",
-                effects: [{ type: "damage", target: "defeated", amount: 100 }],
-            }] })],
+            [actionView({
+                escapes: [{
+                    available: true,
+                    target: "hero",
+                    binding: "selected",
+                    effects: [{ type: "damage", target: "defeated", amount: 100 }],
+                }]
+            })],
         );
         const decision = evaluateSmartDecision(fixture);
 

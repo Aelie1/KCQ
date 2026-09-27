@@ -15,7 +15,7 @@ import {
 } from "../../src/harness/policy/smart";
 
 function binding(id: string, value: number, level: Binding["level"]): Binding {
-    return { id, value, level, data: {}, status: [] };
+    return { id, value, level, data: {}, status: [], tickEffects: [] };
 }
 
 function character(id: string, values: Partial<Character> = {}): Character {

@@ -240,6 +240,7 @@ export interface Binding {
     level: BindingLevel;
     data: Record<string, number>;
     status: Status[];
+    tickEffects: Effect[];
 }
 
 export type BindingId = string;

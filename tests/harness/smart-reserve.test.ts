@@ -19,7 +19,7 @@ import {
 } from "../../src/harness/policy/smart";
 
 function binding(value: number): Binding {
-    return { id: "rope", value, level: "hard", data: {}, status: [] };
+    return { id: "rope", value, level: "hard", data: {}, status: [], tickEffects: [] };
 }
 
 function character(bindings: Binding[] = []): Character {
@@ -199,7 +199,7 @@ describe("Smart reserve spending", () => {
         expect(scored.components.bindingRecovery.score).toBeGreaterThan(0);
         expect(scored.total).toBe(
             scored.components.bindingRecovery.score
-                + scored.components.futureMoveOptions.score,
+            + scored.components.futureMoveOptions.score,
         );
         expect(scored.total).toBeGreaterThan(0);
     });
@@ -223,7 +223,7 @@ describe("Smart reserve spending", () => {
         expect(scored.components.futureMoveOptions.score).toBe(-20);
         expect(scored.total).toBe(
             scored.components.bindingRecovery.score
-                + scored.components.futureMoveOptions.score,
+            + scored.components.futureMoveOptions.score,
         );
     });
 });
