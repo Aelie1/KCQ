@@ -14,8 +14,19 @@ import {
     assessSmartBoard,
     type SmartBoardAssessment,
 } from "./smart-board";
+import {
+    addBinding,
+    applyBindingEffects,
+    bindingValue,
+    cloneBindingBoard,
+    currentBindingBoard,
+    recoveryDebt,
+    totalRecoveryDebt,
+    type BindingBoard,
+} from "./smart-bindings";
 
 export * from "./smart-board";
+export { RECOVERY_DEBT_CURVE_A, recoveryDebt } from "./smart-bindings";
 
 /** Public-preview data retained beside an action so scoring stays inspectable. */
 export interface SmartCandidate {
@@ -33,6 +44,12 @@ export interface SmartScoreComponent {
     readonly raw: number;
     readonly weight: number;
     readonly score: number;
+    readonly diagnostics?: unknown;
+}
+
+export interface SmartScorerEvaluation {
+    readonly raw: number;
+    readonly diagnostics?: unknown;
 }
 
 /** Named components retain scorer registration order for diagnostics. */
@@ -48,6 +65,11 @@ export interface SmartScorer {
         context: PolicyContext,
         board: SmartBoardAssessment,
     ): (candidate: SmartCandidate) => number;
+    /** Optional single-pass evaluation for scorers that expose richer diagnostics. */
+    prepareDetailed?(
+        context: PolicyContext,
+        board: SmartBoardAssessment,
+    ): (candidate: SmartCandidate) => SmartScorerEvaluation;
 }
 
 export interface ScoredSmartCandidate extends SmartCandidate {
@@ -68,6 +90,22 @@ export interface BindingRecoveryBreakdown {
     readonly selectedProjectedValue: number;
     readonly selectedDebt: number;
     readonly urgency: number;
+    readonly raw: number;
+}
+
+export interface PressureSourceProgressSourceBreakdown {
+    readonly characterId: EntityId;
+    readonly bindingId: BindingId;
+    readonly currentValue: number;
+    readonly projectedValue: number;
+    readonly removed: number;
+    readonly progressFraction: number;
+    readonly tickPressure: number;
+    readonly contribution: number;
+}
+
+export interface PressureSourceProgressBreakdown {
+    readonly sources: readonly PressureSourceProgressSourceBreakdown[];
     readonly raw: number;
 }
 
@@ -93,8 +131,8 @@ export interface ReserveSpendingBreakdown {
 }
 
 /** Tunable Smart-policy heuristic constants; none is an engine rule. */
-export const RECOVERY_DEBT_CURVE_A = 1.5;
 export const BINDING_RECOVERY_WEIGHT = 0.75;
+export const PRESSURE_SOURCE_PROGRESS_WEIGHT = 1;
 export const FINISHER_PRESSURE_WEIGHT = 1;
 export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
 export const RESERVE_SPENDING_WEIGHT = 1;
@@ -115,6 +153,23 @@ export const bindingRecoveryScorer: SmartScorer = {
     prepare(context, board) {
         const evaluate = prepareBindingRecovery(context, board);
         return (candidate) => evaluate(candidate).raw;
+    },
+};
+
+/** Rewards proportional progress toward removing recurring binding generators. */
+export const pressureSourceProgressScorer: SmartScorer = {
+    id: "pressureSourceProgress",
+    weight: PRESSURE_SOURCE_PROGRESS_WEIGHT,
+    prepare(context, board) {
+        const evaluate = preparePressureSourceProgress(context, board);
+        return (candidate) => evaluate(candidate).raw;
+    },
+    prepareDetailed(context, board) {
+        const evaluate = preparePressureSourceProgress(context, board);
+        return (candidate) => {
+            const diagnostics = evaluate(candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
     },
 };
 
@@ -151,30 +206,11 @@ export const reserveSpendingScorer: SmartScorer = {
 export const smartScorers: readonly SmartScorer[] = [
     expectedDamageScorer,
     bindingRecoveryScorer,
+    pressureSourceProgressScorer,
     finisherPressureScorer,
     futureMoveOptionsScorer,
     reserveSpendingScorer,
 ];
-
-/**
- * Convex estimate of the effort to recover one binding track. This is a Smart
- * policy heuristic, not a game mechanic.
- */
-export function recoveryDebt(value: number, thresholds: ThresholdInfo): number {
-    const impossible = thresholds.thresholds.impossible;
-    const maximum = thresholds.max;
-    if (impossible === undefined || impossible <= 0 || maximum <= 0) return 0;
-
-    const clamped = clamp(value, 0, maximum);
-    if (clamped <= impossible) {
-        return clamped
-            + RECOVERY_DEBT_CURVE_A * clamped ** 3 / impossible ** 2;
-    }
-
-    const debtAtImpossible = impossible + RECOVERY_DEBT_CURVE_A * impossible;
-    const slopeAtImpossible = 1 + 3 * RECOVERY_DEBT_CURVE_A;
-    return debtAtImpossible + (clamped - impossible) * slopeAtImpossible;
-}
 
 /** Exposes the scorer's formula breakdown for focused tests and diagnostics. */
 export function evaluateBindingRecovery(
@@ -183,6 +219,15 @@ export function evaluateBindingRecovery(
     candidate: SmartCandidate,
 ): BindingRecoveryBreakdown {
     return prepareBindingRecovery(context, board)(candidate);
+}
+
+/** Exposes recurring-source progress and its per-source contributions. */
+export function evaluatePressureSourceProgress(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    candidate: SmartCandidate,
+): PressureSourceProgressBreakdown {
+    return preparePressureSourceProgress(context, board)(candidate);
 }
 
 /** Exposes the future-move option delta for focused tests and diagnostics. */
@@ -290,18 +335,31 @@ export function evaluateSmartDecision(
 ): SmartDecision {
     assertUniqueScorerIds(scorers);
     const board = assessSmartBoard(context);
-    const preparedScorers = scorers.map((scorer) => ({
-        id: scorer.id,
-        weight: scorer.weight,
-        evaluate: scorer.prepare(context, board),
-    }));
+    const preparedScorers = scorers.map((scorer) => {
+        const evaluateDetailed = scorer.prepareDetailed?.(context, board);
+        let evaluate: (candidate: SmartCandidate) => SmartScorerEvaluation;
+        if (evaluateDetailed) {
+            evaluate = evaluateDetailed;
+        } else {
+            const evaluateRaw = scorer.prepare(context, board);
+            evaluate = (candidate) => ({ raw: evaluateRaw(candidate) });
+        }
+        return {
+            id: scorer.id,
+            weight: scorer.weight,
+            evaluate,
+        };
+    });
     const candidates = generateSmartCandidates(context).map((candidate) => {
         const componentEntries = preparedScorers.map((scorer) => {
-            const raw = scorer.evaluate(candidate);
+            const evaluation = scorer.evaluate(candidate);
             const component: SmartScoreComponent = {
-                raw,
+                raw: evaluation.raw,
                 weight: scorer.weight,
-                score: raw * scorer.weight,
+                score: evaluation.raw * scorer.weight,
+                ...(evaluation.diagnostics !== undefined
+                    ? { diagnostics: evaluation.diagnostics }
+                    : {}),
             };
             return [scorer.id, component] as const;
         });
@@ -343,14 +401,12 @@ export const smartPolicy: FightPolicy = {
     },
 };
 
-type BindingBoard = Map<EntityId, Map<BindingId, number>>;
-
 function prepareBindingRecovery(
     context: PolicyContext,
     board: SmartBoardAssessment,
 ): (candidate: SmartCandidate) => BindingRecoveryBreakdown {
     const characterIds = new Set(context.state.characters.map(({ id }) => id));
-    const current = currentBindingBoard(context);
+    const current = currentBindingBoard(context.state.characters);
     const baseline = cloneBindingBoard(current);
     applyKnownIncoming(baseline, board, context.thresholds.max);
     const baselineDebt = totalRecoveryDebt(baseline, context.thresholds);
@@ -395,6 +451,51 @@ function prepareBindingRecovery(
     };
 }
 
+function preparePressureSourceProgress(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+): (candidate: SmartCandidate) => PressureSourceProgressBreakdown {
+    const characterIds = new Set(context.state.characters.map(({ id }) => id));
+    const current = currentBindingBoard(context.state.characters);
+
+    return (candidate) => {
+        const projected = cloneBindingBoard(current);
+        applyCandidateBindingEffects(
+            projected,
+            candidate,
+            characterIds,
+            context.thresholds.max,
+        );
+
+        const sources = board.bindingPressureSources.map((source) => {
+            const currentValue = source.sourceValue;
+            const projectedValue = bindingValue(
+                projected,
+                source.characterId,
+                source.bindingId,
+            );
+            const removed = Math.max(0, currentValue - projectedValue);
+            const progressFraction = currentValue > 0 ? removed / currentValue : 0;
+            const contribution = source.tickPressure * progressFraction;
+            return {
+                characterId: source.characterId,
+                bindingId: source.bindingId,
+                currentValue,
+                projectedValue,
+                removed,
+                progressFraction,
+                tickPressure: source.tickPressure,
+                contribution,
+            };
+        });
+
+        return {
+            sources,
+            raw: sources.reduce((total, source) => total + source.contribution, 0),
+        };
+    };
+}
+
 function applyCandidateBindingEffects(
     projected: BindingBoard,
     candidate: SmartCandidate,
@@ -406,25 +507,6 @@ function applyCandidateBindingEffects(
         for (let hit = 0; hit < candidate.hits; hit += 1) {
             applyBindingEffects(projected, target.effects, characterIds, maximum);
         }
-    }
-}
-
-function applyBindingEffects(
-    projected: BindingBoard,
-    effects: readonly Effect[],
-    characterIds: ReadonlySet<EntityId>,
-    maximum: number,
-): void {
-    for (const effect of effects) {
-        if (effect.type !== "binding" || effect.amount === undefined
-            || !characterIds.has(effect.target)) continue;
-        addBinding(
-            projected,
-            effect.target,
-            effect.binding,
-            effect.amount,
-            maximum,
-        );
     }
 }
 
@@ -449,20 +531,6 @@ function worstRelievedBinding(
     return selected;
 }
 
-function currentBindingBoard(context: PolicyContext): BindingBoard {
-    return new Map(context.state.characters.map((character) => [
-        character.id,
-        new Map(character.bindings.map((binding) => [binding.id, binding.value])),
-    ]));
-}
-
-function cloneBindingBoard(board: BindingBoard): BindingBoard {
-    return new Map([...board].map(([characterId, bindings]) => [
-        characterId,
-        new Map(bindings),
-    ]));
-}
-
 function applyKnownIncoming(
     projected: BindingBoard,
     board: SmartBoardAssessment,
@@ -479,37 +547,6 @@ function applyKnownIncoming(
             );
         }
     }
-}
-
-function addBinding(
-    board: BindingBoard,
-    characterId: EntityId,
-    bindingId: BindingId,
-    amount: number,
-    maximum: number,
-): void {
-    const bindings = board.get(characterId);
-    if (!bindings) return;
-    bindings.set(
-        bindingId,
-        clamp((bindings.get(bindingId) ?? 0) + amount, 0, maximum),
-    );
-}
-
-function bindingValue(
-    board: BindingBoard,
-    characterId: EntityId,
-    bindingId: BindingId,
-): number {
-    return board.get(characterId)?.get(bindingId) ?? 0;
-}
-
-function totalRecoveryDebt(board: BindingBoard, thresholds: ThresholdInfo): number {
-    let total = 0;
-    for (const bindings of board.values()) {
-        for (const value of bindings.values()) total += recoveryDebt(value, thresholds);
-    }
-    return total;
 }
 
 function prepareFutureMoveOptions(

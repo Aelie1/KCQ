@@ -22,6 +22,7 @@ import {
     finisherPressureScorer,
     futureMoveOptionsScorer,
     generateSmartCandidates,
+    pressureSourceProgressScorer,
     reserveSpendingScorer,
     smartScorers,
     smartPolicy,
@@ -304,6 +305,7 @@ describe("Smart 2 composable scoring", () => {
         expect(smartScorers).toEqual([
             expectedDamageScorer,
             bindingRecoveryScorer,
+            pressureSourceProgressScorer,
             finisherPressureScorer,
             futureMoveOptionsScorer,
             reserveSpendingScorer,
@@ -312,6 +314,8 @@ describe("Smart 2 composable scoring", () => {
         expect(expectedDamageScorer.weight).toBe(1);
         expect(bindingRecoveryScorer.id).toBe("bindingRecovery");
         expect(bindingRecoveryScorer.weight).toBe(0.75);
+        expect(pressureSourceProgressScorer.id).toBe("pressureSourceProgress");
+        expect(pressureSourceProgressScorer.weight).toBe(1);
         expect(finisherPressureScorer.id).toBe("finisherPressure");
         expect(finisherPressureScorer.weight).toBe(1);
         expect(futureMoveOptionsScorer.id).toBe("futureMoveOptions");
@@ -469,6 +473,8 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.expectedDamage.weight === 1
             && candidate.components.bindingRecovery.raw === 0
             && candidate.components.bindingRecovery.weight === 0.75
+            && candidate.components.pressureSourceProgress.raw === 0
+            && candidate.components.pressureSourceProgress.weight === 1
             && typeof candidate.components.finisherPressure.raw === "number"
             && candidate.components.finisherPressure.weight === 1
             && candidate.components.futureMoveOptions.raw === 0
@@ -477,6 +483,7 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.reserveSpending.weight === 1
             && candidate.total === candidate.components.expectedDamage.score
                 + candidate.components.bindingRecovery.score
+                + candidate.components.pressureSourceProgress.score
                 + candidate.components.finisherPressure.score
                 + candidate.components.futureMoveOptions.score
                 + candidate.components.reserveSpending.score,
@@ -571,6 +578,8 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.expectedDamage.weight === 1
                 && typeof candidate.components.bindingRecovery.raw === "number"
                 && candidate.components.bindingRecovery.weight === 0.75
+                && typeof candidate.components.pressureSourceProgress.raw === "number"
+                && candidate.components.pressureSourceProgress.weight === 1
                 && typeof candidate.components.finisherPressure.raw === "number"
                 && candidate.components.finisherPressure.weight === 1
                 && typeof candidate.components.futureMoveOptions.raw === "number"
@@ -579,6 +588,7 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.reserveSpending.weight === 1
                 && candidate.total === candidate.components.expectedDamage.score
                     + candidate.components.bindingRecovery.score
+                    + candidate.components.pressureSourceProgress.score
                     + candidate.components.finisherPressure.score
                     + candidate.components.futureMoveOptions.score
                     + candidate.components.reserveSpending.score,

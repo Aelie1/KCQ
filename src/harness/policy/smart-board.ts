@@ -11,6 +11,12 @@ import type {
     MoveType,
 } from "../../engine/public/types";
 import type { PolicyContext } from "../harness";
+import {
+    applyBindingEffects,
+    cloneBindingBoard,
+    currentBindingBoard,
+    totalRecoveryDebt,
+} from "./smart-bindings";
 
 export type SmartCapabilityState =
     | "available"
@@ -24,6 +30,14 @@ export type SmartBindingLevelCounts = Readonly<Record<BindingLevel, number>>;
 export interface SmartTrapAssessment {
     readonly id: string;
     readonly amount: number;
+}
+
+/** An active binding whose public tick effects can add recurring recovery debt. */
+export interface SmartBindingPressureSource {
+    readonly characterId: EntityId;
+    readonly bindingId: BindingId;
+    readonly sourceValue: number;
+    readonly tickPressure: number;
 }
 
 export interface SmartIncomingBindingAssessment {
@@ -109,6 +123,7 @@ export interface SmartBoardAssessment {
     readonly party: SmartPartyAssessment;
     readonly characters: readonly SmartCharacterAssessment[];
     readonly enemies: readonly SmartEnemyAssessment[];
+    readonly bindingPressureSources: readonly SmartBindingPressureSource[];
 }
 
 const BINDING_LEVELS: readonly BindingLevel[] = [
@@ -126,7 +141,9 @@ const BINDING_LEVEL_ORDINAL = new Map(
 );
 
 /** Pure assessment of public state, action capability, and committed enemy intentions. */
-export function assessSmartBoard(context: Pick<PolicyContext, "state" | "actions">): SmartBoardAssessment {
+export function assessSmartBoard(
+    context: Pick<PolicyContext, "state" | "actions" | "thresholds">,
+): SmartBoardAssessment {
     const actionByCharacter = new Map(context.actions.map((action) => [action.id, action]));
     const enemies = context.state.enemies.map((enemy) => assessEnemy(enemy, context.state));
     const incomingByCharacter = aggregateIncomingByCharacter(
@@ -145,7 +162,38 @@ export function assessSmartBoard(context: Pick<PolicyContext, "state" | "actions
         party: assessParty(characters, currentTraps, incomingTraps),
         characters,
         enemies,
+        bindingPressureSources: assessBindingPressureSources(context),
     };
+}
+
+function assessBindingPressureSources(
+    context: Pick<PolicyContext, "state" | "thresholds">,
+): SmartBindingPressureSource[] {
+    const characterIds = new Set(context.state.characters.map(({ id }) => id));
+    const current = currentBindingBoard(context.state.characters);
+    const beforeDebt = totalRecoveryDebt(current, context.thresholds);
+    const sources: SmartBindingPressureSource[] = [];
+
+    for (const character of context.state.characters) {
+        for (const binding of character.bindings) {
+            if (binding.tickEffects.length === 0) continue;
+            const afterTick = cloneBindingBoard(current);
+            applyBindingEffects(
+                afterTick,
+                binding.tickEffects,
+                characterIds,
+                context.thresholds.max,
+            );
+            const afterDebt = totalRecoveryDebt(afterTick, context.thresholds);
+            sources.push({
+                characterId: character.id,
+                bindingId: binding.id,
+                sourceValue: binding.value,
+                tickPressure: Math.max(0, afterDebt - beforeDebt),
+            });
+        }
+    }
+    return sources;
 }
 
 function assessCharacter(
