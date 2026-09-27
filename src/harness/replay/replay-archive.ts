@@ -19,6 +19,7 @@ import type {
 import type { ImportedPostHogReplay, PostHogReplayEventRow } from "./posthog-replay";
 import { ReleaseReplayRuntime } from "./release-replay-runtime";
 import { timestampMilliseconds } from "./replay-timestamp";
+import { assertSemanticVersion, compareSemanticVersions } from "./semantic-version";
 
 export type ArchivedReplayTerminal = "finished" | "quit" | "abandoned";
 
@@ -91,6 +92,11 @@ export interface FailedReplay {
 
 export interface ReplaySyncResult {
     found: number;
+    belowMinimumRelease: number;
+    trivialIgnored: number;
+    activeDeferred: number;
+    fetched: number;
+    prunedArchives: number;
     completeArchives: number;
     provisionalArchives: number;
     newFights: number;
@@ -104,11 +110,13 @@ export interface ReplaySyncResult {
 export interface ReplaySyncOptions {
     client: PostHogReplayClient;
     replaysDirectory: string;
+    minimumRelease?: string;
     now?: () => Date;
     reconstruct?: (rows: readonly PostHogReplayEventRow[], release: string) => Promise<ImportedPostHogReplay>;
 }
 
 const ABANDON_AFTER_MS = 6 * 60 * 60 * 1_000;
+export const MIN_ARCHIVED_REPLAY_ROUNDS = 3;
 
 interface ArchiveEntry {
     filename: string;
@@ -119,40 +127,73 @@ interface ArchiveEntry {
 export async function syncPostHogReplays(
     options: ReplaySyncOptions,
 ): Promise<ReplaySyncResult> {
+    if (options.minimumRelease !== undefined) {
+        assertSemanticVersion(options.minimumRelease, "Minimum replay release");
+    }
+    const { archives: archived, pruned: prunedArchives } = await readArchivedReplays(
+        options.replaysDirectory,
+        options.minimumRelease,
+    );
     const remote = uniqueRemoteReplays(await options.client.discoverReplays());
-    const archived = await readArchivedReplays(options.replaysDirectory);
-    const relevantEntries = remote.flatMap((metadata) => {
-        const entry = archived.get(metadata.replayId);
-        return entry ? [entry] : [];
-    });
-    const completeArchives = relevantEntries.filter((entry) => entry.archive.terminal).length;
-    const provisionalArchives = relevantEntries.length - completeArchives;
-    const newFights = remote.length - relevantEntries.length;
     const added: AddedReplay[] = [];
     const updated: UpdatedReplay[] = [];
     const unchangedProvisional: UnchangedProvisionalReplay[] = [];
     const failed: FailedReplay[] = [];
+    let belowMinimumRelease = 0;
+    let trivialIgnored = 0;
+    let activeDeferred = 0;
+    let fetched = 0;
+    let completeArchives = 0;
+    let provisionalArchives = 0;
+    let newFights = 0;
     let skippedCompleteArchives = 0;
     const runtime = options.reconstruct ? undefined : new ReleaseReplayRuntime();
+    const now = (options.now ?? (() => new Date()))();
 
     for (const metadata of remote) {
         const existing = archived.get(metadata.replayId);
-        if (existing?.archive.terminal && (existing.archive.timingUnavailable || hasCompleteArchiveMetadata(existing.archive))) {
-            skippedCompleteArchives += 1;
-            continue;
-        }
         try {
+            if (options.minimumRelease !== undefined
+                && compareSemanticVersions(metadata.release, options.minimumRelease) < 0) {
+                belowMinimumRelease += 1;
+                continue;
+            }
+            if (existing) {
+                if (existing.archive.terminal) completeArchives += 1;
+                else provisionalArchives += 1;
+            } else {
+                newFights += 1;
+            }
+            if (existing?.archive.terminal
+                && (existing.archive.timingUnavailable || hasCompleteArchiveMetadata(existing.archive))) {
+                skippedCompleteArchives += 1;
+                continue;
+            }
+
+            const stale = isStaleReplay(metadata.latestEventAt, now, metadata.replayId);
+            if (!metadata.terminal && !stale) {
+                activeDeferred += 1;
+                continue;
+            }
+            if (metadata.round < MIN_ARCHIVED_REPLAY_ROUNDS) {
+                trivialIgnored += 1;
+                continue;
+            }
+
+            fetched += 1;
             const rows = await options.client.fetchReplayEvents(metadata.replayId);
             const imported = await (options.reconstruct
                 ? options.reconstruct(rows, metadata.release)
                 : runtime!.reconstruct(rows, metadata.release));
             assertMetadataMatches(metadata, imported);
             const terminal = imported.terminal
-                ?? (isStaleReplay(rows, (options.now ?? (() => new Date()))())
-                    ? "abandoned"
-                    : undefined);
+                ?? (stale ? "abandoned" : undefined);
             const archive = createArchive(metadata, imported, terminal);
             const summary = summarizeArchive(archive);
+            if ((summary.rounds ?? 0) < MIN_ARCHIVED_REPLAY_ROUNDS) {
+                trivialIgnored += 1;
+                continue;
+            }
 
             if (!existing) {
                 const filename = await writeArchivedReplay(options.replaysDirectory, archive);
@@ -186,6 +227,11 @@ export async function syncPostHogReplays(
 
     return {
         found: remote.length,
+        belowMinimumRelease,
+        trivialIgnored,
+        activeDeferred,
+        fetched,
+        prunedArchives,
         completeArchives,
         provisionalArchives,
         newFights,
@@ -197,20 +243,16 @@ export async function syncPostHogReplays(
     };
 }
 
-function isStaleReplay(rows: readonly PostHogReplayEventRow[], now: Date): boolean {
-    let newestEventTime = -Infinity;
-    for (const row of rows) {
-        const eventTime = Date.parse(row.timestamp);
-        if (!Number.isFinite(eventTime)) {
-            throw new Error(`Replay ${row.replay_id}: invalid event timestamp ${JSON.stringify(row.timestamp)}.`);
-        }
-        newestEventTime = Math.max(newestEventTime, eventTime);
+function isStaleReplay(latestEventAt: string, now: Date, replayId: string): boolean {
+    const latestEventTime = Date.parse(latestEventAt);
+    if (!Number.isFinite(latestEventTime)) {
+        throw new Error(`Replay ${replayId}: invalid latest event timestamp ${JSON.stringify(latestEventAt)}.`);
     }
-    return now.getTime() - newestEventTime >= ABANDON_AFTER_MS;
+    return now.getTime() - latestEventTime >= ABANDON_AFTER_MS;
 }
 
 export async function findArchivedReplayIds(directory: string): Promise<Set<string>> {
-    return new Set((await readArchivedReplays(directory)).keys());
+    return new Set((await readArchivedReplays(directory)).archives.keys());
 }
 
 export async function writeArchivedReplay(
@@ -259,16 +301,22 @@ export async function replaceArchivedReplay(
     }
 }
 
-async function readArchivedReplays(directory: string): Promise<Map<string, ArchiveEntry>> {
+async function readArchivedReplays(
+    directory: string,
+    minimumRelease?: string,
+): Promise<{ archives: Map<string, ArchiveEntry>; pruned: number }> {
     let entries;
     try {
         entries = await readdir(directory, { withFileTypes: true });
     } catch (error: unknown) {
-        if (isNodeError(error) && error.code === "ENOENT") return new Map();
+        if (isNodeError(error) && error.code === "ENOENT") {
+            return { archives: new Map(), pruned: 0 };
+        }
         throw error;
     }
 
     const archives = new Map<string, ArchiveEntry>();
+    let pruned = 0;
     for (const entry of entries) {
         if (!entry.isFile() || !entry.name.toLowerCase().endsWith(".json")) continue;
         const path = join(directory, entry.name);
@@ -278,13 +326,27 @@ async function readArchivedReplays(directory: string): Promise<Map<string, Archi
         } catch (error: unknown) {
             throw new Error(`Invalid replay archive ${entry.name}: ${errorMessage(error)}.`);
         }
+        if (minimumRelease !== undefined && isRecord(value)
+            && typeof value.release === "string") {
+            let comparison: number;
+            try {
+                comparison = compareSemanticVersions(value.release, minimumRelease);
+            } catch (error: unknown) {
+                throw new Error(`Invalid replay archive ${entry.name}: ${errorMessage(error)}`);
+            }
+            if (comparison < 0) {
+                await unlink(path);
+                pruned += 1;
+                continue;
+            }
+        }
         const archive = parseArchive(value, entry.name);
         if (archives.has(archive.replayId)) {
             throw new Error(`Duplicate replayId ${archive.replayId} in replay archives.`);
         }
         archives.set(archive.replayId, { filename: entry.name, path, archive });
     }
-    return archives;
+    return { archives, pruned };
 }
 
 function parseArchive(value: unknown, filename: string): ArchivedReplay {
@@ -448,6 +510,11 @@ function assertMetadataMatches(
     if (discoveredStart !== fetchedStart) {
         throw new Error(
             `Replay ${metadata.replayId}: discovered start timestamp ${JSON.stringify(metadata.startedAt)}, fetched ${JSON.stringify(parsed.startedAt)}.`,
+        );
+    }
+    if (metadata.terminal !== undefined && metadata.terminal !== parsed.terminal) {
+        throw new Error(
+            `Replay ${metadata.replayId}: discovered terminal state ${JSON.stringify(metadata.terminal)}, fetched ${JSON.stringify(parsed.terminal)}.`,
         );
     }
 }

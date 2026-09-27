@@ -17,6 +17,10 @@ export interface RemoteReplayMetadata {
     encounter: string;
     seed: number;
     startedAt: string;
+    latestEventAt: string;
+    terminal?: "finished" | "quit" | "abandoned";
+    round: number;
+    actionCount: number;
     anonymousPlayerId?: string;
     sessionId?: string;
 }
@@ -80,17 +84,30 @@ export class PostHogApiClient implements PostHogReplayClient {
         const rows = await this.#query(`
             SELECT
                 toString(properties.replay_id) AS replay_id,
-                argMin(toString(properties.release), timestamp) AS release,
-                argMin(toString(properties.encounter), timestamp) AS encounter,
-                argMin(toString(properties.seed), timestamp) AS seed,
-                min(timestamp) AS started_at,
-                argMin(toString(distinct_id), timestamp) AS anonymous_player_id,
-                argMin(toString(properties.kcq_session_id), timestamp) AS kcq_session_id,
-                argMin(toString(properties.$session_id), timestamp) AS posthog_session_id
+                argMinIf(toString(properties.release), timestamp, event = 'battle_started') AS release,
+                argMinIf(toString(properties.encounter), timestamp, event = 'battle_started') AS encounter,
+                argMinIf(toString(properties.seed), timestamp, event = 'battle_started') AS seed,
+                minIf(timestamp, event = 'battle_started') AS started_at,
+                argMinIf(toString(distinct_id), timestamp, event = 'battle_started') AS anonymous_player_id,
+                argMinIf(toString(properties.kcq_session_id), timestamp, event = 'battle_started') AS kcq_session_id,
+                argMinIf(toString(properties.$session_id), timestamp, event = 'battle_started') AS posthog_session_id,
+                max(timestamp) AS latest_event_at,
+                replaceOne(argMaxIf(event, timestamp, event IN ('battle_finished', 'battle_quit', 'battle_abandoned')), 'battle_', '') AS terminal,
+                greatest(
+                    1,
+                    maxIf(JSONExtractInt(properties.state_after, 'turn', 'round'), event = 'battle_action'),
+                    maxIf(JSONExtractInt(properties.final_state, 'turn', 'round'), event = 'battle_finished'),
+                    maxIf(JSONExtractInt(properties.current_state, 'turn', 'round'), event IN ('battle_quit', 'battle_abandoned'))
+                ) AS current_round,
+                greatest(
+                    countIf(event = 'battle_action'),
+                    maxIf(toInt64OrZero(toString(properties.action_count)), event IN ('battle_finished', 'battle_quit', 'battle_abandoned'))
+                ) AS action_count
             FROM events
-            WHERE event = 'battle_started'
+            WHERE event IN ('battle_started', 'battle_action', 'battle_finished', 'battle_quit', 'battle_abandoned')
               AND notEmpty(toString(properties.replay_id))
             GROUP BY replay_id
+            HAVING countIf(event = 'battle_started') > 0
             ORDER BY started_at, replay_id
             LIMIT ${QUERY_LIMIT}
         `, "kcq_replay_discovery");
@@ -202,15 +219,44 @@ function parseMetadata(row: Record<string, unknown>, index: number): RemoteRepla
     const sessionId = optionalString(row.kcq_session_id)
         || optionalString(row.posthog_session_id)
         || undefined;
+    const latestEventAtText = requiredString(row.latest_event_at, "latest_event_at", location);
+    const latestEventAtDate = new Date(latestEventAtText);
+    if (Number.isNaN(latestEventAtDate.getTime())) {
+        throw new Error(`${location} has an invalid latest_event_at timestamp.`);
+    }
+    if (latestEventAtDate.getTime() < startedAtDate.getTime()) {
+        throw new Error(`${location} has latest_event_at before started_at.`);
+    }
+    const terminalText = optionalString(row.terminal);
+    if (terminalText !== "" && terminalText !== "finished"
+        && terminalText !== "quit" && terminalText !== "abandoned") {
+        throw new Error(`${location} has an invalid terminal state.`);
+    }
+    const round = requiredNonnegativeInteger(row.current_round, "current_round", location);
+    if (round < 1) throw new Error(`${location} has an invalid current_round.`);
+    const actionCount = requiredNonnegativeInteger(row.action_count, "action_count", location);
     return {
         replayId,
         release,
         encounter,
         seed,
         startedAt: startedAtDate.toISOString(),
+        latestEventAt: latestEventAtDate.toISOString(),
+        ...(terminalText ? { terminal: terminalText } : {}),
+        round,
+        actionCount,
         ...(anonymousPlayerId ? { anonymousPlayerId } : {}),
         ...(sessionId ? { sessionId } : {}),
     };
+}
+
+function requiredNonnegativeInteger(value: unknown, name: string, location: string): number {
+    const text = requiredString(value, name, location);
+    const parsed = Number(text);
+    if (!Number.isSafeInteger(parsed) || parsed < 0) {
+        throw new Error(`${location} has an invalid ${name}.`);
+    }
+    return parsed;
 }
 
 function apiValueToString(value: unknown, column: string, rowIndex: number): string {

@@ -27,6 +27,7 @@ import {
     type ReplaySyncOptions,
 } from "../../src/harness/replay/replay-archive";
 import { compactStateDigest } from "../../src/web/telemetry";
+import { compareSemanticVersions } from "../../src/harness/replay/semantic-version";
 
 const temporaryDirectories: string[] = [];
 const RECENT_NOW = new Date("2026-09-21T13:00:00.000Z");
@@ -54,10 +55,12 @@ describe("PostHog replay API", () => {
             columns: [
                 "replay_id", "release", "encounter", "seed", "started_at",
                 "anonymous_player_id", "kcq_session_id", "posthog_session_id",
+                "latest_event_at", "terminal", "current_round", "action_count",
             ],
             results: [[
                 "remote-1", "0.6.3", "plains_3", "870164936",
                 "2026-09-21T12:34:56.000Z", "anonymous-1", "kcq-session-1", null,
+                "2026-09-21T12:40:00.000Z", "quit", 3, 12,
             ]],
         }));
         const client = new PostHogApiClient(config(), fetchMock);
@@ -68,6 +71,10 @@ describe("PostHog replay API", () => {
             encounter: "plains_3",
             seed: 870164936,
             startedAt: "2026-09-21T12:34:56.000Z",
+            latestEventAt: "2026-09-21T12:40:00.000Z",
+            terminal: "quit",
+            round: 3,
+            actionCount: 12,
             anonymousPlayerId: "anonymous-1",
             sessionId: "kcq-session-1",
         }]);
@@ -82,6 +89,9 @@ describe("PostHog replay API", () => {
             refresh: "force_blocking",
         });
         expect(body.query.query).toContain("GROUP BY replay_id");
+        expect(body.query.query).toContain("max(timestamp) AS latest_event_at");
+        expect(body.query.query).toContain("properties.current_state");
+        expect(body.query.query).toContain("countIf(event = 'battle_action')");
     });
 
     it("converts fetched query values into the existing ParsedPostHogReplay shape", async () => {
@@ -134,14 +144,139 @@ describe("PostHog replay API", () => {
 });
 
 describe("PostHog replay archive sync", () => {
+    it("compares releases using semantic-version precedence", () => {
+        expect(compareSemanticVersions("0.10.0", "0.9.9")).toBeGreaterThan(0);
+        expect(compareSemanticVersions("0.8.1-beta.2", "0.8.1-beta.10")).toBeLessThan(0);
+        expect(compareSemanticVersions("v0.8.1+build.7", "0.8.1")).toBe(0);
+    });
+
+    it("prunes an old archive before strict summary validation", async () => {
+        const directory = await temporaryDirectory();
+        const archive = makeArchive("old-local", makeReplayRows("old-local", {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
+            terminal: "quit",
+            release: "0.8.0",
+        }));
+        await writeFile(join(directory, "old-invalid.json"), JSON.stringify({
+            ...archive,
+            totalRounds: 999,
+        }));
+        const client = new FakeClient([], new Map());
+
+        const result = await syncPostHogReplays({
+            client,
+            replaysDirectory: directory,
+            minimumRelease: "0.8.1",
+        });
+
+        expect(result.prunedArchives).toBe(1);
+        expect(await readdir(directory)).toEqual([]);
+    });
+
+    it("does not fetch remote releases below the semantic minimum", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "old-remote";
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
+            terminal: "quit",
+            release: "0.8.0",
+        });
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+
+        const result = await syncPostHogReplays({
+            client,
+            replaysDirectory: directory,
+            minimumRelease: "0.8.1",
+        });
+
+        expect(result.belowMinimumRelease).toBe(1);
+        expect(client.fetched).toEqual([]);
+    });
+
+    it.each([0, 1])("does not fetch a terminal replay ending after %i end turns", async (turns) => {
+        const directory = await temporaryDirectory();
+        const replayId = `terminal-round-${turns + 1}`;
+        const rows = makeReplayRows(replayId, {
+            actions: Array.from({ length: turns }, () => ({ type: "endTurn" as const })),
+            terminal: "quit",
+        });
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+
+        const result = await syncPostHogReplays({ client, replaysDirectory: directory });
+
+        expect(result.trivialIgnored).toBe(1);
+        expect(client.fetched).toEqual([]);
+    });
+
+    it("fetches and archives a terminal round-3 replay", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "terminal-round-3";
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
+            terminal: "quit",
+        });
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+
+        const result = await syncPostHogReplays({ client, replaysDirectory: directory });
+
+        expect(client.fetched).toEqual([replayId]);
+        expect(result.fetched).toBe(1);
+        expect(result.added).toEqual([expect.objectContaining({ replayId, rounds: 3 })]);
+    });
+
+    it("defers a recent active round-3 replay without fetching", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "active-round-3";
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
+        });
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+
+        const result = await syncPostHogReplays({
+            client,
+            replaysDirectory: directory,
+            now: () => RECENT_NOW,
+        });
+
+        expect(result.activeDeferred).toBe(1);
+        expect(client.fetched).toEqual([]);
+        expect(await readdir(directory)).toEqual([]);
+    });
+
+    it("fetches a stale round-3 replay once and archives it as abandoned", async () => {
+        const directory = await temporaryDirectory();
+        const replayId = "stale-round-3";
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
+        });
+        const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
+
+        const first = await syncPostHogReplays({
+            client,
+            replaysDirectory: directory,
+            now: () => STALE_NOW,
+        });
+        client.fetched.length = 0;
+        const second = await syncPostHogReplays({
+            client,
+            replaysDirectory: directory,
+            now: () => STALE_NOW,
+        });
+
+        expect(first.added).toEqual([expect.objectContaining({ replayId, status: "abandoned" })]);
+        expect(client.discoveries).toBe(2);
+        expect(client.fetched).toEqual([]);
+        expect(second.unchanged).toBe(1);
+    });
+
     it.each([
-        ["younger than six hours", "2026-09-21T18:00:01.000Z", undefined],
-        ["exactly six hours old", "2026-09-21T18:00:00.000Z", "abandoned"],
-        ["older than six hours", "2026-09-21T17:59:59.000Z", "abandoned"],
-    ] as const)("uses the newest fetched event when a provisional replay is %s", async (
+        ["younger than six hours", "2026-09-21T18:00:01.000Z", "activeDeferred"],
+        ["exactly six hours old", "2026-09-21T18:00:00.000Z", "trivialIgnored"],
+        ["older than six hours", "2026-09-21T17:59:59.000Z", "trivialIgnored"],
+    ] as const)("classifies a below-threshold provisional replay that is %s without fetching", async (
         _age,
         latestTimestamp,
-        expectedTerminal,
+        expectedCount,
     ) => {
         const directory = await temporaryDirectory();
         const replayId = "stale-replay";
@@ -161,14 +296,11 @@ describe("PostHog replay archive sync", () => {
         });
 
         expect(first.failed).toEqual([]);
-        expect(first.updated).toEqual([expect.objectContaining({
-            replayId,
-            filename,
-            status: expectedTerminal ?? "incomplete",
-            previousActionCount: 0,
-            actionCount: 1,
-        })]);
-        expect((await readArchives(directory))[0].terminal).toBe(expectedTerminal);
+        expect(first.updated).toEqual([]);
+        expect(first[expectedCount]).toBe(1);
+        expect(client.fetched).toEqual([]);
+        expect((await readArchives(directory))[0].terminal).toBeUndefined();
+        expect((await readdir(directory))).toContain(filename);
 
         client.fetched.length = 0;
         const second = await syncPostHogReplays({
@@ -176,12 +308,12 @@ describe("PostHog replay archive sync", () => {
             replaysDirectory: directory,
             now: () => STALE_NOW,
         });
-        expect(client.fetched).toEqual(expectedTerminal ? [] : [replayId]);
-        expect(second.completeArchives).toBe(expectedTerminal ? 1 : 0);
+        expect(client.fetched).toEqual([]);
+        expect(second[expectedCount]).toBe(1);
         expect(second.updated).toEqual([]);
     });
 
-    it("abandons a new replay with no actions when its start is the newest event", async () => {
+    it("ignores a stale replay below round 3 without fetching or archiving", async () => {
         const directory = await temporaryDirectory();
         const replayId = "empty-stale-replay";
         const client = new FakeClient([metadata(replayId)], new Map([
@@ -194,15 +326,13 @@ describe("PostHog replay archive sync", () => {
             now: () => STALE_NOW,
         });
 
-        expect(result.added).toEqual([expect.objectContaining({
-            replayId,
-            status: "abandoned",
-            actionCount: 0,
-        })]);
-        expect((await readArchives(directory))[0].terminal).toBe("abandoned");
+        expect(result.added).toEqual([]);
+        expect(result.trivialIgnored).toBe(1);
+        expect(client.fetched).toEqual([]);
+        expect(await readdir(directory)).toEqual([]);
     });
 
-    it("skips complete archives while rechecking provisional archives and fetching new fights", async () => {
+    it("skips complete archives and defers recent provisional and new fights", async () => {
         const directory = await temporaryDirectory();
         await writeFile(
             join(directory, "filename-is-not-the-identity.json"),
@@ -223,69 +353,43 @@ describe("PostHog replay archive sync", () => {
 
         const first = await syncPostHogReplays({ client, replaysDirectory: directory, now: () => RECENT_NOW });
 
-        expect(client.fetched).toEqual(["provisional", "new-replay"]);
+        expect(client.fetched).toEqual([]);
         expect(first).toMatchObject({
             found: 3,
             completeArchives: 1,
             provisionalArchives: 1,
             newFights: 1,
-            unchanged: 2,
+            activeDeferred: 2,
+            unchanged: 1,
             failed: [],
         });
-        expect(first.added).toHaveLength(1);
+        expect(first.added).toHaveLength(0);
         const archiveNames = (await readdir(directory)).filter((name) => name.endsWith(".json"));
-        expect(archiveNames).toHaveLength(3);
-        const addedArchive = JSON.parse(await readFile(
-            join(directory, first.added[0].filename),
-            "utf8",
-        ));
-        expect(addedArchive).toMatchObject({
-            format: 1,
-            replayId: "new-replay",
-            battleOutcome: "incomplete",
-            totalRounds: 1,
-            totalDecisions: 0,
-            release: "test-release",
-            encounter: "plains_1",
-            seed: 12345,
-            startedAt: "2026-09-21T12:00:00.000Z",
-            anonymousPlayerId: "anonymous-player",
-            sessionId: "kcq-session",
-            stepTelemetry: [],
-            replay: { steps: [] },
-        });
-        expect(Object.keys(addedArchive).slice(0, 5)).toEqual([
-            "format",
-            "replayId",
-            "battleOutcome",
-            "totalRounds",
-            "totalDecisions",
-        ]);
-        expect(addedArchive).not.toHaveProperty("terminal");
-        expect(addedArchive).not.toHaveProperty("endedAt");
+        expect(archiveNames).toHaveLength(2);
 
         client.fetched.length = 0;
         const second = await syncPostHogReplays({ client, replaysDirectory: directory, now: () => RECENT_NOW });
         expect(second).toMatchObject({
             found: 3,
             completeArchives: 1,
-            provisionalArchives: 2,
-            newFights: 0,
-            unchanged: 3,
+            provisionalArchives: 1,
+            newFights: 1,
+            activeDeferred: 2,
+            unchanged: 1,
             added: [],
             updated: [],
             failed: [],
         });
-        expect(client.fetched).toEqual(["provisional", "new-replay"]);
+        expect(client.fetched).toEqual([]);
         expect((await readdir(directory)).filter((name) => name.endsWith(".json")))
-            .toHaveLength(3);
+            .toHaveLength(2);
     });
 
     it("backfills one completed legacy archive in place, then skips it", async () => {
         const directory = await temporaryDirectory();
         const replayId = "legacy-complete";
         const rows = makeReplayRows(replayId, {
-            actions: [{ type: "endTurn" }],
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
             terminal: "quit",
         });
         const current = makeArchive(replayId, rows);
@@ -311,15 +415,12 @@ describe("PostHog replay archive sync", () => {
         expect(backfilled.endedAt).toBe("2026-09-21T12:59:59.000Z");
         expect(backfilled).toMatchObject({
             battleOutcome: "quit",
-            totalRounds: 2,
-            totalDecisions: 1,
+            totalRounds: 3,
+            totalDecisions: 2,
             totalElapsedTime: "59m59s",
             totalAfkTime: "0m00s",
         });
-        expect(backfilled.stepTelemetry).toEqual([{
-            timestamp: "2026-09-21T12:00:01.000Z",
-            source: "player",
-        }]);
+        expect(backfilled.stepTelemetry).toHaveLength(2);
 
         client.fetched.length = 0;
         const second = await syncPostHogReplays({ client, replaysDirectory: directory });
@@ -354,11 +455,19 @@ describe("PostHog replay archive sync", () => {
     it("skips a completed archive that already contains aligned timing metadata", async () => {
         const directory = await temporaryDirectory();
         const replayId = "timed-complete";
-        const rows = makeReplayRows(replayId, { terminal: "quit" });
+        const rows = makeReplayRows(replayId, {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
+            terminal: "quit",
+            release: "0.8.1",
+        });
         await writeArchivedReplay(directory, makeArchive(replayId, rows));
         const client = new FakeClient([metadata(replayId)], new Map([[replayId, rows]]));
 
-        const result = await syncPostHogReplays({ client, replaysDirectory: directory });
+        const result = await syncPostHogReplays({
+            client,
+            replaysDirectory: directory,
+            minimumRelease: "0.8.1",
+        });
 
         expect(client.fetched).toEqual([]);
         expect(result.unchanged).toBe(1);
@@ -394,7 +503,7 @@ describe("PostHog replay archive sync", () => {
             const terminalRows = terminal === "finished"
                 ? makeFinishedReplayRows(replayId)
                 : makeReplayRows(replayId, {
-                    actions: [{ type: "endTurn" }],
+                    actions: [{ type: "endTurn" }, { type: "endTurn" }],
                     terminal,
                 });
             const client = new FakeClient([metadata(replayId)], new Map([
@@ -428,7 +537,7 @@ describe("PostHog replay archive sync", () => {
         },
     );
 
-    it("updates a longer incomplete replay but does not rewrite it when unchanged", async () => {
+    it("does not update a recent active provisional replay", async () => {
         const directory = await temporaryDirectory();
         const replayId = "growing-replay";
         const filename = await writeArchivedReplay(
@@ -443,31 +552,27 @@ describe("PostHog replay archive sync", () => {
         ]));
 
         const first = await syncPostHogReplays({ client, replaysDirectory: directory, now: () => RECENT_NOW });
-        expect(first.updated).toEqual([expect.objectContaining({
-            replayId,
-            status: "incomplete",
-            previousActionCount: 0,
-            actionCount: 1,
-            filename,
-        })]);
+        expect(first.updated).toEqual([]);
+        expect(first.activeDeferred).toBe(1);
+        expect(client.fetched).toEqual([]);
         const path = join(directory, filename);
         const modifiedAfterUpdate = (await stat(path)).mtimeMs;
         await new Promise((resolve) => setTimeout(resolve, 20));
 
         const second = await syncPostHogReplays({ client, replaysDirectory: directory, now: () => RECENT_NOW });
         expect(second.updated).toEqual([]);
-        expect(second.unchangedProvisional).toEqual([expect.objectContaining({
-            replayId,
-            encounter: "plains_1",
-            actionCount: 1,
-        })]);
+        expect(second.activeDeferred).toBe(1);
+        expect(second.unchangedProvisional).toEqual([]);
         expect((await stat(path)).mtimeMs).toBe(modifiedAfterUpdate);
         expect((await readArchives(directory))[0]).not.toHaveProperty("terminal");
     });
 
     it("leaves a valid provisional archive untouched after divergence and continues", async () => {
         const directory = await temporaryDirectory();
-        const divergentRows = makeReplayRows("bad-replay");
+        const divergentRows = makeReplayRows("bad-replay", {
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
+            terminal: "quit",
+        });
         const state = JSON.parse(divergentRows[0].initial_state);
         state.turn.round = 999;
         divergentRows[0].initial_state = JSON.stringify(state);
@@ -481,7 +586,10 @@ describe("PostHog replay archive sync", () => {
             metadata("good-replay"),
         ], new Map([
             ["bad-replay", divergentRows],
-            ["good-replay", makeReplayRows("good-replay")],
+            ["good-replay", makeReplayRows("good-replay", {
+                actions: [{ type: "endTurn" }, { type: "endTurn" }],
+                terminal: "quit",
+            })],
         ]));
 
         const result = await syncPostHogReplays({ client, replaysDirectory: directory, now: () => RECENT_NOW });
@@ -541,12 +649,14 @@ describe("PostHog replay archive sync", () => {
         const directory = await temporaryDirectory();
         const replayId = "initial-afk-replay";
         const rows = makeReplayRows(replayId, {
-            actions: [{ type: "endTurn" }],
+            actions: [{ type: "endTurn" }, { type: "endTurn" }],
             terminal: "quit",
         });
 
         rows.find((row) => row.sequence === "1")!.timestamp =
             "2026-09-21T12:36:00.000Z";
+        rows.find((row) => row.sequence === "2")!.timestamp =
+            "2026-09-21T12:36:30.000Z";
         rows.find((row) => row.event === "battle_quit")!.timestamp =
             "2026-09-21T12:37:00.000Z";
 
@@ -618,6 +728,7 @@ describe("PostHog replay archive sync", () => {
 
 class FakeClient implements PostHogReplayClient {
     readonly fetched: string[] = [];
+    discoveries = 0;
 
     constructor(
         readonly remote: RemoteReplayMetadata[],
@@ -625,7 +736,11 @@ class FakeClient implements PostHogReplayClient {
     ) { }
 
     async discoverReplays(): Promise<RemoteReplayMetadata[]> {
-        return structuredClone(this.remote);
+        this.discoveries += 1;
+        return structuredClone(this.remote.map((item) => {
+            const rows = this.rows.get(item.replayId);
+            return rows ? metadataFromRows(item, rows) : item;
+        }));
     }
 
     async fetchReplayEvents(replayId: string): Promise<PostHogReplayEventRow[]> {
@@ -639,6 +754,7 @@ class FakeClient implements PostHogReplayClient {
 interface ReplayRowsOptions {
     actions?: PlayerAction[];
     terminal?: "finished" | "quit" | "abandoned";
+    release?: string;
 }
 
 function makeReplayRows(
@@ -651,7 +767,7 @@ function makeReplayRows(
         timestamp: "2026-09-21T12:00:00.000Z",
         event: "battle_started",
         replay_id: replayId,
-        release: "test-release",
+        release: options.release ?? "test-release",
         encounter: "plains_1",
         seed: "12345",
         initial_state: JSON.stringify(compactStateDigest(engine.getGameState())),
@@ -799,8 +915,38 @@ function metadata(replayId: string): RemoteReplayMetadata {
         encounter: "plains_1",
         seed: 12345,
         startedAt: "2026-09-21T12:00:00.000Z",
+        latestEventAt: "2026-09-21T12:00:00.000Z",
+        round: 1,
+        actionCount: 0,
         anonymousPlayerId: "anonymous-player",
         sessionId: "kcq-session",
+    };
+}
+
+function metadataFromRows(
+    base: RemoteReplayMetadata,
+    rows: readonly PostHogReplayEventRow[],
+): RemoteReplayMetadata {
+    let round = 1;
+    for (const row of rows) {
+        for (const state of [row.state_after, row.final_state, row.current_state]) {
+            if (!state) continue;
+            round = Math.max(round, Number(JSON.parse(state).turn.round));
+        }
+    }
+    const terminalEvent = [...rows].reverse().find((row) => [
+        "battle_finished", "battle_quit", "battle_abandoned",
+    ].includes(row.event));
+    const terminal = terminalEvent?.event.replace("battle_", "") as RemoteReplayMetadata["terminal"];
+    return {
+        ...base,
+        release: rows.find((row) => row.event === "battle_started")!.release,
+        latestEventAt: [...rows]
+            .sort((left, right) => left.timestamp.localeCompare(right.timestamp))
+            .at(-1)!.timestamp,
+        ...(terminal ? { terminal } : {}),
+        round,
+        actionCount: rows.filter((row) => row.event === "battle_action").length,
     };
 }
 

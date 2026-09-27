@@ -6,11 +6,17 @@ import {
 import { syncPostHogReplays } from "../replay/replay-archive";
 import type {
     AddedReplay,
-    UnchangedProvisionalReplay,
     UpdatedReplay,
 } from "../replay/replay-archive";
+import { assertSemanticVersion } from "../replay/semantic-version";
 
 async function main(): Promise<void> {
+    const args = process.argv.slice(2);
+    if (args.length !== 1) {
+        throw new Error("Usage: npm run get-replays -- <minimum-release>");
+    }
+    const minimumRelease = args[0];
+    assertSemanticVersion(minimumRelease, "Minimum replay release");
     const config = postHogConfigFromEnvironment(process.env);
     const client = new PostHogApiClient(config);
 
@@ -18,12 +24,17 @@ async function main(): Promise<void> {
     const result = await syncPostHogReplays({
         client,
         replaysDirectory: resolve("replays"),
+        minimumRelease,
     });
 
     process.stdout.write(`${result.found} fights found\n`);
-    process.stdout.write(`${result.completeArchives} complete archives\n`);
-    process.stdout.write(`${result.provisionalArchives} provisional archives\n`);
-    process.stdout.write(`${result.newFights} new fights\n`);
+    process.stdout.write(`${result.belowMinimumRelease} below minimum release\n`);
+    process.stdout.write(`${result.trivialIgnored} trivial runs ignored\n`);
+    process.stdout.write(`${result.activeDeferred} active fights deferred\n`);
+    process.stdout.write(`${result.fetched} meaningful fights fetched\n`);
+    if (result.prunedArchives > 0) {
+        process.stdout.write(`Pruned ${result.prunedArchives} replay archive${result.prunedArchives === 1 ? "" : "s"} older than ${minimumRelease}.\n`);
+    }
     if (result.added.length > 0) {
         process.stdout.write("\nAdded:\n");
         printGrouped(result.added, formatAdded);
@@ -31,11 +42,6 @@ async function main(): Promise<void> {
     if (result.updated.length > 0) {
         process.stdout.write("\nUpdated:\n");
         printGrouped(result.updated, formatUpdated);
-    }
-    if (result.unchangedProvisional.length > 0) {
-        process.stdout.write("\nUnchanged provisional:\n");
-        printGrouped(result.unchangedProvisional, (replay) =>
-            `${formatStart(replay.startedAt)}  ${replay.encounter}  ${shortId(replay.replayId)}  ${replay.actionCount} actions`);
     }
     if (result.failed.length > 0) {
         process.stdout.write("\nFailed:\n");

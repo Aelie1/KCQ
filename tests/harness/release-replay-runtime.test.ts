@@ -57,7 +57,7 @@ describe("release replay runtime", () => {
             .rejects.toThrow(/^Replay release missing-kcq-release: cannot resolve Git tag\.$/u);
     });
 
-    it.skipIf(!hasTag)("routes archive sync through the recorded release", async () => {
+    it("defers an active replay before preparing its historical runtime", async () => {
         const rows = await fixture();
         const directory = await mkdtemp(join(tmpdir(), "kcq-release-sync-"));
         const metadata = {
@@ -66,6 +66,9 @@ describe("release replay runtime", () => {
             encounter: rows[0].encounter,
             seed: Number(rows[0].seed),
             startedAt: rows[0].timestamp,
+            latestEventAt: rows.at(-1)!.timestamp,
+            round: 1,
+            actionCount: rows.filter((row) => row.event === "battle_action").length,
         };
         const client: PostHogReplayClient = {
             discoverReplays: async () => [metadata],
@@ -78,10 +81,8 @@ describe("release replay runtime", () => {
                 now: () => new Date(rows[1].timestamp),
             });
             expect(result.failed).toEqual([]);
-            expect(result.added).toHaveLength(1);
-            const archive = JSON.parse(await readFile(join(directory, result.added[0].filename), "utf8"));
-            expect(archive.replay.steps[0].state.characters[0].buffs[0].id)
-                .toBe("fairyTransformation");
+            expect(result.activeDeferred).toBe(1);
+            expect(result.added).toEqual([]);
         } finally {
             await rm(directory, { recursive: true, force: true });
         }
