@@ -66,6 +66,7 @@ import {
 
 export * from "./knowledge/control-knowledge";
 export * from "./knowledge/kit-knowledge";
+export * from "./knowledge/intention-knowledge";
 export * from "./knowledge/periodic-binding-knowledge";
 export * from "./knowledge/reactive-knowledge";
 export * from "./knowledge/skunk-knowledge";

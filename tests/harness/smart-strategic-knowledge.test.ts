@@ -125,6 +125,23 @@ function starlight(
     return info;
 }
 
+function release(enemyIds: string[], modifiers: ModifierSet): ActionInfo {
+    const info = move("release", enemyIds);
+    info.targets = info.targets.map((preview) => preview.valid && preview.target !== null
+        ? {
+            ...preview,
+            effects: [{
+                type: "buff",
+                target: preview.target,
+                buff: "currentReleaseDebuff",
+                operation: "add",
+                effects: modifiers,
+            }],
+        }
+        : preview);
+    return info;
+}
+
 function action(actor: string, moves: ActionInfo[]): ActionView {
     return {
         id: actor,
@@ -455,6 +472,50 @@ describe("Smart Starlight control knowledge", () => {
             .toMatchObject({ move: "telekinesis" });
     });
 });
+
+describe("Smart Release target control knowledge", () => {
+    it("ranks a high-pressure Release target above a low-pressure target", () => {
+        const low = enemy("low");
+        const high = dangerousEnemy("high", "hinari", 70);
+        const fixture = releaseContext([low, high]);
+        expect(control(fixture, "release", "high").raw)
+            .toBeGreaterThan(control(fixture, "release", "low").raw);
+    });
+
+    it("does not let stable target order choose the Release winner", () => {
+        for (const enemies of [
+            [enemy("low"), dangerousEnemy("high", "hinari", 70)],
+            [dangerousEnemy("high", "hinari", 70), enemy("low")],
+        ]) {
+            expect(evaluateSmartDecision(releaseContext(enemies)).selected.action)
+                .toMatchObject({ move: "release", targets: ["high"] });
+        }
+    });
+
+    it("reads Release modifiers from the current public preview", () => {
+        const weak = releaseContext([dangerousEnemy("target", "hinari", 40)], { hit: -1 });
+        const strong = releaseContext([dangerousEnemy("target", "hinari", 40)], { hit: -3 });
+        const weakResult = control(weak, "release", "target");
+        const strongResult = control(strong, "release", "target");
+        expect(strongResult.raw).toBeCloseTo(weakResult.raw * 3);
+        expect(strongResult.targets[0]).toMatchObject({
+            hitModifier: -3,
+            defenseModifier: 0,
+            durationSource: "public-preview-fallback",
+        });
+    });
+});
+
+function releaseContext(
+    enemies: Enemy[],
+    modifiers: ModifierSet = { hit: -2, defense: -2 },
+): PolicyContext {
+    return context(
+        [character("hinari", { data: { subspace: 75, subspaceMax: 100 } })],
+        enemies,
+        [action("hinari", [release(enemies.map(({ id }) => id), modifiers)])],
+    );
+}
 
 function starlightContext(enemies: Enemy[], modifiers?: ModifierSet): PolicyContext {
     return context(

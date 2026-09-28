@@ -6,6 +6,7 @@ import type {
     Binding,
     Buff,
     Character,
+    Effect,
     Enemy,
     EntitySide,
     GameState,
@@ -26,7 +27,6 @@ import {
     POUNCE_CLEAR_BONUS,
     POUNCE_REMOVAL_VALUE,
     smartScorers,
-    STOP_COMMITTED_INTENTION_BONUS,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
 
@@ -73,6 +73,8 @@ interface MoveOptions {
     accuracy?: number;
     targets?: TargetCount;
     side?: EntitySide;
+    effects?: Effect[];
+    targetEffects?: Effect[];
 }
 
 function move(
@@ -91,11 +93,11 @@ function move(
             hits: options.hits ?? 1,
         },
         available: true,
-        effects: [],
+        effects: options.effects ?? [],
         targets: targetIds.map((target) => ({
             valid: true,
             target,
-            effects: [],
+            effects: options.targetEffects ?? [],
             ...(target !== null && damage > 0
                 ? {
                     accuracy: { miss: 100 - accuracy, hit: accuracy },
@@ -185,6 +187,44 @@ function pounceBuff(linkedEntity: string, level?: number): Buff {
         id: "pounce",
         linkedEntity,
         ...(level === undefined ? {} : { modifiers: { hit: level * 2 } }),
+    };
+}
+
+function bindingIntention(
+    moveId: string,
+    target: string,
+    bindingId: string,
+    amount?: number,
+    band: "miss" | "hit" = "hit",
+): Enemy["intentions"][number] {
+    return {
+        move: moveId,
+        targets: [{
+            target,
+            band,
+            effects: amount === undefined ? [] : [{
+                type: "binding",
+                target,
+                binding: bindingId,
+                amount,
+            }],
+        }],
+        effects: [],
+    };
+}
+
+function addEnemyMove(
+    fixture: PolicyContext,
+    moveId: string,
+    targets: TargetCount = 1,
+    side: EntitySide = "player",
+): void {
+    fixture.library.moves[moveId] = {
+        id: moveId,
+        targetSide: side,
+        targets,
+        type: "arms",
+        bindings: [],
     };
 }
 
@@ -321,33 +361,259 @@ describe("Smart Matsuko kit knowledge", () => {
         expect(knowledge(fixture, "obey").rules).toEqual([]);
     });
 
-    it("strongly values Stop against a committed enemy intention", () => {
+    it("gives Stop no utility for a committed miss", () => {
         const target = enemy("target", {
-            intentions: [{ move: "unknown-threat", targets: [], effects: [] }],
+            intentions: [bindingIntention("miss", "matsuko", "arms", undefined, "miss")],
         });
         const fixture = context(
             [character("matsuko")],
             [target],
+            [action("matsuko", [move("stop", ["target"])])],
+        );
+        expect(knowledge(fixture, "stop")).toMatchObject({
+            raw: 0,
+            rules: [{ details: { intentions: [{ reason: "committed-miss" }] } }],
+        });
+    });
+
+    it("values harmful non-boss Stop by prevented recovery debt", () => {
+        const fixture = context(
+            [character("matsuko")],
+            [enemy("target", {
+                intentions: [bindingIntention("bind", "matsuko", "arms", 40)],
+            })],
             [action("matsuko", [
                 move("punch", ["target"], { damage: 30 }),
                 move("stop", ["target"]),
             ])],
         );
-        expect(knowledge(fixture, "stop").raw).toBe(STOP_COMMITTED_INTENTION_BONUS);
+        expect(knowledge(fixture, "stop").raw).toBeGreaterThan(0);
         expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "stop" });
     });
 
-    it("leaves Attack Me neutral", () => {
+    it("values a larger harmful intention above a smaller one", () => {
+        const stopValue = (amount: number) => {
+            const fixture = context(
+                [character("matsuko")],
+                [enemy("target", {
+                    intentions: [bindingIntention("bind", "matsuko", "arms", amount)],
+                })],
+                [action("matsuko", [move("stop", ["target"])])],
+            );
+            return knowledge(fixture, "stop").raw;
+        };
+        expect(stopValue(60)).toBeGreaterThan(stopValue(20));
+    });
+
+    it("only proportionally mitigates a boss intention", () => {
+        const make = (rank: Enemy["rank"]) => context(
+            [character("matsuko")],
+            [enemy("target", {
+                rank,
+                intentions: [bindingIntention("bind", "matsuko", "arms", 60)],
+            })],
+            [action("matsuko", [move("stop", ["target"])])],
+        );
+        const full = knowledge(make("enemy"), "stop").raw;
+        const boss = knowledge(make("boss"), "stop");
+        expect(boss.raw).toBeCloseTo(full * 0.25);
+        expect(boss.rules[0].details).toMatchObject({ reason: "boss-weaken" });
+    });
+
+    it("gives Stop no utility without an intention", () => {
         const fixture = context(
             [character("matsuko")],
             [enemy("target")],
-            [action("matsuko", [move("attackMe", ["target"], { targets: "all" })])],
+            [action("matsuko", [move("stop", ["target"])])],
         );
-        expect(knowledge(fixture, "attackMe")).toEqual({ rules: [], raw: 0 });
+        expect(knowledge(fixture, "stop").raw).toBe(0);
+    });
+
+    it("reuses existing trap pressure for harmful non-binding intentions", () => {
+        const fixture = context(
+            [character("matsuko")],
+            [enemy("target", {
+                intentions: [{
+                    move: "trap",
+                    targets: [],
+                    effects: [{ type: "trap", trap: "puddle", amount: 20 }],
+                }],
+            })],
+            [action("matsuko", [move("stop", ["target"])])],
+        );
+        expect(knowledge(fixture, "stop")).toMatchObject({
+            raw: 5,
+            rules: [{ details: { committedTrapPressure: 5 } }],
+        });
+    });
+
+    it("strongly values Attack Me when it redirects a deep track to clean Matsuko", () => {
+        const attackMe = move("attackMe", ["source"], {
+            targets: "all",
+            effects: [{
+                type: "buff", target: "matsuko", buff: "defenseBarrier",
+                operation: "add", effects: { defense: 3 },
+            }],
+        });
+        const fixture = context(
+            [
+                character("matsuko", { bindings: [binding("arms", 0, "none")] }),
+                character("ko", { bindings: [binding("arms", 70, "extreme")] }),
+            ],
+            [enemy("source", {
+                intentions: [bindingIntention("bind", "ko", "arms", 20)],
+            })],
+            [action("matsuko", [
+                move("punch", ["source"], { damage: 30 }),
+                attackMe,
+            ])],
+        );
+        addEnemyMove(fixture, "bind");
+        const result = knowledge(fixture, "attackMe");
+        expect(result.raw).toBeGreaterThan(70);
+        expect(result.rules[0].details).toMatchObject({
+            defenseModifier: 3,
+            defenseBenefit: expect.any(Number),
+        });
+        expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "attackMe" });
+    });
+
+    it("does not value Attack Me when Matsuko is the worse recipient", () => {
+        const fixture = attackMeContext(70, 0, "ko", 20);
+        expect(knowledge(fixture, "attackMe").raw).toBe(0);
+    });
+
+    it("does not value Attack Me for Matsuko-targeted, AoE, or missed intentions", () => {
+        for (const [target, targets, amount, band] of [
+            ["matsuko", 1, 20, "hit"],
+            ["ko", "all", 20, "hit"],
+            ["ko", 1, undefined, "miss"],
+        ] as const) {
+            const fixture = attackMeContext(0, 70, target, amount, band);
+            addEnemyMove(fixture, "bind", targets);
+            expect(knowledge(fixture, "attackMe").raw).toBe(0);
+        }
+    });
+
+    it("adds useful redirects from multiple eligible enemies", () => {
+        const one = attackMeContext(0, 70, "ko", 10);
+        const many = attackMeContext(0, 70, "ko", 10, "hit", 2);
+        expect(knowledge(many, "attackMe").raw).toBeGreaterThan(
+            knowledge(one, "attackMe").raw,
+        );
     });
 });
 
+function attackMeContext(
+    matsukoArms: number,
+    koArms: number,
+    target: string,
+    amount?: number,
+    band: "miss" | "hit" = "hit",
+    enemyCount = 1,
+): PolicyContext {
+    const enemies = Array.from({ length: enemyCount }, (_, index) => enemy(`source-${index}`, {
+        intentions: [bindingIntention("bind", target, "arms", amount, band)],
+    }));
+    const attackMe = move("attackMe", enemies.map(({ id }) => id), {
+        targets: "all",
+        effects: [{
+            type: "buff", target: "matsuko", buff: "defenseBarrier",
+            operation: "add", effects: { defense: 3 },
+        }],
+    });
+    const fixture = context(
+        [
+            character("matsuko", { bindings: [binding("arms", matsukoArms, "none")] }),
+            character("ko", { bindings: [binding("arms", koArms, "none")] }),
+        ],
+        enemies,
+        [action("matsuko", [attackMe])],
+    );
+    addEnemyMove(fixture, "bind");
+    return fixture;
+}
+
 describe("Smart Hinari kit knowledge", () => {
+    it("gives Brace no utility without incoming binding", () => {
+        const fixture = braceContext([], 0);
+        expect(knowledge(fixture, "brace").raw).toBe(0);
+    });
+
+    it("values known binding that fits in Subspace", () => {
+        const fixture = braceContext([
+            enemy("source", { intentions: [bindingIntention("bind", "hinari", "arms", 40)] }),
+        ], 0);
+        expect(knowledge(fixture, "brace").raw).toBeGreaterThan(0);
+    });
+
+    it("strongly values a huge committed binding", () => {
+        const source = enemy("source", {
+            intentions: [bindingIntention("crit", "hinari", "arms", 96)],
+        });
+        const fixture = context(
+            [character("hinari", {
+                bindings: [binding("arms", 0, "none")],
+                data: { subspace: 0, subspaceMax: 100 },
+            })],
+            [source],
+            [action("hinari", [
+                move("rockfall", ["source"], { damage: 30 }),
+                move("brace", []),
+            ])],
+        );
+        expect(knowledge(fixture, "brace").raw).toBeGreaterThan(250);
+        expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "brace" });
+    });
+
+    it("values only the amount that fits in nearly full Subspace", () => {
+        const source = enemy("source", {
+            intentions: [bindingIntention("bind", "hinari", "arms", 40)],
+        });
+        const fixture = braceContext([
+            source,
+        ], 90);
+        expect(knowledge(fixture, "brace").rules[0].details).toMatchObject({
+            incomingAmount: 40,
+            subspaceRoom: 10,
+            absorbedAmount: 10,
+            overflowAmount: 30,
+        });
+        expect(knowledge(fixture, "brace").raw).toBeLessThan(
+            knowledge(braceContext([source], 0), "brace").raw,
+        );
+    });
+
+    it("treats only the first incoming application as intercepted", () => {
+        const source = enemy("source", {
+            intentions: [{
+                move: "multi",
+                targets: [{
+                    target: "hinari",
+                    band: "hit",
+                    effects: [
+                        { type: "binding", target: "hinari", binding: "arms", amount: 5 },
+                        { type: "binding", target: "hinari", binding: "legs", amount: 60 },
+                    ],
+                }],
+                effects: [],
+            }],
+        });
+        const fixture = braceContext([source], 0);
+        const result = knowledge(fixture, "brace");
+        expect(result.rules[0].details).toMatchObject({
+            bindingId: "arms",
+            incomingAmount: 5,
+            absorbedAmount: 5,
+        });
+        const firstOnly = braceContext([
+            enemy("source", {
+                intentions: [bindingIntention("first", "hinari", "arms", 5)],
+            }),
+        ], 0);
+        expect(result.raw).toBeCloseTo(knowledge(firstOnly, "brace").raw);
+    });
+
     it("prefers Fairy Rockfall over ordinary Rockfall when choosing offense", () => {
         const fixture = context(
             [character("hinari", {
@@ -408,6 +674,17 @@ describe("Smart Hinari kit knowledge", () => {
         expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "release" });
     });
 });
+
+function braceContext(enemies: Enemy[], subspace: number): PolicyContext {
+    return context(
+        [character("hinari", {
+            bindings: [binding("arms", 0, "none"), binding("legs", 0, "none")],
+            data: { subspace, subspaceMax: 100 },
+        })],
+        enemies,
+        [action("hinari", [move("brace", [])])],
+    );
+}
 
 function hinariSubspaceContext(subspace: number, rockfallHits: number): PolicyContext {
     return context(

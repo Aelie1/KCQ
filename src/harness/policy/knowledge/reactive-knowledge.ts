@@ -8,6 +8,7 @@ import {
 } from "../smart-bindings";
 import type { SmartCandidate } from "../smart";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
+import { firstKnownBindingApplication } from "./intention-knowledge";
 
 export const REACTIVE_KNOWLEDGE_WEIGHT = 1;
 export const REFLECTED_DAMAGE_VALUE = 1;
@@ -18,6 +19,7 @@ const FAIRY_REFLECT = "fairyReflect";
 
 export interface ReflectableBindingApplication {
     readonly enemyId: EntityId;
+    readonly move: string;
     readonly bindingId: BindingId;
     readonly amount: number;
 }
@@ -102,32 +104,5 @@ export function evaluateReactiveKnowledge(
 export function firstReflectableBindingApplication(
     context: PolicyContext,
 ): ReflectableBindingApplication | undefined {
-    for (const enemy of context.state.enemies) {
-        if (enemy.currHp <= 0) continue;
-        for (const intention of enemy.intentions) {
-            for (const target of intention.targets) {
-                for (const effect of target.effects) {
-                    if (effect.type === "binding" && effect.target === KO
-                        && effect.amount !== undefined && effect.amount > 0) {
-                        return {
-                            enemyId: enemy.id,
-                            bindingId: effect.binding,
-                            amount: effect.amount,
-                        };
-                    }
-                }
-            }
-            for (const effect of intention.effects) {
-                if (effect.type === "binding" && effect.target === KO
-                    && effect.amount !== undefined && effect.amount > 0) {
-                    return {
-                        enemyId: enemy.id,
-                        bindingId: effect.binding,
-                        amount: effect.amount,
-                    };
-                }
-            }
-        }
-    }
-    return undefined;
+    return firstKnownBindingApplication(context, KO);
 }

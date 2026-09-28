@@ -2,6 +2,7 @@ import type { EntityId } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
 import type { SmartBoardAssessment } from "../smart-board";
 import type { SmartCandidate } from "../smart";
+import { evaluateIntentionKnowledge } from "./intention-knowledge";
 import { evaluateSkunkKnowledge } from "./skunk-knowledge";
 
 export interface KitKnowledgeRuleDiagnostic {
@@ -19,7 +20,6 @@ export interface KitKnowledgeBreakdown {
 export const EMPOWERED_OFFENSE_SUBSTITUTION_PENALTY = -80;
 export const IMMOLATION_RESERVE_PENALTY = -1_000;
 export const OBEY_KO_BONUS = 80;
-export const STOP_COMMITTED_INTENTION_BONUS = 70;
 export const RELEASE_SUBSPACE_PRESSURE_VALUE = 80;
 export const RELEASE_LOST_ROCKFALL_HIT_VALUE = 20;
 export const STORE_SUBSPACE_PRESSURE_PENALTY = 100;
@@ -31,8 +31,6 @@ const KO = "ko";
 const EMPOWERMENT = "empowerment";
 const IMMOLATION = "immolation";
 const OBEY = "obey";
-const STOP = "stop";
-const ATTACK_ME = "attackMe";
 const MATSUKO_FAIRY_ATTACKS = new Set(["fairyWhiteFlame", "fairyPhoenixKick"]);
 const MATSUKO_ORDINARY_ATTACKS = new Set(["punch", "kick", "whiteFlame", "phoenixKick"]);
 const ROCKFALL = "rockfall";
@@ -51,6 +49,7 @@ export function evaluateKitKnowledge(
     const rules = [
         ...evaluateMatsukoKnowledge(context, board, candidate),
         ...evaluateHinariKnowledge(context, candidate),
+        ...evaluateIntentionKnowledge(context, candidate),
         ...evaluateSkunkKnowledge(context, candidate),
     ];
     return {
@@ -121,23 +120,6 @@ function evaluateMatsukoKnowledge(
         });
     }
 
-    if (moveId === STOP) {
-        const usefulTarget = candidate.action.targets.some((targetId) =>
-            context.state.enemies.some(({ id, currHp, intentions }) =>
-                id === targetId && currHp > 0 && intentions.length > 0
-            )
-        );
-        if (usefulTarget) {
-            rules.push({
-                id: "matsuko.stop-committed-intention",
-                adjustment: STOP_COMMITTED_INTENTION_BONUS,
-                reason: "Stop can interfere with a living enemy's committed intention.",
-            });
-        }
-    }
-
-    // Attack Me is intentionally neutral in this first knowledge pass.
-    if (moveId === ATTACK_ME) return rules;
     return rules;
 }
 

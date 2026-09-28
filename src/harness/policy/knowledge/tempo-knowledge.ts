@@ -26,7 +26,7 @@ const INTENTION_PRESSURE = 8;
 const TARGETED_CHARACTER_PRESSURE = 2;
 const LINKED_CAPTOR_PRESSURE = 12;
 const UNKNOWN_BINDING_PRESSURE = 4;
-const TRAP_PRESSURE_SCALE = 0.25;
+export const TRAP_PRESSURE_SCALE = 0.25;
 const QUEEN_REINFORCEMENT_RATIOS = [0.8, 2 / 3, 0.6, 0.4, 1 / 3, 0.2] as const;
 
 export interface EnemyPressureBreakdown {
