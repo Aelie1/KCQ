@@ -53,6 +53,14 @@ beforeEach(() => {
     process.argv = [process.execPath, "batch-main.ts", "plains_1", "1", "escape", "3"];
     process.exitCode = undefined;
     vi.mocked(runBatch).mockReturnValue(batchFixture());
+    vi.mocked(runSingleFight).mockImplementation((input) => {
+        const source = batchFixture().runs.find((run) => run.engineSeed === input.engineSeed);
+        if (!source) throw new Error(`Missing fixture run for engine seed ${input.engineSeed}`);
+        return {
+            ...source.result,
+            replay: { initialState: source.result.finalState, initialActions: [], steps: [] },
+        };
+    });
 });
 
 afterEach(() => {
@@ -63,7 +71,7 @@ afterEach(() => {
 });
 
 describe("batch CLI entry point", () => {
-    it("runs without replay, saves exactly the factual summary, and prints a compact save notice", async () => {
+    it("runs the batch without replay, then writes and reports two selected replay reruns", async () => {
         const summary = summarizeBatch(batchFixture());
         await import("../../src/harness/cli/batch-main");
 
@@ -80,6 +88,19 @@ describe("batch CLI entry point", () => {
             path.join(runDir, "run.json"), expect.any(String), "utf8",
         );
         expect(fs.writeFileSync).toHaveBeenCalledWith(outputPath, JSON.stringify(summary, null, 2), "utf8");
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.join(
+                runDir,
+                "plains_1-engine-100-escape-policy-200-representative-win.json",
+            ),
+            expect.stringContaining('"replay"'),
+            "utf8",
+        );
+        expect(fs.writeFileSync).toHaveBeenCalledWith(
+            path.join(runDir, "plains_1-engine-102-escape-policy-202-stressed-win.json"),
+            expect.stringContaining('"replay"'),
+            "utf8",
+        );
         const manifestCall = vi.mocked(fs.writeFileSync).mock.calls.find(([file]) => file === path.join(runDir, "run.json"));
         expect(JSON.parse(manifestCall?.[1] as string)).toEqual({
             startedAt: expect.stringMatching(/^2026-09-21T21:15:04[+-]\d{2}:\d{2}$/),
@@ -92,6 +113,9 @@ describe("batch CLI entry point", () => {
         });
         expect(summary.fightLength.actionCount?.mean).toBe(4 / 3);
         expect(console.log).toHaveBeenCalledWith(formatBatchSummary(summary).join("\n"));
+        expect(console.log).toHaveBeenCalledWith(
+            expect.stringContaining("Replays:\n  representative-win  seed=100"),
+        );
         expect(console.log).toHaveBeenCalledWith(
             "Saved 1 summary to:\nharness-output/2026-09-21_21-15-04_1_level_1_policy/",
         );

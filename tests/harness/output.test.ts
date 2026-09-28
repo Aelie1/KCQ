@@ -7,7 +7,9 @@ import { summarizeBatch } from "../../src/harness/batch/summary";
 import {
     batchSummaryFilename,
     createBatchRunOutput,
+    fightResultFilename,
     formatBatchRunDirectoryName,
+    formatReplaySamples,
     writeBatchSummary,
 } from "../../src/harness/output";
 import { basicPolicy } from "../../src/harness/policy/basic";
@@ -96,6 +98,33 @@ describe("batch run output", () => {
         expect(fs.readdirSync(output.directoryPath).sort()).toEqual(["plains_1-basic.json", "run.json"]);
         expect(batchSummaryFilename({ encounterId: "../odd/encounter", policy: basicPolicy }))
             .toBe(".._odd_encounter-basic.json");
+    });
+
+    it("labels automatic replay filenames and formats their selection reasons", () => {
+        const fightInput = {
+            encounterId: "plains_1",
+            engineSeed: 12,
+            policySeed: 34,
+            maxActions: 100,
+            policy: basicPolicy,
+            replay: true,
+        };
+        expect(fightResultFilename(fightInput, "stressed-win"))
+            .toBe("plains_1-engine-12-basic-policy-34-stressed-win.json");
+        expect(formatReplaySamples([{
+            label: "stressed-win",
+            runIndex: 2,
+            engineSeed: 12,
+            policySeed: 34,
+            termination: "victory",
+            decisions: 8,
+            rounds: 3,
+            damage: 19,
+            peakBondage: 7,
+        }])).toBe(
+            "Replays:\n"
+            + "  stressed-win  seed=12  policySeed=34  rounds=3  decisions=8  damage=19  peakBondage=7",
+        );
     });
 });
 

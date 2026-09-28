@@ -2,6 +2,7 @@ import { availableParallelism } from "node:os";
 import { runConsoleReplay } from "../../console/replay";
 import { createEngine } from "../../engine/public/engine";
 import { runBatch } from "../batch/batch";
+import { captureReplaySamples } from "../batch/replay-samples";
 import {
     executePolicyComparison,
     formatPolicyComparison,
@@ -22,9 +23,11 @@ import {
 import { runSingleFight, type FightPolicy, type SingleFightInput } from "../harness";
 import {
     createBatchRunOutput,
+    formatReplaySamples,
     formatSavedSummaries,
     writeBatchSummary,
     writeFightResult,
+    writeReplaySamples,
 } from "../output";
 import { policies } from "../policies";
 import {
@@ -252,15 +255,29 @@ async function runInteractiveBatch(
             await pool?.close();
         }
     })();
-    result.policies.forEach((entry) => writeBatchSummary({
-        encounterId,
-        policy: selectedPolicies.find((policy) => policy.id === entry.policyId)!,
-        masterSeed,
-        runs,
-        maxActions,
-        replay: false,
-    }, entry.summary, output.directoryPath));
+    const replayReports = result.policies.map((entry) => {
+        const policy = selectedPolicies.find((candidate) => candidate.id === entry.policyId)!;
+        const batchInput = {
+            encounterId,
+            policy,
+            masterSeed,
+            runs,
+            maxActions,
+            replay: false,
+        } as const;
+        writeBatchSummary(batchInput, entry.summary, output.directoryPath);
+        return {
+            policyId: entry.policyId,
+            samples: writeReplaySamples(
+                captureReplaySamples(batchInput, entry.batch, deps.runSingleFight),
+                output.directoryPath,
+            ),
+        };
+    });
     io.write(`${formatPolicyComparison(result).join("\n")}\n\n`);
+    replayReports.forEach(({ policyId, samples }) => {
+        io.write(`${formatReplaySamples(samples, `Replays (${encounterId} / ${policyId}):`)}\n`);
+    });
     io.write(`${formatCompletion(selectedPolicies.length * runs, result.overallElapsedMs, "fights")}\n`);
     io.write(`${formatSavedSummaries(result.policies.length, output.directoryPath)}\n`);
 }
@@ -336,14 +353,27 @@ async function runInteractiveEncounterSet(
                     io.write(`${formatPolicyComparison(encounter.comparison).join("\n")}\n\n`);
                     encounter.comparison.policies.forEach((entry) => {
                         const policy = selectedPolicies.find((candidate) => candidate.id === entry.policyId)!;
-                        writeBatchSummary({
+                        const batchInput = {
                             encounterId: encounter.encounterId,
                             policy,
                             masterSeed,
                             runs: runsPerEncounter,
                             maxActions,
                             replay: false,
-                        }, entry.summary, output.directoryPath);
+                        } as const;
+                        writeBatchSummary(batchInput, entry.summary, output.directoryPath);
+                        const samples = writeReplaySamples(
+                            captureReplaySamples(
+                                batchInput,
+                                entry.batch,
+                                deps.runSingleFight,
+                            ),
+                            output.directoryPath,
+                        );
+                        io.write(`${formatReplaySamples(
+                            samples,
+                            `Replays (${encounter.encounterId} / ${entry.policyId}):`,
+                        )}\n`);
                     });
                     io.write(`${formatCompletion(
                         selectedPolicies.length * runsPerEncounter,

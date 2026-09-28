@@ -1,7 +1,15 @@
 import { formatEncounterComparisons, formatPolicyComparison } from "../batch/comparison";
 import { executeEncounterSet } from "../batch/encounter-sets";
 import { effectiveWorkerCount } from "../batch/parallel-batch";
-import { createBatchRunOutput, formatSavedSummaries, writeBatchSummary } from "../output";
+import { captureReplaySamples } from "../batch/replay-samples";
+import {
+    createBatchRunOutput,
+    formatReplaySamples,
+    formatSavedSummaries,
+    type SavedReplaySample,
+    writeBatchSummary,
+    writeReplaySamples,
+} from "../output";
 import { getPolicy, policies } from "../policies";
 import { formatCompletion } from "./progress";
 
@@ -70,20 +78,33 @@ async function main(): Promise<void> {
         maxActions,
         workers,
     });
+    const replayGroups: Array<{
+        encounterId: string;
+        policyId: string;
+        samples: SavedReplaySample[];
+    }> = [];
     for (const encounter of result.encounters) {
         encounter.comparison.policies.forEach((entry) => {
             const policy = selectedPolicies.find(
                 (candidate) => candidate.id === entry.policyId,
             )!;
-
-            writeBatchSummary({
+            const batchInput = {
                 encounterId: encounter.encounterId,
                 policy,
                 masterSeed,
                 runs,
                 maxActions,
                 replay: false,
-            }, entry.summary, output.directoryPath);
+            } as const;
+            writeBatchSummary(batchInput, entry.summary, output.directoryPath);
+            replayGroups.push({
+                encounterId: encounter.encounterId,
+                policyId: entry.policyId,
+                samples: writeReplaySamples(
+                    captureReplaySamples(batchInput, entry.batch),
+                    output.directoryPath,
+                ),
+            });
         });
     }
 
@@ -94,6 +115,9 @@ async function main(): Promise<void> {
             ? formatPolicyComparison(comparisons[0]).join("\n")
             : formatEncounterComparisons(comparisons).join("\n"),
     );
+    replayGroups.forEach(({ encounterId, policyId, samples }) => {
+        console.log(formatReplaySamples(samples, `Replays (${encounterId} / ${policyId}):`));
+    });
     console.log(formatCompletion(
         encounterIds.length * selectedPolicies.length * runs,
         result.elapsedMs,

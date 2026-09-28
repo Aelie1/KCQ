@@ -1,6 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { BatchInput } from "./batch/batch";
+import type {
+    CapturedReplaySample,
+    ReplaySampleLabel,
+    ReplaySampleSelection,
+} from "./batch/replay-samples";
 import type { BatchSummary } from "./batch/summary";
 import type { SingleFightInput, SingleFightResult } from "./harness";
 
@@ -101,24 +106,62 @@ export function writeBatchSummary(
     return outputPath;
 }
 
-export function fightResultFilename(input: SingleFightInput): string {
-    return [
+export function fightResultFilename(
+    input: SingleFightInput,
+    label?: ReplaySampleLabel,
+): string {
+    const parts = [
         safeFilenamePart(input.encounterId),
         `engine-${input.engineSeed}`,
         safeFilenamePart(input.policy.id),
         `policy-${input.policySeed}`,
-    ].join("-") + ".json";
+    ];
+    if (label) parts.push(label);
+    return parts.join("-") + ".json";
 }
 
 export function writeFightResult(
     input: SingleFightInput,
     result: SingleFightResult,
     outputDir = path.resolve("harness-output"),
+    label?: ReplaySampleLabel,
 ): string {
-    const outputPath = path.join(outputDir, fightResultFilename(input));
+    const outputPath = path.join(outputDir, fightResultFilename(input, label));
     fs.mkdirSync(outputDir, { recursive: true });
     fs.writeFileSync(outputPath, JSON.stringify(result, null, 2), "utf8");
     return outputPath;
+}
+
+export interface SavedReplaySample extends ReplaySampleSelection {
+    outputPath: string;
+}
+
+/** Writes captured batch samples in the same full-result JSON format as `npm run fight`. */
+export function writeReplaySamples(
+    samples: readonly CapturedReplaySample[],
+    outputDir: string,
+): SavedReplaySample[] {
+    return samples.map(({ input, result, ...selection }) => ({
+        ...selection,
+        outputPath: writeFightResult(input, result, outputDir, selection.label),
+    }));
+}
+
+export function formatReplaySamples(
+    samples: readonly ReplaySampleSelection[],
+    heading = "Replays:",
+): string {
+    if (samples.length === 0) return `${heading} none (no victories or defeats)`;
+    return [
+        heading,
+        ...samples.map((sample) => `  ${sample.label}`
+            + `  seed=${sample.engineSeed}`
+            + `  policySeed=${sample.policySeed}`
+            + `  rounds=${sample.rounds}`
+            + `  decisions=${sample.decisions}`
+            + `  damage=${sample.damage}`
+            + `  peakBondage=${sample.peakBondage}`),
+    ].join("\n");
 }
 
 export function formatSavedSummaries(
