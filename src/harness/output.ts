@@ -16,6 +16,8 @@ export interface BatchRunOutputInput {
     parallelWorkers: number;
     encounters: readonly string[];
     policies: readonly string[];
+    /** Encounter IDs whose completed batches receive automatic replay samples. */
+    replayEncounters?: readonly string[];
 }
 
 export interface BatchRunManifest {
@@ -26,6 +28,7 @@ export interface BatchRunManifest {
     parallelWorkers: number;
     encounters: string[];
     policies: string[];
+    replayEncounters?: string[];
 }
 
 export interface BatchRunOutput {
@@ -59,6 +62,9 @@ export function createBatchRunOutput(
         parallelWorkers: input.parallelWorkers,
         encounters: [...input.encounters],
         policies: [...input.policies],
+        ...(input.replayEncounters === undefined
+            ? {}
+            : { replayEncounters: [...input.replayEncounters] }),
     };
     writeBatchRunManifest(directoryPath, manifest);
     return { directoryPath, manifest };

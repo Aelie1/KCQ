@@ -126,7 +126,9 @@
                 "plains_1,plains_2,plains_3,forest_1,forest_2,forest_3",
                 "25",
                 "smart",
-                "1000"
+                "1000",
+                "--replay-levels",
+                "forest_3"
             ],
             "problemMatcher": []
         }

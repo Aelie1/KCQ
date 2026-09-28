@@ -6,13 +6,13 @@ import type {
     ValidTarget,
 } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import type { SmartCandidate } from "../smart";
 import {
     addBinding,
     cloneBindingBoard,
     currentBindingBoard,
     totalRecoveryDebt,
 } from "../smart-bindings";
-import type { SmartCandidate } from "../smart";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 
 export const POUNCE_REMOVAL_VALUE = 25;
@@ -347,10 +347,21 @@ function evaluateExplosionKnowledge(
         }
 
         if (uncoveredCrossingProbability > 0) {
+            const otherLivingEnemies = context.state.enemies.filter(
+                other => other.id !== enemy.id && other.currHp > 0
+            ).length;
+
+            const boardFactor = Math.min(1, otherLivingEnemies / 3);
+            const adjustment = -pressure * uncoveredCrossingProbability * boardFactor;
+
             rules.push({
-                id: "skunk.explosion-nonlethal-threshold-risk",
-                adjustment: -pressure * uncoveredCrossingProbability,
-                reason: `${enemy.id} has a ${format(crossingProbability * 100)}% midpoint-band chance to cross its ${format(threshold)} HP Explosion threshold; ${format(uncoveredCrossingProbability * 100)}% remains uncovered by ${format(remainingPartyDamageEV)} expected follow-up damage from the unacted party.`,
+                id: otherLivingEnemies === 0
+                    ? "skunk.explosion-last-enemy-no-penalty"
+                    : "skunk.explosion-nonlethal-threshold-risk",
+                adjustment,
+                reason: otherLivingEnemies === 0
+                    ? `${enemy.id} is the last living enemy; crossing its ${format(threshold)} HP Explosion threshold is unavoidable progress toward ending the encounter.`
+                    : `${enemy.id} has a ${format(crossingProbability * 100)}% midpoint-band chance to cross its ${format(threshold)} HP Explosion threshold; ${format(uncoveredCrossingProbability * 100)}% remains uncovered by ${format(remainingPartyDamageEV)} expected follow-up damage from the unacted party. Explosion risk is scaled to ${format(boardFactor * 100)}% with ${otherLivingEnemies} other living enem${otherLivingEnemies === 1 ? "y" : "ies"} on the board.`,
                 details: {
                     targetId: enemy.id,
                     currentHp: enemy.currHp,
@@ -361,6 +372,8 @@ function evaluateExplosionKnowledge(
                     remainingPartyDamageEV: formatNumber(remainingPartyDamageEV),
                     lethalProbability: formatNumber(lethalProbability),
                     safeLethal: false,
+                    otherLivingEnemies,
+                    boardFactor: formatNumber(boardFactor),
                     approximation: "Public damage-band midpoints with ordered independent hits; reactions are harmless if later hits defeat the Skunk.",
                 },
             });
@@ -664,7 +677,7 @@ function explosionRecoveryPressure(context: PolicyContext, actorId: EntityId): n
     return Math.max(
         0,
         totalRecoveryDebt(projected, context.thresholds)
-            - totalRecoveryDebt(current, context.thresholds),
+        - totalRecoveryDebt(current, context.thresholds),
     );
 }
 

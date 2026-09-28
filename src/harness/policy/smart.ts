@@ -221,7 +221,7 @@ export interface IncomingThreatBreakdown {
 /** Tunable Smart-policy heuristic constants; none is an engine rule. */
 export const BINDING_RECOVERY_WEIGHT = 0.75;
 export const BINDING_MOVE_ACCESS_WEIGHT = 20;
-export const PRESSURE_SOURCE_PROGRESS_WEIGHT = 5;
+export const PRESSURE_SOURCE_PROGRESS_WEIGHT = 8;
 export const FINISHER_PRESSURE_WEIGHT = 1;
 export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
 export const RESERVE_SPENDING_WEIGHT = 1;
