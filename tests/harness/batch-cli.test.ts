@@ -14,7 +14,7 @@ function reference(runIndex: number, termination: RunReference["termination"]): 
 function summaryFixture(): BatchSummary {
     return {
         encounterId: "fixture",
-        policyId: "first",
+        policyId: "basic",
         masterSeed: 99,
         runCount: 4,
         outcomes: {
@@ -72,15 +72,15 @@ describe("batch CLI arguments", () => {
             .toMatchObject({ workers: 1, input: { runs: 1000, maxActions: 1000 } });
         expect(parseBatchCommandArguments(["plains_3", "1", "basic", "1000", "1000", "8"]))
             .toMatchObject({ workers: 8, input: { runs: 1000, maxActions: 1000 } });
-        expect(() => parseBatchCommandArguments(["plains_3", "1", "first", "1", "1000", "0"]))
+        expect(() => parseBatchCommandArguments(["plains_3", "1", "basic", "1", "1000", "0"]))
             .toThrow(/workers must be a positive safe integer/);
     });
 
     it("parses the required identity, defaults maxActions, and disables replay", () => {
-        expect(parseBatchArguments(["plains_1", "1", "first", "1000"])).toEqual({
+        expect(parseBatchArguments(["plains_1", "1", "basic", "1000"])).toEqual({
             encounterId: "plains_1",
             masterSeed: 1,
-            policy: policies.first,
+            policy: policies.basic,
             runs: 1000,
             maxActions: 1000,
             replay: false,
@@ -94,12 +94,12 @@ describe("batch CLI arguments", () => {
     });
 
     it.each([Number.MIN_SAFE_INTEGER, -1, 0, Number.MAX_SAFE_INTEGER])("accepts safe master seed %s", (seed) => {
-        expect(parseBatchArguments(["plains_1", String(seed), "first", "1"]).masterSeed).toBe(seed);
+        expect(parseBatchArguments(["plains_1", String(seed), "basic", "1"]).masterSeed).toBe(seed);
     });
 
     it("accepts the positive safe-integer boundaries for runs and maxActions", () => {
         for (const value of [1, Number.MAX_SAFE_INTEGER]) {
-            expect(parseBatchArguments(["plains_1", "1", "first", String(value), String(value)]))
+            expect(parseBatchArguments(["plains_1", "1", "basic", String(value), String(value)]))
                 .toMatchObject({ runs: value, maxActions: value });
         }
     });
@@ -112,7 +112,7 @@ describe("batch CLI arguments", () => {
         const invalid = ["", " ", "NaN", "Infinity", "-Infinity", "1.5", "9007199254740992", "-9007199254740992", "1junk"];
         if (positive) invalid.push("0", "-1");
         for (const value of invalid) {
-            const args = ["plains_1", "1", "first", "2", "1000"];
+            const args = ["plains_1", "1", "basic", "2", "1000"];
             args[index] = value;
             expect(() => parseBatchArguments(args)).toThrow(`${name} must be a ${positive ? "positive " : ""}safe integer`);
             expect(() => parseBatchArguments(args)).toThrow("Usage: npm run batch --");
@@ -120,7 +120,7 @@ describe("batch CLI arguments", () => {
     });
 
     it("rejects missing or extra arguments", () => {
-        const args = ["plains_1", "1", "first", "2"];
+        const args = ["plains_1", "1", "basic", "2"];
         for (let count = 0; count < 4; count++) {
             expect(() => parseBatchArguments(args.slice(0, count))).toThrow("Usage: npm run batch --");
         }
@@ -133,7 +133,7 @@ describe("batch CLI arguments", () => {
     });
 
     it("rejects an empty encounter ID", () => {
-        expect(() => parseBatchArguments([" ", "1", "first", "2"]))
+        expect(() => parseBatchArguments([" ", "1", "basic", "2"]))
             .toThrow("encounterId must not be empty");
     });
 });
@@ -141,7 +141,7 @@ describe("batch CLI arguments", () => {
 describe("batch summary console formatting", () => {
     it("prints the experiment identity and all four outcome counts and percentages", () => {
         expect(formatBatchSummary(summaryFixture()).slice(0, 7)).toEqual([
-            "fixture / first",
+            "fixture / basic",
             "4 runs / master seed 99",
             "",
             "Victory: 3 (75.0%)",

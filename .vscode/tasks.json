@@ -61,13 +61,13 @@
         {
             "label": "perf",
             "type": "shell",
-            "command": "npm run build; node performance/current-bench.cjs plains_1 basic 1000; node performance/current-bench.cjs plains_3 basic 1000; node performance/current-bench.cjs plains_3 random 300",
+            "command": "npm run build; node performance/current-bench.cjs plains_1 basic 1000; node performance/current-bench.cjs plains_3 basic 1000; node performance/current-bench.cjs plains_3 escape 300",
             "problemMatcher": []
         },
         {
             "label": "profile",
             "type": "shell",
-            "command": "npm run build; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains1-basic.cpuprofile performance/current-bench.cjs plains_1 basic 1000; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains3-basic.cpuprofile performance/current-bench.cjs plains_3 basic 1000; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains3-random.cpuprofile performance/current-bench.cjs plains_3 random 300",
+            "command": "npm run build; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains1-basic.cpuprofile performance/current-bench.cjs plains_1 basic 1000; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains3-basic.cpuprofile performance/current-bench.cjs plains_3 basic 1000; node --cpu-prof --cpu-prof-interval=500 --cpu-prof-dir=performance\\profiles --cpu-prof-name=plains3-escape.cpuprofile performance/current-bench.cjs plains_3 escape 300",
             "problemMatcher": []
         },
         {

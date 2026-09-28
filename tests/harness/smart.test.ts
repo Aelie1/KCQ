@@ -36,7 +36,7 @@ import {
     type SmartDecision,
     type SmartScorer,
 } from "../../src/harness/policy/smart";
-import { firstPolicy } from "../../src/harness/policy/first";
+import { basicPolicy } from "../../src/harness/policy/basic";
 import { createEngine } from "../../src/engine/public/engine";
 import { createEmptyContentLibrary } from "../helpers/library";
 
@@ -767,7 +767,7 @@ describe("Smart 2 selection and integration", () => {
             engineSeed: 99,
             policySeed: 88,
             maxActions: 1_000,
-            policy: firstPolicy,
+            policy: basicPolicy,
             replay: true,
         });
 

@@ -17,7 +17,8 @@ import {
     type LauncherIO,
 } from "../../src/harness/cli/launcher";
 import { policies } from "../../src/harness/policies";
-import { firstPolicy } from "../../src/harness/policy/first";
+import { basicPolicy } from "../../src/harness/policy/basic";
+import { idlePolicy } from "../../src/harness/policy/idle";
 
 describe("interactive launcher helpers", () => {
     it("defines the named encounter sets as extensible data", () => {
@@ -67,14 +68,14 @@ describe("encounter-set execution", () => {
         });
         const result = await executeEncounterSet({
             encounterIds: encounterSets.n123,
-            policies: [policies.first, policies.random],
+            policies: [policies.basic, policies.escape],
             masterSeed: 1,
             runsPerEncounter: 0,
             maxActions: 1_000,
         }, { runBatch: fakeRunBatch, now: () => 0 });
 
         expect(seen).toEqual(encounterSets.n123.flatMap((encounterId) => [
-            `${encounterId}/first`, `${encounterId}/random`,
+            `${encounterId}/basic`, `${encounterId}/escape`,
         ]));
         expect(result.encounters.map(({ encounterId }) => encounterId)).toEqual([...encounterSets.n123]);
         expect(result.encounters.every(({ comparison }) => comparison.policies.length === 2)).toBe(true);
@@ -84,7 +85,7 @@ describe("encounter-set execution", () => {
     it("keeps encounters isolated when their batches use parallel workers", async () => {
         const result = await executeEncounterSet({
             encounterIds: ["plains_1", "plains_2"],
-            policies: [firstPolicy],
+            policies: [basicPolicy],
             masterSeed: 11,
             runsPerEncounter: 2,
             maxActions: 0,
@@ -99,7 +100,7 @@ describe("encounter-set execution", () => {
     });
 
     it("prints compact per-encounter and aggregate output while saving every summary", async () => {
-        const answers = ["3", "n", "first", "", "", "", "", "5"];
+        const answers = ["3", "n", "basic", "", "", "", "", "5"];
         const write = vi.fn();
         const io: LauncherIO = {
             question: vi.fn(async () => answers.shift() ?? ""),
@@ -148,7 +149,7 @@ describe("encounter-set execution", () => {
         const summaryPaths = writtenPaths.filter((file) => !file.endsWith("run.json"));
         expect(new Set(summaryPaths.map((file) => path.dirname(file)))).toEqual(new Set([runDir]));
         expect(summaryPaths.map((file) => path.basename(file)).sort())
-            .toEqual(["plains_1-first.json", "plains_2-first.json", "plains_3-first.json"]);
+            .toEqual(["plains_1-basic.json", "plains_2-basic.json", "plains_3-basic.json"]);
         const manifestCall = writeCalls.find(([file]) => String(file).endsWith("run.json"));
         expect(JSON.parse(manifestCall?.[1] as string)).toMatchObject({
             masterSeed: launcherDefaults.masterSeed,
@@ -156,7 +157,7 @@ describe("encounter-set execution", () => {
             maxActions: launcherDefaults.maxActions,
             parallelWorkers: launcherDefaults.parallelWorkers,
             encounters: ["plains_1", "plains_2", "plains_3"],
-            policies: ["first"],
+            policies: ["basic"],
         });
     });
 });
@@ -189,7 +190,7 @@ describe("replay launcher path", () => {
         const direct = runSingleFight({
             encounterId: "plains_1",
             engineSeed: 2149783249,
-            policy: firstPolicy,
+            policy: idlePolicy,
             policySeed: 1543602598,
             maxActions: 1_000,
             replay: true,

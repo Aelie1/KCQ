@@ -17,8 +17,7 @@ import {
 } from "../../src/harness/batch/parallel-batch";
 import { summarizeBatch } from "../../src/harness/batch/summary";
 import { basicPolicy } from "../../src/harness/policy/basic";
-import { firstPolicy } from "../../src/harness/policy/first";
-import { randomPolicy } from "../../src/harness/policy/random";
+import { escapePolicy } from "../../src/harness/policy/escape";
 
 function input(overrides: Partial<BatchInput> = {}): BatchInput {
     return {
@@ -118,9 +117,9 @@ describe("parallel batch execution", () => {
     it("keeps real persistent workers deterministic across sequential jobs", async () => {
         const pool = new BatchWorkerPool(2);
         const jobs = [
-            input({ runs: 2, policy: firstPolicy, encounterId: "plains_1", replay: false }),
-            input({ runs: 2, policy: randomPolicy, encounterId: "plains_1", replay: false }),
-            input({ runs: 2, policy: firstPolicy, encounterId: "plains_2", replay: false }),
+            input({ runs: 2, policy: basicPolicy, encounterId: "plains_1", replay: false }),
+            input({ runs: 2, policy: escapePolicy, encounterId: "plains_1", replay: false }),
+            input({ runs: 2, policy: basicPolicy, encounterId: "plains_2", replay: false }),
         ];
         try {
             for (const job of jobs) {
@@ -140,9 +139,9 @@ describe("parallel batch execution", () => {
         };
         const pool = new BatchWorkerPool(2, { createWorker: factory });
         const jobs = [
-            input({ policy: firstPolicy, encounterId: "plains_1", replay: false }),
-            input({ policy: randomPolicy, encounterId: "plains_1", replay: false }),
-            input({ policy: firstPolicy, encounterId: "plains_2", replay: false }),
+            input({ policy: basicPolicy, encounterId: "plains_1", replay: false }),
+            input({ policy: escapePolicy, encounterId: "plains_1", replay: false }),
+            input({ policy: basicPolicy, encounterId: "plains_2", replay: false }),
         ];
 
         try {
@@ -261,7 +260,7 @@ describe("parallel batch execution", () => {
     });
 
     it("keeps custom policies supported on the one-worker synchronous path", async () => {
-        const custom = { ...firstPolicy, id: "custom-first" };
+        const custom = { ...basicPolicy, id: "custom-basic" };
         const batchInput = input({ policy: custom, runs: 1 });
         expect(await runBatchParallel(batchInput, { workers: 1 })).toEqual(runBatch(batchInput));
         await expect(runBatchParallel({ ...batchInput, runs: 2 }, { workers: 2 })).rejects.toThrow(

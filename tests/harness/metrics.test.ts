@@ -22,7 +22,7 @@ import {
     type MetricActionObservation,
     type MetricCollector,
 } from "../../src/harness/metrics";
-import { firstPolicy } from "../../src/harness/policy/first";
+import { basicPolicy } from "../../src/harness/policy/basic";
 
 function character(
     id: string,
@@ -135,7 +135,7 @@ describe("metric collector framework", () => {
             engineSeed: 10,
             policySeed: 20,
             maxActions: 4,
-            policy: firstPolicy,
+            policy: basicPolicy,
             metricCollectors: [customFactory],
         });
 

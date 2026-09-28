@@ -10,7 +10,7 @@ import {
     formatBatchRunDirectoryName,
     writeBatchSummary,
 } from "../../src/harness/output";
-import { firstPolicy } from "../../src/harness/policy/first";
+import { basicPolicy } from "../../src/harness/policy/basic";
 
 describe("batch run output", () => {
     let outputRoot: string;
@@ -59,11 +59,11 @@ describe("batch run output", () => {
             maxActions: 1_000,
             parallelWorkers: 8,
             encounters: ["plains_1"],
-            policies: ["first"],
+            policies: ["basic"],
         }, { outputRoot, now: () => startedAt });
         const input: BatchInput = {
             encounterId: "plains_1",
-            policy: firstPolicy,
+            policy: basicPolicy,
             masterSeed: 4,
             runs: 1_000,
             maxActions: 1_000,
@@ -81,7 +81,7 @@ describe("batch run output", () => {
 
         expect(path.basename(output.directoryPath))
             .toBe("2026-09-21_16-17-42_1_level_1_policy");
-        expect(path.basename(summaryPath)).toBe("plains_1-first.json");
+        expect(path.basename(summaryPath)).toBe("plains_1-basic.json");
         expect(fs.readFileSync(summaryPath, "utf8")).toBe(JSON.stringify(summary, null, 2));
         expect(JSON.parse(fs.readFileSync(path.join(output.directoryPath, "run.json"), "utf8")))
             .toEqual({
@@ -91,11 +91,11 @@ describe("batch run output", () => {
                 maxActions: 1_000,
                 parallelWorkers: 8,
                 encounters: ["plains_1"],
-                policies: ["first"],
+                policies: ["basic"],
             });
-        expect(fs.readdirSync(output.directoryPath).sort()).toEqual(["plains_1-first.json", "run.json"]);
-        expect(batchSummaryFilename({ encounterId: "../odd/encounter", policy: firstPolicy }))
-            .toBe(".._odd_encounter-first.json");
+        expect(fs.readdirSync(output.directoryPath).sort()).toEqual(["plains_1-basic.json", "run.json"]);
+        expect(batchSummaryFilename({ encounterId: "../odd/encounter", policy: basicPolicy }))
+            .toBe(".._odd_encounter-basic.json");
     });
 });
 
@@ -106,6 +106,6 @@ function runInput() {
         maxActions: 1_000,
         parallelWorkers: 8,
         encounters: ["plains_1", "plains_2", "plains_3"],
-        policies: ["first", "random"],
+        policies: ["basic", "escape"],
     } as const;
 }

@@ -1,6 +1,6 @@
 import { runSingleFight } from "../harness";
 import { writeFightResult } from "../output";
-import { getPolicy } from "../policies";
+import { getPolicy, policies } from "../policies";
 
 const DEFAULT_POLICY_SEED = 0;
 const DEFAULT_MAX_ACTIONS = 1_000;
@@ -19,7 +19,7 @@ const policySeed = policySeedArgument === undefined
     : parseSeed(policySeedArgument, "policySeed");
 const policy = getPolicy(policyId);
 if (!policy) {
-    fail(`Unknown policy: ${policyId}. Available policies: first, random, swing-only`);
+    fail(`Unknown policy: ${policyId}. Available policies: ${Object.keys(policies).join(", ")}`);
 }
 
 const input = {

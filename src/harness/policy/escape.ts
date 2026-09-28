@@ -9,21 +9,20 @@ import type {
 import { chooseBasicAction } from "./basic";
 
 const rescuers = ["matsuko", "hinari"] as const;
+const ESCAPE_THRESHOLD = 20;
 
-export function makeBasicEscapePolicy(threshold: number): FightPolicy {
-    return {
-        id: `basic${threshold}`,
+export const escapePolicy: FightPolicy = {
+    id: "escape",
 
-        chooseAction(context: PolicyContext): PlayerAction {
-            for (const actorId of rescuers) {
-                const action = chooseRescueAction(context, actorId, threshold);
-                if (action) return action;
-            }
+    chooseAction(context: PolicyContext): PlayerAction {
+        for (const actorId of rescuers) {
+            const action = chooseRescueAction(context, actorId, ESCAPE_THRESHOLD);
+            if (action) return action;
+        }
 
-            return chooseBasicAction(context);
-        },
-    };
-}
+        return chooseBasicAction(context);
+    },
+};
 
 function chooseRescueAction(
     context: PolicyContext,
@@ -111,5 +110,3 @@ function escapeAction(actor: string, option: EscapeInfo): PlayerAction {
         binding: option.binding,
     };
 }
-
-export const escapePolicy = makeBasicEscapePolicy(20);

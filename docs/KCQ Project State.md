@@ -244,13 +244,12 @@ The long-term value of this system is primarily **reconstructable play behavior*
 
 KCQ has a functioning deterministic combat harness rather than the minimal prototype originally planned.
 
-Current policy families include:
+Current policies include:
 
-* `first`
-* `idle`
-* `random`
 * `basic`
-* threshold-based `basicEscape` policies from `basic10` through `basic50`
+* `escape`
+* `smart`
+* `idle`
 
 The **basic** policy intentionally uses only each character's simple offensive move:
 
@@ -260,7 +259,9 @@ The **basic** policy intentionally uses only each character's simple offensive m
 
 It is useful as a low-skill baseline, not as a representation of competent full-kit play.
 
-The threshold escape policies add simple rescue behavior, generally prioritizing assistance and using Standing to exploit the double-escape mechanic.
+The **escape** policy adds rescue behavior to Basic for bindings over 20, generally prioritizing assistance and using Standing to exploit the double-escape mechanic.
+
+The **smart** policy is the competent full-kit harness policy. The **idle** policy is retained as a sanity/control policy.
 
 The harness currently includes infrastructure for:
 

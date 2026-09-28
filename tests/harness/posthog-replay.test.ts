@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
 import type { Engine, PlayerAction } from "../../src/engine/public/types";
 import { runSingleFight } from "../../src/harness/harness";
-import { firstPolicy } from "../../src/harness/policy/first";
+import { basicPolicy } from "../../src/harness/policy/basic";
 import {
     importPostHogReplayCsv,
     parseCsv,
@@ -207,7 +207,7 @@ describe("PostHog CSV replay import", () => {
             engineSeed: 2468,
             policySeed: 0,
             maxActions: 1_000,
-            policy: firstPolicy,
+            policy: basicPolicy,
             replay: true,
         });
         expect(["victory", "defeat"]).toContain(result.termination);

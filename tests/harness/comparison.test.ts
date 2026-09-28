@@ -4,22 +4,22 @@ import {
     formatPolicyComparison,
     formatRuntime,
 } from "../../src/harness/batch/comparison";
-import { firstPolicy } from "../../src/harness/policy/first";
-import { randomPolicy } from "../../src/harness/policy/random";
+import { basicPolicy } from "../../src/harness/policy/basic";
+import { escapePolicy } from "../../src/harness/policy/escape";
 
 describe("policy comparison", () => {
     it("uses identical engine and policy seed mappings at equal run indexes", async () => {
         const result = await executePolicyComparison({
             encounterId: "plains_1",
-            policies: [firstPolicy, randomPolicy],
+            policies: [basicPolicy, escapePolicy],
             masterSeed: 123,
             runs: 3,
             maxActions: 0,
             workers: 2,
         });
-        const [first, random] = result.policies;
-        expect(first.batch.runs.map(({ runIndex, engineSeed, policySeed }) => ({ runIndex, engineSeed, policySeed })))
-            .toEqual(random.batch.runs.map(({ runIndex, engineSeed, policySeed }) => ({ runIndex, engineSeed, policySeed })));
+        const [basic, escape] = result.policies;
+        expect(basic.batch.runs.map(({ runIndex, engineSeed, policySeed }) => ({ runIndex, engineSeed, policySeed })))
+            .toEqual(escape.batch.runs.map(({ runIndex, engineSeed, policySeed }) => ({ runIndex, engineSeed, policySeed })));
         expect(result.parallelWorkers).toBe(2);
     });
 
@@ -27,14 +27,14 @@ describe("policy comparison", () => {
         const times = [0, 100, 300, 400, 1_000, 1_200];
         const result = await executePolicyComparison({
             encounterId: "plains_1",
-            policies: [firstPolicy, randomPolicy],
+            policies: [basicPolicy, escapePolicy],
             masterSeed: 1,
             runs: 2,
             maxActions: 0,
         }, { now: () => times.shift()! });
         const output = formatPolicyComparison(result).join("\n");
 
-        expect(result.policies.map(({ policyId }) => policyId)).toEqual(["first", "random"]);
+        expect(result.policies.map(({ policyId }) => policyId)).toEqual(["basic", "escape"]);
         expect(result.policies[0].timing).toEqual({ runtimeMs: 200, meanPerRunMs: 100 });
         expect(result.policies[1].timing).toEqual({ runtimeMs: 600, meanPerRunMs: 300 });
         expect(result.policyRuntimeTotalMs).toBe(800);
@@ -46,10 +46,10 @@ describe("policy comparison", () => {
         expect(output).not.toContain("Timing:");
         expect(output).not.toContain("runtime");
         expect(output).not.toContain("share");
-        expect(output.match(/\| first\s+\|/g)).toHaveLength(1);
-        expect(output.match(/\| random\s+\|/g)).toHaveLength(1);
-        expect(output).toMatch(/\| first\s+\|[^\n]*\| 100\.0\s+\|/);
-        expect(output).toMatch(/\| random\s+\|[^\n]*\| 300\.0\s+\|/);
+        expect(output.match(/\| basic\s+\|/g)).toHaveLength(1);
+        expect(output.match(/\| escape\s+\|/g)).toHaveLength(1);
+        expect(output).toMatch(/\| basic\s+\|[^\n]*\| 100\.0\s+\|/);
+        expect(output).toMatch(/\| escape\s+\|[^\n]*\| 300\.0\s+\|/);
         expect(output).not.toMatch(/engineSeed|policySeed|shortestDefeat/);
         expect(result.policies[0].summary).not.toHaveProperty("timing");
         expect(result.policies[0].summary).not.toHaveProperty("parallelWorkers");
@@ -59,7 +59,7 @@ describe("policy comparison", () => {
         const updates: string[] = [];
         const input = {
             encounterId: "plains_1",
-            policies: [firstPolicy, randomPolicy],
+            policies: [basicPolicy, escapePolicy],
             masterSeed: 7,
             runs: 2,
             maxActions: 0,
@@ -73,8 +73,8 @@ describe("policy comparison", () => {
         const withoutProgress = await executePolicyComparison(input, { now: () => 0 });
 
         expect(updates).toEqual([
-            "plains_1/first:1/2:1/4", "plains_1/first:2/2:2/4",
-            "plains_1/random:1/2:3/4", "plains_1/random:2/2:4/4",
+            "plains_1/basic:1/2:1/4", "plains_1/basic:2/2:2/4",
+            "plains_1/escape:1/2:3/4", "plains_1/escape:2/2:4/4",
         ]);
         expect(withProgress).toEqual(withoutProgress);
     });

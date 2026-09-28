@@ -30,7 +30,7 @@ beforeEach(() => {
         "compare-main.ts",
         "plains_1",
         "4",
-        "first,random",
+        "basic,escape",
         "3",
         "1000",
         "2",
@@ -57,8 +57,8 @@ describe("comparison CLI output", () => {
         const writes = vi.mocked(fs.writeFileSync).mock.calls;
         expect(writes.map(([file]) => String(file))).toEqual([
             path.join(runDir, "run.json"),
-            path.join(runDir, "plains_1-first.json"),
-            path.join(runDir, "plains_1-random.json"),
+            path.join(runDir, "plains_1-basic.json"),
+            path.join(runDir, "plains_1-escape.json"),
         ]);
         expect(JSON.parse(writes[0][1] as string)).toMatchObject({
             masterSeed: 4,
@@ -66,7 +66,7 @@ describe("comparison CLI output", () => {
             maxActions: 1_000,
             parallelWorkers: 2,
             encounters: ["plains_1"],
-            policies: ["first", "random"],
+            policies: ["basic", "escape"],
         });
         expect(console.log).toHaveBeenCalledWith(
             "Saved 2 summaries to:\n"
@@ -78,7 +78,7 @@ describe("comparison CLI output", () => {
 });
 
 function comparisonFixture(): PolicyComparisonResult {
-    const policies = ["first", "random"].map((policyId) => {
+    const policies = ["basic", "escape"].map((policyId) => {
         const batch: BatchResult = {
             encounterId: "plains_1",
             policyId,

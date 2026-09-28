@@ -20,7 +20,7 @@ for (let runIndex = 0; runIndex < runs; runIndex++) {
     let actions = engine.getActionView();
     let count = 0;
     while (state.turn.outcome === "ongoing" && count < maxActions) {
-        const action = chooseSwingOnly(actions);
+        const action = chooseBasic(actions);
         const result = engine.executeAction(action);
         if (!result.success) throw new Error(`rejected action: ${result.reason}`);
         state = result.frames.at(-1)?.state ?? engine.getGameState();
@@ -33,12 +33,12 @@ for (let runIndex = 0; runIndex < runs; runIndex++) {
 }
 const elapsedMs = performance.now() - started;
 console.log(JSON.stringify({
-    checkout: path.basename(checkout), encounterId, policyId: "swing-only", runs, masterSeed,
+    checkout: path.basename(checkout), encounterId, policyId: "basic", runs, masterSeed,
     elapsedMs, runsPerSecond: runs / (elapsedMs / 1000), meanDecisions: decisions / runs,
     decisionsPerSecond: decisions / (elapsedMs / 1000), decisions, terminations,
 }));
 
-function chooseSwingOnly(actions) {
+function chooseBasic(actions) {
     const programmedMoves = { ko: "telekinesis", matsuko: "whiteFlame", hinari: "rockfall" };
     for (const actionView of actions) {
         if (!actionView.available) continue;

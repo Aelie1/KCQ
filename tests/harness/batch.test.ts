@@ -5,7 +5,7 @@ import {
     runBatch,
 } from "../../src/harness/batch/batch";
 import { runSingleFight } from "../../src/harness/harness";
-import { firstPolicy } from "../../src/harness/policy/first";
+import { basicPolicy } from "../../src/harness/policy/basic";
 
 function stockEncounterId(): string {
     const encounterId = createEngine(1).listEncounters()[0];
@@ -54,7 +54,7 @@ describe("batch harness", () => {
     it("runs every index through the single-fight behavior with its assigned seeds", () => {
         const input = {
             encounterId: stockEncounterId(),
-            policy: firstPolicy,
+            policy: basicPolicy,
             masterSeed: 24680,
             runs: 3,
             maxActions: 2,
@@ -65,7 +65,7 @@ describe("batch harness", () => {
 
         expect(batch).toMatchObject({
             encounterId: input.encounterId,
-            policyId: firstPolicy.id,
+            policyId: basicPolicy.id,
             masterSeed: input.masterSeed,
         });
         expect(batch.runs).toHaveLength(input.runs);
@@ -89,13 +89,13 @@ describe("batch harness", () => {
     it("returns an empty factual result for a zero-run batch", () => {
         expect(runBatch({
             encounterId: "unused",
-            policy: firstPolicy,
+            policy: basicPolicy,
             masterSeed: 1,
             runs: 0,
             maxActions: 10,
         })).toEqual({
             encounterId: "unused",
-            policyId: firstPolicy.id,
+            policyId: basicPolicy.id,
             masterSeed: 1,
             runs: [],
         });
@@ -105,7 +105,7 @@ describe("batch harness", () => {
         const updates: Array<[number, number]> = [];
         runBatch({
             encounterId: stockEncounterId(),
-            policy: firstPolicy,
+            policy: basicPolicy,
             masterSeed: 1,
             runs: 3,
             maxActions: 1,
@@ -117,7 +117,7 @@ describe("batch harness", () => {
     it("keeps deterministic results identical with and without a progress callback", () => {
         const input = {
             encounterId: stockEncounterId(),
-            policy: firstPolicy,
+            policy: basicPolicy,
             masterSeed: 456,
             runs: 4,
             maxActions: 5,
@@ -142,7 +142,7 @@ describe("batch harness", () => {
         (runs) => {
             expect(() => runBatch({
                 encounterId: "unused",
-                policy: firstPolicy,
+                policy: basicPolicy,
                 masterSeed: 1,
                 runs,
                 maxActions: 10,

@@ -20,7 +20,7 @@ function batchFixture(): BatchResult {
     };
     return {
         encounterId: "plains_1",
-        policyId: "first",
+        policyId: "escape",
         masterSeed: 1,
         runs: [1, 1, 2].map((actionCount, runIndex) => ({
             runIndex,
@@ -29,7 +29,7 @@ function batchFixture(): BatchResult {
             result: {
                 encounterId: "plains_1",
                 engineSeed: 100 + runIndex,
-                policyId: "first",
+                policyId: "escape",
                 policySeed: 200 + runIndex,
                 termination: "victory",
                 finalState,
@@ -50,7 +50,7 @@ beforeEach(() => {
     vi.spyOn(fs, "writeFileSync").mockImplementation(() => { });
     vi.spyOn(console, "log").mockImplementation(() => { });
     vi.spyOn(console, "error").mockImplementation(() => { });
-    process.argv = [process.execPath, "batch-main.ts", "plains_1", "1", "first", "3"];
+    process.argv = [process.execPath, "batch-main.ts", "plains_1", "1", "escape", "3"];
     process.exitCode = undefined;
     vi.mocked(runBatch).mockReturnValue(batchFixture());
 });
@@ -68,12 +68,12 @@ describe("batch CLI entry point", () => {
         await import("../../src/harness/cli/batch-main");
 
         expect(runBatch).toHaveBeenCalledExactlyOnceWith({
-            encounterId: "plains_1", masterSeed: 1, policy: expect.objectContaining({ id: "first" }),
+            encounterId: "plains_1", masterSeed: 1, policy: expect.objectContaining({ id: "escape" }),
             runs: 3, maxActions: 1000, replay: false,
         }, { onProgress: expect.any(Function) });
         const outputDir = path.resolve("harness-output");
         const runDir = path.join(outputDir, "2026-09-21_21-15-04_1_level_1_policy");
-        const outputPath = path.join(runDir, "plains_1-first.json");
+        const outputPath = path.join(runDir, "plains_1-escape.json");
         expect(fs.mkdirSync).toHaveBeenNthCalledWith(1, outputDir, { recursive: true });
         expect(fs.mkdirSync).toHaveBeenNthCalledWith(2, runDir);
         expect(fs.writeFileSync).toHaveBeenCalledWith(
@@ -88,7 +88,7 @@ describe("batch CLI entry point", () => {
             maxActions: 1_000,
             parallelWorkers: 1,
             encounters: ["plains_1"],
-            policies: ["first"],
+            policies: ["escape"],
         });
         expect(summary.fightLength.actionCount?.mean).toBe(4 / 3);
         expect(console.log).toHaveBeenCalledWith(formatBatchSummary(summary).join("\n"));
@@ -112,7 +112,7 @@ describe("batch CLI entry point", () => {
             path.resolve(
                 "harness-output",
                 "2026-09-21_21-15-04_1_level_1_policy",
-                "plains_1-first.json",
+                "plains_1-escape.json",
             ),
             expect.any(String), "utf8",
         );
@@ -128,7 +128,7 @@ describe("batch CLI entry point", () => {
             path.resolve(
                 "harness-output",
                 "2026-09-21_21-15-04_1_level_1_policy",
-                ".._odd_encounter-first.json",
+                ".._odd_encounter-escape.json",
             ),
             expect.any(String), "utf8",
         );
@@ -156,17 +156,17 @@ describe("batch CLI entry point", () => {
     });
 
     it("keeps the existing fight entry point and replay artifact behavior unchanged", async () => {
-        process.argv = [process.execPath, "main.ts", "plains_1", "12345", "first"];
+        process.argv = [process.execPath, "main.ts", "plains_1", "12345", "escape"];
         const result = { ...batchFixture().runs[0].result, replay: { initialState: batchFixture().runs[0].result.finalState, initialActions: [], steps: [] } };
         vi.mocked(runSingleFight).mockReturnValue(result);
         await import("../../src/harness/cli/fight-main");
 
         expect(runSingleFight).toHaveBeenCalledExactlyOnceWith({
-            encounterId: "plains_1", engineSeed: 12345, policy: expect.objectContaining({ id: "first" }),
+            encounterId: "plains_1", engineSeed: 12345, policy: expect.objectContaining({ id: "escape" }),
             policySeed: 0, maxActions: 1000, replay: true,
         });
         expect(fs.writeFileSync).toHaveBeenCalledWith(
-            path.resolve("harness-output", "plains_1-engine-12345-first-policy-0.json"),
+            path.resolve("harness-output", "plains_1-engine-12345-escape-policy-0.json"),
             JSON.stringify(result, null, 2), "utf8",
         );
         expect(runBatch).not.toHaveBeenCalled();

@@ -6,7 +6,7 @@ import { createEngine } from "../../src/engine/public/engine";
 import type { PlayerAction } from "../../src/engine/public/types";
 import type { FightReplay } from "../../src/harness/harness";
 import { runSingleFight } from "../../src/harness/harness";
-import { firstPolicy } from "../../src/harness/policy/first";
+import { basicPolicy } from "../../src/harness/policy/basic";
 import {
     PostHogApiClient,
     parseQueryResponse,
@@ -827,7 +827,7 @@ function makeFinishedReplayRows(replayId: string): PostHogReplayEventRow[] {
         engineSeed: 12345,
         policySeed: 0,
         maxActions: 1_000,
-        policy: firstPolicy,
+        policy: basicPolicy,
     });
     if (result.termination !== "victory" && result.termination !== "defeat") {
         throw new Error(`Synthetic fight did not terminate: ${result.termination}.`);

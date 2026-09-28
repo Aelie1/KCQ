@@ -5,6 +5,7 @@ import { createEngine } from "../../src/engine/public/engine";
 import type {
     ActionInfo,
     ActionView,
+    Character,
     PlayerAction,
 } from "../../src/engine/public/types";
 import {
@@ -14,10 +15,9 @@ import {
     type FightPolicy,
     type PolicyContext,
 } from "../../src/harness/harness";
-import { policies } from "../../src/harness/policies";
+import { getPolicy, policies } from "../../src/harness/policies";
 import { basicPolicy } from "../../src/harness/policy/basic";
-import { firstPolicy } from "../../src/harness/policy/first";
-import { randomPolicy } from "../../src/harness/policy/random";
+import { escapePolicy } from "../../src/harness/policy/escape";
 import { resolvedEvents } from "../helpers/events";
 import { createEmptyContentLibrary } from "../helpers/library";
 
@@ -77,7 +77,66 @@ function policyContext(actions: ActionView[]): PolicyContext {
     };
 }
 
+function boundCharacter(id: string, value: number): Character {
+    return {
+        id,
+        acted: false,
+        standing: true,
+        bonusEscapes: 0,
+        bindings: [{
+            id: "rope",
+            value,
+            level: value > 20 ? "medium" : "easy",
+            data: {},
+            status: [],
+            tickEffects: [],
+        }],
+        buffs: [],
+        cooldowns: {},
+        modifiers: {},
+        blockedMoveTypes: [],
+        data: {},
+    };
+}
+
 describe("policy-driven single-fight harness", () => {
+    it("exposes only the intended policy roster with matching IDs", () => {
+        expect(Object.keys(policies)).toEqual(["idle", "smart", "basic", "escape"]);
+        expect(Object.entries(policies).map(([key, policy]) => [key, policy.id])).toEqual([
+            ["idle", "idle"],
+            ["smart", "smart"],
+            ["basic", "basic"],
+            ["escape", "escape"],
+        ]);
+        for (const removed of ["first", "random", "basic10", "basic20", "basic25", "basic50"]) {
+            expect(getPolicy(removed)).toBeUndefined();
+        }
+    });
+
+    it("uses the canonical escape ID and rescues only above 20", () => {
+        const action = actionView("matsuko", {
+            escapes: [{
+                available: true,
+                target: "ko",
+                binding: "rope",
+                effects: [],
+            }],
+        });
+        const atThreshold = policyContext([action]);
+        atThreshold.state.characters = [boundCharacter("ko", 20), boundCharacter("matsuko", 0)];
+        const overThreshold = policyContext([action]);
+        overThreshold.state.characters = [boundCharacter("ko", 21), boundCharacter("matsuko", 0)];
+
+        expect(escapePolicy.id).toBe("escape");
+        expect(escapePolicy.chooseAction(atThreshold)).toEqual({ type: "endTurn" });
+        expect(escapePolicy.chooseAction(overThreshold)).toEqual({
+            type: "escape",
+            actor: "matsuko",
+            target: "ko",
+            binding: "rope",
+        });
+    });
+
     it("supplies public engine thresholds to policy contexts", () => {
         let observed: PolicyContext["thresholds"] | undefined;
         const policy: FightPolicy = {
@@ -113,9 +172,9 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("omits replay capture by default and when explicitly disabled", () => {
-        const defaultResult = runSingleFight({ ...fightInput(firstPolicy), maxActions: 1 });
+        const defaultResult = runSingleFight({ ...fightInput(basicPolicy), maxActions: 1 });
         const disabledResult = runSingleFight({
-            ...fightInput(firstPolicy),
+            ...fightInput(basicPolicy),
             maxActions: 1,
             replay: false,
         });
@@ -127,7 +186,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("captures the loaded encounter state before the first policy action", () => {
-        const input = { ...fightInput(firstPolicy, 101), maxActions: 1, replay: true };
+        const input = { ...fightInput(basicPolicy, 101), maxActions: 1, replay: true };
         const expectedEngine = createEngine(input.engineSeed);
         for (const id of expectedEngine.listCharacters()) {
             expectedEngine.loadCharacter(id);
@@ -146,7 +205,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("records one factual replay step for every successful submitted action", () => {
-        const input = { ...fightInput(firstPolicy, 202), maxActions: 12, replay: true };
+        const input = { ...fightInput(basicPolicy, 202), maxActions: 12, replay: true };
         const result = runSingleFight(input);
         const replayEngine = createEngine(input.engineSeed);
         for (const id of replayEngine.listCharacters()) {
@@ -176,7 +235,7 @@ describe("policy-driven single-fight harness", () => {
 
     it("collects decisions as actionCount and counts every submitted escape", () => {
         const result = runSingleFight({
-            ...fightInput(randomPolicy, 77, 1),
+            ...fightInput(escapePolicy, 77, 1),
             maxActions: 50,
             replay: false,
         });
@@ -186,7 +245,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("sums authoritative applied enemyDamaged events as actual damage", () => {
-        const result = runSingleFight({ ...fightInput(firstPolicy, 202), replay: true });
+        const result = runSingleFight({ ...fightInput(basicPolicy, 202), replay: true });
         const eventDamage = result.replay?.steps.reduce((total, step) => total + (
             step.success
                 ? resolvedEvents(step.frames).reduce((stepTotal, event) =>
@@ -198,7 +257,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("takes peak party bondage over the initial and every post-action view", () => {
-        const result = runSingleFight({ ...fightInput(firstPolicy, 303), replay: true });
+        const result = runSingleFight({ ...fightInput(basicPolicy, 303), replay: true });
         const views = [
             result.replay!.initialState,
             ...result.replay!.steps.flatMap((step) => step.success ? [step.state] : []),
@@ -208,7 +267,7 @@ describe("policy-driven single-fight harness", () => {
 
     it("records endTurn as one step containing its enemy-phase events", () => {
         const result = runSingleFight({
-            ...fightInput(firstPolicy, 303),
+            ...fightInput(basicPolicy, 303),
             maxActions: 20,
             replay: true,
         });
@@ -250,7 +309,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("does not alter gameplay results when replay capture is enabled", () => {
-        const input = fightInput(randomPolicy, 404, 505);
+        const input = fightInput(escapePolicy, 404, 505);
         const disabled = runSingleFight({ ...input, replay: false });
         const enabled = runSingleFight({ ...input, replay: true });
 
@@ -277,12 +336,12 @@ describe("policy-driven single-fight harness", () => {
                 context.state.turn.step = 999_999;
                 context.state.characters[0].data["corrupted"] = 999;
 
-                return firstPolicy.chooseAction(context);
+                return basicPolicy.chooseAction(context);
             },
         };
 
         const expected = runSingleFight({
-            ...fightInput(firstPolicy, 404, 505),
+            ...fightInput(basicPolicy, 404, 505),
             maxActions: 2,
             replay: true,
         });
@@ -300,7 +359,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("captures deterministic replay for identical engine and policy seeds", () => {
-        const input = { ...fightInput(randomPolicy, 606, 707), replay: true };
+        const input = { ...fightInput(escapePolicy, 606, 707), replay: true };
 
         expect(runSingleFight(input).replay).toEqual(runSingleFight(input).replay);
     });
@@ -312,7 +371,7 @@ describe("policy-driven single-fight harness", () => {
             id: "rng-observer",
             chooseAction(context) {
                 rolls.push(context.random.next());
-                return firstPolicy.chooseAction(context);
+                return basicPolicy.chooseAction(context);
             },
         });
         const baseInput = fightInput(policy(disabledRolls), 808, 909);
@@ -334,41 +393,7 @@ describe("policy-driven single-fight harness", () => {
         expect(source).toMatch(/replay:\s*true/);
     });
 
-    it("lets first autonomously complete a real discovered encounter", () => {
-        const result = runSingleFight(fightInput(firstPolicy));
-
-        expect(["victory", "defeat"]).toContain(result.termination);
-        expect(result.finalState.turn.outcome).toBe(result.termination);
-        expect(result.actionCount).toBe(result.trace.length);
-        expect(result.actionCount).toBeGreaterThan(0);
-        expect(result.policyId).toBe("first");
-        expect(result.policySeed).toBe(0);
-    });
-
-    it("preserves first-available character, move, and target ordering", () => {
-        const context = policyContext(
-            [
-                actionView("unavailable", {
-                    available: false,
-                    reason: "actorAlreadyActed",
-                }),
-                actionView("no-moves", { moves: [move("blocked", false)] }),
-                actionView("chosen", {
-                    moves: [move("first-blocked", false), move("first-available"), move("later")],
-                }),
-                actionView("later", { moves: [move("not-reached")] }),
-            ],
-        );
-
-        expect(firstPolicy.chooseAction(context)).toEqual({
-            type: "move",
-            actor: "chosen",
-            move: "first-available",
-            targets: ["enemy-1"],
-        });
-    });
-
-    it("uses only each programmed swing-only move in a real fight", () => {
+    it("uses only each programmed basic move in a real fight", () => {
         const result = runSingleFight(fightInput(basicPolicy));
         const expectedMoves: Readonly<Record<string, string>> = {
             ko: "telekinesis",
@@ -394,66 +419,12 @@ describe("policy-driven single-fight harness", () => {
         expect(basicPolicy.chooseAction(context)).toEqual({ type: "endTurn" });
     });
 
-    it("lets random autonomously drive a real encounter", () => {
-        const result = runSingleFight(fightInput(randomPolicy, 12345, 999));
-
-        expect(["victory", "defeat"]).toContain(result.termination);
-        expect(result.error).toBeUndefined();
-        expect(result.actionCount).toBeGreaterThan(0);
-    });
-
-    it("does not treat an unavailable escape entry as a random candidate", () => {
-        const context = policyContext([
-            actionView("hero", {
-                escapes: [{
-                    available: false,
-                    reason: "escapeUnavailable",
-                    target: "hero",
-                    binding: "rope",
-                    effects: [],
-                }],
-            }),
-        ]);
-
-        expect(randomPolicy.chooseAction(context)).toEqual({ type: "endTurn" });
-    });
-
-    it("can select an available escape entry", () => {
-        const context = policyContext([
-            actionView("hero", {
-                escapes: [{
-                    available: true,
-                    target: "hero",
-                    binding: "rope",
-                    effects: [],
-                }],
-            }),
-        ]);
-
-        expect(randomPolicy.chooseAction(context)).toEqual({
-            type: "escape",
-            actor: "hero",
-            target: "hero",
-            binding: "rope",
-        });
-    });
-
     it.each([
-        [firstPolicy, 17],
-        [basicPolicy, 31],
-        [randomPolicy, 999],
+        [basicPolicy, 17],
+        [escapePolicy, 999],
     ])("replays a policy exactly for identical engine and policy seeds", (policy, policySeed) => {
         const input = fightInput(policy, 24680, policySeed);
         expect(runSingleFight(input)).toEqual(runSingleFight(input));
-    });
-
-    it("uses the separate policy seed deterministically for random decisions", () => {
-        const seedOne = runSingleFight({ ...fightInput(randomPolicy, 77, 1), maxActions: 30 });
-        const seedOneReplay = runSingleFight({ ...fightInput(randomPolicy, 77, 1), maxActions: 30 });
-        const seedTwo = runSingleFight({ ...fightInput(randomPolicy, 77, 2), maxActions: 30 });
-
-        expect(seedOne).toEqual(seedOneReplay);
-        expect(seedOne.trace).not.toEqual(seedTwo.trace);
     });
 
     it("allows every registered policy to drive the same runner", () => {
@@ -503,7 +474,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("terminates at maxActions without submitting an extra action", () => {
-        const result = runSingleFight({ ...fightInput(firstPolicy, 7), maxActions: 0 });
+        const result = runSingleFight({ ...fightInput(basicPolicy, 7), maxActions: 0 });
 
         expect(result.termination).toBe("maxActions");
         expect(result.finalState.turn.outcome).toBe("ongoing");
@@ -512,7 +483,7 @@ describe("policy-driven single-fight harness", () => {
     });
 
     it("derives victory and defeat only from the public outcome", () => {
-        const result = runSingleFight(fightInput(firstPolicy, 8));
+        const result = runSingleFight(fightInput(basicPolicy, 8));
         const source = readFileSync(
             resolve(process.cwd(), "src/harness/harness.ts"),
             "utf8",
@@ -527,13 +498,13 @@ describe("policy-driven single-fight harness", () => {
 
     it("returns a structured error for an encounter absent from the public catalogue", () => {
         const result = runSingleFight({
-            ...fightInput(firstPolicy),
+            ...fightInput(basicPolicy),
             encounterId: "not-a-stock-encounter",
         });
 
         expect(result).toMatchObject({
             encounterId: "not-a-stock-encounter",
-            policyId: "first",
+            policyId: "basic",
             termination: "error",
             actionCount: 0,
             trace: [],
