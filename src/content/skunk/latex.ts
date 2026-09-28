@@ -239,14 +239,14 @@ export const latexCollar: BindingDef = {
     },
     onTick(target: iCharacter, binding: iBinding): iEffect[] {
         const effects: iEffect[] = [];
-        const bindings = [latexHead, latexArms, latexTorso, latexLegs];
-        for (const binding of bindings) {
+        const types = [latexHead, latexArms, latexTorso, latexLegs];
+        for (const type of types) {
             effects.push({
                 type: "binding",
                 source: target,
                 target: target,
-                binding: binding,
-                amount: COLLAR_BINDING
+                binding: type,
+                amount: Math.ceil(binding.value / 20)
             });
         }
         return effects

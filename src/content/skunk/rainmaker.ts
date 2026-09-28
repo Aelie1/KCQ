@@ -2,6 +2,7 @@ import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
+import { HitBand } from "../../engine/public/types";
 import { RAINMAKER_ID } from "./constants";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
@@ -10,6 +11,12 @@ const RAINMAKER_DEF = 0;
 
 const RAIN_DAMAGE = 10;
 
+const countByBand: Partial<Record<HitBand, number>> = {
+    graze: 2,
+    hit: 3,
+    crit: 4,
+};
+
 export const latexRain: MoveDef = {
     id: "latexRain",
     targetSide: "player",
@@ -17,7 +24,9 @@ export const latexRain: MoveDef = {
     baseDamage: RAIN_DAMAGE,
     accuracy: {
         miss: 50,
-        hit: 50,
+        graze: 30,
+        hit: 15,
+        crit: 5,
     },
     type: "none",
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
@@ -30,7 +39,7 @@ export const latexRain: MoveDef = {
 
         for (const target of targets) {
             if (isCharacter(target.target)) {
-                const count = effectivenessInt(target.effectiveness, 1, bindings.length);
+                const count = countByBand[target.band] ?? 0;
                 const start = effectivenessInt(target.effectiveness / bindings.length, 0, bindings.length - 1);
                 const effects: iEffect[] = [];
                 for (let i = 0; i < count; i++) {
@@ -41,7 +50,7 @@ export const latexRain: MoveDef = {
                         source: actor,
                         target: target.target,
                         binding: binding,
-                        amount: (move.definition.baseDamage ?? 1) * target.effectiveness
+                        amount: (move.definition.baseDamage ?? 1)
                     });
                 }
                 result.targets.push({
