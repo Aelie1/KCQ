@@ -155,8 +155,8 @@ export function evaluateSkunkKnowledge(
     candidate: SmartCandidate,
 ): KitKnowledgeRuleDiagnostic[] {
     const rules: KitKnowledgeRuleDiagnostic[] = [
-        ...evaluateRegenerationLiabilityRules(context, candidate),
-        ...evaluateFuturePuddleRules(context, candidate),
+        //...evaluateRegenerationLiabilityRules(context, candidate),
+        //...evaluateFuturePuddleRules(context, candidate),
         ...evaluateFairyHealingKnowledge(context, candidate),
         ...evaluateBarrierKnowledge(context, candidate),
         ...evaluateExplosionKnowledge(context, candidate),
@@ -294,7 +294,7 @@ export function evaluateFuturePuddlePressure(
     );
     const creationProbability = clamp(
         (PUDDLE_CREATION_STOCK_CUTOFF - puddleAmount)
-            / PUDDLE_CREATION_PROBABILITY_DENOMINATOR,
+        / PUDDLE_CREATION_PROBABILITY_DENOMINATOR,
         0,
         PUDDLE_CREATION_MAX_PROBABILITY,
     );

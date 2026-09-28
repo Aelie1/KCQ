@@ -131,6 +131,23 @@
                 "forest_3"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "balance smart f3",
+            "type": "process",
+            "command": "npm.cmd",
+            "args": [
+                "run",
+                "compare",
+                "--",
+                "forest_3",
+                "25",
+                "smart",
+                "1000",
+                "--replay-levels",
+                "forest_3"
+            ],
+            "problemMatcher": []
         }
     ]
 }

@@ -34,6 +34,11 @@
             "id": "balance-smart",
             "label": "$(thinking) Smart Balance",
             "task": "balance smart"
+        },
+        {
+            "id": "balance-smart-f3",
+            "label": "$(wand) Smart Balance F3",
+            "task": "balance smart f3"
         }
     ]
 }
