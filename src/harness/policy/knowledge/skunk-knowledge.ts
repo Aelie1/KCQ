@@ -293,13 +293,33 @@ function evaluateExplosionKnowledge(
             (total, state) => total + (state.damage >= enemy.currHp ? state.probability : 0),
             0,
         );
-        const crossingProbability = alreadyLow ? 0 : projection.states.reduce(
-            (total, state) => {
+        let crossingProbability = 0;
+        let coveredCrossingProbability = 0;
+        let uncoveredCrossingProbability = 0;
+        let weightedRemainingPartyDamageEV = 0;
+        if (!alreadyLow) {
+            for (const state of projection.states) {
                 const remaining = enemy.currHp - state.damage;
-                return total + (remaining > 0 && remaining < threshold ? state.probability : 0);
-            },
-            0,
-        );
+                if (remaining <= 0 || remaining >= threshold) continue;
+
+                crossingProbability += state.probability;
+                const remainingPartyDamageEV = expectedRemainingPartyDamage(
+                    context,
+                    candidate.action.actor,
+                    enemy.id,
+                    state.barrier,
+                );
+                weightedRemainingPartyDamageEV += remainingPartyDamageEV * state.probability;
+                if (remainingPartyDamageEV >= remaining) {
+                    coveredCrossingProbability += state.probability;
+                } else {
+                    uncoveredCrossingProbability += state.probability;
+                }
+            }
+        }
+        const remainingPartyDamageEV = crossingProbability > 0
+            ? weightedRemainingPartyDamageEV / crossingProbability
+            : 0;
         const pressure = explosionRecoveryPressure(context, candidate.action.actor);
 
         if (alreadyLow) {
@@ -326,19 +346,39 @@ function evaluateExplosionKnowledge(
             continue;
         }
 
-        if (crossingProbability > 0) {
+        if (uncoveredCrossingProbability > 0) {
             rules.push({
                 id: "skunk.explosion-nonlethal-threshold-risk",
-                adjustment: -pressure * crossingProbability,
-                reason: `${enemy.id} has a ${format(crossingProbability * 100)}% midpoint-band chance to finish alive below its ${format(threshold)} HP Explosion threshold.`,
+                adjustment: -pressure * uncoveredCrossingProbability,
+                reason: `${enemy.id} has a ${format(crossingProbability * 100)}% midpoint-band chance to cross its ${format(threshold)} HP Explosion threshold; ${format(uncoveredCrossingProbability * 100)}% remains uncovered by ${format(remainingPartyDamageEV)} expected follow-up damage from the unacted party.`,
                 details: {
                     targetId: enemy.id,
                     currentHp: enemy.currHp,
                     threshold,
                     crossingProbability: formatNumber(crossingProbability),
+                    coveredCrossingProbability: formatNumber(coveredCrossingProbability),
+                    uncoveredCrossingProbability: formatNumber(uncoveredCrossingProbability),
+                    remainingPartyDamageEV: formatNumber(remainingPartyDamageEV),
                     lethalProbability: formatNumber(lethalProbability),
                     safeLethal: false,
                     approximation: "Public damage-band midpoints with ordered independent hits; reactions are harmless if later hits defeat the Skunk.",
+                },
+            });
+        } else if (crossingProbability > 0) {
+            rules.push({
+                id: "skunk.explosion-covered-threshold-crossing",
+                adjustment: 0,
+                reason: `${enemy.id} can cross below ${format(threshold)} HP, but the unacted party has ${format(remainingPartyDamageEV)} expected follow-up damage to finish it this player phase.`,
+                details: {
+                    targetId: enemy.id,
+                    currentHp: enemy.currHp,
+                    threshold,
+                    crossingProbability: formatNumber(crossingProbability),
+                    coveredCrossingProbability: formatNumber(coveredCrossingProbability),
+                    uncoveredCrossingProbability: 0,
+                    remainingPartyDamageEV: formatNumber(remainingPartyDamageEV),
+                    lethalProbability: formatNumber(lethalProbability),
+                    safeLethal: false,
                 },
             });
         } else if (lethalProbability > 0) {
@@ -358,6 +398,64 @@ function evaluateExplosionKnowledge(
         }
     }
     return rules;
+}
+
+/**
+ * Estimates damage still available against one target this player phase.
+ * Each other currently-available actor contributes only their best damaging move,
+ * so alternate moves on one character are not incorrectly added together.
+ *
+ * Barrier is evaluated from the post-candidate state supplied by the crossing
+ * projection. Reusing that same remaining Barrier for each actor is deliberately
+ * conservative; this helper never invents extra shield-clearing progress.
+ */
+function expectedRemainingPartyDamage(
+    context: PolicyContext,
+    currentActorId: EntityId,
+    enemyId: EntityId,
+    barrierDuration: number,
+): number {
+    const enemy = context.state.enemies.find(({ id, currHp }) =>
+        id === enemyId && currHp > 0
+    );
+    if (enemy === undefined) return 0;
+
+    let total = 0;
+    for (const action of context.actions) {
+        if (!action.available || action.id === currentActorId) continue;
+
+        let best = 0;
+        for (const info of action.moves) {
+            if (!info.available) continue;
+            const target = info.targets.find((value): value is ValidTarget =>
+                value.valid && value.target === enemyId
+            );
+            if (target === undefined || !previewHasDamage(target, enemyId)) continue;
+
+            const followUp: SmartCandidate = {
+                action: {
+                    type: "move",
+                    actor: action.id,
+                    move: info.move.id,
+                    targets: [enemyId],
+                },
+                effects: info.effects,
+                targets: [target],
+                hits: info.move.hits ?? 1,
+            };
+            best = Math.max(
+                best,
+                projectAttack(
+                    followUp,
+                    target,
+                    barrierDuration,
+                    enemy.currHp,
+                ).postBarrierExpectedDamage,
+            );
+        }
+        total += best;
+    }
+    return total;
 }
 
 function bestAvailableSourceAttackRemoval(

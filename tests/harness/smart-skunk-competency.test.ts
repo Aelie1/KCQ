@@ -329,6 +329,97 @@ describe("Smart Skunk Explosion discipline", () => {
         expect(knowledge(lethal, "lethal", "skunk1").raw).toBe(0);
     });
 
+    it("waives threshold risk when the remaining party damage EV covers the surviving Skunk", () => {
+        const context = fixture(
+            [enemy("skunk1", { currHp: 100 })],
+            [attack("cross", ["skunk1"], 30)],
+            [character("hero"), character("ally1"), character("ally2")],
+        );
+        context.actions.push(
+            action("ally1", [attack("follow-a", ["skunk1"], 40)]),
+            action("ally2", [attack("follow-b", ["skunk1"], 35)]),
+        );
+
+        const result = knowledge(context, "cross", "skunk1");
+        expect(result.rules).toContainEqual(expect.objectContaining({
+            id: "skunk.explosion-covered-threshold-crossing",
+            adjustment: 0,
+            details: expect.objectContaining({
+                crossingProbability: 1,
+                coveredCrossingProbability: 1,
+                uncoveredCrossingProbability: 0,
+                remainingPartyDamageEV: 75,
+            }),
+        }));
+        expect(result.rules.some(({ id }) =>
+            id === "skunk.explosion-nonlethal-threshold-risk"
+        )).toBe(false);
+    });
+
+    it("keeps threshold risk when the remaining party damage EV is insufficient", () => {
+        const context = fixture(
+            [enemy("skunk1", { currHp: 100 })],
+            [attack("cross", ["skunk1"], 30)],
+            [character("hero"), character("ally")],
+        );
+        context.actions.push(
+            action("ally", [attack("follow", ["skunk1"], 40)]),
+        );
+
+        const rule = knowledge(context, "cross", "skunk1").rules.find(({ id }) =>
+            id === "skunk.explosion-nonlethal-threshold-risk"
+        );
+        expect(rule?.adjustment).toBeLessThan(0);
+        expect(rule?.details).toMatchObject({
+            crossingProbability: 1,
+            coveredCrossingProbability: 0,
+            uncoveredCrossingProbability: 1,
+            remainingPartyDamageEV: 40,
+        });
+    });
+
+    it("ignores spent actors when estimating remaining party damage", () => {
+        const context = fixture(
+            [enemy("skunk1", { currHp: 100 })],
+            [attack("cross", ["skunk1"], 30)],
+            [character("hero"), character("spent")],
+        );
+        const spent = action("spent", [attack("follow", ["skunk1"], 100)]);
+        spent.available = false;
+        spent.reason = "actorAlreadyActed";
+        context.actions.push(spent);
+
+        const rule = knowledge(context, "cross", "skunk1").rules.find(({ id }) =>
+            id === "skunk.explosion-nonlethal-threshold-risk"
+        );
+        expect(rule?.details).toMatchObject({
+            uncoveredCrossingProbability: 1,
+            remainingPartyDamageEV: 0,
+        });
+    });
+
+    it("uses each remaining actor's best attack instead of summing alternate moves", () => {
+        const context = fixture(
+            [enemy("skunk1", { currHp: 100 })],
+            [attack("cross", ["skunk1"], 30)],
+            [character("hero"), character("ally")],
+        );
+        context.actions.push(
+            action("ally", [
+                attack("option-a", ["skunk1"], 40),
+                attack("option-b", ["skunk1"], 40),
+            ]),
+        );
+
+        const rule = knowledge(context, "cross", "skunk1").rules.find(({ id }) =>
+            id === "skunk.explosion-nonlethal-threshold-risk"
+        );
+        expect(rule?.details).toMatchObject({
+            uncoveredCrossingProbability: 1,
+            remainingPartyDamageEV: 40,
+        });
+    });
+
     it("adds urgency only when an already-low Skunk can actually be removed", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 60 })],
