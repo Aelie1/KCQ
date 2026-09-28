@@ -1,6 +1,6 @@
 import { FightPolicy } from "./harness";
 import { basicPolicy } from "./policy/basic";
-import { basic10Policy, basic30Policy, basic50Policy } from "./policy/basic-escape";
+import { escapePolicy } from "./policy/escape";
 import { idlePolicy } from "./policy/idle";
 import { smartPolicy } from "./policy/smart";
 
@@ -8,9 +8,7 @@ export const policies = {
     idle: idlePolicy,
     smart: smartPolicy,
     basic: basicPolicy,
-    basic50: basic50Policy,
-    basic30: basic30Policy,
-    basic10: basic10Policy,
+    escape: escapePolicy,
 } as const satisfies Record<string, FightPolicy>;
 
 export type PolicyId = keyof typeof policies;
