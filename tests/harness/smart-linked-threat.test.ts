@@ -395,6 +395,7 @@ describe("Smart generic linked-threat targeting", () => {
             "bindingRecovery",
             "bindingMoveAccess",
             "pressureSourceProgress",
+            "sustainedPressureProgress",
             "finisherPressure",
             "futureMoveOptions",
             "reserveSpending",

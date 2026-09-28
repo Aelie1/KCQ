@@ -16,11 +16,37 @@ import type {
 } from "../../engine/public/types";
 import type { FightPolicy, PolicyContext } from "../harness";
 import {
-    assessSmartBoard,
-    type SmartBoardAssessment,
-    type SmartEnemyAssessment,
-    type SmartEnemyTargetAssessment,
-} from "./smart-board";
+    CONTROL_KNOWLEDGE_WEIGHT,
+    evaluateControlKnowledge as evaluateControlKnowledgeRules,
+    type ControlKnowledgeBreakdown,
+} from "./knowledge/control-knowledge";
+import {
+    evaluateKitKnowledge as evaluateKitKnowledgeRules,
+    type KitKnowledgeBreakdown,
+} from "./knowledge/kit-knowledge";
+import {
+    evaluatePeriodicBindingPressure,
+    type PeriodicBindingPressureBreakdown,
+    type PeriodicBindingSourceBreakdown,
+} from "./knowledge/periodic-binding-knowledge";
+import {
+    evaluateReactiveKnowledge as evaluateReactiveKnowledgeRules,
+    REACTIVE_KNOWLEDGE_WEIGHT,
+    type ReactiveKnowledgeBreakdown,
+} from "./knowledge/reactive-knowledge";
+import {
+    assessSustainedEnemyPressure,
+    evaluateSustainedPressureProgress as evaluateSustainedPressureProgressRules,
+    SUSTAINED_PRESSURE_PROGRESS_WEIGHT,
+    type SustainedPressureProgressBreakdown,
+} from "./knowledge/sustained-pressure-knowledge";
+import {
+    assessSmartPressure,
+    evaluateTempoKnowledge as evaluateTempoKnowledgeRules,
+    TEMPO_KNOWLEDGE_WEIGHT,
+    type SmartPressureAssessment,
+    type TempoKnowledgeBreakdown,
+} from "./knowledge/tempo-knowledge";
 import {
     addBinding,
     applyBindingEffects,
@@ -32,40 +58,22 @@ import {
     type BindingBoard,
 } from "./smart-bindings";
 import {
-    evaluateKitKnowledge as evaluateKitKnowledgeRules,
-    type KitKnowledgeBreakdown,
-} from "./knowledge/kit-knowledge";
-import {
-    assessSmartPressure,
-    evaluateTempoKnowledge as evaluateTempoKnowledgeRules,
-    TEMPO_KNOWLEDGE_WEIGHT,
-    type SmartPressureAssessment,
-    type TempoKnowledgeBreakdown,
-} from "./knowledge/tempo-knowledge";
-import {
-    CONTROL_KNOWLEDGE_WEIGHT,
-    evaluateControlKnowledge as evaluateControlKnowledgeRules,
-    type ControlKnowledgeBreakdown,
-} from "./knowledge/control-knowledge";
-import {
-    evaluateReactiveKnowledge as evaluateReactiveKnowledgeRules,
-    REACTIVE_KNOWLEDGE_WEIGHT,
-    type ReactiveKnowledgeBreakdown,
-} from "./knowledge/reactive-knowledge";
-import {
-    evaluatePeriodicBindingPressure,
-    type PeriodicBindingPressureBreakdown,
-    type PeriodicBindingSourceBreakdown,
-} from "./knowledge/periodic-binding-knowledge";
+    assessSmartBoard,
+    type SmartBoardAssessment,
+    type SmartEnemyAssessment,
+    type SmartEnemyTargetAssessment,
+} from "./smart-board";
 
-export * from "./smart-board";
-export { RECOVERY_DEBT_CURVE_A, recoveryDebt } from "./smart-bindings";
-export * from "./knowledge/kit-knowledge";
-export * from "./knowledge/skunk-knowledge";
-export * from "./knowledge/tempo-knowledge";
 export * from "./knowledge/control-knowledge";
-export * from "./knowledge/reactive-knowledge";
+export * from "./knowledge/kit-knowledge";
 export * from "./knowledge/periodic-binding-knowledge";
+export * from "./knowledge/reactive-knowledge";
+export * from "./knowledge/skunk-knowledge";
+export * from "./knowledge/sustained-pressure-knowledge";
+export * from "./knowledge/tempo-knowledge";
+export { RECOVERY_DEBT_CURVE_A, recoveryDebt } from "./smart-bindings";
+export * from "./smart-board";
+export { SUSTAINED_PRESSURE_PROGRESS_WEIGHT };
 
 /** Public-preview data retained beside an action so scoring stays inspectable. */
 export interface SmartCandidate {
@@ -213,7 +221,7 @@ export interface IncomingThreatBreakdown {
 /** Tunable Smart-policy heuristic constants; none is an engine rule. */
 export const BINDING_RECOVERY_WEIGHT = 0.75;
 export const BINDING_MOVE_ACCESS_WEIGHT = 20;
-export const PRESSURE_SOURCE_PROGRESS_WEIGHT = 1;
+export const PRESSURE_SOURCE_PROGRESS_WEIGHT = 5;
 export const FINISHER_PRESSURE_WEIGHT = 1;
 export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
 export const RESERVE_SPENDING_WEIGHT = 1;
@@ -372,6 +380,28 @@ export const pressureSourceProgressScorer: SmartScorer = {
     },
 };
 
+/** Rewards damage progress toward removing enemies that produce future pressure. */
+export const sustainedPressureProgressScorer: SmartScorer = {
+    id: "sustainedPressureProgress",
+    weight: SUSTAINED_PRESSURE_PROGRESS_WEIGHT,
+    prepare(context) {
+        const pressure = assessSustainedEnemyPressure(context);
+        return (candidate) =>
+            evaluateSustainedPressureProgressRules(context, candidate, pressure).raw;
+    },
+    prepareDetailed(context) {
+        const pressure = assessSustainedEnemyPressure(context);
+        return (candidate) => {
+            const diagnostics = evaluateSustainedPressureProgressRules(
+                context,
+                candidate,
+                pressure,
+            );
+            return { raw: diagnostics.raw, diagnostics };
+        };
+    },
+};
+
 /** Coarsely values declarative gains and losses in future move-list membership. */
 export const futureMoveOptionsScorer: SmartScorer = {
     id: "futureMoveOptions",
@@ -413,6 +443,7 @@ export const smartScorers: readonly SmartScorer[] = [
     bindingRecoveryScorer,
     bindingMoveAccessScorer,
     pressureSourceProgressScorer,
+    sustainedPressureProgressScorer,
     finisherPressureScorer,
     futureMoveOptionsScorer,
     reserveSpendingScorer,
@@ -442,6 +473,14 @@ export function evaluatePressureSourceProgress(
     candidate: SmartCandidate,
 ): PressureSourceProgressBreakdown {
     return preparePressureSourceProgress(context, board)(candidate);
+}
+
+/** Exposes future enemy-pressure progress and its per-enemy contributions. */
+export function evaluateSustainedPressureProgress(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): SustainedPressureProgressBreakdown {
+    return evaluateSustainedPressureProgressRules(context, candidate);
 }
 
 /** Exposes the future-move option delta for focused tests and diagnostics. */

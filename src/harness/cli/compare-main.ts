@@ -4,11 +4,10 @@ import { effectiveWorkerCount } from "../batch/parallel-batch";
 import { captureReplaySamples } from "../batch/replay-samples";
 import {
     createBatchRunOutput,
-    formatReplaySamples,
     formatSavedSummaries,
     type SavedReplaySample,
     writeBatchSummary,
-    writeReplaySamples,
+    writeReplaySamples
 } from "../output";
 import { getPolicy, policies } from "../policies";
 import { formatCompletion } from "./progress";
@@ -115,9 +114,6 @@ async function main(): Promise<void> {
             ? formatPolicyComparison(comparisons[0]).join("\n")
             : formatEncounterComparisons(comparisons).join("\n"),
     );
-    replayGroups.forEach(({ encounterId, policyId, samples }) => {
-        console.log(formatReplaySamples(samples, `Replays (${encounterId} / ${policyId}):`));
-    });
     console.log(formatCompletion(
         encounterIds.length * selectedPolicies.length * runs,
         result.elapsedMs,

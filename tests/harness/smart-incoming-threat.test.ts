@@ -474,6 +474,7 @@ describe("Smart generic incoming-threat targeting", () => {
             "bindingRecovery",
             "bindingMoveAccess",
             "pressureSourceProgress",
+            "sustainedPressureProgress",
             "finisherPressure",
             "futureMoveOptions",
             "reserveSpending",
