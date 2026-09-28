@@ -1,15 +1,11 @@
 import { FightPolicy } from "./harness";
 import { basicPolicy } from "./policy/basic";
 import { basic10Policy, basic30Policy, basic50Policy } from "./policy/basic-escape";
-import { firstPolicy } from "./policy/first";
 import { idlePolicy } from "./policy/idle";
-import { randomPolicy } from "./policy/random";
 import { smartPolicy } from "./policy/smart";
 
 export const policies = {
-    first: firstPolicy,
     idle: idlePolicy,
-    random: randomPolicy,
     smart: smartPolicy,
     basic: basicPolicy,
     basic50: basic50Policy,
