@@ -178,7 +178,7 @@ export interface IncomingThreatEnemyBreakdown {
     readonly threat: number;
     readonly expectedDamage: number;
     readonly currentHp: number;
-    readonly progressFraction: number;
+    readonly expectedLethal: boolean;
     readonly contribution: number;
     readonly bindingTargets: readonly SmartEnemyTargetAssessment[];
     readonly unknownIncomingBindingEffects: number;
@@ -227,7 +227,7 @@ export const linkedThreatScorer: SmartScorer = {
     },
 };
 
-/** Values damage progress against enemies with known committed binding pressure. */
+/** Values expected kills that prevent known committed enemy binding pressure. */
 export const incomingThreatScorer: SmartScorer = {
     id: "incomingThreat",
     weight: INCOMING_THREAT_WEIGHT,
@@ -380,7 +380,7 @@ export function evaluateLinkedThreat(
     return prepareLinkedThreat(context)(candidate);
 }
 
-/** Exposes known incoming binding threat and offensive progress for diagnostics. */
+/** Exposes known incoming binding threat and expected-lethal prevention diagnostics. */
 export function evaluateIncomingThreat(
     context: PolicyContext,
     board: SmartBoardAssessment,
@@ -498,8 +498,8 @@ function prepareIncomingThreat(
             threat,
         }) => {
             const expectedDamage = expectedDamageToEnemy(candidate, enemy.id);
-            const progressFraction = clamp(expectedDamage / enemy.currHp, 0, 1);
-            const contribution = threat * progressFraction;
+            const expectedLethal = expectedDamage >= enemy.currHp;
+            const contribution = expectedLethal ? threat : 0;
             return {
                 enemyId: enemy.id,
                 baselineDebt,
@@ -507,7 +507,7 @@ function prepareIncomingThreat(
                 threat,
                 expectedDamage,
                 currentHp: enemy.currHp,
-                progressFraction,
+                expectedLethal,
                 contribution,
                 bindingTargets: assessment.bindingTargets,
                 unknownIncomingBindingEffects: assessment.unknownIncomingBindingEffects,

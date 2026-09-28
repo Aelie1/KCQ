@@ -17,6 +17,7 @@ import {
     generateSmartCandidates,
     INCOMING_THREAT_WEIGHT,
     incomingThreatScorer,
+    recoveryDebt,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
 
@@ -56,9 +57,12 @@ function enemy(id: string, effects: Effect[] = [], currHp = 100): Enemy {
     };
 }
 
-function attack(damageByEnemy: Readonly<Record<string, number>>): ActionInfo {
+function attack(
+    damageByEnemy: Readonly<Record<string, number>>,
+    targets: number | "all" = 1,
+): ActionInfo {
     return {
-        move: { id: "synthetic-attack", targetSide: "enemy", targets: 1, type: "arms" },
+        move: { id: "synthetic-attack", targetSide: "enemy", targets, type: "arms" },
         available: true,
         effects: [],
         targets: Object.entries(damageByEnemy).map(([target, damage]) => ({
@@ -74,6 +78,7 @@ function context(
     characters: Character[],
     enemies: Enemy[],
     damageByEnemy: Readonly<Record<string, number>>,
+    targets: number | "all" = 1,
 ): PolicyContext {
     const state: GameState = {
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
@@ -85,7 +90,7 @@ function context(
     const actions: ActionView[] = [{
         id: characters[0]?.id ?? "synthetic-hero",
         available: true,
-        moves: [attack(damageByEnemy)],
+        moves: [attack(damageByEnemy, targets)],
         escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
     }];
@@ -124,8 +129,8 @@ describe("Smart generic incoming-threat targeting", () => {
         const fixture = context(
             [character("synthetic-hero")],
             [
-                enemy("enemy-a"),
-                enemy("enemy-b", [bind("synthetic-hero", "synthetic-rope", 20)]),
+                enemy("enemy-a", [], 20),
+                enemy("enemy-b", [bind("synthetic-hero", "synthetic-rope", 20)], 20),
             ],
             { "enemy-a": 20, "enemy-b": 20 },
         );
@@ -211,32 +216,150 @@ describe("Smart generic incoming-threat targeting", () => {
         expect(breakdown(fixture)).toEqual({ enemies: [], raw: 0 });
     });
 
-    it("awards proportional progress against remaining HP", () => {
+    it("gives nonlethal damage zero score even against a very dangerous enemy", () => {
         const fixture = context(
-            [character("synthetic-hero")],
-            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)])],
-            { "enemy-a": 25 },
+            [character("synthetic-hero", [binding("synthetic-rope", 70)])],
+            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 30)])],
+            { "enemy-a": 99 },
         );
 
         const result = breakdown(fixture);
         expect(result.enemies[0]).toMatchObject({
-            expectedDamage: 25,
+            expectedDamage: 99,
             currentHp: 100,
-            progressFraction: 0.25,
+            expectedLethal: false,
+            contribution: 0,
         });
-        expect(result.raw).toBeCloseTo(result.enemies[0].threat * 0.25);
+        expect(result.enemies[0].threat).toBeGreaterThan(100);
+        expect(result.raw).toBe(0);
     });
 
-    it("caps lethal offensive progress at one", () => {
+    it("gives expected-lethal damage the enemy's full threat score", () => {
         const fixture = context(
             [character("synthetic-hero")],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)], 40)],
+            { "enemy-a": 40 },
+        );
+
+        const result = breakdown(fixture);
+        expect(result.enemies[0]).toMatchObject({
+            expectedDamage: 40,
+            currentHp: 40,
+            expectedLethal: true,
+        });
+        expect(result.raw).toBeCloseTo(result.enemies[0].threat);
+    });
+
+    it("gives damage just below remaining HP zero threat score", () => {
+        const fixture = context(
+            [character("synthetic-hero")],
+            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)])],
+            { "enemy-a": 99 },
+        );
+
+        const result = breakdown(fixture);
+        expect(result.enemies[0].expectedLethal).toBe(false);
+        expect(result.raw).toBe(0);
+    });
+
+    it("gives damage equal to remaining HP full threat score", () => {
+        const fixture = context(
+            [character("synthetic-hero")],
+            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)])],
             { "enemy-a": 100 },
         );
 
         const result = breakdown(fixture);
-        expect(result.enemies[0].progressFraction).toBe(1);
+        expect(result.enemies[0].expectedLethal).toBe(true);
         expect(result.raw).toBeCloseTo(result.enemies[0].threat);
+    });
+
+    it("gives damage above remaining HP full threat score", () => {
+        const fixture = context(
+            [character("synthetic-hero")],
+            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)])],
+            { "enemy-a": 101 },
+        );
+
+        const result = breakdown(fixture);
+        expect(result.enemies[0].expectedLethal).toBe(true);
+        expect(result.raw).toBeCloseTo(result.enemies[0].threat);
+    });
+
+    it("does not reward removing a large fraction of enemy HP without an expected kill", () => {
+        const fixture = context(
+            [character("synthetic-hero")],
+            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 50)])],
+            { "enemy-a": 90 },
+        );
+
+        const result = breakdown(fixture);
+        expect(result.enemies[0]).toMatchObject({
+            expectedDamage: 90,
+            currentHp: 100,
+            expectedLethal: false,
+            contribution: 0,
+        });
+        expect(result.raw).toBe(0);
+    });
+
+    it("collects threat only from the threatening enemy it can expected-kill", () => {
+        const fixture = context(
+            [character("synthetic-hero")],
+            [
+                enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 10)], 30),
+                enemy("enemy-b", [bind("synthetic-hero", "synthetic-silk", 20)], 50),
+            ],
+            { "enemy-a": 30, "enemy-b": 49 },
+            "all",
+        );
+
+        const result = breakdown(fixture);
+        expect(result.enemies.map(({ expectedLethal, contribution }) => ({
+            expectedLethal,
+            contribution,
+        }))).toEqual([
+            { expectedLethal: true, contribution: result.enemies[0].threat },
+            { expectedLethal: false, contribution: 0 },
+        ]);
+        expect(result.raw).toBeCloseTo(result.enemies[0].threat);
+    });
+
+    it("lets an AoE collect each enemy's threat only when lethal to that enemy", () => {
+        const fixture = context(
+            [character("synthetic-hero")],
+            [
+                enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 10)], 30),
+                enemy("enemy-b", [bind("synthetic-hero", "synthetic-silk", 20)], 40),
+            ],
+            { "enemy-a": 30, "enemy-b": 40 },
+            "all",
+        );
+
+        const result = breakdown(fixture);
+        expect(result.enemies.every(({ expectedLethal }) => expectedLethal)).toBe(true);
+        expect(result.raw).toBeCloseTo(
+            result.enemies.reduce((total, value) => total + value.threat, 0),
+        );
+    });
+
+    it("keeps the existing convex recovery-debt threat calculation unchanged", () => {
+        const currentValue = 60;
+        const incoming = 10;
+        const fixture = context(
+            [character("synthetic-hero", [binding("synthetic-rope", currentValue)])],
+            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", incoming)])],
+            { "enemy-a": 100 },
+        );
+
+        const result = breakdown(fixture);
+        const expectedBaseline = recoveryDebt(currentValue, fixture.thresholds);
+        const expectedProjected = recoveryDebt(currentValue + incoming, fixture.thresholds);
+        expect(result.enemies[0]).toMatchObject({
+            baselineDebt: expectedBaseline,
+            projectedDebt: expectedProjected,
+            threat: expectedProjected - expectedBaseline,
+        });
     });
 
     it("retains unknown binding effects diagnostically without numeric threat", () => {
@@ -280,6 +403,52 @@ describe("Smart generic incoming-threat targeting", () => {
         const withoutTrap = breakdown(fixture, 1).enemies[1];
         expect(withTrap.totalIncomingTrapAmount).toBe(7);
         expect(withTrap.threat).toBeCloseTo(withoutTrap.threat);
+    });
+
+    it("does not let a nonlethal threat bonus displace a useful recovery action", () => {
+        const fixture = context(
+            [character("synthetic-hero", [binding("synthetic-rope", 60)])],
+            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 40)], 2)],
+            { "enemy-a": 1 },
+        );
+        fixture.actions[0].escapes.push({
+            available: true,
+            target: "synthetic-hero",
+            binding: "synthetic-rope",
+            effects: [bind("synthetic-hero", "synthetic-rope", -5)],
+        });
+
+        const decision = evaluateSmartDecision(fixture);
+        const attackCandidate = decision.candidates.find(
+            (candidate) => candidate.action.type === "move",
+        );
+        const escapeCandidate = decision.candidates.find(
+            (candidate) => candidate.action.type === "escape",
+        );
+        expect(attackCandidate?.components.incomingThreat.raw).toBe(0);
+        expect(escapeCandidate?.components.bindingRecovery.raw).toBeGreaterThan(0);
+        expect(decision.selected.action).toMatchObject({ type: "escape" });
+    });
+
+    it("can prefer an expected-lethal attack that prevents the committed threat", () => {
+        const fixture = context(
+            [character("synthetic-hero", [binding("synthetic-rope", 60)])],
+            [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 40)], 2)],
+            { "enemy-a": 2 },
+        );
+        fixture.actions[0].escapes.push({
+            available: true,
+            target: "synthetic-hero",
+            binding: "synthetic-rope",
+            effects: [bind("synthetic-hero", "synthetic-rope", -5)],
+        });
+
+        const decision = evaluateSmartDecision(fixture);
+        const attackCandidate = decision.candidates.find(
+            (candidate) => candidate.action.type === "move",
+        );
+        expect(attackCandidate?.components.incomingThreat.raw).toBeGreaterThan(0);
+        expect(decision.selected.action).toMatchObject({ type: "move" });
     });
 
     it("is deterministic, avoids policy RNG, and emits structured-cloneable diagnostics", () => {
