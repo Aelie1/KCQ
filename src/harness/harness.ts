@@ -207,7 +207,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
 
     view = engine.getGameState();
     actions = engine.getActionView();
-    collectors.onFightStart({ view });
+    collectors.onFightStart({ view, library });
 
     if (input.replay === true) {
         replay = {

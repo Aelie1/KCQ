@@ -32,6 +32,8 @@ import {
     reserveSpendingScorer,
     smartScorers,
     smartPolicy,
+    skunkedRescueScorer,
+    stanceTrapScorer,
     sustainedPressureProgressScorer,
     tempoKnowledgeScorer,
     type SmartDecision,
@@ -190,10 +192,11 @@ describe("Smart 1 candidate generation", () => {
             { type: "move", actor: "hero", move: "empty", targets: [] },
             { type: "move", actor: "hero", move: "everyone", targets: [] },
             { type: "escape", actor: "hero", target: "ally", binding: "rope" },
+            { type: "stance", actor: "hero" },
             { type: "endTurn" },
         ]);
         expect(candidates.at(-1)?.action).toEqual({ type: "endTurn" });
-        expect(candidates.some(({ action }) => action.type === "stance")).toBe(false);
+        expect(candidates.filter(({ action }) => action.type === "stance")).toHaveLength(1);
         expect(candidates[6].targets.map(({ target: id }) => id)).toEqual([
             "enemy-1",
             "enemy-2",
@@ -315,12 +318,14 @@ describe("Smart 2 composable scoring", () => {
         expect(smartScorers).toEqual([
             expectedDamageScorer,
             linkedThreatScorer,
+            skunkedRescueScorer,
             incomingThreatScorer,
             kitKnowledgeScorer,
             tempoKnowledgeScorer,
             controlKnowledgeScorer,
             reactiveKnowledgeScorer,
             bindingRecoveryScorer,
+            stanceTrapScorer,
             bindingMoveAccessScorer,
             pressureSourceProgressScorer,
             sustainedPressureProgressScorer,
@@ -332,6 +337,8 @@ describe("Smart 2 composable scoring", () => {
         expect(expectedDamageScorer.weight).toBe(1);
         expect(linkedThreatScorer.id).toBe("linkedThreat");
         expect(linkedThreatScorer.weight).toBe(40);
+        expect(skunkedRescueScorer.id).toBe("skunkedRescue");
+        expect(skunkedRescueScorer.weight).toBe(1);
         expect(incomingThreatScorer.id).toBe("incomingThreat");
         expect(incomingThreatScorer.weight).toBe(1);
         expect(kitKnowledgeScorer.id).toBe("kitKnowledge");
@@ -344,10 +351,12 @@ describe("Smart 2 composable scoring", () => {
         expect(reactiveKnowledgeScorer.weight).toBe(1);
         expect(bindingRecoveryScorer.id).toBe("bindingRecovery");
         expect(bindingRecoveryScorer.weight).toBe(0.75);
+        expect(stanceTrapScorer.id).toBe("stanceTrap");
+        expect(stanceTrapScorer.weight).toBe(1);
         expect(bindingMoveAccessScorer.id).toBe("bindingMoveAccess");
         expect(bindingMoveAccessScorer.weight).toBe(20);
         expect(pressureSourceProgressScorer.id).toBe("pressureSourceProgress");
-        expect(pressureSourceProgressScorer.weight).toBe(1);
+        expect(pressureSourceProgressScorer.weight).toBe(8);
         expect(sustainedPressureProgressScorer.id).toBe("sustainedPressureProgress");
         expect(sustainedPressureProgressScorer.weight).toBe(1);
         expect(finisherPressureScorer.id).toBe("finisherPressure");
@@ -507,6 +516,8 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.expectedDamage.weight === 1
             && candidate.components.linkedThreat.raw === 0
             && candidate.components.linkedThreat.weight === 40
+            && candidate.components.skunkedRescue.raw === 0
+            && candidate.components.skunkedRescue.weight === 1
             && candidate.components.incomingThreat.raw === 0
             && candidate.components.incomingThreat.weight === 1
             && candidate.components.kitKnowledge.raw === 0
@@ -519,10 +530,12 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.reactiveKnowledge.weight === 1
             && candidate.components.bindingRecovery.raw === 0
             && candidate.components.bindingRecovery.weight === 0.75
+            && candidate.components.stanceTrap.raw === 0
+            && candidate.components.stanceTrap.weight === 1
             && candidate.components.bindingMoveAccess.raw === 0
             && candidate.components.bindingMoveAccess.weight === 20
             && candidate.components.pressureSourceProgress.raw === 0
-            && candidate.components.pressureSourceProgress.weight === 1
+            && candidate.components.pressureSourceProgress.weight === 8
             && candidate.components.sustainedPressureProgress.raw === 0
             && candidate.components.sustainedPressureProgress.weight === 1
             && typeof candidate.components.finisherPressure.raw === "number"
@@ -533,12 +546,14 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.reserveSpending.weight === 1
             && candidate.total === candidate.components.expectedDamage.score
                 + candidate.components.linkedThreat.score
+                + candidate.components.skunkedRescue.score
                 + candidate.components.incomingThreat.score
                 + candidate.components.kitKnowledge.score
                 + candidate.components.tempoKnowledge.score
                 + candidate.components.controlKnowledge.score
                 + candidate.components.reactiveKnowledge.score
                 + candidate.components.bindingRecovery.score
+                + candidate.components.stanceTrap.score
                 + candidate.components.bindingMoveAccess.score
                 + candidate.components.pressureSourceProgress.score
                 + candidate.components.sustainedPressureProgress.score
@@ -636,6 +651,8 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.expectedDamage.weight === 1
                 && typeof candidate.components.linkedThreat.raw === "number"
                 && candidate.components.linkedThreat.weight === 40
+                && typeof candidate.components.skunkedRescue.raw === "number"
+                && candidate.components.skunkedRescue.weight === 1
                 && typeof candidate.components.incomingThreat.raw === "number"
                 && candidate.components.incomingThreat.weight === 1
                 && typeof candidate.components.kitKnowledge.raw === "number"
@@ -648,10 +665,12 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.reactiveKnowledge.weight === 1
                 && typeof candidate.components.bindingRecovery.raw === "number"
                 && candidate.components.bindingRecovery.weight === 0.75
+                && typeof candidate.components.stanceTrap.raw === "number"
+                && candidate.components.stanceTrap.weight === 1
                 && typeof candidate.components.bindingMoveAccess.raw === "number"
                 && candidate.components.bindingMoveAccess.weight === 20
                 && typeof candidate.components.pressureSourceProgress.raw === "number"
-                && candidate.components.pressureSourceProgress.weight === 1
+                && candidate.components.pressureSourceProgress.weight === 8
                 && typeof candidate.components.sustainedPressureProgress.raw === "number"
                 && candidate.components.sustainedPressureProgress.weight === 1
                 && typeof candidate.components.finisherPressure.raw === "number"
@@ -662,12 +681,14 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.reserveSpending.weight === 1
                 && candidate.total === candidate.components.expectedDamage.score
                     + candidate.components.linkedThreat.score
+                    + candidate.components.skunkedRescue.score
                     + candidate.components.incomingThreat.score
                     + candidate.components.kitKnowledge.score
                     + candidate.components.tempoKnowledge.score
                     + candidate.components.controlKnowledge.score
                     + candidate.components.reactiveKnowledge.score
                     + candidate.components.bindingRecovery.score
+                    + candidate.components.stanceTrap.score
                     + candidate.components.bindingMoveAccess.score
                     + candidate.components.pressureSourceProgress.score
                     + candidate.components.sustainedPressureProgress.score

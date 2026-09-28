@@ -366,7 +366,7 @@ describe("accuracy", () => {
         expect(evaluateAccuracyResult(actor, target, move, standardProfile, 25)).toEqual({
             target,
             band: "hit",
-            effectiveness: 0.8 * 1.25 * 1.375,
+            effectiveness: 0.8 * 1.2 * 1.3,
         });
     });
 

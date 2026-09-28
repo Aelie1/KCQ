@@ -3,11 +3,13 @@ import type {
     GameState,
     PlayerAction,
 } from "../../engine/public/types";
+import type { ContentLibrary } from "../../engine/public/library";
 import type { SingleFightTermination } from "../harness";
 
 /** The loaded encounter state, before the policy submits its first action. */
 export interface MetricFightStart {
     readonly view: GameState;
+    readonly library: ContentLibrary;
 }
 
 /** One policy submission and the public result returned by the engine. */

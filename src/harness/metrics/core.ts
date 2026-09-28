@@ -10,6 +10,10 @@ import type {
     MetricCollectorFactory,
     MetricFightEnd
 } from "./collector";
+import {
+    createDetailedCombatCollector,
+    type DetailedCombatMetrics,
+} from "./detailed-combat";
 
 export interface OutcomeMetrics {
     termination: MetricFightEnd["termination"] | null;
@@ -130,6 +134,7 @@ export interface CoreMetricResults {
     escapes: EscapeMetrics;
     traps: TrapMetrics;
     incapacitations: IncapacitationMetrics;
+    detailedCombat: DetailedCombatMetrics;
     limitations: MetricLimitations;
 }
 
@@ -150,6 +155,7 @@ export const coreMetricCollectorFactories: readonly MetricCollectorFactory[] = [
     createEscapeCollector,
     createTrapCollector,
     createIncapacitationCollector,
+    createDetailedCombatCollector,
     createLimitationsCollector,
 ];
 

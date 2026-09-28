@@ -47,6 +47,13 @@ function summaryFixture(): BatchSummary {
             matsuko: { observations: 4, averageTotalBinding: 3.75, maxTotalBinding: 8 },
             ko: { observations: 4, averageTotalBinding: 5.75, maxTotalBinding: 10 },
         },
+        escapeSequences: { single: 0, double: 0, byActor: {} },
+        skunkings: { total: 0, byCharacter: {} },
+        rescues: { total: 0, byCharacter: {}, byMove: {} },
+        playerMoves: {},
+        bondageRemoved: { escapes: 0, skills: 0, rescues: 0, unattributed: 0 },
+        bondageBlocked: { unattributed: 0 },
+        bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
         forensicExamples: {
             shortestVictory: reference(0, "victory"),
             longestVictory: reference(2, "victory"),

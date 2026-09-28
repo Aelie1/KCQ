@@ -956,7 +956,7 @@ describe("console formatting", () => {
             "foe1 — Miss: 10%  Graze: 15% (2–5)  Hit: 65% (8–10)  Crit: 10% (15–20) | adds burnout",
         );
         expect(targetScreen).toContain(
-            "attacker1 — Miss: 10%  Graze: 15% (3–7)  Hit: 65% (10–13)  Crit: 10% (19–25) | adds burnout",
+            "attacker1 — Miss: 10%  Graze: 15% (3–6)  Hit: 65% (10–12)  Crit: 10% (18–24) | adds burnout",
         );
         expect(targetScreen).toContain("[1] Confirm");
         expect(targetScreen).toContain("[=] Back");

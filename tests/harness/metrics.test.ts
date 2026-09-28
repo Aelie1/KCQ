@@ -24,6 +24,8 @@ import {
 } from "../../src/harness/metrics";
 import { basicPolicy } from "../../src/harness/policy/basic";
 
+const testLibrary = createEngine(1).getLibrary();
+
 function character(
     id: string,
     bindings: Array<{ id: string; value: number; incapacitated?: boolean }> = [],
@@ -108,7 +110,7 @@ describe("metric collector framework", () => {
         const initial = view();
         const collectors = new MetricCollectorSet([factory]);
 
-        collectors.onFightStart({ view: initial });
+        collectors.onFightStart({ view: initial, library: testLibrary });
         collectors.onAction(successfulAction(initial, initial, []));
         collectors.onFightEnd({ termination: "maxActions", view: initial, actionCount: 1 });
 
@@ -193,7 +195,7 @@ describe("metric collector framework", () => {
             ],
         });
 
-        collector.onFightStart?.({ view: initial });
+        collector.onFightStart?.({ view: initial, library: testLibrary });
         collector.onAction?.(successfulAction(initial, after, [
             {
                 type: "useMove", actor: "enemy-1", move: "bind", targets: [], effects: [
@@ -262,8 +264,8 @@ describe("metric collector framework", () => {
         const damage = createDamageCollector();
         const moves = createMoveUsageCollector();
         const accuracy = createAccuracyCollector();
-        moves.onFightStart?.({ view: initial });
-        accuracy.onFightStart?.({ view: initial });
+        moves.onFightStart?.({ view: initial, library: testLibrary });
+        accuracy.onFightStart?.({ view: initial, library: testLibrary });
 
         damage.onAction?.(observation);
         moves.onAction?.(observation);
@@ -331,7 +333,7 @@ describe("metric collector framework", () => {
         const collector = createTrapCollector();
         const initial = view({ traps: [{ id: "trapPuddle", amount: 5 }] });
         const after = view({ traps: [{ id: "trapPuddle", amount: 8 }] });
-        collector.onFightStart?.({ view: initial });
+        collector.onFightStart?.({ view: initial, library: testLibrary });
         collector.onAction?.(successfulAction(initial, after, [
             {
                 type: "changePhase", phase: "enemy", effects: [
@@ -372,7 +374,7 @@ describe("metric collector framework", () => {
             round: 2,
             characters: [character("hero", [{ id: "rope", value: 100, incapacitated: true }])],
         });
-        collector.onFightStart?.({ view: healthy });
+        collector.onFightStart?.({ view: healthy, library: testLibrary });
         collector.onAction?.(successfulAction(healthy, down, [], { type: "endTurn" }, 1));
         collector.onAction?.(successfulAction(down, healthy, [], { type: "endTurn" }, 2));
         collector.onAction?.(successfulAction(healthy, down, [], { type: "endTurn" }, 3));

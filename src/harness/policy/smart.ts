@@ -3,13 +3,16 @@ import type {
     BindingId,
     BindingLevel,
     Buff,
+    Character,
     Effect,
     Enemy,
     EntityId,
     EscapeInfo,
+    FlagId,
     MoveId,
     MoveType,
     PlayerAction,
+    StanceId,
     StatusId,
     ThresholdInfo,
     ValidTarget,
@@ -44,6 +47,7 @@ import {
     assessSmartPressure,
     evaluateTempoKnowledge as evaluateTempoKnowledgeRules,
     TEMPO_KNOWLEDGE_WEIGHT,
+    TRAP_PRESSURE_SCALE,
     type SmartPressureAssessment,
     type TempoKnowledgeBreakdown,
 } from "./knowledge/tempo-knowledge";
@@ -220,6 +224,76 @@ export interface IncomingThreatBreakdown {
     readonly raw: number;
 }
 
+export interface StanceTrapBreakdown {
+    readonly actorId?: EntityId;
+    readonly currentStance?: StanceId;
+    readonly candidateStance?: StanceId;
+    readonly traps: readonly StanceTrapDiagnostic[];
+    readonly currentRecoveryDebt: number;
+    readonly dangerRatio: number;
+    readonly estimatedMovementTrapPressure: number;
+    readonly targetingIntentions: readonly StandingIntentionDiagnostic[];
+    readonly estimatedStandingDefensePressure: number;
+    readonly firstEscape?: StanceEscapeDiagnostic;
+    readonly bonusEscapeEligibleAfterFirst: boolean;
+    readonly bonusEscapeBlockedBy: readonly FlagId[];
+    readonly secondEscape?: StanceEscapeDiagnostic;
+    readonly plannedEscapeValue: number;
+    readonly bonusEscapeValue: number;
+    readonly standingUtility: number;
+    readonly stanceAdjustment: number;
+    readonly raw: number;
+}
+
+export interface StanceTrapDiagnostic {
+    readonly id: string;
+    readonly amount: number;
+    readonly triggerProbability: number;
+    readonly expectedConsumedAmount: number;
+    readonly recoveryDangerRatio: number;
+    readonly contribution: number;
+    readonly approximation: string;
+}
+
+export interface StandingIntentionDiagnostic {
+    readonly enemyId: EntityId;
+    readonly move: MoveId;
+    readonly band: string;
+    readonly bindingPressure: number;
+    readonly trapPressure: number;
+    readonly visiblePressure: number;
+    readonly additionalStandingPressure: number;
+}
+
+export interface StanceEscapeDiagnostic {
+    readonly actorId: EntityId;
+    readonly targetId: EntityId;
+    readonly bindingId: BindingId;
+    readonly projectedRecoveryGain: number;
+    readonly urgency: number;
+    readonly recoveryValue: number;
+    readonly weightedValue: number;
+}
+
+export interface SkunkedRescueEnemyBreakdown {
+    readonly enemyId: EntityId;
+    readonly characterId: EntityId;
+    readonly characterSkunked: boolean;
+    readonly characterIncapacitated: boolean;
+    readonly currentHp: number;
+    readonly expectedDamage: number;
+    readonly progressFraction: number;
+    readonly restoredActorValue: number;
+    readonly halvedBindingRecoveryValue: number;
+    readonly fullRescueValue: number;
+    readonly rescueProgressContribution: number;
+}
+
+export interface SkunkedRescueBreakdown {
+    readonly enemies: readonly SkunkedRescueEnemyBreakdown[];
+    readonly raw: number;
+}
+
 /** Tunable Smart-policy heuristic constants; none is an engine rule. */
 export const BINDING_RECOVERY_WEIGHT = 0.75;
 export const BINDING_MOVE_ACCESS_WEIGHT = 20;
@@ -228,8 +302,13 @@ export const FINISHER_PRESSURE_WEIGHT = 1;
 export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
 export const RESERVE_SPENDING_WEIGHT = 1;
 export const LINKED_THREAT_WEIGHT = 40;
+export const SKUNKED_RESCUE_WEIGHT = 1;
 export const INCOMING_THREAT_WEIGHT = 1;
 export const KIT_KNOWLEDGE_WEIGHT = 1;
+export const STANCE_TRAP_WEIGHT = 1;
+export const SKUNKED_RESCUE_ACTOR_VALUE = 200;
+export const STANDING_DEFENSE_PRESSURE_FRACTION = 0.2;
+export const TRAP_MODIFIER_PRESSURE_STEP = 5;
 
 /** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
 export const expectedDamageScorer: SmartScorer = {
@@ -250,6 +329,23 @@ export const linkedThreatScorer: SmartScorer = {
     },
     prepareDetailed(context) {
         const evaluate = prepareLinkedThreat(context);
+        return (candidate) => {
+            const diagnostics = evaluate(candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
+    },
+};
+
+/** Values damage progress toward rescuing a currently Skunked party member. */
+export const skunkedRescueScorer: SmartScorer = {
+    id: "skunkedRescue",
+    weight: SKUNKED_RESCUE_WEIGHT,
+    prepare(context) {
+        const evaluate = prepareSkunkedRescue(context);
+        return (candidate) => evaluate(candidate).raw;
+    },
+    prepareDetailed(context) {
+        const evaluate = prepareSkunkedRescue(context);
         return (candidate) => {
             const diagnostics = evaluate(candidate);
             return { raw: diagnostics.raw, diagnostics };
@@ -345,6 +441,23 @@ export const bindingRecoveryScorer: SmartScorer = {
     prepare(context, board) {
         const evaluate = prepareBindingRecovery(context, board);
         return (candidate) => evaluate(candidate).raw;
+    },
+};
+
+/** Compares movement-trap exposure, Standing defense, and one bonus escape. */
+export const stanceTrapScorer: SmartScorer = {
+    id: "stanceTrap",
+    weight: STANCE_TRAP_WEIGHT,
+    prepare(context, board) {
+        const evaluate = prepareStanceTrap(context, board);
+        return (candidate) => evaluate(candidate).raw;
+    },
+    prepareDetailed(context, board) {
+        const evaluate = prepareStanceTrap(context, board);
+        return (candidate) => {
+            const diagnostics = evaluate(candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
     },
 };
 
@@ -444,12 +557,14 @@ export const reserveSpendingScorer: SmartScorer = {
 export const smartScorers: readonly SmartScorer[] = [
     expectedDamageScorer,
     linkedThreatScorer,
+    skunkedRescueScorer,
     incomingThreatScorer,
     kitKnowledgeScorer,
     tempoKnowledgeScorer,
     controlKnowledgeScorer,
     reactiveKnowledgeScorer,
     bindingRecoveryScorer,
+    stanceTrapScorer,
     bindingMoveAccessScorer,
     pressureSourceProgressScorer,
     sustainedPressureProgressScorer,
@@ -514,6 +629,23 @@ export function evaluateLinkedThreat(
     candidate: SmartCandidate,
 ): LinkedThreatBreakdown {
     return prepareLinkedThreat(context)(candidate);
+}
+
+/** Exposes Skunked rescue progress and its public-state value. */
+export function evaluateSkunkedRescue(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): SkunkedRescueBreakdown {
+    return prepareSkunkedRescue(context)(candidate);
+}
+
+/** Exposes stance, trap, defense, and bonus-escape planning diagnostics. */
+export function evaluateStanceTrap(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    candidate: SmartCandidate,
+): StanceTrapBreakdown {
+    return prepareStanceTrap(context, board)(candidate);
 }
 
 /** Exposes known incoming binding threat and expected-lethal prevention diagnostics. */
@@ -644,6 +776,448 @@ function prepareLinkedThreat(
         }
 
         return { enemies, raw };
+    };
+}
+
+function prepareSkunkedRescue(
+    context: PolicyContext,
+): (candidate: SmartCandidate) => SkunkedRescueBreakdown {
+    const current = currentBindingBoard(context.state.characters);
+    const actionById = new Map(context.actions.map((action) => [action.id, action] as const));
+    const relationships = context.state.characters.flatMap((character) => {
+        const skunkedBuff = character.buffs.find((buff) =>
+            buff.id === "skunked" && buff.linkedEntity !== undefined
+        );
+        const enemy = skunkedBuff?.linkedEntity === undefined
+            ? undefined
+            : context.state.enemies.find(({ id, currHp }) =>
+                id === skunkedBuff.linkedEntity && currHp > 0
+            );
+        if (skunkedBuff === undefined || enemy === undefined) return [];
+
+        const flags = publicCharacterFlags(context, character, current);
+        const incapacitated = flags.has("incapacitated")
+            || actionById.get(character.id)?.reason === "actorIncapacitated";
+        if (!incapacitated) return [];
+
+        const halvedBindingRecoveryValue = character.bindings.reduce(
+            (sum, binding) => sum
+                + recoveryDebt(binding.value, context.thresholds)
+                - recoveryDebt(Math.floor(binding.value / 2), context.thresholds),
+            0,
+        );
+        return [{
+            character,
+            enemy,
+            halvedBindingRecoveryValue,
+            fullRescueValue: SKUNKED_RESCUE_ACTOR_VALUE + halvedBindingRecoveryValue,
+        }];
+    });
+
+    return (candidate) => {
+        const enemies = relationships.map(({ character, enemy, ...value }) => {
+            const expectedDamage = expectedDamageToEnemy(candidate, enemy.id);
+            const progressFraction = clamp(expectedDamage / enemy.currHp, 0, 1);
+            const rescueProgressContribution = value.fullRescueValue * progressFraction;
+            return {
+                enemyId: enemy.id,
+                characterId: character.id,
+                characterSkunked: true,
+                characterIncapacitated: true,
+                currentHp: enemy.currHp,
+                expectedDamage,
+                progressFraction,
+                restoredActorValue: SKUNKED_RESCUE_ACTOR_VALUE,
+                ...value,
+                rescueProgressContribution,
+            } satisfies SkunkedRescueEnemyBreakdown;
+        });
+        return {
+            enemies,
+            raw: enemies.reduce(
+                (total, enemy) => total + enemy.rescueProgressContribution,
+                0,
+            ),
+        };
+    };
+}
+
+interface PreparedStanceActor {
+    readonly actor: Character;
+    readonly traps: readonly StanceTrapDiagnostic[];
+    readonly currentRecoveryDebt: number;
+    readonly dangerRatio: number;
+    readonly estimatedMovementTrapPressure: number;
+    readonly targetingIntentions: readonly StandingIntentionDiagnostic[];
+    readonly estimatedStandingDefensePressure: number;
+    readonly firstEscape?: StanceEscapeDiagnostic;
+    readonly bonusEscapeEligibleAfterFirst: boolean;
+    readonly bonusEscapeBlockedBy: readonly FlagId[];
+    readonly secondEscape?: StanceEscapeDiagnostic;
+    readonly plannedEscapeValue: number;
+    readonly bonusEscapeValue: number;
+}
+
+function prepareStanceTrap(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+): (candidate: SmartCandidate) => StanceTrapBreakdown {
+    const current = currentBindingBoard(context.state.characters);
+    const prepared = new Map<EntityId, PreparedStanceActor>();
+    for (const actionView of context.actions) {
+        const actor = context.state.characters.find(({ id }) => id === actionView.id);
+        if (actor !== undefined) {
+            prepared.set(actor.id, prepareStanceActor(context, board, current, actor, actionView));
+        }
+    }
+
+    return (candidate) => {
+        const actorId = candidate.action.type === "endTurn"
+            ? undefined
+            : candidate.action.actor;
+        const assessment = actorId === undefined ? undefined : prepared.get(actorId);
+        if (assessment === undefined) return emptyStanceTrapBreakdown(actorId);
+
+        const currentStance: StanceId = assessment.actor.standing ? "standing" : "moving";
+        const candidateStance: StanceId = candidate.action.type === "stance"
+            ? assessment.actor.standing ? "moving" : "standing"
+            : currentStance;
+        const escapeSetupValue = assessment.secondEscape === undefined
+            ? 0
+            : assessment.actor.standing
+                ? assessment.bonusEscapeValue
+                : assessment.plannedEscapeValue;
+        const standingUtility = assessment.estimatedMovementTrapPressure
+            + escapeSetupValue
+            - assessment.estimatedStandingDefensePressure;
+        const stanceAdjustment = candidate.action.type !== "stance"
+            ? 0
+            : candidateStance === "standing" ? standingUtility : -standingUtility;
+
+        return {
+            actorId,
+            currentStance,
+            candidateStance,
+            traps: assessment.traps,
+            currentRecoveryDebt: assessment.currentRecoveryDebt,
+            dangerRatio: assessment.dangerRatio,
+            estimatedMovementTrapPressure: assessment.estimatedMovementTrapPressure,
+            targetingIntentions: assessment.targetingIntentions,
+            estimatedStandingDefensePressure: assessment.estimatedStandingDefensePressure,
+            ...(assessment.firstEscape ? { firstEscape: assessment.firstEscape } : {}),
+            bonusEscapeEligibleAfterFirst: assessment.bonusEscapeEligibleAfterFirst,
+            bonusEscapeBlockedBy: assessment.bonusEscapeBlockedBy,
+            ...(assessment.secondEscape ? { secondEscape: assessment.secondEscape } : {}),
+            plannedEscapeValue: assessment.plannedEscapeValue,
+            bonusEscapeValue: assessment.bonusEscapeValue,
+            standingUtility,
+            stanceAdjustment,
+            raw: stanceAdjustment,
+        };
+    };
+}
+
+function prepareStanceActor(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    current: BindingBoard,
+    actor: Character,
+    actionView: PolicyContext["actions"][number],
+): PreparedStanceActor {
+    const actorBoard: BindingBoard = new Map([[
+        actor.id,
+        new Map(current.get(actor.id) ?? []),
+    ]]);
+    const currentRecoveryDebt = totalRecoveryDebt(actorBoard, context.thresholds);
+    const impossible = context.thresholds.thresholds.impossible;
+    const debtAtImpossible = impossible === undefined
+        ? 0
+        : recoveryDebt(impossible, context.thresholds);
+    const dangerRatio = debtAtImpossible > 0 ? currentRecoveryDebt / debtAtImpossible : 0;
+    const currentFlags = publicCharacterFlags(context, actor, current);
+    const ignoresTraps = currentFlags.has("skipsTraps");
+    const trapModifier = actor.modifiers.traps ?? 0;
+    const traps = context.state.traps.map((trap) => {
+        const estimate = expectedTrapConsumption(
+            trap.id,
+            trap.amount,
+            trapModifier,
+            ignoresTraps,
+        );
+        const contribution = estimate.expectedConsumedAmount * dangerRatio;
+        return {
+            id: trap.id,
+            amount: trap.amount,
+            triggerProbability: estimate.triggerProbability,
+            expectedConsumedAmount: estimate.expectedConsumedAmount,
+            recoveryDangerRatio: dangerRatio,
+            contribution,
+            approximation: estimate.approximation,
+        } satisfies StanceTrapDiagnostic;
+    });
+    const targetingIntentions = standingIntentionDiagnostics(context, current, actor.id);
+    const estimatedStandingDefensePressure = targetingIntentions.reduce(
+        (sum, intention) => sum + intention.additionalStandingPressure,
+        0,
+    );
+
+    const escapeCandidates = actionView.escapes
+        .filter(({ available }) => available)
+        .map((escape) => ({ escape, candidate: escapeCandidate(actor.id, escape) }));
+    let first: typeof escapeCandidates[number] | undefined;
+    let firstRecovery: BindingRecoveryBreakdown | undefined;
+    for (const value of escapeCandidates) {
+        const recovery = evaluateBindingRecoveryFromBoard(context, board, current, value.candidate);
+        if (recovery.raw > 0 && (firstRecovery === undefined || recovery.raw > firstRecovery.raw)) {
+            first = value;
+            firstRecovery = recovery;
+        }
+    }
+
+    let firstEscape: StanceEscapeDiagnostic | undefined;
+    let secondEscape: StanceEscapeDiagnostic | undefined;
+    let bonusEscapeEligibleAfterFirst = false;
+    let bonusEscapeBlockedBy: FlagId[] = [];
+    if (first !== undefined && firstRecovery !== undefined) {
+        firstEscape = stanceEscapeDiagnostic(actor.id, first.escape, firstRecovery);
+        const afterFirst = cloneBindingBoard(current);
+        applyCandidateBindingEffects(
+            afterFirst,
+            first.candidate,
+            new Set(context.state.characters.map(({ id }) => id)),
+            context.thresholds.max,
+        );
+        const removedBuffIds = removedBuffsFor(first.candidate, actor.id);
+        const flagsAfterFirst = publicCharacterFlags(context, actor, afterFirst, removedBuffIds);
+        bonusEscapeBlockedBy = [
+            "blocksBonusEscape",
+            "blocksEscape",
+            "skipsTurn",
+            "incapacitated",
+        ].filter((flag): flag is FlagId => flagsAfterFirst.has(flag as FlagId));
+        const blocksAssist = flagsAfterFirst.has("blocksAssist");
+
+        let secondRecovery: BindingRecoveryBreakdown | undefined;
+        for (const value of escapeCandidates) {
+            if (bindingValue(afterFirst, value.escape.target, value.escape.binding) <= 0) continue;
+            if (value.escape.target !== actor.id && blocksAssist) continue;
+            const recovery = evaluateBindingRecoveryFromBoard(
+                context,
+                board,
+                afterFirst,
+                value.candidate,
+            );
+            if (recovery.raw > 0
+                && (secondRecovery === undefined || recovery.raw > secondRecovery.raw)) {
+                secondEscape = stanceEscapeDiagnostic(actor.id, value.escape, recovery);
+                secondRecovery = recovery;
+            }
+        }
+        bonusEscapeEligibleAfterFirst = bonusEscapeBlockedBy.length === 0
+            && secondEscape !== undefined;
+        if (!bonusEscapeEligibleAfterFirst) secondEscape = undefined;
+    }
+
+    const firstValue = firstEscape?.weightedValue ?? 0;
+    const bonusEscapeValue = secondEscape?.weightedValue ?? 0;
+    return {
+        actor,
+        traps,
+        currentRecoveryDebt,
+        dangerRatio,
+        estimatedMovementTrapPressure: traps.reduce(
+            (sum, trap) => sum + trap.contribution,
+            0,
+        ),
+        targetingIntentions,
+        estimatedStandingDefensePressure,
+        ...(firstEscape ? { firstEscape } : {}),
+        bonusEscapeEligibleAfterFirst,
+        bonusEscapeBlockedBy,
+        ...(secondEscape ? { secondEscape } : {}),
+        plannedEscapeValue: secondEscape === undefined ? 0 : firstValue + bonusEscapeValue,
+        bonusEscapeValue,
+    };
+}
+
+function stanceEscapeDiagnostic(
+    actorId: EntityId,
+    escape: EscapeInfo,
+    recovery: BindingRecoveryBreakdown,
+): StanceEscapeDiagnostic {
+    return {
+        actorId,
+        targetId: escape.target,
+        bindingId: escape.binding,
+        projectedRecoveryGain: recovery.recoveryGain,
+        urgency: recovery.urgency,
+        recoveryValue: recovery.raw,
+        weightedValue: recovery.raw * BINDING_RECOVERY_WEIGHT,
+    };
+}
+
+function expectedTrapConsumption(
+    trapId: string,
+    amount: number,
+    trapModifier: number,
+    ignoresTraps: boolean,
+): {
+    triggerProbability: number;
+    expectedConsumedAmount: number;
+    approximation: string;
+} {
+    if (ignoresTraps || amount <= 0) {
+        return {
+            triggerProbability: 0,
+            expectedConsumedAmount: 0,
+            approximation: ignoresTraps
+                ? "Public skipsTraps flag prevents movement-trap exposure."
+                : "An empty trap contributes no movement pressure.",
+        };
+    }
+
+    let triggers = 0;
+    let consumed = 0;
+    for (let roll = 0; roll < 100; roll += 1) {
+        const adjustedRoll = Math.max(0, roll + trapModifier * TRAP_MODIFIER_PRESSURE_STEP);
+        if (adjustedRoll >= amount) continue;
+        triggers += 1;
+        consumed += trapId === "trapPuddle"
+            ? authoredPuddleConsumption(amount, adjustedRoll)
+            : Math.min(amount, 20);
+    }
+    return {
+        triggerProbability: triggers / 100,
+        expectedConsumedAmount: consumed / 100,
+        approximation: trapId === "trapPuddle"
+            ? "Expected authored puddle consumption over the 100 public accuracy points; no private roll is read."
+            : "Unknown public trap behavior uses a conservative 20-point consumption cap per trigger.",
+    };
+}
+
+function authoredPuddleConsumption(amount: number, roll: number): number {
+    const ratio = roll / amount;
+    const capacity = ratio < 0.1 ? 80 : ratio < 0.35 ? 40 : ratio < 0.75 ? 20 : 10;
+    return Math.min(amount, capacity);
+}
+
+function standingIntentionDiagnostics(
+    context: PolicyContext,
+    current: BindingBoard,
+    actorId: EntityId,
+): StandingIntentionDiagnostic[] {
+    const characterIds = new Set(context.state.characters.map(({ id }) => id));
+    const diagnostics: StandingIntentionDiagnostic[] = [];
+    for (const enemy of context.state.enemies) {
+        if (enemy.currHp <= 0) continue;
+        for (const intention of enemy.intentions) {
+            const actorTargets = intention.targets.filter(({ target }) => target === actorId);
+            if (actorTargets.length === 0) continue;
+            const effects = [
+                ...actorTargets.flatMap((target) => target.effects),
+                ...intention.effects,
+            ];
+            const projected = cloneBindingBoard(current);
+            const before = totalRecoveryDebt(projected, context.thresholds);
+            applyBindingEffects(
+                projected,
+                effects.filter((effect) =>
+                    effect.type !== "binding"
+                    || (effect.target === actorId && (effect.amount ?? 0) > 0)
+                ),
+                characterIds,
+                context.thresholds.max,
+            );
+            const bindingPressure = Math.max(
+                0,
+                totalRecoveryDebt(projected, context.thresholds) - before,
+            );
+            const trapPressure = effects.reduce((sum, effect) =>
+                effect.type === "trap" && effect.amount > 0
+                    ? sum + effect.amount * TRAP_PRESSURE_SCALE
+                    : sum
+            , 0);
+            const visiblePressure = bindingPressure + trapPressure;
+            diagnostics.push({
+                enemyId: enemy.id,
+                move: intention.move,
+                band: actorTargets.map(({ band }) => band).join(","),
+                bindingPressure,
+                trapPressure,
+                visiblePressure,
+                additionalStandingPressure:
+                    visiblePressure * STANDING_DEFENSE_PRESSURE_FRACTION,
+            });
+        }
+    }
+    return diagnostics;
+}
+
+function publicCharacterFlags(
+    context: PolicyContext,
+    character: Character,
+    board: BindingBoard,
+    removedBuffIds: ReadonlySet<string> = new Set(),
+): Set<FlagId> {
+    const reference = context.library.characters[character.id];
+    const passives = (reference?.passives ?? []).flatMap((passiveId) => {
+        const passive = context.library.passives[passiveId];
+        return passive === undefined ? [] : [passive];
+    });
+    const immunities = new Set(passives.flatMap((passive) => passive.immunities ?? []));
+    const flags = new Set<FlagId>();
+    const addStatus = (statusId: StatusId, level: number): void => {
+        if (immunities.has(statusId)) return;
+        if (statusId === "incapacitated") flags.add("incapacitated");
+        for (const flag of context.library.statuses[statusId]?.modifiers[level]?.flags ?? []) {
+            flags.add(flag);
+        }
+    };
+
+    for (const [bindingId, value] of board.get(character.id) ?? []) {
+        const level = bindingLevel(value, context.thresholds);
+        const statuses = context.library.bindings[bindingId]?.status?.[level]
+            ?? (character.bindings.find(({ id }) => id === bindingId)?.value === value
+                ? character.bindings.find(({ id }) => id === bindingId)?.status
+                : undefined)
+            ?? [];
+        for (const status of statuses) addStatus(status.id, "level" in status ? status.level : status.value);
+    }
+    for (const buff of character.buffs) {
+        if (removedBuffIds.has(buff.id)) continue;
+        for (const status of buff.statuses ?? []) addStatus(status.id, status.value);
+    }
+    for (const passive of passives) {
+        for (const flag of passive.status?.flags ?? []) flags.add(flag);
+    }
+    return flags;
+}
+
+function removedBuffsFor(candidate: SmartCandidate, actorId: EntityId): Set<string> {
+    const effects = [candidate.effects, ...candidate.targets.map(({ effects }) => effects)].flat();
+    return new Set(effects.flatMap((effect) =>
+        effect.type === "buff" && effect.target === actorId && effect.operation === "remove"
+            ? [effect.buff]
+            : []
+    ));
+}
+
+function emptyStanceTrapBreakdown(actorId?: EntityId): StanceTrapBreakdown {
+    return {
+        ...(actorId === undefined ? {} : { actorId }),
+        traps: [],
+        currentRecoveryDebt: 0,
+        dangerRatio: 0,
+        estimatedMovementTrapPressure: 0,
+        targetingIntentions: [],
+        estimatedStandingDefensePressure: 0,
+        bonusEscapeEligibleAfterFirst: false,
+        bonusEscapeBlockedBy: [],
+        plannedEscapeValue: 0,
+        bonusEscapeValue: 0,
+        standingUtility: 0,
+        stanceAdjustment: 0,
+        raw: 0,
     };
 }
 
@@ -807,10 +1381,18 @@ export function generateSmartCandidates(context: PolicyContext): SmartCandidate[
             if (!escape.available) continue;
             candidates.push(escapeCandidate(actionView.id, escape));
         }
+
+        if (actionView.stance.available) {
+            candidates.push({
+                action: { type: "stance", actor: actionView.id },
+                effects: [],
+                targets: [],
+                hits: 1,
+            });
+        }
     }
 
-    // End turn is always the final, stable fallback. Stance is intentionally
-    // absent until Smart can evaluate setup plus a following action.
+    // End turn is always the final, stable fallback.
     candidates.push({
         action: { type: "endTurn" },
         effects: [],
@@ -870,7 +1452,10 @@ export function evaluateSmartDecision(
     // Candidate generation always supplies endTurn.
     let selected = candidates[0];
     for (let index = 1; index < candidates.length; index += 1) {
-        if (candidates[index].total > selected.total) {
+        if (candidates[index].total > selected.total
+            || (candidates[index].total === selected.total
+                && selected.action.type === "stance"
+                && candidates[index].action.type === "endTurn")) {
             selected = candidates[index];
         }
     }
@@ -897,49 +1482,55 @@ function prepareBindingRecovery(
     context: PolicyContext,
     board: SmartBoardAssessment,
 ): (candidate: SmartCandidate) => BindingRecoveryBreakdown {
-    const characterIds = new Set(context.state.characters.map(({ id }) => id));
     const current = currentBindingBoard(context.state.characters);
+    return (candidate) => evaluateBindingRecoveryFromBoard(context, board, current, candidate);
+}
+
+function evaluateBindingRecoveryFromBoard(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    current: BindingBoard,
+    candidate: SmartCandidate,
+): BindingRecoveryBreakdown {
+    const characterIds = new Set(context.state.characters.map(({ id }) => id));
     const baseline = cloneBindingBoard(current);
     applyKnownIncoming(baseline, board, context.thresholds.max);
     const baselineDebt = totalRecoveryDebt(baseline, context.thresholds);
+    const escaped = cloneBindingBoard(current);
+    applyCandidateBindingEffects(
+        escaped,
+        candidate,
+        characterIds,
+        context.thresholds.max,
+    );
+    applyKnownIncoming(escaped, board, context.thresholds.max);
 
-    return (candidate) => {
-        const escaped = cloneBindingBoard(current);
-        applyCandidateBindingEffects(
-            escaped,
-            candidate,
-            characterIds,
-            context.thresholds.max,
-        );
-        applyKnownIncoming(escaped, board, context.thresholds.max);
+    const escapedDebt = totalRecoveryDebt(escaped, context.thresholds);
+    const recoveryGain = baselineDebt - escapedDebt;
+    const selected = candidate.action.type === "escape"
+        ? {
+            characterId: candidate.action.target,
+            bindingId: candidate.action.binding,
+        }
+        : worstRelievedBinding(baseline, escaped, context.thresholds);
+    const selectedProjectedValue = selected === undefined
+        ? 0
+        : bindingValue(baseline, selected.characterId, selected.bindingId);
+    const selectedDebt = recoveryDebt(selectedProjectedValue, context.thresholds);
+    const impossible = context.thresholds.thresholds.impossible;
+    const debtAtImpossible = impossible === undefined
+        ? 0
+        : recoveryDebt(impossible, context.thresholds);
+    const urgency = debtAtImpossible > 0 ? 1 + selectedDebt / debtAtImpossible : 1;
 
-        const escapedDebt = totalRecoveryDebt(escaped, context.thresholds);
-        const recoveryGain = baselineDebt - escapedDebt;
-        const selected = candidate.action.type === "escape"
-            ? {
-                characterId: candidate.action.target,
-                bindingId: candidate.action.binding,
-            }
-            : worstRelievedBinding(baseline, escaped, context.thresholds);
-        const selectedProjectedValue = selected === undefined
-            ? 0
-            : bindingValue(baseline, selected.characterId, selected.bindingId);
-        const selectedDebt = recoveryDebt(selectedProjectedValue, context.thresholds);
-        const impossible = context.thresholds.thresholds.impossible;
-        const debtAtImpossible = impossible === undefined
-            ? 0
-            : recoveryDebt(impossible, context.thresholds);
-        const urgency = debtAtImpossible > 0 ? 1 + selectedDebt / debtAtImpossible : 1;
-
-        return {
-            baselineDebt,
-            escapedDebt,
-            recoveryGain,
-            selectedProjectedValue,
-            selectedDebt,
-            urgency,
-            raw: recoveryGain * urgency,
-        };
+    return {
+        baselineDebt,
+        escapedDebt,
+        recoveryGain,
+        selectedProjectedValue,
+        selectedDebt,
+        urgency,
+        raw: recoveryGain * urgency,
     };
 }
 

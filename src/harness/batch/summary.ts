@@ -1,4 +1,14 @@
 import type { SingleFightTermination } from "../harness";
+import type {
+    BondageReceivedMetrics,
+    BondageRemovedMetrics,
+    CountByCharacterMetrics,
+    DetailedCombatMetrics,
+    EscapeSequenceMetrics,
+    RawPlayerMoveMetrics,
+    RescueMetrics,
+    UnattributedBondageBlockedMetrics,
+} from "../metrics";
 import type { BatchResult, BatchRun } from "./batch";
 
 export interface OutcomeMetric {
@@ -40,6 +50,28 @@ export interface CharacterFinalConditionSummary {
     observations: number;
     averageTotalBinding: number;
     maxTotalBinding: number;
+}
+
+export interface PerUseAmountSummary {
+    total: number;
+    averagePerUse: number;
+}
+
+export interface PlayerMoveAccuracySummary {
+    stat: "hit" | "willpower" | null;
+    averageModifier: number | null;
+    minModifier: number | null;
+    maxModifier: number | null;
+    usesByModifier: Record<string, number>;
+    results: RawPlayerMoveMetrics["accuracy"]["results"];
+}
+
+export interface PlayerMovePerformanceSummary {
+    uses: number;
+    damage: PerUseAmountSummary;
+    accuracy: PlayerMoveAccuracySummary;
+    bondageRemoved: PerUseAmountSummary;
+    bondageBlocked: PerUseAmountSummary;
 }
 
 export interface WilsonInterval {
@@ -97,6 +129,13 @@ export interface BatchSummary {
     fightLength: FightLengthSummary;
     actionUsage: ActionUsageSummary;
     finalParty: Record<string, CharacterFinalConditionSummary>;
+    escapeSequences: EscapeSequenceMetrics;
+    skunkings: CountByCharacterMetrics;
+    rescues: RescueMetrics;
+    playerMoves: Record<string, PlayerMovePerformanceSummary>;
+    bondageRemoved: BondageRemovedMetrics;
+    bondageBlocked: UnattributedBondageBlockedMetrics;
+    bondageReceived: BondageReceivedMetrics;
     forensicExamples: ForensicExamples;
 }
 
@@ -151,6 +190,7 @@ export function summarizeBatch(batch: BatchResult): BatchSummary {
         endTurnActions: 0,
     };
     const characterAggregates = new Map<string, MutableCharacterAggregate>();
+    const detailedCombat = emptyDetailedCombatMetrics();
     const forensicExamples: ForensicExamples = {
         shortestVictory: null,
         longestVictory: null,
@@ -180,6 +220,9 @@ export function summarizeBatch(batch: BatchResult): BatchSummary {
 
         aggregateActions(actionUsage, result.trace);
         aggregateFinalParty(characterAggregates, result.finalState.characters);
+        if (result.collectorMetrics?.detailedCombat) {
+            aggregateDetailedCombat(detailedCombat, result.collectorMetrics.detailedCombat);
+        }
 
         const reference = toRunReference(run);
         if (result.termination === "victory") {
@@ -233,8 +276,168 @@ export function summarizeBatch(batch: BatchResult): BatchSummary {
         },
         actionUsage,
         finalParty: finishFinalParty(characterAggregates),
+        escapeSequences: sortedEscapeSequences(detailedCombat.escapeSequences),
+        skunkings: sortedCharacterCounts(detailedCombat.skunkings),
+        rescues: {
+            ...sortedCharacterCounts(detailedCombat.rescues),
+            byMove: sortedRecord(detailedCombat.rescues.byMove),
+        },
+        playerMoves: finishPlayerMoves(detailedCombat.playerMoves),
+        bondageRemoved: { ...detailedCombat.bondageRemoved },
+        bondageBlocked: { ...detailedCombat.bondageBlocked },
+        bondageReceived: {
+            moves: sortedRecord(detailedCombat.bondageReceived.moves),
+            ticks: sortedRecord(detailedCombat.bondageReceived.ticks),
+            traps: sortedRecord(detailedCombat.bondageReceived.traps),
+            unattributed: detailedCombat.bondageReceived.unattributed,
+        },
         forensicExamples,
     };
+}
+
+function emptyDetailedCombatMetrics(): DetailedCombatMetrics {
+    return {
+        escapeSequences: { single: 0, double: 0, byActor: {} },
+        skunkings: { total: 0, byCharacter: {} },
+        rescues: { total: 0, byCharacter: {}, byMove: {} },
+        playerMoves: {},
+        bondageRemoved: { escapes: 0, skills: 0, rescues: 0, unattributed: 0 },
+        bondageBlocked: { unattributed: 0 },
+        bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
+    };
+}
+
+function aggregateDetailedCombat(target: DetailedCombatMetrics, source: DetailedCombatMetrics): void {
+    target.escapeSequences.single += source.escapeSequences.single;
+    target.escapeSequences.double += source.escapeSequences.double;
+    for (const [actor, counts] of Object.entries(source.escapeSequences.byActor)) {
+        const aggregate = target.escapeSequences.byActor[actor] ??= { single: 0, double: 0 };
+        aggregate.single += counts.single;
+        aggregate.double += counts.double;
+    }
+    target.skunkings.total += source.skunkings.total;
+    addRecord(target.skunkings.byCharacter, source.skunkings.byCharacter);
+    target.rescues.total += source.rescues.total;
+    addRecord(target.rescues.byCharacter, source.rescues.byCharacter);
+    addRecord(target.rescues.byMove, source.rescues.byMove);
+    addRecord(target.bondageReceived.moves, source.bondageReceived.moves);
+    addRecord(target.bondageReceived.ticks, source.bondageReceived.ticks);
+    addRecord(target.bondageReceived.traps, source.bondageReceived.traps);
+    target.bondageReceived.unattributed += source.bondageReceived.unattributed;
+    target.bondageRemoved.escapes += source.bondageRemoved.escapes;
+    target.bondageRemoved.skills += source.bondageRemoved.skills;
+    target.bondageRemoved.rescues += source.bondageRemoved.rescues;
+    target.bondageRemoved.unattributed += source.bondageRemoved.unattributed;
+    target.bondageBlocked.unattributed += source.bondageBlocked.unattributed;
+
+    for (const [moveId, sourceMove] of Object.entries(source.playerMoves)) {
+        const move = target.playerMoves[moveId] ??= emptyRawPlayerMove();
+        move.uses += sourceMove.uses;
+        move.totalDamage += sourceMove.totalDamage;
+        move.totalBondageRemoved += sourceMove.totalBondageRemoved;
+        move.totalBondageBlocked += sourceMove.totalBondageBlocked;
+        move.accuracy.modifierTotal += sourceMove.accuracy.modifierTotal;
+        move.accuracy.modifierUses += sourceMove.accuracy.modifierUses;
+        move.accuracy.stat ??= sourceMove.accuracy.stat;
+        if (move.accuracy.stat !== sourceMove.accuracy.stat && sourceMove.accuracy.stat !== null) {
+            move.accuracy.stat = null;
+        }
+        move.accuracy.minModifier = minimumNullable(
+            move.accuracy.minModifier,
+            sourceMove.accuracy.minModifier,
+        );
+        move.accuracy.maxModifier = maximumNullable(
+            move.accuracy.maxModifier,
+            sourceMove.accuracy.maxModifier,
+        );
+        addRecord(move.accuracy.usesByModifier, sourceMove.accuracy.usesByModifier);
+        for (const band of ["miss", "graze", "hit", "crit", "none"] as const) {
+            move.accuracy.results[band] += sourceMove.accuracy.results[band];
+        }
+    }
+}
+
+function finishPlayerMoves(
+    moves: Record<string, RawPlayerMoveMetrics>,
+): Record<string, PlayerMovePerformanceSummary> {
+    const result: Record<string, PlayerMovePerformanceSummary> = {};
+    for (const moveId of Object.keys(moves).sort()) {
+        const move = moves[moveId];
+        result[moveId] = {
+            uses: move.uses,
+            damage: perUse(move.totalDamage, move.uses),
+            accuracy: {
+                stat: move.accuracy.stat,
+                averageModifier: move.accuracy.modifierUses === 0
+                    ? null
+                    : move.accuracy.modifierTotal / move.accuracy.modifierUses,
+                minModifier: move.accuracy.minModifier,
+                maxModifier: move.accuracy.maxModifier,
+                usesByModifier: sortedRecord(move.accuracy.usesByModifier, true),
+                results: { ...move.accuracy.results },
+            },
+            bondageRemoved: perUse(move.totalBondageRemoved, move.uses),
+            bondageBlocked: perUse(move.totalBondageBlocked, move.uses),
+        };
+    }
+    return result;
+}
+
+function emptyRawPlayerMove(): RawPlayerMoveMetrics {
+    return {
+        uses: 0,
+        totalDamage: 0,
+        accuracy: {
+            stat: null,
+            modifierTotal: 0,
+            modifierUses: 0,
+            minModifier: null,
+            maxModifier: null,
+            usesByModifier: {},
+            results: { miss: 0, graze: 0, hit: 0, crit: 0, none: 0 },
+        },
+        totalBondageRemoved: 0,
+        totalBondageBlocked: 0,
+    };
+}
+
+function perUse(total: number, uses: number): PerUseAmountSummary {
+    return { total, averagePerUse: uses === 0 ? 0 : total / uses };
+}
+
+function sortedEscapeSequences(source: EscapeSequenceMetrics): EscapeSequenceMetrics {
+    const byActor: EscapeSequenceMetrics["byActor"] = {};
+    for (const actor of Object.keys(source.byActor).sort()) byActor[actor] = { ...source.byActor[actor] };
+    return { single: source.single, double: source.double, byActor };
+}
+
+function sortedCharacterCounts(source: CountByCharacterMetrics): CountByCharacterMetrics {
+    return { total: source.total, byCharacter: sortedRecord(source.byCharacter) };
+}
+
+function addRecord(target: Record<string, number>, source: Readonly<Record<string, number>>): void {
+    for (const [key, value] of Object.entries(source)) target[key] = (target[key] ?? 0) + value;
+}
+
+function sortedRecord(source: Record<string, number>, numeric = false): Record<string, number> {
+    const result: Record<string, number> = {};
+    const keys = Object.keys(source).sort(numeric
+        ? (left, right) => Number(left) - Number(right)
+        : undefined);
+    for (const key of keys) result[key] = source[key];
+    return result;
+}
+
+function minimumNullable(left: number | null, right: number | null): number | null {
+    if (left === null) return right;
+    if (right === null) return left;
+    return Math.min(left, right);
+}
+
+function maximumNullable(left: number | null, right: number | null): number | null {
+    if (left === null) return right;
+    if (right === null) return left;
+    return Math.max(left, right);
 }
 
 function outcomeMetric(count: number, runCount: number): OutcomeMetric {

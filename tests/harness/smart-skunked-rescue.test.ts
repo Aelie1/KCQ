@@ -1,0 +1,248 @@
+import { describe, expect, it } from "vitest";
+import type {
+    ActionInfo,
+    ActionView,
+    Binding,
+    Buff,
+    Character,
+    Enemy,
+    GameState,
+} from "../../src/engine/public/types";
+import type { PolicyContext } from "../../src/harness/harness";
+import {
+    evaluateSkunkedRescue,
+    evaluateSmartDecision,
+    generateSmartCandidates,
+    SKUNKED_RESCUE_ACTOR_VALUE,
+    skunkedRescueScorer,
+    type SkunkedRescueBreakdown,
+} from "../../src/harness/policy/smart";
+import { createEmptyContentLibrary } from "../helpers/library";
+
+function binding(value = 80): Binding {
+    return {
+        id: "test-binding",
+        value,
+        level: value >= 80 ? "impossible" : "hard",
+        data: {},
+        status: [],
+        tickEffects: [],
+    };
+}
+
+function character(buffs: Buff[] = [], bindings: Binding[] = [binding()]): Character {
+    return {
+        id: "test-victim",
+        acted: false,
+        standing: true,
+        bonusEscapes: 0,
+        bindings,
+        buffs,
+        cooldowns: {},
+        modifiers: {},
+        blockedMoveTypes: [],
+        data: {},
+    };
+}
+
+function enemy(id: string, currHp = 200): Enemy {
+    return {
+        id,
+        rank: "enemy",
+        maxHp: 200,
+        currHp,
+        currDef: 0,
+        intentions: [],
+        buffs: [],
+        cooldowns: {},
+    };
+}
+
+function linkedBuff(id: string, enemyId: string, incapacitated = true): Buff {
+    return {
+        id,
+        linkedEntity: enemyId,
+        ...(incapacitated
+            ? { statuses: [{ id: "incapacitated" as const, value: 1 }] }
+            : {}),
+    };
+}
+
+function attack(damageByTarget: Readonly<Record<string, number>>): ActionInfo {
+    return {
+        move: { id: "test-attack", targetSide: "enemy", targets: 1, type: "arms" },
+        available: true,
+        effects: [],
+        targets: Object.entries(damageByTarget).map(([target, damage]) => ({
+            valid: true,
+            target,
+            effects: [],
+            damage: { hit: { chance: 100, min: damage, max: damage } },
+        })),
+    };
+}
+
+function context(
+    victim: Character,
+    enemies: Enemy[],
+    damageByTarget: Readonly<Record<string, number>>,
+): PolicyContext {
+    const library = createEmptyContentLibrary();
+    library.characters[victim.id] = {
+        id: victim.id, moves: [], passives: [], empoweredMoves: [],
+    };
+    library.bindings["test-binding"] = { id: "test-binding" };
+    library.statuses.incapacitated = {
+        id: "incapacitated",
+        modifiers: [{}, { flags: ["incapacitated"] }],
+    };
+    const rescuer: Character = {
+        ...character([], []),
+        id: "test-rescuer",
+        standing: false,
+    };
+    const victimIncapacitated = victim.buffs.some((buff) =>
+        buff.statuses?.some(({ id }) => id === "incapacitated")
+    );
+    const actions: ActionView[] = [{
+        id: rescuer.id,
+        available: true,
+        moves: [attack(damageByTarget)],
+        escapes: [],
+        stance: { available: false, reason: "moveUnavailable" },
+    }, {
+        id: victim.id,
+        available: !victimIncapacitated,
+        ...(victimIncapacitated ? { reason: "actorIncapacitated" as const } : {}),
+        moves: [],
+        escapes: [],
+        stance: victimIncapacitated
+            ? { available: false, reason: "actorIncapacitated" }
+            : { available: false, reason: "moveUnavailable" },
+    }];
+    const state: GameState = {
+        turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
+        characters: [rescuer, victim],
+        enemies,
+        traps: [],
+        encounter: null,
+    };
+    return {
+        state,
+        actions,
+        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        library,
+        random: {
+            next: () => { throw new Error("rescue scoring must not use random"); },
+            integer: () => { throw new Error("rescue scoring must not use random"); },
+        },
+    };
+}
+
+function moveCandidates(fixture: PolicyContext) {
+    return generateSmartCandidates(fixture).filter(
+        (candidate) => candidate.action.type === "move",
+    );
+}
+
+function breakdown(fixture: PolicyContext, index = 0): SkunkedRescueBreakdown {
+    return evaluateSkunkedRescue(fixture, moveCandidates(fixture)[index]);
+}
+
+describe("Smart linked Skunked rescue priority", () => {
+    it("gives damage against the linked rescue enemy a strong bonus", () => {
+        const fixture = context(
+            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            [enemy("test-other-enemy"), enemy("test-rescue-enemy")],
+            { "test-other-enemy": 40, "test-rescue-enemy": 40 },
+        );
+        const decision = evaluateSmartDecision(fixture);
+        const [other, rescue] = decision.candidates.filter(
+            (candidate) => candidate.action.type === "move",
+        );
+
+        expect(other.components.skunkedRescue.raw).toBe(0);
+        expect(rescue.components.skunkedRescue.raw).toBeGreaterThan(40);
+        expect(decision.selected.action).toMatchObject({ targets: ["test-rescue-enemy"] });
+    });
+
+    it("awards full rescue-progress value to expected-lethal damage", () => {
+        const fixture = context(
+            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            [enemy("test-rescue-enemy")],
+            { "test-rescue-enemy": 200 },
+        );
+        const detail = breakdown(fixture).enemies[0];
+
+        expect(detail.progressFraction).toBe(1);
+        expect(detail.restoredActorValue).toBe(SKUNKED_RESCUE_ACTOR_VALUE);
+        expect(detail.halvedBindingRecoveryValue).toBeGreaterThan(0);
+        expect(detail.rescueProgressContribution).toBe(detail.fullRescueValue);
+    });
+
+    it("awards meaningful proportional value to partial damage", () => {
+        const fixture = context(
+            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            [enemy("test-rescue-enemy")],
+            { "test-rescue-enemy": 50 },
+        );
+        const detail = breakdown(fixture).enemies[0];
+
+        expect(detail.progressFraction).toBeCloseTo(0.25);
+        expect(detail.rescueProgressContribution).toBeCloseTo(detail.fullRescueValue * 0.25);
+        expect(detail.rescueProgressContribution).toBeGreaterThan(50);
+    });
+
+    it("does not give an ordinary unlinked enemy a rescue bonus", () => {
+        const fixture = context(
+            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            [enemy("test-ordinary-enemy"), enemy("test-rescue-enemy")],
+            { "test-ordinary-enemy": 200, "test-rescue-enemy": 0 },
+        );
+
+        expect(breakdown(fixture).raw).toBe(0);
+    });
+
+    it("does not treat a Pounce link as a Skunked rescue relationship", () => {
+        const fixture = context(
+            character([linkedBuff("pounce", "test-pounce-enemy")]),
+            [enemy("test-pounce-enemy")],
+            { "test-pounce-enemy": 200 },
+        );
+
+        expect(breakdown(fixture)).toEqual({ enemies: [], raw: 0 });
+    });
+
+    it("removes the bonus when the Skunked or incapacitated relationship is gone", () => {
+        const noSkunkedBuff = context(
+            character([]),
+            [enemy("test-rescue-enemy")],
+            { "test-rescue-enemy": 200 },
+        );
+        const noIncapacitation = context(
+            character([linkedBuff("skunked", "test-rescue-enemy", false)]),
+            [enemy("test-rescue-enemy")],
+            { "test-rescue-enemy": 200 },
+        );
+
+        expect(breakdown(noSkunkedBuff).raw).toBe(0);
+        expect(breakdown(noIncapacitation).raw).toBe(0);
+    });
+
+    it("leaves targeting of other enemies unchanged and remains deterministic", () => {
+        const fixture = context(
+            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            [enemy("test-other-a"), enemy("test-other-b"), enemy("test-rescue-enemy")],
+            { "test-other-a": 30, "test-other-b": 30, "test-rescue-enemy": 0 },
+        );
+        const first = evaluateSmartDecision(fixture, [skunkedRescueScorer]);
+        const second = evaluateSmartDecision(fixture, [skunkedRescueScorer]);
+
+        expect(second).toEqual(first);
+        expect(first.candidates.slice(0, 2).map(
+            (candidate) => candidate.components.skunkedRescue.raw,
+        )).toEqual([0, 0]);
+        expect(structuredClone(first.candidates[0].components.skunkedRescue.diagnostics))
+            .toEqual(first.candidates[0].components.skunkedRescue.diagnostics);
+    });
+});

@@ -315,9 +315,28 @@ describe("Smart Skunk Explosion discipline", () => {
             .some(({ id }) => id.includes("explosion"))).toBe(false);
     });
 
+    it("keeps the recent last-enemy threshold-crossing exception", () => {
+        const context = fixture(
+            [enemy("skunk1", { currHp: 100 })],
+            [attack("cross", ["skunk1"], 30)],
+        );
+        expect(knowledge(context, "cross", "skunk1").rules).toContainEqual(
+            expect.objectContaining({
+                id: "skunk.explosion-last-enemy-no-penalty",
+                adjustment: -0,
+            }),
+        );
+    });
+
     it("penalizes a nonlethal threshold crossing but preserves a large clean kill", () => {
-        const risky = fixture([enemy("skunk1", { currHp: 100 })], [attack("risk", ["skunk1"], 30)]);
-        const lethal = fixture([enemy("skunk1", { currHp: 100 })], [attack("lethal", ["skunk1"], 100)]);
+        const risky = fixture(
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
+            [attack("risk", ["skunk1"], 30)],
+        );
+        const lethal = fixture(
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
+            [attack("lethal", ["skunk1"], 100)],
+        );
         expect(knowledge(risky, "risk", "skunk1").rules)
             .toContainEqual(expect.objectContaining({
                 id: "skunk.explosion-nonlethal-threshold-risk",
@@ -331,7 +350,7 @@ describe("Smart Skunk Explosion discipline", () => {
 
     it("waives threshold risk when the remaining party damage EV covers the surviving Skunk", () => {
         const context = fixture(
-            [enemy("skunk1", { currHp: 100 })],
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("cross", ["skunk1"], 30)],
             [character("hero"), character("ally1"), character("ally2")],
         );
@@ -358,7 +377,7 @@ describe("Smart Skunk Explosion discipline", () => {
 
     it("keeps threshold risk when the remaining party damage EV is insufficient", () => {
         const context = fixture(
-            [enemy("skunk1", { currHp: 100 })],
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("cross", ["skunk1"], 30)],
             [character("hero"), character("ally")],
         );
@@ -380,7 +399,7 @@ describe("Smart Skunk Explosion discipline", () => {
 
     it("ignores spent actors when estimating remaining party damage", () => {
         const context = fixture(
-            [enemy("skunk1", { currHp: 100 })],
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("cross", ["skunk1"], 30)],
             [character("hero"), character("spent")],
         );
@@ -400,7 +419,7 @@ describe("Smart Skunk Explosion discipline", () => {
 
     it("uses each remaining actor's best attack instead of summing alternate moves", () => {
         const context = fixture(
-            [enemy("skunk1", { currHp: 100 })],
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("cross", ["skunk1"], 30)],
             [character("hero"), character("ally")],
         );
@@ -437,7 +456,7 @@ describe("Smart Skunk Explosion discipline", () => {
 
     it("finds ordered multihit risk even when aggregate expected damage is lethal", () => {
         const context = fixture(
-            [enemy("skunk1", { currHp: 100 })],
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("six-hit", ["skunk1"], 20, 6, 90)],
         );
         const rule = knowledge(context, "six-hit", "skunk1").rules.find(({ id }) =>
@@ -448,8 +467,14 @@ describe("Smart Skunk Explosion discipline", () => {
     });
 
     it("scales crossing risk with miss probability and ignores unrelated enemies", () => {
-        const certain = fixture([enemy("skunk1", { currHp: 100 })], [attack("hit", ["skunk1"], 30)]);
-        const uncertain = fixture([enemy("skunk1", { currHp: 100 })], [attack("hit", ["skunk1"], 30, 1, 50)]);
+        const certain = fixture(
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
+            [attack("hit", ["skunk1"], 30)],
+        );
+        const uncertain = fixture(
+            [enemy("skunk1", { currHp: 100 }), enemy("other1")],
+            [attack("hit", ["skunk1"], 30, 1, 50)],
+        );
         expect(Math.abs(knowledge(uncertain, "hit", "skunk1").raw))
             .toBeLessThan(Math.abs(knowledge(certain, "hit", "skunk1").raw));
 

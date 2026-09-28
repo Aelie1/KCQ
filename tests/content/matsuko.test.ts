@@ -217,9 +217,9 @@ describe("Matsuko's dynamic offensive kit", () => {
         });
         expect(targetPreview(normal, matsuko.id, "phoenixKick", "foe1").damage).toEqual({
             miss: { chance: 10, min: 0, max: 0 },
-            graze: { chance: 15, min: 8, max: 19 },
-            hit: { chance: 65, min: 30, max: 38 },
-            crit: { chance: 10, min: 57, max: 75 },
+            graze: { chance: 15, min: 8, max: 20 },
+            hit: { chance: 65, min: 32, max: 39 },
+            crit: { chance: 10, min: 59, max: 78 },
         });
 
         const phoenix = execute(normal, {

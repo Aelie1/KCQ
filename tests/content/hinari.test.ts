@@ -779,7 +779,7 @@ describe("Hinari's Release", () => {
         });
         expect(target(low, "foe1")).toEqual({
             valid: true, target: "foe1", damage: undefined,
-            effects: [{ type: "buff", target: "foe1", buff: "subspaceClutter", effects: { defense: -1, hit: -1 }, operation: "add" }],
+            effects: [{ type: "buff", target: "foe1", buff: "subspaceClutter", effects: { defense: -2, hit: -2 }, operation: "add" }],
         });
         const result = execute(low, { type: "move", actor: hinari.id, move: "release", targets: ["foe1"] });
         expect(moveEvent(result).targets).toEqual([{
@@ -805,7 +805,7 @@ describe("Hinari's Release", () => {
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "buffAdded", target: "foe1", buff: "subspaceClutter" });
         expect(buffState(engine, "subspaceClutter", "foe1")).toMatchObject({
             duration: 2,
-            modifiers: { defense: -1, hit: -1 },
+            modifiers: { defense: -2, hit: -2 },
         });
         expect(engine.getGameState().enemies[0].currHp).toBe(2_000);
         expect(characterState(engine, hinari.id).data.subspace).toBe(35);

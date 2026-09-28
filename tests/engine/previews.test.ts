@@ -100,9 +100,9 @@ describe("public move previews", () => {
             accuracy: { miss: 10, graze: 15, hit: 65, crit: 10 },
             damage: {
                 miss: { chance: 10, min: 0, max: 0 },
-                graze: { chance: 15, min: 4, max: 8 },
-                hit: { chance: 65, min: 13, max: 16 },
-                crit: { chance: 10, min: 24, max: 31 },
+                graze: { chance: 15, min: 3, max: 8 },
+                hit: { chance: 65, min: 12, max: 15 },
+                crit: { chance: 10, min: 22, max: 30 },
             },
             effects: [{ type: "buff", target: "foe2", buff: "mark-foe2", effects: undefined, operation: "add" }],
         });

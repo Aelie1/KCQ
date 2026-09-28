@@ -548,6 +548,6 @@ describe("Empowering Magic", () => {
         const empowered = effectivenessAfterTurn(true);
 
         expect(baseline).toBeGreaterThan(0);
-        expect(empowered).toBeCloseTo(baseline * (1 + 5 * 0.125));
+        expect(empowered).toBeCloseTo(baseline * (1 + 5 * 0.1));
     });
 });

@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Character, Enemy, GameState, PlayerAction } from "../../src/engine/public/types";
 import type { BatchResult, BatchRun } from "../../src/harness/batch/batch";
 import { summarizeBatch, wilsonScoreInterval } from "../../src/harness/batch/summary";
-import type { FightReplay, SingleFightTermination } from "../../src/harness/harness";
+import type { FightReplay, SingleFightResult, SingleFightTermination } from "../../src/harness/harness";
+import type { DetailedCombatMetrics } from "../../src/harness/metrics";
 
 interface RunFixture {
     runIndex: number;
@@ -13,6 +14,7 @@ interface RunFixture {
     escapes?: number;
     remainingEnemyHp: number;
     round?: number;
+    detailedCombat?: DetailedCombatMetrics;
 }
 
 const endTurn = (): PlayerAction => ({ type: "endTurn" });
@@ -52,26 +54,32 @@ function view(fixture: RunFixture): GameState {
 
 function run(fixture: RunFixture): BatchRun {
     const trace = Array.from({ length: fixture.actionCount }, endTurn);
+    const result: SingleFightResult = {
+        encounterId: "fixture",
+        engineSeed: 1_000 + fixture.runIndex,
+        policyId: "fixture-policy",
+        policySeed: 2_000 + fixture.runIndex,
+        termination: fixture.termination,
+        finalState: view(fixture),
+        actionCount: fixture.actionCount,
+        metrics: {
+            decisions: fixture.actionCount,
+            damage: fixture.damage,
+            peakBondage: fixture.peakBondage,
+            escapes: fixture.escapes ?? 0,
+        },
+        trace,
+    };
+    if (fixture.detailedCombat) {
+        // This summary fixture intentionally supplies only the collector consumed here.
+        // @ts-expect-error The production runner always supplies every core collector.
+        result.collectorMetrics = { detailedCombat: fixture.detailedCombat };
+    }
     return {
         runIndex: fixture.runIndex,
         engineSeed: 1_000 + fixture.runIndex,
         policySeed: 2_000 + fixture.runIndex,
-        result: {
-            encounterId: "fixture",
-            engineSeed: 1_000 + fixture.runIndex,
-            policyId: "fixture-policy",
-            policySeed: 2_000 + fixture.runIndex,
-            termination: fixture.termination,
-            finalState: view(fixture),
-            actionCount: fixture.actionCount,
-            metrics: {
-                decisions: fixture.actionCount,
-                damage: fixture.damage,
-                peakBondage: fixture.peakBondage,
-                escapes: fixture.escapes ?? 0,
-            },
-            trace,
-        },
+        result,
     };
 }
 
@@ -268,5 +276,74 @@ describe("batch summary metrics", () => {
         const before = structuredClone(withReplay);
         expect(summarizeBatch(withReplay)).toEqual(summarizeBatch(original));
         expect(withReplay).toEqual(before);
+    });
+
+    it("aggregates compact detailed combat counters and derives per-use averages", () => {
+        const detailed = (uses: number, damage: number, modifier: number): DetailedCombatMetrics => ({
+            escapeSequences: { single: 1, double: 1, byActor: { ko: { single: 1, double: 1 } } },
+            skunkings: { total: 1, byCharacter: { ko: 1 } },
+            rescues: { total: 1, byCharacter: { ko: 1 }, byMove: { telekinesis: 1 } },
+            playerMoves: {
+                telekinesis: {
+                    uses,
+                    totalDamage: damage,
+                    accuracy: {
+                        stat: "hit",
+                        modifierTotal: modifier * uses,
+                        modifierUses: uses,
+                        minModifier: modifier,
+                        maxModifier: modifier,
+                        usesByModifier: { [String(modifier)]: uses },
+                        results: { miss: 1, graze: 0, hit: uses - 1, crit: 0, none: 0 },
+                    },
+                    totalBondageRemoved: 2,
+                    totalBondageBlocked: 4,
+                },
+            },
+            bondageRemoved: { escapes: 5, skills: 2, rescues: 3, unattributed: 1 },
+            bondageBlocked: { unattributed: 2 },
+            bondageReceived: {
+                moves: { latexRegeneration: 10 },
+                ticks: { latexCollar: 2 },
+                traps: { trapPuddle: 3 },
+                unattributed: 1,
+            },
+        });
+        const summary = summarizeBatch(batch([
+            run({ runIndex: 0, termination: "victory", actionCount: 1, damage: 10, peakBondage: 1, remainingEnemyHp: 0, detailedCombat: detailed(2, 12, -8) }),
+            run({ runIndex: 1, termination: "defeat", actionCount: 1, damage: 20, peakBondage: 2, remainingEnemyHp: 10, detailedCombat: detailed(1, 3, 2) }),
+        ]));
+
+        expect(summary).toMatchObject({
+            escapeSequences: { single: 2, double: 2, byActor: { ko: { single: 2, double: 2 } } },
+            skunkings: { total: 2, byCharacter: { ko: 2 } },
+            rescues: { total: 2, byCharacter: { ko: 2 }, byMove: { telekinesis: 2 } },
+            playerMoves: {
+                telekinesis: {
+                    uses: 3,
+                    damage: { total: 15, averagePerUse: 5 },
+                    accuracy: {
+                        stat: "hit",
+                        averageModifier: -14 / 3,
+                        minModifier: -8,
+                        maxModifier: 2,
+                        usesByModifier: { "2": 1, "-8": 2 },
+                        results: { miss: 2, graze: 0, hit: 1, crit: 0, none: 0 },
+                    },
+                    bondageRemoved: { total: 4, averagePerUse: 4 / 3 },
+                    bondageBlocked: { total: 8, averagePerUse: 8 / 3 },
+                },
+            },
+            bondageRemoved: { escapes: 10, skills: 4, rescues: 6, unattributed: 2 },
+            bondageBlocked: { unattributed: 4 },
+            bondageReceived: {
+                moves: { latexRegeneration: 20 },
+                ticks: { latexCollar: 4 },
+                traps: { trapPuddle: 6 },
+                unattributed: 2,
+            },
+        });
+        expect(structuredClone(summary)).toEqual(summary);
+        expect(JSON.parse(JSON.stringify(summary))).toEqual(summary);
     });
 });
