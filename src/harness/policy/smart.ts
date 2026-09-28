@@ -52,6 +52,11 @@ import {
     REACTIVE_KNOWLEDGE_WEIGHT,
     type ReactiveKnowledgeBreakdown,
 } from "./knowledge/reactive-knowledge";
+import {
+    evaluatePeriodicBindingPressure,
+    type PeriodicBindingPressureBreakdown,
+    type PeriodicBindingSourceBreakdown,
+} from "./knowledge/periodic-binding-knowledge";
 
 export * from "./smart-board";
 export { RECOVERY_DEBT_CURVE_A, recoveryDebt } from "./smart-bindings";
@@ -60,6 +65,7 @@ export * from "./knowledge/skunk-knowledge";
 export * from "./knowledge/tempo-knowledge";
 export * from "./knowledge/control-knowledge";
 export * from "./knowledge/reactive-knowledge";
+export * from "./knowledge/periodic-binding-knowledge";
 
 /** Public-preview data retained beside an action so scoring stays inspectable. */
 export interface SmartCandidate {
@@ -126,21 +132,8 @@ export interface BindingRecoveryBreakdown {
     readonly raw: number;
 }
 
-export interface PressureSourceProgressSourceBreakdown {
-    readonly characterId: EntityId;
-    readonly bindingId: BindingId;
-    readonly currentValue: number;
-    readonly projectedValue: number;
-    readonly removed: number;
-    readonly progressFraction: number;
-    readonly tickPressure: number;
-    readonly contribution: number;
-}
-
-export interface PressureSourceProgressBreakdown {
-    readonly sources: readonly PressureSourceProgressSourceBreakdown[];
-    readonly raw: number;
-}
+export type PressureSourceProgressSourceBreakdown = PeriodicBindingSourceBreakdown;
+export type PressureSourceProgressBreakdown = PeriodicBindingPressureBreakdown;
 
 export interface FutureMoveOptionsCharacterBreakdown {
     readonly characterId: EntityId;
@@ -1032,45 +1025,11 @@ function preparePressureSourceProgress(
     context: PolicyContext,
     board: SmartBoardAssessment,
 ): (candidate: SmartCandidate) => PressureSourceProgressBreakdown {
-    const characterIds = new Set(context.state.characters.map(({ id }) => id));
-    const current = currentBindingBoard(context.state.characters);
-
-    return (candidate) => {
-        const projected = cloneBindingBoard(current);
-        applyCandidateBindingEffects(
-            projected,
-            candidate,
-            characterIds,
-            context.thresholds.max,
-        );
-
-        const sources = board.bindingPressureSources.map((source) => {
-            const currentValue = source.sourceValue;
-            const projectedValue = bindingValue(
-                projected,
-                source.characterId,
-                source.bindingId,
-            );
-            const removed = Math.max(0, currentValue - projectedValue);
-            const progressFraction = currentValue > 0 ? removed / currentValue : 0;
-            const contribution = source.tickPressure * progressFraction;
-            return {
-                characterId: source.characterId,
-                bindingId: source.bindingId,
-                currentValue,
-                projectedValue,
-                removed,
-                progressFraction,
-                tickPressure: source.tickPressure,
-                contribution,
-            };
-        });
-
-        return {
-            sources,
-            raw: sources.reduce((total, source) => total + source.contribution, 0),
-        };
-    };
+    return (candidate) => evaluatePeriodicBindingPressure(
+        context,
+        board.bindingPressureSources,
+        candidate,
+    );
 }
 
 function applyCandidateBindingEffects(

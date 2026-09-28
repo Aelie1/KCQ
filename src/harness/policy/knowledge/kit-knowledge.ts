@@ -8,6 +8,7 @@ export interface KitKnowledgeRuleDiagnostic {
     readonly id: string;
     readonly adjustment: number;
     readonly reason: string;
+    readonly details?: unknown;
 }
 
 export interface KitKnowledgeBreakdown {

@@ -112,6 +112,36 @@ describe("Smart recurring binding pressure assessment", () => {
         expect(large.tickPressure).toBeGreaterThan(small.tickPressure);
     });
 
+    it("values an identical tick more on an already heavily bound track", () => {
+        const fixture = context([
+            character("clean", [binding("source-clean", 10, [sourceTick("track", 10, "clean")])]),
+            character("heavy", [
+                binding("track", 70),
+                binding("source-heavy", 10, [sourceTick("track", 10, "heavy")]),
+            ]),
+        ]);
+        const [clean, heavy] = assessSmartBoard(fixture).bindingPressureSources;
+
+        expect(heavy.tickPressure).toBeGreaterThan(clean.tickPressure);
+    });
+
+    it("projects every harmful tick effect across multiple targets and tracks", () => {
+        const fixture = context([
+            character("alpha", [binding("source", 20, [
+                sourceTick("arms", 5, "alpha"),
+                sourceTick("legs", 7, "alpha"),
+                sourceTick("rope", 9, "beta"),
+            ])]),
+            character("beta", []),
+        ]);
+        const pressure = assessSmartBoard(fixture).bindingPressureSources[0].tickPressure;
+        const expected = recoveryDebt(5, thresholds)
+            + recoveryDebt(7, thresholds)
+            + recoveryDebt(9, thresholds);
+
+        expect(pressure).toBeCloseTo(expected, 10);
+    });
+
     it("ignores non-binding tick effects in the one-tick pressure estimate", () => {
         const fixture = context([character("hero", [
             binding("damage-only", 20, [
@@ -131,6 +161,19 @@ describe("Smart recurring binding pressure assessment", () => {
         expect(evaluate(fixture, candidate([
             sourceTick("damage-only", -20),
         ])).raw).toBe(0);
+    });
+
+    it("ignores harmless negative binding tick effects without offsetting harmful pressure", () => {
+        const fixture = context([character("hero", [
+            binding("ordinary", 50),
+            binding("source", 20, [
+                sourceTick("ordinary", -50),
+                sourceTick("new-harm", 10),
+            ]),
+        ])]);
+
+        expect(assessSmartBoard(fixture).bindingPressureSources[0].tickPressure)
+            .toBeCloseTo(recoveryDebt(10, thresholds), 10);
     });
 });
 

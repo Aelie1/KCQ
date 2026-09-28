@@ -12,11 +12,11 @@ import type {
 } from "../../engine/public/types";
 import type { PolicyContext } from "../harness";
 import {
-    applyBindingEffects,
-    cloneBindingBoard,
-    currentBindingBoard,
-    totalRecoveryDebt,
-} from "./smart-bindings";
+    assessPeriodicBindingPressureSources,
+    type SmartBindingPressureSource,
+} from "./knowledge/periodic-binding-knowledge";
+
+export type { SmartBindingPressureSource } from "./knowledge/periodic-binding-knowledge";
 
 export type SmartCapabilityState =
     | "available"
@@ -30,14 +30,6 @@ export type SmartBindingLevelCounts = Readonly<Record<BindingLevel, number>>;
 export interface SmartTrapAssessment {
     readonly id: string;
     readonly amount: number;
-}
-
-/** An active binding whose public tick effects can add recurring recovery debt. */
-export interface SmartBindingPressureSource {
-    readonly characterId: EntityId;
-    readonly bindingId: BindingId;
-    readonly sourceValue: number;
-    readonly tickPressure: number;
 }
 
 export interface SmartIncomingBindingAssessment {
@@ -162,38 +154,8 @@ export function assessSmartBoard(
         party: assessParty(characters, currentTraps, incomingTraps),
         characters,
         enemies,
-        bindingPressureSources: assessBindingPressureSources(context),
+        bindingPressureSources: assessPeriodicBindingPressureSources(context),
     };
-}
-
-function assessBindingPressureSources(
-    context: Pick<PolicyContext, "state" | "thresholds">,
-): SmartBindingPressureSource[] {
-    const characterIds = new Set(context.state.characters.map(({ id }) => id));
-    const current = currentBindingBoard(context.state.characters);
-    const beforeDebt = totalRecoveryDebt(current, context.thresholds);
-    const sources: SmartBindingPressureSource[] = [];
-
-    for (const character of context.state.characters) {
-        for (const binding of character.bindings) {
-            if (binding.tickEffects.length === 0) continue;
-            const afterTick = cloneBindingBoard(current);
-            applyBindingEffects(
-                afterTick,
-                binding.tickEffects,
-                characterIds,
-                context.thresholds.max,
-            );
-            const afterDebt = totalRecoveryDebt(afterTick, context.thresholds);
-            sources.push({
-                characterId: character.id,
-                bindingId: binding.id,
-                sourceValue: binding.value,
-                tickPressure: Math.max(0, afterDebt - beforeDebt),
-            });
-        }
-    }
-    return sources;
 }
 
 function assessCharacter(

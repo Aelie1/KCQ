@@ -1,5 +1,17 @@
-import type { AccuracyProfile, EntityId, ValidTarget } from "../../../engine/public/types";
+import type {
+    AccuracyProfile,
+    EntityId,
+    HitBand,
+    Intention,
+    ValidTarget,
+} from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import {
+    addBinding,
+    cloneBindingBoard,
+    currentBindingBoard,
+    totalRecoveryDebt,
+} from "../smart-bindings";
 import type { SmartCandidate } from "../smart";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 
@@ -9,9 +21,34 @@ export const THROW_OFF_SEVERITY_VALUE = 20;
 export const THROW_OFF_LOW_RESERVE_PENALTY = -80;
 export const THROW_OFF_MODERATE_RESERVE_PENALTY = -70;
 export const THROW_OFF_HIGH_RESERVE_PENALTY = -30;
+export const FAIRY_COMMITTED_HEAL_MULTIPLIER = 1.5;
+export const BARRIER_WAITING_PENALTY = 15;
 
 const POUNCE = "pounce";
 const THROW_OFF = "throwOff";
+const HEALING_MAGIC = "healingMagic";
+const BARRIER_MAGIC = "barrierMagic";
+const LATEX_EXPLOSION = "latexExplosion";
+const FAIRY_HEAL_RATIO = 0.25;
+const SKUNK_EXPLOSION_RATIO = 0.25;
+const FAIRY_PATTERN = /^fairy(?:\d+)?$/;
+const SKUNK_PATTERN = /^skunk(?:\d+)?$/;
+const SKUNKETTE_PATTERN = /^skunkette(?:\d+|[A-Z].*)?$/;
+
+interface AttackState {
+    readonly barrier: number;
+    readonly damage: number;
+    readonly probability: number;
+    readonly blockedHits: number;
+}
+
+interface AttackProjection {
+    readonly rawExpectedDamage: number;
+    readonly postBarrierExpectedDamage: number;
+    readonly expectedBlockedHits: number;
+    readonly lethalProbability: number;
+    readonly states: readonly AttackState[];
+}
 
 export interface PounceRelationship {
     readonly characterId: EntityId;
@@ -47,11 +84,15 @@ export function evaluateSkunkKnowledge(
     context: PolicyContext,
     candidate: SmartCandidate,
 ): KitKnowledgeRuleDiagnostic[] {
+    const rules: KitKnowledgeRuleDiagnostic[] = [
+        ...evaluateFairyHealingKnowledge(context, candidate),
+        ...evaluateBarrierKnowledge(context, candidate),
+        ...evaluateExplosionKnowledge(context, candidate),
+    ];
     const relationships = detectPounceRelationships(context);
-    if (relationships.length === 0 || candidate.action.type !== "move") return [];
+    if (relationships.length === 0 || candidate.action.type !== "move") return rules;
     const action = candidate.action;
 
-    const rules: KitKnowledgeRuleDiagnostic[] = [];
     let totalRemoval = 0;
     let clearedRelationships = 0;
     for (const relationship of relationships) {
@@ -110,6 +151,215 @@ export function evaluateSkunkKnowledge(
     return rules;
 }
 
+function evaluateFairyHealingKnowledge(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): KitKnowledgeRuleDiagnostic[] {
+    if (candidate.action.type !== "move") return [];
+    const damagedHealableAllies = context.state.enemies.filter((enemy) =>
+        isFairyHealTarget(enemy.id) && enemy.currHp > 0 && enemy.currHp < enemy.maxHp
+    );
+    const potentialHealing = damagedHealableAllies.reduce(
+        (total, enemy) => total + Math.min(
+            enemy.maxHp - enemy.currHp,
+            enemy.maxHp * FAIRY_HEAL_RATIO,
+        ),
+        0,
+    );
+    const rules: KitKnowledgeRuleDiagnostic[] = [];
+
+    for (const fairy of context.state.enemies.filter((enemy) =>
+        isFairy(enemy.id) && enemy.currHp > 0
+    )) {
+        const committed = fairy.intentions.filter(({ move }) => move === HEALING_MAGIC);
+        const committedHealing = committed.reduce(
+            (total, intention) => total + usefulCommittedHealing(context, intention),
+            0,
+        );
+        const healingPressure = committed.length > 0
+            ? committedHealing * FAIRY_COMMITTED_HEAL_MULTIPLIER
+            : potentialHealing;
+        if (healingPressure <= 0) continue;
+
+        const damageToFairy = expectedDamageToEnemy(candidate, fairy.id);
+        const fairyRemovalProgress = clamp(damageToFairy / fairy.currHp, 0, 1);
+        let preventionFraction = fairyRemovalProgress;
+        let invalidatedRecipient: EntityId | undefined;
+
+        // Healing Magic returns before producing any primary or critical healing
+        // when its selected target has disappeared from public state.
+        for (const intention of committed) {
+            const recipient = intention.targets[0]?.target;
+            const target = context.state.enemies.find(({ id }) => id === recipient);
+            if (target !== undefined
+                && expectedDamageToEnemy(candidate, target.id) >= target.currHp) {
+                preventionFraction = 1;
+                invalidatedRecipient = target.id;
+                break;
+            }
+        }
+
+        if (preventionFraction <= 0) continue;
+        const adjustment = healingPressure * preventionFraction;
+        rules.push({
+            id: committed.length > 0
+                ? "skunk.fairy-committed-heal-prevention"
+                : "skunk.fairy-healing-support",
+            adjustment,
+            reason: invalidatedRecipient !== undefined
+                ? `Defeating intended recipient ${invalidatedRecipient} invalidates ${format(committedHealing)} useful committed healing.`
+                : `${fairy.id} can provide ${format(healingPressure)} useful${committed.length > 0 ? " immediate" : ""} healing pressure.`,
+            details: {
+                fairyId: fairy.id,
+                usefulHealing: committed.length > 0 ? committedHealing : potentialHealing,
+                committed: committed.length > 0,
+                fairyRemovalProgress,
+                invalidatedRecipient,
+            },
+        });
+    }
+    return rules;
+}
+
+function evaluateBarrierKnowledge(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): KitKnowledgeRuleDiagnostic[] {
+    if (candidate.action.type !== "move") return [];
+    const rules: KitKnowledgeRuleDiagnostic[] = [];
+    for (const target of candidate.targets) {
+        if (target.target === null) continue;
+        const enemy = context.state.enemies.find(({ id }) => id === target.target);
+        const duration = enemy?.buffs.find(({ id }) => id === BARRIER_MAGIC)?.duration ?? 0;
+        if (enemy === undefined || duration <= 0) continue;
+
+        const projection = projectAttack(candidate, target, duration, enemy.currHp);
+        if (projection.rawExpectedDamage <= 0) continue;
+        const rawFinisher = finisherValue(projection.rawExpectedDamage, enemy.currHp);
+        const survivingFinisher = finisherValue(
+            projection.postBarrierExpectedDamage,
+            enemy.currHp,
+        );
+        const blockedFraction = clamp(
+            1 - projection.postBarrierExpectedDamage / projection.rawExpectedDamage,
+            0,
+            1,
+        );
+        // Barrier naturally decays. Consuming it is not progress, and spending a
+        // whole action mostly doing so carries a small waiting-opportunity cost.
+        const waitingPenalty = BARRIER_WAITING_PENALTY * blockedFraction / duration;
+        const adjustment = projection.postBarrierExpectedDamage
+            - projection.rawExpectedDamage
+            + survivingFinisher
+            - rawFinisher
+            - waitingPenalty;
+        rules.push({
+            id: "skunk.fairy-barrier-adjusted-offense",
+            adjustment,
+            reason: `${enemy.id} Barrier ${duration} blocks ${format(projection.expectedBlockedHits)} expected hit(s), leaving ${format(projection.postBarrierExpectedDamage)} expected offense after Barrier.`,
+            details: {
+                targetId: enemy.id,
+                barrierDuration: duration,
+                candidateHits: candidate.hits,
+                expectedSuccessfulHits: formatNumber(candidate.hits * expectedSuccessfulHits(target)),
+                expectedBlockedHits: formatNumber(projection.expectedBlockedHits),
+                rawExpectedDamage: formatNumber(projection.rawExpectedDamage),
+                postBarrierExpectedDamage: formatNumber(projection.postBarrierExpectedDamage),
+                lethalProbability: formatNumber(projection.lethalProbability),
+                waitingPenalty: formatNumber(waitingPenalty),
+            },
+        });
+    }
+    return rules;
+}
+
+function evaluateExplosionKnowledge(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): KitKnowledgeRuleDiagnostic[] {
+    if (candidate.action.type !== "move") return [];
+    const rules: KitKnowledgeRuleDiagnostic[] = [];
+    for (const target of candidate.targets) {
+        if (target.target === null || !isSkunk(target.target)) continue;
+        const enemy = context.state.enemies.find(({ id }) => id === target.target);
+        if (enemy === undefined || enemy.currHp <= 0) continue;
+        const barrierDuration = enemy.buffs.find(({ id }) => id === BARRIER_MAGIC)?.duration ?? 0;
+        const projection = projectAttack(candidate, target, barrierDuration, enemy.currHp);
+        if (projection.rawExpectedDamage <= 0) continue;
+
+        const threshold = enemy.maxHp * SKUNK_EXPLOSION_RATIO;
+        const alreadyLow = enemy.currHp < threshold;
+        const lethalProbability = projection.states.reduce(
+            (total, state) => total + (state.damage >= enemy.currHp ? state.probability : 0),
+            0,
+        );
+        const crossingProbability = alreadyLow ? 0 : projection.states.reduce(
+            (total, state) => {
+                const remaining = enemy.currHp - state.damage;
+                return total + (remaining > 0 && remaining < threshold ? state.probability : 0);
+            },
+            0,
+        );
+        const pressure = explosionRecoveryPressure(context, candidate.action.actor);
+
+        if (alreadyLow) {
+            const alreadyCommitted = enemy.intentions.some(({ move }) => move === LATEX_EXPLOSION);
+            const adjustment = alreadyCommitted ? 0 : pressure * lethalProbability;
+            rules.push({
+                id: lethalProbability > 0
+                    ? "skunk.explosion-imminent-lethal-removal"
+                    : "skunk.explosion-imminent-unresolved",
+                adjustment,
+                reason: lethalProbability > 0
+                    ? `${enemy.id} is already below ${format(threshold)} HP; lethal removal probability is ${format(lethalProbability * 100)}%.`
+                    : `${enemy.id} is already below ${format(threshold)} HP and this attack does not remove the imminent Explosion.`,
+                details: {
+                    targetId: enemy.id,
+                    currentHp: enemy.currHp,
+                    threshold,
+                    crossingProbability: 0,
+                    lethalProbability: formatNumber(lethalProbability),
+                    safeLethal: lethalProbability > 0,
+                    alreadyCommitted,
+                },
+            });
+            continue;
+        }
+
+        if (crossingProbability > 0) {
+            rules.push({
+                id: "skunk.explosion-nonlethal-threshold-risk",
+                adjustment: -pressure * crossingProbability,
+                reason: `${enemy.id} has a ${format(crossingProbability * 100)}% midpoint-band chance to finish alive below its ${format(threshold)} HP Explosion threshold.`,
+                details: {
+                    targetId: enemy.id,
+                    currentHp: enemy.currHp,
+                    threshold,
+                    crossingProbability: formatNumber(crossingProbability),
+                    lethalProbability: formatNumber(lethalProbability),
+                    safeLethal: false,
+                    approximation: "Public damage-band midpoints with ordered independent hits; reactions are harmless if later hits defeat the Skunk.",
+                },
+            });
+        } else if (lethalProbability > 0) {
+            rules.push({
+                id: "skunk.explosion-safe-lethal",
+                adjustment: 0,
+                reason: `${enemy.id} can be removed without a surviving below-threshold outcome in the midpoint-band projection.`,
+                details: {
+                    targetId: enemy.id,
+                    currentHp: enemy.currHp,
+                    threshold,
+                    crossingProbability: 0,
+                    lethalProbability: formatNumber(lethalProbability),
+                    safeLethal: true,
+                },
+            });
+        }
+    }
+    return rules;
+}
+
 function bestAvailableSourceAttackRemoval(
     context: PolicyContext,
     relationship: PounceRelationship,
@@ -157,6 +407,238 @@ function previewHasDamage(target: ValidTarget, enemyId: EntityId): boolean {
     );
 }
 
+function usefulCommittedHealing(context: PolicyContext, intention: Intention): number {
+    const missingHp = new Map(context.state.enemies.map((enemy) => [
+        enemy.id,
+        Math.max(0, enemy.maxHp - enemy.currHp),
+    ]));
+    const healingByTarget = new Map<EntityId, number>();
+    for (const effect of [
+        ...intention.effects,
+        ...intention.targets.flatMap(({ effects }) => effects),
+    ]) {
+        if (effect.type !== "damage" || effect.amount >= 0) continue;
+        healingByTarget.set(
+            effect.target,
+            (healingByTarget.get(effect.target) ?? 0) - effect.amount,
+        );
+    }
+    let useful = 0;
+    for (const [targetId, amount] of healingByTarget) {
+        useful += Math.min(missingHp.get(targetId) ?? 0, amount);
+    }
+    return useful;
+}
+
+function projectAttack(
+    candidate: SmartCandidate,
+    target: ValidTarget,
+    barrierDuration: number,
+    targetHp: number,
+): AttackProjection {
+    if (target.target === null) {
+        return {
+            rawExpectedDamage: 0,
+            postBarrierExpectedDamage: 0,
+            expectedBlockedHits: 0,
+            lethalProbability: 0,
+            states: [],
+        };
+    }
+    const targetId = target.target;
+    const outcomes = damageOutcomes(target);
+    let states: AttackState[] = [{
+        barrier: barrierDuration,
+        damage: 0,
+        probability: 1,
+        blockedHits: 0,
+    }];
+    for (let hit = 0; hit < candidate.hits; hit += 1) {
+        const next: AttackState[] = [];
+        for (const state of states) {
+            for (const outcome of outcomes) {
+                if (outcome.probability <= 0) continue;
+                const blocked = outcome.damage > 0 && state.barrier > 0;
+                next.push({
+                    barrier: state.barrier - (blocked ? 1 : 0),
+                    damage: state.damage + (blocked ? 0 : outcome.damage),
+                    probability: state.probability * outcome.probability,
+                    blockedHits: state.blockedHits + (blocked ? 1 : 0),
+                });
+            }
+        }
+        states = coalesceStates(next);
+    }
+
+    const onceDamage = damageEffectsToEnemy(candidate.effects, targetId);
+    if (onceDamage > 0) {
+        states = states.map((state) => {
+            const blocked = state.barrier > 0;
+            return {
+                barrier: state.barrier - (blocked ? 1 : 0),
+                damage: state.damage + (blocked ? 0 : onceDamage),
+                probability: state.probability,
+                blockedHits: state.blockedHits + (blocked ? 1 : 0),
+            };
+        });
+    }
+
+    const rawExpectedDamage = expectedDamageToEnemy(candidate, targetId);
+    const postBarrierExpectedDamage = states.reduce(
+        (total, state) => total + state.damage * state.probability,
+        0,
+    );
+    const expectedBlockedHits = states.reduce(
+        (total, state) => total + state.blockedHits * state.probability,
+        0,
+    );
+    const lethalProbability = states.reduce(
+        (total, state) => total + (state.damage >= targetHp ? state.probability : 0),
+        0,
+    );
+    return {
+        rawExpectedDamage,
+        postBarrierExpectedDamage,
+        expectedBlockedHits,
+        lethalProbability,
+        states,
+    };
+}
+
+function damageOutcomes(target: ValidTarget): Array<{ probability: number; damage: number }> {
+    const fixedDamage = damageEffectsToEnemy(target.effects, target.target);
+    const outcomes: Array<{ probability: number; damage: number }> = [];
+    let representedProbability = 0;
+    for (const band of ["miss", "graze", "hit", "crit", "none"] as const) {
+        const preview = target.damage?.[band];
+        if (preview === undefined) continue;
+        const probability = clamp(preview.chance / 100, 0, 1);
+        representedProbability += probability;
+        outcomes.push({
+            probability,
+            damage: Math.max(0, fixedDamage + (preview.min + preview.max) / 2),
+        });
+    }
+    if (outcomes.length > 0) {
+        if (representedProbability < 1) {
+            outcomes.push({ probability: 1 - representedProbability, damage: 0 });
+        }
+        return outcomes;
+    }
+
+    if (fixedDamage <= 0) return [{ probability: 1, damage: 0 }];
+    if (target.accuracy !== undefined) {
+        const success = nonMissProbability(target.accuracy, target);
+        return [
+            { probability: 1 - success, damage: 0 },
+            { probability: success, damage: fixedDamage },
+        ];
+    }
+    return [{ probability: 1, damage: fixedDamage }];
+}
+
+function coalesceStates(states: readonly AttackState[]): AttackState[] {
+    const combined = new Map<string, AttackState>();
+    for (const state of states) {
+        const damage = Number(state.damage.toFixed(4));
+        const key = `${state.barrier}|${damage}|${state.blockedHits}`;
+        const existing = combined.get(key);
+        combined.set(key, existing === undefined
+            ? { ...state, damage }
+            : { ...existing, probability: existing.probability + state.probability });
+    }
+    return [...combined.values()];
+}
+
+function explosionRecoveryPressure(context: PolicyContext, actorId: EntityId): number {
+    const actor = context.state.characters.find(({ id }) => id === actorId);
+    const explosion = context.library.moves[LATEX_EXPLOSION];
+    if (actor === undefined || explosion === undefined || explosion.baseDamage === undefined) return 0;
+
+    const expectedEffectiveness = expectedExplosionEffectiveness(explosion.accuracy);
+    const expectedAmount = explosion.baseDamage * expectedEffectiveness;
+    if (expectedAmount <= 0 || explosion.bindings.length === 0) return 0;
+    const current = currentBindingBoard(context.state.characters);
+    const projected = cloneBindingBoard(current);
+    for (const bindingId of explosion.bindings) {
+        addBinding(projected, actorId, bindingId, expectedAmount, context.thresholds.max);
+    }
+    return Math.max(
+        0,
+        totalRecoveryDebt(projected, context.thresholds)
+            - totalRecoveryDebt(current, context.thresholds),
+    );
+}
+
+function expectedExplosionEffectiveness(accuracy: AccuracyProfile | undefined): number {
+    if (accuracy === undefined) return 0;
+    // Public MoveReference exposes band probabilities but not within-band
+    // effectiveness ranges, so use the current band midpoints as the smallest
+    // isolated content-aware approximation.
+    const midpoints: Readonly<Record<HitBand, number>> = {
+        none: 0,
+        miss: 0,
+        graze: 0.35,
+        hit: 0.9,
+        crit: 1.75,
+    };
+    return Object.entries(accuracy).reduce(
+        (total, [band, chance]) => total
+            + ((chance ?? 0) / 100) * midpoints[band as HitBand],
+        0,
+    );
+}
+
+function expectedDamageToEnemy(candidate: SmartCandidate, enemyId: EntityId): number {
+    let total = damageEffectsToEnemy(candidate.effects, enemyId);
+    for (const target of candidate.targets) {
+        let perHit = damageEffectsToEnemy(target.effects, enemyId);
+        if (target.target === enemyId) {
+            for (const band of Object.values(target.damage ?? {})) {
+                if (band !== undefined) {
+                    perHit += (band.chance / 100) * ((band.min + band.max) / 2);
+                }
+            }
+        }
+        total += perHit * candidate.hits;
+    }
+    return total;
+}
+
+function damageEffectsToEnemy(
+    effects: SmartCandidate["effects"],
+    enemyId: EntityId | null,
+): number {
+    if (enemyId === null) return 0;
+    return effects.reduce(
+        (total, effect) => total
+            + (effect.type === "damage" && effect.target === enemyId && effect.amount > 0
+                ? effect.amount
+                : 0),
+        0,
+    );
+}
+
+function finisherValue(damage: number, currentHp: number): number {
+    return currentHp > 0 ? damage * Math.min(damage / currentHp, 1) : 0;
+}
+
+function expectedSuccessfulHits(target: ValidTarget): number {
+    return nonMissProbability(target.accuracy, target);
+}
+
+function isFairy(id: EntityId): boolean {
+    return FAIRY_PATTERN.test(id);
+}
+
+function isSkunk(id: EntityId): boolean {
+    return SKUNK_PATTERN.test(id);
+}
+
+function isFairyHealTarget(id: EntityId): boolean {
+    return isSkunk(id) || SKUNKETTE_PATTERN.test(id);
+}
+
 function nonMissProbability(
     accuracy: AccuracyProfile | undefined,
     target: ValidTarget,
@@ -188,6 +670,10 @@ function throwOffReservePenalty(level: number): number {
 
 function format(value: number): string {
     return Number(value.toFixed(2)).toString();
+}
+
+function formatNumber(value: number): number {
+    return Number(value.toFixed(4));
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
