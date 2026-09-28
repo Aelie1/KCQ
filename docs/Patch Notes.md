@@ -1,5 +1,10 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.8.2 — 2026-09-28
+* Matsuko's Attack Me! now grants +3 Defense for that turn
+* Skunk Collar spread is now based on its value — stays +10 at 50, and scales from +1 at 5 to +20 at 100
+* Latex Rain is simplified.  It used to have multiple random values, now it does 2/3/4 tracks of +10 flat binding, slightly skewed to lower tracks at neutral Defense
+
 ## 0.8.1 — 2026-09-25
 
 ### Player Cooldowns
