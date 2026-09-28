@@ -14,6 +14,7 @@ const STORE_REMOVE_MODIFIER = 2;
 const RELEASE_PLAYER_AMOUNT = 50;
 const RELEASE_ENEMY_AMOUNT = 25;
 const RELEASE_BUFF = "subspaceClutter";
+const RELEASE_MODIFIER = -2;
 
 const ROCKFALL_DAMAGE = 10;
 
@@ -250,8 +251,8 @@ export const release: MoveDef = {
                     duration: 2,
                     active: true,
                     modifiers: {
-                        defense: -1,
-                        hit: -1,
+                        defense: RELEASE_MODIFIER,
+                        hit: RELEASE_MODIFIER,
                     }
                 }
 

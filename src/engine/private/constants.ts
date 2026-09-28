@@ -1,6 +1,6 @@
 import { HitBand } from "../public/types";
 
-export const EFFECTIVENESS_MODIFIER = 0.125;
+export const EFFECTIVENESS_MODIFIER = 0.1;
 export const DEFENSE_MODIFIER = 10;
 export const HIT_MODIFIER = 10;
 export const WILLPOWER_MODIFIER = 10;

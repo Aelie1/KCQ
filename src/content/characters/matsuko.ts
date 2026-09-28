@@ -13,8 +13,10 @@ const PUNCH_DAMAGE = 30;
 const KICK_DAMAGE = 30;
 
 const WHITE_FLAME_DAMAGE = 30;
+const WHITE_FLAME_HIT = 2;
 
 const PHOENIX_KICK_DAMAGE = 30;
+const PHOENIX_KICK_POTENCY = 3;
 
 const IMMOLATION_DAMAGE = 75;
 const IMMOLATION_BUFF = "burnout";
@@ -65,7 +67,7 @@ export const whiteFlame: MoveDef = {
     baseDamage: WHITE_FLAME_DAMAGE,
     type: "arms",
     accuracy: basicPlayerAccuracy,
-    modifiers: { hit: 2 },
+    modifiers: { hit: WHITE_FLAME_HIT },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
@@ -91,7 +93,7 @@ export const phoenixKick: MoveDef = {
     baseDamage: PHOENIX_KICK_DAMAGE,
     type: "legs",
     accuracy: basicPlayerAccuracy,
-    modifiers: { potency: 2 },
+    modifiers: { potency: PHOENIX_KICK_POTENCY },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }

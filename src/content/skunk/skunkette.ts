@@ -20,7 +20,7 @@ const MIST_DAMAGE = 10;
 const MIST_SPREAD = 5;
 
 const RESISTANCE_HP_THRESHOLD = 0.4;
-const RESISTANCE_POTENCY = -3;
+const RESISTANCE_POTENCY = -4;
 const RESISTANCE_DEFENSE = -1;
 const RESISTANCE_BUFF = "resistance";
 
