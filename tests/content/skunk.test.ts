@@ -4,14 +4,18 @@ import { trapPuddle } from "../../src/content/skunk/puddles";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import type { BindingDef, EncounterDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { isEnemy } from "../../src/engine/protected/helpers";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type { Engine } from "../../src/engine/public/types";
 import { resolvedEvents } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 const BODY_LATEX = [latexHead, latexArms, latexTorso, latexLegs];
+const EXPLOSION_HP_RATIO = 0.2;
+const ABOVE_THRESHOLD = skunk.hp * EXPLOSION_HP_RATIO + 1;
+const BELOW_THRESHOLD = skunk.hp * EXPLOSION_HP_RATIO - 1;
+
 
 type InitialBinding = {
     definition: BindingDef;
@@ -317,7 +321,7 @@ describe("normal Latex Skunk", () => {
         const rope = makeBindingDef("rope");
         const engine = loadSkunk({
             seed: 1,
-            hp: 60,
+            hp: BELOW_THRESHOLD,
             characterIds: ["lessBound", "moreBound"],
             bindings: {
                 lessBound: [{ definition: rope, value: 10 }],
@@ -334,7 +338,7 @@ describe("normal Latex Skunk", () => {
     it("falls back to a valid character for low-HP Explosion when nobody is bound", () => {
         const engine = loadSkunk({
             seed: 1,
-            hp: 60,
+            hp: BELOW_THRESHOLD,
             characterIds: ["first", "second"],
         });
         expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
@@ -353,7 +357,7 @@ describe("normal Latex Skunk", () => {
         });
         const engine = loadSkunk({
             seed: 1,
-            hp: 76,
+            hp: ABOVE_THRESHOLD,
             characterIds: ["alpha", "beta"],
             moves: [crossThreshold],
         });
@@ -376,7 +380,7 @@ describe("normal Latex Skunk", () => {
         if (!result.success) throw new Error("Expected threshold-crossing attack to succeed");
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "skunk1" });
         expect(result.frames.at(-1)!.state.enemies[0]).toMatchObject({
-            currHp: 74,
+            currHp: BELOW_THRESHOLD,
             intentions: [{
                 move: "latexExplosion",
                 targets: [{ target: attacker }],
@@ -391,7 +395,7 @@ describe("normal Latex Skunk", () => {
             const rope = makeBindingDef("rope");
             const engine = loadSkunk({
                 seed: 1,
-                hp: 60,
+                hp: BELOW_THRESHOLD,
                 trapAmount: withTrap ? 0 : null,
                 bindings: { hero: [{ definition: rope, value: 1 }] },
             });
@@ -425,7 +429,7 @@ describe("normal Latex Skunk", () => {
         const rope = makeBindingDef("rope");
         const engine = loadSkunk({
             seed: 2,
-            hp: 60,
+            hp: BELOW_THRESHOLD,
             bindings: { hero: [{ definition: rope, value: 1 }] },
         });
         expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
@@ -444,7 +448,7 @@ describe("normal Latex Skunk", () => {
         const rope = makeBindingDef("rope");
         const engine = loadSkunk({
             seed: 36,
-            hp: 60,
+            hp: BELOW_THRESHOLD,
             bindings: { hero: [{ definition: rope, value: 1 }] },
         });
         expect(engine.getGameState().enemies[0].intentions).toMatchObject([{
@@ -453,9 +457,9 @@ describe("normal Latex Skunk", () => {
         }]);
 
         const result = endTurn(engine);
-        expect(result.frames.at(-1)!.state.enemies.find(({ id }) => id === "skunk1")).toMatchObject({ currHp: 120 });
+        expect(result.frames.at(-1)!.state.enemies.find(({ id }) => id === "skunk1")).toMatchObject({ currHp: BELOW_THRESHOLD + skunk.hp * EXPLOSION_HP_RATIO });
         expect(resolvedEvents(result.frames)).toContainEqual({
-            type: "enemyHealed", target: "skunk1", amount: 60,
+            type: "enemyHealed", target: "skunk1", amount: skunk.hp * EXPLOSION_HP_RATIO,
         });
         expect(BODY_LATEX.map(({ id }) => id)).toEqual(
             result.frames.at(-1)!.state.characters[0].bindings.slice(1).map(({ id }) => id),

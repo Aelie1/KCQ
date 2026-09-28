@@ -249,6 +249,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             actionIndex: trace.length,
             action,
             before,
+            actions,
             result,
         });
         if (!result.success) {

@@ -1,5 +1,6 @@
 import type {
     ActionResult,
+    ActionView,
     GameState,
     PlayerAction,
 } from "../../engine/public/types";
@@ -18,6 +19,8 @@ export interface MetricActionObservation {
     readonly actionIndex: number;
     readonly action: PlayerAction;
     readonly before: GameState;
+    /** Public action availability immediately before the submitted action. */
+    readonly actions?: readonly ActionView[];
     readonly result: ActionResult;
 }
 

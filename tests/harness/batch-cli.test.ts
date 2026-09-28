@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { parseBatchArguments, parseBatchCommandArguments } from "../../src/harness/cli/batch-cli";
 import type { BatchSummary, RunReference } from "../../src/harness/batch/summary";
 import { formatBatchSummary } from "../../src/harness/batch/summary-format";
+import { parseBatchArguments, parseBatchCommandArguments } from "../../src/harness/cli/batch-cli";
 import { policies } from "../../src/harness/policies";
 
 function reference(runIndex: number, termination: RunReference["termination"]): RunReference {
@@ -54,8 +54,40 @@ function summaryFixture(): BatchSummary {
         bondageRemoved: { escapes: 0, skills: 0, rescues: 0, unattributed: 0 },
         bondageBlocked: { unattributed: 0 },
         bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
+        enemyLifetimes: {},
         skunkExplosion: {
             intentionsQueued: 0, killedBeforeUse: 0, uses: 0, cancelledBeforeUse: 0,
+            hpAtTrigger: {}, unspentCharactersAtTrigger: {}, hpAndUnspentAtTrigger: {},
+        },
+        skunkExplosionResponse: {
+            decisionsObserved: 0,
+            withDamageOption: 0,
+            actions: {
+                damageExplodingSkunk: 0,
+                damageOtherEnemy: 0,
+                stopExplodingSkunk: 0,
+                supportExplodingSkunk: 0,
+                escape: 0,
+                stance: 0,
+                supportMove: 0,
+                endTurn: 0,
+            },
+            whileDamageOptionAvailable: {
+                damageExplodingSkunk: 0,
+                damageOtherEnemy: 0,
+                stopExplodingSkunk: 0,
+                supportExplodingSkunk: 0,
+                escape: 0,
+                stance: 0,
+                supportMove: 0,
+                endTurn: 0,
+            },
+            movesByMove: {},
+            whileDamageOptionAvailableByMove: {},
+            targetsById: {},
+            whileDamageOptionAvailableTargetsById: {},
+            damageExplodingSkunkByMove: {},
+            damageOtherEnemyByMove: {},
         },
         forensicExamples: {
             shortestVictory: reference(0, "victory"),

@@ -1,5 +1,7 @@
 import type { ContentLibrary, MoveReference } from "../../engine/public/library";
 import type {
+    ActionInfo,
+    ActionView,
     BondageEvent,
     Buff,
     Character,
@@ -10,6 +12,8 @@ import type {
     HitBand,
     LeafEvent,
     ModifierId,
+    PlayerAction,
+    ValidTarget,
 } from "../../engine/public/types";
 import type { MetricCollector } from "./collector";
 
@@ -72,6 +76,50 @@ export interface SkunkExplosionMetrics {
     killedBeforeUse: number;
     uses: number;
     cancelledBeforeUse: number;
+    hpAtTrigger: Record<string, number>;
+    unspentCharactersAtTrigger: Record<string, number>;
+    hpAndUnspentAtTrigger: Record<string, number>;
+}
+
+export interface SkunkExplosionResponseActionCounts {
+    damageExplodingSkunk: number;
+    damageOtherEnemy: number;
+    stopExplodingSkunk: number;
+    supportExplodingSkunk: number;
+    escape: number;
+    stance: number;
+    supportMove: number;
+    endTurn: number;
+}
+
+export interface SkunkExplosionResponseMetrics {
+    /** Successful player decisions submitted while at least one Explosion intention is visible. */
+    decisionsObserved: number;
+
+    /** Decisions where some currently-actionable character could damage an exploding Skunk. */
+    withDamageOption: number;
+
+    actions: SkunkExplosionResponseActionCounts;
+    whileDamageOptionAvailable: SkunkExplosionResponseActionCounts;
+
+    /** Selected player moves while Explosion is on the board. */
+    movesByMove: Record<string, number>;
+    whileDamageOptionAvailableByMove: Record<string, number>;
+
+    /** Actual selected move targets. AoE all-target moves contribute every valid public target. */
+    targetsById: Record<string, number>;
+    whileDamageOptionAvailableTargetsById: Record<string, number>;
+
+    damageExplodingSkunkByMove: Record<string, number>;
+    damageOtherEnemyByMove: Record<string, number>;
+}
+
+export interface EnemyLifetimeMetrics {
+    /** Inclusive rounds observed across all instances with this exact public ID. */
+    totalRounds: number;
+    observations: number;
+    defeated: number;
+    survivedToEnd: number;
 }
 
 /** Compact per-fight counters; derived averages are added only in BatchSummary. */
@@ -84,6 +132,12 @@ export interface DetailedCombatMetrics {
     bondageBlocked: UnattributedBondageBlockedMetrics;
     bondageReceived: BondageReceivedMetrics;
     skunkExplosion: SkunkExplosionMetrics;
+
+    /** Optional so older/synthetic DetailedCombatMetrics fixtures remain valid. */
+    enemyLifetimes?: Record<string, EnemyLifetimeMetrics>;
+
+    /** Optional so older/synthetic DetailedCombatMetrics fixtures remain valid. */
+    skunkExplosionResponse?: SkunkExplosionResponseMetrics;
 }
 
 const SKUNKED_BUFF = "skunked";
@@ -93,6 +147,8 @@ export function createDetailedCombatCollector(): MetricCollector<DetailedCombatM
     const pendingBonusEscape = new Set<string>();
     const pendingExplosions = new Set<string>();
     const defenseOrigins = new Map<string, string>();
+    const activeEnemyFirstSeen = new Map<string, number>();
+    const observedEnemyIds = new Set<string>();
     let library: ContentLibrary | undefined;
     const result: DetailedCombatMetrics = {
         escapeSequences: { single: 0, double: 0, byActor: {} },
@@ -103,6 +159,8 @@ export function createDetailedCombatCollector(): MetricCollector<DetailedCombatM
         bondageBlocked: { unattributed: 0 },
         bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
         skunkExplosion: emptySkunkExplosionMetrics(),
+        enemyLifetimes: {},
+        skunkExplosionResponse: emptySkunkExplosionResponseMetrics(),
     };
 
     const countSequence = (actorId: string, kind: keyof SequenceCounts): void => {
@@ -121,6 +179,11 @@ export function createDetailedCombatCollector(): MetricCollector<DetailedCombatM
         onFightStart(context) {
             library = context.library;
             for (const character of context.view.characters) playerIds.add(character.id);
+            observeEnemyAppearances(
+                context.view,
+                activeEnemyFirstSeen,
+                observedEnemyIds,
+            );
             queueNewExplosionEpisodes(context.view, pendingExplosions, result.skunkExplosion);
         },
         onAction(context) {
@@ -132,8 +195,23 @@ export function createDetailedCombatCollector(): MetricCollector<DetailedCombatM
             if (actionActor !== undefined && context.action.type !== "escape") flushPending(actionActor);
             if (!context.result.success) return;
 
+            observeSkunkExplosionResponse(
+                context.before,
+                context.actions ?? [],
+                context.action,
+                result.skunkExplosionResponse!,
+            );
+
             let prior = context.before;
             for (const frame of context.result.frames) {
+                observeEnemyLifetimeFrame(
+                    frame.event,
+                    prior,
+                    frame.state,
+                    activeEnemyFirstSeen,
+                    observedEnemyIds,
+                    result.enemyLifetimes!,
+                );
                 observeFrame(
                     frame.event,
                     prior,
@@ -167,11 +245,107 @@ export function createDetailedCombatCollector(): MetricCollector<DetailedCombatM
                 }
             }
         },
-        onFightEnd() {
+        onFightEnd(context) {
             for (const actorId of [...pendingBonusEscape]) flushPending(actorId);
+            observeEnemyAppearances(
+                context.view,
+                activeEnemyFirstSeen,
+                observedEnemyIds,
+            );
+            for (const enemyId of [...activeEnemyFirstSeen.keys()]) {
+                closeEnemyLifetime(
+                    enemyId,
+                    context.view.turn.round,
+                    false,
+                    activeEnemyFirstSeen,
+                    result.enemyLifetimes!,
+                );
+            }
         },
         getResult: () => structuredClone(result),
     };
+}
+
+function observeEnemyLifetimeFrame(
+    event: GameEvent,
+    before: GameState,
+    after: GameState,
+    active: Map<string, number>,
+    observed: Set<string>,
+    result: Record<string, EnemyLifetimeMetrics>,
+): void {
+    observeEnemyAppearances(before, active, observed);
+    const leaves = flattenEvent(event);
+    for (const leaf of leaves) {
+        if (leaf.type === "enemySpawned") {
+            observeEnemyAppearance(
+                leaf.target,
+                after.turn.round,
+                active,
+                observed,
+            );
+        }
+    }
+    observeEnemyAppearances(after, active, observed);
+    for (const leaf of leaves) {
+        if (leaf.type !== "enemyDefeated") continue;
+        observeEnemyAppearance(
+            leaf.target,
+            after.turn.round,
+            active,
+            observed,
+        );
+        closeEnemyLifetime(
+            leaf.target,
+            after.turn.round,
+            true,
+            active,
+            result,
+        );
+    }
+}
+
+function observeEnemyAppearances(
+    view: GameState,
+    active: Map<string, number>,
+    observed: Set<string>,
+): void {
+    for (const enemy of view.enemies) {
+        observeEnemyAppearance(enemy.id, view.turn.round, active, observed);
+    }
+}
+
+function observeEnemyAppearance(
+    enemyId: string,
+    round: number,
+    active: Map<string, number>,
+    observed: Set<string>,
+): void {
+    if (observed.has(enemyId)) return;
+    observed.add(enemyId);
+    active.set(enemyId, round);
+}
+
+function closeEnemyLifetime(
+    enemyId: string,
+    endRound: number,
+    defeated: boolean,
+    active: Map<string, number>,
+    result: Record<string, EnemyLifetimeMetrics>,
+): void {
+    const firstSeenRound = active.get(enemyId);
+    if (firstSeenRound === undefined) return;
+    active.delete(enemyId);
+    const metrics = result[enemyId] ??= {
+        totalRounds: 0,
+        observations: 0,
+        defeated: 0,
+        survivedToEnd: 0,
+    };
+    metrics.totalRounds += Math.max(1, endRound - firstSeenRound + 1);
+    metrics.observations += 1;
+    if (defeated) metrics.defeated += 1;
+    else metrics.survivedToEnd += 1;
 }
 
 function observeFrame(
@@ -316,6 +490,14 @@ function observeExplosionFrame(
     queueNewExplosionEpisodes(after, pending, result, justUsed);
 }
 
+function explosionHpBucket(hp: number): string {
+    if (hp <= 15) return "01-15";
+    if (hp <= 30) return "16-30";
+    if (hp <= 45) return "31-45";
+    if (hp <= 60) return "46-60";
+    return "61+";
+}
+
 function queueNewExplosionEpisodes(
     view: GameState,
     pending: Set<string>,
@@ -329,6 +511,18 @@ function queueNewExplosionEpisodes(
         }
         pending.add(enemy.id);
         result.intentionsQueued += 1;
+
+        const hpBucket = explosionHpBucket(enemy.currHp);
+        const unspentCharacters = view.characters.filter(
+            character => !character.acted
+        ).length;
+
+        increment(result.hpAtTrigger, hpBucket);
+        increment(result.unspentCharactersAtTrigger, String(unspentCharacters));
+        increment(
+            result.hpAndUnspentAtTrigger,
+            `${hpBucket}|${unspentCharacters}`,
+        );
     }
 }
 
@@ -360,7 +554,7 @@ function stoppedCommittedBondage(
         blocked += Math.max(
             0,
             committedPositiveBondage(before, enemyId, playerIds)
-                - committedPositiveBondage(after, enemyId, playerIds),
+            - committedPositiveBondage(after, enemyId, playerIds),
         );
     }
     return blocked;
@@ -394,7 +588,259 @@ function positivePlayerBinding(
 }
 
 function emptySkunkExplosionMetrics(): SkunkExplosionMetrics {
-    return { intentionsQueued: 0, killedBeforeUse: 0, uses: 0, cancelledBeforeUse: 0 };
+    return {
+        intentionsQueued: 0,
+        killedBeforeUse: 0,
+        uses: 0,
+        cancelledBeforeUse: 0,
+        hpAtTrigger: {},
+        unspentCharactersAtTrigger: {},
+        hpAndUnspentAtTrigger: {},
+    };
+}
+
+function emptySkunkExplosionResponseActionCounts(): SkunkExplosionResponseActionCounts {
+    return {
+        damageExplodingSkunk: 0,
+        damageOtherEnemy: 0,
+        stopExplodingSkunk: 0,
+        supportExplodingSkunk: 0,
+        escape: 0,
+        stance: 0,
+        supportMove: 0,
+        endTurn: 0,
+    };
+}
+
+function emptySkunkExplosionResponseMetrics(): SkunkExplosionResponseMetrics {
+    return {
+        decisionsObserved: 0,
+        withDamageOption: 0,
+        actions: emptySkunkExplosionResponseActionCounts(),
+        whileDamageOptionAvailable: emptySkunkExplosionResponseActionCounts(),
+        movesByMove: {},
+        whileDamageOptionAvailableByMove: {},
+        targetsById: {},
+        whileDamageOptionAvailableTargetsById: {},
+        damageExplodingSkunkByMove: {},
+        damageOtherEnemyByMove: {},
+    };
+}
+
+function observeSkunkExplosionResponse(
+    before: GameState,
+    actionViews: readonly ActionView[],
+    action: PlayerAction,
+    result: SkunkExplosionResponseMetrics,
+): void {
+    const explodingSkunks = new Set(
+        before.enemies
+            .filter((enemy) => enemy.currHp > 0 && hasExplosionIntention(enemy))
+            .map((enemy) => enemy.id),
+    );
+
+    if (explodingSkunks.size === 0) return;
+
+    result.decisionsObserved += 1;
+
+    const damageOptionAvailable = hasDamageOptionAgainst(
+        actionViews,
+        explodingSkunks,
+    );
+
+    if (damageOptionAvailable) {
+        result.withDamageOption += 1;
+    }
+
+    const classification = classifyExplosionResponseAction(
+        before,
+        actionViews,
+        action,
+        explodingSkunks,
+    );
+
+    result.actions[classification] += 1;
+
+    if (damageOptionAvailable) {
+        result.whileDamageOptionAvailable[classification] += 1;
+    }
+
+    if (action.type !== "move") return;
+
+    increment(result.movesByMove, action.move);
+
+    if (damageOptionAvailable) {
+        increment(
+            result.whileDamageOptionAvailableByMove,
+            action.move,
+        );
+    }
+
+    const previews = selectedMovePreviews(actionViews, action);
+
+    for (const preview of previews) {
+        if (preview.target === null) continue;
+
+        increment(result.targetsById, preview.target);
+
+        if (damageOptionAvailable) {
+            increment(
+                result.whileDamageOptionAvailableTargetsById,
+                preview.target,
+            );
+        }
+    }
+
+    if (classification === "damageExplodingSkunk") {
+        increment(result.damageExplodingSkunkByMove, action.move);
+    } else if (classification === "damageOtherEnemy") {
+        increment(result.damageOtherEnemyByMove, action.move);
+    }
+}
+
+function hasDamageOptionAgainst(
+    actionViews: readonly ActionView[],
+    enemyIds: ReadonlySet<string>,
+): boolean {
+    return actionViews.some(
+        (actor) =>
+            actor.available
+            && actor.moves.some(
+                (move) =>
+                    move.available
+                    && move.targets.some(
+                        (target) =>
+                            target.valid
+                            && target.target !== null
+                            && enemyIds.has(target.target)
+                            && previewCanDamage(target),
+                    ),
+            ),
+    );
+}
+
+function classifyExplosionResponseAction(
+    before: GameState,
+    actionViews: readonly ActionView[],
+    action: PlayerAction,
+    explodingSkunks: ReadonlySet<string>,
+): keyof SkunkExplosionResponseActionCounts {
+    switch (action.type) {
+        case "escape":
+            return "escape";
+
+        case "stance":
+            return "stance";
+
+        case "endTurn":
+            return "endTurn";
+
+        case "move": {
+            const previews = selectedMovePreviews(actionViews, action);
+
+            const targetsExplosion = previews.some(
+                (target) =>
+                    target.target !== null
+                    && explodingSkunks.has(target.target),
+            );
+
+            if (action.move === "stop" && targetsExplosion) {
+                return "stopExplodingSkunk";
+            }
+
+            const damagesExplosion = previews.some(
+                (target) =>
+                    target.target !== null
+                    && explodingSkunks.has(target.target)
+                    && previewCanDamage(target),
+            );
+
+            if (damagesExplosion) {
+                return "damageExplodingSkunk";
+            }
+
+            const enemyIds = new Set(
+                before.enemies.map((enemy) => enemy.id),
+            );
+
+            const damagesOtherEnemy = previews.some(
+                (target) =>
+                    target.target !== null
+                    && enemyIds.has(target.target)
+                    && !explodingSkunks.has(target.target)
+                    && previewCanDamage(target),
+            );
+
+            if (damagesOtherEnemy) {
+                return "damageOtherEnemy";
+            }
+
+            if (targetsExplosion) {
+                return "supportExplodingSkunk";
+            }
+
+            return "supportMove";
+        }
+    }
+}
+
+function selectedMovePreviews(
+    actionViews: readonly ActionView[],
+    action: Extract<PlayerAction, { type: "move" }>,
+): ValidTarget[] {
+    const moveInfo = findMoveInfo(
+        actionViews,
+        action.actor,
+        action.move,
+    );
+
+    if (!moveInfo) return [];
+
+    const valid = moveInfo.targets.filter(
+        (target): target is ValidTarget => target.valid,
+    );
+
+    /*
+     * Smart represents all-target and zero-target moves with no explicit
+     * selected target IDs, so use their complete public preview set.
+     */
+    if (moveInfo.move.targets === "all" || moveInfo.move.targets === 0) {
+        return valid;
+    }
+
+    const selectedIds = new Set(action.targets);
+
+    return valid.filter(
+        (target) =>
+            target.target !== null
+            && selectedIds.has(target.target),
+    );
+}
+
+function findMoveInfo(
+    actionViews: readonly ActionView[],
+    actorId: string,
+    moveId: string,
+): ActionInfo | undefined {
+    return actionViews
+        .find((actor) => actor.id === actorId)
+        ?.moves.find((move) => move.move.id === moveId);
+}
+
+function previewCanDamage(target: ValidTarget): boolean {
+    if (
+        Object.values(target.damage ?? {}).some(
+            (band) => band !== undefined && band.max > 0,
+        )
+    ) {
+        return true;
+    }
+
+    return target.effects.some(
+        (effect) =>
+            effect.type === "damage"
+            && effect.amount > 0,
+    );
 }
 
 function attributeReceived(

@@ -4,10 +4,12 @@ import type {
     BondageRemovedMetrics,
     CountByCharacterMetrics,
     DetailedCombatMetrics,
+    EnemyLifetimeMetrics,
     EscapeSequenceMetrics,
     RawPlayerMoveMetrics,
     RescueMetrics,
     SkunkExplosionMetrics,
+    SkunkExplosionResponseMetrics,
     UnattributedBondageBlockedMetrics,
 } from "../metrics";
 import type { BatchResult, BatchRun } from "./batch";
@@ -75,6 +77,13 @@ export interface PlayerMovePerformanceSummary {
     bondageBlocked: PerUseAmountSummary;
 }
 
+export interface EnemyLifetimeSummary {
+    observations: number;
+    defeated: number;
+    survivedToEnd: number;
+    averageRoundsAlive: number;
+}
+
 export interface WilsonInterval {
     lower: number;
     upper: number;
@@ -137,7 +146,10 @@ export interface BatchSummary {
     bondageRemoved: BondageRemovedMetrics;
     bondageBlocked: UnattributedBondageBlockedMetrics;
     bondageReceived: BondageReceivedMetrics;
+    /** Exact public enemy instance IDs, sorted deterministically in JSON output. */
+    enemyLifetimes: Record<string, EnemyLifetimeSummary>;
     skunkExplosion: SkunkExplosionMetrics;
+    skunkExplosionResponse: SkunkExplosionResponseMetrics;
     forensicExamples: ForensicExamples;
 }
 
@@ -293,7 +305,13 @@ export function summarizeBatch(batch: BatchResult): BatchSummary {
             traps: sortedRecord(detailedCombat.bondageReceived.traps),
             unattributed: detailedCombat.bondageReceived.unattributed,
         },
+        enemyLifetimes: finishEnemyLifetimes(
+            detailedCombat.enemyLifetimes ?? {},
+        ),
         skunkExplosion: { ...detailedCombat.skunkExplosion },
+        skunkExplosionResponse: finishSkunkExplosionResponse(
+            detailedCombat.skunkExplosionResponse,
+        ),
         forensicExamples,
     };
 }
@@ -307,12 +325,17 @@ function emptyDetailedCombatMetrics(): DetailedCombatMetrics {
         bondageRemoved: { escapes: 0, skills: 0, rescues: 0, unattributed: 0 },
         bondageBlocked: { unattributed: 0 },
         bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
+        enemyLifetimes: {},
         skunkExplosion: {
             intentionsQueued: 0,
             killedBeforeUse: 0,
             uses: 0,
             cancelledBeforeUse: 0,
+            hpAtTrigger: {},
+            unspentCharactersAtTrigger: {},
+            hpAndUnspentAtTrigger: {},
         },
+        skunkExplosionResponse: emptySkunkExplosionResponseMetrics(),
     };
 }
 
@@ -338,10 +361,92 @@ function aggregateDetailedCombat(target: DetailedCombatMetrics, source: Detailed
     target.bondageRemoved.rescues += source.bondageRemoved.rescues;
     target.bondageRemoved.unattributed += source.bondageRemoved.unattributed;
     target.bondageBlocked.unattributed += source.bondageBlocked.unattributed;
+    if (source.enemyLifetimes) {
+        const targetLifetimes = target.enemyLifetimes ??= {};
+        for (const [enemyId, sourceLifetime] of Object.entries(source.enemyLifetimes)) {
+            const lifetime = targetLifetimes[enemyId] ??= {
+                totalRounds: 0,
+                observations: 0,
+                defeated: 0,
+                survivedToEnd: 0,
+            };
+            lifetime.totalRounds += sourceLifetime.totalRounds;
+            lifetime.observations += sourceLifetime.observations;
+            lifetime.defeated += sourceLifetime.defeated;
+            lifetime.survivedToEnd += sourceLifetime.survivedToEnd;
+        }
+    }
     target.skunkExplosion.intentionsQueued += source.skunkExplosion.intentionsQueued;
     target.skunkExplosion.killedBeforeUse += source.skunkExplosion.killedBeforeUse;
     target.skunkExplosion.uses += source.skunkExplosion.uses;
     target.skunkExplosion.cancelledBeforeUse += source.skunkExplosion.cancelledBeforeUse;
+    addRecord(
+        target.skunkExplosion.hpAtTrigger,
+        source.skunkExplosion.hpAtTrigger,
+    );
+
+    addRecord(
+        target.skunkExplosion.unspentCharactersAtTrigger,
+        source.skunkExplosion.unspentCharactersAtTrigger,
+    );
+
+    addRecord(
+        target.skunkExplosion.hpAndUnspentAtTrigger,
+        source.skunkExplosion.hpAndUnspentAtTrigger,
+    );
+
+    if (source.skunkExplosionResponse) {
+        const response =
+            target.skunkExplosionResponse ??=
+            emptySkunkExplosionResponseMetrics();
+
+        response.decisionsObserved +=
+            source.skunkExplosionResponse.decisionsObserved;
+
+        response.withDamageOption +=
+            source.skunkExplosionResponse.withDamageOption;
+
+        addExplosionResponseActions(
+            response.actions,
+            source.skunkExplosionResponse.actions,
+        );
+
+        addExplosionResponseActions(
+            response.whileDamageOptionAvailable,
+            source.skunkExplosionResponse.whileDamageOptionAvailable,
+        );
+
+        addRecord(
+            response.movesByMove,
+            source.skunkExplosionResponse.movesByMove,
+        );
+
+        addRecord(
+            response.whileDamageOptionAvailableByMove,
+            source.skunkExplosionResponse.whileDamageOptionAvailableByMove,
+        );
+
+        addRecord(
+            response.targetsById,
+            source.skunkExplosionResponse.targetsById,
+        );
+
+        addRecord(
+            response.whileDamageOptionAvailableTargetsById,
+            source.skunkExplosionResponse
+                .whileDamageOptionAvailableTargetsById,
+        );
+
+        addRecord(
+            response.damageExplodingSkunkByMove,
+            source.skunkExplosionResponse.damageExplodingSkunkByMove,
+        );
+
+        addRecord(
+            response.damageOtherEnemyByMove,
+            source.skunkExplosionResponse.damageOtherEnemyByMove,
+        );
+    }
 
     for (const [moveId, sourceMove] of Object.entries(source.playerMoves)) {
         const move = target.playerMoves[moveId] ??= emptyRawPlayerMove();
@@ -368,6 +473,119 @@ function aggregateDetailedCombat(target: DetailedCombatMetrics, source: Detailed
             move.accuracy.results[band] += sourceMove.accuracy.results[band];
         }
     }
+}
+
+function finishEnemyLifetimes(
+    source: Readonly<Record<string, EnemyLifetimeMetrics>>,
+): Record<string, EnemyLifetimeSummary> {
+    const result: Record<string, EnemyLifetimeSummary> = {};
+    for (const enemyId of Object.keys(source).sort()) {
+        const lifetime = source[enemyId];
+        result[enemyId] = {
+            observations: lifetime.observations,
+            defeated: lifetime.defeated,
+            survivedToEnd: lifetime.survivedToEnd,
+            averageRoundsAlive: lifetime.observations === 0
+                ? 0
+                : lifetime.totalRounds / lifetime.observations,
+        };
+    }
+    return result;
+}
+
+function emptySkunkExplosionResponseMetrics(): SkunkExplosionResponseMetrics {
+    return {
+        decisionsObserved: 0,
+        withDamageOption: 0,
+        actions: {
+            damageExplodingSkunk: 0,
+            damageOtherEnemy: 0,
+            stopExplodingSkunk: 0,
+            supportExplodingSkunk: 0,
+            escape: 0,
+            stance: 0,
+            supportMove: 0,
+            endTurn: 0,
+        },
+        whileDamageOptionAvailable: {
+            damageExplodingSkunk: 0,
+            damageOtherEnemy: 0,
+            stopExplodingSkunk: 0,
+            supportExplodingSkunk: 0,
+            escape: 0,
+            stance: 0,
+            supportMove: 0,
+            endTurn: 0,
+        },
+        movesByMove: {},
+        whileDamageOptionAvailableByMove: {},
+        targetsById: {},
+        whileDamageOptionAvailableTargetsById: {},
+        damageExplodingSkunkByMove: {},
+        damageOtherEnemyByMove: {},
+    };
+}
+
+function addExplosionResponseActions(
+    target: SkunkExplosionResponseMetrics["actions"],
+    source: SkunkExplosionResponseMetrics["actions"],
+): void {
+    for (const key of [
+        "damageExplodingSkunk",
+        "damageOtherEnemy",
+        "stopExplodingSkunk",
+        "supportExplodingSkunk",
+        "escape",
+        "stance",
+        "supportMove",
+        "endTurn",
+    ] as const) {
+        target[key] += source[key];
+    }
+}
+
+function finishSkunkExplosionResponse(
+    source: SkunkExplosionResponseMetrics | undefined,
+): SkunkExplosionResponseMetrics {
+    const value =
+        source ?? emptySkunkExplosionResponseMetrics();
+
+    return {
+        decisionsObserved: value.decisionsObserved,
+        withDamageOption: value.withDamageOption,
+
+        actions: {
+            ...value.actions,
+        },
+
+        whileDamageOptionAvailable: {
+            ...value.whileDamageOptionAvailable,
+        },
+
+        movesByMove: sortedRecord(
+            value.movesByMove,
+        ),
+
+        whileDamageOptionAvailableByMove: sortedRecord(
+            value.whileDamageOptionAvailableByMove,
+        ),
+
+        targetsById: sortedRecord(
+            value.targetsById,
+        ),
+
+        whileDamageOptionAvailableTargetsById: sortedRecord(
+            value.whileDamageOptionAvailableTargetsById,
+        ),
+
+        damageExplodingSkunkByMove: sortedRecord(
+            value.damageExplodingSkunkByMove,
+        ),
+
+        damageOtherEnemyByMove: sortedRecord(
+            value.damageOtherEnemyByMove,
+        ),
+    };
 }
 
 function finishPlayerMoves(

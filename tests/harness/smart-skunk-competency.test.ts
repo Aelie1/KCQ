@@ -13,7 +13,9 @@ import type {
 import type { PolicyContext } from "../../src/harness/harness";
 import {
     assessSmartBoard,
+    evaluateFuturePuddlePressure,
     evaluateKitKnowledge,
+    evaluateSkunkRegenerationLiability,
     evaluateSmartDecision,
     generateSmartCandidates,
 } from "../../src/harness/policy/smart";
@@ -104,6 +106,15 @@ function fixture(
         bindings: ["generic-head", "generic-arms", "generic-torso", "generic-legs"],
         accuracy: { miss: 50, graze: 30, hit: 17, crit: 3 },
     };
+    library.moves.latexPuddle = {
+        id: "latexPuddle",
+        targetSide: "none",
+        targets: 0,
+        type: "none",
+        baseDamage: 30,
+        bindings: [],
+        accuracy: { graze: 45, hit: 50, crit: 5 },
+    };
     mutateLibrary?.(library);
     const state: GameState = {
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
@@ -143,6 +154,36 @@ function knowledge(context: PolicyContext, moveId: string, targetId: string) {
     );
 }
 
+function latexBinding(value: number, peak: number, id = "latexArms"): Binding {
+    return {
+        id,
+        value,
+        level: "hard",
+        data: { peak },
+        status: [],
+        tickEffects: [],
+    };
+}
+
+function escapeCandidate(context: PolicyContext, amount: number) {
+    context.actions[0].escapes.push({
+        available: true,
+        target: context.state.characters[0].id,
+        binding: "latexArms",
+        effects: [{
+            type: "binding",
+            target: context.state.characters[0].id,
+            binding: "latexArms",
+            amount,
+        }],
+    });
+    const value = generateSmartCandidates(context).find(({ action }) =>
+        action.type === "escape" && action.binding === "latexArms"
+    );
+    if (value === undefined) throw new Error("Missing Latex escape candidate");
+    return value;
+}
+
 function healingIntention(target: Enemy, amount: number, extras: Effect[] = []): Intention {
     return {
         move: "healingMagic",
@@ -154,6 +195,184 @@ function healingIntention(target: Enemy, amount: number, extras: Effect[] = []):
         effects: extras,
     };
 }
+
+describe("Smart Skunk Regeneration liability", () => {
+    it("does not adjust without a living Skunk", () => {
+        const context = fixture(
+            [enemy("wolf1")],
+            [],
+            [character("hero", [latexBinding(10, 70)])],
+        );
+        const result = evaluateSkunkRegenerationLiability(
+            context,
+            escapeCandidate(context, -10),
+        );
+        expect(result).toMatchObject({
+            beforeExposure: 60,
+            afterExposure: 0,
+            livingSkunkCount: 0,
+            rawAdjustment: 0,
+        });
+    });
+
+    it("recognizes a present 10/70 Latex binding as 60 liability", () => {
+        const context = fixture(
+            [enemy("skunk1")],
+            [],
+            [character("hero", [latexBinding(10, 70)])],
+        );
+        const result = evaluateSkunkRegenerationLiability(
+            context,
+            generateSmartCandidates(context).at(-1)!,
+        );
+        expect(result.characterLiabilitiesBefore[0]).toMatchObject({
+            characterId: "hero",
+            liability: 60,
+            bindings: [{
+                bindingId: "latexArms",
+                current: 10,
+                peak: 70,
+                recoverableGap: 60,
+            }],
+        });
+        expect(result.beforeExposure).toBe(60);
+    });
+
+    it("penalizes a partial escape that increases the recoverable gap", () => {
+        const context = fixture(
+            [enemy("skunk1")],
+            [],
+            [character("hero", [latexBinding(40, 70)])],
+        );
+        const result = evaluateSkunkRegenerationLiability(
+            context,
+            escapeCandidate(context, -20),
+        );
+        expect(result).toMatchObject({
+            beforeExposure: 30,
+            afterExposure: 50,
+            recoveryAdjustment: -20,
+            rawAdjustment: -20,
+        });
+    });
+
+    it("rewards finishing a binding because zero has no Regeneration liability", () => {
+        const context = fixture(
+            [enemy("skunk1")],
+            [],
+            [character("hero", [latexBinding(10, 70)])],
+        );
+        const result = evaluateSkunkRegenerationLiability(
+            context,
+            escapeCandidate(context, -10),
+        );
+        expect(result).toMatchObject({
+            beforeExposure: 60,
+            afterExposure: 0,
+            recoveryAdjustment: 60,
+            rawAdjustment: 60,
+        });
+    });
+
+    it("scales recovery exposure change by the number of living Skunks", () => {
+        const one = fixture(
+            [enemy("skunk1")],
+            [],
+            [character("hero", [latexBinding(40, 70)])],
+        );
+        const two = fixture(
+            [enemy("skunk1"), enemy("skunk2")],
+            [],
+            [character("hero", [latexBinding(40, 70)])],
+        );
+        expect(evaluateSkunkRegenerationLiability(
+            two,
+            escapeCandidate(two, -20),
+        ).recoveryAdjustment).toBe(2 * evaluateSkunkRegenerationLiability(
+            one,
+            escapeCandidate(one, -20),
+        ).recoveryAdjustment);
+    });
+
+    it("credits proportional Skunk damage progress but not unrelated damage", () => {
+        const context = fixture(
+            [enemy("skunk1", { currHp: 100 }), enemy("wolf1", { currHp: 100 })],
+            [attack("strike", ["skunk1", "wolf1"], 25)],
+            [character("hero", [latexBinding(10, 70)])],
+        );
+        const skunk = evaluateSkunkRegenerationLiability(
+            context,
+            candidate(context, "strike", "skunk1"),
+        );
+        const wolf = evaluateSkunkRegenerationLiability(
+            context,
+            candidate(context, "strike", "wolf1"),
+        );
+        expect(skunk.offensiveAdjustment).toBe(15);
+        expect(skunk.skunks[0]).toMatchObject({
+            expectedDamage: 25,
+            progressFraction: 0.25,
+            contribution: 15,
+        });
+        expect(wolf.offensiveAdjustment).toBe(0);
+    });
+});
+
+describe("Smart future Skunk puddle-production pressure", () => {
+    function pressureAt(stock: number, target = "skunk1", enemies = [enemy("skunk1", { currHp: 100 })]) {
+        const context = fixture(enemies, [attack("strike", enemies.map(({ id }) => id), 50)]);
+        context.state.traps = [{ id: "trapPuddle", amount: stock }];
+        return evaluateFuturePuddlePressure(
+            context,
+            candidate(context, "strike", target),
+        );
+    }
+
+    it("is strongest at zero stock, lower at intermediate stock, and zero at 75+", () => {
+        const empty = pressureAt(0);
+        const intermediate = pressureAt(50);
+        const full = pressureAt(75);
+        expect(empty).toMatchObject({
+            puddleAmount: 0,
+            creationProbability: 0.75,
+            pressurePerSkunk: 22.5,
+            contribution: 11.25,
+        });
+        expect(intermediate.creationProbability).toBe(0.25);
+        expect(intermediate.contribution).toBeLessThan(empty.contribution);
+        expect(full).toMatchObject({
+            creationProbability: 0,
+            pressurePerSkunk: 0,
+            contribution: 0,
+        });
+    });
+
+    it("credits only damage progress against a living Skunk", () => {
+        const enemies = [
+            enemy("skunk1", { currHp: 100 }),
+            enemy("wolf1", { currHp: 100 }),
+        ];
+        expect(pressureAt(0, "skunk1", enemies).contribution).toBe(11.25);
+        expect(pressureAt(0, "wolf1", enemies).contribution).toBe(0);
+    });
+
+    it("treats multiple Skunks as multiple producers without removing all for one hit", () => {
+        const result = pressureAt(0, "skunk1", [
+            enemy("skunk1", { currHp: 100 }),
+            enemy("skunk2", { currHp: 100 }),
+        ]);
+        expect(result).toMatchObject({
+            livingSkunkCount: 2,
+            pressurePerSkunk: 22.5,
+            totalProducerPressure: 45,
+            contribution: 11.25,
+        });
+        expect(result.skunks).toEqual([
+            expect.objectContaining({ enemyId: "skunk1", progressFraction: 0.5 }),
+            expect.objectContaining({ enemyId: "skunk2", progressFraction: 0 }),
+        ]);
+    });
+});
 
 describe("Smart Fairy healing knowledge", () => {
     it("adds no support pressure when no Skunk-family ally needs healing", () => {
@@ -318,7 +537,7 @@ describe("Smart Skunk Explosion discipline", () => {
     it("keeps the recent last-enemy threshold-crossing exception", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 })],
-            [attack("cross", ["skunk1"], 30)],
+            [attack("cross", ["skunk1"], 50)],
         );
         expect(knowledge(context, "cross", "skunk1").rules).toContainEqual(
             expect.objectContaining({
@@ -331,7 +550,7 @@ describe("Smart Skunk Explosion discipline", () => {
     it("penalizes a nonlethal threshold crossing but preserves a large clean kill", () => {
         const risky = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
-            [attack("risk", ["skunk1"], 30)],
+            [attack("risk", ["skunk1"], 50)],
         );
         const lethal = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
@@ -345,13 +564,15 @@ describe("Smart Skunk Explosion discipline", () => {
         expect(knowledge(risky, "risk", "skunk1").raw).toBeLessThan(0);
         expect(knowledge(lethal, "lethal", "skunk1").rules)
             .toContainEqual(expect.objectContaining({ id: "skunk.explosion-safe-lethal" }));
-        expect(knowledge(lethal, "lethal", "skunk1").raw).toBe(0);
+        expect(knowledge(lethal, "lethal", "skunk1").rules
+            .filter(({ id }) => id.startsWith("skunk.explosion"))
+            .reduce((total, rule) => total + rule.adjustment, 0)).toBe(0);
     });
 
     it("waives threshold risk when the remaining party damage EV covers the surviving Skunk", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
-            [attack("cross", ["skunk1"], 30)],
+            [attack("cross", ["skunk1"], 50)],
             [character("hero"), character("ally1"), character("ally2")],
         );
         context.actions.push(
@@ -378,7 +599,7 @@ describe("Smart Skunk Explosion discipline", () => {
     it("keeps threshold risk when the remaining party damage EV is insufficient", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
-            [attack("cross", ["skunk1"], 30)],
+            [attack("cross", ["skunk1"], 50)],
             [character("hero"), character("ally")],
         );
         context.actions.push(
@@ -400,7 +621,7 @@ describe("Smart Skunk Explosion discipline", () => {
     it("ignores spent actors when estimating remaining party damage", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
-            [attack("cross", ["skunk1"], 30)],
+            [attack("cross", ["skunk1"], 50)],
             [character("hero"), character("spent")],
         );
         const spent = action("spent", [attack("follow", ["skunk1"], 100)]);
@@ -420,7 +641,7 @@ describe("Smart Skunk Explosion discipline", () => {
     it("uses each remaining actor's best attack instead of summing alternate moves", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
-            [attack("cross", ["skunk1"], 30)],
+            [attack("cross", ["skunk1"], 50)],
             [character("hero"), character("ally")],
         );
         context.actions.push(
@@ -441,8 +662,8 @@ describe("Smart Skunk Explosion discipline", () => {
 
     it("adds urgency only when an already-low Skunk can actually be removed", () => {
         const context = fixture(
-            [enemy("skunk1", { currHp: 60 })],
-            [attack("poke", ["skunk1"], 10), attack("finish", ["skunk1"], 60)],
+            [enemy("skunk1", { currHp: 50 })],
+            [attack("poke", ["skunk1"], 10), attack("finish", ["skunk1"], 50)],
         );
         expect(knowledge(context, "poke", "skunk1").rules)
             .toContainEqual(expect.objectContaining({ id: "skunk.explosion-imminent-unresolved", adjustment: 0 }));
@@ -469,11 +690,11 @@ describe("Smart Skunk Explosion discipline", () => {
     it("scales crossing risk with miss probability and ignores unrelated enemies", () => {
         const certain = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
-            [attack("hit", ["skunk1"], 30)],
+            [attack("hit", ["skunk1"], 50)],
         );
         const uncertain = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
-            [attack("hit", ["skunk1"], 30, 1, 50)],
+            [attack("hit", ["skunk1"], 50, 1, 50)],
         );
         expect(Math.abs(knowledge(uncertain, "hit", "skunk1").raw))
             .toBeLessThan(Math.abs(knowledge(certain, "hit", "skunk1").raw));

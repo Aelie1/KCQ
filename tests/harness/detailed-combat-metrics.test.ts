@@ -197,6 +197,9 @@ describe("detailed combat metric collector", () => {
             killedBeforeUse: 0,
             uses: 0,
             cancelledBeforeUse: 0,
+            hpAtTrigger: { "61+": 1 },
+            unspentCharactersAtTrigger: { "1": 1 },
+            hpAndUnspentAtTrigger: { "61+|1": 1 },
         });
 
         const cancelled = view({ enemies: [enemyWithIntentions("skunk1", [])] });
@@ -219,6 +222,9 @@ describe("detailed combat metric collector", () => {
             killedBeforeUse: 0,
             uses: 0,
             cancelledBeforeUse: 1,
+            hpAtTrigger: { "61+": 2 },
+            unspentCharactersAtTrigger: { "1": 2 },
+            hpAndUnspentAtTrigger: { "61+|1": 2 },
         });
     });
 
@@ -289,6 +295,9 @@ describe("detailed combat metric collector", () => {
             killedBeforeUse: 1,
             uses: 1,
             cancelledBeforeUse: 1,
+            hpAtTrigger: { "61+": 3 },
+            unspentCharactersAtTrigger: { "1": 3 },
+            hpAndUnspentAtTrigger: { "61+|1": 3 },
         });
     });
 
@@ -800,5 +809,150 @@ describe("detailed combat metric collector", () => {
         });
         expect(structuredClone(collector.getResult())).toEqual(collector.getResult());
         expect(() => JSON.stringify(collector.getResult())).not.toThrow();
+    });
+
+    it("counts an initial enemy through its inclusive defeat round", () => {
+        const collector = createDetailedCombatCollector();
+        const initial = view({ enemies: [enemy("skunk1")] });
+        const defeated = view({
+            turn: { round: 3, step: 1, phase: "player", outcome: "ongoing" },
+            enemies: [],
+        });
+        collector.onFightStart?.({ view: initial, library: library() });
+        collector.onAction?.(observation(
+            initial,
+            defeated,
+            {
+                type: "useMove",
+                actor: "hero",
+                move: "syntheticMouth",
+                targets: [],
+                effects: [{ type: "enemyDefeated", target: "skunk1" }],
+            },
+            { type: "endTurn" },
+        ));
+
+        expect(collector.getResult().enemyLifetimes).toEqual({
+            skunk1: {
+                totalRounds: 3,
+                observations: 1,
+                defeated: 1,
+                survivedToEnd: 0,
+            },
+        });
+    });
+
+    it("counts spawn and defeat in the same round as one round", () => {
+        const collector = createDetailedCombatCollector();
+        const round4 = view({
+            turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },
+        });
+        collector.onFightStart?.({ view: round4, library: library() });
+        collector.onAction?.(observation(
+            round4,
+            round4,
+            {
+                type: "useMove",
+                actor: "hero",
+                move: "syntheticMouth",
+                targets: [],
+                effects: [
+                    { type: "enemySpawned", target: "rainmaker1" },
+                    { type: "enemyDefeated", target: "rainmaker1" },
+                ],
+            },
+            { type: "endTurn" },
+        ));
+
+        expect(collector.getResult().enemyLifetimes?.rainmaker1).toEqual({
+            totalRounds: 1,
+            observations: 1,
+            defeated: 1,
+            survivedToEnd: 0,
+        });
+    });
+
+    it("closes a spawned survivor on the final round", () => {
+        const collector = createDetailedCombatCollector();
+        const before = view({
+            turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },
+        });
+        const spawned = view({
+            turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },
+            enemies: [enemy("queen1")],
+        });
+        collector.onFightStart?.({ view: before, library: library() });
+        collector.onAction?.(observation(
+            before,
+            spawned,
+            {
+                type: "useMove",
+                actor: "hero",
+                move: "syntheticMouth",
+                targets: [],
+                effects: [{ type: "enemySpawned", target: "queen1" }],
+            },
+            { type: "endTurn" },
+        ));
+        collector.onFightEnd?.({
+            termination: "defeat",
+            view: view({
+                turn: { round: 6, step: 1, phase: "player", outcome: "defeat" },
+                enemies: [enemy("queen1")],
+            }),
+            actionCount: 1,
+        });
+
+        expect(collector.getResult().enemyLifetimes?.queen1).toEqual({
+            totalRounds: 3,
+            observations: 1,
+            defeated: 0,
+            survivedToEnd: 1,
+        });
+    });
+
+    it("aggregates different public enemy instance IDs independently", () => {
+        const collector = createDetailedCombatCollector();
+        const initial = view({ enemies: [enemy("skunk1"), enemy("skunk2")] });
+        const after = view({
+            turn: { round: 2, step: 1, phase: "player", outcome: "ongoing" },
+            enemies: [enemy("skunk2")],
+        });
+        collector.onFightStart?.({ view: initial, library: library() });
+        collector.onAction?.(observation(
+            initial,
+            after,
+            {
+                type: "useMove",
+                actor: "hero",
+                move: "syntheticMouth",
+                targets: [],
+                effects: [{ type: "enemyDefeated", target: "skunk1" }],
+            },
+            { type: "endTurn" },
+        ));
+        collector.onFightEnd?.({
+            termination: "defeat",
+            view: view({
+                turn: { round: 4, step: 1, phase: "player", outcome: "defeat" },
+                enemies: [enemy("skunk2")],
+            }),
+            actionCount: 1,
+        });
+
+        expect(collector.getResult().enemyLifetimes).toEqual({
+            skunk1: {
+                totalRounds: 2,
+                observations: 1,
+                defeated: 1,
+                survivedToEnd: 0,
+            },
+            skunk2: {
+                totalRounds: 4,
+                observations: 1,
+                defeated: 0,
+                survivedToEnd: 1,
+            },
+        });
     });
 });

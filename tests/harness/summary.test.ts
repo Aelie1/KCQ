@@ -313,6 +313,9 @@ describe("batch summary metrics", () => {
                 killedBeforeUse: 1,
                 uses: 1,
                 cancelledBeforeUse: 0,
+                hpAtTrigger: {},
+                unspentCharactersAtTrigger: {},
+                hpAndUnspentAtTrigger: {},
             },
         });
         const summary = summarizeBatch(batch([
@@ -357,5 +360,69 @@ describe("batch summary metrics", () => {
         });
         expect(structuredClone(summary)).toEqual(summary);
         expect(JSON.parse(JSON.stringify(summary))).toEqual(summary);
+    });
+
+    it("aggregates exact enemy instance lifetimes and derives sorted averages", () => {
+        const detailed = (
+            enemyLifetimes: NonNullable<DetailedCombatMetrics["enemyLifetimes"]>,
+        ): DetailedCombatMetrics => ({
+            escapeSequences: { single: 0, double: 0, byActor: {} },
+            skunkings: { total: 0, byCharacter: {} },
+            rescues: { total: 0, byCharacter: {}, byMove: {} },
+            playerMoves: {},
+            bondageRemoved: { escapes: 0, skills: 0, rescues: 0, unattributed: 0 },
+            bondageBlocked: { unattributed: 0 },
+            bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
+            enemyLifetimes,
+            skunkExplosion: {
+                intentionsQueued: 0,
+                killedBeforeUse: 0,
+                uses: 0,
+                cancelledBeforeUse: 0,
+                hpAtTrigger: {},
+                unspentCharactersAtTrigger: {},
+                hpAndUnspentAtTrigger: {},
+            },
+        });
+        const summary = summarizeBatch(batch([
+            run({
+                runIndex: 0,
+                termination: "victory",
+                actionCount: 1,
+                damage: 10,
+                peakBondage: 0,
+                remainingEnemyHp: 0,
+                detailedCombat: detailed({
+                    skunk1: { totalRounds: 3, observations: 1, defeated: 1, survivedToEnd: 0 },
+                    queen1: { totalRounds: 6, observations: 1, defeated: 0, survivedToEnd: 1 },
+                }),
+            }),
+            run({
+                runIndex: 1,
+                termination: "defeat",
+                actionCount: 1,
+                damage: 5,
+                peakBondage: 0,
+                remainingEnemyHp: 10,
+                detailedCombat: detailed({
+                    skunk1: { totalRounds: 5, observations: 1, defeated: 0, survivedToEnd: 1 },
+                }),
+            }),
+        ]));
+
+        expect(summary.enemyLifetimes).toEqual({
+            queen1: {
+                observations: 1,
+                defeated: 0,
+                survivedToEnd: 1,
+                averageRoundsAlive: 6,
+            },
+            skunk1: {
+                observations: 2,
+                defeated: 1,
+                survivedToEnd: 1,
+                averageRoundsAlive: 4,
+            },
+        });
     });
 });

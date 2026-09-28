@@ -1,5 +1,7 @@
 import type {
     AccuracyProfile,
+    BindingId,
+    Character,
     EntityId,
     HitBand,
     Intention,
@@ -9,6 +11,8 @@ import type { PolicyContext } from "../../harness";
 import type { SmartCandidate } from "../smart";
 import {
     addBinding,
+    applyBindingEffects,
+    bindingValue,
     cloneBindingBoard,
     currentBindingBoard,
     totalRecoveryDebt,
@@ -23,17 +27,83 @@ export const THROW_OFF_MODERATE_RESERVE_PENALTY = -70;
 export const THROW_OFF_HIGH_RESERVE_PENALTY = -30;
 export const FAIRY_COMMITTED_HEAL_MULTIPLIER = 1.5;
 export const BARRIER_WAITING_PENALTY = 15;
+export const SKUNK_REGENERATION_EXPOSURE_WEIGHT = 1;
+export const PUDDLE_CREATION_STOCK_CUTOFF = 75;
+export const PUDDLE_CREATION_PROBABILITY_DENOMINATOR = 100;
+export const PUDDLE_CREATION_MAX_PROBABILITY = 0.75;
 
 const POUNCE = "pounce";
 const THROW_OFF = "throwOff";
 const HEALING_MAGIC = "healingMagic";
 const BARRIER_MAGIC = "barrierMagic";
 const LATEX_EXPLOSION = "latexExplosion";
+const LATEX_PUDDLE = "latexPuddle";
+const TRAP_PUDDLE = "trapPuddle";
 const FAIRY_HEAL_RATIO = 0.25;
-const SKUNK_EXPLOSION_RATIO = 0.25;
+const SKUNK_EXPLOSION_RATIO = 0.2;
+const MIN_EXPLOSION_CLEANUP_ACTORS = 2;
 const FAIRY_PATTERN = /^fairy(?:\d+)?$/;
 const SKUNK_PATTERN = /^skunk(?:\d+)?$/;
 const SKUNKETTE_PATTERN = /^skunkette(?:\d+|[A-Z].*)?$/;
+const REGENERABLE_LATEX_BINDINGS = new Set<BindingId>([
+    "latexHead",
+    "latexArms",
+    "latexTorso",
+    "latexLegs",
+]);
+
+export interface RegenerationBindingLiability {
+    readonly bindingId: BindingId;
+    readonly current: number;
+    readonly peak: number;
+    readonly recoverableGap: number;
+}
+
+export interface RegenerationCharacterLiability {
+    readonly characterId: EntityId;
+    readonly liability: number;
+    readonly bindings: readonly RegenerationBindingLiability[];
+}
+
+export interface RegenerationSkunkProgress {
+    readonly enemyId: EntityId;
+    readonly currentHp: number;
+    readonly expectedDamage: number;
+    readonly progressFraction: number;
+    readonly contribution: number;
+}
+
+export interface SkunkRegenerationKnowledgeBreakdown {
+    readonly characterLiabilitiesBefore: readonly RegenerationCharacterLiability[];
+    readonly characterLiabilitiesAfter: readonly RegenerationCharacterLiability[];
+    readonly beforeExposure: number;
+    readonly afterExposure: number;
+    readonly livingSkunkCount: number;
+    readonly recoveryAdjustment: number;
+    readonly skunks: readonly RegenerationSkunkProgress[];
+    readonly offensiveAdjustment: number;
+    readonly rawAdjustment: number;
+}
+
+export interface FuturePuddleSkunkProgress {
+    readonly enemyId: EntityId;
+    readonly currentHp: number;
+    readonly expectedDamage: number;
+    readonly progressFraction: number;
+    readonly contribution: number;
+}
+
+export interface FuturePuddlePressureBreakdown {
+    readonly puddleAmount: number;
+    readonly creationProbability: number;
+    readonly livingSkunkCount: number;
+    readonly puddleBaseAmount: number;
+    readonly pressurePerSkunk: number;
+    readonly totalProducerPressure: number;
+    readonly skunks: readonly FuturePuddleSkunkProgress[];
+    readonly contribution: number;
+    readonly rawAdjustment: number;
+}
 
 interface AttackState {
     readonly barrier: number;
@@ -85,6 +155,8 @@ export function evaluateSkunkKnowledge(
     candidate: SmartCandidate,
 ): KitKnowledgeRuleDiagnostic[] {
     const rules: KitKnowledgeRuleDiagnostic[] = [
+        ...evaluateRegenerationLiabilityRules(context, candidate),
+        ...evaluateFuturePuddleRules(context, candidate),
         ...evaluateFairyHealingKnowledge(context, candidate),
         ...evaluateBarrierKnowledge(context, candidate),
         ...evaluateExplosionKnowledge(context, candidate),
@@ -149,6 +221,220 @@ export function evaluateSkunkKnowledge(
     }
 
     return rules;
+}
+
+/** Models only the extra consequence created by Skunk Latex Regeneration. */
+export function evaluateSkunkRegenerationLiability(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): SkunkRegenerationKnowledgeBreakdown {
+    const livingSkunks = context.state.enemies.filter((enemy) =>
+        enemy.currHp > 0 && isSkunk(enemy.id)
+    );
+    const current = currentBindingBoard(context.state.characters);
+    const projected = cloneBindingBoard(current);
+    const characterIds = new Set(context.state.characters.map(({ id }) => id));
+    applyCandidateBindingEffects(
+        projected,
+        candidate,
+        characterIds,
+        context.thresholds.max,
+    );
+
+    const characterLiabilitiesBefore = regenerationCharacterLiabilities(
+        context.state.characters,
+        current,
+    );
+    const characterLiabilitiesAfter = regenerationCharacterLiabilities(
+        context.state.characters,
+        projected,
+    );
+    const beforeExposure = maximumLiability(characterLiabilitiesBefore);
+    const afterExposure = maximumLiability(characterLiabilitiesAfter);
+    const recoveryAdjustment = livingSkunks.length
+        * (beforeExposure - afterExposure)
+        * SKUNK_REGENERATION_EXPOSURE_WEIGHT;
+    const skunks = livingSkunks.map((enemy) => {
+        const expectedDamage = expectedDamageToEnemy(candidate, enemy.id);
+        const progressFraction = clamp(expectedDamage / enemy.currHp, 0, 1);
+        return {
+            enemyId: enemy.id,
+            currentHp: enemy.currHp,
+            expectedDamage,
+            progressFraction,
+            contribution: beforeExposure * progressFraction
+                * SKUNK_REGENERATION_EXPOSURE_WEIGHT,
+        };
+    });
+    const offensiveAdjustment = skunks.reduce(
+        (total, skunk) => total + skunk.contribution,
+        0,
+    );
+    return {
+        characterLiabilitiesBefore,
+        characterLiabilitiesAfter,
+        beforeExposure,
+        afterExposure,
+        livingSkunkCount: livingSkunks.length,
+        recoveryAdjustment,
+        skunks,
+        offensiveAdjustment,
+        rawAdjustment: recoveryAdjustment + offensiveAdjustment,
+    };
+}
+
+/** Models removal progress against living future puddle producers. */
+export function evaluateFuturePuddlePressure(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): FuturePuddlePressureBreakdown {
+    const puddleAmount = Math.max(
+        0,
+        context.state.traps.find(({ id }) => id === TRAP_PUDDLE)?.amount ?? 0,
+    );
+    const creationProbability = clamp(
+        (PUDDLE_CREATION_STOCK_CUTOFF - puddleAmount)
+            / PUDDLE_CREATION_PROBABILITY_DENOMINATOR,
+        0,
+        PUDDLE_CREATION_MAX_PROBABILITY,
+    );
+    // The base amount is public content data. Accuracy-band effectiveness is
+    // intentionally not reconstructed here, so this is a one-opportunity estimate.
+    const puddleBaseAmount = Math.max(
+        0,
+        context.library.moves[LATEX_PUDDLE]?.baseDamage ?? 0,
+    );
+    const pressurePerSkunk = creationProbability * puddleBaseAmount;
+    const livingSkunks = context.state.enemies.filter((enemy) =>
+        enemy.currHp > 0 && isSkunk(enemy.id)
+    );
+    const skunks = livingSkunks.map((enemy) => {
+        const expectedDamage = expectedDamageToEnemy(candidate, enemy.id);
+        const progressFraction = clamp(expectedDamage / enemy.currHp, 0, 1);
+        return {
+            enemyId: enemy.id,
+            currentHp: enemy.currHp,
+            expectedDamage,
+            progressFraction,
+            contribution: pressurePerSkunk * progressFraction,
+        };
+    });
+    const contribution = skunks.reduce(
+        (total, skunk) => total + skunk.contribution,
+        0,
+    );
+    return {
+        puddleAmount,
+        creationProbability,
+        livingSkunkCount: livingSkunks.length,
+        puddleBaseAmount,
+        pressurePerSkunk,
+        totalProducerPressure: pressurePerSkunk * livingSkunks.length,
+        skunks,
+        contribution,
+        rawAdjustment: contribution,
+    };
+}
+
+function evaluateRegenerationLiabilityRules(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): KitKnowledgeRuleDiagnostic[] {
+    const details = evaluateSkunkRegenerationLiability(context, candidate);
+    if (details.livingSkunkCount === 0) return [];
+
+    const rules: KitKnowledgeRuleDiagnostic[] = [];
+    if (details.recoveryAdjustment !== 0) {
+        rules.push({
+            id: "skunk.regeneration-exposure-change",
+            adjustment: details.recoveryAdjustment,
+            reason: `Candidate changes maximum party Regeneration exposure from ${format(details.beforeExposure)} to ${format(details.afterExposure)} across ${details.livingSkunkCount} living Skunk(s).`,
+            details: {
+                characterLiabilitiesBefore: details.characterLiabilitiesBefore,
+                characterLiabilitiesAfter: details.characterLiabilitiesAfter,
+                beforeExposure: details.beforeExposure,
+                afterExposure: details.afterExposure,
+                livingSkunkCount: details.livingSkunkCount,
+                rawAdjustment: details.recoveryAdjustment,
+            },
+        });
+    }
+    if (details.offensiveAdjustment > 0) {
+        rules.push({
+            id: "skunk.regeneration-source-progress",
+            adjustment: details.offensiveAdjustment,
+            reason: `Expected damage makes ${format(details.offensiveAdjustment)} progress against active Regeneration exposure.`,
+            details: {
+                characterLiabilities: details.characterLiabilitiesBefore,
+                selectedExposure: details.beforeExposure,
+                livingSkunkCount: details.livingSkunkCount,
+                skunks: details.skunks,
+                rawAdjustment: details.offensiveAdjustment,
+            },
+        });
+    }
+    return rules;
+}
+
+function evaluateFuturePuddleRules(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): KitKnowledgeRuleDiagnostic[] {
+    const details = evaluateFuturePuddlePressure(context, candidate);
+    if (details.contribution <= 0) return [];
+    return [{
+        id: "skunk.future-puddle-source-progress",
+        adjustment: details.contribution,
+        reason: `Expected Skunk damage removes ${format(details.contribution)} future puddle-production pressure.`,
+        details,
+    }];
+}
+
+function regenerationCharacterLiabilities(
+    characters: readonly Character[],
+    board: ReturnType<typeof currentBindingBoard>,
+): RegenerationCharacterLiability[] {
+    return characters.map((character) => {
+        const bindings = character.bindings.flatMap((binding) => {
+            if (!REGENERABLE_LATEX_BINDINGS.has(binding.id)) return [];
+            const current = bindingValue(board, character.id, binding.id);
+            const peak = binding.data.peak;
+            if (current <= 0 || !Number.isFinite(peak)) return [];
+            const recoverableGap = Math.max(0, peak - current);
+            return [{ bindingId: binding.id, current, peak, recoverableGap }];
+        });
+        return {
+            characterId: character.id,
+            liability: bindings.reduce(
+                (total, binding) => total + binding.recoverableGap,
+                0,
+            ),
+            bindings,
+        };
+    });
+}
+
+function maximumLiability(
+    characters: readonly RegenerationCharacterLiability[],
+): number {
+    return characters.reduce(
+        (maximum, character) => Math.max(maximum, character.liability),
+        0,
+    );
+}
+
+function applyCandidateBindingEffects(
+    projected: ReturnType<typeof currentBindingBoard>,
+    candidate: SmartCandidate,
+    characterIds: ReadonlySet<EntityId>,
+    maximum: number,
+): void {
+    applyBindingEffects(projected, candidate.effects, characterIds, maximum);
+    for (const target of candidate.targets) {
+        for (let hit = 0; hit < candidate.hits; hit += 1) {
+            applyBindingEffects(projected, target.effects, characterIds, maximum);
+        }
+    }
 }
 
 function evaluateFairyHealingKnowledge(
@@ -297,6 +583,13 @@ function evaluateExplosionKnowledge(
         let coveredCrossingProbability = 0;
         let uncoveredCrossingProbability = 0;
         let weightedRemainingPartyDamageEV = 0;
+
+        const remainingPartyDamageActors = countRemainingPartyDamageActors(
+            context,
+            candidate.action.actor,
+            enemy.id,
+        );
+
         if (!alreadyLow) {
             for (const state of projection.states) {
                 const remaining = enemy.currHp - state.damage;
@@ -310,7 +603,10 @@ function evaluateExplosionKnowledge(
                     state.barrier,
                 );
                 weightedRemainingPartyDamageEV += remainingPartyDamageEV * state.probability;
-                if (remainingPartyDamageEV >= remaining) {
+                if (
+                    remainingPartyDamageActors >= MIN_EXPLOSION_CLEANUP_ACTORS
+                    && remainingPartyDamageEV >= remaining
+                ) {
                     coveredCrossingProbability += state.probability;
                 } else {
                     uncoveredCrossingProbability += state.probability;
@@ -350,9 +646,20 @@ function evaluateExplosionKnowledge(
             const otherLivingEnemies = context.state.enemies.filter(
                 other => other.id !== enemy.id && other.currHp > 0
             ).length;
-
             const boardFactor = Math.min(1, otherLivingEnemies / 3);
-            const adjustment = -pressure * uncoveredCrossingProbability * boardFactor;
+
+            const spentActors = context.actions.filter(
+                ({ available, reason }) =>
+                    !available && reason === "actorAlreadyActed"
+            ).length;
+
+            const lateTurnFactor = spentActors > 0 ? 100 : 1;
+
+            const adjustment =
+                -pressure
+                * uncoveredCrossingProbability
+                * boardFactor
+                * lateTurnFactor;
 
             rules.push({
                 id: otherLivingEnemies === 0
@@ -370,9 +677,12 @@ function evaluateExplosionKnowledge(
                     coveredCrossingProbability: formatNumber(coveredCrossingProbability),
                     uncoveredCrossingProbability: formatNumber(uncoveredCrossingProbability),
                     remainingPartyDamageEV: formatNumber(remainingPartyDamageEV),
+                    remainingPartyDamageActors,
                     lethalProbability: formatNumber(lethalProbability),
                     safeLethal: false,
                     otherLivingEnemies,
+                    spentActors,
+                    lateTurnFactor: formatNumber(lateTurnFactor),
                     boardFactor: formatNumber(boardFactor),
                     approximation: "Public damage-band midpoints with ordered independent hits; reactions are harmless if later hits defeat the Skunk.",
                 },
@@ -411,6 +721,25 @@ function evaluateExplosionKnowledge(
         }
     }
     return rules;
+}
+
+function countRemainingPartyDamageActors(
+    context: PolicyContext,
+    currentActorId: EntityId,
+    enemyId: EntityId,
+): number {
+    return context.actions.filter((action) =>
+        action.available
+        && action.id !== currentActorId
+        && action.moves.some((info) =>
+            info.available
+            && info.targets.some((target) =>
+                target.valid
+                && target.target === enemyId
+                && previewHasDamage(target, enemyId)
+            )
+        )
+    ).length;
 }
 
 /**
