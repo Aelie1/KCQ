@@ -3,6 +3,8 @@ import type {
     BondageEvent,
     Buff,
     Character,
+    Effect,
+    Enemy,
     GameEvent,
     GameState,
     HitBand,
@@ -65,6 +67,13 @@ export interface BondageReceivedMetrics {
     unattributed: number;
 }
 
+export interface SkunkExplosionMetrics {
+    intentionsQueued: number;
+    killedBeforeUse: number;
+    uses: number;
+    cancelledBeforeUse: number;
+}
+
 /** Compact per-fight counters; derived averages are added only in BatchSummary. */
 export interface DetailedCombatMetrics {
     escapeSequences: EscapeSequenceMetrics;
@@ -74,6 +83,7 @@ export interface DetailedCombatMetrics {
     bondageRemoved: BondageRemovedMetrics;
     bondageBlocked: UnattributedBondageBlockedMetrics;
     bondageReceived: BondageReceivedMetrics;
+    skunkExplosion: SkunkExplosionMetrics;
 }
 
 const SKUNKED_BUFF = "skunked";
@@ -81,6 +91,7 @@ const SKUNKED_BUFF = "skunked";
 export function createDetailedCombatCollector(): MetricCollector<DetailedCombatMetrics> {
     const playerIds = new Set<string>();
     const pendingBonusEscape = new Set<string>();
+    const pendingExplosions = new Set<string>();
     const defenseOrigins = new Map<string, string>();
     let library: ContentLibrary | undefined;
     const result: DetailedCombatMetrics = {
@@ -91,6 +102,7 @@ export function createDetailedCombatCollector(): MetricCollector<DetailedCombatM
         bondageRemoved: { escapes: 0, skills: 0, rescues: 0, unattributed: 0 },
         bondageBlocked: { unattributed: 0 },
         bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
+        skunkExplosion: emptySkunkExplosionMetrics(),
     };
 
     const countSequence = (actorId: string, kind: keyof SequenceCounts): void => {
@@ -109,6 +121,7 @@ export function createDetailedCombatCollector(): MetricCollector<DetailedCombatM
         onFightStart(context) {
             library = context.library;
             for (const character of context.view.characters) playerIds.add(character.id);
+            queueNewExplosionEpisodes(context.view, pendingExplosions, result.skunkExplosion);
         },
         onAction(context) {
             for (const actorId of [...pendingBonusEscape]) {
@@ -121,7 +134,17 @@ export function createDetailedCombatCollector(): MetricCollector<DetailedCombatM
 
             let prior = context.before;
             for (const frame of context.result.frames) {
-                observeFrame(frame.event, prior, frame.state, context.before, playerIds, library, defenseOrigins, result);
+                observeFrame(
+                    frame.event,
+                    prior,
+                    frame.state,
+                    context.before,
+                    playerIds,
+                    library,
+                    defenseOrigins,
+                    pendingExplosions,
+                    result,
+                );
                 prior = frame.state;
             }
 
@@ -159,9 +182,17 @@ function observeFrame(
     playerIds: ReadonlySet<string>,
     library: ContentLibrary | undefined,
     defenseOrigins: Map<string, string>,
+    pendingExplosions: Set<string>,
     result: DetailedCombatMetrics,
 ): void {
     const leaves = flattenEvent(event);
+    observeExplosionFrame(
+        event,
+        leaves,
+        after,
+        pendingExplosions,
+        result.skunkExplosion,
+    );
     const beforeLinks = skunkLinks(before);
     const afterLinks = skunkLinks(after);
     for (const [characterId] of afterLinks) {
@@ -192,6 +223,14 @@ function observeFrame(
         const move = library?.moves[event.move];
         const actor = actionBefore.characters.find(({ id }) => id === event.actor);
         recordAccuracy(playerMove.accuracy, actor, move);
+        if (event.move === "stop") {
+            playerMove.totalBondageBlocked += stoppedCommittedBondage(
+                leaves,
+                before,
+                after,
+                playerIds,
+            );
+        }
     }
 
     const blockedSources = new Set<string>();
@@ -244,6 +283,118 @@ function observeFrame(
         const [target, buff] = splitBuffKey(key);
         if (!entityBuffs(after, target).some(({ id }) => id === buff)) defenseOrigins.delete(key);
     }
+}
+
+function observeExplosionFrame(
+    event: GameEvent,
+    leaves: readonly LeafEvent[],
+    after: GameState,
+    pending: Set<string>,
+    result: SkunkExplosionMetrics,
+): void {
+    let justUsed: string | undefined;
+    if (event.type === "useMove" && event.move === "latexExplosion") {
+        result.uses += 1;
+        pending.delete(event.actor);
+        justUsed = event.actor;
+    }
+
+    for (const leaf of leaves) {
+        if (leaf.type === "intentionCancelled" && pending.has(leaf.target)
+            && isLivingEnemy(after, leaf.target)) {
+            result.cancelledBeforeUse += 1;
+            pending.delete(leaf.target);
+        } else if (leaf.type === "enemyDefeated" && pending.delete(leaf.target)) {
+            result.killedBeforeUse += 1;
+        }
+    }
+
+    for (const enemyId of [...pending]) {
+        const enemy = after.enemies.find(({ id }) => id === enemyId);
+        if (!enemy || !hasExplosionIntention(enemy)) pending.delete(enemyId);
+    }
+    queueNewExplosionEpisodes(after, pending, result, justUsed);
+}
+
+function queueNewExplosionEpisodes(
+    view: GameState,
+    pending: Set<string>,
+    result: SkunkExplosionMetrics,
+    suppressedEnemy?: string,
+): void {
+    for (const enemy of view.enemies) {
+        if (enemy.id === suppressedEnemy || !isLivingEnemy(view, enemy.id)
+            || !hasExplosionIntention(enemy) || pending.has(enemy.id)) {
+            continue;
+        }
+        pending.add(enemy.id);
+        result.intentionsQueued += 1;
+    }
+}
+
+function hasExplosionIntention(enemy: Enemy): boolean {
+    return enemy.intentions.some(({ move }) => move === "latexExplosion");
+}
+
+function isLivingEnemy(view: GameState, enemyId: string): boolean {
+    return view.enemies.some(({ id, currHp }) => id === enemyId && currHp > 0);
+}
+
+function stoppedCommittedBondage(
+    leaves: readonly LeafEvent[],
+    before: GameState,
+    after: GameState,
+    playerIds: ReadonlySet<string>,
+): number {
+    const cancelled = new Set(leaves.flatMap((leaf) => leaf.type === "intentionCancelled"
+        ? [leaf.target]
+        : []));
+    const weakened = new Set(leaves.flatMap((leaf) => leaf.type === "intentionWeakened"
+        ? [leaf.target]
+        : []));
+    let blocked = 0;
+    for (const enemyId of cancelled) {
+        blocked += committedPositiveBondage(before, enemyId, playerIds);
+    }
+    for (const enemyId of weakened) {
+        blocked += Math.max(
+            0,
+            committedPositiveBondage(before, enemyId, playerIds)
+                - committedPositiveBondage(after, enemyId, playerIds),
+        );
+    }
+    return blocked;
+}
+
+function committedPositiveBondage(
+    view: GameState,
+    enemyId: string,
+    playerIds: ReadonlySet<string>,
+): number {
+    const enemy = view.enemies.find(({ id }) => id === enemyId);
+    if (!enemy) return 0;
+    let total = 0;
+    for (const intention of enemy.intentions) {
+        total += positivePlayerBinding(intention.effects, playerIds);
+        for (const target of intention.targets) {
+            total += positivePlayerBinding(target.effects, playerIds);
+        }
+    }
+    return total;
+}
+
+function positivePlayerBinding(
+    effects: readonly Effect[],
+    playerIds: ReadonlySet<string>,
+): number {
+    return effects.reduce((total, effect) => effect.type === "binding"
+        && playerIds.has(effect.target) && (effect.amount ?? 0) > 0
+        ? total + effect.amount!
+        : total, 0);
+}
+
+function emptySkunkExplosionMetrics(): SkunkExplosionMetrics {
+    return { intentionsQueued: 0, killedBeforeUse: 0, uses: 0, cancelledBeforeUse: 0 };
 }
 
 function attributeReceived(

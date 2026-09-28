@@ -54,6 +54,9 @@ function summaryFixture(): BatchSummary {
         bondageRemoved: { escapes: 0, skills: 0, rescues: 0, unattributed: 0 },
         bondageBlocked: { unattributed: 0 },
         bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
+        skunkExplosion: {
+            intentionsQueued: 0, killedBeforeUse: 0, uses: 0, cancelledBeforeUse: 0,
+        },
         forensicExamples: {
             shortestVictory: reference(0, "victory"),
             longestVictory: reference(2, "victory"),

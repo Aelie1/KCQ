@@ -7,6 +7,7 @@ import type {
     EscapeSequenceMetrics,
     RawPlayerMoveMetrics,
     RescueMetrics,
+    SkunkExplosionMetrics,
     UnattributedBondageBlockedMetrics,
 } from "../metrics";
 import type { BatchResult, BatchRun } from "./batch";
@@ -136,6 +137,7 @@ export interface BatchSummary {
     bondageRemoved: BondageRemovedMetrics;
     bondageBlocked: UnattributedBondageBlockedMetrics;
     bondageReceived: BondageReceivedMetrics;
+    skunkExplosion: SkunkExplosionMetrics;
     forensicExamples: ForensicExamples;
 }
 
@@ -291,6 +293,7 @@ export function summarizeBatch(batch: BatchResult): BatchSummary {
             traps: sortedRecord(detailedCombat.bondageReceived.traps),
             unattributed: detailedCombat.bondageReceived.unattributed,
         },
+        skunkExplosion: { ...detailedCombat.skunkExplosion },
         forensicExamples,
     };
 }
@@ -304,6 +307,12 @@ function emptyDetailedCombatMetrics(): DetailedCombatMetrics {
         bondageRemoved: { escapes: 0, skills: 0, rescues: 0, unattributed: 0 },
         bondageBlocked: { unattributed: 0 },
         bondageReceived: { moves: {}, ticks: {}, traps: {}, unattributed: 0 },
+        skunkExplosion: {
+            intentionsQueued: 0,
+            killedBeforeUse: 0,
+            uses: 0,
+            cancelledBeforeUse: 0,
+        },
     };
 }
 
@@ -329,6 +338,10 @@ function aggregateDetailedCombat(target: DetailedCombatMetrics, source: Detailed
     target.bondageRemoved.rescues += source.bondageRemoved.rescues;
     target.bondageRemoved.unattributed += source.bondageRemoved.unattributed;
     target.bondageBlocked.unattributed += source.bondageBlocked.unattributed;
+    target.skunkExplosion.intentionsQueued += source.skunkExplosion.intentionsQueued;
+    target.skunkExplosion.killedBeforeUse += source.skunkExplosion.killedBeforeUse;
+    target.skunkExplosion.uses += source.skunkExplosion.uses;
+    target.skunkExplosion.cancelledBeforeUse += source.skunkExplosion.cancelledBeforeUse;
 
     for (const [moveId, sourceMove] of Object.entries(source.playerMoves)) {
         const move = target.playerMoves[moveId] ??= emptyRawPlayerMove();

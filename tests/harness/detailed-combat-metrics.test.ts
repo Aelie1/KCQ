@@ -5,8 +5,10 @@ import type {
     Buff,
     Character,
     Enemy,
+    Effect,
     GameEvent,
     GameState,
+    Intention,
     PlayerAction,
 } from "../../src/engine/public/types";
 import {
@@ -114,7 +116,300 @@ function escapeEvent(actor: string, target = actor): GameEvent {
     };
 }
 
+function intention(
+    move: string,
+    targetEffects: Effect[] = [],
+    effects: Effect[] = [],
+    band: Intention["targets"][number]["band"] = "hit",
+): Intention {
+    return { move, targets: [{ target: "hero", band, effects: targetEffects }], effects };
+}
+
+function enemyWithIntentions(
+    id: string,
+    intentions: Intention[],
+    rank: Enemy["rank"] = "enemy",
+): Enemy {
+    return { ...enemy(id), rank, intentions };
+}
+
+function stopEvent(target: string, signal?: "intentionCancelled" | "intentionWeakened"): GameEvent {
+    return {
+        type: "useMove",
+        actor: "hero",
+        move: "stop",
+        effects: [],
+        targets: [{
+            target,
+            result: signal ? "hit" : "miss",
+            effects: signal ? [{ type: signal, target }] : [],
+        }],
+    };
+}
+
+function stopBlocked(
+    beforeIntentions: Intention[],
+    afterIntentions: Intention[],
+    signal?: "intentionCancelled" | "intentionWeakened",
+): ReturnType<ReturnType<typeof createDetailedCombatCollector>["getResult"]> {
+    const collector = createDetailedCombatCollector();
+    const before = view({
+        characters: [character("hero")],
+        enemies: [enemyWithIntentions("target1", beforeIntentions, signal === "intentionWeakened" ? "boss" : "enemy")],
+    });
+    const after = view({
+        characters: [character("hero")],
+        enemies: [enemyWithIntentions("target1", afterIntentions, signal === "intentionWeakened" ? "boss" : "enemy")],
+    });
+    collector.onFightStart?.({ view: before, library: library() });
+    collector.onAction?.(observation(
+        before,
+        after,
+        stopEvent("target1", signal),
+        { type: "move", actor: "hero", move: "stop", targets: ["target1"] },
+    ));
+    return collector.getResult();
+}
+
 describe("detailed combat metric collector", () => {
+    it("tracks distinct queued Explosion episodes without recounting persistent intentions", () => {
+        const collector = createDetailedCombatCollector();
+        const empty = view({ enemies: [enemyWithIntentions("skunk1", [])] });
+        const queued = view({
+            enemies: [enemyWithIntentions("skunk1", [intention("latexExplosion")])],
+        });
+        collector.onFightStart?.({ view: empty, library: library() });
+        collector.onAction?.(observation(
+            empty,
+            queued,
+            { type: "changePhase", phase: "player", effects: [] },
+            { type: "endTurn" },
+        ));
+        collector.onAction?.(observation(
+            queued,
+            queued,
+            { type: "changePhase", phase: "player", effects: [] },
+            { type: "endTurn" },
+            2,
+        ));
+        expect(collector.getResult().skunkExplosion).toEqual({
+            intentionsQueued: 1,
+            killedBeforeUse: 0,
+            uses: 0,
+            cancelledBeforeUse: 0,
+        });
+
+        const cancelled = view({ enemies: [enemyWithIntentions("skunk1", [])] });
+        collector.onAction?.(observation(
+            queued,
+            cancelled,
+            stopEvent("skunk1", "intentionCancelled"),
+            { type: "move", actor: "hero", move: "stop", targets: ["skunk1"] },
+            3,
+        ));
+        collector.onAction?.(observation(
+            cancelled,
+            queued,
+            { type: "changePhase", phase: "player", effects: [] },
+            { type: "endTurn" },
+            4,
+        ));
+        expect(collector.getResult().skunkExplosion).toEqual({
+            intentionsQueued: 2,
+            killedBeforeUse: 0,
+            uses: 0,
+            cancelledBeforeUse: 1,
+        });
+    });
+
+    it("classifies queued Explosion episodes as killed, used, or authoritatively cancelled", () => {
+        const collector = createDetailedCombatCollector();
+        const initial = view({
+            enemies: [
+                enemyWithIntentions("killedSkunk", [intention("latexExplosion")]),
+                enemyWithIntentions("usingSkunk", [intention("latexExplosion")]),
+                enemyWithIntentions("cancelledSkunk", [intention("latexExplosion")]),
+                enemyWithIntentions("ordinarySkunk", []),
+                enemyWithIntentions("otherEnemy", [intention("differentMove")]),
+            ],
+        });
+        collector.onFightStart?.({ view: initial, library: library() });
+
+        const afterKill = view({ enemies: initial.enemies.filter(({ id }) => id !== "killedSkunk") });
+        collector.onAction?.(observation(
+            initial,
+            afterKill,
+            { type: "useMove", actor: "hero", move: "syntheticMouth", effects: [], targets: [{
+                target: "killedSkunk", result: "hit", effects: [{ type: "enemyDefeated", target: "killedSkunk" }],
+            }] },
+            { type: "move", actor: "hero", move: "syntheticMouth", targets: ["killedSkunk"] },
+        ));
+
+        // Enemy-action frame snapshots can still show the just-executed intention;
+        // the authoritative useMove must close the episode without re-queuing it.
+        const afterUse = view({ enemies: afterKill.enemies });
+        collector.onAction?.(observation(
+            afterKill,
+            afterUse,
+            { type: "useMove", actor: "usingSkunk", move: "latexExplosion", effects: [], targets: [] },
+            { type: "endTurn" },
+            2,
+        ));
+
+        const afterCancel = view({
+            enemies: afterUse.enemies.map((foe) => {
+                if (foe.id === "cancelledSkunk") return enemyWithIntentions("cancelledSkunk", []);
+                if (foe.id === "usingSkunk") return enemyWithIntentions("usingSkunk", []);
+                return foe;
+            }),
+        });
+        collector.onAction?.(observation(
+            afterUse,
+            afterCancel,
+            stopEvent("cancelledSkunk", "intentionCancelled"),
+            { type: "move", actor: "hero", move: "stop", targets: ["cancelledSkunk"] },
+            3,
+        ));
+
+        const afterOrdinaryDeath = view({
+            enemies: afterCancel.enemies.filter(({ id }) => id !== "ordinarySkunk"),
+        });
+        collector.onAction?.(observation(
+            afterCancel,
+            afterOrdinaryDeath,
+            { type: "useMove", actor: "hero", move: "syntheticMouth", effects: [], targets: [{
+                target: "ordinarySkunk", result: "hit", effects: [{ type: "enemyDefeated", target: "ordinarySkunk" }],
+            }] },
+            { type: "move", actor: "hero", move: "syntheticMouth", targets: ["ordinarySkunk"] },
+            4,
+        ));
+
+        expect(collector.getResult().skunkExplosion).toEqual({
+            intentionsQueued: 3,
+            killedBeforeUse: 1,
+            uses: 1,
+            cancelledBeforeUse: 1,
+        });
+    });
+
+    it("gives Stop full credit for cancelled positive committed player binding", () => {
+        const single = stopBlocked([
+            intention("latexSpray", [
+                { type: "binding", target: "hero", binding: "latexArms", amount: 30 },
+            ]),
+        ], [], "intentionCancelled");
+        expect(single.playerMoves.stop).toMatchObject({ uses: 1, totalBondageBlocked: 30 });
+
+        const result = stopBlocked([
+            intention("latexSpray", [
+                { type: "binding", target: "hero", binding: "latexArms", amount: 30 },
+                { type: "binding", target: "hero", binding: "latexHead", amount: -4 },
+                { type: "buff", target: "hero", buff: "irrelevant", operation: "add" },
+            ], [
+                { type: "binding", target: "hero", binding: "latexHead", amount: 5 },
+                { type: "binding", target: "foe", binding: "latexHead", amount: 99 },
+            ]),
+            intention("latexRain", [
+                { type: "binding", target: "hero", binding: "latexHead", amount: 10 },
+            ]),
+        ], [], "intentionCancelled");
+
+        expect(result.playerMoves.stop).toMatchObject({
+            uses: 1,
+            totalBondageBlocked: 45,
+        });
+        expect(result.bondageBlocked.unattributed).toBe(0);
+    });
+
+    it("keeps Stop counterfactual value separate from buff blockage and unattributed events", () => {
+        const collector = createDetailedCombatCollector();
+        const initial = view({
+            characters: [character("hero")],
+            enemies: [enemyWithIntentions("target1", [
+                intention("latexSpray", [
+                    { type: "binding", target: "hero", binding: "latexArms", amount: 30 },
+                ]),
+            ])],
+        });
+        const reflected = view({
+            characters: [character("hero", { buffs: [{ id: "reflect", duration: 1 }] })],
+            enemies: initial.enemies,
+        });
+        collector.onFightStart?.({ view: initial, library: library() });
+        collector.onAction?.(observation(
+            initial,
+            reflected,
+            { type: "useMove", actor: "hero", move: "reflect", targets: [], effects: [
+                { type: "buffAdded", target: "hero", buff: "reflect" },
+            ] },
+            { type: "move", actor: "hero", move: "reflect", targets: [] },
+        ));
+        const stopped = view({ characters: reflected.characters, enemies: [enemyWithIntentions("target1", [])] });
+        collector.onAction?.(observation(
+            reflected,
+            stopped,
+            stopEvent("target1", "intentionCancelled"),
+            { type: "move", actor: "hero", move: "stop", targets: ["target1"] },
+            2,
+        ));
+
+        expect(collector.getResult()).toMatchObject({
+            playerMoves: {
+                stop: { totalBondageBlocked: 30 },
+                reflect: { totalBondageBlocked: 0 },
+            },
+            bondageBlocked: { unattributed: 0 },
+        });
+    });
+
+    it("does not turn cancelled deferred trap pressure into Stop bondageBlocked", () => {
+        const result = stopBlocked([
+            intention("latexPuddle", [], [{ type: "trap", trap: "trapPuddle", amount: 30 }]),
+        ], [], "intentionCancelled");
+        expect(result.playerMoves.stop).toMatchObject({ uses: 1, totalBondageBlocked: 0 });
+    });
+
+    it("credits boss Stop only for the visible before/after committed-binding reduction", () => {
+        const reduced = stopBlocked(
+            [intention("bossBind", [{ type: "binding", target: "hero", binding: "rope", amount: 40 }])],
+            [intention("bossBind", [{ type: "binding", target: "hero", binding: "rope", amount: 15 }], [], "graze")],
+            "intentionWeakened",
+        );
+        const missed = stopBlocked(
+            [intention("bossBind", [{ type: "binding", target: "hero", binding: "rope", amount: 20 }])],
+            [intention("bossBind", [], [], "miss")],
+            "intentionWeakened",
+        );
+        const unchanged = stopBlocked(
+            [intention("bossBind", [{ type: "binding", target: "hero", binding: "rope", amount: 12 }])],
+            [intention("bossBind", [{ type: "binding", target: "hero", binding: "rope", amount: 12 }])],
+            "intentionWeakened",
+        );
+
+        expect(reduced.playerMoves.stop.totalBondageBlocked).toBe(25);
+        expect(missed.playerMoves.stop.totalBondageBlocked).toBe(20);
+        expect(unchanged.playerMoves.stop.totalBondageBlocked).toBe(0);
+    });
+
+    it("keeps ineffective and rejected Stop attempts at zero defensive value", () => {
+        const ineffective = stopBlocked(
+            [intention("latexSpray", [{ type: "binding", target: "hero", binding: "rope", amount: 30 }])],
+            [intention("latexSpray", [{ type: "binding", target: "hero", binding: "rope", amount: 30 }])],
+        );
+        expect(ineffective.playerMoves.stop).toMatchObject({ uses: 1, totalBondageBlocked: 0 });
+
+        const collector = createDetailedCombatCollector();
+        const state = view();
+        collector.onFightStart?.({ view: state, library: library() });
+        collector.onAction?.({
+            actionIndex: 1,
+            action: { type: "move", actor: "hero", move: "stop", targets: ["target1"] },
+            before: state,
+            result: { success: false, reason: "invalidTarget" },
+        });
+        expect(collector.getResult().playerMoves.stop).toBeUndefined();
+    });
+
     it("counts ordinary, completed bonus, and unused bonus escape sequences", () => {
         const collector = createDetailedCombatCollector();
         const initial = view({ characters: [character("single"), character("double"), character("unused")] });

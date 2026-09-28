@@ -284,7 +284,7 @@ describe("batch summary metrics", () => {
             skunkings: { total: 1, byCharacter: { ko: 1 } },
             rescues: { total: 1, byCharacter: { ko: 1 }, byMove: { telekinesis: 1 } },
             playerMoves: {
-                telekinesis: {
+                stop: {
                     uses,
                     totalDamage: damage,
                     accuracy: {
@@ -308,6 +308,12 @@ describe("batch summary metrics", () => {
                 traps: { trapPuddle: 3 },
                 unattributed: 1,
             },
+            skunkExplosion: {
+                intentionsQueued: 2,
+                killedBeforeUse: 1,
+                uses: 1,
+                cancelledBeforeUse: 0,
+            },
         });
         const summary = summarizeBatch(batch([
             run({ runIndex: 0, termination: "victory", actionCount: 1, damage: 10, peakBondage: 1, remainingEnemyHp: 0, detailedCombat: detailed(2, 12, -8) }),
@@ -319,7 +325,7 @@ describe("batch summary metrics", () => {
             skunkings: { total: 2, byCharacter: { ko: 2 } },
             rescues: { total: 2, byCharacter: { ko: 2 }, byMove: { telekinesis: 2 } },
             playerMoves: {
-                telekinesis: {
+                stop: {
                     uses: 3,
                     damage: { total: 15, averagePerUse: 5 },
                     accuracy: {
@@ -341,6 +347,12 @@ describe("batch summary metrics", () => {
                 ticks: { latexCollar: 4 },
                 traps: { trapPuddle: 6 },
                 unattributed: 2,
+            },
+            skunkExplosion: {
+                intentionsQueued: 4,
+                killedBeforeUse: 2,
+                uses: 2,
+                cancelledBeforeUse: 0,
             },
         });
         expect(structuredClone(summary)).toEqual(summary);
