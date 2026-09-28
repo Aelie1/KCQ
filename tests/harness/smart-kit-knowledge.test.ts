@@ -1,0 +1,544 @@
+import { describe, expect, it } from "vitest";
+import type { ContentLibrary } from "../../src/engine/public/library";
+import type {
+    ActionInfo,
+    ActionView,
+    Binding,
+    Buff,
+    Character,
+    Enemy,
+    EntitySide,
+    GameState,
+    TargetCount,
+} from "../../src/engine/public/types";
+import type { PolicyContext } from "../../src/harness/harness";
+import {
+    assessSmartBoard,
+    detectPounceRelationships,
+    EMPOWERED_OFFENSE_SUBSTITUTION_PENALTY,
+    evaluateKitKnowledge,
+    evaluateSmartDecision,
+    generateSmartCandidates,
+    IMMOLATION_RESERVE_PENALTY,
+    KIT_KNOWLEDGE_WEIGHT,
+    kitKnowledgeScorer,
+    OBEY_KO_BONUS,
+    POUNCE_CLEAR_BONUS,
+    POUNCE_REMOVAL_VALUE,
+    smartScorers,
+    STOP_COMMITTED_INTENTION_BONUS,
+} from "../../src/harness/policy/smart";
+import { createEmptyContentLibrary } from "../helpers/library";
+
+function binding(id: string, value: number, level: Binding["level"]): Binding {
+    return { id, value, level, data: {}, status: [], tickEffects: [] };
+}
+
+function character(
+    id: string,
+    values: Partial<Character> = {},
+): Character {
+    return {
+        id,
+        acted: false,
+        standing: false,
+        bonusEscapes: 0,
+        bindings: [],
+        buffs: [],
+        cooldowns: {},
+        modifiers: {},
+        blockedMoveTypes: [],
+        data: {},
+        ...values,
+    };
+}
+
+function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
+    return {
+        id,
+        rank: "enemy",
+        maxHp: 200,
+        currHp: 200,
+        currDef: 0,
+        intentions: [],
+        buffs: [],
+        cooldowns: {},
+        ...values,
+    };
+}
+
+interface MoveOptions {
+    damage?: number;
+    hits?: number;
+    accuracy?: number;
+    targets?: TargetCount;
+    side?: EntitySide;
+}
+
+function move(
+    id: string,
+    targetIds: Array<string | null>,
+    options: MoveOptions = {},
+): ActionInfo {
+    const damage = options.damage ?? 0;
+    const accuracy = options.accuracy ?? 100;
+    return {
+        move: {
+            id,
+            targetSide: options.side ?? "enemy",
+            targets: options.targets ?? (targetIds.length === 0 ? 0 : 1),
+            type: "arms",
+            hits: options.hits ?? 1,
+        },
+        available: true,
+        effects: [],
+        targets: targetIds.map((target) => ({
+            valid: true,
+            target,
+            effects: [],
+            ...(target !== null && damage > 0
+                ? {
+                    accuracy: { miss: 100 - accuracy, hit: accuracy },
+                    damage: {
+                        miss: { chance: 100 - accuracy, min: 0, max: 0 },
+                        hit: { chance: accuracy, min: damage, max: damage },
+                    },
+                }
+                : {}),
+        })),
+    };
+}
+
+function action(actor: string, moves: ActionInfo[]): ActionView {
+    return {
+        id: actor,
+        available: true,
+        moves,
+        escapes: [],
+        stance: { available: false, reason: "moveUnavailable" },
+    };
+}
+
+function context(
+    characters: Character[],
+    enemies: Enemy[],
+    actions: ActionView[],
+): PolicyContext {
+    const state: GameState = {
+        turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
+        characters,
+        enemies,
+        traps: [],
+        encounter: null,
+    };
+    const library = createEmptyContentLibrary();
+    addMoveReferences(library, actions);
+    return {
+        state,
+        actions,
+        thresholds: {
+            thresholds: { easy: 20, medium: 40, hard: 60, extreme: 70, impossible: 80 },
+            max: 100,
+        },
+        library,
+        random: {
+            next: () => { throw new Error("kit knowledge must not use policy random"); },
+            integer: () => { throw new Error("kit knowledge must not use policy random"); },
+        },
+    };
+}
+
+function addMoveReferences(library: ContentLibrary, actions: ActionView[]): void {
+    for (const view of actions) {
+        for (const info of view.moves) {
+            library.moves[info.move.id] = {
+                ...info.move,
+                bindings: [],
+                baseHits: info.move.id === "rockfall"
+                    ? 4
+                    : info.move.id === "fairyRockfall" ? 6 : info.move.hits,
+            };
+        }
+    }
+}
+
+function candidate(fixture: PolicyContext, moveId: string, targetId?: string) {
+    const result = generateSmartCandidates(fixture).find((value) =>
+        value.action.type === "move"
+        && value.action.move === moveId
+        && (targetId === undefined || value.action.targets.includes(targetId))
+    );
+    if (result === undefined) throw new Error(`Missing candidate ${moveId} -> ${targetId ?? "any"}`);
+    return result;
+}
+
+function knowledge(fixture: PolicyContext, moveId: string, targetId?: string) {
+    return evaluateKitKnowledge(
+        fixture,
+        assessSmartBoard(fixture),
+        candidate(fixture, moveId, targetId),
+    );
+}
+
+function pounceBuff(linkedEntity: string, level?: number): Buff {
+    return {
+        id: "pounce",
+        linkedEntity,
+        ...(level === undefined ? {} : { modifiers: { hit: level * 2 } }),
+    };
+}
+
+function pounceContext(
+    actorId: string,
+    level: number,
+    attackOptions: MoveOptions = { damage: 10, hits: 1, accuracy: 100 },
+    sourceAttackable = true,
+): PolicyContext {
+    const actor = character(actorId, { buffs: [pounceBuff("pounce-source")] });
+    const source = enemy("pounce-source", {
+        buffs: [pounceBuff(actorId, level)],
+    });
+    const other = enemy("other-enemy");
+    const moves = [
+        ...(sourceAttackable
+            ? [move("source-attack", ["pounce-source", "other-enemy"], attackOptions)]
+            : []),
+        move("throwOff", [], { targets: 0, side: "none" }),
+    ];
+    return context([actor], [source, other], [action(actorId, moves)]);
+}
+
+describe("Smart Matsuko kit knowledge", () => {
+    it("prefers an available fairy attack over equivalent ordinary offense", () => {
+        const fixture = context(
+            [character("matsuko", { buffs: [{ id: "empowerment" }] })],
+            [enemy("target")],
+            [action("matsuko", [
+                move("punch", ["target"], { damage: 30 }),
+                move("fairyWhiteFlame", ["target"], { damage: 30 }),
+            ])],
+        );
+
+        expect(knowledge(fixture, "punch").raw)
+            .toBe(EMPOWERED_OFFENSE_SUBSTITUTION_PENALTY);
+        expect(evaluateSmartDecision(fixture).selected.action)
+            .toMatchObject({ move: "fairyWhiteFlame" });
+    });
+
+    it("does not force empowerment consumption over urgent recovery", () => {
+        const matsuko = character("matsuko", {
+            buffs: [{ id: "empowerment" }],
+            bindings: [binding("restraint", 80, "impossible")],
+        });
+        const view = action("matsuko", [
+            move("punch", ["target"], { damage: 30 }),
+            move("fairyPhoenixKick", ["target"], { damage: 30 }),
+        ]);
+        view.escapes.push({
+            available: true,
+            target: "matsuko",
+            binding: "restraint",
+            effects: [{ type: "binding", target: "matsuko", binding: "restraint", amount: -40 }],
+        });
+        const fixture = context([matsuko], [enemy("target")], [view]);
+
+        expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ type: "escape" });
+    });
+
+    it("reserves Immolation despite enormous healthy-enemy AoE damage", () => {
+        const enemies = [1, 2, 3, 4].map((index) => enemy(`target-${index}`));
+        const fixture = context(
+            [character("matsuko")],
+            enemies,
+            [action("matsuko", [
+                move("punch", ["target-1"], { damage: 30 }),
+                move("immolation", enemies.map(({ id }) => id), {
+                    damage: 75,
+                    targets: "all",
+                }),
+            ])],
+        );
+
+        expect(knowledge(fixture, "immolation").raw).toBe(IMMOLATION_RESERVE_PENALTY);
+        expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "punch" });
+    });
+
+    it("releases the Immolation reserve in a serious binding emergency", () => {
+        const fixture = context(
+            [character("matsuko", {
+                bindings: [binding("restraint", 80, "impossible")],
+            })],
+            [enemy("target")],
+            [action("matsuko", [move("immolation", ["target"], { damage: 75 })])],
+        );
+
+        expect(knowledge(fixture, "immolation")).toMatchObject({
+            raw: 0,
+            rules: [{ id: "matsuko.immolation-release-emergency", adjustment: 0 }],
+        });
+    });
+
+    it("releases the Immolation reserve when it finishes every enemy", () => {
+        const fixture = context(
+            [character("matsuko")],
+            [enemy("one", { currHp: 70 }), enemy("two", { currHp: 75 })],
+            [action("matsuko", [move("immolation", ["one", "two"], {
+                damage: 75,
+                targets: "all",
+            })])],
+        );
+
+        expect(knowledge(fixture, "immolation")).toMatchObject({
+            raw: 0,
+            rules: [{ id: "matsuko.immolation-release-finisher", adjustment: 0 }],
+        });
+    });
+
+    it("gives Obey targeting Ko its explicit bonus", () => {
+        const fixture = context(
+            [character("matsuko"), character("ko", { acted: true })],
+            [],
+            [action("matsuko", [move("obey", ["ko"], { side: "player" })])],
+        );
+        expect(knowledge(fixture, "obey", "ko").raw).toBe(OBEY_KO_BONUS);
+    });
+
+    it("does not give Obey targeting Hinari the Ko bonus", () => {
+        const fixture = context(
+            [character("matsuko"), character("hinari", { acted: true })],
+            [],
+            [action("matsuko", [move("obey", ["hinari"], { side: "player" })])],
+        );
+        expect(knowledge(fixture, "obey", "hinari").raw).toBe(0);
+    });
+
+    it("does not invent an Obey fallback when Ko is not a valid target", () => {
+        const fixture = context(
+            [character("matsuko"), character("hinari", { acted: true })],
+            [],
+            [action("matsuko", [move("obey", ["hinari"], { side: "player" })])],
+        );
+        expect(knowledge(fixture, "obey").rules).toEqual([]);
+    });
+
+    it("strongly values Stop against a committed enemy intention", () => {
+        const target = enemy("target", {
+            intentions: [{ move: "unknown-threat", targets: [], effects: [] }],
+        });
+        const fixture = context(
+            [character("matsuko")],
+            [target],
+            [action("matsuko", [
+                move("punch", ["target"], { damage: 30 }),
+                move("stop", ["target"]),
+            ])],
+        );
+        expect(knowledge(fixture, "stop").raw).toBe(STOP_COMMITTED_INTENTION_BONUS);
+        expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "stop" });
+    });
+
+    it("leaves Attack Me neutral", () => {
+        const fixture = context(
+            [character("matsuko")],
+            [enemy("target")],
+            [action("matsuko", [move("attackMe", ["target"], { targets: "all" })])],
+        );
+        expect(knowledge(fixture, "attackMe")).toEqual({ rules: [], raw: 0 });
+    });
+});
+
+describe("Smart Hinari kit knowledge", () => {
+    it("prefers Fairy Rockfall over ordinary Rockfall when choosing offense", () => {
+        const fixture = context(
+            [character("hinari", {
+                buffs: [{ id: "empowerment" }],
+                data: { subspace: 0, subspaceMax: 100 },
+            })],
+            [enemy("target")],
+            [action("hinari", [
+                move("rockfall", ["target"], { damage: 10, hits: 4 }),
+                move("fairyRockfall", ["target"], { damage: 10, hits: 6 }),
+            ])],
+        );
+        expect(knowledge(fixture, "rockfall").raw)
+            .toBe(EMPOWERED_OFFENSE_SUBSTITUTION_PENALTY);
+        expect(evaluateSmartDecision(fixture).selected.action)
+            .toMatchObject({ move: "fairyRockfall" });
+    });
+
+    it("creates no artificial Release urgency at low Subspace", () => {
+        const fixture = hinariSubspaceContext(0, 4);
+        expect(knowledge(fixture, "release").raw).toBe(0);
+    });
+
+    it("increases Release value as Subspace rises and Rockfall loses hits", () => {
+        const moderate = hinariSubspaceContext(25, 3);
+        const high = hinariSubspaceContext(75, 1);
+        expect(knowledge(high, "release").raw).toBeGreaterThan(
+            knowledge(moderate, "release").raw,
+        );
+    });
+
+    it("penalizes high-Subspace Store but lets urgent recovery outweigh it", () => {
+        const hinari = character("hinari", {
+            bindings: [binding("restraint", 100, "max")],
+            data: { subspace: 75, subspaceMax: 100 },
+        });
+        const store = move("store", ["hinari"], { side: "player" });
+        store.targets[0] = {
+            valid: true,
+            target: "hinari",
+            effects: [{ type: "binding", target: "hinari", binding: "restraint", amount: -100 }],
+        };
+        const fixture = context(
+            [hinari],
+            [enemy("target")],
+            [action("hinari", [
+                move("rockfall", ["target"], { damage: 10, hits: 1 }),
+                move("release", ["target"]),
+                store,
+            ])],
+        );
+        expect(knowledge(fixture, "store").raw).toBeLessThan(0);
+        expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "store" });
+    });
+
+    it("does not remain highly charged while choosing a degraded Rockfall", () => {
+        const fixture = hinariSubspaceContext(75, 1);
+        expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "release" });
+    });
+});
+
+function hinariSubspaceContext(subspace: number, rockfallHits: number): PolicyContext {
+    return context(
+        [character("hinari", { data: { subspace, subspaceMax: 100 } })],
+        [enemy("target")],
+        [action("hinari", [
+            move("rockfall", ["target"], { damage: 10, hits: rockfallHits }),
+            move("release", ["target"]),
+        ])],
+    );
+}
+
+describe("Smart Pounce and Throw Off knowledge", () => {
+    it("derives Pounce level from the source's public hit modifier divided by two", () => {
+        expect(detectPounceRelationships(pounceContext("ko", 3))).toEqual([{
+            characterId: "ko",
+            enemyId: "pounce-source",
+            level: 3,
+        }]);
+    });
+
+    it("values a damaging attack against the actual Pounce source", () => {
+        const fixture = pounceContext("ko", 2);
+        expect(knowledge(fixture, "source-attack", "pounce-source").raw).toBeGreaterThan(0);
+    });
+
+    it("does not value the same attack against an unrelated enemy", () => {
+        const fixture = pounceContext("ko", 2);
+        expect(knowledge(fixture, "source-attack", "other-enemy").raw).toBe(0);
+    });
+
+    it("values more useful damaging hits over fewer hits", () => {
+        const one = pounceContext("ko", 4, { damage: 10, hits: 1, accuracy: 100 });
+        const four = pounceContext("ko", 4, { damage: 10, hits: 4, accuracy: 100 });
+        expect(knowledge(four, "source-attack").raw)
+            .toBeGreaterThan(knowledge(one, "source-attack").raw);
+    });
+
+    it("applies the same source-removal rule to Ko, Matsuko, and Hinari", () => {
+        for (const actorId of ["ko", "matsuko", "hinari"]) {
+            const result = knowledge(pounceContext(actorId, 2), "source-attack");
+            expect(result.rules.some(({ id }) => id === "skunk.pounce-source-removal")).toBe(true);
+        }
+    });
+
+    it("uses public non-miss accuracy for expected successful hits", () => {
+        const half = pounceContext("ko", 4, { damage: 10, hits: 2, accuracy: 50 });
+        const certain = pounceContext("ko", 4, { damage: 10, hits: 2, accuracy: 100 });
+        expect(knowledge(half, "source-attack").raw).toBe(POUNCE_REMOVAL_VALUE);
+        expect(knowledge(certain, "source-attack").raw).toBe(2 * POUNCE_REMOVAL_VALUE);
+    });
+
+    it("adds a named bonus when expected hits can clear Pounce", () => {
+        const fixture = pounceContext("ko", 2, { damage: 10, hits: 2, accuracy: 100 });
+        const result = knowledge(fixture, "source-attack");
+        expect(result.rules).toContainEqual(expect.objectContaining({
+            id: "skunk.pounce-clear",
+            adjustment: POUNCE_CLEAR_BONUS,
+        }));
+    });
+
+    it("strongly discourages low-level Throw Off when a good source attack exists", () => {
+        const fixture = pounceContext("ko", 1);
+        expect(knowledge(fixture, "throwOff").raw).toBeLessThan(0);
+        expect(evaluateSmartDecision(fixture).selected.action)
+            .toMatchObject({ move: "source-attack" });
+    });
+
+    it("makes Throw Off substantially more acceptable around level three", () => {
+        const low = knowledge(pounceContext("ko", 1), "throwOff").raw;
+        const high = knowledge(pounceContext("ko", 3), "throwOff").raw;
+        expect(high).toBeGreaterThan(low);
+        expect(high).toBeGreaterThan(0);
+    });
+
+    it("still prefers a strong multi-hit source attack at level four", () => {
+        const fixture = pounceContext("ko", 4, { damage: 10, hits: 6, accuracy: 100 });
+        expect(evaluateSmartDecision(fixture).selected.action)
+            .toMatchObject({ move: "source-attack" });
+    });
+
+    it("uses Throw Off as fallback when the source cannot be attacked", () => {
+        const fixture = pounceContext("ko", 4, {}, false);
+        expect(evaluateSmartDecision(fixture).selected.action)
+            .toMatchObject({ move: "throwOff" });
+    });
+});
+
+describe("Smart knowledge diagnostics and registration", () => {
+    it("gives unknown characters and moves zero adjustment", () => {
+        const fixture = context(
+            [character("unknown-hero")],
+            [enemy("unknown-enemy")],
+            [action("unknown-hero", [move("unknown-move", ["unknown-enemy"], { damage: 10 })])],
+        );
+        expect(knowledge(fixture, "unknown-move")).toEqual({ rules: [], raw: 0 });
+    });
+
+    it("emits named rule diagnostics with inspectable adjustments", () => {
+        const fixture = context(
+            [character("matsuko", { buffs: [{ id: "empowerment" }] })],
+            [enemy("target")],
+            [action("matsuko", [
+                move("punch", ["target"], { damage: 30 }),
+                move("fairyWhiteFlame", ["target"], { damage: 30 }),
+            ])],
+        );
+        expect(knowledge(fixture, "punch").rules).toEqual([{
+            id: "matsuko.consume-empowerment",
+            adjustment: EMPOWERED_OFFENSE_SUBSTITUTION_PENALTY,
+            reason: expect.any(String),
+        }]);
+    });
+
+    it("produces structured-cloneable diagnostics", () => {
+        const fixture = pounceContext("matsuko", 2);
+        const result = knowledge(fixture, "source-attack");
+        expect(structuredClone(result)).toEqual(result);
+    });
+
+    it("is deterministic and consumes no policy RNG", () => {
+        const fixture = pounceContext("hinari", 3, { damage: 10, hits: 4, accuracy: 75 });
+        const first = evaluateSmartDecision(fixture, [kitKnowledgeScorer]);
+        const second = evaluateSmartDecision(fixture, [kitKnowledgeScorer]);
+        expect(second).toEqual(first);
+    });
+
+    it("registers the unit-weight knowledge scorer exactly once", () => {
+        expect(kitKnowledgeScorer.weight).toBe(KIT_KNOWLEDGE_WEIGHT);
+        expect(KIT_KNOWLEDGE_WEIGHT).toBe(1);
+        expect(smartScorers.filter(({ id }) => id === "kitKnowledge"))
+            .toEqual([kitKnowledgeScorer]);
+    });
+});

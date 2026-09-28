@@ -388,6 +388,7 @@ describe("Smart generic linked-threat targeting", () => {
             "expectedDamage",
             "linkedThreat",
             "incomingThreat",
+            "kitKnowledge",
             "bindingRecovery",
             "bindingMoveAccess",
             "pressureSourceProgress",

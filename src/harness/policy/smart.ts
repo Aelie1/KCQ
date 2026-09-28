@@ -31,9 +31,15 @@ import {
     totalRecoveryDebt,
     type BindingBoard,
 } from "./smart-bindings";
+import {
+    evaluateKitKnowledge as evaluateKitKnowledgeRules,
+    type KitKnowledgeBreakdown,
+} from "./knowledge/kit-knowledge";
 
 export * from "./smart-board";
 export { RECOVERY_DEBT_CURVE_A, recoveryDebt } from "./smart-bindings";
+export * from "./knowledge/kit-knowledge";
+export * from "./knowledge/skunk-knowledge";
 
 /** Public-preview data retained beside an action so scoring stays inspectable. */
 export interface SmartCandidate {
@@ -200,6 +206,7 @@ export const FUTURE_MOVE_OPTIONS_WEIGHT = 20;
 export const RESERVE_SPENDING_WEIGHT = 1;
 export const LINKED_THREAT_WEIGHT = 40;
 export const INCOMING_THREAT_WEIGHT = 1;
+export const KIT_KNOWLEDGE_WEIGHT = 1;
 
 /** Smart 1's expected-direct-enemy-damage behavior as a reusable component. */
 export const expectedDamageScorer: SmartScorer = {
@@ -239,6 +246,21 @@ export const incomingThreatScorer: SmartScorer = {
         const evaluate = prepareIncomingThreat(context, board);
         return (candidate) => {
             const diagnostics = evaluate(candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
+    },
+};
+
+/** Applies explicit current-KCQ character-kit and mechanic knowledge. */
+export const kitKnowledgeScorer: SmartScorer = {
+    id: "kitKnowledge",
+    weight: KIT_KNOWLEDGE_WEIGHT,
+    prepare(context, board) {
+        return (candidate) => evaluateKitKnowledgeRules(context, board, candidate).raw;
+    },
+    prepareDetailed(context, board) {
+        return (candidate) => {
+            const diagnostics = evaluateKitKnowledgeRules(context, board, candidate);
             return { raw: diagnostics.raw, diagnostics };
         };
     },
@@ -322,6 +344,7 @@ export const smartScorers: readonly SmartScorer[] = [
     expectedDamageScorer,
     linkedThreatScorer,
     incomingThreatScorer,
+    kitKnowledgeScorer,
     bindingRecoveryScorer,
     bindingMoveAccessScorer,
     pressureSourceProgressScorer,
@@ -387,6 +410,15 @@ export function evaluateIncomingThreat(
     candidate: SmartCandidate,
 ): IncomingThreatBreakdown {
     return prepareIncomingThreat(context, board)(candidate);
+}
+
+/** Exposes named content-aware rule adjustments for focused diagnostics. */
+export function evaluateKitKnowledge(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    candidate: SmartCandidate,
+): KitKnowledgeBreakdown {
+    return evaluateKitKnowledgeRules(context, board, candidate);
 }
 
 function prepareExpectedEnemyDamage(
