@@ -1,5 +1,13 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.8.3 — 2026-09-28
+* Hinari's Release is now -2 Hit / -2 Defense
+* Potency/Vulnerability are now 10% per point instead of 12.5%, and existing users have been modified
+* * Skunkette resistance is -4 (up from -3)
+* * Matsuko's Phoenix kick is now +3 (up from +2)
+* * Fairy Empower is still +5 (lowering its final effect slightly)
+* * Submissive is still +1 per level (lowering its final effect slightly)
+
 ## 0.8.2 — 2026-09-28
 * Matsuko's Attack Me! now grants +3 Defense for that turn
 * Skunk Collar spread is now based on its value — stays +10 at 50, and scales from +1 at 5 to +20 at 100

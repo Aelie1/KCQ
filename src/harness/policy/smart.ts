@@ -148,6 +148,7 @@ export interface FutureMoveOptionsCharacterBreakdown {
     readonly characterId: EntityId;
     readonly gainedMoveIds: readonly string[];
     readonly lostMoveIds: readonly string[];
+    readonly blockedProposedGainIds: readonly string[];
 }
 
 export interface FutureMoveOptionsBreakdown {
@@ -410,6 +411,13 @@ export const futureMoveOptionsScorer: SmartScorer = {
     prepare(context) {
         const evaluate = prepareFutureMoveOptions(context);
         return (candidate) => evaluate(candidate).raw;
+    },
+    prepareDetailed(context) {
+        const evaluate = prepareFutureMoveOptions(context);
+        return (candidate) => {
+            const diagnostics = evaluate(candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
     },
 };
 
@@ -1152,6 +1160,12 @@ function prepareFutureMoveOptions(
             .filter(({ id }) => characterIds.has(id))
             .map((view) => [view.id, new Set(view.moves.map(({ move }) => move.id))]),
     );
+    const activeBlockedMoves = new Map<EntityId, Set<string>>(
+        context.state.characters.map((character) => [
+            character.id,
+            new Set(character.buffs.flatMap(({ moveList }) => moveList?.blockedMoves ?? [])),
+        ]),
+    );
 
     return (candidate) => {
         const changes = new Map<EntityId, {
@@ -1169,13 +1183,25 @@ function prepareFutureMoveOptions(
         for (const [characterId, { added, blocked }] of changes) {
             const before = currentMoves.get(characterId) ?? new Set<string>();
             const after = new Set([...before, ...added]);
-            for (const moveId of blocked) after.delete(moveId);
+            const allBlocked = new Set([
+                ...(activeBlockedMoves.get(characterId) ?? []),
+                ...blocked,
+            ]);
+            const blockedProposedGainIds = [...added].filter((moveId) =>
+                !before.has(moveId) && allBlocked.has(moveId)
+            );
+            for (const moveId of allBlocked) after.delete(moveId);
 
             const gainedMoveIds = [...after].filter((moveId) => !before.has(moveId));
             const lostMoveIds = [...before].filter((moveId) => !after.has(moveId));
             gainedOptions += gainedMoveIds.length;
             lostOptions += lostMoveIds.length;
-            characters.push({ characterId, gainedMoveIds, lostMoveIds });
+            characters.push({
+                characterId,
+                gainedMoveIds,
+                lostMoveIds,
+                blockedProposedGainIds,
+            });
         }
 
         return {

@@ -26,6 +26,7 @@ import {
     generateSmartCandidates,
     INCOMING_THREAT_WEIGHT,
     kitKnowledgeScorer,
+    QUEEN_ADD_CLEAR_PENALTY,
     reactiveKnowledgeScorer,
     recoveryDebt,
     REACTIVE_KNOWLEDGE_WEIGHT,
@@ -315,7 +316,7 @@ describe("Smart tempo and pressure knowledge", () => {
         expect(tempo(high, "finish").raw).toBeGreaterThan(tempo(low, "finish").raw);
     });
 
-    it("does not boost arbitrary nonlethal Queen damage under high pressure", () => {
+    it("reserves arbitrary nonlethal Queen damage while adds remain", () => {
         const fixture = context(
             [character("ko")],
             [
@@ -324,7 +325,7 @@ describe("Smart tempo and pressure knowledge", () => {
             ],
             [action("ko", [move("queen-chip", ["queen1"], { damage: 10 })])],
         );
-        expect(tempo(fixture, "queen-chip").raw).toBe(0);
+        expect(tempo(fixture, "queen-chip").raw).toBe(-QUEEN_ADD_CLEAR_PENALTY);
     });
 
     it("allows normal offense when both party and enemy pressure are low", () => {
@@ -379,6 +380,84 @@ describe("Smart tempo and pressure knowledge", () => {
         expect(tempo(fixture, "queen-chip").rules).not.toContainEqual(
             expect.objectContaining({ id: "tempo.queen-phase-push" }),
         );
+    });
+
+    it("strongly reserves Queen damage while adds and an unreached threshold remain", () => {
+        const fixture = context(
+            [character("ko")],
+            [
+                enemy("queen1", { rank: "boss", maxHp: 750, currHp: 194 }),
+                enemy("skunk1"),
+                enemy("fairy1"),
+                enemy("rainmaker1"),
+            ],
+            [action("ko", [
+                move("queen-chip", ["queen1"], { damage: 40 }),
+                move("add-chip", ["skunk1"], { damage: 40 }),
+            ])],
+        );
+
+        const result = tempo(fixture, "queen-chip");
+        expect(result.rules).toContainEqual(expect.objectContaining({
+            id: "tempo.queen-clear-adds",
+            adjustment: -QUEEN_ADD_CLEAR_PENALTY,
+            details: {
+                queenId: "queen1",
+                queenHp: 194,
+                queenMaxHp: 750,
+                livingAddCount: 3,
+                remainingReinforcementThresholds: [150],
+                expectedLethalBypassed: false,
+                adjustment: -QUEEN_ADD_CLEAR_PENALTY,
+            },
+        }));
+        expect(result.rules).not.toContainEqual(
+            expect.objectContaining({ id: "tempo.queen-phase-push" }),
+        );
+        expect(tempo(fixture, "add-chip").rules).not.toContainEqual(
+            expect.objectContaining({ id: "tempo.queen-clear-adds" }),
+        );
+    });
+
+    it("does not apply the add-clear reserve when the Queen is alone", () => {
+        const fixture = context(
+            [character("ko")],
+            [enemy("queen1", { rank: "boss", maxHp: 750, currHp: 194 })],
+            [action("ko", [move("queen-chip", ["queen1"], { damage: 40 })])],
+        );
+        expect(tempo(fixture, "queen-chip").rules).not.toContainEqual(
+            expect.objectContaining({ id: "tempo.queen-clear-adds" }),
+        );
+    });
+
+    it("removes the add-clear reserve after the final reinforcement threshold", () => {
+        const fixture = context(
+            [character("ko")],
+            [
+                enemy("queen1", { rank: "boss", maxHp: 750, currHp: 145 }),
+                enemy("skunk1"),
+            ],
+            [action("ko", [move("queen-chip", ["queen1"], { damage: 40 })])],
+        );
+        expect(tempo(fixture, "queen-chip").rules).not.toContainEqual(
+            expect.objectContaining({ id: "tempo.queen-clear-adds" }),
+        );
+    });
+
+    it("lets expected lethal Queen damage bypass the add-clear reserve", () => {
+        const fixture = context(
+            [character("ko")],
+            [
+                enemy("queen1", { rank: "boss", maxHp: 750, currHp: 194 }),
+                enemy("skunk1"),
+            ],
+            [action("ko", [move("queen-kill", ["queen1"], { damage: 194 })])],
+        );
+        expect(tempo(fixture, "queen-kill").rules).toContainEqual(expect.objectContaining({
+            id: "tempo.queen-clear-adds",
+            adjustment: 0,
+            details: expect.objectContaining({ expectedLethalBypassed: true }),
+        }));
     });
 });
 

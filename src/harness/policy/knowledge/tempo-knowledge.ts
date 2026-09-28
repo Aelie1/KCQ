@@ -15,6 +15,7 @@ export const TEMPO_KNOWLEDGE_WEIGHT = 1;
 export const BREATHING_ROOM_RECOVERY_VALUE = 1;
 export const PRESSURE_REMOVAL_VALUE = 2;
 export const QUEEN_PHASE_PUSH_PENALTY = 180;
+export const QUEEN_ADD_CLEAR_PENALTY = 1_000;
 
 const ENEMY_QUIET_PRESSURE = 35;
 const ENEMY_HIGH_PRESSURE = 100;
@@ -165,11 +166,61 @@ export function evaluateTempoKnowledge(
         }
     }
 
+    rules.push(...queenAddClearRules(context, candidate));
+
     return {
         pressure,
         rules,
         raw: rules.reduce((total, rule) => total + rule.adjustment, 0),
     };
+}
+
+interface QueenAddClearDetails {
+    readonly queenId: EntityId;
+    readonly queenHp: number;
+    readonly queenMaxHp: number;
+    readonly livingAddCount: number;
+    readonly remainingReinforcementThresholds: readonly number[];
+    readonly expectedLethalBypassed: boolean;
+    readonly adjustment: number;
+}
+
+function queenAddClearRules(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): KitKnowledgeRuleDiagnostic[] {
+    const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
+    const rules: KitKnowledgeRuleDiagnostic[] = [];
+    for (const queen of livingEnemies.filter(({ id }) => isQueenId(id))) {
+        const expectedDamage = expectedDamageToEnemy(candidate, queen.id);
+        if (expectedDamage <= 0) continue;
+
+        const livingAddCount = livingEnemies.filter(({ id }) => id !== queen.id).length;
+        const remainingReinforcementThresholds = QUEEN_REINFORCEMENT_RATIOS
+            .map((ratio) => queen.maxHp * ratio)
+            .filter((threshold) => queen.currHp > threshold);
+        if (livingAddCount === 0 || remainingReinforcementThresholds.length === 0) continue;
+
+        const expectedLethalBypassed = expectedDamage >= queen.currHp;
+        const adjustment = expectedLethalBypassed ? 0 : -QUEEN_ADD_CLEAR_PENALTY;
+        rules.push({
+            id: "tempo.queen-clear-adds",
+            adjustment,
+            reason: expectedLethalBypassed
+                ? "Expected lethal Queen damage bypasses the add-clear reserve."
+                : "Clear living adds before damaging the Queen while a reinforcement threshold remains.",
+            details: {
+                queenId: queen.id,
+                queenHp: queen.currHp,
+                queenMaxHp: queen.maxHp,
+                livingAddCount,
+                remainingReinforcementThresholds,
+                expectedLethalBypassed,
+                adjustment,
+            } satisfies QueenAddClearDetails,
+        });
+    }
+    return rules;
 }
 
 function enemyPressureBreakdown(

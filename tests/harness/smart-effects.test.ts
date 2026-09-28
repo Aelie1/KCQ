@@ -208,9 +208,16 @@ describe("Smart binding recovery for move effects", () => {
 });
 
 describe("Smart future move options", () => {
-    function fixture(moveIds: string[]): PolicyContext {
+    function fixture(
+        moveIds: string[],
+        blockedMoves: string[] = [],
+    ): PolicyContext {
+        const hero = character("hero");
+        if (blockedMoves.length > 0) {
+            hero.buffs = [{ id: "active-move-list-blocker", moveList: { blockedMoves } }];
+        }
         return context(
-            [character("hero")],
+            [hero],
             [actionView("hero", moveIds.map((id) => move(id, [], 1, id !== "unavailable")))],
         );
     }
@@ -247,6 +254,54 @@ describe("Smart future move options", () => {
         expect(result.characters[0]).toMatchObject({
             gainedMoveIds: ["three"],
             lostMoveIds: ["two"],
+            blockedProposedGainIds: ["four"],
+        });
+    });
+
+    it("does not count an added move blocked by an active public move-list buff", () => {
+        const result = evaluateFutureMoveOptions(
+            fixture(["strike"], ["guard"]),
+            buffCandidate([moveListEffect("hero", { addedMoves: ["guard"] })]),
+        );
+
+        expect(result).toMatchObject({ gainedOptions: 0, lostOptions: 0, raw: 0 });
+        expect(result.characters[0]).toMatchObject({
+            gainedMoveIds: [],
+            blockedProposedGainIds: ["guard"],
+        });
+    });
+
+    it("counts only the unblocked member of a mixed proposed gain", () => {
+        const result = evaluateFutureMoveOptions(
+            fixture(["strike"], ["blocked-one"]),
+            buffCandidate([moveListEffect("hero", {
+                addedMoves: ["blocked-one", "usable-one"],
+            })]),
+        );
+
+        expect(result).toMatchObject({ gainedOptions: 1, lostOptions: 0, raw: 1 });
+        expect(result.characters[0]).toMatchObject({
+            gainedMoveIds: ["usable-one"],
+            blockedProposedGainIds: ["blocked-one"],
+        });
+    });
+
+    it("does not give Fairy Empowerment phantom options after Matsuko Burnout", () => {
+        const fairyAttacks = ["fairyWhiteFlame", "fairyPhoenixKick"];
+        const matsuko = character("matsuko");
+        matsuko.buffs = [{ id: "burnout", moveList: { blockedMoves: fairyAttacks } }];
+        const result = evaluateFutureMoveOptions(
+            context(
+                [matsuko],
+                [actionView("matsuko", [move("punch"), move("kick")])],
+            ),
+            buffCandidate([moveListEffect("matsuko", { addedMoves: fairyAttacks })]),
+        );
+
+        expect(result).toMatchObject({ gainedOptions: 0, lostOptions: 0, raw: 0 });
+        expect(result.characters[0]).toMatchObject({
+            gainedMoveIds: [],
+            blockedProposedGainIds: fairyAttacks,
         });
     });
 
@@ -304,6 +359,8 @@ describe("Smart future move options", () => {
 
         const decision = evaluateSmartDecision(current);
         expect(decision.candidates[0].components.futureMoveOptions)
-            .toEqual({ raw: -1, weight: 20, score: -20 });
+            .toMatchObject({ raw: -1, weight: 20, score: -20 });
+        expect(decision.candidates[0].components.futureMoveOptions.diagnostics)
+            .toEqual(evaluateFutureMoveOptions(current, decision.candidates[0]));
     });
 });

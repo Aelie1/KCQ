@@ -1,4 +1,10 @@
-import type { EntityId } from "../../../engine/public/types";
+import type {
+    Binding,
+    BindingEffect,
+    Character,
+    Enemy,
+    EntityId,
+} from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
 import type { SmartBoardAssessment } from "../smart-board";
 import type { SmartCandidate } from "../smart";
@@ -24,6 +30,10 @@ export const RELEASE_SUBSPACE_PRESSURE_VALUE = 80;
 export const RELEASE_LOST_ROCKFALL_HIT_VALUE = 20;
 export const STORE_SUBSPACE_PRESSURE_PENALTY = 100;
 export const STORE_LOST_ROCKFALL_HIT_PENALTY = 20;
+export const POWER_OF_DENIAL_RESCUE_BONUS = 2_000;
+export const POWER_OF_DENIAL_RAINMAKER_BONUS = 600;
+export const POWER_OF_DENIAL_EMERGENCY_BINDING_BONUS = 400;
+export const POWER_OF_DENIAL_PLAYER_RESERVE_PENALTY = -1_000;
 
 const MATSUKO = "matsuko";
 const HINARI = "hinari";
@@ -37,6 +47,10 @@ const ROCKFALL = "rockfall";
 const FAIRY_ROCKFALL = "fairyRockfall";
 const RELEASE = "release";
 const STORE = "store";
+const POWER_OF_DENIAL = "powerOfDenial";
+const SKUNKED = "skunked";
+const POWER_OF_DENIAL_EMERGENCY_THRESHOLD = 80;
+const POWER_OF_DENIAL_PRIORITY_BINDINGS = new Set(["latexArms"]);
 const RELEASE_START_RATIO = 0.25;
 const STORE_PRESSURE_START_RATIO = 0.5;
 
@@ -49,6 +63,7 @@ export function evaluateKitKnowledge(
     const rules = [
         ...evaluateMatsukoKnowledge(context, board, candidate),
         ...evaluateHinariKnowledge(context, candidate),
+        ...evaluateKoKnowledge(context, candidate),
         ...evaluateIntentionKnowledge(context, candidate),
         ...evaluateSkunkKnowledge(context, candidate),
     ];
@@ -56,6 +71,146 @@ export function evaluateKitKnowledge(
         rules,
         raw: rules.reduce((total, rule) => total + rule.adjustment, 0),
     };
+}
+
+export type PowerOfDenialEnemyClassification =
+    | "linkedSkunkedCharacterRescueSkunkette"
+    | "rainmaker"
+    | "ordinaryOrNonPriorityEnemy";
+
+export interface PowerOfDenialEnemyDetails {
+    readonly targetEnemyId: EntityId;
+    readonly classification: PowerOfDenialEnemyClassification;
+    readonly linkedCharacterId?: EntityId;
+    readonly linkedCharacterCurrentlySkunked: boolean;
+    readonly linkedCharacterBindings?: readonly Pick<Binding, "id" | "value">[];
+    readonly restoresCharacter: boolean;
+}
+
+export interface PowerOfDenialPlayerDetails {
+    readonly targetCharacterId: EntityId;
+    readonly removedBindingId?: string;
+    readonly removedAmount: number;
+    readonly meetsEmergencyThreshold: boolean;
+    readonly priorityBinding: boolean;
+}
+
+function evaluateKoKnowledge(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): KitKnowledgeRuleDiagnostic[] {
+    if (candidate.action.type !== "move" || candidate.action.actor !== KO
+        || candidate.action.move !== POWER_OF_DENIAL) return [];
+
+    const targetId = candidate.action.targets[0];
+    if (targetId === undefined) return [];
+
+    const enemy = context.state.enemies.find(({ id }) => id === targetId);
+    if (enemy !== undefined && enemy.currHp > 0 && defeatsEnemy(candidate, enemy.id)) {
+        return [powerOfDenialEnemyRule(context, enemy)];
+    }
+
+    const character = context.state.characters.find(({ id }) => id === targetId);
+    if (character === undefined) return [];
+    return [powerOfDenialPlayerRule(candidate, character)];
+}
+
+function powerOfDenialEnemyRule(
+    context: PolicyContext,
+    enemy: Enemy,
+): KitKnowledgeRuleDiagnostic {
+    const rescue = linkedSkunkedCharacter(context, enemy);
+    if (rescue !== undefined) {
+        return {
+            id: "ko.power-of-denial-enemy",
+            adjustment: POWER_OF_DENIAL_RESCUE_BONUS,
+            reason: "Defeating the linked Skunked-character captor immediately restores an incapacitated party member.",
+            details: {
+                targetEnemyId: enemy.id,
+                classification: "linkedSkunkedCharacterRescueSkunkette",
+                linkedCharacterId: rescue.id,
+                linkedCharacterCurrentlySkunked: true,
+                linkedCharacterBindings: rescue.bindings.map(({ id, value }) => ({ id, value })),
+                restoresCharacter: true,
+            } satisfies PowerOfDenialEnemyDetails,
+        };
+    }
+
+    const rainmaker = isRainmaker(enemy);
+    return {
+        id: "ko.power-of-denial-enemy",
+        adjustment: rainmaker ? POWER_OF_DENIAL_RAINMAKER_BONUS : 0,
+        reason: rainmaker
+            ? "Power of Denial removes recurring Latex Rain pressure."
+            : "This enemy is not an exceptional Power of Denial target.",
+        details: {
+            targetEnemyId: enemy.id,
+            classification: rainmaker ? "rainmaker" : "ordinaryOrNonPriorityEnemy",
+            linkedCharacterCurrentlySkunked: false,
+            restoresCharacter: false,
+        } satisfies PowerOfDenialEnemyDetails,
+    };
+}
+
+function powerOfDenialPlayerRule(
+    candidate: SmartCandidate,
+    character: Character,
+): KitKnowledgeRuleDiagnostic {
+    const effect = candidate.targets
+        .flatMap(({ effects }) => effects)
+        .find((value): value is BindingEffect =>
+            value.type === "binding" && value.target === character.id
+            && value.amount !== undefined && value.amount < 0);
+    const removedAmount = Math.abs(effect?.amount ?? 0);
+    const priorityBinding = effect !== undefined
+        && POWER_OF_DENIAL_PRIORITY_BINDINGS.has(effect.binding);
+    const meetsEmergencyThreshold = removedAmount >= POWER_OF_DENIAL_EMERGENCY_THRESHOLD;
+    const emergency = priorityBinding && meetsEmergencyThreshold;
+    return {
+        id: "ko.power-of-denial-player-binding",
+        adjustment: emergency
+            ? POWER_OF_DENIAL_EMERGENCY_BINDING_BONUS
+            : POWER_OF_DENIAL_PLAYER_RESERVE_PENALTY,
+        reason: emergency
+            ? "Power of Denial removes the actual 80+ priority binding selected by the move."
+            : "Reserve Power of Denial because the binding actually removed is not an 80+ priority binding.",
+        details: {
+            targetCharacterId: character.id,
+            ...(effect === undefined ? {} : { removedBindingId: effect.binding }),
+            removedAmount,
+            meetsEmergencyThreshold,
+            priorityBinding,
+        } satisfies PowerOfDenialPlayerDetails,
+    };
+}
+
+function linkedSkunkedCharacter(
+    context: PolicyContext,
+    enemy: Enemy,
+): Character | undefined {
+    const enemyLink = enemy.buffs.find(({ id, linkedEntity }) =>
+        id === SKUNKED && linkedEntity !== undefined
+    );
+    if (enemyLink?.linkedEntity === undefined) return undefined;
+
+    const character = context.state.characters.find(({ id }) => id === enemyLink.linkedEntity);
+    const reciprocal = character?.buffs.find(({ id, linkedEntity }) =>
+        id === SKUNKED && linkedEntity === enemy.id
+    );
+    const incapacitated = reciprocal?.statuses?.some(({ id, value }) =>
+        id === "incapacitated" && value > 0
+    ) ?? false;
+    return incapacitated ? character : undefined;
+}
+
+function defeatsEnemy(candidate: SmartCandidate, enemyId: EntityId): boolean {
+    return [...candidate.effects, ...candidate.targets.flatMap(({ effects }) => effects)]
+        .some((effect) => effect.type === "enemy" && effect.operation === "defeat"
+            && effect.target === enemyId);
+}
+
+function isRainmaker(enemy: Enemy): boolean {
+    return enemy.id === "rainmaker" || /^rainmaker\d+$/.test(enemy.id);
 }
 
 function evaluateMatsukoKnowledge(
