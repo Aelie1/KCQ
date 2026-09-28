@@ -201,6 +201,7 @@ describe("Smart reserve spending", () => {
         expect(scored.components.bindingRecovery.score).toBeGreaterThan(0);
         expect(scored.total).toBe(
             scored.components.bindingRecovery.score
+            + scored.components.tempoKnowledge.score
             + scored.components.futureMoveOptions.score,
         );
         expect(scored.total).toBeGreaterThan(0);
@@ -225,6 +226,7 @@ describe("Smart reserve spending", () => {
         expect(scored.components.futureMoveOptions.score).toBe(-20);
         expect(scored.total).toBe(
             scored.components.bindingRecovery.score
+            + scored.components.tempoKnowledge.score
             + scored.components.futureMoveOptions.score,
         );
     });

@@ -257,7 +257,12 @@ describe("Smart finisher pressure", () => {
         const attack = decision.candidates.find(({ action }) => action.type === "move")!;
         const escape = decision.candidates.find(({ action }) => action.type === "escape")!;
 
-        expect(attack.total).toBe(20);
+        expect(attack.total).toBe(
+            attack.components.expectedDamage.score
+            + attack.components.finisherPressure.score
+            + attack.components.tempoKnowledge.score,
+        );
+        expect(attack.components.tempoKnowledge.score).toBeGreaterThan(0);
         expect(escape.components.bindingRecovery.score).toBeCloseTo(55.81, 2);
         expect(decision.selected).toBe(escape);
     });

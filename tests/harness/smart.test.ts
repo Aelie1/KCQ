@@ -18,6 +18,7 @@ import { getPolicy, policies } from "../../src/harness/policies";
 import {
     bindingMoveAccessScorer,
     bindingRecoveryScorer,
+    controlKnowledgeScorer,
     evaluateSmartDecision,
     expectedDamageScorer,
     finisherPressureScorer,
@@ -27,9 +28,11 @@ import {
     kitKnowledgeScorer,
     linkedThreatScorer,
     pressureSourceProgressScorer,
+    reactiveKnowledgeScorer,
     reserveSpendingScorer,
     smartScorers,
     smartPolicy,
+    tempoKnowledgeScorer,
     type SmartDecision,
     type SmartScorer,
 } from "../../src/harness/policy/smart";
@@ -313,6 +316,9 @@ describe("Smart 2 composable scoring", () => {
             linkedThreatScorer,
             incomingThreatScorer,
             kitKnowledgeScorer,
+            tempoKnowledgeScorer,
+            controlKnowledgeScorer,
+            reactiveKnowledgeScorer,
             bindingRecoveryScorer,
             bindingMoveAccessScorer,
             pressureSourceProgressScorer,
@@ -328,6 +334,12 @@ describe("Smart 2 composable scoring", () => {
         expect(incomingThreatScorer.weight).toBe(1);
         expect(kitKnowledgeScorer.id).toBe("kitKnowledge");
         expect(kitKnowledgeScorer.weight).toBe(1);
+        expect(tempoKnowledgeScorer.id).toBe("tempoKnowledge");
+        expect(tempoKnowledgeScorer.weight).toBe(1);
+        expect(controlKnowledgeScorer.id).toBe("controlKnowledge");
+        expect(controlKnowledgeScorer.weight).toBe(1);
+        expect(reactiveKnowledgeScorer.id).toBe("reactiveKnowledge");
+        expect(reactiveKnowledgeScorer.weight).toBe(1);
         expect(bindingRecoveryScorer.id).toBe("bindingRecovery");
         expect(bindingRecoveryScorer.weight).toBe(0.75);
         expect(bindingMoveAccessScorer.id).toBe("bindingMoveAccess");
@@ -495,6 +507,12 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.incomingThreat.weight === 1
             && candidate.components.kitKnowledge.raw === 0
             && candidate.components.kitKnowledge.weight === 1
+            && candidate.components.tempoKnowledge.raw === 0
+            && candidate.components.tempoKnowledge.weight === 1
+            && candidate.components.controlKnowledge.raw === 0
+            && candidate.components.controlKnowledge.weight === 1
+            && candidate.components.reactiveKnowledge.raw === 0
+            && candidate.components.reactiveKnowledge.weight === 1
             && candidate.components.bindingRecovery.raw === 0
             && candidate.components.bindingRecovery.weight === 0.75
             && candidate.components.bindingMoveAccess.raw === 0
@@ -511,6 +529,9 @@ describe("Smart 2 selection and integration", () => {
                 + candidate.components.linkedThreat.score
                 + candidate.components.incomingThreat.score
                 + candidate.components.kitKnowledge.score
+                + candidate.components.tempoKnowledge.score
+                + candidate.components.controlKnowledge.score
+                + candidate.components.reactiveKnowledge.score
                 + candidate.components.bindingRecovery.score
                 + candidate.components.bindingMoveAccess.score
                 + candidate.components.pressureSourceProgress.score
@@ -612,6 +633,12 @@ describe("Smart 2 selection and integration", () => {
                 && candidate.components.incomingThreat.weight === 1
                 && typeof candidate.components.kitKnowledge.raw === "number"
                 && candidate.components.kitKnowledge.weight === 1
+                && typeof candidate.components.tempoKnowledge.raw === "number"
+                && candidate.components.tempoKnowledge.weight === 1
+                && typeof candidate.components.controlKnowledge.raw === "number"
+                && candidate.components.controlKnowledge.weight === 1
+                && typeof candidate.components.reactiveKnowledge.raw === "number"
+                && candidate.components.reactiveKnowledge.weight === 1
                 && typeof candidate.components.bindingRecovery.raw === "number"
                 && candidate.components.bindingRecovery.weight === 0.75
                 && typeof candidate.components.bindingMoveAccess.raw === "number"
@@ -628,6 +655,9 @@ describe("Smart 2 selection and integration", () => {
                     + candidate.components.linkedThreat.score
                     + candidate.components.incomingThreat.score
                     + candidate.components.kitKnowledge.score
+                    + candidate.components.tempoKnowledge.score
+                    + candidate.components.controlKnowledge.score
+                    + candidate.components.reactiveKnowledge.score
                     + candidate.components.bindingRecovery.score
                     + candidate.components.bindingMoveAccess.score
                     + candidate.components.pressureSourceProgress.score

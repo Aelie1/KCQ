@@ -35,11 +35,31 @@ import {
     evaluateKitKnowledge as evaluateKitKnowledgeRules,
     type KitKnowledgeBreakdown,
 } from "./knowledge/kit-knowledge";
+import {
+    assessSmartPressure,
+    evaluateTempoKnowledge as evaluateTempoKnowledgeRules,
+    TEMPO_KNOWLEDGE_WEIGHT,
+    type SmartPressureAssessment,
+    type TempoKnowledgeBreakdown,
+} from "./knowledge/tempo-knowledge";
+import {
+    CONTROL_KNOWLEDGE_WEIGHT,
+    evaluateControlKnowledge as evaluateControlKnowledgeRules,
+    type ControlKnowledgeBreakdown,
+} from "./knowledge/control-knowledge";
+import {
+    evaluateReactiveKnowledge as evaluateReactiveKnowledgeRules,
+    REACTIVE_KNOWLEDGE_WEIGHT,
+    type ReactiveKnowledgeBreakdown,
+} from "./knowledge/reactive-knowledge";
 
 export * from "./smart-board";
 export { RECOVERY_DEBT_CURVE_A, recoveryDebt } from "./smart-bindings";
 export * from "./knowledge/kit-knowledge";
 export * from "./knowledge/skunk-knowledge";
+export * from "./knowledge/tempo-knowledge";
+export * from "./knowledge/control-knowledge";
+export * from "./knowledge/reactive-knowledge";
 
 /** Public-preview data retained beside an action so scoring stays inspectable. */
 export interface SmartCandidate {
@@ -266,6 +286,55 @@ export const kitKnowledgeScorer: SmartScorer = {
     },
 };
 
+/** Contextualizes recovery, pressure removal, and Queen phase advancement. */
+export const tempoKnowledgeScorer: SmartScorer = {
+    id: "tempoKnowledge",
+    weight: TEMPO_KNOWLEDGE_WEIGHT,
+    prepare(context, board) {
+        const pressure = assessSmartPressure(context, board);
+        return (candidate) => evaluateTempoKnowledgeRules(context, board, candidate, pressure).raw;
+    },
+    prepareDetailed(context, board) {
+        const pressure = assessSmartPressure(context, board);
+        return (candidate) => {
+            const diagnostics = evaluateTempoKnowledgeRules(context, board, candidate, pressure);
+            return { raw: diagnostics.raw, diagnostics };
+        };
+    },
+};
+
+/** Values current public Starlight control effects against meaningful enemies. */
+export const controlKnowledgeScorer: SmartScorer = {
+    id: "controlKnowledge",
+    weight: CONTROL_KNOWLEDGE_WEIGHT,
+    prepare(context, board) {
+        const pressure = assessSmartPressure(context, board);
+        return (candidate) => evaluateControlKnowledgeRules(context, candidate, pressure).raw;
+    },
+    prepareDetailed(context, board) {
+        const pressure = assessSmartPressure(context, board);
+        return (candidate) => {
+            const diagnostics = evaluateControlKnowledgeRules(context, candidate, pressure);
+            return { raw: diagnostics.raw, diagnostics };
+        };
+    },
+};
+
+/** Values one-turn prevention and reflected damage from Ko's Reflect moves. */
+export const reactiveKnowledgeScorer: SmartScorer = {
+    id: "reactiveKnowledge",
+    weight: REACTIVE_KNOWLEDGE_WEIGHT,
+    prepare(context) {
+        return (candidate) => evaluateReactiveKnowledgeRules(context, candidate).raw;
+    },
+    prepareDetailed(context) {
+        return (candidate) => {
+            const diagnostics = evaluateReactiveKnowledgeRules(context, candidate);
+            return { raw: diagnostics.raw, diagnostics };
+        };
+    },
+};
+
 /** Values an escape by the reduction in projected whole-party recovery debt. */
 export const bindingRecoveryScorer: SmartScorer = {
     id: "bindingRecovery",
@@ -345,6 +414,9 @@ export const smartScorers: readonly SmartScorer[] = [
     linkedThreatScorer,
     incomingThreatScorer,
     kitKnowledgeScorer,
+    tempoKnowledgeScorer,
+    controlKnowledgeScorer,
+    reactiveKnowledgeScorer,
     bindingRecoveryScorer,
     bindingMoveAccessScorer,
     pressureSourceProgressScorer,
@@ -419,6 +491,37 @@ export function evaluateKitKnowledge(
     candidate: SmartCandidate,
 ): KitKnowledgeBreakdown {
     return evaluateKitKnowledgeRules(context, board, candidate);
+}
+
+/** Exposes pressure measurements and candidate-specific tempo adjustments. */
+export function evaluateTempoKnowledge(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    candidate: SmartCandidate,
+    pressure?: SmartPressureAssessment,
+): TempoKnowledgeBreakdown {
+    return evaluateTempoKnowledgeRules(context, board, candidate, pressure);
+}
+
+/** Exposes Starlight's per-target public control value. */
+export function evaluateControlKnowledge(
+    context: PolicyContext,
+    board: SmartBoardAssessment,
+    candidate: SmartCandidate,
+): ControlKnowledgeBreakdown {
+    return evaluateControlKnowledgeRules(
+        context,
+        candidate,
+        assessSmartPressure(context, board),
+    );
+}
+
+/** Exposes single-use Reflect prevention and reflected-damage value. */
+export function evaluateReactiveKnowledge(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+): ReactiveKnowledgeBreakdown {
+    return evaluateReactiveKnowledgeRules(context, candidate);
 }
 
 function prepareExpectedEnemyDamage(
