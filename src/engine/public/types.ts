@@ -50,6 +50,8 @@ export type Phase = "player" | "enemy";
 
 export type EntityId = string;
 
+export type DefinitionId = string;
+
 export type EntitySide = "either" | "player" | "enemy" | "none";
 
 export type PassiveId = string
@@ -77,6 +79,7 @@ export interface Character {
 
 export interface Enemy {
     id: EntityId;
+    defId: DefinitionId;
     rank: "minion" | "enemy" | "boss";
     maxHp: number;
     currHp: number;

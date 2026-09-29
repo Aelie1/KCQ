@@ -5,4 +5,5 @@ export const SKUNK_ID = "skunk";
 export const FAIRY_ID = "fairy";
 export const RAINMAKER_ID = "rainmaker";
 export const QUEEN_ID = "queen";
-
+export const EMPRESS_BUFF = "empressMight";
+export const GODDESS_BUFF = "goddessMight";

@@ -3,7 +3,7 @@ import { ContentCatalog } from "../engine/protected/types";
 import { brace, fairyRockfall, hinari, release, rockfall, store, subspaceMovement } from "./characters/hinari";
 import { fairyEmpowerment, fairyReflect, fairyStarlightBindings, fairyTelekinesis, fairyTransformation, ko, powerOfDenial, reflect, starlightBindings, telekinesis, thousandRestraintsBody } from "./characters/ko";
 import { attackMe, fairyPhoenixKick, fairyWhiteFlame, immolation, kick, matsuko, obey, phoenixKick, punch, stop, whiteFlame } from "./characters/matsuko";
-import { forest_1, forest_2, forest_3, plains_1, plains_2, plains_3 } from "./skunk/encounters";
+import { forest_1, forest_2, forest_3, plains_1, plains_2, plains_3, tower_1, tower_2, tower_3 } from "./skunk/encounters";
 import { barrierMagic, bindingMagic, empoweringMagic, fairy, healingMagic } from "./skunk/fairy";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./skunk/latex";
 import { trapPuddle } from "./skunk/puddles";
@@ -88,5 +88,8 @@ export const contentCatalog: ContentCatalog = {
         forest_1,
         forest_2,
         forest_3,
+        tower_1,
+        tower_2,
+        tower_3
     ],
 };

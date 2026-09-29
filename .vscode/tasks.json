@@ -71,51 +71,6 @@
             "problemMatcher": []
         },
         {
-            "label": "balance plains 1",
-            "type": "process",
-            "command": "npm.cmd",
-            "args": [
-                "run",
-                "compare",
-                "--",
-                "plains_1",
-                "12345",
-                "basic,idle",
-                "1000"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "balance plains 2",
-            "type": "process",
-            "command": "npm.cmd",
-            "args": [
-                "run",
-                "compare",
-                "--",
-                "plains_2",
-                "12345",
-                "basic,idle",
-                "1000"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "balance plains 3",
-            "type": "process",
-            "command": "npm.cmd",
-            "args": [
-                "run",
-                "compare",
-                "--",
-                "plains_3",
-                "12345",
-                "basic,idle",
-                "1000"
-            ],
-            "problemMatcher": []
-        },
-        {
             "label": "balance smart",
             "type": "process",
             "command": "npm.cmd",
@@ -133,19 +88,32 @@
             "problemMatcher": []
         },
         {
-            "label": "balance smart f3",
+            "label": "balance smart tower",
             "type": "process",
             "command": "npm.cmd",
             "args": [
                 "run",
                 "compare",
                 "--",
-                "forest_3",
+                "tower_1,tower_2,tower_3",
                 "25",
                 "smart",
                 "1000",
-                "--replay-levels",
-                "forest_3"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "balance smart t1",
+            "type": "process",
+            "command": "npm.cmd",
+            "args": [
+                "run",
+                "compare",
+                "--",
+                "tower_1",
+                "25",
+                "smart",
+                "1000",
             ],
             "problemMatcher": []
         }

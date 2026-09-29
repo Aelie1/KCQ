@@ -381,6 +381,7 @@ export class GameEffects {
             definition: definition,
             buffs: [],
             id: name,
+            defId: definition.id,
             rank: definition.rank,
             maxHp: definition.hp,
             currHp: definition.hp * hpRatio,

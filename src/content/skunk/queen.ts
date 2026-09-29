@@ -5,7 +5,7 @@ import { basicBindingEffect } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { EntityId } from "../../engine/public/types";
-import { FAIRY_ID, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID } from "./constants";
+import { EMPRESS_BUFF, FAIRY_ID, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 
 const QUEEN_HP = 750;
@@ -20,10 +20,14 @@ const PERFUME_HEAL_RATIO = 0.10;
 const DEFENSE_BUFF = "defensePerfume";
 const ESCAPE_BUFF = "escapePerfume";
 
+const empressBuff1: iBuff = { id: EMPRESS_BUFF, modifiers: { hit: 1, defense: 1 }, active: true }
+const empressBuff2: iBuff = { id: EMPRESS_BUFF, modifiers: { hit: 2, defense: 2 }, active: true }
+
 const WAVE_RATIOS = [0.8, 0.6, 0.4, 0.2];
 const WAVE_SUMMONS: {
     enemy: EntityId;
     hpRatio?: number;
+    buff?: iBuff;
 }[][] = [
         [{ enemy: SKUNKETTE_ID, hpRatio: 0.5 }],
         [{ enemy: SKUNKETTE_ID }],
@@ -31,6 +35,8 @@ const WAVE_SUMMONS: {
         [{ enemy: SKUNKETTE_ID }, { enemy: SKUNK_ID }],
         [{ enemy: SKUNK_ID }, { enemy: FAIRY_ID }],
         [{ enemy: SKUNKETTE_ID }, { enemy: SKUNK_ID }, { enemy: FAIRY_ID }],
+        [{ enemy: SKUNKETTE_ID, buff: empressBuff1 }, { enemy: SKUNK_ID, buff: empressBuff1 }, { enemy: FAIRY_ID, buff: empressBuff1 }],
+        [{ enemy: SKUNKETTE_ID, buff: empressBuff2 }, { enemy: SKUNK_ID, buff: empressBuff2 }, { enemy: FAIRY_ID, buff: empressBuff2 }],
     ];
 
 
@@ -43,6 +49,7 @@ const RAINMAKER_SUMMONS: {
         [{ enemy: RAINMAKER_ID, hpRatio: 0.5 }],
         [{ enemy: RAINMAKER_ID }],
         [{ enemy: RAINMAKER_ID, buff: { id: "shielding", modifiers: { defense: 2 }, active: true } }],
+        [{ enemy: RAINMAKER_ID, buff: empressBuff2 }],
     ];
 
 export const skunkGun: MoveDef = {
@@ -98,7 +105,8 @@ export const callReinforcements: MoveDef = {
                 type: "enemy",
                 operation: "spawn",
                 definition: summon.enemy,
-                hpRatio: summon.hpRatio
+                hpRatio: summon.hpRatio,
+                buff: summon.buff
             });
         }
         return result;

@@ -178,10 +178,10 @@ export function evaluateTempoKnowledge(
                 0,
             )
             : firstCrossing.probability * readinessRisk
-                + additionalCrossings.reduce(
-                    (total, crossing) => total + crossing.probability,
-                    0,
-                );
+            + additionalCrossings.reduce(
+                (total, crossing) => total + crossing.probability,
+                0,
+            );
 
         if (crossingRisk > 0) {
             rules.push({
@@ -232,7 +232,7 @@ function queenAddClearRules(
 ): KitKnowledgeRuleDiagnostic[] {
     const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
     const rules: KitKnowledgeRuleDiagnostic[] = [];
-    for (const queen of livingEnemies.filter(({ id }) => isQueenId(id))) {
+    for (const queen of livingEnemies.filter(({ defId }) => isQueenId(defId))) {
         const expectedDamage = expectedQueenDamage(context, candidate, queen.id);
         if (expectedDamage <= 0) continue;
 
@@ -438,7 +438,7 @@ function queenPhasePush(
     let expectedLethal = false;
     const pendingPhaseIntentions: string[] = [];
     for (const enemy of context.state.enemies) {
-        if (enemy.currHp <= 0 || !isQueenId(enemy.id)) continue;
+        if (enemy.currHp <= 0 || !isQueenId(enemy.defId)) continue;
         const damage = expectedQueenDamage(context, candidate, enemy.id);
         if (damage <= 0) continue;
         if (damage >= enemy.currHp) {
@@ -484,7 +484,7 @@ function damageEffectsToEnemy(
 }
 
 function isQueenId(id: EntityId): boolean {
-    return id === "queen" || /^queen\d+$/.test(id);
+    return id === "queen";
 }
 
 function scaleAboveQuiet(value: number, quiet: number, high: number): number {

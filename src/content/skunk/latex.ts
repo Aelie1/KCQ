@@ -246,7 +246,7 @@ export const latexCollar: BindingDef = {
                 source: target,
                 target: target,
                 binding: type,
-                amount: Math.ceil(binding.value / 20)
+                amount: Math.ceil(binding.value / 5)
             });
         }
         return effects

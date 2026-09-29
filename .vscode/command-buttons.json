@@ -16,29 +16,19 @@
             "task": "profile"
         },
         {
-            "id": "balance-plains-1",
-            "label": "$(beaker) N1 Balance",
-            "task": "balance plains 1"
-        },
-        {
-            "id": "balance-plains-2",
-            "label": "$(beaker) N2 Balance",
-            "task": "balance plains 2"
-        },
-        {
-            "id": "balance-plains-3",
-            "label": "$(beaker) N3 Balance",
-            "task": "balance plains 3"
-        },
-        {
             "id": "balance-smart",
-            "label": "$(thinking) Smart Balance",
+            "label": "$(thinking) Balance Plains+Forest",
             "task": "balance smart"
         },
         {
-            "id": "balance-smart-f3",
-            "label": "$(wand) Smart Balance F3",
-            "task": "balance smart f3"
+            "id": "balance-smart-t",
+            "label": "$(radio-tower) Balance Tower",
+            "task": "balance smart tower"
+        },
+        {
+            "id": "balance-smart-t1",
+            "label": "$(wand) Balance T1",
+            "task": "balance smart t1"
         }
     ]
 }
