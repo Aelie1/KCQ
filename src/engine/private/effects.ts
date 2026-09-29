@@ -1,8 +1,9 @@
 import { BindingDef, MoveDef } from "../protected/definitions";
 import { getValidTargets } from "../protected/enemies";
-import { findBinding, findBuff, findEntity, isEnemy, isValidEntity } from "../protected/helpers";
+import { findBinding, findBuff, findEntity, isCharacter, isEnemy, isValidEntity } from "../protected/helpers";
 import { thresholds } from "../protected/mechanics";
 import { Random } from "../protected/random";
+import { GameStatus } from "../protected/status";
 import { ContentCatalog, iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, LeafEvent, StanceId } from "../public/types";
 import { TRAP_MAX } from "./constants";
@@ -245,12 +246,23 @@ export class GameEffects {
     private removeBuff(target: iEntity, buff: iBuff) {
         const index = target.buffs.indexOf(buff);
         if (index >= 0) {
+            const couldMove = isCharacter(target) ? new GameStatus(target).canMove() : true;
             target.buffs.splice(index, 1);
             this.addEvent({
                 type: "buffRemoved",
                 target: target.id,
                 buff: buff.id
             });
+            if (isCharacter(target)) {
+                const canMove = new GameStatus(target).canMove();
+                if (!couldMove && canMove) {
+                    this.stack([{
+                        type: "stance",
+                        actor: target,
+                        stance: "moving"
+                    }]);
+                }
+            }
         }
         return;
     };
