@@ -14,6 +14,7 @@ import {
     evaluateSmartDecision,
     generateSmartCandidates,
     SKUNKED_RESCUE_ACTOR_VALUE,
+    SKUNKED_RESCUE_DELAY_PENALTY,
     skunkedRescueScorer,
     type SkunkedRescueBreakdown,
 } from "../../src/harness/policy/smart";
@@ -45,9 +46,10 @@ function character(buffs: Buff[] = [], bindings: Binding[] = [binding()]): Chara
     };
 }
 
-function enemy(id: string, currHp = 200): Enemy {
+function enemy(id: string, currHp = 200, defId = id): Enemy {
     return {
         id,
+        defId,
         rank: "enemy",
         maxHp: 200,
         currHp,
@@ -153,7 +155,7 @@ describe("Smart linked Skunked rescue priority", () => {
     it("gives damage against the linked rescue enemy a strong bonus", () => {
         const fixture = context(
             character([linkedBuff("skunked", "test-rescue-enemy")]),
-            [enemy("test-other-enemy"), enemy("test-rescue-enemy")],
+            [enemy("test-other-enemy"), enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-other-enemy": 40, "test-rescue-enemy": 40 },
         );
         const decision = evaluateSmartDecision(fixture);
@@ -161,7 +163,11 @@ describe("Smart linked Skunked rescue priority", () => {
             (candidate) => candidate.action.type === "move",
         );
 
-        expect(other.components.skunkedRescue.raw).toBe(0);
+        expect(other.components.skunkedRescue.raw).toBe(-SKUNKED_RESCUE_DELAY_PENALTY);
+        expect(other.components.skunkedRescue.diagnostics).toMatchObject({
+            delayPenalty: SKUNKED_RESCUE_DELAY_PENALTY,
+            raw: -SKUNKED_RESCUE_DELAY_PENALTY,
+        });
         expect(rescue.components.skunkedRescue.raw).toBeGreaterThan(40);
         expect(decision.selected.action).toMatchObject({ targets: ["test-rescue-enemy"] });
     });
@@ -169,7 +175,7 @@ describe("Smart linked Skunked rescue priority", () => {
     it("awards full rescue-progress value to expected-lethal damage", () => {
         const fixture = context(
             character([linkedBuff("skunked", "test-rescue-enemy")]),
-            [enemy("test-rescue-enemy")],
+            [enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-rescue-enemy": 200 },
         );
         const detail = breakdown(fixture).enemies[0];
@@ -183,7 +189,7 @@ describe("Smart linked Skunked rescue priority", () => {
     it("awards meaningful proportional value to partial damage", () => {
         const fixture = context(
             character([linkedBuff("skunked", "test-rescue-enemy")]),
-            [enemy("test-rescue-enemy")],
+            [enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-rescue-enemy": 50 },
         );
         const detail = breakdown(fixture).enemies[0];
@@ -193,35 +199,38 @@ describe("Smart linked Skunked rescue priority", () => {
         expect(detail.rescueProgressContribution).toBeGreaterThan(50);
     });
 
-    it("does not give an ordinary unlinked enemy a rescue bonus", () => {
+    it("penalizes attacking an ordinary enemy while a linked rescue is delayed", () => {
         const fixture = context(
             character([linkedBuff("skunked", "test-rescue-enemy")]),
-            [enemy("test-ordinary-enemy"), enemy("test-rescue-enemy")],
+            [enemy("test-ordinary-enemy"), enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-ordinary-enemy": 200, "test-rescue-enemy": 0 },
         );
 
-        expect(breakdown(fixture).raw).toBe(0);
+        expect(breakdown(fixture)).toMatchObject({
+            delayPenalty: SKUNKED_RESCUE_DELAY_PENALTY,
+            raw: -SKUNKED_RESCUE_DELAY_PENALTY,
+        });
     });
 
     it("does not treat a Pounce link as a Skunked rescue relationship", () => {
         const fixture = context(
             character([linkedBuff("pounce", "test-pounce-enemy")]),
-            [enemy("test-pounce-enemy")],
+            [enemy("test-pounce-enemy", 200, "skunkette")],
             { "test-pounce-enemy": 200 },
         );
 
-        expect(breakdown(fixture)).toEqual({ enemies: [], raw: 0 });
+        expect(breakdown(fixture)).toEqual({ enemies: [], delayPenalty: 0, raw: 0 });
     });
 
     it("removes the bonus when the Skunked or incapacitated relationship is gone", () => {
         const noSkunkedBuff = context(
             character([]),
-            [enemy("test-rescue-enemy")],
+            [enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-rescue-enemy": 200 },
         );
         const noIncapacitation = context(
             character([linkedBuff("skunked", "test-rescue-enemy", false)]),
-            [enemy("test-rescue-enemy")],
+            [enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-rescue-enemy": 200 },
         );
 
@@ -229,10 +238,14 @@ describe("Smart linked Skunked rescue priority", () => {
         expect(breakdown(noIncapacitation).raw).toBe(0);
     });
 
-    it("leaves targeting of other enemies unchanged and remains deterministic", () => {
+    it("penalizes other targets consistently and remains deterministic", () => {
         const fixture = context(
             character([linkedBuff("skunked", "test-rescue-enemy")]),
-            [enemy("test-other-a"), enemy("test-other-b"), enemy("test-rescue-enemy")],
+            [
+                enemy("test-other-a"),
+                enemy("test-other-b"),
+                enemy("test-rescue-enemy", 200, "skunkette"),
+            ],
             { "test-other-a": 30, "test-other-b": 30, "test-rescue-enemy": 0 },
         );
         const first = evaluateSmartDecision(fixture, [skunkedRescueScorer]);
@@ -241,7 +254,10 @@ describe("Smart linked Skunked rescue priority", () => {
         expect(second).toEqual(first);
         expect(first.candidates.slice(0, 2).map(
             (candidate) => candidate.components.skunkedRescue.raw,
-        )).toEqual([0, 0]);
+        )).toEqual([
+            -SKUNKED_RESCUE_DELAY_PENALTY,
+            -SKUNKED_RESCUE_DELAY_PENALTY,
+        ]);
         expect(structuredClone(first.candidates[0].components.skunkedRescue.diagnostics))
             .toEqual(first.candidates[0].components.skunkedRescue.diagnostics);
     });

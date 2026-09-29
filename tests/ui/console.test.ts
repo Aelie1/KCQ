@@ -43,6 +43,7 @@ const state: GameState = {
     }],
     enemies: [{
         id: "skunkette1",
+        defId: "skunkette",
         rank: "enemy",
         currHp: 12,
         maxHp: 20,

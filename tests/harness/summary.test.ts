@@ -31,7 +31,7 @@ function character(id: string, bindingValues: number[]): Character {
 
 function enemy(currHp: number): Enemy {
     return {
-        id: `enemy-${currHp}`, rank: "enemy", maxHp: 100, currHp, currDef: 0,
+        id: `enemy-${currHp}`, defId: "enemy", rank: "enemy", maxHp: 100, currHp, currDef: 0,
         intentions: [], buffs: [], cooldowns: {},
     };
 }

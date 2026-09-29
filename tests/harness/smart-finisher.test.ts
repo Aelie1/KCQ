@@ -19,6 +19,7 @@ import {
 function enemy(id: string, currHp: number, maxHp = currHp): Enemy {
     return {
         id,
+        defId: id,
         rank: "enemy",
         maxHp,
         currHp,

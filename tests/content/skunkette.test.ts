@@ -181,6 +181,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "enemyDamaged", target: "skunkette1", amount: 1 },
             { type: "buffRemoved", target: "skunkette1", buff: POUNCE_ID },
             { type: "buffRemoved", target: "victim", buff: POUNCE_ID },
+            { type: "stanceSet", actor: "victim", stance: "moving" },
             {
                 type: "cooldownChanged",
                 target: "skunkette1",
@@ -222,6 +223,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffUpdated", target: "skunkette1", buff: POUNCE_ID },
             { type: "buffRemoved", target: "skunkette1", buff: POUNCE_ID },
             { type: "buffRemoved", target: "victim", buff: POUNCE_ID },
+            { type: "stanceSet", actor: "victim", stance: "moving" },
             { type: "enemyDefeated", target: "skunkette1" },
         ]);
         expect(buffState(engine, POUNCE_ID, "victim")).toBeUndefined();
@@ -254,6 +256,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(moveEffects(hitResult)).toEqual([
             { type: "buffRemoved", target: "victim", buff: POUNCE_ID },
             { type: "buffRemoved", target: "skunkette1", buff: POUNCE_ID },
+            { type: "stanceSet", actor: "victim", stance: "moving" },
             {
                 type: "cooldownChanged",
                 target: "skunkette1",
@@ -264,7 +267,7 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(buffState(hit, POUNCE_ID, "victim")).toBeUndefined();
         expect(buffState(hit, POUNCE_ID, "skunkette1")).toBeUndefined();
         expect(enemyState(hit, "skunkette1").cooldowns[POUNCE_ID]).toBe(2);
-        expect(characterState(hit, "victim").standing).toBe(true);
+        expect(characterState(hit, "victim").standing).toBe(false);
 
         execute(hit, { type: "endTurn" });
         expect(characterState(hit, "victim").standing).toBe(false);
@@ -283,6 +286,7 @@ describe("Skunkette behavior through GameEngine", () => {
             })),
             { type: "buffRemoved", target: SKUNKED_CHARACTER_ID, buff: POUNCE_ID },
             { type: "buffRemoved", target: "skunkette1", buff: POUNCE_ID },
+            { type: "stanceSet", actor: SKUNKED_CHARACTER_ID, stance: "moving" },
             {
                 type: "bondageRemoved",
                 target: SKUNKED_CHARACTER_ID,

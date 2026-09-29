@@ -134,6 +134,7 @@ export function makeEnemyDef(
 export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnemy {
     return {
         id,
+        defId: definition.id,
         rank: definition.rank,
         definition,
         buffs: [],

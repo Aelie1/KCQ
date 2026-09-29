@@ -37,8 +37,10 @@ function character(id = "hero", bindings: Binding[] = []): Character {
 }
 
 function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
+    const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
     return {
         id,
+        defId,
         rank: "enemy",
         maxHp: 300,
         currHp: 300,
@@ -238,7 +240,7 @@ describe("Smart Skunk Regeneration liability", () => {
         expect(result.beforeExposure).toBe(60);
     });
 
-    it("penalizes a partial escape that increases the recoverable gap", () => {
+    it("does not reward a partial escape until it clears the exposed track", () => {
         const context = fixture(
             [enemy("skunk1")],
             [],
@@ -251,8 +253,8 @@ describe("Smart Skunk Regeneration liability", () => {
         expect(result).toMatchObject({
             beforeExposure: 30,
             afterExposure: 50,
-            recoveryAdjustment: -20,
-            rawAdjustment: -20,
+            recoveryAdjustment: 0,
+            rawAdjustment: 0,
         });
     });
 

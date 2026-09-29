@@ -60,6 +60,7 @@ function attack(damage = 5): ActionInfo {
 function enemy(intentions: Intention[] = [], id = "test-enemy"): Enemy {
     return {
         id,
+        defId: id,
         rank: "enemy",
         maxHp: 100,
         currHp: 100,

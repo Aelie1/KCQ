@@ -44,6 +44,7 @@ function character(id: string, bindings: Binding[] = []): Character {
 function enemy(id = "enemy"): Enemy {
     return {
         id,
+        defId: id,
         rank: "enemy",
         maxHp: 100,
         currHp: 100,

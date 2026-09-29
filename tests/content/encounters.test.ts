@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { contentCatalog } from "../../src/content/content";
-import { plains_1, plains_2 } from "../../src/content/skunk/encounters";
+import { plains_1, plains_2, tower_1 } from "../../src/content/skunk/encounters";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
@@ -116,15 +116,29 @@ describe("encounters", () => {
         expect(engine.getGameState().enemies).toEqual([
             expect.objectContaining({
                 id: "foe1",
+                defId: "foe",
                 maxHp: waitEnemy.hp,
                 intentions: expect.any(Array),
             }),
             expect.objectContaining({
                 id: "attacker1",
+                defId: "attacker",
                 maxHp: basicAttackingEnemy.hp,
                 intentions: expect.any(Array),
             }),
         ]);
+    });
+
+    it("preserves definition ids when encounter setup renames runtime enemies", () => {
+        const engine = createCatalogEngine(contentCatalog, 1);
+        engine.loadCharacter(ko.id);
+
+        engine.loadEncounter(tower_1.id);
+
+        expect(engine.getGameState().enemies).toEqual(expect.arrayContaining([
+            expect.objectContaining({ id: "empress", defId: "queen" }),
+            expect.objectContaining({ id: "skunketteQueen", defId: "skunkette" }),
+        ]));
     });
 
     it("runs setup after spawning enemies and before calculating intentions", () => {

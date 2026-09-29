@@ -50,6 +50,7 @@ function enemy(incoming = 0, unknown = false): Enemy {
     }
     return {
         id: "enemy",
+        defId: "enemy",
         rank: "enemy",
         maxHp: 100,
         currHp: 100,

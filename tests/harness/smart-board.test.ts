@@ -38,6 +38,7 @@ function character(id: string, values: Partial<Character> = {}): Character {
 function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
     return {
         id,
+        defId: id,
         rank: "enemy",
         maxHp: 10,
         currHp: 10,

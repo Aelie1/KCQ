@@ -54,8 +54,10 @@ function character(
 }
 
 function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
+    const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
     return {
         id,
+        defId,
         rank: "enemy",
         maxHp: 200,
         currHp: 200,

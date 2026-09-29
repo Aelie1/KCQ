@@ -30,8 +30,10 @@ function character(id: string): Character {
 }
 
 function enemy(id: string, exploding = false): Enemy {
+    const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
     return {
         id,
+        defId,
         rank: "enemy",
         maxHp: 300,
         currHp: 50,

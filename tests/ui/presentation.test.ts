@@ -320,7 +320,7 @@ describe("combat presentation", () => {
                     buffs: [{ id: "focus" }], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
                 }],
                 enemies: [{
-                    id: "skunk1", rank: "enemy", maxHp: 20, currHp: 20, currDef: 0,
+                    id: "skunk1", defId: "skunk", rank: "enemy", maxHp: 20, currHp: 20, currDef: 0,
                     intentions: [{
                         move: "spray",
                         targets: [{ target: "ko", band: "crit", effects: [] }],
@@ -380,6 +380,7 @@ describe("combat presentation", () => {
     it("aligns cooldown and buff highlights to their owning enemy", () => {
         const enemy = (id: string, withBuff = false) => ({
             id,
+            defId: "skunkette",
             rank: "enemy" as const,
             maxHp: 200,
             currHp: 200,

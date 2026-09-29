@@ -47,6 +47,7 @@ function intention(effects: Effect[]): Intention {
 function enemy(id: string, effects: Effect[] = [], currHp = 100): Enemy {
     return {
         id,
+        defId: id,
         rank: "enemy",
         maxHp: 100,
         currHp,

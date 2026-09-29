@@ -54,6 +54,7 @@ function enemy(
 ): Enemy {
     return {
         id,
+        defId: id,
         rank: "minion",
         maxHp: 200,
         currHp,

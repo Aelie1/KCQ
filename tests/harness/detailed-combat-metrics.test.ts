@@ -33,8 +33,10 @@ function character(id: string, values: Partial<Character> = {}): Character {
 }
 
 function enemy(id: string, buffs: Buff[] = [], currDef = 0): Enemy {
+    const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
     return {
         id,
+        defId,
         rank: "enemy",
         maxHp: 100,
         currHp: 100,

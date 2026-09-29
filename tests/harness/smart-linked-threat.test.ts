@@ -29,6 +29,7 @@ const neutralId = "test-neutral" as StatusId;
 function enemy(id: string, currHp = 100): Enemy {
     return {
         id,
+        defId: id,
         rank: "enemy",
         maxHp: 100,
         currHp,

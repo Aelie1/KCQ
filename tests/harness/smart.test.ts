@@ -61,6 +61,7 @@ function character(id: string): Character {
 function enemy(id: string): Enemy {
     return {
         id,
+        defId: id,
         rank: "enemy",
         maxHp: 100,
         currHp: 100,

@@ -30,6 +30,7 @@ function recordedState(round: number, hp: number, binding: number): GameState {
         }],
         enemies: [{
             id: "recorded-foe",
+            defId: "recorded-foe",
             rank: "enemy",
             currHp: hp,
             maxHp: 90,
