@@ -6,8 +6,8 @@ import type {
     EntityId,
 } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
-import type { SmartBoardAssessment } from "../smart-board";
 import type { SmartCandidate } from "../smart";
+import type { SmartBoardAssessment } from "../smart-board";
 import { evaluateIntentionKnowledge } from "./intention-knowledge";
 import { evaluateSkunkKnowledge } from "./skunk-knowledge";
 
@@ -30,7 +30,7 @@ export const RELEASE_SUBSPACE_PRESSURE_VALUE = 80;
 export const RELEASE_LOST_ROCKFALL_HIT_VALUE = 20;
 export const STORE_SUBSPACE_PRESSURE_PENALTY = 100;
 export const STORE_LOST_ROCKFALL_HIT_PENALTY = 20;
-export const DEGRADED_ROCKFALL_PRESERVATION_PENALTY = 15;
+export const DEGRADED_ROCKFALL_PRESERVATION_PENALTY = 0;
 export const POWER_OF_DENIAL_RESCUE_BONUS = 2_000;
 export const POWER_OF_DENIAL_RAINMAKER_BONUS = 600;
 export const POWER_OF_DENIAL_EMERGENCY_BINDING_BONUS = 400;
@@ -352,15 +352,13 @@ function subspacePressure(context: PolicyContext): {
     const subspace = Math.max(0, hinari?.data.subspace ?? 0);
     const maximum = Math.max(1, hinari?.data.subspaceMax ?? 100);
     const ratio = Math.min(1, subspace / maximum);
-    const rockfalls = context.actions
+    const rockfall = context.actions
         .find(({ id }) => id === HINARI)
-        ?.moves.filter(({ available, move }) => available && ROCKFALL_MOVES.has(move.id))
-        ?? [];
-    const lostRockfallHits = rockfalls.reduce((maximum, info) => {
-        const baseHits = context.library.moves[info.move.id]?.baseHits ?? info.move.hits ?? 1;
-        const currentHits = info.move.hits ?? baseHits;
-        return Math.max(maximum, Math.max(0, baseHits - currentHits));
-    }, 0);
+        ?.moves.find(({ move }) => move.id === ROCKFALL);
+
+    const baseHits = context.library.moves[ROCKFALL]?.baseHits ?? 4;
+    const currentHits = rockfall?.move.hits ?? baseHits;
+    const lostRockfallHits = Math.max(0, baseHits - currentHits);
 
     const releaseRatio = clamp(
         (ratio - RELEASE_START_RATIO) / (1 - RELEASE_START_RATIO),

@@ -192,14 +192,7 @@ export function evaluateSkunkKnowledge(
             && id !== relationship.enemyId
             && expectedDamageToEnemy(candidate, id) > 0
         );
-        const attentionScale = incidental
-            ? 1
-            : clamp(
-                (relationship.level - DIRECT_POUNCE_ATTENTION_START_LEVEL)
-                    / (DIRECT_POUNCE_ATTENTION_FULL_LEVEL - DIRECT_POUNCE_ATTENTION_START_LEVEL),
-                0,
-                1,
-            );
+        const attentionScale = 1;
         totalRemoval += expectedRemoval;
         removalAdjustment += expectedRemoval * POUNCE_REMOVAL_VALUE * attentionScale;
         const clears = expectedSuccessfulHits >= relationship.level;

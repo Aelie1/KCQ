@@ -7,6 +7,7 @@ import type {
     Intention,
 } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import type { SmartCandidate } from "../smart";
 import {
     addBinding,
     cloneBindingBoard,
@@ -14,7 +15,6 @@ import {
     totalRecoveryDebt,
     type BindingBoard,
 } from "../smart-bindings";
-import type { SmartCandidate } from "../smart";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 import { TRAP_PRESSURE_SCALE } from "./tempo-knowledge";
 
@@ -27,9 +27,9 @@ const ATTACK_ME = "attackMe";
 /** Stop subtracts 25 points from a boss roll, but the private roll is unavailable. */
 export const STOP_BOSS_PRESSURE_MITIGATION = 0.25;
 /** Public positive enemy modifiers are harmful even when they add no binding. */
-export const STOP_POSITIVE_MODIFIER_PRESSURE = 8;
+export const STOP_POSITIVE_MODIFIER_PRESSURE = 0;
 /** Public move grants are conservatively classified as additional enemy options. */
-export const STOP_ADDED_MOVE_PRESSURE = 10;
+export const STOP_ADDED_MOVE_PRESSURE = 0;
 /** One public Defense point conservatively discounts 1% of redirected binding debt. */
 export const ATTACK_ME_DEFENSE_DEBT_FRACTION = 0.01;
 
@@ -216,8 +216,8 @@ function stopRule(
             reason: applications.length > 0
                 ? "public-numeric-binding-pressure"
                 : harmfulTrapPressure > 0 ? "public-trap-pressure"
-                : nonBinding.total > 0 ? "public-harmful-enemy-buff"
-                : allMiss ? "committed-miss" : "no-valued-harmful-effects",
+                    : nonBinding.total > 0 ? "public-harmful-enemy-buff"
+                        : allMiss ? "committed-miss" : "no-valued-harmful-effects",
         } satisfies CommittedIntentionDiagnostic;
     });
     const baselineDebt = totalRecoveryDebt(projected, context.thresholds);
@@ -317,10 +317,10 @@ function attackMeRule(
                     reason: target?.target === MATSUKO
                         ? "already-targets-matsuko"
                         : move === undefined ? "missing-public-move-definition"
-                        : move.targets !== 1 ? "aoe-or-non-single-target"
-                        : move.targetSide !== "player" && move.targetSide !== "either"
-                            ? "non-retargetable-side"
-                            : "no-single-character-target",
+                            : move.targets !== 1 ? "aoe-or-non-single-target"
+                                : move.targetSide !== "player" && move.targetSide !== "either"
+                                    ? "non-retargetable-side"
+                                    : "no-single-character-target",
                     bindings: [],
                     originalTargetDebt: 0,
                     matsukoDebt: 0,
@@ -383,7 +383,7 @@ function attackMeRule(
         effect.type === "buff" && effect.operation === "add" && effect.target === MATSUKO
             ? Math.max(best, effect.effects?.defense ?? 0)
             : best
-    , 0);
+        , 0);
     const harmfulRedirect = redirectedDebt > normalDebt;
     const defenseEligibleDebt = alreadyTargetedMatsukoDebt
         + (trackTransferGain > 0 ? redirectedMatsukoDebt : 0);
@@ -398,7 +398,7 @@ function attackMeRule(
             ? "Attack Me moves committed single-target binding pressure onto cheaper Matsuko tracks and applies Defense."
             : defenseBenefit > 0
                 ? "Attack Me's public Defense mitigates committed binding pressure already targeting Matsuko."
-            : "Attack Me has no beneficial public single-target binding redirect.",
+                : "Attack Me has no beneficial public single-target binding redirect.",
         details: {
             intentions,
             normalDebt,
@@ -493,7 +493,7 @@ function intentionTrapPressure(intention: Intention): number {
         effect.type === "trap" && effect.amount > 0
             ? sum + effect.amount * TRAP_PRESSURE_SCALE
             : sum
-    , 0);
+        , 0);
 }
 
 function positiveBindingEffects(
