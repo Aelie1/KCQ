@@ -1,5 +1,10 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.9.0 — 2026-09-29
+
+* Skunks now explode at 20% (60HP) instead of 25% (75HP)
+* When Pounce falls off, no matter how, the player will begin moving again if they are able to
+
 ## 0.8.3 — 2026-09-28
 * Hinari's Release is now -2 Hit / -2 Defense
 * Potency/Vulnerability are now 10% per point instead of 12.5%, and existing users have been modified
