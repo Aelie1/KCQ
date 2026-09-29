@@ -853,6 +853,62 @@ function prepareSkunkedRescue(
     };
 }
 
+export interface SmartDecisionOptions {
+    readonly rejectedStandingActors?: ReadonlySet<EntityId>;
+}
+
+interface SmartPolicyState {
+    round: number;
+    readonly rejectedStandingActors: Set<EntityId>;
+
+    // Deferred until the next chooseAction so replay evaluateDecision()
+    // still observes exactly the same decision state as chooseAction().
+    pendingStandingRejection?: EntityId;
+}
+
+const smartPolicyStates = new WeakMap<
+    PolicyContext["random"],
+    SmartPolicyState
+>();
+
+function getSmartPolicyState(context: PolicyContext): SmartPolicyState {
+    let state = smartPolicyStates.get(context.random);
+
+    if (state === undefined) {
+        state = {
+            round: context.state.turn.round,
+            rejectedStandingActors: new Set(),
+        };
+        smartPolicyStates.set(context.random, state);
+    }
+
+    return state;
+}
+
+function syncSmartPolicyState(
+    context: PolicyContext,
+    state: SmartPolicyState,
+): void {
+    if (state.round !== context.state.turn.round) {
+        state.round = context.state.turn.round;
+        state.rejectedStandingActors.clear();
+        state.pendingStandingRejection = undefined;
+        return;
+    }
+
+    const actorId = state.pendingStandingRejection;
+    state.pendingStandingRejection = undefined;
+
+    if (actorId === undefined) return;
+
+    // The previous stance action was chosen while Standing.
+    // If it succeeded, we're Moving now: Standing was examined and rejected.
+    const actor = context.state.characters.find(({ id }) => id === actorId);
+    if (actor !== undefined && !actor.standing) {
+        state.rejectedStandingActors.add(actorId);
+    }
+}
+
 interface PreparedStanceActor {
     readonly actor: Character;
     readonly traps: readonly StanceTrapDiagnostic[];
@@ -1428,48 +1484,63 @@ export function generateSmartCandidates(context: PolicyContext): SmartCandidate[
 export function evaluateSmartDecision(
     context: PolicyContext,
     scorers: readonly SmartScorer[] = smartScorers,
+    options: SmartDecisionOptions = {},
 ): SmartDecision {
     assertUniqueScorerIds(scorers);
     const board = assessSmartBoard(context);
+
     const preparedScorers = scorers.map((scorer) => {
         const evaluateDetailed = scorer.prepareDetailed?.(context, board);
         let evaluate: (candidate: SmartCandidate) => SmartScorerEvaluation;
+
         if (evaluateDetailed) {
             evaluate = evaluateDetailed;
         } else {
             const evaluateRaw = scorer.prepare(context, board);
             evaluate = (candidate) => ({ raw: evaluateRaw(candidate) });
         }
+
         return {
             id: scorer.id,
             weight: scorer.weight,
             evaluate,
         };
     });
-    const candidates = generateSmartCandidates(context).map((candidate) => {
-        const componentEntries = preparedScorers.map((scorer) => {
-            const evaluation = scorer.evaluate(candidate);
-            const component: SmartScoreComponent = {
-                raw: evaluation.raw,
-                weight: scorer.weight,
-                score: evaluation.raw * scorer.weight,
-                ...(evaluation.diagnostics !== undefined
-                    ? { diagnostics: evaluation.diagnostics }
-                    : {}),
+
+    const candidates = generateSmartCandidates(context)
+        .filter((candidate) => !isRejectedStandingCandidate(
+            context,
+            candidate,
+            options,
+        ))
+        .map((candidate) => {
+            const componentEntries = preparedScorers.map((scorer) => {
+                const evaluation = scorer.evaluate(candidate);
+                const component: SmartScoreComponent = {
+                    raw: evaluation.raw,
+                    weight: scorer.weight,
+                    score: evaluation.raw * scorer.weight,
+                    ...(evaluation.diagnostics !== undefined
+                        ? { diagnostics: evaluation.diagnostics }
+                        : {}),
+                };
+                return [scorer.id, component] as const;
+            });
+
+            const components: SmartScoreComponents =
+                Object.fromEntries(componentEntries);
+
+            const total = componentEntries.reduce(
+                (sum, [, component]) => sum + component.score,
+                0,
+            );
+
+            return {
+                ...candidate,
+                components,
+                total,
             };
-            return [scorer.id, component] as const;
         });
-        const components: SmartScoreComponents = Object.fromEntries(componentEntries);
-        const total = componentEntries.reduce(
-            (sum, [, component]) => sum + component.score,
-            0,
-        );
-        return {
-            ...candidate,
-            components,
-            total,
-        };
-    });
 
     // Candidate generation always supplies endTurn.
     let selected = candidates[0];
@@ -1485,13 +1556,66 @@ export function evaluateSmartDecision(
     return { board, candidates, selected };
 }
 
+function isRejectedStandingCandidate(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+    options: SmartDecisionOptions,
+): boolean {
+    if (candidate.action.type !== "stance") return false;
+
+    const actorId = candidate.action.actor;
+    if (!options.rejectedStandingActors?.has(actorId)) return false;
+
+    const actor = context.state.characters.find(({ id }) => id === actorId);
+
+    // Never prevent someone who is Standing from returning to Moving.
+    // We only suppress Moving -> Standing after Standing was already rejected.
+    return actor !== undefined && !actor.standing;
+}
+
 export const smartPolicy: FightPolicy = {
     id: "smart",
+
     chooseAction(context) {
-        return evaluateSmartDecision(context).selected.action;
+        const state = getSmartPolicyState(context);
+        syncSmartPolicyState(context, state);
+
+        const decision = evaluateSmartDecision(
+            context,
+            smartScorers,
+            {
+                rejectedStandingActors: state.rejectedStandingActors,
+            },
+        );
+
+        const action = decision.selected.action;
+
+        if (action.type === "stance") {
+            const actor = context.state.characters.find(
+                ({ id }) => id === action.actor,
+            );
+
+            // Standing -> Moving means Smart looked at the Standing board
+            // and decided it was worse. Don't reconsider Standing this round.
+            if (actor?.standing) {
+                state.pendingStandingRejection = actor.id;
+            }
+        }
+
+        return action;
     },
+
     evaluateDecision(context, chosenAction) {
-        const decision = evaluateSmartDecision(context);
+        const state = getSmartPolicyState(context);
+
+        const decision = evaluateSmartDecision(
+            context,
+            smartScorers,
+            {
+                rejectedStandingActors: state.rejectedStandingActors,
+            },
+        );
+
         return {
             // Replay evaluation is observational; chooseAction remains authoritative.
             action: chosenAction,
