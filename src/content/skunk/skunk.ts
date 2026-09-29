@@ -216,7 +216,7 @@ export const latexExplosion: MoveDef = {
                     amount: PUDDLE_BASE
                 });
             }
-            if (isEnemy(actor)) {
+            if (isEnemy(actor) && actor.data["goddess"] !== 1) {
                 result.effects.push({
                     type: "enemy",
                     target: actor,
@@ -245,7 +245,7 @@ export const latexExplosion: MoveDef = {
                 result: target.band,
                 effects: effects
             });
-            if (target.band === "crit") {
+            if (target.band === "crit" || actor.data["goddess"] === 1) {
                 if (isEnemy(actor)) {
                     result.effects.push({
                         type: "damage",

@@ -2,8 +2,10 @@
 
 ## 0.9.1 — 2026-09-29
 
- * Added tower levels - 1 is the hardest(an expected loss, but maybe you can still beat it), 2 and 3 are weakened versions after the goddess helps you
+ * Added tower levels - tower_1 is the hardest(an expected loss, but maybe you can still beat it), tower_2 and tower_3 are weakened versions after the goddess helps you
+ * Added outside realm level - This was the "oh so you want to lose" gimmick fight from bq1.  My agent can still clear it 2% of the time, so i guess it's still possible, but very, very hard
  * Fixed the collar which was apparently spreading at 1/4 of its intended value
+ * Changed the third rainmaker from +Def to +Hit to make it less grindy
 
 ## 0.9.0 — 2026-09-29
 

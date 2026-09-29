@@ -29,6 +29,11 @@
             "id": "balance-smart-t1",
             "label": "$(wand) Balance T1",
             "task": "balance smart t1"
+        },
+        {
+            "id": "balance-smart-outside",
+            "label": "$(sparkle) Balance Outside",
+            "task": "balance smart outside"
         }
     ]
 }

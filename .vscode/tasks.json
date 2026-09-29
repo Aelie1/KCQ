@@ -116,6 +116,21 @@
                 "1000",
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "balance smart outside",
+            "type": "process",
+            "command": "npm.cmd",
+            "args": [
+                "run",
+                "compare",
+                "--",
+                "outside",
+                "25",
+                "smart",
+                "1000",
+            ],
+            "problemMatcher": []
         }
     ]
 }
