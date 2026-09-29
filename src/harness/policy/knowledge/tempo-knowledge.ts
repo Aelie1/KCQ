@@ -1,5 +1,6 @@
 import type { Enemy, EntityId } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import { firstKnownBindingApplication, type SmartCandidate } from "../smart";
 import {
     addBinding,
     applyBindingEffects,
@@ -8,7 +9,6 @@ import {
     totalRecoveryDebt,
 } from "../smart-bindings";
 import type { SmartBoardAssessment, SmartEnemyAssessment } from "../smart-board";
-import type { SmartCandidate } from "../smart";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 
 export const TEMPO_KNOWLEDGE_WEIGHT = 1;
@@ -296,6 +296,31 @@ function candidateRecoveryGain(
     );
 }
 
+function expectedQueenDamage(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+    queenId: EntityId,
+): number {
+    let damage = expectedDamageToEnemy(candidate, queenId);
+
+    if (
+        candidate.action.type !== "move"
+        || candidate.action.actor !== "ko"
+        || (candidate.action.move !== "reflect"
+            && candidate.action.move !== "fairyReflect")
+    ) {
+        return damage;
+    }
+
+    const application = firstKnownBindingApplication(context, "ko");
+    if (application?.enemyId === queenId) {
+        damage += application.amount;
+    }
+
+    return damage;
+}
+
+
 function queenPhasePush(
     context: PolicyContext,
     candidate: SmartCandidate,
@@ -304,7 +329,7 @@ function queenPhasePush(
     let expectedLethal = false;
     for (const enemy of context.state.enemies) {
         if (enemy.currHp <= 0 || !isQueenId(enemy.id)) continue;
-        const damage = expectedDamageToEnemy(candidate, enemy.id);
+        const damage = expectedQueenDamage(context, candidate, enemy.id);
         if (damage <= 0) continue;
         const projectedHp = Math.max(0, enemy.currHp - damage);
         if (projectedHp === 0) {

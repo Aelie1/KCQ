@@ -69,8 +69,8 @@ import {
 } from "./smart-board";
 
 export * from "./knowledge/control-knowledge";
-export * from "./knowledge/kit-knowledge";
 export * from "./knowledge/intention-knowledge";
+export * from "./knowledge/kit-knowledge";
 export * from "./knowledge/periodic-binding-knowledge";
 export * from "./knowledge/reactive-knowledge";
 export * from "./knowledge/skunk-knowledge";
@@ -291,6 +291,7 @@ export interface SkunkedRescueEnemyBreakdown {
 
 export interface SkunkedRescueBreakdown {
     readonly enemies: readonly SkunkedRescueEnemyBreakdown[];
+    readonly delayPenalty: number;
     readonly raw: number;
 }
 
@@ -307,6 +308,7 @@ export const INCOMING_THREAT_WEIGHT = 1;
 export const KIT_KNOWLEDGE_WEIGHT = 1;
 export const STANCE_TRAP_WEIGHT = 1;
 export const SKUNKED_RESCUE_ACTOR_VALUE = 200;
+export const SKUNKED_RESCUE_DELAY_PENALTY = 75;
 export const STANDING_DEFENSE_PRESSURE_FRACTION = 0.2;
 export const TRAP_MODIFIER_PRESSURE_STEP = 5;
 
@@ -832,12 +834,20 @@ function prepareSkunkedRescue(
                 rescueProgressContribution,
             } satisfies SkunkedRescueEnemyBreakdown;
         });
+        const rescueProgress = enemies.reduce(
+            (total, enemy) => total + enemy.rescueProgressContribution,
+            0,
+        );
+
+        const delayPenalty =
+            relationships.length > 0 && rescueProgress <= 0
+                ? SKUNKED_RESCUE_DELAY_PENALTY
+                : 0;
+
         return {
             enemies,
-            raw: enemies.reduce(
-                (total, enemy) => total + enemy.rescueProgressContribution,
-                0,
-            ),
+            delayPenalty,
+            raw: rescueProgress - delayPenalty,
         };
     };
 }
@@ -870,7 +880,10 @@ function prepareStanceTrap(
             prepared.set(actor.id, prepareStanceActor(context, board, current, actor, actionView));
         }
     }
-
+    const skunksAlive = context.state.enemies.some(
+        ({ id, currHp }) =>
+            currHp > 0 && (id === "skunk" || /^skunk\d+$/.test(id)),
+    );
     return (candidate) => {
         const actorId = candidate.action.type === "endTurn"
             ? undefined
@@ -887,7 +900,15 @@ function prepareStanceTrap(
             : assessment.actor.standing
                 ? assessment.bonusEscapeValue
                 : assessment.plannedEscapeValue;
+
+        const puddlePreservationValue = skunksAlive
+            ? assessment.traps
+                .filter(({ id }) => id === "trapPuddle")
+                .reduce((sum, trap) => sum + trap.contribution, 0)
+            : 0;
+
         const standingUtility = assessment.estimatedMovementTrapPressure
+            + puddlePreservationValue
             + escapeSetupValue
             - assessment.estimatedStandingDefensePressure;
         const stanceAdjustment = candidate.action.type !== "stance"
@@ -1136,7 +1157,7 @@ function standingIntentionDiagnostics(
                 effect.type === "trap" && effect.amount > 0
                     ? sum + effect.amount * TRAP_PRESSURE_SCALE
                     : sum
-            , 0);
+                , 0);
             const visiblePressure = bindingPressure + trapPressure;
             diagnostics.push({
                 enemyId: enemy.id,

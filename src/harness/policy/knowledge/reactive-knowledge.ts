@@ -1,14 +1,14 @@
 import type { BindingId, EntityId } from "../../../engine/public/types";
 import type { PolicyContext } from "../../harness";
+import type { SmartCandidate } from "../smart";
 import {
     addBinding,
     cloneBindingBoard,
     currentBindingBoard,
     totalRecoveryDebt,
 } from "../smart-bindings";
-import type { SmartCandidate } from "../smart";
-import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 import { firstKnownBindingApplication } from "./intention-knowledge";
+import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 
 export const REACTIVE_KNOWLEDGE_WEIGHT = 1;
 export const REFLECTED_DAMAGE_VALUE = 1;
@@ -50,7 +50,15 @@ export function evaluateReactiveKnowledge(
         || (candidate.action.move !== REFLECT && candidate.action.move !== FAIRY_REFLECT)) {
         return empty;
     }
+    const ko = context.state.characters.find(({ id }) => id === KO);
+    const reflectAlreadyActive = ko?.buffs.some(
+        ({ id }) =>
+            (id === REFLECT || id === FAIRY_REFLECT),
+    ) ?? false;
 
+    if (reflectAlreadyActive) {
+        return empty;
+    }
     const application = firstReflectableBindingApplication(context);
     if (application === undefined) return empty;
 

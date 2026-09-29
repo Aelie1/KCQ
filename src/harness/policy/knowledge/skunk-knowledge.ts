@@ -251,9 +251,31 @@ export function evaluateSkunkRegenerationLiability(
     );
     const beforeExposure = maximumLiability(characterLiabilitiesBefore);
     const afterExposure = maximumLiability(characterLiabilitiesAfter);
-    const recoveryAdjustment = livingSkunks.length
-        * (beforeExposure - afterExposure)
-        * SKUNK_REGENERATION_EXPOSURE_WEIGHT;
+
+    const recoveryAdjustment = livingSkunks.length === 0
+        ? 0
+        : characterLiabilitiesBefore.reduce(
+            (total, character) => total + character.bindings.reduce(
+                (characterTotal, binding) => {
+                    // Only reward finishing a track that already had
+                    // Regeneration exposure before this action.
+                    if (binding.recoverableGap <= 0) return characterTotal;
+
+                    const afterValue = bindingValue(
+                        projected,
+                        character.characterId,
+                        binding.bindingId,
+                    );
+
+                    if (afterValue > 0) return characterTotal;
+
+                    return characterTotal
+                        + binding.recoverableGap * SKUNK_REGENERATION_EXPOSURE_WEIGHT;
+                },
+                0,
+            ),
+            0,
+        );
     const skunks = livingSkunks.map((enemy) => {
         const expectedDamage = expectedDamageToEnemy(candidate, enemy.id);
         const progressFraction = clamp(expectedDamage / enemy.currHp, 0, 1);
@@ -344,11 +366,11 @@ function evaluateRegenerationLiabilityRules(
     if (details.livingSkunkCount === 0) return [];
 
     const rules: KitKnowledgeRuleDiagnostic[] = [];
-    if (details.recoveryAdjustment !== 0) {
+    if (details.recoveryAdjustment > 0) {
         rules.push({
-            id: "skunk.regeneration-exposure-change",
+            id: "skunk.regeneration-track-clear",
             adjustment: details.recoveryAdjustment,
-            reason: `Candidate changes maximum party Regeneration exposure from ${format(details.beforeExposure)} to ${format(details.afterExposure)} across ${details.livingSkunkCount} living Skunk(s).`,
+            reason: `Candidate completely clears an already-exposed Latex track while ${details.livingSkunkCount} Skunk(s) remain alive.`,
             details: {
                 characterLiabilitiesBefore: details.characterLiabilitiesBefore,
                 characterLiabilitiesAfter: details.characterLiabilitiesAfter,
