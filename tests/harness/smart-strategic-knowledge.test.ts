@@ -10,6 +10,7 @@ import type {
     Enemy,
     GameState,
     ModifierSet,
+    PreviewProfile,
     TargetCount,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
@@ -73,6 +74,7 @@ function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
 
 interface MoveOptions {
     damage?: number;
+    damagePreview?: PreviewProfile;
     hits?: number;
     targets?: TargetCount;
     targetEffects?: readonly Effect[];
@@ -98,8 +100,10 @@ function move(
             valid: true,
             target,
             effects: [...(options.targetEffects ?? [])],
-            ...(target !== null && damage > 0
-                ? { damage: { hit: { chance: 100, min: damage, max: damage } } }
+            ...(target !== null && options.damagePreview !== undefined
+                ? { damage: options.damagePreview }
+                : target !== null && damage > 0
+                    ? { damage: { hit: { chance: 100, min: damage, max: damage } } }
                 : {}),
         })),
     };
@@ -401,7 +405,7 @@ describe("Smart tempo and pressure knowledge", () => {
         expect(result.rules).toContainEqual(expect.objectContaining({
             id: "tempo.queen-clear-adds",
             adjustment: -QUEEN_ADD_CLEAR_PENALTY,
-            details: {
+            details: expect.objectContaining({
                 queenId: "queen1",
                 queenHp: 194,
                 queenMaxHp: 750,
@@ -411,7 +415,7 @@ describe("Smart tempo and pressure knowledge", () => {
                 remainingReinforcementThresholds: [150],
                 expectedLethalBypassed: false,
                 adjustment: -QUEEN_ADD_CLEAR_PENALTY,
-            },
+            }),
         }));
         expect(result.rules).not.toContainEqual(
             expect.objectContaining({ id: "tempo.queen-phase-push" }),
@@ -547,6 +551,78 @@ describe("Smart tempo and pressure knowledge", () => {
             }),
         }));
     });
+    it("weights a possible second threshold from a multihit crit tail", () => {
+        const fixture = context(
+            [character("matsuko")],
+            [enemy("queen1", {
+                rank: "boss",
+                maxHp: 750,
+                currHp: 303,
+            })],
+            [action("matsuko", [move("crit-tail", ["queen1"], {
+                hits: 2,
+                damagePreview: {
+                    hit: { chance: 80, min: 20, max: 20 },
+                    crit: { chance: 20, min: 40, max: 40 },
+                },
+            })])],
+        );
+
+        const result = tempo(fixture, "crit-tail");
+        const phasePush = result.rules.find(({ id }) => id === "tempo.queen-phase-push");
+        const addClear = result.rules.find(({ id }) => id === "tempo.queen-clear-adds");
+
+        expect(phasePush?.adjustment).toBeCloseTo(-0.36 * 180);
+        expect(phasePush?.details).toMatchObject({
+            thresholdCrossings: [
+                { threshold: 300 },
+                { threshold: 250 },
+                { threshold: 150 },
+            ],
+        });
+        const phaseDetails = phasePush?.details as {
+            thresholdCrossings: Array<{ probability: number }>;
+            crossingRisk: number;
+        };
+        expect(phaseDetails.thresholdCrossings[0].probability).toBe(1);
+        expect(phaseDetails.thresholdCrossings[1].probability).toBeCloseTo(0.36);
+        expect(phaseDetails.thresholdCrossings[2].probability).toBe(0);
+        expect(phaseDetails.crossingRisk).toBeCloseTo(0.36);
+        expect(addClear?.adjustment).toBeCloseTo(-0.36 * QUEEN_ADD_CLEAR_PENALTY);
+        expect((addClear?.details as { phaseStackingProbability: number })
+            .phaseStackingProbability).toBeCloseTo(0.36);
+    });
+    for (const pendingMove of ["callReinforcements", "latexRainmaker"]) {
+        it(`weights ${pendingMove} reserve by a below-EV threshold tail`, () => {
+            const fixture = context(
+                [character("ko")],
+                [enemy("queen1", {
+                    rank: "boss",
+                    maxHp: 750,
+                    currHp: 248,
+                    intentions: [{ move: pendingMove, targets: [], effects: [] }],
+                })],
+                [action("ko", [move("crit-tail", ["queen1"], {
+                    damagePreview: {
+                        hit: { chance: 80, min: 80, max: 80 },
+                        crit: { chance: 20, min: 100, max: 100 },
+                    },
+                })])],
+            );
+
+            const result = tempo(fixture, "crit-tail");
+            const phasePush = result.rules.find(({ id }) => id === "tempo.queen-phase-push");
+            const addClear = result.rules.find(({ id }) => id === "tempo.queen-clear-adds");
+
+            expect(phasePush?.adjustment).toBeCloseTo(-0.2 * 180);
+            expect(phasePush?.details).toMatchObject({
+                thresholdCrossings: [{ threshold: 150, probability: 0.2 }],
+                crossingRisk: 0.2,
+            });
+            expect(addClear?.adjustment).toBeCloseTo(-0.2 * QUEEN_ADD_CLEAR_PENALTY);
+            expect(addClear?.details).toMatchObject({ phaseStackingProbability: 0.2 });
+        });
+    }
     it("uses first-source reflected damage for pending Queen phase preservation", () => {
         const fixture = context(
             [character("ko")],

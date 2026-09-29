@@ -78,6 +78,7 @@ export * from "./knowledge/sustained-pressure-knowledge";
 export * from "./knowledge/tempo-knowledge";
 export { RECOVERY_DEBT_CURVE_A, recoveryDebt } from "./smart-bindings";
 export * from "./smart-board";
+export * from "./smart-damage";
 export { SUSTAINED_PRESSURE_PROGRESS_WEIGHT };
 
 /** Public-preview data retained beside an action so scoring stays inspectable. */

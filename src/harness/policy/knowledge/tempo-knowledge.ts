@@ -9,6 +9,7 @@ import {
     totalRecoveryDebt,
 } from "../smart-bindings";
 import type { SmartBoardAssessment, SmartEnemyAssessment } from "../smart-board";
+import { probabilityDamageAtLeast } from "../smart-damage";
 import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 
 export const TEMPO_KNOWLEDGE_WEIGHT = 1;
@@ -146,7 +147,10 @@ export function evaluateTempoKnowledge(
     }
 
     const queenPush = queenPhasePush(context, candidate);
-    if (!queenPush.expectedLethal && queenPush.crossings > 0) {
+    if (
+        !queenPush.expectedLethal
+        && queenPush.thresholdCrossings.some(({ probability }) => probability > 0)
+    ) {
         const partyRisk = scaleAboveQuiet(
             pressure.currentPartyPressure,
             PARTY_QUIET_PRESSURE,
@@ -163,18 +167,32 @@ export function evaluateTempoKnowledge(
             queenPush.pendingPhaseIntentions.length > 0 ? 1 : 0,
         );
 
-        // The first threshold uses normal board readiness.
-        // Every additional threshold is crossed after the previous one has
-        // effectively queued a Queen phase.
-        const crossingRisk = readinessRisk + Math.max(0, queenPush.crossings - 1);
+        // With no pending phase, the first threshold uses normal board
+        // readiness. Every deeper threshold is reached after the first has
+        // effectively queued a Queen phase. An existing pending phase makes
+        // every newly reachable threshold fully risky.
+        const [firstCrossing, ...additionalCrossings] = queenPush.thresholdCrossings;
+        const crossingRisk = queenPush.pendingPhaseIntentions.length > 0
+            ? queenPush.thresholdCrossings.reduce(
+                (total, crossing) => total + crossing.probability,
+                0,
+            )
+            : firstCrossing.probability * readinessRisk
+                + additionalCrossings.reduce(
+                    (total, crossing) => total + crossing.probability,
+                    0,
+                );
 
         if (crossingRisk > 0) {
             rules.push({
                 id: "tempo.queen-phase-push",
                 adjustment: -crossingRisk * QUEEN_PHASE_PUSH_PENALTY,
-                reason: `Expected damage crosses ${queenPush.crossings} Queen reinforcement threshold(s) before the board is ready.`,
+                reason: "Public damage outcomes can cross Queen reinforcement thresholds before the board is ready.",
                 details: {
-                    crossings: queenPush.crossings,
+                    crossings: queenPush.thresholdCrossings.filter(
+                        ({ probability }) => probability > 0,
+                    ).length,
+                    thresholdCrossings: queenPush.thresholdCrossings,
                     readinessRisk,
                     crossingRisk,
                     partyRisk,
@@ -202,6 +220,8 @@ interface QueenAddClearDetails {
     readonly pendingPhaseIntentions: readonly string[];
     readonly crossedReinforcementThresholds: readonly number[];
     readonly remainingReinforcementThresholds: readonly number[];
+    readonly thresholdCrossingProbabilities: readonly QueenThresholdCrossing[];
+    readonly phaseStackingProbability: number;
     readonly expectedLethalBypassed: boolean;
     readonly adjustment: number;
 }
@@ -223,20 +243,29 @@ function queenAddClearRules(
         const remainingReinforcementThresholds = QUEEN_REINFORCEMENT_RATIOS
             .map((ratio) => queen.maxHp * ratio)
             .filter((threshold) => queen.currHp > threshold);
-        const projectedHp = Math.max(0, queen.currHp - expectedDamage);
-        const crossedReinforcementThresholds = remainingReinforcementThresholds
-            .filter((threshold) => projectedHp <= threshold);
+        const thresholdCrossingProbabilities = queenThresholdCrossings(
+            context,
+            candidate,
+            queen,
+        );
+        const crossedReinforcementThresholds = thresholdCrossingProbabilities
+            .filter(({ probability }) => probability > 0)
+            .map(({ threshold }) => threshold);
         const unresolvedLivingAdds = livingAddCount > 0
             && remainingReinforcementThresholds.length > 0;
-        const unresolvedPendingPhase = crossedReinforcementThresholds.length > 0
-            && (
-                pendingPhaseIntentions.length > 0
-                || crossedReinforcementThresholds.length > 1
-            );
+        const phaseStackingCrossing = pendingPhaseIntentions.length > 0
+            ? thresholdCrossingProbabilities[0]
+            : thresholdCrossingProbabilities[1];
+        const phaseStackingProbability = phaseStackingCrossing?.probability ?? 0;
+        const unresolvedPendingPhase = phaseStackingProbability > 0;
         if (!unresolvedLivingAdds && !unresolvedPendingPhase) continue;
 
         const expectedLethalBypassed = expectedDamage >= queen.currHp;
-        const adjustment = expectedLethalBypassed ? 0 : -QUEEN_ADD_CLEAR_PENALTY;
+        const adjustment = expectedLethalBypassed
+            ? 0
+            : -QUEEN_ADD_CLEAR_PENALTY * (
+                unresolvedLivingAdds ? 1 : phaseStackingProbability
+            );
         rules.push({
             id: "tempo.queen-clear-adds",
             adjustment,
@@ -253,6 +282,8 @@ function queenAddClearRules(
                 pendingPhaseIntentions,
                 crossedReinforcementThresholds,
                 remainingReinforcementThresholds,
+                thresholdCrossingProbabilities,
+                phaseStackingProbability,
                 expectedLethalBypassed,
                 adjustment,
             } satisfies QueenAddClearDetails,
@@ -339,51 +370,87 @@ function expectedQueenDamage(
     candidate: SmartCandidate,
     queenId: EntityId,
 ): number {
-    let damage = expectedDamageToEnemy(candidate, queenId);
+    return expectedDamageToEnemy(candidate, queenId)
+        + reflectedQueenDamage(context, candidate, queenId);
+}
 
+
+interface QueenThresholdCrossing {
+    readonly queenId: EntityId;
+    readonly threshold: number;
+    readonly requiredDamage: number;
+    readonly deterministicDamageOffset: number;
+    readonly probability: number;
+}
+
+function queenThresholdCrossings(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+    queen: Enemy,
+): QueenThresholdCrossing[] {
+    const deterministicDamageOffset = reflectedQueenDamage(context, candidate, queen.id);
+    return QUEEN_REINFORCEMENT_RATIOS
+        .map((ratio) => queen.maxHp * ratio)
+        .filter((threshold) => queen.currHp > threshold)
+        .map((threshold) => {
+            const requiredDamage = queen.currHp - threshold;
+            return {
+                queenId: queen.id,
+                threshold,
+                requiredDamage,
+                deterministicDamageOffset,
+                probability: probabilityDamageAtLeast(
+                    candidate,
+                    queen.id,
+                    requiredDamage - deterministicDamageOffset,
+                ),
+            };
+        });
+}
+
+function reflectedQueenDamage(
+    context: PolicyContext,
+    candidate: SmartCandidate,
+    queenId: EntityId,
+): number {
     if (
         candidate.action.type !== "move"
         || candidate.action.actor !== "ko"
         || (candidate.action.move !== "reflect"
             && candidate.action.move !== "fairyReflect")
     ) {
-        return damage;
+        return 0;
     }
 
     const application = firstKnownBindingApplication(context, "ko");
-    if (application?.enemyId === queenId) {
-        damage += application.amount;
-    }
-
-    return damage;
+    return application?.enemyId === queenId ? application.amount : 0;
 }
-
 
 function queenPhasePush(
     context: PolicyContext,
     candidate: SmartCandidate,
-): { crossings: number; expectedLethal: boolean; pendingPhaseIntentions: string[] } {
-    let crossings = 0;
+): {
+    thresholdCrossings: QueenThresholdCrossing[];
+    expectedLethal: boolean;
+    pendingPhaseIntentions: string[];
+} {
+    const thresholdCrossings: QueenThresholdCrossing[] = [];
     let expectedLethal = false;
     const pendingPhaseIntentions: string[] = [];
     for (const enemy of context.state.enemies) {
         if (enemy.currHp <= 0 || !isQueenId(enemy.id)) continue;
         const damage = expectedQueenDamage(context, candidate, enemy.id);
         if (damage <= 0) continue;
-        const projectedHp = Math.max(0, enemy.currHp - damage);
-        if (projectedHp === 0) {
+        if (damage >= enemy.currHp) {
             expectedLethal = true;
             continue;
         }
         pendingPhaseIntentions.push(...enemy.intentions
             .map(({ move }) => move)
             .filter((move) => QUEEN_PHASE_INTENTIONS.has(move)));
-        for (const ratio of QUEEN_REINFORCEMENT_RATIOS) {
-            const threshold = enemy.maxHp * ratio;
-            if (enemy.currHp > threshold && projectedHp <= threshold) crossings += 1;
-        }
+        thresholdCrossings.push(...queenThresholdCrossings(context, candidate, enemy));
     }
-    return { crossings, expectedLethal, pendingPhaseIntentions };
+    return { thresholdCrossings, expectedLethal, pendingPhaseIntentions };
 }
 
 export function expectedDamageToEnemy(
