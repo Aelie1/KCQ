@@ -1,11 +1,17 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.9.1 — 2026-09-29
+
+ * Added tower levels - 1 is the hardest(an expected loss, but maybe you can still beat it), 2 and 3 are weakened versions after the goddess helps you
+ * Fixed the collar which was apparently spreading at 1/4 of its intended value
+
 ## 0.9.0 — 2026-09-29
 
 * Skunks now explode at 20% (60HP) instead of 25% (75HP)
 * When Pounce falls off, no matter how, the player will begin moving again if they are able to
 
 ## 0.8.3 — 2026-09-28
+
 * Hinari's Release is now -2 Hit / -2 Defense
 * Potency/Vulnerability are now 10% per point instead of 12.5%, and existing users have been modified
 * * Skunkette resistance is -4 (up from -3)
@@ -14,6 +20,7 @@
 * * Submissive is still +1 per level (lowering its final effect slightly)
 
 ## 0.8.2 — 2026-09-28
+
 * Matsuko's Attack Me! now grants +3 Defense for that turn
 * Skunk Collar spread is now based on its value — stays +10 at 50, and scales from +1 at 5 to +20 at 100
 * Latex Rain is simplified.  It used to have multiple random values, now it does 2/3/4 tracks of +10 flat binding, slightly skewed to lower tracks at neutral Defense
