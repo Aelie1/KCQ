@@ -30,6 +30,7 @@ export const RELEASE_SUBSPACE_PRESSURE_VALUE = 80;
 export const RELEASE_LOST_ROCKFALL_HIT_VALUE = 20;
 export const STORE_SUBSPACE_PRESSURE_PENALTY = 100;
 export const STORE_LOST_ROCKFALL_HIT_PENALTY = 20;
+export const DEGRADED_ROCKFALL_PRESERVATION_PENALTY = 15;
 export const POWER_OF_DENIAL_RESCUE_BONUS = 2_000;
 export const POWER_OF_DENIAL_RAINMAKER_BONUS = 600;
 export const POWER_OF_DENIAL_EMERGENCY_BINDING_BONUS = 400;
@@ -45,6 +46,7 @@ const MATSUKO_FAIRY_ATTACKS = new Set(["fairyWhiteFlame", "fairyPhoenixKick"]);
 const MATSUKO_ORDINARY_ATTACKS = new Set(["punch", "kick", "whiteFlame", "phoenixKick"]);
 const ROCKFALL = "rockfall";
 const FAIRY_ROCKFALL = "fairyRockfall";
+const ROCKFALL_MOVES = new Set([ROCKFALL, FAIRY_ROCKFALL]);
 const RELEASE = "release";
 const STORE = "store";
 const POWER_OF_DENIAL = "powerOfDenial";
@@ -319,6 +321,25 @@ function evaluateHinariKnowledge(
         });
     }
 
+    if (ROCKFALL_MOVES.has(moveId)) {
+        const baseHits = context.library.moves[moveId]?.baseHits ?? candidate.hits;
+        const lostHits = Math.max(0, baseHits - candidate.hits);
+        if (lostHits > 0) {
+            rules.push({
+                id: "hinari.degraded-rockfall-opportunity-cost",
+                adjustment: -lostHits * DEGRADED_ROCKFALL_PRESERVATION_PENALTY,
+                reason: `This degraded Rockfall preserves high Subspace and remains ${lostHits} hit(s) below its public base.`,
+                details: {
+                    moveId,
+                    baseHits,
+                    currentHits: candidate.hits,
+                    lostHits,
+                    currentSubspace: Math.max(0, hinari.data.subspace ?? 0),
+                },
+            });
+        }
+    }
+
     return rules;
 }
 
@@ -331,12 +352,15 @@ function subspacePressure(context: PolicyContext): {
     const subspace = Math.max(0, hinari?.data.subspace ?? 0);
     const maximum = Math.max(1, hinari?.data.subspaceMax ?? 100);
     const ratio = Math.min(1, subspace / maximum);
-    const rockfall = context.actions
+    const rockfalls = context.actions
         .find(({ id }) => id === HINARI)
-        ?.moves.find(({ move }) => move.id === ROCKFALL);
-    const baseHits = context.library.moves[ROCKFALL]?.baseHits ?? 4;
-    const currentHits = rockfall?.move.hits ?? baseHits;
-    const lostRockfallHits = Math.max(0, baseHits - currentHits);
+        ?.moves.filter(({ available, move }) => available && ROCKFALL_MOVES.has(move.id))
+        ?? [];
+    const lostRockfallHits = rockfalls.reduce((maximum, info) => {
+        const baseHits = context.library.moves[info.move.id]?.baseHits ?? info.move.hits ?? 1;
+        const currentHits = info.move.hits ?? baseHits;
+        return Math.max(maximum, Math.max(0, baseHits - currentHits));
+    }, 0);
 
     const releaseRatio = clamp(
         (ratio - RELEASE_START_RATIO) / (1 - RELEASE_START_RATIO),

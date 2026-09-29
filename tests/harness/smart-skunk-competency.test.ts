@@ -450,6 +450,47 @@ describe("Smart Fairy healing knowledge", () => {
         expect(knowledge(context, "finish", other.id).rules
             .some(({ id }) => id === "skunk.fairy-committed-heal-prevention")).toBe(false);
     });
+
+    it("preserves meaningful damage invested in a healable enemy instead of spreading", () => {
+        const context = fixture(
+            [
+                enemy("fairy1", { maxHp: 200, currHp: 200 }),
+                enemy("skunkette1", { maxHp: 200, currHp: 100 }),
+                enemy("skunkette2", { maxHp: 200, currHp: 200 }),
+            ],
+            [attack("strike", ["skunkette1", "skunkette2"], 50)],
+        );
+        const continuing = knowledge(context, "strike", "skunkette1");
+        const spreading = knowledge(context, "strike", "skunkette2");
+        expect(continuing.raw).toBeGreaterThan(spreading.raw);
+        expect(continuing.rules).toContainEqual(expect.objectContaining({
+            id: "skunk.fairy-focus-continuity",
+            details: expect.objectContaining({ fairyIds: ["fairy1"] }),
+        }));
+    });
+
+    it("still values removing Fairy more when that prevents more healing", () => {
+        const context = fixture(
+            [
+                enemy("fairy1", { maxHp: 200, currHp: 200 }),
+                enemy("skunk1", { maxHp: 200, currHp: 100 }),
+                enemy("skunkette1", { maxHp: 200, currHp: 100 }),
+            ],
+            [attack("finish", ["fairy1", "skunk1"], 200)],
+        );
+        expect(knowledge(context, "finish", "fairy1").raw)
+            .toBeGreaterThan(knowledge(context, "finish", "skunk1").raw);
+    });
+
+    it("adds no focus-continuity value without a meaningful healing source", () => {
+        const context = fixture(
+            [enemy("skunkette1", { maxHp: 200, currHp: 100 }), enemy("wolf1")],
+            [attack("strike", ["skunkette1"], 50)],
+        );
+        expect(knowledge(context, "strike", "skunkette1").rules).not.toContainEqual(
+            expect.objectContaining({ id: "skunk.fairy-focus-continuity" }),
+        );
+    });
 });
 
 describe("Smart Fairy Barrier knowledge", () => {

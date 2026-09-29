@@ -21,6 +21,8 @@ import type { KitKnowledgeRuleDiagnostic } from "./kit-knowledge";
 
 export const POUNCE_REMOVAL_VALUE = 25;
 export const POUNCE_CLEAR_BONUS = 40;
+export const DIRECT_POUNCE_ATTENTION_FULL_LEVEL = 4;
+export const DIRECT_POUNCE_ATTENTION_START_LEVEL = 2;
 export const THROW_OFF_SEVERITY_VALUE = 20;
 export const THROW_OFF_LOW_RESERVE_PENALTY = -80;
 export const THROW_OFF_MODERATE_RESERVE_PENALTY = -70;
@@ -166,7 +168,17 @@ export function evaluateSkunkKnowledge(
     const action = candidate.action;
 
     let totalRemoval = 0;
+    let removalAdjustment = 0;
     let clearedRelationships = 0;
+    let clearAdjustment = 0;
+    const opportunities: Array<{
+        characterId: EntityId;
+        enemyId: EntityId;
+        level: number;
+        expectedRemoval: number;
+        incidental: boolean;
+        attentionScale: number;
+    }> = [];
     for (const relationship of relationships) {
         const target = candidate.targets.find(({ target }) => target === relationship.enemyId);
         if (target === undefined || !candidateDamagesEnemy(candidate, target, relationship.enemyId)) {
@@ -175,22 +187,50 @@ export function evaluateSkunkKnowledge(
         const expectedSuccessfulHits = candidate.hits * nonMissProbability(target.accuracy, target);
         const expectedRemoval = Math.min(relationship.level, expectedSuccessfulHits);
         if (expectedRemoval <= 0) continue;
+        const incidental = context.state.enemies.some(({ id, currHp }) =>
+            currHp > 0
+            && id !== relationship.enemyId
+            && expectedDamageToEnemy(candidate, id) > 0
+        );
+        const attentionScale = incidental
+            ? 1
+            : clamp(
+                (relationship.level - DIRECT_POUNCE_ATTENTION_START_LEVEL)
+                    / (DIRECT_POUNCE_ATTENTION_FULL_LEVEL - DIRECT_POUNCE_ATTENTION_START_LEVEL),
+                0,
+                1,
+            );
         totalRemoval += expectedRemoval;
-        if (expectedSuccessfulHits >= relationship.level) clearedRelationships += 1;
+        removalAdjustment += expectedRemoval * POUNCE_REMOVAL_VALUE * attentionScale;
+        const clears = expectedSuccessfulHits >= relationship.level;
+        if (clears) {
+            clearedRelationships += 1;
+            clearAdjustment += POUNCE_CLEAR_BONUS * attentionScale;
+        }
+        opportunities.push({
+            characterId: relationship.characterId,
+            enemyId: relationship.enemyId,
+            level: relationship.level,
+            expectedRemoval,
+            incidental,
+            attentionScale,
+        });
     }
 
     if (totalRemoval > 0) {
         rules.push({
             id: "skunk.pounce-source-removal",
-            adjustment: totalRemoval * POUNCE_REMOVAL_VALUE,
+            adjustment: removalAdjustment,
             reason: `Expected damaging hits remove ${format(totalRemoval)} Pounce level(s) from linked source(s).`,
+            details: { opportunities },
         });
     }
     if (clearedRelationships > 0) {
         rules.push({
             id: "skunk.pounce-clear",
-            adjustment: clearedRelationships * POUNCE_CLEAR_BONUS,
+            adjustment: clearAdjustment,
             reason: `Expected successful hits can clear ${clearedRelationships} active Pounce relationship(s).`,
+            details: { opportunities },
         });
     }
 
@@ -475,10 +515,47 @@ function evaluateFairyHealingKnowledge(
         0,
     );
     const rules: KitKnowledgeRuleDiagnostic[] = [];
-
-    for (const fairy of context.state.enemies.filter((enemy) =>
+    const livingFairies = context.state.enemies.filter((enemy) =>
         isFairy(enemy.id) && enemy.currHp > 0
-    )) {
+    );
+
+    if (livingFairies.length > 0 && potentialHealing > 0) {
+        const targets = damagedHealableAllies.flatMap((enemy) => {
+            const expectedDamage = expectedDamageToEnemy(candidate, enemy.id);
+            if (expectedDamage <= 0) return [];
+            const investedDamage = enemy.maxHp - enemy.currHp;
+            const healingExposure = Math.min(
+                investedDamage,
+                enemy.maxHp * FAIRY_HEAL_RATIO * livingFairies.length,
+            );
+            const completionProgress = clamp(expectedDamage / enemy.currHp, 0, 1);
+            const contribution = healingExposure * completionProgress;
+            return contribution > 0
+                ? [{
+                    enemyId: enemy.id,
+                    investedDamage,
+                    healingExposure,
+                    expectedDamage,
+                    completionProgress,
+                    contribution,
+                }]
+                : [];
+        });
+        const adjustment = targets.reduce((total, target) => total + target.contribution, 0);
+        if (adjustment > 0) {
+            rules.push({
+                id: "skunk.fairy-focus-continuity",
+                adjustment,
+                reason: "Preserve meaningful damage already invested in healable enemies while a Fairy can erase that progress.",
+                details: {
+                    fairyIds: livingFairies.map(({ id }) => id),
+                    targets,
+                },
+            });
+        }
+    }
+
+    for (const fairy of livingFairies) {
         const committed = fairy.intentions.filter(({ move }) => move === HEALING_MAGIC);
         const committedHealing = committed.reduce(
             (total, intention) => total + usefulCommittedHealing(context, intention),

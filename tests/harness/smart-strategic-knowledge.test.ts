@@ -406,6 +406,8 @@ describe("Smart tempo and pressure knowledge", () => {
                 queenHp: 194,
                 queenMaxHp: 750,
                 livingAddCount: 3,
+                pendingPhaseIntentions: [],
+                crossedReinforcementThresholds: [],
                 remainingReinforcementThresholds: [150],
                 expectedLethalBypassed: false,
                 adjustment: -QUEEN_ADD_CLEAR_PENALTY,
@@ -457,6 +459,92 @@ describe("Smart tempo and pressure knowledge", () => {
             id: "tempo.queen-clear-adds",
             adjustment: 0,
             details: expect.objectContaining({ expectedLethalBypassed: true }),
+        }));
+    });
+
+    for (const pendingMove of ["callReinforcements", "latexRainmaker"]) {
+        it(`treats pending ${pendingMove} as unresolved phase pressure before the spawn exists`, () => {
+            const fixture = context(
+                [character("ko")],
+                [enemy("queen1", {
+                    rank: "boss",
+                    maxHp: 750,
+                    currHp: 610,
+                    intentions: [{ move: pendingMove, targets: [], effects: [] }],
+                })],
+                [action("ko", [
+                    move("multi-phase-push", ["queen1"], {
+                        damage: 10,
+                        hits: 2,
+                        targets: "all",
+                    }),
+                    move("steady-alternative", []),
+                ])],
+            );
+
+            const result = tempo(fixture, "multi-phase-push");
+            expect(result.rules).toContainEqual(expect.objectContaining({
+                id: "tempo.queen-phase-push",
+                details: expect.objectContaining({
+                    pendingPhaseIntentions: [pendingMove],
+                    readinessRisk: 1,
+                }),
+            }));
+            expect(result.rules).toContainEqual(expect.objectContaining({
+                id: "tempo.queen-clear-adds",
+                adjustment: -QUEEN_ADD_CLEAR_PENALTY,
+                details: expect.objectContaining({
+                    livingAddCount: 0,
+                    pendingPhaseIntentions: [pendingMove],
+                    crossedReinforcementThresholds: [600],
+                }),
+            }));
+            expect(evaluateSmartDecision(fixture).selected.action)
+                .toMatchObject({ move: "steady-alternative" });
+        });
+    }
+
+    it("does not reserve Queen chip that crosses no new threshold solely for a pending phase", () => {
+        const fixture = context(
+            [character("ko")],
+            [enemy("queen1", {
+                rank: "boss",
+                maxHp: 750,
+                currHp: 650,
+                intentions: [{ move: "callReinforcements", targets: [], effects: [] }],
+            })],
+            [action("ko", [move("queen-chip", ["queen1"], { damage: 20 })])],
+        );
+        expect(tempo(fixture, "queen-chip").rules).not.toContainEqual(
+            expect.objectContaining({ id: "tempo.queen-clear-adds" }),
+        );
+        expect(tempo(fixture, "queen-chip").rules).not.toContainEqual(
+            expect.objectContaining({ id: "tempo.queen-phase-push" }),
+        );
+    });
+
+    it("uses first-source reflected damage for pending Queen phase preservation", () => {
+        const fixture = context(
+            [character("ko")],
+            [enemy("queen1", {
+                rank: "boss",
+                maxHp: 750,
+                currHp: 610,
+                intentions: [
+                    { move: "callReinforcements", targets: [], effects: [] },
+                    bindingIntention("queen-bind", "ko", [{
+                        type: "binding",
+                        target: "ko",
+                        binding: "restraint",
+                        amount: 20,
+                    }]),
+                ],
+            })],
+            [action("ko", [move("reflect", [])])],
+        );
+        expect(tempo(fixture, "reflect").rules).toContainEqual(expect.objectContaining({
+            id: "tempo.queen-clear-adds",
+            adjustment: -QUEEN_ADD_CLEAR_PENALTY,
         }));
     });
 });

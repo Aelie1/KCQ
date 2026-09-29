@@ -29,6 +29,7 @@ const LINKED_CAPTOR_PRESSURE = 12;
 const UNKNOWN_BINDING_PRESSURE = 4;
 export const TRAP_PRESSURE_SCALE = 0.25;
 const QUEEN_REINFORCEMENT_RATIOS = [0.8, 2 / 3, 0.6, 0.4, 1 / 3, 0.2] as const;
+const QUEEN_PHASE_INTENTIONS = new Set(["callReinforcements", "latexRainmaker"]);
 
 export interface EnemyPressureBreakdown {
     readonly enemyId: EntityId;
@@ -156,12 +157,23 @@ export function evaluateTempoKnowledge(
             ENEMY_QUIET_PRESSURE,
             ENEMY_HIGH_PRESSURE,
         );
-        const readinessRisk = Math.max(partyRisk, enemyRisk);
+        const readinessRisk = Math.max(
+            partyRisk,
+            enemyRisk,
+            queenPush.pendingPhaseIntentions.length > 0 ? 1 : 0,
+        );
         if (readinessRisk > 0) {
             rules.push({
                 id: "tempo.queen-phase-push",
                 adjustment: -queenPush.crossings * readinessRisk * QUEEN_PHASE_PUSH_PENALTY,
                 reason: `Expected damage crosses ${queenPush.crossings} Queen reinforcement threshold(s) before the board is ready.`,
+                details: {
+                    crossings: queenPush.crossings,
+                    readinessRisk,
+                    partyRisk,
+                    enemyRisk,
+                    pendingPhaseIntentions: queenPush.pendingPhaseIntentions,
+                },
             });
         }
     }
@@ -180,6 +192,8 @@ interface QueenAddClearDetails {
     readonly queenHp: number;
     readonly queenMaxHp: number;
     readonly livingAddCount: number;
+    readonly pendingPhaseIntentions: readonly string[];
+    readonly crossedReinforcementThresholds: readonly number[];
     readonly remainingReinforcementThresholds: readonly number[];
     readonly expectedLethalBypassed: boolean;
     readonly adjustment: number;
@@ -192,14 +206,24 @@ function queenAddClearRules(
     const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
     const rules: KitKnowledgeRuleDiagnostic[] = [];
     for (const queen of livingEnemies.filter(({ id }) => isQueenId(id))) {
-        const expectedDamage = expectedDamageToEnemy(candidate, queen.id);
+        const expectedDamage = expectedQueenDamage(context, candidate, queen.id);
         if (expectedDamage <= 0) continue;
 
         const livingAddCount = livingEnemies.filter(({ id }) => id !== queen.id).length;
+        const pendingPhaseIntentions = queen.intentions
+            .map(({ move }) => move)
+            .filter((move) => QUEEN_PHASE_INTENTIONS.has(move));
         const remainingReinforcementThresholds = QUEEN_REINFORCEMENT_RATIOS
             .map((ratio) => queen.maxHp * ratio)
             .filter((threshold) => queen.currHp > threshold);
-        if (livingAddCount === 0 || remainingReinforcementThresholds.length === 0) continue;
+        const projectedHp = Math.max(0, queen.currHp - expectedDamage);
+        const crossedReinforcementThresholds = remainingReinforcementThresholds
+            .filter((threshold) => projectedHp <= threshold);
+        const unresolvedLivingAdds = livingAddCount > 0
+            && remainingReinforcementThresholds.length > 0;
+        const unresolvedPendingPhase = pendingPhaseIntentions.length > 0
+            && crossedReinforcementThresholds.length > 0;
+        if (!unresolvedLivingAdds && !unresolvedPendingPhase) continue;
 
         const expectedLethalBypassed = expectedDamage >= queen.currHp;
         const adjustment = expectedLethalBypassed ? 0 : -QUEEN_ADD_CLEAR_PENALTY;
@@ -208,12 +232,16 @@ function queenAddClearRules(
             adjustment,
             reason: expectedLethalBypassed
                 ? "Expected lethal Queen damage bypasses the add-clear reserve."
-                : "Clear living adds before damaging the Queen while a reinforcement threshold remains.",
+                : unresolvedPendingPhase
+                    ? "Resolve pending Queen reinforcement or Rainmaker phases before crossing another threshold."
+                    : "Clear living adds before damaging the Queen while a reinforcement threshold remains.",
             details: {
                 queenId: queen.id,
                 queenHp: queen.currHp,
                 queenMaxHp: queen.maxHp,
                 livingAddCount,
+                pendingPhaseIntentions,
+                crossedReinforcementThresholds,
                 remainingReinforcementThresholds,
                 expectedLethalBypassed,
                 adjustment,
@@ -324,9 +352,10 @@ function expectedQueenDamage(
 function queenPhasePush(
     context: PolicyContext,
     candidate: SmartCandidate,
-): { crossings: number; expectedLethal: boolean } {
+): { crossings: number; expectedLethal: boolean; pendingPhaseIntentions: string[] } {
     let crossings = 0;
     let expectedLethal = false;
+    const pendingPhaseIntentions: string[] = [];
     for (const enemy of context.state.enemies) {
         if (enemy.currHp <= 0 || !isQueenId(enemy.id)) continue;
         const damage = expectedQueenDamage(context, candidate, enemy.id);
@@ -336,12 +365,15 @@ function queenPhasePush(
             expectedLethal = true;
             continue;
         }
+        pendingPhaseIntentions.push(...enemy.intentions
+            .map(({ move }) => move)
+            .filter((move) => QUEEN_PHASE_INTENTIONS.has(move)));
         for (const ratio of QUEEN_REINFORCEMENT_RATIOS) {
             const threshold = enemy.maxHp * ratio;
             if (enemy.currHp > threshold && projectedHp <= threshold) crossings += 1;
         }
     }
-    return { crossings, expectedLethal };
+    return { crossings, expectedLethal, pendingPhaseIntentions };
 }
 
 export function expectedDamageToEnemy(
