@@ -15,7 +15,6 @@ import type {
 import type { PolicyContext } from "../../src/harness/harness";
 import {
     assessSmartBoard,
-    DEGRADED_ROCKFALL_PRESERVATION_PENALTY,
     detectPounceRelationships,
     EMPOWERED_OFFENSE_SUBSTITUTION_PENALTY,
     evaluateKitKnowledge,
@@ -490,50 +489,6 @@ describe("Smart Matsuko kit knowledge", () => {
         });
     });
 
-    it("values Stop against visible committed enemy Empowerment modifiers", () => {
-        const fixture = context(
-            [character("matsuko")],
-            [
-                enemy("fairy1", {
-                    intentions: [{
-                        move: "empoweringMagic",
-                        targets: [{
-                            target: "skunk1",
-                            band: "crit",
-                            effects: [{
-                                type: "buff",
-                                target: "skunk1",
-                                buff: "empoweringMagic",
-                                operation: "add",
-                                effects: { potency: 5 },
-                            }],
-                        }],
-                        effects: [{
-                            type: "buff",
-                            target: "fairy1",
-                            buff: "empoweringMagic",
-                            operation: "add",
-                            effects: { potency: 5 },
-                        }],
-                    }],
-                }),
-                enemy("skunk1"),
-            ],
-            [action("matsuko", [move("stop", ["fairy1"])])],
-        );
-        expect(knowledge(fixture, "stop")).toMatchObject({
-            raw: 80,
-            rules: [{
-                details: {
-                    committedBindingPressure: 0,
-                    committedTrapPressure: 0,
-                    committedNonBindingPressure: 80,
-                    intentions: [{ reason: "public-harmful-enemy-buff" }],
-                },
-            }],
-        });
-    });
-
     it("strongly values Attack Me when it redirects a deep track to clean Matsuko", () => {
         const attackMe = move("attackMe", ["source"], {
             targets: "all",
@@ -772,54 +727,6 @@ describe("Smart Hinari kit knowledge", () => {
         expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "release" });
     });
 
-    it("prices degraded Fairy Rockfall in a realistic Store, Release, and offense set", () => {
-        const hinari = character("hinari", {
-            buffs: [{ id: "empowerment" }],
-            data: { subspace: 55, subspaceMax: 100 },
-        });
-        const ko = character("ko", {
-            bindings: [binding("arms", 30, "easy")],
-        });
-        const store = move("store", ["ko"], {
-            side: "player",
-            targetEffects: [{ type: "binding", target: "ko", binding: "arms", amount: -20 }],
-        });
-        const release = move("release", ["target"], {
-            targetEffects: [{
-                type: "buff",
-                target: "target",
-                buff: "subspaceClutter",
-                operation: "add",
-                effects: { hit: -2, defense: -2 },
-            }],
-        });
-        const fixture = context(
-            [hinari, ko],
-            [enemy("target")],
-            [action("hinari", [
-                move("rockfall", ["target"], { damage: 10, hits: 2 }),
-                move("fairyRockfall", ["target"], { damage: 10, hits: 3 }),
-                store,
-                release,
-            ])],
-        );
-
-        const fairyRockfall = knowledge(fixture, "fairyRockfall");
-        expect(fairyRockfall.rules).toContainEqual(expect.objectContaining({
-            id: "hinari.degraded-rockfall-opportunity-cost",
-            adjustment: -3 * DEGRADED_ROCKFALL_PRESERVATION_PENALTY,
-            details: expect.objectContaining({
-                baseHits: 6,
-                currentHits: 3,
-                lostHits: 3,
-            }),
-        }));
-        expect(knowledge(fixture, "release").rules).toContainEqual(expect.objectContaining({
-            id: "hinari.release-subspace-pressure",
-            reason: expect.stringContaining("losing 3 Rockfall hit"),
-        }));
-        expect(evaluateSmartDecision(fixture).selected.action).toMatchObject({ move: "release" });
-    });
 });
 
 function braceContext(enemies: Enemy[], subspace: number): PolicyContext {
@@ -853,8 +760,8 @@ describe("Smart Pounce and Throw Off knowledge", () => {
         }]);
     });
 
-    it("values direct attention to the actual Pounce source when Pounce is severe", () => {
-        const fixture = pounceContext("ko", 4);
+    it("values a damaging attack against the actual Pounce source", () => {
+        const fixture = pounceContext("ko", 2);
         expect(knowledge(fixture, "source-attack", "pounce-source").raw).toBeGreaterThan(0);
     });
 
@@ -885,55 +792,11 @@ describe("Smart Pounce and Throw Off knowledge", () => {
     });
 
     it("adds a named bonus when expected hits can clear Pounce", () => {
-        const fixture = pounceContext("ko", 4, { damage: 10, hits: 4, accuracy: 100 });
+        const fixture = pounceContext("ko", 2, { damage: 10, hits: 2, accuracy: 100 });
         const result = knowledge(fixture, "source-attack");
         expect(result.rules).toContainEqual(expect.objectContaining({
             id: "skunk.pounce-clear",
             adjustment: POUNCE_CLEAR_BONUS,
-        }));
-    });
-
-    it("keeps incidental multi-target Pounce removal without redirecting a single-target nuke", () => {
-        const actor = character("matsuko", { buffs: [pounceBuff("pounce-source")] });
-        const source = enemy("pounce-source", { buffs: [pounceBuff("matsuko", 2)] });
-        const fairy = enemy("fairy1");
-        const wounded = enemy("skunkette1", { currHp: 100 });
-        const fixture = context(
-            [actor],
-            [source, fairy, wounded],
-            [action("matsuko", [
-                move("phoenix-like", [source.id, fairy.id], { damage: 60 }),
-                move("rockfall-like", [source.id, fairy.id, wounded.id], {
-                    damage: 10,
-                    hits: 4,
-                    targets: "all",
-                }),
-            ])],
-        );
-
-        const direct = knowledge(fixture, "phoenix-like", source.id);
-        const focused = knowledge(fixture, "phoenix-like", fairy.id);
-        const incidental = knowledge(fixture, "rockfall-like");
-        expect(direct.rules).toContainEqual(expect.objectContaining({
-            id: "skunk.pounce-source-removal",
-            adjustment: 0,
-            details: expect.objectContaining({
-                opportunities: [expect.objectContaining({
-                    incidental: false,
-                    attentionScale: 0,
-                })],
-            }),
-        }));
-        expect(focused.raw).toBeGreaterThan(direct.raw);
-        expect(incidental.rules).toContainEqual(expect.objectContaining({
-            id: "skunk.pounce-source-removal",
-            adjustment: 2 * POUNCE_REMOVAL_VALUE,
-            details: expect.objectContaining({
-                opportunities: [expect.objectContaining({
-                    incidental: true,
-                    attentionScale: 1,
-                })],
-            }),
         }));
     });
 

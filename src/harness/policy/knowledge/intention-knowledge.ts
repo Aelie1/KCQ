@@ -26,10 +26,6 @@ const ATTACK_ME = "attackMe";
 
 /** Stop subtracts 25 points from a boss roll, but the private roll is unavailable. */
 export const STOP_BOSS_PRESSURE_MITIGATION = 0.25;
-/** Public positive enemy modifiers are harmful even when they add no binding. */
-export const STOP_POSITIVE_MODIFIER_PRESSURE = 0;
-/** Public move grants are conservatively classified as additional enemy options. */
-export const STOP_ADDED_MOVE_PRESSURE = 0;
 /** One public Defense point conservatively discounts 1% of redirected binding debt. */
 export const ATTACK_ME_DEFENSE_DEBT_FRACTION = 0.01;
 
@@ -46,8 +42,6 @@ interface CommittedIntentionDiagnostic {
     readonly harmfulBindingApplications: number;
     readonly harmfulBindingAmount: number;
     readonly harmfulTrapPressure: number;
-    readonly harmfulModifierPressure: number;
-    readonly harmfulAddedMovePressure: number;
     readonly addedRecoveryDebt: number;
     readonly reason: string;
 }
@@ -60,7 +54,6 @@ interface StopDiagnostic {
     readonly committedHarmfulPressure: number;
     readonly committedBindingPressure: number;
     readonly committedTrapPressure: number;
-    readonly committedNonBindingPressure: number;
     readonly baselineDebt: number;
     readonly stoppedDebt: number;
     readonly preventedOrMitigatedPressure: number;
@@ -178,20 +171,16 @@ function stopRule(
         committedHarmfulPressure: 0,
         committedBindingPressure: 0,
         committedTrapPressure: 0,
-        committedNonBindingPressure: 0,
         baselineDebt: 0,
         stoppedDebt: 0,
         preventedOrMitigatedPressure: 0,
         mitigationFraction: 0,
-        approximation: "Only public numeric binding/trap effects and visible positive enemy buff modifiers or added moves are valued.",
+        approximation: "Only public positive numeric binding effects are valued.",
         reason: enemy === undefined ? "no-living-target" : "no-harmful-committed-effects",
     };
     if (enemy === undefined) return stopDiagnosticRule(empty);
 
     const characterIds = new Set(context.state.characters.map(({ id }) => id));
-    const enemyIds = new Set(context.state.enemies
-        .filter(({ currHp }) => currHp > 0)
-        .map(({ id }) => id));
     const current = currentBindingBoard(context.state.characters);
     const projected = cloneBindingBoard(current);
     const currentDebt = totalRecoveryDebt(current, context.thresholds);
@@ -199,7 +188,6 @@ function stopRule(
         const before = totalRecoveryDebt(projected, context.thresholds);
         const applications = committedBindingEffects(intention, characterIds);
         const harmfulTrapPressure = intentionTrapPressure(intention);
-        const nonBinding = intentionNonBindingPressure(intention, enemyIds);
         for (const effect of applications) applyBinding(projected, effect, context.thresholds.max);
         const after = totalRecoveryDebt(projected, context.thresholds);
         const allMiss = intention.targets.length > 0
@@ -210,14 +198,11 @@ function stopRule(
             harmfulBindingApplications: applications.length,
             harmfulBindingAmount: applications.reduce((sum, effect) => sum + effect.amount!, 0),
             harmfulTrapPressure,
-            harmfulModifierPressure: nonBinding.modifierPressure,
-            harmfulAddedMovePressure: nonBinding.addedMovePressure,
             addedRecoveryDebt: Math.max(0, after - before),
             reason: applications.length > 0
                 ? "public-numeric-binding-pressure"
                 : harmfulTrapPressure > 0 ? "public-trap-pressure"
-                    : nonBinding.total > 0 ? "public-harmful-enemy-buff"
-                        : allMiss ? "committed-miss" : "no-valued-harmful-effects",
+                : allMiss ? "committed-miss" : "no-valued-harmful-effects",
         } satisfies CommittedIntentionDiagnostic;
     });
     const baselineDebt = totalRecoveryDebt(projected, context.thresholds);
@@ -226,13 +211,7 @@ function stopRule(
         (sum, intention) => sum + intentionTrapPressure(intention),
         0,
     );
-    const committedNonBindingPressure = intentions.reduce(
-        (sum, intention) => sum + intention.harmfulModifierPressure
-            + intention.harmfulAddedMovePressure,
-        0,
-    );
-    const committedHarmfulPressure = committedBindingPressure + committedTrapPressure
-        + committedNonBindingPressure;
+    const committedHarmfulPressure = committedBindingPressure + committedTrapPressure;
     const mitigationFraction = enemy.rank === "boss"
         ? STOP_BOSS_PRESSURE_MITIGATION
         : 1;
@@ -246,14 +225,13 @@ function stopRule(
         committedHarmfulPressure,
         committedBindingPressure,
         committedTrapPressure,
-        committedNonBindingPressure,
         baselineDebt,
         stoppedDebt,
         preventedOrMitigatedPressure,
         mitigationFraction,
         approximation: enemy.rank === "boss"
-            ? "Boss Stop is approximated as preventing 25% of current committed public binding, trap, and visible enemy-buff pressure because private rolls are not public."
-            : "Non-boss Stop cancels all currently committed public binding, trap, and visible enemy-buff pressure.",
+            ? "Boss Stop is approximated as preventing 25% of current committed binding and existing trap pressure because private rolls are not public."
+            : "Non-boss Stop cancels all currently committed public binding and trap pressure.",
         reason: committedHarmfulPressure > 0
             ? enemy.rank === "boss" ? "boss-weaken" : "non-boss-cancel"
             : "no-harmful-committed-effects",
@@ -266,8 +244,8 @@ function stopDiagnosticRule(details: StopDiagnostic): KitKnowledgeRuleDiagnostic
         id: "matsuko.stop-committed-intention",
         adjustment: details.preventedOrMitigatedPressure,
         reason: details.preventedOrMitigatedPressure > 0
-            ? `Stop prevents or mitigates ${details.preventedOrMitigatedPressure.toFixed(2)} public harmful pressure.`
-            : "Stop's target has no harmful committed public pressure; misses are worth zero.",
+            ? `Stop prevents or mitigates ${details.preventedOrMitigatedPressure.toFixed(2)} recovery debt.`
+            : "Stop's target has no harmful committed public binding pressure; misses are worth zero.",
         details,
     };
 }
@@ -410,33 +388,6 @@ function attackMeRule(
             defenseBenefit,
             defenseApproximation: "Each public Defense point discounts 1% of committed Matsuko recovery debt after eligible redirects; the private roll is not replayed.",
         },
-    };
-}
-
-function intentionNonBindingPressure(
-    intention: Intention,
-    enemyIds: ReadonlySet<EntityId>,
-): { modifierPressure: number; addedMovePressure: number; total: number } {
-    const effects = [
-        ...intention.targets.flatMap((target) => target.band === "miss" ? [] : target.effects),
-        ...intention.effects,
-    ];
-    let modifierPressure = 0;
-    let addedMovePressure = 0;
-    for (const effect of effects) {
-        if (effect.type !== "buff" || effect.operation !== "add"
-            || !enemyIds.has(effect.target)) continue;
-        modifierPressure += Object.values(effect.effects ?? {}).reduce(
-            (sum, value) => sum + Math.max(0, value ?? 0) * STOP_POSITIVE_MODIFIER_PRESSURE,
-            0,
-        );
-        addedMovePressure += (effect.moveList?.addedMoves?.length ?? 0)
-            * STOP_ADDED_MOVE_PRESSURE;
-    }
-    return {
-        modifierPressure,
-        addedMovePressure,
-        total: modifierPressure + addedMovePressure,
     };
 }
 
