@@ -27,13 +27,13 @@ import {
     INCOMING_THREAT_WEIGHT,
     kitKnowledgeScorer,
     QUEEN_ADD_CLEAR_PENALTY,
+    REACTIVE_KNOWLEDGE_WEIGHT,
     reactiveKnowledgeScorer,
     recoveryDebt,
-    REACTIVE_KNOWLEDGE_WEIGHT,
     smartScorers,
     STARLIGHT_REAPPLICATION_MULTIPLIER,
-    tempoKnowledgeScorer,
     TEMPO_KNOWLEDGE_WEIGHT,
+    tempoKnowledgeScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
 
@@ -522,7 +522,31 @@ describe("Smart tempo and pressure knowledge", () => {
             expect.objectContaining({ id: "tempo.queen-phase-push" }),
         );
     });
+    it("treats multiple Queen thresholds crossed by one action as unresolved phase pressure", () => {
+        const fixture = context(
+            [character("matsuko")],
+            [enemy("queen1", {
+                rank: "boss",
+                maxHp: 750,
+                currHp: 310,
+            })],
+            [action("matsuko", [
+                move("big-hit", ["queen1"], { damage: 80 }),
+                move("wait", []),
+            ])],
+        );
 
+        const result = tempo(fixture, "big-hit");
+
+        expect(result.rules).toContainEqual(expect.objectContaining({
+            id: "tempo.queen-clear-adds",
+            adjustment: -QUEEN_ADD_CLEAR_PENALTY,
+            details: expect.objectContaining({
+                pendingPhaseIntentions: [],
+                crossedReinforcementThresholds: [300, 250],
+            }),
+        }));
+    });
     it("uses first-source reflected damage for pending Queen phase preservation", () => {
         const fixture = context(
             [character("ko")],

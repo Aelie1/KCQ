@@ -162,14 +162,21 @@ export function evaluateTempoKnowledge(
             enemyRisk,
             queenPush.pendingPhaseIntentions.length > 0 ? 1 : 0,
         );
-        if (readinessRisk > 0) {
+
+        // The first threshold uses normal board readiness.
+        // Every additional threshold is crossed after the previous one has
+        // effectively queued a Queen phase.
+        const crossingRisk = readinessRisk + Math.max(0, queenPush.crossings - 1);
+
+        if (crossingRisk > 0) {
             rules.push({
                 id: "tempo.queen-phase-push",
-                adjustment: -queenPush.crossings * readinessRisk * QUEEN_PHASE_PUSH_PENALTY,
+                adjustment: -crossingRisk * QUEEN_PHASE_PUSH_PENALTY,
                 reason: `Expected damage crosses ${queenPush.crossings} Queen reinforcement threshold(s) before the board is ready.`,
                 details: {
                     crossings: queenPush.crossings,
                     readinessRisk,
+                    crossingRisk,
                     partyRisk,
                     enemyRisk,
                     pendingPhaseIntentions: queenPush.pendingPhaseIntentions,
@@ -221,8 +228,11 @@ function queenAddClearRules(
             .filter((threshold) => projectedHp <= threshold);
         const unresolvedLivingAdds = livingAddCount > 0
             && remainingReinforcementThresholds.length > 0;
-        const unresolvedPendingPhase = pendingPhaseIntentions.length > 0
-            && crossedReinforcementThresholds.length > 0;
+        const unresolvedPendingPhase = crossedReinforcementThresholds.length > 0
+            && (
+                pendingPhaseIntentions.length > 0
+                || crossedReinforcementThresholds.length > 1
+            );
         if (!unresolvedLivingAdds && !unresolvedPendingPhase) continue;
 
         const expectedLethalBypassed = expectedDamage >= queen.currHp;
