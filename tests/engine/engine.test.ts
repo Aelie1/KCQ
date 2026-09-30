@@ -238,6 +238,63 @@ describe("turn phases and enemy intentions", () => {
             targets: [],
         });
     });
+
+    it("does not execute a committed intention after an earlier enemy removes its actor", () => {
+        const threatened = makeBindingDef("removed-actor-threat");
+        const removeNext = makeMove("remove-next", "none", {
+            targetSide: "none",
+            targets: 0,
+            accuracy: undefined,
+            resolve: (state) => state.enemies[1] ? [{
+                type: "enemy",
+                operation: "defeat",
+                target: state.enemies[1],
+            }] : [],
+        });
+        const threaten = makeMove("threaten", "none", {
+            targetSide: "player",
+            resolve: (state, actor) => [{
+                type: "binding",
+                source: actor,
+                target: state.characters[0],
+                binding: threatened,
+                amount: 10,
+            }],
+        });
+        const remover = makeEnemyDef("remover", [removeNext]);
+        const removed = makeEnemyDef("removed", [threaten]);
+        const encounter = {
+            id: "remove-committed-actor",
+            enemies: [remover.id, removed.id],
+            bindings: [],
+            traps: [],
+        };
+        const hero = makeCharacterDef("hero");
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [remover, removed] });
+        engine.loadCharacter(hero.id);
+        engine.loadEncounter(encounter.id);
+        expect(engine.getGameState().enemies.map(({ intentions }) => intentions)).toEqual([
+            [expect.objectContaining({ move: removeNext.id })],
+            [expect.objectContaining({ move: threaten.id })],
+        ]);
+
+        const result = engine.executeAction({ type: "endTurn" });
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected enemy phase to succeed");
+
+        expect(resolvedEvents(result.frames).filter(({ type }) => type === "useMove"))
+            .toEqual([expect.objectContaining({
+                type: "useMove",
+                actor: "remover1",
+                move: removeNext.id,
+            })]);
+        expect(resolvedEvents(result.frames)).toContainEqual({
+            type: "enemyDefeated",
+            target: "removed1",
+        });
+        expect(engine.getGameState().characters[0].bindings).toEqual([]);
+        expect(engine.getGameState().enemies.map(({ id }) => id)).toEqual(["remover1"]);
+    });
 });
 
 describe("enemy intention previews", () => {

@@ -168,7 +168,7 @@ describe("binding levels and effective statuses through GameEngine", () => {
         expect(bindingState(engine, rope.id)).toMatchObject({ value, level });
     });
 
-    it("publishes statuses on their bindings and applies the strongest modifier", () => {
+    it("applies the strongest shared status, then falls back when that source is removed", () => {
         const blinded: StatusDef = {
             id: "blinded",
             levels: [
@@ -196,8 +196,9 @@ describe("binding levels and effective statuses through GameEngine", () => {
             accuracy: { miss: 20, hit: 80 },
             baseDamage: 10,
         });
+        const removeStrong = bindingMove("remove-strong", strong, -100);
         const engine = makeBehavioralEngine([
-            makeBehavioralCharacter("hero", [applyBoth, attack]),
+            makeBehavioralCharacter("hero", [applyBoth, attack, removeStrong]),
         ]);
 
         use(engine, "hero", applyBoth.id);
@@ -208,6 +209,15 @@ describe("binding levels and effective statuses through GameEngine", () => {
         expect(targetAccuracy(engine, "hero", attack.id, "foe1")).toEqual({
             miss: 60,
             hit: 40,
+        });
+
+        use(engine, "hero", removeStrong.id);
+        expect(bindingState(engine, strong.id)).toBeUndefined();
+        expect(bindingState(engine, weak.id)?.status).toEqual([{ id: "blinded", value: 1 }]);
+        expect(characterState(engine).modifiers).toEqual({ hit: -1 });
+        expect(targetAccuracy(engine, "hero", attack.id, "foe1")).toEqual({
+            miss: 30,
+            hit: 70,
         });
     });
 });

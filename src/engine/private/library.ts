@@ -55,7 +55,7 @@ export function libraryMove(move: MoveDef): MoveReference {
         check: move.check,
         alwaysAvailable: move.alwaysAvailable,
         baseDamage: move.baseDamage,
-        cooldown: move.cooldown,
+        cooldown: { ...move.cooldown },
         freeOnHit: move.freeOnHit,
         modifiers: move.modifiers ? { ...move.modifiers } : undefined,
         bindings: move.bindings ? move.bindings.map(x => x.id) : [],

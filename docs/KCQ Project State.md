@@ -1,10 +1,10 @@
 # KCQ Project State
 
-**Last updated:** 2026-09-25
-**Status:** Draft — intended for periodic refresh as the project changes
-**Repository:** `Aelie1/KCQ`
-**Current repository baseline:** `master`, 0.8.1 release candidate
-**Current public release:** `0.8.1` (2026-09-25)
+**Last updated:** 2026-09-29  
+**Status:** Draft — intended for periodic refresh as the project changes  
+**Repository:** `Aelie1/KCQ`  
+**Current repository baseline:** `master` @ `76d2c178`  
+**Current public version tag:** `0.9.1` (2026-09-29)
 
 This document describes **where KCQ is now, what has been established, and what direction the project is taking**.
 
@@ -18,12 +18,14 @@ When sources disagree, use the following priority:
 
 1. **Current repository and tests** — authoritative for implemented behavior, APIs, content, and mechanics.
 2. **`Game Rules.md`** — human-readable specification of stable game rules.
-3. **This document (`PROJECT_STATE.md`)** — current project direction, design conclusions, milestones, and priorities.
+3. **This document (`KCQ Project State.md`)** — current project direction, design conclusions, milestones, and priorities.
 4. **Trello** — roadmap and task planning. Card completion state may lag actual repository work.
 5. **Older design notes and conversations** — historical context only unless reaffirmed.
 6. **ChatGPT memory** — convenience, never authoritative over the sources above.
 
-The `package.json` version (`1.0.0`) is package metadata and should not be treated as the KCQ release version.
+The `package.json` version (`1.0.0`) is package metadata and should not be treated as the KCQ gameplay/release version.
+
+There is currently some known documentation drift, especially in `Game Rules.md`; see **Documentation Debt** below. When that occurs, the repository and tests win.
 
 ---
 
@@ -31,18 +33,22 @@ The `package.json` version (`1.0.0`) is package metadata and should not be treat
 
 **Ko-chan's Quest (KCQ)** is the clean reboot/successor to the earlier BQuest implementation.
 
-The current project is no longer an architecture prototype. It is a functioning game with:
+The project is now well beyond the architecture-prototype stage. It currently has:
 
 * a deterministic combat engine;
 * three implemented player characters;
-* multiple complete encounters;
+* ten implemented encounters;
 * a browser-playable console-style UI;
-* automated simulation/balance tooling;
-* replay infrastructure;
-* anonymous playtest telemetry;
-* a growing content roadmap.
+* anonymous external-playtest telemetry;
+* deterministic replay and replay-analysis infrastructure;
+* multiple automated combat policies ranging from deliberately naive to full-kit tactical play;
+* detailed simulation metrics and batch-comparison tooling;
+* a growing set of stress-test / challenge encounters;
+* a defined set of larger future directions covering campaigns, more characters, Castle content, and a real web UI.
 
-The immediate goal is to build a game that is mechanically interesting and testable before committing significant effort to a polished final UI.
+The project's core goal remains unchanged:
+
+> **Build a mechanically interesting, testable game first; polish the final presentation after the game itself is worth playing.**
 
 The current web interface is intentionally an **early-playtest interface**, not the final presentation layer.
 
@@ -59,46 +65,54 @@ The engine owns:
 * combat resolution;
 * RNG;
 * status and binding behavior;
-* enemy behavior;
+* enemy behavior and intentions;
 * targeting;
-* action results;
+* action results and event causality;
 * victory and defeat.
 
-UI, harnesses, and other consumers should interact through the public state, action, and event-frame interfaces rather than reproducing engine rules.
+UI, harnesses, replay tools, and other consumers should interact through public snapshots, action views, previews, event frames, and sanitized content metadata rather than reproducing engine rules.
 
-The basic flow is conceptually:
+The basic interaction remains conceptually:
 
 **GameState + ActionView[] → PlayerAction → ActionResult (EventFrame[] + ActionView[])**
 
-The harness is deliberately treated as another consumer of the engine rather than as a privileged simulation layer.
+A sanitized public content library now also exists through `getLibrary()`. It exposes safe reference data for characters, enemies, moves, passives, bindings, traps, statuses, and encounters without exposing engine callbacks or mutable internal definitions.
 
-This is an important difference from BQuest 1, where testing code increasingly duplicated or depended directly on internal combat logic.
+The harness is deliberately treated as another consumer of the engine rather than a privileged simulation layer.
+
+This remains a major architectural improvement over BQuest 1, where testing code increasingly duplicated or depended directly on internal combat logic.
 
 ---
 
-# 4. Determinism and Replay
+# 4. Determinism, Replay, and Reproduction
 
-Determinism is a first-class project requirement.
+Determinism remains a first-class project requirement.
 
-Seeded runs should be reproducible.
+Seeded runs should be reproducible, and diagnostics must not perturb the combat RNG.
 
 Combat AI randomness and combat-resolution randomness are deliberately controlled so that:
 
 * problem runs can be reproduced;
 * balance changes can be compared;
-* harness policies can be evaluated fairly;
-* replays can reconstruct player runs;
-* UI inspection should not alter combat RNG.
+* policies can be evaluated fairly;
+* external player runs can be reconstructed;
+* unusual victories or defeats can be inspected after the fact;
+* rendering, previews, telemetry, and policy inspection do not change outcomes.
 
-Replay support is not merely debugging infrastructure. Replays are intended to be useful for:
+Replay support is now substantial infrastructure rather than a future feature.
 
-* balance analysis;
-* external playtest collection;
-* reproducing player behavior;
-* forensic examination of unusual victories or defeats;
-* future replay viewing.
+The current project includes:
 
-The current project includes state-rich fight replays and a console replay viewer.
+* state-rich fight replays;
+* a console replay viewer;
+* replay archives;
+* retrieval of telemetry-backed external replays;
+* release/version-aware replay handling;
+* validation of older collected runs where supported;
+* batch replay sampling;
+* deterministic reproduction from victory/problem seeds.
+
+Replay remains useful both for debugging and for understanding **why** a policy or human player won or lost.
 
 ---
 
@@ -106,21 +120,23 @@ The current project includes state-rich fight replays and a console replay viewe
 
 ## Player characters
 
-The currently implemented playable party is:
+The currently implemented party is:
 
 * **Ko-chan**
 * **Matsuko**
 * **Hinari**
 
-Their current kits are implemented and tested, although their final balance is not considered settled.
+Their kits are implemented and extensively exercised by the harness, although final design and balance are not considered settled.
 
-Naruyo and Sakari remain planned future player characters.
+Naruyo and Sakari remain future playable characters.
 
-Character-specific rules belong in their content/design documentation rather than in `Game Rules.md`.
+Hinari in particular is explicitly open to a larger redesign; her current Store / Release / Subspace kit should not be preserved merely because Smart already knows how to use it.
+
+Character-specific rules belong in their design/content documentation rather than in `Game Rules.md` unless they become general engine rules.
 
 ## Encounters
 
-The current content catalogue contains six encounters:
+The current content catalogue contains **ten** encounters.
 
 ### Plains
 
@@ -128,69 +144,93 @@ The current content catalogue contains six encounters:
 * `plains_2`
 * `plains_3`
 
+The Plains sequence is the original baseline progression and culminates in the Skunk Queen.
+
 ### Forest
 
 * `forest_1`
 * `forest_2`
 * `forest_3`
 
-The original Plains progression culminates in the Skunk Queen.
+Forest expands the original encounter set with Fairy support and more difficult Queen conditions.
 
-Forest expands the current playable encounter set beyond the original three-fight slice.
+### Tower
+
+* `tower_1`
+* `tower_2`
+* `tower_3`
+
+The Tower encounters are deliberately high-pressure variants built around a strengthened Empress encounter.
+
+`tower_1` is the hardest version and is intended to feel like an expected loss while still leaving open the possibility of victory. `tower_2` and `tower_3` are weakened versions in which the player receives increasing divine assistance.
+
+### Outside Realm
+
+* `outside`
+
+`outside` revives the deliberately absurd BQuest 1 “oh, so you want to lose” style gimmick encounter. It is intentionally extreme rather than a normal balance target.
+
+The 0.9.1 patch note records that the current Smart agent can still clear it roughly **2%** of the time, making it extremely difficult but not literally impossible.
+
+These Tower/Outside encounters are currently individual combat scenarios, not yet a complete campaign flow.
 
 ---
 
-# 6. Current Public/Web State
+# 6. Current Public / Web State
 
 KCQ is browser-playable.
 
-The first public version was:
+The first public browser version was:
 
 **0.7.2 — 2026-09-22**
 
-The current release is:
+The current version tag is:
 
-**0.8.1 — 2026-09-25**
+**0.9.1 — 2026-09-29**
 
-0.8.1 is a mechanics and character-balance follow-up to the 0.8.0 event-model release. It introduces first-class player move cooldowns and applies them to existing character mechanics, while also making another focused pass over Ko-chan and Matsuko's kits.
+At the current baseline, `master` and the `0.9.1` tag point to the same commit (`76d2c178`).
 
 The browser UI currently provides:
 
-* an encounter selector;
-* normal player action choices;
+* encounter selection;
+* normal player actions;
+* move/escape/stance availability;
+* action previews;
 * keyboard and button input;
 * End Turn;
 * Quit;
 * final battle-state handling;
-* return to encounter selection after leaving a completed battle;
-* the existing console-style combat display;
+* return to encounter selection after a battle;
+* console-style battle presentation;
 * a separate scrolling combat log;
 * semantic actor/effect styling;
 * battle-state highlighting and timed presentation;
 * causal combat-log presentation, including per-hit effects for multihit moves;
 * shared presentation/controller code with the console implementation.
 
-The browser UI remains deliberately utilitarian.
+The browser interface remains deliberately utilitarian.
 
-It is intended to make KCQ **playable and testable by other people without installing Node**, not to represent the final graphical interface.
+Its purpose is to make KCQ **playable and testable without installing Node**, not to represent the final graphical UI.
+
+A separate future direction now exists for designing the real web interface once the surrounding game structure is mature enough to justify it.
 
 ---
 
-# 7. Release vs. Master
+# 7. Release Tags vs. Master
 
-The deployed GitHub Pages workflow builds from the **latest release tag**, not directly from `master`.
+The GitHub Pages deployment flow uses version tags rather than treating `master` itself as the public release boundary.
 
 Therefore:
 
-**public release state and current repository state may differ.**
+> **Public state and current repository state may differ between tags.**
 
-The 0.8.0 release captures the completed event-model revamp, its consumer migrations, the richer action/damage preview work, and the causal combat-log presentation. After the release is tagged, later `master` work may again move ahead of the public build.
+At the time of this update they happen to match at `0.9.1` / `76d2c178`.
 
-The web build's release identifier is injected from the release tag selected by the deployment workflow. The `package.json` version is not used as the KCQ gameplay/replay release identifier.
+The web build's version identifier is derived from the selected version tag. The `package.json` version is not the gameplay/replay version.
 
 When discussing current implementation details, use `master`.
 
-When discussing what an external player is actually playing, check the latest release tag/deployed build.
+When discussing what an external player is actually playing, verify the current deployed/tagged version rather than assuming `master` is public.
 
 ---
 
@@ -208,19 +248,19 @@ Current lifecycle events include:
 * `battle_quit`
 * `battle_abandoned`
 
-Recorded information includes:
+Recorded gameplay information includes:
 
-* release;
+* release/version;
 * encounter;
 * combat seed;
 * replay ID;
 * actions;
 * action success/failure;
-* compact game state after actions;
+* compact state after actions;
 * final/current game state;
 * action count.
 
-The current implementation also distinguishes an explicitly quit battle from a browser/session abandonment.
+The implementation distinguishes an explicit quit from a browser/session abandonment.
 
 PostHog configuration intentionally disables unrelated tracking features including:
 
@@ -236,111 +276,213 @@ An anonymous locally generated player identifier is used without creating PostHo
 
 Telemetry must never affect gameplay if initialization or delivery fails.
 
-The long-term value of this system is primarily **reconstructable play behavior**, not vanity analytics.
+The long-term value of telemetry remains **reconstructable play behavior**, not vanity analytics.
 
 ---
 
 # 9. Harness State
 
-KCQ has a functioning deterministic combat harness rather than the minimal prototype originally planned.
+KCQ now has a mature deterministic combat harness rather than the lightweight runner originally planned.
 
-Current policies include:
+The current policy set is:
 
+* `idle`
 * `basic`
 * `escape`
 * `smart`
-* `idle`
 
-The **basic** policy intentionally uses only each character's simple offensive move:
+Older `first` and `random` policies were removed once they stopped answering useful design questions.
+
+## Idle
+
+`idle` does nothing and serves primarily as a control/sanity policy.
+
+It verifies that encounters apply real pressure and that victory is not possible without meaningful player actions.
+
+## Basic
+
+`basic` intentionally uses only each character's simple offensive move:
 
 * Ko-chan → Telekinesis
 * Matsuko → White Flame
 * Hinari → Rockfall
 
-It is useful as a low-skill baseline, not as a representation of competent full-kit play.
+It is a deliberately low-skill anchor, not a representation of competent play.
 
-The **escape** policy adds rescue behavior to Basic for bindings over 20, generally prioritizing assistance and using Standing to exploit the double-escape mechanic.
+## Escape
 
-The **smart** policy is the competent full-kit harness policy. The **idle** policy is retained as a sanity/control policy.
+`escape` is the middle anchor.
 
-The harness currently includes infrastructure for:
+It starts from Basic-style play but adds simple binding cleanup/rescue behavior around a fixed threshold, generally preferring assistance and using Standing when useful for the bonus escape.
+
+It is intentionally understandable and limited rather than a full tactical player.
+
+## Smart
+
+`smart` is now the full-kit competent harness policy.
+
+It is no longer a planned milestone: Smart v1 is implemented and has already been used for repeated balance work and new encounter calibration.
+
+The harness also includes:
 
 * deterministic single fights;
 * large batches;
-* policy comparisons;
 * parallel batch execution;
-* aggregate metrics;
+* multi-policy comparisons;
+* detailed aggregate metrics;
+* detailed combat metrics;
+* victory/problem seed reporting;
 * replay capture;
 * replay archives;
-* retrieval/analysis of collected external replays.
+* replay sampling;
+* external replay retrieval and analysis;
+* compare-oriented CLI tooling.
 
-Simulation performance has improved substantially during development and is now fast enough for large experimental batches.
-
----
-
-# 10. Balance State
-
-The project has completed its first meaningful balance pass.
-
-The important result of that work was not a claim that combat is “balanced.” It established that the game now produces meaningful pressure and decisions rather than functioning as an auto-attack simulator.
-
-A major design criterion is:
-
-> **A naive basic-attack policy should not be able to beat major boss content such as the Queen.**
-
-That criterion has been achieved.
-
-Recent benchmarks continue to show the basic policy losing all tested `plains_3` runs.
-
-At the same time, ordinary encounters remain winnable by much simpler policies, giving the encounter sequence an actual difficulty curve.
-
-Escape behavior matters substantially in intermediate encounters. Earlier threshold-policy experiments showed that escaping neither constantly nor never was universally correct; moderate escape thresholds could materially change success rates.
-
-This is considered a desirable property.
-
-## Important limitation
-
-The existing basic and threshold policies do **not** establish full-kit balance.
-
-Current character utility moves, transformations, Compulsions, Store/Release, Reflect, and similar mechanics still need evaluation by policies capable of understanding them.
-
-The project should therefore avoid conclusions like:
-
-> “Character X is balanced because Basic has a 50% win rate.”
-
-Basic does not use most of the characters' kits.
+Simulation performance remains fast enough for large experimental batches.
 
 ---
 
-# 11. Recent Balance Changes
+# 10. Smart Policy — Current State
 
-The 0.8.1 balance pass makes several additional changes to the current character kits:
+The Smart-policy milestone substantially changed what automated testing can tell us.
 
-* Ko-chan gains Power of Denial, a single-use ability capable of removing a character's strongest binding or defeating a non-boss enemy.
-* Normal Reflect now halves incoming binding while retaining its retaliation; Fairy Reflect still negates the binding completely.
-* Fairy Transformation and Fairy Empowerment now have cooldowns.
-* Matsuko's Compulsions now use the general move-cooldown system, including cross-cooldowns between related Compulsions.
-* Immolation damage increased from 60 to 75 and now removes half of Matsuko's current bindings.
-* Fairy White Flame is now an all-enemy attack rather than a Potency-enhanced attack.
-* Fairy Phoenix Kick now attacks twice rather than receiving a Hit bonus.
+Smart is built around **public game state and public previews**, rather than reaching into private engine resolution logic.
 
-These remain targeted kit adjustments rather than a claim of final balance. Full-kit evaluation remains one of the primary goals of the planned Smart harness.
+Its main architecture includes:
+
+* a board assessment of current party/enemy state;
+* candidate generation from available actions;
+* modular score components with inspectable diagnostics;
+* public-preview damage distributions rather than hidden-roll peeking;
+* explicit knowledge modules for tactical concepts that generic EV alone cannot understand.
+
+Current Smart knowledge is split into focused modules covering areas such as:
+
+* control effects;
+* enemy intentions;
+* character-kit interactions;
+* periodic binding pressure;
+* reactive mechanics;
+* Skunk-specific mechanics;
+* sustained pressure;
+* tempo / encounter pacing.
+
+Smart can currently reason about far more than raw expected damage, including:
+
+* current and projected binding pressure;
+* recovery debt;
+* assists and self-escapes;
+* Standing versus Moving decisions;
+* movement traps;
+* committed enemy intentions;
+* incoming binding pressure;
+* linked threats;
+* future move access;
+* limited/reserve resources;
+* control effects;
+* kill/finisher pressure;
+* Queen reinforcement thresholds and phase stacking;
+* encounter-specific Skunk mechanics.
+
+The scoring system is intentionally inspectable. A candidate retains named score components and diagnostics so bad decisions can be investigated rather than treated as unexplained AI behavior.
+
+## What Smart is not
+
+Smart is **not** intended to be an optimal solver.
+
+It is also not a content-agnostic general game AI. The current policy contains substantial authored knowledge for the Skunk content set.
+
+That is acceptable because its job is to be a useful design instrument, not to prove theoretical optimality.
+
+Future content should add focused knowledge only when necessary. Smart maintenance should not become the reason character or encounter designs are frozen in place.
 
 ---
 
-# 12. Current Balance Philosophy
+# 11. Balance State
+
+KCQ has now progressed beyond its first crude balance pass into a **Smart-informed balance phase**.
+
+The original important result still holds as a design principle:
+
+> **Major encounters should not collapse into an auto-attack solution.**
+
+Basic remains useful as a lower-bound anchor, Escape as a simple survival heuristic, and Smart as a much stronger full-kit reference point.
+
+The existence of Smart means the project no longer has to infer full-kit balance from Basic results that ignore most of the characters' abilities.
+
+Recent balance work has focused not only on win rate but also on whether mechanics create the intended decisions:
+
+* whether control moves are worth actions;
+* whether defensive abilities have real boss use cases;
+* whether binding cleanup has meaningful partial value;
+* whether Queen thresholds create tactical pacing rather than accidental punishment;
+* whether encounters become grindy rather than dangerous;
+* whether the policy recognizes and responds to explosive enemy mechanics;
+* whether character resources are worth spending;
+* whether the player is rewarded for reacting to pressure rather than following a fixed rotation.
+
+The project still should **not** treat any automated policy's win rate as the definition of fun or as a perfect estimate of human performance.
+
+Smart is a stronger instrument, not an oracle.
+
+---
+
+# 12. Recent Balance and Content Changes
+
+The period from 0.8.1 through 0.9.1 contained several meaningful balance iterations.
+
+## 0.8.1 — cooldowns and kit cleanup
+
+* Player move cooldowns became a first-class mechanic.
+* Ko-chan gained Power of Denial.
+* Normal Reflect was reduced to half-binding mitigation while Fairy Reflect retained full negation.
+* Fairy Transformation / Empowerment gained cooldowns.
+* Matsuko's Compulsions moved to the shared cooldown system.
+* Immolation became stronger and also removes half of Matsuko's current bindings.
+* Fairy White Flame became an all-enemy attack.
+* Fairy Phoenix Kick became a two-hit attack.
+
+## 0.8.2 — pressure/value adjustments
+
+* Attack Me gained a temporary +3 Defense benefit.
+* Collar's ongoing spread was changed to scale with its current value rather than behaving almost identically at tiny and large amounts.
+* Latex Rain was simplified into clearer fixed binding applications.
+
+## 0.8.3 — modifier rebalance
+
+* Hinari's offensive Release became a -2 Hit / -2 Defense debuff.
+* Potency and Vulnerability changed from 12.5% per point to **10% per point**.
+* Existing users of those modifiers were adjusted around the new scale.
+
+## 0.9.0 — Skunk pressure cleanup
+
+* Skunks now explode at 20% HP / 60 HP rather than 25% / 75 HP.
+* When Pounce ends, the affected character returns to Moving if movement is legal.
+
+## 0.9.1 — challenge encounters and fixes
+
+* Added `tower_1`, `tower_2`, and `tower_3`.
+* Added `outside`.
+* Fixed Collar spreading at only one quarter of its intended value.
+* Changed the third Rainmaker from a Defense buff to a Hit buff to reduce grindiness.
+
+These changes should be viewed as a continuing calibration of tactical pressure, not as a declaration that the current game is finally balanced.
+
+---
+
+# 13. Current Balance Philosophy
 
 Balance should be evaluated through several levels of player behavior rather than by trying to invent one perfect approximation of a human player.
 
-Useful anchors include:
+Useful anchors now include:
 
 * intentionally idle behavior;
 * naive/simple offense;
-* simple escape heuristics;
-* kit-aware scripted behavior;
-* eventually, tactical board evaluation.
+* simple escape/rescue behavior;
+* full-kit Smart behavior;
+* eventually, real-player replay evidence in larger quantities.
 
-Different policies answer different design questions.
+Different policies answer different questions.
 
 The harness should expose:
 
@@ -351,9 +493,11 @@ The harness should expose:
 * escape/assist value;
 * pressure escalation;
 * failure modes;
-* character-specific balance problems.
+* character-specific balance problems;
+* policy blind spots;
+* encounter mechanics that demand or fail to demand the intended response.
 
-It does **not** need to prove a single precise “human win rate.”
+It does **not** need to prove one precise “human win rate.”
 
 A fight can be considered wrong because it:
 
@@ -362,250 +506,303 @@ A fight can be considered wrong because it:
 * is beatable by mindless attacks when it should require tactics;
 * creates no meaningful pressure;
 * produces unavoidable collapse;
-* makes an important mechanic irrelevant.
+* becomes a grind rather than a threat;
+* makes an important mechanic irrelevant;
+* makes one option obviously dominate the rest of a kit.
 
-Those judgments remain useful even when there is no perfect automated player.
-
----
-
-# 13. Immediate Development Sequence
-
-The event-model milestone is complete. The current sequence is now:
-
-1. **Completed: event revamp / causal combat log**
-2. **Current: Smart harness policy / board evaluation**
-3. **Next: further balance work using the smarter harness**
-
-This ordering remains intentional.
-
-The event revamp established the causal structure needed by presentation, replay inspection, telemetry, and richer action analysis before investing heavily in the next generation of harness reasoning.
-
-The next major testing milestone is therefore a Smart policy capable of evaluating actual character kits and tactical board state.
-
-The resulting policy should then be used for another substantial balance pass.
+Those judgments remain useful even without a perfect automated player.
 
 ---
 
-# 14. Completed Milestone: Event Revamp / Causal Combat Log
+# 14. Completed Foundation: Event Revamp / Causal Combat Log
 
-The event revamp is complete for 0.8.0.
+The 0.8.0 event-model milestone remains an important completed foundation.
 
-Combat-event causality is now explicit instead of requiring downstream consumers to reconstruct relationships from a flat stream.
+Combat-event causality is explicit rather than reconstructed by downstream consumers.
 
-The established model is:
+The established model includes:
 
-* only the engine produces top-level game events;
-* concrete state changes/results are leaf events owned by the game event that caused them;
-* `useMove` owns ordered target-result entries plus separate move-level leaf effects;
-* each evaluated target result owns the leaf effects causally produced by that result, even when an effect's recipient is somebody else;
-* misses remain represented as evaluated target results with empty effect stacks;
-* `useEscape`, `changePhase`, `changeStance`, `loadCharacter`, and `loadEncounter` likewise own the leaf effects they cause;
-* the actual stance mutation is represented separately as `stanceSet`;
-* phase-boundary effects are attached to `changePhase`;
-* traps report `trapTriggered` before the leaves produced by the trap;
-* target-result effects resolve before move-level effects in the canonical move-processing order.
+* only the engine producing top-level game events;
+* concrete state changes/results being leaf events owned by the game event that caused them;
+* `useMove` owning ordered target-result entries plus move-level effects;
+* each evaluated target result owning the effects caused by that result;
+* misses remaining represented as evaluated target results with empty effect stacks;
+* escapes, phase changes, stance changes, character loads, and encounter loads owning their resulting effects;
+* trap triggers appearing before the effects produced by the trap;
+* target-result effects resolving before move-level effects.
 
-The motivating multihit case now presents naturally as:
+The motivating multihit case therefore presents naturally as:
 
 **Hit → Damage → Hit → Damage**
 
-rather than emitting all hit results first and all resulting damage afterward. The console/browser presentation now preserves that causal grouping, so callbacks and secondary effects appear under the specific hit that caused them.
+rather than all hit rolls followed by all damage events.
 
-The migration covered engine consumers, previews, console/browser presentation, harness metrics and replay, serialization, fixtures, and tests. Two localized regressions were found during migration and fixed: trap-trigger consumption reporting and missing move-level effects in action previews.
+This causal structure now supports presentation, telemetry, replay inspection, previews, and Smart-policy analysis.
 
-The completed 0.8.0 candidate passes **1,224 tests across 84 test files**, with build and web TypeScript checks also clean.
-
-This was an **engine/event-model cleanup**, not a balance change.
+It should be treated as solved infrastructure rather than a current milestone.
 
 ---
 
-# 15. Current Priority: Smart Harness
+# 15. Completed Milestone: Smart Harness v1
 
-With the event revamp complete, the current major harness task is a policy that can actually understand the game board and character kits.
+The previous project-state document described Smart as the **next major milestone**.
 
-The current Trello direction is a **Smart policy using move previews / EV scoring**.
+That description is obsolete.
 
-Recent engine work exposing richer action/damage previews is directly related to this goal.
+Between September 26 and September 29, Smart grew through repeated iterations into a substantial full-kit policy with board assessment, modular knowledge, detailed diagnostics, richer metrics, and dedicated competency tests.
 
-The intended Smart-policy direction is:
+The repository now treats `smart` as a normal policy alongside `basic`, `escape`, and `idle`.
 
-* evaluate current board state;
-* evaluate projected action outcomes;
-* score candidate actions;
-* preserve inspectable/debuggable reasoning;
-* support different tactical priorities rather than one opaque master score.
+The first major use of Smart has already occurred:
 
-Possible tactical perspectives include:
+**Smart implementation → repeated Smart-informed balance work → Tower/Outside stress encounters**
 
-* stable/default play;
-* escape/danger response;
-* damage race;
-* cleanup.
+The project should therefore preserve the following lesson:
 
-The goal is **not an optimal AI**.
+> **Do not spend another cycle trying to build a mythical perfect human simulator. Maintain Smart as a practical design instrument and move the game forward.**
 
-The goal is an agent competent enough to expose problems that Basic cannot see.
-
-The Smart harness should be useful for answering questions such as:
-
-* Is a character's utility kit actually worth using?
-* Are transformations or empowerment options worth their action cost?
-* When should a competent player stop attacking and start escaping?
-* Does a control move meaningfully improve expected outcomes?
-* Are some moves dominated by other moves?
-* Are encounter mechanics demanding the intended tactical response?
-* Are characters contributing in distinct, useful ways?
+New Smart knowledge should be added as maintenance when real content requires it, not as an endless standalone project.
 
 ---
 
-# 16. Following Smart Harness: Further Balance Pass
+# 16. Current Development Position
 
-A new major balance pass should follow the Smart-policy work.
+KCQ has just completed a dense cluster of milestones:
 
-This pass should not merely repeat Basic-policy tuning.
-
-Its purpose is to evaluate KCQ under increasingly credible use of the actual character kits.
-
-Areas of interest include:
-
-* full-kit character effectiveness;
-* move selection;
-* utility versus damage tradeoffs;
-* escape and assist timing;
-* Standing decisions;
-* target prioritization;
-* transformation/empowerment value;
-* Compulsion value;
-* Hinari's Subspace economy;
-* Reflect and defensive utility;
-* encounter-specific tactical demands;
-* whether particular moves become dominant or irrelevant.
-
-The earlier Basic-policy balance work remains valuable as a lower-bound anchor.
-
-The Smart policy should add another reference point rather than replacing simpler policies.
-
----
-
-# 17. Current Development Position
-
-The project has now completed a cluster of work around:
-
-* public deployment;
+* public browser deployment;
 * telemetry/replay collection;
-* first major balance adjustments;
-* richer action/damage previews;
-* the 0.8.0 causal event model;
-* causal console/browser combat presentation;
-* durable game-rule documentation.
+* causal event-model revamp;
+* action and damage previews;
+* first-class player cooldowns;
+* sanitized public content-library data;
+* Smart v1;
+* detailed combat metrics and compare tooling;
+* multiple Smart-informed balance passes;
+* additional Tower challenge encounters;
+* Outside Realm stress/gimmick encounter.
 
-Following the 0.8.0 event-model milestone, 0.8.1 added general player cooldown support and another focused character-kit balance pass.
+This means the old immediate sequence:
 
-The immediate planned work remains:
+**event revamp → Smart harness → further balance**
 
-**Smart harness → further balance**
+has now been substantially completed.
 
-The event revamp should be treated as a completed foundation rather than an outstanding prerequisite. This sequence should be treated as current project intent even if Trello's list positions or card states temporarily lag behind it.
+As of this update, Trello's **In Progress** list is empty. There is no single next major engineering direction that should be presented as already chosen.
 
----
-
-# 18. Major Near-Term Directions After the Current Sequence
-
-Once the event/harness/balance sequence is sufficiently mature, larger project directions include:
-
-### Campaign / carryover vertical slice
-
-Move beyond independent battles into authored sequences where state can persist between encounters.
-
-Planned campaign work includes:
-
-* encounter chains;
-* between-fight recovery/carryover;
-* route state;
-* pre/between-fight decisions;
-* deterministic campaign harness runs.
-
-The campaign layer should remain small and authored rather than becoming a general quest scripting system prematurely.
-
-### Additional playable characters
-
-Naruyo and Sakari remain to be implemented.
-
-Their kits should drive generic engine additions where necessary rather than introducing character-specific engine hacks.
-
-### Additional campaigns/content
-
-Longer-term content currently includes concepts for:
-
-* Normal / Hard / Extreme Skunk campaigns;
-* Castle routes;
-* Factory;
-* smaller Bandit/Rope content;
-* additional bosses and enemy types.
-
-Much of this remains deliberately deferred while the core combat/campaign architecture matures.
+KCQ is at a genuine milestone boundary / crossroads.
 
 ---
 
-# 19. Known Engine/Content Work Still Deferred
+# 17. Major Near-Term Directions
 
-Several useful systems are planned but are not current universal engine rules.
+The current Trello board now contains several larger **Future Directions** rather than one mandatory next step.
 
-These include:
+These should be treated as options / project branches until one is deliberately selected.
 
-### Generic binding spread
+## Engine support for future content
 
-Latex currently owns specialized spread behavior.
+### Generalize binding spread
 
-The intended future direction is to make spread an engine-level reusable binding mechanic so other restraint types, such as Castle Ribbons, can reuse it.
+Move spread out of Latex-specific behavior into a reusable engine mechanic so future bindings such as Castle Ribbons can use the same primitive.
 
-### Generic binding locks / floors
+### Generic binding lock / floor
 
-Future bindings may contain a locked minimum value that ordinary escapes cannot reduce.
+Allow bindings to carry a locked minimum value that ordinary escape actions cannot reduce below.
 
-Unlock actions and campaign-specific permission to unlock are planned.
-
-This system does not yet belong in `Game Rules.md` because it is not implemented as a general rule.
+This is intended to support systems such as Leather restraints and Castle Seal Ribbons, with campaign rules deciding when unlock actions are allowed.
 
 ### Expanded traps
 
+Grow traps beyond the current probabilistic movement hazard only when actual content needs visible, hidden, disarmable, persistent, or condition-triggered trap behavior.
+
+### Engine helper / cleanup pass
+
+Perform narrow cleanup opportunistically where upcoming mechanics reveal repeated awkward plumbing. Avoid speculative framework building.
+
+## Game/content directions
+
+### Add Naruyo + Sakari and character selection
+
+Expand the playable roster to five and stop assuming one fixed three-character party.
+
+This requires both worthwhile character kits and party-selection support across engine/content/UI/harness boundaries.
+
+### Build a complete campaign loop
+
+Turn the current collection of isolated fights into an authored start-to-finish experience with encounter sequencing, carryover/cleanup, transitions, defeat/restart flow, and a real endpoint.
+
+The Trello card was written when there were six levels; the concept remains valid even though the catalogue now contains ten encounters.
+
+### Build the Castle content set
+
+Begin the next major content area, using real Castle content to drive generic spread, lock/seal, and other engine additions where needed.
+
+### Design the real web UI
+
+Replace the utilitarian browser console with the long-term presentation layer once campaign navigation, party selection, story presentation, and content structure are stable enough to design around.
+
+### Revamp Hinari
+
+Revisit whether Store / Release / Subspace should be simplified, replaced, or substantially reworked.
+
+Smart knowledge should be updated after that design decision, not used as an argument against changing her.
+
+---
+
+# 18. Campaign / Carryover Direction
+
+Campaign structure remains one of the largest missing pieces between “combat game” and “complete game.”
+
+The intended direction remains a relatively small authored campaign layer rather than a generic quest scripting engine.
+
+Expected campaign responsibilities include:
+
+* encounter sequencing;
+* explicit victory/defeat progression;
+* between-fight carryover rules;
+* cleanup of encounter-local state;
+* route state;
+* pre-fight and between-fight decisions;
+* story/transition presentation;
+* deterministic campaign harness runs;
+* restart/completion flow.
+
+The existing engine already reports battle outcomes, but a full campaign layer must define what persists and what resets across encounters.
+
+Tower and Outside currently provide additional encounter content, but they do not replace the need for campaign progression.
+
+---
+
+# 19. Additional Playable Characters
+
+Naruyo and Sakari remain planned future characters.
+
+Their kits should be designed as distinct contributions to the party rather than simply increasing roster count.
+
+New character mechanics should drive generic engine additions only when those mechanics genuinely need reusable support.
+
+Avoid character-specific hacks in the core engine.
+
+Character selection will become necessary once the roster exceeds the fixed three-character party.
+
+That change will also need deterministic harness support for explicit party compositions.
+
+---
+
+# 20. Known Engine / Content Work Still Deferred
+
+Several systems remain intentionally deferred until real content demands them.
+
+## Generic binding spread
+
+Latex currently owns specialized spread behavior.
+
+The desired direction is a reusable engine-level spread primitive with content-defined topology/amount.
+
+## Generic binding locks / floors
+
+A binding may eventually store a minimum locked value that normal escape cannot cross until an unlock action or campaign permission removes the lock.
+
+## Expanded traps
+
 Current traps are primarily movement-triggered probabilistic hazards.
 
-Future content may require visible, hidden, disarmable, persistent, or conditionally triggered traps.
+Future content may require traps with visible/hidden state, disarming, persistence, alternate triggers, or richer interaction.
 
-This should be built only as actual content requires it rather than as a speculative dungeon engine.
+## Super Skills / Limit Breaks
 
----
+Still deep-future design work.
 
-# 20. Campaign / Meta Progression
+Do not add them merely because they are a familiar RPG feature; they need a clear charge/use role and should not become automatic first-turn burst buttons.
 
-Large-scale progression remains intentionally deferred.
+## Double / Triple Techs
 
-Two broad ideas remain alive:
+Also deferred.
 
-* character-oriented **Ascension** progression;
-* collectible magic-item/perk loadouts;
-* potentially a hybrid of both.
-
-The important constraint is that the **base game must stand on its own**.
-
-Core characters, campaigns, and encounters should not depend on a meta-progression layer to become complete or enjoyable.
-
-Meta progression should primarily expand options, interactions, replayability, and character expression rather than repair an incomplete baseline game.
+Cooperative techniques may eventually support character relationships and progression, but their action economy and unlock structure should be designed only when the baseline game is stable enough to justify them.
 
 ---
 
-# 21. Important Design Principles
+# 21. Campaign / Meta Progression
+
+Large-scale progression remains intentionally deferred, but the design direction has become more concrete.
+
+The current dedicated campaign/meta-progression design favors **horizontal unlocks rather than permanent stat inflation**.
+
+Core characters should be complete without this layer.
+
+The present conceptual split is:
+
+* **Ko-chan — Why Not?**: changes a rule or limitation affecting a selected character.
+* **Matsuko — Training Program**: improves or alters a specific move.
+* **Naruyo — Battle Outfit**: provides an encounter-start performance benefit until the outfit is damaged/broken.
+* **Sakari — Distortion / Sabotage**: makes some part of the enemy side work incorrectly or less reliably.
+* **Hinari — Inventory**: brings limited-use tactical items into a campaign.
+
+The shared principle is:
+
+> **Progression should unlock new choices, not mandatory permanent power.**
+
+Campaign/meta systems should remain unimplemented until the game has at least:
+
+* stable core character kits;
+* stable enemy mechanics;
+* a working campaign structure;
+* enough harness evidence to understand baseline balance.
+
+They must not be used to repair incomplete base characters or encounters.
+
+---
+
+# 22. Documentation Debt / Known Source Drift
+
+The project documentation is useful, but the development pace from September 25–29 outran some of it.
+
+## `Game Rules.md` needs a refresh
+
+Its header still identifies `f30b6c0` from 2026-09-24 as its source baseline.
+
+At least one known rule is now stale:
+
+* `Game Rules.md` still describes Potency and Vulnerability as **12.5% per point**.
+* Current code and the 0.8.3 patch notes use **10% per point**.
+
+Player cooldown semantics added in 0.8.1 also need to be represented as stable rules if they are not already documented in the relevant section.
+
+Until that document is refreshed, repository/tests are authoritative.
+
+## Trello contains some stale cards
+
+This is expected and is why Trello is below the repository in the source-of-truth order.
+
+Examples at this checkpoint:
+
+* the backlog still contains “Add sanitized definition/library API,” but `master` now exposes `getLibrary()` and a sanitized `ContentLibrary`;
+* the campaign-loop Future Direction still refers to “the current six levels,” while the content catalogue now contains ten.
+
+Do not infer implementation status from card location without checking the repository.
+
+## Patch Notes
+
+`Patch Notes.md` is currently updated through 0.9.1 and is a useful concise record of release-level changes, but it should not replace the repository or this broader project-state document.
+
+---
+
+# 23. Important Design Principles
 
 The following principles have survived enough development to be treated as current project direction.
 
 ### Build the game before polishing the shell
 
-Mechanical correctness, testability, and interesting decisions take priority over a final graphical UI.
+Mechanical correctness, testability, meaningful decisions, and content take priority over a final graphical UI.
 
 ### Keep the engine black-box usable
 
-A UI or harness should not need private knowledge to play KCQ correctly.
+A UI, harness, replay viewer, or future client should not need private engine knowledge to play KCQ correctly.
+
+### Expose useful public information instead of duplicating rules
+
+Action views, previews, event frames, and the sanitized content library should give consumers enough information to make decisions without reimplementing combat logic.
 
 ### Prefer generic mechanics driven by real content needs
 
@@ -615,7 +812,7 @@ Do not build large generalized systems merely because they might someday be usef
 
 ### Preserve determinism
 
-Diagnostics, previews, rendering, telemetry, and policy evaluation must not accidentally change combat outcomes.
+Diagnostics, previews, rendering, telemetry, replay tools, and policy evaluation must not accidentally change combat outcomes.
 
 ### Replay is first-class
 
@@ -625,68 +822,95 @@ Runs should remain reproducible and inspectable.
 
 Harness data should identify behavior worth investigating, not replace design judgment.
 
+### Smart is a tool, not the game
+
+Do not freeze character/content design merely because Smart currently understands it.
+
+Update the policy when the game improves.
+
 ### Avoid the auto-attack game
 
 A major encounter that can be reliably solved by blindly using basic attacks is a warning sign.
 
-Meaningful abilities, escape decisions, target priorities, and enemy mechanics should matter.
+Meaningful abilities, escape decisions, target priorities, enemy mechanics, and timing should matter.
+
+### Avoid the endless-harness trap
+
+The project now has a competent Smart policy. Improve it when content exposes a meaningful blind spot, but do not indefinitely postpone campaigns, characters, content, or UI in pursuit of a perfect simulated human.
 
 ---
 
-# 22. Explicitly Obsolete Project Assumptions
+# 24. Explicitly Obsolete Project Assumptions
 
-The following older descriptions should no longer be treated as current:
+The following older descriptions should no longer be treated as current.
 
 ### “KCQ is still primarily an engine prototype.”
 
-Obsolete. It now has playable content, browser presentation, public releases, telemetry, and a substantial testing apparatus.
+Obsolete. It has playable content, public browser presentation, telemetry, replays, a substantial harness, and multiple released/tagged balance iterations.
 
 ### “The public/web console is the next major milestone.”
 
-Obsolete. The browser version has already been implemented and publicly released.
+Obsolete. It has already been implemented and released.
 
 ### “The web build still needs an encounter selector.”
 
-Obsolete. The browser currently exposes the encounter catalogue.
+Obsolete. The browser exposes the encounter catalogue.
 
 ### “Analytics/replay reporting are still only a future design problem.”
 
-Obsolete. Anonymous battle telemetry and replay-oriented collection infrastructure now exist.
+Obsolete. Anonymous battle telemetry and replay-oriented collection/analysis infrastructure exist.
 
 ### “There are only three Plains encounters.”
 
-Obsolete. The current content catalogue contains six encounters: three Plains and three Forest.
+Obsolete. The catalogue now contains ten encounters across Plains, Forest, Tower, and Outside Realm.
 
-### “The current milestone is 0.5.”
+### “There are six encounters.”
 
-Obsolete. The current documented public release is 0.8.0.
+Obsolete as of 0.9.1. Tower and Outside Realm increased the catalogue to ten.
+
+### “The current release is 0.8.0 / 0.8.1.”
+
+Obsolete. The current version tag is 0.9.1.
 
 ### “The harness is still just a simple single-fight runner.”
 
-Obsolete. The project now has batch comparison, multiple policy families, parallel infrastructure, metrics, replay capture, and replay analysis tooling.
+Obsolete. It includes multiple policy levels, parallel batch comparison, detailed metrics, replay capture/sampling, external replay analysis, and Smart.
 
-### “The event revamp is still the immediate next task.”
+### “Smart harness / board evaluation is the current next task.”
 
-Obsolete. The event revamp is complete in 0.8.0. Smart harness work is now the current major development priority, followed by another balance pass.
+Obsolete. Smart v1 is implemented and has already been used for substantial balance work.
+
+### “The next sequence is Smart → balance.”
+
+Obsolete as an immediate roadmap. That sequence has already occurred through the 0.9.1 cycle.
+
+### “Full-kit balance still cannot be evaluated automatically.”
+
+Obsolete in the old absolute sense. Smart now provides a competent full-kit automated reference, although it is heuristic and content-aware rather than an optimal player.
 
 ### “BQ1 policy architecture should be recreated directly.”
 
 Obsolete.
 
-BQ1 remains useful historical evidence, but KCQ's character kits and tactical structure should drive its own policy architecture.
+BQ1 remains useful historical evidence, but KCQ's actual mechanics and content should drive its testing architecture.
+
+### “The sanitized content-library API is still future work.”
+
+Obsolete. `master` now exposes `getLibrary()` and `ContentLibrary`.
 
 ---
 
-# 23. Document Maintenance
+# 25. Document Maintenance
 
 Update this file when one of the following changes substantially:
 
-* public milestone/release;
+* public milestone/version tag;
 * primary development focus;
 * major architecture decision;
 * playable roster;
 * encounter/campaign availability;
 * balance conclusions;
+* harness capability level;
 * external-testing/telemetry approach;
 * major roadmap priority;
 * a previously deferred mechanic becomes a stable part of the game.
@@ -696,7 +920,7 @@ Do **not** update this document for:
 * routine refactors;
 * renamed interfaces;
 * individual test additions;
-* minor numeric tuning;
+* minor numeric tuning that does not alter broader balance conclusions;
 * implementation details already obvious from the repository.
 
 When this file conflicts with current code, **the repository wins** and this document should be corrected.

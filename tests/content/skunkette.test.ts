@@ -146,6 +146,52 @@ describe("Skunkette behavior through GameEngine", () => {
         expect(characterState(engine, "victim").bindings).toHaveLength(1);
     });
 
+    it("adds Resistance only after HP falls strictly below 40%", () => {
+        const damageMove = (id: string, amount: number) => makeBehavioralMove(id, "arms", {
+            freeOnHit: true,
+            resolve: (state, actor) => [{
+                type: "damage",
+                source: actor,
+                target: state.enemies[0],
+                amount,
+            }],
+        });
+        const reachBoundary = damageMove("reach-resistance-boundary", skunkette.hp * 0.6);
+        const crossBoundary = damageMove("cross-resistance-boundary", 1);
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("attacker", [reachBoundary, crossBoundary]),
+        ], [skunkette], 1);
+
+        const exact = execute(engine, {
+            type: "move",
+            actor: "attacker",
+            move: reachBoundary.id,
+            targets: ["skunkette1"],
+        });
+        expect(enemyState(engine, "skunkette1").currHp).toBe(skunkette.hp * 0.4);
+        expect(buffState(engine, "resistance", "skunkette1")).toBeUndefined();
+        expect(resolvedEvents(exact.frames).some(
+            (event) => event.type === "buffAdded" && event.buff === "resistance",
+        )).toBe(false);
+
+        const crossed = execute(engine, {
+            type: "move",
+            actor: "attacker",
+            move: crossBoundary.id,
+            targets: ["skunkette1"],
+        });
+        expect(enemyState(engine, "skunkette1").currHp).toBe(skunkette.hp * 0.4 - 1);
+        expect(resolvedEvents(crossed.frames)).toContainEqual({
+            type: "buffAdded",
+            target: "skunkette1",
+            buff: "resistance",
+        });
+        expect(buffState(engine, "resistance", "skunkette1")?.modifiers).toEqual({
+            potency: -4,
+            defense: -1,
+        });
+    });
+
     it("weakens both linked Pounce buffs when another character damages Skunkette", () => {
         const { engine, strike } = setupPounce(3, true);
         expect(buffState(engine, POUNCE_ID, "skunkette1")?.modifiers?.hit).toBe(8);

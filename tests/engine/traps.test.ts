@@ -193,12 +193,14 @@ describe("generic traps through GameEngine", () => {
             .toEqual(control.executeAction(attack("hero", rolledMove.id)));
     });
 
-    it.each(["bindingRestriction", "attackUnavailable"] as const satisfies readonly FailureReason[])(
+    it.each(["bindingRestriction", "attackUnavailable", "actorSkipped"] as const satisfies readonly FailureReason[])(
         "commits trap effects and interrupts an attack for %s",
         (reason) => {
             const restriction: StatusLevelDef = reason === "bindingRestriction"
                 ? { blockedMoveTypes: ["arms"] }
-                : { flags: ["blocksAttack"] };
+                : reason === "attackUnavailable"
+                    ? { flags: ["blocksAttack"] }
+                    : { flags: ["skipsTurn"] };
             const status: StatusDef = { id: "bound", levels: [{}, restriction] };
             const blocker = makeBindingDef(`${reason}-source`, {
                 easy: [{ definition: status, value: 1 }],
@@ -226,6 +228,66 @@ describe("generic traps through GameEngine", () => {
             expect(result.frames.at(-1)!.state.traps[0].amount).toBe(91);
         },
     );
+
+    it("rechecks a move's authored validity after a trap changes actor state", () => {
+        const marker = makeBindingDef("should-not-resolve");
+        const trap: TrapDef = {
+            id: "resource-drain",
+            onTrigger: (target, state) => [{
+                type: "data",
+                target,
+                name: "ready",
+                amount: -1,
+            }, {
+                type: "trap",
+                actor: target,
+                trap: state,
+                amount: -1,
+            }],
+        };
+        const gated = makeMove("resource-gated", "none", {
+            targetSide: "none",
+            targets: 0,
+            accuracy: undefined,
+            cooldown: { "resource-gated": 3 },
+            isValid: (_move, actor) => actor.data.ready === 1
+                ? undefined
+                : "insufficientResource",
+            resolve: (state, actor) => [{
+                type: "binding",
+                source: actor,
+                target: state.characters[0],
+                binding: marker,
+                amount: 1,
+            }],
+        });
+        const engine = makeTrapEngine(
+            [{ definition: trap, amount: 100 }],
+            [gated],
+            1,
+            (state) => [{
+                type: "data",
+                target: state.characters[0],
+                name: "ready",
+                amount: 1,
+            }],
+        );
+
+        const result = engine.executeAction(attack("hero", gated.id));
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected committed interruption");
+        expect(result.frames[0].event.effects).toEqual([
+            { type: "trapTriggered", actor: "hero", trap: trap.id, amount: 1 },
+            { type: "actionInterrupted", actor: "hero", reason: "insufficientResource" },
+        ]);
+        expect(result.frames.at(-1)!.state.characters[0]).toMatchObject({
+            acted: true,
+            data: { ready: 0 },
+            bindings: [],
+            cooldowns: {},
+        });
+        expect(result.frames.at(-1)!.state.traps).toEqual([{ id: trap.id, amount: 99 }]);
+    });
 
     const cases = [
         ["self", "escapeUnavailable", { flags: ["blocksEscape"] }],

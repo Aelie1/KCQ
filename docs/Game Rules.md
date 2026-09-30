@@ -81,6 +81,18 @@ Such a move does not consume the normal action if at least one of its attacks su
 
 If every attempted hit misses, the normal action is consumed.
 
+### Cooldowns
+
+Moves may apply cooldowns to themselves or other moves.
+
+A move with a remaining cooldown is unavailable.
+
+Executing the move applies its configured cooldowns.
+
+This happens even for freeOnHit moves; keeping the normal action doesn't avoid the cooldown.
+
+Both player and enemy cooldowns tick once when the enemy phase ends and the next player phase begins.
+
 ### Action refresh
 
 Effects may explicitly refresh a character who has already acted, allowing that character to take another normal action.
@@ -126,6 +138,8 @@ At the beginning of the next player phase, characters automatically return to Mo
 If a character is currently prevented from moving, they remain Standing instead.
 
 A character who is prevented from moving cannot voluntarily change from Standing back to Moving.
+
+If the buff preventing them from Moving is removed, that player will start Moving immediately.
 
 ### Movement exceptions
 
@@ -285,7 +299,7 @@ A successful roll has an effectiveness based on where it lands within its result
 
 Damage and similar effects scale from this effectiveness.
 
-**Potency** on the attacker and **Vulnerability** on the target each modify effectiveness by 12.5% per point. Their multipliers are applied separately.
+**Potency** on the attacker and **Vulnerability** on the target each modify effectiveness by 10% per point. Their multipliers are applied separately.
 
 ---
 
@@ -557,7 +571,7 @@ Buffs may also:
 
 * provide modifiers;
 * provide statuses;
-* add moves;
+* add or remove moves;
 * alter incoming damage;
 * alter incoming bondage;
 * link themselves to another entity.

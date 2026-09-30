@@ -1,0 +1,110 @@
+import { describe, expect, it } from "vitest";
+import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
+import { rainmaker } from "../../src/content/skunk/rainmaker";
+import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
+import { incapacitated } from "../../src/engine/protected/statuses";
+import type { iEffect } from "../../src/engine/protected/types";
+import type { Engine } from "../../src/engine/public/types";
+import {
+    characterState,
+    execute,
+    makeBehavioralCharacter,
+} from "../helpers/behavioralHelpers";
+import { createTestEngine } from "../helpers/testCatalog";
+
+function loadRainmaker(
+    seed: number,
+    characterIds = ["hero"],
+    setup?: EncounterDef["setup"],
+    bindings: BindingDef[] = [],
+): Engine {
+    const encounter: EncounterDef = {
+        id: "rainmaker-test",
+        enemies: [rainmaker.id],
+        bindings,
+        traps: [],
+        setup,
+    };
+    const characters = characterIds.map((id) => makeBehavioralCharacter(id));
+    const engine = createTestEngine([encounter], characters, seed, { enemies: [rainmaker] });
+    for (const character of characters) engine.loadCharacter(character.id);
+    engine.loadEncounter(encounter.id);
+    return engine;
+}
+
+describe("Rainmaker Latex Rain", () => {
+    it.each([
+        [1, "miss", []],
+        [4, "graze", [latexTorso.id, latexLegs.id]],
+        [2, "hit", [latexLegs.id, latexHead.id, latexArms.id]],
+        [36, "crit", [latexTorso.id, latexLegs.id, latexHead.id, latexArms.id]],
+    ] as const)(
+        "applies the authored number and circular ordering of bindings on a %s band",
+        (seed, band, expectedBindings) => {
+            const engine = loadRainmaker(seed);
+            const intention = engine.getGameState().enemies[0].intentions[0];
+
+            expect(intention).toMatchObject({
+                move: "latexRain",
+                targets: [{ target: "hero", band }],
+            });
+            expect(intention.targets[0].effects
+                .filter((effect) => effect.type === "binding")
+                .map((effect) => effect.binding))
+                .toEqual(expectedBindings);
+
+            const result = execute(engine, { type: "endTurn" });
+            const rain = result.frames.find(({ event }) =>
+                event.type === "useMove" && event.actor === "rainmaker1");
+            expect(rain?.event).toMatchObject({
+                type: "useMove",
+                actor: "rainmaker1",
+                move: "latexRain",
+                targets: [{ target: "hero", result: band }],
+            });
+            expect(characterState(engine).bindings.map(({ id }) => id))
+                .toEqual(expectedBindings);
+        },
+    );
+
+    it("resolves independent all-party rolls without giving missed targets another character's bindings", () => {
+        const engine = loadRainmaker(1, ["first", "second"]);
+        const intention = engine.getGameState().enemies[0].intentions[0];
+
+        expect(intention.targets.map(({ target, band }) => ({ target, band }))).toEqual([
+            { target: "first", band: "miss" },
+            { target: "second", band: "hit" },
+        ]);
+        expect(intention.targets[0].effects).toEqual([]);
+        expect(intention.targets[1].effects.filter((effect) => effect.type === "binding"))
+            .toHaveLength(3);
+
+        execute(engine, { type: "endTurn" });
+        expect(characterState(engine, "first").bindings).toEqual([]);
+        expect(characterState(engine, "second").bindings.map(({ id }) => id)).toEqual([
+            latexArms.id,
+            latexTorso.id,
+            latexLegs.id,
+        ]);
+    });
+
+    it("excludes a character incapacitated during encounter setup from its committed all-party intention", () => {
+        const restraint: BindingDef = {
+            id: "incapacitating-restraint",
+            status: { easy: [{ definition: incapacitated, value: 1 }] },
+        };
+        const setup: EncounterDef["setup"] = (state): iEffect[] => [{
+            type: "binding",
+            source: state.characters[1],
+            target: state.characters[1],
+            binding: restraint,
+            amount: 10,
+        }];
+        const engine = loadRainmaker(2, ["active", "down"], setup, [restraint]);
+
+        expect(engine.getGameState().enemies[0].intentions[0].targets.map(({ target }) => target))
+            .toEqual(["active"]);
+        expect(engine.getGameState().characters.find(({ id }) => id === "down"))
+            .toMatchObject({ bindings: [expect.objectContaining({ id: restraint.id })] });
+    });
+});

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MoveDef, StatusDef } from "../../src/engine/protected/definitions";
+import { immobilized } from "../../src/engine/protected/statuses";
 import type { iBuff, iEnemy, iEntity } from "../../src/engine/protected/types";
 import {
     buffState, characterState, enemyState, execute, makeBehavioralCharacter,
@@ -159,6 +160,43 @@ describe("buff behavior through GameEngine", () => {
         expect(buffState(engine, "temporary")).toBeUndefined();
     });
 
+    it("restores moving stance when an expiring buff removes the last movement restriction", () => {
+        const add = makeBehavioralMove("immobilize", "none", {
+            targetSide: "none",
+            targets: 0,
+            resolve: (state) => [{
+                type: "buff",
+                target: state.characters[0],
+                buff: {
+                    id: "temporary-immobilization",
+                    active: true,
+                    duration: 2,
+                    statuses: [{ definition: immobilized, value: 1 }],
+                },
+                operation: "add",
+            }],
+        });
+        const engine = makeBehavioralEngine([
+            makeBehavioralCharacter("hero", [add]),
+        ]);
+        execute(engine, { type: "move", actor: "hero", move: add.id, targets: [] });
+
+        const restricted = execute(engine, { type: "endTurn" });
+        expect(resolvedEvents(restricted.frames)).toContainEqual({
+            type: "stanceSet",
+            actor: "hero",
+            stance: "standing",
+        });
+        expect(characterState(engine)).toMatchObject({ standing: true });
+        expect(buffState(engine, "temporary-immobilization")?.duration).toBe(1);
+
+        const expired = execute(engine, { type: "endTurn" });
+        expect(resolvedEvents(expired.frames).filter(({ type }) => type === "stanceSet"))
+            .toEqual([{ type: "stanceSet", actor: "hero", stance: "moving" }]);
+        expect(buffState(engine, "temporary-immobilization")).toBeUndefined();
+        expect(characterState(engine)).toMatchObject({ standing: false });
+    });
+
     it("leaves an infinite buff active across round transitions", () => {
         const add = addBuffMove("permanent", "hero", undefined, "permanent");
         const engine = makeBehavioralEngine([
@@ -216,50 +254,55 @@ describe("buff behavior through GameEngine", () => {
         expect(enemyState(engine).buffs).toEqual([]);
     });
 
-    it("removes a buff through an authored action and preserves linkedEntity publicly", () => {
-        const add = makeBehavioralMove("link", "mouth", {
-            targets: 0,
-            targetSide: "none",
-            freeOnHit: true,
-            resolve: (state) => [{
-                type: "buff",
-                target: state.characters[0],
-                buff: { id: "linked", active: true, linkedEntity: "foe1" },
-                operation: "add",
-            }],
-        });
-        const remove = makeBehavioralMove("unlink", "mouth", {
-            targets: 0,
-            targetSide: "none",
-            resolve: (state, actor) => {
-                const buff = actor.buffs.find(({ id }) => id === "linked");
-                return buff ? [{
+    it.each(["foe1", "missing-counterpart"])(
+        "removes a linked buff safely when counterpart %s has no matching buff",
+        (linkedEntity) => {
+            const add = makeBehavioralMove("link", "mouth", {
+                targets: 0,
+                targetSide: "none",
+                freeOnHit: true,
+                resolve: (state) => [{
                     type: "buff",
                     target: state.characters[0],
-                    buff,
-                    operation: "remove",
-                }] : [];
-            },
-        });
-        const engine = makeBehavioralEngine([
-            makeBehavioralCharacter("hero", [add, remove]),
-        ]);
+                    buff: { id: "linked", active: true, linkedEntity },
+                    operation: "add",
+                }],
+            });
+            const remove = makeBehavioralMove("unlink", "mouth", {
+                targets: 0,
+                targetSide: "none",
+                resolve: (state, actor) => {
+                    const buff = actor.buffs.find(({ id }) => id === "linked");
+                    return buff ? [{
+                        type: "buff",
+                        target: state.characters[0],
+                        buff,
+                        operation: "remove",
+                        linked: true,
+                    }] : [];
+                },
+            });
+            const engine = makeBehavioralEngine([
+                makeBehavioralCharacter("hero", [add, remove]),
+            ]);
 
-        execute(engine, { type: "move", actor: "hero", move: add.id, targets: [] });
-        expect(buffState(engine, "linked")?.linkedEntity).toBe("foe1");
-        const result = execute(engine, {
-            type: "move",
-            actor: "hero",
-            move: remove.id,
-            targets: [],
-        });
-        expect(result.frames[0].event.effects[0]).toEqual({
-            type: "buffRemoved",
-            target: "hero",
-            buff: "linked",
-        });
-        expect(buffState(engine, "linked")).toBeUndefined();
-    });
+            execute(engine, { type: "move", actor: "hero", move: add.id, targets: [] });
+            expect(buffState(engine, "linked")?.linkedEntity).toBe(linkedEntity);
+            const result = execute(engine, {
+                type: "move",
+                actor: "hero",
+                move: remove.id,
+                targets: [],
+            });
+            expect(result.frames[0].event.effects[0]).toEqual({
+                type: "buffRemoved",
+                target: "hero",
+                buff: "linked",
+            });
+            expect(buffState(engine, "linked")).toBeUndefined();
+            expect(enemyState(engine).buffs).toEqual([]);
+        },
+    );
 });
 
 describe("buff status integration through GameEngine", () => {

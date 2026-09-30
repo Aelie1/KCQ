@@ -1,14 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { contentCatalog } from "../../src/content/content";
-import { plains_1, plains_2, tower_1 } from "../../src/content/skunk/encounters";
+import { forest_3, outside, plains_1, plains_2, plains_3, tower_1, tower_2, tower_3 } from "../../src/content/skunk/encounters";
+import { fairy } from "../../src/content/skunk/fairy";
 import { trapPuddle } from "../../src/content/skunk/puddles";
+import { queen } from "../../src/content/skunk/queen";
+import { rainmaker } from "../../src/content/skunk/rainmaker";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
+import { isEnemy } from "../../src/engine/protected/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { actionView } from "../helpers/actionView";
+import { execute, makeBehavioralCharacter, makeBehavioralMove } from "../helpers/behavioralHelpers";
+import { resolvedEvents } from "../helpers/events";
 import { makeEnemyDef, makeWaitMove } from "../helpers/helpers";
 import {
     basicAttackingEnemy,
@@ -139,6 +145,160 @@ describe("encounters", () => {
             expect.objectContaining({ id: "empress", defId: "queen" }),
             expect.objectContaining({ id: "skunketteQueen", defId: "skunkette" }),
         ]));
+    });
+
+    it.each([
+        ["tower_1", tower_1, "empress", "empressMight", 4, 8, 50, undefined, true],
+        ["tower_2", tower_2, "empress", "empressMight", 3, 6, 40, 1, false],
+        ["tower_3", tower_3, "empress", "empressMight", 2, 4, 30, 2, false],
+        ["outside", outside, "goddess", "goddessMight", 4, 8, undefined, undefined, false],
+    ] as const)(
+        "applies %s setup modifiers to renamed enemies and the player before actions are published",
+        (_label, encounter, queenId, enemyBuff, queenModifier, skunketteHit, collar, playerModifier, ambushed) => {
+            const engine = createCatalogEngine(contentCatalog, 7);
+            engine.loadCharacter(ko.id);
+            engine.loadEncounter(encounter.id);
+            const state = engine.getGameState();
+            const loadedQueen = state.enemies.find(({ defId }) => defId === queen.id);
+            const loadedSkunkette = state.enemies.find(({ defId }) => defId === skunkette.id);
+            const character = state.characters[0];
+
+            expect(loadedQueen).toMatchObject({
+                id: queenId,
+                defId: queen.id,
+                buffs: [expect.objectContaining({
+                    id: enemyBuff,
+                    modifiers: { hit: queenModifier, defense: queenModifier },
+                })],
+            });
+            expect(loadedSkunkette).toMatchObject({
+                id: "skunketteQueen",
+                defId: skunkette.id,
+                buffs: [expect.objectContaining({
+                    id: enemyBuff,
+                    modifiers: { hit: skunketteHit },
+                })],
+            });
+            expect(character.bindings.find(({ id }) => id === "latexCollar")?.value)
+                .toBe(collar);
+            if (playerModifier === undefined) {
+                expect(character.buffs.some(({ id }) => id === "goddessMight")).toBe(false);
+                expect(character.modifiers).not.toHaveProperty("hit");
+                expect(character.modifiers).not.toHaveProperty("defense");
+            } else {
+                expect(character.buffs).toContainEqual(expect.objectContaining({
+                    id: "goddessMight",
+                    modifiers: { hit: playerModifier, defense: playerModifier },
+                }));
+                expect(character.modifiers).toMatchObject({ hit: playerModifier, defense: playerModifier });
+            }
+            expect(character.buffs.some(({ id }) => id === "ambushed")).toBe(ambushed);
+            expect(actionView(engine, ko.id)).toMatchObject(ambushed
+                ? { available: false, reason: "actorSkipped" }
+                : { available: true });
+
+            if (encounter === outside) {
+                expect(state.enemies.find(({ defId }) => defId === skunk.id)).toMatchObject({
+                    id: "skunkEmpress",
+                    buffs: [expect.objectContaining({
+                        id: enemyBuff,
+                        modifiers: { hit: 8 },
+                    })],
+                });
+            }
+        },
+    );
+
+    it("uses forest_3's setup wave offset when the Queen crosses her first HP threshold", () => {
+        const crossThreshold = makeBehavioralMove("cross-threshold", "arms", {
+            freeOnHit: true,
+            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
+                isEnemy(target) ? [{
+                    type: "damage" as const,
+                    source: actor,
+                    target,
+                    amount: 151,
+                }] : [],
+            ),
+        });
+        const run = (encounter: EncounterDef) => {
+            const hero = makeBehavioralCharacter("hero", [crossThreshold]);
+            const engine = createTestEngine([encounter], [hero], 11, {
+                enemies: [queen, skunkette, skunk, fairy, rainmaker],
+            });
+            engine.loadCharacter(hero.id);
+            engine.loadEncounter(encounter.id);
+            execute(engine, {
+                type: "move",
+                actor: hero.id,
+                move: crossThreshold.id,
+                targets: ["queen1"],
+            });
+            return execute(engine, { type: "endTurn" });
+        };
+
+        expect(resolvedEvents(run(plains_3).frames).filter(({ type }) => type === "enemySpawned"))
+            .toContainEqual({ type: "enemySpawned", target: "skunkette1" });
+        expect(resolvedEvents(run(forest_3).frames).filter(({ type }) => type === "enemySpawned"))
+            .toContainEqual({ type: "enemySpawned", target: "skunk1" });
+    });
+
+    it("uses outside's hidden Goddess modifier to keep an exploding Skunk alive", () => {
+        const bringLow = makeBehavioralMove("bring-skunk-low", "arms", {
+            freeOnHit: true,
+            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
+                isEnemy(target) ? [{
+                    type: "damage" as const,
+                    source: actor,
+                    target,
+                    amount: skunk.hp - 59,
+                }] : [],
+            ),
+        });
+        const control: EncounterDef = {
+            ...outside,
+            id: "outside-without-setup",
+            setup: undefined,
+        };
+        const run = (encounter: EncounterDef) => {
+            const hero = makeBehavioralCharacter("hero", [bringLow]);
+            const engine = createTestEngine([encounter], [hero], 1, {
+                enemies: [queen, skunkette, skunk, fairy, rainmaker],
+            });
+            engine.loadCharacter(hero.id);
+            engine.loadEncounter(encounter.id);
+            const target = engine.getGameState().enemies.find(({ defId }) => defId === skunk.id);
+            if (!target) throw new Error("Expected outside Skunk");
+            execute(engine, {
+                type: "move",
+                actor: hero.id,
+                move: bringLow.id,
+                targets: [target.id],
+            });
+            const committed = engine.getGameState().enemies.find(({ defId }) => defId === skunk.id);
+            expect(committed).toMatchObject({
+                currHp: 59,
+                intentions: [expect.objectContaining({ move: "latexExplosion" })],
+            });
+            expect(committed?.intentions[0].targets[0]?.band).not.toBe("crit");
+            return { result: execute(engine, { type: "endTurn" }), targetId: target.id };
+        };
+
+        const goddess = run(outside);
+        expect(goddess.result.frames.at(-1)!.state.enemies.some(({ defId }) => defId === skunk.id))
+            .toBe(true);
+        expect(resolvedEvents(goddess.result.frames)).not.toContainEqual({
+            type: "enemyDefeated",
+            target: goddess.targetId,
+        });
+
+        const ordinary = run(control);
+        expect(ordinary.result.frames.at(-1)!.state.enemies.some(({ defId }) => defId === skunk.id))
+            .toBe(false);
+        expect(resolvedEvents(ordinary.result.frames)).toContainEqual({
+            type: "enemyDefeated",
+            target: ordinary.targetId,
+        });
     });
 
     it("runs setup after spawning enemies and before calculating intentions", () => {

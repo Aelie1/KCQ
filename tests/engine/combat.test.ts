@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { skunkette } from "../../src/content/skunk/skunkette";
+import { isEnemy } from "../../src/engine/protected/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 import type { Engine, FailureReason, PlayerAction } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
@@ -380,6 +381,61 @@ describe("move validation and player actions", () => {
 });
 
 describe("move and effect resolution through GameEngine", () => {
+    it("drops later hits after an earlier hit removes the target and runs defeat cleanup once", () => {
+        const doubleTap = makeMove("double-tap", "arms", {
+            baseHits: 2,
+            resolve: (_state, actor, move, targets) => ({
+                effects: [],
+                targets: targets.map((target) => ({
+                    target: target.target,
+                    result: target.band,
+                    effects: isEnemy(target.target) ? [{
+                        type: "damage" as const,
+                        source: actor,
+                        target: target.target,
+                        amount: move.definition.baseDamage ?? 1,
+                    }] : [],
+                })),
+            }),
+            baseDamage: 5,
+        });
+        const foe = makeEnemyDef("fragile", [makeWaitMove()]);
+        foe.hp = 5;
+        let defeatCallbacks = 0;
+        foe.onDefeat = () => {
+            defeatCallbacks++;
+            return [];
+        };
+        const engine = makeBehavioralEngine([
+            makeCharacterDef("hero", [doubleTap]),
+        ], [foe], 1);
+
+        const result = execute(engine, {
+            type: "move",
+            actor: "hero",
+            move: doubleTap.id,
+            targets: ["fragile1"],
+        });
+        const event = result.frames[0].event;
+        if (event.type !== "useMove") throw new Error("Expected useMove event");
+
+        expect(event.targets).toEqual([
+            {
+                target: "fragile1",
+                result: "hit",
+                effects: [
+                    { type: "enemyDamaged", target: "fragile1", amount: 5 },
+                    { type: "enemyDefeated", target: "fragile1" },
+                ],
+            },
+            { target: "fragile1", result: "hit", effects: [] },
+        ]);
+        expect(defeatCallbacks).toBe(1);
+        expect(resolvedEvents(result.frames).filter(({ type }) => type === "enemyDefeated"))
+            .toEqual([{ type: "enemyDefeated", target: "fragile1" }]);
+        expect(engine.getGameState().enemies).toEqual([]);
+    });
+
     it("filters missed targets and normalizes successful effects before applying them", () => {
         const move = makeMove("fractional-damage", "arms", {
             targets: "all",

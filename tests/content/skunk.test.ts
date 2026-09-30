@@ -347,6 +347,45 @@ describe("normal Latex Skunk", () => {
         }]);
     });
 
+    it("does not select Explosion at exactly 20% HP, then queues it after one more damage", () => {
+        const crossThreshold = makeMove("cross-exact-threshold", "arms", {
+            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
+                isEnemy(target)
+                    ? [{ type: "damage" as const, source: actor, target, amount: 1 }]
+                    : [],
+            ),
+        });
+        const engine = loadSkunk({
+            seed: 1,
+            hp: skunk.hp * EXPLOSION_HP_RATIO,
+            moves: [crossThreshold],
+        });
+
+        expect(engine.getGameState().enemies[0].intentions[0]?.move)
+            .not.toBe("latexExplosion");
+
+        const result = engine.executeAction({
+            type: "move",
+            actor: "hero",
+            move: crossThreshold.id,
+            targets: ["skunk1"],
+        });
+
+        expect(result.success).toBe(true);
+        if (!result.success) throw new Error("Expected exact-threshold attack to succeed");
+        expect(resolvedEvents(result.frames)).toContainEqual({
+            type: "intentionCancelled",
+            target: "skunk1",
+        });
+        expect(result.frames.at(-1)!.state.enemies[0]).toMatchObject({
+            currHp: BELOW_THRESHOLD,
+            intentions: [{
+                move: "latexExplosion",
+                targets: [{ target: "hero" }],
+            }],
+        });
+    });
+
     it("cancels its old intention and targets the threshold-crossing attacker with Explosion", () => {
         const crossThreshold = makeMove("cross-threshold", "arms", {
             resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
