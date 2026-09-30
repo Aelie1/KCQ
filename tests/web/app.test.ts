@@ -5,12 +5,25 @@ import { createEngine } from "../../src/engine/public/engine";
 import {
     attachBattlePageLifecycle,
     createBattle,
+    DEFAULT_DIFFICULTY,
+    ENCOUNTER_DIFFICULTIES,
     startBattle,
     type PageLifecycleTarget,
 } from "../../src/web/app";
 import type { BattleTelemetryObserver } from "../../src/web/telemetry";
 
 describe("web battle application", () => {
+    it("offers all five difficulties with Standard selected by default", () => {
+        expect(DEFAULT_DIFFICULTY).toBe("standard");
+        expect(ENCOUNTER_DIFFICULTIES.map(({ id }) => id)).toEqual([
+            "casual",
+            "standard",
+            "veteran",
+            "extreme",
+            "mythic",
+        ]);
+    });
+
     it("loads the full character list in order for every selectable encounter", () => {
         for (const encounter of contentCatalog.encounters) {
             const engine = createEngine();
@@ -33,6 +46,21 @@ describe("web battle application", () => {
 
         expect(battle.engine.getGameState().difficulty).toEqual({
             id: "mythic",
+            playerModifiers: {},
+            enemyModifiers: { potency: 2 },
+        });
+    });
+
+    it("starts the selected encounter through the engine difficulty API", () => {
+        const engine = createEngine();
+        const setDifficulty = vi.spyOn(engine, "setDifficulty");
+
+        const battle = createBattle(engine, contentCatalog.encounters[0].id, "extreme");
+
+        expect(setDifficulty).toHaveBeenCalledOnce();
+        expect(setDifficulty).toHaveBeenCalledWith("extreme");
+        expect(battle.engine.getGameState().difficulty).toEqual({
+            id: "extreme",
             playerModifiers: {},
             enemyModifiers: { potency: 2 },
         });

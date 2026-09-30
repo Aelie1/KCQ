@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import { createEngine } from "../../src/engine/public/engine";
 import type {
     Character,
@@ -75,6 +76,7 @@ function view(values: {
             bindings: ["rope", "slime"],
             traps: ["trapPuddle"],
         },
+        difficulty: STANDARD_DIFFICULTY,
     };
 }
 

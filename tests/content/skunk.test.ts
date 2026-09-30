@@ -6,7 +6,7 @@ import { skunkette } from "../../src/content/skunk/skunkette";
 import type { BindingDef, EncounterDef, MoveDef } from "../../src/engine/protected/definitions";
 import { isEnemy } from "../../src/engine/protected/helpers";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
-import type { Engine } from "../../src/engine/public/types";
+import type { DifficultyId, Engine } from "../../src/engine/public/types";
 import { resolvedEvents } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
@@ -30,6 +30,7 @@ function loadSkunk(options: {
     hp?: number;
     bindings?: Record<string, InitialBinding[]>;
     moves?: MoveDef[];
+    difficulty?: DifficultyId;
 }): Engine {
     const characterIds = options.characterIds ?? ["hero"];
     const encounter: EncounterDef = {
@@ -51,6 +52,7 @@ function loadSkunk(options: {
     };
     const characters = characterIds.map((id) => makeCharacterDef(id, options.moves));
     const engine = createTestEngine([encounter], characters, options.seed, { enemies: [skunk, skunkette] });
+    engine.setDifficulty(options.difficulty ?? "standard");
     for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;
@@ -482,6 +484,30 @@ describe("normal Latex Skunk", () => {
             result.frames.at(-1)!.state.characters[0].bindings.slice(1).map(({ id }) => id),
         );
     });
+
+    it.each([
+        ["extreme", 2, "hit", true],
+        ["extreme", 1, "miss", false],
+        ["mythic", 1, "miss", true],
+    ] as const)(
+        "%s Explosion with seed %s rolls %s and survival is %s",
+        (difficulty, seed, expectedBand, survives) => {
+            const rope = makeBindingDef("rope");
+            const engine = loadSkunk({
+                difficulty,
+                seed,
+                hp: BELOW_THRESHOLD,
+                trapAmount: null,
+                bindings: { hero: [{ definition: rope, value: 1 }] },
+            });
+            const band = engine.getGameState().enemies[0].intentions[0]?.targets[0]?.band ?? "miss";
+            expect(band).toBe(expectedBand);
+
+            const result = endTurn(engine);
+            expect(result.frames.at(-1)!.state.enemies.some(({ id }) => id === "skunk1"))
+                .toBe(survives);
+        },
+    );
 
     it("applies all four bindings and heals instead of dying on a Crit Explosion", () => {
         const rope = makeBindingDef("rope");

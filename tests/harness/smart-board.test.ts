@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionView,
     Binding,
@@ -67,6 +68,7 @@ function state(
 ): GameState {
     return {
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
+        difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],

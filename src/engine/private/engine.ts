@@ -92,6 +92,7 @@ export class GameEngine implements Engine {
 
     setDifficulty(difficulty: DifficultyId) {
         this.state.difficulty = difficulties[difficulty];
+        this.refreshView();
     }
 
     listCharacters(): EntityId[] {

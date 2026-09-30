@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { Character, Enemy, GameState, PlayerAction } from "../../src/engine/public/types";
 import type { BatchResult, BatchRun } from "../../src/harness/batch/batch";
 import { summarizeBatch, wilsonScoreInterval } from "../../src/harness/batch/summary";
@@ -46,6 +47,7 @@ function view(fixture: RunFixture): GameState {
                 ? fixture.termination
                 : "ongoing",
         },
+        difficulty: STANDARD_DIFFICULTY,
         characters: [character("ko", [fixture.peakBondage / 2])],
         enemies: fixture.remainingEnemyHp === 0 ? [] : [enemy(fixture.remainingEnemyHp)],
         traps: [], encounter: null,

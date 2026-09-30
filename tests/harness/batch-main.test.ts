@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { GameState, PlayerAction } from "../../src/engine/public/types";
 import { runBatch, type BatchResult } from "../../src/harness/batch/batch";
 import { summarizeBatch } from "../../src/harness/batch/summary";
@@ -16,6 +17,7 @@ const originalExitCode = process.exitCode;
 function batchFixture(): BatchResult {
     const finalState: GameState = {
         turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
+        difficulty: STANDARD_DIFFICULTY,
         characters: [], enemies: [], traps: [], encounter: null,
     };
     return {

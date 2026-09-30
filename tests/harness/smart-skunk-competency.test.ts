@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -120,6 +121,7 @@ function fixture(
     mutateLibrary?.(library);
     const state: GameState = {
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
+        difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],

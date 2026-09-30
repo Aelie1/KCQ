@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { GameState } from "../../src/engine/public/types";
 import type { BatchInput, BatchResult, BatchRun } from "../../src/harness/batch/batch";
 import {
@@ -190,6 +191,7 @@ function run(
 function state(outcome: GameState["turn"]["outcome"], round: number): GameState {
     return {
         turn: { round, step: 1, phase: "player", outcome },
+        difficulty: STANDARD_DIFFICULTY,
         characters: [],
         enemies: [],
         traps: [],

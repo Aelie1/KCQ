@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
-import { skunkette } from "../../src/content/skunk/skunkette";
+import { latexSpray, pounce, skunkette } from "../../src/content/skunk/skunkette";
+import { difficulties } from "../../src/engine/private/constants";
 import { createTestEngine } from "../helpers/testCatalog";
-import type { ActionSuccess, LeafEvent } from "../../src/engine/public/types";
+import type { ActionSuccess, DifficultyId, LeafEvent } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import {
     bindingState,
@@ -15,6 +16,8 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
+import { makeCharacter, makeEnemy } from "../helpers/helpers";
+import { makeInternalState } from "../helpers/state";
 
 const POUNCE_ID = "pounce";
 const SKUNKED_ID = "skunked";
@@ -34,7 +37,7 @@ function moveEffects(result: ActionSuccess, target?: string): LeafEvent[] {
     return stack.effects;
 }
 
-function setupPounce(seed: number, withAttacker = false) {
+function setupPounce(seed: number, withAttacker = false, difficulty: DifficultyId = "standard") {
     const strike = makeBehavioralMove("strike", "arms", {
         resolve: (state, actor) => [{
             type: "damage",
@@ -45,7 +48,7 @@ function setupPounce(seed: number, withAttacker = false) {
     });
     const characters = [makeBehavioralCharacter("victim")];
     if (withAttacker) characters.push(makeBehavioralCharacter("attacker", [strike]));
-    const engine = makeBehavioralEngine(characters, [skunkette], seed);
+    const engine = makeBehavioralEngine(characters, [skunkette], seed, difficulty);
     const pounceTurn = execute(engine, { type: "endTurn" });
     return { engine, pounceTurn, strike };
 }
@@ -145,6 +148,36 @@ describe("Skunkette behavior through GameEngine", () => {
             .toContain(bindingEvent?.type === "bondageAdded" ? bindingEvent.binding : undefined);
         expect(characterState(engine, "victim").bindings).toHaveLength(1);
     });
+
+    it.each([
+        ["extreme", 0.949, "hit", false],
+        ["extreme", 0.95, "hit", true],
+        ["mythic", 0.5, "graze", true],
+    ] as const)(
+        "%s at Pounce effectiveness %s (%s) adds Spray: %s",
+        (difficulty: DifficultyId, effectiveness, band, addsSpray) => {
+            const actor = makeEnemy(skunkette, "skunkette1");
+            const target = makeCharacter("victim");
+            const state = makeInternalState({
+                characters: [target],
+                enemies: [actor],
+                difficulty: difficulties[difficulty],
+            });
+
+            const result = pounce.resolve(
+                state,
+                actor,
+                { definition: pounce, binding: latexHead },
+                [{ target, band, effectiveness }],
+            );
+            const effects = result.targets[0]?.effects ?? [];
+
+            expect(effects.some(
+                (effect) => effect.type === "move" && effect.move.definition === latexSpray,
+            ))
+                .toBe(addsSpray);
+        },
+    );
 
     it("adds Resistance only after HP falls strictly below 40%", () => {
         const damageMove = (id: string, amount: number) => makeBehavioralMove(id, "arms", {

@@ -2,7 +2,7 @@ import { expect } from "vitest";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { createTestEngine } from "./testCatalog";
 import type { iEffect, iMoveResult } from "../../src/engine/protected/types";
-import type { AccuracyProfile, ActionSuccess, Binding, Buff, Character, Enemy, Engine, MoveType, PlayerAction, ValidTarget } from "../../src/engine/public/types";
+import type { AccuracyProfile, ActionSuccess, Binding, Buff, Character, DifficultyId, Enemy, Engine, MoveType, PlayerAction, ValidTarget } from "../../src/engine/public/types";
 import { actionView } from "./actionView";
 
 export { actionView } from "./actionView";
@@ -111,9 +111,11 @@ export function makeBehavioralEngine(
     characters: CharacterDef[],
     enemies: EnemyDef[] = [makeBehavioralEnemy()],
     seed = 1,
+    difficulty: DifficultyId = "standard",
 ): Engine {
     const encounter: EncounterDef = { id: "behavioral-test", enemies: enemies.map(enemy => enemy.id), bindings: [], traps: [] };
     const engine = createTestEngine([encounter], characters, seed, { enemies });
+    engine.setDifficulty(difficulty);
     for (const character of characters) engine.loadCharacter(character.id);
     engine.loadEncounter(encounter.id);
     return engine;

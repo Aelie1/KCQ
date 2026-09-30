@@ -109,7 +109,10 @@ export class GameStatus {
             return this.modifiers[id] ?? 0;
         }
 
-        let amount = this.isStanding && id === "defense" ? -2 : 0;
+        let amount = this.difficulty[id] ?? 0;
+        if (this.isStanding && id === "defense") {
+            amount -= 2;
+        }
         for (const status of this.statuses) {
             if (status.modifiers?.[id]) {
                 amount += status.modifiers?.[id];

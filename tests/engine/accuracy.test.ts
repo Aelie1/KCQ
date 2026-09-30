@@ -24,6 +24,7 @@ import {
     makeMove,
     makeWaitMove,
 } from "../helpers/helpers";
+import { makeInternalState } from "../helpers/state";
 
 describe("accuracy", () => {
     const standardProfile: AccuracyProfile = {
@@ -72,11 +73,12 @@ describe("accuracy", () => {
         accuracy: AccuracyProfile,
         roll: number,
     ): iTargetInfo {
+        const state = makeInternalState({ characters: [actor], enemies: [target] });
         return evaluateResult(
             actor,
-            new GameStatus(actor),
+            new GameStatus(state, actor),
             target,
-            new GameStatus(target),
+            new GameStatus(state, target),
             move,
             accuracy,
             roll,
@@ -96,14 +98,19 @@ describe("accuracy", () => {
         });
         const target = makeCharacter("character-target");
         const move = makeAccuracyMove(standardProfile, { targetSide: "player", type: "none" });
-        const info = isValidTarget({
+        const state = makeInternalState({
             turn: { round: 1, step: 1, phase: "enemy" },
-            nextId: {},
             characters: [target],
             enemies: [actor],
-            traps: [],
-            encounter: null
-        }, actor, new GameStatus(actor), target, new GameStatus(target), move);
+        });
+        const info = isValidTarget(
+            state,
+            actor,
+            new GameStatus(state, actor),
+            target,
+            new GameStatus(state, target),
+            move,
+        );
         if (!info.valid || !info.accuracy) throw new Error("Expected enemy accuracy profile");
         return info.accuracy;
     }

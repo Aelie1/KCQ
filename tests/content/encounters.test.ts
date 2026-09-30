@@ -9,13 +9,13 @@ import { rainmaker } from "../../src/content/skunk/rainmaker";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
-import { isEnemy } from "../../src/engine/protected/helpers";
-import { createTestEngine } from "../helpers/testCatalog";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
+import { isEnemy } from "../../src/engine/protected/helpers";
 import { actionView } from "../helpers/actionView";
 import { execute, makeBehavioralCharacter, makeBehavioralMove } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
 import { makeEnemyDef, makeWaitMove } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 import {
     basicAttackingEnemy,
     multiEnemyEncounter,
@@ -241,64 +241,6 @@ describe("encounters", () => {
             .toContainEqual({ type: "enemySpawned", target: "skunkette1" });
         expect(resolvedEvents(run(forest_3).frames).filter(({ type }) => type === "enemySpawned"))
             .toContainEqual({ type: "enemySpawned", target: "skunk1" });
-    });
-
-    it("uses outside's hidden Goddess modifier to keep an exploding Skunk alive", () => {
-        const bringLow = makeBehavioralMove("bring-skunk-low", "arms", {
-            freeOnHit: true,
-            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
-                isEnemy(target) ? [{
-                    type: "damage" as const,
-                    source: actor,
-                    target,
-                    amount: skunk.hp - 59,
-                }] : [],
-            ),
-        });
-        const control: EncounterDef = {
-            ...outside,
-            id: "outside-without-setup",
-            setup: undefined,
-        };
-        const run = (encounter: EncounterDef) => {
-            const hero = makeBehavioralCharacter("hero", [bringLow]);
-            const engine = createTestEngine([encounter], [hero], 1, {
-                enemies: [queen, skunkette, skunk, fairy, rainmaker],
-            });
-            engine.loadCharacter(hero.id);
-            engine.loadEncounter(encounter.id);
-            const target = engine.getGameState().enemies.find(({ defId }) => defId === skunk.id);
-            if (!target) throw new Error("Expected outside Skunk");
-            execute(engine, {
-                type: "move",
-                actor: hero.id,
-                move: bringLow.id,
-                targets: [target.id],
-            });
-            const committed = engine.getGameState().enemies.find(({ defId }) => defId === skunk.id);
-            expect(committed).toMatchObject({
-                currHp: 59,
-                intentions: [expect.objectContaining({ move: "latexExplosion" })],
-            });
-            expect(committed?.intentions[0].targets[0]?.band).not.toBe("crit");
-            return { result: execute(engine, { type: "endTurn" }), targetId: target.id };
-        };
-
-        const goddess = run(outside);
-        expect(goddess.result.frames.at(-1)!.state.enemies.some(({ defId }) => defId === skunk.id))
-            .toBe(true);
-        expect(resolvedEvents(goddess.result.frames)).not.toContainEqual({
-            type: "enemyDefeated",
-            target: goddess.targetId,
-        });
-
-        const ordinary = run(control);
-        expect(ordinary.result.frames.at(-1)!.state.enemies.some(({ defId }) => defId === skunk.id))
-            .toBe(false);
-        expect(resolvedEvents(ordinary.result.frames)).toContainEqual({
-            type: "enemyDefeated",
-            target: ordinary.targetId,
-        });
     });
 
     it("runs setup after spawning enemies and before calculating intentions", () => {

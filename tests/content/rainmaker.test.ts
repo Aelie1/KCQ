@@ -1,14 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { rainmaker } from "../../src/content/skunk/rainmaker";
+import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
 import { incapacitated } from "../../src/engine/protected/statuses";
+import { isEnemy } from "../../src/engine/protected/helpers";
 import type { iEffect } from "../../src/engine/protected/types";
-import type { Engine } from "../../src/engine/public/types";
+import type { DifficultyId, Engine } from "../../src/engine/public/types";
 import {
     characterState,
     execute,
     makeBehavioralCharacter,
+    makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { createTestEngine } from "../helpers/testCatalog";
 
@@ -106,5 +109,43 @@ describe("Rainmaker Latex Rain", () => {
             .toEqual(["active"]);
         expect(engine.getGameState().characters.find(({ id }) => id === "down"))
             .toMatchObject({ bindings: [expect.objectContaining({ id: restraint.id })] });
+    });
+
+    it.each([
+        ["standard", 0],
+        ["extreme", 50],
+        ["mythic", 100],
+    ] as const)("on %s creates a puddle of %s on death", (difficulty: DifficultyId, amount) => {
+        const defeat = makeBehavioralMove("defeat-rainmaker", "arms", {
+            freeOnHit: true,
+            resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) =>
+                isEnemy(target) ? [{
+                    type: "damage" as const,
+                    source: actor,
+                    target,
+                    amount: rainmaker.hp,
+                }] : [],
+            ),
+        });
+        const encounter: EncounterDef = {
+            id: "rainmaker-defeat-test",
+            enemies: [rainmaker.id],
+            bindings: [],
+            traps: [{ definition: trapPuddle, amount: 0 }],
+        };
+        const hero = makeBehavioralCharacter("hero", [defeat]);
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [rainmaker] });
+        engine.setDifficulty(difficulty);
+        engine.loadCharacter(hero.id);
+        engine.loadEncounter(encounter.id);
+
+        execute(engine, {
+            type: "move",
+            actor: hero.id,
+            move: defeat.id,
+            targets: ["rainmaker1"],
+        });
+
+        expect(engine.getGameState().traps).toEqual([{ id: trapPuddle.id, amount }]);
     });
 });

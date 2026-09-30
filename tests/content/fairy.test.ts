@@ -2,11 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { fairy } from "../../src/content/skunk/fairy";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
+import { difficulties } from "../../src/engine/private/constants";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { createTestEngine } from "../helpers/testCatalog";
 import { Random } from "../../src/engine/protected/random";
 import type { iEnemy, iGameState, iMoveEffect } from "../../src/engine/protected/types";
-import type { Engine, HitBand } from "../../src/engine/public/types";
+import type { DifficultyId, Engine, HitBand } from "../../src/engine/public/types";
 import {
     bindingState,
     buffState,
@@ -19,6 +20,7 @@ import {
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
 import { makeCharacter, makeEnemy } from "../helpers/helpers";
+import { makeInternalState } from "../helpers/state";
 
 const BARRIER_ID = "barrierMagic";
 const BINDING_ID = "bindingMagic";
@@ -34,19 +36,16 @@ function scriptedRandom(...values: number[]): Random {
     } as unknown as Random;
 }
 
-function rawState(enemies: iEnemy[], withCharacter = false): iGameState {
-    return {
-        turn: {
-            round: 1,
-            step: 1,
-            phase: "player",
-        },
-        nextId: {},
+function rawState(
+    enemies: iEnemy[],
+    withCharacter = false,
+    difficulty: DifficultyId = "standard",
+): iGameState {
+    return makeInternalState({
         characters: withCharacter ? [makeCharacter()] : [],
         enemies,
-        traps: [],
-        encounter: null
-    };
+        difficulty: difficulties[difficulty],
+    });
 }
 
 function testEnemy(id: string, hp = 100): EnemyDef {
@@ -59,9 +58,23 @@ function selectedAction(
     allies: iEnemy[],
     rolls: number[] = [0, 0, 0],
     withCharacter = false,
+    difficulty: DifficultyId = "standard",
 ): iMoveEffect | undefined {
+    return selectedActions(allies, rolls, withCharacter, difficulty)[0];
+}
+
+function selectedActions(
+    allies: iEnemy[],
+    rolls: number[] = [0, 0, 0],
+    withCharacter = false,
+    difficulty: DifficultyId = "standard",
+): iMoveEffect[] {
     const actor = makeEnemy(fairy, "fairy1");
-    return fairy.ai(rawState([...allies, actor], withCharacter), actor, scriptedRandom(...rolls))[0];
+    return fairy.ai(
+        rawState([...allies, actor], withCharacter, difficulty),
+        actor,
+        scriptedRandom(...rolls),
+    );
 }
 
 function selectedMove(action: iMoveEffect | undefined): MoveDef {
@@ -208,6 +221,21 @@ describe("Skunk Fairy AI", () => {
 });
 
 describe("Binding Magic", () => {
+    it.each([
+        ["standard", [0, 0, 0], 1],
+        ["extreme", [0.5, 0, 0], 1],
+        ["extreme", [0.49, 0, 0, 0, 0], 2],
+        ["mythic", [0, 0, 0, 0], 2],
+    ] as const)(
+        "%s with deterministic rolls %j queues %s Binding Magic attack(s)",
+        (difficulty, rolls, expectedAttacks) => {
+            const actions = selectedActions([], [...rolls], true, difficulty);
+            expect(actions.filter(
+                (action) => action.type === "move" && action.move.definition.id === BINDING_ID,
+            )).toHaveLength(expectedAttacks);
+        },
+    );
+
     it("executes the selected binding through the enemy phase", () => {
         const encounter: EncounterDef = {
             id: "fairy-binding-test",

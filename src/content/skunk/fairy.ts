@@ -223,10 +223,8 @@ export const fairy: EnemyDef = {
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
         const validTargets = getValidTargets(state, state.enemies);
 
-        const currHpRatio = actor.currHp / actor.maxHp;
-
         //-1) Difficulty based extra attacks
-        if (state.difficulty.id === "mythic" || (currHpRatio < 0.5 && state.difficulty.id === "extreme")) {
+        if (state.difficulty.id === "mythic" || (state.difficulty.id === "extreme" && rng.random() < 0.5)) {
             const target = pickValidTarget(state, state.characters, rng);
             if (target && isCharacter(target)) {
                 const binding = pickBinding(target, bindings, rng);

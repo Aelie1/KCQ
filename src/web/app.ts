@@ -1,5 +1,5 @@
 import { runBattleController, type BattleUI } from "../console/controller";
-import type { EncounterId, Engine, GameEvent } from "../engine/public/types";
+import type { DifficultyId, EncounterId, Engine, GameEvent } from "../engine/public/types";
 import {
     createBattleTelemetryObserver,
     disabledTelemetry,
@@ -13,7 +13,24 @@ export interface PreparedBattle {
     loadEvents: GameEvent[];
 }
 
-export function createBattle(engine: Engine, encounterId: EncounterId): PreparedBattle {
+export const ENCOUNTER_DIFFICULTIES: readonly { id: DifficultyId; label: string }[] = [
+    { id: "casual", label: "Casual" },
+    { id: "standard", label: "Standard" },
+    { id: "veteran", label: "Veteran" },
+    { id: "extreme", label: "Extreme" },
+    { id: "mythic", label: "Mythic" },
+];
+
+export const DEFAULT_DIFFICULTY: DifficultyId = "standard";
+
+export function createBattle(
+    engine: Engine,
+    encounterId: EncounterId,
+    difficulty?: DifficultyId,
+): PreparedBattle {
+    if (difficulty) {
+        engine.setDifficulty(difficulty);
+    }
 
     const loadEvents = engine.listCharacters().map(id =>
         engine.loadCharacter(id)
@@ -34,8 +51,9 @@ export async function startBattle(
     ui: BattleUI,
     telemetry: GameplayTelemetry = disabledTelemetry,
     release = "",
+    difficulty?: DifficultyId,
 ): Promise<void> {
-    const battle = createBattle(engine, encounter);
+    const battle = createBattle(engine, encounter, difficulty);
     const observer = createBattleTelemetryObserver({
         telemetry,
         replayId: crypto.randomUUID(),

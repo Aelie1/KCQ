@@ -12,7 +12,7 @@ import { mixSeed, Random } from "../../src/engine/protected/random";
 import { s } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEffect, iGameState } from "../../src/engine/protected/types";
-import type { ActionSuccess, Engine, GameEvent, GameState, HitBand, ModifierSet } from "../../src/engine/public/types";
+import type { ActionSuccess, DifficultyId, Engine, GameEvent, GameState, HitBand, ModifierSet } from "../../src/engine/public/types";
 import { execute, makeBehavioralCharacter, makeBehavioralMove } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
 
@@ -37,6 +37,7 @@ interface QueenSetup {
     characters?: CharacterDef[];
     enemies?: EnemyDef[];
     setup?: EncounterDef["setup"];
+    difficulty?: DifficultyId;
 }
 
 function loadQueen(options: QueenSetup = {}): Engine {
@@ -52,6 +53,7 @@ function loadQueen(options: QueenSetup = {}): Engine {
     const engine = createTestEngine([encounter], characters, options.seed ?? 1, {
         enemies: [...enemies, skunkette, skunk, fairy, rainmaker],
     });
+    engine.setDifficulty(options.difficulty ?? "standard");
     for (const character of characters) {
         engine.loadCharacter(character.id);
     }
@@ -628,6 +630,28 @@ describe("Queen Skunk Gun and AI fallbacks", () => {
         const engine = loadQueen({ setup: (state) => queenSetupEffects(state, 1, 0) });
         expect(queenMoves(engine)).toEqual(["skunkPerfume"]);
     });
+
+    it.each([
+        ["extreme", queen.hp / 2, false],
+        ["extreme", queen.hp / 2 - 1, true],
+        ["mythic", queen.hp, true],
+    ] as const)(
+        "%s free Gun at %s HP is %s",
+        (difficulty, hp, hasFreeGun) => {
+            const engine = loadQueen({
+                difficulty,
+                setup: (state) => {
+                    const actor = state.enemies.find(({ definition }) => definition === queen);
+                    if (!actor) throw new Error("Expected internal Queen state");
+                    actor.currHp = hp;
+                    return [];
+                },
+            });
+
+            expect(queenMoves(engine).includes("skunkGun")).toBe(hasFreeGun);
+            expect(queenMoves(engine)).toContain("skunkCollar");
+        },
+    );
 
     it("uses Gun when both specials are cooling down and targets only a valid character", () => {
         const engine = gunEngine(5, true);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -75,6 +76,7 @@ function enemy(id: string): Enemy {
 function state(enemyIds = ["enemy-1", "enemy-2", "enemy-3"]): GameState {
     return {
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
+        difficulty: STANDARD_DIFFICULTY,
         characters: [character("hero"), character("ally")],
         enemies: enemyIds.map(enemy),
         traps: [],

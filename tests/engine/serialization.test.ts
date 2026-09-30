@@ -8,6 +8,7 @@ import { GameStatus } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEntity, iGameState } from "../../src/engine/protected/types";
 import { makeBindingDef, makeCharacter, makeCharacterDef, makeEnemy, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
+import { makeInternalState, STANDARD_DIFFICULTY } from "../helpers/state";
 import { multiEnemyEncounter, testAlly, testCharacterList, testEnemyList, testHero } from "../helpers/testContent";
 
 describe("character catalogue", () => {
@@ -72,6 +73,7 @@ describe("state serialization and combatant loading", () => {
 
         expect(state).toEqual({
             turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
+            difficulty: STANDARD_DIFFICULTY,
             characters: [],
             enemies: [],
             traps: [],
@@ -301,18 +303,15 @@ describe("state serialization and combatant loading", () => {
             move: { definition: enemyMove },
             rolls: [{ target: null, roll: 25 }]
         }];
-        const internalState: iGameState = {
+        const internalState: iGameState = makeInternalState({
             turn: { round: 1, step: 1, phase: "player" },
-            nextId: {},
             characters: [character],
             enemies: [enemy],
-            traps: [],
-            encounter: null
-        };
+        });
 
         const statuses = new Map<iEntity, GameStatus>([
-            [character, new GameStatus(character)],
-            [enemy, new GameStatus(enemy)],
+            [character, new GameStatus(internalState, character)],
+            [enemy, new GameStatus(internalState, enemy)],
         ]);
         const serialized = serializeGameState(internalState, statuses);
 

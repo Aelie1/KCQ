@@ -9,7 +9,7 @@ import { playActionGroups, PRESENTATION_TIMING } from "../console/presentation";
 import { renderStyledScreen, type ScreenModel } from "../console/render";
 import { createEngine } from "../engine/public/engine";
 import { DifficultyId, EncounterId } from "../engine/public/types";
-import { startBattle } from "./app";
+import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES, startBattle } from "./app";
 import { gameplayTelemetry } from "./posthog";
 import {
     browserChoiceForKey,
@@ -255,14 +255,6 @@ function requiredElement<T extends HTMLElement>(id: string): T {
     return element as T;
 }
 
-const DIFFICULTIES: readonly { id: DifficultyId; label: string }[] = [
-    { id: "casual", label: "Casual" },
-    { id: "standard", label: "Standard" },
-    { id: "veteran", label: "Veteran" },
-    { id: "extreme", label: "Extreme" },
-    { id: "mythic", label: "Mythic" },
-];
-
 interface EncounterSelection {
     encounter: EncounterId;
     difficulty: DifficultyId;
@@ -286,13 +278,13 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection>
     difficultyLabel.append("Difficulty");
     const difficultySelect = document.createElement("select");
     difficultySelect.setAttribute("aria-label", "Difficulty");
-    for (const difficulty of DIFFICULTIES) {
+    for (const difficulty of ENCOUNTER_DIFFICULTIES) {
         const option = document.createElement("option");
         option.value = difficulty.id;
         option.textContent = difficulty.label;
         difficultySelect.append(option);
     }
-    difficultySelect.value = "standard";
+    difficultySelect.value = DEFAULT_DIFFICULTY;
     difficultyLabel.append(difficultySelect);
     difficultyRow.append(difficultyLabel);
     choicesElement.append(difficultyRow);
@@ -304,8 +296,8 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection>
                 candidate.disabled = true;
             }
             difficultySelect.disabled = true;
-            const difficulty = DIFFICULTIES.find(({ id }) => id === difficultySelect.value)?.id
-                ?? "standard";
+            const difficulty = ENCOUNTER_DIFFICULTIES.find(({ id }) => id === difficultySelect.value)?.id
+                ?? DEFAULT_DIFFICULTY;
             resolve({
                 encounter,
                 difficulty,
@@ -344,8 +336,14 @@ async function start(): Promise<void> {
     while (true) {
         const engine = createEngine();
         const selection = await showEncounterSelector(engine.listEncounters());
-        engine.setDifficulty(selection.difficulty);
-        await startBattle(engine, selection.encounter, new BrowserBattleUI(), gameplayTelemetry, __KCQ_RELEASE_TAG__);
+        await startBattle(
+            engine,
+            selection.encounter,
+            new BrowserBattleUI(),
+            gameplayTelemetry,
+            __KCQ_RELEASE_TAG__,
+            selection.difficulty,
+        );
     }
 }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import { createEngine } from "../../src/engine/public/engine";
 import type {
     ActionView,
@@ -58,6 +59,7 @@ function state(): GameState {
             phase: "player",
             outcome: "ongoing",
         },
+        difficulty: STANDARD_DIFFICULTY,
         characters: [character("ko")],
         enemies: [
             enemy("skunk1", true),

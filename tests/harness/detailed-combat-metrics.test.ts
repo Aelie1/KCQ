@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import { createEngine } from "../../src/engine/public/engine";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
@@ -60,6 +61,7 @@ function view(values: Partial<GameState> = {}): GameState {
             traps: ["trapPuddle"],
         },
         ...values,
+        difficulty: values.difficulty ?? STANDARD_DIFFICULTY,
     };
 }
 
