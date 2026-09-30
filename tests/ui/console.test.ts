@@ -61,7 +61,12 @@ const state: GameState = {
         }],
     }],
     traps: [],
-    encounter: null
+    encounter: null,
+    difficulty: {
+        id: "casual",
+        playerModifiers: { hit: 2, escape: 2 },
+        enemyModifiers: {},
+    },
 };
 
 const bindingThresholds = createTestEngine([], [], 1).getThresholds();
@@ -382,6 +387,7 @@ describe("console formatting", () => {
 
         const header = rendered.split("\n")[1];
         expect(header).toContain("KO-CHAN'S QUEST  test");
+        expect(header).toContain("Casual [P: Hit +2, Esc +2]");
         expect(header).toContain("Puddles [#######-------------] 35/100");
         expect(rendered.split("\n")).toHaveLength(36);
         expect(rendered.split("\n").every((line) => line.length === 120)).toBe(true);

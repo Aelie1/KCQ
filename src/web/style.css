@@ -100,6 +100,33 @@ button {
     cursor: pointer;
 }
 
+.difficulty-picker {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid #64748b;
+    border-radius: 0.25rem;
+    background: #17202b;
+}
+
+.difficulty-picker select {
+    border: 0;
+    background: #17202b;
+    color: #e6edf3;
+    font: inherit;
+    cursor: pointer;
+}
+
+.difficulty-picker:focus-within {
+    border-color: #93c5fd;
+    background: #223044;
+}
+
+.difficulty-picker:focus-within select {
+    background: #223044;
+}
+
 button:hover:not(:disabled),
 button:focus-visible {
     border-color: #93c5fd;

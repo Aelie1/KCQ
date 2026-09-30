@@ -41,6 +41,7 @@ function recordedState(round: number, hp: number, binding: number): GameState {
         }],
         traps: [{ id: "recordedTrap", amount: round }],
         encounter: { id: "recorded-encounter", enemies: ["recorded-foe"], bindings: ["rope"], traps: ["recordedTrap"] },
+        difficulty: { id: "standard", playerModifiers: {}, enemyModifiers: {} },
     };
 }
 

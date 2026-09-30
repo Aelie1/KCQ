@@ -25,6 +25,19 @@ describe("web battle application", () => {
         }
     });
 
+    it("uses the engine-selected difficulty as battle state", () => {
+        const engine = createEngine();
+        engine.setDifficulty("mythic");
+
+        const battle = createBattle(engine, contentCatalog.encounters[0].id);
+
+        expect(battle.engine.getGameState().difficulty).toEqual({
+            id: "mythic",
+            playerModifiers: {},
+            enemyModifiers: { potency: 2 },
+        });
+    });
+
     it("returns after the shared controller exits", async () => {
         const close = vi.fn();
         const ui: BattleUI = {

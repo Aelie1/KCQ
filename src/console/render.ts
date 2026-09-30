@@ -1,4 +1,4 @@
-import type { AccuracyProfile, BindingId, Character, Enemy, EntityId, FailureReason, GameState, ModifierId, MoveType, PreviewProfile, Status, ThresholdInfo, } from "../engine/public/types";
+import type { AccuracyProfile, BindingId, Character, Difficulty, Enemy, EntityId, FailureReason, GameState, ModifierId, MoveType, PreviewProfile, Status, ThresholdInfo, } from "../engine/public/types";
 import { formatBuff, formatIntention } from "./format";
 import {
     accuracyQualityStyle,
@@ -79,11 +79,11 @@ export function renderScreen(
     const turn = model.state.turn;
     const headerLeft = ` KO-CHAN'S QUEST  ${model.encounter}`;
     const headerRight = `Seed ${model.seed} / Round ${turn.round} / ${turn.phase.toUpperCase()} `;
-    const trapWidth = Math.max(0, width - 2 - headerLeft.length - headerRight.length - 2);
+    const middleWidth = Math.max(0, width - 2 - headerLeft.length - headerRight.length);
     const header = overlayHeader(
         width - 2,
         headerLeft,
-        formatTrapHeader(model.state.traps, trapWidth),
+        formatBattleHeader(model.state.difficulty, model.state.traps, middleWidth),
         headerRight,
     );
 
@@ -367,6 +367,37 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
         if (index < enemies.length - 1) lines.push("");
         return lines;
     });
+}
+
+function formatBattleHeader(
+    difficulty: Difficulty,
+    traps: GameState["traps"],
+    width: number,
+): string {
+    const difficultyText = formatDifficultyHeader(difficulty);
+    if (traps.length === 0) return truncate(difficultyText, width);
+
+    const separator = " | ";
+    const trapWidth = Math.max(0, width - difficultyText.length - separator.length);
+    const trapText = formatTrapHeader(traps, trapWidth);
+    return truncate(`${difficultyText}${separator}${trapText}`, width);
+}
+
+export function formatDifficultyHeader(difficulty: Difficulty): string {
+    const groups = [
+        formatGlobalModifiers("P", difficulty.playerModifiers),
+        formatGlobalModifiers("E", difficulty.enemyModifiers),
+    ].filter((group) => group.length > 0);
+    const name = displayName(difficulty.id);
+    return groups.length > 0 ? `${name} [${groups.join("; ")}]` : name;
+}
+
+function formatGlobalModifiers(side: string, modifiers: Difficulty["playerModifiers"]): string {
+    const values = MODIFIER_DISPLAY.flatMap(([id, label]) => {
+        const value = modifiers[id];
+        return value ? [`${label} ${value > 0 ? "+" : ""}${value}`] : [];
+    });
+    return values.length > 0 ? `${side}: ${values.join(", ")}` : "";
 }
 
 function formatTrapHeader(traps: GameState["traps"], width: number): string {

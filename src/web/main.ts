@@ -8,7 +8,7 @@ import type { HighlightTarget, StyledLine, StyledText } from "../console/present
 import { playActionGroups, PRESENTATION_TIMING } from "../console/presentation";
 import { renderStyledScreen, type ScreenModel } from "../console/render";
 import { createEngine } from "../engine/public/engine";
-import { EncounterId } from "../engine/public/types";
+import { DifficultyId, EncounterId } from "../engine/public/types";
 import { startBattle } from "./app";
 import { gameplayTelemetry } from "./posthog";
 import {
@@ -255,7 +255,20 @@ function requiredElement<T extends HTMLElement>(id: string): T {
     return element as T;
 }
 
-function showEncounterSelector(list: EncounterId[]): Promise<EncounterId> {
+const DIFFICULTIES: readonly { id: DifficultyId; label: string }[] = [
+    { id: "casual", label: "Casual" },
+    { id: "standard", label: "Standard" },
+    { id: "veteran", label: "Veteran" },
+    { id: "extreme", label: "Extreme" },
+    { id: "mythic", label: "Mythic" },
+];
+
+interface EncounterSelection {
+    encounter: EncounterId;
+    difficulty: DifficultyId;
+}
+
+function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection> {
     screenContainer.setAttribute("aria-label", "Encounter selector");
     screenElement.textContent = "Choose encounter:";
     battleLogElement.textContent = "";
@@ -265,13 +278,34 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterId> {
     statusElement.textContent = "";
     choicesElement.replaceChildren();
 
-    return new Promise<EncounterId>((resolve) => {
+    const difficultyLabel = document.createElement("label");
+    difficultyLabel.className = "difficulty-picker";
+    difficultyLabel.append("Difficulty");
+    const difficultySelect = document.createElement("select");
+    difficultySelect.setAttribute("aria-label", "Difficulty");
+    for (const difficulty of DIFFICULTIES) {
+        const option = document.createElement("option");
+        option.value = difficulty.id;
+        option.textContent = difficulty.label;
+        difficultySelect.append(option);
+    }
+    difficultySelect.value = "standard";
+    difficultyLabel.append(difficultySelect);
+    choicesElement.append(difficultyLabel);
+
+    return new Promise<EncounterSelection>((resolve) => {
         const selectEncounter = (encounter: EncounterId): void => {
             document.removeEventListener("keydown", handleKeyDown);
             for (const candidate of choicesElement.querySelectorAll("button")) {
                 candidate.disabled = true;
             }
-            resolve(encounter);
+            difficultySelect.disabled = true;
+            const difficulty = DIFFICULTIES.find(({ id }) => id === difficultySelect.value)?.id
+                ?? "standard";
+            resolve({
+                encounter,
+                difficulty,
+            });
         };
         const handleKeyDown = (event: KeyboardEvent): void => {
             if (event.altKey || event.ctrlKey || event.metaKey || event.repeat) return;
@@ -305,8 +339,9 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterId> {
 async function start(): Promise<void> {
     while (true) {
         const engine = createEngine();
-        const encounter = await showEncounterSelector(engine.listEncounters());
-        await startBattle(engine, encounter, new BrowserBattleUI(), gameplayTelemetry, __KCQ_RELEASE_TAG__);
+        const selection = await showEncounterSelector(engine.listEncounters());
+        engine.setDifficulty(selection.difficulty);
+        await startBattle(engine, selection.encounter, new BrowserBattleUI(), gameplayTelemetry, __KCQ_RELEASE_TAG__);
     }
 }
 
