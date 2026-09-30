@@ -1,23 +1,23 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
-import { runConsoleClient } from "../../src/console/client";
-import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention, formatPreviewEffects } from "../../src/console/format";
-import { formatAccuracyRow, renderScreen } from "../../src/console/render";
 import { ko } from "../../src/content/characters/ko";
 import { contentCatalog } from "../../src/content/content";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { helpless, stunned } from "../../src/engine/protected/statuses";
 import type { Engine, GameEvent, GameState, Intention } from "../../src/engine/public/types";
+import { runConsoleClient } from "../../src/ui/console/client";
+import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention, formatPreviewEffects } from "../../src/ui/console/format";
+import { formatAccuracyRow, renderScreen } from "../../src/ui/console/render";
 import {
     makeBindingDef,
     makeCharacterDef,
     makeMove,
     setupBoundEngine,
 } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 import { multiEnemyEncounter, oneEnemyEncounter, testEnemyList, waitEnemy } from "../helpers/testContent";
 
 const state: GameState = {

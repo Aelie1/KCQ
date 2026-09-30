@@ -1,4 +1,4 @@
-import type { Buff, Effect, GameEvent, Intention, LeafEvent, ModifierId } from "../engine/public/types";
+import type { Buff, Effect, GameEvent, Intention, LeafEvent, ModifierId } from "../../engine/public/types";
 import { eventEntries } from "./eventEntries";
 
 export function formatEffect(effect: Effect, includeTarget = false): string {

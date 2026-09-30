@@ -1,7 +1,7 @@
 import { PassThrough, Readable } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
-import { runConsoleReplay, type ConsoleReplayInput } from "../../src/console/replay";
 import type { ActionView, GameState, PlayerAction } from "../../src/engine/public/types";
+import { runConsoleReplay, type ConsoleReplayInput } from "../../src/ui/console/replay";
 
 // Fail if viewing ever acquires a runtime dependency on simulation or the runner.
 vi.mock("../../src/engine/private/engine", () => {

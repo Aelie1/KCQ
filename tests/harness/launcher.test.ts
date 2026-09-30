@@ -1,13 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
-import type { ConsoleReplayInput } from "../../src/console/replay";
 import type { BatchResult } from "../../src/harness/batch/batch";
 import {
     encounterSets,
     executeEncounterSet,
 } from "../../src/harness/batch/encounter-sets";
-import { runSingleFight } from "../../src/harness/harness";
 import {
     launcherDefaults,
     parseIntegerPrompt,
@@ -16,9 +14,11 @@ import {
     runHarnessLauncher,
     type LauncherIO,
 } from "../../src/harness/cli/launcher";
+import { runSingleFight } from "../../src/harness/harness";
 import { policies } from "../../src/harness/policies";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { idlePolicy } from "../../src/harness/policy/idle";
+import type { ConsoleReplayInput } from "../../src/ui/console/replay";
 
 describe("interactive launcher helpers", () => {
     it("defines the named encounter sets as extensible data", () => {

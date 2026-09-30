@@ -1,4 +1,7 @@
-import type { AccuracyProfile, BindingId, Character, Difficulty, Enemy, EntityId, FailureReason, GameState, ModifierId, MoveType, PreviewProfile, Status, ThresholdInfo, } from "../engine/public/types";
+import type {
+    AccuracyProfile, BindingId, Character, Difficulty, Enemy, EntityId, FailureReason, GameState, ModifierId,
+    MoveType, PreviewProfile, Status, ThresholdInfo,
+} from "../../engine/public/types";
 import { formatBuff, formatIntention } from "./format";
 import {
     accuracyQualityStyle,

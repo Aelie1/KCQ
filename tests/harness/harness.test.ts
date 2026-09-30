@@ -19,7 +19,6 @@ import { getPolicy, policies } from "../../src/harness/policies";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { escapePolicy } from "../../src/harness/policy/escape";
 import { resolvedEvents } from "../helpers/events";
-import { createEmptyContentLibrary } from "../helpers/library";
 
 function stockEncounterId(): string {
     const encounterId = createEngine(1).listEncounters()[0];

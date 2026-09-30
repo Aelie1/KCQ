@@ -1,18 +1,17 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-    runBattleController,
-    type BattleChoiceRequest,
-    type BattleUI,
-} from "../../src/console/controller";
-import { playActionGroups } from "../../src/console/presentation";
 import { ko } from "../../src/content/characters/ko";
 import { contentCatalog } from "../../src/content/content";
 import type { EncounterDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { Engine } from "../../src/engine/public/types";
+import {
+    runBattleController,
+    type BattleChoiceRequest,
+    type BattleUI,
+} from "../../src/ui/console/controller";
+import { playActionGroups } from "../../src/ui/console/presentation";
 import {
     makeBindingDef,
     makeCharacterDef,
@@ -20,6 +19,7 @@ import {
     makeMove,
     makeWaitMove,
 } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 describe("shared battle controller", () => {
     it("presents each enemy's frame state during End Turn playback", async () => {

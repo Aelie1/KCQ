@@ -1,4 +1,4 @@
-import type { GameEvent, LeafEvent } from "../engine/public/types";
+import type { GameEvent, LeafEvent } from "../../engine/public/types";
 
 /** Events in the order the engine resolved them, for console rendering. */
 export function eventEntries(events: readonly GameEvent[]): Array<GameEvent | LeafEvent> {

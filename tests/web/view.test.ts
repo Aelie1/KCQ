@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BattleChoice } from "../../src/console/controller";
+import type { BattleChoice } from "../../src/ui/console/controller";
 import {
     browserChoiceForKey,
     browserChoiceLabel,

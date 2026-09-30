@@ -11,7 +11,7 @@ import type {
     GameState,
     PlayerAction,
     ValidTarget,
-} from "../engine/public/types";
+} from "../../engine/public/types";
 import { formatEffects, formatPreviewEffects } from "./format";
 import {
     ActorStyleRegistry,

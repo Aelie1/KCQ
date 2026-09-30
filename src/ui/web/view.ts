@@ -1,11 +1,6 @@
-import type { BattleChoice } from "../../console/controller";
-import type {
-    HighlightTarget,
-    SemanticStyle,
-    StyledLine,
-    StyledText,
-} from "../../console/presentation";
-import { choiceForKey, choiceShortcut } from "../../console/shortcuts";
+import type { BattleChoice } from "../console/controller";
+import type { HighlightTarget, SemanticStyle, StyledLine, StyledText } from "../console/presentation";
+import { choiceForKey, choiceShortcut } from "../console/shortcuts";
 
 export interface BrowserChoiceSet {
     choices: BattleChoice[];

@@ -1,8 +1,7 @@
 import { availableParallelism } from "node:os";
-import { runConsoleReplay } from "../../console/replay";
 import { createEngine } from "../../engine/public/engine";
+import { runConsoleReplay } from "../../ui/console/replay";
 import { runBatch } from "../batch/batch";
-import { captureReplaySamples } from "../batch/replay-samples";
 import {
     executePolicyComparison,
     formatPolicyComparison,
@@ -20,6 +19,7 @@ import {
     runBatchParallel,
     type BatchWorkerRunner,
 } from "../batch/parallel-batch";
+import { captureReplaySamples } from "../batch/replay-samples";
 import { runSingleFight, type FightPolicy, type SingleFightInput } from "../harness";
 import {
     createBatchRunOutput,

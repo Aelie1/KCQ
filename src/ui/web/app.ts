@@ -1,5 +1,5 @@
-import { runBattleController, type BattleUI } from "../../console/controller";
 import type { DifficultyId, EncounterId, Engine, GameEvent } from "../../engine/public/types";
+import { runBattleController, type BattleUI } from "../console/controller";
 import {
     createBattleTelemetryObserver,
     disabledTelemetry,

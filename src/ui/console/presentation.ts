@@ -2,14 +2,14 @@ import type {
     AccuracyProfile,
     BindingLevel,
     EntityId,
-    GameEvent,
     EventFrame,
+    GameEvent,
     GameState,
-    LeafEvent,
     HitBand,
+    LeafEvent,
     Phase,
     PlayerAction,
-} from "../engine/public/types";
+} from "../../engine/public/types";
 import { eventEntries } from "./eventEntries";
 
 export const PRESENTATION_TIMING = {

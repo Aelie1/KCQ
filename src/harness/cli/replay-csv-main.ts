@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { runConsoleReplay } from "../../console/replay";
 import { createEngine } from "../../engine/public/engine";
+import { runConsoleReplay } from "../../ui/console/replay";
 import { importPostHogReplayCsv } from "../replay/posthog-replay";
 
 async function main(): Promise<void> {

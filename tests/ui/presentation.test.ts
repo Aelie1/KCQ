@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { GameEvent } from "../../src/engine/public/types";
 import {
     accuracyQualityStyle,
     ActorStyleRegistry,
@@ -11,9 +12,8 @@ import {
     intentOutcomeStyle,
     playActionGroups,
     PRESENTATION_TIMING,
-} from "../../src/console/presentation";
-import { renderAnsi, renderStyledScreen } from "../../src/console/render";
-import type { GameEvent } from "../../src/engine/public/types";
+} from "../../src/ui/console/presentation";
+import { renderAnsi, renderStyledScreen } from "../../src/ui/console/render";
 import { styledLogText, styledTextParts } from "../../src/ui/web/view";
 
 describe("combat presentation", () => {

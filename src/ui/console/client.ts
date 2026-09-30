@@ -1,6 +1,6 @@
 import { createInterface } from "node:readline/promises";
 import type { Readable, Writable } from "node:stream";
-import type { Engine, GameEvent } from "../engine/public/types";
+import type { Engine, GameEvent } from "../../engine/public/types";
 import {
     runBattleController,
     type BattleChoiceRequest,

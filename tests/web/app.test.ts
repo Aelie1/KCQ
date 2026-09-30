@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import type { BattleUI } from "../../src/console/controller";
 import { contentCatalog } from "../../src/content/content";
 import { createEngine } from "../../src/engine/public/engine";
+import type { BattleUI } from "../../src/ui/console/controller";
 import {
     attachBattlePageLifecycle,
     createBattle,

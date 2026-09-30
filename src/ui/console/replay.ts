@@ -1,7 +1,7 @@
 import { createInterface } from "node:readline";
 import type { Readable, Writable } from "node:stream";
-import type { ActionView, GameEvent, GameState, PlayerAction, ThresholdInfo } from "../engine/public/types";
-import type { FightReplay, ReplayPolicyDecision } from "../harness/harness";
+import type { ActionView, GameEvent, GameState, PlayerAction, ThresholdInfo } from "../../engine/public/types";
+import type { FightReplay, ReplayPolicyDecision } from "../../harness/harness";
 import {
     ActorStyleRegistry,
     encounterSeparator,
