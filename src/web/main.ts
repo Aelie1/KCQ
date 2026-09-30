@@ -278,6 +278,9 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection>
     statusElement.textContent = "";
     choicesElement.replaceChildren();
 
+    const difficultyRow = document.createElement("div");
+    difficultyRow.className = "difficulty-row";
+
     const difficultyLabel = document.createElement("label");
     difficultyLabel.className = "difficulty-picker";
     difficultyLabel.append("Difficulty");
@@ -291,7 +294,8 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection>
     }
     difficultySelect.value = "standard";
     difficultyLabel.append(difficultySelect);
-    choicesElement.append(difficultyLabel);
+    difficultyRow.append(difficultyLabel);
+    choicesElement.append(difficultyRow);
 
     return new Promise<EncounterSelection>((resolve) => {
         const selectEncounter = (encounter: EncounterId): void => {
