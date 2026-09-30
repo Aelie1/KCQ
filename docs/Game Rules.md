@@ -612,7 +612,33 @@ An enemy unable to attack or whose turn is skipped does not execute its committe
 
 ---
 
-## 13. Rule Layers
+## 13. Difficulty
+
+KCQ has five game-wide difficulty levels:
+
+| Difficulty | Global effect | Enemy behavior |
+| ---------- | ------------- | -------------- |
+| Casual     | Players gain Hit +2 and Escape +2 | Standard |
+| Standard   | None | Standard |
+| Veteran    | Enemies gain Potency +2 | Standard |
+| Extreme    | Enemies gain Potency +2 | Selected enemies gain enhanced behaviors |
+| Mythic     | Enemies gain Potency +2 | Enhanced enemy behaviors are used at their strongest level |
+
+**Standard** is the baseline difficulty around which normal encounter behavior is defined.
+
+Difficulty modifiers apply globally and combine with ordinary modifiers from statuses, buffs, stances, and encounter/content effects.
+
+Casual increases player reliability and recovery without changing enemy mechanics.
+
+Veteran increases the effectiveness of successful enemy actions without changing their normal moves or behavior.
+
+Extreme and Mythic additionally allow individual enemies to gain difficulty-specific mechanics. These mechanics are content rules and differ by enemy; Mythic generally removes limitations present on the Extreme version.
+
+Difficulty applies to the battle as a whole, including enemies that are summoned after the encounter begins.
+
+---
+
+## 14. Rule Layers
 
 When interpreting KCQ, distinguish between three kinds of rules.
 

@@ -1,5 +1,24 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.10.0 — 2026-09-30
+
+ * Added difficulty system.  This offers five levels of difficulty:
+ * * Casual:  some bonuses for the player (+2hit, +2esc) -- this matches the old "failure bonuses" you could get in bq1
+ * * Standard:  its standard, no effects
+ * * Veteran:  some bonuses for the enemy (+2pot)
+ * * Extreme:  veteran+each enemy has a new power
+ * * * Skunks survive Explosion when they hit
+ * * * Skunkettes add Spray to Pounce when it would be a level 3 or 4 pounce
+ * * * Queen gets a free Skunk Gun attack when below half health
+ * * * Rainmakers explode into 50 puddles on defeat
+ * * * Fairies have a 50% chance to use a binding attack in addition to their support attack
+ * * Mythic: veteran+each enemy has a stronger power
+ * * * Skunks survive Explosion when they hit or miss
+ * * * Skunkettes add Spray to Pounce
+ * * * Queen gets a free Skunk Gun attack each turn
+ * * * Rainmakers explode into 100 puddles on defeat
+ * * * Fairies use a binding attack in addition to their support attack each turn
+
 ## 0.9.1 — 2026-09-29
 
  * Added tower levels - tower_1 is the hardest(an expected loss, but maybe you can still beat it), tower_2 and tower_3 are weakened versions after the goddess helps you
