@@ -2,12 +2,13 @@ import { ActionType, FailureReason, FlagId, ModifierId, ModifierSet, MoveType } 
 import { StatusDef, StatusLevelDef } from "./definitions";
 import { isCharacter } from "./helpers";
 import { getBindingLevel } from "./mechanics";
-import { iBuff, iEntity, iStatus } from "./types";
+import { iBuff, iEntity, iGameState, iStatus } from "./types";
 
 export class GameStatus {
     private statuses: StatusLevelDef[];
     private buffs: iBuff[];
 
+    private difficulty: ModifierSet;
     private modifiers: ModifierSet;
     private calculated: Partial<Record<ModifierId, boolean>>;
     private flags: Partial<Record<FlagId, boolean>>;
@@ -16,8 +17,9 @@ export class GameStatus {
     private hasBonusEscapes: boolean | undefined;
     private isStanding: boolean | undefined;
 
-    constructor(target: iEntity) {
-        this.modifiers = {};
+    constructor(state: iGameState, target: iEntity) {
+        this.difficulty = isCharacter(target) ? state.difficulty.playerModifiers : state.difficulty.enemyModifiers;
+        this.modifiers = { ...this.difficulty };
         this.calculated = {};
         this.flags = {};
         this.blockedMoveTypes = {};
@@ -67,7 +69,7 @@ export class GameStatus {
     }
 
     getModifiers(): ModifierSet {
-        this.modifiers = {};
+        this.modifiers = { ...this.difficulty };
         if (this.isStanding) {
             this.modifiers["defense"] = -2;
         }

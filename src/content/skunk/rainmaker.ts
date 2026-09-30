@@ -1,10 +1,11 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
-import { isCharacter } from "../../engine/protected/helpers";
+import { findTrap, isCharacter } from "../../engine/protected/helpers";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { HitBand } from "../../engine/public/types";
 import { RAINMAKER_ID } from "./constants";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
+import { trapPuddle } from "./puddles";
 
 const RAINMAKER_HP = 200;
 const RAINMAKER_DEF = 0;
@@ -80,5 +81,30 @@ export const rainmaker: EnemyDef = {
             targets: [state.characters[0]]
         });
         return effects;
+    },
+    onDefeat(state: iGameState, target: iEnemy): iEffect[] {
+        if (state.difficulty.id === "extreme") {
+            const trap = findTrap(state, trapPuddle.id);
+            if (trap) {
+                return [{
+                    type: "trap",
+                    actor: target,
+                    trap: trap,
+                    amount: 50
+                }];
+            }
+        }
+        if (state.difficulty.id === "mythic") {
+            const trap = findTrap(state, trapPuddle.id);
+            if (trap) {
+                return [{
+                    type: "trap",
+                    actor: target,
+                    trap: trap,
+                    amount: 100
+                }];
+            }
+        }
+        return [];
     }
 }

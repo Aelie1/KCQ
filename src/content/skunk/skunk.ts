@@ -216,7 +216,7 @@ export const latexExplosion: MoveDef = {
                     amount: PUDDLE_BASE
                 });
             }
-            if (isEnemy(actor) && actor.data["goddess"] !== 1) {
+            if (isEnemy(actor) && state.difficulty.id !== "mythic") {
                 result.effects.push({
                     type: "enemy",
                     target: actor,
@@ -245,7 +245,7 @@ export const latexExplosion: MoveDef = {
                 result: target.band,
                 effects: effects
             });
-            if (target.band === "crit" || actor.data["goddess"] === 1) {
+            if (target.band === "crit") {
                 if (isEnemy(actor)) {
                     result.effects.push({
                         type: "damage",
@@ -254,7 +254,7 @@ export const latexExplosion: MoveDef = {
                         amount: -EXPLOSION_HEAL
                     });
                 }
-            } else {
+            } else if (state.difficulty.id !== "extreme" && state.difficulty.id !== "mythic") {
                 if (isEnemy(actor)) {
                     result.effects.push({
                         type: "enemy",
@@ -278,7 +278,7 @@ export const skunk: EnemyDef = {
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
-        const validTargets = getValidTargets(state.characters);
+        const validTargets = getValidTargets(state, state.characters);
 
         //1) Explode if low HP
         {

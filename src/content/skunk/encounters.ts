@@ -223,12 +223,6 @@ function towerBuffs(state: iGameState, queenName: string, enemyMod: number, quee
                     modifiers: { hit: enemyMod * 2 }
                 }
             });
-            effects.push({
-                type: "data",
-                target: skunk,
-                name: "goddess",
-                amount: 1
-            });
         }
     }
     return effects;

@@ -15,7 +15,12 @@ export function serializeGameState(state: iGameState, statuses: StatusMap): Game
         characters: state.characters.map(x => serializeCharacter(x, getStatus(statuses, x))),
         enemies: state.enemies.map(x => serializeEnemy(state, x, statuses)),
         traps: state.traps.map(serializeTraps),
-        encounter: state.encounter ? serializeEncounter(state.encounter) : null
+        encounter: state.encounter ? serializeEncounter(state.encounter) : null,
+        difficulty: {
+            ...state.difficulty,
+            playerModifiers: { ...state.difficulty.playerModifiers },
+            enemyModifiers: { ...state.difficulty.enemyModifiers },
+        }
     };
 }
 

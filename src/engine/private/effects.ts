@@ -65,7 +65,7 @@ export class GameEffects {
                     }
                     if (effect.amount !== undefined) {
                         if (effect.amount > 0) {
-                            this.addBinding(this.state, effect.source, effect.target, effect.binding, effect.amount);
+                            this.addBinding(effect.source, effect.target, effect.binding, effect.amount);
                         } else {
                             this.removeBinding(effect.target, effect.binding, -effect.amount);
                         }
@@ -137,12 +137,12 @@ export class GameEffects {
     };
 
 
-    private addBinding(state: iGameState, actor: iEntity, target: iCharacter, type: BindingDef, amount: number) {
+    private addBinding(actor: iEntity, target: iCharacter, type: BindingDef, amount: number) {
         let modifiedAmount = amount;
         if (modifiedAmount > 0) {
             for (const buff of target.buffs) {
                 if (buff.active && buff.modifyBinding) {
-                    const result = buff.modifyBinding(state, actor, target, buff, type, modifiedAmount);
+                    const result = buff.modifyBinding(this.state, actor, target, buff, type, modifiedAmount);
                     modifiedAmount = result.value;
                     this.stack(result.effects);
                 }
@@ -246,7 +246,7 @@ export class GameEffects {
     private removeBuff(target: iEntity, buff: iBuff) {
         const index = target.buffs.indexOf(buff);
         if (index >= 0) {
-            const couldMove = isCharacter(target) ? new GameStatus(target).canMove() : true;
+            const couldMove = isCharacter(target) ? new GameStatus(this.state, target).canMove() : true;
             target.buffs.splice(index, 1);
             this.addEvent({
                 type: "buffRemoved",
@@ -254,7 +254,7 @@ export class GameEffects {
                 buff: buff.id
             });
             if (isCharacter(target)) {
-                const canMove = new GameStatus(target).canMove();
+                const canMove = new GameStatus(this.state, target).canMove();
                 if (!couldMove && canMove) {
                     this.stack([{
                         type: "stance",
@@ -485,7 +485,7 @@ export class GameEffects {
                 targetStates.push(...this.state.enemies);
             }
             if (moveState.definition.targetSide === "either" || moveState.definition.targetSide === "player") {
-                targetStates.push(...getValidTargets(this.state.characters));
+                targetStates.push(...getValidTargets(this.state, this.state.characters));
             }
         } else {
             targetStates.push(...targets);

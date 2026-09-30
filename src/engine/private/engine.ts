@@ -4,13 +4,13 @@ import { mixSeed, Random } from "../protected/random";
 import { GameStatus, StatusMap } from "../protected/status";
 import { ContentCatalog, iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import { ContentLibrary } from "../public/library";
-import type { AccuracyResult, ActionResult, ActionView, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, ThresholdInfo, TrapEvent } from "../public/types";
+import type { AccuracyResult, ActionResult, ActionView, DifficultyId, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, ThresholdInfo, TrapEvent } from "../public/types";
 import {
     applyCooldowns,
     evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape,
     resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers
 } from "./combat";
-import { TRAP_MODIFIER } from "./constants";
+import { difficulties, TRAP_MODIFIER } from "./constants";
 import { GameEffects } from "./effects";
 import { serializeLibrary } from "./library";
 import { serializeGameState } from "./serialize";
@@ -34,7 +34,8 @@ export class GameEngine implements Engine {
             characters: [],
             enemies: [],
             traps: [],
-            encounter: null
+            encounter: null,
+            difficulty: difficulties.standard
         };
         this.statuses = getStatusMap(this.state);
         this.viewState = serializeGameState(this.state, this.statuses);
@@ -87,6 +88,10 @@ export class GameEngine implements Engine {
             },
             max: thresholds.max
         }
+    }
+
+    setDifficulty(difficulty: DifficultyId) {
+        this.state.difficulty = difficulties[difficulty];
     }
 
     listCharacters(): EntityId[] {
@@ -220,7 +225,7 @@ export class GameEngine implements Engine {
             };
         }
 
-        let status = new GameStatus(actor);
+        let status = new GameStatus(this.state, actor);
         const capability = status.canAct(action.type);
         if (capability) {
             return {
@@ -281,14 +286,14 @@ export class GameEngine implements Engine {
                     }
                     if (move.targetSide === "either" || move.targetSide === "enemy") {
                         for (const enemy of this.state.enemies) {
-                            const targetStatus = new GameStatus(enemy);
+                            const targetStatus = new GameStatus(this.state, enemy);
                             targetInfo.push(isValidTarget(this.state, actor, status, enemy, targetStatus, move));
                         }
                     }
                     if (move.targetSide === "either" || move.targetSide === "player") {
 
                         for (const character of this.state.characters) {
-                            const targetStatus = new GameStatus(character);
+                            const targetStatus = new GameStatus(this.state, character);
                             targetInfo.push(isValidTarget(this.state, actor, status, character, targetStatus, move));
                         }
                     }
@@ -311,7 +316,7 @@ export class GameEngine implements Engine {
                     for (const target of action.targets) {
                         const targetState = findEntity(this.state, target);
                         if (targetState) {
-                            const targetStatus = new GameStatus(targetState);
+                            const targetStatus = new GameStatus(this.state, targetState);
                             const info = isValidTarget(this.state, actor, status, targetState, targetStatus, move);
                             if (info.valid) {
                                 targetInfo.push(info);
@@ -354,7 +359,7 @@ export class GameEngine implements Engine {
                         }
                     }
                     //Redo some checks in case status has changed
-                    status = new GameStatus(actor);
+                    status = new GameStatus(this.state, actor);
                     let reason: FailureReason | undefined;
 
                     const capability = status.canAct(action.type);
@@ -526,7 +531,7 @@ export class GameEngine implements Engine {
                     }
 
                     //Redo some checks in case status has changed
-                    status = new GameStatus(actor);
+                    status = new GameStatus(this.state, actor);
                     let reason: FailureReason | undefined;
 
                     const capability = status.canAct(action.type);
@@ -564,11 +569,11 @@ export class GameEngine implements Engine {
                 }
 
                 //now we have a valid actor, target, and binding -- execute the escape
-                const targetStatus = new GameStatus(target);
+                const targetStatus = new GameStatus(this.state, target);
                 effects.merge(resolveEscape(actor, status, target, targetStatus, binding));
                 if (!actor.acted) {
                     actor.acted = true;
-                    status = new GameStatus(actor);
+                    status = new GameStatus(this.state, actor);
                     const hasFollowUpEscape = status.canAct("escape") && this.state.characters.some(x => x.bindings.length > 0 && (x === actor || status.canAssist()));
                     if (actor.standing && status.canBonusEscape() && hasFollowUpEscape) {
                         actor.bonusEscapes++;
@@ -624,7 +629,7 @@ export class GameEngine implements Engine {
             return;
         }
 
-        const status = new GameStatus(actor);
+        const status = new GameStatus(this.state, actor);
         if (!status.canAttack() || status.isSkipped()) {
             return;
         }

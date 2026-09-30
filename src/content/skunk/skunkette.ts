@@ -142,7 +142,7 @@ export const pounce: MoveDef = {
             effects.push(...createPounceBuffs(target, actor, 4, false));
         }
 
-        if (effectiveness >= 1.75 && move.binding) {
+        if (move.binding && (effectiveness >= 1.75 || (effectiveness >= 0.95 && state.difficulty.id === "extreme") || state.difficulty.id === "mythic")) {
             effects.push({
                 type: "move",
                 actor: actor,
@@ -309,7 +309,7 @@ export const skunkette: EnemyDef = {
             }
         }
 
-        const validTargets = getValidTargets(state.characters);
+        const validTargets = getValidTargets(state, state.characters);
 
         //2) Pounce if off cooldown and a valid target exists
         {

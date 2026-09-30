@@ -221,7 +221,25 @@ export const fairy: EnemyDef = {
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
-        const validTargets = getValidTargets(state.enemies);
+        const validTargets = getValidTargets(state, state.enemies);
+
+        const currHpRatio = actor.currHp / actor.maxHp;
+
+        //-1) Difficulty based extra attacks
+        if (state.difficulty.id === "mythic" || (currHpRatio < 0.5 && state.difficulty.id === "extreme")) {
+            const target = pickValidTarget(state, state.characters, rng);
+            if (target && isCharacter(target)) {
+                const binding = pickBinding(target, bindings, rng);
+                if (binding) {
+                    effects.push({
+                        type: "move",
+                        actor: actor,
+                        move: { definition: bindingMagic, binding: binding },
+                        targets: [target]
+                    });
+                }
+            }
+        }
 
         //0) Determine which moves are valid
         const healFilter = ["skunkette", "skunk"];
@@ -292,7 +310,7 @@ export const fairy: EnemyDef = {
 
 
         //2) If no valid actions, basic attack
-        const target = pickValidTarget(state.characters, rng);
+        const target = pickValidTarget(state, state.characters, rng);
         if (target && isCharacter(target)) {
             const binding = pickBinding(target, bindings, rng);
             if (binding) {

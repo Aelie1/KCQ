@@ -305,7 +305,7 @@ export function tickPlayers(state: iGameState): iEffect[] {
     const effects: iEffect[] = [];
     for (const character of state.characters) {
         character.acted = false;
-        const status = new GameStatus(character);
+        const status = new GameStatus(state, character);
         effects.push({
             type: "stance",
             actor: character,
@@ -386,7 +386,7 @@ function normalizeEffect(effect: iEffect) {
 export function evaluateIntention(state: iGameState, intention: iIntention, actorStatus: GameStatus, statusMap?: StatusMap): iTargetInfo[] {
     const targets: iTargetInfo[] = [];
     for (const roll of intention.rolls) {
-        const targetStatus = (roll.target && isValidEntity(state, roll.target)) ? (statusMap ? getStatus(statusMap, roll.target) : new GameStatus(roll.target)) : null;
+        const targetStatus = (roll.target && isValidEntity(state, roll.target)) ? (statusMap ? getStatus(statusMap, roll.target) : new GameStatus(state, roll.target)) : null;
         const info = isValidTarget(state, intention.actor, actorStatus, roll.target, targetStatus, intention.move.definition);
         if (info.valid) {
             if (info.target) {

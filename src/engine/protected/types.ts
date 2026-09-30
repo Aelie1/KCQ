@@ -1,6 +1,9 @@
 import {
-    Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect, Enemy, EnemyEffect, EntityId,
-    HitBand, StanceId, TargetInfo, Trap, TrapEffect, Turn
+    Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect,
+    Difficulty,
+    Enemy, EnemyEffect, EntityId,
+    HitBand,
+    StanceId, TargetInfo, Trap, TrapEffect, Turn
 } from "../public/types";
 import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, TrapDef } from "./definitions";
 
@@ -24,6 +27,7 @@ export interface iGameState {
     enemies: iEnemy[];
     traps: iTrap[];
     encounter: EncounterDef | null;
+    difficulty: Difficulty;
 }
 
 interface iTurn extends Omit<Turn, "outcome"> { };

@@ -1,4 +1,4 @@
-import { HitBand } from "../public/types";
+import { Difficulty, DifficultyId, HitBand } from "../public/types";
 
 export const EFFECTIVENESS_MODIFIER = 0.1;
 export const DEFENSE_MODIFIER = 10;
@@ -16,3 +16,31 @@ export const effectivenessRange: Record<HitBand, [number, number]> = {
     crit: [1.50, 2.00],
     none: [0, 0],
 };
+
+export const difficulties: Record<DifficultyId, Difficulty> = {
+    casual: {
+        id: "casual",
+        playerModifiers: { hit: 2, escape: 2 },
+        enemyModifiers: {},
+    },
+    standard: {
+        id: "standard",
+        playerModifiers: {},
+        enemyModifiers: {},
+    },
+    veteran: {
+        id: "veteran",
+        playerModifiers: {},
+        enemyModifiers: { potency: 2 },
+    },
+    extreme: {
+        id: "extreme",
+        playerModifiers: {},
+        enemyModifiers: { potency: 2 },
+    },
+    mythic: {
+        id: "mythic",
+        playerModifiers: {},
+        enemyModifiers: { potency: 2 },
+    },
+}

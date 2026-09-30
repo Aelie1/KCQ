@@ -228,7 +228,25 @@ export const queen: EnemyDef = {
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
-        const validTargets = getValidTargets(state.characters);
+        const validTargets = getValidTargets(state, state.characters);
+
+        const currHpRatio = actor.currHp / actor.maxHp;
+
+        if (state.difficulty.id === "mythic" || (currHpRatio < 0.5 && state.difficulty.id === "extreme")) {
+            const target = pickTarget(validTargets, rng);
+            if (target && isCharacter(target)) {
+                const binding = pickBinding(target, bindings, rng);
+                if (binding) {
+                    effects.push({
+                        type: "move",
+                        actor: actor,
+                        move: { definition: skunkGun, binding: binding },
+                        targets: [target]
+                    });
+                }
+            }
+        }
+
         //1) If no one has a collar and it is off CD, use skunk collar on the person who dealt the most damage to her
         {
             if (!validTargets.some(x => isCharacter(x) && x.bindings.some(x => x.id === latexCollar.id))) {

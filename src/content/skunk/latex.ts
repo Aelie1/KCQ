@@ -33,7 +33,7 @@ export const latexBindings: BindingDef = {
         }
 
         //We're already Impossible x4, incapacitate the player, if they aren't already
-        const status = new GameStatus(target);
+        const status = new GameStatus(state, target);
         if (status.isIncapacitated()) {
             return effects;
         }

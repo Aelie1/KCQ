@@ -3,12 +3,12 @@ import { findBinding } from "./helpers";
 import { thresholds } from "./mechanics";
 import { Random } from "./random";
 import { GameStatus } from "./status";
-import type { iCharacter, iEntity } from "./types";
+import type { iCharacter, iEntity, iGameState } from "./types";
 
-export function getValidTargets(entities: iEntity[]): iEntity[] {
+export function getValidTargets(state: iGameState, entities: iEntity[]): iEntity[] {
     const validTargets: iEntity[] = [];
     for (const character of entities) {
-        const status = new GameStatus(character);
+        const status = new GameStatus(state, character);
         if (!status.isIncapacitated()) {
             validTargets.push(character);
         }
@@ -16,8 +16,8 @@ export function getValidTargets(entities: iEntity[]): iEntity[] {
     return validTargets;
 }
 
-export function pickValidTarget(entities: iEntity[], rng: Random): iEntity | undefined {
-    const validTargets = getValidTargets(entities);
+export function pickValidTarget(state: iGameState, entities: iEntity[], rng: Random): iEntity | undefined {
+    const validTargets = getValidTargets(state, entities);
 
     if (validTargets.length === 0) {
         return undefined;

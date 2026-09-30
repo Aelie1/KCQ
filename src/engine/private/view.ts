@@ -12,10 +12,10 @@ export function getStatusMap(state: iGameState): StatusMap {
     //First we cache all statuses
     const statuses: StatusMap = new Map();
     for (const character of state.characters) {
-        statuses.set(character, new GameStatus(character));
+        statuses.set(character, new GameStatus(state, character));
     }
     for (const enemy of state.enemies) {
-        statuses.set(enemy, new GameStatus(enemy));
+        statuses.set(enemy, new GameStatus(state, enemy));
     }
     return statuses;
 }

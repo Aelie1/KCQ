@@ -35,6 +35,7 @@ export interface GameState {
     enemies: Enemy[];
     traps: Trap[];
     encounter: Encounter | null;
+    difficulty: Difficulty;
 }
 
 export interface Turn {
@@ -42,6 +43,12 @@ export interface Turn {
     step: number;
     phase: Phase;
     outcome: BattleState;
+}
+
+export interface Difficulty {
+    id: DifficultyId;
+    playerModifiers: ModifierSet;
+    enemyModifiers: ModifierSet;
 }
 
 export type BattleState = "ongoing" | "defeat" | "victory";
@@ -54,7 +61,9 @@ export type DefinitionId = string;
 
 export type EntitySide = "either" | "player" | "enemy" | "none";
 
-export type PassiveId = string
+export type PassiveId = string;
+
+export type DifficultyId = "casual" | "standard" | "veteran" | "extreme" | "mythic";
 
 /*******************************************************
  * Characters
