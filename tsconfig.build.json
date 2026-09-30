@@ -10,7 +10,7 @@
     ],
     "exclude": [
         "tests",
-        "src/web/main.ts",
-        "src/web/posthog.ts"
+        "src/ui/web/main.ts",
+        "src/ui/web/posthog.ts"
     ]
 }

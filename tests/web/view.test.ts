@@ -9,7 +9,7 @@ import {
     HighlightTimeline,
     isLogNearBottom,
     styledLogText,
-} from "../../src/web/view";
+} from "../../src/ui/web/view";
 
 describe("web battle view", () => {
     it("adds the release tag to the browser title", () => {

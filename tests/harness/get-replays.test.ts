@@ -26,8 +26,8 @@ import {
     type ArchivedReplay,
     type ReplaySyncOptions,
 } from "../../src/harness/replay/replay-archive";
-import { compactStateDigest } from "../../src/web/telemetry";
 import { compareSemanticVersions } from "../../src/harness/replay/semantic-version";
+import { compactStateDigest } from "../../src/ui/web/telemetry";
 
 const temporaryDirectories: string[] = [];
 const RECENT_NOW = new Date("2026-09-21T13:00:00.000Z");

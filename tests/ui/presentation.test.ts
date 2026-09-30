@@ -14,7 +14,7 @@ import {
 } from "../../src/console/presentation";
 import { renderAnsi, renderStyledScreen } from "../../src/console/render";
 import type { GameEvent } from "../../src/engine/public/types";
-import { styledLogText, styledTextParts } from "../../src/web/view";
+import { styledLogText, styledTextParts } from "../../src/ui/web/view";
 
 describe("combat presentation", () => {
     it("formats encounter starts as a distinct banner", () => {

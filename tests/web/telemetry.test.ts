@@ -6,17 +6,17 @@ import {
     ANONYMOUS_PLAYER_ID_KEY,
     getOrCreateAnonymousPlayerId,
     type AnonymousIdStorage,
-} from "../../src/web/anonymousPlayer";
+} from "../../src/ui/web/anonymousPlayer";
 import {
     sanitizePostHogEvent,
     type PostHogEventPayload,
-} from "../../src/web/posthogSanitizer";
+} from "../../src/ui/web/posthogSanitizer";
 import {
     compactStateDigest,
     createBattleTelemetryObserver,
     createGameplayTelemetry,
     type GameplayTelemetry,
-} from "../../src/web/telemetry";
+} from "../../src/ui/web/telemetry";
 
 const PLAYER_ID = "10000000-0000-4000-8000-000000000001";
 const OTHER_PLAYER_ID = "20000000-0000-4000-8000-000000000002";

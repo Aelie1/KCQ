@@ -3,12 +3,12 @@ import {
     type BattleChoiceRequest,
     type BattlePlaybackRequest,
     type BattleUI,
-} from "../console/controller";
-import type { HighlightTarget, StyledLine, StyledText } from "../console/presentation";
-import { playActionGroups, PRESENTATION_TIMING } from "../console/presentation";
-import { renderStyledScreen, type ScreenModel } from "../console/render";
-import { createEngine } from "../engine/public/engine";
-import { DifficultyId, EncounterId } from "../engine/public/types";
+} from "../../console/controller";
+import type { HighlightTarget, StyledLine, StyledText } from "../../console/presentation";
+import { playActionGroups, PRESENTATION_TIMING } from "../../console/presentation";
+import { renderStyledScreen, type ScreenModel } from "../../console/render";
+import { createEngine } from "../../engine/public/engine";
+import { DifficultyId, EncounterId } from "../../engine/public/types";
 import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES, startBattle } from "./app";
 import { gameplayTelemetry } from "./posthog";
 import {

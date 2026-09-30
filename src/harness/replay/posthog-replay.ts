@@ -9,7 +9,7 @@ import type {
 import {
     compactStateDigest,
     type CompactStateDigest,
-} from "../../web/telemetry";
+} from "../../ui/web/telemetry";
 import type { FightReplay, ReplayStep } from "../harness";
 import { timestampMilliseconds } from "./replay-timestamp";
 

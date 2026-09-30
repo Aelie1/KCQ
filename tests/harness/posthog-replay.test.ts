@@ -8,7 +8,7 @@ import {
     parseCsv,
     parsePostHogReplayCsv,
 } from "../../src/harness/replay/posthog-replay";
-import { compactStateDigest } from "../../src/web/telemetry";
+import { compactStateDigest } from "../../src/ui/web/telemetry";
 
 const HEADERS = [
     "timestamp",

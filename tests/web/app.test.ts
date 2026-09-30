@@ -9,8 +9,8 @@ import {
     ENCOUNTER_DIFFICULTIES,
     startBattle,
     type PageLifecycleTarget,
-} from "../../src/web/app";
-import type { BattleTelemetryObserver } from "../../src/web/telemetry";
+} from "../../src/ui/web/app";
+import type { BattleTelemetryObserver } from "../../src/ui/web/telemetry";
 
 describe("web battle application", () => {
     it("offers all five difficulties with Standard selected by default", () => {
