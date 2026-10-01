@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -13,12 +12,13 @@ import type {
 import type { PolicyContext } from "../../src/harness/harness";
 import {
     evaluateSmartDecision,
-    STANDING_DEFENSE_PRESSURE_FRACTION,
     stanceTrapScorer,
+    STANDING_DEFENSE_PRESSURE_FRACTION,
     type ScoredSmartCandidate,
     type StanceTrapBreakdown,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const thresholds = {
     thresholds: { easy: 10, medium: 20, hard: 30, extreme: 50, impossible: 80 },
@@ -62,6 +62,7 @@ function enemy(intentions: Intention[] = [], id = "test-enemy"): Enemy {
     return {
         id,
         defId: id,
+        index: 1,
         rank: "enemy",
         maxHp: 100,
         currHp: 100,

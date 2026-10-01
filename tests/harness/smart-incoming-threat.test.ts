@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -21,6 +20,7 @@ import {
     recoveryDebt,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number): Binding {
     return { id, value, level: "none", data: {}, status: [], tickEffects: [] };
@@ -49,6 +49,7 @@ function enemy(id: string, effects: Effect[] = [], currHp = 100): Enemy {
     return {
         id,
         defId: id,
+        index: 1,
         rank: "enemy",
         maxHp: 100,
         currHp,

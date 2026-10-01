@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import { createEngine } from "../../src/engine/public/engine";
 import type {
     ActionView,
@@ -14,6 +13,7 @@ import {
     createDetailedCombatCollector,
     type MetricActionObservation,
 } from "../../src/harness/metrics";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function character(id: string): Character {
     return {
@@ -35,6 +35,7 @@ function enemy(id: string, exploding = false): Enemy {
     return {
         id,
         defId,
+        index: 1,
         rank: "enemy",
         maxHp: 300,
         currHp: 50,

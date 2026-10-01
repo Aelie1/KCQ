@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -30,6 +29,7 @@ import {
     smartScorers,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number, level: Binding["level"]): Binding {
     return { id, value, level, data: {}, status: [], tickEffects: [] };
@@ -59,6 +59,7 @@ function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
     return {
         id,
         defId,
+        index: 1,
         rank: "enemy",
         maxHp: 200,
         currHp: 200,

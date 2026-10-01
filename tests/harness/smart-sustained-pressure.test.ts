@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -22,6 +21,7 @@ import {
     sustainedPressureProgressScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const LATEX_TRACKS = ["latexHead", "latexArms", "latexTorso", "latexLegs"];
 
@@ -56,6 +56,7 @@ function enemy(
     return {
         id,
         defId: id,
+        index: 1,
         rank: "minion",
         maxHp: 200,
         currHp,

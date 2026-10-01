@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { Character, Enemy, GameState, PlayerAction } from "../../src/engine/public/types";
 import type { BatchResult, BatchRun } from "../../src/harness/batch/batch";
 import { summarizeBatch, wilsonScoreInterval } from "../../src/harness/batch/summary";
 import type { FightReplay, SingleFightResult, SingleFightTermination } from "../../src/harness/harness";
 import type { DetailedCombatMetrics } from "../../src/harness/metrics";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 interface RunFixture {
     runIndex: number;
@@ -32,7 +32,7 @@ function character(id: string, bindingValues: number[]): Character {
 
 function enemy(currHp: number): Enemy {
     return {
-        id: `enemy-${currHp}`, defId: "enemy", rank: "enemy", maxHp: 100, currHp, currDef: 0,
+        id: `enemy-${currHp}`, defId: "enemy", index: currHp, rank: "enemy", maxHp: 100, currHp, currDef: 0,
         intentions: [], buffs: [], cooldowns: {},
     };
 }

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -20,6 +19,7 @@ import {
     type SkunkedRescueBreakdown,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(value = 80): Binding {
     return {
@@ -51,6 +51,7 @@ function enemy(id: string, currHp = 200, defId = id): Enemy {
     return {
         id,
         defId,
+        index: 1,
         rank: "enemy",
         maxHp: 200,
         currHp,

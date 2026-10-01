@@ -43,6 +43,7 @@ function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): 
     return {
         id: enemy.id,
         defId: enemy.defId,
+        index: enemy.index,
         rank: enemy.rank,
         maxHp: enemy.maxHp,
         currHp: enemy.currHp,

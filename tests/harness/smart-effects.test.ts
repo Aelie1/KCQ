@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -10,7 +9,6 @@ import type {
     GameState,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
-import { createEmptyContentLibrary } from "../helpers/library";
 import {
     assessSmartBoard,
     evaluateBindingRecovery,
@@ -20,6 +18,8 @@ import {
     generateSmartCandidates,
     type SmartCandidate,
 } from "../../src/harness/policy/smart";
+import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const thresholds = { thresholds: { impossible: 80 }, max: 100 } as const;
 
@@ -46,6 +46,7 @@ function enemy(id = "enemy"): Enemy {
     return {
         id,
         defId: id,
+        index: 1,
         rank: "enemy",
         maxHp: 100,
         currHp: 100,
