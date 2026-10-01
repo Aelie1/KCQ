@@ -90,7 +90,6 @@ export interface Character {
 export interface Enemy {
     id: EntityId;
     defId: DefinitionId;
-    index: number;
     rank: "minion" | "enemy" | "boss";
     maxHp: number;
     currHp: number;

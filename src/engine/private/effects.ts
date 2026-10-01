@@ -382,7 +382,6 @@ export class GameEffects {
             buffs: [],
             id: name,
             defId: definition.id,
-            index: this.state.nextId[definition.id],
             rank: definition.rank,
             maxHp: definition.hp,
             currHp: definition.hp * hpRatio,

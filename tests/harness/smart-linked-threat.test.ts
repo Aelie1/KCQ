@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -19,7 +20,6 @@ import {
     linkedThreatScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const catastrophicId = "test-catastrophic" as StatusId;
 const severeId = "test-severe" as StatusId;
@@ -31,7 +31,6 @@ function enemy(id: string, currHp = 100): Enemy {
     return {
         id,
         defId: id,
-        index: 1,
         rank: "enemy",
         maxHp: 100,
         currHp,

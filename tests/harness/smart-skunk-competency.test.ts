@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -20,7 +21,6 @@ import {
     generateSmartCandidates,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function character(id = "hero", bindings: Binding[] = []): Character {
     return {
@@ -42,7 +42,6 @@ function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
     return {
         id,
         defId,
-        index: 1,
         rank: "enemy",
         maxHp: 300,
         currHp: 300,

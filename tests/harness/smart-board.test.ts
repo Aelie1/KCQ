@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionView,
     Binding,
@@ -7,14 +8,13 @@ import type {
     GameState,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
+import { createEmptyContentLibrary } from "../helpers/library";
 import {
     assessSmartBoard,
     evaluateSmartDecision,
     type SmartBoardAssessment,
     type SmartScorer,
 } from "../../src/harness/policy/smart";
-import { createEmptyContentLibrary } from "../helpers/library";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number, level: Binding["level"]): Binding {
     return { id, value, level, data: {}, status: [], tickEffects: [] };
@@ -40,7 +40,6 @@ function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
     return {
         id,
         defId: id,
-        index: 1,
         rank: "enemy",
         maxHp: 10,
         currHp: 10,

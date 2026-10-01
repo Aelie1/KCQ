@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import { createEngine } from "../../src/engine/public/engine";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     Buff,
     Character,
-    Effect,
     Enemy,
+    Effect,
     GameEvent,
     GameState,
     Intention,
@@ -15,7 +16,6 @@ import {
     createDetailedCombatCollector,
     type MetricActionObservation,
 } from "../../src/harness/metrics";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function character(id: string, values: Partial<Character> = {}): Character {
     return {
@@ -38,7 +38,6 @@ function enemy(id: string, buffs: Buff[] = [], currDef = 0): Enemy {
     return {
         id,
         defId,
-        index: 1,
         rank: "enemy",
         maxHp: 100,
         currHp: 100,
@@ -250,11 +249,9 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             initial,
             afterKill,
-            {
-                type: "useMove", actor: "hero", move: "syntheticMouth", effects: [], targets: [{
-                    target: "killedSkunk", result: "hit", effects: [{ type: "enemyDefeated", target: "killedSkunk" }],
-                }]
-            },
+            { type: "useMove", actor: "hero", move: "syntheticMouth", effects: [], targets: [{
+                target: "killedSkunk", result: "hit", effects: [{ type: "enemyDefeated", target: "killedSkunk" }],
+            }] },
             { type: "move", actor: "hero", move: "syntheticMouth", targets: ["killedSkunk"] },
         ));
 
@@ -290,11 +287,9 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             afterCancel,
             afterOrdinaryDeath,
-            {
-                type: "useMove", actor: "hero", move: "syntheticMouth", effects: [], targets: [{
-                    target: "ordinarySkunk", result: "hit", effects: [{ type: "enemyDefeated", target: "ordinarySkunk" }],
-                }]
-            },
+            { type: "useMove", actor: "hero", move: "syntheticMouth", effects: [], targets: [{
+                target: "ordinarySkunk", result: "hit", effects: [{ type: "enemyDefeated", target: "ordinarySkunk" }],
+            }] },
             { type: "move", actor: "hero", move: "syntheticMouth", targets: ["ordinarySkunk"] },
             4,
         ));
@@ -357,11 +352,9 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             initial,
             reflected,
-            {
-                type: "useMove", actor: "hero", move: "reflect", targets: [], effects: [
-                    { type: "buffAdded", target: "hero", buff: "reflect" },
-                ]
-            },
+            { type: "useMove", actor: "hero", move: "reflect", targets: [], effects: [
+                { type: "buffAdded", target: "hero", buff: "reflect" },
+            ] },
             { type: "move", actor: "hero", move: "reflect", targets: [] },
         ));
         const stopped = view({ characters: reflected.characters, enemies: [enemyWithIntentions("target1", [])] });
@@ -639,16 +632,14 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             reflected,
             initial,
-            {
-                type: "useMove", actor: "foe", move: "latexSpray", targets: [{
-                    target: "hero", result: "hit", effects: [
-                        { type: "buffRemoved", target: "hero", buff: "reflect" },
-                        { type: "enemyDamaged", target: "foe", amount: 8 },
-                        { type: "bondageBlocked", target: "hero", binding: "rope", amount: 4 },
-                        { type: "bondageAdded", target: "hero", binding: "rope", amount: 4 },
-                    ],
-                }], effects: []
-            },
+            { type: "useMove", actor: "foe", move: "latexSpray", targets: [{
+                target: "hero", result: "hit", effects: [
+                    { type: "buffRemoved", target: "hero", buff: "reflect" },
+                    { type: "enemyDamaged", target: "foe", amount: 8 },
+                    { type: "bondageBlocked", target: "hero", binding: "rope", amount: 4 },
+                    { type: "bondageAdded", target: "hero", binding: "rope", amount: 4 },
+                ],
+            }], effects: [] },
             { type: "endTurn" },
             2,
         ));
@@ -664,14 +655,12 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             braced,
             initial,
-            {
-                type: "useMove", actor: "foe", move: "latexRain", targets: [{
-                    target: "hero", result: "hit", effects: [
-                        { type: "buffRemoved", target: "hero", buff: "brace" },
-                        { type: "bondageBlocked", target: "hero", binding: "rope", amount: 10 },
-                    ],
-                }], effects: []
-            },
+            { type: "useMove", actor: "foe", move: "latexRain", targets: [{
+                target: "hero", result: "hit", effects: [
+                    { type: "buffRemoved", target: "hero", buff: "brace" },
+                    { type: "bondageBlocked", target: "hero", binding: "rope", amount: 10 },
+                ],
+            }], effects: [] },
             { type: "endTurn" },
             4,
         ));
@@ -687,15 +676,13 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             fairyReflected,
             initial,
-            {
-                type: "useMove", actor: "foe", move: "latexSpray", targets: [{
-                    target: "hero", result: "hit", effects: [
-                        { type: "buffRemoved", target: "hero", buff: "fairyReflect" },
-                        { type: "enemyDamaged", target: "foe", amount: 6 },
-                        { type: "bondageBlocked", target: "hero", binding: "rope", amount: 6 },
-                    ],
-                }], effects: []
-            },
+            { type: "useMove", actor: "foe", move: "latexSpray", targets: [{
+                target: "hero", result: "hit", effects: [
+                    { type: "buffRemoved", target: "hero", buff: "fairyReflect" },
+                    { type: "enemyDamaged", target: "foe", amount: 6 },
+                    { type: "bondageBlocked", target: "hero", binding: "rope", amount: 6 },
+                ],
+            }], effects: [] },
             { type: "endTurn" },
             6,
         ));
@@ -706,37 +693,31 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             initial,
             ambiguous,
-            {
-                type: "useMove", actor: "hero", move: "reflect", targets: [], effects: [
-                    { type: "buffAdded", target: "hero", buff: "reflect" },
-                ]
-            },
+            { type: "useMove", actor: "hero", move: "reflect", targets: [], effects: [
+                { type: "buffAdded", target: "hero", buff: "reflect" },
+            ] },
             { type: "move", actor: "hero", move: "reflect", targets: [] },
             7,
         ));
         collector.onAction?.(observation(
             ambiguous,
             ambiguous,
-            {
-                type: "useMove", actor: "hero", move: "brace", targets: [], effects: [
-                    { type: "buffAdded", target: "hero", buff: "brace" },
-                ]
-            },
+            { type: "useMove", actor: "hero", move: "brace", targets: [], effects: [
+                { type: "buffAdded", target: "hero", buff: "brace" },
+            ] },
             { type: "move", actor: "hero", move: "brace", targets: [] },
             8,
         ));
         collector.onAction?.(observation(
             ambiguous,
             initial,
-            {
-                type: "useMove", actor: "foe", move: "latexRain", targets: [{
-                    target: "hero", result: "hit", effects: [
-                        { type: "buffRemoved", target: "hero", buff: "reflect" },
-                        { type: "buffRemoved", target: "hero", buff: "brace" },
-                        { type: "bondageBlocked", target: "hero", binding: "rope", amount: 9 },
-                    ],
-                }], effects: []
-            },
+            { type: "useMove", actor: "foe", move: "latexRain", targets: [{
+                target: "hero", result: "hit", effects: [
+                    { type: "buffRemoved", target: "hero", buff: "reflect" },
+                    { type: "buffRemoved", target: "hero", buff: "brace" },
+                    { type: "bondageBlocked", target: "hero", binding: "rope", amount: 9 },
+                ],
+            }], effects: [] },
             { type: "endTurn" },
             9,
         ));
@@ -770,24 +751,20 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             initial,
             initial,
-            {
-                type: "useMove", actor: "hero", move: "syntheticCleanse", targets: [], effects: [
-                    { type: "bondageChanged", target: "hero", binding: "rope", amount: -7 },
-                ]
-            },
+            { type: "useMove", actor: "hero", move: "syntheticCleanse", targets: [], effects: [
+                { type: "bondageChanged", target: "hero", binding: "rope", amount: -7 },
+            ] },
             { type: "move", actor: "hero", move: "syntheticCleanse", targets: [] },
             2,
         ));
         collector.onAction?.(observation(
             initial,
             initial,
-            {
-                type: "useMove", actor: "skunk", move: "latexRegeneration", targets: [{
-                    target: "hero", result: "crit", effects: [
-                        { type: "bondageChanged", target: "hero", binding: "latexArms", amount: 38 },
-                    ],
-                }], effects: []
-            },
+            { type: "useMove", actor: "skunk", move: "latexRegeneration", targets: [{
+                target: "hero", result: "crit", effects: [
+                    { type: "bondageChanged", target: "hero", binding: "latexArms", amount: 38 },
+                ],
+            }], effects: [] },
             { type: "endTurn" },
             3,
         ));
@@ -798,34 +775,28 @@ describe("detailed combat metric collector", () => {
         collector.onAction?.(observation(
             initial,
             enemyPhase,
-            {
-                type: "changePhase", phase: "enemy", effects: [
-                    { type: "bondageAdded", target: "hero", binding: "latexHead", amount: 1 },
-                ]
-            },
+            { type: "changePhase", phase: "enemy", effects: [
+                { type: "bondageAdded", target: "hero", binding: "latexHead", amount: 1 },
+            ] },
             { type: "endTurn" },
             4,
         ));
         collector.onAction?.(observation(
             initial,
             initial,
-            {
-                type: "useMove", actor: "hero", move: "syntheticMouth", targets: [], effects: [
-                    { type: "trapTriggered", actor: "hero", trap: "trapPuddle", amount: 3 },
-                    { type: "bondageAdded", target: "hero", binding: "latexArms", amount: 6 },
-                ]
-            },
+            { type: "useMove", actor: "hero", move: "syntheticMouth", targets: [], effects: [
+                { type: "trapTriggered", actor: "hero", trap: "trapPuddle", amount: 3 },
+                { type: "bondageAdded", target: "hero", binding: "latexArms", amount: 6 },
+            ] },
             { type: "move", actor: "hero", move: "syntheticMouth", targets: [] },
             5,
         ));
         collector.onAction?.(observation(
             initial,
             initial,
-            {
-                type: "changePhase", phase: "player", effects: [
-                    { type: "bondageAdded", target: "hero", binding: "latexArms", amount: 2 },
-                ]
-            },
+            { type: "changePhase", phase: "player", effects: [
+                { type: "bondageAdded", target: "hero", binding: "latexArms", amount: 2 },
+            ] },
             { type: "endTurn" },
             6,
         ));

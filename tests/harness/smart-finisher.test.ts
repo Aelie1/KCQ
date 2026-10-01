@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -10,18 +11,16 @@ import type {
     PreviewInfo,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
+import { createEmptyContentLibrary } from "../helpers/library";
 import {
     evaluateSmartDecision,
     type ScoredSmartCandidate,
 } from "../../src/harness/policy/smart";
-import { createEmptyContentLibrary } from "../helpers/library";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function enemy(id: string, currHp: number, maxHp = currHp): Enemy {
     return {
         id,
         defId: id,
-        index: 1,
         rank: "enemy",
         maxHp,
         currHp,

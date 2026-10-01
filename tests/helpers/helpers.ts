@@ -1,9 +1,9 @@
 import { expect } from "vitest";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
+import { createTestEngine } from "./testCatalog";
 import type { iBinding, iCharacter, iEffect, iEnemy, iMoveResult, iStatus } from "../../src/engine/protected/types";
 import type { BindingLevel, Engine, FailureReason, MoveType } from "../../src/engine/public/types";
 import { actionView } from "./actionView";
-import { createTestEngine } from "./testCatalog";
 
 export { actionView } from "./actionView";
 
@@ -135,7 +135,6 @@ export function makeEnemy(definition: EnemyDef, id = `${definition.id}1`): iEnem
     return {
         id,
         defId: definition.id,
-        index: 1,
         rank: definition.rank,
         definition,
         buffs: [],
