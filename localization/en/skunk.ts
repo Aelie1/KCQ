@@ -128,7 +128,7 @@ export const skunkStrings = {
     "encounter.tower_2.desc": "...",
     "encounter.tower_3.name": "Goddess's Resurgence",
     "encounter.tower_3.desc": "...",
-    "outside.tower_3.name": "Goddess's Trial",
-    "outside.tower_3.desc": "...",
+    "encounter.outside.name": "Goddess's Trial",
+    "encounter.outside.desc": "...",
 
 };

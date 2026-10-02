@@ -34,7 +34,7 @@ export const eventStrings = {
     "event.trapRemoved.text": "{actor} removes {amount} {trap}.",
     "event.trapTriggered.text": "{actor} triggers {amount} {trap}.",
 
-    "event.actionInterrupted.text": "{actor}'s action is interrupted: {reason}.",
+    "event.actionInterrupted.text": "{actor}'s action is interrupted: {reason}",
     "event.actionRefreshed.text": "{target}'s action is refreshed.",
 
     "event.targetChanged.text": "{target}'s target changes to {destination}.",

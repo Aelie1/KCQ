@@ -1,14 +1,7 @@
-import { ContentLibrary } from "../../engine/public/library";
 import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
 import { StringKey } from "./types";
 
 export class Presentation {
-    private library: ContentLibrary;
-
-    constructor(library: ContentLibrary) {
-        this.library = library;
-    }
-
     getEntityName(entity: EntityId): StringKey {
         const match = entity.match(/^(.*?)(\d+)$/);
 
@@ -207,7 +200,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.${event.success ? "success" : "failure"}`,
                     args: {
-                        id: this.getEntityName(event.id)
+                        id: event.success ? this.getEntityName(event.id) : event.id
                     }
                 };
 
@@ -215,7 +208,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.${event.success ? "success" : "failure"}`,
                     args: {
-                        id: this.getEncounterName(event.id)
+                        id: event.success ? this.getEncounterName(event.id) : event.id
                     }
                 };
 

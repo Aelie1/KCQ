@@ -6,10 +6,15 @@ export const systemStrings = {
     "stance.moving.name": "Moving",
 
     "difficulty.casual.name": "Casual",
+    "difficulty.casual.desc": "...",
     "difficulty.standard.name": "Standard",
+    "difficulty.standard.desc": "...",
     "difficulty.veteran.name": "Veteran",
+    "difficulty.veteran.desc": "...",
     "difficulty.extreme.name": "Extreme",
+    "difficulty.extreme.desc": "...",
     "difficulty.mythic.name": "Mythic",
+    "difficulty.mythic.desc": "...",
 
     "bindingLevel.none.name": "None",
     "bindingLevel.easy.name": "Easy",
