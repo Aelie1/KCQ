@@ -1,4 +1,6 @@
-export const systemStrings = {
+import { StringTable } from "../../src/ui/presentation/presentation";
+
+export const systemStrings: StringTable = {
     "phase.player.name": "Player",
     "phase.enemy.name": "Enemy",
 

@@ -1,4 +1,6 @@
-export const skunkStrings = {
+import { StringTable } from "../../src/ui/presentation/presentation";
+
+export const skunkStrings: StringTable = {
     "entity.skunkette.name": "Skunkette {index}",
     "entity.skunk.name": "Skunk {index}",
     "entity.fairy.name": "Fairy {index}",

@@ -1,7 +1,52 @@
 import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
-import { StringKey } from "./types";
+
+interface StringKey {
+    id: string;
+    args?: Record<string, StringArg>;
+}
+
+type StringArg = number | string | boolean | StringKey;
+
+export type StringTable = Record<string, string>;
 
 export class Presentation {
+    private strings;
+
+    constructor(strings: StringTable) {
+        this.strings = strings;
+    }
+
+    private isStringKey(value: unknown): value is StringKey {
+        return typeof value === "object"
+            && value !== null
+            && "id" in value
+            && typeof value.id === "string";
+    }
+
+    private translate(key: StringKey): string {
+        const template = this.strings[key.id];
+
+        if (template === undefined) {
+            return `[${key.id}]`;
+        }
+
+        if (!key.args) {
+            return template;
+        }
+
+        return template.replace(/\{([^}]+)\}/g, (match, name: string) => {
+            const value = key.args?.[name];
+
+            if (value === undefined) {
+                return match;
+            }
+
+            return this.isStringKey(value)
+                ? this.translate(value)
+                : String(value);
+        });
+    }
+
     getEntityName(entity: EntityId): StringKey {
         const match = entity.match(/^(.*?)(\d+)$/);
 

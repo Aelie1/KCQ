@@ -1,4 +1,6 @@
-export const eventStrings = {
+import { StringTable } from "../../src/ui/presentation/presentation";
+
+export const eventStrings: StringTable = {
     "event.useMove.text": "{actor} uses {move}.",
     "event.useEscape.escape": "{actor} attempts to escape.",
     "event.useEscape.assist": "{actor} tries to assist {target}.",

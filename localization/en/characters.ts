@@ -1,4 +1,6 @@
-export const characterStrings = {
+import { StringTable } from "../../src/ui/presentation/presentation";
+
+export const characterStrings: StringTable = {
     "entity.ko.name": "Ko-chan",
     "entity.ko.desc": "Student council president.  Self-proclaimed fairy.",
     "entity.matsuko.name": "Matsuko",
