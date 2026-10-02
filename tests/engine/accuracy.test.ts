@@ -292,15 +292,15 @@ describe("accuracy", () => {
             makeAccuracyTarget(),
             move,
         );
-        const severePenalty = previewAccuracy(
+        const extremePenalty = previewAccuracy(
             makeAccuracyActor(-1_000),
             makeAccuracyTarget(),
             move,
         );
 
         expect(noCrit.crit).toBe(5);
-        expect(severePenalty.crit).toBeUndefined();
-        expect(Object.values(severePenalty).every((width) => width >= 0)).toBe(true);
+        expect(extremePenalty.crit).toBeUndefined();
+        expect(Object.values(extremePenalty).every((width) => width >= 0)).toBe(true);
     });
 
     it("does not create a Crit band when the move did not author one", () => {
@@ -337,7 +337,7 @@ describe("accuracy", () => {
         }
     });
 
-    it("keeps every band nonnegative and totals 100 at severe deltas", () => {
+    it("keeps every band nonnegative and totals 100 at extreme deltas", () => {
         for (const delta of [-1_000, 1_000]) {
             const result = previewAccuracy(
                 makeAccuracyActor(delta),

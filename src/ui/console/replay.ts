@@ -532,7 +532,7 @@ function boardDetailLines(board: BoardDiagnostic): string[] {
     const { party } = board;
     const lines = [
         `Party binding: total=${party.totalBinding} peak=${party.peakBinding}/${party.peakBindingLevel}`,
-        `  severity: heavy+=${party.heavyOrWorseBindings} extreme+=${party.severeOrWorseBindings} overwhelming/max=${party.overwhelmingOrMaxBindings}`,
+        `  severity: heavy+=${party.heavyOrWorseBindings} severe+=${party.severeOrWorseBindings} overwhelming/max=${party.overwhelmingOrMaxBindings}`,
         `Party incoming: binding=${formatIncoming(party.totalKnownIncomingBinding, party.unknownIncomingBindingEffects)} traps=${party.totalIncomingTrapAmount}`,
         `Action economy: available=${party.availableActors}/${party.totalCharacters} spent=${party.spentActors} skipped=${party.skippedActors} incapacitated=${party.incapacitatedActors} unavailable=${party.unavailableActors}`,
         `  moves=${party.totalAvailableMoves} escape/assist=${party.totalAvailableEscapesAndAssists} blocked-types=${party.totalBlockedMoveTypes}`,
@@ -547,7 +547,7 @@ function boardDetailLines(board: BoardDiagnostic): string[] {
         lines.push(
             `Character ${character.id}`,
             `  binding: total=${character.totalBinding} peak=${character.peakBinding}/${character.peakBindingLevel}`,
-            `  severity: heavy+=${character.heavyOrWorseBindings} extreme+=${character.severeOrWorseBindings} overwhelming/max=${character.overwhelmingOrMaxBindings}`,
+            `  severity: heavy+=${character.heavyOrWorseBindings} severe+=${character.severeOrWorseBindings} overwhelming/max=${character.overwhelmingOrMaxBindings}`,
             `  action: ${character.capability}${character.capabilityReason ? ` (${character.capabilityReason})` : ""}; acted=${yesNo(character.acted)} standing=${yesNo(character.standing)} bonusEscapes=${character.bonusEscapes}`,
             `  available: moves=${character.availableMoves} escape/assist=${character.availableEscapesAndAssists}`,
             `  incoming binding: ${formatIncoming(character.incomingBinding.known, character.incomingBinding.unknownEffects)}`,

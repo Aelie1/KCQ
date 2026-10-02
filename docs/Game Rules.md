@@ -312,23 +312,23 @@ The standard thresholds are:
 |  Value | Binding level |
 | -----: | ------------- |
 |    0–9 | None          |
-|  10–19 | Easy          |
-|  20–29 | Medium        |
-|  30–49 | Hard          |
-|  50–79 | Extreme       |
-| 80–100 | Impossible    |
+|  10–19 | Light         |
+|  20–29 | Moderate      |
+|  30–49 | Heavy         |
+|  50–79 | Severe        |
+| 80–100 | Overwhelming  |
 
 The maximum binding value is **100**.
 
-`Max` represents the numeric cap; values of 80 through 100 are mechanically classified as Impossible.
+`Max` represents the numeric cap; values of 80 through 100 are mechanically classified as Overwhelming.
 
 When a binding reaches zero, it is removed from the character.
 
-### Resistance above Impossible
+### Resistance above Overwhelming
 
 Binding accumulates normally up to 80.
 
-Additional bondage above the Impossible threshold receives only **10% effectiveness**.
+Additional bondage above the Overwhelming threshold receives only **10% effectiveness**.
 
 If an incoming effect crosses 80, the portion needed to reach 80 applies normally and only the overflow is reduced.
 
@@ -336,7 +336,7 @@ Example:
 
 * Current binding: 75
 * Incoming binding: 20
-* First 5 points reach Impossible normally.
+* First 5 points reach Overwhelming normally.
 * Remaining 15 points are reduced to 10%.
 * The final increase rounds upward, producing a value of 82.
 
@@ -370,7 +370,7 @@ Increasing bondage reduces the amount removed according to:
 
 `20 − 15 × (min(binding / 80, 1))²`
 
-Therefore escape progress becomes progressively worse as the binding approaches Impossible.
+Therefore escape progress becomes progressively worse as the binding approaches Overwhelming.
 
 Once the binding reaches 80, additional binding strength does not further reduce the underlying base escape potency.
 

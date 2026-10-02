@@ -9,9 +9,9 @@ import { POUNCE_BUFF, SKUNKED_BUFF, SKUNKETTE_ID } from "./constants";
 const COLLAR_BINDING = 10;
 
 const SPREAD_MODIFIER = 0.1;
-const heavy_SPREAD_RATIO = 0.25;
-const severe_SPREAD_RATIO = 0.5;
-const overwhelming_SPREAD_RATIO = 1;
+const HEAVY_SPREAD_RATIO = 0.25;
+const SEVERE_SPREAD_RATIO = 0.5;
+const OVERWHELMING_SPREAD_RATIO = 1;
 
 export const latexBindings: BindingDef = {
     id: "latexBindings",
@@ -98,21 +98,21 @@ export const latexBindings: BindingDef = {
         const spreadModifier = spread * SPREAD_MODIFIER;
         let spreadAmount = 0;
         if (binding.value >= thresholds.overwhelming) {
-            const spreadRatio = (overwhelming_SPREAD_RATIO + overwhelming_SPREAD_RATIO
+            const spreadRatio = (OVERWHELMING_SPREAD_RATIO + OVERWHELMING_SPREAD_RATIO
                 * ((binding.value - thresholds.overwhelming)
                     / (thresholds.max - thresholds.overwhelming)))
                 * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         }
         else if (binding.value >= thresholds.severe) {
-            const spreadRatio = (severe_SPREAD_RATIO + severe_SPREAD_RATIO
+            const spreadRatio = (SEVERE_SPREAD_RATIO + SEVERE_SPREAD_RATIO
                 * ((binding.value - thresholds.severe)
                     / (thresholds.overwhelming - thresholds.severe)))
                 * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         }
         else if (binding.value >= thresholds.heavy) {
-            const spreadRatio = (heavy_SPREAD_RATIO + heavy_SPREAD_RATIO
+            const spreadRatio = (HEAVY_SPREAD_RATIO + HEAVY_SPREAD_RATIO
                 * ((binding.value - thresholds.heavy)
                     / (thresholds.severe - thresholds.heavy)))
                 * (1 + spreadModifier);

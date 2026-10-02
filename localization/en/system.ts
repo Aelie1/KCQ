@@ -22,6 +22,7 @@ export const systemStrings = {
     "bindingLevel.heavy.name": "Heavy",
     "bindingLevel.severe.name": "Severe",
     "bindingLevel.overwhelming.name": "Overwhelming",
+    "bindingLevel.max.name": "Maximum",
 
     "hitBand.miss.name": "Miss",
     "hitBand.graze.name": "Graze",
