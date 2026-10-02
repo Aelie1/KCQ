@@ -1,5 +1,5 @@
 import { ContentLibrary } from "../../engine/public/library";
-import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, Enemy, EntityId, FailureReason, GameEvent, HitBand, LeafEvent, MoveId, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
+import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
 import { StringKey } from "./types";
 
 export class Presentation {
@@ -38,12 +38,6 @@ export class Presentation {
         return {
             id: `entity.${entity}.desc`
         };
-    }
-
-    getEnemyBaseName(enemy: Enemy): StringKey {
-        return {
-            id: `enemy.${enemy.defId}.name`,
-        }
     }
 
     getBindingName(binding: BindingId): StringKey {
@@ -165,6 +159,14 @@ export class Presentation {
         return { id: `battleState.${state}.name` };
     }
 
+    getModifierName(modifier: ModifierId): StringKey {
+        return { id: `modifier.${modifier}.name` };
+    }
+
+    getFlagName(flag: FlagId): StringKey {
+        return { id: `flag.${flag}.name` };
+    }
+
     getEventText(event: GameEvent | LeafEvent): StringKey {
         switch (event.type) {
             case "useMove":
@@ -178,7 +180,7 @@ export class Presentation {
 
             case "useEscape":
                 return {
-                    id: `event.${event.type}.text`,
+                    id: `event.${event.type}.${event.actor === event.target ? "escape" : "assist"}`,
                     args: {
                         actor: this.getEntityName(event.actor),
                         target: this.getEntityName(event.target),

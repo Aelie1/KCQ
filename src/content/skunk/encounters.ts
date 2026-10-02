@@ -37,7 +37,24 @@ export const forest_1: EncounterDef = {
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
         { definition: trapPuddle, amount: 0 }
-    ]
+    ],
+    setup: function (state: iGameState): iEffect[] {
+        const effects: iEffect[] = [];
+        for (const character of state.characters) {
+            effects.push({
+                type: "buff",
+                operation: "add",
+                target: character,
+                buff: {
+                    id: "ambushed",
+                    active: true,
+                    duration: 1,
+                    statuses: [s(helpless, 1)]
+                }
+            });
+        }
+        return effects;
+    }
 }
 
 export const forest_2: EncounterDef = {
@@ -45,7 +62,7 @@ export const forest_2: EncounterDef = {
     enemies: [SKUNKETTE_ID, SKUNKETTE_ID, SKUNK_ID, SKUNK_ID, FAIRY_ID],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
-        { definition: trapPuddle, amount: 50 }
+        { definition: trapPuddle, amount: 100 }
     ]
 }
 
