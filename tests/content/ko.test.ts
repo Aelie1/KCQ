@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ko, TRANSFORMATION_BUFF } from "../../src/content/characters/ko";
 import { EMPOWERMENT_BUFF, type CharacterDef, type EncounterDef, type EnemyDef, type MoveDef, type StatusDef, type TrapDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import { bound, gagged, helpless, hobbled, incapacitated } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
@@ -18,6 +17,7 @@ import {
     makeEnemyWaitMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
+import { createTestEngine } from "../helpers/testCatalog";
 
 function loadKoEncounter(
     enemies: EnemyDef[] = [makeBehavioralEnemy("foe")],
@@ -104,7 +104,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         };
         const restraint = makeBehavioralBinding("full-restraint", {
             status: {
-                impossible: [
+                overwhelming: [
                     { definition: bound, value: 3 },
                     { definition: hobbled, value: 3 },
                     { definition: gagged, value: 3 },
@@ -221,7 +221,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         ["incapacitation", incapacitated, "actorIncapacitated"],
     ] as const)("does not override unrelated %s status", (_label, status, reason) => {
         const restriction = makeBehavioralBinding(`${status.id}-binding`, {
-            status: { easy: [{ definition: status, value: 1 }] },
+            status: { light: [{ definition: status, value: 1 }] },
         });
         const apply = makeBehavioralMove("apply-status", "none", {
             targetSide: "player",

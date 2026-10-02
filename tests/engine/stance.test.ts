@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import { createTestEngine } from "../helpers/testCatalog";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { immobilized, vibrating } from "../../src/engine/protected/statuses";
 import { actionView } from "../helpers/actionView";
 import { resolvedEvents, resultDetails } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove, setupBoundEngine } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 describe("stance toggling", () => {
     it("starts a mobile character in the moving stance", () => {
@@ -95,11 +95,11 @@ describe("stance toggling", () => {
 
     it("cannot return to moving stance while immobilized", () => {
         const immobilizingBinding = makeBindingDef("immobilizing-binding", {
-            easy: [{ definition: immobilized, value: 1 }],
+            light: [{ definition: immobilized, value: 1 }],
         });
         const { engine, hero } = setupBoundEngine(
             immobilizingBinding,
-            thresholds.easy,
+            thresholds.light,
         );
         expect(actionView(engine, hero.id).stance).toEqual({
             available: false,
@@ -117,7 +117,7 @@ describe("stance toggling", () => {
 
     it("grants exactly one bonus escape after the normal escape", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, thresholds.impossible);
+        const { engine, hero } = setupBoundEngine(restraint, thresholds.overwhelming);
         const escape = {
             type: "escape" as const,
             actor: hero.id,
@@ -166,7 +166,7 @@ describe("stance toggling", () => {
 
     it("does not wait for a bonus escape after the first escape removes the last binding", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, thresholds.easy);
+        const { engine, hero } = setupBoundEngine(restraint, thresholds.light);
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
@@ -199,14 +199,14 @@ describe("stance toggling", () => {
                     source: actor,
                     target: state.characters[0],
                     binding: restraint,
-                    amount: thresholds.impossible,
+                    amount: thresholds.overwhelming,
                 },
                 {
                     type: "binding" as const,
                     source: actor,
                     target: state.characters[1],
                     binding: restraint,
-                    amount: thresholds.impossible,
+                    amount: thresholds.overwhelming,
                 },
             ],
         });
@@ -252,8 +252,8 @@ describe("stance toggling", () => {
 
     it("does not grant a bonus escape when the status blocks it", () => {
         const vibratingBinding = makeBindingDef("vibrating-binding", {
-            extreme: [{ definition: vibrating, value: 1 }],
-            impossible: [{ definition: vibrating, value: 1 }],
+            severe: [{ definition: vibrating, value: 1 }],
+            overwhelming: [{ definition: vibrating, value: 1 }],
         });
         const { engine, hero } = setupBoundEngine(vibratingBinding, thresholds.max);
         const escape = {
@@ -280,7 +280,7 @@ describe("stance toggling", () => {
 
     it("returns a mobile standing character to moving at the next player phase", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, thresholds.impossible);
+        const { engine, hero } = setupBoundEngine(restraint, thresholds.overwhelming);
         expect(engine.executeAction({
             type: "stance",
             actor: hero.id,
@@ -309,7 +309,7 @@ describe("stance toggling", () => {
     it("keeps a character standing when the enemy phase immobilizes them", () => {
         const restraint = makeBindingDef("rope");
         const immobilizingBinding = makeBindingDef("immobilizing-binding", {
-            easy: [{ definition: immobilized, value: 1 }],
+            light: [{ definition: immobilized, value: 1 }],
         });
         const immobilize = makeMove("immobilize", "none", {
             targetSide: "player",
@@ -323,7 +323,7 @@ describe("stance toggling", () => {
                         source: actor,
                         target,
                         binding: immobilizingBinding,
-                        amount: thresholds.easy,
+                        amount: thresholds.light,
                     } as const]
                     : [];
             },
@@ -332,7 +332,7 @@ describe("stance toggling", () => {
         const encounter = { id: "immobilizer", enemies: [enemy.id], bindings: [], traps: [] };
         const { engine, hero } = setupBoundEngine(
             restraint,
-            thresholds.impossible,
+            thresholds.overwhelming,
             [encounter],
             [],
             [enemy],
@@ -446,7 +446,7 @@ describe("stance toggling", () => {
 
     it("cannot change stance after using the normal action", () => {
         const restraint = makeBindingDef("rope");
-        const { engine, hero } = setupBoundEngine(restraint, thresholds.impossible);
+        const { engine, hero } = setupBoundEngine(restraint, thresholds.overwhelming);
         expect(engine.executeAction({
             type: "escape",
             actor: hero.id,

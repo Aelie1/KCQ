@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -10,7 +9,6 @@ import type {
     GameState,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
-import { createEmptyContentLibrary } from "../helpers/library";
 import {
     evaluateReserveSpending,
     evaluateSmartDecision,
@@ -19,9 +17,11 @@ import {
     generateSmartCandidates,
     type SmartCandidate,
 } from "../../src/harness/policy/smart";
+import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(value: number): Binding {
-    return { id: "rope", value, level: "hard", data: {}, status: [], tickEffects: [] };
+    return { id: "rope", value, level: "heavy", data: {}, status: [], tickEffects: [] };
 }
 
 function character(bindings: Binding[] = []): Character {
@@ -91,7 +91,7 @@ function context(
             move("spender", spenderEffects),
             move("future-option"),
         ])],
-        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        thresholds: { thresholds: { overwhelming: 80 }, max: 100 },
         library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("Reserve scoring must not use random"); },

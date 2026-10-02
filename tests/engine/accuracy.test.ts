@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { evaluateResult, isValidTarget } from "../../src/engine/private/combat";
 import { effectivenessRange } from "../../src/engine/private/constants";
 import type { EncounterDef, MoveDef, StatusDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { mixSeed, Random } from "../../src/engine/protected/random";
 import { GameStatus } from "../../src/engine/protected/status";
@@ -25,6 +24,7 @@ import {
     makeWaitMove,
 } from "../helpers/helpers";
 import { makeInternalState } from "../helpers/state";
+import { createTestEngine } from "../helpers/testCatalog";
 
 describe("accuracy", () => {
     const standardProfile: AccuracyProfile = {
@@ -53,10 +53,10 @@ describe("accuracy", () => {
             levels: [{}, { modifiers: { hitarms: hitModifier } }],
         };
         const source = makeBindingDef("accuracy-modifier", {
-            easy: [{ definition: modifierStatus, value: 1 }],
+            light: [{ definition: modifierStatus, value: 1 }],
         });
         return makeCharacter("actor", [
-            makeBinding(source, thresholds.easy),
+            makeBinding(source, thresholds.light),
         ]);
     }
 

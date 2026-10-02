@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -21,6 +20,7 @@ import {
     generateSmartCandidates,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function character(id = "hero", bindings: Binding[] = []): Character {
     return {
@@ -131,7 +131,7 @@ function fixture(
         state,
         actions,
         thresholds: {
-            thresholds: { easy: 20, medium: 40, hard: 60, extreme: 70, impossible: 80 },
+            thresholds: { light: 20, moderate: 40, heavy: 60, severe: 70, overwhelming: 80 },
             max: 100,
         },
         library,
@@ -162,7 +162,7 @@ function latexBinding(value: number, peak: number, id = "latexArms"): Binding {
     return {
         id,
         value,
-        level: "hard",
+        level: "heavy",
         data: { peak },
         status: [],
         tickEffects: [],
@@ -531,7 +531,7 @@ describe("Smart Fairy Barrier knowledge", () => {
 
     it("lets useful recovery beat an attack whose only result is stripping Barrier", () => {
         const restraint: Binding = {
-            id: "restraint", value: 60, level: "hard", data: {}, status: [], tickEffects: [],
+            id: "restraint", value: 60, level: "heavy", data: {}, status: [], tickEffects: [],
         };
         const context = fixture(
             [enemy("skunkette1", { maxHp: 200, currHp: 200, buffs: [barrier] })],

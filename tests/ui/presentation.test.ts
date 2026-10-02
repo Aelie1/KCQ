@@ -198,7 +198,7 @@ describe("combat presentation", () => {
             intentOutcomeStyle(band as "miss" | "graze" | "hit" | "crit")))
             .toEqual(["intent-miss", "intent-graze", "intent-hit", "intent-crit"]);
         expect(bindingSeverityStyle("none")).toBeUndefined();
-        expect(bindingSeverityStyle("easy")).toBe("binding-easy");
+        expect(bindingSeverityStyle("light")).toBe("binding-easy");
         expect(bindingSeverityStyle("max")).toBe("binding-max");
         expect(accuracyQualityStyle({ hit: 60, crit: 5 })).toBe("accuracy-good");
         expect(accuracyQualityStyle({ hit: 45, crit: 5 })).toBe("accuracy-caution");
@@ -316,7 +316,7 @@ describe("combat presentation", () => {
                 turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
                 characters: [{
                     id: "ko", acted: false, standing: true, bonusEscapes: 0,
-                    bindings: [{ id: "latexArms", value: 55, level: "extreme", data: {}, status: [], tickEffects: [] }],
+                    bindings: [{ id: "latexArms", value: 55, level: "severe", data: {}, status: [], tickEffects: [] }],
                     buffs: [{ id: "focus" }], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
                 }],
                 enemies: [{
@@ -335,7 +335,7 @@ describe("combat presentation", () => {
             bindings: ["latexArms"],
             bindingThresholds: {
                 max: 100,
-                thresholds: { easy: 10, medium: 20, hard: 35, extreme: 50, impossible: 70, max: 100 },
+                thresholds: { light: 10, moderate: 20, heavy: 35, severe: 50, overwhelming: 70, max: 100 },
             },
             actionLines: [
                 "skunk1 — Miss: 70%  Hit: 10% (8–10)  Crit: 5% (15–20)",

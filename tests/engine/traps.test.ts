@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, StatusDef, StatusLevelDef, TrapDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import type { Engine, FailureReason, PlayerAction } from "../../src/engine/public/types";
 import { resolvedEvents, resultDetails } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 function trapThatConsumes(
     id: string,
@@ -203,7 +203,7 @@ describe("generic traps through GameEngine", () => {
                     : { flags: ["skipsTurn"] };
             const status: StatusDef = { id: "bound", levels: [{}, restriction] };
             const blocker = makeBindingDef(`${reason}-source`, {
-                easy: [{ definition: status, value: 1 }],
+                light: [{ definition: status, value: 1 }],
             });
             const trap = trapThatConsumes(`${reason}-trap`, 9, blocker);
             const move = makeMove("arms-action", "arms", {
@@ -302,7 +302,7 @@ describe("generic traps through GameEngine", () => {
         const rope = makeBindingDef("rope");
         const status: StatusDef = { id: "bound", levels: [{}, restriction] };
         const blocker = makeBindingDef(`${reason}-source`, {
-            easy: [{ definition: status, value: 1 }],
+            light: [{ definition: status, value: 1 }],
         });
         const trap = trapThatConsumes(`${reason}-trap`, 6, blocker);
         const engine = makeTrapEngine(

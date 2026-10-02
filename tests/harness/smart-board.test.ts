@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionView,
     Binding,
@@ -8,13 +7,14 @@ import type {
     GameState,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
-import { createEmptyContentLibrary } from "../helpers/library";
 import {
     assessSmartBoard,
     evaluateSmartDecision,
     type SmartBoardAssessment,
     type SmartScorer,
 } from "../../src/harness/policy/smart";
+import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number, level: Binding["level"]): Binding {
     return { id, value, level, data: {}, status: [], tickEffects: [] };
@@ -80,7 +80,7 @@ function context(gameState: GameState, actions: ActionView[]): PolicyContext {
     return {
         state: gameState,
         actions,
-        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        thresholds: { thresholds: { overwhelming: 80 }, max: 100 },
         library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("board assessment must not consume policy random"); },
@@ -93,15 +93,15 @@ describe("Smart 3 board binding assessment", () => {
     it("keeps multiple bindings and characters separate while aggregating ordinal severity", () => {
         const hero = character("hero", {
             bindings: [
-                binding("silk", 5, "easy"),
-                binding("rope", 12, "hard"),
+                binding("silk", 5, "light"),
+                binding("rope", 12, "heavy"),
                 binding("seal", 2, "max"),
             ],
             modifiers: { defense: 2, escape: -1, vulnerability: 3, traps: 1, hitarms: -2 },
             blockedMoveTypes: ["arms", "mouth"],
         });
         const ally = character("ally", {
-            bindings: [binding("web", 7, "extreme")],
+            bindings: [binding("web", 7, "severe")],
         });
 
         const board = assessSmartBoard(context(state([hero, ally]), [action("hero"), action("ally")]));
@@ -112,8 +112,8 @@ describe("Smart 3 board binding assessment", () => {
             peakBinding: 12,
             peakBindingLevel: "max",
             bindingLevels: {
-                none: 0, easy: 1, medium: 0, hard: 1,
-                extreme: 0, impossible: 0, max: 1,
+                none: 0, light: 1, moderate: 0, heavy: 1,
+                severe: 0, overwhelming: 0, max: 1,
             },
             hardOrWorseBindings: 2,
             extremeOrWorseBindings: 1,

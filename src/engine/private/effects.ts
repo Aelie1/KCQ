@@ -181,10 +181,10 @@ export class GameEffects {
         }
         let origLevel = binding.value;
         //bondage above 80 is reduced by 90%
-        if (origLevel > thresholds.impossible) {
+        if (origLevel > thresholds.overwhelming) {
             binding.value += Math.ceil(modifiedAmount * 0.1);
         } else {
-            const toThreshold = Math.min(modifiedAmount, thresholds.impossible - origLevel);
+            const toThreshold = Math.min(modifiedAmount, thresholds.overwhelming - origLevel);
             const overflow = modifiedAmount - toThreshold;
             binding.value += Math.ceil(toThreshold + overflow * 0.1);
         }

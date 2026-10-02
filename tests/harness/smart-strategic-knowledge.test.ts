@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -38,6 +37,7 @@ import {
     tempoKnowledgeScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number, level: Binding["level"] = "none"): Binding {
     return { id, value, level, data: {}, status: [], tickEffects: [] };
@@ -107,7 +107,7 @@ function move(
                 ? { damage: options.damagePreview }
                 : target !== null && damage > 0
                     ? { damage: { hit: { chance: 100, min: damage, max: damage } } }
-                : {}),
+                    : {}),
         })),
     };
 }
@@ -179,7 +179,7 @@ function context(
         state,
         actions,
         thresholds: {
-            thresholds: { easy: 20, medium: 40, hard: 60, extreme: 70, impossible: 80 },
+            thresholds: { light: 20, moderate: 40, heavy: 60, severe: 70, overwhelming: 80 },
             max: 100,
         },
         library,
@@ -246,9 +246,9 @@ function dangerousEnemy(id: string, target = "ko", amount = 60): Enemy {
 
 function highPartyBindings(): Binding[] {
     return [
-        binding("arms", 60, "hard"),
-        binding("legs", 60, "hard"),
-        binding("torso", 60, "hard"),
+        binding("arms", 60, "heavy"),
+        binding("legs", 60, "heavy"),
+        binding("torso", 60, "heavy"),
     ];
 }
 
@@ -896,7 +896,7 @@ describe("Smart Reflect reactive knowledge", () => {
 
 function reflectContext(enemies: Enemy[], currentBinding: number, includeAttack = false): PolicyContext {
     const bindings = currentBinding > 0
-        ? [binding("restraint", currentBinding, currentBinding >= 60 ? "hard" : "none")]
+        ? [binding("restraint", currentBinding, currentBinding >= 60 ? "heavy" : "none")]
         : [];
     const moves = [
         ...(includeAttack ? [move("telekinesis", [enemies[0]?.id ?? "source"], { damage: 30 })] : []),

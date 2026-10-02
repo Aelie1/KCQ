@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { BindingDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { bound, helpless, immobilized, incapacitated, stunned } from "../../src/engine/protected/statuses";
 import { actionView } from "../helpers/actionView";
 import { expectMoveRejection, makeBindingDef, makeCharacterDef, makeMove, setupBoundEngine } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: number) {
     const targetBinding = makeBindingDef("target-binding");
@@ -25,7 +25,7 @@ function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: numbe
                 source: actor,
                 target: state.characters[1],
                 binding: targetBinding,
-                amount: thresholds.easy,
+                amount: thresholds.light,
             },
         ],
     });
@@ -47,11 +47,11 @@ function setupActorAndTarget(actorBinding: BindingDef, actorBindingAmount: numbe
 describe("actor-level action restrictions", () => {
     it("rejects every actor action when a skipped status is active", () => {
         const source = makeBindingDef("helpless-source", {
-            easy: [{ definition: helpless, value: 1 }],
+            light: [{ definition: helpless, value: 1 }],
         });
         const { engine, hero, foeId, mouthMove } = setupBoundEngine(
             source,
-            thresholds.easy,
+            thresholds.light,
         );
 
         expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorSkipped");
@@ -72,11 +72,11 @@ describe("actor-level action restrictions", () => {
 
     it("reports incapacitation distinctly from an ordinary skipped turn", () => {
         const source = makeBindingDef("incapacitated-source", {
-            easy: [{ definition: incapacitated, value: 1 }],
+            light: [{ definition: incapacitated, value: 1 }],
         });
         const { engine, hero, foeId, mouthMove } = setupBoundEngine(
             source,
-            thresholds.easy,
+            thresholds.light,
         );
 
         expectMoveRejection(engine, hero.id, mouthMove.id, foeId, "actorIncapacitated");
@@ -97,11 +97,11 @@ describe("actor-level action restrictions", () => {
 
     it("allows attacks while immobilized but prevents toggling back to moving", () => {
         const source = makeBindingDef("immobilized-source", {
-            easy: [{ definition: immobilized, value: 1 }],
+            light: [{ definition: immobilized, value: 1 }],
         });
         const { engine, hero, mouthMove } = setupBoundEngine(
             source,
-            thresholds.easy,
+            thresholds.light,
         );
 
         expect(actionView(engine, hero.id).moves.find((action) => action.move.id === mouthMove.id))
@@ -118,9 +118,9 @@ describe("actor-level action restrictions", () => {
 
 describe("move and escape restrictions", () => {
     it.each([
-        [thresholds.hard, false, 2],
-        [thresholds.extreme, true, 3],
-        [thresholds.impossible, true, 4],
+        [thresholds.heavy, false, 2],
+        [thresholds.severe, true, 3],
+        [thresholds.overwhelming, true, 4],
     ] as const)(
         "applies Bound move restrictions at binding value %s",
         (value, armsBlocked, boundValue) => {
@@ -168,11 +168,11 @@ describe("move and escape restrictions", () => {
 
     it("keeps getActions and executeAction aligned when a status blocks attacks", () => {
         const restraint = makeBindingDef("stunning-restraint", {
-            easy: [{ definition: stunned, value: 1 }],
+            light: [{ definition: stunned, value: 1 }],
         });
         const { engine, hero, foeId, mouthMove } = setupBoundEngine(
             restraint,
-            thresholds.easy,
+            thresholds.light,
         );
 
         expectMoveRejection(
@@ -186,11 +186,11 @@ describe("move and escape restrictions", () => {
 
     it("applies blocksEscape to both self-escape and assistance", () => {
         const escapeBlockingBinding = makeBindingDef("escape-blocking", {
-            easy: [{ definition: stunned, value: 1 }],
+            light: [{ definition: stunned, value: 1 }],
         });
         const { engine, helper, target, targetBinding } = setupActorAndTarget(
             escapeBlockingBinding,
-            thresholds.easy,
+            thresholds.light,
         );
 
         expect(actionView(engine, helper.id).escapes).toEqual([
@@ -222,7 +222,7 @@ describe("move and escape restrictions", () => {
     it("allows self-escape but rejects assistance when only blocksAssist is active", () => {
         const { engine, helper, target, targetBinding } = setupActorAndTarget(
             latexArms,
-            thresholds.extreme,
+            thresholds.severe,
         );
         const escapes = actionView(engine, helper.id).escapes;
 

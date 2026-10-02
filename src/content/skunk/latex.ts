@@ -9,9 +9,9 @@ import { POUNCE_BUFF, SKUNKED_BUFF, SKUNKETTE_ID } from "./constants";
 const COLLAR_BINDING = 10;
 
 const SPREAD_MODIFIER = 0.1;
-const HARD_SPREAD_RATIO = 0.25;
-const EXTREME_SPREAD_RATIO = 0.5;
-const IMPOSSIBLE_SPREAD_RATIO = 1;
+const heavy_SPREAD_RATIO = 0.25;
+const severe_SPREAD_RATIO = 0.5;
+const overwhelming_SPREAD_RATIO = 1;
 
 export const latexBindings: BindingDef = {
     id: "latexBindings",
@@ -28,11 +28,11 @@ export const latexBindings: BindingDef = {
         const skunkedDefs = [latexHead, latexArms, latexTorso, latexLegs];
         const bindings = target.bindings.filter(x => skunkedDefs.includes(x.definition));
         if (bindings.length != skunkedDefs.length ||
-            !bindings.every(x => x.value >= thresholds.impossible)) {
+            !bindings.every(x => x.value >= thresholds.overwhelming)) {
             return effects;
         }
 
-        //We're already Impossible x4, incapacitate the player, if they aren't already
+        //We're already overwhelming x4, incapacitate the player, if they aren't already
         const status = new GameStatus(state, target);
         if (status.isIncapacitated()) {
             return effects;
@@ -97,24 +97,24 @@ export const latexBindings: BindingDef = {
         const spreadLocation: BindingDef = (actor === target && binding.definition === latexArms) ? latexHead : latexArms;
         const spreadModifier = spread * SPREAD_MODIFIER;
         let spreadAmount = 0;
-        if (binding.value >= thresholds.impossible) {
-            const spreadRatio = (IMPOSSIBLE_SPREAD_RATIO + IMPOSSIBLE_SPREAD_RATIO
-                * ((binding.value - thresholds.impossible)
-                    / (thresholds.max - thresholds.impossible)))
+        if (binding.value >= thresholds.overwhelming) {
+            const spreadRatio = (overwhelming_SPREAD_RATIO + overwhelming_SPREAD_RATIO
+                * ((binding.value - thresholds.overwhelming)
+                    / (thresholds.max - thresholds.overwhelming)))
                 * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         }
-        else if (binding.value >= thresholds.extreme) {
-            const spreadRatio = (EXTREME_SPREAD_RATIO + EXTREME_SPREAD_RATIO
-                * ((binding.value - thresholds.extreme)
-                    / (thresholds.impossible - thresholds.extreme)))
+        else if (binding.value >= thresholds.severe) {
+            const spreadRatio = (severe_SPREAD_RATIO + severe_SPREAD_RATIO
+                * ((binding.value - thresholds.severe)
+                    / (thresholds.overwhelming - thresholds.severe)))
                 * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         }
-        else if (binding.value >= thresholds.hard) {
-            const spreadRatio = (HARD_SPREAD_RATIO + HARD_SPREAD_RATIO
-                * ((binding.value - thresholds.hard)
-                    / (thresholds.extreme - thresholds.hard)))
+        else if (binding.value >= thresholds.heavy) {
+            const spreadRatio = (heavy_SPREAD_RATIO + heavy_SPREAD_RATIO
+                * ((binding.value - thresholds.heavy)
+                    / (thresholds.severe - thresholds.heavy)))
                 * (1 + spreadModifier);
             spreadAmount = Math.ceil(amount * spreadRatio);
         } else {
@@ -129,12 +129,12 @@ export const latexBindings: BindingDef = {
         const existingBinding = actor.bindings.find(x => x.definition === spreadLocation);
         const existingValue = existingBinding ? existingBinding.value : 0;
 
-        if (existingValue + spreadAmount > thresholds.impossible) {
+        if (existingValue + spreadAmount > thresholds.overwhelming) {
             //any spread that would put the target region above 80 will spread onto other locations 
-            //it should be impossible for an assistant to trigger this, but it should work even if they do
+            //it should be overwhelming for an assistant to trigger this, but it should work even if they do
             //other than the escaped location and the main spread location, half goes onto each of the other two locations
             //this does mean a theoretical assistant could get 1.5* the spread total, but that's fine with me
-            const overflowAmount = Math.min(spreadAmount, existingValue + spreadAmount - thresholds.impossible);
+            const overflowAmount = Math.min(spreadAmount, existingValue + spreadAmount - thresholds.overwhelming);
             const splashAmount = Math.ceil(overflowAmount / 2);
             const directAmount = spreadAmount - overflowAmount;
 
@@ -157,7 +157,7 @@ export const latexBindings: BindingDef = {
                 const newAmount = splashAmount + carryoverAmount;
                 const carryoverBinding = actor.bindings.find(x => x.definition === location);
                 const carryoverValue = carryoverBinding ? carryoverBinding.value : 0;
-                carryoverAmount = Math.min(newAmount, Math.max(0, carryoverValue + newAmount - thresholds.impossible));
+                carryoverAmount = Math.min(newAmount, Math.max(0, carryoverValue + newAmount - thresholds.overwhelming));
                 if (newAmount != carryoverAmount) {
                     effects.push({
                         type: "binding",
@@ -185,11 +185,11 @@ export const latexHead: BindingDef = {
     ...latexBindings,
     id: "latexHead",
     status: {
-        easy: [s(gagged, 1)],
-        medium: [s(gagged, 2)],
-        hard: [s(gagged, 2), s(submissive, 1)],
-        extreme: [s(gagged, 3), s(submissive, 1)],
-        impossible: [s(gagged, 4), s(submissive, 2)]
+        light: [s(gagged, 1)],
+        moderate: [s(gagged, 2)],
+        heavy: [s(gagged, 2), s(submissive, 1)],
+        severe: [s(gagged, 3), s(submissive, 1)],
+        overwhelming: [s(gagged, 4), s(submissive, 2)]
     },
 }
 
@@ -197,10 +197,10 @@ export const latexArms: BindingDef = {
     ...latexBindings,
     id: "latexArms",
     status: {
-        medium: [s(bound, 1)],
-        hard: [s(bound, 2)],
-        extreme: [s(bound, 3)],
-        impossible: [s(bound, 4)]
+        moderate: [s(bound, 1)],
+        heavy: [s(bound, 2)],
+        severe: [s(bound, 3)],
+        overwhelming: [s(bound, 4)]
     },
 }
 
@@ -208,11 +208,11 @@ export const latexTorso: BindingDef = {
     ...latexBindings,
     id: "latexTorso",
     status: {
-        easy: [s(breathless, 1)],
-        medium: [s(breathless, 2), s(vibrating, 1)],
-        hard: [s(breathless, 2), s(vibrating, 1)],
-        extreme: [s(breathless, 3), s(vibrating, 2)],
-        impossible: [s(breathless, 4), s(vibrating, 3)]
+        light: [s(breathless, 1)],
+        moderate: [s(breathless, 2), s(vibrating, 1)],
+        heavy: [s(breathless, 2), s(vibrating, 1)],
+        severe: [s(breathless, 3), s(vibrating, 2)],
+        overwhelming: [s(breathless, 4), s(vibrating, 3)]
     },
 }
 
@@ -220,10 +220,10 @@ export const latexLegs: BindingDef = {
     ...latexBindings,
     id: "latexLegs",
     status: {
-        medium: [s(hobbled, 1)],
-        hard: [s(hobbled, 2)],
-        extreme: [s(hobbled, 3)],
-        impossible: [s(hobbled, 4)]
+        moderate: [s(hobbled, 1)],
+        heavy: [s(hobbled, 2)],
+        severe: [s(hobbled, 3)],
+        overwhelming: [s(hobbled, 4)]
     },
 }
 
@@ -231,11 +231,11 @@ export const latexLegs: BindingDef = {
 export const latexCollar: BindingDef = {
     id: "latexCollar",
     status: {
-        easy: [s(submissive, 1)],
-        medium: [s(submissive, 2)],
-        hard: [s(submissive, 3)],
-        extreme: [s(submissive, 4)],
-        impossible: [s(submissive, 4)]
+        light: [s(submissive, 1)],
+        moderate: [s(submissive, 2)],
+        heavy: [s(submissive, 3)],
+        severe: [s(submissive, 4)],
+        overwhelming: [s(submissive, 4)]
     },
     onTick(target: iCharacter, binding: iBinding): iEffect[] {
         const effects: iEffect[] = [];

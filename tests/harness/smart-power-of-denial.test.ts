@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -22,11 +21,12 @@ import {
     POWER_OF_DENIAL_RESCUE_BONUS,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const POWER_OF_DENIAL = "powerOfDenial";
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: value >= 80 ? "impossible" : "extreme", data: {}, status: [], tickEffects: [] };
+    return { id, value, level: value >= 80 ? "overwhelming" : "severe", data: {}, status: [], tickEffects: [] };
 }
 
 function character(id: string, values: Partial<Character> = {}): Character {
@@ -111,7 +111,7 @@ function context(
         state,
         actions: [action(info)],
         thresholds: {
-            thresholds: { easy: 20, medium: 40, hard: 60, extreme: 70, impossible: 80 },
+            thresholds: { light: 20, moderate: 40, heavy: 60, severe: 70, overwhelming: 80 },
             max: 100,
         },
         library: createEmptyContentLibrary(),
@@ -226,36 +226,44 @@ describe("Smart Power of Denial knowledge", () => {
         const lowFixture = context(
             [character("ko"), low],
             [],
-            denial([{ id: low.id, effects: [{
-                type: "binding", target: low.id, binding: "latexArms", amount: -79,
-            }] }]),
+            denial([{
+                id: low.id, effects: [{
+                    type: "binding", target: low.id, binding: "latexArms", amount: -79,
+                }]
+            }]),
         );
         expect(knowledge(lowFixture, low.id)).toMatchObject({
             raw: POWER_OF_DENIAL_PLAYER_RESERVE_PENALTY,
-            rules: [{ details: {
-                removedBindingId: "latexArms",
-                removedAmount: 79,
-                meetsEmergencyThreshold: false,
-                priorityBinding: true,
-            } }],
+            rules: [{
+                details: {
+                    removedBindingId: "latexArms",
+                    removedAmount: 79,
+                    meetsEmergencyThreshold: false,
+                    priorityBinding: true,
+                }
+            }],
         });
 
         const emergency = character("ally", { bindings: [binding("latexArms", 80)] });
         const emergencyFixture = context(
             [character("ko"), emergency],
             [],
-            denial([{ id: emergency.id, effects: [{
-                type: "binding", target: emergency.id, binding: "latexArms", amount: -80,
-            }] }]),
+            denial([{
+                id: emergency.id, effects: [{
+                    type: "binding", target: emergency.id, binding: "latexArms", amount: -80,
+                }]
+            }]),
         );
         expect(knowledge(emergencyFixture, emergency.id)).toMatchObject({
             raw: POWER_OF_DENIAL_EMERGENCY_BINDING_BONUS,
-            rules: [{ details: {
-                removedBindingId: "latexArms",
-                removedAmount: 80,
-                meetsEmergencyThreshold: true,
-                priorityBinding: true,
-            } }],
+            rules: [{
+                details: {
+                    removedBindingId: "latexArms",
+                    removedAmount: 80,
+                    meetsEmergencyThreshold: true,
+                    priorityBinding: true,
+                }
+            }],
         });
     });
 
@@ -266,19 +274,23 @@ describe("Smart Power of Denial knowledge", () => {
         const fixture = context(
             [character("ko"), ally],
             [],
-            denial([{ id: ally.id, effects: [{
-                type: "binding", target: ally.id, binding: "latexTorso", amount: -90,
-            }] }]),
+            denial([{
+                id: ally.id, effects: [{
+                    type: "binding", target: ally.id, binding: "latexTorso", amount: -90,
+                }]
+            }]),
         );
 
         expect(knowledge(fixture, ally.id)).toMatchObject({
             raw: POWER_OF_DENIAL_PLAYER_RESERVE_PENALTY,
-            rules: [{ details: {
-                removedBindingId: "latexTorso",
-                removedAmount: 90,
-                meetsEmergencyThreshold: true,
-                priorityBinding: false,
-            } }],
+            rules: [{
+                details: {
+                    removedBindingId: "latexTorso",
+                    removedAmount: 90,
+                    meetsEmergencyThreshold: true,
+                    priorityBinding: false,
+                }
+            }],
         });
     });
 
@@ -287,9 +299,11 @@ describe("Smart Power of Denial knowledge", () => {
         const fixture = context(
             [character("ko"), ally],
             [],
-            denial([{ id: ally.id, effects: [{
-                type: "binding", target: ally.id, binding: "latexTorso", amount: -60,
-            }] }]),
+            denial([{
+                id: ally.id, effects: [{
+                    type: "binding", target: ally.id, binding: "latexTorso", amount: -60,
+                }]
+            }]),
         );
 
         expect(evaluateSmartDecision(fixture).selected.action).toEqual({ type: "endTurn" });

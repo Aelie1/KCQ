@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -21,15 +20,16 @@ import {
     type SmartCandidate,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const restrictionId = "test-limb-restriction" as StatusId;
 const thresholds = {
-    thresholds: { easy: 10, medium: 20, hard: 30, extreme: 50, impossible: 80 },
+    thresholds: { light: 10, moderate: 20, heavy: 30, severe: 50, overwhelming: 80 },
     max: 100,
 } as const;
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: value >= 30 ? "hard" : "medium", data: {}, status: [], tickEffects: [] };
+    return { id, value, level: value >= 30 ? "heavy" : "moderate", data: {}, status: [], tickEffects: [] };
 }
 
 function character(bindings: Binding[]): Character {
@@ -100,7 +100,7 @@ function restrictionLibrary(
         bindings: {
             "test-restraint": {
                 id: "test-restraint",
-                status: { hard: [{ id: restrictionId, level: 1 }] },
+                status: { heavy: [{ id: restrictionId, level: 1 }] },
             },
         },
         statuses: {
@@ -228,11 +228,11 @@ describe("Smart binding-derived move access", () => {
             bindings: {
                 "test-restraint": {
                     id: "test-restraint",
-                    status: { hard: [{ id: restrictionId, level: 2 }] },
+                    status: { heavy: [{ id: restrictionId, level: 2 }] },
                 },
                 "test-second-restraint": {
                     id: "test-second-restraint",
-                    status: { hard: [{ id: restrictionId, level: 1 }] },
+                    status: { heavy: [{ id: restrictionId, level: 1 }] },
                 },
             },
             statuses: {

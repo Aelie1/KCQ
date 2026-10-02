@@ -29,7 +29,7 @@ describe("public content library", () => {
         };
         const restraint: BindingDef = {
             id: "restraint",
-            status: { easy: [{ definition: focus, value: 1 }] },
+            status: { light: [{ definition: focus, value: 1 }] },
         };
         const strike = makeBehavioralMove("strike", "arms", {
             baseHits: 2,
@@ -102,7 +102,7 @@ describe("public content library", () => {
             status: { modifiers: { defense: 1 } },
             immunities: [focus.id],
         });
-        expect(library.bindings.restraint.status?.easy).toEqual([
+        expect(library.bindings.restraint.status?.light).toEqual([
             { id: focus.id, level: 1 },
         ]);
         expect(library.statuses.blinded.modifiers[1]).toEqual({
@@ -124,7 +124,7 @@ describe("public content library", () => {
         library.moves.strike.accuracy!.hit = 1;
         library.moves.strike.modifiers!.potency = 99;
         library.passives.trained.immunities!.push("stunned");
-        library.bindings.restraint.status!.easy![0].level = 4;
+        library.bindings.restraint.status!.light![0].level = 4;
         library.statuses.blinded.modifiers[1].flags!.push("skipsTurn");
         library.encounters[encounter.id].traps[trap.id] = 0;
 
@@ -134,7 +134,7 @@ describe("public content library", () => {
         expect(fresh.moves.strike.accuracy).toEqual({ miss: 20, hit: 80 });
         expect(fresh.moves.strike.modifiers).toEqual({ potency: 1 });
         expect(fresh.passives.trained.immunities).toEqual([focus.id]);
-        expect(fresh.bindings.restraint.status?.easy).toEqual([{ id: focus.id, level: 1 }]);
+        expect(fresh.bindings.restraint.status?.light).toEqual([{ id: focus.id, level: 1 }]);
         expect(fresh.statuses.blinded.modifiers[1].flags).toEqual(["blocksAssist"]);
         expect(fresh.encounters[encounter.id].traps).toEqual({ [trap.id]: 25 });
     });

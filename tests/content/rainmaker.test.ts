@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
-import { rainmaker } from "../../src/content/skunk/rainmaker";
 import { trapPuddle } from "../../src/content/skunk/puddles";
+import { rainmaker } from "../../src/content/skunk/rainmaker";
 import type { BindingDef, EncounterDef } from "../../src/engine/protected/definitions";
-import { incapacitated } from "../../src/engine/protected/statuses";
 import { isEnemy } from "../../src/engine/protected/helpers";
+import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iEffect } from "../../src/engine/protected/types";
 import type { DifficultyId, Engine } from "../../src/engine/public/types";
 import {
@@ -94,7 +94,7 @@ describe("Rainmaker Latex Rain", () => {
     it("excludes a character incapacitated during encounter setup from its committed all-party intention", () => {
         const restraint: BindingDef = {
             id: "incapacitating-restraint",
-            status: { easy: [{ definition: incapacitated, value: 1 }] },
+            status: { light: [{ definition: incapacitated, value: 1 }] },
         };
         const setup: EncounterDef["setup"] = (state): iEffect[] => [{
             type: "binding",

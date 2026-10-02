@@ -178,10 +178,10 @@ describe("binding levels and effective statuses through GameEngine", () => {
             ],
         };
         const weak = makeBehavioralBinding("weak", {
-            status: { easy: [{ definition: blinded, value: 1 }] },
+            status: { light: [{ definition: blinded, value: 1 }] },
         });
         const strong = makeBehavioralBinding("strong", {
-            status: { easy: [{ definition: blinded, value: 2 }] },
+            status: { light: [{ definition: blinded, value: 2 }] },
         });
         const applyBoth = makeBehavioralMove("apply-both", "mouth", {
             targetSide: "none",

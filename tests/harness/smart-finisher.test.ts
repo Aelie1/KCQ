@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -11,11 +10,12 @@ import type {
     PreviewInfo,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
-import { createEmptyContentLibrary } from "../helpers/library";
 import {
     evaluateSmartDecision,
     type ScoredSmartCandidate,
 } from "../../src/harness/policy/smart";
+import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function enemy(id: string, currHp: number, maxHp = currHp): Enemy {
     return {
@@ -32,7 +32,7 @@ function enemy(id: string, currHp: number, maxHp = currHp): Enemy {
 }
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "impossible", data: {}, status: [], tickEffects: [] };
+    return { id, value, level: "overwhelming", data: {}, status: [], tickEffects: [] };
 }
 
 function character(bindings: Binding[] = []): Character {
@@ -101,7 +101,7 @@ function context(
     return {
         state,
         actions,
-        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        thresholds: { thresholds: { overwhelming: 80 }, max: 100 },
         library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("finisher scoring must not consume policy random"); },

@@ -21,7 +21,7 @@ function recordedState(round: number, hp: number, binding: number): GameState {
             acted: false,
             standing: true,
             bonusEscapes: 0,
-            bindings: [{ id: "rope", value: binding, level: "easy", data: {}, status: [], tickEffects: [] }],
+            bindings: [{ id: "rope", value: binding, level: "light", data: {}, status: [], tickEffects: [] }],
             buffs: [],
             cooldowns: {},
             data: {},
@@ -53,7 +53,7 @@ function replayInput(): ConsoleReplayInput {
     return {
         encounter: "recorded-encounter",
         seed: 42,
-        bindingThresholds: { max: 100, thresholds: { easy: 10, hard: 30 } },
+        bindingThresholds: { max: 100, thresholds: { light: 10, heavy: 30 } },
         replay: {
             initialState: recordedState(1, 90, 0),
             initialActions: recordedActions,

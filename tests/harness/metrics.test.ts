@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import { createEngine } from "../../src/engine/public/engine";
 import type {
     Character,
@@ -24,6 +23,7 @@ import {
     type MetricCollector,
 } from "../../src/harness/metrics";
 import { basicPolicy } from "../../src/harness/policy/basic";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const testLibrary = createEngine(1).getLibrary();
 
@@ -39,7 +39,7 @@ function character(
         bindings: bindings.map((binding) => ({
             id: binding.id,
             value: binding.value,
-            level: "easy",
+            level: "light",
             data: {},
             status: binding.incapacitated
                 ? [{ id: "incapacitated", value: 1 }]

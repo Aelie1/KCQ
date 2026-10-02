@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { serializeGameState } from "../../src/engine/private/serialize";
 import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { GameStatus } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEntity, iGameState } from "../../src/engine/protected/types";
 import { makeBindingDef, makeCharacter, makeCharacterDef, makeEnemy, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
 import { makeInternalState, STANDARD_DIFFICULTY } from "../helpers/state";
+import { createTestEngine } from "../helpers/testCatalog";
 import { multiEnemyEncounter, testAlly, testCharacterList, testEnemyList, testHero } from "../helpers/testContent";
 
 describe("character catalogue", () => {
@@ -86,11 +86,11 @@ describe("state serialization and combatant loading", () => {
     it("publishes the current binding thresholds through the public API", () => {
         expect(createTestEngine([], [], 1).getThresholds()).toEqual({
             thresholds: {
-                easy: 10,
-                medium: 20,
-                hard: 30,
-                extreme: 50,
-                impossible: 80,
+                light: 10,
+                moderate: 20,
+                heavy: 30,
+                severe: 50,
+                overwhelming: 80,
             },
             max: 100,
         });
@@ -106,7 +106,7 @@ describe("state serialization and combatant loading", () => {
 
     it("reports defeat when every player is incapacitated", () => {
         const capture = makeBindingDef("capture", {
-            easy: [{ definition: incapacitated, value: 1 }],
+            light: [{ definition: incapacitated, value: 1 }],
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
@@ -119,7 +119,7 @@ describe("state serialization and combatant loading", () => {
                 source: character,
                 target: character,
                 binding: capture,
-                amount: thresholds.easy,
+                amount: thresholds.light,
             })),
         };
         const hero = makeCharacterDef("hero");
@@ -134,7 +134,7 @@ describe("state serialization and combatant loading", () => {
 
     it("reports an ongoing battle while any player remains capable", () => {
         const capture = makeBindingDef("capture", {
-            easy: [{ definition: incapacitated, value: 1 }],
+            light: [{ definition: incapacitated, value: 1 }],
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
@@ -147,7 +147,7 @@ describe("state serialization and combatant loading", () => {
                 source: state.characters[0],
                 target: state.characters[0],
                 binding: capture,
-                amount: thresholds.easy,
+                amount: thresholds.light,
             }],
         };
         const hero = makeCharacterDef("hero");
@@ -199,7 +199,7 @@ describe("state serialization and combatant loading", () => {
             levels: [{}, { modifiers: { hitarms: -1 } }],
         };
         const restraint = makeBindingDef("rope", {
-            easy: [{ definition: status, value: 1 }],
+            light: [{ definition: status, value: 1 }],
         });
         const prepare = makeMove("prepare", "mouth", {
             targetSide: "none",
@@ -209,7 +209,7 @@ describe("state serialization and combatant loading", () => {
                 source: actor,
                 target: state.characters[0],
                 binding: restraint,
-                amount: thresholds.easy,
+                amount: thresholds.light,
             }],
         });
         const hero = makeCharacterDef("hero", [prepare]);

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -21,6 +20,7 @@ import {
     recoveryDebt,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number): Binding {
     return { id, value, level: "none", data: {}, status: [], tickEffects: [] };
@@ -100,7 +100,7 @@ function context(
     return {
         state,
         actions,
-        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        thresholds: { thresholds: { overwhelming: 80 }, max: 100 },
         library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("incoming-threat scoring must not use random"); },

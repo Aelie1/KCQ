@@ -120,11 +120,11 @@ export interface SmartBoardAssessment {
 
 const BINDING_LEVELS: readonly BindingLevel[] = [
     "none",
-    "easy",
-    "medium",
-    "hard",
-    "extreme",
-    "impossible",
+    "light",
+    "moderate",
+    "heavy",
+    "severe",
+    "overwhelming",
     "max",
 ];
 
@@ -189,9 +189,9 @@ function assessCharacter(
         peakBinding,
         peakBindingLevel,
         bindingLevels,
-        hardOrWorseBindings: countAtOrAbove(bindingLevels, "hard"),
-        extremeOrWorseBindings: countAtOrAbove(bindingLevels, "extreme"),
-        impossibleOrMaxBindings: countAtOrAbove(bindingLevels, "impossible"),
+        hardOrWorseBindings: countAtOrAbove(bindingLevels, "heavy"),
+        extremeOrWorseBindings: countAtOrAbove(bindingLevels, "severe"),
+        impossibleOrMaxBindings: countAtOrAbove(bindingLevels, "overwhelming"),
         blockedMoveTypes: [...character.blockedMoveTypes],
         modifiers: { ...character.modifiers },
         standing: character.standing,
@@ -310,9 +310,9 @@ function assessParty(
         totalBinding: sum(characters, ({ totalBinding }) => totalBinding),
         peakBinding: Math.max(0, ...characters.map(({ peakBinding }) => peakBinding)),
         peakBindingLevel: highestBindingLevel(characters.map(({ peakBindingLevel }) => peakBindingLevel)),
-        hardOrWorseBindings: countAtOrAbove(bindingLevels, "hard"),
-        extremeOrWorseBindings: countAtOrAbove(bindingLevels, "extreme"),
-        impossibleOrMaxBindings: countAtOrAbove(bindingLevels, "impossible"),
+        hardOrWorseBindings: countAtOrAbove(bindingLevels, "heavy"),
+        extremeOrWorseBindings: countAtOrAbove(bindingLevels, "severe"),
+        impossibleOrMaxBindings: countAtOrAbove(bindingLevels, "overwhelming"),
         totalKnownIncomingBinding: sum(characters, ({ incomingBinding }) => incomingBinding.known),
         unknownIncomingBindingEffects: sum(
             characters,
@@ -381,11 +381,11 @@ function capabilityState(action: ActionView | undefined): SmartCapabilityState {
 function emptyBindingLevels(): Record<BindingLevel, number> {
     return {
         none: 0,
-        easy: 0,
-        medium: 0,
-        hard: 0,
-        extreme: 0,
-        impossible: 0,
+        light: 0,
+        moderate: 0,
+        heavy: 0,
+        severe: 0,
+        overwhelming: 0,
         max: 0,
     };
 }

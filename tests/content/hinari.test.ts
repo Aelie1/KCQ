@@ -4,7 +4,6 @@ import { latexLegs } from "../../src/content/skunk/latex";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import type { BindingDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { s } from "../../src/engine/protected/status";
@@ -23,6 +22,7 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
+import { createTestEngine } from "../helpers/testCatalog";
 
 const rope = makeBehavioralBinding("rope");
 const tape = makeBehavioralBinding("tape");
@@ -259,21 +259,21 @@ describe("Hinari's Spatial Movement", () => {
                     source: state.characters[0],
                     target: state.characters[0],
                     binding: latexLegs,
-                    amount: thresholds.extreme,
+                    amount: thresholds.severe,
                 },
                 {
                     type: "binding",
                     source: state.characters[0],
                     target: state.characters[1],
                     binding: latexLegs,
-                    amount: thresholds.extreme,
+                    amount: thresholds.severe,
                 },
             ],
         });
 
         const hinariState = characterState(engine, hinari.id);
         const ordinaryState = characterState(engine, ordinary.id);
-        expect(bindingState(engine, latexLegs.id, hinari.id)?.value).toBe(thresholds.extreme);
+        expect(bindingState(engine, latexLegs.id, hinari.id)?.value).toBe(thresholds.severe);
         expect(hinariState.modifiers).toEqual({});
         expect(hinariState.blockedMoveTypes).toEqual([]);
         expect(ordinaryState.modifiers).toEqual({ defense: -3, traps: -3, hitlegs: -6 });
@@ -607,7 +607,7 @@ describe("Hinari's Store", () => {
     });
 
     it("limits removal to Subspace room while applying the fixed overflow to Hinari", () => {
-        const initialHinariBinding = thresholds.impossible - 5;
+        const initialHinariBinding = thresholds.overwhelming - 5;
         const engine = constrainedStoreEngine(90, initialHinariBinding);
         const beforeAlly = bindingState(engine, tape.id, "ally")!.value;
 
@@ -622,7 +622,7 @@ describe("Hinari's Store", () => {
         expect(allyRemoved).toBe(10);
         expect(subspaceGained).toBe(10);
         expect(bodyBindingGained).toBe(6);
-        expect(afterHinariBinding).toBe(thresholds.impossible + 1);
+        expect(afterHinariBinding).toBe(thresholds.overwhelming + 1);
     });
 
     it("refuses characters with no bindings while keeping bound characters valid", () => {

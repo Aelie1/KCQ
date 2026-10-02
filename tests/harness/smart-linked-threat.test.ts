@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -20,6 +19,7 @@ import {
     linkedThreatScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const catastrophicId = "test-catastrophic" as StatusId;
 const severeId = "test-severe" as StatusId;
@@ -143,7 +143,7 @@ function context(
     return {
         state,
         actions: [actionView(moves)],
-        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        thresholds: { thresholds: { overwhelming: 80 }, max: 100 },
         library,
         random: {
             next: () => { throw new Error("linked-threat scoring must not use random"); },

@@ -16,7 +16,7 @@ export const RECOVERY_DEBT_CURVE_A = 1.5;
  * policy heuristic, not a game mechanic.
  */
 export function recoveryDebt(value: number, thresholds: ThresholdInfo): number {
-    const impossible = thresholds.thresholds.impossible;
+    const impossible = thresholds.thresholds.overwhelming;
     const maximum = thresholds.max;
     if (impossible === undefined || impossible <= 0 || maximum <= 0) return 0;
 

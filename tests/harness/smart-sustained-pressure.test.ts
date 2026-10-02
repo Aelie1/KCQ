@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -22,6 +21,7 @@ import {
     sustainedPressureProgressScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const LATEX_TRACKS = ["latexHead", "latexArms", "latexTorso", "latexLegs"];
 
@@ -114,7 +114,7 @@ function context(
     return {
         state,
         actions,
-        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        thresholds: { thresholds: { overwhelming: 80 }, max: 100 },
         library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("sustained-pressure scoring must not use RNG"); },

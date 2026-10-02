@@ -10,7 +10,7 @@ export const BASE_ESCAPE_PENALTY = 15;
 export function getEscapePotency(value: number, escapeModifier: number, assistModifier: number) {
     const basePotency = BASE_ESCAPE_POTENCY;
     const bindingValue = value;
-    const bindingRatio = Math.min(bindingValue / thresholds.impossible, 1);
+    const bindingRatio = Math.min(bindingValue / thresholds.overwhelming, 1);
     const basePenalty = BASE_ESCAPE_PENALTY;
     let escapePotency = basePotency - basePenalty * Math.pow(bindingRatio, 2);
     escapePotency *= 1 + escapeModifier * BINDING_MODIFIER;
@@ -21,29 +21,29 @@ export function getEscapePotency(value: number, escapeModifier: number, assistMo
 
 export const thresholds: Record<BindingLevel, number> = {
     none: 0,
-    easy: 10,
-    medium: 20,
-    hard: 30,
-    extreme: 50,
-    impossible: 80,
+    light: 10,
+    moderate: 20,
+    heavy: 30,
+    severe: 50,
+    overwhelming: 80,
     max: 100
 };
 
 export function getBindingLevel(binding: iBinding): BindingLevel {
-    if (binding.value >= thresholds.impossible) {
-        return "impossible";
+    if (binding.value >= thresholds.overwhelming) {
+        return "overwhelming";
     }
-    else if (binding.value >= thresholds.extreme) {
-        return "extreme";
+    else if (binding.value >= thresholds.severe) {
+        return "severe";
     }
-    else if (binding.value >= thresholds.hard) {
-        return "hard";
+    else if (binding.value >= thresholds.heavy) {
+        return "heavy";
     }
-    else if (binding.value >= thresholds.medium) {
-        return "medium";
+    else if (binding.value >= thresholds.moderate) {
+        return "moderate";
     }
-    else if (binding.value >= thresholds.easy) {
-        return "easy";
+    else if (binding.value >= thresholds.light) {
+        return "light";
     }
     return "none";
 }

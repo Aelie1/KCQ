@@ -1,19 +1,19 @@
 import { expect } from "vitest";
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "./testCatalog";
 import type { iBinding, iCharacter, iEffect, iEnemy, iMoveResult, iStatus } from "../../src/engine/protected/types";
 import type { BindingLevel, Engine, FailureReason, MoveType } from "../../src/engine/public/types";
 import { actionView } from "./actionView";
+import { createTestEngine } from "./testCatalog";
 
 export { actionView } from "./actionView";
 
 const bindingLevels: BindingLevel[] = [
     "none",
-    "easy",
-    "medium",
-    "hard",
-    "extreme",
-    "impossible",
+    "light",
+    "moderate",
+    "heavy",
+    "severe",
+    "overwhelming",
 ];
 
 function statusMap(

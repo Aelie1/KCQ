@@ -30,7 +30,7 @@ const state: GameState = {
         bindings: [{
             id: "latexArms",
             value: 55,
-            level: "extreme",
+            level: "severe",
             data: {},
             status: [{ id: "bound", value: 3 }],
             tickEffects: []
@@ -472,7 +472,7 @@ describe("console formatting", () => {
                     {
                         id: "latexArms",
                         value: 36,
-                        level: "hard",
+                        level: "heavy",
                         data: {},
                         status: [
                             { id: "bound", value: 3 },
@@ -483,7 +483,7 @@ describe("console formatting", () => {
                     {
                         id: "latexTorso",
                         value: 23,
-                        level: "medium",
+                        level: "moderate",
                         data: {},
                         status: [{ id: "gagged", value: 2 }],
                         tickEffects: []
@@ -521,9 +521,9 @@ describe("console formatting", () => {
             characters: [{
                 ...state.characters[0],
                 bindings: [
-                    { id: "withPeak", value: 36, level: "hard", data: { peak: 58 }, status: [], tickEffects: [] },
-                    { id: "withoutPeak", value: 36, level: "hard", data: {}, status: [], tickEffects: [] },
-                    { id: "zeroPeak", value: 12, level: "easy", data: { peak: 0 }, status: [], tickEffects: [] },
+                    { id: "withPeak", value: 36, level: "heavy", data: { peak: 58 }, status: [], tickEffects: [] },
+                    { id: "withoutPeak", value: 36, level: "heavy", data: {}, status: [], tickEffects: [] },
+                    { id: "zeroPeak", value: 12, level: "light", data: { peak: 0 }, status: [], tickEffects: [] },
                 ],
             }],
         }, [{ id: "ko", available: true }], ["withPeak", "withoutPeak", "zeroPeak"]);
@@ -790,7 +790,7 @@ describe("console formatting", () => {
     });
 
     it("omits accuracy from move rows that have a failure reason", async () => {
-        const { engine } = setupBoundEngine(latexArms, thresholds.extreme);
+        const { engine } = setupBoundEngine(latexArms, thresholds.severe);
 
         const rendered = await runScriptedConsole(engine, ["1", "7", "3"]);
         const unavailableRow = rendered.split("\n")
@@ -1047,9 +1047,9 @@ describe("console formatting", () => {
 
     it("does not offer escape when every published escape entry is unavailable", async () => {
         const escapeBlockingBinding = makeBindingDef("escape-blocking", {
-            easy: [{ definition: stunned, value: 1 }],
+            light: [{ definition: stunned, value: 1 }],
         });
-        const { engine } = setupBoundEngine(escapeBlockingBinding, thresholds.easy);
+        const { engine } = setupBoundEngine(escapeBlockingBinding, thresholds.light);
         const escapes = engine.getActionView()
             .find((action) => action.id === "hero")?.escapes ?? [];
 
@@ -1079,21 +1079,21 @@ describe("console formatting", () => {
                         source: hero,
                         target: hero,
                         binding: latexArms,
-                        amount: thresholds.extreme,
+                        amount: thresholds.severe,
                     },
                     {
                         type: "binding" as const,
                         source: hero,
                         target: ally,
                         binding: unavailableAssist,
-                        amount: thresholds.easy,
+                        amount: thresholds.light,
                     },
                     {
                         type: "binding" as const,
                         source: hero,
                         target: hero,
                         binding: firstLegal,
-                        amount: thresholds.easy,
+                        amount: thresholds.light,
                     },
                 ];
             },
@@ -1162,11 +1162,11 @@ describe("console formatting", () => {
 
     it("does not number unavailable characters and ignores them for automatic end turn", async () => {
         const helplessBinding = makeBindingDef("helpless-source", {
-            easy: [{ definition: helpless, value: 1 }],
+            light: [{ definition: helpless, value: 1 }],
         });
         const wait = makeMove("player-wait", "mouth", { targetSide: "none", targets: 0 });
         const ally = makeCharacterDef("ally", [wait]);
-        const { engine } = setupBoundEngine(helplessBinding, thresholds.easy, [], [ally]);
+        const { engine } = setupBoundEngine(helplessBinding, thresholds.light, [], [ally]);
         engine.loadCharacter(ally.id);
 
         const rendered = await runScriptedConsole(engine, ["2", "1", "4"]);
@@ -1183,7 +1183,7 @@ describe("console formatting", () => {
 
     it("refreshes stance and bonus-escape menus in place", async () => {
         const restraint = makeBindingDef("rope");
-        const { engine } = setupBoundEngine(restraint, thresholds.impossible);
+        const { engine } = setupBoundEngine(restraint, thresholds.overwhelming);
 
         const rendered = await runScriptedConsole(
             engine,
@@ -1205,7 +1205,7 @@ describe("console formatting", () => {
     });
 
     it("previews every effect for an escape option", async () => {
-        const { engine } = setupBoundEngine(latexArms, thresholds.hard);
+        const { engine } = setupBoundEngine(latexArms, thresholds.heavy);
 
         const rendered = await runScriptedConsole(
             engine,

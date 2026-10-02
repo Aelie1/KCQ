@@ -68,7 +68,7 @@ describe("game-wide difficulty", () => {
             levels: [{}, { modifiers: { hit: 3, defense: 1 } }],
         };
         const restraint = makeBindingDef("focus-source", {
-            easy: [{ definition: focused, value: 1 }],
+            light: [{ definition: focused, value: 1 }],
         });
         const character = makeCharacter("hero", [makeBinding(restraint, 10)]);
         character.standing = true;

@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionView,
     Binding,
@@ -9,7 +8,6 @@ import type {
     ValidTarget,
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
-import { createEmptyContentLibrary } from "../helpers/library";
 import {
     assessSmartBoard,
     evaluatePressureSourceProgress,
@@ -18,11 +16,13 @@ import {
     type PressureSourceProgressBreakdown,
     type SmartCandidate,
 } from "../../src/harness/policy/smart";
+import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
-const thresholds = { thresholds: { impossible: 80 }, max: 100 } as const;
+const thresholds = { thresholds: { overwhelming: 80 }, max: 100 } as const;
 
 function binding(id: string, value: number, tickEffects: Effect[] = []): Binding {
-    return { id, value, level: "hard", data: {}, status: [], tickEffects };
+    return { id, value, level: "heavy", data: {}, status: [], tickEffects };
 }
 
 function character(id: string, bindings: Binding[]): Character {

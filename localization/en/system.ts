@@ -17,11 +17,11 @@ export const systemStrings = {
     "difficulty.mythic.desc": "...",
 
     "bindingLevel.none.name": "None",
-    "bindingLevel.easy.name": "Easy",
-    "bindingLevel.medium.name": "Medium",
-    "bindingLevel.hard.name": "Hard",
-    "bindingLevel.extreme.name": "Extreme",
-    "bindingLevel.impossible.name": "Impossible",
+    "bindingLevel.light.name": "Light",
+    "bindingLevel.moderate.name": "Moderate",
+    "bindingLevel.heavy.name": "Heavy",
+    "bindingLevel.severe.name": "Severe",
+    "bindingLevel.overwhelming.name": "Overwhelming",
 
     "hitBand.miss.name": "Miss",
     "hitBand.graze.name": "Graze",

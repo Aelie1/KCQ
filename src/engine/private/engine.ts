@@ -80,11 +80,11 @@ export class GameEngine implements Engine {
     getThresholds(): ThresholdInfo {
         return {
             thresholds: {
-                easy: thresholds.easy,
-                medium: thresholds.medium,
-                hard: thresholds.hard,
-                extreme: thresholds.extreme,
-                impossible: thresholds.impossible
+                light: thresholds.light,
+                moderate: thresholds.moderate,
+                heavy: thresholds.heavy,
+                severe: thresholds.severe,
+                overwhelming: thresholds.overwhelming
             },
             max: thresholds.max
         }

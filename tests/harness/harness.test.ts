@@ -85,7 +85,7 @@ function boundCharacter(id: string, value: number): Character {
         bindings: [{
             id: "rope",
             value,
-            level: value > 20 ? "medium" : "easy",
+            level: value > 20 ? "moderate" : "light",
             data: {},
             status: [],
             tickEffects: [],

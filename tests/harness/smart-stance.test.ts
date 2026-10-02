@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -13,20 +12,21 @@ import type {
 import type { PolicyContext } from "../../src/harness/harness";
 import {
     evaluateSmartDecision,
-    STANDING_DEFENSE_PRESSURE_FRACTION,
     stanceTrapScorer,
+    STANDING_DEFENSE_PRESSURE_FRACTION,
     type ScoredSmartCandidate,
     type StanceTrapBreakdown,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const thresholds = {
-    thresholds: { easy: 10, medium: 20, hard: 30, extreme: 50, impossible: 80 },
+    thresholds: { light: 10, moderate: 20, heavy: 30, severe: 50, overwhelming: 80 },
     max: 100,
 } as const;
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: value >= 80 ? "impossible" : "hard", data: {}, status: [], tickEffects: [] };
+    return { id, value, level: value >= 80 ? "overwhelming" : "heavy", data: {}, status: [], tickEffects: [] };
 }
 
 function character(bindings: Binding[] = [], buffs: Character["buffs"] = []): Character {
@@ -284,7 +284,7 @@ describe("Smart deliberate Standing double-escape planning", () => {
             modifiers: [{}, { flags: ["blocksBonusEscape"] }],
         };
         fixture.library.bindings["test-rope-a"].status = {
-            extreme: [{ id: "vibrating", level: 1 }],
+            severe: [{ id: "vibrating", level: 1 }],
         };
         const detail = diagnostics(fixture);
 

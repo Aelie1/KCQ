@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     ActionInfo,
@@ -30,6 +29,7 @@ import {
     smartScorers,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number, level: Binding["level"]): Binding {
     return { id, value, level, data: {}, status: [], tickEffects: [] };
@@ -143,7 +143,7 @@ function context(
         state,
         actions,
         thresholds: {
-            thresholds: { easy: 20, medium: 40, hard: 60, extreme: 70, impossible: 80 },
+            thresholds: { light: 20, moderate: 40, heavy: 60, severe: 70, overwhelming: 80 },
             max: 100,
         },
         library,
@@ -272,7 +272,7 @@ describe("Smart Matsuko kit knowledge", () => {
     it("does not force empowerment consumption over urgent recovery", () => {
         const matsuko = character("matsuko", {
             buffs: [{ id: "empowerment" }],
-            bindings: [binding("restraint", 80, "impossible")],
+            bindings: [binding("restraint", 80, "overwhelming")],
         });
         const view = action("matsuko", [
             move("punch", ["target"], { damage: 30 }),
@@ -310,7 +310,7 @@ describe("Smart Matsuko kit knowledge", () => {
     it("releases the Immolation reserve in a serious binding emergency", () => {
         const fixture = context(
             [character("matsuko", {
-                bindings: [binding("restraint", 80, "impossible")],
+                bindings: [binding("restraint", 80, "overwhelming")],
             })],
             [enemy("target")],
             [action("matsuko", [move("immolation", ["target"], { damage: 75 })])],
@@ -324,7 +324,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("shows Immolation emergency recovery and Queen transition cost together", () => {
         const bindings = ["head", "arms", "torso", "legs"].map((id) =>
-            binding(id, id === "head" ? 75 : 80, id === "head" ? "extreme" : "impossible")
+            binding(id, id === "head" ? 75 : 80, id === "head" ? "severe" : "overwhelming")
         );
         const enemies = [
             enemy("queen1", { rank: "boss", maxHp: 750, currHp: 160 }),
@@ -504,7 +504,7 @@ describe("Smart Matsuko kit knowledge", () => {
         const fixture = context(
             [
                 character("matsuko", { bindings: [binding("arms", 0, "none")] }),
-                character("ko", { bindings: [binding("arms", 70, "extreme")] }),
+                character("ko", { bindings: [binding("arms", 70, "severe")] }),
             ],
             [enemy("source", {
                 intentions: [bindingIntention("bind", "ko", "arms", 20)],

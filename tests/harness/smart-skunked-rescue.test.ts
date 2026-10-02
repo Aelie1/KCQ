@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type {
     ActionInfo,
     ActionView,
@@ -20,12 +19,13 @@ import {
     type SkunkedRescueBreakdown,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(value = 80): Binding {
     return {
         id: "test-binding",
         value,
-        level: value >= 80 ? "impossible" : "hard",
+        level: value >= 80 ? "overwhelming" : "heavy",
         data: {},
         status: [],
         tickEffects: [],
@@ -134,7 +134,7 @@ function context(
     return {
         state,
         actions,
-        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        thresholds: { thresholds: { overwhelming: 80 }, max: 100 },
         library,
         random: {
             next: () => { throw new Error("rescue scoring must not use random"); },

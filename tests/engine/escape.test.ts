@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { latexArms } from "../../src/content/skunk/latex";
 import type { BindingDef, StatusDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { getEscapePotency, thresholds } from "../../src/engine/protected/mechanics";
 import type { Effect, Engine } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import { resultDetails } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 interface BindingSetup {
     target: string;
@@ -76,8 +76,8 @@ describe("escape progress", () => {
             "helper",
             ["helper", "easy", "impossible", "over-impossible"],
             [
-                { target: "easy", binding: restraint, amount: thresholds.easy },
-                { target: "impossible", binding: restraint, amount: thresholds.impossible },
+                { target: "easy", binding: restraint, amount: thresholds.light },
+                { target: "impossible", binding: restraint, amount: thresholds.overwhelming },
                 { target: "over-impossible", binding: restraint, amount: thresholds.max },
             ],
         );
@@ -97,16 +97,16 @@ describe("escape progress", () => {
             levels: [{}, { modifiers: { escape: escapeModifier } }],
         };
         const modifierBinding = makeBindingDef("modifier", {
-            easy: [{ definition: modifierStatus, value: 1 }],
+            light: [{ definition: modifierStatus, value: 1 }],
         });
         const targetBinding = makeBindingDef("rope");
         const engine = setupEscapeScenario(
             "setup",
             ["setup", "unpenalized-helper", "penalized-helper", "target"],
             [
-                { target: "penalized-helper", binding: modifierBinding, amount: thresholds.easy },
-                { target: "target", binding: modifierBinding, amount: thresholds.easy },
-                { target: "target", binding: targetBinding, amount: thresholds.hard },
+                { target: "penalized-helper", binding: modifierBinding, amount: thresholds.light },
+                { target: "target", binding: modifierBinding, amount: thresholds.light },
+                { target: "target", binding: targetBinding, amount: thresholds.heavy },
             ],
         );
 
@@ -179,7 +179,7 @@ describe("escape progress", () => {
         const engine = setupEscapeScenario(
             "hero",
             ["hero"],
-            [{ target: "hero", binding: restraint, amount: thresholds.hard }],
+            [{ target: "hero", binding: restraint, amount: thresholds.heavy }],
         );
         const before = engine.getGameState().characters[0].bindings[0].value;
         const amount = escapeAmount(engine, "hero", "hero", restraint.id);
@@ -232,7 +232,7 @@ describe("escape progress", () => {
         const engine = setupEscapeScenario(
             "hero",
             ["hero"],
-            [{ target: "hero", binding: latexArms, amount: thresholds.hard }],
+            [{ target: "hero", binding: latexArms, amount: thresholds.heavy }],
         );
 
         expect(escapeEffects(engine, "hero", "hero", latexArms.id)).toEqual([

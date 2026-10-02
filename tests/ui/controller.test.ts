@@ -268,7 +268,7 @@ describe("shared battle controller", () => {
 
     it("renders defeat from the public outcome without requesting a choice", async () => {
         const capture = makeBindingDef("capture", {
-            easy: [{ definition: incapacitated, value: 1 }],
+            light: [{ definition: incapacitated, value: 1 }],
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter: EncounterDef = {
@@ -281,7 +281,7 @@ describe("shared battle controller", () => {
                 source: character,
                 target: character,
                 binding: capture,
-                amount: thresholds.easy,
+                amount: thresholds.light,
             })),
         };
         const hero = makeCharacterDef("hero");

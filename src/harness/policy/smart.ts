@@ -1007,7 +1007,7 @@ function prepareStanceActor(
         new Map(current.get(actor.id) ?? []),
     ]]);
     const currentRecoveryDebt = totalRecoveryDebt(actorBoard, context.thresholds);
-    const impossible = context.thresholds.thresholds.impossible;
+    const impossible = context.thresholds.thresholds.overwhelming;
     const debtAtImpossible = impossible === undefined
         ? 0
         : recoveryDebt(impossible, context.thresholds);
@@ -1663,7 +1663,7 @@ function evaluateBindingRecoveryFromBoard(
         ? 0
         : bindingValue(baseline, selected.characterId, selected.bindingId);
     const selectedDebt = recoveryDebt(selectedProjectedValue, context.thresholds);
-    const impossible = context.thresholds.thresholds.impossible;
+    const impossible = context.thresholds.thresholds.overwhelming;
     const debtAtImpossible = impossible === undefined
         ? 0
         : recoveryDebt(impossible, context.thresholds);
@@ -1793,11 +1793,11 @@ function collectMoveTypeRules(
 
 function bindingLevel(value: number, thresholds: ThresholdInfo): BindingLevel {
     const levels: readonly BindingLevel[] = [
-        "impossible",
-        "extreme",
-        "hard",
-        "medium",
-        "easy",
+        "overwhelming",
+        "severe",
+        "heavy",
+        "moderate",
+        "light",
     ];
     for (const level of levels) {
         const threshold = thresholds.thresholds[level];

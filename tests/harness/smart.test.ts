@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
+import { createEngine } from "../../src/engine/public/engine";
 import type {
     ActionInfo,
     ActionView,
@@ -8,14 +8,15 @@ import type {
     GameState,
     PreviewInfo,
 } from "../../src/engine/public/types";
+import { runBatch } from "../../src/harness/batch/batch";
 import {
     createPolicyRandom,
     runSingleFight,
     type FightPolicy,
     type PolicyContext,
 } from "../../src/harness/harness";
-import { runBatch } from "../../src/harness/batch/batch";
 import { getPolicy, policies } from "../../src/harness/policies";
+import { basicPolicy } from "../../src/harness/policy/basic";
 import {
     bindingMoveAccessScorer,
     bindingRecoveryScorer,
@@ -31,18 +32,17 @@ import {
     pressureSourceProgressScorer,
     reactiveKnowledgeScorer,
     reserveSpendingScorer,
-    smartScorers,
-    smartPolicy,
     skunkedRescueScorer,
+    smartPolicy,
+    smartScorers,
     stanceTrapScorer,
     sustainedPressureProgressScorer,
     tempoKnowledgeScorer,
     type SmartDecision,
     type SmartScorer,
 } from "../../src/harness/policy/smart";
-import { basicPolicy } from "../../src/harness/policy/basic";
-import { createEngine } from "../../src/engine/public/engine";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function character(id: string): Character {
     return {
@@ -124,7 +124,7 @@ function context(actions: ActionView[], gameState = state()): PolicyContext {
     return {
         state: gameState,
         actions,
-        thresholds: { thresholds: { impossible: 80 }, max: 100 },
+        thresholds: { thresholds: { overwhelming: 80 }, max: 100 },
         library: createEmptyContentLibrary(),
         random: {
             next: () => { throw new Error("Smart must not consume policy random"); },
@@ -548,21 +548,21 @@ describe("Smart 2 selection and integration", () => {
             && candidate.components.reserveSpending.raw === 0
             && candidate.components.reserveSpending.weight === 1
             && candidate.total === candidate.components.expectedDamage.score
-                + candidate.components.linkedThreat.score
-                + candidate.components.skunkedRescue.score
-                + candidate.components.incomingThreat.score
-                + candidate.components.kitKnowledge.score
-                + candidate.components.tempoKnowledge.score
-                + candidate.components.controlKnowledge.score
-                + candidate.components.reactiveKnowledge.score
-                + candidate.components.bindingRecovery.score
-                + candidate.components.stanceTrap.score
-                + candidate.components.bindingMoveAccess.score
-                + candidate.components.pressureSourceProgress.score
-                + candidate.components.sustainedPressureProgress.score
-                + candidate.components.finisherPressure.score
-                + candidate.components.futureMoveOptions.score
-                + candidate.components.reserveSpending.score,
+            + candidate.components.linkedThreat.score
+            + candidate.components.skunkedRescue.score
+            + candidate.components.incomingThreat.score
+            + candidate.components.kitKnowledge.score
+            + candidate.components.tempoKnowledge.score
+            + candidate.components.controlKnowledge.score
+            + candidate.components.reactiveKnowledge.score
+            + candidate.components.bindingRecovery.score
+            + candidate.components.stanceTrap.score
+            + candidate.components.bindingMoveAccess.score
+            + candidate.components.pressureSourceProgress.score
+            + candidate.components.sustainedPressureProgress.score
+            + candidate.components.finisherPressure.score
+            + candidate.components.futureMoveOptions.score
+            + candidate.components.reserveSpending.score,
         )).toBe(true);
         expect(smartPolicy.chooseAction(fixture)).toEqual(first.selected.action);
     });
@@ -683,21 +683,21 @@ describe("Smart 2 selection and integration", () => {
                 && typeof candidate.components.reserveSpending.raw === "number"
                 && candidate.components.reserveSpending.weight === 1
                 && candidate.total === candidate.components.expectedDamage.score
-                    + candidate.components.linkedThreat.score
-                    + candidate.components.skunkedRescue.score
-                    + candidate.components.incomingThreat.score
-                    + candidate.components.kitKnowledge.score
-                    + candidate.components.tempoKnowledge.score
-                    + candidate.components.controlKnowledge.score
-                    + candidate.components.reactiveKnowledge.score
-                    + candidate.components.bindingRecovery.score
-                    + candidate.components.stanceTrap.score
-                    + candidate.components.bindingMoveAccess.score
-                    + candidate.components.pressureSourceProgress.score
-                    + candidate.components.sustainedPressureProgress.score
-                    + candidate.components.finisherPressure.score
-                    + candidate.components.futureMoveOptions.score
-                    + candidate.components.reserveSpending.score,
+                + candidate.components.linkedThreat.score
+                + candidate.components.skunkedRescue.score
+                + candidate.components.incomingThreat.score
+                + candidate.components.kitKnowledge.score
+                + candidate.components.tempoKnowledge.score
+                + candidate.components.controlKnowledge.score
+                + candidate.components.reactiveKnowledge.score
+                + candidate.components.bindingRecovery.score
+                + candidate.components.stanceTrap.score
+                + candidate.components.bindingMoveAccess.score
+                + candidate.components.pressureSourceProgress.score
+                + candidate.components.sustainedPressureProgress.score
+                + candidate.components.finisherPressure.score
+                + candidate.components.futureMoveOptions.score
+                + candidate.components.reserveSpending.score,
             )).toBe(true);
             expect(step.action).toEqual(decision.selected.action);
         }

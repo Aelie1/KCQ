@@ -31,7 +31,7 @@ describe("browser gameplay telemetry", () => {
         view.characters[0].bindings = [{
             id: "rope",
             value: 12,
-            level: "easy",
+            level: "light",
             data: { hidden: 3 },
             status: [{ id: "bound", value: 1 }],
             tickEffects: []

@@ -265,11 +265,11 @@ export type BindingId = string;
 
 export type BindingLevel =
     | "none"
-    | "easy"
-    | "medium"
-    | "hard"
-    | "extreme"
-    | "impossible"
+    | "light"
+    | "moderate"
+    | "heavy"
+    | "severe"
+    | "overwhelming"
     | "max"
 
 export interface ThresholdInfo {
