@@ -106,10 +106,10 @@ function smartBoardDiagnostic(): Record<string, unknown> {
             standingCharacters: 1,
             totalBinding: 31,
             peakBinding: 20,
-            peakBindingLevel: "extreme",
-            hardOrWorseBindings: 2,
-            extremeOrWorseBindings: 1,
-            impossibleOrMaxBindings: 0,
+            peakBindingLevel: "severe",
+            heavyOrWorseBindings: 2,
+            severeOrWorseBindings: 1,
+            overwhelmingOrMaxBindings: 0,
             totalKnownIncomingBinding: 12,
             unknownIncomingBindingEffects: 1,
             currentTraps: [{ id: "recordedTrap", amount: 3 }],
@@ -121,10 +121,10 @@ function smartBoardDiagnostic(): Record<string, unknown> {
             id: "hero",
             totalBinding: 20,
             peakBinding: 20,
-            peakBindingLevel: "extreme",
-            hardOrWorseBindings: 1,
-            extremeOrWorseBindings: 1,
-            impossibleOrMaxBindings: 0,
+            peakBindingLevel: "severe",
+            heavyOrWorseBindings: 1,
+            severeOrWorseBindings: 1,
+            overwhelmingOrMaxBindings: 0,
             blockedMoveTypes: ["arms"],
             standing: true,
             acted: true,
@@ -138,10 +138,10 @@ function smartBoardDiagnostic(): Record<string, unknown> {
             id: "ally-with-a-long-name",
             totalBinding: 11,
             peakBinding: 11,
-            peakBindingLevel: "hard",
-            hardOrWorseBindings: 1,
-            extremeOrWorseBindings: 0,
-            impossibleOrMaxBindings: 0,
+            peakBindingLevel: "heavy",
+            heavyOrWorseBindings: 1,
+            severeOrWorseBindings: 0,
+            overwhelmingOrMaxBindings: 0,
             blockedMoveTypes: [],
             standing: false,
             acted: false,
@@ -235,7 +235,7 @@ describe("console replay viewer", () => {
         expect(frame).toContain("PARTY");
         expect(frame).toContain("hero [Ready]");
         expect(frame).toContain("rope");
-        expect(frame).toContain("0  Easy");
+        expect(frame).toContain("0  Light");
         expect(frame).toContain("ENEMIES");
         expect(frame).toContain("Intent: recorded-intention");
         expect(frame).toMatch(/Recorded \[[-#]+\] 1\/100/);
@@ -248,13 +248,13 @@ describe("console replay viewer", () => {
         expect(frames).toHaveLength(5);
         expectPosition(frames[1], 1, 73);
         expect(frames[1]).toContain("Action: move hero: recorded-strike; targets: [recorded-foe]");
-        expect(frames[1]).toContain("12  Easy");
+        expect(frames[1]).toContain("12  Light");
         expect(frames[1]).toContain("recorded-foe took 17 damage.");
         expect(frames[1]).not.toContain("took 32 damage");
         expectPosition(frames[2], 2, 41);
         expect(frames[2]).toContain("Round 2 / PLAYER");
         expect(frames[2]).toContain("Action: endTurn");
-        expect(frames[2]).toContain("24  Easy");
+        expect(frames[2]).toContain("24  Light");
         expect(frames[2]).toContain("recorded-foe took 17 damage.");
         expect(frames[2]).toContain("recorded-foe took 32 damage.");
         expectPosition(frames[3], 1, 73);
@@ -349,14 +349,14 @@ describe("console replay viewer", () => {
         const enemyPage = frames[28];
         const returnedCandidateView = frames[29];
 
-        expect(candidateView).toContain("Board: binding=31 peak=20/extreme");
+        expect(candidateView).toContain("Board: binding=31 peak=20/severe");
         expect(candidateView).toContain("incoming=12 known + 1 unknown");
         expect(candidateView).toContain("Actors: 1/2 available");
         expect(candidateView).toContain("incapacitated=1");
         expect(candidateView).toContain("[b] board");
 
         expect(firstBoardPage).toContain("SMART BOARD  Lines 1-7");
-        expect(firstBoardPage).toContain("Party binding: total=31 peak=20/extreme");
+        expect(firstBoardPage).toContain("Party binding: total=31 peak=20/severe");
         expect(firstBoardPage).toContain("Action economy: available=1/2");
         expect(characterPage).toContain("Character hero");
         expect(characterPage).toContain("incoming binding: 8 known + 1 unknown");

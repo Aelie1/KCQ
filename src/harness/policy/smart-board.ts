@@ -48,9 +48,9 @@ export interface SmartCharacterAssessment {
     readonly peakBinding: number;
     readonly peakBindingLevel: BindingLevel;
     readonly bindingLevels: SmartBindingLevelCounts;
-    readonly hardOrWorseBindings: number;
-    readonly extremeOrWorseBindings: number;
-    readonly impossibleOrMaxBindings: number;
+    readonly heavyOrWorseBindings: number;
+    readonly severeOrWorseBindings: number;
+    readonly overwhelmingOrMaxBindings: number;
     readonly blockedMoveTypes: readonly MoveType[];
     readonly modifiers: Readonly<ModifierSet>;
     readonly standing: boolean;
@@ -100,9 +100,9 @@ export interface SmartPartyAssessment {
     readonly totalBinding: number;
     readonly peakBinding: number;
     readonly peakBindingLevel: BindingLevel;
-    readonly hardOrWorseBindings: number;
-    readonly extremeOrWorseBindings: number;
-    readonly impossibleOrMaxBindings: number;
+    readonly heavyOrWorseBindings: number;
+    readonly severeOrWorseBindings: number;
+    readonly overwhelmingOrMaxBindings: number;
     readonly totalKnownIncomingBinding: number;
     readonly unknownIncomingBindingEffects: number;
     readonly currentTraps: readonly SmartTrapAssessment[];
@@ -189,9 +189,9 @@ function assessCharacter(
         peakBinding,
         peakBindingLevel,
         bindingLevels,
-        hardOrWorseBindings: countAtOrAbove(bindingLevels, "heavy"),
-        extremeOrWorseBindings: countAtOrAbove(bindingLevels, "severe"),
-        impossibleOrMaxBindings: countAtOrAbove(bindingLevels, "overwhelming"),
+        heavyOrWorseBindings: countAtOrAbove(bindingLevels, "heavy"),
+        severeOrWorseBindings: countAtOrAbove(bindingLevels, "severe"),
+        overwhelmingOrMaxBindings: countAtOrAbove(bindingLevels, "overwhelming"),
         blockedMoveTypes: [...character.blockedMoveTypes],
         modifiers: { ...character.modifiers },
         standing: character.standing,
@@ -310,9 +310,9 @@ function assessParty(
         totalBinding: sum(characters, ({ totalBinding }) => totalBinding),
         peakBinding: Math.max(0, ...characters.map(({ peakBinding }) => peakBinding)),
         peakBindingLevel: highestBindingLevel(characters.map(({ peakBindingLevel }) => peakBindingLevel)),
-        hardOrWorseBindings: countAtOrAbove(bindingLevels, "heavy"),
-        extremeOrWorseBindings: countAtOrAbove(bindingLevels, "severe"),
-        impossibleOrMaxBindings: countAtOrAbove(bindingLevels, "overwhelming"),
+        heavyOrWorseBindings: countAtOrAbove(bindingLevels, "heavy"),
+        severeOrWorseBindings: countAtOrAbove(bindingLevels, "severe"),
+        overwhelmingOrMaxBindings: countAtOrAbove(bindingLevels, "overwhelming"),
         totalKnownIncomingBinding: sum(characters, ({ incomingBinding }) => incomingBinding.known),
         unknownIncomingBindingEffects: sum(
             characters,

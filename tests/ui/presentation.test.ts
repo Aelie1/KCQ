@@ -198,7 +198,7 @@ describe("combat presentation", () => {
             intentOutcomeStyle(band as "miss" | "graze" | "hit" | "crit")))
             .toEqual(["intent-miss", "intent-graze", "intent-hit", "intent-crit"]);
         expect(bindingSeverityStyle("none")).toBeUndefined();
-        expect(bindingSeverityStyle("light")).toBe("binding-easy");
+        expect(bindingSeverityStyle("light")).toBe("binding-light");
         expect(bindingSeverityStyle("max")).toBe("binding-max");
         expect(accuracyQualityStyle({ hit: 60, crit: 5 })).toBe("accuracy-good");
         expect(accuracyQualityStyle({ hit: 45, crit: 5 })).toBe("accuracy-caution");
@@ -357,7 +357,7 @@ describe("combat presentation", () => {
 
         expect(styledValues).toContainEqual({ style: "intent-crit", value: "CRIT" });
         expect(styledValues.some((entry) =>
-            entry.style === "binding-extreme" && entry.value.includes("55"))).toBe(true);
+            entry.style === "binding-severe" && entry.value.includes("55"))).toBe(true);
         expect(styledValues.some((entry) => entry.style === "accuracy-very-poor")).toBe(true);
         expect(styledValues).toContainEqual({ style: "accuracy-good", value: "Success: 65%" });
         expect(styledValues.filter((entry) => entry.style.startsWith("accuracy-"))

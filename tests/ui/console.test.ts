@@ -501,10 +501,10 @@ describe("console formatting", () => {
         expect(rendered.indexOf("latexArms")).toBeLessThan(rendered.indexOf("latexTorso"));
         expect(rendered).toContain("latexLegs   [-+-+-+---+-----+----] 0  ---");
         expect(rendered).toContain(
-            "latexArms   [#######--+-----+----] 36  Hard    [Bound 3] [Immobilized]",
+            "latexArms   [#######--+-----+----] 36  Heavy    [Bound 3] [Immobilized]",
         );
         expect(rendered).toContain(
-            "latexTorso  [#####+---+-----+----] 23  Medium    [Gagged 2]",
+            "latexTorso  [#####+---+-----+----] 23  Moderate    [Gagged 2]",
         );
         const bindingLines = rendered.split("\n");
         const firstBindingLine = bindingLines.findIndex((line) => line.includes("Bindings:"));
@@ -528,10 +528,10 @@ describe("console formatting", () => {
             }],
         }, [{ id: "ko", available: true }], ["withPeak", "withoutPeak", "zeroPeak"]);
 
-        expect(rendered).toMatch(/withPeak\s+\[[#/+\-]+\] 36\/58  Hard/);
-        expect(rendered).toMatch(/withoutPeak\s+\[[#/+\-]+\] 36  Hard/);
+        expect(rendered).toMatch(/withPeak\s+\[[#/+\-]+\] 36\/58  Heavy/);
+        expect(rendered).toMatch(/withoutPeak\s+\[[#/+\-]+\] 36  Heavy/);
         expect(rendered).not.toMatch(/withoutPeak\s+\[[#/+\-]+\] 36\/0/);
-        expect(rendered).toMatch(/zeroPeak\s+\[[#/+\-]+\] 12\/0  Easy/);
+        expect(rendered).toMatch(/zeroPeak\s+\[[#/+\-]+\] 12\/0  Light/);
     });
 
     it("shows Hinari's Subspace resource between action state and stance", () => {

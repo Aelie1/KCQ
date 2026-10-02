@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { fairy } from "../../src/content/skunk/fairy";
-import { skunkette } from "../../src/content/skunk/skunkette";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
+import { skunkette } from "../../src/content/skunk/skunkette";
 import { difficulties } from "../../src/engine/private/constants";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { Random } from "../../src/engine/protected/random";
 import type { iEnemy, iGameState, iMoveEffect } from "../../src/engine/protected/types";
 import type { DifficultyId, Engine, HitBand } from "../../src/engine/public/types";
@@ -21,6 +20,7 @@ import {
 import { resolvedEvents } from "../helpers/events";
 import { makeCharacter, makeEnemy } from "../helpers/helpers";
 import { makeInternalState } from "../helpers/state";
+import { createTestEngine } from "../helpers/testCatalog";
 
 const BARRIER_ID = "barrierMagic";
 const BINDING_ID = "bindingMagic";
@@ -271,7 +271,7 @@ describe("Binding Magic", () => {
         expect(bindingState(engine, preview.binding, "hero")?.value).toBe(preview.amount);
     });
 
-    it("does not overbind a hero whose four latex locations are already Impossible", () => {
+    it("does not overbind a hero whose four latex locations are already Overwhelming", () => {
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
         const encounter: EncounterDef = {
             id: "fairy-fully-bound-test",

@@ -151,8 +151,8 @@ describe("Smart 4 recovery-debt formula", () => {
 
     it.each([
         ["efficient early cleanup", 30, 0, 1, 31.31],
-        ["ordinary Hard cleanup", 30, 12, 5, 16.74],
-        ["ugly Impossible cleanup", 80, 75, 5, 31.64],
+        ["ordinary Heavy cleanup", 30, 12, 5, 16.74],
+        ["ugly Overwhelming cleanup", 80, 75, 5, 31.64],
         ["severe-to-cheap transfer", 80, 70, 12, 55.81],
         ["net-positive raw bondage at very high level", 90, 85, 8, 33.07],
     ])("characterizes %s", (_name, selected, remaining, spread, expected) => {

@@ -276,9 +276,9 @@ interface BoardPartyDiagnostic {
     totalBinding: number;
     peakBinding: number;
     peakBindingLevel: string;
-    hardOrWorseBindings: number;
-    extremeOrWorseBindings: number;
-    impossibleOrMaxBindings: number;
+    heavyOrWorseBindings: number;
+    severeOrWorseBindings: number;
+    overwhelmingOrMaxBindings: number;
     totalKnownIncomingBinding: number;
     unknownIncomingBindingEffects: number;
     currentTraps: TrapDiagnostic[];
@@ -297,9 +297,9 @@ interface BoardCharacterDiagnostic {
     totalBinding: number;
     peakBinding: number;
     peakBindingLevel: string;
-    hardOrWorseBindings: number;
-    extremeOrWorseBindings: number;
-    impossibleOrMaxBindings: number;
+    heavyOrWorseBindings: number;
+    severeOrWorseBindings: number;
+    overwhelmingOrMaxBindings: number;
     blockedMoveTypes: string[];
     standing: boolean;
     acted: boolean;
@@ -368,8 +368,8 @@ function isBoardDiagnostic(value: unknown): value is BoardDiagnostic {
         "incapacitatedActors", "unavailableActors", "totalAvailableMoves",
         "totalAvailableEscapesAndAssists", "totalBlockedMoveTypes",
         "charactersWithBonusEscapes", "standingCharacters", "totalBinding",
-        "peakBinding", "hardOrWorseBindings", "extremeOrWorseBindings",
-        "impossibleOrMaxBindings", "totalKnownIncomingBinding",
+        "peakBinding", "heavyOrWorseBindings", "severeOrWorseBindings",
+        "overwhelmingOrMaxBindings", "totalKnownIncomingBinding",
         "unknownIncomingBindingEffects", "totalCurrentTrapAmount", "totalIncomingTrapAmount",
     ])
         && typeof party.peakBindingLevel === "string"
@@ -388,8 +388,8 @@ function isBoardCharacterDiagnostic(value: unknown): value is BoardCharacterDiag
         && typeof value.capability === "string"
         && (value.capabilityReason === undefined || typeof value.capabilityReason === "string")
         && hasNumbers(value, [
-            "totalBinding", "peakBinding", "hardOrWorseBindings",
-            "extremeOrWorseBindings", "impossibleOrMaxBindings", "bonusEscapes",
+            "totalBinding", "peakBinding", "heavyOrWorseBindings",
+            "severeOrWorseBindings", "overwhelmingOrMaxBindings", "bonusEscapes",
             "availableMoves", "availableEscapesAndAssists",
         ])
         && Array.isArray(value.blockedMoveTypes)
@@ -532,7 +532,7 @@ function boardDetailLines(board: BoardDiagnostic): string[] {
     const { party } = board;
     const lines = [
         `Party binding: total=${party.totalBinding} peak=${party.peakBinding}/${party.peakBindingLevel}`,
-        `  severity: hard+=${party.hardOrWorseBindings} extreme+=${party.extremeOrWorseBindings} impossible/max=${party.impossibleOrMaxBindings}`,
+        `  severity: heavy+=${party.heavyOrWorseBindings} extreme+=${party.severeOrWorseBindings} overwhelming/max=${party.overwhelmingOrMaxBindings}`,
         `Party incoming: binding=${formatIncoming(party.totalKnownIncomingBinding, party.unknownIncomingBindingEffects)} traps=${party.totalIncomingTrapAmount}`,
         `Action economy: available=${party.availableActors}/${party.totalCharacters} spent=${party.spentActors} skipped=${party.skippedActors} incapacitated=${party.incapacitatedActors} unavailable=${party.unavailableActors}`,
         `  moves=${party.totalAvailableMoves} escape/assist=${party.totalAvailableEscapesAndAssists} blocked-types=${party.totalBlockedMoveTypes}`,
@@ -547,7 +547,7 @@ function boardDetailLines(board: BoardDiagnostic): string[] {
         lines.push(
             `Character ${character.id}`,
             `  binding: total=${character.totalBinding} peak=${character.peakBinding}/${character.peakBindingLevel}`,
-            `  severity: hard+=${character.hardOrWorseBindings} extreme+=${character.extremeOrWorseBindings} impossible/max=${character.impossibleOrMaxBindings}`,
+            `  severity: heavy+=${character.heavyOrWorseBindings} extreme+=${character.severeOrWorseBindings} overwhelming/max=${character.overwhelmingOrMaxBindings}`,
             `  action: ${character.capability}${character.capabilityReason ? ` (${character.capabilityReason})` : ""}; acted=${yesNo(character.acted)} standing=${yesNo(character.standing)} bonusEscapes=${character.bonusEscapes}`,
             `  available: moves=${character.availableMoves} escape/assist=${character.availableEscapesAndAssists}`,
             `  incoming binding: ${formatIncoming(character.incomingBinding.known, character.incomingBinding.unknownEffects)}`,

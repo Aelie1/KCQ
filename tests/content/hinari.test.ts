@@ -429,7 +429,7 @@ describe("Hinari's Store", () => {
         });
     }
 
-    it("uses twice normal severity-scaled potency at Impossible without Hinari's escape modifier", () => {
+    it("uses twice normal severity-scaled potency at Overwhelming without Hinari's escape modifier", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
             allies: [ally],

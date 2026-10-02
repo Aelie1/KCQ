@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { latexSpray, pounce, skunkette } from "../../src/content/skunk/skunkette";
 import { difficulties } from "../../src/engine/private/constants";
-import { createTestEngine } from "../helpers/testCatalog";
 import type { ActionSuccess, DifficultyId, LeafEvent } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import {
@@ -18,6 +17,7 @@ import {
 import { resolvedEvents } from "../helpers/events";
 import { makeCharacter, makeEnemy } from "../helpers/helpers";
 import { makeInternalState } from "../helpers/state";
+import { createTestEngine } from "../helpers/testCatalog";
 
 const POUNCE_ID = "pounce";
 const SKUNKED_ID = "skunked";
@@ -588,8 +588,8 @@ describe("Skunkette behavior through GameEngine", () => {
             .toBe(before + bindingEffect.amount);
     });
 
-    it("does not select an Impossible latex location for Spray", () => {
-        const prepare = makeBehavioralMove("prepare-impossible", "mouth", {
+    it("does not select an Overwhelming latex location for Spray", () => {
+        const prepare = makeBehavioralMove("prepare-overwhelming", "mouth", {
             targetSide: "none",
             targets: 0,
             resolve: (state, actor) => [latexHead, latexArms, latexTorso].map((binding) => ({

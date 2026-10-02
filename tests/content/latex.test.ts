@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import type { BindingDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import type { iEffect } from "../../src/engine/protected/types";
 import type { ActionSuccess, Engine, LeafEvent } from "../../src/engine/public/types";
 import {
@@ -11,6 +10,7 @@ import {
     makeBehavioralCharacter,
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 interface BindingSetup {
     character: string;
@@ -95,7 +95,7 @@ describe("latex escape spread through GameEngine", () => {
         expect(escaped?.data).toEqual({ peak: 60 });
     });
 
-    it("does not spread below Hard without a modifier, but does with one", () => {
+    it("does not spread below Heavy without a modifier, but does with one", () => {
         const plain = setupLatexScenario(
             ["hero"],
             [{ character: "hero", binding: latexHead, amount: 20 }],
@@ -146,21 +146,21 @@ describe("latex escape spread through GameEngine", () => {
 
     it.each([
         {
-            range: "Hard",
+            range: "Heavy",
             application: 30,
             initial: 30,
             removed: 18,
             spread: 5,
         },
         {
-            range: "Extreme",
+            range: "Severe",
             application: 50,
             initial: 50,
             removed: 15,
             spread: 8,
         },
         {
-            range: "Impossible",
+            range: "Overwhelming",
             application: 180,
             initial: 90,
             removed: 5,
@@ -202,7 +202,7 @@ describe("latex escape spread through GameEngine", () => {
         expect(bindingState(engine, latexArms.id)?.value).toBe(spread);
     });
 
-    it("rounds the Hard threshold's 4.5 spread upward to 5", () => {
+    it("rounds the Heavy threshold's 4.5 spread upward to 5", () => {
         const engine = setupLatexScenario(
             ["hero"],
             [{ character: "hero", binding: latexLegs, amount: 30 }],

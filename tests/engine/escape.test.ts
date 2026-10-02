@@ -70,24 +70,24 @@ function escapeAmount(engine: Engine, actor: string, target: string, binding: st
 }
 
 describe("escape progress", () => {
-    it("falls as binding strength rises and does not worsen past Impossible", () => {
+    it("falls as binding strength rises and does not worsen past Overwhelming", () => {
         const restraint = makeBindingDef("rope");
         const engine = setupEscapeScenario(
             "helper",
-            ["helper", "easy", "impossible", "over-impossible"],
+            ["helper", "light", "overwhelming", "over-overwhelming"],
             [
-                { target: "easy", binding: restraint, amount: thresholds.light },
-                { target: "impossible", binding: restraint, amount: thresholds.overwhelming },
-                { target: "over-impossible", binding: restraint, amount: thresholds.max },
+                { target: "light", binding: restraint, amount: thresholds.light },
+                { target: "overwhelming", binding: restraint, amount: thresholds.overwhelming },
+                { target: "over-overwhelming", binding: restraint, amount: thresholds.max },
             ],
         );
 
-        const easy = escapeAmount(engine, "helper", "easy", restraint.id);
-        const impossible = escapeAmount(engine, "helper", "impossible", restraint.id);
-        const overImpossible = escapeAmount(engine, "helper", "over-impossible", restraint.id);
+        const light = escapeAmount(engine, "helper", "light", restraint.id);
+        const overwhelming = escapeAmount(engine, "helper", "overwhelming", restraint.id);
+        const overOverwhelming = escapeAmount(engine, "helper", "over-overwhelming", restraint.id);
 
-        expect(easy).toBeGreaterThan(impossible);
-        expect(overImpossible).toBe(impossible);
+        expect(light).toBeGreaterThan(overwhelming);
+        expect(overOverwhelming).toBe(overwhelming);
     });
 
     it("applies the actor's escape modifier and the assistance multiplier", () => {

@@ -241,8 +241,8 @@ function evaluateMatsukoKnowledge(
 
     if (moveId === IMMOLATION) {
         const assessment = board.characters.find(({ id }) => id === MATSUKO);
-        const emergency = (assessment?.impossibleOrMaxBindings ?? 0) >= 1
-            || (assessment?.extremeOrWorseBindings ?? 0) >= 2;
+        const emergency = (assessment?.overwhelmingOrMaxBindings ?? 0) >= 1
+            || (assessment?.severeOrWorseBindings ?? 0) >= 2;
         const livingEnemies = context.state.enemies.filter(({ currHp }) => currHp > 0);
         const encounterEnding = livingEnemies.length > 0 && livingEnemies.every((enemy) =>
             expectedDamageToEnemy(candidate, enemy.id) >= enemy.currHp

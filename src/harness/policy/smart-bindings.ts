@@ -16,19 +16,19 @@ export const RECOVERY_DEBT_CURVE_A = 1.5;
  * policy heuristic, not a game mechanic.
  */
 export function recoveryDebt(value: number, thresholds: ThresholdInfo): number {
-    const impossible = thresholds.thresholds.overwhelming;
+    const overwhelming = thresholds.thresholds.overwhelming;
     const maximum = thresholds.max;
-    if (impossible === undefined || impossible <= 0 || maximum <= 0) return 0;
+    if (overwhelming === undefined || overwhelming <= 0 || maximum <= 0) return 0;
 
     const clamped = clamp(value, 0, maximum);
-    if (clamped <= impossible) {
+    if (clamped <= overwhelming) {
         return clamped
-            + RECOVERY_DEBT_CURVE_A * clamped ** 3 / impossible ** 2;
+            + RECOVERY_DEBT_CURVE_A * clamped ** 3 / overwhelming ** 2;
     }
 
-    const debtAtImpossible = impossible + RECOVERY_DEBT_CURVE_A * impossible;
-    const slopeAtImpossible = 1 + 3 * RECOVERY_DEBT_CURVE_A;
-    return debtAtImpossible + (clamped - impossible) * slopeAtImpossible;
+    const debtAtOverwhelming = overwhelming + RECOVERY_DEBT_CURVE_A * overwhelming;
+    const slopeAtOverwhelming = 1 + 3 * RECOVERY_DEBT_CURVE_A;
+    return debtAtOverwhelming + (clamped - overwhelming) * slopeAtOverwhelming;
 }
 
 export function currentBindingBoard(characters: readonly Character[]): BindingBoard {

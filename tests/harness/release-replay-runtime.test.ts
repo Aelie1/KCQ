@@ -1,13 +1,12 @@
 import { execFileSync } from "node:child_process";
-import { readFile, stat } from "node:fs/promises";
+import { mkdtemp, readFile, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import type { PostHogReplayClient } from "../../src/harness/replay/posthog-api";
 import { parsePostHogReplayEvents, reconstructFightReplay, type PostHogReplayEventRow } from "../../src/harness/replay/posthog-replay";
 import { ReleaseReplayRuntime } from "../../src/harness/replay/release-replay-runtime";
 import { syncPostHogReplays } from "../../src/harness/replay/replay-archive";
-import type { PostHogReplayClient } from "../../src/harness/replay/posthog-api";
-import { mkdtemp, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
 
 const root = process.cwd();
 const fixturePath = join(root, "tests", "fixtures", "replay-0.7.3-fairy.json");
@@ -25,8 +24,7 @@ describe("release replay runtime", () => {
     it.skipIf(!hasTag)("uses the 0.7.3 engine for a historical transformation replay", async () => {
         const rows = await fixture();
         expect(() => reconstructFightReplay(parsePostHogReplayEvents(rows)))
-            .toThrow(/fairyTransformation.*transformation/su);
-
+            .toThrow(/Replay .*diverg/u);
         const imported = await new ReleaseReplayRuntime(root, false).reconstruct(rows, "0.7.3");
         expect(imported.release).toBe("0.7.3");
         const step = imported.replay.steps[0];

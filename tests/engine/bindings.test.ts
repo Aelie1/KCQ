@@ -32,7 +32,7 @@ function use(engine: ReturnType<typeof makeBehavioralEngine>, actor: string, mov
 }
 
 describe("binding behavior through GameEngine", () => {
-    it("adds, accumulates, scales above Impossible, caps, and removes a binding", () => {
+    it("adds, accumulates, scales above Overwhelming, caps, and removes a binding", () => {
         const rope = makeBehavioralBinding("rope");
         const moves = [
             bindingMove("add-75", rope, 75),
@@ -62,7 +62,7 @@ describe("binding behavior through GameEngine", () => {
             binding: "rope",
             amount: 18,
         });
-        expect(bindingState(engine, "rope")).toMatchObject({ value: 100, level: "impossible" });
+        expect(bindingState(engine, "rope")).toMatchObject({ value: 100, level: "overwhelming" });
 
         expect(use(engine, "hero", "remove-7").frames[0].event.effects[0]).toEqual({
             type: "bondageChanged",
@@ -151,12 +151,12 @@ describe("binding behavior through GameEngine", () => {
 describe("binding levels and effective statuses through GameEngine", () => {
     it.each([
         [1, 1, "none"],
-        [10, 10, "easy"],
-        [20, 20, "medium"],
-        [30, 30, "hard"],
-        [50, 50, "extreme"],
-        [80, 80, "impossible"],
-        [1_000, 100, "impossible"],
+        [10, 10, "light"],
+        [20, 20, "moderate"],
+        [30, 30, "heavy"],
+        [50, 50, "severe"],
+        [80, 80, "overwhelming"],
+        [1_000, 100, "overwhelming"],
     ] as const)("serializes binding application %s as value %s at level %s", (amount, value, level) => {
         const rope = makeBehavioralBinding("rope");
         const apply = bindingMove("apply", rope, amount);

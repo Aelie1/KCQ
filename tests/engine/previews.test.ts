@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { basicBindingEffect, basicDamageEffect } from "../../src/engine/protected/mechanics";
 import type { iTargetInfo } from "../../src/engine/protected/types";
 import type { Engine, ValidTarget } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import { makeBindingDef, makeCharacter, makeCharacterDef, makeEnemy, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 function preview(engine: Engine, moveId: string, targetId: string): ValidTarget {
     const target = actionView(engine, "hero").moves.find(({ move }) => move.id === moveId)
@@ -19,12 +19,12 @@ describe("public move previews", () => {
         const selective = makeMove("selective", "arms", {
             isValidTarget: (_move, target) => target?.id === "foe2" ? "invalidTarget" : undefined,
         });
-        const impossible = makeMove("impossible", "arms", {
+        const overwhelming = makeMove("overwhelming", "arms", {
             isValidTarget: () => "invalidTarget",
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         const encounter = { id: "target-validity", enemies: [foe.id, foe.id], bindings: [], traps: [] };
-        const engine = createTestEngine([encounter], [makeCharacterDef("hero", [selective, impossible])], 1, { enemies: [foe] });
+        const engine = createTestEngine([encounter], [makeCharacterDef("hero", [selective, overwhelming])], 1, { enemies: [foe] });
         engine.loadCharacter("hero");
         engine.loadEncounter(encounter.id);
 
@@ -39,7 +39,7 @@ describe("public move previews", () => {
                 ],
             },
             {
-                move: { id: "impossible", type: "arms", targetSide: "enemy", targets: 1, hits: undefined },
+                move: { id: "overwhelming", type: "arms", targetSide: "enemy", targets: 1, hits: undefined },
                 available: false, reason: "insufficientTargets",
                 effects: [],
                 targets: [],

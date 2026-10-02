@@ -1007,11 +1007,11 @@ function prepareStanceActor(
         new Map(current.get(actor.id) ?? []),
     ]]);
     const currentRecoveryDebt = totalRecoveryDebt(actorBoard, context.thresholds);
-    const impossible = context.thresholds.thresholds.overwhelming;
-    const debtAtImpossible = impossible === undefined
+    const overwhelming = context.thresholds.thresholds.overwhelming;
+    const debtAtOverwhelming = overwhelming === undefined
         ? 0
-        : recoveryDebt(impossible, context.thresholds);
-    const dangerRatio = debtAtImpossible > 0 ? currentRecoveryDebt / debtAtImpossible : 0;
+        : recoveryDebt(overwhelming, context.thresholds);
+    const dangerRatio = debtAtOverwhelming > 0 ? currentRecoveryDebt / debtAtOverwhelming : 0;
     const currentFlags = publicCharacterFlags(context, actor, current);
     const ignoresTraps = currentFlags.has("skipsTraps");
     const trapModifier = actor.modifiers.traps ?? 0;
@@ -1663,11 +1663,11 @@ function evaluateBindingRecoveryFromBoard(
         ? 0
         : bindingValue(baseline, selected.characterId, selected.bindingId);
     const selectedDebt = recoveryDebt(selectedProjectedValue, context.thresholds);
-    const impossible = context.thresholds.thresholds.overwhelming;
-    const debtAtImpossible = impossible === undefined
+    const overwhelming = context.thresholds.thresholds.overwhelming;
+    const debtAtOverwhelming = overwhelming === undefined
         ? 0
-        : recoveryDebt(impossible, context.thresholds);
-    const urgency = debtAtImpossible > 0 ? 1 + selectedDebt / debtAtImpossible : 1;
+        : recoveryDebt(overwhelming, context.thresholds);
+    const urgency = debtAtOverwhelming > 0 ? 1 + selectedDebt / debtAtOverwhelming : 1;
 
     return {
         baselineDebt,

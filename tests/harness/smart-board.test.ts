@@ -115,24 +115,24 @@ describe("Smart 3 board binding assessment", () => {
                 none: 0, light: 1, moderate: 0, heavy: 1,
                 severe: 0, overwhelming: 0, max: 1,
             },
-            hardOrWorseBindings: 2,
-            extremeOrWorseBindings: 1,
-            impossibleOrMaxBindings: 1,
+            heavyOrWorseBindings: 2,
+            severeOrWorseBindings: 1,
+            overwhelmingOrMaxBindings: 1,
             blockedMoveTypes: ["arms", "mouth"],
             modifiers: { defense: 2, escape: -1, vulnerability: 3, traps: 1, hitarms: -2 },
         });
         expect(board.characters[1]).toMatchObject({
             totalBinding: 7,
             peakBinding: 7,
-            peakBindingLevel: "extreme",
+            peakBindingLevel: "severe",
         });
         expect(board.party).toMatchObject({
             totalBinding: 26,
             peakBinding: 12,
             peakBindingLevel: "max",
-            hardOrWorseBindings: 3,
-            extremeOrWorseBindings: 2,
-            impossibleOrMaxBindings: 1,
+            heavyOrWorseBindings: 3,
+            severeOrWorseBindings: 2,
+            overwhelmingOrMaxBindings: 1,
             totalBlockedMoveTypes: 2,
         });
     });
