@@ -1,4 +1,4 @@
-import { StringTable } from "../../src/ui/presentation/presentation";
+import type { StringTable } from "../../src/ui/presentation/presentation";
 import { characterStrings } from "./characters";
 import { eventStrings } from "./events";
 import { skunkStrings } from "./skunk";

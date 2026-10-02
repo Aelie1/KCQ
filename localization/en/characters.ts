@@ -1,4 +1,4 @@
-import { StringTable } from "../../src/ui/presentation/presentation";
+import type { StringTable } from "../../src/ui/presentation/presentation";
 
 export const characterStrings: StringTable = {
     "entity.ko.name": "Ko-chan",

@@ -16,6 +16,115 @@ export class Presentation {
         this.strings = strings;
     }
 
+
+    entity(entity: EntityId): string {
+        return this.translate(this.entityKey(entity));
+    }
+
+    entityDesc(entity: EntityId): string {
+        return this.translate(this.entityDescKey(entity));
+    }
+
+    binding(binding: BindingId): string {
+        return this.translate(this.bindingKey(binding));
+    }
+
+    bindingDesc(binding: BindingId): string {
+        return this.translate(this.bindingDescKey(binding));
+    }
+
+    move(move: MoveId): string {
+        return this.translate(this.moveKey(move));
+    }
+
+    moveDesc(move: MoveId): string {
+        return this.translate(this.moveDescKey(move));
+    }
+
+    status(status: StatusId): string {
+        return this.translate(this.statusKey(status));
+    }
+
+    statusDesc(status: StatusId): string {
+        return this.translate(this.statusDescKey(status));
+    }
+
+    trap(trap: TrapId): string {
+        return this.translate(this.trapKey(trap));
+    }
+
+    trapDesc(trap: TrapId): string {
+        return this.translate(this.trapDescKey(trap));
+    }
+
+    passive(passive: PassiveId): string {
+        return this.translate(this.passiveKey(passive));
+    }
+
+    passiveDesc(passive: PassiveId): string {
+        return this.translate(this.passiveDescKey(passive));
+    }
+
+    encounter(encounter: EncounterId): string {
+        return this.translate(this.encounterKey(encounter));
+    }
+
+    encounterDesc(encounter: EncounterId): string {
+        return this.translate(this.encounterDescKey(encounter));
+    }
+
+    buff(buff: BuffId): string {
+        return this.translate(this.buffKey(buff));
+    }
+
+    buffDesc(buff: BuffId): string {
+        return this.translate(this.buffDescKey(buff));
+    }
+
+    failure(reason: FailureReason): string {
+        return this.translate(this.failureKey(reason));
+    }
+
+    phase(phase: Phase): string {
+        return this.translate(this.phaseKey(phase));
+    }
+
+    stance(stance: StanceId): string {
+        return this.translate(this.stanceKey(stance));
+    }
+
+    bindingLevel(level: BindingLevel): string {
+        return this.translate(this.bindingLevelKey(level));
+    }
+
+    hitBand(band: HitBand): string {
+        return this.translate(this.hitBandKey(band));
+    }
+
+    difficulty(difficulty: DifficultyId): string {
+        return this.translate(this.difficultyKey(difficulty));
+    }
+
+    difficultyDesc(difficulty: DifficultyId): string {
+        return this.translate(this.difficultyDescKey(difficulty));
+    }
+
+    battleState(state: BattleState): string {
+        return this.translate(this.battleStateKey(state));
+    }
+
+    modifier(modifier: ModifierId): string {
+        return this.translate(this.modifierKey(modifier));
+    }
+
+    flag(flag: FlagId): string {
+        return this.translate(this.flagKey(flag));
+    }
+
+    event(event: GameEvent | LeafEvent): string {
+        return this.translate(this.eventTextKey(event));
+    }
+
     private isStringKey(value: unknown): value is StringKey {
         return typeof value === "object"
             && value !== null
@@ -47,7 +156,7 @@ export class Presentation {
         });
     }
 
-    getEntityName(entity: EntityId): StringKey {
+    private entityKey(entity: EntityId): StringKey {
         const match = entity.match(/^(.*?)(\d+)$/);
 
         if (match) {
@@ -64,7 +173,7 @@ export class Presentation {
         };
     }
 
-    getEntityDesc(entity: EntityId): StringKey {
+    private entityDescKey(entity: EntityId): StringKey {
         const match = entity.match(/^(.*?)(\d+)$/);
 
         if (match) {
@@ -78,141 +187,141 @@ export class Presentation {
         };
     }
 
-    getBindingName(binding: BindingId): StringKey {
+    private bindingKey(binding: BindingId): StringKey {
         return {
             id: `binding.${binding}.name`
         }
     }
 
-    getBindingDesc(binding: BindingId): StringKey {
+    private bindingDescKey(binding: BindingId): StringKey {
         return {
             id: `binding.${binding}.desc`
         }
     }
 
-    getMoveName(move: MoveId): StringKey {
+    private moveKey(move: MoveId): StringKey {
         return {
             id: `move.${move}.name`
         }
     }
 
-    getMoveDesc(move: MoveId): StringKey {
+    private moveDescKey(move: MoveId): StringKey {
         return {
             id: `move.${move}.desc`
         }
     }
 
-    getStatusName(status: StatusId): StringKey {
+    private statusKey(status: StatusId): StringKey {
         return {
             id: `status.${status}.name`
         }
     }
 
-    getStatusDesc(status: StatusId): StringKey {
+    private statusDescKey(status: StatusId): StringKey {
         return {
             id: `status.${status}.desc`
         }
     }
 
-    getTrapName(trap: TrapId): StringKey {
+    private trapKey(trap: TrapId): StringKey {
         return {
             id: `trap.${trap}.name`
         }
     }
 
-    getTrapDesc(trap: TrapId): StringKey {
+    private trapDescKey(trap: TrapId): StringKey {
         return {
             id: `trap.${trap}.desc`
         }
     }
 
-    getPassiveName(passive: PassiveId): StringKey {
+    private passiveKey(passive: PassiveId): StringKey {
         return {
             id: `passive.${passive}.name`
         }
     }
 
-    getPassiveDesc(passive: PassiveId): StringKey {
+    private passiveDescKey(passive: PassiveId): StringKey {
         return {
             id: `passive.${passive}.desc`
         }
     }
 
-    getEncounterName(encounter: EncounterId): StringKey {
+    private encounterKey(encounter: EncounterId): StringKey {
         return {
             id: `encounter.${encounter}.name`
         }
     }
 
-    getEncounterDesc(encounter: EncounterId): StringKey {
+    private encounterDescKey(encounter: EncounterId): StringKey {
         return {
             id: `encounter.${encounter}.desc`
         }
     }
 
-    getBuffName(buff: BuffId): StringKey {
+    private buffKey(buff: BuffId): StringKey {
         return {
             id: `buff.${buff}.name`
         };
     }
 
-    getBuffDesc(buff: BuffId): StringKey {
+    private buffDescKey(buff: BuffId): StringKey {
         return {
             id: `buff.${buff}.desc`
         };
     }
 
-    getFailureReason(reason: FailureReason): StringKey {
+    private failureKey(reason: FailureReason): StringKey {
         return {
             id: `failure.${reason}.text`
         }
     }
 
-    getPhaseName(phase: Phase): StringKey {
+    private phaseKey(phase: Phase): StringKey {
         return { id: `phase.${phase}.name` };
     }
 
-    getStanceName(stance: StanceId): StringKey {
+    private stanceKey(stance: StanceId): StringKey {
         return { id: `stance.${stance}.name` };
     }
 
-    getBindingLevelName(level: BindingLevel): StringKey {
+    private bindingLevelKey(level: BindingLevel): StringKey {
         return { id: `bindingLevel.${level}.name` };
     }
 
-    getHitBandName(band: HitBand): StringKey {
+    private hitBandKey(band: HitBand): StringKey {
         return { id: `hitBand.${band}.name` };
     }
 
 
-    getDifficultyName(difficulty: DifficultyId): StringKey {
+    private difficultyKey(difficulty: DifficultyId): StringKey {
         return { id: `difficulty.${difficulty}.name` };
     }
 
-    getDifficultyDesc(difficulty: DifficultyId): StringKey {
+    private difficultyDescKey(difficulty: DifficultyId): StringKey {
         return { id: `difficulty.${difficulty}.desc` };
     }
 
-    getBattleStateName(state: BattleState): StringKey {
+    private battleStateKey(state: BattleState): StringKey {
         return { id: `battleState.${state}.name` };
     }
 
-    getModifierName(modifier: ModifierId): StringKey {
+    private modifierKey(modifier: ModifierId): StringKey {
         return { id: `modifier.${modifier}.name` };
     }
 
-    getFlagName(flag: FlagId): StringKey {
+    private flagKey(flag: FlagId): StringKey {
         return { id: `flag.${flag}.name` };
     }
 
-    getEventText(event: GameEvent | LeafEvent): StringKey {
+    private eventTextKey(event: GameEvent | LeafEvent): StringKey {
         switch (event.type) {
             case "useMove":
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        actor: this.getEntityName(event.actor),
-                        move: this.getMoveName(event.move),
+                        actor: this.entityKey(event.actor),
+                        move: this.moveKey(event.move),
                     }
                 };
 
@@ -220,8 +329,8 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.${event.actor === event.target ? "escape" : "assist"}`,
                     args: {
-                        actor: this.getEntityName(event.actor),
-                        target: this.getEntityName(event.target),
+                        actor: this.entityKey(event.actor),
+                        target: this.entityKey(event.target),
                     }
                 };
 
@@ -229,7 +338,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        phase: this.getPhaseName(event.phase)
+                        phase: this.phaseKey(event.phase)
                     }
                 };
 
@@ -237,7 +346,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        actor: this.getEntityName(event.actor),
+                        actor: this.entityKey(event.actor),
                     }
                 };
 
@@ -245,7 +354,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.${event.success ? "success" : "failure"}`,
                     args: {
-                        id: event.success ? this.getEntityName(event.id) : event.id
+                        id: event.success ? this.entityKey(event.id) : event.id
                     }
                 };
 
@@ -253,7 +362,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.${event.success ? "success" : "failure"}`,
                     args: {
-                        id: event.success ? this.getEncounterName(event.id) : event.id
+                        id: event.success ? this.encounterKey(event.id) : event.id
                     }
                 };
 
@@ -263,7 +372,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        target: this.getEntityName(event.target),
+                        target: this.entityKey(event.target),
                         amount: event.amount,
                     }
                 };
@@ -275,8 +384,8 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        target: this.getEntityName(event.target),
-                        binding: this.getBindingName(event.binding),
+                        target: this.entityKey(event.target),
+                        binding: this.bindingKey(event.binding),
                         amount: event.amount,
                     }
                 };
@@ -287,8 +396,8 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        target: this.getEntityName(event.target),
-                        buff: this.getBuffName(event.buff),
+                        target: this.entityKey(event.target),
+                        buff: this.buffKey(event.buff),
                     }
                 };
 
@@ -297,7 +406,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        target: this.getEntityName(event.target),
+                        target: this.entityKey(event.target),
                     }
                 };
 
@@ -305,7 +414,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        actor: this.getEntityName(event.actor),
+                        actor: this.entityKey(event.actor),
                         stance: { id: `stance.${event.stance}.name` },
                     }
                 };
@@ -314,8 +423,8 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        target: this.getEntityName(event.target),
-                        move: this.getMoveName(event.move),
+                        target: this.entityKey(event.target),
+                        move: this.moveKey(event.move),
                         value: event.value,
                     }
                 };
@@ -326,8 +435,8 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        actor: this.getEntityName(event.actor),
-                        trap: this.getTrapName(event.trap),
+                        actor: this.entityKey(event.actor),
+                        trap: this.trapKey(event.trap),
                         amount: event.amount,
                     }
                 };
@@ -336,8 +445,8 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        actor: this.getEntityName(event.actor),
-                        reason: this.getFailureReason(event.reason),
+                        actor: this.entityKey(event.actor),
+                        reason: this.failure(event.reason),
                     }
                 };
 
@@ -345,7 +454,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        target: this.getEntityName(event.target),
+                        target: this.entityKey(event.target),
                     }
                 };
 
@@ -353,8 +462,8 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        target: this.getEntityName(event.target),
-                        destination: this.getEntityName(event.destination),
+                        target: this.entityKey(event.target),
+                        destination: this.entityKey(event.destination),
                     }
                 };
 
@@ -363,7 +472,7 @@ export class Presentation {
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        target: this.getEntityName(event.target),
+                        target: this.entityKey(event.target),
                     }
                 };
 
