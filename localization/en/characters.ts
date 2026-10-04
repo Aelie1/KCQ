@@ -18,7 +18,7 @@ export const characterStrings: StringTable = {
     "move.fairyTelekinesis.desc": "...",
     "move.starlightBindings.name": "Starlight Bindings",
     "move.starlightBindings.desc": "...",
-    "move.fairyStarlightBindings.name": "Starlight Bindings",
+    "move.fairyStarlightBindings.name": "Fairy Starlight Bindings",
     "move.fairyStarlightBindings.desc": "...",
     "move.reflect.name": "Reflect",
     "move.reflect.desc": "...",

@@ -2,10 +2,12 @@ import { createSignal, Match, Switch, type JSX } from "solid-js";
 import { App } from "../App";
 import { battleOverviewFixture } from "../fixtures/battleOverview";
 import { characterDetailsFixture } from "../fixtures/characterDetails";
+import { escapeFixtures } from "../fixtures/escape";
 import { targetingFixtures } from "../fixtures/targeting";
 import { BattleOverviewPanel } from "../panels/BattleOverviewPanel";
 import { CharacterDetailsPanel } from "../panels/CharacterDetailsPanel";
 import { ComponentGalleryPanel } from "../panels/ComponentGalleryPanel";
+import { EscapePanel } from "../panels/EscapePanel";
 import { PlaceholderPanel } from "../panels/PlaceholderPanel";
 import { TargetingPanel } from "../panels/TargetingPanel";
 import { PANEL_OPTIONS, PanelSwitcher, type PanelId } from "./PanelSwitcher";
@@ -34,6 +36,9 @@ export function DevApp(): JSX.Element {
                             </Match>
                             <Match when={panel() === "targeting"}>
                                 <TargetingPanel {...targetingFixtures.telekinesisChoose} />
+                            </Match>
+                            <Match when={panel() === "escape"}>
+                                <EscapePanel {...escapeFixtures.unselected} />
                             </Match>
                         </Switch>
                     </App>
