@@ -1,4 +1,4 @@
-import { createMemo, For, type JSX } from "solid-js";
+import { createMemo, For, Show, type JSX } from "solid-js";
 import type { EventFrame, PlayerAction } from "../../../../engine/public/types";
 import {
     ActorStyleRegistry,
@@ -6,11 +6,16 @@ import {
     type SemanticStyle,
 } from "../../../console/presentation";
 
-export interface GameLogPanelProps {
-    action?: PlayerAction;
+export interface GameLogEntry {
+    action: PlayerAction;
     frames: readonly EventFrame[];
-    startingRound?: number;
+    startingRound: number;
+}
+
+export interface GameLogPanelProps {
+    entries: readonly GameLogEntry[];
     actorStyles?: ActorStyleRegistry;
+    onBack?: () => void;
 }
 
 export const GAME_LOG_SEMANTIC_CLASSES = {
@@ -44,17 +49,28 @@ export function gameLogSemanticClass(style: SemanticStyle): string {
 }
 
 export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
-    const groups = createMemo(() => formatActionGroups(
-        props.action,
-        props.frames,
-        props.actorStyles ?? new ActorStyleRegistry(),
-        props.startingRound ?? 1,
-    ));
+    const actorStyles = props.actorStyles ?? new ActorStyleRegistry();
+    const groups = createMemo(() => props.entries.flatMap((entry) => formatActionGroups(
+        entry.action,
+        entry.frames,
+        actorStyles,
+        entry.startingRound,
+    )));
 
     return (
         <section class="kcq-game-log" aria-labelledby="game-log-title">
             <header class="kcq-game-log__header">
-                <div>
+                <div classList={{ "kcq-game-log__header-title--with-back": props.onBack !== undefined }}>
+                    <Show when={props.onBack}>
+                        <button
+                            class="kcq-game-log__back"
+                            type="button"
+                            aria-label="Back"
+                            onClick={() => props.onBack?.()}
+                        >
+                            <span aria-hidden="true">{"\u2190"}</span>
+                        </button>
+                    </Show>
                     <p>Battle history</p>
                     <h1 id="game-log-title">Game Log</h1>
                 </div>

@@ -29,6 +29,10 @@ export interface TargetingPanelProps {
     presentation: Presentation;
     state: GameState;
     thresholds: ThresholdInfo;
+    onBack?: () => void;
+    onExecute?: (targets: readonly EntityId[]) => void;
+    onHeaderBack?: () => void;
+    onSelectCharacter?: (id: EntityId) => void;
 }
 
 interface TargetingActionRegionProps {
@@ -37,6 +41,8 @@ interface TargetingActionRegionProps {
     initialSelectedTargetIds?: readonly EntityId[];
     presentation: Presentation;
     state: GameState;
+    onBack?: () => void;
+    onExecute?: (targets: readonly EntityId[]) => void;
 }
 
 export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
@@ -51,6 +57,8 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
     return (
         <CharacterDetailsLayout
             model={characterModel()}
+            onHeaderBack={props.onHeaderBack}
+            onSelectCharacter={props.onSelectCharacter}
             actionRegion={
                 <TargetingActionRegion
                     action={props.action}
@@ -58,6 +66,8 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
                     initialSelectedTargetIds={props.initialSelectedTargetIds}
                     presentation={props.presentation}
                     state={props.state}
+                    onBack={props.onBack}
+                    onExecute={props.onExecute}
                 />
             }
         />
@@ -142,13 +152,20 @@ function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
                 </Show>
             </div>
             <footer class="kcq-targeting__footer">
-                <button type="button" class="kcq-targeting__back">
+                <button
+                    type="button"
+                    class="kcq-targeting__back"
+                    onClick={() => props.onBack?.()}
+                >
                     <span aria-hidden="true">↶</span> {model().controls.backLabel}
                 </button>
                 <button
                     type="button"
                     class="kcq-targeting__execute"
                     disabled={!ready()}
+                    onClick={() => {
+                        if (ready()) props.onExecute?.(selectedTargets());
+                    }}
                 >
                     {model().controls.executeLabel} <span aria-hidden="true">▶</span>
                 </button>

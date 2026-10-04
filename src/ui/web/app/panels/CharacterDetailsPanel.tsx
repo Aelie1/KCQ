@@ -16,6 +16,9 @@ export interface CharacterDetailsPanelProps {
     presentation: Presentation;
     state: GameState;
     thresholds: ThresholdInfo;
+    onBack?: () => void;
+    onSelectCharacter?: (id: EntityId) => void;
+    onSelectCommand?: (commandId: string) => void;
 }
 
 export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.Element {
@@ -30,19 +33,32 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
     return (
         <CharacterDetailsLayout
             model={model()}
+            onHeaderBack={props.onBack}
+            onSelectCharacter={props.onSelectCharacter}
             actionRegion={
                 <>
                     <section class="kcq-character-section kcq-character-commands" aria-labelledby="character-commands-heading">
                         <h2 id="character-commands-heading">{model().labels.commandsHeading}</h2>
                         <div class="kcq-character-commands__grid">
                             <For each={model().focused.commands}>
-                                {(command) => <CommandCard command={command} />}
+                                {(command) => (
+                                    <CommandCard
+                                        command={command}
+                                        onSelect={props.onSelectCommand
+                                            ? () => props.onSelectCommand?.(command.id)
+                                            : undefined}
+                                    />
+                                )}
                             </For>
                         </div>
                     </section>
 
                     <footer class="kcq-character-details__footer">
-                        <button type="button" class="kcq-character-details__back">
+                        <button
+                            type="button"
+                            class="kcq-character-details__back"
+                            onClick={() => props.onBack?.()}
+                        >
                             <span aria-hidden="true">↶</span> {model().controls.backLabel}
                         </button>
                         <button type="button" class="kcq-character-details__select" disabled>

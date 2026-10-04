@@ -1,7 +1,11 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { formatActionGroups, type SemanticStyle } from "../../src/ui/console/presentation";
+import {
+    ActorStyleRegistry,
+    formatActionGroups,
+    type SemanticStyle,
+} from "../../src/ui/console/presentation";
 import { DevApp } from "../../src/ui/web/app/dev/DevApp";
 import { gameLogFixture } from "../../src/ui/web/app/fixtures/gameLog";
 import {
@@ -20,15 +24,19 @@ function decoded(html: string): string {
 describe("Solid game log panel", () => {
     it("renders the shared formatter output in chronological action-group order", () => {
         const html = decoded(renderGameLog());
-        const groups = formatActionGroups(
-            gameLogFixture.action,
-            gameLogFixture.frames,
-            undefined,
-            gameLogFixture.startingRound,
-        );
+        const actorStyles = new ActorStyleRegistry();
+        const groups = gameLogFixture.entries.flatMap((entry) => formatActionGroups(
+            entry.action,
+            entry.frames,
+            actorStyles,
+            entry.startingRound,
+        ));
         const lines = groups.flatMap((group) => group.lines.map((line) => line.text));
 
         expect(lines.every((line) => html.includes(line))).toBe(true);
+        expect(html.indexOf("ko tried to escape latexArms on ko")).toBeLessThan(
+            html.indexOf("ko used telekinesis"),
+        );
         expect(html.indexOf("ko used telekinesis")).toBeLessThan(html.indexOf("hinari used rockfall"));
         expect(html.indexOf("hinari used rockfall")).toBeLessThan(html.indexOf("matsuko attempted flameBurst"));
         expect(html.indexOf("matsuko attempted flameBurst")).toBeLessThan(html.indexOf("ENEMY PHASE"));

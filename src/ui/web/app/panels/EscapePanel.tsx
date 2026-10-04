@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, For, Show, type JSX } from "solid-js";
 import type {
     ActionView,
+    BindingId,
     EntityId,
     EscapeInfo,
     GameState,
@@ -13,6 +14,7 @@ import { createCharacterDetailsViewModel } from "../viewModels/characterDetails"
 import {
     createEscapeViewModel,
     initialEscapeSelection,
+    escapeChoiceId,
     sanitizeEscapeSelection,
 } from "../viewModels/escape";
 
@@ -23,6 +25,10 @@ export interface EscapePanelProps {
     presentation: Presentation;
     state: GameState;
     thresholds: ThresholdInfo;
+    onBack?: () => void;
+    onExecute?: (target: EntityId, binding: BindingId) => void;
+    onHeaderBack?: () => void;
+    onSelectCharacter?: (id: EntityId) => void;
 }
 
 interface EscapeActionRegionProps {
@@ -32,6 +38,8 @@ interface EscapeActionRegionProps {
     presentation: Presentation;
     thresholds: ThresholdInfo;
     state: GameState;
+    onBack?: () => void;
+    onExecute?: (target: EntityId, binding: BindingId) => void;
 }
 
 export function EscapePanel(props: EscapePanelProps): JSX.Element {
@@ -46,6 +54,8 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
     return (
         <CharacterDetailsLayout
             model={characterModel()}
+            onHeaderBack={props.onHeaderBack}
+            onSelectCharacter={props.onSelectCharacter}
             actionRegion={
                 <EscapeActionRegion
                     actions={props.actions}
@@ -54,6 +64,8 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
                     presentation={props.presentation}
                     state={props.state}
                     thresholds={props.thresholds}
+                    onBack={props.onBack}
+                    onExecute={props.onExecute}
                 />
             }
         />
@@ -87,6 +99,14 @@ function EscapeActionRegion(props: EscapeActionRegionProps): JSX.Element {
             setSelectedEscapeId(sanitized);
         }
     });
+
+    const execute = (): void => {
+        const selectedId = selectedEscapeId();
+        if (!selectedId) return;
+        const selected = actorAction().escapes.find((escape, index) =>
+            escape.available && escapeChoiceId(escape, index) === selectedId);
+        if (selected) props.onExecute?.(selected.target, selected.binding);
+    };
 
     return (
         <section class="kcq-escape" aria-labelledby="escape-heading">
@@ -154,13 +174,18 @@ function EscapeActionRegion(props: EscapeActionRegionProps): JSX.Element {
                 </div>
             </div>
             <footer class="kcq-escape__footer">
-                <button type="button" class="kcq-escape__back">
+                <button
+                    type="button"
+                    class="kcq-escape__back"
+                    onClick={() => props.onBack?.()}
+                >
                     <span aria-hidden="true">{"\u21b6"}</span> {model().controls.backLabel}
                 </button>
                 <button
                     type="button"
                     class="kcq-escape__execute"
                     disabled={!model().selectedEscapeId}
+                    onClick={execute}
                 >
                     {model().controls.executeLabel} <span aria-hidden="true">{"\u25b6"}</span>
                 </button>

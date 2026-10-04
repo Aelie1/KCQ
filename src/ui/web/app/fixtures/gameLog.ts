@@ -119,7 +119,16 @@ const frames = [
 ] satisfies readonly EventFrame[];
 
 export const gameLogFixture = {
-    action,
-    frames,
-    startingRound: 4,
+    entries: [
+        {
+            action,
+            frames: frames.slice(0, 1),
+            startingRound: 4,
+        },
+        {
+            action: { type: "endTurn" } as const,
+            frames: frames.slice(1),
+            startingRound: 4,
+        },
+    ],
 };

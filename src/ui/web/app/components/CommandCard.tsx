@@ -4,6 +4,7 @@ import { CommandTag } from "./CommandTag";
 
 export interface CommandCardProps {
     command: CommandCardViewModel;
+    onSelect?: () => void;
 }
 
 export function CommandCard(props: CommandCardProps): JSX.Element {
@@ -13,6 +14,7 @@ export function CommandCard(props: CommandCardProps): JSX.Element {
             classList={{ "kcq-command-card--disabled": !props.command.available }}
             type="button"
             disabled={!props.command.available}
+            onClick={() => props.onSelect?.()}
             aria-label={props.command.reasonLabel
                 ? `${props.command.name}: ${props.command.reasonLabel}`
                 : props.command.name}

@@ -1,5 +1,10 @@
 import { createSignal, Match, Switch, type JSX } from "solid-js";
+import { englishStrings } from "../../../../../localization/en/index";
+import { createEngine } from "../../../../engine/public/engine";
+import { Presentation } from "../../../presentation/presentation";
+import { createBattle } from "../../app";
 import { App } from "../App";
+import { BattleApp } from "../BattleApp";
 import { battleOverviewFixture } from "../fixtures/battleOverview";
 import { characterDetailsFixture } from "../fixtures/characterDetails";
 import { escapeFixtures } from "../fixtures/escape";
@@ -31,6 +36,9 @@ export function DevApp(props: DevAppProps = {}): JSX.Element {
                 <div class="dev-game-viewport">
                     <App>
                         <Switch fallback={<PlaceholderPanel title={selectedLabel()} />}>
+                            <Match when={panel() === "playable"}>
+                                <PlayableBattle />
+                            </Match>
                             <Match when={panel() === "battle"}>
                                 <BattleOverviewPanel {...battleOverviewFixture} />
                             </Match>
@@ -55,4 +63,12 @@ export function DevApp(props: DevAppProps = {}): JSX.Element {
             </section>
         </div>
     );
+}
+
+function PlayableBattle(): JSX.Element {
+    const engine = createEngine(12345);
+    createBattle(engine, "plains_1", "standard");
+    const presentation = new Presentation(englishStrings);
+
+    return <BattleApp engine={engine} presentation={presentation} />;
 }

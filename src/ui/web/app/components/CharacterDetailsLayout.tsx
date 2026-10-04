@@ -1,4 +1,5 @@
 import { For, Show, type JSX } from "solid-js";
+import type { EntityId } from "../../../../engine/public/types";
 import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
 import { ModifierMeter } from "./ModifierMeter";
 import { StatusChip } from "./StatusChip";
@@ -6,6 +7,8 @@ import { StatusChip } from "./StatusChip";
 export interface CharacterDetailsLayoutProps {
     actionRegion: JSX.Element;
     model: CharacterDetailsViewModel;
+    onHeaderBack?: () => void;
+    onSelectCharacter?: (id: EntityId) => void;
 }
 
 export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.Element {
@@ -16,6 +19,7 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                     class="kcq-character-details__header-back"
                     type="button"
                     aria-label={props.model.controls.backLabel}
+                    onClick={() => props.onHeaderBack?.()}
                 >
                     <span aria-hidden="true">←</span>
                 </button>
@@ -40,6 +44,7 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                             }}
                             type="button"
                             aria-pressed={character.focused}
+                            onClick={() => props.onSelectCharacter?.(character.id)}
                         >
                             <span class="kcq-character-roster__name">{character.name}</span>
                             <span

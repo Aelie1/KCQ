@@ -7,11 +7,27 @@ export type { PartyCardData } from "./componentTypes";
 
 export interface PartyCardProps {
     character: PartyCardData;
+    onSelect?: () => void;
 }
 
 export function PartyCard(props: PartyCardProps): JSX.Element {
+    const interactive = (): boolean => props.onSelect !== undefined;
+
     return (
-        <article class="kcq-party-card" classList={{ "kcq-party-card--ready": props.character.actionState.kind === "ready" }} aria-label={props.character.name}>
+        <article
+            class="kcq-party-card"
+            classList={{ "kcq-party-card--ready": props.character.actionState.kind === "ready" }}
+            aria-label={props.character.name}
+            role={interactive() ? "button" : undefined}
+            tabIndex={interactive() ? 0 : undefined}
+            onClick={() => props.onSelect?.()}
+            onKeyDown={(event) => {
+                if (interactive() && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    props.onSelect?.();
+                }
+            }}
+        >
             <header class="kcq-party-card__header">
                 <div class="kcq-party-card__identity">
                     <h3 class="kcq-party-card__name" title={props.character.name}>

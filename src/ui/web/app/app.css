@@ -764,6 +764,30 @@ button {
     margin: 0;
 }
 
+.kcq-game-log__header-title--with-back {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 8px;
+    align-items: center;
+}
+
+.kcq-game-log__header-title--with-back>p,
+.kcq-game-log__header-title--with-back>h1 {
+    grid-column: 2;
+}
+
+.kcq-game-log__back {
+    grid-row: 1 / span 2;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 7px;
+    background: var(--kcq-surface-card);
+    color: var(--kcq-text-primary);
+    cursor: pointer;
+}
+
 .kcq-game-log__header p {
     color: var(--kcq-accent-primary);
     font-size: 9px;

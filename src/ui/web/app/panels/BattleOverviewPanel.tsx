@@ -1,6 +1,7 @@
 import { createMemo, For, Show, type JSX } from "solid-js";
 import type {
     ActionView,
+    EntityId,
     GameState,
     ThresholdInfo,
 } from "../../../../engine/public/types";
@@ -15,6 +16,9 @@ export interface BattleOverviewPanelProps {
     presentation: Presentation;
     state: GameState;
     thresholds: ThresholdInfo;
+    onEndTurn?: () => void;
+    onGameLog?: () => void;
+    onSelectCharacter?: (id: EntityId) => void;
 }
 
 export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Element {
@@ -85,16 +89,31 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                 </header>
                 <div class="kcq-battle-overview__party">
                     <For each={model().party}>
-                        {(character) => <PartyCard character={character} />}
+                        {(character) => (
+                            <PartyCard
+                                character={character}
+                                onSelect={props.onSelectCharacter
+                                    ? () => props.onSelectCharacter?.(character.id)
+                                    : undefined}
+                            />
+                        )}
                     </For>
                 </div>
             </section>
 
             <footer class="kcq-battle-overview__footer">
-                <button class="kcq-battle-overview__secondary-action" type="button">
+                <button
+                    class="kcq-battle-overview__secondary-action"
+                    type="button"
+                    onClick={() => props.onGameLog?.()}
+                >
                     {model().controls.gameLogLabel}
                 </button>
-                <button class="kcq-battle-overview__primary-action" type="button">
+                <button
+                    class="kcq-battle-overview__primary-action"
+                    type="button"
+                    onClick={() => props.onEndTurn?.()}
+                >
                     {model().controls.endTurnLabel}
                 </button>
             </footer>
