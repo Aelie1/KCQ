@@ -317,6 +317,7 @@ describe("move validation and player actions", () => {
                 targetSide: definition.targetSide,
                 targets: definition.targets,
                 type: definition.type,
+                ...(definition.traits ? { traits: [...definition.traits] } : {}),
             },
             available: true,
         })));

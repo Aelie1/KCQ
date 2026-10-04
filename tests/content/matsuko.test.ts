@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
-import { matsuko } from "../../src/content/characters/matsuko";
+import { matsuko, obey } from "../../src/content/characters/matsuko";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { createTestEngine } from "../helpers/testCatalog";
 import { s } from "../../src/engine/protected/status";
@@ -532,7 +532,13 @@ describe("Matsuko's Compulsion moves", () => {
         expect(action(engine, "obey")).toEqual({
             available: false,
             reason: "insufficientTargets",
-            move: { id: "obey", type: "mouth", targetSide: "player", targets: 1 },
+            move: {
+                id: obey.id,
+                type: obey.type,
+                targetSide: obey.targetSide,
+                targets: obey.targets,
+                ...(obey.traits ? { traits: [...obey.traits] } : {}),
+            },
             targets: [],
             effects: [],
         });
@@ -552,6 +558,7 @@ describe("Matsuko's Compulsion moves", () => {
                 expect.objectContaining({
                     valid: true, target: ally.id, effects: [
                         expect.objectContaining({ type: "buff", target: ally.id, buff: "servitude", operation: "add" }),
+                        { type: "refresh", target: ally.id },
                     ]
                 }),
             ]),
@@ -629,6 +636,7 @@ describe("Matsuko's Compulsion moves", () => {
                 expect.objectContaining({
                     valid: true, target: eligible.id, effects: [
                         expect.objectContaining({ type: "buff", target: eligible.id, buff: "servitude", operation: "add" }),
+                        { type: "refresh", target: eligible.id },
                     ]
                 }),
             ]),

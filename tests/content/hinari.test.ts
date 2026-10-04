@@ -88,8 +88,8 @@ function loadHinariEncounter(options: {
 function hinariData(state: iGameState, subspace: number, binding = 0): iEffect[] {
     const target = state.characters[0];
     return [
-        { type: "data", target, name: "subspace", amount: subspace },
-        { type: "data", target, name: "subspaceBinding", amount: binding },
+        { type: "data", target, name: "subspace", amount: subspace, visible: false },
+        { type: "data", target, name: "subspaceBinding", amount: binding, visible: false },
     ];
 }
 
@@ -387,11 +387,17 @@ describe("Hinari's Store", () => {
 
         expect(targets?.find(({ target }) => target === ropeAlly.id)).toEqual({
             valid: true, target: ropeAlly.id, damage: undefined,
-            effects: [{ type: "binding", target: ropeAlly.id, binding: rope.id, amount: -30 }],
+            effects: [
+                { type: "binding", target: ropeAlly.id, binding: rope.id, amount: -30 },
+                { type: "data", target: hinari.id, name: "subspace", amount: 25 },
+            ],
         });
         expect(targets?.find(({ target }) => target === tapeAlly.id)).toEqual({
             valid: true, target: tapeAlly.id, damage: undefined,
-            effects: [{ type: "binding", target: tapeAlly.id, binding: tape.id, amount: -10 }],
+            effects: [
+                { type: "binding", target: tapeAlly.id, binding: tape.id, amount: -10 },
+                { type: "data", target: hinari.id, name: "subspace", amount: 25 },
+            ],
         });
     });
 
@@ -644,7 +650,14 @@ describe("Hinari's Store", () => {
             targets: expect.arrayContaining([
                 { valid: false, target: hinari.id, reason: "invalidTarget" },
                 { valid: false, target: empty.id, reason: "invalidTarget" },
-                expect.objectContaining({ valid: true, target: bound.id, effects: [{ type: "binding", target: bound.id, binding: rope.id, amount: -10 }] }),
+                expect.objectContaining({
+                    valid: true,
+                    target: bound.id,
+                    effects: [
+                        { type: "binding", target: bound.id, binding: rope.id, amount: -10 },
+                        { type: "data", target: hinari.id, name: "subspace", amount: 25 },
+                    ],
+                }),
             ]),
         });
         expect(engine.executeAction({
@@ -771,15 +784,24 @@ describe("Hinari's Release", () => {
 
         expect(target(low, "ally")).toEqual({
             valid: true, target: "ally", damage: undefined,
-            effects: [{ type: "binding", target: "ally", binding: tape.id, amount: 13 }],
+            effects: [
+                { type: "binding", target: "ally", binding: tape.id, amount: 13 },
+                { type: "data", target: hinari.id, name: "subspace", amount: -25 },
+            ],
         });
         expect(target(high, "ally")).toEqual({
             valid: true, target: "ally", damage: undefined,
-            effects: [{ type: "binding", target: "ally", binding: tape.id, amount: 25 }],
+            effects: [
+                { type: "binding", target: "ally", binding: tape.id, amount: 25 },
+                { type: "data", target: hinari.id, name: "subspace", amount: -50 },
+            ],
         });
         expect(target(low, "foe1")).toEqual({
             valid: true, target: "foe1", damage: undefined,
-            effects: [{ type: "buff", target: "foe1", buff: "subspaceClutter", effects: { defense: -2, hit: -2 }, operation: "add" }],
+            effects: [
+                { type: "buff", target: "foe1", buff: "subspaceClutter", effects: { defense: -2, hit: -2 }, operation: "add" },
+                { type: "data", target: hinari.id, name: "subspace", amount: -25 },
+            ],
         });
         const result = execute(low, { type: "move", actor: hinari.id, move: "release", targets: ["foe1"] });
         expect(moveEvent(result).targets).toEqual([{

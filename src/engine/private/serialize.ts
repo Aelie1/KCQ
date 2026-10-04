@@ -208,7 +208,7 @@ export function serializeMove(actor: iEntity, move: MoveDef): Move {
         targets: move.targets,
         hits: move.getHits?.(actor, move) ?? move.baseHits,
         type: move.type,
-        traits: move.traits ? [...move.traits] : undefined,
+        ...(move.traits ? { traits: [...move.traits] } : {}),
     };
 }
 

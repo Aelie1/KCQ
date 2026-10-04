@@ -270,6 +270,7 @@ describe("encounters", () => {
                     target: state.enemies[0],
                     name: "setup",
                     amount: 7,
+                    visible: false,
                 }];
             },
         };

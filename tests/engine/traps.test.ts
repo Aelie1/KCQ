@@ -238,6 +238,7 @@ describe("generic traps through GameEngine", () => {
                 target,
                 name: "ready",
                 amount: -1,
+                visible: false,
             }, {
                 type: "trap",
                 actor: target,
@@ -270,6 +271,7 @@ describe("generic traps through GameEngine", () => {
                 target: state.characters[0],
                 name: "ready",
                 amount: 1,
+                visible: false,
             }],
         );
 
