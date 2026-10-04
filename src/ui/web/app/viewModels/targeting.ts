@@ -199,10 +199,12 @@ function targetIdentity(
     }
     const action = character ? actions.find(({ id }) => id === character.id) : undefined;
     if (!character || !action) return {};
-    return { characterSummary: presentation.ui("targeting.characterSummary", {
-        action: createCharacterActionState(character, action, presentation).label,
-        stance: createCharacterStanceState(character, action, presentation).label,
-    }) };
+    return {
+        characterSummary: presentation.ui("targeting.characterSummary", {
+            action: createCharacterActionState(character, action, presentation).label,
+            stance: createCharacterStanceState(character, action, presentation).label,
+        })
+    };
 }
 
 function createDamageProfile(damage: PreviewProfile, presentation: Presentation): DamageProfileViewModel {
@@ -273,7 +275,7 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
     const { presentation } = context;
     const modifierEntries = Object.entries(effect.buff.modifiers ?? {}) as [ModifierId, number][];
     const classifications = modifierEntries.map(([modifier, value]) => isHarmfulModifierChange(modifier, value));
-    const debuff = classifications.length > 0 && classifications.every((value) => value === true);
+    const debuff = (effect.buff.statuses?.length ?? 0) > 0 || (classifications.length > 0 && classifications.every((value) => value === true));
     const operationKey = effect.operation === "add"
         ? (debuff ? "targeting.effectAddDebuff" : "targeting.effectAddBuff")
         : (debuff ? "targeting.effectRemoveDebuff" : "targeting.effectRemoveBuff");
@@ -310,11 +312,11 @@ function createBindingEffect(
     if (!target || effect.amount === undefined || !context.thresholds) {
         return compactEffect(id, "binding", "special", context.presentation.ui("targeting.effectBinding"),
             context.presentation.binding(effect.binding), [
-                ...recipientDetails(effect.target, context),
-                ...(effect.amount === undefined ? [] : [context.presentation.ui("targeting.bindingAmount", {
-                    amount: formatSignedNumber(effect.amount),
-                })]),
-            ]);
+            ...recipientDetails(effect.target, context),
+            ...(effect.amount === undefined ? [] : [context.presentation.ui("targeting.bindingAmount", {
+                amount: formatSignedNumber(effect.amount),
+            })]),
+        ]);
     }
     const currentValue = target.bindings.find(({ id: binding }) => binding === effect.binding)?.value ?? 0;
     const projectedValue = Math.max(0, currentValue + effect.amount);

@@ -161,7 +161,7 @@ export const systemStrings: StringTable = {
     "status.stunned.desc": "...",
     "status.incapacitated.name": "Incapacitated",
     "status.incapacitated.desc": "...",
-    "status.servitude.name": "Servitude",
+    "status.servitude.name": "Blocks Escape",
     "status.servitude.desc": "...",
 
     "modifier.hitarms.name": "Accuracy(Arms)",
