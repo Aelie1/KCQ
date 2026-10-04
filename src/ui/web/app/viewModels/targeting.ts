@@ -159,6 +159,28 @@ export function toggleTargetSelection(
     return [...selected, target];
 }
 
+export function targetingActionIdentity(
+    actorId: EntityId,
+    action: ActionInfo,
+): string {
+    return JSON.stringify([actorId, action.move.id]);
+}
+
+export function reconcileTargetSelection(
+    previousActionIdentity: string,
+    nextActionIdentity: string,
+    currentSelection: readonly EntityId[],
+    initialSelection: readonly EntityId[],
+    model: TargetingViewModel,
+): EntityId[] {
+    return sanitizeTargetSelection(
+        previousActionIdentity === nextActionIdentity
+            ? currentSelection
+            : initialSelection,
+        model,
+    );
+}
+
 export function sanitizeTargetSelection(
     selected: readonly EntityId[],
     model: TargetingViewModel,

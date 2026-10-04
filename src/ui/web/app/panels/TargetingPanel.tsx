@@ -1,21 +1,37 @@
-import { createMemo, createSignal, For, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show, type JSX } from "solid-js";
 import type {
     ActionInfo,
+    ActionView,
     EntityId,
     GameState,
+    ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { CharacterDetailsLayout } from "../components/CharacterDetailsLayout";
 import { EffectPreview } from "../components/EffectPreview";
 import { SelectedCommandSummary } from "../components/SelectedCommandSummary";
 import { TargetCard } from "../components/TargetCard";
+import { createCharacterDetailsViewModel } from "../viewModels/characterDetails";
 import {
     createTargetingViewModel,
     isTargetingReady,
+    reconcileTargetSelection,
     sanitizeTargetSelection,
+    targetingActionIdentity,
     toggleTargetSelection,
 } from "../viewModels/targeting";
 
 export interface TargetingPanelProps {
+    action: ActionInfo;
+    actions: readonly ActionView[];
+    actorId: EntityId;
+    initialSelectedTargetIds?: readonly EntityId[];
+    presentation: Presentation;
+    state: GameState;
+    thresholds: ThresholdInfo;
+}
+
+interface TargetingActionRegionProps {
     action: ActionInfo;
     actorId: EntityId;
     initialSelectedTargetIds?: readonly EntityId[];
@@ -24,15 +40,59 @@ export interface TargetingPanelProps {
 }
 
 export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
+    const characterModel = createMemo(() => createCharacterDetailsViewModel(
+        props.state,
+        props.actions,
+        props.actorId,
+        props.thresholds,
+        props.presentation,
+    ));
+
+    return (
+        <CharacterDetailsLayout
+            model={characterModel()}
+            actionRegion={
+                <TargetingActionRegion
+                    action={props.action}
+                    actorId={props.actorId}
+                    initialSelectedTargetIds={props.initialSelectedTargetIds}
+                    presentation={props.presentation}
+                    state={props.state}
+                />
+            }
+        />
+    );
+}
+
+function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
     const model = createMemo(() => createTargetingViewModel(
         props.state,
         props.actorId,
         props.action,
         props.presentation,
     ));
+    const actionIdentity = createMemo(() => targetingActionIdentity(
+        props.actorId,
+        props.action,
+    ));
+    let previousActionIdentity = actionIdentity();
     const [selectedTargets, setSelectedTargets] = createSignal(
         sanitizeTargetSelection(props.initialSelectedTargetIds ?? [], model()),
     );
+
+    createEffect(() => {
+        const nextActionIdentity = actionIdentity();
+        const nextModel = model();
+        setSelectedTargets((currentSelection) => reconcileTargetSelection(
+            previousActionIdentity,
+            nextActionIdentity,
+            currentSelection,
+            props.initialSelectedTargetIds ?? [],
+            nextModel,
+        ));
+        previousActionIdentity = nextActionIdentity;
+    });
+
     const ready = createMemo(() => isTargetingReady(model(), selectedTargets()));
 
     const selectTarget = (targetId: EntityId): void => {

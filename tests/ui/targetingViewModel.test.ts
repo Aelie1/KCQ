@@ -4,7 +4,9 @@ import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
 import {
     createTargetingViewModel,
     isTargetingReady,
+    reconcileTargetSelection,
     sanitizeTargetSelection,
+    targetingActionIdentity,
     toggleTargetSelection,
 } from "../../src/ui/web/app/viewModels/targeting";
 
@@ -96,6 +98,49 @@ describe("targeting view model", () => {
             valid: false,
             reasonLabel: "Invalid target.",
         });
+    });
+
+    it("resets selection when the actor and move identity changes", () => {
+        const chooseFixture = targetingFixtures.telekinesisChoose;
+        const nextAction: ActionInfo = {
+            ...chooseFixture.action,
+            move: {
+                ...chooseFixture.action.move,
+                id: "starlightBindings",
+            },
+        };
+        const nextModel = createTargetingViewModel(
+            chooseFixture.state,
+            chooseFixture.actorId,
+            nextAction,
+            chooseFixture.presentation,
+        );
+
+        expect(reconcileTargetSelection(
+            targetingActionIdentity(chooseFixture.actorId, chooseFixture.action),
+            targetingActionIdentity(chooseFixture.actorId, nextAction),
+            ["skunkette1"],
+            [],
+            nextModel,
+        )).toEqual([]);
+
+        const sameMoveModel = createTargetingViewModel(
+            chooseFixture.state,
+            chooseFixture.actorId,
+            chooseFixture.action,
+            chooseFixture.presentation,
+        );
+        const sameIdentity = targetingActionIdentity(
+            chooseFixture.actorId,
+            chooseFixture.action,
+        );
+        expect(reconcileTargetSelection(
+            sameIdentity,
+            sameIdentity,
+            ["skunkette1"],
+            [],
+            sameMoveModel,
+        )).toEqual(["skunkette1"]);
     });
 
     it("treats all-target actions as predetermined and ready without cyan selection state", () => {

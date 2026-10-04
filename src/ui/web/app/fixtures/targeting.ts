@@ -1,38 +1,27 @@
-import { englishStrings } from "../../../../../localization/en";
+import { englishStrings } from "../../../../../localization/en/index";
 import type {
     ActionInfo,
-    Character,
+    ActionView,
     Enemy,
     EntityId,
     GameState,
     PreviewInfo,
+    ThresholdInfo,
 } from "../../../../engine/public/types";
 import { Presentation } from "../../../presentation/presentation";
+import { characterDetailsFixture } from "./characterDetails";
 
 export interface TargetingFixture {
     action: ActionInfo;
+    actions: readonly ActionView[];
     actorId: EntityId;
     initialSelectedTargetIds?: readonly EntityId[];
     presentation: Presentation;
     state: GameState;
+    thresholds: ThresholdInfo;
 }
 
 const presentation = new Presentation(englishStrings);
-
-function character(id: string, standing: boolean): Character {
-    return {
-        id,
-        acted: false,
-        standing,
-        bonusEscapes: 0,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
-}
 
 function enemy(id: string): Enemy {
     return {
@@ -65,33 +54,16 @@ function telekinesisTarget(target: string): PreviewInfo {
 }
 
 const state = {
-    turn: {
-        round: 4,
-        step: 1,
-        phase: "player",
-        outcome: "ongoing",
-    },
-    characters: [
-        character("ko", false),
-        character("matsuko", false),
-        character("hinari", true),
-    ],
+    ...characterDetailsFixture.state,
     enemies: [
         enemy("skunkette1"),
         enemy("skunketteQueen"),
         enemy("skunkette2"),
     ],
-    traps: [{ id: "trapPuddle", amount: 57 }],
     encounter: {
-        id: "plains_2",
+        ...characterDetailsFixture.state.encounter,
+        id: characterDetailsFixture.state.encounter?.id ?? "plains_2",
         enemies: ["skunkette1", "skunketteQueen", "skunkette2"],
-        bindings: [],
-        traps: ["trapPuddle"],
-    },
-    difficulty: {
-        id: "standard",
-        playerModifiers: {},
-        enemyModifiers: {},
     },
 } satisfies GameState;
 
@@ -135,8 +107,10 @@ const fairyEmpowerment = {
 
 const base = {
     state,
+    actions: characterDetailsFixture.actions,
     actorId: "ko",
     presentation,
+    thresholds: characterDetailsFixture.thresholds,
 } satisfies Omit<TargetingFixture, "action">;
 
 export const targetingFixtures = {

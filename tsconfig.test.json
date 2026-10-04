@@ -5,10 +5,13 @@
       "noEmit": true,
       "module": "ESNext",
       "moduleResolution": "Bundler",
+      "jsx": "preserve",
+      "jsxImportSource": "solid-js",
       "types": ["node"]
     },
     "include": [
       "src/**/*.ts",
+      "src/ui/web/app/panels/TargetingPanel.tsx",
       "tests/**/*.ts"
     ],
     "exclude": [
