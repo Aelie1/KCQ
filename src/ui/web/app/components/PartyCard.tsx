@@ -11,7 +11,7 @@ export interface PartyCardProps {
 
 export function PartyCard(props: PartyCardProps): JSX.Element {
     return (
-        <article class="kcq-party-card" aria-label={props.character.name}>
+        <article class="kcq-party-card" classList={{ "kcq-party-card--ready": props.character.actionState.kind === "ready" }} aria-label={props.character.name}>
             <header class="kcq-party-card__header">
                 <div class="kcq-party-card__identity">
                     <h3 class="kcq-party-card__name" title={props.character.name}>

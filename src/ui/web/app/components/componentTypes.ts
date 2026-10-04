@@ -59,10 +59,10 @@ export interface PartyActionState {
     tone: Extract<StatusChipTone, "danger" | "neutral" | "success">;
 }
 
-export interface PartyStanceState {
-    kind: StanceId;
+export interface PartyConditionState {
+    kind: StanceId | "immobilized";
     label: string;
-    tone: "success" | "warning";
+    tone: Extract<StatusChipTone, "danger" | "success" | "warning">;
 }
 
 export interface BlockedCapabilityData {
@@ -87,6 +87,6 @@ export interface PartyCardData {
     id: EntityId;
     name: string;
     noEffectsLabel: string;
-    stanceState: PartyStanceState;
+    stanceState: PartyConditionState;
     visibleEffects: readonly string[];
 }

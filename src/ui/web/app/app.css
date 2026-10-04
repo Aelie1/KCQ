@@ -183,7 +183,7 @@ button {
     height: 20px;
 }
 
-.kcq-enemy-card__intent-slot > .kcq-intent-row {
+.kcq-enemy-card__intent-slot>.kcq-intent-row {
     flex: 1 1 auto;
     width: auto;
 }
@@ -211,6 +211,11 @@ button {
     border: 1px solid var(--kcq-structure-border);
     border-radius: 12px;
     background: var(--kcq-surface-card);
+}
+
+.kcq-party-card--ready {
+    background: var(--kcq-surface-panel-alt);
+    box-shadow: inset 3px 0 0 var(--kcq-state-success);
 }
 
 .kcq-party-card__header {

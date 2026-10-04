@@ -10,6 +10,7 @@ import type {
     BlockedCapabilityData,
     PartyActionState,
     PartyCardData,
+    PartyConditionState,
 } from "../components/componentTypes";
 
 export const PARTY_CARD_EFFECT_SLOTS = 3;
@@ -50,9 +51,7 @@ export function createPartyCardViewModel(
         id: character.id,
         name: presentation.entity(character.id),
         actionState: createActionState(character, action, presentation),
-        stanceState: character.standing
-            ? { kind: "standing", label: presentation.stance("standing"), tone: "warning" }
-            : { kind: "moving", label: presentation.stance("moving"), tone: "success" },
+        stanceState: createStanceState(character, action, presentation),
         blockedCapabilities: character.blockedMoveTypes
             .filter(isDisplayableMoveType)
             .map((kind): BlockedCapabilityData => ({
@@ -81,24 +80,43 @@ export function createPartyCardViewModel(
     };
 }
 
+function createStanceState(
+    character: Character,
+    action: ActionView,
+    presentation: Presentation,
+): PartyConditionState {
+    if (action.stance.reason === "actorImmobilized") {
+        return {
+            kind: "immobilized",
+            label: presentation.status("immobilized"),
+            tone: "danger",
+        };
+    }
+
+    return character.standing
+        ? {
+            kind: "standing",
+            label: presentation.stance("standing"),
+            tone: "warning",
+        }
+        : {
+            kind: "moving",
+            label: presentation.stance("moving"),
+            tone: "success",
+        };
+}
+
 function createActionState(
     character: Character,
     action: ActionView,
     presentation: Presentation,
 ): PartyActionState {
-    const reason = action.reason ?? action.stance.reason;
-
+    const reason = action.reason;
     switch (reason) {
         case "actorIncapacitated":
             return {
                 kind: "incapacitated",
                 label: presentation.status("incapacitated"),
-                tone: "danger",
-            };
-        case "actorImmobilized":
-            return {
-                kind: "immobilized",
-                label: presentation.status("immobilized"),
                 tone: "danger",
             };
         case "actorSkipped":
