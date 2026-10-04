@@ -438,7 +438,7 @@ function createMoveCommand(
     };
 }
 
-function createMoveTags(
+export function createMoveTags(
     info: ActionInfo,
     state: GameState,
     character: Character,
