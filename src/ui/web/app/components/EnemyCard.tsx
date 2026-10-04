@@ -1,6 +1,7 @@
 import { For, Show, type JSX } from "solid-js";
 import type { EnemyCardData } from "./componentTypes";
 import { IntentRow } from "./IntentRow";
+import { LinkedEntityChip } from "./LinkedEntityChip";
 import { StatusChip } from "./StatusChip";
 
 export type { EnemyCardData } from "./componentTypes";
@@ -18,6 +19,13 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                     {props.enemy.currentHp} / {props.enemy.maxHp}
                 </p>
             </header>
+            <Show when={props.enemy.linkedEntities.length > 0}>
+                <div class="kcq-enemy-card__links">
+                    <For each={props.enemy.linkedEntities}>
+                        {(link) => <LinkedEntityChip link={link} />}
+                    </For>
+                </div>
+            </Show>
             <div class="kcq-enemy-card__intentions">
                 <For each={[0, 1]}>
                     {(index) => (

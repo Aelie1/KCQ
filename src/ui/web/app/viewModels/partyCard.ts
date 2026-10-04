@@ -1,5 +1,6 @@
 import type {
     ActionView,
+    BindingId,
     Buff,
     Character,
     MoveType,
@@ -14,6 +15,7 @@ import {
     createCharacterActionState,
     createCharacterStanceState,
 } from "./characterState";
+import { projectBindingZones } from "./bindingZones";
 
 export const PARTY_CARD_EFFECT_SLOTS = 3;
 
@@ -41,6 +43,7 @@ export function createPartyCardViewModel(
     action: ActionView,
     thresholds: ThresholdInfo,
     presentation: Presentation,
+    encounterBindingIds?: readonly BindingId[],
 ): PartyCardData {
     if (character.id !== action.id) {
         throw new Error(`Character ${character.id} does not match ActionView ${action.id}.`);
@@ -60,7 +63,7 @@ export function createPartyCardViewModel(
                 kind,
                 label: presentation.moveType(kind),
             })),
-        bindings: character.bindings.map((binding) => ({
+        bindings: projectBindingZones(encounterBindingIds, character.bindings).map((binding) => ({
             id: binding.id,
             label: presentation.binding(binding.id, "compact"),
             current: binding.value,

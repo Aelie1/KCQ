@@ -352,12 +352,22 @@ button {
     align-items: stretch;
     gap: 5px;
     width: 180px;
-    height: 82px;
+    min-height: 82px;
     padding: 8px 7px;
     overflow: hidden;
     border: 1px solid var(--kcq-structure-border);
     border-radius: 12px;
     background: var(--kcq-surface-card);
+}
+
+.kcq-enemy-card__links {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 3px;
+    min-width: 0;
+    max-height: 17px;
+    overflow: hidden;
 }
 
 .kcq-enemy-card__header {
@@ -1424,7 +1434,7 @@ button {
     align-items: flex-start;
     gap: 5px;
     min-width: 0;
-    height: 75px;
+    min-height: 75px;
     padding: 8px 9px;
     overflow: hidden;
     border: 1px solid var(--kcq-structure-border);
@@ -1444,10 +1454,10 @@ button {
 .kcq-command-card__heading {
     display: flex;
     gap: 4px;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
     min-width: 0;
-    height: 17px;
+    min-height: 17px;
     font-size: 10px;
     font-weight: 700;
     line-height: normal;
@@ -1463,10 +1473,15 @@ button {
 }
 
 .kcq-command-card__name {
+    display: -webkit-box;
     min-width: 0;
+    max-height: 24px;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 12px;
+    overflow-wrap: break-word;
+    white-space: normal;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 
 .kcq-command-card__reason {
@@ -1714,6 +1729,48 @@ button {
     overflow: hidden;
 }
 
+.kcq-linked-entity-chip {
+    display: inline-flex;
+    flex: 0 1 auto;
+    gap: 3px;
+    align-items: center;
+    min-width: 0;
+    max-width: 100%;
+    padding: 1px 4px;
+    overflow: hidden;
+    border: 1px solid currentColor;
+    border-radius: 6px;
+    color: var(--kcq-text-muted);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 12px;
+    white-space: nowrap;
+}
+
+.kcq-linked-entity-chip>span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kcq-linked-entity-chip__icon {
+    flex: 0 0 11px;
+    width: 11px;
+    height: 11px;
+}
+
+.kcq-linked-entity-chip--ko {
+    color: var(--kcq-state-special);
+}
+
+.kcq-linked-entity-chip--matsuko {
+    color: var(--kcq-state-warning);
+}
+
+.kcq-linked-entity-chip--hinari {
+    color: var(--kcq-binding-light);
+}
+
 .kcq-target-header strong {
     flex: 0 1 auto;
     min-width: 0;
@@ -1883,6 +1940,22 @@ button {
 
 .kcq-targeting__action-effects .kcq-preview-effect {
     min-height: 30px;
+}
+
+.kcq-targeting__action-effect-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.kcq-targeting__action-effect-group h3 {
+    margin: 0;
+    color: var(--kcq-text-muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
 }
 
 .kcq-targeting__footer {

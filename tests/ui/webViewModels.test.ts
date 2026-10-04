@@ -69,6 +69,36 @@ describe("enemy card view model", () => {
         expect(model.overflowLabel).toBe("+3");
         expect(model.overflowAriaLabel).toBe("3 more intentions");
     });
+
+    it("projects, deduplicates, and filters linked player relationships", () => {
+        const enemy: Enemy = {
+            id: "skunkette1",
+            defId: "skunkette",
+            rank: "enemy",
+            currHp: 200,
+            maxHp: 200,
+            currDef: 0,
+            intentions: [],
+            buffs: [
+                { id: "pounce", linkedEntity: "ko" },
+                { id: "skunked", linkedEntity: "ko" },
+                { id: "ignored", linkedEntity: "not-a-player" },
+                { id: "pounce", linkedEntity: "matsuko" },
+            ],
+            cooldowns: {},
+        };
+
+        const model = createEnemyCardViewModel(
+            enemy,
+            presentation,
+            [character(), character({ id: "matsuko" })],
+        );
+
+        expect(model.linkedEntities).toEqual([
+            { id: "ko", name: "Ko-chan", tone: "ko" },
+            { id: "matsuko", name: "Matsuko", tone: "matsuko" },
+        ]);
+    });
 });
 
 describe("party card view model", () => {
@@ -150,6 +180,44 @@ describe("party card view model", () => {
         expect(model.visibleEffects).toEqual(["Pounce", "Burnout"]);
         expect(model.hiddenEffectCount).toBe(2);
         expect(model.effectsOverflowLabel).toBe("+2 more");
+    });
+
+    it("projects mixed and clean characters through encounter binding order", () => {
+        const mixed = createPartyCardViewModel(
+            character({
+                bindings: [{
+                    id: "latexArms",
+                    value: 41,
+                    level: "heavy",
+                    data: {},
+                    status: [],
+                    tickEffects: [],
+                }],
+            }),
+            action(),
+            thresholds,
+            presentation,
+            ["latexLegs", "latexArms", "latexHead"],
+        );
+        const clean = createPartyCardViewModel(
+            character(),
+            action(),
+            thresholds,
+            presentation,
+            ["latexHead", "latexArms", "latexTorso", "latexLegs"],
+        );
+
+        expect(mixed.bindings.map(({ id, current, level }) => ({ id, current, level }))).toEqual([
+            { id: "latexLegs", current: 0, level: "none" },
+            { id: "latexArms", current: 41, level: "heavy" },
+            { id: "latexHead", current: 0, level: "none" },
+        ]);
+        expect(clean.bindings.map(({ current, level }) => ({ current, level }))).toEqual([
+            { current: 0, level: "none" },
+            { current: 0, level: "none" },
+            { current: 0, level: "none" },
+            { current: 0, level: "none" },
+        ]);
     });
 });
 

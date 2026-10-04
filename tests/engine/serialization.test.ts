@@ -96,6 +96,23 @@ describe("state serialization and combatant loading", () => {
         });
     });
 
+    it("keeps move traits on unavailable actions with zero target previews", () => {
+        const unavailableBuff = makeMove("unavailable-buff", "mouth", {
+            traits: ["buff"],
+            isValid: () => "moveUnavailable",
+        });
+        const hero = makeCharacterDef("hero", [unavailableBuff]);
+        const engine = createTestEngine([], [hero], 1);
+        engine.loadCharacter(hero.id);
+
+        expect(engine.getActionView()[0].moves[0]).toMatchObject({
+            available: false,
+            reason: "moveUnavailable",
+            move: { id: unavailableBuff.id, traits: ["buff"] },
+            targets: [],
+        });
+    });
+
     it("reports victory when no enemies are present", () => {
         const hero = makeCharacterDef("hero");
         const engine = createTestEngine([], [hero], 1);

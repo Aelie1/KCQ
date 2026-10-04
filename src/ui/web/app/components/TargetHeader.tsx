@@ -1,5 +1,6 @@
-import { Show, type JSX } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 import type { TargetPreviewViewModel } from "../viewModels/targeting";
+import { LinkedEntityChip } from "./LinkedEntityChip";
 
 export interface TargetHeaderProps {
     target: TargetPreviewViewModel;
@@ -9,6 +10,9 @@ export function TargetHeader(props: TargetHeaderProps): JSX.Element {
     return (
         <div class="kcq-target-header">
             <strong>{props.target.name}</strong>
+            <For each={props.target.linkedEntities}>
+                {(link) => <LinkedEntityChip link={link} />}
+            </For>
             <Show when={props.target.valueLabel}>
                 <span class="kcq-target-header__meter" aria-hidden="true">
                     <span style={{ width: `${props.target.fillPercent ?? 0}%` }} />

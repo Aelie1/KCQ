@@ -142,9 +142,19 @@ function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
                         )}
                     </For>
                 </div>
-                <Show when={model().actionEffects.length > 0}>
+                <Show when={model().actionEffects.length > 0 || model().actionEffectGroups.length > 0}>
                     <section class="kcq-targeting__action-effects" aria-labelledby="targeting-action-effects-heading">
                         <h2 id="targeting-action-effects-heading">{model().labels.actionEffects}</h2>
+                        <For each={model().actionEffectGroups}>
+                            {(group) => (
+                                <div class="kcq-targeting__action-effect-group">
+                                    <h3>{group.name}</h3>
+                                    <For each={group.effects}>
+                                        {(effect) => <EffectPreview effect={effect} />}
+                                    </For>
+                                </div>
+                            )}
+                        </For>
                         <For each={model().actionEffects}>
                             {(effect) => <EffectPreview effect={effect} />}
                         </For>

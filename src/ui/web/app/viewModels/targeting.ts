@@ -15,6 +15,10 @@ import {
     createMoveTags,
     type CommandTagViewModel,
 } from "./characterDetails";
+import {
+    projectLinkedPlayers,
+    type LinkedEntityViewModel,
+} from "./linkedEntities";
 
 export type TargetingMode = "predetermined" | "selectable";
 export type EffectTone = "danger" | "primary" | "special" | "warning";
@@ -56,6 +60,7 @@ export interface TargetPreviewViewModel {
     effects: readonly EffectPreviewViewModel[];
     fillPercent?: number;
     id: string;
+    linkedEntities: readonly LinkedEntityViewModel[];
     maxValue?: number;
     name: string;
     reasonLabel?: string;
@@ -67,6 +72,7 @@ export interface TargetPreviewViewModel {
 
 export interface TargetingViewModel {
     actionEffects: readonly CompactEffectViewModel[];
+    actionEffectGroups: readonly ActionEffectGroupViewModel[];
     available: boolean;
     command: {
         id: string;
@@ -85,6 +91,12 @@ export interface TargetingViewModel {
     reasonLabel?: string;
     requiredTargetCount: number;
     targets: readonly TargetPreviewViewModel[];
+}
+
+export interface ActionEffectGroupViewModel {
+    effects: readonly CompactEffectViewModel[];
+    id: EntityId;
+    name: string;
 }
 
 const DAMAGE_BANDS = ["miss", "graze", "hit", "crit"] as const;
@@ -107,6 +119,8 @@ export function createTargetingViewModel(
     const requiredTargetCount = mode === "selectable" ? action.move.targets as number : 0;
     const moveName = presentation.move(action.move.id);
 
+    const actionEffects = groupActionEffects(action.effects, state, presentation);
+
     return {
         mode,
         requiredTargetCount,
@@ -123,11 +137,8 @@ export function createTargetingViewModel(
             index,
             presentation,
         )),
-        actionEffects: action.effects.map((effect, index) => createCompactEffect(
-            effect,
-            `action-effect-${index}`,
-            presentation,
-        )),
+        actionEffects: actionEffects.ungrouped,
+        actionEffectGroups: actionEffects.groups,
         labels: {
             actionEffects: presentation.ui("targeting.actionEffects"),
         },
@@ -252,6 +263,9 @@ function createTargetPreview(
         id: targetId ?? `automatic-${index}`,
         target: targetId,
         name,
+        linkedEntities: enemy
+            ? projectLinkedPlayers(enemy.buffs, state.characters, presentation)
+            : [],
     };
 
     if (!preview.valid) {
@@ -375,6 +389,7 @@ function createCompactEffect(
     effect: Effect,
     id: string,
     presentation: Presentation,
+    suppressTargetDetail = false,
 ): CompactEffectViewModel {
     switch (effect.type) {
         case "damage":
@@ -384,7 +399,7 @@ function createCompactEffect(
                 "danger",
                 presentation.ui("targeting.effectDamage"),
                 presentation.ui("targeting.damageAmount", { amount: effect.amount }),
-                [presentation.entity(effect.target)],
+                suppressTargetDetail ? [] : [presentation.entity(effect.target)],
             );
         case "binding":
             return compactEffect(
@@ -394,8 +409,10 @@ function createCompactEffect(
                 presentation.ui("targeting.effectBinding"),
                 presentation.binding(effect.binding),
                 effect.amount === undefined
-                    ? [presentation.entity(effect.target)]
-                    : [presentation.entity(effect.target), presentation.ui("targeting.bindingAmount", {
+                    ? (suppressTargetDetail ? [] : [presentation.entity(effect.target)])
+                    : [
+                        ...(suppressTargetDetail ? [] : [presentation.entity(effect.target)]),
+                        presentation.ui("targeting.bindingAmount", {
                         amount: effect.amount,
                     })],
             );
@@ -404,13 +421,12 @@ function createCompactEffect(
                 id,
                 effect.type,
                 "special",
-                presentation.ui("targeting.effectBuff"),
+                presentation.ui(effect.operation === "add"
+                    ? "targeting.effectAddBuff"
+                    : "targeting.effectRemoveBuff"),
                 presentation.buff(effect.buff),
                 [
-                    presentation.ui(effect.operation === "add"
-                        ? "targeting.operationAdd"
-                        : "targeting.operationRemove"),
-                    presentation.entity(effect.target),
+                    ...(suppressTargetDetail ? [] : [presentation.entity(effect.target)]),
                     ...modifierDetails(effect.effects, presentation),
                     ...moveListDetails(effect.moveList, presentation),
                 ],
@@ -451,7 +467,10 @@ function createCompactEffect(
                 "primary",
                 presentation.ui("targeting.effectData"),
                 presentation.data(effect.name),
-                [presentation.entity(effect.target), effect.amount.toString()],
+                [
+                    ...(suppressTargetDetail ? [] : [presentation.entity(effect.target)]),
+                    effect.amount.toString(),
+                ],
             );
         case "intention":
             return compactEffect(
@@ -476,6 +495,43 @@ function createCompactEffect(
                 [],
             );
     }
+}
+
+function groupActionEffects(
+    effects: readonly Effect[],
+    state: GameState,
+    presentation: Presentation,
+): {
+    groups: ActionEffectGroupViewModel[];
+    ungrouped: CompactEffectViewModel[];
+} {
+    const charactersById = new Map(state.characters.map((character) => [character.id, character]));
+    const groups: ActionEffectGroupViewModel[] = [];
+    const groupsById = new Map<EntityId, { effects: CompactEffectViewModel[] }>();
+    const ungrouped: CompactEffectViewModel[] = [];
+
+    effects.forEach((effect, index) => {
+        const id = `action-effect-${index}`;
+        const target = "target" in effect ? effect.target : undefined;
+        if (target === undefined || !charactersById.has(target)) {
+            ungrouped.push(createCompactEffect(effect, id, presentation));
+            return;
+        }
+
+        let group = groupsById.get(target);
+        if (!group) {
+            group = { effects: [] };
+            groupsById.set(target, group);
+            groups.push({
+                id: target,
+                name: presentation.entity(target),
+                effects: group.effects,
+            });
+        }
+        group.effects.push(createCompactEffect(effect, id, presentation, true));
+    });
+
+    return { groups, ungrouped };
 }
 
 function compactEffect(

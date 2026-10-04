@@ -188,17 +188,104 @@ describe("targeting view model", () => {
         expect(model.actionEffects.map(({ type }) => type)).toEqual([
             "damage",
             "binding",
-            "buff",
             "enemy",
             "trap",
             "move",
         ]);
         expect(model.targets.every(({ effects: targetEffects }) =>
             targetEffects.every((effect) => effect.kind === "damage-profile"))).toBe(true);
-        expect(model.actionEffects[2]).toMatchObject({
-            label: "Buff",
-            payload: "Fairy Transformation",
-            details: ["Add", "Ko-chan", "Defense +3", "Add Reflect"],
+        expect(model.actionEffectGroups).toHaveLength(1);
+        expect(model.actionEffectGroups[0]).toMatchObject({
+            id: "ko",
+            name: "Ko-chan",
         });
+        expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
+            label: "Add Buff",
+            payload: "Fairy Transformation",
+            details: ["Defense +3", "Add Reflect"],
+        });
+    });
+
+    it("groups targetless self-buffs in effect order and puts the operation in the semantic chip", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            move: {
+                id: "fairyTransformation",
+                targetSide: "player",
+                targets: 0,
+                type: "mouth",
+                traits: ["buff"],
+            },
+            available: true,
+            targets: [],
+            effects: [
+                {
+                    type: "buff",
+                    target: "ko",
+                    buff: "transformation",
+                    operation: "add",
+                    effects: { defense: 3 },
+                },
+                {
+                    type: "buff",
+                    target: "ko",
+                    buff: "pounce",
+                    operation: "remove",
+                },
+                { type: "trap", trap: "trapPuddle", amount: 2 },
+            ],
+        };
+        const model = createTargetingViewModel(
+            fixture.state,
+            fixture.actorId,
+            action,
+            fixture.presentation,
+        );
+
+        expect(model.actionEffectGroups).toEqual([{
+            id: "ko",
+            name: "Ko-chan",
+            effects: [
+                expect.objectContaining({
+                    label: "Add Buff",
+                    payload: "Fairy Transformation",
+                    details: ["Defense +3"],
+                }),
+                expect.objectContaining({
+                    label: "Remove Buff",
+                    payload: "Pounce",
+                    details: [],
+                }),
+            ],
+        }]);
+        expect(model.actionEffects.map(({ type }) => type)).toEqual(["trap"]);
+    });
+
+    it("uses the shared linked-player projection for enemy target previews", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const state = {
+            ...fixture.state,
+            enemies: fixture.state.enemies.map((enemy, index) => index === 0
+                ? {
+                    ...enemy,
+                    buffs: [
+                        { id: "pounce", linkedEntity: "ko" },
+                        { id: "skunked", linkedEntity: "ko" },
+                        { id: "ignored", linkedEntity: "not-a-player" },
+                    ],
+                }
+                : enemy),
+        };
+        const model = createTargetingViewModel(
+            state,
+            fixture.actorId,
+            fixture.action,
+            fixture.presentation,
+        );
+
+        expect(model.targets[0].linkedEntities).toEqual([
+            { id: "ko", name: "Ko-chan", tone: "ko" },
+        ]);
+        expect(model.targets[1].linkedEntities).toEqual([]);
     });
 });

@@ -9,6 +9,7 @@ import type {
     FailureReason,
     GameState,
     ModifierId,
+    MoveTrait,
     MoveType,
     Status,
     ThresholdInfo,
@@ -23,6 +24,7 @@ import {
     createCharacterActionState,
     createCharacterStanceState,
 } from "./characterState";
+import { projectBindingZones } from "./bindingZones";
 
 export type CommandTagTone = "ally" | "danger" | "neutral" | "primary" | "special" | "success" | "warning";
 
@@ -241,7 +243,7 @@ export function createFocusedCharacterViewModel(
                 presentation,
             )),
         },
-        bindings: character.bindings.map((binding) => ({
+        bindings: projectBindingZones(state.encounter?.bindings, character.bindings).map((binding) => ({
             fillPercent: thresholds.max > 0
                 ? Math.min(100, Math.max(0, (binding.value / thresholds.max) * 100))
                 : 0,
@@ -480,21 +482,25 @@ export function createMoveTags(
         push(tag("enemy", presentation.ui("characterDetails.tagEnemy"), "primary"));
     }
 
-    const effects = collectEffects(info);
-    const hasDamage = info.targets.some((preview) => preview.valid && preview.damage !== undefined)
-        || effects.some(({ type }) => type === "damage");
-    if (hasDamage) {
-        push(tag("damage", presentation.ui("characterDetails.tagDamage"), "danger"));
-    }
-
-    for (const effect of effects) {
-        if (effect.type !== "buff" && effect.type !== "binding") {
-            continue;
+    if (info.move.traits !== undefined) {
+        for (const trait of info.move.traits) push(semanticTraitTag(trait, presentation));
+    } else {
+        const effects = collectEffects(info);
+        const hasDamage = info.targets.some((preview) => preview.valid && preview.damage !== undefined)
+            || effects.some(({ type }) => type === "damage");
+        if (hasDamage) {
+            push(tag("damage", presentation.ui("characterDetails.tagDamage"), "danger"));
         }
-        if (enemyIds.has(effect.target)) {
-            push(tag("debuff", presentation.ui("characterDetails.tagDebuff"), "special"));
-        } else if (characterIds.has(effect.target) && effect.type === "buff" && effect.operation === "add") {
-            push(tag("buff", presentation.ui("characterDetails.tagBuff"), "special"));
+
+        for (const effect of effects) {
+            if (effect.type !== "buff" && effect.type !== "binding") {
+                continue;
+            }
+            if (enemyIds.has(effect.target)) {
+                push(tag("debuff", presentation.ui("characterDetails.tagDebuff"), "special"));
+            } else if (characterIds.has(effect.target) && effect.type === "buff" && effect.operation === "add") {
+                push(tag("buff", presentation.ui("characterDetails.tagBuff"), "special"));
+            }
         }
     }
 
@@ -511,6 +517,25 @@ export function createMoveTags(
     }
 
     return tags;
+}
+
+function semanticTraitTag(
+    trait: MoveTrait,
+    presentation: Presentation,
+): CommandTagViewModel {
+    switch (trait) {
+        case "damage": return tag(trait, presentation.ui("characterDetails.tagDamage"), "danger");
+        case "buff": return tag(trait, presentation.ui("characterDetails.tagBuff"), "special");
+        case "debuff": return tag(trait, presentation.ui("characterDetails.tagDebuff"), "special");
+        case "escape": return tag(trait, presentation.ui("characterDetails.tagEscape"), "success");
+        case "onetime": return tag(trait, presentation.ui("characterDetails.tagOnetime"), "warning");
+        case "refresh": return tag(trait, presentation.ui("characterDetails.tagRefresh"), "success");
+        case "heal": return tag(trait, presentation.ui("characterDetails.tagHeal"), "success");
+        case "defeat": return tag(trait, presentation.ui("characterDetails.tagDefeat"), "danger");
+        case "spawn": return tag(trait, presentation.ui("characterDetails.tagSpawn"), "primary");
+        case "trap": return tag(trait, presentation.ui("characterDetails.tagTrap"), "warning");
+        case "retarget": return tag(trait, presentation.ui("characterDetails.tagRetarget"), "primary");
+    }
 }
 
 function collectEffects(info: ActionInfo): Effect[] {

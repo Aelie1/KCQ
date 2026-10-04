@@ -1,7 +1,8 @@
-import type { Enemy } from "../../../../engine/public/types";
+import type { Character, Enemy } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 import type { EnemyCardData } from "../components/componentTypes";
 import { createIntentViewModel } from "./intentRow";
+import { projectLinkedPlayers } from "./linkedEntities";
 
 export const ENEMY_CARD_VISIBLE_INTENTIONS = 2;
 
@@ -20,6 +21,7 @@ export function summarizeIntentions<T>(intentions: readonly T[]): IntentionSumma
 export function createEnemyCardViewModel(
     enemy: Enemy,
     presentation: Presentation,
+    characters: readonly Character[] = [],
 ): EnemyCardData {
     const intentions = enemy.intentions.map((intention) =>
         createIntentViewModel(intention, presentation));
@@ -30,6 +32,7 @@ export function createEnemyCardViewModel(
         name: presentation.entity(enemy.id),
         currentHp: enemy.currHp,
         maxHp: enemy.maxHp,
+        linkedEntities: projectLinkedPlayers(enemy.buffs, characters, presentation),
         intentions,
         ...summary,
         ...(summary.overflowCount > 0 ? {

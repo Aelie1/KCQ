@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { ActionInfo } from "../../src/engine/public/types";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
 import {
     createCharacterDetailsViewModel,
     createFocusedCharacterViewModel,
+    createMoveTags,
 } from "../../src/ui/web/app/viewModels/characterDetails";
 
 describe("character details view model", () => {
@@ -76,6 +78,36 @@ describe("character details view model", () => {
             { value: 27, fillPercent: 13.5 },
             { value: 89, fillPercent: 44.5 },
             { value: 0, fillPercent: 0 },
+        ]);
+    });
+
+    it("shows every encounter binding as a normal zero/none row for a clean character", () => {
+        const fixture = characterDetailsFixture;
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "ko"
+                ? { ...character, bindings: [] }
+                : character),
+        };
+        const model = createCharacterDetailsViewModel(
+            state,
+            fixture.actions,
+            fixture.focusedCharacterId,
+            fixture.thresholds,
+            fixture.presentation,
+        );
+
+        expect(model.labels.bindingsHeading).toBe("Bindings / 4 Zones");
+        expect(model.focused.bindings.map(({ id, levelLabel, value, fillPercent }) => ({
+            id,
+            levelLabel,
+            value,
+            fillPercent,
+        }))).toEqual([
+            { id: "latexHead", levelLabel: "None", value: 0, fillPercent: 0 },
+            { id: "latexArms", levelLabel: "None", value: 0, fillPercent: 0 },
+            { id: "latexTorso", levelLabel: "None", value: 0, fillPercent: 0 },
+            { id: "latexLegs", levelLabel: "None", value: 0, fillPercent: 0 },
         ]);
     });
 
@@ -166,6 +198,59 @@ describe("character details view model", () => {
             available: false,
             reasonLabel: "This character cannot escape.",
         });
+    });
+
+    it("uses public move traits without previews and retains traitless effect fallback", () => {
+        const fixture = characterDetailsFixture;
+        const character = fixture.state.characters[0];
+        const action = (trait: "buff" | "damage"): ActionInfo => ({
+            move: {
+                id: `unavailable-${trait}`,
+                targetSide: "enemy",
+                targets: 1,
+                type: "mouth",
+                traits: [trait],
+            },
+            available: false,
+            reason: "insufficientTargets",
+            targets: [],
+            effects: [],
+        });
+        const fallback: ActionInfo = {
+            move: {
+                id: "legacy-buff",
+                targetSide: "player",
+                targets: 0,
+                type: "mouth",
+            },
+            available: true,
+            targets: [],
+            effects: [{
+                type: "buff",
+                operation: "add",
+                target: character.id,
+                buff: "transformation",
+            }],
+        };
+
+        expect(createMoveTags(
+            action("buff"),
+            fixture.state,
+            character,
+            fixture.presentation,
+        ).map(({ label }) => label)).toContain("Buff");
+        expect(createMoveTags(
+            action("damage"),
+            fixture.state,
+            character,
+            fixture.presentation,
+        ).map(({ label }) => label)).toContain("Damage");
+        expect(createMoveTags(
+            fallback,
+            fixture.state,
+            character,
+            fixture.presentation,
+        ).map(({ label }) => label)).toContain("Buff");
     });
 
     it("localizes public buff details without reconstructing hidden statuses", () => {

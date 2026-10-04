@@ -8,6 +8,7 @@ import type {
     MoveType,
     StanceId,
 } from "../../../../engine/public/types";
+import type { LinkedEntityViewModel } from "../viewModels/linkedEntities";
 
 export type StatusChipTone = "danger" | "neutral" | "outcome" | "success" | "warning";
 export type StatusChipSize = "compact" | "standard";
@@ -29,6 +30,7 @@ export interface EnemyCardData {
     currentHp: number;
     id: EntityId;
     intentions: readonly IntentViewModel[];
+    linkedEntities: readonly LinkedEntityViewModel[];
     maxHp: number;
     name: string;
     overflowAriaLabel?: string;

@@ -57,7 +57,13 @@ export function createBattleOverviewViewModel(
             throw new Error(`Missing ActionView for character ${character.id}.`);
         }
 
-        return createPartyCardViewModel(character, action, thresholds, presentation);
+        return createPartyCardViewModel(
+            character,
+            action,
+            thresholds,
+            presentation,
+            state.encounter?.bindings,
+        );
     });
     const activePartyCount = party.filter(({ actionState }) =>
         actionState.kind !== "incapacitated").length;
@@ -79,7 +85,7 @@ export function createBattleOverviewViewModel(
                 : {}),
         },
         enemies: state.enemies.map((enemy) =>
-            createEnemyCardViewModel(enemy, presentation)),
+            createEnemyCardViewModel(enemy, presentation, state.characters)),
         enemiesHeading: presentation.ui("battleOverview.enemies"),
         enemiesCountLabel: presentation.ui("battleOverview.enemiesRemaining", {
             count: state.enemies.length,
