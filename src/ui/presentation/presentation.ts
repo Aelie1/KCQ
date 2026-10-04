@@ -1,4 +1,4 @@
-import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
+import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
 
 interface StringKey {
     id: string;
@@ -8,6 +8,19 @@ interface StringKey {
 type StringArg = number | string | boolean | StringKey;
 
 export type StringTable = Record<string, string>;
+
+export type UiLabel =
+    | "action.acted"
+    | "action.ready"
+    | "action.skipped"
+    | "action.unavailable"
+    | "effects.more"
+    | "effects.none"
+    | "intentions.more"
+    | "intentions.moreAccessible"
+    | "partyCard.bindings"
+    | "partyCard.blockedCapabilities"
+    | "partyCard.effects";
 
 export class Presentation {
     private strings;
@@ -27,6 +40,10 @@ export class Presentation {
 
     binding(binding: BindingId): string {
         return this.translate(this.bindingKey(binding));
+    }
+
+    bindingCompact(binding: BindingId): string {
+        return this.translate({ id: `binding.${binding}.compact` });
     }
 
     bindingDesc(binding: BindingId): string {
@@ -99,6 +116,14 @@ export class Presentation {
 
     hitBand(band: HitBand): string {
         return this.translate(this.hitBandKey(band));
+    }
+
+    moveType(type: MoveType): string {
+        return this.translate({ id: `moveType.${type}.compact` });
+    }
+
+    ui(label: UiLabel, args?: Record<string, number | string | boolean>): string {
+        return this.translate({ id: `ui.${label}`, args });
     }
 
     difficulty(difficulty: DifficultyId): string {

@@ -1,5 +1,5 @@
 import { Show, type JSX } from "solid-js";
-import type { IntentOutcome, IntentRowData } from "./componentTypes";
+import type { IntentRowData } from "./componentTypes";
 import { StatusChip } from "./StatusChip";
 
 export type { IntentOutcome, IntentRowData } from "./componentTypes";
@@ -8,23 +8,16 @@ export interface IntentRowProps {
     intent: IntentRowData;
 }
 
-const OUTCOME_LABELS: Record<IntentOutcome, string> = {
-    miss: "Miss",
-    graze: "Graze",
-    hit: "Hit",
-    crit: "Crit",
-};
-
 export function IntentRow(props: IntentRowProps): JSX.Element {
     return (
         <div
             class="kcq-intent-row"
-            classList={{ "kcq-intent-row--move-only": !props.intent.target && !props.intent.outcome }}
+            classList={{ "kcq-intent-row--move-only": !props.intent.targetLabel && !props.intent.outcome }}
         >
-            <span class="kcq-intent-row__move" title={props.intent.move}>
-                {props.intent.move}
+            <span class="kcq-intent-row__move" title={props.intent.moveLabel}>
+                {props.intent.moveLabel}
             </span>
-            <Show when={props.intent.target}>
+            <Show when={props.intent.targetLabel}>
                 {(target) => (
                     <>
                         <span class="kcq-intent-row__arrow" aria-hidden="true">→</span>
@@ -33,9 +26,9 @@ export function IntentRow(props: IntentRowProps): JSX.Element {
                 )}
             </Show>
             <Show when={props.intent.outcome}>
-                {(outcome) => (
+                {(_outcome) => (
                     <StatusChip tone="outcome" size="compact">
-                        {OUTCOME_LABELS[outcome()]}
+                        {props.intent.outcomeLabel}
                     </StatusChip>
                 )}
             </Show>

@@ -30,13 +30,7 @@ export function ComponentGalleryPanel(): JSX.Element {
             <GalleryGroup title="Enemy Card">
                 <div class="component-gallery__enemy-grid">
                     <For each={enemyCardFixtures}>
-                        {(fixture) => (
-                            <EnemyCard
-                                enemy={fixture.enemy}
-                                name={fixture.name}
-                                intentions={fixture.intentions}
-                            />
-                        )}
+                        {(fixture) => <EnemyCard enemy={fixture} />}
                     </For>
                 </div>
             </GalleryGroup>
@@ -51,18 +45,22 @@ export function ComponentGalleryPanel(): JSX.Element {
 
             <GalleryGroup title="Small Primitives">
                 <div class="component-gallery__primitives">
-                    <StatusChip tone="success">Ready</StatusChip>
-                    <StatusChip tone="neutral">Acted</StatusChip>
-                    <StatusChip tone="warning">Standing</StatusChip>
-                    <StatusChip tone="danger">Mouth</StatusChip>
-                    <StatusChip tone="outcome" size="compact">Crit</StatusChip>
-                    <BindingMetric metric={{
-                        id: "latexTorso",
-                        label: "T",
-                        current: 54,
-                        max: 54,
-                        level: "severe",
-                    }} />
+                    <StatusChip tone={partyCardFixtures[0].actionState.tone}>
+                        {partyCardFixtures[0].actionState.label}
+                    </StatusChip>
+                    <StatusChip tone={partyCardFixtures[1].actionState.tone}>
+                        {partyCardFixtures[1].actionState.label}
+                    </StatusChip>
+                    <StatusChip tone={partyCardFixtures[2].stanceState.tone}>
+                        {partyCardFixtures[2].stanceState.label}
+                    </StatusChip>
+                    <StatusChip tone="danger">
+                        {partyCardFixtures[1].blockedCapabilities[0].label}
+                    </StatusChip>
+                    <StatusChip tone="outcome" size="compact">
+                        {intentRowFixtures.latexShower.outcomeLabel}
+                    </StatusChip>
+                    <BindingMetric metric={partyCardFixtures[1].bindings[2]} />
                 </div>
             </GalleryGroup>
         </section>

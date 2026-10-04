@@ -1,106 +1,215 @@
-import type { Enemy } from "../../../../engine/public/types";
 import type {
-    EnemyCardIntentions,
-    IntentRowData,
-    PartyCardData,
-    PartyCondition,
-} from "../components/componentTypes";
+    ActionView,
+    Binding,
+    BindingLevel,
+    Buff,
+    Character,
+    Enemy,
+    FailureReason,
+    HitBand,
+    Intention,
+    MoveId,
+    ThresholdInfo,
+} from "../../../../engine/public/types";
+import { Presentation } from "../../../presentation/presentation";
+import { englishStrings } from "../../../presentation/localization/en";
+import { createEnemyCardViewModel } from "../viewModels/enemyCard";
+import { createIntentViewModel } from "../viewModels/intentRow";
+import { createPartyCardViewModel } from "../viewModels/partyCard";
 
-const skunkette = {
-    id: "skunkette1",
-    currHp: 200,
-    maxHp: 200,
-} satisfies Pick<Enemy, "currHp" | "id" | "maxHp">;
+const presentation = new Presentation(englishStrings);
 
-const skunk = {
-    id: "skunk1",
-    currHp: 300,
-    maxHp: 300,
-} satisfies Pick<Enemy, "currHp" | "id" | "maxHp">;
-
-const queen = {
-    id: "skunkQueen1",
-    currHp: 234,
-    maxHp: 750,
-} satisfies Pick<Enemy, "currHp" | "id" | "maxHp">;
-
-export const intentRowFixtures = {
-    pounce: { move: "Pounce", target: "Ko-chan", outcome: "hit" },
-    latexShower: { move: "Latex Shower", target: "Matsuko", outcome: "crit" },
-    constructRainmaker: { move: "Construct Rainmaker" },
-} satisfies Record<string, IntentRowData>;
-
-export const enemyCardFixtures = [
-    {
-        enemy: skunkette,
-        name: "Skunkette 1",
-        intentions: [intentRowFixtures.pounce],
-    },
-    {
-        enemy: skunk,
-        name: "Skunk 1",
-        intentions: [intentRowFixtures.latexShower],
-    },
-    {
-        enemy: queen,
-        name: "Skunk Queen",
-        intentions: [
-            { move: "Skunk Gun", target: "Ko-chan", outcome: "hit" },
-            intentRowFixtures.constructRainmaker,
-        ],
-    },
-] as const satisfies readonly {
-    enemy: Pick<Enemy, "currHp" | "id" | "maxHp">;
-    intentions: EnemyCardIntentions;
-    name: string;
-}[];
-
-function condition(fields: PartyCondition): PartyCondition {
-    return fields;
+function intention(move: MoveId, target?: string, band: HitBand = "none"): Intention {
+    return {
+        move,
+        targets: target ? [{ target, band, effects: [] }] : [],
+        effects: [],
+    };
 }
 
-export const partyCardFixtures = [
+const rawIntentions = {
+    pounce: intention("pounce", "ko", "hit"),
+    latexShower: intention("latexShower", "matsuko", "crit"),
+    constructRainmaker: intention("latexRainmaker"),
+    skunkGun: intention("skunkGun", "ko", "hit"),
+    skunkCollar: intention("skunkCollar", "hinari", "graze"),
+    callReinforcements: intention("callReinforcements"),
+    skunkPerfume: intention("skunkPerfume"),
+} as const;
+
+export const intentRowFixtures = {
+    pounce: createIntentViewModel(rawIntentions.pounce, presentation),
+    latexShower: createIntentViewModel(rawIntentions.latexShower, presentation),
+    constructRainmaker: createIntentViewModel(rawIntentions.constructRainmaker, presentation),
+};
+
+function enemy(id: string, currHp: number, maxHp: number, intentions: Intention[]): Enemy {
+    return {
+        id,
+        defId: id.replace(/\d+$/, ""),
+        rank: id.startsWith("queen") ? "boss" : "enemy",
+        currHp,
+        maxHp,
+        currDef: 0,
+        intentions,
+        buffs: [],
+        cooldowns: {},
+    };
+}
+
+const rawEnemyCardFixtures = [
+    enemy("skunkette1", 200, 200, []),
+    enemy("skunk1", 300, 300, [rawIntentions.latexShower]),
+    enemy("queen1", 550, 750, [
+        rawIntentions.skunkGun,
+        rawIntentions.constructRainmaker,
+    ]),
+    enemy("queen2", 400, 750, [
+        rawIntentions.skunkGun,
+        rawIntentions.skunkCollar,
+        rawIntentions.callReinforcements,
+    ]),
+    enemy("queen3", 234, 750, [
+        rawIntentions.skunkGun,
+        rawIntentions.skunkCollar,
+        rawIntentions.callReinforcements,
+        rawIntentions.constructRainmaker,
+        rawIntentions.skunkPerfume,
+    ]),
+];
+
+export const enemyCardFixtures = rawEnemyCardFixtures.map((fixture) =>
+    createEnemyCardViewModel(fixture, presentation));
+
+const thresholds: ThresholdInfo = {
+    thresholds: {
+        light: 10,
+        moderate: 20,
+        heavy: 35,
+        severe: 50,
+        overwhelming: 70,
+    },
+    max: 100,
+};
+
+function binding(id: string, value: number, level: BindingLevel): Binding {
+    return { id, value, level, data: {}, status: [], tickEffects: [] };
+}
+
+function buff(id: string): Buff {
+    return { id };
+}
+
+function character(
+    id: string,
+    options: {
+        acted?: boolean;
+        standing?: boolean;
+        blockedMoveTypes?: Character["blockedMoveTypes"];
+        bindings?: Binding[];
+        buffs?: Buff[];
+    } = {},
+): Character {
+    return {
+        id,
+        acted: options.acted ?? false,
+        standing: options.standing ?? false,
+        bonusEscapes: 0,
+        bindings: options.bindings ?? [],
+        buffs: options.buffs ?? [],
+        cooldowns: {},
+        modifiers: {},
+        blockedMoveTypes: options.blockedMoveTypes ?? [],
+        data: {},
+    };
+}
+
+function action(
+    id: string,
+    reason?: FailureReason,
+    stanceReason?: FailureReason,
+): ActionView {
+    return {
+        id,
+        available: reason === undefined,
+        ...(reason ? { reason } : {}),
+        moves: [],
+        escapes: [],
+        stance: stanceReason
+            ? { available: false, reason: stanceReason }
+            : { available: true },
+    };
+}
+
+const rawPartyCardFixtures = [
     {
-        name: "Ko-chan",
-        id: "ko",
-        acted: false,
-        standing: false,
-        blockedMoveTypes: ["arms", "mouth"],
-        condition: condition({ label: "Immob", tone: "danger" }),
-        bindings: [
-            { id: "latexHead", label: "H", current: 72, max: 72, level: "severe" },
-            { id: "latexArms", label: "A", current: 27, max: 34, level: "moderate" },
-            { id: "latexTorso", label: "T", current: 89, max: 89, level: "max" },
-            { id: "latexLegs", label: "L", current: 0, max: 0, level: "none" },
-        ],
-        visibleEffects: ["Pounced", "Transformation", "+2 more"],
+        character: character("ko", {
+            blockedMoveTypes: ["arms", "mouth"],
+            bindings: [
+                binding("latexHead", 72, "severe"),
+                binding("latexArms", 27, "moderate"),
+                binding("latexTorso", 89, "max"),
+                binding("latexLegs", 0, "none"),
+            ],
+            buffs: [buff("pounce"), buff("transformation"), buff("empowerment"), buff("reflect")],
+        }),
+        action: action("ko"),
     },
     {
-        name: "Matsuko",
-        id: "matsuko",
-        acted: true,
-        standing: false,
-        blockedMoveTypes: ["mouth"],
-        bindings: [
-            { id: "latexHead", label: "H", current: 0, max: 0, level: "none" },
-            { id: "latexArms", label: "A", current: 0, max: 0, level: "none" },
-            { id: "latexTorso", label: "T", current: 54, max: 54, level: "severe" },
-            { id: "latexLegs", label: "L", current: 25, max: 25, level: "moderate" },
-        ],
-        visibleEffects: ["Pounced", "Burnout", "Empowerment"],
+        character: character("matsuko", {
+            acted: true,
+            blockedMoveTypes: ["mouth"],
+            bindings: [
+                binding("latexHead", 0, "none"),
+                binding("latexArms", 0, "none"),
+                binding("latexTorso", 54, "severe"),
+                binding("latexLegs", 25, "moderate"),
+            ],
+            buffs: [buff("pounce"), buff("burnout"), buff("empowerment")],
+        }),
+        action: action("matsuko", "actorAlreadyActed"),
     },
     {
-        name: "Hinari",
-        id: "hinari",
-        acted: false,
-        standing: true,
-        blockedMoveTypes: ["legs"],
-        bindings: [
-            { id: "latexHead", label: "H", current: 0, max: 0, level: "none" },
-            { id: "latexArms", label: "A", current: 26, max: 26, level: "moderate" },
-            { id: "latexTorso", label: "T", current: 27, max: 27, level: "moderate" },
-            { id: "latexLegs", label: "L", current: 80, max: 80, level: "max" },
-        ],
-        visibleEffects: ["Pounced", "Latex Mist", "+4 buffs"],
+        character: character("hinari", {
+            standing: true,
+            blockedMoveTypes: ["legs"],
+            bindings: [
+                binding("latexHead", 0, "none"),
+                binding("latexArms", 26, "moderate"),
+                binding("latexTorso", 27, "moderate"),
+                binding("latexLegs", 80, "max"),
+            ],
+            buffs: [buff("pounce"), buff("latexMist")],
+        }),
+        action: action("hinari"),
     },
-] as const satisfies readonly PartyCardData[];
+    {
+        character: character("ko", {
+            standing: true,
+            blockedMoveTypes: ["legs"],
+            bindings: [
+                binding("latexHead", 20, "moderate"),
+                binding("latexArms", 35, "heavy"),
+                binding("latexTorso", 50, "severe"),
+                binding("latexLegs", 70, "overwhelming"),
+            ],
+        }),
+        action: action("ko", undefined, "actorImmobilized"),
+    },
+    {
+        character: character("matsuko", {
+            blockedMoveTypes: ["arms", "mouth", "legs"],
+            bindings: [
+                binding("latexHead", 100, "max"),
+                binding("latexArms", 100, "max"),
+                binding("latexTorso", 100, "max"),
+                binding("latexLegs", 100, "max"),
+            ],
+            buffs: [buff("servitude")],
+        }),
+        action: action("matsuko", "actorIncapacitated"),
+    },
+];
+
+export const partyCardFixtures = rawPartyCardFixtures.map((fixture) =>
+    createPartyCardViewModel(fixture.character, fixture.action, thresholds, presentation));

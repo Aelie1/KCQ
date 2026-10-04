@@ -1,9 +1,12 @@
 import type {
     BindingId,
     BindingLevel,
-    Character,
-    Enemy,
+    Buff,
+    EntityId,
     HitBand,
+    Intention,
+    MoveType,
+    StanceId,
 } from "../../../../engine/public/types";
 
 export type StatusChipTone = "danger" | "neutral" | "outcome" | "success" | "warning";
@@ -12,15 +15,27 @@ export type StatusChipSize = "compact" | "standard";
 export type IntentOutcome = Exclude<HitBand, "none">;
 
 export interface IntentRowData {
-    move: string;
+    moveLabel: string;
     outcome?: IntentOutcome;
-    target?: string;
+    outcomeLabel?: string;
+    targetLabel?: string;
 }
 
-export type EnemyCardEnemy = Pick<Enemy, "currHp" | "id" | "maxHp">;
-export type EnemyCardIntentions =
-    | readonly [IntentRowData]
-    | readonly [IntentRowData, IntentRowData];
+export interface IntentViewModel extends IntentRowData {
+    intention: Intention;
+}
+
+export interface EnemyCardData {
+    currentHp: number;
+    id: EntityId;
+    intentions: readonly IntentViewModel[];
+    maxHp: number;
+    name: string;
+    overflowAriaLabel?: string;
+    overflowCount: number;
+    overflowLabel?: string;
+    visibleIntentions: readonly IntentViewModel[];
+}
 
 export interface BindingMetricData {
     current: number;
@@ -30,16 +45,48 @@ export interface BindingMetricData {
     max: number;
 }
 
-export type PartyCardCharacter = Pick<Character, "acted" | "blockedMoveTypes" | "id" | "standing">;
+export type PartyActionStateKind =
+    | "acted"
+    | "incapacitated"
+    | "immobilized"
+    | "ready"
+    | "skipped"
+    | "unavailable";
 
-export interface PartyCondition {
+export interface PartyActionState {
+    kind: PartyActionStateKind;
     label: string;
-    tone: Extract<StatusChipTone, "danger" | "success" | "warning">;
+    tone: Extract<StatusChipTone, "danger" | "neutral" | "success">;
 }
 
-export interface PartyCardData extends PartyCardCharacter {
+export interface PartyStanceState {
+    kind: StanceId;
+    label: string;
+    tone: "success" | "warning";
+}
+
+export interface BlockedCapabilityData {
+    kind: Exclude<MoveType, "none">;
+    label: string;
+}
+
+export interface PartyCardAccessibility {
+    bindingsLabel: string;
+    blockedCapabilitiesLabel: string;
+    effectsLabel: string;
+}
+
+export interface PartyCardData {
+    accessibility: PartyCardAccessibility;
+    actionState: PartyActionState;
     bindings: readonly BindingMetricData[];
-    condition?: PartyCondition;
+    blockedCapabilities: readonly BlockedCapabilityData[];
+    effects: readonly Buff[];
+    effectsOverflowLabel?: string;
+    hiddenEffectCount: number;
+    id: EntityId;
     name: string;
+    noEffectsLabel: string;
+    stanceState: PartyStanceState;
     visibleEffects: readonly string[];
 }

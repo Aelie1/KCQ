@@ -1,30 +1,47 @@
 import { For, Show, type JSX } from "solid-js";
-import type { EnemyCardEnemy, EnemyCardIntentions } from "./componentTypes";
+import type { EnemyCardData } from "./componentTypes";
 import { IntentRow } from "./IntentRow";
+import { StatusChip } from "./StatusChip";
 
-export type { EnemyCardEnemy, EnemyCardIntentions } from "./componentTypes";
+export type { EnemyCardData } from "./componentTypes";
 
 export interface EnemyCardProps {
-    enemy: EnemyCardEnemy;
-    intentions: EnemyCardIntentions;
-    name: string;
+    enemy: EnemyCardData;
 }
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
     return (
-        <article class="kcq-enemy-card" aria-label={props.name}>
+        <article class="kcq-enemy-card" aria-label={props.enemy.name}>
             <header class="kcq-enemy-card__header">
-                <h3 class="kcq-enemy-card__name" title={props.name}>{props.name}</h3>
+                <h3 class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
                 <p class="kcq-enemy-card__hp">
-                    {props.enemy.currHp} / {props.enemy.maxHp}
+                    {props.enemy.currentHp} / {props.enemy.maxHp}
                 </p>
             </header>
-            <For each={props.intentions}>
-                {(intent) => <IntentRow intent={intent} />}
-            </For>
-            <Show when={props.intentions.length === 1}>
-                <div class="kcq-enemy-card__empty-intent" aria-hidden="true" />
-            </Show>
+            <div class="kcq-enemy-card__intentions">
+                <For each={[0, 1]}>
+                    {(index) => (
+                        <div class="kcq-enemy-card__intent-slot">
+                            <Show
+                                when={props.enemy.visibleIntentions[index]}
+                                fallback={<div class="kcq-enemy-card__empty-intent" aria-hidden="true" />}
+                            >
+                                {(intent) => <IntentRow intent={intent()} />}
+                            </Show>
+                            <Show when={index === 1 && props.enemy.overflowCount > 0}>
+                                <span
+                                    class="kcq-enemy-card__overflow"
+                                    aria-label={props.enemy.overflowAriaLabel}
+                                >
+                                    <StatusChip tone="neutral" size="compact">
+                                        {props.enemy.overflowLabel}
+                                    </StatusChip>
+                                </span>
+                            </Show>
+                        </div>
+                    )}
+                </For>
+            </div>
         </article>
     );
 }

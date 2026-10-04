@@ -166,9 +166,36 @@ button {
     font-weight: 700;
 }
 
+.kcq-enemy-card__intentions {
+    display: grid;
+    flex: 0 0 45px;
+    grid-template-rows: repeat(2, 20px);
+    gap: 5px;
+    min-width: 0;
+    height: 45px;
+}
+
+.kcq-enemy-card__intent-slot {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    height: 20px;
+}
+
+.kcq-enemy-card__intent-slot > .kcq-intent-row {
+    flex: 1 1 auto;
+    width: auto;
+}
+
 .kcq-enemy-card__empty-intent {
     flex: 0 0 20px;
     height: 20px;
+}
+
+.kcq-enemy-card__overflow {
+    display: inline-flex;
+    flex: 0 0 auto;
 }
 
 .kcq-party-card {
