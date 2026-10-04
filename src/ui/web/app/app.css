@@ -735,6 +735,182 @@ button {
     line-height: 1.5;
 }
 
+.kcq-game-log {
+    display: flex;
+    flex-direction: column;
+    width: 366px;
+    max-width: 100%;
+    min-width: 0;
+    height: 696px;
+    max-height: calc(100vh - 24px);
+    overflow: hidden;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 12px;
+    background: var(--kcq-surface-panel);
+}
+
+.kcq-game-log__header {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border-bottom: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-game-log__header p,
+.kcq-game-log__header h1 {
+    margin: 0;
+}
+
+.kcq-game-log__header p {
+    color: var(--kcq-accent-primary);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.kcq-game-log__header h1 {
+    margin-top: 2px;
+    color: var(--kcq-text-primary);
+    font-size: 18px;
+    line-height: 22px;
+}
+
+.kcq-game-log__header>span {
+    color: var(--kcq-text-dim);
+    font-size: 10px;
+    white-space: nowrap;
+}
+
+.kcq-game-log__scroll {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 0;
+    padding: 10px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: var(--kcq-surface-card);
+}
+
+.kcq-game-log__group {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+
+.kcq-game-log__group--action {
+    padding: 8px 9px;
+    border: 1px solid var(--kcq-structure-border);
+    border-left: 3px solid var(--kcq-structure-border-strong);
+    border-radius: 7px;
+    background: var(--kcq-surface-panel-alt);
+}
+
+.kcq-game-log__group--phase {
+    padding: 7px 4px;
+    border-top: 1px solid var(--kcq-structure-border-strong);
+    border-bottom: 1px solid var(--kcq-structure-border-strong);
+    background: var(--kcq-surface-inset);
+    text-align: center;
+}
+
+.kcq-game-log__group--system {
+    padding: 2px 9px;
+    color: var(--kcq-text-muted);
+}
+
+.kcq-game-log__line {
+    max-width: 100%;
+    color: var(--kcq-text-muted);
+    font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    font-size: 10px;
+    line-height: 15px;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+.kcq-game-log__line--actor-ko {
+    color: var(--kcq-state-special);
+}
+
+.kcq-game-log__line--actor-matsuko {
+    color: var(--kcq-state-warning);
+}
+
+.kcq-game-log__line--actor-hinari,
+.kcq-game-log__line--binding-light {
+    color: var(--kcq-binding-light);
+}
+
+.kcq-game-log__line--actor-enemy,
+.kcq-game-log__line--intent-crit,
+.kcq-game-log__line--binding-overwhelming {
+    color: var(--kcq-state-danger);
+}
+
+.kcq-game-log__line--intent-miss,
+.kcq-game-log__line--binding-none {
+    color: var(--kcq-text-secondary);
+}
+
+.kcq-game-log__line--intent-graze,
+.kcq-game-log__line--binding-moderate,
+.kcq-game-log__line--accuracy-caution {
+    color: var(--kcq-binding-moderate);
+}
+
+.kcq-game-log__line--intent-hit,
+.kcq-game-log__line--binding-heavy,
+.kcq-game-log__line--accuracy-poor {
+    color: var(--kcq-binding-heavy);
+    font-weight: 700;
+}
+
+.kcq-game-log__line--intent-crit,
+.kcq-game-log__line--binding-severe,
+.kcq-game-log__line--binding-overwhelming,
+.kcq-game-log__line--accuracy-very-poor {
+    font-weight: 800;
+}
+
+.kcq-game-log__line--binding-severe {
+    color: var(--kcq-binding-severe);
+}
+
+.kcq-game-log__line--binding-max,
+.kcq-game-log__line--accuracy-very-poor {
+    background: var(--kcq-state-danger-bg);
+    color: var(--kcq-text-primary);
+    font-weight: 800;
+}
+
+.kcq-game-log__line--accuracy-good,
+.kcq-game-log__line--encounter-separator {
+    color: var(--kcq-state-success);
+}
+
+.kcq-game-log__line--encounter-separator {
+    font-weight: 800;
+}
+
+.kcq-game-log__line--phase-separator {
+    color: var(--kcq-text-primary);
+    font-weight: 800;
+}
+
+.kcq-game-log__line--current-log-action {
+    color: var(--kcq-text-primary);
+    font-weight: 800;
+}
+
+.kcq-game-log__line--transient-highlight {
+    background: var(--kcq-accent-primary-bg);
+}
+
 .kcq-character-details {
     display: flex;
     flex-direction: column;
