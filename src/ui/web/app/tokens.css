@@ -18,6 +18,7 @@
 
     --kcq-accent-primary: #22d3ee;
     --kcq-accent-primary-bg: #172554;
+    --kcq-accent-primary-deep: #07313a;
 
     --kcq-state-success: #34d399;
     --kcq-state-success-bg: #052e24;
@@ -27,6 +28,8 @@
     --kcq-state-danger-bg: #3b1018;
     --kcq-state-special: #c4b5fd;
     --kcq-state-special-bg: #2e1f55;
+    --kcq-state-special-vivid: #e879f9;
+    --kcq-state-special-deep: #34103a;
     --kcq-state-neutral-bg: #1e293b;
 
     --kcq-binding-light: #67e8f9;

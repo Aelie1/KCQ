@@ -1,7 +1,9 @@
 import { createSignal, Match, Switch, type JSX } from "solid-js";
 import { App } from "../App";
 import { battleOverviewFixture } from "../fixtures/battleOverview";
+import { characterDetailsFixture } from "../fixtures/characterDetails";
 import { BattleOverviewPanel } from "../panels/BattleOverviewPanel";
+import { CharacterDetailsPanel } from "../panels/CharacterDetailsPanel";
 import { ComponentGalleryPanel } from "../panels/ComponentGalleryPanel";
 import { PlaceholderPanel } from "../panels/PlaceholderPanel";
 import { PANEL_OPTIONS, PanelSwitcher, type PanelId } from "./PanelSwitcher";
@@ -24,6 +26,9 @@ export function DevApp(): JSX.Element {
                             </Match>
                             <Match when={panel() === "components"}>
                                 <ComponentGalleryPanel />
+                            </Match>
+                            <Match when={panel() === "character"}>
+                                <CharacterDetailsPanel {...characterDetailsFixture} />
                             </Match>
                         </Switch>
                     </App>
