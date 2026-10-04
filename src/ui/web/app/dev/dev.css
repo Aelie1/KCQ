@@ -1,0 +1,103 @@
+.dev-shell {
+    min-height: 100vh;
+    background: var(--kcq-surface-background);
+}
+
+.dev-panel-switcher {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1;
+    width: 180px;
+    padding: 1.25rem 0.85rem;
+    border-right: 1px solid var(--kcq-structure-border);
+    background: var(--kcq-surface-panel-alt);
+    box-shadow: 0.5rem 0 2rem var(--kcq-shadow-raised);
+}
+
+.dev-panel-switcher-title {
+    margin: 0 0 1.25rem;
+    color: var(--kcq-text-secondary);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+}
+
+.dev-panel-switcher-list {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.dev-panel-switcher-button {
+    width: 100%;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: var(--kcq-text-muted);
+    text-align: left;
+    cursor: pointer;
+}
+
+.dev-panel-switcher-button:hover,
+.dev-panel-switcher-button:focus-visible {
+    border-color: var(--kcq-structure-border-strong);
+    background: var(--kcq-surface-raised);
+    color: var(--kcq-text-primary);
+    outline: none;
+}
+
+.dev-panel-switcher-button.is-selected {
+    border-color: var(--kcq-accent-primary);
+    background: var(--kcq-accent-primary-bg);
+    color: var(--kcq-accent-primary);
+}
+
+.dev-workspace {
+    display: grid;
+    align-content: start;
+    justify-content: center;
+    min-height: 100vh;
+    margin-left: 180px;
+    padding: 2rem;
+}
+
+.dev-viewport-label {
+    align-self: end;
+    width: 390px;
+    max-width: 100%;
+    margin: 0 0 0.5rem;
+    color: var(--kcq-text-dim);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dev-game-viewport {
+    align-self: start;
+    width: 390px;
+    max-width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--kcq-structure-border-strong);
+    border-radius: 0.8rem;
+    background: var(--kcq-surface-panel);
+    box-shadow: 0 1.25rem 3rem var(--kcq-shadow-raised);
+}
+
+@media (max-width: 640px) {
+    .dev-panel-switcher {
+        position: static;
+        width: 100%;
+        border-right: 0;
+        border-bottom: 1px solid var(--kcq-structure-border);
+    }
+
+    .dev-panel-switcher-list {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .dev-workspace {
+        margin-left: 0;
+        padding: 1rem;
+    }
+}

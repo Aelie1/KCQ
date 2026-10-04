@@ -39,9 +39,11 @@
         "tsx": "^4.23.13",
         "typescript": "^7.0.2",
         "vite": "^8.2.2",
+        "vite-plugin-solid": "^2.11.14",
         "vitest": "^5.0.0"
     },
     "dependencies": {
-        "posthog-js": "^1.434.4"
+        "posthog-js": "^1.434.4",
+        "solid-js": "^1.9.15"
     }
 }

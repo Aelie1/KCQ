@@ -1,0 +1,112 @@
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+    min-width: 320px;
+    min-height: 100%;
+    margin: 0;
+}
+
+body {
+    background: var(--kcq-surface-background);
+    color: var(--kcq-text-primary);
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+button {
+    font: inherit;
+}
+
+.kcq-app {
+    min-height: 720px;
+    padding: 1rem;
+    background: var(--kcq-surface-panel);
+    color: var(--kcq-text-primary);
+}
+
+.kcq-panel {
+    display: grid;
+    gap: 1rem;
+}
+
+.kcq-panel-header {
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-panel-eyebrow {
+    margin: 0 0 0.35rem;
+    color: var(--kcq-accent-primary);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.kcq-panel-title {
+    margin: 0;
+    font-size: 1.35rem;
+}
+
+.kcq-panel-description {
+    margin: 0.45rem 0 0;
+    color: var(--kcq-text-muted);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.kcq-card {
+    padding: 1rem;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 0.7rem;
+    background: var(--kcq-surface-card);
+}
+
+.kcq-card-title {
+    margin: 0 0 0.8rem;
+    color: var(--kcq-text-secondary);
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.kcq-fixture-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.55rem;
+    margin: 0;
+}
+
+.kcq-fixture-value {
+    min-width: 0;
+    padding: 0.65rem;
+    border-radius: 0.45rem;
+    background: var(--kcq-surface-inset);
+}
+
+.kcq-fixture-value dt {
+    color: var(--kcq-text-dim);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+}
+
+.kcq-fixture-value dd {
+    margin: 0.3rem 0 0;
+    color: var(--kcq-state-success);
+    font-weight: 700;
+    text-transform: capitalize;
+}
+
+.kcq-placeholder-note {
+    margin: 0;
+    padding: 0.9rem;
+    border: 1px dashed var(--kcq-structure-border-strong);
+    border-radius: 0.55rem;
+    background: var(--kcq-state-neutral-bg);
+    color: var(--kcq-text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}

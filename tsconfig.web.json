@@ -1,11 +1,14 @@
 {
     "extends": "./tsconfig.json",
     "compilerOptions": {
+        "jsx": "preserve",
+        "jsxImportSource": "solid-js",
         "module": "ESNext",
         "moduleResolution": "Bundler",
         "types": ["node", "vite/client"]
     },
     "include": [
-        "src/**/*.ts"
+        "src/**/*.ts",
+        "src/**/*.tsx"
     ]
 }
