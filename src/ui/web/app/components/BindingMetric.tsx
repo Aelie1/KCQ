@@ -26,7 +26,7 @@ export function BindingMetric(props: BindingMetricProps): JSX.Element {
                 class="kcq-binding-metric__value"
                 classList={{ [`kcq-binding-metric__value--${BINDING_TONE[props.metric.level]}`]: true }}
             >
-                {props.metric.current}/{props.metric.max}
+                {props.metric.current}
             </span>
         </span>
     );

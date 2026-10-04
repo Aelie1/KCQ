@@ -1,4 +1,4 @@
-import { englishStrings } from "../../../../../localization/en";
+import { englishStrings } from "../../../../../localization/en/index";
 import type {
     ActionView,
     Binding,
