@@ -352,7 +352,7 @@ button {
     align-items: stretch;
     gap: 5px;
     width: 180px;
-    min-height: 82px;
+    height: auto;
     padding: 8px 7px;
     overflow: hidden;
     border: 1px solid var(--kcq-structure-border);
@@ -366,8 +366,6 @@ button {
     flex-wrap: wrap;
     gap: 3px;
     min-width: 0;
-    max-height: 17px;
-    overflow: hidden;
 }
 
 .kcq-enemy-card__header {
@@ -405,11 +403,9 @@ button {
 
 .kcq-enemy-card__intentions {
     display: grid;
-    flex: 0 0 45px;
-    grid-template-rows: repeat(2, 20px);
+    grid-auto-rows: 20px;
     gap: 5px;
     min-width: 0;
-    height: 45px;
 }
 
 .kcq-enemy-card__intent-slot {
@@ -423,11 +419,6 @@ button {
 .kcq-enemy-card__intent-slot>.kcq-intent-row {
     flex: 1 1 auto;
     width: auto;
-}
-
-.kcq-enemy-card__empty-intent {
-    flex: 0 0 20px;
-    height: 20px;
 }
 
 .kcq-enemy-card__overflow {
@@ -1902,8 +1893,19 @@ button {
 
 .kcq-buff-effect,
 .kcq-binding-effect {
-    grid-template-columns: 3px minmax(0, 1fr);
+    grid-template-columns: 3px auto minmax(0, 1fr);
     align-items: stretch;
+}
+
+.kcq-buff-effect>.kcq-preview-effect__accent,
+.kcq-binding-effect>.kcq-preview-effect__accent {
+    align-self: stretch;
+    height: auto;
+}
+
+.kcq-buff-effect>.kcq-preview-effect__tag,
+.kcq-binding-effect>.kcq-preview-effect__tag {
+    align-self: center;
 }
 
 .kcq-buff-effect__content,
@@ -1934,19 +1936,26 @@ button {
     white-space: nowrap;
 }
 
-.kcq-buff-effect__secondary {
-    display: flex;
-    gap: 8px;
+.kcq-buff-effect__modifiers {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px 8px;
     min-width: 0;
-    padding-left: 68px;
-    overflow: hidden;
+}
+
+.kcq-buff-effect__details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
 }
 
 .kcq-effect-modifier {
     display: inline-grid;
-    grid-template-columns: auto 60px auto;
-    gap: 5px;
+    grid-template-columns: minmax(22px, auto) 60px minmax(16px, auto);
+    gap: 4px;
     align-items: center;
+    min-width: 0;
     color: var(--kcq-text-muted);
     font-size: 9px;
     text-transform: uppercase;
@@ -1962,10 +1971,38 @@ button {
     font-size: 10px;
 }
 
+.kcq-binding-effect--none {
+    color: var(--kcq-text-dim);
+}
+
+.kcq-binding-effect--light {
+    color: var(--kcq-binding-light);
+}
+
+.kcq-binding-effect--moderate {
+    color: var(--kcq-binding-moderate);
+}
+
+.kcq-binding-effect--heavy {
+    color: var(--kcq-binding-heavy);
+}
+
+.kcq-binding-effect--severe {
+    color: var(--kcq-binding-severe);
+}
+
+.kcq-binding-effect--overwhelming,
+.kcq-binding-effect--max {
+    color: var(--kcq-binding-impossible);
+}
+
+.kcq-binding-effect>.kcq-preview-effect__tag {
+    background: var(--kcq-surface-raised);
+}
+
 .kcq-binding-effect__bar {
     position: relative;
     height: 7px;
-    margin-left: 68px;
     overflow: hidden;
     border-radius: 4px;
     background: var(--kcq-surface-raised);
@@ -1977,14 +2014,43 @@ button {
     border-radius: inherit;
 }
 
-.kcq-binding-effect__projected {
+.kcq-binding-effect__current {
     z-index: 1;
-    background: var(--kcq-state-special-vivid);
+    opacity: 0.35;
 }
 
-.kcq-binding-effect__current {
-    background: var(--kcq-state-special);
-    opacity: 0.35;
+.kcq-binding-effect__projected {
+    z-index: 2;
+}
+
+.kcq-binding-effect__bar.is-increase .kcq-binding-effect__current {
+    z-index: 3;
+    opacity: 1;
+}
+
+.kcq-binding-effect__segment--none {
+    background: var(--kcq-text-dim);
+}
+
+.kcq-binding-effect__segment--light {
+    background: var(--kcq-binding-light);
+}
+
+.kcq-binding-effect__segment--moderate {
+    background: var(--kcq-binding-moderate);
+}
+
+.kcq-binding-effect__segment--heavy {
+    background: var(--kcq-binding-heavy);
+}
+
+.kcq-binding-effect__segment--severe {
+    background: var(--kcq-binding-severe);
+}
+
+.kcq-binding-effect__segment--overwhelming,
+.kcq-binding-effect__segment--max {
+    background: var(--kcq-binding-impossible);
 }
 
 .kcq-damage-profile {
@@ -2004,7 +2070,7 @@ button {
     align-items: center;
     min-width: 0;
     color: var(--kcq-text-muted);
-    font-size: 9px;
+    font-size: 10px;
     font-weight: 700;
     line-height: 13px;
     text-align: center;
@@ -2013,7 +2079,7 @@ button {
 
 .kcq-damage-profile__band strong {
     color: var(--kcq-text-muted);
-    font-size: 10px;
+    font-size: 11px;
 }
 
 .kcq-damage-profile__band strong.is-emphasized {

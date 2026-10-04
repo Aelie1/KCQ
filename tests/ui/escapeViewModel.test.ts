@@ -161,6 +161,46 @@ describe("escape view model", () => {
         expect(ko.choices.find(({ binding }) => binding === "latexHead")?.displayOnly).toBe(true);
     });
 
+    it("keeps a completely clean character visible and projects selected Spread into its display-only slot", () => {
+        const fixture = escapeFixtures.unselected;
+        const actions = fixture.actions.map((action) => action.id === "ko"
+            ? {
+                ...action,
+                escapes: [{
+                    available: true,
+                    target: "hinari",
+                    binding: "latexLegs",
+                    effects: [
+                        { type: "binding" as const, target: "hinari", binding: "latexLegs", amount: -8 },
+                        { type: "binding" as const, target: "matsuko", binding: "latexArms", amount: 12 },
+                    ],
+                }],
+            }
+            : action);
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "matsuko"
+                ? { ...character, bindings: [] }
+                : character),
+        };
+        const selectedId = escapeChoiceId(actions[0].escapes[0], 0);
+        const model = createEscapeViewModel(
+            state, actions, fixture.actorId, fixture.thresholds, fixture.presentation, selectedId,
+        );
+        const matsuko = model.groups.find(({ id }) => id === "matsuko")!;
+
+        expect(model.groups.map(({ id }) => id)).toEqual(["ko", "matsuko", "hinari"]);
+        expect(matsuko.choices.map(({ binding, currentValue }) => [binding, currentValue])).toEqual([
+            ["latexHead", 0], ["latexArms", 0], ["latexTorso", 0], ["latexLegs", 0],
+        ]);
+        expect(matsuko.choices.every(({ displayOnly, available }) => displayOnly && !available)).toBe(true);
+        expect(matsuko.choices.find(({ binding }) => binding === "latexArms")?.projection).toEqual({
+            amount: 12,
+            projectedValue: 12,
+            tone: "light",
+        });
+    });
+
     it("advertises SELF and ALLY only for currently available escapes", () => {
         const fixture = escapeFixtures.unselected;
         const variants = [

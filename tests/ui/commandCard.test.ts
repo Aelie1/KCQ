@@ -45,7 +45,7 @@ describe("command card", () => {
         expect(nameRule).not.toContain("text-overflow: ellipsis");
         expect(nameRule).not.toContain("white-space: nowrap");
         expect(reasonRule).toContain("-webkit-line-clamp: 2");
-        expect(tagsRule).toContain("max-height: 32px");
+        expect(tagsRule).toContain("max-height: 36px");
         expect(tagsRule).toContain("overflow: hidden");
     });
 });

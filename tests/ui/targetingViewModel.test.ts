@@ -38,6 +38,12 @@ describe("targeting view model", () => {
             hit: { chance: 65, min: 24, max: 30 },
             crit: { chance: 10, min: 45, max: 60 },
         });
+        expect(model.targets[0].health).toEqual({
+            current: 152,
+            currentLabel: "152",
+            max: 200,
+            fillPercent: 76,
+        });
         expect(model.targets[0].effects[0]).toMatchObject({
             kind: "damage-profile",
             bands: [
@@ -205,7 +211,7 @@ describe("targeting view model", () => {
             kind: "buff",
             label: "Add Buff",
             name: "Fairy Transformation",
-            modifiers: [expect.objectContaining({ label: "Defense", signedValue: "+3" })],
+            modifiers: [expect.objectContaining({ label: "DEF", signedValue: "+3" })],
             moveList: ["Add Reflect"],
         });
     });
@@ -253,7 +259,7 @@ describe("targeting view model", () => {
                     kind: "buff",
                     label: "Add Buff",
                     name: "Fairy Transformation",
-                    modifiers: [expect.objectContaining({ label: "Defense", signedValue: "+3" })],
+                    modifiers: [expect.objectContaining({ label: "DEF", signedValue: "+3" })],
                 }),
                 expect.objectContaining({
                     kind: "buff",
@@ -353,12 +359,14 @@ describe("targeting view model", () => {
 
         expect(effects[0]).toMatchObject({
             kind: "binding", currentValue: 27, projectedValue: 42,
-            level: "heavy", deltaLabel: "+15 Binding",
+            currentLevel: "moderate", projectedLevel: "heavy",
+            levelLabel: "Heavy", deltaLabel: "+15 Binding",
         });
         expect(effects[0]).not.toHaveProperty("recipient");
         expect(effects[1]).toMatchObject({
             kind: "binding", currentValue: 72, projectedValue: 40,
-            deltaLabel: "-32 Binding",
+            currentLevel: "severe", projectedLevel: "heavy",
+            levelLabel: "Heavy", deltaLabel: "-32 Binding",
         });
     });
 
@@ -444,8 +452,8 @@ describe("targeting view model", () => {
         expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
             label: "Add Debuff",
             modifiers: [
-                expect.objectContaining({ signedValue: "-2", direction: "right" }),
-                expect.objectContaining({ signedValue: "-2", direction: "right" }),
+                expect.objectContaining({ label: "DEF", signedValue: "-2", direction: "right" }),
+                expect.objectContaining({ label: "HIT", signedValue: "-2", direction: "right" }),
             ],
         });
         expect(model.actionEffectGroups[0].effects[1]).toMatchObject({

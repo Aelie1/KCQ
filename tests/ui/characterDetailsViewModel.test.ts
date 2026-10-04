@@ -303,6 +303,43 @@ describe("character details view model", () => {
             .toEqual(["self"]);
     });
 
+    it("tags Change Stance with the localized destination in both directions", () => {
+        const fixture = characterDetailsFixture;
+        const stanceTag = (standing: boolean) => {
+            const state = {
+                ...fixture.state,
+                characters: fixture.state.characters.map((character) => character.id === "ko"
+                    ? { ...character, standing }
+                    : character),
+            };
+            return createFocusedCharacterViewModel(
+                state, fixture.actions[0], fixture.thresholds, fixture.presentation,
+            ).commands.find(({ id }) => id === "stance")?.tags[0];
+        };
+
+        expect(stanceTag(true)).toMatchObject({ id: "stance-destination", label: "Moving" });
+        expect(stanceTag(false)).toMatchObject({ id: "stance-destination", label: "Standing" });
+    });
+
+    it("distinguishes no EscapeInfo targets from an engine-provided failure", () => {
+        const fixture = characterDetailsFixture;
+        const commandReason = (escapes: typeof fixture.actions[0]["escapes"]) => {
+            const action = { ...fixture.actions[0], escapes };
+            return createFocusedCharacterViewModel(
+                fixture.state, action, fixture.thresholds, fixture.presentation,
+            ).commands.find(({ id }) => id === "escape")?.reasonLabel;
+        };
+
+        expect(commandReason([])).toBe("No valid escape targets.");
+        expect(commandReason([{
+            available: false,
+            reason: "assistUnavailable",
+            target: "matsuko",
+            binding: "latexTorso",
+            effects: [],
+        }])).toBe("Cannot Assist");
+    });
+
     it("rejects a focused character without a matching public action view", () => {
         const fixture = characterDetailsFixture;
 

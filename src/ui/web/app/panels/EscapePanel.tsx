@@ -42,6 +42,22 @@ interface EscapeActionRegionProps {
     onExecute?: (target: EntityId, binding: BindingId) => void;
 }
 
+export interface EscapeExecutionTransition {
+    escape?: EscapeInfo;
+    selectedEscapeId: undefined;
+}
+
+export function beginEscapeExecution(
+    selectedEscapeId: string | undefined,
+    escapes: readonly EscapeInfo[],
+): EscapeExecutionTransition {
+    const escape = selectedEscapeId
+        ? escapes.find((candidate, index) => candidate.available
+            && escapeChoiceId(candidate, index) === selectedEscapeId)
+        : undefined;
+    return { selectedEscapeId: undefined, ...(escape ? { escape } : {}) };
+}
+
 export function EscapePanel(props: EscapePanelProps): JSX.Element {
     const characterModel = createMemo(() => createCharacterDetailsViewModel(
         props.state,
@@ -101,11 +117,10 @@ function EscapeActionRegion(props: EscapeActionRegionProps): JSX.Element {
     });
 
     const execute = (): void => {
-        const selectedId = selectedEscapeId();
-        if (!selectedId) return;
-        const selected = actorAction().escapes.find((escape, index) =>
-            escape.available && escapeChoiceId(escape, index) === selectedId);
-        if (selected) props.onExecute?.(selected.target, selected.binding);
+        const transition = beginEscapeExecution(selectedEscapeId(), actorAction().escapes);
+        if (!transition.escape) return;
+        setSelectedEscapeId(transition.selectedEscapeId);
+        props.onExecute?.(transition.escape.target, transition.escape.binding);
     };
 
     return (

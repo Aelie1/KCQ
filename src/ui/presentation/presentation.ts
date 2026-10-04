@@ -34,6 +34,7 @@ export type UiLabel =
     | "characterDetails.effectModifier"
     | "characterDetails.effectsHeading"
     | "characterDetails.escape"
+    | "characterDetails.noEscapeTargets"
     | "characterDetails.modifierValue"
     | "characterDetails.rosterLabel"
     | "characterDetails.rounds"
@@ -188,8 +189,8 @@ export class Presentation {
         return this.translate(this.definitionKey("battleState", state, "name"));
     }
 
-    modifier(modifier: ModifierId): string {
-        return this.translate(this.definitionKey("modifier", modifier, "name"));
+    modifier(modifier: ModifierId, variant: "name" | "compact" = "name"): string {
+        return this.translate(this.definitionKey("modifier", modifier, variant));
     }
 
     flag(flag: FlagId): string {

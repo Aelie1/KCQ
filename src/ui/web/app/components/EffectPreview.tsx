@@ -1,4 +1,4 @@
-import { For, Match, Switch, type JSX } from "solid-js";
+import { For, Match, Show, Switch, type JSX } from "solid-js";
 import type { EffectPreviewViewModel } from "../viewModels/targeting";
 import { DamageEffect } from "./DamageEffect";
 import { PipMeter } from "./PipMeter";
@@ -40,34 +40,40 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                     return (
                         <div class="kcq-preview-effect kcq-preview-effect--special kcq-buff-effect">
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
+                            <span class="kcq-preview-effect__tag">{buff.label}</span>
                             <div class="kcq-buff-effect__content">
                                 <div class="kcq-buff-effect__header">
-                                    <span class="kcq-preview-effect__tag">{buff.label}</span>
                                     <strong class="kcq-preview-effect__payload">{buff.name}</strong>
                                     <EffectRecipient recipient={buff.recipient} />
                                     <span class="kcq-buff-effect__duration">{buff.durationLabel}</span>
                                 </div>
-                                <div class="kcq-buff-effect__secondary">
-                                    <For each={buff.modifiers}>
-                                        {(modifier) => (
-                                            <span class="kcq-effect-modifier">
-                                                <span>{modifier.label}</span>
-                                                <PipMeter
-                                                    active={modifier.value}
-                                                    direction={modifier.direction}
-                                                    tone={modifier.harmful ? "danger" : "success"}
-                                                />
-                                                <strong>{modifier.signedValue}</strong>
-                                            </span>
-                                        )}
-                                    </For>
-                                    <For each={buff.moveList}>
-                                        {(detail) => <StatusChip size="compact">{detail}</StatusChip>}
-                                    </For>
-                                    <For each={buff.details}>
-                                        {(detail) => <StatusChip size="compact">{detail}</StatusChip>}
-                                    </For>
-                                </div>
+                                <Show when={buff.modifiers.length > 0}>
+                                    <div class="kcq-buff-effect__modifiers">
+                                        <For each={buff.modifiers}>
+                                            {(modifier) => (
+                                                <span class="kcq-effect-modifier">
+                                                    <span>{modifier.label}</span>
+                                                    <PipMeter
+                                                        active={modifier.value}
+                                                        direction={modifier.direction}
+                                                        tone={modifier.harmful ? "danger" : "success"}
+                                                    />
+                                                    <strong>{modifier.signedValue}</strong>
+                                                </span>
+                                            )}
+                                        </For>
+                                    </div>
+                                </Show>
+                                <Show when={buff.moveList.length > 0 || buff.details.length > 0}>
+                                    <div class="kcq-buff-effect__details">
+                                        <For each={buff.moveList}>
+                                            {(detail) => <StatusChip size="compact">{detail}</StatusChip>}
+                                        </For>
+                                        <For each={buff.details}>
+                                            {(detail) => <StatusChip size="compact">{detail}</StatusChip>}
+                                        </For>
+                                    </div>
+                                </Show>
                             </div>
                         </div>
                     );
@@ -77,22 +83,35 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                 {(effect) => {
                     const binding = effect() as Extract<EffectPreviewViewModel, { kind: "binding" }>;
                     return (
-                        <div class="kcq-preview-effect kcq-preview-effect--special kcq-binding-effect">
+                        <div class={`kcq-preview-effect kcq-binding-effect kcq-binding-effect--${binding.projectedLevel}`}>
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
+                            <span class="kcq-preview-effect__tag">{binding.label}</span>
                             <div class="kcq-binding-effect__content">
                                 <div class="kcq-binding-effect__header">
-                                    <span class="kcq-preview-effect__tag">{binding.label}</span>
                                     <strong class="kcq-preview-effect__payload">{binding.bindingName}</strong>
                                     <EffectRecipient recipient={binding.recipient} />
-                                    <span class={`kcq-binding-effect__level kcq-escape-value--${binding.level}`}>
+                                    <span class={`kcq-binding-effect__level kcq-escape-value--${binding.projectedLevel}`}>
                                         {binding.levelLabel}
                                     </span>
                                     <strong>{binding.currentValue} → {binding.projectedValue}</strong>
                                     <strong>{binding.deltaLabel}</strong>
                                 </div>
-                                <div class="kcq-binding-effect__bar" aria-hidden="true">
-                                    <span class="kcq-binding-effect__projected" style={{ width: `${binding.projectedPercent}%` }} />
-                                    <span class="kcq-binding-effect__current" style={{ width: `${binding.currentPercent}%` }} />
+                                <div
+                                    class="kcq-binding-effect__bar"
+                                    classList={{
+                                        "is-increase": binding.projectedValue > binding.currentValue,
+                                        "is-decrease": binding.projectedValue < binding.currentValue,
+                                    }}
+                                    aria-hidden="true"
+                                >
+                                    <span
+                                        class={`kcq-binding-effect__current kcq-binding-effect__segment--${binding.currentLevel}`}
+                                        style={{ width: `${binding.currentPercent}%` }}
+                                    />
+                                    <span
+                                        class={`kcq-binding-effect__projected kcq-binding-effect__segment--${binding.projectedLevel}`}
+                                        style={{ width: `${binding.projectedPercent}%` }}
+                                    />
                                 </div>
                             </div>
                         </div>

@@ -372,6 +372,7 @@ function createCommands(
         character,
         presentation,
     ));
+    const stanceDestination = character.standing ? "moving" : "standing";
 
     commands.push({
         id: "stance",
@@ -379,12 +380,15 @@ function createCommands(
         shortcutLabel: shortcutLabel(action.moves.length + 1, presentation),
         available: action.stance.available,
         ...reasonLabel(action.stance.available, action.stance.reason, presentation),
-        tags: [],
+        tags: [tag(
+            "stance-destination",
+            presentation.stance(stanceDestination),
+            stanceDestination === "moving" ? "success" : "warning",
+        )],
     });
 
     const availableEscape = action.escapes.some(({ available }) => available);
-    const escapeReason = action.escapes.find(({ reason }) => reason)?.reason
-        ?? (action.escapes.length === 0 ? "escapeUnavailable" : undefined);
+    const escapeReason = action.escapes.find(({ reason }) => reason)?.reason;
     const escapeTargets = new Set(action.escapes
         .filter(({ available }) => available)
         .map(({ target }) => target));
@@ -401,7 +405,9 @@ function createCommands(
         name: presentation.ui("characterDetails.escape"),
         shortcutLabel: shortcutLabel(0, presentation),
         available: availableEscape,
-        ...reasonLabel(availableEscape, escapeReason, presentation),
+        ...(action.escapes.length === 0
+            ? { reasonLabel: presentation.ui("characterDetails.noEscapeTargets") }
+            : reasonLabel(availableEscape, escapeReason, presentation)),
         tags: escapeTags,
     });
 

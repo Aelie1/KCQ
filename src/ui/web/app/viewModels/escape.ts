@@ -45,16 +45,14 @@ export function createEscapeViewModel(
     }));
     const selected = indexedEscapes.find(({ id, escape }) => id === selectedEscapeId && escape.available);
     const actionsById = new Map(actions.map((action) => [action.id, action]));
-    const targetIds = [...new Set(indexedEscapes.map(({ escape }) => escape.target))];
     const groups: EscapeTargetGroupViewModel[] = [];
 
-    for (const targetId of targetIds) {
-        const target = state.characters.find(({ id }) => id === targetId);
-        const targetAction = actionsById.get(targetId);
-        if (!target || !targetAction) throw new Error(`Missing character data for escape target ${targetId}.`);
+    for (const target of state.characters) {
+        const targetAction = actionsById.get(target.id);
+        if (!targetAction) throw new Error(`Missing character data for escape target ${target.id}.`);
 
         const entriesByBinding = new Map(indexedEscapes
-            .filter(({ escape }) => escape.target === targetId)
+            .filter(({ escape }) => escape.target === target.id)
             .map((entry) => [entry.escape.binding, entry]));
         const actionState = createCharacterActionState(target, targetAction, presentation);
         const stanceState = createCharacterStanceState(target, targetAction, presentation);

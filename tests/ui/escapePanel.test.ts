@@ -2,7 +2,8 @@ import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
 import { escapeFixtures } from "../../src/ui/web/app/fixtures/escape";
-import { EscapePanel } from "../../src/ui/web/app/panels/EscapePanel";
+import { beginEscapeExecution, EscapePanel } from "../../src/ui/web/app/panels/EscapePanel";
+import { escapeChoiceId } from "../../src/ui/web/app/viewModels/escape";
 
 function countClass(html: string, className: string): number {
     return [...html.matchAll(/class="([^"]*)"/g)]
@@ -27,6 +28,7 @@ describe("escape workflow composition", () => {
         expect(countClass(html, "kcq-character-commands")).toBe(0);
         expect(countClass(html, "kcq-escape")).toBe(1);
         expect(countClass(html, "kcq-escape-group")).toBe(3);
+        expect(countClass(html, "is-selected")).toBe(0);
         expect(executeButton).toContain("disabled");
     });
 
@@ -43,5 +45,19 @@ describe("escape workflow composition", () => {
         expect(html).toContain("Assist Hinari's Skunk Legs");
         expect(executeButton).toBeDefined();
         expect(executeButton).not.toContain("disabled");
+    });
+
+    it("clears selection as execution begins so a retained bonus-Escape screen starts clean", () => {
+        const fixture = escapeFixtures.selectedAssist;
+        const escapes = fixture.actions.find(({ id }) => id === fixture.actorId)?.escapes ?? [];
+        const selectedIndex = escapes.findIndex(({ target, binding }) =>
+            target === fixture.initialSelectedEscape.target
+            && binding === fixture.initialSelectedEscape.binding);
+        const selectedId = escapeChoiceId(escapes[selectedIndex], selectedIndex);
+
+        const transition = beginEscapeExecution(selectedId, escapes);
+
+        expect(transition.escape).toMatchObject(fixture.initialSelectedEscape);
+        expect(transition.selectedEscapeId).toBeUndefined();
     });
 });

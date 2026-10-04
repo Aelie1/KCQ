@@ -1,5 +1,5 @@
 import type {
-    AccuracyProfile, ActionInfo, ActionView, BandPreview, BuffEffect, Character, Effect,
+    AccuracyProfile, ActionInfo, ActionView, BandPreview, BindingLevel, BuffEffect, Character, Effect,
     EntityId, GameState, HitBand, ModifierId, PreviewProfile, ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
@@ -31,17 +31,21 @@ export interface BuffEffectViewModel {
     operation: BuffEffect["operation"]; recipient?: string; tone: "special"; type: "buff";
 }
 export interface BindingEffectViewModel {
-    bindingName: string; currentPercent: number; currentValue: number; deltaLabel: string; id: string;
-    kind: "binding"; label: string; level: ReturnType<typeof bindingLevelAtValue>; levelLabel: string;
-    projectedPercent: number; projectedValue: number; recipient?: string; tone: "special"; type: "binding";
+    bindingName: string; currentLevel: BindingLevel; currentPercent: number; currentValue: number;
+    deltaLabel: string; id: string; kind: "binding"; label: string; levelLabel: string;
+    projectedLevel: BindingLevel; projectedPercent: number; projectedValue: number;
+    recipient?: string; tone: "binding"; type: "binding";
 }
 export type EffectPreviewViewModel = BindingEffectViewModel | BuffEffectViewModel | CompactEffectViewModel | DamageProfileViewModel;
 
 export interface TargetPreviewViewModel {
     accuracy?: AccuracyProfile; characterSummary?: string; damage?: PreviewProfile;
-    effects: readonly EffectPreviewViewModel[]; fillPercent?: number; id: string;
-    linkedEntities: readonly LinkedEntityViewModel[]; maxValue?: number; name: string;
-    reasonLabel?: string; target: EntityId | null; valid: boolean; value?: number; valueLabel?: string;
+    effects: readonly EffectPreviewViewModel[]; health?: TargetHealthViewModel; id: string;
+    linkedEntities: readonly LinkedEntityViewModel[]; name: string;
+    reasonLabel?: string; target: EntityId | null; valid: boolean;
+}
+export interface TargetHealthViewModel {
+    current: number; currentLabel: string; fillPercent: number; max: number;
 }
 export interface TargetingViewModel {
     actionEffects: readonly EffectPreviewViewModel[]; actionEffectGroups: readonly ActionEffectGroupViewModel[];
@@ -185,9 +189,12 @@ function targetIdentity(
 ): Partial<TargetPreviewViewModel> {
     if (current !== undefined && max !== undefined) {
         return {
-            value: current, maxValue: max,
-            valueLabel: presentation.ui("targeting.value", { current, max }),
-            fillPercent: max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0,
+            health: {
+                current,
+                currentLabel: String(current),
+                max,
+                fillPercent: max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0,
+            },
         };
     }
     const action = character ? actions.find(({ id }) => id === character.id) : undefined;
@@ -278,7 +285,7 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
             ? { durationLabel: presentation.ui("characterDetails.rounds", { count: effect.buff.duration }) }
             : {}),
         modifiers: applying ? modifierEntries.slice(0, 2).map(([modifier, value]) => ({
-            label: presentation.modifier(modifier), value, signedValue: formatSignedNumber(value),
+            label: presentation.modifier(modifier, "compact"), value, signedValue: formatSignedNumber(value),
             harmful: isHarmfulModifierChange(modifier, value) === true,
             direction: value >= 0 ? "left" : "right",
         })) : [],
@@ -311,15 +318,16 @@ function createBindingEffect(
     }
     const currentValue = target.bindings.find(({ id: binding }) => binding === effect.binding)?.value ?? 0;
     const projectedValue = Math.max(0, currentValue + effect.amount);
-    const level = bindingLevelAtValue(projectedValue, context.thresholds);
+    const currentLevel = bindingLevelAtValue(currentValue, context.thresholds);
+    const projectedLevel = bindingLevelAtValue(projectedValue, context.thresholds);
     const percent = (value: number): number => context.thresholds!.max > 0
         ? Math.min(100, Math.max(0, (value / context.thresholds!.max) * 100)) : 0;
     return {
-        kind: "binding", id, type: "binding", tone: "special",
+        kind: "binding", id, type: "binding", tone: "binding",
         label: context.presentation.ui("targeting.effectBinding"),
         bindingName: context.presentation.binding(effect.binding), currentValue, projectedValue,
         deltaLabel: context.presentation.ui("targeting.bindingAmount", { amount: formatSignedNumber(effect.amount) }),
-        level, levelLabel: context.presentation.bindingLevel(level),
+        currentLevel, projectedLevel, levelLabel: context.presentation.bindingLevel(projectedLevel),
         currentPercent: percent(currentValue), projectedPercent: percent(projectedValue),
         ...(context.scopeTarget !== effect.target ? { recipient: context.presentation.entity(effect.target) } : {}),
     };

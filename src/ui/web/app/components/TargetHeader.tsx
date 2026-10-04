@@ -13,11 +13,15 @@ export function TargetHeader(props: TargetHeaderProps): JSX.Element {
             <For each={props.target.linkedEntities}>
                 {(link) => <LinkedEntityChip link={link} />}
             </For>
-            <Show when={props.target.valueLabel}>
-                <span class="kcq-target-header__meter" aria-hidden="true">
-                    <span style={{ width: `${props.target.fillPercent ?? 0}%` }} />
-                </span>
-                <span class="kcq-target-header__value">{props.target.valueLabel}</span>
+            <Show when={props.target.health} keyed>
+                {(health) => (
+                    <>
+                        <span class="kcq-target-header__meter" aria-hidden="true">
+                            <span style={{ width: `${health.fillPercent}%` }} />
+                        </span>
+                        <span class="kcq-target-header__value">{health.currentLabel}</span>
+                    </>
+                )}
             </Show>
             <Show when={props.target.characterSummary}>
                 <span class="kcq-target-header__character-state">

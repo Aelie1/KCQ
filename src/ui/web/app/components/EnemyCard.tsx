@@ -27,16 +27,11 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                 </div>
             </Show>
             <div class="kcq-enemy-card__intentions">
-                <For each={[0, 1]}>
-                    {(index) => (
+                <For each={props.enemy.visibleIntentions}>
+                    {(intent, index) => (
                         <div class="kcq-enemy-card__intent-slot">
-                            <Show
-                                when={props.enemy.visibleIntentions[index]}
-                                fallback={<div class="kcq-enemy-card__empty-intent" aria-hidden="true" />}
-                            >
-                                {(intent) => <IntentRow intent={intent()} />}
-                            </Show>
-                            <Show when={index === 1 && props.enemy.overflowCount > 0}>
+                            <IntentRow intent={intent} />
+                            <Show when={index() === props.enemy.visibleIntentions.length - 1 && props.enemy.overflowCount > 0}>
                                 <span
                                     class="kcq-enemy-card__overflow"
                                     aria-label={props.enemy.overflowAriaLabel}
