@@ -20,7 +20,7 @@ export function DevApp(): JSX.Element {
                     <App>
                         <Switch fallback={<PlaceholderPanel title={selectedLabel()} />}>
                             <Match when={panel() === "battle"}>
-                                <BattleOverviewPanel turn={battleOverviewFixture} />
+                                <BattleOverviewPanel {...battleOverviewFixture} />
                             </Match>
                             <Match when={panel() === "components"}>
                                 <ComponentGalleryPanel />

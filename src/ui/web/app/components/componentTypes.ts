@@ -48,7 +48,6 @@ export interface BindingMetricData {
 export type PartyActionStateKind =
     | "acted"
     | "incapacitated"
-    | "immobilized"
     | "ready"
     | "skipped"
     | "unavailable";

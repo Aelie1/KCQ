@@ -81,7 +81,7 @@
     overflow: hidden;
     border: 1px solid var(--kcq-structure-border-strong);
     border-radius: 0.8rem;
-    background: var(--kcq-surface-panel);
+    background: var(--kcq-surface-background);
     box-shadow: 0 1.25rem 3rem var(--kcq-shadow-raised);
 }
 

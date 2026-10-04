@@ -8,6 +8,8 @@ import type {
 } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { englishStrings } from "../../src/ui/presentation/localization/en";
+import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
+import { createBattleOverviewViewModel } from "../../src/ui/web/app/viewModels/battleOverview";
 import {
     createEnemyCardViewModel,
     summarizeIntentions,
@@ -73,7 +75,7 @@ describe("party card view model", () => {
     it.each([
         [undefined, undefined, false, "ready", "Ready"],
         ["actorAlreadyActed", undefined, true, "acted", "Acted"],
-        [undefined, "actorImmobilized", false, "immobilized", "Immobilized"],
+        [undefined, "actorImmobilized", false, "ready", "Ready"],
         ["actorIncapacitated", undefined, false, "incapacitated", "Incapacitated"],
         ["actorSkipped", undefined, false, "skipped", "Skipped"],
     ] as const)("maps engine state to %s / %s / %s as %s", (
@@ -93,6 +95,22 @@ describe("party card view model", () => {
         expect(model.actionState).toMatchObject({
             kind: expectedKind,
             label: expectedLabel,
+        });
+    });
+
+    it("keeps Ready action state independent from an immobilized stance", () => {
+        const model = createPartyCardViewModel(
+            character(),
+            action(undefined, "actorImmobilized"),
+            thresholds,
+            presentation,
+        );
+
+        expect(model.actionState).toMatchObject({ kind: "ready", label: "Ready" });
+        expect(model.stanceState).toMatchObject({
+            kind: "immobilized",
+            label: "Immobilized",
+            tone: "danger",
         });
     });
 
@@ -132,6 +150,53 @@ describe("party card view model", () => {
         expect(model.visibleEffects).toEqual(["Pounce", "Burnout"]);
         expect(model.hiddenEffectCount).toBe(2);
         expect(model.effectsOverflowLabel).toBe("+2 more");
+    });
+});
+
+describe("battle overview view model", () => {
+    it("composes localized battle, enemy, trap, and party models from engine views", () => {
+        const fixture = battleOverviewFixture;
+        const model = createBattleOverviewViewModel(
+            fixture.state,
+            fixture.actions,
+            fixture.thresholds,
+            fixture.presentation,
+        );
+
+        expect(model.header).toMatchObject({
+            encounterLabel: "Fight with Skunks",
+            roundLabel: "Round 4",
+            phaseLabel: "Enemy Phase",
+            trap: {
+                id: "trapPuddle",
+                label: "Latex Puddle",
+                amount: 57,
+                max: 100,
+                fillPercent: 57,
+                valueLabel: "57/100",
+            },
+        });
+        expect(model.enemiesCountLabel).toBe("6 remaining");
+        expect(model.enemies).toHaveLength(6);
+        expect(model.enemies[3].intentions).toHaveLength(3);
+        expect(model.enemies[3].visibleIntentions).toHaveLength(2);
+        expect(model.enemies[3].overflowCount).toBe(1);
+        expect(model.partyCountLabel).toBe("3 / 3");
+        expect(model.party[0].actionState.kind).toBe("ready");
+        expect(model.party[0].stanceState.kind).toBe("immobilized");
+        expect(model.party[1].stanceState.kind).toBe("moving");
+        expect(model.party[2].stanceState.kind).toBe("standing");
+    });
+
+    it("rejects a state without a matching public action view", () => {
+        const fixture = battleOverviewFixture;
+
+        expect(() => createBattleOverviewViewModel(
+            fixture.state,
+            fixture.actions.slice(1),
+            fixture.thresholds,
+            fixture.presentation,
+        )).toThrow("Missing ActionView for character ko.");
     });
 });
 
