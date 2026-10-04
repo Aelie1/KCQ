@@ -118,6 +118,38 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 type: effect.type,
                 move: effect.move.definition.id
             }
+        case "data":
+            if (effect.visible) {
+                return {
+                    type: effect.type,
+                    target: effect.target.id,
+                    name: effect.name,
+                    amount: effect.amount
+                }
+            }
+            break;
+        case "intention":
+            if (effect.operation === "cancel") {
+                return {
+                    type: effect.type,
+                    operation: effect.operation,
+                    target: effect.target.id,
+                    amount: effect.amount
+                }
+            } else if (effect.operation === "target") {
+                return {
+                    type: effect.type,
+                    operation: effect.operation,
+                    target: effect.target.id,
+                    destination: effect.destination.id
+                }
+            }
+        case "refresh":
+            return {
+                type: effect.type,
+                target: effect.target.id,
+            }
+
     }
 }
 

@@ -101,6 +101,7 @@ export const callReinforcements: MoveDef = {
     targetSide: "none",
     targets: 0,
     type: "none",
+    traits: ["spawn"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         const wave = move.data?.["wave"] ?? 1;
@@ -124,6 +125,7 @@ export const latexRainmaker: MoveDef = {
     targetSide: "none",
     targets: 0,
     type: "none",
+    traits: ["spawn"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         const wave = move.data?.["wave"] ?? 1;
@@ -154,6 +156,7 @@ export const skunkPerfume: MoveDef = {
     },
     check: "willpower",
     cooldown: { "skunkPerfume": 5 },
+    traits: ["debuff", "heal"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         const type = move.data?.["type"] ?? 0;

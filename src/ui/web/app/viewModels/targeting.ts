@@ -444,6 +444,37 @@ function createCompactEffect(
                 presentation.move(effect.move),
                 [],
             );
+        case "data":
+            return compactEffect(
+                id,
+                effect.type,
+                "primary",
+                presentation.ui("targeting.effectData"),
+                presentation.data(effect.name),
+                [presentation.entity(effect.target), effect.amount.toString()],
+            );
+        case "intention":
+            return compactEffect(
+                id,
+                effect.type,
+                "primary",
+                presentation.ui(effect.operation === "cancel" ?
+                    "targeting.effectCancel" : "targeting.effectRetarget"),
+                presentation.entity(effect.target),
+                [effect.operation === "cancel"
+                    ? effect.amount.toString()
+                    : presentation.entity(effect.destination)
+                ],
+            );
+        case "refresh":
+            return compactEffect(
+                id,
+                effect.type,
+                "primary",
+                presentation.ui("targeting.effectRefresh"),
+                presentation.entity(effect.target),
+                [],
+            );
     }
 }
 

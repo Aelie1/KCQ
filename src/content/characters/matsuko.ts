@@ -41,6 +41,7 @@ export const punch: MoveDef = {
     baseDamage: PUNCH_DAMAGE,
     type: "arms",
     accuracy: basicPlayerAccuracy,
+    traits: ["damage"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
@@ -54,6 +55,7 @@ export const kick: MoveDef = {
     baseDamage: KICK_DAMAGE,
     type: "legs",
     accuracy: basicPlayerAccuracy,
+    traits: ["damage"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
@@ -68,6 +70,7 @@ export const whiteFlame: MoveDef = {
     type: "arms",
     accuracy: basicPlayerAccuracy,
     modifiers: { hit: WHITE_FLAME_HIT },
+    traits: ["damage"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
@@ -94,6 +97,7 @@ export const phoenixKick: MoveDef = {
     type: "legs",
     accuracy: basicPlayerAccuracy,
     modifiers: { potency: PHOENIX_KICK_POTENCY },
+    traits: ["damage"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     }
@@ -119,6 +123,7 @@ export const immolation: MoveDef = {
     baseDamage: IMMOLATION_DAMAGE,
     type: "none",
     accuracy: basicPlayerAccuracy,
+    traits: ["damage", "onetime", "escape"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = basicDamageEffect(actor, move, targets);
 
@@ -162,6 +167,7 @@ export const obey: MoveDef = {
         "obey": OBEY_COMPULSION_COOLDOWN,
         "attackMe": DEFAULT_COMPULSION_COOLDOWN
     },
+    traits: ["debuff", "refresh"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
@@ -212,6 +218,7 @@ export const stop: MoveDef = {
         "obey": DEFAULT_COMPULSION_COOLDOWN,
         "attackMe": DEFAULT_COMPULSION_COOLDOWN
     },
+    traits: ["debuff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
@@ -246,6 +253,7 @@ export const attackMe: MoveDef = {
         "obey": DEFAULT_COMPULSION_COOLDOWN,
         "attackMe": ATTACKME_COMPULSION_COOLDOWN
     },
+    traits: ["buff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 

@@ -99,6 +99,7 @@ export const latexPuddle: MoveDef = {
         crit: 5
     },
     type: "none",
+    traits: ["trap"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 

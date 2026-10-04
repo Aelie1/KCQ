@@ -13,6 +13,10 @@ export const skunkStrings: StringTable = {
     "entity.skunketteQueen.name": "Skunkette Queen",
     "entity.skunkEmpress.name": "Skunk Empress",
 
+    "entity.skunketteKo.name": "Skunkette Ko",
+    "entity.skunketteMatsuko.name": "Skunkette Matsuko",
+    "entity.skunketteHinari.name": "Skunkette Hinari",
+
     "entity.skunkette.desc": "An unfortunate girl that has been trapped on her elbows and knees by a suit of living latex. The latex itself controls her body, and she can only watch on as she assaults anyone nearby, trying to create more skunks.",
     "entity.skunk.desc": "A cute forest animal... with a high gloss sheen. It sprays latex on anything that threatens it, and it covers the area in traps!",
     "entity.fairy.desc": "A tiny skunk with fairy wings. Just what kind of experiment created this being?",

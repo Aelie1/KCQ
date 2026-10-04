@@ -64,6 +64,7 @@ export const telekinesis: MoveDef = {
     targets: 1,
     baseDamage: TELEKINESIS_DAMAGE,
     type: "mouth",
+    traits: ["damage"],
     accuracy: basicPlayerAccuracy,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
@@ -90,6 +91,7 @@ export const starlightBindings: MoveDef = {
     targetSide: "enemy",
     targets: 1,
     type: "mouth",
+    traits: ["debuff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
@@ -140,6 +142,7 @@ export const reflect: MoveDef = {
     targetSide: "player",
     targets: 0,
     type: "mouth",
+    traits: ["buff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
@@ -178,6 +181,7 @@ export const fairyTransformation: MoveDef = {
     targetSide: "player",
     targets: 0,
     type: "mouth",
+    traits: ["buff"],
     cooldown: { "fairyTransformation": TRANSFORMATION_COOLDOWN },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
@@ -273,6 +277,7 @@ export const powerOfDenial: MoveDef = {
     targetSide: "either",
     targets: 1,
     type: "mouth",
+    traits: ["onetime", "escape"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 

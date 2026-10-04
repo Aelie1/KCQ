@@ -140,7 +140,11 @@ export type Effect =
     | BuffEffect
     | EnemyEffect
     | TrapEffect
-    | MoveEffect;
+    | MoveEffect
+    | DataEffect
+    | RetargetEffect
+    | RefreshEffect
+    | CancelEffect;
 
 export interface DamageEffect {
     type: "damage";
@@ -181,6 +185,33 @@ export interface MoveEffect {
     move: MoveId;
 }
 
+interface DataEffect {
+    type: "data"
+    target: EntityId;
+    name: string;
+    amount: number;
+}
+
+interface RetargetEffect {
+    type: "intention"
+    operation: "target";
+    target: EntityId;
+    destination: EntityId;
+}
+
+interface CancelEffect {
+    type: "intention"
+    operation: "cancel";
+    target: EntityId;
+    amount: number;
+}
+
+interface RefreshEffect {
+    type: "refresh"
+    target: EntityId;
+}
+
+
 /*******************************************************
  * Moves
  *******************************************************/
@@ -192,6 +223,7 @@ export interface Move {
     hits?: number;
     type: MoveType;
     binding?: BindingId;
+    traits?: MoveTrait[];
 }
 
 export type MoveType =
@@ -199,6 +231,18 @@ export type MoveType =
     | "mouth"
     | "legs"
     | "none";
+
+type MoveTrait =
+    | "damage"
+    | "buff"
+    | "debuff"
+    | "escape"
+    | "onetime"
+    | "refresh"
+    | "heal"
+    | "defeat"
+    | "spawn"
+    | "trap";
 
 export type MoveId = string;
 

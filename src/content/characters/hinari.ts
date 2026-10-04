@@ -40,7 +40,8 @@ function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, bu
                 type: "data",
                 target: target,
                 name: "subspace",
-                amount: subspaceAmount
+                amount: subspaceAmount,
+                visible: true
             });
             const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
             const currentBindingId = target.data["subspaceBinding"] ?? 0;
@@ -49,7 +50,8 @@ function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, bu
                     type: "data",
                     target: target,
                     name: "subspaceBinding",
-                    amount: bindingId - currentBindingId
+                    amount: bindingId - currentBindingId,
+                    visible: true
                 });
             }
         }
@@ -76,6 +78,7 @@ export const rockfall: MoveDef = {
     type: "arms",
     accuracy: basicPlayerAccuracy,
     baseHits: 4,
+    traits: ["damage"],
     getHits: function (actor: iEntity, move: MoveDef): number {
         if (actor.data["subspace"] === undefined) {
             return move.baseHits ?? 1;
@@ -113,6 +116,7 @@ export const store: MoveDef = {
     targetSide: "player",
     targets: 1,
     type: "arms",
+    traits: ["escape"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         if (actor.data["subspace"] === undefined || isEnemy(actor) || !state.encounter) {
@@ -150,14 +154,16 @@ export const store: MoveDef = {
                             type: "data",
                             target: actor,
                             name: "subspace",
-                            amount: subspaceAmount
+                            amount: subspaceAmount,
+                            visible: true
                         });
                         if (bindingId >= 0) {
                             effects.push({
                                 type: "data",
                                 target: actor,
                                 name: "subspaceBinding",
-                                amount: bindingId - currentBindingId
+                                amount: bindingId - currentBindingId,
+                                visible: false
                             });
                         }
                     }
@@ -205,6 +211,7 @@ export const brace: MoveDef = {
     targetSide: "none",
     targets: 0,
     type: "none",
+    traits: ["buff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
@@ -239,6 +246,7 @@ export const release: MoveDef = {
     targetSide: "either",
     targets: 1,
     type: "arms",
+    traits: ["debuff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         if (actor.data["subspace"] === undefined || actor.data["subspaceBinding"] === undefined || !state.encounter) {
@@ -269,7 +277,8 @@ export const release: MoveDef = {
                         type: "data",
                         target: actor,
                         name: "subspace",
-                        amount: -RELEASE_ENEMY_AMOUNT
+                        amount: -RELEASE_ENEMY_AMOUNT,
+                        visible: true
                     }]
                 });
             }
@@ -292,7 +301,8 @@ export const release: MoveDef = {
                             type: "data",
                             target: actor,
                             name: "subspace",
-                            amount: -subspaceAmount
+                            amount: -subspaceAmount,
+                            visible: true
                         }]
                     });
                 }

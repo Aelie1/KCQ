@@ -205,4 +205,5 @@ interface iDataEffect {
     target: iEntity;
     name: string;
     amount: number;
+    visible: boolean;
 }

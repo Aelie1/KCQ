@@ -16,6 +16,16 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
             return `${target}${effect.amount} ${effect.trap} created`;
         case "move":
             return `${target}${effect.move} used`;
+        case "data":
+            return `${target}${effect.name} : ${effect.amount}`
+        case "intention":
+            if (effect.operation === "cancel") {
+                return `${target} cancelled`
+            } else {
+                return `${target} target changed`
+            }
+        case "refresh":
+            return `${target} refreshed`
     }
 }
 
@@ -76,6 +86,19 @@ export function formatPreviewEffects(effects: readonly Effect[]): string {
                 break;
             case "move":
                 value = `${effect.move} used`;
+                break;
+            case "data":
+                value = `${effect.name} : ${effect.amount}`
+                break;
+            case "intention":
+                if (effect.operation === "cancel") {
+                    value = `${effect.target} cancelled`
+                } else {
+                    value = `${effect.target} target changed`
+                }
+                break;
+            case "refresh":
+                value = `${effect.target} refreshed`
                 break;
         }
         return value;

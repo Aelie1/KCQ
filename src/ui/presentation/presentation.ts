@@ -82,6 +82,10 @@ export type UiLabel =
     | "targeting.effectDamage"
     | "targeting.effectMove"
     | "targeting.effectTrap"
+    | "targeting.effectData"
+    | "targeting.effectCancel"
+    | "targeting.effectRetarget"
+    | "targeting.effectRefresh"
     | "targeting.operationAdd"
     | "targeting.operationDefeat"
     | "targeting.operationRemove"
@@ -155,6 +159,10 @@ export class Presentation {
 
     moveType(type: MoveType): string {
         return this.translate(this.definitionKey("moveType", type, "compact"));
+    }
+
+    data(type: string): string {
+        return this.translate(this.definitionKey("data", type, "name"));
     }
 
     ui(label: UiLabel, args?: Record<string, number | string | boolean>): string {

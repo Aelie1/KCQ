@@ -48,6 +48,7 @@ export const bindingMagic: MoveDef = {
         crit: 10
     },
     type: "none",
+    traits: ["buff"],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);
@@ -64,6 +65,7 @@ export const healingMagic: MoveDef = {
         crit: 5
     },
     type: "none",
+    traits: ["heal"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {
@@ -113,6 +115,7 @@ export const empoweringMagic: MoveDef = {
         crit: 5
     },
     type: "none",
+    traits: ["buff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {
@@ -170,6 +173,7 @@ export const barrierMagic: MoveDef = {
         crit: 5
     },
     type: "none",
+    traits: ["buff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         if (targets.length === 0) {

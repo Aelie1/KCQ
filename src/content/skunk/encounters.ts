@@ -81,13 +81,15 @@ export const forest_3: EncounterDef = {
                 type: "data",
                 target: queen,
                 name: "wave",
-                amount: 2
+                amount: 2,
+                visible: false
             });
             effects.push({
                 type: "data",
                 target: queen,
                 name: "rainmaker",
-                amount: 1
+                amount: 1,
+                visible: false
             });
         }
         return effects;
@@ -153,13 +155,15 @@ function towerBuffs(state: iGameState, queenName: string, enemyMod: number, quee
             type: "data",
             target: queen,
             name: "wave",
-            amount: queenWave
+            amount: queenWave,
+            visible: false
         });
         effects.push({
             type: "data",
             target: queen,
             name: "rainmaker",
-            amount: queenWave / 2
+            amount: queenWave / 2,
+            visible: false
         });
         if (enemyMod > 0) {
             effects.push({
