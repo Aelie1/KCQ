@@ -116,7 +116,7 @@ describe("targeting workflow composition", () => {
         expect(html).not.toContain("Ã‚");
     });
 
-    it("stacks localized BuffEffect operation and type labels", () => {
+    it("renders localized BuffEffect operation and type as one line", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const action: ActionInfo = {
             ...fixture.action,
@@ -131,7 +131,8 @@ describe("targeting workflow composition", () => {
 
         expect(html).toContain('class="kcq-preview-effect__tag kcq-buff-effect__tag"');
         expect(html).toContain('aria-label="Remove Debuff"');
-        expect(html).toContain("<span>Remove</span><span>Debuff</span>");
+        expect(html).toContain('aria-label="Remove Debuff">Remove Debuff</span>');
+        expect(html).not.toContain("<span>Remove</span><span>Debuff</span>");
     });
 
     it("allows the selected command name to wrap to two lines without displacing tags", () => {
@@ -151,5 +152,63 @@ describe("targeting workflow composition", () => {
         expect(headingRule).not.toContain("text-overflow: ellipsis");
         expect(tagsRule).toContain("flex-wrap: wrap");
         expect(tagsRule).toContain("min-width: 0");
+    });
+
+    it("uses the larger two-line command, binding, severity, and roster typography", () => {
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+        const commandNameRule = css.match(/\.kcq-command-card__name\s*\{([^}]*)\}/)?.[1] ?? "";
+        const bindingNameRule = css.match(/\.kcq-binding-effect__header \.kcq-preview-effect__payload\s*\{([^}]*)\}/)?.[1] ?? "";
+        const bindingLevelRule = css.match(/\.kcq-binding-effect__level\s*\{([^}]*)\}/)?.[1] ?? "";
+        const rosterStateRule = css.match(/\.kcq-character-roster__state\s*\{([^}]*)\}/)?.[1] ?? "";
+        const buffTagRule = css.match(/\.kcq-buff-effect__tag\s*\{([^}]*)\}/)?.[1] ?? "";
+
+        expect(commandNameRule).toContain("font-size: 12px");
+        expect(commandNameRule).toContain("line-height: 14px");
+        expect(commandNameRule).toContain("max-height: 28px");
+        expect(commandNameRule).toContain("-webkit-line-clamp: 2");
+        expect(bindingNameRule).toContain("font-size: 12px");
+        expect(bindingNameRule).toContain("font-weight: 700");
+        expect(bindingLevelRule).toContain("font-size: 11px");
+        expect(rosterStateRule).toContain("font-size: 10px");
+        expect(rosterStateRule).toContain("line-height: 12px");
+        expect(buffTagRule).toContain("white-space: nowrap");
+        expect(buffTagRule).not.toContain("flex-direction: column");
+    });
+
+    it("keeps the Binding chip stable while severity text and bars retain projected colors", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const renderBinding = (amount: number) => {
+            const action: ActionInfo = {
+                ...fixture.action,
+                effects: [{ type: "binding", target: "ko", binding: "latexArms", amount }],
+            };
+            return renderToString(() => createComponent(TargetingPanel, { ...fixture, action }));
+        };
+        const moderate = renderBinding(5);
+        const severe = renderBinding(40);
+
+        for (const html of [moderate, severe]) {
+            expect(html).toContain("kcq-preview-effect kcq-preview-effect--special kcq-binding-effect");
+            expect(html).not.toContain("kcq-binding-effect--moderate");
+            expect(html).not.toContain("kcq-binding-effect--severe");
+        }
+        expect(moderate).toContain("kcq-escape-value--moderate");
+        expect(moderate).toContain("kcq-binding-effect__segment--moderate");
+        expect(severe).toContain("kcq-escape-value--severe");
+        expect(severe).toContain("kcq-binding-effect__segment--severe");
+    });
+
+    it("renders action and stance summaries with EntityId identity classes", () => {
+        const html = renderToString(() => createComponent(
+            TargetingPanel,
+            targetingFixtures.telekinesisChoose,
+        ));
+
+        expect(html).toContain("Ready · Immobilized");
+        expect(html).toContain("Incapacitated · Moving");
+        expect(html).toContain("Skipped · Standing");
+        expect(html).toContain("kcq-character-roster__name kcq-player-identity--ko");
+        expect(html).toContain("kcq-character-roster__name kcq-player-identity--matsuko");
+        expect(html).toContain("kcq-character-roster__name kcq-player-identity--hinari");
     });
 });

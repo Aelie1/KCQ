@@ -8,6 +8,8 @@ const TELEKINESIS_DAMAGE = 30;
 export const TRANSFORMATION_BUFF = "transformation";
 const TRANSFORMATION_COOLDOWN = 3;
 
+const STARLIGHT_BUFF = "starlightBindings"
+
 const DENIAL_BUFF = "exhausted"
 
 function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
@@ -96,7 +98,7 @@ export const starlightBindings: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
 
         const buff: iBuff = {
-            id: move.definition.id,
+            id: STARLIGHT_BUFF,
             duration: 3,
             active: true,
             modifiers: {

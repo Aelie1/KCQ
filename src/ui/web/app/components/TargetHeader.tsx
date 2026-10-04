@@ -9,7 +9,13 @@ export interface TargetHeaderProps {
 export function TargetHeader(props: TargetHeaderProps): JSX.Element {
     return (
         <div class="kcq-target-header">
-            <strong class="kcq-target-header__name" title={props.target.name}>{props.target.name}</strong>
+            <strong
+                class="kcq-target-header__name"
+                classList={{ [`kcq-player-identity--${props.target.tone}`]: true }}
+                title={props.target.name}
+            >
+                {props.target.name}
+            </strong>
             <For each={props.target.linkedEntities}>
                 {(link) => <LinkedEntityChip link={link} iconOnly />}
             </For>

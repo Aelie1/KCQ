@@ -48,4 +48,22 @@ describe("character details panel", () => {
         expect(meterRule).toContain("width: 60px");
         expect(pipRule).toContain("width: 4px");
     });
+
+    it("places Hinari's public Subspace resource in the focused summary", () => {
+        const fixture = characterDetailsFixture;
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "hinari"
+                ? { ...character, data: { subspace: 27, subspaceMax: 100 } }
+                : character),
+        };
+        const html = renderToString(() => createComponent(CharacterDetailsPanel, {
+            ...fixture,
+            state,
+            focusedCharacterId: "hinari",
+        }));
+
+        expect(html).toContain('class="kcq-focused-character__resource">Subspace 27 / 100</span>');
+        expect(html).toContain('<h2 class="kcq-player-identity--hinari">Hinari</h2>');
+    });
 });

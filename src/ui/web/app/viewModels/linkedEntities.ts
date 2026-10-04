@@ -6,7 +6,8 @@ import type {
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 
-export type LinkedEntityTone = "hinari" | "ko" | "matsuko" | "neutral";
+export type PlayerTone = "hinari" | "ko" | "matsuko" | "neutral";
+export type LinkedEntityTone = PlayerTone;
 
 export interface LinkedEntityViewModel {
     accessibleLabel: string;
@@ -35,7 +36,7 @@ export function projectLinkedPlayers(
             }),
             id,
             name: presentation.entity(id),
-            tone: linkedPlayerTone(id),
+            tone: playerTone(id),
         });
     }
 
@@ -55,7 +56,7 @@ export function projectLinkedEntity(
             }),
             id,
             name: presentation.entity(id),
-            tone: linkedPlayerTone(character.id),
+            tone: playerTone(character.id),
         };
     }
     if (state.enemies.some(({ id: enemyId }) => enemyId === id)) {
@@ -71,7 +72,7 @@ export function projectLinkedEntity(
     return undefined;
 }
 
-export function linkedPlayerTone(id: EntityId): LinkedEntityTone {
+export function playerTone(id: EntityId): PlayerTone {
     switch (id) {
         case "ko":
         case "matsuko":

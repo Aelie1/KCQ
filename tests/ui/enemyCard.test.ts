@@ -48,6 +48,7 @@ describe("enemy card", () => {
                 valid: true,
                 effects: [],
                 linkedEntities: model.linkedEntities,
+                tone: "neutral",
             },
         }));
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");

@@ -25,7 +25,7 @@ import {
     createCharacterStanceState,
 } from "./characterState";
 import { projectBindingZones } from "./bindingZones";
-import { projectLinkedEntity, type LinkedEntityViewModel } from "./linkedEntities";
+import { playerTone, projectLinkedEntity, type LinkedEntityViewModel, type PlayerTone } from "./linkedEntities";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
 export type CommandTagTone = "ally" | "danger" | "neutral" | "primary" | "special" | "success" | "warning";
@@ -87,7 +87,13 @@ export interface FocusedCharacterViewModel {
         right: readonly ModifierMeterViewModel[];
     };
     name: string;
+    resource?: {
+        current: number;
+        label: string;
+        max: number;
+    };
     stanceState: PartyConditionState;
+    tone: PlayerTone;
 }
 
 export interface CharacterDetailsViewModel {
@@ -115,6 +121,9 @@ export interface CharacterDetailsViewModel {
         focused: boolean;
         id: EntityId;
         name: string;
+        stanceState: PartyConditionState;
+        summary: string;
+        tone: PlayerTone;
     }[];
 }
 
@@ -165,11 +174,19 @@ export function createCharacterDetailsViewModel(
             throw new Error(`Missing ActionView for character ${character.id}.`);
         }
 
+        const actionState = createCharacterActionState(character, action, presentation);
+        const stanceState = createCharacterStanceState(character, action, presentation);
         return {
             id: character.id,
             name: presentation.entity(character.id),
             focused: character.id === focusedId,
-            actionState: createCharacterActionState(character, action, presentation),
+            actionState,
+            stanceState,
+            summary: presentation.ui("targeting.characterSummary", {
+                action: actionState.label,
+                stance: stanceState.label,
+            }),
+            tone: playerTone(character.id),
         };
     });
 
@@ -221,12 +238,28 @@ export function createFocusedCharacterViewModel(
         throw new Error(`Missing Character for ActionView ${action.id}.`);
     }
 
+    const subspace = character.data["subspace"];
+    const subspaceMax = character.data["subspaceMax"];
+    const resource = Number.isFinite(subspace) && Number.isFinite(subspaceMax)
+        ? {
+            current: subspace,
+            max: subspaceMax,
+            label: presentation.ui("characterDetails.resourceValue", {
+                resource: presentation.data("subspace"),
+                current: subspace,
+                max: subspaceMax,
+            }),
+        }
+        : undefined;
+
     return {
         id: character.id,
         name: presentation.entity(character.id),
+        tone: playerTone(character.id),
         initial: presentation.entity(character.id).trim().charAt(0).toLocaleUpperCase(),
         actionState: createCharacterActionState(character, action, presentation),
         stanceState: createCharacterStanceState(character, action, presentation),
+        ...(resource ? { resource } : {}),
         modifiers: {
             left: LEFT_MODIFIERS.map((definition) => createModifierMeter(
                 definition,
@@ -382,7 +415,9 @@ function createCommands(
         ...reasonLabel(action.stance.available, action.stance.reason, presentation),
         tags: [tag(
             "stance-destination",
-            presentation.stance(stanceDestination),
+            presentation.ui("characterDetails.stanceTransition", {
+                stance: presentation.stance(stanceDestination),
+            }),
             stanceDestination === "moving" ? "success" : "warning",
         )],
     });

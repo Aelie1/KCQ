@@ -67,8 +67,7 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                         <div class="kcq-preview-effect kcq-preview-effect--special kcq-buff-effect">
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
                             <span class="kcq-preview-effect__tag kcq-buff-effect__tag" aria-label={buff.label}>
-                                <span>{buff.labelParts[0]}</span>
-                                <span>{buff.labelParts[1]}</span>
+                                {buff.label}
                             </span>
                             <div class="kcq-buff-effect__content">
                                 <div class="kcq-buff-effect__header">
@@ -112,7 +111,7 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                 {(effect) => {
                     const binding = effect() as Extract<EffectPreviewViewModel, { kind: "binding" }>;
                     return (
-                        <div class={`kcq-preview-effect kcq-binding-effect kcq-binding-effect--${binding.projectedLevel}`}>
+                        <div class="kcq-preview-effect kcq-preview-effect--special kcq-binding-effect">
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
                             <span class="kcq-preview-effect__tag">{binding.label}</span>
                             <div class="kcq-binding-effect__content">

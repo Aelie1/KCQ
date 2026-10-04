@@ -79,7 +79,7 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
 }
 
 function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
-    const model = createMemo(() => createTargetingViewModel(
+    const baseModel = createMemo(() => createTargetingViewModel(
         props.state,
         props.actorId,
         props.action,
@@ -93,12 +93,21 @@ function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
     ));
     let previousActionIdentity = actionIdentity();
     const [selectedTargets, setSelectedTargets] = createSignal(
-        sanitizeTargetSelection(props.initialSelectedTargetIds ?? [], model()),
+        sanitizeTargetSelection(props.initialSelectedTargetIds ?? [], baseModel()),
     );
+    const model = createMemo(() => createTargetingViewModel(
+        props.state,
+        props.actorId,
+        props.action,
+        props.presentation,
+        props.actions,
+        props.thresholds,
+        selectedTargets(),
+    ));
 
     createEffect(() => {
         const nextActionIdentity = actionIdentity();
-        const nextModel = model();
+        const nextModel = baseModel();
         setSelectedTargets((currentSelection) => reconcileTargetSelection(
             previousActionIdentity,
             nextActionIdentity,
@@ -156,7 +165,7 @@ function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
                         <For each={model().actionEffectGroups}>
                             {(group) => (
                                 <div class="kcq-targeting__action-effect-group">
-                                    <h3>{group.name}</h3>
+                                    <h3 class={`kcq-player-identity--${group.tone}`}>{group.name}</h3>
                                     <For each={group.effects}>
                                         {(effect) => <EffectPreview effect={effect} />}
                                     </For>

@@ -2,8 +2,8 @@ import type {
     ActionView, BindingEffect, BindingId, BindingLevel, EntityId, EscapeInfo, GameState, ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
-import type { CommandTagViewModel } from "./characterDetails";
 import { projectBindingZones } from "./bindingZones";
+import type { CommandTagViewModel } from "./characterDetails";
 import { createCharacterActionState, createCharacterStanceState } from "./characterState";
 import { bindingLevelAtValue } from "./presentationHelpers";
 
@@ -69,7 +69,7 @@ export function createEscapeViewModel(
                 currentTone: binding.level,
                 available: entry?.escape.available ?? false,
                 displayOnly: entry === undefined,
-                selected: selected?.id === entry?.id,
+                selected: selected !== undefined && selected?.id === entry?.id,
                 ...(projection ? { projection } : {}),
                 ...(entry && !entry.escape.available ? {
                     reasonLabel: entry.escape.reason

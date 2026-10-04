@@ -1,11 +1,11 @@
 import type {
-    AccuracyProfile, ActionInfo, ActionView, BandPreview, BindingLevel, BuffEffect, Character, Effect,
+    AccuracyProfile, ActionInfo, ActionView, BandPreview, BindingLevel, BuffEffect, Character, DataEffect, Effect,
     EntityId, GameState, HitBand, ModifierId, PreviewProfile, ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 import { createMoveTags, type CommandTagViewModel } from "./characterDetails";
 import { createCharacterActionState, createCharacterStanceState } from "./characterState";
-import { projectLinkedPlayers, type LinkedEntityViewModel } from "./linkedEntities";
+import { playerTone, projectLinkedPlayers, type LinkedEntityViewModel, type PlayerTone } from "./linkedEntities";
 import { bindingLevelAtValue, formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
 export type TargetingMode = "predetermined" | "selectable";
@@ -33,7 +33,7 @@ export interface BuffModifierViewModel {
 }
 export interface BuffEffectViewModel {
     details: readonly string[]; durationLabel?: string; id: string; kind: "buff"; label: string;
-    labelParts: readonly [string, string]; modifiers: readonly BuffModifierViewModel[]; moveList: readonly string[]; name: string;
+    modifiers: readonly BuffModifierViewModel[]; moveList: readonly string[]; name: string;
     operation: BuffEffect["operation"]; recipient?: string; tone: "special"; type: "buff";
 }
 export interface BindingEffectViewModel {
@@ -47,7 +47,7 @@ export type EffectPreviewViewModel = AccuracyProfileViewModel | BindingEffectVie
 export interface TargetPreviewViewModel {
     accuracy?: AccuracyProfile; characterSummary?: string; damage?: PreviewProfile;
     effects: readonly EffectPreviewViewModel[]; health?: TargetHealthViewModel; id: string;
-    linkedEntities: readonly LinkedEntityViewModel[]; name: string;
+    linkedEntities: readonly LinkedEntityViewModel[]; name: string; tone: PlayerTone;
     reasonLabel?: string; target: EntityId | null; valid: boolean;
 }
 export interface TargetHealthViewModel {
@@ -61,7 +61,7 @@ export interface TargetingViewModel {
     requiredTargetCount: number; targets: readonly TargetPreviewViewModel[];
 }
 export interface ActionEffectGroupViewModel {
-    effects: readonly EffectPreviewViewModel[]; id: EntityId; name: string;
+    effects: readonly EffectPreviewViewModel[]; id: EntityId; name: string; tone: PlayerTone;
 }
 interface EffectContext {
     actions: readonly ActionView[]; presentation: Presentation; scopeTarget?: EntityId; state: GameState; thresholds?: ThresholdInfo;
@@ -76,6 +76,7 @@ export function createTargetingViewModel(
     presentation: Presentation,
     actions: readonly ActionView[] = [],
     thresholds?: ThresholdInfo,
+    selectedTargets: readonly EntityId[] = [],
 ): TargetingViewModel {
     const actor = state.characters.find(({ id }) => id === actorId);
     if (!actor) throw new Error(`Missing Character for targeting actor ${actorId}.`);
@@ -85,6 +86,9 @@ export function createTargetingViewModel(
     const moveName = presentation.move(action.move.id);
     const context = { actions, state, presentation, thresholds };
     const grouped = groupActionEffects(action.effects, context);
+    const selectedDataEffects = targetDataEffects(action, selectedTargets);
+    const projectedDataEffects = selectedDataEffects.flatMap((effect, index) =>
+        createEffectPreviews(effect, `selected-data-effect-${index}`, context));
     const zeroTargetPreviewEffects = action.move.targets === 0
         ? action.targets.flatMap((preview, index) => preview.valid
             ? createPreviewEffects(preview, `action-preview-${index}`, context)
@@ -101,7 +105,7 @@ export function createTargetingViewModel(
         targets: action.move.targets === 0 ? [] : action.targets.map((preview, index) => createTargetPreview(
             state, actions, preview, index, presentation, thresholds,
         )),
-        actionEffects: [...zeroTargetPreviewEffects, ...grouped.ungrouped],
+        actionEffects: [...zeroTargetPreviewEffects, ...grouped.ungrouped, ...projectedDataEffects],
         actionEffectGroups: grouped.groups,
         labels: { actionEffects: presentation.ui("targeting.actionEffects") },
         controls: {
@@ -165,6 +169,7 @@ function createTargetPreview(
         id: targetId ?? `preview-${index}`,
         target: targetId,
         name: targetId ? presentation.entity(targetId) : "",
+        tone: character ? playerTone(character.id) : "neutral" as PlayerTone,
         linkedEntities: enemy ? projectLinkedPlayers(enemy.buffs, state.characters, presentation) : [],
     };
     const identity = targetIdentity(enemy?.currHp, enemy?.maxHp, character, actions, presentation);
@@ -175,17 +180,21 @@ function createTargetPreview(
         ...base, ...identity, valid: true, accuracy: preview.accuracy, damage: preview.damage,
         effects: createPreviewEffects(preview, base.id, {
             actions, state, presentation, thresholds, ...(targetId ? { scopeTarget: targetId } : {}),
-        }),
+        }, true),
     };
 }
 
 function createPreviewEffects(
     preview: Extract<ActionInfo["targets"][number], { valid: true }>, id: string, context: EffectContext,
+    omitDataEffects = false,
 ): EffectPreviewViewModel[] {
     const effects: EffectPreviewViewModel[] = [];
     if (preview.damage) effects.push(createDamageProfile(preview.damage, context.presentation));
     else if (preview.accuracy) effects.push(createAccuracyEffect(preview.accuracy, context.presentation));
-    effects.push(...preview.effects.map((effect, index) => createEffectPreview(effect, `${id}-effect-${index}`, context)));
+    effects.push(...preview.effects.flatMap((effect, index) =>
+        omitDataEffects && effect.type === "data"
+            ? []
+            : createEffectPreviews(effect, `${id}-effect-${index}`, context)));
     return effects;
 }
 
@@ -255,6 +264,42 @@ function createAccuracyEffect(accuracy: AccuracyProfile, presentation: Presentat
     };
 }
 
+function createEffectPreviews(effect: Effect, id: string, context: EffectContext): EffectPreviewViewModel[] {
+    if (effect.type !== "intention" || effect.operation !== "cancel") {
+        return [createEffectPreview(effect, id, context)];
+    }
+
+    const enemy = context.state.enemies.find(({ id: enemyId }) => enemyId === effect.target);
+    const boss = enemy?.rank === "boss";
+    const label = context.presentation.ui(boss ? "targeting.effectWeaken" : "targeting.effectCancel");
+    const percentage = context.presentation.ui("targeting.percentage", {
+        value: effect.amount * 100,
+    });
+    const intentions = enemy?.intentions ?? [];
+
+    if (intentions.length === 0) {
+        return [compactEffect(
+            id,
+            effect.type,
+            "primary",
+            label,
+            boss ? percentage : "",
+            recipientDetails(effect.target, context),
+        )];
+    }
+
+    return intentions.map((intention, index) => compactEffect(
+        `${id}-intention-${index}`,
+        effect.type,
+        "primary",
+        label,
+        boss
+            ? `${context.presentation.move(intention.move)} ${percentage}`
+            : context.presentation.move(intention.move),
+        recipientDetails(effect.target, context),
+    ));
+}
+
 function createEffectPreview(effect: Effect, id: string, context: EffectContext): EffectPreviewViewModel {
     const { presentation } = context;
     switch (effect.type) {
@@ -303,15 +348,12 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
         ? (debuff ? "targeting.effectAddDebuff" : "targeting.effectAddBuff")
         : (debuff ? "targeting.effectRemoveDebuff" : "targeting.effectRemoveBuff");
     const applying = effect.operation === "add";
-    const operationLabel = presentation.ui(applying ? "targeting.operationAdd" : "targeting.operationRemove");
-    const typeLabel = presentation.ui(debuff ? "characterDetails.tagDebuff" : "targeting.effectBuff");
     const currentMoves = new Set(context.actions
         .find(({ id: targetId }) => targetId === effect.target)
         ?.moves.map(({ move }) => move.id) ?? []);
     return {
         kind: "buff", id, type: "buff", tone: "special", operation: effect.operation,
         label: presentation.ui(operationKey), name: presentation.buff(effect.buff.id),
-        labelParts: [operationLabel, typeLabel],
         ...(applying && effect.buff.duration !== undefined
             ? { durationLabel: presentation.ui("characterDetails.rounds", { count: effect.buff.duration }) }
             : {}),
@@ -366,6 +408,50 @@ function createBindingEffect(
     };
 }
 
+function targetDataEffects(action: ActionInfo, selectedTargets: readonly EntityId[]): DataEffect[] {
+    if (action.move.targets === 0) return [];
+
+    const validTargets = action.targets.flatMap((preview) =>
+        preview.valid && preview.target !== null
+            ? [{
+                target: preview.target,
+                effects: preview.effects.filter((effect): effect is DataEffect => effect.type === "data"),
+            }]
+            : []);
+    if (validTargets.length === 0) return [];
+
+    let chosen: readonly DataEffect[][];
+    if (action.move.targets === "all") {
+        chosen = validTargets.map(({ effects }) => effects);
+    } else if (selectedTargets.length > 0) {
+        const selected = new Set(selectedTargets);
+        chosen = validTargets
+            .filter(({ target }) => selected.has(target))
+            .map(({ effects }) => effects);
+    } else {
+        const [first, ...rest] = validTargets.map(({ effects }) => effects);
+        const signature = dataEffectSetSignature(first);
+        if (rest.some((effects) => dataEffectSetSignature(effects) !== signature)) return [];
+        chosen = [first];
+    }
+
+    const seen = new Set<string>();
+    return chosen.flatMap((effects) => effects.filter((effect) => {
+        const key = dataEffectSignature(effect);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    }));
+}
+
+function dataEffectSetSignature(effects: readonly DataEffect[]): string {
+    return JSON.stringify(effects.map(dataEffectSignature).sort());
+}
+
+function dataEffectSignature(effect: DataEffect): string {
+    return JSON.stringify([effect.target, effect.name, effect.amount]);
+}
+
 function groupActionEffects(
     effects: readonly Effect[], context: Omit<EffectContext, "scopeTarget">,
 ): { groups: ActionEffectGroupViewModel[]; ungrouped: EffectPreviewViewModel[] } {
@@ -377,16 +463,21 @@ function groupActionEffects(
         const id = `action-effect-${index}`;
         const target = "target" in effect ? effect.target : undefined;
         if (target === undefined || !charactersById.has(target)) {
-            ungrouped.push(createEffectPreview(effect, id, context));
+            ungrouped.push(...createEffectPreviews(effect, id, context));
             return;
         }
         let group = groupsById.get(target);
         if (!group) {
             group = [];
             groupsById.set(target, group);
-            groups.push({ id: target, name: context.presentation.entity(target), effects: group });
+            groups.push({
+                id: target,
+                name: context.presentation.entity(target),
+                tone: playerTone(target),
+                effects: group,
+            });
         }
-        group.push(createEffectPreview(effect, id, { ...context, scopeTarget: target }));
+        group.push(...createEffectPreviews(effect, id, { ...context, scopeTarget: target }));
     });
     return { groups, ungrouped };
 }

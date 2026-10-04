@@ -310,6 +310,7 @@ describe("targeting view model", () => {
         expect(model.actionEffectGroups).toEqual([{
             id: "ko",
             name: "Ko-chan",
+            tone: "ko",
             effects: [
                 expect.objectContaining({
                     kind: "buff",
@@ -426,7 +427,7 @@ describe("targeting view model", () => {
         });
     });
 
-    it("suppresses same-scope recipients and retains cross-scope Resource/Data recipients", () => {
+    it("moves target-derived Resource/Data effects out of target cards", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const action: ActionInfo = {
             ...fixture.action,
@@ -444,10 +445,11 @@ describe("targeting view model", () => {
             fixture.actions, fixture.thresholds,
         );
 
-        expect(model.targets[0].effects[0]).toMatchObject({
-            label: "Data", payload: "[data.mystery.name] -4", details: [],
+        expect(model.targets[0].effects).toEqual([]);
+        expect(model.actionEffects[0]).toMatchObject({
+            label: "Data", payload: "Skunkette 1   [data.mystery.name] -4", details: [],
         });
-        expect(model.targets[0].effects[1]).toMatchObject({
+        expect(model.actionEffects[1]).toMatchObject({
             label: "Resource", payload: "Hinari   Subspace +25", details: [],
         });
     });
@@ -541,7 +543,6 @@ describe("targeting view model", () => {
         expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
             kind: "buff",
             label: "Add Debuff",
-            labelParts: ["Add", "Debuff"],
             name: "Servitude",
             durationLabel: "2 Rounds",
             details: ["Blocks Escape"],
@@ -588,5 +589,146 @@ describe("targeting view model", () => {
             ],
         });
         expect(JSON.stringify(model)).not.toContain("Block Fairy White Flame");
+    });
+
+    it("expands non-boss cancellation into named rows without percentages", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const state = {
+            ...fixture.state,
+            enemies: fixture.state.enemies.map((enemy) => enemy.id === "skunkette1"
+                ? {
+                    ...enemy,
+                    rank: "enemy" as const,
+                    intentions: [
+                        { move: "latexSpray", targets: [], effects: [] },
+                        { move: "pounce", targets: [], effects: [] },
+                    ],
+                }
+                : enemy),
+        };
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [{ type: "intention", operation: "cancel", target: "skunkette1", amount: 0.25 }],
+        };
+        const model = createTargetingViewModel(
+            state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.actionEffects).toEqual([
+            expect.objectContaining({ label: "Cancel", payload: "Latex Spray" }),
+            expect.objectContaining({ label: "Cancel", payload: "Pounce" }),
+        ]);
+        expect(JSON.stringify(model.actionEffects)).not.toContain("25%");
+        expect(JSON.stringify(model.actionEffects)).not.toContain("0.25");
+    });
+
+    it("projects a single non-boss intention as one named Cancel row", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const state = {
+            ...fixture.state,
+            enemies: fixture.state.enemies.map((enemy) => enemy.id === "skunkette1"
+                ? { ...enemy, intentions: [{ move: "latexSpray", targets: [], effects: [] }] }
+                : enemy),
+        };
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [{ type: "intention", operation: "cancel", target: "skunkette1", amount: 0.25 }],
+        };
+        const model = createTargetingViewModel(
+            state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.actionEffects).toEqual([
+            expect.objectContaining({ label: "Cancel", payload: "Latex Spray" }),
+        ]);
+    });
+
+    it("expands boss weakening in intention order with computed percentages", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const state = {
+            ...fixture.state,
+            enemies: fixture.state.enemies.map((enemy) => enemy.id === "skunketteQueen"
+                ? {
+                    ...enemy,
+                    rank: "boss" as const,
+                    intentions: [
+                        { move: "skunkGun", targets: [], effects: [] },
+                        { move: "latexRain", targets: [], effects: [] },
+                    ],
+                }
+                : enemy),
+        };
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [{ type: "intention", operation: "cancel", target: "skunketteQueen", amount: 0.25 }],
+        };
+        const model = createTargetingViewModel(
+            state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.actionEffects).toEqual([
+            expect.objectContaining({ label: "Weaken", payload: "Skunk Gun 25%" }),
+            expect.objectContaining({ label: "Weaken", payload: "Latex Rain 25%" }),
+        ]);
+
+        const fortyPercent = createTargetingViewModel(
+            state,
+            fixture.actorId,
+            { ...action, effects: [{ type: "intention", operation: "cancel", target: "skunketteQueen", amount: 0.4 }] },
+            fixture.presentation,
+            fixture.actions,
+            fixture.thresholds,
+        );
+        expect(fortyPercent.actionEffects[0]).toMatchObject({ payload: "Skunk Gun 40%" });
+    });
+
+    it("projects differing target resources only after selection and updates by target", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            move: { id: "release", targetSide: "either", targets: 1, type: "mouth" },
+            available: true,
+            targets: [
+                { valid: true, target: "ko", effects: [{ type: "data", target: "hinari", name: "subspace", amount: -50 }] },
+                { valid: true, target: "matsuko", effects: [{ type: "data", target: "hinari", name: "subspace", amount: -50 }] },
+                { valid: true, target: "skunkette1", effects: [{ type: "data", target: "hinari", name: "subspace", amount: -25 }] },
+            ],
+            effects: [],
+        };
+        const create = (selected: readonly string[] = []) => createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds, selected,
+        );
+
+        expect(create().actionEffects).toEqual([]);
+        expect(create().targets.every(({ effects }) => effects.length === 0)).toBe(true);
+        expect(create(["ko"]).actionEffects).toEqual([
+            expect.objectContaining({ label: "Resource", payload: "Hinari   Subspace -50" }),
+        ]);
+        expect(create(["skunkette1"]).actionEffects).toEqual([
+            expect.objectContaining({ label: "Resource", payload: "Hinari   Subspace -25" }),
+        ]);
+    });
+
+    it("shows one shared target resource before selection and deduplicates selected copies", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const resource = { type: "data" as const, target: "hinari", name: "subspace", amount: -25 };
+        const action: ActionInfo = {
+            move: { id: "release", targetSide: "enemy", targets: 2, type: "mouth" },
+            available: true,
+            targets: [
+                { valid: true, target: "skunkette1", effects: [resource] },
+                { valid: true, target: "skunkette2", effects: [resource] },
+            ],
+            effects: [],
+        };
+        const create = (selected: readonly string[] = []) => createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds, selected,
+        );
+
+        expect(create().actionEffects).toEqual([
+            expect.objectContaining({ payload: "Hinari   Subspace -25" }),
+        ]);
+        expect(create(["skunkette1", "skunkette2"]).actionEffects).toHaveLength(1);
     });
 });

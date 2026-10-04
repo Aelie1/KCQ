@@ -47,12 +47,17 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                             aria-pressed={character.focused}
                             onClick={() => props.onSelectCharacter?.(character.id)}
                         >
-                            <span class="kcq-character-roster__name">{character.name}</span>
+                            <span
+                                class="kcq-character-roster__name"
+                                classList={{ [`kcq-player-identity--${character.tone}`]: true }}
+                            >
+                                {character.name}
+                            </span>
                             <span
                                 class="kcq-character-roster__state"
                                 classList={{ [`kcq-character-roster__state--${character.actionState.tone}`]: true }}
                             >
-                                {character.actionState.label}
+                                {character.summary}
                             </span>
                         </button>
                     )}
@@ -63,13 +68,18 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                 <span class="kcq-focused-character__avatar" aria-hidden="true">
                     {props.model.focused.initial}
                 </span>
-                <h2>{props.model.focused.name}</h2>
+                <h2 class={`kcq-player-identity--${props.model.focused.tone}`}>{props.model.focused.name}</h2>
                 <StatusChip tone={props.model.focused.actionState.tone}>
                     {props.model.focused.actionState.label}
                 </StatusChip>
                 <StatusChip tone={props.model.focused.stanceState.tone}>
                     {props.model.focused.stanceState.label}
                 </StatusChip>
+                <Show when={props.model.focused.resource} keyed>
+                    {(resource) => (
+                        <span class="kcq-focused-character__resource">{resource.label}</span>
+                    )}
+                </Show>
             </article>
 
             <section class="kcq-character-section kcq-character-capabilities" aria-labelledby="character-status-heading">
