@@ -14,6 +14,7 @@ describe("escape view model", () => {
             fixture.state,
             fixture.actions,
             fixture.actorId,
+            fixture.thresholds,
             fixture.presentation,
         );
 
@@ -25,10 +26,10 @@ describe("escape view model", () => {
             "latexLegs",
         ]);
         expect(model.groups[0].choices.map(({ bindingName }) => bindingName)).toEqual([
-            "H",
-            "A",
-            "T",
-            "L",
+            "Head",
+            "Arms",
+            "Torso",
+            "Legs",
         ]);
         expect(model.groups[0].choices[1].projection).toMatchObject({
             amount: -19,
@@ -48,8 +49,9 @@ describe("escape view model", () => {
             fixture.state,
             fixture.actions,
             fixture.actorId,
+            fixture.thresholds,
             fixture.presentation,
-            selectedId,
+            selectedId
         );
         const ko = model.groups[0];
         const hinari = model.groups[2];
