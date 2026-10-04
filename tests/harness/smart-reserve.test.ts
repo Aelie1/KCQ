@@ -104,9 +104,9 @@ function blockFutureOption(): Effect {
     return {
         type: "buff",
         target: "hero",
-        buff: "synthetic-spent-reserve",
+        buff: { id: "synthetic-spent-reserve", moveList: { blockedMoves: ["future-option"] } },
         operation: "add",
-        moveList: { blockedMoves: ["future-option"] },
+
     };
 }
 

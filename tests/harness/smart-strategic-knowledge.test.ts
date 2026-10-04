@@ -124,9 +124,8 @@ function starlight(
             effects: [{
                 type: "buff",
                 target: preview.target,
-                buff: id,
+                buff: { id, modifiers },
                 operation: "add",
-                effects: modifiers,
             }],
         }
         : preview);
@@ -141,9 +140,8 @@ function release(enemyIds: string[], modifiers: ModifierSet): ActionInfo {
             effects: [{
                 type: "buff",
                 target: preview.target,
-                buff: "currentReleaseDebuff",
+                buff: { id: "currentReleaseDebuff", modifiers },
                 operation: "add",
-                effects: modifiers,
             }],
         }
         : preview);

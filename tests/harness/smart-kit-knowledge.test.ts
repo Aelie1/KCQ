@@ -497,8 +497,10 @@ describe("Smart Matsuko kit knowledge", () => {
         const attackMe = move("attackMe", ["source"], {
             targets: "all",
             effects: [{
-                type: "buff", target: "matsuko", buff: "defenseBarrier",
-                operation: "add", effects: { defense: 3 },
+                type: "buff",
+                target: "matsuko",
+                buff: { id: "defenseBarrier", modifiers: { defense: 3 } },
+                operation: "add",
             }],
         });
         const fixture = context(
@@ -575,8 +577,10 @@ function attackMeContext(
     const attackMe = move("attackMe", enemies.map(({ id }) => id), {
         targets: "all",
         effects: [{
-            type: "buff", target: "matsuko", buff: "defenseBarrier",
-            operation: "add", effects: { defense: 3 },
+            type: "buff",
+            target: "matsuko",
+            buff: { id: "defenseBarrier", modifiers: { defense: 3 } },
+            operation: "add",
         }],
     });
     const fixture = context(

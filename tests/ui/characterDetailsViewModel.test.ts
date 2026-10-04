@@ -229,7 +229,7 @@ describe("character details view model", () => {
                 type: "buff",
                 operation: "add",
                 target: character.id,
-                buff: "transformation",
+                buff: { id: "transformation" },
             }],
         };
 

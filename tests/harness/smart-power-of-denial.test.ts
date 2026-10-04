@@ -65,9 +65,9 @@ function spentDenial(): Effect {
     return {
         type: "buff",
         target: "ko",
-        buff: "denied",
+        buff: { id: "denied", moveList: { blockedMoves: [POWER_OF_DENIAL] } },
         operation: "add",
-        moveList: { blockedMoves: [POWER_OF_DENIAL] },
+
     };
 }
 

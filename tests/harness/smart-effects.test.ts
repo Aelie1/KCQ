@@ -129,7 +129,7 @@ function moveListEffect(
     moveList: { addedMoves?: string[]; blockedMoves?: string[] },
     operation: "add" | "remove" = "add",
 ): Effect {
-    return { type: "buff", target, buff: "synthetic", operation, moveList };
+    return { type: "buff", target, buff: { id: "synthetic", moveList }, operation };
 }
 
 describe("Smart binding recovery for move effects", () => {

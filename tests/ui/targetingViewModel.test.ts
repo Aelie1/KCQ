@@ -168,10 +168,12 @@ describe("targeting view model", () => {
             {
                 type: "buff",
                 target: "ko",
-                buff: "transformation",
+                buff: {
+                    id: "transformation",
+                    modifiers: { defense: 3 },
+                    moveList: { addedMoves: ["reflect"] }
+                },
                 operation: "add",
-                effects: { defense: 3 },
-                moveList: { addedMoves: ["reflect"] },
             },
             { type: "enemy", target: "skunkette2", operation: "defeat" },
             { type: "trap", trap: "trapPuddle", amount: 12 },
@@ -222,14 +224,13 @@ describe("targeting view model", () => {
                 {
                     type: "buff",
                     target: "ko",
-                    buff: "transformation",
+                    buff: { id: "transformation", modifiers: { defense: 3 } },
                     operation: "add",
-                    effects: { defense: 3 },
                 },
                 {
                     type: "buff",
                     target: "ko",
-                    buff: "pounce",
+                    buff: { id: "pounce" },
                     operation: "remove",
                 },
                 { type: "trap", trap: "trapPuddle", amount: 2 },

@@ -460,7 +460,7 @@ describe("Smart 2 expected direct enemy damage", () => {
                     effects: [{
                         type: "buff",
                         target: "hero",
-                        buff: "focus",
+                        buff: { id: "focus" },
                         operation: "add",
                     }],
                 })],

@@ -9,7 +9,7 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
         case "binding":
             return `${target}${effect.binding} ${effect.amount !== undefined ? signed(effect.amount) : "+??"}`;
         case "buff":
-            return `${target}${effect.buff} added`;
+            return `${target}${effect.buff.id} added`;
         case "enemy":
             return (effect.operation === "spawn") ? `${effect.target} spawned` : `${effect.target} defeated`;
         case "trap":
@@ -74,7 +74,7 @@ export function formatPreviewEffects(effects: readonly Effect[]): string {
                 const modifiers = Object.entries(effect.buff.modifiers ?? {})
                     .map(([key, amount]) => `(${modifierLabel(key as ModifierId)} ${signed(amount)})`)
                     .join(" ");
-                value = `${effect.operation === "add" ? "adds" : "removes"} ${effect.buff}`
+                value = `${effect.operation === "add" ? "adds" : "removes"} ${effect.buff.id}`
                     + (modifiers ? ` ${modifiers}` : "");
                 break;
             }

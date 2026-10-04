@@ -321,7 +321,7 @@ describe("detailed combat metric collector", () => {
             intention("latexSpray", [
                 { type: "binding", target: "hero", binding: "latexArms", amount: 30 },
                 { type: "binding", target: "hero", binding: "latexHead", amount: -4 },
-                { type: "buff", target: "hero", buff: "irrelevant", operation: "add" },
+                { type: "buff", target: "hero", buff: { id: "irrelevant" }, operation: "add" },
             ], [
                 { type: "binding", target: "hero", binding: "latexHead", amount: 5 },
                 { type: "binding", target: "foe", binding: "latexHead", amount: 99 },

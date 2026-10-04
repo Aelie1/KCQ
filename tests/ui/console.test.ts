@@ -77,7 +77,7 @@ const longIntention: Intention = {
         target: "ko",
         band: "crit",
         effects: [
-            { type: "buff", target: "ko", buff: "latexMist", operation: "add" },
+            { type: "buff", target: "ko", buff: { id: "latexMist" }, operation: "add" },
             { type: "binding", target: "ko", binding: "latexTorso", amount: 19 },
             { type: "binding", target: "ko", binding: "latexHead", amount: 19 },
             { type: "binding", target: "ko", binding: "latexArms", amount: 19 },
@@ -137,16 +137,16 @@ describe("console formatting", () => {
                 {
                     target: "ko",
                     band: "crit",
-                    effects: [{ type: "buff", target: "ko", buff: "latexMist", operation: "add" }],
+                    effects: [{ type: "buff", target: "ko", buff: { id: "latexMist" }, operation: "add" }],
                 },
                 { target: "matsuko", band: "hit", effects: [] },
                 {
                     target: "hinari",
                     band: "miss",
-                    effects: [{ type: "buff", target: "hinari", buff: "latexMist", operation: "add" }],
+                    effects: [{ type: "buff", target: "hinari", buff: { id: "latexMist" }, operation: "add" }],
                 },
             ],
-            effects: [{ type: "buff", target: "queen", buff: "puddle", operation: "add" }],
+            effects: [{ type: "buff", target: "queen", buff: { id: "puddle" }, operation: "add" }],
         })).toEqual([
             "  Intent: royalMist",
             "    ko           CRIT  ",
@@ -706,8 +706,8 @@ describe("console formatting", () => {
         expect(formatPreviewEffects([
             { type: "binding", target: "ko", binding: "latexLegs", amount: -25 },
             { type: "binding", target: "ko", binding: "subspaceClutter", amount: 25 },
-            { type: "buff", target: "ko", buff: "whiteFlame", operation: "add", effects: { defense: -1, hit: -1 } },
-            { type: "buff", target: "ko", buff: "fairyTransformation", operation: "remove" },
+            { type: "buff", target: "ko", buff: { id: "whiteFlame", modifiers: { defense: -1, hit: -1 } }, operation: "add" },
+            { type: "buff", target: "ko", buff: { id: "fairyTransformation" }, operation: "remove" },
         ])).toBe(
             "latexLegs -25 | subspaceClutter +25 | adds whiteFlame (Def -1) (Hit -1)"
             + " | removes fairyTransformation",
