@@ -51,7 +51,7 @@ function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, bu
                     target: target,
                     name: "subspaceBinding",
                     amount: bindingId - currentBindingId,
-                    visible: true
+                    visible: false
                 });
             }
         }

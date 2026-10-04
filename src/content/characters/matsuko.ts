@@ -253,7 +253,7 @@ export const attackMe: MoveDef = {
         "obey": DEFAULT_COMPULSION_COOLDOWN,
         "attackMe": ATTACKME_COMPULSION_COOLDOWN
     },
-    traits: ["buff"],
+    traits: ["buff", "retarget"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 

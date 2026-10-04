@@ -207,7 +207,8 @@ export function serializeMove(actor: iEntity, move: MoveDef): Move {
         targetSide: move.targetSide,
         targets: move.targets,
         hits: move.getHits?.(actor, move) ?? move.baseHits,
-        type: move.type
+        type: move.type,
+        traits: move.traits ? [...move.traits] : undefined,
     };
 }
 

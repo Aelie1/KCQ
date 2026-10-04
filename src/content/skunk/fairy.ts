@@ -48,7 +48,6 @@ export const bindingMagic: MoveDef = {
         crit: 10
     },
     type: "none",
-    traits: ["buff"],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);

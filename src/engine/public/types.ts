@@ -185,28 +185,28 @@ export interface MoveEffect {
     move: MoveId;
 }
 
-interface DataEffect {
+export interface DataEffect {
     type: "data"
     target: EntityId;
     name: string;
     amount: number;
 }
 
-interface RetargetEffect {
+export interface RetargetEffect {
     type: "intention"
     operation: "target";
     target: EntityId;
     destination: EntityId;
 }
 
-interface CancelEffect {
+export interface CancelEffect {
     type: "intention"
     operation: "cancel";
     target: EntityId;
     amount: number;
 }
 
-interface RefreshEffect {
+export interface RefreshEffect {
     type: "refresh"
     target: EntityId;
 }
@@ -232,7 +232,7 @@ export type MoveType =
     | "legs"
     | "none";
 
-type MoveTrait =
+export type MoveTrait =
     | "damage"
     | "buff"
     | "debuff"
@@ -242,7 +242,8 @@ type MoveTrait =
     | "heal"
     | "defeat"
     | "spawn"
-    | "trap";
+    | "trap"
+    | "retarget";
 
 export type MoveId = string;
 
