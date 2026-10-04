@@ -6,13 +6,14 @@ import type {
     EntityId,
     EscapeInfo,
     GameState,
+    ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import type { CommandTagViewModel } from "./characterDetails";
 import {
     createCharacterActionState,
     createCharacterStanceState,
 } from "./characterState";
-import type { CommandTagViewModel } from "./characterDetails";
 
 export type EscapeValueTone = BindingLevel | "danger";
 
@@ -65,6 +66,7 @@ export function createEscapeViewModel(
     state: GameState,
     actions: readonly ActionView[],
     actorId: EntityId,
+    thresholds: ThresholdInfo,
     presentation: Presentation,
     selectedEscapeId?: string,
 ): EscapeViewModel {
@@ -119,13 +121,13 @@ export function createEscapeViewModel(
             target.id,
             binding.id,
             binding.value,
-            binding.level,
+            thresholds,
         );
         (group.choices as EscapeChoiceViewModel[]).push({
             id: entry.id,
             target: target.id,
             binding: binding.id,
-            bindingName: presentation.bindingCompact(binding.id),
+            bindingName: presentation.binding(binding.id, "short"),
             currentValue: binding.value,
             currentTone: binding.level,
             available: entry.escape.available,
@@ -213,23 +215,58 @@ function bindingProjection(
     target: EntityId,
     binding: BindingId,
     currentValue: number,
-    currentLevel: BindingLevel,
+    thresholds: ThresholdInfo,
 ): EscapeProjectionViewModel | undefined {
     const matching = effects.filter((effect): effect is BindingEffect =>
         effect.type === "binding"
         && effect.target === target
         && effect.binding === binding
         && effect.amount !== undefined);
+
     if (matching.length === 0) {
         return undefined;
     }
 
-    const amount = matching.reduce((total, effect) => total + (effect.amount ?? 0), 0);
+    const amount = matching.reduce(
+        (total, effect) => total + (effect.amount ?? 0),
+        0,
+    );
+
+    const projectedValue = Math.max(0, currentValue + amount);
+
     return {
         amount,
-        projectedValue: currentValue + amount,
-        tone: amount > 0 ? "danger" : currentLevel,
+        projectedValue,
+        tone: amount > 0
+            ? "danger"
+            : bindingLevel(projectedValue, thresholds),
     };
+}
+
+function bindingLevel(
+    value: number,
+    info: ThresholdInfo,
+): BindingLevel {
+    const levels: BindingLevel[] = [
+        "max",
+        "overwhelming",
+        "severe",
+        "heavy",
+        "moderate",
+        "light",
+    ];
+
+    for (const level of levels) {
+        const threshold = level === "max"
+            ? info.max
+            : info.thresholds[level];
+
+        if (threshold !== undefined && value >= threshold) {
+            return level;
+        }
+    }
+
+    return "none";
 }
 
 function hasSpreadSideEffect(info: EscapeInfo): boolean {

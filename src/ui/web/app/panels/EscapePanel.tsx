@@ -30,6 +30,7 @@ interface EscapeActionRegionProps {
     actorId: EntityId;
     initialSelectedEscape?: Pick<EscapeInfo, "binding" | "target">;
     presentation: Presentation;
+    thresholds: ThresholdInfo;
     state: GameState;
 }
 
@@ -52,6 +53,7 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
                     initialSelectedEscape={props.initialSelectedEscape}
                     presentation={props.presentation}
                     state={props.state}
+                    thresholds={props.thresholds}
                 />
             }
         />
@@ -74,6 +76,7 @@ function EscapeActionRegion(props: EscapeActionRegionProps): JSX.Element {
         props.state,
         props.actions,
         props.actorId,
+        props.thresholds,
         props.presentation,
         selectedEscapeId(),
     ));

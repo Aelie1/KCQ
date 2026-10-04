@@ -92,127 +92,89 @@ export type UiLabel =
     | "targeting.value";
 
 export class Presentation {
-    private strings;
+    private readonly strings: StringTable;
 
     constructor(strings: StringTable) {
         this.strings = strings;
     }
 
-
-    entity(entity: EntityId): string {
-        return this.translate(this.entityKey(entity));
+    entity(entity: EntityId, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.entityKey(entity, variant));
     }
 
-    entityDesc(entity: EntityId): string {
-        return this.translate(this.entityDescKey(entity));
+    binding(
+        binding: BindingId,
+        variant: "name" | "short" | "compact" | "desc" = "name",
+    ): string {
+        return this.translate(this.definitionKey("binding", binding, variant));
     }
 
-    binding(binding: BindingId): string {
-        return this.translate(this.bindingKey(binding));
+    move(move: MoveId, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.definitionKey("move", move, variant));
     }
 
-    bindingCompact(binding: BindingId): string {
-        return this.translate({ id: `binding.${binding}.compact` });
+    status(status: StatusId, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.definitionKey("status", status, variant));
     }
 
-    bindingDesc(binding: BindingId): string {
-        return this.translate(this.bindingDescKey(binding));
+    trap(trap: TrapId, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.definitionKey("trap", trap, variant));
     }
 
-    move(move: MoveId): string {
-        return this.translate(this.moveKey(move));
+    passive(passive: PassiveId, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.definitionKey("passive", passive, variant));
     }
 
-    moveDesc(move: MoveId): string {
-        return this.translate(this.moveDescKey(move));
+    encounter(encounter: EncounterId, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.definitionKey("encounter", encounter, variant));
     }
 
-    status(status: StatusId): string {
-        return this.translate(this.statusKey(status));
-    }
-
-    statusDesc(status: StatusId): string {
-        return this.translate(this.statusDescKey(status));
-    }
-
-    trap(trap: TrapId): string {
-        return this.translate(this.trapKey(trap));
-    }
-
-    trapDesc(trap: TrapId): string {
-        return this.translate(this.trapDescKey(trap));
-    }
-
-    passive(passive: PassiveId): string {
-        return this.translate(this.passiveKey(passive));
-    }
-
-    passiveDesc(passive: PassiveId): string {
-        return this.translate(this.passiveDescKey(passive));
-    }
-
-    encounter(encounter: EncounterId): string {
-        return this.translate(this.encounterKey(encounter));
-    }
-
-    encounterDesc(encounter: EncounterId): string {
-        return this.translate(this.encounterDescKey(encounter));
-    }
-
-    buff(buff: BuffId): string {
-        return this.translate(this.buffKey(buff));
-    }
-
-    buffDesc(buff: BuffId): string {
-        return this.translate(this.buffDescKey(buff));
+    buff(buff: BuffId, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.definitionKey("buff", buff, variant));
     }
 
     failure(reason: FailureReason): string {
-        return this.translate(this.failureKey(reason));
+        return this.translate(this.definitionKey("failure", reason, "text"));
     }
 
     phase(phase: Phase): string {
-        return this.translate(this.phaseKey(phase));
+        return this.translate(this.definitionKey("phase", phase, "name"));
     }
 
     stance(stance: StanceId): string {
-        return this.translate(this.stanceKey(stance));
+        return this.translate(this.definitionKey("stance", stance, "name"));
     }
 
     bindingLevel(level: BindingLevel): string {
-        return this.translate(this.bindingLevelKey(level));
+        return this.translate(this.definitionKey("bindingLevel", level, "name"));
     }
 
     hitBand(band: HitBand): string {
-        return this.translate(this.hitBandKey(band));
+        return this.translate(this.definitionKey("hitBand", band, "name"));
     }
 
     moveType(type: MoveType): string {
-        return this.translate({ id: `moveType.${type}.compact` });
+        return this.translate(this.definitionKey("moveType", type, "compact"));
     }
 
     ui(label: UiLabel, args?: Record<string, number | string | boolean>): string {
         return this.translate({ id: `ui.${label}`, args });
     }
 
-    difficulty(difficulty: DifficultyId): string {
-        return this.translate(this.difficultyKey(difficulty));
-    }
-
-    difficultyDesc(difficulty: DifficultyId): string {
-        return this.translate(this.difficultyDescKey(difficulty));
+    difficulty(difficulty: DifficultyId, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.definitionKey("difficulty", difficulty, variant));
     }
 
     battleState(state: BattleState): string {
-        return this.translate(this.battleStateKey(state));
+        return this.translate(this.definitionKey("battleState", state, "name"));
     }
 
     modifier(modifier: ModifierId): string {
-        return this.translate(this.modifierKey(modifier));
+        return this.translate(this.definitionKey("modifier", modifier, "name"));
     }
 
     flag(flag: FlagId): string {
-        return this.translate(this.flagKey(flag));
+        return this.translate(this.definitionKey("flag", flag, "name"));
     }
 
     event(event: GameEvent | LeafEvent): string {
@@ -250,162 +212,21 @@ export class Presentation {
         });
     }
 
-    private entityKey(entity: EntityId): StringKey {
+    private definitionKey(namespace: string, id: string, variant: string): StringKey {
+        return { id: `${namespace}.${id}.${variant}` };
+    }
+
+    private entityKey(entity: EntityId, variant: "name" | "desc" = "name"): StringKey {
         const match = entity.match(/^(.*?)(\d+)$/);
 
-        if (match) {
-            return {
-                id: `entity.${match[1]}.name`,
-                args: {
-                    index: Number(match[2])
-                }
-            };
+        if (!match) {
+            return this.definitionKey("entity", entity, variant);
         }
 
-        return {
-            id: `entity.${entity}.name`
-        };
-    }
-
-    private entityDescKey(entity: EntityId): StringKey {
-        const match = entity.match(/^(.*?)(\d+)$/);
-
-        if (match) {
-            return {
-                id: `entity.${match[1]}.desc`,
-            };
-        }
-
-        return {
-            id: `entity.${entity}.desc`
-        };
-    }
-
-    private bindingKey(binding: BindingId): StringKey {
-        return {
-            id: `binding.${binding}.name`
-        }
-    }
-
-    private bindingDescKey(binding: BindingId): StringKey {
-        return {
-            id: `binding.${binding}.desc`
-        }
-    }
-
-    private moveKey(move: MoveId): StringKey {
-        return {
-            id: `move.${move}.name`
-        }
-    }
-
-    private moveDescKey(move: MoveId): StringKey {
-        return {
-            id: `move.${move}.desc`
-        }
-    }
-
-    private statusKey(status: StatusId): StringKey {
-        return {
-            id: `status.${status}.name`
-        }
-    }
-
-    private statusDescKey(status: StatusId): StringKey {
-        return {
-            id: `status.${status}.desc`
-        }
-    }
-
-    private trapKey(trap: TrapId): StringKey {
-        return {
-            id: `trap.${trap}.name`
-        }
-    }
-
-    private trapDescKey(trap: TrapId): StringKey {
-        return {
-            id: `trap.${trap}.desc`
-        }
-    }
-
-    private passiveKey(passive: PassiveId): StringKey {
-        return {
-            id: `passive.${passive}.name`
-        }
-    }
-
-    private passiveDescKey(passive: PassiveId): StringKey {
-        return {
-            id: `passive.${passive}.desc`
-        }
-    }
-
-    private encounterKey(encounter: EncounterId): StringKey {
-        return {
-            id: `encounter.${encounter}.name`
-        }
-    }
-
-    private encounterDescKey(encounter: EncounterId): StringKey {
-        return {
-            id: `encounter.${encounter}.desc`
-        }
-    }
-
-    private buffKey(buff: BuffId): StringKey {
-        return {
-            id: `buff.${buff}.name`
-        };
-    }
-
-    private buffDescKey(buff: BuffId): StringKey {
-        return {
-            id: `buff.${buff}.desc`
-        };
-    }
-
-    private failureKey(reason: FailureReason): StringKey {
-        return {
-            id: `failure.${reason}.text`
-        }
-    }
-
-    private phaseKey(phase: Phase): StringKey {
-        return { id: `phase.${phase}.name` };
-    }
-
-    private stanceKey(stance: StanceId): StringKey {
-        return { id: `stance.${stance}.name` };
-    }
-
-    private bindingLevelKey(level: BindingLevel): StringKey {
-        return { id: `bindingLevel.${level}.name` };
-    }
-
-    private hitBandKey(band: HitBand): StringKey {
-        return { id: `hitBand.${band}.name` };
-    }
-
-
-    private difficultyKey(difficulty: DifficultyId): StringKey {
-        return { id: `difficulty.${difficulty}.name` };
-    }
-
-    private difficultyDescKey(difficulty: DifficultyId): StringKey {
-        return { id: `difficulty.${difficulty}.desc` };
-    }
-
-    private battleStateKey(state: BattleState): StringKey {
-        return { id: `battleState.${state}.name` };
-    }
-
-    private modifierKey(modifier: ModifierId): StringKey {
-        return { id: `modifier.${modifier}.name` };
-    }
-
-    private flagKey(flag: FlagId): StringKey {
-        return { id: `flag.${flag}.name` };
+        const key = this.definitionKey("entity", match[1], variant);
+        return variant === "name"
+            ? { ...key, args: { index: Number(match[2]) } }
+            : key;
     }
 
     private eventTextKey(event: GameEvent | LeafEvent): StringKey {
@@ -415,8 +236,8 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         actor: this.entityKey(event.actor),
-                        move: this.moveKey(event.move),
-                    }
+                        move: this.definitionKey("move", event.move, "name"),
+                    },
                 };
 
             case "useEscape":
@@ -425,15 +246,15 @@ export class Presentation {
                     args: {
                         actor: this.entityKey(event.actor),
                         target: this.entityKey(event.target),
-                    }
+                    },
                 };
 
             case "changePhase":
                 return {
                     id: `event.${event.type}.text`,
                     args: {
-                        phase: this.phaseKey(event.phase)
-                    }
+                        phase: this.definitionKey("phase", event.phase, "name"),
+                    },
                 };
 
             case "changeStance":
@@ -441,23 +262,25 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         actor: this.entityKey(event.actor),
-                    }
+                    },
                 };
 
             case "loadCharacter":
                 return {
                     id: `event.${event.type}.${event.success ? "success" : "failure"}`,
                     args: {
-                        id: event.success ? this.entityKey(event.id) : event.id
-                    }
+                        id: event.success ? this.entityKey(event.id) : event.id,
+                    },
                 };
 
             case "loadEncounter":
                 return {
                     id: `event.${event.type}.${event.success ? "success" : "failure"}`,
                     args: {
-                        id: event.success ? this.encounterKey(event.id) : event.id
-                    }
+                        id: event.success
+                            ? this.definitionKey("encounter", event.id, "name")
+                            : event.id,
+                    },
                 };
 
             case "enemyDamaged":
@@ -468,7 +291,7 @@ export class Presentation {
                     args: {
                         target: this.entityKey(event.target),
                         amount: event.amount,
-                    }
+                    },
                 };
 
             case "bondageChanged":
@@ -479,9 +302,9 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         target: this.entityKey(event.target),
-                        binding: this.bindingKey(event.binding),
+                        binding: this.definitionKey("binding", event.binding, "name"),
                         amount: event.amount,
-                    }
+                    },
                 };
 
             case "buffAdded":
@@ -491,8 +314,8 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         target: this.entityKey(event.target),
-                        buff: this.buffKey(event.buff),
-                    }
+                        buff: this.definitionKey("buff", event.buff, "name"),
+                    },
                 };
 
             case "enemySpawned":
@@ -501,7 +324,7 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         target: this.entityKey(event.target),
-                    }
+                    },
                 };
 
             case "stanceSet":
@@ -509,8 +332,8 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         actor: this.entityKey(event.actor),
-                        stance: { id: `stance.${event.stance}.name` },
-                    }
+                        stance: this.definitionKey("stance", event.stance, "name"),
+                    },
                 };
 
             case "cooldownChanged":
@@ -518,9 +341,9 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         target: this.entityKey(event.target),
-                        move: this.moveKey(event.move),
+                        move: this.definitionKey("move", event.move, "name"),
                         value: event.value,
-                    }
+                    },
                 };
 
             case "trapAdded":
@@ -530,9 +353,9 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         actor: this.entityKey(event.actor),
-                        trap: this.trapKey(event.trap),
+                        trap: this.definitionKey("trap", event.trap, "name"),
                         amount: event.amount,
-                    }
+                    },
                 };
 
             case "actionInterrupted":
@@ -541,7 +364,7 @@ export class Presentation {
                     args: {
                         actor: this.entityKey(event.actor),
                         reason: this.failure(event.reason),
-                    }
+                    },
                 };
 
             case "actionRefreshed":
@@ -549,7 +372,7 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         target: this.entityKey(event.target),
-                    }
+                    },
                 };
 
             case "targetChanged":
@@ -558,7 +381,7 @@ export class Presentation {
                     args: {
                         target: this.entityKey(event.target),
                         destination: this.entityKey(event.destination),
-                    }
+                    },
                 };
 
             case "intentionCancelled":
@@ -567,7 +390,7 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         target: this.entityKey(event.target),
-                    }
+                    },
                 };
 
             default: {

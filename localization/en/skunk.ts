@@ -97,18 +97,23 @@ export const skunkStrings: StringTable = {
 
     // Bindings
     "binding.latexHead.name": "Skunk Head",
+    "binding.latexHead.short": "Head",
     "binding.latexHead.compact": "H",
     "binding.latexHead.desc": "...",
     "binding.latexArms.name": "Skunk Arms",
+    "binding.latexArms.short": "Arms",
     "binding.latexArms.compact": "A",
     "binding.latexArms.desc": "...",
     "binding.latexTorso.name": "Skunk Torso",
+    "binding.latexTorso.short": "Torso",
     "binding.latexTorso.compact": "T",
     "binding.latexTorso.desc": "...",
     "binding.latexLegs.name": "Skunk Legs",
+    "binding.latexLegs.short": "Legs",
     "binding.latexLegs.compact": "L",
     "binding.latexLegs.desc": "...",
     "binding.latexCollar.name": "Skunk Collar",
+    "binding.latexCollar.short": "Collar",
     "binding.latexCollar.compact": "C",
     "binding.latexCollar.desc": "...",
 

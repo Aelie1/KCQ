@@ -1084,11 +1084,10 @@ button {
 
 .kcq-character-binding__statuses .kcq-status-chip,
 .kcq-character-effect__details .kcq-status-chip {
-    min-height: 15px;
-    padding: 1px 3px;
-    border-color: var(--kcq-structure-border);
-    font-size: 8px;
-    line-height: 11px;
+    min-height: 18px;
+    padding: 2px 4px;
+    font-size: 9px;
+    line-height: 12px;
 }
 
 .kcq-character-binding__level {
@@ -1181,19 +1180,18 @@ button {
 
 .kcq-character-effect {
     display: grid;
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 4px;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 8px;
     align-items: center;
     min-width: 0;
-    height: 15px;
-    font-size: 9px;
+    min-height: 20px;
+    height: auto;
+    font-size: 11px;
 }
 
 .kcq-character-effect__name {
-    overflow: hidden;
     color: var(--kcq-text-primary);
     font-weight: 600;
-    text-overflow: ellipsis;
     white-space: nowrap;
 }
 

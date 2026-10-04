@@ -62,7 +62,7 @@ export function createPartyCardViewModel(
             })),
         bindings: character.bindings.map((binding) => ({
             id: binding.id,
-            label: presentation.bindingCompact(binding.id),
+            label: presentation.binding(binding.id, "compact"),
             current: binding.value,
             max: thresholds.max,
             level: binding.level,
