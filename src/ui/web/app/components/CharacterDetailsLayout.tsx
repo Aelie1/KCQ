@@ -2,6 +2,7 @@ import { For, Show, type JSX } from "solid-js";
 import type { EntityId } from "../../../../engine/public/types";
 import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
 import { ModifierMeter } from "./ModifierMeter";
+import { LinkedEntityChip } from "./LinkedEntityChip";
 import { StatusChip } from "./StatusChip";
 
 export interface CharacterDetailsLayoutProps {
@@ -129,6 +130,9 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                             <div class="kcq-character-effect">
                                 <span class="kcq-character-effect__name">{effect.name}</span>
                                 <span class="kcq-character-effect__details">
+                                    <Show when={effect.linkedEntity} keyed>
+                                        {(link) => <LinkedEntityChip link={link} />}
+                                    </Show>
                                     <For each={effect.details}>
                                         {(detail) => (
                                             <StatusChip size="compact" tone={detail.tone}>

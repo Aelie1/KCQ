@@ -137,11 +137,16 @@ function EscapeActionRegion(props: EscapeActionRegionProps): JSX.Element {
                                                 classList={{
                                                     "is-selected": choice.selected,
                                                     "is-increase": (choice.projection?.amount ?? 0) > 0,
+                                                    "is-display-only": choice.displayOnly,
                                                 }}
                                                 disabled={!choice.available}
                                                 aria-pressed={choice.selected}
                                                 title={choice.reasonLabel}
-                                                onClick={() => setSelectedEscapeId(choice.id)}
+                                                onClick={() => {
+                                                    if (!choice.displayOnly && choice.available) {
+                                                        setSelectedEscapeId(choice.id);
+                                                    }
+                                                }}
                                             >
                                                 <span class="kcq-escape-choice__name">{choice.bindingName}</span>
                                                 <span class="kcq-escape-choice__value">

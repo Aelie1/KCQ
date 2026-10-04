@@ -187,7 +187,7 @@ describe("targeting view model", () => {
             fixture.presentation,
         );
 
-        expect(model.actionEffects.map(({ type }) => type)).toEqual([
+        expect(model.actionEffects.map((effect) => effect.kind === "damage-profile" ? "damage" : effect.type)).toEqual([
             "damage",
             "binding",
             "enemy",
@@ -202,9 +202,11 @@ describe("targeting view model", () => {
             name: "Ko-chan",
         });
         expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
+            kind: "buff",
             label: "Add Buff",
-            payload: "Fairy Transformation",
-            details: ["Defense +3", "Add Reflect"],
+            name: "Fairy Transformation",
+            modifiers: [expect.objectContaining({ label: "Defense", signedValue: "+3" })],
+            moveList: ["Add Reflect"],
         });
     });
 
@@ -248,18 +250,20 @@ describe("targeting view model", () => {
             name: "Ko-chan",
             effects: [
                 expect.objectContaining({
+                    kind: "buff",
                     label: "Add Buff",
-                    payload: "Fairy Transformation",
-                    details: ["Defense +3"],
+                    name: "Fairy Transformation",
+                    modifiers: [expect.objectContaining({ label: "Defense", signedValue: "+3" })],
                 }),
                 expect.objectContaining({
+                    kind: "buff",
                     label: "Remove Buff",
-                    payload: "Pounce",
-                    details: [],
+                    name: "Pounce",
+                    modifiers: [],
                 }),
             ],
         }]);
-        expect(model.actionEffects.map(({ type }) => type)).toEqual(["trap"]);
+        expect(model.actionEffects.map((effect) => effect.kind === "damage-profile" ? "damage" : effect.type)).toEqual(["trap"]);
     });
 
     it("uses the shared linked-player projection for enemy target previews", () => {
@@ -288,5 +292,165 @@ describe("targeting view model", () => {
             { id: "ko", name: "Ko-chan", tone: "ko" },
         ]);
         expect(model.targets[1].linkedEntities).toEqual([]);
+    });
+
+    it("omits fake zero-target cards while preserving meaningful null-target previews", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            move: { id: "throwOff", targetSide: "none", targets: 0, type: "mouth" },
+            available: true,
+            targets: [{
+                valid: true,
+                target: null,
+                accuracy: { hit: 100 },
+                effects: [{ type: "data", target: "ko", name: "subspace", amount: 25 }],
+            }],
+            effects: [],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.heading).toBeUndefined();
+        expect(model.targets).toEqual([]);
+        expect(model.actionEffects).toEqual([
+            expect.objectContaining({ kind: "compact", type: "accuracy" }),
+            expect.objectContaining({ label: "Resource", payload: "Ko-chan   Subspace +25" }),
+        ]);
+    });
+
+    it("uses shared ActionView state for immobilized target summaries", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            move: { id: "assist", targetSide: "player", targets: 1, type: "mouth" },
+            available: true,
+            targets: [{ valid: true, target: "ko", effects: [] }],
+            effects: [],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.targets[0].characterSummary).toBe("Ready · Immobilized");
+    });
+
+    it("formats signed binding projections and crosses public thresholds", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [
+                { type: "binding", target: "ko", binding: "latexArms", amount: 15 },
+                { type: "binding", target: "ko", binding: "latexHead", amount: -32 },
+            ],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+        const effects = model.actionEffectGroups[0].effects;
+
+        expect(effects[0]).toMatchObject({
+            kind: "binding", currentValue: 27, projectedValue: 42,
+            level: "heavy", deltaLabel: "+15 Binding",
+        });
+        expect(effects[0]).not.toHaveProperty("recipient");
+        expect(effects[1]).toMatchObject({
+            kind: "binding", currentValue: 72, projectedValue: 40,
+            deltaLabel: "-32 Binding",
+        });
+    });
+
+    it("suppresses same-scope recipients and retains cross-scope Resource/Data recipients", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            targets: [{
+                valid: true,
+                target: "skunkette1",
+                effects: [
+                    { type: "data", target: "skunkette1", name: "mystery", amount: -4 },
+                    { type: "data", target: "hinari", name: "subspace", amount: 25 },
+                ],
+            }],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.targets[0].effects[0]).toMatchObject({
+            label: "Data", payload: "[data.mystery.name] -4", details: [],
+        });
+        expect(model.targets[0].effects[1]).toMatchObject({
+            label: "Resource", payload: "Hinari   Subspace +25", details: [],
+        });
+    });
+
+    it("keeps nested buff name primary and move-list changes secondary", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [{
+                type: "buff",
+                target: "ko",
+                operation: "add",
+                buff: {
+                    id: "empowerment",
+                    duration: 3,
+                    modifiers: { defense: 3, hit: 2, potency: 1 },
+                    moveList: { addedMoves: ["fairyTelekinesis", "fairyStarlightBindings"] },
+                },
+            }],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
+            kind: "buff",
+            name: "Fairy Empowerment",
+            durationLabel: "3 Rounds",
+            modifiers: [
+                expect.objectContaining({ signedValue: "+3" }),
+                expect.objectContaining({ signedValue: "+2" }),
+            ],
+            moveList: ["Add Fairy Telekinesis", "Add Fairy Starlight Bindings"],
+        });
+    });
+
+    it("classifies clearly harmful public modifier payloads as debuffs", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [
+                {
+                    type: "buff", target: "ko", operation: "add",
+                    buff: { id: "subspaceClutter", modifiers: { defense: -2, hit: -2 } },
+                },
+                {
+                    type: "buff", target: "ko", operation: "remove",
+                    buff: { id: "subspaceClutter", duration: 2, modifiers: { defense: -2 } },
+                },
+            ],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
+            label: "Add Debuff",
+            modifiers: [
+                expect.objectContaining({ signedValue: "-2", direction: "right" }),
+                expect.objectContaining({ signedValue: "-2", direction: "right" }),
+            ],
+        });
+        expect(model.actionEffectGroups[0].effects[1]).toMatchObject({
+            label: "Remove Debuff", modifiers: [],
+        });
+        expect(model.actionEffectGroups[0].effects[1]).not.toHaveProperty("durationLabel");
     });
 });

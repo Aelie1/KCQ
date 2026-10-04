@@ -9,7 +9,7 @@ export function formatEffect(effect: Effect, includeTarget = false): string {
         case "binding":
             return `${target}${effect.binding} ${effect.amount !== undefined ? signed(effect.amount) : "+??"}`;
         case "buff":
-            return `${target}${effect.buff.id} added`;
+            return `${target}${effect.buff.id} ${effect.operation === "add" ? "added" : "removed"}`;
         case "enemy":
             return (effect.operation === "spawn") ? `${effect.target} spawned` : `${effect.target} defeated`;
         case "trap":

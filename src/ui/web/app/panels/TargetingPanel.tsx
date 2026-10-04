@@ -37,10 +37,12 @@ export interface TargetingPanelProps {
 
 interface TargetingActionRegionProps {
     action: ActionInfo;
+    actions: readonly ActionView[];
     actorId: EntityId;
     initialSelectedTargetIds?: readonly EntityId[];
     presentation: Presentation;
     state: GameState;
+    thresholds: ThresholdInfo;
     onBack?: () => void;
     onExecute?: (targets: readonly EntityId[]) => void;
 }
@@ -62,10 +64,12 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
             actionRegion={
                 <TargetingActionRegion
                     action={props.action}
+                    actions={props.actions}
                     actorId={props.actorId}
                     initialSelectedTargetIds={props.initialSelectedTargetIds}
                     presentation={props.presentation}
                     state={props.state}
+                    thresholds={props.thresholds}
                     onBack={props.onBack}
                     onExecute={props.onExecute}
                 />
@@ -80,6 +84,8 @@ function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
         props.actorId,
         props.action,
         props.presentation,
+        props.actions,
+        props.thresholds,
     ));
     const actionIdentity = createMemo(() => targetingActionIdentity(
         props.actorId,
@@ -114,9 +120,11 @@ function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
     };
 
     return (
-        <section class="kcq-targeting" aria-labelledby="targeting-heading">
+        <section class="kcq-targeting" aria-label={model().command.name}>
             <div class="kcq-targeting__panel">
-                <h1 id="targeting-heading">{model().heading}</h1>
+                <Show when={model().heading} keyed>
+                    {(heading) => <h1>{heading}</h1>}
+                </Show>
                 <SelectedCommandSummary
                     name={model().command.name}
                     tags={model().command.tags}

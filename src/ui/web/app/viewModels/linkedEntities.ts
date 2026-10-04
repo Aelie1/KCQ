@@ -2,6 +2,7 @@ import type {
     Buff,
     Character,
     EntityId,
+    GameState,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 
@@ -30,14 +31,29 @@ export function projectLinkedPlayers(
         links.push({
             id,
             name: presentation.entity(id),
-            tone: linkedEntityTone(id),
+            tone: linkedPlayerTone(id),
         });
     }
 
     return links;
 }
 
-function linkedEntityTone(id: EntityId): LinkedEntityTone {
+export function projectLinkedEntity(
+    id: EntityId,
+    state: Pick<GameState, "characters" | "enemies">,
+    presentation: Presentation,
+): LinkedEntityViewModel | undefined {
+    const character = state.characters.find(({ id: characterId }) => characterId === id);
+    if (character) {
+        return { id, name: presentation.entity(id), tone: linkedPlayerTone(character.id) };
+    }
+    if (state.enemies.some(({ id: enemyId }) => enemyId === id)) {
+        return { id, name: presentation.entity(id), tone: "neutral" };
+    }
+    return undefined;
+}
+
+function linkedPlayerTone(id: EntityId): LinkedEntityTone {
     switch (id) {
         case "ko":
         case "matsuko":

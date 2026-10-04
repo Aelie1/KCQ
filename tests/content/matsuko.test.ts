@@ -557,7 +557,10 @@ describe("Matsuko's Compulsion moves", () => {
                 { valid: false, target: matsuko.id, reason: "invalidTarget" },
                 expect.objectContaining({
                     valid: true, target: ally.id, effects: [
-                        expect.objectContaining({ type: "buff", target: ally.id, buff: "servitude", operation: "add" }),
+                        expect.objectContaining({
+                            type: "buff", target: ally.id, operation: "add",
+                            buff: expect.objectContaining({ id: "servitude" }),
+                        }),
                         { type: "refresh", target: ally.id },
                     ]
                 }),
@@ -635,7 +638,10 @@ describe("Matsuko's Compulsion moves", () => {
                 { valid: false, target: servant.id, reason: "invalidTarget" },
                 expect.objectContaining({
                     valid: true, target: eligible.id, effects: [
-                        expect.objectContaining({ type: "buff", target: eligible.id, buff: "servitude", operation: "add" }),
+                        expect.objectContaining({
+                            type: "buff", target: eligible.id, operation: "add",
+                            buff: expect.objectContaining({ id: "servitude" }),
+                        }),
                         { type: "refresh", target: eligible.id },
                     ]
                 }),

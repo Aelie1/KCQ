@@ -25,6 +25,8 @@ import {
     createCharacterStanceState,
 } from "./characterState";
 import { projectBindingZones } from "./bindingZones";
+import { projectLinkedEntity, type LinkedEntityViewModel } from "./linkedEntities";
+import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
 export type CommandTagTone = "ally" | "danger" | "neutral" | "primary" | "special" | "success" | "warning";
 
@@ -69,6 +71,7 @@ export interface EffectDetailViewModel {
         tone: Extract<StatusChipTone, "danger" | "neutral" | "outcome" | "warning">;
     }[];
     id: string;
+    linkedEntity?: LinkedEntityViewModel;
     name: string;
 }
 
@@ -136,11 +139,6 @@ interface CapabilityDefinition {
     modifier: ModifierId;
     moveType?: Exclude<MoveType, "none">;
 }
-
-const HIGHER_IS_HARMFUL = new Set<ModifierId>([
-    "vulnerability",
-    "spread",
-]);
 
 export function createCharacterDetailsViewModel(
     state: GameState,
@@ -257,7 +255,7 @@ export function createFocusedCharacterViewModel(
             levelLabel: presentation.bindingLevel(binding.level),
             statusLabels: binding.status.map((status) => statusLabel(status, presentation)),
         })),
-        effects: character.buffs.map((buff) => createEffectDetail(buff, presentation)),
+        effects: character.buffs.map((buff) => createEffectDetail(buff, state, presentation)),
         commands: createCommands(state, character, action, presentation),
     };
 }
@@ -284,7 +282,7 @@ function createModifierMeter(
         valueLabel: blocked
             ? presentation.ui("characterDetails.blocked")
             : presentation.ui("characterDetails.modifierValue", {
-                value: value >= 0 ? `+${value}` : value,
+                value: formatSignedNumber(value),
             }),
         tone: modifierTone(definition.modifier, value, blocked),
     };
@@ -302,14 +300,13 @@ function modifierTone(
         return "neutral";
     }
 
-    const beneficial = HIGHER_IS_HARMFUL.has(modifier)
-        ? value < 0
-        : value > 0;
+    const beneficial = isHarmfulModifierChange(modifier, value) === false;
     return beneficial ? "success" : "danger";
 }
 
 function createEffectDetail(
     buff: Buff,
+    state: GameState,
     presentation: Presentation,
 ): EffectDetailViewModel {
     const details: EffectDetailViewModel["details"][number][] = [];
@@ -325,18 +322,9 @@ function createEffectDetail(
         details.push({
             label: presentation.ui("characterDetails.effectModifier", {
                 modifier: presentation.modifier(modifier),
-                value: value >= 0 ? `+${value}` : value,
+                value: formatSignedNumber(value),
             }),
             tone: "neutral",
-        });
-    }
-
-    if (buff.linkedEntity) {
-        details.push({
-            label: presentation.ui("characterDetails.linkedEntity", {
-                entity: presentation.entity(buff.linkedEntity),
-            }),
-            tone: "outcome",
         });
     }
 
@@ -349,11 +337,16 @@ function createEffectDetail(
         });
     }
 
+    const linkedEntity = buff.linkedEntity
+        ? projectLinkedEntity(buff.linkedEntity, state, presentation)
+        : undefined;
+
     return {
         id: buff.id,
         name: presentation.buff(buff.id),
         buff,
         details,
+        ...(linkedEntity ? { linkedEntity } : {}),
     };
 }
 
@@ -392,7 +385,9 @@ function createCommands(
     const availableEscape = action.escapes.some(({ available }) => available);
     const escapeReason = action.escapes.find(({ reason }) => reason)?.reason
         ?? (action.escapes.length === 0 ? "escapeUnavailable" : undefined);
-    const escapeTargets = new Set(action.escapes.map(({ target }) => target));
+    const escapeTargets = new Set(action.escapes
+        .filter(({ available }) => available)
+        .map(({ target }) => target));
     const escapeTags: CommandTagViewModel[] = [];
     if ([...escapeTargets].some((target) => target !== character.id)) {
         escapeTags.push(tag("ally", presentation.ui("characterDetails.tagAlly"), "ally"));

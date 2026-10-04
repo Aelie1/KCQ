@@ -263,23 +263,44 @@ describe("character details view model", () => {
             fixture.presentation,
         );
 
-        expect(model.focused.effects.map(({ name, details }) => ({
+        expect(model.focused.effects.map(({ name, details, linkedEntity }) => ({
             name,
             details: details.map(({ label }) => label),
+            linkedEntity,
         }))).toEqual([
             {
                 name: "Pounce",
-                details: ["Immobilized", "Accuracy -1", "↗ Skunkette 1"],
+                details: ["Immobilized", "Accuracy -1"],
+                linkedEntity: { id: "skunkette1", name: "Skunkette 1", tone: "neutral" },
             },
             {
                 name: "Fairy Transformation",
                 details: ["Defense +3", "2 Rounds"],
+                linkedEntity: undefined,
             },
             {
                 name: "Fairy Empowerment",
                 details: [],
+                linkedEntity: undefined,
             },
         ]);
+    });
+
+    it("derives Escape SELF and ALLY tags only from available options", () => {
+        const fixture = characterDetailsFixture;
+        const action = {
+            ...fixture.actions[0],
+            escapes: fixture.actions[0].escapes.map((escape) => ({
+                ...escape,
+                available: escape.target === "ko",
+            })),
+        };
+        const focused = createFocusedCharacterViewModel(
+            fixture.state, action, fixture.thresholds, fixture.presentation,
+        );
+
+        expect(focused.commands.find(({ id }) => id === "escape")?.tags.map(({ id }) => id))
+            .toEqual(["self"]);
     });
 
     it("rejects a focused character without a matching public action view", () => {

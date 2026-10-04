@@ -263,6 +263,15 @@ describe("console formatting", () => {
         );
     });
 
+    it("uses BuffEffect operation for add and remove wording", () => {
+        expect(formatEffect({
+            type: "buff", target: "ko", buff: { id: "reflect" }, operation: "add",
+        }, true)).toBe("ko reflect added");
+        expect(formatEffect({
+            type: "buff", target: "ko", buff: { id: "reflect" }, operation: "remove",
+        }, true)).toBe("ko reflect removed");
+    });
+
     it("groups equal binding effects without merging different operations", () => {
         expect(formatEffects([
             { type: "binding", target: "ko", binding: "latexArms", amount: 10 },

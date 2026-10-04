@@ -799,7 +799,13 @@ describe("Hinari's Release", () => {
         expect(target(low, "foe1")).toEqual({
             valid: true, target: "foe1", damage: undefined,
             effects: [
-                { type: "buff", target: "foe1", buff: "subspaceClutter", effects: { defense: -2, hit: -2 }, operation: "add" },
+                {
+                    type: "buff", target: "foe1", operation: "add",
+                    buff: {
+                        id: "subspaceClutter", duration: 2, linkedEntity: undefined,
+                        modifiers: { defense: -2, hit: -2 }, moveList: undefined, statuses: undefined,
+                    },
+                },
                 { type: "data", target: hinari.id, name: "subspace", amount: -25 },
             ],
         });

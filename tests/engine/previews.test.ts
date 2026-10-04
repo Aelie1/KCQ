@@ -93,7 +93,13 @@ describe("public move previews", () => {
                 hit: { chance: 65, min: 10, max: 13 },
                 crit: { chance: 10, min: 19, max: 25 },
             },
-            effects: [{ type: "buff", target: "foe1", buff: "mark-foe1", effects: undefined, operation: "add" }],
+            effects: [{
+                type: "buff", target: "foe1", operation: "add",
+                buff: {
+                    id: "mark-foe1", duration: undefined, linkedEntity: undefined,
+                    modifiers: {}, moveList: undefined, statuses: undefined,
+                },
+            }],
         });
         expect(preview(engine, strike.id, "foe2")).toEqual({
             valid: true, target: "foe2",
@@ -104,7 +110,13 @@ describe("public move previews", () => {
                 hit: { chance: 65, min: 12, max: 15 },
                 crit: { chance: 10, min: 22, max: 30 },
             },
-            effects: [{ type: "buff", target: "foe2", buff: "mark-foe2", effects: undefined, operation: "add" }],
+            effects: [{
+                type: "buff", target: "foe2", operation: "add",
+                buff: {
+                    id: "mark-foe2", duration: undefined, linkedEntity: undefined,
+                    modifiers: {}, moveList: undefined, statuses: undefined,
+                },
+            }],
         });
     });
 
