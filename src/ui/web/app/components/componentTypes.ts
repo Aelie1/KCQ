@@ -28,6 +28,7 @@ export interface IntentTargetViewModel {
 }
 
 export interface IntentRowData {
+    allTargetsLabel?: string;
     moveLabel: string;
     outcome?: IntentOutcome;
     outcomeLabel?: string;
@@ -68,12 +69,14 @@ export type PartyActionStateKind =
     | "unavailable";
 
 export interface PartyActionState {
+    compactLabel: string;
     kind: PartyActionStateKind;
     label: string;
     tone: Extract<StatusChipTone, "danger" | "neutral" | "success">;
 }
 
 export interface PartyConditionState {
+    compactLabel: string;
     kind: StanceId | "immobilized";
     label: string;
     tone: Extract<StatusChipTone, "danger" | "success" | "warning">;

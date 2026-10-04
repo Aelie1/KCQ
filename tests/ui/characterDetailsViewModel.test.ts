@@ -27,10 +27,12 @@ describe("character details view model", () => {
         expect(model.focused.actionState).toMatchObject({
             kind: "ready",
             label: "Ready",
+            compactLabel: "Ready",
         });
         expect(model.focused.stanceState).toMatchObject({
             kind: "immobilized",
             label: "Immobilized",
+            compactLabel: "Immob",
         });
         expect(model.roster.map(({ name, actionState }) => [name, actionState.label])).toEqual([
             ["Ko-chan", "Ready"],
@@ -41,6 +43,14 @@ describe("character details view model", () => {
             ["Ready · Immobilized", "ko"],
             ["Incapacitated · Moving", "matsuko"],
             ["Skipped · Standing", "hinari"],
+        ]);
+        expect(model.roster.map(({ actionState, stanceState }) => [
+            actionState.compactLabel,
+            stanceState.compactLabel,
+        ])).toEqual([
+            ["Ready", "Immob"],
+            ["Incap", "Moving"],
+            ["Skipped", "Standing"],
         ]);
     });
 
@@ -208,7 +218,7 @@ describe("character details view model", () => {
     it("uses public move traits without previews and retains traitless effect fallback", () => {
         const fixture = characterDetailsFixture;
         const character = fixture.state.characters[0];
-        const action = (trait: "buff" | "damage"): ActionInfo => ({
+        const action = (trait: "buff" | "damage" | "debuff"): ActionInfo => ({
             move: {
                 id: `unavailable-${trait}`,
                 targetSide: "enemy",
@@ -243,7 +253,13 @@ describe("character details view model", () => {
             fixture.state,
             character,
             fixture.presentation,
-        ).map(({ label }) => label)).toContain("Buff");
+        )).toContainEqual(expect.objectContaining({ label: "Buff", tone: "success" }));
+        expect(createMoveTags(
+            action("debuff"),
+            fixture.state,
+            character,
+            fixture.presentation,
+        )).toContainEqual(expect.objectContaining({ label: "Debuff", tone: "special" }));
         expect(createMoveTags(
             action("damage"),
             fixture.state,
@@ -327,8 +343,12 @@ describe("character details view model", () => {
             ).commands.find(({ id }) => id === "stance")?.tags[0];
         };
 
-        expect(stanceTag(true)).toMatchObject({ id: "stance-destination", label: "→ Moving" });
-        expect(stanceTag(false)).toMatchObject({ id: "stance-destination", label: "→ Standing" });
+        expect(stanceTag(true)).toMatchObject({
+            id: "stance-destination", leadingSymbol: "→", label: "Moving",
+        });
+        expect(stanceTag(false)).toMatchObject({
+            id: "stance-destination", leadingSymbol: "→", label: "Standing",
+        });
     });
 
     it("distinguishes no EscapeInfo targets from an engine-provided failure", () => {

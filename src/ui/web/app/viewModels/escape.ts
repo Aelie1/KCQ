@@ -6,6 +6,7 @@ import { projectBindingZones } from "./bindingZones";
 import type { CommandTagViewModel } from "./characterDetails";
 import { createCharacterActionState, createCharacterStanceState } from "./characterState";
 import { bindingLevelAtValue } from "./presentationHelpers";
+import { playerTone, type PlayerTone } from "./linkedEntities";
 
 export type EscapeValueTone = BindingLevel;
 export interface EscapeProjectionViewModel { amount: number; projectedValue: number; tone: EscapeValueTone }
@@ -15,7 +16,7 @@ export interface EscapeChoiceViewModel {
     reasonLabel?: string; selected: boolean; target: EntityId;
 }
 export interface EscapeTargetGroupViewModel {
-    choices: readonly EscapeChoiceViewModel[]; id: EntityId; name: string; selected: boolean; stateSummary: string;
+    choices: readonly EscapeChoiceViewModel[]; id: EntityId; name: string; selected: boolean; stateSummary: string; tone: PlayerTone;
 }
 export interface EscapeViewModel {
     command: { name: string; tags: readonly CommandTagViewModel[] };
@@ -82,6 +83,7 @@ export function createEscapeViewModel(
         groups.push({
             id: target.id,
             name: presentation.entity(target.id),
+            tone: playerTone(target.id),
             stateSummary: presentation.ui("targeting.characterSummary", {
                 action: actionState.label,
                 stance: stanceState.label,

@@ -7,11 +7,18 @@ export interface CommandTagProps {
 
 export function CommandTag(props: CommandTagProps): JSX.Element {
     return (
-        <span
-            class="kcq-command-tag"
-            classList={{ [`kcq-command-tag--${props.tag.tone}`]: true }}
-        >
-            {props.tag.label}
-        </span>
+        <>
+            {props.tag.leadingSymbol && (
+                <span class="kcq-command-tag__leading-symbol" aria-hidden="true">
+                    {props.tag.leadingSymbol}
+                </span>
+            )}
+            <span
+                class="kcq-command-tag"
+                classList={{ [`kcq-command-tag--${props.tag.tone}`]: true }}
+            >
+                {props.tag.label}
+            </span>
+        </>
     );
 }

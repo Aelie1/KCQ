@@ -94,7 +94,7 @@ describe("targeting workflow composition", () => {
         expect(actionEffectsRule).toContain("gap: 7px");
     });
 
-    it("renders four structured accuracy bands with pipe separators and dim zero bands", () => {
+    it("omits zero Accuracy bands while preserving separators and all four Damage bands", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const action: ActionInfo = {
             ...fixture.action,
@@ -105,15 +105,35 @@ describe("targeting workflow composition", () => {
                 effects: [],
             }],
         };
-        const html = renderToString(() => createComponent(TargetingPanel, { ...fixture, action }));
+        const accuracyHtml = renderToString(() => createComponent(TargetingPanel, { ...fixture, action }));
+        const damageAction: ActionInfo = {
+            ...action,
+            targets: [{
+                valid: true,
+                target: "skunkette1",
+                damage: {
+                    miss: { chance: 40, min: 0, max: 0 },
+                    hit: { chance: 60, min: 10, max: 15 },
+                },
+                effects: [],
+            }],
+        };
+        const damageHtml = renderToString(() => createComponent(
+            TargetingPanel,
+            { ...fixture, action: damageAction },
+        ));
 
-        expect(countClass(html, "kcq-accuracy-profile__band")).toBe(4);
-        expect(countClass(html, "kcq-accuracy-profile__separator")).toBe(3);
-        expect(countClass(html, "is-zero")).toBe(2);
-        expect(html).toContain("Miss · 40%");
-        expect(html).toContain("Graze · 0%");
-        expect(html).toContain(">|</span>");
-        expect(html).not.toContain("Ã‚");
+        expect(countClass(accuracyHtml, "kcq-accuracy-profile__band")).toBe(2);
+        expect(countClass(accuracyHtml, "kcq-accuracy-profile__separator")).toBe(1);
+        expect(accuracyHtml).toContain("Miss · 40%");
+        expect(accuracyHtml).toContain("Hit · 60%");
+        expect(accuracyHtml).not.toContain("Graze · 0%");
+        expect(accuracyHtml).not.toContain("Crit · 0%");
+        expect(accuracyHtml).toContain(">|</span>");
+        expect(countClass(damageHtml, "kcq-damage-profile__band")).toBe(4);
+        expect(countClass(damageHtml, "is-zero")).toBe(2);
+        expect(damageHtml).toContain("Graze");
+        expect(damageHtml).toContain("Crit");
     });
 
     it("renders localized BuffEffect operation and type as one line", () => {
@@ -133,6 +153,32 @@ describe("targeting workflow composition", () => {
         expect(html).toContain('aria-label="Remove Debuff"');
         expect(html).toContain('aria-label="Remove Debuff">Remove Debuff</span>');
         expect(html).not.toContain("<span>Remove</span><span>Debuff</span>");
+        expect(html).toContain("kcq-preview-effect--special kcq-buff-effect");
+    });
+
+    it("renders Buff and Debuff effect chips with distinct existing semantic tones", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const buffAction: ActionInfo = {
+            ...fixture.action,
+            effects: [{
+                type: "buff", target: "ko", operation: "add",
+                buff: { id: "empowerment", modifiers: { defense: 2 } },
+            }],
+        };
+        const debuffAction: ActionInfo = {
+            ...fixture.action,
+            effects: [{
+                type: "buff", target: "ko", operation: "add",
+                buff: { id: "subspaceClutter", statuses: [{ id: "blinded", value: 1 }] },
+            }],
+        };
+        const buffHtml = renderToString(() => createComponent(TargetingPanel, { ...fixture, action: buffAction }));
+        const debuffHtml = renderToString(() => createComponent(TargetingPanel, { ...fixture, action: debuffAction }));
+
+        expect(buffHtml).toContain("kcq-preview-effect--success kcq-buff-effect");
+        expect(buffHtml).toContain("Add Buff");
+        expect(debuffHtml).toContain("kcq-preview-effect--special kcq-buff-effect");
+        expect(debuffHtml).toContain("Add Debuff");
     });
 
     it("allows the selected command name to wrap to two lines without displacing tags", () => {
@@ -186,12 +232,17 @@ describe("targeting workflow composition", () => {
         };
         const moderate = renderBinding(5);
         const severe = renderBinding(40);
+        const visibleText = (html: string) => html.replace(/<!--.*?-->/g, "");
 
         for (const html of [moderate, severe]) {
             expect(html).toContain("kcq-preview-effect kcq-preview-effect--special kcq-binding-effect");
             expect(html).not.toContain("kcq-binding-effect--moderate");
             expect(html).not.toContain("kcq-binding-effect--severe");
         }
+        expect(visibleText(moderate)).toContain("27 → 32");
+        expect(moderate).not.toContain("+5 Binding");
+        expect(visibleText(severe)).toContain("27 → 67");
+        expect(severe).not.toContain("+40 Binding");
         expect(moderate).toContain("kcq-escape-value--moderate");
         expect(moderate).toContain("kcq-binding-effect__segment--moderate");
         expect(severe).toContain("kcq-escape-value--severe");

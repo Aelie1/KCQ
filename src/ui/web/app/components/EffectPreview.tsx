@@ -64,7 +64,7 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                 {(effect) => {
                     const buff = effect() as Extract<EffectPreviewViewModel, { kind: "buff" }>;
                     return (
-                        <div class="kcq-preview-effect kcq-preview-effect--special kcq-buff-effect">
+                        <div class={`kcq-preview-effect kcq-preview-effect--${buff.tone} kcq-buff-effect`}>
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
                             <span class="kcq-preview-effect__tag kcq-buff-effect__tag" aria-label={buff.label}>
                                 {buff.label}
@@ -122,7 +122,6 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                         {binding.levelLabel}
                                     </span>
                                     <strong>{binding.currentValue} → {binding.projectedValue}</strong>
-                                    <strong>{binding.deltaLabel}</strong>
                                 </div>
                                 <div
                                     class="kcq-binding-effect__bar"

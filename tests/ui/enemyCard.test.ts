@@ -116,4 +116,67 @@ describe("enemy card", () => {
             expect(rule).toContain(`color: ${color}`);
         }
     });
+
+    it("collapses a complete current-party intention to localized ALL only on overview cards", () => {
+        const fixture = battleOverviewFixture;
+        const enemy = {
+            ...fixture.state.enemies[0],
+            intentions: [{
+                move: "latexSpray",
+                targets: fixture.state.characters.map(({ id }) => ({
+                    target: id,
+                    band: "none" as const,
+                    effects: [],
+                })),
+                effects: [],
+            }],
+        };
+        const overview = createEnemyCardViewModel(
+            enemy, fixture.presentation, fixture.state.characters,
+        );
+        const overviewHtml = renderToString(() => createComponent(EnemyCard, { enemy: overview }));
+        const general = createIntentViewModel(enemy.intentions[0], fixture.presentation);
+
+        expect(overview.intentions[0]).toMatchObject({
+            moveLabel: "Latex Spray",
+            allTargetsLabel: "ALL",
+            targetLabel: "ALL",
+        });
+        expect(overview.intentions[0].targets).toBeUndefined();
+        expect(overviewHtml).toContain("ALL");
+        expect(overviewHtml).not.toContain("Ko-chan");
+        expect(general.targets?.map(({ label }) => label)).toEqual([
+            "Ko-chan", "Matsuko", "Hinari",
+        ]);
+    });
+
+    it("keeps partial overview intentions as EntityId-colored player names", () => {
+        const fixture = battleOverviewFixture;
+        const enemy = {
+            ...fixture.state.enemies[0],
+            intentions: [{
+                move: "latexSpray",
+                targets: [
+                    { target: "ko", band: "none" as const, effects: [] },
+                    { target: "matsuko", band: "none" as const, effects: [] },
+                ],
+                effects: [],
+            }],
+        };
+        const model = createEnemyCardViewModel(
+            enemy, fixture.presentation, fixture.state.characters,
+        );
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
+
+        expect(model.intentions[0].allTargetsLabel).toBeUndefined();
+        expect(model.intentions[0].targets?.map(({ id, tone }) => [id, tone])).toEqual([
+            ["ko", "ko"],
+            ["matsuko", "matsuko"],
+        ]);
+        expect(html).toContain("Ko-chan");
+        expect(html).toContain("Matsuko");
+        expect(html).toContain("kcq-intent-row__target--ko");
+        expect(html).toContain("kcq-intent-row__target--matsuko");
+        expect(html).not.toContain("ALL");
+    });
 });

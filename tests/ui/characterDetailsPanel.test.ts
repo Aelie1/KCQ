@@ -66,4 +66,38 @@ describe("character details panel", () => {
         expect(html).toContain('class="kcq-focused-character__resource">Subspace 27 / 100</span>');
         expect(html).toContain('<h2 class="kcq-player-identity--hinari">Hinari</h2>');
     });
+
+    it("renders compact top-card conditions with independent established tones", () => {
+        const html = renderToString(() => createComponent(
+            CharacterDetailsPanel,
+            characterDetailsFixture,
+        ));
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+
+        expect(html).toContain("kcq-character-roster__condition--danger\">Immob</span>");
+        expect(html).toContain("kcq-character-roster__action--danger\">Incap</span>");
+        expect(html).toContain("kcq-character-roster__condition--success\">Moving</span>");
+        expect(html).toContain("kcq-character-roster__condition--warning\">Standing</span>");
+        expect(html).toContain('aria-label="Ready · Immobilized"');
+        expect(html).toContain('aria-label="Incapacitated · Moving"');
+
+        const successRule = css.match(/\.kcq-character-roster__action--success,\s*\.kcq-character-roster__condition--success\s*\{([^}]*)\}/)?.[1] ?? "";
+        const dangerRule = css.match(/\.kcq-character-roster__action--danger,\s*\.kcq-character-roster__condition--danger\s*\{([^}]*)\}/)?.[1] ?? "";
+        const warningRule = css.match(/\.kcq-character-roster__condition--warning\s*\{([^}]*)\}/)?.[1] ?? "";
+        expect(successRule).toContain("color: var(--kcq-state-success)");
+        expect(dangerRule).toContain("color: var(--kcq-state-danger)");
+        expect(warningRule).toContain("color: var(--kcq-state-warning)");
+    });
+
+    it("renders the Change Stance arrow outside its destination chip", () => {
+        const html = renderToString(() => createComponent(
+            CharacterDetailsPanel,
+            characterDetailsFixture,
+        ));
+
+        expect(html).toContain('class="kcq-command-tag__leading-symbol" aria-hidden="true">→</span>');
+        expect(html).toMatch(/class="kcq-command-tag kcq-command-tag--(?:success|warning)">(?:Moving|Standing)<\/span>/);
+        expect(html).not.toContain(">→ Moving</span>");
+        expect(html).not.toContain(">→ Standing</span>");
+    });
 });

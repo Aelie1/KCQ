@@ -33,6 +33,7 @@ export type CommandTagTone = "ally" | "danger" | "neutral" | "primary" | "specia
 export interface CommandTagViewModel {
     id: string;
     label: string;
+    leadingSymbol?: string;
     tone: CommandTagTone;
 }
 
@@ -415,10 +416,9 @@ function createCommands(
         ...reasonLabel(action.stance.available, action.stance.reason, presentation),
         tags: [tag(
             "stance-destination",
-            presentation.ui("characterDetails.stanceTransition", {
-                stance: presentation.stance(stanceDestination),
-            }),
+            presentation.stance(stanceDestination),
             stanceDestination === "moving" ? "success" : "warning",
+            presentation.ui("characterDetails.stanceTransitionIndicator"),
         )],
     });
 
@@ -535,7 +535,7 @@ export function createMoveTags(
             if (enemyIds.has(effect.target)) {
                 push(tag("debuff", presentation.ui("characterDetails.tagDebuff"), "special"));
             } else if (characterIds.has(effect.target) && effect.type === "buff" && effect.operation === "add") {
-                push(tag("buff", presentation.ui("characterDetails.tagBuff"), "special"));
+                push(tag("buff", presentation.ui("characterDetails.tagBuff"), "success"));
             }
         }
     }
@@ -561,7 +561,7 @@ function semanticTraitTag(
 ): CommandTagViewModel {
     switch (trait) {
         case "damage": return tag(trait, presentation.ui("characterDetails.tagDamage"), "danger");
-        case "buff": return tag(trait, presentation.ui("characterDetails.tagBuff"), "special");
+        case "buff": return tag(trait, presentation.ui("characterDetails.tagBuff"), "success");
         case "debuff": return tag(trait, presentation.ui("characterDetails.tagDebuff"), "special");
         case "escape": return tag(trait, presentation.ui("characterDetails.tagEscape"), "success");
         case "onetime": return tag(trait, presentation.ui("characterDetails.tagOnetime"), "warning");
@@ -605,6 +605,7 @@ function tag(
     id: string,
     label: string,
     tone: CommandTagTone,
+    leadingSymbol?: string,
 ): CommandTagViewModel {
-    return { id, label, tone };
+    return { id, label, tone, ...(leadingSymbol ? { leadingSymbol } : {}) };
 }

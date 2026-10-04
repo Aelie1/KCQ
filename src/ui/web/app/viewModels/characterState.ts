@@ -17,12 +17,14 @@ export function createCharacterActionState(
     switch (reason) {
         case "actorIncapacitated":
             return {
+                compactLabel: presentation.status("incapacitated", "short"),
                 kind: "incapacitated",
                 label: presentation.status("incapacitated"),
                 tone: "danger",
             };
         case "actorSkipped":
             return {
+                compactLabel: presentation.ui("action.skipped"),
                 kind: "skipped",
                 label: presentation.ui("action.skipped"),
                 tone: "danger",
@@ -32,6 +34,7 @@ export function createCharacterActionState(
         case undefined:
             if (action.available) {
                 return {
+                    compactLabel: presentation.ui("action.ready"),
                     kind: "ready",
                     label: presentation.ui("action.ready"),
                     tone: "success",
@@ -52,6 +55,7 @@ export function createCharacterStanceState(
 ): PartyConditionState {
     if (action.stance.reason === "actorImmobilized") {
         return {
+            compactLabel: presentation.status("immobilized", "short"),
             kind: "immobilized",
             label: presentation.status("immobilized"),
             tone: "danger",
@@ -60,11 +64,13 @@ export function createCharacterStanceState(
 
     return character.standing
         ? {
+            compactLabel: presentation.stance("standing"),
             kind: "standing",
             label: presentation.stance("standing"),
             tone: "warning",
         }
         : {
+            compactLabel: presentation.stance("moving"),
             kind: "moving",
             label: presentation.stance("moving"),
             tone: "success",
@@ -73,6 +79,7 @@ export function createCharacterStanceState(
 
 function actedState(presentation: Presentation): PartyActionState {
     return {
+        compactLabel: presentation.ui("action.acted"),
         kind: "acted",
         label: presentation.ui("action.acted"),
         tone: "neutral",
@@ -81,6 +88,7 @@ function actedState(presentation: Presentation): PartyActionState {
 
 function unavailableState(presentation: Presentation): PartyActionState {
     return {
+        compactLabel: presentation.ui("action.unavailable"),
         kind: "unavailable",
         label: presentation.ui("action.unavailable"),
         tone: "neutral",

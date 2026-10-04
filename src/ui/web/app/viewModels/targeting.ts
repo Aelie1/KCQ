@@ -9,7 +9,7 @@ import { playerTone, projectLinkedPlayers, type LinkedEntityViewModel, type Play
 import { bindingLevelAtValue, formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
 export type TargetingMode = "predetermined" | "selectable";
-export type EffectTone = "danger" | "primary" | "special" | "warning";
+export type EffectTone = "danger" | "primary" | "special" | "success" | "warning";
 
 export interface DamageBandViewModel {
     band: Exclude<HitBand, "none">; chance: number; chanceLabel: string; emphasized: boolean;
@@ -34,11 +34,11 @@ export interface BuffModifierViewModel {
 export interface BuffEffectViewModel {
     details: readonly string[]; durationLabel?: string; id: string; kind: "buff"; label: string;
     modifiers: readonly BuffModifierViewModel[]; moveList: readonly string[]; name: string;
-    operation: BuffEffect["operation"]; recipient?: string; tone: "special"; type: "buff";
+    operation: BuffEffect["operation"]; recipient?: string; tone: "special" | "success"; type: "buff";
 }
 export interface BindingEffectViewModel {
     bindingName: string; currentLevel: BindingLevel; currentPercent: number; currentValue: number;
-    deltaLabel: string; id: string; kind: "binding"; label: string; levelLabel: string;
+    id: string; kind: "binding"; label: string; levelLabel: string;
     projectedLevel: BindingLevel; projectedPercent: number; projectedValue: number;
     recipient?: string; tone: "binding"; type: "binding";
 }
@@ -248,9 +248,9 @@ function createAccuracyEffect(accuracy: AccuracyProfile, presentation: Presentat
         label: presentation.ui("targeting.effectAccuracy"),
         tone: "primary",
         type: "accuracy",
-        bands: DAMAGE_BANDS.map((band) => {
+        bands: DAMAGE_BANDS.flatMap((band) => {
             const chance = accuracy[band] ?? 0;
-            return {
+            return chance === 0 ? [] : [{
                 band,
                 chance,
                 chanceLabel: presentation.ui("targeting.chance", {
@@ -258,8 +258,8 @@ function createAccuracyEffect(accuracy: AccuracyProfile, presentation: Presentat
                     chance,
                 }),
                 label: presentation.hitBand(band),
-                zero: chance === 0,
-            };
+                zero: false,
+            }];
         }),
     };
 }
@@ -352,7 +352,7 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
         .find(({ id: targetId }) => targetId === effect.target)
         ?.moves.map(({ move }) => move.id) ?? []);
     return {
-        kind: "buff", id, type: "buff", tone: "special", operation: effect.operation,
+        kind: "buff", id, type: "buff", tone: debuff ? "special" : "success", operation: effect.operation,
         label: presentation.ui(operationKey), name: presentation.buff(effect.buff.id),
         ...(applying && effect.buff.duration !== undefined
             ? { durationLabel: presentation.ui("characterDetails.rounds", { count: effect.buff.duration }) }
@@ -401,7 +401,6 @@ function createBindingEffect(
         kind: "binding", id, type: "binding", tone: "binding",
         label: context.presentation.ui("targeting.effectBinding"),
         bindingName: context.presentation.binding(effect.binding), currentValue, projectedValue,
-        deltaLabel: context.presentation.ui("targeting.bindingAmount", { amount: formatSignedNumber(effect.amount) }),
         currentLevel, projectedLevel, levelLabel: context.presentation.bindingLevel(projectedLevel),
         currentPercent: percent(currentValue), projectedPercent: percent(projectedValue),
         ...(context.scopeTarget !== effect.target ? { recipient: context.presentation.entity(effect.target) } : {}),

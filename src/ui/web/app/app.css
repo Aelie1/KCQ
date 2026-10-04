@@ -373,6 +373,11 @@ button {
     font-weight: 700;
 }
 
+.kcq-intent-row__target-all {
+    color: var(--kcq-text-primary);
+    font-weight: 700;
+}
+
 .kcq-intent-row__target--ko {
     color: var(--kcq-state-special);
 }
@@ -1132,6 +1137,20 @@ button {
     color: var(--kcq-state-danger);
 }
 
+.kcq-character-roster__action--success,
+.kcq-character-roster__condition--success {
+    color: var(--kcq-state-success);
+}
+
+.kcq-character-roster__action--danger,
+.kcq-character-roster__condition--danger {
+    color: var(--kcq-state-danger);
+}
+
+.kcq-character-roster__condition--warning {
+    color: var(--kcq-state-warning);
+}
+
 .kcq-focused-character,
 .kcq-character-section {
     width: 100%;
@@ -1547,9 +1566,9 @@ button {
     width: 100%;
     overflow: hidden;
     color: var(--kcq-text-dim);
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 500;
-    line-height: 10px;
+    line-height: 12px;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }
@@ -1580,6 +1599,14 @@ button {
     text-overflow: ellipsis;
     text-transform: uppercase;
     white-space: nowrap;
+}
+
+.kcq-command-tag__leading-symbol {
+    display: inline-flex;
+    align-items: center;
+    color: var(--kcq-text-muted);
+    font-size: 11px;
+    line-height: 15px;
 }
 
 .kcq-command-tag--warning {
@@ -1969,6 +1996,14 @@ button {
     background: var(--kcq-state-special-deep);
 }
 
+.kcq-preview-effect--success {
+    color: var(--kcq-state-success);
+}
+
+.kcq-preview-effect--success .kcq-preview-effect__tag {
+    background: var(--kcq-state-success-bg);
+}
+
 .kcq-preview-effect--warning {
     color: var(--kcq-state-warning);
 }
@@ -2348,6 +2383,18 @@ button {
 .kcq-escape-group__header h2 {
     color: var(--kcq-text-secondary);
     font-size: 14px;
+}
+
+.kcq-escape-group__header h2.kcq-player-identity--ko {
+    color: var(--kcq-state-special);
+}
+
+.kcq-escape-group__header h2.kcq-player-identity--matsuko {
+    color: var(--kcq-state-warning);
+}
+
+.kcq-escape-group__header h2.kcq-player-identity--hinari {
+    color: var(--kcq-binding-light);
 }
 
 .kcq-escape-group__header p {

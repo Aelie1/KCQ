@@ -29,6 +29,7 @@ export type UiLabel =
     | "characterDetails.bindingsHeading"
     | "characterDetails.blocked"
     | "characterDetails.changeStance"
+    | "characterDetails.stanceTransitionIndicator"
     | "characterDetails.stanceTransition"
     | "characterDetails.resourceValue"
     | "characterDetails.commandsHeading"
@@ -68,6 +69,7 @@ export type UiLabel =
     | "effects.none"
     | "intentions.more"
     | "intentions.moreAccessible"
+    | "intentions.all"
     | "linkedEntity.linkedTo"
     | "partyCard.bindings"
     | "partyCard.blockedCapabilities"
@@ -132,7 +134,7 @@ export class Presentation {
         return this.translate(this.definitionKey("move", move, variant));
     }
 
-    status(status: StatusId, variant: "name" | "desc" = "name"): string {
+    status(status: StatusId, variant: "name" | "short" | "desc" = "name"): string {
         return this.translate(this.definitionKey("status", status, variant));
     }
 

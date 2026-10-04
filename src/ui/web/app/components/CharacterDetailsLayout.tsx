@@ -53,11 +53,20 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                             >
                                 {character.name}
                             </span>
-                            <span
-                                class="kcq-character-roster__state"
-                                classList={{ [`kcq-character-roster__state--${character.actionState.tone}`]: true }}
-                            >
-                                {character.summary}
+                            <span class="kcq-character-roster__state" aria-label={character.summary}>
+                                <span
+                                    class="kcq-character-roster__action"
+                                    classList={{ [`kcq-character-roster__action--${character.actionState.tone}`]: true }}
+                                >
+                                    {character.actionState.compactLabel}
+                                </span>
+                                <span class="kcq-character-roster__state-separator" aria-hidden="true">{" \u00b7 "}</span>
+                                <span
+                                    class="kcq-character-roster__condition"
+                                    classList={{ [`kcq-character-roster__condition--${character.stanceState.tone}`]: true }}
+                                >
+                                    {character.stanceState.compactLabel}
+                                </span>
                             </span>
                         </button>
                     )}

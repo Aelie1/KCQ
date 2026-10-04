@@ -56,7 +56,7 @@ describe("targeting view model", () => {
         expect(model.actionEffects).toEqual([]);
     });
 
-    it("projects a stable four-band accuracy vocabulary without mojibake", () => {
+    it("projects ordered nonzero accuracy bands without mojibake", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const action: ActionInfo = {
             ...fixture.action,
@@ -77,9 +77,7 @@ describe("targeting view model", () => {
             kind: "accuracy-profile",
             bands: [
                 { band: "miss", chance: 40, chanceLabel: "Miss · 40%", zero: false },
-                { band: "graze", chance: 0, chanceLabel: "Graze · 0%", zero: true },
                 { band: "hit", chance: 60, chanceLabel: "Hit · 60%", zero: false },
-                { band: "crit", chance: 0, chanceLabel: "Crit · 0%", zero: true },
             ],
         });
         expect(JSON.stringify(accuracy)).not.toContain("Ã‚");
@@ -417,14 +415,16 @@ describe("targeting view model", () => {
         expect(effects[0]).toMatchObject({
             kind: "binding", currentValue: 27, projectedValue: 42,
             currentLevel: "moderate", projectedLevel: "heavy",
-            levelLabel: "Heavy", deltaLabel: "+15 Binding",
+            levelLabel: "Heavy",
         });
+        expect(effects[0]).not.toHaveProperty("deltaLabel");
         expect(effects[0]).not.toHaveProperty("recipient");
         expect(effects[1]).toMatchObject({
             kind: "binding", currentValue: 72, projectedValue: 40,
             currentLevel: "severe", projectedLevel: "heavy",
-            levelLabel: "Heavy", deltaLabel: "-32 Binding",
+            levelLabel: "Heavy",
         });
+        expect(effects[1]).not.toHaveProperty("deltaLabel");
     });
 
     it("moves target-derived Resource/Data effects out of target cards", () => {
@@ -477,6 +477,7 @@ describe("targeting view model", () => {
 
         expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
             kind: "buff",
+            tone: "success",
             name: "Fairy Empowerment",
             durationLabel: "3 Rounds",
             modifiers: [
@@ -509,6 +510,7 @@ describe("targeting view model", () => {
 
         expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
             label: "Add Debuff",
+            tone: "special",
             modifiers: [
                 expect.objectContaining({ label: "DEF", signedValue: "-2", direction: "right" }),
                 expect.objectContaining({ label: "HIT", signedValue: "-2", direction: "right" }),

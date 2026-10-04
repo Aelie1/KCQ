@@ -19,6 +19,11 @@ describe("escape view model", () => {
         );
 
         expect(model.groups.map(({ id }) => id)).toEqual(["ko", "matsuko", "hinari"]);
+        expect(model.groups.map(({ id, tone }) => [id, tone])).toEqual([
+            ["ko", "ko"],
+            ["matsuko", "matsuko"],
+            ["hinari", "hinari"],
+        ]);
         expect(model.groups[0].choices.map(({ binding }) => binding)).toEqual([
             "latexHead",
             "latexArms",

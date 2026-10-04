@@ -23,8 +23,23 @@ export function createEnemyCardViewModel(
     presentation: Presentation,
     characters: readonly Character[] = [],
 ): EnemyCardData {
-    const intentions = enemy.intentions.map((intention) =>
-        createIntentViewModel(intention, presentation));
+    const partyIds = new Set(characters.map(({ id }) => id));
+    const intentions = enemy.intentions.map((intention) => {
+        const model = createIntentViewModel(intention, presentation);
+        const targetIds = new Set(intention.targets.map(({ target }) => target));
+        const targetsFullParty = partyIds.size > 0
+            && targetIds.size === partyIds.size
+            && [...partyIds].every((id) => targetIds.has(id));
+
+        return targetsFullParty
+            ? {
+                ...model,
+                allTargetsLabel: presentation.ui("intentions.all"),
+                targetLabel: presentation.ui("intentions.all"),
+                targets: undefined,
+            }
+            : model;
+    });
     const summary = summarizeIntentions(intentions);
 
     return {

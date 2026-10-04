@@ -28,6 +28,9 @@ describe("escape workflow composition", () => {
         expect(countClass(html, "kcq-character-commands")).toBe(0);
         expect(countClass(html, "kcq-escape")).toBe(1);
         expect(countClass(html, "kcq-escape-group")).toBe(3);
+        expect(html).toContain('<h2 class="kcq-player-identity--ko">Ko-chan</h2>');
+        expect(html).toContain('<h2 class="kcq-player-identity--matsuko">Matsuko</h2>');
+        expect(html).toContain('<h2 class="kcq-player-identity--hinari">Hinari</h2>');
         expect(countClass(html, "is-selected")).toBe(0);
         expect(executeButton).toContain("disabled");
 

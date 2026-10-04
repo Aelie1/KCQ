@@ -139,7 +139,7 @@ function EscapeActionRegion(props: EscapeActionRegionProps): JSX.Element {
                                 aria-label={group.name}
                             >
                                 <header class="kcq-escape-group__header">
-                                    <h2>{group.name}</h2>
+                                    <h2 class={`kcq-player-identity--${group.tone}`}>{group.name}</h2>
                                     <p>{group.stateSummary}</p>
                                 </header>
                                 <div class="kcq-escape-group__choices">
