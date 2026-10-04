@@ -1,3 +1,4 @@
+import { englishStrings } from "../../../../../localization/en";
 import type {
     ActionView,
     Binding,
@@ -11,7 +12,6 @@ import type {
     Intention,
     ThresholdInfo,
 } from "../../../../engine/public/types";
-import { englishStrings } from "../../../presentation/localization/en";
 import { Presentation } from "../../../presentation/presentation";
 
 const presentation = new Presentation(englishStrings);

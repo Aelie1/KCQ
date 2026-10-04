@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { englishStrings } from "../../localization/en";
 import type {
     ActionView,
     Character,
@@ -7,7 +8,6 @@ import type {
     ThresholdInfo,
 } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import { englishStrings } from "../../src/ui/presentation/localization/en";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { createBattleOverviewViewModel } from "../../src/ui/web/app/viewModels/battleOverview";
 import {

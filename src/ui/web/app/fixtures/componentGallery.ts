@@ -1,3 +1,4 @@
+import { englishStrings } from "../../../../../localization/en";
 import type {
     ActionView,
     Binding,
@@ -12,7 +13,6 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import { Presentation } from "../../../presentation/presentation";
-import { englishStrings } from "../../../presentation/localization/en";
 import { createEnemyCardViewModel } from "../viewModels/enemyCard";
 import { createIntentViewModel } from "../viewModels/intentRow";
 import { createPartyCardViewModel } from "../viewModels/partyCard";
