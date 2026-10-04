@@ -14,3 +14,9 @@
 - Prefer focused tests for changed code.
 - Run the normal test/type/build checks when appropriate.
 - Avoid generating large benchmark artifacts as part of routine validation.
+
+## Figma Tasks
+
+When implementing UI from a Figma link, always use the connected Figma MCP
+server to inspect the referenced design before writing code. Prefer structured
+Figma component/variable data over screenshots or visual guesses.

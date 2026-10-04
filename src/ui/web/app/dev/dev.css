@@ -75,6 +75,7 @@
 
 .dev-game-viewport {
     align-self: start;
+    box-sizing: content-box;
     width: 390px;
     max-width: 100%;
     overflow: hidden;

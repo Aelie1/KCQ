@@ -1,7 +1,8 @@
-import { createSignal, Show, type JSX } from "solid-js";
+import { createSignal, Match, Switch, type JSX } from "solid-js";
 import { App } from "../App";
 import { battleOverviewFixture } from "../fixtures/battleOverview";
 import { BattleOverviewPanel } from "../panels/BattleOverviewPanel";
+import { ComponentGalleryPanel } from "../panels/ComponentGalleryPanel";
 import { PlaceholderPanel } from "../panels/PlaceholderPanel";
 import { PANEL_OPTIONS, PanelSwitcher, type PanelId } from "./PanelSwitcher";
 
@@ -17,12 +18,14 @@ export function DevApp(): JSX.Element {
                 <p class="dev-viewport-label">390px game viewport</p>
                 <div class="dev-game-viewport">
                     <App>
-                        <Show
-                            when={panel() === "battle"}
-                            fallback={<PlaceholderPanel title={selectedLabel()} />}
-                        >
-                            <BattleOverviewPanel turn={battleOverviewFixture} />
-                        </Show>
+                        <Switch fallback={<PlaceholderPanel title={selectedLabel()} />}>
+                            <Match when={panel() === "battle"}>
+                                <BattleOverviewPanel turn={battleOverviewFixture} />
+                            </Match>
+                            <Match when={panel() === "components"}>
+                                <ComponentGalleryPanel />
+                            </Match>
+                        </Switch>
                     </App>
                 </div>
             </section>
