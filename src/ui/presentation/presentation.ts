@@ -66,6 +66,7 @@ export type UiLabel =
     | "effects.none"
     | "intentions.more"
     | "intentions.moreAccessible"
+    | "linkedEntity.linkedTo"
     | "partyCard.bindings"
     | "partyCard.blockedCapabilities"
     | "partyCard.effects"

@@ -2,6 +2,7 @@ import type { JSX } from "solid-js";
 import type { LinkedEntityViewModel } from "../viewModels/linkedEntities";
 
 export interface LinkedEntityChipProps {
+    iconOnly?: boolean;
     link: LinkedEntityViewModel;
 }
 
@@ -9,7 +10,12 @@ export function LinkedEntityChip(props: LinkedEntityChipProps): JSX.Element {
     return (
         <span
             class="kcq-linked-entity-chip"
-            classList={{ [`kcq-linked-entity-chip--${props.link.tone}`]: true }}
+            classList={{
+                [`kcq-linked-entity-chip--${props.link.tone}`]: true,
+                "kcq-linked-entity-chip--icon-only": props.iconOnly,
+            }}
+            aria-label={props.iconOnly ? props.link.accessibleLabel : undefined}
+            title={props.iconOnly ? props.link.accessibleLabel : undefined}
         >
             <svg
                 class="kcq-linked-entity-chip__icon"
@@ -24,7 +30,7 @@ export function LinkedEntityChip(props: LinkedEntityChipProps): JSX.Element {
                     stroke-width="1.6"
                 />
             </svg>
-            <span>{props.link.name}</span>
+            {!props.iconOnly && <span>{props.link.name}</span>}
         </span>
     );
 }

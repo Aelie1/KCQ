@@ -136,7 +136,6 @@ function EscapeActionRegion(props: EscapeActionRegionProps): JSX.Element {
                         {(group) => (
                             <section
                                 class="kcq-escape-group"
-                                classList={{ "is-selected": group.selected }}
                                 aria-label={group.name}
                             >
                                 <header class="kcq-escape-group__header">

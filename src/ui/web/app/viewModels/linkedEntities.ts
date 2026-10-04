@@ -9,6 +9,7 @@ import type { Presentation } from "../../../presentation/presentation";
 export type LinkedEntityTone = "hinari" | "ko" | "matsuko" | "neutral";
 
 export interface LinkedEntityViewModel {
+    accessibleLabel: string;
     id: EntityId;
     name: string;
     tone: LinkedEntityTone;
@@ -29,6 +30,9 @@ export function projectLinkedPlayers(
 
         seen.add(id);
         links.push({
+            accessibleLabel: presentation.ui("linkedEntity.linkedTo", {
+                character: presentation.entity(id),
+            }),
             id,
             name: presentation.entity(id),
             tone: linkedPlayerTone(id),
@@ -45,15 +49,29 @@ export function projectLinkedEntity(
 ): LinkedEntityViewModel | undefined {
     const character = state.characters.find(({ id: characterId }) => characterId === id);
     if (character) {
-        return { id, name: presentation.entity(id), tone: linkedPlayerTone(character.id) };
+        return {
+            accessibleLabel: presentation.ui("linkedEntity.linkedTo", {
+                character: presentation.entity(id),
+            }),
+            id,
+            name: presentation.entity(id),
+            tone: linkedPlayerTone(character.id),
+        };
     }
     if (state.enemies.some(({ id: enemyId }) => enemyId === id)) {
-        return { id, name: presentation.entity(id), tone: "neutral" };
+        return {
+            accessibleLabel: presentation.ui("linkedEntity.linkedTo", {
+                character: presentation.entity(id),
+            }),
+            id,
+            name: presentation.entity(id),
+            tone: "neutral",
+        };
     }
     return undefined;
 }
 
-function linkedPlayerTone(id: EntityId): LinkedEntityTone {
+export function linkedPlayerTone(id: EntityId): LinkedEntityTone {
     switch (id) {
         case "ko":
         case "matsuko":

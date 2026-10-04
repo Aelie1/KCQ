@@ -95,8 +95,8 @@ describe("enemy card view model", () => {
         );
 
         expect(model.linkedEntities).toEqual([
-            { id: "ko", name: "Ko-chan", tone: "ko" },
-            { id: "matsuko", name: "Matsuko", tone: "matsuko" },
+            { accessibleLabel: "Linked to Ko-chan", id: "ko", name: "Ko-chan", tone: "ko" },
+            { accessibleLabel: "Linked to Matsuko", id: "matsuko", name: "Matsuko", tone: "matsuko" },
         ]);
     });
 });

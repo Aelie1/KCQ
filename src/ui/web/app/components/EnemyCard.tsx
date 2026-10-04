@@ -15,17 +15,13 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
         <article class="kcq-enemy-card" aria-label={props.enemy.name}>
             <header class="kcq-enemy-card__header">
                 <h3 class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
+                <For each={props.enemy.linkedEntities}>
+                    {(link) => <LinkedEntityChip link={link} iconOnly />}
+                </For>
                 <p class="kcq-enemy-card__hp">
                     {props.enemy.currentHp} / {props.enemy.maxHp}
                 </p>
             </header>
-            <Show when={props.enemy.linkedEntities.length > 0}>
-                <div class="kcq-enemy-card__links">
-                    <For each={props.enemy.linkedEntities}>
-                        {(link) => <LinkedEntityChip link={link} />}
-                    </For>
-                </div>
-            </Show>
             <div class="kcq-enemy-card__intentions">
                 <For each={props.enemy.visibleIntentions}>
                     {(intent, index) => (

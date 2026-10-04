@@ -8,18 +8,31 @@ import type {
     MoveType,
     StanceId,
 } from "../../../../engine/public/types";
-import type { LinkedEntityViewModel } from "../viewModels/linkedEntities";
+import type { LinkedEntityTone, LinkedEntityViewModel } from "../viewModels/linkedEntities";
 
-export type StatusChipTone = "danger" | "neutral" | "outcome" | "success" | "warning";
+export type StatusChipTone =
+    | "danger"
+    | "neutral"
+    | "outcome"
+    | `outcome-${IntentOutcome}`
+    | "success"
+    | "warning";
 export type StatusChipSize = "compact" | "standard";
 
 export type IntentOutcome = Exclude<HitBand, "none">;
+
+export interface IntentTargetViewModel {
+    id: EntityId;
+    label: string;
+    tone: LinkedEntityTone;
+}
 
 export interface IntentRowData {
     moveLabel: string;
     outcome?: IntentOutcome;
     outcomeLabel?: string;
     targetLabel?: string;
+    targets?: readonly IntentTargetViewModel[];
 }
 
 export interface IntentViewModel extends IntentRowData {

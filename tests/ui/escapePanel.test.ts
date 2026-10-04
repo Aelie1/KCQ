@@ -30,6 +30,14 @@ describe("escape workflow composition", () => {
         expect(countClass(html, "kcq-escape-group")).toBe(3);
         expect(countClass(html, "is-selected")).toBe(0);
         expect(executeButton).toContain("disabled");
+
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+        const choiceRule = css.match(/\.kcq-escape-choice\s*\{([^}]*)\}/)?.[1] ?? "";
+        const displayOnlyRule = css.match(/\.kcq-escape-choice\.is-display-only\s*\{([^}]*)\}/)?.[1] ?? "";
+        expect(css).not.toMatch(/\.kcq-escape-group\.is-selected\s*\{/);
+        expect(choiceRule).toContain("border: 1px solid var(--kcq-structure-border)");
+        expect(displayOnlyRule).toContain("background: var(--kcq-surface-card)");
+        expect(displayOnlyRule).toContain("color: var(--kcq-text-dim)");
     });
 
     it("renders the selected assist, spread preview, and enabled execute control", () => {
@@ -39,7 +47,7 @@ describe("escape workflow composition", () => {
         ));
         const executeButton = html.match(/<button[^>]*class="kcq-escape__execute"[^>]*>/)?.[0];
 
-        expect(countClass(html, "is-selected")).toBe(2);
+        expect(countClass(html, "is-selected")).toBe(1);
         expect(countClass(html, "is-increase")).toBe(1);
         expect(html).toContain("Spread");
         expect(html).toContain("Assist Hinari's Skunk Legs");
@@ -61,3 +69,5 @@ describe("escape workflow composition", () => {
         expect(transition.selectedEscapeId).toBeUndefined();
     });
 });
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";

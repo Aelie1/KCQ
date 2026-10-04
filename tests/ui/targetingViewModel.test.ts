@@ -56,6 +56,62 @@ describe("targeting view model", () => {
         expect(model.actionEffects).toEqual([]);
     });
 
+    it("projects a stable four-band accuracy vocabulary without mojibake", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            targets: [{
+                valid: true,
+                target: "skunkette1",
+                accuracy: { miss: 40, hit: 60 },
+                effects: [],
+            }],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+        const accuracy = model.targets[0].effects[0];
+
+        expect(accuracy).toMatchObject({
+            kind: "accuracy-profile",
+            bands: [
+                { band: "miss", chance: 40, chanceLabel: "Miss · 40%", zero: false },
+                { band: "graze", chance: 0, chanceLabel: "Graze · 0%", zero: true },
+                { band: "hit", chance: 60, chanceLabel: "Hit · 60%", zero: false },
+                { band: "crit", chance: 0, chanceLabel: "Crit · 0%", zero: true },
+            ],
+        });
+        expect(JSON.stringify(accuracy)).not.toContain("Ã‚");
+    });
+
+    it("fills omitted damage bands with dim zero ranges without changing authored bands", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            targets: [{
+                valid: true,
+                target: "skunkette1",
+                damage: { hit: { chance: 100, min: 12, max: 18 } },
+                effects: [],
+            }],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.targets[0].effects[0]).toMatchObject({
+            kind: "damage-profile",
+            bands: [
+                { band: "miss", chance: 0, rangeLabel: "0–0", zero: true },
+                { band: "graze", chance: 0, rangeLabel: "0–0", zero: true },
+                { band: "hit", chance: 100, rangeLabel: "12–18", zero: false },
+                { band: "crit", chance: 0, rangeLabel: "0–0", zero: true },
+            ],
+        });
+    });
+
     it("requires the exact numeric count and prevents duplicate selections", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const action: ActionInfo = {
@@ -295,7 +351,7 @@ describe("targeting view model", () => {
         );
 
         expect(model.targets[0].linkedEntities).toEqual([
-            { id: "ko", name: "Ko-chan", tone: "ko" },
+            { accessibleLabel: "Linked to Ko-chan", id: "ko", name: "Ko-chan", tone: "ko" },
         ]);
         expect(model.targets[1].linkedEntities).toEqual([]);
     });
@@ -321,7 +377,7 @@ describe("targeting view model", () => {
         expect(model.heading).toBeUndefined();
         expect(model.targets).toEqual([]);
         expect(model.actionEffects).toEqual([
-            expect.objectContaining({ kind: "compact", type: "accuracy" }),
+            expect.objectContaining({ kind: "accuracy-profile", type: "accuracy" }),
             expect.objectContaining({ label: "Resource", payload: "Ko-chan   Subspace +25" }),
         ]);
     });
@@ -460,5 +516,77 @@ describe("targeting view model", () => {
             label: "Remove Debuff", modifiers: [],
         });
         expect(model.actionEffectGroups[0].effects[1]).not.toHaveProperty("durationLabel");
+    });
+
+    it("classifies status-only buffs as debuffs and presents Servitude as Blocks Escape", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [{
+                type: "buff",
+                target: "ko",
+                operation: "add",
+                buff: {
+                    id: "servitude",
+                    duration: 2,
+                    statuses: [{ id: "servitude", value: 1 }],
+                },
+            }],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+
+        expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
+            kind: "buff",
+            label: "Add Debuff",
+            labelParts: ["Add", "Debuff"],
+            name: "Servitude",
+            durationLabel: "2 Rounds",
+            details: ["Blocks Escape"],
+        });
+    });
+
+    it("filters blocked moves through the target's public ActionView but keeps absent added moves", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [{
+                type: "buff",
+                target: "matsuko",
+                operation: "add",
+                buff: {
+                    id: "burnout",
+                    moveList: {
+                        addedMoves: ["fairyWhiteFlame"],
+                        blockedMoves: ["whiteFlame", "fairyWhiteFlame", "immolation"],
+                    },
+                },
+            }],
+        };
+        const moves = ["whiteFlame", "immolation"].map((id) => ({
+            move: { id, targetSide: "enemy" as const, targets: 1, type: "arms" as const },
+            available: true,
+            targets: [],
+            effects: [],
+        }));
+        const actions = fixture.actions.map((view) => view.id === "matsuko"
+            ? { ...view, moves }
+            : view);
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            actions, fixture.thresholds,
+        );
+
+        expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
+            kind: "buff",
+            moveList: [
+                "Add Fairy White Flame",
+                "Block White Flame",
+                "Block Immolation",
+            ],
+        });
+        expect(JSON.stringify(model)).not.toContain("Block Fairy White Flame");
     });
 });

@@ -13,10 +13,16 @@ export type EffectTone = "danger" | "primary" | "special" | "warning";
 
 export interface DamageBandViewModel {
     band: Exclude<HitBand, "none">; chance: number; chanceLabel: string; emphasized: boolean;
-    label: string; max: number; min: number; rangeLabel: string;
+    label: string; max: number; min: number; rangeLabel: string; zero: boolean;
 }
 export interface DamageProfileViewModel {
     bands: readonly DamageBandViewModel[]; kind: "damage-profile"; label: string; tone: "danger";
+}
+export interface AccuracyBandViewModel {
+    band: Exclude<HitBand, "none">; chance: number; chanceLabel: string; label: string; zero: boolean;
+}
+export interface AccuracyProfileViewModel {
+    bands: readonly AccuracyBandViewModel[]; kind: "accuracy-profile"; label: string; tone: "primary"; type: "accuracy";
 }
 export interface CompactEffectViewModel {
     details: readonly string[]; id: string; kind: "compact"; label: string; payload: string;
@@ -27,7 +33,7 @@ export interface BuffModifierViewModel {
 }
 export interface BuffEffectViewModel {
     details: readonly string[]; durationLabel?: string; id: string; kind: "buff"; label: string;
-    modifiers: readonly BuffModifierViewModel[]; moveList: readonly string[]; name: string;
+    labelParts: readonly [string, string]; modifiers: readonly BuffModifierViewModel[]; moveList: readonly string[]; name: string;
     operation: BuffEffect["operation"]; recipient?: string; tone: "special"; type: "buff";
 }
 export interface BindingEffectViewModel {
@@ -36,7 +42,7 @@ export interface BindingEffectViewModel {
     projectedLevel: BindingLevel; projectedPercent: number; projectedValue: number;
     recipient?: string; tone: "binding"; type: "binding";
 }
-export type EffectPreviewViewModel = BindingEffectViewModel | BuffEffectViewModel | CompactEffectViewModel | DamageProfileViewModel;
+export type EffectPreviewViewModel = AccuracyProfileViewModel | BindingEffectViewModel | BuffEffectViewModel | CompactEffectViewModel | DamageProfileViewModel;
 
 export interface TargetPreviewViewModel {
     accuracy?: AccuracyProfile; characterSummary?: string; damage?: PreviewProfile;
@@ -58,7 +64,7 @@ export interface ActionEffectGroupViewModel {
     effects: readonly EffectPreviewViewModel[]; id: EntityId; name: string;
 }
 interface EffectContext {
-    presentation: Presentation; scopeTarget?: EntityId; state: GameState; thresholds?: ThresholdInfo;
+    actions: readonly ActionView[]; presentation: Presentation; scopeTarget?: EntityId; state: GameState; thresholds?: ThresholdInfo;
 }
 
 const DAMAGE_BANDS = ["miss", "graze", "hit", "crit"] as const;
@@ -77,7 +83,7 @@ export function createTargetingViewModel(
     const mode: TargetingMode = typeof action.move.targets === "number" && action.move.targets > 0 ? "selectable" : "predetermined";
     const requiredTargetCount = mode === "selectable" ? action.move.targets as number : 0;
     const moveName = presentation.move(action.move.id);
-    const context = { state, presentation, thresholds };
+    const context = { actions, state, presentation, thresholds };
     const grouped = groupActionEffects(action.effects, context);
     const zeroTargetPreviewEffects = action.move.targets === 0
         ? action.targets.flatMap((preview, index) => preview.valid
@@ -168,7 +174,7 @@ function createTargetPreview(
     return {
         ...base, ...identity, valid: true, accuracy: preview.accuracy, damage: preview.damage,
         effects: createPreviewEffects(preview, base.id, {
-            state, presentation, thresholds, ...(targetId ? { scopeTarget: targetId } : {}),
+            actions, state, presentation, thresholds, ...(targetId ? { scopeTarget: targetId } : {}),
         }),
     };
 }
@@ -210,10 +216,11 @@ function targetIdentity(
 function createDamageProfile(damage: PreviewProfile, presentation: Presentation): DamageProfileViewModel {
     return {
         kind: "damage-profile", label: presentation.ui("targeting.effectDamage"), tone: "danger",
-        bands: DAMAGE_BANDS.flatMap((band) => {
-            const value = damage[band];
-            return value ? [createDamageBand(band, value, presentation)] : [];
-        }),
+        bands: DAMAGE_BANDS.map((band) => createDamageBand(
+            band,
+            damage[band] ?? { chance: 0, min: 0, max: 0 },
+            presentation,
+        )),
     };
 }
 function createDamageBand(band: DamageBandViewModel["band"], value: BandPreview, presentation: Presentation): DamageBandViewModel {
@@ -222,14 +229,30 @@ function createDamageBand(band: DamageBandViewModel["band"], value: BandPreview,
         chanceLabel: presentation.ui("targeting.chance", { band: presentation.hitBand(band), chance: value.chance }),
         min: value.min, max: value.max,
         rangeLabel: presentation.ui("targeting.damageRange", { min: value.min, max: value.max }),
-        emphasized: band === "hit" || band === "crit",
+        emphasized: value.chance > 0 && (band === "hit" || band === "crit"),
+        zero: value.chance === 0,
     };
 }
-function createAccuracyEffect(accuracy: AccuracyProfile, presentation: Presentation): CompactEffectViewModel {
-    return compactEffect("accuracy", "accuracy", "primary", presentation.ui("targeting.effectAccuracy"),
-        DAMAGE_BANDS.flatMap((band) => accuracy[band] === undefined ? [] : [presentation.ui("targeting.chance", {
-            band: presentation.hitBand(band), chance: accuracy[band] ?? 0,
-        })]).join(" Â· "), []);
+function createAccuracyEffect(accuracy: AccuracyProfile, presentation: Presentation): AccuracyProfileViewModel {
+    return {
+        kind: "accuracy-profile",
+        label: presentation.ui("targeting.effectAccuracy"),
+        tone: "primary",
+        type: "accuracy",
+        bands: DAMAGE_BANDS.map((band) => {
+            const chance = accuracy[band] ?? 0;
+            return {
+                band,
+                chance,
+                chanceLabel: presentation.ui("targeting.chance", {
+                    band: presentation.hitBand(band),
+                    chance,
+                }),
+                label: presentation.hitBand(band),
+                zero: chance === 0,
+            };
+        }),
+    };
 }
 
 function createEffectPreview(effect: Effect, id: string, context: EffectContext): EffectPreviewViewModel {
@@ -280,9 +303,15 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
         ? (debuff ? "targeting.effectAddDebuff" : "targeting.effectAddBuff")
         : (debuff ? "targeting.effectRemoveDebuff" : "targeting.effectRemoveBuff");
     const applying = effect.operation === "add";
+    const operationLabel = presentation.ui(applying ? "targeting.operationAdd" : "targeting.operationRemove");
+    const typeLabel = presentation.ui(debuff ? "characterDetails.tagDebuff" : "targeting.effectBuff");
+    const currentMoves = new Set(context.actions
+        .find(({ id: targetId }) => targetId === effect.target)
+        ?.moves.map(({ move }) => move.id) ?? []);
     return {
         kind: "buff", id, type: "buff", tone: "special", operation: effect.operation,
         label: presentation.ui(operationKey), name: presentation.buff(effect.buff.id),
+        labelParts: [operationLabel, typeLabel],
         ...(applying && effect.buff.duration !== undefined
             ? { durationLabel: presentation.ui("characterDetails.rounds", { count: effect.buff.duration }) }
             : {}),
@@ -293,7 +322,9 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
         })) : [],
         moveList: applying ? [
             ...(effect.buff.moveList?.addedMoves ?? []).map((move) => presentation.ui("targeting.addMove", { move: presentation.move(move) })),
-            ...(effect.buff.moveList?.blockedMoves ?? []).map((move) => presentation.ui("targeting.blockMove", { move: presentation.move(move) })),
+            ...(effect.buff.moveList?.blockedMoves ?? [])
+                .filter((move) => currentMoves.has(move))
+                .map((move) => presentation.ui("targeting.blockMove", { move: presentation.move(move) })),
         ] : [],
         details: applying ? [
             ...(effect.buff.statuses ?? []).map((status) => status.value > 1

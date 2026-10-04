@@ -11,6 +11,32 @@ export interface EffectPreviewProps {
 export function EffectPreview(props: EffectPreviewProps): JSX.Element {
     return (
         <Switch>
+            <Match when={props.effect.kind === "accuracy-profile" && props.effect}>
+                {(effect) => {
+                    const accuracy = effect() as Extract<EffectPreviewViewModel, { kind: "accuracy-profile" }>;
+                    return (
+                        <div class="kcq-preview-effect kcq-preview-effect--primary">
+                            <span class="kcq-preview-effect__accent" aria-hidden="true" />
+                            <span class="kcq-preview-effect__tag">{accuracy.label}</span>
+                            <div class="kcq-accuracy-profile">
+                                <For each={accuracy.bands}>
+                                    {(band, index) => (
+                                        <>
+                                            {index() > 0 && <span class="kcq-accuracy-profile__separator" aria-hidden="true">|</span>}
+                                            <span
+                                                class="kcq-accuracy-profile__band"
+                                                classList={{ "is-zero": band.zero }}
+                                            >
+                                                {band.chanceLabel}
+                                            </span>
+                                        </>
+                                    )}
+                                </For>
+                            </div>
+                        </div>
+                    );
+                }}
+            </Match>
             <Match when={props.effect.kind === "damage-profile" && props.effect}>
                 {(effect) => <DamageEffect effect={effect() as Extract<EffectPreviewViewModel, { kind: "damage-profile" }>} />}
             </Match>
@@ -40,7 +66,10 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                     return (
                         <div class="kcq-preview-effect kcq-preview-effect--special kcq-buff-effect">
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
-                            <span class="kcq-preview-effect__tag">{buff.label}</span>
+                            <span class="kcq-preview-effect__tag kcq-buff-effect__tag" aria-label={buff.label}>
+                                <span>{buff.labelParts[0]}</span>
+                                <span>{buff.labelParts[1]}</span>
+                            </span>
                             <div class="kcq-buff-effect__content">
                                 <div class="kcq-buff-effect__header">
                                     <strong class="kcq-preview-effect__payload">{buff.name}</strong>

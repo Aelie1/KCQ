@@ -64,6 +64,7 @@ export const systemStrings: StringTable = {
     "ui.effects.more": "+{count} more",
     "ui.intentions.more": "+{count}",
     "ui.intentions.moreAccessible": "{count} more intentions",
+    "ui.linkedEntity.linkedTo": "Linked to {character}",
     "ui.partyCard.blockedCapabilities": "Blocked capabilities",
     "ui.partyCard.bindings": "Bindings",
     "ui.partyCard.effects": "Effects",
