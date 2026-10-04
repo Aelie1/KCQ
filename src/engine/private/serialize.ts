@@ -90,9 +90,7 @@ function serializeEffect(effect: iEffect): Effect | undefined {
             return {
                 type: effect.type,
                 target: effect.target.id,
-                buff: effect.buff.id,
-                effects: effect.buff.modifiers,
-                moveList: serializeMoveList(effect.buff.moveList),
+                buff: serializeBuff(effect.buff),
                 operation: effect.operation
             }
         case "damage":

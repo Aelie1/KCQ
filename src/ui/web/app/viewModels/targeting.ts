@@ -8,6 +8,7 @@ import type {
     GameState,
     HitBand,
     ModifierId,
+    MoveListModifier,
     PreviewProfile,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
@@ -413,8 +414,8 @@ function createCompactEffect(
                     : [
                         ...(suppressTargetDetail ? [] : [presentation.entity(effect.target)]),
                         presentation.ui("targeting.bindingAmount", {
-                        amount: effect.amount,
-                    })],
+                            amount: effect.amount,
+                        })],
             );
         case "buff":
             return compactEffect(
@@ -424,11 +425,11 @@ function createCompactEffect(
                 presentation.ui(effect.operation === "add"
                     ? "targeting.effectAddBuff"
                     : "targeting.effectRemoveBuff"),
-                presentation.buff(effect.buff),
+                presentation.buff(effect.buff.id),
                 [
                     ...(suppressTargetDetail ? [] : [presentation.entity(effect.target)]),
-                    ...modifierDetails(effect.effects, presentation),
-                    ...moveListDetails(effect.moveList, presentation),
+                    ...modifierDetails(effect.buff.modifiers, presentation),
+                    ...moveListDetails(effect.buff.moveList, presentation),
                 ],
             );
         case "enemy":
@@ -557,7 +558,7 @@ function modifierDetails(
 }
 
 function moveListDetails(
-    moveList: Extract<Effect, { type: "buff" }>["moveList"],
+    moveList: MoveListModifier | undefined,
     presentation: Presentation,
 ): string[] {
     return [

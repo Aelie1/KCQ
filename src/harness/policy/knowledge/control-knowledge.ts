@@ -65,10 +65,10 @@ export function evaluateControlKnowledge(
         const effect = preview.effects.find((value) => value.type === "buff"
             && value.operation === "add"
             && (starlight
-                ? STARLIGHT_IDS.has(value.buff)
-                : (value.effects?.hit ?? 0) < 0 || (value.effects?.defense ?? 0) < 0));
+                ? STARLIGHT_IDS.has(value.buff.id)
+                : (value.buff.modifiers?.hit ?? 0) < 0 || (value.buff.modifiers?.defense ?? 0) < 0));
         if (effect?.type !== "buff") continue;
-        const modifiers = effect.effects ?? {};
+        const modifiers = effect.buff.modifiers ?? {};
         const hitModifier = Math.min(0, modifiers.hit ?? 0);
         const defenseModifier = Math.min(0, modifiers.defense ?? 0);
         if (hitModifier === 0 && defenseModifier === 0) continue;
@@ -82,7 +82,7 @@ export function evaluateControlKnowledge(
             : "public-preview-fallback" as const;
         const alreadyControlled = starlight
             ? hasUsefulStarlight(enemy.buffs)
-            : hasEquivalentControl(enemy.buffs, effect.buff, hitModifier, defenseModifier);
+            : hasEquivalentControl(enemy.buffs, effect.buff.id, hitModifier, defenseModifier);
         const hitReductionValue = Math.abs(hitModifier) * duration
             * (STARLIGHT_HIT_BASE_VALUE + enemyPressure * STARLIGHT_HIT_PRESSURE_SCALE);
         const defeatProgress = enemy.maxHp > 0
@@ -95,7 +95,7 @@ export function evaluateControlKnowledge(
         const multiplier = alreadyControlled ? STARLIGHT_REAPPLICATION_MULTIPLIER : 1;
         targets.push({
             enemyId: enemy.id,
-            buffId: effect.buff,
+            buffId: effect.buff.id,
             enemyPressure,
             hitModifier,
             defenseModifier,

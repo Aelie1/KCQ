@@ -162,9 +162,7 @@ export interface BindingEffect {
 export interface BuffEffect {
     type: "buff";
     target: EntityId;
-    buff: BuffId;
-    effects?: ModifierSet;
-    moveList?: MoveListModifier;
+    buff: Buff;
     operation: "add" | "remove";
 }
 

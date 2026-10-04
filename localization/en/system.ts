@@ -198,7 +198,7 @@ export const systemStrings: StringTable = {
 
     "failure.moveUnavailable.text": "This move is unavailable.",
     "failure.attackUnavailable.text": "This character cannot attack.",
-    "failure.assistUnavailable.text": "This character cannot assist.",
+    "failure.assistUnavailable.text": "Cannot Assist",
     "failure.escapeUnavailable.text": "This character cannot escape.",
     "failure.bindingRestriction.text": "Bindings prevent this action.",
     "failure.cooldownIncomplete.text": "This move is still on cooldown.",

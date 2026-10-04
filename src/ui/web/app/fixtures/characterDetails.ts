@@ -122,39 +122,45 @@ const koMoves: ActionInfo[] = [
     ]),
     move("reflect", "mouth", "player", 0, [
         validTarget(null),
-    ], { effects: [{
-        type: "buff",
-        target: "ko",
-        buff: "reflect",
-        operation: "add",
-    }] }),
+    ], {
+        effects: [{
+            type: "buff",
+            target: "ko",
+            buff: { id: "reflect" },
+            operation: "add",
+        }]
+    }),
     move("fairyReflect", "mouth", "player", 0, [
         validTarget(null),
-    ], { effects: [{
-        type: "buff",
-        target: "ko",
-        buff: "fairyReflect",
-        operation: "add",
-    }] }),
+    ], {
+        effects: [{
+            type: "buff",
+            target: "ko",
+            buff: { id: "fairyReflect" },
+            operation: "add",
+        }]
+    }),
     move("fairyTransformation", "mouth", "player", 0, [
         validTarget(null),
-    ], { effects: [{
-        type: "buff",
-        target: "ko",
-        buff: "transformation",
-        operation: "add",
-    }] }),
+    ], {
+        effects: [{
+            type: "buff",
+            target: "ko",
+            buff: { id: "transformation" },
+            operation: "add",
+        }]
+    }),
     move("fairyEmpowerment", "mouth", "player", "all", [
         validTarget("ko", [{
             type: "buff",
             target: "ko",
-            buff: "empowerment",
+            buff: { id: "empowerment" },
             operation: "add",
         }]),
         validTarget("matsuko", [{
             type: "buff",
             target: "matsuko",
-            buff: "empowerment",
+            buff: { id: "empowerment" },
             operation: "add",
         }]),
     ]),

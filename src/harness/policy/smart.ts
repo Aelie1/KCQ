@@ -1275,7 +1275,7 @@ function removedBuffsFor(candidate: SmartCandidate, actorId: EntityId): Set<stri
     const effects = [candidate.effects, ...candidate.targets.map(({ effects }) => effects)].flat();
     return new Set(effects.flatMap((effect) =>
         effect.type === "buff" && effect.target === actorId && effect.operation === "remove"
-            ? [effect.buff]
+            ? [effect.buff.id]
             : []
     ));
 }
@@ -1959,15 +1959,15 @@ function collectMoveListEffects(
         // Removing a move-list buff cannot be reconstructed exactly from the
         // public view, so remove operations are deliberately ignored for now.
         if (effect.type !== "buff" || effect.operation !== "add"
-            || effect.moveList === undefined || !characterIds.has(effect.target)) continue;
+            || effect.buff.moveList === undefined || !characterIds.has(effect.target)) continue;
 
         let change = changes.get(effect.target);
         if (change === undefined) {
             change = { added: new Set(), blocked: new Set() };
             changes.set(effect.target, change);
         }
-        for (const moveId of effect.moveList.addedMoves ?? []) change.added.add(moveId);
-        for (const moveId of effect.moveList.blockedMoves ?? []) change.blocked.add(moveId);
+        for (const moveId of effect.buff.moveList?.addedMoves ?? []) change.added.add(moveId);
+        for (const moveId of effect.buff.moveList?.blockedMoves ?? []) change.blocked.add(moveId);
     }
 }
 

@@ -97,7 +97,7 @@ const fairyEmpowerment = {
         effects: [{
             type: "buff" as const,
             target: id,
-            buff: "transformation",
+            buff: { id: "transformation" },
             effects: { defense: 3 },
             operation: "add" as const,
         }],

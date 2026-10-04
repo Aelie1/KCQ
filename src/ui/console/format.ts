@@ -71,7 +71,7 @@ export function formatPreviewEffects(effects: readonly Effect[]): string {
                 value = `${effect.binding} ${effect.amount === undefined ? "+??" : signed(effect.amount)}`;
                 break;
             case "buff": {
-                const modifiers = Object.entries(effect.effects ?? {})
+                const modifiers = Object.entries(effect.buff.modifiers ?? {})
                     .map(([key, amount]) => `(${modifierLabel(key as ModifierId)} ${signed(amount)})`)
                     .join(" ");
                 value = `${effect.operation === "add" ? "adds" : "removes"} ${effect.buff}`

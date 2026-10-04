@@ -202,7 +202,7 @@ function stopRule(
             reason: applications.length > 0
                 ? "public-numeric-binding-pressure"
                 : harmfulTrapPressure > 0 ? "public-trap-pressure"
-                : allMiss ? "committed-miss" : "no-valued-harmful-effects",
+                    : allMiss ? "committed-miss" : "no-valued-harmful-effects",
         } satisfies CommittedIntentionDiagnostic;
     });
     const baselineDebt = totalRecoveryDebt(projected, context.thresholds);
@@ -359,7 +359,7 @@ function attackMeRule(
     const trackTransferGain = Math.max(0, normalDebt - redirectedDebt);
     const defenseModifier = candidate.effects.reduce((best, effect) =>
         effect.type === "buff" && effect.operation === "add" && effect.target === MATSUKO
-            ? Math.max(best, effect.effects?.defense ?? 0)
+            ? Math.max(best, effect.buff.modifiers?.defense ?? 0)
             : best
         , 0);
     const harmfulRedirect = redirectedDebt > normalDebt;
