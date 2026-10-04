@@ -3,6 +3,7 @@ import type {
     ActionView,
     EntityId,
     GameState,
+    ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 import { CommandCard } from "../components/CommandCard";
@@ -15,6 +16,7 @@ export interface CharacterDetailsPanelProps {
     focusedCharacterId: EntityId;
     presentation: Presentation;
     state: GameState;
+    thresholds: ThresholdInfo;
 }
 
 export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.Element {
@@ -22,6 +24,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
         props.state,
         props.actions,
         props.focusedCharacterId,
+        props.thresholds,
         props.presentation,
     ));
 
@@ -124,7 +127,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                                     classList={{ [`kcq-character-binding__bar--${binding.level}`]: true }}
                                     aria-hidden="true"
                                 >
-                                    <span />
+                                    <span style={{ width: `${binding.fillPercent}%` }} />
                                 </div>
                             </div>
                         )}

@@ -1005,6 +1005,10 @@ button {
     background: var(--kcq-state-danger);
 }
 
+.kcq-modifier-meter__segment--active.kcq-modifier-meter__segment--success {
+    background: var(--kcq-state-success);
+}
+
 .kcq-modifier-meter__visual--blocked {
     display: block;
     overflow: hidden;
@@ -1027,6 +1031,10 @@ button {
 
 .kcq-modifier-meter__value--danger {
     color: var(--kcq-state-danger);
+}
+
+.kcq-modifier-meter__value--success {
+    color: var(--kcq-state-success);
 }
 
 .kcq-character-bindings {
@@ -1133,37 +1141,27 @@ button {
     border-radius: inherit;
 }
 
-.kcq-character-binding__bar--none span {
-    width: 0;
-}
-
 .kcq-character-binding__bar--light span {
-    width: 20%;
     background: var(--kcq-binding-light);
 }
 
 .kcq-character-binding__bar--moderate span {
-    width: 40%;
     background: var(--kcq-binding-moderate);
 }
 
 .kcq-character-binding__bar--heavy span {
-    width: 60%;
     background: var(--kcq-binding-heavy);
 }
 
 .kcq-character-binding__bar--severe span {
-    width: 75%;
     background: var(--kcq-binding-severe);
 }
 
 .kcq-character-binding__bar--overwhelming span {
-    width: 90%;
     background: var(--kcq-binding-impossible);
 }
 
 .kcq-character-binding__bar--max span {
-    width: 100%;
     background: var(--kcq-binding-impossible);
 }
 

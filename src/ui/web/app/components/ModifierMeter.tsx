@@ -25,6 +25,7 @@ export function ModifierMeter(props: ModifierMeterProps): JSX.Element {
                             classList={{
                                 "kcq-modifier-meter__segment--active": segment >= SEGMENTS.length - activeSegments(),
                                 "kcq-modifier-meter__segment--danger": props.metric.tone === "danger",
+                                "kcq-modifier-meter__segment--success": props.metric.tone === "success",
                             }}
                         />
                     )}
@@ -32,7 +33,10 @@ export function ModifierMeter(props: ModifierMeterProps): JSX.Element {
             </span>
             <span
                 class="kcq-modifier-meter__value"
-                classList={{ "kcq-modifier-meter__value--danger": props.metric.tone === "danger" }}
+                classList={{
+                    "kcq-modifier-meter__value--danger": props.metric.tone === "danger",
+                    "kcq-modifier-meter__value--success": props.metric.tone === "success",
+                }}
             >
                 {props.metric.valueLabel}
             </span>

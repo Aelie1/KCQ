@@ -63,7 +63,7 @@ describe("enemy card view model", () => {
             moveLabel: "Skunk Gun",
             targetLabel: "Ko-chan",
             outcome: "crit",
-            outcomeLabel: "Critical",
+            outcomeLabel: "Crit",
         });
         expect(model.overflowCount).toBe(3);
         expect(model.overflowLabel).toBe("+3");

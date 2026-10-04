@@ -12,6 +12,7 @@ describe("character details view model", () => {
             fixture.state,
             fixture.actions,
             fixture.focusedCharacterId,
+            fixture.thresholds,
             fixture.presentation,
         );
 
@@ -41,6 +42,7 @@ describe("character details view model", () => {
         const focused = createFocusedCharacterViewModel(
             fixture.state,
             fixture.actions[0],
+            fixture.thresholds,
             fixture.presentation,
         );
 
@@ -60,12 +62,65 @@ describe("character details view model", () => {
         ]);
     });
 
+    it("uses the public threshold maximum for numeric binding fill", () => {
+        const fixture = characterDetailsFixture;
+        const focused = createFocusedCharacterViewModel(
+            fixture.state,
+            fixture.actions[0],
+            { ...fixture.thresholds, max: 200 },
+            fixture.presentation,
+        );
+
+        expect(focused.bindings.map(({ value, fillPercent }) => ({ value, fillPercent }))).toEqual([
+            { value: 72, fillPercent: 36 },
+            { value: 27, fillPercent: 13.5 },
+            { value: 89, fillPercent: 44.5 },
+            { value: 0, fillPercent: 0 },
+        ]);
+    });
+
+    it("applies modifier tone according to beneficial and harmful direction", () => {
+        const fixture = characterDetailsFixture;
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "ko"
+                ? {
+                    ...character,
+                    modifiers: {
+                        defense: 3,
+                        hitmouth: 4,
+                        potency: 1,
+                        spread: 1,
+                        vulnerability: -2,
+                    },
+                }
+                : character),
+        };
+        const focused = createFocusedCharacterViewModel(
+            state,
+            fixture.actions[0],
+            fixture.thresholds,
+            fixture.presentation,
+        );
+        const tones = new Map([
+            ...focused.modifiers.left,
+            ...focused.modifiers.right,
+        ].map(({ label, tone }) => [label, tone]));
+
+        expect(tones.get("Defense")).toBe("success");
+        expect(tones.get("Potency")).toBe("success");
+        expect(tones.get("Vulnerability")).toBe("success");
+        expect(tones.get("Spread")).toBe("danger");
+        expect(tones.get("Mouth")).toBe("danger");
+    });
+
     it("derives command tags only from public move, target, preview, and effect data", () => {
         const fixture = characterDetailsFixture;
         const model = createCharacterDetailsViewModel(
             fixture.state,
             fixture.actions,
             fixture.focusedCharacterId,
+            fixture.thresholds,
             fixture.presentation,
         );
         const command = (id: string) => model.focused.commands.find((item) => item.id === id);
@@ -88,6 +143,16 @@ describe("character details view model", () => {
             "Buff",
             "AOE",
         ]);
+        expect(command("reflect")?.tags.map(({ label }) => label)).toEqual([
+            "Mouth",
+            "Self",
+            "Buff",
+        ]);
+        expect(command("fairyTransformation")?.tags.map(({ label }) => label)).toEqual([
+            "Mouth",
+            "Self",
+            "Buff",
+        ]);
         expect(command("powerOfDenial")?.tags.map(({ label }) => label)).toEqual([
             "Mouth",
             "Ally",
@@ -109,6 +174,7 @@ describe("character details view model", () => {
             fixture.state,
             fixture.actions,
             fixture.focusedCharacterId,
+            fixture.thresholds,
             fixture.presentation,
         );
 
@@ -138,6 +204,7 @@ describe("character details view model", () => {
             fixture.state,
             fixture.actions.slice(1),
             fixture.focusedCharacterId,
+            fixture.thresholds,
             fixture.presentation,
         )).toThrow("Missing ActionView for focused character ko.");
     });

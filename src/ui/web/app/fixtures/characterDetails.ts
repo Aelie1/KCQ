@@ -11,6 +11,7 @@ import type {
     MoveType,
     PreviewInfo,
     TargetCount,
+    ThresholdInfo,
 } from "../../../../engine/public/types";
 import { Presentation } from "../../../presentation/presentation";
 
@@ -45,7 +46,7 @@ function character(
 }
 
 function validTarget(
-    target: string,
+    target: string | null,
     effects: Effect[] = [],
     damage = false,
 ): PreviewInfo {
@@ -119,30 +120,30 @@ const koMoves: ActionInfo[] = [
             amount: 20,
         }]),
     ]),
-    move("reflect", "mouth", "player", 1, [
-        validTarget("ko", [{
-            type: "buff",
-            target: "ko",
-            buff: "reflect",
-            operation: "add",
-        }]),
-    ]),
-    move("fairyReflect", "mouth", "player", 1, [
-        validTarget("ko", [{
-            type: "buff",
-            target: "ko",
-            buff: "fairyReflect",
-            operation: "add",
-        }]),
-    ]),
-    move("fairyTransformation", "mouth", "player", 1, [
-        validTarget("ko", [{
-            type: "buff",
-            target: "ko",
-            buff: "transformation",
-            operation: "add",
-        }]),
-    ]),
+    move("reflect", "mouth", "player", 0, [
+        validTarget(null),
+    ], { effects: [{
+        type: "buff",
+        target: "ko",
+        buff: "reflect",
+        operation: "add",
+    }] }),
+    move("fairyReflect", "mouth", "player", 0, [
+        validTarget(null),
+    ], { effects: [{
+        type: "buff",
+        target: "ko",
+        buff: "fairyReflect",
+        operation: "add",
+    }] }),
+    move("fairyTransformation", "mouth", "player", 0, [
+        validTarget(null),
+    ], { effects: [{
+        type: "buff",
+        target: "ko",
+        buff: "transformation",
+        operation: "add",
+    }] }),
     move("fairyEmpowerment", "mouth", "player", "all", [
         validTarget("ko", [{
             type: "buff",
@@ -266,9 +267,22 @@ const actions = [
     },
 ] satisfies ActionView[];
 
+const thresholds = {
+    thresholds: {
+        light: 10,
+        moderate: 25,
+        heavy: 40,
+        severe: 55,
+        overwhelming: 75,
+        max: 100,
+    },
+    max: 100,
+} satisfies ThresholdInfo;
+
 export const characterDetailsFixture = {
     state,
     actions,
     focusedCharacterId: "ko",
     presentation,
+    thresholds,
 };

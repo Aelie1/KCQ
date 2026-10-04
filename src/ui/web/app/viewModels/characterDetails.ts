@@ -11,6 +11,7 @@ import type {
     ModifierId,
     MoveType,
     Status,
+    ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 import type {
@@ -43,12 +44,13 @@ export interface CommandCardViewModel {
 export interface ModifierMeterViewModel {
     blocked: boolean;
     label: string;
-    tone: "danger" | "neutral";
+    tone: "danger" | "neutral" | "success";
     value: number;
     valueLabel: string;
 }
 
 export interface BindingDetailViewModel {
+    fillPercent: number;
     id: string;
     level: BindingLevel;
     levelLabel: string;
@@ -133,10 +135,16 @@ interface CapabilityDefinition {
     moveType?: Exclude<MoveType, "none">;
 }
 
+const HIGHER_IS_HARMFUL = new Set<ModifierId>([
+    "vulnerability",
+    "spread",
+]);
+
 export function createCharacterDetailsViewModel(
     state: GameState,
     actions: readonly ActionView[],
     focusedId: EntityId,
+    thresholds: ThresholdInfo,
     presentation: Presentation,
 ): CharacterDetailsViewModel {
     const actionsById = new Map(actions.map((action) => [action.id, action]));
@@ -145,7 +153,12 @@ export function createCharacterDetailsViewModel(
         throw new Error(`Missing ActionView for focused character ${focusedId}.`);
     }
 
-    const focused = createFocusedCharacterViewModel(state, focusedAction, presentation);
+    const focused = createFocusedCharacterViewModel(
+        state,
+        focusedAction,
+        thresholds,
+        presentation,
+    );
     const roster = state.characters.map((character) => {
         const action = actionsById.get(character.id);
         if (!action) {
@@ -200,6 +213,7 @@ export function createCharacterDetailsViewModel(
 export function createFocusedCharacterViewModel(
     state: GameState,
     action: ActionView,
+    thresholds: ThresholdInfo,
     presentation: Presentation,
 ): FocusedCharacterViewModel {
     const character = state.characters.find(({ id }) => id === action.id);
@@ -228,6 +242,9 @@ export function createFocusedCharacterViewModel(
             )),
         },
         bindings: character.bindings.map((binding) => ({
+            fillPercent: thresholds.max > 0
+                ? Math.min(100, Math.max(0, (binding.value / thresholds.max) * 100))
+                : 0,
             id: binding.id,
             name: presentation.binding(binding.id),
             value: binding.value,
@@ -267,8 +284,26 @@ function createModifierMeter(
             : presentation.ui("characterDetails.modifierValue", {
                 value: value >= 0 ? `+${value}` : value,
             }),
-        tone: blocked || value !== 0 ? "danger" : "neutral",
+        tone: modifierTone(definition.modifier, value, blocked),
     };
+}
+
+function modifierTone(
+    modifier: ModifierId,
+    value: number,
+    blocked: boolean,
+): ModifierMeterViewModel["tone"] {
+    if (blocked) {
+        return "danger";
+    }
+    if (value === 0) {
+        return "neutral";
+    }
+
+    const beneficial = HIGHER_IS_HARMFUL.has(modifier)
+        ? value < 0
+        : value > 0;
+    return beneficial ? "success" : "danger";
 }
 
 function createEffectDetail(
@@ -433,7 +468,9 @@ function createMoveTags(
         characterIds.has(target) && target !== character.id);
     const includesEnemy = validTargets.some((target) => enemyIds.has(target));
 
-    if (includesAlly || (info.move.targetSide === "player" && info.move.targets === "all")) {
+    if (info.move.targetSide === "player" && info.move.targets === 0) {
+        push(tag("self", presentation.ui("characterDetails.tagSelf"), "success"));
+    } else if (includesAlly || (info.move.targetSide === "player" && info.move.targets === "all")) {
         push(tag("ally", presentation.ui("characterDetails.tagAlly"), "ally"));
     } else if (includesSelf) {
         push(tag("self", presentation.ui("characterDetails.tagSelf"), "success"));
