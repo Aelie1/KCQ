@@ -1277,7 +1277,7 @@ button {
     display: grid;
     grid-template-columns: repeat(8, auto);
     gap: 1px;
-    width: 60px;
+    width: 63px;
     height: 10px;
 }
 
@@ -1298,7 +1298,7 @@ button {
 
 .kcq-pip-meter--blocked {
     display: block;
-    width: 60px;
+    width: 63px;
     height: 10px;
     overflow: hidden;
     border-radius: 6px;
