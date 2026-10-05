@@ -54,6 +54,39 @@ export function removeEmpowerment(actor: iEntity): iEffect[] {
     return effects;
 }
 
+function createTransformBuff(target: iEntity, duration: number, defense: number): iEffect {
+    const transformBuff: iBuff = {
+        id: TRANSFORMATION_BUFF,
+        active: true,
+        duration: duration,
+        modifiers: {
+            defense: defense,
+        }
+    }
+
+    return {
+        type: "buff",
+        target: target,
+        buff: transformBuff,
+        operation: "add"
+    }
+}
+
+function createEmpowermentBuff(target: iCharacter): iEffect {
+    const newBuff: iBuff = {
+        id: EMPOWERMENT_BUFF,
+        moveList: { addedMoves: target.definition.empoweredMoves },
+        active: true,
+    }
+
+    return {
+        type: "buff",
+        target: target,
+        buff: newBuff,
+        operation: "add"
+    }
+}
+
 export const thousandRestraintsBody: PassiveDef = {
     id: "thousandRestraintsBody",
     status: { allowedMoveTypes: ["arms", "legs", "mouth"], flags: ["blocksEscape"] }
@@ -187,37 +220,11 @@ export const fairyTransformation: MoveDef = {
     cooldown: { "fairyTransformation": TRANSFORMATION_COOLDOWN },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
-
-        const transformBuff: iBuff = {
-            id: TRANSFORMATION_BUFF,
-            active: true,
-            duration: 3,
-            modifiers: {
-                defense: 3,
-            }
-        }
-
-        result.effects.push({
-            type: "buff",
-            target: actor,
-            buff: transformBuff,
-            operation: "add"
-        })
+        result.effects.push(createTransformBuff(actor, 3, 3));
 
         const fairyBuff = findBuff(actor, EMPOWERMENT_BUFF);
         if (!fairyBuff && isCharacter(actor)) {
-            const newBuff: iBuff = {
-                id: EMPOWERMENT_BUFF,
-                moveList: { addedMoves: actor.definition.empoweredMoves },
-                active: true,
-            }
-
-            result.effects.push({
-                type: "buff",
-                target: actor,
-                buff: newBuff,
-                operation: "add"
-            })
+            result.effects.push(createEmpowermentBuff(actor));
         }
 
         return result;
@@ -231,40 +238,27 @@ export const fairyEmpowerment: MoveDef = {
     targets: "all",
     cooldown: { "fairyEmpowerment": TRANSFORMATION_COOLDOWN },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
-        const result = fairyTransformation.resolve(state, actor, move, targets);
-        result.effects.push(...removeEmpowerment(actor));
+        const result: iMoveResult = { effects: [], targets: [] };
+        const koEffects: iEffect[] = [];
 
-        const transformBuff: iBuff = {
-            id: TRANSFORMATION_BUFF,
-            active: true,
-            duration: 2,
-            modifiers: {
-                defense: 2,
-            }
-        }
+        koEffects.push(createTransformBuff(actor, 3, 3));
+        koEffects.push(...removeEmpowerment(actor));
+        result.targets.push({
+            target: actor,
+            result: "none",
+            effects: koEffects
+        });
+
 
         for (const target of targets) {
             if (target.target !== actor && isCharacter(target.target)) {
-                const empowerBuff = {
-                    id: EMPOWERMENT_BUFF,
-                    moveList: { addedMoves: target.target.definition.empoweredMoves },
-                    active: true,
-                }
+                const allyEffects: iEffect[] = [];
+                allyEffects.push(createTransformBuff(target.target, 2, 2));
+                allyEffects.push(createEmpowermentBuff(target.target));
                 result.targets.push({
                     target: target.target,
                     result: target.band,
-                    effects: [{
-                        type: "buff",
-                        target: target.target,
-                        buff: transformBuff,
-                        operation: "add"
-                    },
-                    {
-                        type: "buff",
-                        target: target.target,
-                        buff: empowerBuff,
-                        operation: "add"
-                    }]
+                    effects: allyEffects
                 });
             }
         }

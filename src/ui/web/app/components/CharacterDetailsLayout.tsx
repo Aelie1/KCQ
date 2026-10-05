@@ -86,7 +86,7 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                 </StatusChip>
                 <Show when={props.model.focused.resource} keyed>
                     {(resource) => (
-                        <span class="kcq-focused-character__resource">{resource.label}</span>
+                        <span class="kcq-focused-character__resource kcq-subspace-value">{resource.label}</span>
                     )}
                 </Show>
             </article>

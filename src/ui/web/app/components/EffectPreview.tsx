@@ -118,10 +118,16 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                 <div class="kcq-binding-effect__header">
                                     <strong class="kcq-preview-effect__payload">{binding.bindingName}</strong>
                                     <EffectRecipient recipient={binding.recipient} />
-                                    <span class={`kcq-binding-effect__level kcq-escape-value--${binding.projectedLevel}`}>
-                                        {binding.levelLabel}
+                                    <span class={`kcq-binding-effect__level kcq-escape-value--${binding.currentLevel}`}>
+                                        {binding.currentLevelLabel}
                                     </span>
-                                    <strong>{binding.currentValue} → {binding.projectedValue}</strong>
+                                    <strong class="kcq-binding-effect__transition">
+                                        {binding.currentValue} → {binding.projectedLevelLabel && (
+                                            <span class={`kcq-binding-effect__projected-level kcq-escape-value--${binding.projectedLevel}`}>
+                                                {binding.projectedLevelLabel}{" "}
+                                            </span>
+                                        )}{binding.projectedValue}
+                                    </strong>
                                 </div>
                                 <div
                                     class="kcq-binding-effect__bar"

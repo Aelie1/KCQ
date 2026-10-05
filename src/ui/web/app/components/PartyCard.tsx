@@ -30,9 +30,14 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
         >
             <header class="kcq-party-card__header">
                 <div class="kcq-party-card__identity">
-                    <h3 class="kcq-party-card__name" title={props.character.name}>
+                    <h3 class="kcq-party-card__name" classList={{ [`kcq-player-identity--${props.character.tone}`]: true }} title={props.character.name}>
                         {props.character.name}
                     </h3>
+                    <Show when={props.character.subspaceValue !== undefined}>
+                        <span class="kcq-party-card__resource kcq-subspace-value">
+                            {props.character.subspaceValue}
+                        </span>
+                    </Show>
                     <StatusChip tone={props.character.actionState.tone}>
                         {props.character.actionState.label}
                     </StatusChip>

@@ -343,8 +343,8 @@ button {
 }
 
 .kcq-intent-row__move {
-    flex: 0 1 68px;
-    width: 68px;
+    flex: 0 1 auto;
+    width: auto;
     min-width: 0;
     overflow: hidden;
     color: var(--kcq-text-muted);
@@ -1193,6 +1193,9 @@ button {
 
 .kcq-focused-character__resource {
     margin-left: auto;
+}
+
+.kcq-subspace-value {
     padding: 3px 5px;
     border: 1px solid var(--kcq-binding-light);
     border-radius: 6px;
@@ -1272,15 +1275,15 @@ button {
 
 .kcq-pip-meter {
     display: grid;
-    grid-template-columns: repeat(8, 4px);
-    gap: 4px;
+    grid-template-columns: repeat(8, auto);
+    gap: 1px;
     width: 60px;
     height: 10px;
 }
 
 .kcq-pip-meter__pip {
-    width: 4px;
-    height: 10px;
+    width: 7px;
+    height: 12px;
     border-radius: 6px;
     background: var(--kcq-state-neutral-bg);
 }
@@ -2097,8 +2100,8 @@ button {
 
 .kcq-effect-modifier {
     display: inline-grid;
-    grid-template-columns: minmax(22px, auto) 60px minmax(16px, auto);
-    gap: 4px;
+    grid-template-columns: minmax(14px, auto) 60px minmax(16px, auto);
+    gap: 8px;
     align-items: center;
     min-width: 0;
     color: var(--kcq-text-muted);

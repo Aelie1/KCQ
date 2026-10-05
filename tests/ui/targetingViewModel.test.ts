@@ -415,14 +415,14 @@ describe("targeting view model", () => {
         expect(effects[0]).toMatchObject({
             kind: "binding", currentValue: 27, projectedValue: 42,
             currentLevel: "moderate", projectedLevel: "heavy",
-            levelLabel: "Heavy",
+            currentLevelLabel: "Moderate", projectedLevelLabel: "Heavy",
         });
         expect(effects[0]).not.toHaveProperty("deltaLabel");
         expect(effects[0]).not.toHaveProperty("recipient");
         expect(effects[1]).toMatchObject({
             kind: "binding", currentValue: 72, projectedValue: 40,
             currentLevel: "severe", projectedLevel: "heavy",
-            levelLabel: "Heavy",
+            currentLevelLabel: "Severe", projectedLevelLabel: "Heavy",
         });
         expect(effects[1]).not.toHaveProperty("deltaLabel");
     });

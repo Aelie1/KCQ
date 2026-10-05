@@ -221,7 +221,7 @@ describe("targeting workflow composition", () => {
         expect(buffTagRule).not.toContain("flex-direction: column");
     });
 
-    it("keeps the Binding chip stable while severity text and bars retain projected colors", () => {
+    it("shows Binding severity transitions only when the projected level changes", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const renderBinding = (amount: number) => {
             const action: ActionInfo = {
@@ -232,19 +232,23 @@ describe("targeting workflow composition", () => {
         };
         const moderate = renderBinding(5);
         const severe = renderBinding(40);
-        const visibleText = (html: string) => html.replace(/<!--.*?-->/g, "");
+        const visibleText = (html: string) => html
+            .replace(/<!--.*?-->/g, "")
+            .replace(/ data-hk="[^"]*"/g, "");
 
         for (const html of [moderate, severe]) {
             expect(html).toContain("kcq-preview-effect kcq-preview-effect--special kcq-binding-effect");
             expect(html).not.toContain("kcq-binding-effect--moderate");
             expect(html).not.toContain("kcq-binding-effect--severe");
         }
-        expect(visibleText(moderate)).toContain("27 → 32");
+        expect(visibleText(moderate)).toContain("Moderate</span><strong class=\"kcq-binding-effect__transition\">27 → 32");
+        expect(visibleText(moderate)).not.toContain("27 → Moderate 32");
         expect(moderate).not.toContain("+5 Binding");
-        expect(visibleText(severe)).toContain("27 → 67");
+        expect(visibleText(severe)).toContain("27 → <span class=\"kcq-binding-effect__projected-level kcq-escape-value--severe\">Severe </span>67");
         expect(severe).not.toContain("+40 Binding");
         expect(moderate).toContain("kcq-escape-value--moderate");
         expect(moderate).toContain("kcq-binding-effect__segment--moderate");
+        expect(severe).toContain("kcq-binding-effect__level kcq-escape-value--moderate");
         expect(severe).toContain("kcq-escape-value--severe");
         expect(severe).toContain("kcq-binding-effect__segment--severe");
     });

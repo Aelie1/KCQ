@@ -8,7 +8,7 @@ import type {
     MoveType,
     StanceId,
 } from "../../../../engine/public/types";
-import type { LinkedEntityTone, LinkedEntityViewModel } from "../viewModels/linkedEntities";
+import type { LinkedEntityTone, LinkedEntityViewModel, PlayerTone } from "../viewModels/linkedEntities";
 
 export type StatusChipTone =
     | "danger"
@@ -103,7 +103,9 @@ export interface PartyCardData {
     hiddenEffectCount: number;
     id: EntityId;
     name: string;
+    tone: PlayerTone;
     noEffectsLabel: string;
     stanceState: PartyConditionState;
+    subspaceValue?: number;
     visibleEffects: readonly string[];
 }

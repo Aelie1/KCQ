@@ -63,7 +63,7 @@ describe("character details panel", () => {
             focusedCharacterId: "hinari",
         }));
 
-        expect(html).toContain('class="kcq-focused-character__resource">Subspace 27 / 100</span>');
+        expect(html).toContain('class="kcq-focused-character__resource kcq-subspace-value">Subspace 27 / 100</span>');
         expect(html).toContain('<h2 class="kcq-player-identity--hinari">Hinari</h2>');
     });
 

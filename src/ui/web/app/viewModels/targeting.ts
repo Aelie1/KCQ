@@ -37,10 +37,10 @@ export interface BuffEffectViewModel {
     operation: BuffEffect["operation"]; recipient?: string; tone: "special" | "success"; type: "buff";
 }
 export interface BindingEffectViewModel {
-    bindingName: string; currentLevel: BindingLevel; currentPercent: number; currentValue: number;
-    id: string; kind: "binding"; label: string; levelLabel: string;
+    bindingName: string; currentLevel: BindingLevel; currentLevelLabel: string; currentPercent: number; currentValue: number;
+    id: string; kind: "binding"; label: string;
     projectedLevel: BindingLevel; projectedPercent: number; projectedValue: number;
-    recipient?: string; tone: "binding"; type: "binding";
+    projectedLevelLabel?: string; recipient?: string; tone: "binding"; type: "binding";
 }
 export type EffectPreviewViewModel = AccuracyProfileViewModel | BindingEffectViewModel | BuffEffectViewModel | CompactEffectViewModel | DamageProfileViewModel;
 
@@ -352,7 +352,7 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
         .find(({ id: targetId }) => targetId === effect.target)
         ?.moves.map(({ move }) => move.id) ?? []);
     return {
-        kind: "buff", id, type: "buff", tone: debuff ? "special" : "success", operation: effect.operation,
+        kind: "buff", id, type: "buff", tone: applying === debuff ? "special" : "success", operation: effect.operation,
         label: presentation.ui(operationKey), name: presentation.buff(effect.buff.id),
         ...(applying && effect.buff.duration !== undefined
             ? { durationLabel: presentation.ui("characterDetails.rounds", { count: effect.buff.duration }) }
@@ -401,7 +401,12 @@ function createBindingEffect(
         kind: "binding", id, type: "binding", tone: "binding",
         label: context.presentation.ui("targeting.effectBinding"),
         bindingName: context.presentation.binding(effect.binding), currentValue, projectedValue,
-        currentLevel, projectedLevel, levelLabel: context.presentation.bindingLevel(projectedLevel),
+        currentLevel,
+        currentLevelLabel: context.presentation.bindingLevel(currentLevel),
+        projectedLevel,
+        ...(currentLevel !== projectedLevel ? {
+            projectedLevelLabel: context.presentation.bindingLevel(projectedLevel),
+        } : {}),
         currentPercent: percent(currentValue), projectedPercent: percent(projectedValue),
         ...(context.scopeTarget !== effect.target ? { recipient: context.presentation.entity(effect.target) } : {}),
     };

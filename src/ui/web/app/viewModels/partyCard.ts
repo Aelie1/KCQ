@@ -11,11 +11,12 @@ import type {
     BlockedCapabilityData,
     PartyCardData,
 } from "../components/componentTypes";
+import { projectBindingZones } from "./bindingZones";
 import {
     createCharacterActionState,
     createCharacterStanceState,
 } from "./characterState";
-import { projectBindingZones } from "./bindingZones";
+import { playerTone } from "./linkedEntities";
 
 export const PARTY_CARD_EFFECT_SLOTS = 3;
 
@@ -51,12 +52,17 @@ export function createPartyCardViewModel(
 
     const effectSummary = summarizeEffects(character.buffs);
     const hiddenEffectCount = effectSummary.hiddenEffectCount;
+    const subspace = character.data["subspace"];
 
     return {
         id: character.id,
         name: presentation.entity(character.id),
+        tone: playerTone(character.id),
         actionState: createCharacterActionState(character, action, presentation),
         stanceState: createCharacterStanceState(character, action, presentation),
+        ...(character.id === "hinari" && Number.isFinite(subspace)
+            ? { subspaceValue: subspace }
+            : {}),
         blockedCapabilities: character.blockedMoveTypes
             .filter(isDisplayableMoveType)
             .map((kind): BlockedCapabilityData => ({
