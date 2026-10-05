@@ -412,30 +412,48 @@ button {
 }
 
 .kcq-intent-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 4px;
     width: 100%;
     min-width: 0;
-    height: 20px;
+    min-height: 20px;
     font-size: 11px;
     font-weight: 400;
-    line-height: normal;
-    white-space: nowrap;
+    line-height: 20px;
+}
+
+.kcq-intent-row__content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    column-gap: 4px;
+    min-width: 0;
+    min-height: 20px;
 }
 
 .kcq-intent-row__move {
-    flex: 0 1 auto;
-    width: auto;
+    flex: 0 0 auto;
     min-width: 0;
+    max-width: 100%;
     overflow: hidden;
     color: var(--kcq-text-muted);
     text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .kcq-intent-row--move-only .kcq-intent-row__move {
     flex: 1 1 auto;
-    width: auto;
+}
+
+.kcq-intent-row__target-group {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+    white-space: nowrap;
 }
 
 .kcq-intent-row__arrow {
@@ -447,6 +465,11 @@ button {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.kcq-intent-row>.kcq-status-chip {
+    align-self: start;
+    margin-top: 1px;
 }
 
 .kcq-intent-row__target {
@@ -526,17 +549,17 @@ button {
 
 .kcq-enemy-card__intentions {
     display: grid;
-    grid-auto-rows: 20px;
+    grid-auto-rows: minmax(20px, auto);
     gap: 5px;
     min-width: 0;
 }
 
 .kcq-enemy-card__intent-slot {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 4px;
     min-width: 0;
-    height: 20px;
+    min-height: 20px;
 }
 
 .kcq-enemy-card__intent-slot>.kcq-intent-row {
@@ -547,6 +570,7 @@ button {
 .kcq-enemy-card__overflow {
     display: inline-flex;
     flex: 0 0 auto;
+    margin-top: 1px;
 }
 
 .kcq-party-card {

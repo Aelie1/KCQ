@@ -117,6 +117,69 @@ describe("enemy card", () => {
         }
     });
 
+    it("keeps short intentions inline and wraps long target groups without displacing outcomes", () => {
+        const fixture = battleOverviewFixture;
+        const shortIntent = createIntentViewModel({
+            move: "pounce",
+            targets: [{ target: "ko", band: "graze", effects: [] }],
+            effects: [],
+        }, fixture.presentation);
+        const longIntent = {
+            ...shortIntent,
+            moveLabel: "Empowering Magic",
+            targetLabel: "Skunk Queen",
+            targets: [{ id: "skunketteQueen", label: "Skunk Queen", tone: "neutral" as const }],
+            outcome: "hit" as const,
+            outcomeLabel: "Hit",
+        };
+        const shortHtml = renderToString(() => createComponent(IntentRow, { intent: shortIntent }));
+        const longHtml = renderToString(() => createComponent(IntentRow, { intent: longIntent }));
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+        const rowRule = css.match(/\.kcq-intent-row\s*\{([^}]*)\}/)?.[1] ?? "";
+        const contentRule = css.match(/\.kcq-intent-row__content\s*\{([^}]*)\}/)?.[1] ?? "";
+        const moveRule = css.match(/\.kcq-intent-row__move\s*\{([^}]*)\}/)?.[1] ?? "";
+        const targetGroupRule = css.match(/\.kcq-intent-row__target-group\s*\{([^}]*)\}/)?.[1] ?? "";
+        const intentionsRule = css.match(/\.kcq-enemy-card__intentions\s*\{([^}]*)\}/)?.[1] ?? "";
+        const slotRule = css.match(/\.kcq-enemy-card__intent-slot\s*\{([^}]*)\}/)?.[1] ?? "";
+
+        for (const html of [shortHtml, longHtml]) {
+            expect(html).toMatch(/kcq-intent-row__content[^>]*>.*kcq-intent-row__move/s);
+            expect(html).toMatch(/kcq-intent-row__target-group[^>]*>.*kcq-intent-row__arrow.*kcq-intent-row__targets/s);
+        }
+        expect(shortHtml).toContain("Pounce");
+        expect(shortHtml).toContain("Ko-chan");
+        expect(longHtml).toContain("Empowering Magic");
+        expect(longHtml).toContain("Skunk Queen");
+        expect(longHtml).toContain("kcq-status-chip--outcome-hit");
+        expect(rowRule).toContain("grid-template-columns: minmax(0, 1fr) auto");
+        expect(rowRule).toContain("min-height: 20px");
+        expect(rowRule).not.toMatch(/(^|\n)\s*height:/);
+        expect(rowRule).not.toContain("white-space: nowrap");
+        expect(contentRule).toContain("flex-wrap: wrap");
+        expect(moveRule).toContain("flex: 0 0 auto");
+        expect(targetGroupRule).toContain("flex: 0 0 auto");
+        expect(targetGroupRule).toContain("white-space: nowrap");
+        expect(css).toMatch(/\.kcq-intent-row>\.kcq-status-chip\s*\{[^}]*align-self: start[^}]*margin-top: 1px/s);
+        expect(intentionsRule).toContain("grid-auto-rows: minmax(20px, auto)");
+        expect(slotRule).toContain("min-height: 20px");
+        expect(slotRule).not.toMatch(/(^|\n)\s*height:/);
+    });
+
+    it("renders multiple intentions in separate content-driven slots", () => {
+        const fixture = battleOverviewFixture;
+        const enemy = fixture.state.enemies.find(({ intentions }) => intentions.length > 1);
+        expect(enemy).toBeDefined();
+
+        const model = createEnemyCardViewModel(
+            enemy!, fixture.presentation, fixture.state.characters,
+        );
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
+
+        expect(model.visibleIntentions.length).toBeGreaterThan(1);
+        expect((html.match(/kcq-enemy-card__intent-slot/g) ?? [])).toHaveLength(model.visibleIntentions.length);
+        expect((html.match(/kcq-intent-row__content/g) ?? [])).toHaveLength(model.visibleIntentions.length);
+    });
+
     it("collapses a complete current-party intention to localized ALL only on overview cards", () => {
         const fixture = battleOverviewFixture;
         const enemy = {
