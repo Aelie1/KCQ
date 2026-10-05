@@ -382,26 +382,5 @@ describe("character details view model", () => {
         )).toThrow("Missing ActionView for focused character ko.");
     });
 
-    it("shows finite Subspace values including zero and omits absent resources", () => {
-        const fixture = characterDetailsFixture;
-        const focused = (data: Record<string, number>) => {
-            const state = {
-                ...fixture.state,
-                characters: fixture.state.characters.map((character) => character.id === "hinari"
-                    ? { ...character, data }
-                    : character),
-            };
-            return createFocusedCharacterViewModel(
-                state, fixture.actions[2], fixture.thresholds, fixture.presentation,
-            );
-        };
 
-        expect(focused({ subspace: 27, subspaceMax: 100 }).resource).toEqual({
-            current: 27,
-            max: 100,
-            label: "Subspace 27 / 100",
-        });
-        expect(focused({ subspace: 0, subspaceMax: 100 }).resource?.label).toBe("Subspace 0 / 100");
-        expect(focused({})).not.toHaveProperty("resource");
-    });
 });

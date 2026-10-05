@@ -93,5 +93,6 @@ export const characterStrings: StringTable = {
     "buff.subspaceClutter.desc": "...",
 
     "data.subspace.name": "Subspace",
+    "data.subspace.short": "Sub",
 
 };

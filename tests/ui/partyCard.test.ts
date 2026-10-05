@@ -31,7 +31,7 @@ describe("party card", () => {
             .filter(({ id }) => id !== "hinari")
             .map((character) => renderToString(() => createComponent(PartyCard, { character })))
             .join("");
-        expect(hinari.subspaceValue).toBe(27);
+        expect(hinari.resourceLabel).toBe("Sub: 27");
         expect(hinariHtml).toContain("kcq-party-card__resource");
         expect(hinariHtml).toContain("kcq-subspace-value");
         expect(renderedText(hinariHtml)).toContain("Sub: 27");
@@ -39,6 +39,6 @@ describe("party card", () => {
         expect(hinariHtml).not.toContain("Store");
         expect(otherHtml).not.toContain("kcq-party-card__resource");
         expect(models.filter(({ id }) => id !== "hinari")
-            .every((model) => model.subspaceValue === undefined)).toBe(true);
+            .every((model) => model.resourceLabel === undefined)).toBe(true);
     });
 });

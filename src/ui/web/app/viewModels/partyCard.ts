@@ -61,7 +61,12 @@ export function createPartyCardViewModel(
         actionState: createCharacterActionState(character, action, presentation),
         stanceState: createCharacterStanceState(character, action, presentation),
         ...(character.id === "hinari" && Number.isFinite(subspace)
-            ? { subspaceValue: subspace }
+            ? {
+                resourceLabel: presentation.ui("partyCard.resourceValue", {
+                    resource: presentation.data("subspace", "short"),
+                    value: subspace,
+                })
+            }
             : {}),
         blockedCapabilities: character.blockedMoveTypes
             .filter(isDisplayableMoveType)

@@ -77,7 +77,7 @@ describe("character details panel", () => {
         expect(html).toContain("kcq-subspace-meter");
         expect(html).toContain('style="width:27%"');
         expect(renderedText(html)).toContain("Commands / Hinari");
-        expect(renderedText(html)).toContain("SUBSPACE");
+        expect(renderedText(html)).toContain("Subspace");
         expect(renderedText(html)).toContain("27/100");
 
         for (const focusedCharacterId of ["ko", "matsuko"] as const) {

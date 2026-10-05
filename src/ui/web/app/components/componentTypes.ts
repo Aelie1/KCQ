@@ -106,6 +106,6 @@ export interface PartyCardData {
     tone: PlayerTone;
     noEffectsLabel: string;
     stanceState: PartyConditionState;
-    subspaceValue?: number;
+    resourceLabel?: string;
     visibleEffects: readonly string[];
 }

@@ -35,7 +35,6 @@ export type UiLabel =
     | "characterDetails.changeStance"
     | "characterDetails.stanceTransitionIndicator"
     | "characterDetails.stanceTransition"
-    | "characterDetails.resourceValue"
     | "characterDetails.commandsHeading"
     | "characterDetails.cooldown"
     | "characterDetails.effectModifier"
@@ -78,6 +77,7 @@ export type UiLabel =
     | "partyCard.bindings"
     | "partyCard.blockedCapabilities"
     | "partyCard.effects"
+    | "partyCard.resourceValue"
     | "targeting.actionEffects"
     | "targeting.addMove"
     | "targeting.allEnemies"
@@ -182,8 +182,8 @@ export class Presentation {
         return this.translate(this.definitionKey("moveType", type, "compact"));
     }
 
-    data(type: string): string {
-        return this.translate(this.definitionKey("data", type, "name"));
+    data(type: string, variant: "name" | "short" = "name"): string {
+        return this.translate(this.definitionKey("data", type, variant));
     }
 
     ui(label: UiLabel, args?: Record<string, number | string | boolean>): string {

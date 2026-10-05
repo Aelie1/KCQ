@@ -47,7 +47,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                             <Show when={model().focused.resource} keyed>
                                 {(resource) => (
                                     <div class="kcq-character-commands__resource">
-                                        <span>SUBSPACE</span>
+                                        <span>{props.presentation.data("subspace")}</span>
                                         <span class="kcq-subspace-meter">
                                             <span
                                                 style={{
