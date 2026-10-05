@@ -1,10 +1,13 @@
-import { createMemo, For, Show, type JSX } from "solid-js";
-import type { EventFrame, PlayerAction } from "../../../../engine/public/types";
+import { createMemo, For, type JSX } from "solid-js";
+import type { EventFrame, GameState, PlayerAction } from "../../../../engine/public/types";
 import {
     ActorStyleRegistry,
     formatActionGroups,
     type SemanticStyle,
 } from "../../../console/presentation";
+import type { Presentation } from "../../../presentation/presentation";
+import { CombatHeader } from "../components/CombatHeader";
+import { createCombatHeaderViewModel } from "../viewModels/combatHeader";
 
 export interface GameLogEntry {
     action: PlayerAction;
@@ -15,6 +18,8 @@ export interface GameLogEntry {
 export interface GameLogPanelProps {
     entries: readonly GameLogEntry[];
     actorStyles?: ActorStyleRegistry;
+    presentation: Presentation;
+    state: GameState;
     onBack?: () => void;
 }
 
@@ -50,6 +55,7 @@ export function gameLogSemanticClass(style: SemanticStyle): string {
 
 export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     const actorStyles = props.actorStyles ?? new ActorStyleRegistry();
+    const header = createMemo(() => createCombatHeaderViewModel(props.state, props.presentation));
     const groups = createMemo(() => props.entries.flatMap((entry) => formatActionGroups(
         entry.action,
         entry.frames,
@@ -58,24 +64,16 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     )));
 
     return (
-        <section class="kcq-game-log" aria-labelledby="game-log-title">
-            <header class="kcq-game-log__header">
-                <div classList={{ "kcq-game-log__header-title--with-back": props.onBack !== undefined }}>
-                    <Show when={props.onBack}>
-                        <button
-                            class="kcq-game-log__back"
-                            type="button"
-                            aria-label="Back"
-                            onClick={() => props.onBack?.()}
-                        >
-                            <span aria-hidden="true">{"\u2190"}</span>
-                        </button>
-                    </Show>
-                    <p>Battle history</p>
-                    <h1 id="game-log-title">Game Log</h1>
-                </div>
-                <span>{groups().length} groups</span>
-            </header>
+        <section class="kcq-game-log" aria-label={props.presentation.ui("combatHeader.gameLog")}>
+            <CombatHeader
+                variant="subscreen"
+                encounterLabel={header().encounterLabel}
+                contextLabel={props.presentation.ui("combatHeader.gameLog")}
+                roundLabel={header().roundLabel}
+                phaseLabel={header().phaseLabel}
+                backLabel={props.presentation.ui("characterDetails.back")}
+                onBack={props.onBack}
+            />
 
             <div class="kcq-game-log__scroll" role="log" aria-label="Chronological game events">
                 <For each={groups()}>

@@ -213,6 +213,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             <Match when={screen().kind === "log"}>
                 <GameLogPanel
                     entries={logEntries()}
+                    presentation={props.presentation}
+                    state={state()}
                     onBack={() => setScreen({ kind: "overview" })}
                 />
             </Match>

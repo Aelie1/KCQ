@@ -33,6 +33,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
     return (
         <CharacterDetailsLayout
             model={model()}
+            contextLabel={props.presentation.ui("combatHeader.character")}
             onHeaderBack={props.onBack}
             onSelectCharacter={props.onSelectCharacter}
             actionRegion={

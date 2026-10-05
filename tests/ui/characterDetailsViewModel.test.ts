@@ -19,8 +19,8 @@ describe("character details view model", () => {
         );
 
         expect(model.header).toEqual({
+            characterLabel: "Ko-chan",
             encounterLabel: "Fight with Skunks",
-            subtitle: "Ko-chan / Standard View",
             roundLabel: "Round 4",
             phaseLabel: "Player Phase",
         });

@@ -233,6 +233,7 @@ describe("battle overview view model", () => {
 
         expect(model.header).toMatchObject({
             encounterLabel: "Fight with Skunks",
+            difficultyLabel: "Standard",
             roundLabel: "Round 4",
             phaseLabel: "Enemy Phase",
             trap: {

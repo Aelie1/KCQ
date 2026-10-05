@@ -1,12 +1,14 @@
 import { For, Show, type JSX } from "solid-js";
 import type { EntityId } from "../../../../engine/public/types";
 import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
+import { CombatHeader } from "./CombatHeader";
 import { ModifierMeter } from "./ModifierMeter";
 import { LinkedEntityChip } from "./LinkedEntityChip";
 import { StatusChip } from "./StatusChip";
 
 export interface CharacterDetailsLayoutProps {
     actionRegion: JSX.Element;
+    contextLabel: string;
     model: CharacterDetailsViewModel;
     onHeaderBack?: () => void;
     onSelectCharacter?: (id: EntityId) => void;
@@ -15,24 +17,16 @@ export interface CharacterDetailsLayoutProps {
 export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.Element {
     return (
         <section class="kcq-character-details" aria-label={props.model.focused.name}>
-            <header class="kcq-character-details__header">
-                <button
-                    class="kcq-character-details__header-back"
-                    type="button"
-                    aria-label={props.model.controls.backLabel}
-                    onClick={() => props.onHeaderBack?.()}
-                >
-                    <span aria-hidden="true">←</span>
-                </button>
-                <div class="kcq-character-details__title">
-                    <h1>{props.model.header.encounterLabel}</h1>
-                    <p>{props.model.header.subtitle}</p>
-                </div>
-                <div class="kcq-character-details__turn">
-                    <p>{props.model.header.roundLabel}</p>
-                    <p>{props.model.header.phaseLabel}</p>
-                </div>
-            </header>
+            <CombatHeader
+                variant="subscreen"
+                encounterLabel={props.model.header.encounterLabel}
+                contextLabel={props.contextLabel}
+                characterLabel={props.model.header.characterLabel}
+                roundLabel={props.model.header.roundLabel}
+                phaseLabel={props.model.header.phaseLabel}
+                backLabel={props.model.controls.backLabel}
+                onBack={props.onHeaderBack}
+            />
 
             <nav class="kcq-character-roster" aria-label={props.model.labels.rosterLabel}>
                 <For each={props.model.roster}>

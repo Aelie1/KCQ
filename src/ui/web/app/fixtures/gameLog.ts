@@ -3,6 +3,8 @@ import type {
     GameState,
     PlayerAction,
 } from "../../../../engine/public/types";
+import { englishStrings } from "../../../../../localization/en/index";
+import { Presentation } from "../../../presentation/presentation";
 
 const fixtureState = {
     turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },
@@ -119,6 +121,8 @@ const frames = [
 ] satisfies readonly EventFrame[];
 
 export const gameLogFixture = {
+    state: fixtureState,
+    presentation: new Presentation(englishStrings),
     entries: [
         {
             action,

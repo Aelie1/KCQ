@@ -27,6 +27,7 @@ import {
 import { projectBindingZones } from "./bindingZones";
 import { playerTone, projectLinkedEntity, type LinkedEntityViewModel, type PlayerTone } from "./linkedEntities";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
+import { createCombatHeaderViewModel } from "./combatHeader";
 
 export type CommandTagTone = "ally" | "danger" | "neutral" | "primary" | "special" | "success" | "warning";
 
@@ -104,10 +105,10 @@ export interface CharacterDetailsViewModel {
     };
     focused: FocusedCharacterViewModel;
     header: {
+        characterLabel: string;
         encounterLabel: string;
         phaseLabel: string;
         roundLabel: string;
-        subtitle: string;
     };
     labels: {
         bindingsHeading: string;
@@ -169,6 +170,11 @@ export function createCharacterDetailsViewModel(
         thresholds,
         presentation,
     );
+    const {
+        encounterLabel,
+        phaseLabel,
+        roundLabel,
+    } = createCombatHeaderViewModel(state, presentation);
     const roster = state.characters.map((character) => {
         const action = actionsById.get(character.id);
         if (!action) {
@@ -193,19 +199,10 @@ export function createCharacterDetailsViewModel(
 
     return {
         header: {
-            encounterLabel: state.encounter
-                ? presentation.encounter(state.encounter.id)
-                : presentation.ui("battleOverview.noEncounter"),
-            subtitle: presentation.ui("characterDetails.subtitle", {
-                character: focused.name,
-                difficulty: presentation.difficulty(state.difficulty.id),
-            }),
-            roundLabel: presentation.ui("battleOverview.round", {
-                round: state.turn.round,
-            }),
-            phaseLabel: presentation.ui("battleOverview.phase", {
-                phase: presentation.phase(state.turn.phase),
-            }),
+            characterLabel: focused.name,
+            encounterLabel,
+            phaseLabel,
+            roundLabel,
         },
         roster,
         focused,

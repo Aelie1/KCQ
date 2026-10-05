@@ -59,6 +59,7 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
     return (
         <CharacterDetailsLayout
             model={characterModel()}
+            contextLabel={props.presentation.ui("combatHeader.targeting")}
             onHeaderBack={props.onHeaderBack}
             onSelectCharacter={props.onSelectCharacter}
             actionRegion={

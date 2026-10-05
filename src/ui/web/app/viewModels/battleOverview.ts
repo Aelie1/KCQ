@@ -6,6 +6,7 @@ import type {
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 import type { EnemyCardData, PartyCardData } from "../components/componentTypes";
+import { createCombatHeaderViewModel } from "./combatHeader";
 import { createEnemyCardViewModel } from "./enemyCard";
 import { createPartyCardViewModel } from "./partyCard";
 
@@ -21,6 +22,7 @@ export interface BattleOverviewTrapViewModel {
 }
 
 export interface BattleOverviewHeaderViewModel {
+    difficultyLabel: string;
     encounterLabel: string;
     phaseLabel: string;
     roundLabel: string;
@@ -70,15 +72,7 @@ export function createBattleOverviewViewModel(
 
     return {
         header: {
-            encounterLabel: state.encounter
-                ? presentation.encounter(state.encounter.id)
-                : presentation.ui("battleOverview.noEncounter"),
-            roundLabel: presentation.ui("battleOverview.round", {
-                round: state.turn.round,
-            }),
-            phaseLabel: presentation.ui("battleOverview.phase", {
-                phase: presentation.phase(state.turn.phase),
-            }),
+            ...createCombatHeaderViewModel(state, presentation),
             traps,
             ...(traps[0]
                 ? { trap: traps[0] }

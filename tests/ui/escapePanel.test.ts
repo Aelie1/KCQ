@@ -19,7 +19,9 @@ describe("escape workflow composition", () => {
         ));
         const executeButton = html.match(/<button[^>]*class="kcq-escape__execute"[^>]*>/)?.[0];
 
-        expect(countClass(html, "kcq-character-details__header")).toBe(1);
+        expect(countClass(html, "kcq-combat-header--subscreen")).toBe(1);
+        expect(html).toContain("kcq-combat-header__breadcrumb");
+        expect(html).toContain("Escape");
         expect(countClass(html, "kcq-character-roster")).toBe(1);
         expect(countClass(html, "kcq-focused-character")).toBe(1);
         expect(countClass(html, "kcq-character-capabilities")).toBe(1);

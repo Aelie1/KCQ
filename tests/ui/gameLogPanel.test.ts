@@ -85,6 +85,9 @@ describe("Solid game log panel", () => {
         const html = renderToString(() => createComponent(DevApp, { initialPanel: "log" as const }));
 
         expect(html).toContain("class=\"kcq-game-log\"");
+        expect(html).toContain("kcq-combat-header--subscreen");
+        expect(html).toContain("kcq-combat-header__breadcrumb");
+        expect(html).not.toContain("kcq-combat-header__settings");
         expect(html).not.toContain("Gallery placeholder");
         expect(html).not.toContain("reserved for a later UI implementation card");
     });

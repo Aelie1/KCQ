@@ -1,4 +1,4 @@
-import { createMemo, For, Show, type JSX } from "solid-js";
+import { createMemo, For, type JSX } from "solid-js";
 import type {
     ActionView,
     EntityId,
@@ -6,7 +6,7 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
-import settingsIconUrl from "../assets/settings.svg";
+import { CombatHeader } from "../components/CombatHeader";
 import { EnemyCard } from "../components/EnemyCard";
 import { PartyCard } from "../components/PartyCard";
 import { createBattleOverviewViewModel } from "../viewModels/battleOverview";
@@ -31,42 +31,15 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
 
     return (
         <section class="kcq-battle-overview" aria-label={model().header.encounterLabel}>
-            <header class="kcq-battle-header">
-                <div class="kcq-battle-header__encounter">
-                    <h1 class="kcq-battle-header__title">{model().header.encounterLabel}</h1>
-                    <Show when={model().header.trap}>
-                        {(trap) => (
-                            <div class="kcq-battle-header__trap">
-                                <div class="kcq-battle-header__trap-summary">
-                                    <span class="kcq-battle-header__trap-name">{trap().label}</span>
-                                    <span class="kcq-battle-header__trap-value">{trap().valueLabel}</span>
-                                </div>
-                                <div
-                                    class="kcq-battle-header__trap-meter"
-                                    role="meter"
-                                    aria-label={trap().label}
-                                    aria-valuemin="0"
-                                    aria-valuemax={trap().max}
-                                    aria-valuenow={trap().amount}
-                                >
-                                    <span style={{ width: `${trap().fillPercent}%` }} />
-                                </div>
-                            </div>
-                        )}
-                    </Show>
-                </div>
-                <div class="kcq-battle-header__turn">
-                    <p>{model().header.roundLabel}</p>
-                    <p class="kcq-battle-header__phase">{model().header.phaseLabel}</p>
-                </div>
-                <button
-                    class="kcq-battle-header__settings"
-                    type="button"
-                    aria-label={model().controls.settingsLabel}
-                >
-                    <img src={settingsIconUrl} alt="" width="22" height="22" />
-                </button>
-            </header>
+            <CombatHeader
+                variant="overview"
+                encounterLabel={model().header.encounterLabel}
+                difficultyLabel={model().header.difficultyLabel}
+                roundLabel={model().header.roundLabel}
+                phaseLabel={model().header.phaseLabel}
+                trap={model().header.trap}
+                settingsLabel={model().controls.settingsLabel}
+            />
 
             <section class="kcq-battle-section kcq-battle-section--enemies" aria-labelledby="battle-enemies-heading">
                 <header class="kcq-battle-section__heading">

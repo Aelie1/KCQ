@@ -70,6 +70,7 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
     return (
         <CharacterDetailsLayout
             model={characterModel()}
+            contextLabel={props.presentation.ui("combatHeader.escape")}
             onHeaderBack={props.onHeaderBack}
             onSelectCharacter={props.onSelectCharacter}
             actionRegion={
