@@ -3,9 +3,9 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import type { ActionInfo } from "../../src/engine/public/types";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
 import { TargetingPanel } from "../../src/ui/web/app/panels/TargetingPanel";
-import type { ActionInfo } from "../../src/engine/public/types";
 
 function countClass(html: string, className: string): number {
     return [...html.matchAll(/class="([^"]*)"/g)]
@@ -24,7 +24,6 @@ describe("targeting workflow composition", () => {
         expect(html).toContain("kcq-combat-header__breadcrumb");
         expect(html).toContain("Targeting");
         expect(countClass(html, "kcq-character-roster")).toBe(1);
-        expect(countClass(html, "kcq-focused-character")).toBe(1);
         expect(countClass(html, "kcq-character-capabilities")).toBe(1);
         expect(countClass(html, "kcq-character-bindings")).toBe(1);
         expect(countClass(html, "kcq-character-effects")).toBe(1);
@@ -155,7 +154,7 @@ describe("targeting workflow composition", () => {
         expect(html).toContain('aria-label="Remove Debuff"');
         expect(html).toContain('aria-label="Remove Debuff">Remove Debuff</span>');
         expect(html).not.toContain("<span>Remove</span><span>Debuff</span>");
-        expect(html).toContain("kcq-preview-effect--special kcq-buff-effect");
+        expect(html).toContain("kcq-preview-effect--success kcq-buff-effect");
     });
 
     it("renders Buff and Debuff effect chips with distinct existing semantic tones", () => {

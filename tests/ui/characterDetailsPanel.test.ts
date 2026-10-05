@@ -3,9 +3,13 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { ModifierMeter } from "../../src/ui/web/app/components/ModifierMeter";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
 import { CharacterDetailsPanel } from "../../src/ui/web/app/panels/CharacterDetailsPanel";
-import { ModifierMeter } from "../../src/ui/web/app/components/ModifierMeter";
+
+function renderedText(html: string): string {
+    return html.replace(/<!--.*?-->/g, "").replace(/<[^>]+>/g, "");
+}
 
 describe("character details panel", () => {
     it("keeps an incapacitated roster character selectable for inspection", () => {
@@ -43,13 +47,13 @@ describe("character details panel", () => {
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
         const meterRule = css.match(/\.kcq-pip-meter\s*\{([^}]*)\}/)?.[1] ?? "";
         const pipRule = css.match(/\.kcq-pip-meter__pip\s*\{([^}]*)\}/)?.[1] ?? "";
-        expect(meterRule).toContain("grid-template-columns: repeat(8, 4px)");
-        expect(meterRule).toContain("gap: 4px");
-        expect(meterRule).toContain("width: 60px");
-        expect(pipRule).toContain("width: 4px");
+        expect(meterRule).toContain("grid-template-columns: repeat(8, auto)");
+        expect(meterRule).toContain("gap: 1px");
+        expect(meterRule).toContain("width: 63px");
+        expect(pipRule).toContain("width: 7px");
     });
 
-    it("places Hinari's public Subspace resource in the focused summary", () => {
+    it("shows Hinari's public Subspace resource in the Commands header", () => {
         const fixture = characterDetailsFixture;
         const state = {
             ...fixture.state,
@@ -63,8 +67,29 @@ describe("character details panel", () => {
             focusedCharacterId: "hinari",
         }));
 
-        expect(html).toContain('class="kcq-focused-character__resource kcq-subspace-value">Subspace 27 / 100</span>');
-        expect(html).toContain('<h2 class="kcq-player-identity--hinari">Hinari</h2>');
+        expect(html).toContain("kcq-combat-header--subscreen");
+        expect(html).toContain("kcq-character-roster");
+        expect(html).toContain("kcq-character-capabilities");
+        expect(html).toContain("kcq-character-bindings");
+        expect(html).toContain("kcq-character-effects");
+        expect(html).toContain("kcq-character-commands");
+        expect(html).toContain("kcq-character-commands__resource");
+        expect(html).toContain("kcq-subspace-meter");
+        expect(html).toContain('style="width:27%"');
+        expect(renderedText(html)).toContain("Commands / Hinari");
+        expect(renderedText(html)).toContain("SUBSPACE");
+        expect(renderedText(html)).toContain("27/100");
+
+        for (const focusedCharacterId of ["ko", "matsuko"] as const) {
+            const otherHtml = renderToString(() => createComponent(CharacterDetailsPanel, {
+                ...fixture,
+                state,
+                focusedCharacterId,
+            }));
+
+            expect(otherHtml).not.toContain("kcq-character-commands__resource");
+            expect(renderedText(otherHtml)).not.toContain("SUBSPACE");
+        }
     });
 
     it("renders compact top-card conditions with independent established tones", () => {

@@ -23,7 +23,6 @@ describe("escape workflow composition", () => {
         expect(html).toContain("kcq-combat-header__breadcrumb");
         expect(html).toContain("Escape");
         expect(countClass(html, "kcq-character-roster")).toBe(1);
-        expect(countClass(html, "kcq-focused-character")).toBe(1);
         expect(countClass(html, "kcq-character-capabilities")).toBe(1);
         expect(countClass(html, "kcq-character-bindings")).toBe(1);
         expect(countClass(html, "kcq-character-effects")).toBe(1);

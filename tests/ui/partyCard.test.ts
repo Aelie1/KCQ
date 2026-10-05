@@ -1,5 +1,3 @@
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
@@ -7,8 +5,12 @@ import { PartyCard } from "../../src/ui/web/app/components/PartyCard";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { createPartyCardViewModel } from "../../src/ui/web/app/viewModels/partyCard";
 
+function renderedText(html: string): string {
+    return html.replace(/<!--.*?-->/g, "").replace(/<[^>]+>/g, "");
+}
+
 describe("party card", () => {
-    it("shows only Hinari's numeric public Subspace value with the shared treatment", () => {
+    it("shows only Hinari's compact numeric Subspace value", () => {
         const fixture = battleOverviewFixture;
         const characters = fixture.state.characters.map((character) => ({
             ...character,
@@ -29,17 +31,14 @@ describe("party card", () => {
             .filter(({ id }) => id !== "hinari")
             .map((character) => renderToString(() => createComponent(PartyCard, { character })))
             .join("");
-        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
-        const sharedRule = css.match(/\.kcq-subspace-value\s*\{([^}]*)\}/)?.[1] ?? "";
-
         expect(hinari.subspaceValue).toBe(27);
-        expect(hinariHtml).toMatch(/<span[^>]*class="kcq-party-card__resource kcq-subspace-value">27<\/span>/);
+        expect(hinariHtml).toContain("kcq-party-card__resource");
+        expect(hinariHtml).toContain("kcq-subspace-value");
+        expect(renderedText(hinariHtml)).toContain("Sub: 27");
         expect(hinariHtml).not.toContain("Subspace");
         expect(hinariHtml).not.toContain("Store");
         expect(otherHtml).not.toContain("kcq-party-card__resource");
         expect(models.filter(({ id }) => id !== "hinari")
             .every((model) => model.subspaceValue === undefined)).toBe(true);
-        expect(sharedRule).toContain("border: 1px solid var(--kcq-binding-light)");
-        expect(sharedRule).toContain("color: var(--kcq-binding-light)");
     });
 });

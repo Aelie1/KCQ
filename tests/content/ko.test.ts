@@ -443,7 +443,7 @@ describe("Ko's normal and Fairy move effects", () => {
 
         for (const enemy of engine.getGameState().enemies) {
             expect(enemy.buffs).toContainEqual(expect.objectContaining({
-                id: "fairyStarlightBindings",
+                id: "starlightBindings",
                 modifiers: { defense: -2, hit: -2 },
             }));
         }
