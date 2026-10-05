@@ -277,6 +277,7 @@ describe("PostHog event privacy", () => {
             release: "v1.2.3",
             encounter: "plains_1",
             seed: 8224,
+            difficulty: "standard",
             initial_state: { turn: { round: 1 } },
         }],
         ["battle_action", {
