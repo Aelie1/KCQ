@@ -82,6 +82,7 @@ function boundCharacter(id: string, value: number): Character {
         acted: false,
         standing: true,
         bonusEscapes: 0,
+        bonusBlocked: false,
         bindings: [{
             id: "rope",
             value,

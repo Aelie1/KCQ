@@ -53,6 +53,7 @@ describe("browser gameplay telemetry", () => {
                 acted: false,
                 standing: false,
                 bonusEscapes: 0,
+                bonusBlocked: false,
                 bindings: [{ id: "rope", value: 12 }],
                 buffs: [{ id: "focused", duration: 2 }],
                 data: { subspace: 4, subspaceMax: 10 },

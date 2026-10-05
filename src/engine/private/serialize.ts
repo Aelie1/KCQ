@@ -30,6 +30,7 @@ function serializeCharacter(character: iCharacter, status: GameStatus): Characte
         acted: character.acted,
         standing: character.standing,
         bonusEscapes: character.bonusEscapes,
+        bonusBlocked: !status.canBonusEscape(),
         modifiers: status.getModifiers(),
         bindings: character.bindings.map(x => serializeBinding(character, x)),
         buffs: character.buffs.filter(x => x.active).map(serializeBuff),
@@ -207,6 +208,7 @@ export function serializeMove(actor: iEntity, move: MoveDef): Move {
         hits: move.getHits?.(actor, move) ?? move.baseHits,
         type: move.type,
         ...(move.traits ? { traits: [...move.traits] } : {}),
+        freeOnHit: move.freeOnHit
     };
 }
 

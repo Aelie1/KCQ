@@ -32,7 +32,6 @@ export interface MoveDef extends Move {
     baseDamage?: number;
     baseHits?: number;
     cooldown?: Record<MoveId, number>;
-    freeOnHit?: boolean;
     modifiers?: ModifierSet;
     bindings?: BindingDef[];
     getHits?: (actor: iEntity, move: MoveDef) => number;

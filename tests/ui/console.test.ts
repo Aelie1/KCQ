@@ -27,6 +27,7 @@ const state: GameState = {
         acted: false,
         standing: true,
         bonusEscapes: 0,
+        bonusBlocked: false,
         bindings: [{
             id: "latexArms",
             value: 55,

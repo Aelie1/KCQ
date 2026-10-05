@@ -148,6 +148,9 @@ export class GameStatus {
             return !cached;
         }
 
+        if (!this.canAttack()) {
+            return false;
+        }
         let blocked = false;
         for (const status of this.statuses) {
             if (status.blockedMoveTypes?.includes(type)) {

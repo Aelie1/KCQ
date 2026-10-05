@@ -23,6 +23,7 @@ const endTurn = (): PlayerAction => ({ type: "endTurn" });
 function character(id: string, bindingValues: number[]): Character {
     return {
         id, acted: false, standing: true, bonusEscapes: 0,
+        bonusBlocked: false,
         bindings: bindingValues.map((value, index) => ({
             id: `binding-${index}`, value, level: "light", data: {}, status: [], tickEffects: [],
         })),

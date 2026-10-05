@@ -120,6 +120,7 @@ export class GameEngine implements Engine {
             acted: false,
             standing: false,
             bonusEscapes: 0,
+            bonusBlocked: false,
             bindings: [],
             buffs: [],
             cooldowns: {},

@@ -280,6 +280,7 @@ function character(overrides: Partial<Character> = {}): Character {
         acted: false,
         standing: false,
         bonusEscapes: 0,
+        bonusBlocked: false,
         bindings: [],
         buffs: [],
         cooldowns: {},

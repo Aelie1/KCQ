@@ -39,6 +39,7 @@ function character(
         acted: false,
         standing: false,
         bonusEscapes: 0,
+        bonusBlocked: false,
         bindings: LATEX_TRACKS.map((track) => binding(track, bindingValue)),
         buffs: [],
         cooldowns: {},

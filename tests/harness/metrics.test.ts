@@ -36,6 +36,7 @@ function character(
         acted: false,
         standing: true,
         bonusEscapes: 0,
+        bonusBlocked: false,
         bindings: bindings.map((binding) => ({
             id: binding.id,
             value: binding.value,

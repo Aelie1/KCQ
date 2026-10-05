@@ -431,6 +431,15 @@ function createCommands(
     if (escapeTargets.has(character.id)) {
         escapeTags.push(tag("self", presentation.ui("characterDetails.tagSelf"), "success"));
     }
+    if (availableEscape) {
+        if (character.bonusBlocked) {
+            escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusBlocked"), "danger"));
+        } else if (!character.standing) {
+            escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusStanding"), "warning"));
+        } else {
+            escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusEligible"), "success"));
+        }
+    }
 
     commands.push({
         id: "escape",
@@ -546,6 +555,14 @@ export function createMoveTags(
             "multi-hit",
             presentation.ui("characterDetails.tagHits", { count: info.move.hits ?? 1 }),
             "special",
+        ));
+    }
+
+    if (info.move.freeOnHit) {
+        push(tag(
+            "free",
+            presentation.ui("characterDetails.tagFree"),
+            "success",
         ));
     }
 

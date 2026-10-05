@@ -146,7 +146,18 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             move: current.screen.moveId,
             targets: [...targets],
         });
-        if (result.success) setScreen({ kind: "overview" });
+        if (result.success) {
+            const actions = result.actions.find(x => x.id === current.screen.actorId);
+            if (actions?.available) {
+                setScreen({
+                    kind: "character",
+                    actorId: current.screen.actorId,
+                });
+                scrollToBottom();
+            } else {
+                setScreen({ kind: "overview" });
+            }
+        }
     };
 
     const executeEscape = (target: EntityId, binding: BindingId): void => {

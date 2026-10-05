@@ -75,6 +75,7 @@ export interface Character {
     acted: boolean;
     standing: boolean;
     bonusEscapes: number;
+    bonusBlocked: boolean;
     bindings: Binding[];
     buffs: Buff[];
     cooldowns: Record<MoveId, number>;
@@ -222,6 +223,7 @@ export interface Move {
     type: MoveType;
     binding?: BindingId;
     traits?: MoveTrait[];
+    freeOnHit?: boolean;
 }
 
 export type MoveType =

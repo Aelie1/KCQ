@@ -23,6 +23,7 @@ function character(id: string, values: Partial<Character> = {}): Character {
         acted: false,
         standing: true,
         bonusEscapes: 0,
+        bonusBlocked: false,
         bindings: [],
         buffs: [],
         cooldowns: {},

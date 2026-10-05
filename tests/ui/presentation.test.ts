@@ -315,7 +315,7 @@ describe("combat presentation", () => {
             state: {
                 turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
                 characters: [{
-                    id: "ko", acted: false, standing: true, bonusEscapes: 0,
+                    id: "ko", acted: false, standing: true, bonusEscapes: 0, bonusBlocked: false,
                     bindings: [{ id: "latexArms", value: 55, level: "severe", data: {}, status: [], tickEffects: [] }],
                     buffs: [{ id: "focus" }], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
                 }],

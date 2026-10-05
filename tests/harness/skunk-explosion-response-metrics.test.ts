@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import { createEngine } from "../../src/engine/public/engine";
 import type {
     ActionView,
@@ -14,6 +13,7 @@ import {
     createDetailedCombatCollector,
     type MetricActionObservation,
 } from "../../src/harness/metrics";
+import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function character(id: string): Character {
     return {
@@ -21,6 +21,7 @@ function character(id: string): Character {
         acted: false,
         standing: true,
         bonusEscapes: 0,
+        bonusBlocked: false,
         bindings: [],
         buffs: [],
         cooldowns: {},
