@@ -25,6 +25,9 @@ button {
     padding: 12px;
     background: var(--kcq-surface-background);
     color: var(--kcq-text-primary);
+
+    display: flex;
+    justify-content: center;
 }
 
 .kcq-entry-error {
