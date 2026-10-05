@@ -18,6 +18,7 @@ const HEADERS = [
     "release",
     "encounter",
     "seed",
+    "difficulty",
     "source",
     "action",
     "success",
@@ -362,6 +363,7 @@ function makeFixture(options: FixtureOptions = {}): {
         release: "test-release",
         encounter: "plains_1",
         seed: `${seed}.0`,
+        difficulty: "standard",
         initial_state: stringify(initialDigest),
     }];
 

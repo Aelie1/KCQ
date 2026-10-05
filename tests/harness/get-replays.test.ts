@@ -770,6 +770,7 @@ function makeReplayRows(
         release: options.release ?? "test-release",
         encounter: "plains_1",
         seed: "12345",
+        difficulty: "standard",
         initial_state: JSON.stringify(compactStateDigest(engine.getGameState())),
     }];
     for (const [index, action] of (options.actions ?? []).entries()) {

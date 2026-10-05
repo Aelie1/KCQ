@@ -17,7 +17,16 @@ try {
 } catch { /* Shallow checkouts can run the other tests without network. */ }
 
 async function fixture(): Promise<PostHogReplayEventRow[]> {
-    return JSON.parse(await readFile(fixturePath, "utf8")) as PostHogReplayEventRow[];
+    const rows = JSON.parse(
+        await readFile(fixturePath, "utf8"),
+    ) as PostHogReplayEventRow[];
+
+    const started = rows.find((row) => row.event === "battle_started");
+    if (started) {
+        started.difficulty = "standard";
+    }
+
+    return rows;
 }
 
 describe("release replay runtime", () => {
