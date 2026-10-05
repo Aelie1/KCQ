@@ -12,6 +12,7 @@ import type {
     ThresholdInfo,
 } from "../../../engine/public/types";
 import type { Presentation } from "../../presentation/presentation";
+import type { BattleTelemetryObserver } from "../telemetry";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
@@ -21,6 +22,7 @@ import { TargetingPanel } from "./panels/TargetingPanel";
 export interface BattleAppProps {
     engine: Engine;
     presentation: Presentation;
+    observer?: Pick<BattleTelemetryObserver, "onAction" | "onOutcome">;
 }
 
 export type BattleScreen =
@@ -87,13 +89,16 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const execute = (action: PlayerAction): ActionResult => {
         const startingRound = state().turn.round;
         const result = props.engine.executeAction(action);
+        notifyObserver(() => props.observer?.onAction?.(action, result, "player"));
         if (result.success) {
-            setState(props.engine.getGameState());
+            const nextState = props.engine.getGameState();
+            setState(nextState);
             setActions(result.actions);
             setLogEntries((entries) => [
                 ...entries,
                 { action, frames: result.frames, startingRound },
             ]);
+            notifyObserver(() => props.observer?.onOutcome?.(nextState.turn.outcome));
         }
         return result;
     };
@@ -213,4 +218,13 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             </Match>
         </Switch>
     );
+}
+
+function notifyObserver(callback: () => void | Promise<void>): void {
+    try {
+        const pending = callback();
+        if (pending) void pending.catch(() => undefined);
+    } catch {
+        // Telemetry must never interrupt the graphical battle UI.
+    }
 }

@@ -101,6 +101,9 @@ button {
 }
 
 .difficulty-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
     flex: 0 0 100%;
 }
 
