@@ -20,14 +20,14 @@ import type {
     PartyConditionState,
     StatusChipTone,
 } from "../components/componentTypes";
+import { projectBindingZones } from "./bindingZones";
 import {
     createCharacterActionState,
     createCharacterStanceState,
 } from "./characterState";
-import { projectBindingZones } from "./bindingZones";
+import { createCombatHeaderViewModel } from "./combatHeader";
 import { playerTone, projectLinkedEntity, type LinkedEntityViewModel, type PlayerTone } from "./linkedEntities";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
-import { createCombatHeaderViewModel } from "./combatHeader";
 
 export type CommandTagTone = "ally" | "danger" | "neutral" | "primary" | "special" | "success" | "warning";
 
@@ -242,7 +242,7 @@ export function createFocusedCharacterViewModel(
         ? {
             current: subspace,
             max: subspaceMax,
-            label: presentation.ui("characterDetails.resourceValue", {
+            label: presentation.ui("partyCard.resourceValue", {
                 resource: presentation.data("subspace"),
                 current: subspace,
                 max: subspaceMax,
@@ -300,8 +300,8 @@ function createModifierMeter(
     const blocked = definition.moveType !== undefined
         ? character.blockedMoveTypes.includes(definition.moveType)
         : definition.availability === "escape"
-            && action.escapes.length > 0
-            && action.escapes.every(({ available }) => !available);
+        && action.escapes.length > 0
+        && action.escapes.every(({ available }) => !available);
     const value = character.modifiers[definition.modifier] ?? 0;
 
     return {

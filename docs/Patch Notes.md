@@ -1,5 +1,37 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.11.0 — 2026-10-05
+
+### Graphical Interface
+
+* Added the first graphical battle interface.  The old console interface is still available from the encounter launcher.
+* The graphical interface is now the default option when starting an encounter.
+* Added an overview screen showing enemies, intentions, party status, bindings, effects, difficulty, round, phase, and encounter traps.
+* Added character detail screens showing capabilities, bindings, effects, and available commands.
+* Added graphical targeting and Escape screens with previews before committing an action.
+* Enemy intentions now show their move, target, and expected result, and can expand to multiple lines when needed.
+* Added linked-entity indicators for effects such as Pounce and other effects connecting two combatants.
+* Added a shared combat header and persistent party selector to make navigating between characters and action screens easier.
+
+### Action Previews
+
+* Expanded graphical previews for damage, bindings, buffs, debuffs, healing, traps, movement, and other effects.
+* Damage previews show the possible damage for each accuracy result.
+* Binding previews show the current value, projected value, and severity changes.
+* Buff and debuff previews show their modifiers, duration, and other relevant effects.
+* Commands now have semantic tags such as Damage, Buff, Debuff, Escape, One Time, Heal, and AOE.
+
+### Localization
+
+* Added the first localization/presentation system and moved player-facing names and combat text into translation tables.
+* Added the initial English localization for characters, enemies, moves, bindings, statuses, difficulties, combat events, and UI text.
+
+### Web / Presentation
+
+* Added a dedicated graphical battle page that can be launched directly with an encounter and difficulty.
+* The encounter launcher now allows choosing between the Graphical and Console interfaces.
+* Improved mobile-sized layout behavior, scrolling, sticky navigation, and desktop centering.
+
 ## 0.10.0 — 2026-09-30
 
  * Added difficulty system.  This offers five levels of difficulty:
