@@ -16,6 +16,7 @@ const GAMEPLAY_PROPERTIES: Record<TelemetryEvent, readonly string[]> = {
         "release",
         "encounter",
         "seed",
+        "difficulty",
         "initial_state",
     ],
     battle_action: [
