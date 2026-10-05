@@ -1,5 +1,4 @@
 import { For, Show, type JSX } from "solid-js";
-import { BindingMetric } from "./BindingMetric";
 import type { PartyCardData } from "./componentTypes";
 import { StatusChip } from "./StatusChip";
 
@@ -8,6 +7,10 @@ export type { PartyCardData } from "./componentTypes";
 export interface PartyCardProps {
     character: PartyCardData;
     onSelect?: () => void;
+}
+
+function bindingFillPercent(current: number, max: number): number {
+    return max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
 }
 
 export function PartyCard(props: PartyCardProps): JSX.Element {
@@ -56,7 +59,19 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
             </header>
             <div class="kcq-party-card__bindings" aria-label={props.character.accessibility.bindingsLabel}>
                 <For each={props.character.bindings}>
-                    {(binding) => <BindingMetric metric={binding} />}
+                    {(binding) => (
+                        <span
+                            class="kcq-party-card__binding-meter"
+                            classList={{ [`kcq-party-card__binding-meter--${binding.level}`]: true }}
+                            role="progressbar"
+                            aria-label={binding.label}
+                            aria-valuemin={0}
+                            aria-valuemax={binding.max}
+                            aria-valuenow={binding.current}
+                        >
+                            <span style={{ width: `${bindingFillPercent(binding.current, binding.max)}%` }} />
+                        </span>
+                    )}
                 </For>
             </div>
             <div class="kcq-party-card__effects" aria-label={props.character.accessibility.effectsLabel}>

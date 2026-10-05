@@ -497,6 +497,7 @@ button {
 
 .kcq-intent-row__move {
     flex: 0 0 auto;
+    font-weight: 600;
     min-width: 0;
     max-width: 100%;
     overflow: hidden;
@@ -703,13 +704,54 @@ button {
 .kcq-party-card__bindings {
     display: grid;
     flex: 0 0 27px;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 3px;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    align-items: center;
+    gap: 6px;
     height: 27px;
-    padding: 4px 8px;
+    padding: 8px;
     overflow: hidden;
     border-radius: 6px;
     background: var(--kcq-surface-inset);
+}
+
+.kcq-party-card__binding-meter {
+    width: 100%;
+    height: 12px;
+    overflow: hidden;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 5px;
+    background: var(--kcq-surface-raised);
+}
+
+.kcq-party-card__binding-meter>span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+}
+
+.kcq-party-card__binding-meter--none>span {
+    background: var(--kcq-text-dim);
+}
+
+.kcq-party-card__binding-meter--light>span {
+    background: var(--kcq-binding-light);
+}
+
+.kcq-party-card__binding-meter--moderate>span {
+    background: var(--kcq-binding-moderate);
+}
+
+.kcq-party-card__binding-meter--heavy>span {
+    background: var(--kcq-binding-heavy);
+}
+
+.kcq-party-card__binding-meter--severe>span {
+    background: var(--kcq-binding-severe);
+}
+
+.kcq-party-card__binding-meter--overwhelming>span,
+.kcq-party-card__binding-meter--max>span {
+    background: var(--kcq-binding-impossible);
 }
 
 .kcq-binding-metric {
@@ -773,6 +815,7 @@ button {
 .kcq-party-card__no-effects {
     color: var(--kcq-text-dim);
     font-size: 10px;
+    font-weight: 500;
 }
 
 .component-gallery {
@@ -1336,7 +1379,7 @@ button {
 .kcq-modifier-meter__label {
     overflow: hidden;
     color: var(--kcq-text-muted);
-    font-weight: 500;
+    font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -1427,6 +1470,7 @@ button {
 }
 
 .kcq-character-binding__name {
+    font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1562,6 +1606,7 @@ button {
 .kcq-character-effects__empty {
     color: var(--kcq-text-dim);
     font-size: 10px;
+    font-weight: 600;
 }
 
 .kcq-character-commands__grid {

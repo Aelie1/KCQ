@@ -33,7 +33,13 @@ if (!encounter || !difficulty) {
 } else {
     startGraphicalBattle(root, encounter, difficulty);
 }
+function createId(): string {
+    if (typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID();
+    }
 
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
 function startGraphicalBattle(
     target: HTMLElement,
     encounter: EncounterId,
@@ -42,7 +48,7 @@ function startGraphicalBattle(
     const battle = createBattle(engine, encounter, difficulty);
     const observer = createBattleTelemetryObserver({
         telemetry: gameplayTelemetry,
-        replayId: crypto.randomUUID(),
+        replayId: createId(),
         release: __KCQ_RELEASE_TAG__,
         encounter: battle.encounterId,
         seed: battle.engine.getSeed(),

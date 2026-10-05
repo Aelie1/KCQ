@@ -10,6 +10,34 @@ function renderedText(html: string): string {
 }
 
 describe("party card", () => {
+    it("renders the four binding zones in order as unlabeled severity meters", () => {
+        const fixture = battleOverviewFixture;
+        const character = fixture.state.characters[0];
+        const model = createPartyCardViewModel(
+            character,
+            fixture.actions.find(({ id }) => id === character.id)!,
+            fixture.thresholds,
+            fixture.presentation,
+            fixture.state.encounter?.bindings,
+        );
+        const html = renderToString(() => createComponent(PartyCard, { character: model }));
+
+        expect(model.bindings.map(({ id }) => id)).toEqual(fixture.state.encounter.bindings);
+        expect(html.match(/role="progressbar"/g)).toHaveLength(model.bindings.length);
+        expect(html).not.toContain("kcq-binding-metric__label");
+        expect(html).not.toContain("kcq-binding-metric__value");
+
+        let previousMeterIndex = -1;
+        for (const binding of model.bindings) {
+            const meterIndex = html.indexOf(`aria-label="${binding.label}"`);
+            expect(meterIndex).toBeGreaterThan(previousMeterIndex);
+            expect(html).toContain(`kcq-party-card__binding-meter--${binding.level}`);
+            expect(html).toContain(`aria-valuenow="${binding.current}"`);
+            expect(html).toContain(`aria-valuemax="${binding.max}"`);
+            previousMeterIndex = meterIndex;
+        }
+    });
+
     it("shows only Hinari's compact numeric Subspace value", () => {
         const fixture = battleOverviewFixture;
         const characters = fixture.state.characters.map((character) => ({
