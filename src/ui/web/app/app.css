@@ -519,9 +519,8 @@ button {
 }
 
 .kcq-party-card__name {
-    flex: 0 1 75px;
-    width: 75px;
-    min-width: 52px;
+    flex: 0 1 auto;
+    width: auto;
     margin: 0;
     overflow: hidden;
     color: var(--kcq-text-primary);
@@ -1203,7 +1202,6 @@ button {
     font-size: 9px;
     font-weight: 700;
     line-height: 11px;
-    text-transform: uppercase;
     white-space: nowrap;
 }
 

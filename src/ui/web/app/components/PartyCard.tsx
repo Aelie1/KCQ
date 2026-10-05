@@ -35,7 +35,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                     </h3>
                     <Show when={props.character.subspaceValue !== undefined}>
                         <span class="kcq-party-card__resource kcq-subspace-value">
-                            {props.character.subspaceValue}
+                            Sub: {props.character.subspaceValue}
                         </span>
                     </Show>
                     <StatusChip tone={props.character.actionState.tone}>
