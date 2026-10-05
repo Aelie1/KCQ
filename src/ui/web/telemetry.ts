@@ -159,6 +159,7 @@ export function createBattleTelemetryObserver(options: {
         release: options.release,
         encounter: options.encounter,
         seed: options.seed,
+        difficulty: options.initialState.difficulty.id,
         initial_state: compactStateDigest(options.initialState),
     });
 

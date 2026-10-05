@@ -2,6 +2,7 @@ import { isDeepStrictEqual } from "node:util";
 import { createEngine } from "../../engine/public/engine";
 import type {
     BattleState,
+    DifficultyId,
     Engine,
     GameState,
     PlayerAction,
@@ -21,6 +22,7 @@ export const POSTHOG_REPLAY_COLUMNS = [
     "release",
     "encounter",
     "seed",
+    "difficulty",
     "source",
     "action",
     "success",
@@ -68,6 +70,7 @@ export interface ParsedPostHogReplay {
     encounter: string;
     seed: number;
     startedAt: string;
+    difficulty: DifficultyId;
     initialState: CompactStateDigest;
     actions: ParsedPostHogAction[];
     /** Alternate records for a sequence, retained until replay-chain validation. */
@@ -177,6 +180,10 @@ function parseReplayRecords(
     const startedAt = parseRecordTimestamp(start);
     const encounter = requiredValue(start, "encounter");
     const seed = parseInteger(requiredValue(start, "seed"), "seed", start.location);
+    const difficulty = parseDifficulty(
+        requiredValue(start, "difficulty"),
+        start.location,
+    );
     const initialState = parseDigest(requiredValue(start, "initial_state"), "initial_state", start.location);
 
     const actionRecords = replayRecords
@@ -262,6 +269,7 @@ function parseReplayRecords(
         release: start.values.release,
         encounter,
         seed,
+        difficulty,
         startedAt,
         initialState,
         actions,
@@ -288,6 +296,7 @@ export function reconstructFightReplay(parsed: ParsedPostHogReplay): ImportedPos
 
 function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogReplay {
     const engine = createEngine(parsed.seed);
+    engine.setDifficulty(parsed.difficulty);
     loadStockBattle(engine, parsed.encounter, parsed.replayId);
 
     const initialState = structuredClone(engine.getGameState());
@@ -549,6 +558,22 @@ function validateReplayTiming(parsed: ParsedPostHogReplay): void {
 
 function terminalEventName(type: ParsedPostHogTerminal["type"]): string {
     return type === "finished" ? "battle_finished" : `battle_${type}`;
+}
+
+function parseDifficulty(value: string, location: string): DifficultyId {
+    if (
+        value !== "casual"
+        && value !== "standard"
+        && value !== "veteran"
+        && value !== "extreme"
+        && value !== "mythic"
+    ) {
+        throw new Error(
+            `${location} has invalid difficulty ${JSON.stringify(value)}.`,
+        );
+    }
+
+    return value;
 }
 
 function parseRecordTimestamp(record: ReplayRecord): string {

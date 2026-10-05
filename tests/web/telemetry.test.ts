@@ -115,6 +115,7 @@ describe("browser gameplay telemetry", () => {
             release: "v1.2.3",
             encounter: "plains_1",
             seed: 8224,
+            difficulty: "standard",
             initial_state: expect.any(Object),
         });
         expect(capture.mock.calls[1][1]).toMatchObject({
