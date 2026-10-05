@@ -11,9 +11,9 @@ import {
 import { gameplayTelemetry } from "../posthog";
 import { createBattleTelemetryObserver } from "../telemetry";
 import { App } from "./App";
+import "./app.css";
 import { BattleApp } from "./BattleApp";
 import "./tokens.css";
-import "./app.css";
 
 declare const __KCQ_RELEASE_TAG__: string;
 
@@ -61,6 +61,8 @@ function startGraphicalBattle(
             />
         </App>
     ), target);
+
+    setupResponsiveScale();
 }
 
 function renderEntryError(target: HTMLElement): void {
@@ -73,4 +75,27 @@ function renderEntryError(target: HTMLElement): void {
             </section>
         </App>
     ), target);
+}
+
+function setupResponsiveScale(): void {
+    const shell = document.querySelector<HTMLElement>(".kcq-app");
+    if (!shell) return;
+
+    const BASE_WIDTH = 366;
+    const MAX_ZOOM = 1.5;
+
+    const resizeGame = (): void => {
+        // .kcq-app has 12px padding on each side.
+        const availableWidth = shell.clientWidth - 24;
+
+        const zoom = Math.min(
+            MAX_ZOOM,
+            Math.max(1, availableWidth / BASE_WIDTH),
+        );
+
+        shell.style.setProperty("--kcq-ui-zoom", String(zoom));
+    };
+
+    new ResizeObserver(resizeGame).observe(shell);
+    resizeGame();
 }

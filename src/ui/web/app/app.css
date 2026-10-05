@@ -1,3 +1,27 @@
+@font-face {
+    font-family: "Selawik";
+    src: url("./assets/fonts/selawik/selawk.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Selawik";
+    src: url("./assets/fonts/selawik/selawksb.ttf") format("truetype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Selawik";
+    src: url("./assets/fonts/selawik/selawkb.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
 * {
     box-sizing: border-box;
 }
@@ -14,11 +38,15 @@ body,
 body {
     background: var(--kcq-surface-background);
     color: var(--kcq-text-primary);
-    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    font-family: "Selawik", "Segoe UI", system-ui, sans-serif;
 }
 
 button {
     font: inherit;
+}
+
+.kcq-app>* {
+    zoom: var(--kcq-ui-zoom, 1);
 }
 
 .kcq-app {
