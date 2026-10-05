@@ -1,10 +1,10 @@
 # KCQ Project State
 
-**Last updated:** 2026-09-29  
+**Last updated:** 2026-10-05  
 **Status:** Draft — intended for periodic refresh as the project changes  
 **Repository:** `Aelie1/KCQ`  
-**Current repository baseline:** `master` @ `76d2c178`  
-**Current public version tag:** `0.9.1` (2026-09-29)
+**Current repository baseline:** `master` @ `a3b1df71`  
+**Current project version:** `0.11.0` (2026-10-05)
 
 This document describes **where KCQ is now, what has been established, and what direction the project is taking**.
 
@@ -25,7 +25,7 @@ When sources disagree, use the following priority:
 
 The `package.json` version (`1.0.0`) is package metadata and should not be treated as the KCQ gameplay/release version.
 
-There is currently some known documentation drift, especially in `Game Rules.md`; see **Documentation Debt** below. When that occurs, the repository and tests win.
+Documentation can lag the repository during dense development periods; see **Documentation Debt** below. When that occurs, the repository and tests win.
 
 ---
 
@@ -38,19 +38,23 @@ The project is now well beyond the architecture-prototype stage. It currently ha
 * a deterministic combat engine;
 * three implemented player characters;
 * ten implemented encounters;
-* a browser-playable console-style UI;
+* a browser-playable graphical combat interface;
+* the older browser console interface retained as an alternate presentation;
+* a localization/presentation layer with an initial English string set;
 * anonymous external-playtest telemetry;
 * deterministic replay and replay-analysis infrastructure;
 * multiple automated combat policies ranging from deliberately naive to full-kit tactical play;
 * detailed simulation metrics and batch-comparison tooling;
 * a growing set of stress-test / challenge encounters;
-* a defined set of larger future directions covering campaigns, more characters, Castle content, and a real web UI.
+* defined larger future directions covering campaigns, more characters, Castle content, and the non-combat game shell around the graphical battle UI.
 
 The project's core goal remains unchanged:
 
-> **Build a mechanically interesting, testable game first; polish the final presentation after the game itself is worth playing.**
+> **Build a mechanically interesting, testable game first; invest in presentation when the game itself is worth presenting.**
 
-The current web interface is intentionally an **early-playtest interface**, not the final presentation layer.
+The 0.11 cycle marks an important transition. KCQ still prioritizes mechanics, determinism, and testability, but the combat engine and public API are now mature enough to support a real graphical battle client rather than only an engineering/playtest shell.
+
+The current graphical interface should therefore be treated as the **first real presentation baseline**, not as a disposable prototype. It is not a complete game shell yet: campaign/scenario flow, victory/defeat navigation, settings, richer enemy inspection, and other surrounding features remain future work.
 
 ---
 
@@ -77,6 +81,8 @@ The basic interaction remains conceptually:
 **GameState + ActionView[] → PlayerAction → ActionResult (EventFrame[] + ActionView[])**
 
 A sanitized public content library now also exists through `getLibrary()`. It exposes safe reference data for characters, enemies, moves, passives, bindings, traps, statuses, and encounters without exposing engine callbacks or mutable internal definitions.
+
+Player-facing text now has its own presentation/localization boundary. `Presentation` resolves stable engine/content IDs through language string tables, allowing the console and graphical clients to present localized names, labels, events, difficulties, statuses, and UI text without pushing English strings into the engine. English is currently the only complete language set, but the architecture no longer assumes that presentation text is engine data.
 
 The harness is deliberately treated as another consumer of the engine rather than a privileged simulation layer.
 
@@ -184,35 +190,60 @@ The first public browser version was:
 
 **0.7.2 — 2026-09-22**
 
-The current version tag is:
+The current project version is:
 
-**0.9.1 — 2026-09-29**
+**0.11.0 — 2026-10-05**
 
-At the current baseline, `master` and the `0.9.1` tag point to the same commit (`76d2c178`).
+0.11 is the first release built around the new graphical combat interface.
 
-The browser UI currently provides:
+The browser launcher now allows the player to choose:
 
-* encounter selection;
-* normal player actions;
-* move/escape/stance availability;
-* action previews;
-* keyboard and button input;
-* End Turn;
-* Quit;
-* final battle-state handling;
-* return to encounter selection after a battle;
-* console-style battle presentation;
-* a separate scrolling combat log;
-* semantic actor/effect styling;
-* battle-state highlighting and timed presentation;
-* causal combat-log presentation, including per-hit effects for multihit moves;
-* shared presentation/controller code with the console implementation.
+* encounter;
+* difficulty;
+* interface mode — **Graphical** or **Console**.
 
-The browser interface remains deliberately utilitarian.
+Graphical is the default. The console interface remains available as an alternate client and continues to be useful for compatibility, debugging, and comparison.
 
-Its purpose is to make KCQ **playable and testable without installing Node**, not to represent the final graphical UI.
+## Graphical battle interface
 
-A separate future direction now exists for designing the real web interface once the surrounding game structure is mature enough to justify it.
+The graphical interface currently provides:
+
+* a compact battle overview with enemies, intentions, party state, bindings, effects, round, phase, difficulty, and encounter-trap information;
+* selectable party cards leading into character details;
+* character detail views for capabilities, modifiers, bindings, effects, and commands;
+* graphical move targeting with accuracy, damage, binding, buff/debuff, trap, resource, movement, and other effect previews;
+* graphical Escape / Assist selection and previews;
+* semantic command tags such as Damage, Buff, Debuff, Escape, One Time, Heal, and AOE;
+* linked-entity presentation for effects that connect combatants;
+* enemy intention presentation including move, target, expected result, and content-driven wrapping for longer intentions;
+* a shared combat header showing encounter, round, phase, and contextual navigation;
+* a persistent party selector on character/action screens;
+* Hinari's Subspace on both the overview and her command screen;
+* a graphical game log;
+* End Turn and normal battle action execution;
+* sticky/mobile-first navigation and centered desktop presentation;
+* direct battle entry through `game.html?encounter=...&difficulty=...`;
+* the existing anonymous telemetry/replay reporting used by browser playtests.
+
+The graphical client uses the same engine/public information boundaries as other consumers. It relies on public action views, previews, game state, event frames, presentation/localization data, and sanitized public definitions rather than recreating combat rules in the UI.
+
+## Console browser interface
+
+The earlier console-style browser client remains supported and still provides its established keyboard/button battle flow, scrolling combat log, timed presentation, final battle-state handling, Quit behavior, and return-to-selector flow.
+
+## Still outside the 0.11 graphical baseline
+
+The following are intentionally **not blockers for 0.11** and remain post-release work:
+
+* a graphical scenario-selection screen replacing/reframing the current launcher;
+* graphical victory/defeat screens and return-to-scenario flow;
+* functional Settings UI;
+* richer enemy-detail / enemy-move inspection;
+* a more polished graphical Game Log;
+* broader terminology/help/tooltips where needed;
+* further treatment of compact overview binding indicators if a clearly better design emerges.
+
+0.11 should therefore be read as **the first complete graphical combat slice**, not as completion of every surrounding game screen.
 
 ---
 
@@ -224,9 +255,9 @@ Therefore:
 
 > **Public state and current repository state may differ between tags.**
 
-At the time of this update they happen to match at `0.9.1` / `76d2c178`.
+The current project baseline is the 0.11.0 release state on `master`. When this document was refreshed, that release was being prepared for commit/tag/deployment; the deployed public tag should still be verified rather than inferred from `master`.
 
-The web build's version identifier is derived from the selected version tag. The `package.json` version is not the gameplay/replay version.
+The web build's version identifier is derived from the selected version tag. The `package.json` version is package metadata and is not the gameplay/replay version.
 
 When discussing current implementation details, use `master`.
 
@@ -275,6 +306,8 @@ PostHog configuration intentionally disables unrelated tracking features includi
 An anonymous locally generated player identifier is used without creating PostHog person profiles.
 
 Telemetry must never affect gameplay if initialization or delivery fails.
+
+The 0.11 graphical battle page is wired into the same replay-oriented telemetry lifecycle, including release, encounter, seed, initial state, actions, and final/abandoned outcome handling. Presentation failures or telemetry delivery failures must remain isolated from battle execution.
 
 The long-term value of telemetry remains **reconstructable play behavior**, not vanity analytics.
 
@@ -427,9 +460,9 @@ Smart is a stronger instrument, not an oracle.
 
 ---
 
-# 12. Recent Balance and Content Changes
+# 12. Recent Release Changes
 
-The period from 0.8.1 through 0.9.1 contained several meaningful balance iterations.
+The period from 0.8.1 through 0.11.0 contained several meaningful balance, content, engine, and presentation milestones.
 
 ## 0.8.1 — cooldowns and kit cleanup
 
@@ -466,7 +499,24 @@ The period from 0.8.1 through 0.9.1 contained several meaningful balance iterati
 * Fixed Collar spreading at only one quarter of its intended value.
 * Changed the third Rainmaker from a Defense buff to a Hit buff to reduce grindiness.
 
-These changes should be viewed as a continuing calibration of tactical pressure, not as a declaration that the current game is finally balanced.
+## 0.10.0 — difficulty system
+
+* Added five game-wide difficulty levels: Casual, Standard, Veteran, Extreme, and Mythic.
+* Casual adds player Hit/Escape bonuses; Veteran and above add enemy Potency.
+* Extreme and Mythic add enemy-specific enhanced mechanics, with Mythic generally using their strongest form.
+* Difficulty is selected at battle start and is exposed to the browser interface/presentation layer.
+
+## 0.11.0 — graphical combat interface and localization
+
+* Added the first graphical battle interface and made it the default browser presentation.
+* Kept the existing console interface available from the launcher.
+* Added graphical Overview, Character, Targeting, Escape, and Game Log views.
+* Expanded visual action previews and semantic command/effect presentation.
+* Added linked-entity presentation and improved enemy intention display.
+* Added the first localization/presentation system and initial English string tables for player-facing combat/UI text.
+* Added mobile-first sticky navigation and desktop centering for the graphical battle client.
+
+The balance changes above should still be viewed as continuing calibration of tactical pressure, not as a declaration that the current game is finally balanced. Likewise, 0.11 establishes a graphical presentation baseline without declaring the surrounding game shell complete.
 
 ---
 
@@ -567,7 +617,7 @@ New Smart knowledge should be added as maintenance when real content requires it
 
 # 16. Current Development Position
 
-KCQ has just completed a dense cluster of milestones:
+KCQ has now completed several consecutive foundation phases:
 
 * public browser deployment;
 * telemetry/replay collection;
@@ -578,26 +628,45 @@ KCQ has just completed a dense cluster of milestones:
 * Smart v1;
 * detailed combat metrics and compare tooling;
 * multiple Smart-informed balance passes;
-* additional Tower challenge encounters;
-* Outside Realm stress/gimmick encounter.
+* Tower and Outside challenge encounters;
+* game-wide difficulty levels;
+* a localization/presentation layer;
+* the first public-ready graphical combat interface.
 
-This means the old immediate sequence:
+The old sequence:
 
-**event revamp → Smart harness → further balance**
+**event revamp → Smart harness → further balance → someday build a real UI**
 
-has now been substantially completed.
+is now obsolete. Those steps have substantially happened.
 
-As of this update, Trello's **In Progress** list is empty. There is no single next major engineering direction that should be presented as already chosen.
+The immediate 0.11 goal is to **ship the graphical combat slice rather than continue indefinite combat-UI polish**. The current Overview → Character → Targeting/Escape flow is coherent enough to be treated as a baseline.
 
-KCQ is at a genuine milestone boundary / crossroads.
+Remaining graphical work should be evaluated as concrete post-release features rather than reasons to hold 0.11. In particular, scenario flow, win/lose navigation, settings, enemy details, Game Log presentation, and help/terminology improvements can proceed after the first graphical release.
+
+The project is therefore at another useful boundary: combat is playable through a real UI, while the larger campaign/game shell and future content directions remain open for the next development cycle.
 
 ---
 
 # 17. Major Near-Term Directions
 
-The current Trello board now contains several larger **Future Directions** rather than one mandatory next step.
+The current roadmap contains several larger directions rather than one mandatory next engineering task.
 
-These should be treated as options / project branches until one is deliberately selected.
+The important distinction after 0.11 is that **general graphical combat-UI polish is no longer a prerequisite**. New UI work should correspond to an actual missing feature, usability problem, or surrounding game-flow requirement.
+
+## Complete the graphical game shell
+
+The combat interface exists; the surrounding game flow does not yet.
+
+Likely post-0.11 work includes:
+
+* graphical scenario selection;
+* victory / defeat screens and return-to-scenario flow;
+* Settings, including localization selection and return/quit navigation;
+* richer graphical Game Log presentation;
+* enemy-detail inspection with intentions, moves, difficulty powers, and AI summary;
+* focused help/tooltips/terminology support where actual player confusion appears.
+
+Compact H/A/T/L-style overview binding indicators remain design debt rather than a release blocker. If a clearly better treatment appears quickly it can be adopted; otherwise it should not become another polish rabbit hole.
 
 ## Engine support for future content
 
@@ -631,15 +700,9 @@ This requires both worthwhile character kits and party-selection support across 
 
 Turn the current collection of isolated fights into an authored start-to-finish experience with encounter sequencing, carryover/cleanup, transitions, defeat/restart flow, and a real endpoint.
 
-The Trello card was written when there were six levels; the concept remains valid even though the catalogue now contains ten encounters.
-
 ### Build the Castle content set
 
 Begin the next major content area, using real Castle content to drive generic spread, lock/seal, and other engine additions where needed.
-
-### Design the real web UI
-
-Replace the utilitarian browser console with the long-term presentation layer once campaign navigation, party selection, story presentation, and content structure are stable enough to design around.
 
 ### Revamp Hinari
 
@@ -756,35 +819,34 @@ They must not be used to repair incomplete base characters or encounters.
 
 # 22. Documentation Debt / Known Source Drift
 
-The project documentation is useful, but the development pace from September 25–29 outran some of it.
+The project documentation remains useful, but the development pace from late September through the 0.11 UI cycle has repeatedly outrun document headers and planning notes.
 
-## `Game Rules.md` needs a refresh
+## `Game Rules.md`
 
-Its header still identifies `f30b6c0` from 2026-09-24 as its source baseline.
+`Game Rules.md` still identifies `f30b6c0` from 2026-09-24 as its source baseline even though portions of the document have been refreshed since then.
 
-At least one known rule is now stale:
+The specific drift called out by the previous Project State has been corrected:
 
-* `Game Rules.md` still describes Potency and Vulnerability as **12.5% per point**.
-* Current code and the 0.8.3 patch notes use **10% per point**.
+* Potency and Vulnerability are documented as **10% per point**;
+* player move cooldown availability/ticking is represented in the rules.
 
-Player cooldown semantics added in 0.8.1 also need to be represented as stable rules if they are not already documented in the relevant section.
+The stale source-baseline header should still be refreshed when the rules document next receives a deliberate maintenance pass.
 
-Until that document is refreshed, repository/tests are authoritative.
+As always, repository/tests remain authoritative when a rule document and implementation disagree.
 
-## Trello contains some stale cards
+## Trello / planning boards
 
-This is expected and is why Trello is below the repository in the source-of-truth order.
+Trello is planning state rather than implementation state and can lag the repository.
 
-Examples at this checkpoint:
-
-* the backlog still contains “Add sanitized definition/library API,” but `master` now exposes `getLibrary()` and a sanitized `ContentLibrary`;
-* the campaign-loop Future Direction still refers to “the current six levels,” while the content catalogue now contains ten.
+The UI roadmap now distinguishes between the first-release combat baseline and post-release graphical features. Cards such as scenario selection, win/lose flow, Settings, Game Log improvements, enemy details, and compact binding-indicator redesign should not be interpreted as blockers for the 0.11 graphical release unless explicitly moved back into the release-critical path.
 
 Do not infer implementation status from card location without checking the repository.
 
 ## Patch Notes
 
-`Patch Notes.md` is currently updated through 0.9.1 and is a useful concise record of release-level changes, but it should not replace the repository or this broader project-state document.
+`Patch Notes.md` is now updated through **0.11.0** and is the concise release-level history.
+
+It should not replace the repository or this broader project-state document, which records architectural conclusions, current direction, and intentionally deferred work.
 
 ---
 
@@ -792,9 +854,13 @@ Do not infer implementation status from card location without checking the repos
 
 The following principles have survived enough development to be treated as current project direction.
 
-### Build the game before polishing the shell
+### Build the game before polishing the shell — then ship the shell when it earns its place
 
-Mechanical correctness, testability, meaningful decisions, and content take priority over a final graphical UI.
+Mechanical correctness, testability, meaningful decisions, and content come first.
+
+That does **not** mean graphical presentation should remain perpetually deferred. The 0.11 UI exists because the combat engine, public action/previews, and balance work became mature enough to support it.
+
+Future presentation work should improve actual playability or complete missing game flow rather than become open-ended pixel polishing.
 
 ### Keep the engine black-box usable
 
@@ -803,6 +869,10 @@ A UI, harness, replay viewer, or future client should not need private engine kn
 ### Expose useful public information instead of duplicating rules
 
 Action views, previews, event frames, and the sanitized content library should give consumers enough information to make decisions without reimplementing combat logic.
+
+### Presentation and localization stay outside combat rules
+
+Player-facing names, labels, descriptions, and UI wording belong in the presentation/localization layer. The engine should expose stable IDs and public data rather than English combat text.
 
 ### Prefer generic mechanics driven by real content needs
 
@@ -838,6 +908,12 @@ Meaningful abilities, escape decisions, target priorities, enemy mechanics, and 
 
 The project now has a competent Smart policy. Improve it when content exposes a meaningful blind spot, but do not indefinitely postpone campaigns, characters, content, or UI in pursuit of a perfect simulated human.
 
+### Avoid the endless-polish trap
+
+Once a screen is coherent, usable, and sufficiently tested, freeze the baseline and move on unless a concrete problem appears.
+
+The purpose of the graphical UI is to make the game understandable and playable, not to delay releases until every future presentation idea has been solved.
+
 ---
 
 # 24. Explicitly Obsolete Project Assumptions
@@ -846,15 +922,23 @@ The following older descriptions should no longer be treated as current.
 
 ### “KCQ is still primarily an engine prototype.”
 
-Obsolete. It has playable content, public browser presentation, telemetry, replays, a substantial harness, and multiple released/tagged balance iterations.
+Obsolete. It has playable content, public browser presentation, telemetry, replays, a substantial harness, released balance/content iterations, localization infrastructure, and a graphical combat interface.
 
 ### “The public/web console is the next major milestone.”
 
 Obsolete. It has already been implemented and released.
 
+### “The current browser interface is intentionally only a console-style early-playtest UI.”
+
+Obsolete as of 0.11. The console interface still exists, but the graphical battle interface is now the default presentation and should be treated as a real baseline.
+
+### “A real graphical web UI is still future work.”
+
+Obsolete as an absolute statement. The graphical **combat** UI now exists. What remains is the surrounding scenario/campaign/game shell and future feature depth.
+
 ### “The web build still needs an encounter selector.”
 
-Obsolete. The browser exposes the encounter catalogue.
+Obsolete. The browser launcher exposes the encounter catalogue and difficulty/interface selection. A more integrated graphical scenario-select screen remains future work.
 
 ### “Analytics/replay reporting are still only a future design problem.”
 
@@ -868,9 +952,9 @@ Obsolete. The catalogue now contains ten encounters across Plains, Forest, Tower
 
 Obsolete as of 0.9.1. Tower and Outside Realm increased the catalogue to ten.
 
-### “The current release is 0.8.0 / 0.8.1.”
+### “The current release is 0.8.x / 0.9.x / 0.10.x.”
 
-Obsolete. The current version tag is 0.9.1.
+Obsolete for the current project baseline. 0.11.0 is the current release state described by this document.
 
 ### “The harness is still just a simple single-fight runner.”
 
@@ -882,7 +966,7 @@ Obsolete. Smart v1 is implemented and has already been used for substantial bala
 
 ### “The next sequence is Smart → balance.”
 
-Obsolete as an immediate roadmap. That sequence has already occurred through the 0.9.1 cycle.
+Obsolete as an immediate roadmap. That sequence has already occurred through the 0.9/0.10 cycles.
 
 ### “Full-kit balance still cannot be evaluated automatically.”
 
@@ -896,7 +980,11 @@ BQ1 remains useful historical evidence, but KCQ's actual mechanics and content s
 
 ### “The sanitized content-library API is still future work.”
 
-Obsolete. `master` now exposes `getLibrary()` and `ContentLibrary`.
+Obsolete. `master` exposes `getLibrary()` and `ContentLibrary`.
+
+### “KCQ is at an undecided crossroads before choosing whether to build a real UI.”
+
+Obsolete. The graphical combat direction was chosen and the first public-ready slice was completed in 0.11.
 
 ---
 
