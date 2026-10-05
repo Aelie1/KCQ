@@ -2,8 +2,8 @@ import { For, Show, type JSX } from "solid-js";
 import type { EntityId } from "../../../../engine/public/types";
 import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
 import { CombatHeader } from "./CombatHeader";
-import { ModifierMeter } from "./ModifierMeter";
 import { LinkedEntityChip } from "./LinkedEntityChip";
+import { ModifierMeter } from "./ModifierMeter";
 import { StatusChip } from "./StatusChip";
 
 export interface CharacterDetailsLayoutProps {
@@ -17,73 +17,57 @@ export interface CharacterDetailsLayoutProps {
 export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.Element {
     return (
         <section class="kcq-character-details" aria-label={props.model.focused.name}>
-            <CombatHeader
-                variant="subscreen"
-                encounterLabel={props.model.header.encounterLabel}
-                contextLabel={props.contextLabel}
-                characterLabel={props.model.header.characterLabel}
-                roundLabel={props.model.header.roundLabel}
-                phaseLabel={props.model.header.phaseLabel}
-                backLabel={props.model.controls.backLabel}
-                onBack={props.onHeaderBack}
-            />
+            <div class="kcq-character-details__sticky">
+                <CombatHeader
+                    variant="subscreen"
+                    encounterLabel={props.model.header.encounterLabel}
+                    contextLabel={props.contextLabel}
+                    characterLabel={props.model.header.characterLabel}
+                    roundLabel={props.model.header.roundLabel}
+                    phaseLabel={props.model.header.phaseLabel}
+                    backLabel={props.model.controls.backLabel}
+                    onBack={props.onHeaderBack}
+                />
 
-            <nav class="kcq-character-roster" aria-label={props.model.labels.rosterLabel}>
-                <For each={props.model.roster}>
-                    {(character) => (
-                        <button
-                            class="kcq-character-roster__card"
-                            classList={{
-                                "kcq-character-roster__card--focused": character.focused,
-                                "kcq-character-roster__card--disabled": character.actionState.kind === "incapacitated",
-                            }}
-                            type="button"
-                            aria-pressed={character.focused}
-                            onClick={() => props.onSelectCharacter?.(character.id)}
-                        >
-                            <span
-                                class="kcq-character-roster__name"
-                                classList={{ [`kcq-player-identity--${character.tone}`]: true }}
+                <nav class="kcq-character-roster" aria-label={props.model.labels.rosterLabel}>
+                    <For each={props.model.roster}>
+                        {(character) => (
+                            <button
+                                class="kcq-character-roster__card"
+                                classList={{
+                                    "kcq-character-roster__card--focused": character.focused,
+                                    "kcq-character-roster__card--disabled": character.actionState.kind === "incapacitated",
+                                }}
+                                type="button"
+                                aria-pressed={character.focused}
+                                onClick={() => props.onSelectCharacter?.(character.id)}
                             >
-                                {character.name}
-                            </span>
-                            <span class="kcq-character-roster__state" aria-label={character.summary}>
                                 <span
-                                    class="kcq-character-roster__action"
-                                    classList={{ [`kcq-character-roster__action--${character.actionState.tone}`]: true }}
+                                    class="kcq-character-roster__name"
+                                    classList={{ [`kcq-player-identity--${character.tone}`]: true }}
                                 >
-                                    {character.actionState.compactLabel}
+                                    {character.name}
                                 </span>
-                                <span class="kcq-character-roster__state-separator" aria-hidden="true">{" \u00b7 "}</span>
-                                <span
-                                    class="kcq-character-roster__condition"
-                                    classList={{ [`kcq-character-roster__condition--${character.stanceState.tone}`]: true }}
-                                >
-                                    {character.stanceState.compactLabel}
+                                <span class="kcq-character-roster__state" aria-label={character.summary}>
+                                    <span
+                                        class="kcq-character-roster__action"
+                                        classList={{ [`kcq-character-roster__action--${character.actionState.tone}`]: true }}
+                                    >
+                                        {character.actionState.compactLabel}
+                                    </span>
+                                    <span class="kcq-character-roster__state-separator" aria-hidden="true">{" \u00b7 "}</span>
+                                    <span
+                                        class="kcq-character-roster__condition"
+                                        classList={{ [`kcq-character-roster__condition--${character.stanceState.tone}`]: true }}
+                                    >
+                                        {character.stanceState.compactLabel}
+                                    </span>
                                 </span>
-                            </span>
-                        </button>
-                    )}
-                </For>
-            </nav>
-
-            <article class="kcq-focused-character">
-                <span class="kcq-focused-character__avatar" aria-hidden="true">
-                    {props.model.focused.initial}
-                </span>
-                <h2 class={`kcq-player-identity--${props.model.focused.tone}`}>{props.model.focused.name}</h2>
-                <StatusChip tone={props.model.focused.actionState.tone}>
-                    {props.model.focused.actionState.label}
-                </StatusChip>
-                <StatusChip tone={props.model.focused.stanceState.tone}>
-                    {props.model.focused.stanceState.label}
-                </StatusChip>
-                <Show when={props.model.focused.resource} keyed>
-                    {(resource) => (
-                        <span class="kcq-focused-character__resource kcq-subspace-value">{resource.label}</span>
-                    )}
-                </Show>
-            </article>
+                            </button>
+                        )}
+                    </For>
+                </nav>
+            </div>
 
             <section class="kcq-character-section kcq-character-capabilities" aria-labelledby="character-status-heading">
                 <h2 id="character-status-heading">{props.model.labels.statusHeading}</h2>

@@ -107,19 +107,34 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         setScreen({ kind: "character", actorId });
     };
 
+    const scrollToBottom = (): void => {
+        requestAnimationFrame(() => {
+            window.scrollTo({
+                top: document.documentElement.scrollHeight,
+                behavior: "smooth",
+            });
+        });
+    };
+
     const selectCommand = (actorId: EntityId, commandId: string): void => {
         if (commandId === "stance") {
             execute({ type: "stance", actor: actorId });
             return;
         }
+
         if (commandId === "escape") {
             setScreen({ kind: "escape", actorId });
             return;
         }
+
         const move = actions()
             .find(({ id }) => id === actorId)
             ?.moves.find(({ move: candidate }) => candidate.id === commandId);
-        if (move) setScreen({ kind: "targeting", actorId, moveId: move.move.id });
+
+        if (move) {
+            setScreen({ kind: "targeting", actorId, moveId: move.move.id });
+            scrollToBottom();
+        }
     };
 
     const executeMove = (targets: readonly EntityId[]): void => {
@@ -185,10 +200,13 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         presentation={props.presentation}
                         state={state()}
                         thresholds={thresholds()}
-                        onBack={() => setScreen({
-                            kind: "character",
-                            actorId: current.screen.actorId,
-                        })}
+                        onBack={() => {
+                            setScreen({
+                                kind: "character",
+                                actorId: current.screen.actorId,
+                            });
+                            scrollToBottom();
+                        }}
                         onHeaderBack={() => setScreen({ kind: "overview" })}
                         onSelectCharacter={selectCharacter}
                         onExecute={executeMove}

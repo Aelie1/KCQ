@@ -68,6 +68,40 @@ button {
     background: var(--kcq-surface-panel);
 }
 
+.kcq-combat-header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    padding-top: 12px;
+    padding-bottom: 6px;
+
+    background: var(--kcq-surface-background);
+}
+
+.kcq-character-details__sticky {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    margin-top: -12px;
+    padding-top: 12px;
+    padding-bottom: 8px;
+
+    background: var(--kcq-surface-background);
+}
+
+.kcq-character-details__sticky .kcq-combat-header-sticky {
+    position: static;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
 .kcq-combat-header--overview {
     flex: 0 0 72px;
     grid-template-columns: minmax(0, 1fr) 82px 42px;
@@ -1164,14 +1198,52 @@ button {
 }
 
 .kcq-subspace-value {
-    padding: 3px 5px;
-    border: 1px solid var(--kcq-binding-light);
-    border-radius: 6px;
     color: var(--kcq-binding-light);
     font-size: 9px;
     font-weight: 700;
     line-height: 11px;
     white-space: nowrap;
+}
+
+.kcq-party-card__resource {
+    padding: 3px 5px;
+    border: 1px solid var(--kcq-binding-light);
+    border-radius: 6px;
+}
+
+.kcq-character-commands__header .kcq-subspace-value {
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-transform: uppercase;
+}
+
+.kcq-character-commands__resource {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+
+    color: var(--kcq-binding-light);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.kcq-subspace-meter {
+    width: 58px;
+    height: 5px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--kcq-surface-raised);
+}
+
+.kcq-subspace-meter>span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--kcq-binding-light);
 }
 
 .kcq-player-identity--ko,
@@ -1463,15 +1535,29 @@ button {
     font-size: 10px;
 }
 
-.kcq-character-commands {
-    min-height: 527px;
-}
-
 .kcq-character-commands__grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 6px;
     padding-top: 7px;
+}
+
+.kcq-character-commands__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 18px;
+    gap: 8px;
+}
+
+.kcq-character-commands__header h2 {
+    margin: 0;
+    min-width: 0;
+    color: var(--kcq-text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-transform: uppercase;
 }
 
 .kcq-command-card {
