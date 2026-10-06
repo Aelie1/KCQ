@@ -7,6 +7,7 @@ import type { EncounterDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { helpless, stunned } from "../../src/engine/protected/statuses";
+import { getThresholds } from "../../src/engine/public/mechanics";
 import type { Engine, GameEvent, GameState, Intention } from "../../src/engine/public/types";
 import { runConsoleClient } from "../../src/ui/console/client";
 import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention, formatPreviewEffects } from "../../src/ui/console/format";
@@ -58,7 +59,7 @@ const state: GameState = makePublicGameState({
     },
 });
 
-const bindingThresholds = createTestEngine([], [], 1).getThresholds();
+const bindingThresholds = getThresholds();
 
 const longIntention: Intention = {
     move: "royalMist",

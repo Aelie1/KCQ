@@ -1,3 +1,4 @@
+import { getThresholds } from "../../engine/public/mechanics";
 import type {
     ActionInfo,
     ActionResult,
@@ -128,7 +129,7 @@ export async function runBattleController(
             state: visibleState,
             availability: currentActions,
             bindings: bindingIds,
-            bindingThresholds: engine.getThresholds(),
+            bindingThresholds: getThresholds(),
             actionLines,
             logLines: logEntries.map((line) => line.text),
             logStyles: logEntries,

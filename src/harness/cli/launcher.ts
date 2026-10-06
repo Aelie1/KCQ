@@ -1,5 +1,6 @@
 import { availableParallelism } from "node:os";
 import { createEngine } from "../../engine/public/engine";
+import { getThresholds } from "../../engine/public/mechanics";
 import { runConsoleReplay } from "../../ui/console/replay";
 import { runBatch } from "../batch/batch";
 import {
@@ -420,7 +421,7 @@ async function runInteractiveReplay(
         replay: result.replay,
         encounter: encounterId,
         seed: engineSeed,
-        bindingThresholds: createEngine(engineSeed).getThresholds(),
+        bindingThresholds: getThresholds(),
     });
 }
 

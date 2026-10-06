@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import { createEngine } from "../../engine/public/engine";
+import { getThresholds } from "../../engine/public/mechanics";
 import { runConsoleReplay } from "../../ui/console/replay";
 import { importPostHogReplayCsv } from "../replay/posthog-replay";
 
@@ -22,7 +22,7 @@ async function main(): Promise<void> {
         replay: imported.replay,
         encounter: imported.encounter,
         seed: imported.seed,
-        bindingThresholds: createEngine(imported.seed).getThresholds(),
+        bindingThresholds: getThresholds(),
     });
 }
 

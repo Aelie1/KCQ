@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
+import { getThresholds } from "../../src/engine/public/mechanics";
 import type {
     ActionInfo,
     ActionView,
@@ -18,8 +19,8 @@ import {
 import { getPolicy, policies } from "../../src/harness/policies";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { escapePolicy } from "../../src/harness/policy/escape";
-import { makePublicActionView, makePublicBinding, makePublicCharacter } from "../helpers/publicTestData";
 import { resolvedEvents } from "../helpers/events";
+import { makePublicActionView, makePublicBinding, makePublicCharacter } from "../helpers/publicTestData";
 
 function stockEncounterId(): string {
     const encounterId = createEngine(1).listEncounters()[0];
@@ -67,7 +68,7 @@ function policyContext(actions: ActionView[]): PolicyContext {
     return {
         state: engine.getGameState(),
         actions,
-        thresholds: engine.getThresholds(),
+        thresholds: getThresholds(),
         library: engine.getLibrary(),
         random: createPolicyRandom(1),
     };
@@ -134,7 +135,7 @@ describe("policy-driven single-fight harness", () => {
 
         runSingleFight({ ...fightInput(policy, engineSeed), maxActions: 1 });
 
-        expect(observed).toEqual(createEngine(engineSeed).getThresholds());
+        expect(observed).toEqual(getThresholds());
     });
 
     it("supplies the same public content library snapshot to every policy context", () => {

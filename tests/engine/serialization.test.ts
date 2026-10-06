@@ -6,6 +6,7 @@ import { thresholds } from "../../src/engine/protected/mechanics";
 import { GameStatus } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEntity, iGameState } from "../../src/engine/protected/types";
+import { getThresholds } from "../../src/engine/public/mechanics";
 import { makeBindingDef, makeCharacter, makeCharacterDef, makeEnemy, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
 import { makeInternalState, STANDARD_DIFFICULTY } from "../helpers/state";
 import { createTestEngine } from "../helpers/testCatalog";
@@ -84,7 +85,7 @@ describe("state serialization and combatant loading", () => {
     });
 
     it("publishes the current binding thresholds through the public API", () => {
-        expect(createTestEngine([], [], 1).getThresholds()).toEqual({
+        expect(getThresholds()).toEqual({
             thresholds: {
                 light: 10,
                 moderate: 20,

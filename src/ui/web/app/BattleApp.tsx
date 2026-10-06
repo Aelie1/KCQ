@@ -1,4 +1,5 @@
 import { createEffect, createMemo, createSignal, Match, Switch, type JSX } from "solid-js";
+import { getThresholds } from "../../../engine/public/mechanics";
 import type {
     ActionInfo,
     ActionResult,
@@ -44,7 +45,7 @@ interface CurrentTargeting {
 export function BattleApp(props: BattleAppProps): JSX.Element {
     const [state, setState] = createSignal<GameState>(props.engine.getGameState());
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
-    const [thresholds] = createSignal<ThresholdInfo>(props.engine.getThresholds());
+    const [thresholds] = createSignal<ThresholdInfo>(getThresholds());
     const [screen, setScreen] = createSignal<BattleScreen>({ kind: "overview" });
     const [logEntries, setLogEntries] = createSignal<readonly GameLogEntry[]>([]);
 

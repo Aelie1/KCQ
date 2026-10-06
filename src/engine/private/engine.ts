@@ -1,10 +1,10 @@
 import { findBinding, findCharacter, findEntity, isValidEntity } from "../protected/helpers";
-import { findMove, thresholds } from "../protected/mechanics";
+import { findMove } from "../protected/mechanics";
 import { mixSeed, Random } from "../protected/random";
 import { GameStatus, StatusMap } from "../protected/status";
 import { ContentCatalog, iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import { ContentLibrary } from "../public/library";
-import type { AccuracyResult, ActionResult, ActionView, DifficultyId, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, ThresholdInfo, TrapEvent } from "../public/types";
+import type { AccuracyResult, ActionResult, ActionView, DifficultyId, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, TrapEvent } from "../public/types";
 import {
     applyCooldowns,
     evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape,
@@ -75,19 +75,6 @@ export class GameEngine implements Engine {
 
     private refreshActions() {
         this.viewActions = getActionView(this.state, this.statuses);
-    }
-
-    getThresholds(): ThresholdInfo {
-        return {
-            thresholds: {
-                light: thresholds.light,
-                moderate: thresholds.moderate,
-                heavy: thresholds.heavy,
-                severe: thresholds.severe,
-                overwhelming: thresholds.overwhelming
-            },
-            max: thresholds.max
-        }
     }
 
     setDifficulty(difficulty: DifficultyId) {

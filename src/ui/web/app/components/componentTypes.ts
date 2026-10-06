@@ -59,6 +59,8 @@ export interface BindingMetricData {
     label: string;
     level: BindingLevel;
     max: number;
+    peak?: number;
+    incoming?: number;
 }
 
 export type PartyActionStateKind =

@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
+import { getThresholds } from "../../src/engine/public/mechanics";
 import type {
     ActionInfo,
     ActionView,
-    Character,
     Enemy,
     GameState,
-    PreviewInfo,
+    PreviewInfo
 } from "../../src/engine/public/types";
 import { runBatch } from "../../src/harness/batch/batch";
 import {
@@ -709,7 +709,7 @@ describe("Smart 2 selection and integration", () => {
                 {
                     state: beforeState,
                     actions: beforeActions,
-                    thresholds: createEngine(1).getThresholds(),
+                    thresholds: getThresholds(),
                     library: createEmptyContentLibrary(),
                     random: createPolicyRandom(1),
                 },

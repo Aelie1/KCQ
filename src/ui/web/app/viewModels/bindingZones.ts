@@ -10,6 +10,7 @@ export interface BindingZoneViewModel {
     level: BindingLevel;
     status: readonly Status[];
     value: number;
+    peak?: number;
 }
 
 export function projectBindingZones(
@@ -38,5 +39,6 @@ function bindingZone(binding: Binding): BindingZoneViewModel {
         value: binding.value,
         level: binding.level,
         status: binding.status,
+        peak: binding.data["peak"]
     };
 }

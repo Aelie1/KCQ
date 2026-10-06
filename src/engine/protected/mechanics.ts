@@ -19,6 +19,23 @@ export function getEscapePotency(value: number, escapeModifier: number, assistMo
     return escapePotency;
 }
 
+export function getBindingPotency(base: number, amount: number): number {
+    let value = base;
+    //bondage above 80 is reduced by 90%
+
+    if (value > thresholds.overwhelming) {
+        value += Math.ceil(amount * 0.1);
+    } else {
+        const toThreshold = Math.min(amount, thresholds.overwhelming - value);
+        const overflow = amount - toThreshold;
+        value += Math.ceil(toThreshold + overflow * 0.1);
+    }
+    if (value > thresholds.max) {
+        value = thresholds.max;
+    }
+    return value - base;
+}
+
 export const thresholds: Record<BindingLevel, number> = {
     none: 0,
     light: 10,

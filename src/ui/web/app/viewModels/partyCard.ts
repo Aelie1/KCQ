@@ -1,3 +1,4 @@
+import { getBindingProgress } from "../../../../engine/public/mechanics";
 import type {
     ActionView,
     BindingId,
@@ -45,6 +46,7 @@ export function createPartyCardViewModel(
     thresholds: ThresholdInfo,
     presentation: Presentation,
     encounterBindingIds?: readonly BindingId[],
+    incomingBindings?: Record<BindingId, number>,
 ): PartyCardData {
     if (character.id !== action.id) {
         throw new Error(`Character ${character.id} does not match ActionView ${action.id}.`);
@@ -80,6 +82,8 @@ export function createPartyCardViewModel(
             current: binding.value,
             max: thresholds.max,
             level: binding.level,
+            peak: binding.peak,
+            incoming: incomingBindings?.[binding.id] ? getBindingProgress(binding.value, incomingBindings?.[binding.id]) : undefined
         })),
         effects: character.buffs,
         visibleEffects: effectSummary.visibleEffects.map((effect) => presentation.buff(effect.id)),

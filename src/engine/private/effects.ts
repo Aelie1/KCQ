@@ -1,7 +1,7 @@
 import { BindingDef, MoveDef } from "../protected/definitions";
 import { getValidTargets } from "../protected/enemies";
 import { findBinding, findBuff, findEntity, isCharacter, isEnemy, isValidEntity } from "../protected/helpers";
-import { thresholds } from "../protected/mechanics";
+import { getBindingPotency } from "../protected/mechanics";
 import { Random } from "../protected/random";
 import { GameStatus } from "../protected/status";
 import { ContentCatalog, iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
@@ -179,20 +179,8 @@ export class GameEffects {
             target.bindings.push(binding);
             event.type = "bondageAdded";
         }
-        let origLevel = binding.value;
-        //bondage above 80 is reduced by 90%
-        if (origLevel > thresholds.overwhelming) {
-            binding.value += Math.ceil(modifiedAmount * 0.1);
-        } else {
-            const toThreshold = Math.min(modifiedAmount, thresholds.overwhelming - origLevel);
-            const overflow = modifiedAmount - toThreshold;
-            binding.value += Math.ceil(toThreshold + overflow * 0.1);
-        }
-        if (binding.value > thresholds.max) {
-            binding.value = thresholds.max;
-        }
-
-        event.amount = binding.value - origLevel;
+        event.amount = getBindingPotency(binding.value, modifiedAmount);
+        binding.value += event.amount;
         this.addEvent(event);
 
         if (type.onAdd) {

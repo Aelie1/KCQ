@@ -1,5 +1,6 @@
 import type {
     ActionView,
+    BindingId,
     GameState,
     ThresholdInfo,
     Trap,
@@ -58,6 +59,20 @@ export function createBattleOverviewViewModel(
         if (!action) {
             throw new Error(`Missing ActionView for character ${character.id}.`);
         }
+        const incomingBindings: Record<BindingId, number> = {};
+
+        for (const enemy of state.enemies) {
+            for (const intention of enemy.intentions) {
+                const target = intention.targets.find(target => target.target === character.id);
+                if (target) {
+                    for (const effect of target.effects) {
+                        if (effect.type === "binding" && effect.target === character.id && effect.amount) {
+                            incomingBindings[effect.binding] = (incomingBindings[effect.binding] ?? 0) + effect.amount;
+                        }
+                    }
+                }
+            }
+        }
 
         return createPartyCardViewModel(
             character,
@@ -65,6 +80,7 @@ export function createBattleOverviewViewModel(
             thresholds,
             presentation,
             state.encounter?.bindings,
+            incomingBindings,
         );
     });
     const activePartyCount = party.filter(({ actionState }) =>

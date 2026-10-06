@@ -8,7 +8,6 @@ export interface Engine {
     getLibrary(): ContentLibrary;
     getActionView(): ActionView[];
     getGameState(): GameState;
-    getThresholds(): ThresholdInfo;
     setDifficulty(difficulty: DifficultyId): void;
     listCharacters(): EntityId[];
     loadCharacter(id: EntityId): GameEvent;

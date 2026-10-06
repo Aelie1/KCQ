@@ -1,5 +1,6 @@
 import { createEngine } from "../engine/public/engine";
 import type { ContentLibrary } from "../engine/public/library";
+import { getThresholds } from "../engine/public/mechanics";
 import type {
     ActionView,
     EventFrame,
@@ -127,7 +128,7 @@ export interface SingleFightResult {
 /** Runs one stock encounter, delegating every player decision to the supplied policy. */
 export function runSingleFight(input: SingleFightInput): SingleFightResult {
     const engine = createEngine(input.engineSeed);
-    const thresholds = engine.getThresholds();
+    const thresholds = getThresholds();
     const library = engine.getLibrary();
     const policyRandom = createPolicyRandom(input.policySeed);
     const trace: PlayerAction[] = [];
