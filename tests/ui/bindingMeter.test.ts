@@ -39,7 +39,7 @@ describe("binding meter", () => {
         expect(html).toContain("kcq-binding-meter--increase");
         expect(html).toContain('class="kcq-binding-meter__value" style="width:40%"');
         expect(html).toContain("kcq-binding-meter__change--severe");
-        expect(html).toContain('style="left:40%;width:20%"');
+        expect(html).toContain('style="left:calc(40% - var(--kcq-binding-meter-radius));width:calc(20% + var(--kcq-binding-meter-radius))');
     });
 
     it("renders a negative signed delta as the portion removed from the current value", () => {
@@ -56,7 +56,7 @@ describe("binding meter", () => {
         expect(html).toContain("kcq-binding-meter--decrease");
         expect(html).toContain('class="kcq-binding-meter__value" style="width:35%"');
         expect(html).toContain("kcq-binding-meter__change--heavy");
-        expect(html).toContain('style="left:35%;width:25%"');
+        expect(html).toContain('style="left:calc(35% - var(--kcq-binding-meter-radius));width:calc(25% + var(--kcq-binding-meter-radius))"');
     });
 
     it("renders the historical peak as a separate outline extent", () => {
@@ -94,6 +94,6 @@ describe("binding meter", () => {
 
         expect(html).toContain('aria-valuenow="90"');
         expect(html).toContain('class="kcq-binding-meter__value" style="width:90%"');
-        expect(html).toContain('style="left:90%;width:10%"');
+        expect(html).toContain('style="left:calc(90% - var(--kcq-binding-meter-radius));width:calc(10% + var(--kcq-binding-meter-radius))');
     });
 });

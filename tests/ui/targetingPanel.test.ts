@@ -257,7 +257,7 @@ describe("targeting workflow composition", () => {
         expect(visibleText(lower)).toContain('kcq-binding-effect__projected-level kcq-escape-value--none">None </span>2');
         expect(lower).toContain("kcq-binding-meter--decrease");
         expect(lower).toContain("kcq-binding-meter__change--none");
-        expect(lower).toContain('style="left:2%;width:25%"');
+        expect(lower).toContain('style="left:calc(2% - var(--kcq-binding-meter-radius));width:calc(25% + var(--kcq-binding-meter-radius))');
     });
 
     it("renders action and stance summaries with EntityId identity classes", () => {
