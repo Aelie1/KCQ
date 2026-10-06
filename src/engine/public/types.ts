@@ -27,7 +27,10 @@ export interface ActionView {
     reason?: FailureReason;
     moves: ActionInfo[];
     escapes: EscapeInfo[];
-    stance: StanceInfo;
+    attack: CapabilityInfo;
+    escape: CapabilityInfo;
+    bonus: CapabilityInfo;
+    stance: CapabilityInfo;
 }
 
 export interface GameState {
@@ -75,7 +78,6 @@ export interface Character {
     acted: boolean;
     standing: boolean;
     bonusEscapes: number;
-    bonusBlocked: boolean;
     bindings: Binding[];
     buffs: Buff[];
     cooldowns: Record<MoveId, number>;
@@ -371,14 +373,15 @@ export type ModifierId =
     | "willpower"
     | "spread";
 
-export type FlagId = "blocksAttack" |
-    "blocksEscape" |
-    "blocksAssist" |
-    "blocksBonusEscape" |
-    "blocksMoving" |
-    "skipsTraps" |
-    "skipsTurn" |
-    "incapacitated";
+export type FlagId =
+    | "blocksAttack"
+    | "blocksEscape"
+    | "blocksAssist"
+    | "blocksBonusEscape"
+    | "blocksMoving"
+    | "skipsTraps"
+    | "skipsTurn"
+    | "incapacitated";
 
 
 export interface ActionInfo {
@@ -389,7 +392,7 @@ export interface ActionInfo {
     reason?: FailureReason;
 }
 
-export interface StanceInfo {
+export interface CapabilityInfo {
     available: boolean;
     reason?: FailureReason;
 }
@@ -464,6 +467,7 @@ export type FailureReason =
     | "attackUnavailable"
     | "assistUnavailable"
     | "escapeUnavailable"
+    | "bonusUnavailable"
     | "bindingRestriction"
     | "cooldownIncomplete"
     | "insufficientResource"

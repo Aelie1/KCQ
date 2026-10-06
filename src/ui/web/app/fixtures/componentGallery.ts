@@ -131,6 +131,9 @@ function action(
         ...(reason ? { reason } : {}),
         moves: [],
         escapes: [],
+        attack: { available: true },
+        escape: { available: true },
+        bonus: { available: true },
         stance: stanceReason
             ? { available: false, reason: stanceReason }
             : { available: true },

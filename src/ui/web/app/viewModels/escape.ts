@@ -5,8 +5,8 @@ import type { Presentation } from "../../../presentation/presentation";
 import { projectBindingZones } from "./bindingZones";
 import type { CommandTagViewModel } from "./characterDetails";
 import { createCharacterActionState, createCharacterStanceState } from "./characterState";
-import { bindingLevelAtValue } from "./presentationHelpers";
 import { playerTone, type PlayerTone } from "./linkedEntities";
+import { bindingLevelAtValue } from "./presentationHelpers";
 
 export type EscapeValueTone = BindingLevel;
 export interface EscapeProjectionViewModel { amount: number; projectedValue: number; tone: EscapeValueTone }

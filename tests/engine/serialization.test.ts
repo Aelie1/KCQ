@@ -198,7 +198,6 @@ describe("state serialization and combatant loading", () => {
                 acted: false,
                 standing: false,
                 bonusEscapes: 0,
-                bonusBlocked: false,
                 bindings: [],
                 buffs: [],
                 modifiers: {},

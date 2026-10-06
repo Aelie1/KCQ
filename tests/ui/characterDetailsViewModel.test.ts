@@ -58,7 +58,10 @@ describe("character details view model", () => {
         const fixture = characterDetailsFixture;
         const focused = createFocusedCharacterViewModel(
             fixture.state,
-            fixture.actions[0],
+            {
+                ...fixture.actions[0],
+                escape: { available: false, reason: "escapeUnavailable" },
+            },
             fixture.thresholds,
             fixture.presentation,
         );

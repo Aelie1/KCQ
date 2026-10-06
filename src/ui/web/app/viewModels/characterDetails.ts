@@ -298,10 +298,8 @@ function createModifierMeter(
     presentation: Presentation,
 ): ModifierMeterViewModel {
     const blocked = definition.moveType !== undefined
-        ? character.blockedMoveTypes.includes(definition.moveType)
-        : definition.availability === "escape"
-        && action.escapes.length > 0
-        && action.escapes.every(({ available }) => !available);
+        ? (character.blockedMoveTypes.includes(definition.moveType) || !action.attack.available)
+        : (definition.availability === "escape" && !action.escape.available);
     const value = character.modifiers[definition.modifier] ?? 0;
 
     return {
@@ -409,8 +407,8 @@ function createCommands(
         id: "stance",
         name: presentation.ui("characterDetails.changeStance"),
         shortcutLabel: shortcutLabel(action.moves.length + 1, presentation),
-        available: action.stance.available,
-        ...reasonLabel(action.stance.available, action.stance.reason, presentation),
+        available: action.available && action.stance.available,
+        ...reasonLabel(action.available && action.stance.available, action.reason ?? action.stance.reason, presentation),
         tags: [tag(
             "stance-destination",
             presentation.stance(stanceDestination),
@@ -419,8 +417,8 @@ function createCommands(
         )],
     });
 
-    const availableEscape = action.escapes.some(({ available }) => available);
-    const escapeReason = action.escapes.find(({ reason }) => reason)?.reason;
+    const availableEscape = action.escape.available && action.escapes.some(({ available }) => available);
+    const escapeReason = action.escapes.find(({ reason }) => reason)?.reason ?? action.escape.reason;
     const escapeTargets = new Set(action.escapes
         .filter(({ available }) => available)
         .map(({ target }) => target));
@@ -432,7 +430,7 @@ function createCommands(
         escapeTags.push(tag("self", presentation.ui("characterDetails.tagSelf"), "success"));
     }
     if (availableEscape) {
-        if (character.bonusBlocked) {
+        if (!action.bonus.available) {
             escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusBlocked"), "danger"));
         } else if (!character.standing) {
             escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusStanding"), "warning"));
@@ -446,7 +444,7 @@ function createCommands(
         name: presentation.ui("characterDetails.escape"),
         shortcutLabel: shortcutLabel(0, presentation),
         available: availableEscape,
-        ...(action.escapes.length === 0
+        ...(action.escape.available && action.escapes.length === 0
             ? { reasonLabel: presentation.ui("characterDetails.noEscapeTargets") }
             : reasonLabel(availableEscape, escapeReason, presentation)),
         tags: escapeTags,

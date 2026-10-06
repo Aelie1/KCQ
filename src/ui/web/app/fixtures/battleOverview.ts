@@ -87,9 +87,10 @@ function action(id: string, stanceReason?: FailureReason): ActionView {
         available: true,
         moves: [],
         escapes: [],
-        stance: stanceReason
-            ? { available: false, reason: stanceReason }
-            : { available: true },
+        attack: { available: true },
+        escape: { available: true },
+        bonus: { available: true },
+        stance: stanceReason ? { available: false, reason: stanceReason } : { available: true },
     };
 }
 

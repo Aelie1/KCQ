@@ -58,8 +58,6 @@ describe("actor-level action restrictions", () => {
         expect(actionView(engine, hero.id).escapes).toEqual([
             expect.objectContaining({ available: false, reason: "actorSkipped" }),
         ]);
-        expect(actionView(engine, hero.id).stance)
-            .toEqual({ available: false, reason: "actorSkipped" });
         expect(engine.executeAction({
             type: "escape",
             actor: hero.id,
@@ -83,8 +81,6 @@ describe("actor-level action restrictions", () => {
         expect(actionView(engine, hero.id).escapes).toEqual([
             expect.objectContaining({ available: false, reason: "actorIncapacitated" }),
         ]);
-        expect(actionView(engine, hero.id).stance)
-            .toEqual({ available: false, reason: "actorIncapacitated" });
         expect(engine.executeAction({
             type: "escape",
             actor: hero.id,

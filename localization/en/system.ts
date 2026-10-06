@@ -219,7 +219,7 @@ export const systemStrings: StringTable = {
 
     "failure.wrongPhase.text": "This action cannot be used during this phase.",
     "failure.actorAlreadyActed.text": "This character has already acted.",
-    "failure.actorSkipped.text": "This character cannot act this turn.",
+    "failure.actorSkipped.text": "This character's turn was skipped.",
     "failure.actorImmobilized.text": "This character cannot move.",
     "failure.actorIncapacitated.text": "This character is incapacitated.",
     "failure.targetIncapacitated.text": "This target is incapacitated.",
@@ -228,6 +228,7 @@ export const systemStrings: StringTable = {
     "failure.attackUnavailable.text": "This character cannot attack.",
     "failure.assistUnavailable.text": "Cannot Assist",
     "failure.escapeUnavailable.text": "This character cannot escape.",
+    "failure.bonusUnavailable.text": "Bonus Escape Blocked",
     "failure.bindingRestriction.text": "Bindings prevent this action.",
     "failure.cooldownIncomplete.text": "This move is still on cooldown.",
     "failure.insufficientResource.text": "Not enough resources.",

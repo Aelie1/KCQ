@@ -303,7 +303,6 @@ describe("stance toggling", () => {
             standing: false,
             acted: false,
             bonusEscapes: 0,
-            bonusBlocked: false,
         });
     });
 
@@ -356,7 +355,6 @@ describe("stance toggling", () => {
             standing: true,
             acted: false,
             bonusEscapes: 0,
-            bonusBlocked: false,
         });
         expect(engine.getGameState().characters[0].bindings
             .find((binding) => binding.id === immobilizingBinding.id)?.status)
@@ -460,10 +458,6 @@ describe("stance toggling", () => {
             type: "stance",
             actor: hero.id,
         })).toEqual({ success: false, reason: "actorAlreadyActed" });
-        expect(actionView(engine, hero.id).stance).toEqual({
-            available: false,
-            reason: "actorAlreadyActed",
-        });
         expect(engine.getGameState().characters[0].standing).toBe(false);
     });
 });

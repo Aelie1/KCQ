@@ -171,6 +171,9 @@ const koAction: ActionView = {
             effects: [],
         },
     ],
+    attack: { available: true },
+    escape: { available: true },
+    bonus: { available: true },
     stance: { available: false, reason: "actorImmobilized" },
 };
 
@@ -242,7 +245,11 @@ const actions = [
         reason: "actorIncapacitated",
         moves: [],
         escapes: [],
-        stance: { available: false, reason: "actorIncapacitated" },
+        attack: { available: true },
+        escape: { available: true },
+        bonus: { available: true },
+        stance: { available: true },
+
     },
     {
         id: "hinari",
@@ -250,7 +257,10 @@ const actions = [
         reason: "actorSkipped",
         moves: [],
         escapes: [],
-        stance: { available: false, reason: "actorSkipped" },
+        attack: { available: true },
+        escape: { available: true },
+        bonus: { available: true },
+        stance: { available: true },
     },
 ] satisfies ActionView[];
 

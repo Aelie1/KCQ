@@ -30,7 +30,6 @@ function serializeCharacter(character: iCharacter, status: GameStatus): Characte
         acted: character.acted,
         standing: character.standing,
         bonusEscapes: character.bonusEscapes,
-        bonusBlocked: !status.canBonusEscape(),
         modifiers: status.getModifiers(),
         bindings: character.bindings.map(x => serializeBinding(character, x)),
         buffs: character.buffs.filter(x => x.active).map(serializeBuff),

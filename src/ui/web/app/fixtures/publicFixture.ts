@@ -10,7 +10,6 @@ export function makeFixtureCharacter(
         acted: false,
         standing: false,
         bonusEscapes: 0,
-        bonusBlocked: false,
         bindings: [],
         buffs: [],
         cooldowns: {},

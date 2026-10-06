@@ -2,7 +2,7 @@ import { MoveDef } from "../protected/definitions";
 import { getMoves } from "../protected/mechanics";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iCharacter, iGameState } from "../protected/types";
-import { ActionInfo, ActionView, EscapeInfo, FailureReason, PreviewProfile, StanceInfo } from "../public/types";
+import { ActionInfo, ActionView, EscapeInfo, FailureReason, PreviewProfile } from "../public/types";
 import { isValidTarget, resolveEscape, resolveMove } from "./combat";
 import { DAMAGE_BANDS, EFFECTIVENESS_MODIFIER, effectivenessRange } from "./constants";
 import { serializeEffects, serializeMove, serializePreview } from "./serialize";
@@ -28,30 +28,19 @@ export function getActionView(state: iGameState, statuses: StatusMap): ActionVie
         const capability = status.canAct();
         const moves = getMovesList(state, character, statuses);
         const escapes = getEscapes(state, character, statuses);
-        const stance = stanceAvailable(character, status);
         result.push({
             id: character.id,
             available: capability ? false : true,
             reason: capability,
             moves: moves,
             escapes: escapes,
-            stance: stance
+            attack: status.canAttack() ? { available: true } : { available: false, reason: "attackUnavailable" },
+            escape: status.canEscape() ? { available: true } : { available: false, reason: "escapeUnavailable" },
+            bonus: status.canBonusEscape() ? { available: true } : { available: false, reason: "bonusUnavailable" },
+            stance: status.canMove() ? { available: true } : { available: false, reason: "actorImmobilized" },
         });
     }
     return result;
-}
-
-function stanceAvailable(target: iCharacter, status: GameStatus): StanceInfo {
-    const result = status.canAct("stance");
-    if (result) {
-        return {
-            available: false,
-            reason: result
-        }
-    }
-    return {
-        available: true
-    }
 }
 
 function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap): ActionInfo[] {

@@ -4,10 +4,9 @@ import type {
     ActionInfo,
     ActionView,
     Binding,
-    Character,
     Enemy,
     GameState,
-    Intention,
+    Intention
 } from "../../src/engine/public/types";
 import type { PolicyContext } from "../../src/harness/harness";
 import {
@@ -87,9 +86,11 @@ function context(options: {
     vibrating?: boolean;
 } = {}): PolicyContext {
     const bindings = options.bindings ?? [];
-    const hero = makePublicCharacter("test-hero", { bindings: bindings, buffs: options.vibrating
-        ? [{ id: "test-vibration", statuses: [{ id: "vibrating", value: 1 }] }]
-        : [] });
+    const hero = makePublicCharacter("test-hero", {
+        bindings: bindings, buffs: options.vibrating
+            ? [{ id: "test-vibration", statuses: [{ id: "vibrating", value: 1 }] }]
+            : []
+    });
     const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
@@ -105,6 +106,9 @@ function context(options: {
             available: true,
             moves: options.moves ?? [attack()],
             escapes: options.escapes ?? [],
+            attack: { available: true },
+            escape: { available: true },
+            bonus: { available: true },
             stance: { available: true },
         }],
         thresholds,

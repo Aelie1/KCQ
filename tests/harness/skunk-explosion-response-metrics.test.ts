@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
 import type {
     ActionView,
-    Character,
     Enemy,
     GameEvent,
     GameState,
     PlayerAction,
-    ValidTarget,
+    ValidTarget
 } from "../../src/engine/public/types";
 import {
     createDetailedCombatCollector,
@@ -55,9 +54,7 @@ function damagePreview(target: string): ValidTarget {
     };
 }
 
-function actionViews(
-    includeDamage = true,
-): ActionView[] {
+function actionViews(includeDamage = true): ActionView[] {
     return [{
         id: "ko",
         available: true,
@@ -69,16 +66,8 @@ function actionViews(
                 targets: 1,
                 type: "arms",
             },
-
             available: includeDamage,
-
-            targets: includeDamage
-                ? [
-                    damagePreview("skunk1"),
-                    damagePreview("other"),
-                ]
-                : [],
-
+            targets: includeDamage ? [damagePreview("skunk1"), damagePreview("other")] : [],
             effects: [],
         }, {
             move: {
@@ -87,22 +76,19 @@ function actionViews(
                 targets: 1,
                 type: "mouth",
             },
-
             available: true,
-
             targets: [{
                 valid: true,
                 target: "skunk1",
                 effects: [],
             }],
-
             effects: [],
         }],
-
         escapes: [],
-        stance: {
-            available: true,
-        },
+        attack: { available: true },
+        escape: { available: true },
+        bonus: { available: true },
+        stance: { available: true },
     }];
 }
 
