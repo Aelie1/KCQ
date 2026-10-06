@@ -31,7 +31,7 @@ describe("party card", () => {
         for (const binding of model.bindings) {
             const meterIndex = html.indexOf(`aria-label="${binding.label}"`);
             expect(meterIndex).toBeGreaterThan(previousMeterIndex);
-            expect(html).toContain(`kcq-party-card__binding-meter--${binding.level}`);
+            expect(html).toContain(`kcq-binding-meter--${binding.level}`);
             expect(html).toContain(`aria-valuenow="${binding.current}"`);
             expect(html).toContain(`aria-valuemax="${binding.max}"`);
             previousMeterIndex = meterIndex;

@@ -413,18 +413,41 @@ describe("targeting view model", () => {
         const effects = model.actionEffectGroups[0].effects;
 
         expect(effects[0]).toMatchObject({
-            kind: "binding", currentValue: 27, projectedValue: 42,
+            kind: "binding", currentValue: 27, change: 15, projectedValue: 42, max: fixture.thresholds.max,
             currentLevel: "moderate", projectedLevel: "heavy",
             currentLevelLabel: "Moderate", projectedLevelLabel: "Heavy",
         });
         expect(effects[0]).not.toHaveProperty("deltaLabel");
         expect(effects[0]).not.toHaveProperty("recipient");
         expect(effects[1]).toMatchObject({
-            kind: "binding", currentValue: 72, projectedValue: 40,
+            kind: "binding", currentValue: 72, change: -32, projectedValue: 40, max: fixture.thresholds.max,
             currentLevel: "severe", projectedLevel: "heavy",
             currentLevelLabel: "Severe", projectedLevelLabel: "Heavy",
         });
         expect(effects[1]).not.toHaveProperty("deltaLabel");
+    });
+
+    it("passes effective binding deltas to previews after high-binding resistance", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            effects: [
+                { type: "binding", target: "ko", binding: "latexTorso", amount: 20 },
+                { type: "binding", target: "ko", binding: "latexTorso", amount: -25 },
+            ],
+        };
+        const model = createTargetingViewModel(
+            fixture.state, fixture.actorId, action, fixture.presentation,
+            fixture.actions, fixture.thresholds,
+        );
+        const effects = model.actionEffectGroups[0].effects;
+
+        expect(effects[0]).toMatchObject({
+            kind: "binding", currentValue: 89, change: 2, projectedValue: 91,
+        });
+        expect(effects[1]).toMatchObject({
+            kind: "binding", currentValue: 89, change: -25, projectedValue: 64,
+        });
     });
 
     it("moves target-derived Resource/Data effects out of target cards", () => {

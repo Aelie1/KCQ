@@ -1,5 +1,6 @@
 import { For, Match, Show, Switch, type JSX } from "solid-js";
 import type { EffectPreviewViewModel } from "../viewModels/targeting";
+import { BindingMeter } from "./BindingMeter";
 import { DamageEffect } from "./DamageEffect";
 import { PipMeter } from "./PipMeter";
 import { StatusChip } from "./StatusChip";
@@ -129,23 +130,15 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                         )}{binding.projectedValue}
                                     </strong>
                                 </div>
-                                <div
-                                    class="kcq-binding-effect__bar"
-                                    classList={{
-                                        "is-increase": binding.projectedValue > binding.currentValue,
-                                        "is-decrease": binding.projectedValue < binding.currentValue,
-                                    }}
-                                    aria-hidden="true"
-                                >
-                                    <span
-                                        class={`kcq-binding-effect__current kcq-binding-effect__segment--${binding.currentLevel}`}
-                                        style={{ width: `${binding.currentPercent}%` }}
-                                    />
-                                    <span
-                                        class={`kcq-binding-effect__projected kcq-binding-effect__segment--${binding.projectedLevel}`}
-                                        style={{ width: `${binding.projectedPercent}%` }}
-                                    />
-                                </div>
+                                <BindingMeter
+                                    value={binding.currentValue}
+                                    change={binding.change}
+                                    max={binding.max}
+                                    level={binding.currentLevel}
+                                    resultLevel={binding.projectedLevel}
+                                    size="compact"
+                                    ariaLabel={binding.bindingName}
+                                />
                             </div>
                         </div>
                     );

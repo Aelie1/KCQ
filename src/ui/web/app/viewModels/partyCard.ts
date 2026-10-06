@@ -18,6 +18,7 @@ import {
     createCharacterStanceState,
 } from "./characterState";
 import { playerTone } from "./linkedEntities";
+import { bindingLevelAtValue } from "./presentationHelpers";
 
 export const PARTY_CARD_EFFECT_SLOTS = 3;
 
@@ -76,15 +77,26 @@ export function createPartyCardViewModel(
                 kind,
                 label: presentation.moveType(kind),
             })),
-        bindings: projectBindingZones(encounterBindingIds, character.bindings).map((binding) => ({
-            id: binding.id,
-            label: presentation.binding(binding.id, "compact"),
-            current: binding.value,
-            max: thresholds.max,
-            level: binding.level,
-            peak: binding.peak,
-            incoming: incomingBindings?.[binding.id] ? getBindingProgress(binding.value, incomingBindings?.[binding.id]) : undefined
-        })),
+        bindings: projectBindingZones(encounterBindingIds, character.bindings).map((binding) => {
+            const incomingAmount = incomingBindings?.[binding.id];
+            const incoming = incomingAmount === undefined
+                ? undefined
+                : incomingAmount > 0
+                    ? getBindingProgress(binding.value, incomingAmount)
+                    : Math.max(-binding.value, incomingAmount);
+            return {
+                id: binding.id,
+                label: presentation.binding(binding.id, "compact"),
+                current: binding.value,
+                max: thresholds.max,
+                level: binding.level,
+                peak: binding.peak,
+                change: incoming,
+                ...(incoming !== undefined ? {
+                    resultLevel: bindingLevelAtValue(binding.value + incoming, thresholds),
+                } : {}),
+            };
+        }),
         effects: character.buffs,
         visibleEffects: effectSummary.visibleEffects.map((effect) => presentation.buff(effect.id)),
         hiddenEffectCount,

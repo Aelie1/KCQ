@@ -3,6 +3,7 @@ import type {
     EntityId, GameState, HitBand, ModifierId, PreviewProfile, ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { getBindingProgress } from "../../../../engine/public/mechanics";
 import { createMoveTags, type CommandTagViewModel } from "./characterDetails";
 import { createCharacterActionState, createCharacterStanceState } from "./characterState";
 import { playerTone, projectLinkedPlayers, type LinkedEntityViewModel, type PlayerTone } from "./linkedEntities";
@@ -37,9 +38,9 @@ export interface BuffEffectViewModel {
     operation: BuffEffect["operation"]; recipient?: string; tone: "special" | "success"; type: "buff";
 }
 export interface BindingEffectViewModel {
-    bindingName: string; currentLevel: BindingLevel; currentLevelLabel: string; currentPercent: number; currentValue: number;
+    bindingName: string; change: number; currentLevel: BindingLevel; currentLevelLabel: string; currentValue: number;
     id: string; kind: "binding"; label: string;
-    projectedLevel: BindingLevel; projectedPercent: number; projectedValue: number;
+    max: number; projectedLevel: BindingLevel; projectedValue: number;
     projectedLevelLabel?: string; recipient?: string; tone: "binding"; type: "binding";
 }
 export type EffectPreviewViewModel = AccuracyProfileViewModel | BindingEffectViewModel | BuffEffectViewModel | CompactEffectViewModel | DamageProfileViewModel;
@@ -392,22 +393,23 @@ function createBindingEffect(
         ]);
     }
     const currentValue = target.bindings.find(({ id: binding }) => binding === effect.binding)?.value ?? 0;
-    const projectedValue = Math.max(0, currentValue + effect.amount);
+    const change = effect.amount > 0
+        ? getBindingProgress(currentValue, effect.amount)
+        : Math.max(-currentValue, effect.amount);
+    const projectedValue = currentValue + change;
     const currentLevel = bindingLevelAtValue(currentValue, context.thresholds);
     const projectedLevel = bindingLevelAtValue(projectedValue, context.thresholds);
-    const percent = (value: number): number => context.thresholds!.max > 0
-        ? Math.min(100, Math.max(0, (value / context.thresholds!.max) * 100)) : 0;
     return {
         kind: "binding", id, type: "binding", tone: "binding",
         label: context.presentation.ui("targeting.effectBinding"),
-        bindingName: context.presentation.binding(effect.binding), currentValue, projectedValue,
+        bindingName: context.presentation.binding(effect.binding), currentValue, change, projectedValue,
+        max: context.thresholds.max,
         currentLevel,
         currentLevelLabel: context.presentation.bindingLevel(currentLevel),
         projectedLevel,
         ...(currentLevel !== projectedLevel ? {
             projectedLevelLabel: context.presentation.bindingLevel(projectedLevel),
         } : {}),
-        currentPercent: percent(currentValue), projectedPercent: percent(projectedValue),
         ...(context.scopeTarget !== effect.target ? { recipient: context.presentation.entity(effect.target) } : {}),
     };
 }

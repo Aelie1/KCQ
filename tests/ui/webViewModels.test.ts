@@ -171,6 +171,34 @@ describe("party card view model", () => {
         expect(model.effectsOverflowLabel).toBe("+2 more");
     });
 
+    it("projects incoming binding as an effective signed delta with a result level", () => {
+        const bindingThresholds: ThresholdInfo = {
+            thresholds: { light: 10, moderate: 20, heavy: 30, severe: 50, overwhelming: 80 },
+            max: 100,
+        };
+        const model = createPartyCardViewModel(
+            makePublicCharacter("ko", {
+                bindings: [makePublicBinding("latexArms", {
+                    value: 90,
+                    level: "overwhelming",
+                    data: { peak: 96 },
+                })],
+            }),
+            action(),
+            bindingThresholds,
+            presentation,
+            undefined,
+            { latexArms: 25 },
+        );
+
+        expect(model.bindings[0]).toMatchObject({
+            current: 90,
+            change: 3,
+            peak: 96,
+            resultLevel: "overwhelming",
+        });
+    });
+
     it("projects mixed and clean characters through encounter binding order", () => {
         const mixed = createPartyCardViewModel(
             makePublicCharacter("ko", {

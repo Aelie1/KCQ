@@ -56,11 +56,12 @@ export interface ModifierMeterViewModel {
 }
 
 export interface BindingDetailViewModel {
-    fillPercent: number;
     id: string;
     level: BindingLevel;
     levelLabel: string;
+    max: number;
     name: string;
+    peak?: number;
     statusLabels: readonly string[];
     value: number;
     valueLabel: string;
@@ -273,11 +274,10 @@ export function createFocusedCharacterViewModel(
             )),
         },
         bindings: projectBindingZones(state.encounter?.bindings, character.bindings).map((binding) => ({
-            fillPercent: thresholds.max > 0
-                ? Math.min(100, Math.max(0, (binding.value / thresholds.max) * 100))
-                : 0,
             id: binding.id,
+            max: thresholds.max,
             name: presentation.binding(binding.id),
+            peak: binding.peak,
             value: binding.value,
             valueLabel: presentation.ui("characterDetails.bindingValue", {
                 value: binding.value,

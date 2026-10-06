@@ -1,5 +1,6 @@
 import { For, Show, type JSX } from "solid-js";
 import type { PartyCardData } from "./componentTypes";
+import { BindingMeter } from "./BindingMeter";
 import { StatusChip } from "./StatusChip";
 
 export type { PartyCardData } from "./componentTypes";
@@ -7,10 +8,6 @@ export type { PartyCardData } from "./componentTypes";
 export interface PartyCardProps {
     character: PartyCardData;
     onSelect?: () => void;
-}
-
-function bindingFillPercent(current: number, max: number): number {
-    return max > 0 ? Math.min(100, Math.max(0, (current / max) * 100)) : 0;
 }
 
 export function PartyCard(props: PartyCardProps): JSX.Element {
@@ -60,17 +57,15 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
             <div class="kcq-party-card__bindings" aria-label={props.character.accessibility.bindingsLabel}>
                 <For each={props.character.bindings}>
                     {(binding) => (
-                        <span
-                            class="kcq-party-card__binding-meter"
-                            classList={{ [`kcq-party-card__binding-meter--${binding.level}`]: true }}
-                            role="progressbar"
-                            aria-label={binding.label}
-                            aria-valuemin={0}
-                            aria-valuemax={binding.max}
-                            aria-valuenow={binding.current}
-                        >
-                            <span style={{ width: `${bindingFillPercent(binding.current, binding.max)}%` }} />
-                        </span>
+                        <BindingMeter
+                            value={binding.current}
+                            change={binding.change}
+                            peak={binding.peak}
+                            max={binding.max}
+                            level={binding.level}
+                            resultLevel={binding.resultLevel}
+                            ariaLabel={binding.label}
+                        />
                     )}
                 </For>
             </div>

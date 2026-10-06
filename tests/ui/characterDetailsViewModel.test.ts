@@ -82,7 +82,7 @@ describe("character details view model", () => {
         ]);
     });
 
-    it("uses the public threshold maximum for numeric binding fill", () => {
+    it("passes the public threshold maximum to each binding meter", () => {
         const fixture = characterDetailsFixture;
         const focused = createFocusedCharacterViewModel(
             fixture.state,
@@ -91,11 +91,11 @@ describe("character details view model", () => {
             fixture.presentation,
         );
 
-        expect(focused.bindings.map(({ value, fillPercent }) => ({ value, fillPercent }))).toEqual([
-            { value: 72, fillPercent: 36 },
-            { value: 27, fillPercent: 13.5 },
-            { value: 89, fillPercent: 44.5 },
-            { value: 0, fillPercent: 0 },
+        expect(focused.bindings.map(({ value, max }) => ({ value, max }))).toEqual([
+            { value: 72, max: 200 },
+            { value: 27, max: 200 },
+            { value: 89, max: 200 },
+            { value: 0, max: 200 },
         ]);
     });
 
@@ -116,16 +116,16 @@ describe("character details view model", () => {
         );
 
         expect(model.labels.bindingsHeading).toBe("Bindings / 4 Zones");
-        expect(model.focused.bindings.map(({ id, levelLabel, value, fillPercent }) => ({
+        expect(model.focused.bindings.map(({ id, levelLabel, value, max }) => ({
             id,
             levelLabel,
             value,
-            fillPercent,
+            max,
         }))).toEqual([
-            { id: "latexHead", levelLabel: "None", value: 0, fillPercent: 0 },
-            { id: "latexArms", levelLabel: "None", value: 0, fillPercent: 0 },
-            { id: "latexTorso", levelLabel: "None", value: 0, fillPercent: 0 },
-            { id: "latexLegs", levelLabel: "None", value: 0, fillPercent: 0 },
+            { id: "latexHead", levelLabel: "None", value: 0, max: fixture.thresholds.max },
+            { id: "latexArms", levelLabel: "None", value: 0, max: fixture.thresholds.max },
+            { id: "latexTorso", levelLabel: "None", value: 0, max: fixture.thresholds.max },
+            { id: "latexLegs", levelLabel: "None", value: 0, max: fixture.thresholds.max },
         ]);
     });
 

@@ -233,11 +233,12 @@ describe("targeting workflow composition", () => {
         };
         const moderate = renderBinding(5);
         const severe = renderBinding(40);
+        const lower = renderBinding(-25);
         const visibleText = (html: string) => html
             .replace(/<!--.*?-->/g, "")
             .replace(/ data-hk="[^"]*"/g, "");
 
-        for (const html of [moderate, severe]) {
+        for (const html of [moderate, severe, lower]) {
             expect(html).toContain("kcq-preview-effect kcq-preview-effect--special kcq-binding-effect");
             expect(html).not.toContain("kcq-binding-effect--moderate");
             expect(html).not.toContain("kcq-binding-effect--severe");
@@ -248,10 +249,15 @@ describe("targeting workflow composition", () => {
         expect(visibleText(severe)).toContain("27 → <span class=\"kcq-binding-effect__projected-level kcq-escape-value--severe\">Severe </span>67");
         expect(severe).not.toContain("+40 Binding");
         expect(moderate).toContain("kcq-escape-value--moderate");
-        expect(moderate).toContain("kcq-binding-effect__segment--moderate");
+        expect(moderate).toContain("kcq-binding-meter--moderate");
+        expect(moderate).toContain("kcq-binding-meter__change--moderate");
         expect(severe).toContain("kcq-binding-effect__level kcq-escape-value--moderate");
         expect(severe).toContain("kcq-escape-value--severe");
-        expect(severe).toContain("kcq-binding-effect__segment--severe");
+        expect(severe).toContain("kcq-binding-meter__change--severe");
+        expect(visibleText(lower)).toContain('kcq-binding-effect__projected-level kcq-escape-value--none">None </span>2');
+        expect(lower).toContain("kcq-binding-meter--decrease");
+        expect(lower).toContain("kcq-binding-meter__change--none");
+        expect(lower).toContain('style="left:2%;width:25%"');
     });
 
     it("renders action and stance summaries with EntityId identity classes", () => {

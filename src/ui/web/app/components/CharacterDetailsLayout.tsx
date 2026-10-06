@@ -1,6 +1,7 @@
 import { For, Show, type JSX } from "solid-js";
 import type { EntityId } from "../../../../engine/public/types";
 import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
+import { BindingMeter } from "./BindingMeter";
 import { CombatHeader } from "./CombatHeader";
 import { LinkedEntityChip } from "./LinkedEntityChip";
 import { ModifierMeter } from "./ModifierMeter";
@@ -106,13 +107,14 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                                     </span>
                                     <span class="kcq-character-binding__value">{binding.valueLabel}</span>
                                 </div>
-                                <div
-                                    class="kcq-character-binding__bar"
-                                    classList={{ [`kcq-character-binding__bar--${binding.level}`]: true }}
-                                    aria-hidden="true"
-                                >
-                                    <span style={{ width: `${binding.fillPercent}%` }} />
-                                </div>
+                                <BindingMeter
+                                    value={binding.value}
+                                    peak={binding.peak}
+                                    max={binding.max}
+                                    level={binding.level}
+                                    size="compact"
+                                    ariaLabel={binding.name}
+                                />
                             </div>
                         )}
                     </For>

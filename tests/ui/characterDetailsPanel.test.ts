@@ -71,6 +71,7 @@ describe("character details panel", () => {
         expect(html).toContain("kcq-character-roster");
         expect(html).toContain("kcq-character-capabilities");
         expect(html).toContain("kcq-character-bindings");
+        expect(html).toContain("kcq-binding-meter kcq-binding-meter--compact");
         expect(html).toContain("kcq-character-effects");
         expect(html).toContain("kcq-character-commands");
         expect(html).toContain("kcq-character-commands__resource");
