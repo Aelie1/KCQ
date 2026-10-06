@@ -1,4 +1,9 @@
 # Ko-chan's Quest Patch Notes
+
+## 0.11.6 — 2026-10-06
+
+* Binding bars now show the peak value as a hollow section, and the main bars show the incoming binding from all current intentions as a faded section
+
 ## 0.11.5 — 2026-10-06
 
 ### Escape / Capability Presentation
