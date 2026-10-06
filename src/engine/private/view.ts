@@ -192,7 +192,7 @@ function getEscapes(state: iGameState, actor: iCharacter, statuses: StatusMap): 
         const available = capability ?? ((actor !== target && !actorStatus.canAssist()) ? "assistUnavailable" : undefined);
         for (const binding of target.bindings) {
             const effects = resolveEscape(actor, actorStatus, target, targetStatus, binding);
-            let bonus = !actor.acted && actorStatus.canBonusEscape();
+            let bonus = !actor.acted && actor.standing && actorStatus.canBonusEscape();
 
             for (const effect of effects) {
                 if (effect.type !== "binding" || effect.target !== actor || !effect.amount) {
