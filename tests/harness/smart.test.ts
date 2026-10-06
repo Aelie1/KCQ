@@ -42,61 +42,27 @@ import {
     type SmartScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
-
-function character(id: string): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
-}
+import { makePublicActionView, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 
 function enemy(id: string): Enemy {
-    return {
-        id,
-        defId: id,
-        rank: "enemy",
-        maxHp: 100,
-        currHp: 100,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-    };
+    return makePublicEnemy(id);
 }
 
 function state(enemyIds = ["enemy-1", "enemy-2", "enemy-3"]): GameState {
-    return {
-        turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
-        difficulty: STANDARD_DIFFICULTY,
-        characters: [character("hero"), character("ally")],
+    return makePublicGameState({
+        characters: [makePublicCharacter("hero"), makePublicCharacter("ally")],
         enemies: enemyIds.map(enemy),
-        traps: [],
-        encounter: null,
-    };
+    });
 }
 
 function view(
     id: string,
     values: Partial<Omit<ActionView, "id">> = {},
 ): ActionView {
-    return {
-        id,
-        available: true,
-        moves: [],
-        escapes: [],
+    return makePublicActionView(id, {
         stance: { available: false, reason: "moveUnavailable" },
         ...values,
-    };
+    });
 }
 
 function target(

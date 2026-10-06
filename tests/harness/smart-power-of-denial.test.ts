@@ -21,45 +21,18 @@ import {
     POWER_OF_DENIAL_RESCUE_BONUS,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const POWER_OF_DENIAL = "powerOfDenial";
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: value >= 80 ? "overwhelming" : "severe", data: {}, status: [], tickEffects: [] };
-}
-
-function character(id: string, values: Partial<Character> = {}): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-        ...values,
-    };
+    return makePublicBinding(id, { value, level: value >= 80 ? "overwhelming" : "severe" });
 }
 
 function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
     const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
-    return {
-        id,
-        defId,
-        rank: "enemy",
-        maxHp: 200,
-        currHp: 200,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-        ...values,
-    };
+    return makePublicEnemy(id, { defId, maxHp: 200, currHp: 200, ...values });
 }
 
 function spentDenial(): Effect {
@@ -86,13 +59,10 @@ function denial(targets: Array<{ id: string; effects: Effect[] }>): ActionInfo {
 }
 
 function action(info: ActionInfo): ActionView {
-    return {
-        id: "ko",
-        available: true,
+    return makePublicActionView("ko", {
         moves: [info],
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    };
+    });
 }
 
 function context(
@@ -100,14 +70,14 @@ function context(
     enemies: Enemy[],
     info: ActionInfo,
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions: [action(info)],
@@ -148,12 +118,12 @@ describe("Smart Power of Denial knowledge", () => {
         const captor = enemy("synthetic-captor", {
             buffs: [linkedBuff("skunked", "victim")],
         });
-        const victim = character("victim", {
+        const victim = makePublicCharacter("victim", {
             bindings: [binding("latexArms", 90), binding("latexTorso", 84)],
             buffs: [linkedBuff("skunked", captor.id, true)],
         });
         const fixture = context(
-            [character("ko"), victim],
+            [makePublicCharacter("ko"), victim],
             [captor],
             denial([{ id: captor.id, effects: [enemyDefeat(captor.id)] }]),
         );
@@ -178,11 +148,11 @@ describe("Smart Power of Denial knowledge", () => {
     });
 
     it("does not mistake an ordinary or merely Pounce-linked Skunkette for a rescue", () => {
-        const victim = character("victim", { buffs: [linkedBuff("pounce", "skunkette7")] });
+        const victim = makePublicCharacter("victim", { buffs: [linkedBuff("pounce", "skunkette7")] });
         const ordinary = enemy("skunkette6");
         const pouncing = enemy("skunkette7", { buffs: [linkedBuff("pounce", victim.id)] });
         const fixture = context(
-            [character("ko"), victim],
+            [makePublicCharacter("ko"), victim],
             [ordinary, pouncing],
             denial([ordinary, pouncing].map(({ id }) => ({ id, effects: [enemyDefeat(id)] }))),
         );
@@ -205,7 +175,7 @@ describe("Smart Power of Denial knowledge", () => {
     it("gives Rainmaker strong value but Fairy and Skunk no offensive bonus", () => {
         const targets = [enemy("rainmaker3"), enemy("fairy2"), enemy("skunk4")];
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             targets,
             denial(targets.map(({ id }) => ({ id, effects: [enemyDefeat(id)] }))),
         );
@@ -223,9 +193,9 @@ describe("Smart Power of Denial knowledge", () => {
     });
 
     it("reserves player use below 80 and rewards an actual highest latexArms at 80+", () => {
-        const low = character("ally", { bindings: [binding("latexArms", 79)] });
+        const low = makePublicCharacter("ally", { bindings: [binding("latexArms", 79)] });
         const lowFixture = context(
-            [character("ko"), low],
+            [makePublicCharacter("ko"), low],
             [],
             denial([{
                 id: low.id, effects: [{
@@ -245,9 +215,9 @@ describe("Smart Power of Denial knowledge", () => {
             }],
         });
 
-        const emergency = character("ally", { bindings: [binding("latexArms", 80)] });
+        const emergency = makePublicCharacter("ally", { bindings: [binding("latexArms", 80)] });
         const emergencyFixture = context(
-            [character("ko"), emergency],
+            [makePublicCharacter("ko"), emergency],
             [],
             denial([{
                 id: emergency.id, effects: [{
@@ -269,11 +239,11 @@ describe("Smart Power of Denial knowledge", () => {
     });
 
     it("does not award the Arms emergency when a higher non-priority binding is actually removed", () => {
-        const ally = character("ally", {
+        const ally = makePublicCharacter("ally", {
             bindings: [binding("latexArms", 85), binding("latexTorso", 90)],
         });
         const fixture = context(
-            [character("ko"), ally],
+            [makePublicCharacter("ko"), ally],
             [],
             denial([{
                 id: ally.id, effects: [{
@@ -296,9 +266,9 @@ describe("Smart Power of Denial knowledge", () => {
     });
 
     it("preserves Power of Denial instead of spending it on an ordinary lower binding", () => {
-        const ally = character("ally", { bindings: [binding("latexTorso", 60)] });
+        const ally = makePublicCharacter("ally", { bindings: [binding("latexTorso", 60)] });
         const fixture = context(
-            [character("ko"), ally],
+            [makePublicCharacter("ko"), ally],
             [],
             denial([{
                 id: ally.id, effects: [{

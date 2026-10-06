@@ -18,6 +18,7 @@ import {
 import { getPolicy, policies } from "../../src/harness/policies";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { escapePolicy } from "../../src/harness/policy/escape";
+import { makePublicActionView, makePublicBinding, makePublicCharacter } from "../helpers/publicTestData";
 import { resolvedEvents } from "../helpers/events";
 
 function stockEncounterId(): string {
@@ -55,14 +56,10 @@ function actionView(
     id: string,
     values: Partial<Omit<ActionView, "id">> = {},
 ): ActionView {
-    return {
-        id,
-        available: true,
-        moves: [],
-        escapes: [],
+    return makePublicActionView(id, {
         stance: { available: false, reason: "moveUnavailable" },
         ...values,
-    };
+    });
 }
 
 function policyContext(actions: ActionView[]): PolicyContext {
@@ -77,26 +74,13 @@ function policyContext(actions: ActionView[]): PolicyContext {
 }
 
 function boundCharacter(id: string, value: number): Character {
-    return {
-        id,
-        acted: false,
+    return makePublicCharacter(id, {
         standing: true,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [{
-            id: "rope",
+        bindings: [makePublicBinding("rope", {
             value,
             level: value > 20 ? "moderate" : "light",
-            data: {},
-            status: [],
-            tickEffects: [],
-        }],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+        })],
+    });
 }
 
 describe("policy-driven single-fight harness", () => {

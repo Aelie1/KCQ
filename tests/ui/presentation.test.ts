@@ -15,6 +15,12 @@ import {
 } from "../../src/ui/console/presentation";
 import { renderAnsi, renderStyledScreen } from "../../src/ui/console/render";
 import { styledLogText, styledTextParts } from "../../src/ui/web/view";
+import {
+    makePublicBinding,
+    makePublicCharacter,
+    makePublicEnemy,
+    makePublicGameState,
+} from "../helpers/publicTestData";
 
 describe("combat presentation", () => {
     it("formats encounter starts as a distinct banner", () => {
@@ -312,25 +318,23 @@ describe("combat presentation", () => {
         const rendered = renderStyledScreen({
             encounter: "styles",
             seed: 1,
-            state: {
+            state: makePublicGameState({
                 turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
-                characters: [{
-                    id: "ko", acted: false, standing: true, bonusEscapes: 0, bonusBlocked: false,
-                    bindings: [{ id: "latexArms", value: 55, level: "severe", data: {}, status: [], tickEffects: [] }],
-                    buffs: [{ id: "focus" }], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
-                }],
-                enemies: [{
-                    id: "skunk1", defId: "skunk", rank: "enemy", maxHp: 20, currHp: 20, currDef: 0,
+                characters: [makePublicCharacter("ko", {
+                    standing: true,
+                    bindings: [makePublicBinding("latexArms", { value: 55, level: "severe" })],
+                    buffs: [{ id: "focus" }],
+                })],
+                enemies: [makePublicEnemy("skunk1", {
+                    defId: "skunk", maxHp: 20, currHp: 20,
                     intentions: [{
                         move: "spray",
                         targets: [{ target: "ko", band: "crit", effects: [] }],
                         effects: [],
                     }],
-                    buffs: [], cooldowns: {},
-                }],
-                traps: [{ id: "trapPuddle", amount: 35 }], encounter: null,
-                difficulty: { id: "standard", playerModifiers: {}, enemyModifiers: {} },
-            },
+                })],
+                traps: [{ id: "trapPuddle", amount: 35 }],
+            }),
             availability: [{ id: "ko", available: true }],
             bindings: ["latexArms"],
             bindingThresholds: {

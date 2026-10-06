@@ -14,67 +14,25 @@ import {
     type SmartScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 
 function binding(id: string, value: number, level: Binding["level"]): Binding {
-    return { id, value, level, data: {}, status: [], tickEffects: [] };
-}
-
-function character(id: string, values: Partial<Character> = {}): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-        ...values,
-    };
+    return makePublicBinding(id, { value, level });
 }
 
 function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
-    return {
-        id,
-        defId: id,
-        rank: "enemy",
-        maxHp: 10,
-        currHp: 10,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-        ...values,
-    };
+    return makePublicEnemy(id, { maxHp: 10, currHp: 10, ...values });
 }
 
 function action(id: string, values: Partial<Omit<ActionView, "id">> = {}): ActionView {
-    return {
-        id,
-        available: true,
-        moves: [],
-        escapes: [],
-        stance: { available: true },
-        ...values,
-    };
+    return makePublicActionView(id, values);
 }
 
 function state(
     characters: Character[],
     enemies: Enemy[] = [],
 ): GameState {
-    return {
-        turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
-        difficulty: STANDARD_DIFFICULTY,
-        characters,
-        enemies,
-        traps: [],
-        encounter: null,
-    };
+    return makePublicGameState({ characters, enemies });
 }
 
 function context(gameState: GameState, actions: ActionView[]): PolicyContext {
@@ -92,7 +50,7 @@ function context(gameState: GameState, actions: ActionView[]): PolicyContext {
 
 describe("Smart 3 board binding assessment", () => {
     it("keeps multiple bindings and characters separate while aggregating ordinal severity", () => {
-        const hero = character("hero", {
+        const hero = makePublicCharacter("hero", {
             bindings: [
                 binding("silk", 5, "light"),
                 binding("rope", 12, "heavy"),
@@ -101,7 +59,7 @@ describe("Smart 3 board binding assessment", () => {
             modifiers: { defense: 2, escape: -1, vulnerability: 3, traps: 1, hitarms: -2 },
             blockedMoveTypes: ["arms", "mouth"],
         });
-        const ally = character("ally", {
+        const ally = makePublicCharacter("ally", {
             bindings: [binding("web", 7, "severe")],
         });
 
@@ -142,11 +100,11 @@ describe("Smart 3 board binding assessment", () => {
 describe("Smart 3 public ActionView capability assessment", () => {
     it("distinguishes capability reasons and retains acted bonus-escape economy", () => {
         const characters = [
-            character("bonus", { acted: true, bonusEscapes: 1, standing: true }),
-            character("spent", { acted: true }),
-            character("skipped"),
-            character("incapacitated"),
-            character("missing"),
+            makePublicCharacter("bonus", { acted: true, bonusEscapes: 1, standing: true }),
+            makePublicCharacter("spent", { acted: true }),
+            makePublicCharacter("skipped"),
+            makePublicCharacter("incapacitated"),
+            makePublicCharacter("missing"),
         ];
         const actions: ActionView[] = [
             action("incapacitated", {
@@ -220,7 +178,7 @@ describe("Smart 3 public ActionView capability assessment", () => {
     });
 
     it("uses ActionView rather than raw binding statuses for incapacitation", () => {
-        const immune = character("immune", {
+        const immune = makePublicCharacter("immune", {
             bindings: [{
                 ...binding("ominous", 99, "max"),
                 status: [{ id: "incapacitated", value: 1 }],
@@ -268,7 +226,7 @@ describe("Smart 3 intention and trap pressure", () => {
             }],
         });
         const gameState = state(
-            [character("hero"), character("ally")],
+            [makePublicCharacter("hero"), makePublicCharacter("ally")],
             [first, second],
         );
         gameState.traps = [{ id: "old", amount: 2 }, { id: "old", amount: 3 }];
@@ -376,7 +334,7 @@ describe("Smart 3 scorer preparation", () => {
         }));
 
         const decision = evaluateSmartDecision(
-            context(state([character("hero")]), [action("hero")]),
+            context(state([makePublicCharacter("hero")]), [action("hero")]),
             scorers,
         );
 

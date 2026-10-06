@@ -19,6 +19,7 @@ import {
     linkedThreatScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const catastrophicId = "test-catastrophic" as StatusId;
@@ -28,33 +29,7 @@ const minorId = "test-minor" as StatusId;
 const neutralId = "test-neutral" as StatusId;
 
 function enemy(id: string, currHp = 100): Enemy {
-    return {
-        id,
-        defId: id,
-        rank: "enemy",
-        maxHp: 100,
-        currHp,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-    };
-}
-
-function character(id: string, buffs: Buff[] = []): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs,
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    return makePublicEnemy(id, { currHp });
 }
 
 function linkedBuff(
@@ -80,13 +55,10 @@ function attack(id: string, targets: Readonly<Record<string, number>>): ActionIn
 }
 
 function actionView(moves: ActionInfo[]): ActionView {
-    return {
-        id: "test-hero",
-        available: true,
+    return makePublicActionView("test-hero", {
         moves,
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    };
+    });
 }
 
 function testLibrary(characters: Character[]): ContentLibrary {
@@ -133,14 +105,14 @@ function context(
     moves: ActionInfo[] = [],
     library = testLibrary(characters),
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions: [actionView(moves)],
@@ -172,9 +144,9 @@ function linkedRaw(fixture: PolicyContext, index = 0): number {
 describe("Smart generic linked-threat targeting", () => {
     it("prefers an otherwise equivalent attack against a harmful linked enemy", () => {
         const fixture = context(
-            [character("test-hero", [linkedBuff("test-link", "enemy-b", {
+            [makePublicCharacter("test-hero", { buffs: [linkedBuff("test-link", "enemy-b", {
                 statuses: harmfulStatus(severeId),
-            })])],
+            })] })],
             [enemy("enemy-a"), enemy("enemy-b")],
             [attack("test-strike", { "enemy-a": 20, "enemy-b": 20 })],
         );
@@ -193,11 +165,11 @@ describe("Smart generic linked-threat targeting", () => {
 
     it("does not score a linked buff without harmful public consequences", () => {
         const fixture = context(
-            [character("test-hero", [linkedBuff("test-neutral-link", "enemy-a", {
+            [makePublicCharacter("test-hero", { buffs: [linkedBuff("test-neutral-link", "enemy-a", {
                 statuses: harmfulStatus(neutralId),
                 modifiers: { defense: 2, vulnerability: -1 },
                 moveList: { addedMoves: ["test-extra-move"] },
-            })])],
+            })] })],
             [enemy("enemy-a")],
             [attack("test-strike", { "enemy-a": 100 })],
         );
@@ -208,14 +180,14 @@ describe("Smart generic linked-threat targeting", () => {
 
     it("ignores missing and dead linked entities", () => {
         const fixture = context(
-            [character("test-hero", [
+            [makePublicCharacter("test-hero", { buffs: [
                 linkedBuff("test-missing-link", "enemy-missing", {
                     statuses: harmfulStatus(),
                 }),
                 linkedBuff("test-dead-link", "enemy-dead", {
                     statuses: harmfulStatus(),
                 }),
-            ])],
+            ] })],
             [enemy("enemy-dead", 0), enemy("enemy-live")],
             [attack("test-strike", { "enemy-dead": 100, "enemy-live": 100 })],
         );
@@ -229,9 +201,9 @@ describe("Smart generic linked-threat targeting", () => {
     it("orders catastrophic, severe, substantial, and minor linked harm", () => {
         const severity = (statusId: StatusId) => {
             const fixture = context(
-                [character("test-hero", [linkedBuff("test-link", "enemy-a", {
+                [makePublicCharacter("test-hero", { buffs: [linkedBuff("test-link", "enemy-a", {
                     statuses: harmfulStatus(statusId),
-                })])],
+                })] })],
                 [enemy("enemy-a")],
                 [attack("test-strike", { "enemy-a": 100 })],
             );
@@ -248,9 +220,9 @@ describe("Smart generic linked-threat targeting", () => {
 
     it("awards proportional progress against remaining HP", () => {
         const fixture = context(
-            [character("test-hero", [linkedBuff("test-link", "enemy-a", {
+            [makePublicCharacter("test-hero", { buffs: [linkedBuff("test-link", "enemy-a", {
                 statuses: harmfulStatus(),
-            })])],
+            })] })],
             [enemy("enemy-a")],
             [attack("test-strike", { "enemy-a": 25 })],
         );
@@ -267,9 +239,9 @@ describe("Smart generic linked-threat targeting", () => {
 
     it("caps lethal progress at one", () => {
         const fixture = context(
-            [character("test-hero", [linkedBuff("test-link", "enemy-a", {
+            [makePublicCharacter("test-hero", { buffs: [linkedBuff("test-link", "enemy-a", {
                 statuses: harmfulStatus(),
-            })])],
+            })] })],
             [enemy("enemy-a", 40)],
             [attack("test-strike", { "enemy-a": 100 })],
         );
@@ -280,12 +252,12 @@ describe("Smart generic linked-threat targeting", () => {
     });
 
     it("adds severity across multiple affected characters", () => {
-        const one = character("test-hero", [linkedBuff("test-link-one", "enemy-a", {
+        const one = makePublicCharacter("test-hero", { buffs: [linkedBuff("test-link-one", "enemy-a", {
             statuses: harmfulStatus(severeId),
-        })]);
-        const two = character("test-ally", [linkedBuff("test-link-two", "enemy-a", {
+        })] });
+        const two = makePublicCharacter("test-ally", { buffs: [linkedBuff("test-link-two", "enemy-a", {
             statuses: harmfulStatus(severeId),
-        })]);
+        })] });
         const oneFixture = context(
             [one],
             [enemy("enemy-a")],
@@ -311,7 +283,7 @@ describe("Smart generic linked-threat targeting", () => {
 
     it("uses maximum severity within one character/enemy relationship", () => {
         const fixture = context(
-            [character("test-hero", [
+            [makePublicCharacter("test-hero", { buffs: [
                 linkedBuff("test-combined-link", "enemy-a", {
                     statuses: harmfulStatus(),
                     modifiers: { defense: -2 },
@@ -320,7 +292,7 @@ describe("Smart generic linked-threat targeting", () => {
                 linkedBuff("test-additional-link", "enemy-a", {
                     statuses: harmfulStatus(severeId),
                 }),
-            ])],
+            ] })],
             [enemy("enemy-a")],
             [attack("test-strike", { "enemy-a": 100 })],
         );
@@ -338,9 +310,9 @@ describe("Smart generic linked-threat targeting", () => {
     });
 
     it("ignores a linked status covered by a public passive immunity", () => {
-        const hero = character("test-hero", [linkedBuff("test-link", "enemy-a", {
+        const hero = makePublicCharacter("test-hero", { buffs: [linkedBuff("test-link", "enemy-a", {
             statuses: harmfulStatus(),
-        })]);
+        })] });
         const library = testLibrary([hero]);
         library.characters[hero.id].passives = ["test-immunity"];
         library.passives["test-immunity"] = {
@@ -360,7 +332,7 @@ describe("Smart generic linked-threat targeting", () => {
     it("recognizes only unambiguously harmful modifier polarity", () => {
         const scoreModifier = (modifiers: ModifierSet) => {
             const fixture = context(
-                [character("test-hero", [linkedBuff("test-link", "enemy-a", { modifiers })])],
+                [makePublicCharacter("test-hero", { buffs: [linkedBuff("test-link", "enemy-a", { modifiers })] })],
                 [enemy("enemy-a")],
                 [attack("test-strike", { "enemy-a": 100 })],
             );
@@ -376,9 +348,9 @@ describe("Smart generic linked-threat targeting", () => {
 
     it("is deterministic and emits structured-cloneable production diagnostics", () => {
         const fixture = context(
-            [character("test-hero", [linkedBuff("test-link", "enemy-a", {
+            [makePublicCharacter("test-hero", { buffs: [linkedBuff("test-link", "enemy-a", {
                 statuses: harmfulStatus(minorId),
-            })])],
+            })] })],
             [enemy("enemy-a")],
             [attack("test-strike", { "enemy-a": 30 })],
         );

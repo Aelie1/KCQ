@@ -17,40 +17,30 @@ import {
     makeMove,
     setupBoundEngine,
 } from "../helpers/helpers";
+import {
+    makePublicBinding,
+    makePublicCharacter,
+    makePublicEnemy,
+    makePublicGameState,
+} from "../helpers/publicTestData";
 import { createTestEngine } from "../helpers/testCatalog";
 import { multiEnemyEncounter, oneEnemyEncounter, testEnemyList, waitEnemy } from "../helpers/testContent";
 
-const state: GameState = {
+const state: GameState = makePublicGameState({
     turn: { round: 3, step: 1, phase: "player", outcome: "ongoing" },
-    characters: [{
-        id: "ko",
-        acted: false,
+    characters: [makePublicCharacter("ko", {
         standing: true,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [{
-            id: "latexArms",
+        bindings: [makePublicBinding("latexArms", {
             value: 55,
             level: "severe",
-            data: {},
             status: [{ id: "bound", value: 3 }],
-            tickEffects: []
-        }],
-        buffs: [],
-        cooldowns: {},
-        data: {},
+        })],
         modifiers: { defense: -2 },
-        blockedMoveTypes: []
-    }],
-    enemies: [{
-        id: "skunkette1",
+    })],
+    enemies: [makePublicEnemy("skunkette1", {
         defId: "skunkette",
-        rank: "enemy",
         currHp: 12,
         maxHp: 20,
-        currDef: 0,
-        cooldowns: {},
-        buffs: [],
         intentions: [{
             move: "latexSpray",
             targets: [{
@@ -60,15 +50,13 @@ const state: GameState = {
             }],
             effects: [],
         }],
-    }],
-    traps: [],
-    encounter: null,
+    })],
     difficulty: {
         id: "casual",
         playerModifiers: { hit: 2, escape: 2 },
         enemyModifiers: {},
     },
-};
+});
 
 const bindingThresholds = createTestEngine([], [], 1).getThresholds();
 

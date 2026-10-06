@@ -19,47 +19,18 @@ import {
     type SkunkedRescueBreakdown,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(value = 80): Binding {
-    return {
-        id: "test-binding",
+    return makePublicBinding("test-binding", {
         value,
         level: value >= 80 ? "overwhelming" : "heavy",
-        data: {},
-        status: [],
-        tickEffects: [],
-    };
-}
-
-function character(buffs: Buff[] = [], bindings: Binding[] = [binding()]): Character {
-    return {
-        id: "test-victim",
-        acted: false,
-        standing: true,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs,
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    });
 }
 
 function enemy(id: string, currHp = 200, defId = id): Enemy {
-    return {
-        id,
-        defId,
-        rank: "enemy",
-        maxHp: 200,
-        currHp,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-    };
+    return makePublicEnemy(id, { defId, maxHp: 200, currHp });
 }
 
 function linkedBuff(id: string, enemyId: string, incapacitated = true): Buff {
@@ -101,37 +72,31 @@ function context(
         modifiers: [{}, { flags: ["incapacitated"] }],
     };
     const rescuer: Character = {
-        ...character([], []),
+        ...makePublicCharacter("test-victim", { standing: true, buffs: [], bindings: [] }),
         id: "test-rescuer",
         standing: false,
     };
     const victimIncapacitated = victim.buffs.some((buff) =>
         buff.statuses?.some(({ id }) => id === "incapacitated")
     );
-    const actions: ActionView[] = [{
-        id: rescuer.id,
-        available: true,
+    const actions: ActionView[] = [makePublicActionView(rescuer.id, {
         moves: [attack(damageByTarget)],
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    }, {
-        id: victim.id,
+    }), makePublicActionView(victim.id, {
         available: !victimIncapacitated,
         ...(victimIncapacitated ? { reason: "actorIncapacitated" as const } : {}),
-        moves: [],
-        escapes: [],
         stance: victimIncapacitated
             ? { available: false, reason: "actorIncapacitated" }
             : { available: false, reason: "moveUnavailable" },
-    }];
-    const state: GameState = {
+    })];
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters: [rescuer, victim],
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions,
@@ -157,7 +122,7 @@ function breakdown(fixture: PolicyContext, index = 0): SkunkedRescueBreakdown {
 describe("Smart linked Skunked rescue priority", () => {
     it("gives damage against the linked rescue enemy a strong bonus", () => {
         const fixture = context(
-            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            makePublicCharacter("test-victim", { standing: true, buffs: [linkedBuff("skunked", "test-rescue-enemy")], bindings: [binding()] }),
             [enemy("test-other-enemy"), enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-other-enemy": 40, "test-rescue-enemy": 40 },
         );
@@ -177,7 +142,7 @@ describe("Smart linked Skunked rescue priority", () => {
 
     it("awards full rescue-progress value to expected-lethal damage", () => {
         const fixture = context(
-            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            makePublicCharacter("test-victim", { standing: true, buffs: [linkedBuff("skunked", "test-rescue-enemy")], bindings: [binding()] }),
             [enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-rescue-enemy": 200 },
         );
@@ -191,7 +156,7 @@ describe("Smart linked Skunked rescue priority", () => {
 
     it("awards meaningful proportional value to partial damage", () => {
         const fixture = context(
-            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            makePublicCharacter("test-victim", { standing: true, buffs: [linkedBuff("skunked", "test-rescue-enemy")], bindings: [binding()] }),
             [enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-rescue-enemy": 50 },
         );
@@ -204,7 +169,7 @@ describe("Smart linked Skunked rescue priority", () => {
 
     it("penalizes attacking an ordinary enemy while a linked rescue is delayed", () => {
         const fixture = context(
-            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            makePublicCharacter("test-victim", { standing: true, buffs: [linkedBuff("skunked", "test-rescue-enemy")], bindings: [binding()] }),
             [enemy("test-ordinary-enemy"), enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-ordinary-enemy": 200, "test-rescue-enemy": 0 },
         );
@@ -217,7 +182,7 @@ describe("Smart linked Skunked rescue priority", () => {
 
     it("does not treat a Pounce link as a Skunked rescue relationship", () => {
         const fixture = context(
-            character([linkedBuff("pounce", "test-pounce-enemy")]),
+            makePublicCharacter("test-victim", { standing: true, buffs: [linkedBuff("pounce", "test-pounce-enemy")], bindings: [binding()] }),
             [enemy("test-pounce-enemy", 200, "skunkette")],
             { "test-pounce-enemy": 200 },
         );
@@ -227,12 +192,12 @@ describe("Smart linked Skunked rescue priority", () => {
 
     it("removes the bonus when the Skunked or incapacitated relationship is gone", () => {
         const noSkunkedBuff = context(
-            character([]),
+            makePublicCharacter("test-victim", { standing: true, buffs: [], bindings: [binding()] }),
             [enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-rescue-enemy": 200 },
         );
         const noIncapacitation = context(
-            character([linkedBuff("skunked", "test-rescue-enemy", false)]),
+            makePublicCharacter("test-victim", { standing: true, buffs: [linkedBuff("skunked", "test-rescue-enemy", false)], bindings: [binding()] }),
             [enemy("test-rescue-enemy", 200, "skunkette")],
             { "test-rescue-enemy": 200 },
         );
@@ -243,7 +208,7 @@ describe("Smart linked Skunked rescue priority", () => {
 
     it("penalizes other targets consistently and remains deterministic", () => {
         const fixture = context(
-            character([linkedBuff("skunked", "test-rescue-enemy")]),
+            makePublicCharacter("test-victim", { standing: true, buffs: [linkedBuff("skunked", "test-rescue-enemy")], bindings: [binding()] }),
             [
                 enemy("test-other-a"),
                 enemy("test-other-b"),

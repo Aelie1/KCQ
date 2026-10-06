@@ -16,6 +16,8 @@ import {
 } from "../../src/ui/web/app/viewModels/enemyCard";
 import { createPartyCardViewModel } from "../../src/ui/web/app/viewModels/partyCard";
 
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy } from "../helpers/publicTestData";
+
 const presentation = new Presentation(englishStrings);
 
 describe("enemy card view model", () => {
@@ -39,21 +41,17 @@ describe("enemy card view model", () => {
     });
 
     it("retains every engine intention while localizing the compact summary", () => {
-        const enemy: Enemy = {
-            id: "queen1",
+        const enemy: Enemy = makePublicEnemy("queen1", {
             defId: "queen",
             rank: "boss",
             currHp: 234,
             maxHp: 750,
-            currDef: 0,
             intentions: Array.from({ length: 5 }, () => ({
                 move: "skunkGun",
                 targets: [{ target: "ko", band: "crit", effects: [] }],
                 effects: [],
             })),
-            buffs: [],
-            cooldowns: {},
-        };
+        });
 
         const model = createEnemyCardViewModel(enemy, presentation);
 
@@ -71,27 +69,22 @@ describe("enemy card view model", () => {
     });
 
     it("projects, deduplicates, and filters linked player relationships", () => {
-        const enemy: Enemy = {
-            id: "skunkette1",
+        const enemy: Enemy = makePublicEnemy("skunkette1", {
             defId: "skunkette",
-            rank: "enemy",
             currHp: 200,
             maxHp: 200,
-            currDef: 0,
-            intentions: [],
             buffs: [
                 { id: "pounce", linkedEntity: "ko" },
                 { id: "skunked", linkedEntity: "ko" },
                 { id: "ignored", linkedEntity: "not-a-player" },
                 { id: "pounce", linkedEntity: "matsuko" },
             ],
-            cooldowns: {},
-        };
+        });
 
         const model = createEnemyCardViewModel(
             enemy,
             presentation,
-            [character(), character({ id: "matsuko" })],
+            [makePublicCharacter("ko"), makePublicCharacter("ko", { id: "matsuko" })],
         );
 
         expect(model.linkedEntities).toEqual([
@@ -116,7 +109,7 @@ describe("party card view model", () => {
         expectedLabel,
     ) => {
         const model = createPartyCardViewModel(
-            character({ acted }),
+            makePublicCharacter("ko", { acted }),
             action(reason, stanceReason),
             thresholds,
             presentation,
@@ -130,7 +123,7 @@ describe("party card view model", () => {
 
     it("keeps Ready action state independent from an immobilized stance", () => {
         const model = createPartyCardViewModel(
-            character(),
+            makePublicCharacter("ko"),
             action(undefined, "actorImmobilized"),
             thresholds,
             presentation,
@@ -145,16 +138,12 @@ describe("party card view model", () => {
     });
 
     it("uses engine binding data and applies stable effect overflow policy", () => {
-        const source = character({
+        const source = makePublicCharacter("ko", {
             blockedMoveTypes: ["arms", "none", "legs"],
-            bindings: [{
-                id: "latexArms",
+            bindings: [makePublicBinding("latexArms", {
                 value: 41,
                 level: "heavy",
-                data: {},
-                status: [],
-                tickEffects: [],
-            }],
+            })],
             buffs: [
                 { id: "pounce" },
                 { id: "burnout" },
@@ -184,15 +173,11 @@ describe("party card view model", () => {
 
     it("projects mixed and clean characters through encounter binding order", () => {
         const mixed = createPartyCardViewModel(
-            character({
-                bindings: [{
-                    id: "latexArms",
+            makePublicCharacter("ko", {
+                bindings: [makePublicBinding("latexArms", {
                     value: 41,
                     level: "heavy",
-                    data: {},
-                    status: [],
-                    tickEffects: [],
-                }],
+                })],
             }),
             action(),
             thresholds,
@@ -200,7 +185,7 @@ describe("party card view model", () => {
             ["latexLegs", "latexArms", "latexHead"],
         );
         const clean = createPartyCardViewModel(
-            character(),
+            makePublicCharacter("ko"),
             action(),
             thresholds,
             presentation,
@@ -274,32 +259,12 @@ const thresholds: ThresholdInfo = {
     max: 123,
 };
 
-function character(overrides: Partial<Character> = {}): Character {
-    return {
-        id: "ko",
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-        ...overrides,
-    };
-}
-
 function action(reason?: FailureReason, stanceReason?: FailureReason): ActionView {
-    return {
-        id: "ko",
+    return makePublicActionView("ko", {
         available: reason === undefined,
         ...(reason ? { reason } : {}),
-        moves: [],
-        escapes: [],
         stance: stanceReason
             ? { available: false, reason: stanceReason }
             : { available: true },
-    };
+    });
 }

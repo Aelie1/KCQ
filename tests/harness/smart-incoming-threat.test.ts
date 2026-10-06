@@ -20,26 +20,11 @@ import {
     recoveryDebt,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "none", data: {}, status: [], tickEffects: [] };
-}
-
-function character(id: string, bindings: Binding[] = []): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    return makePublicBinding(id, { value });
 }
 
 function intention(effects: Effect[]): Intention {
@@ -47,17 +32,10 @@ function intention(effects: Effect[]): Intention {
 }
 
 function enemy(id: string, effects: Effect[] = [], currHp = 100): Enemy {
-    return {
-        id,
-        defId: id,
-        rank: "enemy",
-        maxHp: 100,
+    return makePublicEnemy(id, {
         currHp,
-        currDef: 0,
         intentions: effects.length > 0 ? [intention(effects)] : [],
-        buffs: [],
-        cooldowns: {},
-    };
+    });
 }
 
 function attack(
@@ -83,21 +61,21 @@ function context(
     damageByEnemy: Readonly<Record<string, number>>,
     targets: number | "all" = 1,
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],
         encounter: null,
-    };
-    const actions: ActionView[] = [{
-        id: characters[0]?.id ?? "synthetic-hero",
-        available: true,
+    });
+    const actions: ActionView[] = [makePublicActionView(
+        characters[0]?.id ?? "synthetic-hero",
+        {
         moves: [attack(damageByEnemy, targets)],
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    }];
+        },
+    )];
     return {
         state,
         actions,
@@ -131,7 +109,7 @@ function bind(target: string, bindingId: string, amount?: number): Effect {
 describe("Smart generic incoming-threat targeting", () => {
     it("prefers an otherwise equivalent attack against the threatening enemy", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [
                 enemy("enemy-a", [], 20),
                 enemy("enemy-b", [bind("synthetic-hero", "synthetic-rope", 20)], 20),
@@ -151,7 +129,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("assigns more threat to a larger recovery-debt increase", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [
                 enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 5)]),
                 enemy("enemy-b", [bind("synthetic-hero", "synthetic-rope", 20)]),
@@ -165,8 +143,8 @@ describe("Smart generic incoming-threat targeting", () => {
     it("values equal pressure more on an already severe binding track", () => {
         const fixture = context(
             [
-                character("light", [binding("synthetic-rope", 0)]),
-                character("severe", [binding("synthetic-rope", 60)]),
+                makePublicCharacter("light", { bindings: [binding("synthetic-rope", 0)] }),
+                makePublicCharacter("severe", { bindings: [binding("synthetic-rope", 60)] }),
             ],
             [
                 enemy("enemy-a", [bind("light", "synthetic-rope", 10)]),
@@ -180,7 +158,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("naturally accumulates threat across multiple characters", () => {
         const fixture = context(
-            [character("hero"), character("ally")],
+            [makePublicCharacter("hero"), makePublicCharacter("ally")],
             [
                 enemy("enemy-a", [bind("hero", "synthetic-rope", 10)]),
                 enemy("enemy-b", [
@@ -196,7 +174,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("naturally accumulates pressure across multiple binding tracks", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [
                 enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 10)]),
                 enemy("enemy-b", [
@@ -212,7 +190,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("scores zero without known incoming binding pressure", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [enemy("enemy-a")],
             { "enemy-a": 100 },
         );
@@ -222,7 +200,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("gives nonlethal damage zero score even against a very dangerous enemy", () => {
         const fixture = context(
-            [character("synthetic-hero", [binding("synthetic-rope", 70)])],
+            [makePublicCharacter("synthetic-hero", { bindings: [binding("synthetic-rope", 70)] })],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 30)])],
             { "enemy-a": 99 },
         );
@@ -240,7 +218,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("gives expected-lethal damage the enemy's full threat score", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)], 40)],
             { "enemy-a": 40 },
         );
@@ -256,7 +234,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("gives damage just below remaining HP zero threat score", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)])],
             { "enemy-a": 99 },
         );
@@ -268,7 +246,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("gives damage equal to remaining HP full threat score", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)])],
             { "enemy-a": 100 },
         );
@@ -280,7 +258,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("gives damage above remaining HP full threat score", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 20)])],
             { "enemy-a": 101 },
         );
@@ -292,7 +270,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("does not reward removing a large fraction of enemy HP without an expected kill", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 50)])],
             { "enemy-a": 90 },
         );
@@ -309,7 +287,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("collects threat only from the threatening enemy it can expected-kill", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [
                 enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 10)], 30),
                 enemy("enemy-b", [bind("synthetic-hero", "synthetic-silk", 20)], 50),
@@ -331,7 +309,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("lets an AoE collect each enemy's threat only when lethal to that enemy", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [
                 enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 10)], 30),
                 enemy("enemy-b", [bind("synthetic-hero", "synthetic-silk", 20)], 40),
@@ -351,7 +329,7 @@ describe("Smart generic incoming-threat targeting", () => {
         const currentValue = 60;
         const incoming = 10;
         const fixture = context(
-            [character("synthetic-hero", [binding("synthetic-rope", currentValue)])],
+            [makePublicCharacter("synthetic-hero", { bindings: [binding("synthetic-rope", currentValue)] })],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", incoming)])],
             { "enemy-a": 100 },
         );
@@ -368,7 +346,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("retains unknown binding effects diagnostically without numeric threat", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [
                 enemy("enemy-a", [
                     bind("synthetic-hero", "synthetic-rope", 10),
@@ -392,7 +370,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("retains incoming traps diagnostically without numeric threat", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [
                 enemy("enemy-a", [
                     bind("synthetic-hero", "synthetic-rope", 10),
@@ -411,7 +389,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("does not let a nonlethal threat bonus displace a useful recovery action", () => {
         const fixture = context(
-            [character("synthetic-hero", [binding("synthetic-rope", 60)])],
+            [makePublicCharacter("synthetic-hero", { bindings: [binding("synthetic-rope", 60)] })],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 40)], 2)],
             { "enemy-a": 1 },
         );
@@ -436,7 +414,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("can prefer an expected-lethal attack that prevents the committed threat", () => {
         const fixture = context(
-            [character("synthetic-hero", [binding("synthetic-rope", 60)])],
+            [makePublicCharacter("synthetic-hero", { bindings: [binding("synthetic-rope", 60)] })],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 40)], 2)],
             { "enemy-a": 2 },
         );
@@ -457,7 +435,7 @@ describe("Smart generic incoming-threat targeting", () => {
 
     it("is deterministic, avoids policy RNG, and emits structured-cloneable diagnostics", () => {
         const fixture = context(
-            [character("synthetic-hero")],
+            [makePublicCharacter("synthetic-hero")],
             [enemy("enemy-a", [bind("synthetic-hero", "synthetic-rope", 10)])],
             { "enemy-a": 30 },
         );

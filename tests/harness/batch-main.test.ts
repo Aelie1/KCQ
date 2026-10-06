@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
 import type { GameState, PlayerAction } from "../../src/engine/public/types";
 import { runBatch, type BatchResult } from "../../src/harness/batch/batch";
 import { summarizeBatch } from "../../src/harness/batch/summary";
 import { formatBatchSummary } from "../../src/harness/batch/summary-format";
 import { runSingleFight } from "../../src/harness/harness";
+import { makePublicGameState } from "../helpers/publicTestData";
 
 vi.mock("../../src/harness/batch/batch", () => ({ runBatch: vi.fn() }));
 vi.mock("../../src/harness/harness", () => ({ runSingleFight: vi.fn() }));
@@ -15,11 +15,9 @@ const originalArgv = process.argv;
 const originalExitCode = process.exitCode;
 
 function batchFixture(): BatchResult {
-    const finalState: GameState = {
+    const finalState: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
-        difficulty: STANDARD_DIFFICULTY,
-        characters: [], enemies: [], traps: [], encounter: null,
-    };
+    });
     return {
         encounterId: "plains_1",
         policyId: "escape",

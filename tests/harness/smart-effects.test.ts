@@ -19,42 +19,17 @@ import {
     type SmartCandidate,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const thresholds = { thresholds: { overwhelming: 80 }, max: 100 } as const;
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "heavy", data: {}, status: [], tickEffects: [] };
-}
-
-function character(id: string, bindings: Binding[] = []): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    return makePublicBinding(id, { value, level: "heavy" });
 }
 
 function enemy(id = "enemy"): Enemy {
-    return {
-        id,
-        defId: id,
-        rank: "enemy",
-        maxHp: 100,
-        currHp: 100,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-    };
+    return makePublicEnemy(id);
 }
 
 function move(
@@ -72,28 +47,25 @@ function move(
 }
 
 function actionView(id: string, moves: ActionInfo[] = []): ActionView {
-    return {
-        id,
-        available: true,
+    return makePublicActionView(id, {
         moves,
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    };
+    });
 }
 
 function context(
-    characters: Character[] = [character("hero")],
+    characters: Character[] = [makePublicCharacter("hero")],
     actions: ActionView[] = [actionView("hero")],
     enemies: Enemy[] = [enemy()],
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions,
@@ -136,7 +108,7 @@ function moveListEffect(
 describe("Smart binding recovery for move effects", () => {
     it("gives a move recovery value for target-level binding removal", () => {
         const fixture = context(
-            [character("hero", [binding("rope", 50)])],
+            [makePublicCharacter("hero", { bindings: [binding("rope", 50)] })],
             [actionView("hero", [move("release", [
                 { type: "binding", target: "hero", binding: "rope", amount: -20 },
             ])])],
@@ -147,7 +119,7 @@ describe("Smart binding recovery for move effects", () => {
 
     it("values full removal of a high binding substantially above a small removal", () => {
         const fixture = context(
-            [character("hero", [binding("rope", 80)])],
+            [makePublicCharacter("hero", { bindings: [binding("rope", 80)] })],
             [actionView("hero", [
                 move("small", [
                     { type: "binding", target: "hero", binding: "rope", amount: -5 },
@@ -163,13 +135,13 @@ describe("Smart binding recovery for move effects", () => {
 
     it("includes positive binding side effects in the net projection", () => {
         const clean = context(
-            [character("hero", [binding("rope", 60), binding("silk", 20)])],
+            [makePublicCharacter("hero", { bindings: [binding("rope", 60), binding("silk", 20)] })],
             [actionView("hero", [move("clean", [
                 { type: "binding", target: "hero", binding: "rope", amount: -20 },
             ])])],
         );
         const spreading = context(
-            [character("hero", [binding("rope", 60), binding("silk", 20)])],
+            [makePublicCharacter("hero", { bindings: [binding("rope", 60), binding("silk", 20)] })],
             [actionView("hero", [move("spread", [
                 { type: "binding", target: "hero", binding: "rope", amount: -20 },
                 { type: "binding", target: "hero", binding: "silk", amount: 15 },
@@ -182,13 +154,13 @@ describe("Smart binding recovery for move effects", () => {
 
     it("applies target-level binding effects once per represented hit", () => {
         const once = context(
-            [character("hero", [binding("rope", 60)])],
+            [makePublicCharacter("hero", { bindings: [binding("rope", 60)] })],
             [actionView("hero", [move("once", [
                 { type: "binding", target: "hero", binding: "rope", amount: -10 },
             ], 1)])],
         );
         const thrice = context(
-            [character("hero", [binding("rope", 60)])],
+            [makePublicCharacter("hero", { bindings: [binding("rope", 60)] })],
             [actionView("hero", [move("thrice", [
                 { type: "binding", target: "hero", binding: "rope", amount: -10 },
             ], 3)])],
@@ -200,7 +172,7 @@ describe("Smart binding recovery for move effects", () => {
 
     it("scores zero without known character binding effects", () => {
         const fixture = context(
-            [character("hero", [binding("rope", 50)])],
+            [makePublicCharacter("hero", { bindings: [binding("rope", 50)] })],
             [actionView("hero", [move("irrelevant", [
                 { type: "binding", target: "hero", binding: "rope" },
                 { type: "binding", target: "enemy", binding: "rope", amount: -50 },
@@ -216,7 +188,7 @@ describe("Smart future move options", () => {
         moveIds: string[],
         blockedMoves: string[] = [],
     ): PolicyContext {
-        const hero = character("hero");
+        const hero = makePublicCharacter("hero");
         if (blockedMoves.length > 0) {
             hero.buffs = [{ id: "active-move-list-blocker", moveList: { blockedMoves } }];
         }
@@ -292,7 +264,7 @@ describe("Smart future move options", () => {
 
     it("does not give Fairy Empowerment phantom options after Matsuko Burnout", () => {
         const fairyAttacks = ["fairyWhiteFlame", "fairyPhoenixKick"];
-        const matsuko = character("matsuko");
+        const matsuko = makePublicCharacter("matsuko");
         matsuko.buffs = [{ id: "burnout", moveList: { blockedMoves: fairyAttacks } }];
         const result = evaluateFutureMoveOptions(
             context(

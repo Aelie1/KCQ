@@ -13,6 +13,7 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import { Presentation } from "../../../presentation/presentation";
+import { makeFixtureCharacter } from "./publicFixture";
 
 const presentation = new Presentation(englishStrings);
 
@@ -72,18 +73,12 @@ function character(
         standing?: boolean;
     },
 ): Character {
-    return {
-        id,
-        acted: false,
+    return makeFixtureCharacter(id, {
         standing: options.standing ?? false,
-        bonusEscapes: 0,
         bindings: options.bindings,
         buffs: options.buffs ?? [],
-        cooldowns: {},
-        modifiers: {},
         blockedMoveTypes: options.blockedMoveTypes ?? [],
-        data: {},
-    };
+    });
 }
 
 function action(id: string, stanceReason?: FailureReason): ActionView {

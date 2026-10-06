@@ -15,40 +15,15 @@ import {
     type ScoredSmartCandidate,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function enemy(id: string, currHp: number, maxHp = currHp): Enemy {
-    return {
-        id,
-        defId: id,
-        rank: "enemy",
-        maxHp,
-        currHp,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-    };
+    return makePublicEnemy(id, { currHp, maxHp });
 }
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "overwhelming", data: {}, status: [], tickEffects: [] };
-}
-
-function character(bindings: Binding[] = []): Character {
-    return {
-        id: "hero",
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    return makePublicBinding(id, { value, level: "overwhelming" });
 }
 
 function target(id: string, damage: number, effects: Effect[] = []): PreviewInfo {
@@ -76,29 +51,25 @@ function move(
 }
 
 function actionView(values: Partial<Omit<ActionView, "id">> = {}): ActionView {
-    return {
-        id: "hero",
-        available: true,
-        moves: [],
-        escapes: [],
+    return makePublicActionView("hero", {
         stance: { available: false, reason: "moveUnavailable" },
         ...values,
-    };
+    });
 }
 
 function context(
     enemies: Enemy[],
     actions: ActionView[],
-    hero = character(),
+    hero = makePublicCharacter(),
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters: [hero],
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions,
@@ -255,7 +226,7 @@ describe("Smart finisher pressure", () => {
                     ],
                 }],
             })],
-            character([binding("selected", 80)]),
+            makePublicCharacter("hero", { bindings: [binding("selected", 80)] }),
         );
         const decision = evaluateSmartDecision(fixture);
         const attack = decision.candidates.find(({ action }) => action.type === "move")!;

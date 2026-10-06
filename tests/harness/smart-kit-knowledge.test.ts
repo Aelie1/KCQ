@@ -29,46 +29,16 @@ import {
     smartScorers,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number, level: Binding["level"]): Binding {
-    return { id, value, level, data: {}, status: [], tickEffects: [] };
-}
-
-function character(
-    id: string,
-    values: Partial<Character> = {},
-): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-        ...values,
-    };
+    return makePublicBinding(id, { value, level });
 }
 
 function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
     const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
-    return {
-        id,
-        defId,
-        rank: "enemy",
-        maxHp: 200,
-        currHp: 200,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-        ...values,
-    };
+    return makePublicEnemy(id, { defId, maxHp: 200, currHp: 200, ...values });
 }
 
 interface MoveOptions {
@@ -116,13 +86,10 @@ function move(
 }
 
 function action(actor: string, moves: ActionInfo[]): ActionView {
-    return {
-        id: actor,
-        available: true,
+    return makePublicActionView(actor, {
         moves,
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    };
+    });
 }
 
 function context(
@@ -130,14 +97,14 @@ function context(
     enemies: Enemy[],
     actions: ActionView[],
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     const library = createEmptyContentLibrary();
     addMoveReferences(library, actions);
     return {
@@ -239,7 +206,7 @@ function pounceContext(
     attackOptions: MoveOptions = { damage: 10, hits: 1, accuracy: 100 },
     sourceAttackable = true,
 ): PolicyContext {
-    const actor = character(actorId, { buffs: [pounceBuff("pounce-source")] });
+    const actor = makePublicCharacter(actorId, { buffs: [pounceBuff("pounce-source")] });
     const source = enemy("pounce-source", {
         buffs: [pounceBuff(actorId, level)],
     });
@@ -256,7 +223,7 @@ function pounceContext(
 describe("Smart Matsuko kit knowledge", () => {
     it("prefers an available fairy attack over equivalent ordinary offense", () => {
         const fixture = context(
-            [character("matsuko", { buffs: [{ id: "empowerment" }] })],
+            [makePublicCharacter("matsuko", { buffs: [{ id: "empowerment" }] })],
             [enemy("target")],
             [action("matsuko", [
                 move("punch", ["target"], { damage: 30 }),
@@ -271,7 +238,7 @@ describe("Smart Matsuko kit knowledge", () => {
     });
 
     it("does not force empowerment consumption over urgent recovery", () => {
-        const matsuko = character("matsuko", {
+        const matsuko = makePublicCharacter("matsuko", {
             buffs: [{ id: "empowerment" }],
             bindings: [binding("restraint", 80, "overwhelming")],
         });
@@ -293,7 +260,7 @@ describe("Smart Matsuko kit knowledge", () => {
     it("reserves Immolation despite enormous healthy-enemy AoE damage", () => {
         const enemies = [1, 2, 3, 4].map((index) => enemy(`target-${index}`));
         const fixture = context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             enemies,
             [action("matsuko", [
                 move("punch", ["target-1"], { damage: 30 }),
@@ -310,7 +277,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("releases the Immolation reserve in a serious binding emergency", () => {
         const fixture = context(
-            [character("matsuko", {
+            [makePublicCharacter("matsuko", {
                 bindings: [binding("restraint", 80, "overwhelming")],
             })],
             [enemy("target")],
@@ -333,7 +300,7 @@ describe("Smart Matsuko kit knowledge", () => {
             enemy("skunk1"),
         ];
         const fixture = context(
-            [character("matsuko", { bindings })],
+            [makePublicCharacter("matsuko", { bindings })],
             enemies,
             [action("matsuko", [move("immolation", enemies.map(({ id }) => id), {
                 damage: 20,
@@ -367,7 +334,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("releases the Immolation reserve when it finishes every enemy", () => {
         const fixture = context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             [enemy("one", { currHp: 70 }), enemy("two", { currHp: 75 })],
             [action("matsuko", [move("immolation", ["one", "two"], {
                 damage: 75,
@@ -383,7 +350,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("gives Obey targeting Ko its explicit bonus", () => {
         const fixture = context(
-            [character("matsuko"), character("ko", { acted: true })],
+            [makePublicCharacter("matsuko"), makePublicCharacter("ko", { acted: true })],
             [],
             [action("matsuko", [move("obey", ["ko"], { side: "player" })])],
         );
@@ -392,7 +359,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("does not give Obey targeting Hinari the Ko bonus", () => {
         const fixture = context(
-            [character("matsuko"), character("hinari", { acted: true })],
+            [makePublicCharacter("matsuko"), makePublicCharacter("hinari", { acted: true })],
             [],
             [action("matsuko", [move("obey", ["hinari"], { side: "player" })])],
         );
@@ -401,7 +368,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("does not invent an Obey fallback when Ko is not a valid target", () => {
         const fixture = context(
-            [character("matsuko"), character("hinari", { acted: true })],
+            [makePublicCharacter("matsuko"), makePublicCharacter("hinari", { acted: true })],
             [],
             [action("matsuko", [move("obey", ["hinari"], { side: "player" })])],
         );
@@ -413,7 +380,7 @@ describe("Smart Matsuko kit knowledge", () => {
             intentions: [bindingIntention("miss", "matsuko", "arms", undefined, "miss")],
         });
         const fixture = context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             [target],
             [action("matsuko", [move("stop", ["target"])])],
         );
@@ -425,7 +392,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("values harmful non-boss Stop by prevented recovery debt", () => {
         const fixture = context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             [enemy("target", {
                 intentions: [bindingIntention("bind", "matsuko", "arms", 40)],
             })],
@@ -441,7 +408,7 @@ describe("Smart Matsuko kit knowledge", () => {
     it("values a larger harmful intention above a smaller one", () => {
         const stopValue = (amount: number) => {
             const fixture = context(
-                [character("matsuko")],
+                [makePublicCharacter("matsuko")],
                 [enemy("target", {
                     intentions: [bindingIntention("bind", "matsuko", "arms", amount)],
                 })],
@@ -454,7 +421,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("only proportionally mitigates a boss intention", () => {
         const make = (rank: Enemy["rank"]) => context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             [enemy("target", {
                 rank,
                 intentions: [bindingIntention("bind", "matsuko", "arms", 60)],
@@ -469,7 +436,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("gives Stop no utility without an intention", () => {
         const fixture = context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             [enemy("target")],
             [action("matsuko", [move("stop", ["target"])])],
         );
@@ -478,7 +445,7 @@ describe("Smart Matsuko kit knowledge", () => {
 
     it("reuses existing trap pressure for harmful non-binding intentions", () => {
         const fixture = context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             [enemy("target", {
                 intentions: [{
                     move: "trap",
@@ -506,8 +473,8 @@ describe("Smart Matsuko kit knowledge", () => {
         });
         const fixture = context(
             [
-                character("matsuko", { bindings: [binding("arms", 0, "none")] }),
-                character("ko", { bindings: [binding("arms", 70, "severe")] }),
+                makePublicCharacter("matsuko", { bindings: [binding("arms", 0, "none")] }),
+                makePublicCharacter("ko", { bindings: [binding("arms", 70, "severe")] }),
             ],
             [enemy("source", {
                 intentions: [bindingIntention("bind", "ko", "arms", 20)],
@@ -586,8 +553,8 @@ function attackMeContext(
     });
     const fixture = context(
         [
-            character("matsuko", { bindings: [binding("arms", matsukoArms, "none")] }),
-            character("ko", { bindings: [binding("arms", koArms, "none")] }),
+            makePublicCharacter("matsuko", { bindings: [binding("arms", matsukoArms, "none")] }),
+            makePublicCharacter("ko", { bindings: [binding("arms", koArms, "none")] }),
         ],
         enemies,
         [action("matsuko", [attackMe])],
@@ -614,7 +581,7 @@ describe("Smart Hinari kit knowledge", () => {
             intentions: [bindingIntention("crit", "hinari", "arms", 96)],
         });
         const fixture = context(
-            [character("hinari", {
+            [makePublicCharacter("hinari", {
                 bindings: [binding("arms", 0, "none")],
                 data: { subspace: 0, subspaceMax: 100 },
             })],
@@ -678,7 +645,7 @@ describe("Smart Hinari kit knowledge", () => {
 
     it("prefers Fairy Rockfall over ordinary Rockfall when choosing offense", () => {
         const fixture = context(
-            [character("hinari", {
+            [makePublicCharacter("hinari", {
                 buffs: [{ id: "empowerment" }],
                 data: { subspace: 0, subspaceMax: 100 },
             })],
@@ -708,7 +675,7 @@ describe("Smart Hinari kit knowledge", () => {
     });
 
     it("penalizes high-Subspace Store but lets urgent recovery outweigh it", () => {
-        const hinari = character("hinari", {
+        const hinari = makePublicCharacter("hinari", {
             bindings: [binding("restraint", 100, "max")],
             data: { subspace: 75, subspaceMax: 100 },
         });
@@ -740,7 +707,7 @@ describe("Smart Hinari kit knowledge", () => {
 
 function braceContext(enemies: Enemy[], subspace: number): PolicyContext {
     return context(
-        [character("hinari", {
+        [makePublicCharacter("hinari", {
             bindings: [binding("arms", 0, "none"), binding("legs", 0, "none")],
             data: { subspace, subspaceMax: 100 },
         })],
@@ -751,7 +718,7 @@ function braceContext(enemies: Enemy[], subspace: number): PolicyContext {
 
 function hinariSubspaceContext(subspace: number, rockfallHits: number): PolicyContext {
     return context(
-        [character("hinari", { data: { subspace, subspaceMax: 100 } })],
+        [makePublicCharacter("hinari", { data: { subspace, subspaceMax: 100 } })],
         [enemy("target")],
         [action("hinari", [
             move("rockfall", ["target"], { damage: 10, hits: rockfallHits }),
@@ -839,7 +806,7 @@ describe("Smart Pounce and Throw Off knowledge", () => {
 describe("Smart knowledge diagnostics and registration", () => {
     it("gives unknown characters and moves zero adjustment", () => {
         const fixture = context(
-            [character("unknown-hero")],
+            [makePublicCharacter("unknown-hero")],
             [enemy("unknown-enemy")],
             [action("unknown-hero", [move("unknown-move", ["unknown-enemy"], { damage: 10 })])],
         );
@@ -848,7 +815,7 @@ describe("Smart knowledge diagnostics and registration", () => {
 
     it("emits named rule diagnostics with inspectable adjustments", () => {
         const fixture = context(
-            [character("matsuko", { buffs: [{ id: "empowerment" }] })],
+            [makePublicCharacter("matsuko", { buffs: [{ id: "empowerment" }] })],
             [enemy("target")],
             [action("matsuko", [
                 move("punch", ["target"], { damage: 30 }),

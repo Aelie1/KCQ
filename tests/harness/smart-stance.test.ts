@@ -18,6 +18,7 @@ import {
     type StanceTrapBreakdown,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const thresholds = {
@@ -26,23 +27,7 @@ const thresholds = {
 } as const;
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: value >= 80 ? "overwhelming" : "heavy", data: {}, status: [], tickEffects: [] };
-}
-
-function character(bindings: Binding[] = [], buffs: Character["buffs"] = []): Character {
-    return {
-        id: "test-hero",
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs,
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    return makePublicBinding(id, { value, level: value >= 80 ? "overwhelming" : "heavy" });
 }
 
 function attack(damage = 5): ActionInfo {
@@ -60,17 +45,7 @@ function attack(damage = 5): ActionInfo {
 }
 
 function enemy(intentions: Intention[] = [], id = "test-enemy"): Enemy {
-    return {
-        id,
-        defId: id,
-        rank: "enemy",
-        maxHp: 100,
-        currHp: 100,
-        currDef: 0,
-        intentions,
-        buffs: [],
-        cooldowns: {},
-    };
+    return makePublicEnemy(id, { intentions });
 }
 
 function targetedBindingIntention(amount: number, bindingId: string): Intention {
@@ -112,17 +87,17 @@ function context(options: {
     vibrating?: boolean;
 } = {}): PolicyContext {
     const bindings = options.bindings ?? [];
-    const hero = character(bindings, options.vibrating
+    const hero = makePublicCharacter("test-hero", { bindings: bindings, buffs: options.vibrating
         ? [{ id: "test-vibration", statuses: [{ id: "vibrating", value: 1 }] }]
-        : []);
-    const state: GameState = {
+        : [] });
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters: [hero],
         enemies: [enemy(options.intentions)],
         traps: options.traps ?? [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions: [{

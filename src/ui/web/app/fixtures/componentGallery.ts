@@ -16,6 +16,7 @@ import { Presentation } from "../../../presentation/presentation";
 import { createEnemyCardViewModel } from "../viewModels/enemyCard";
 import { createIntentViewModel } from "../viewModels/intentRow";
 import { createPartyCardViewModel } from "../viewModels/partyCard";
+import { makeFixtureCharacter } from "./publicFixture";
 
 const presentation = new Presentation(englishStrings);
 
@@ -110,18 +111,13 @@ function character(
         buffs?: Buff[];
     } = {},
 ): Character {
-    return {
-        id,
+    return makeFixtureCharacter(id, {
         acted: options.acted ?? false,
         standing: options.standing ?? false,
-        bonusEscapes: 0,
         bindings: options.bindings ?? [],
         buffs: options.buffs ?? [],
-        cooldowns: {},
-        modifiers: {},
         blockedMoveTypes: options.blockedMoveTypes ?? [],
-        data: {},
-    };
+    });
 }
 
 function action(

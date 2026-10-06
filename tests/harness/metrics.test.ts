@@ -23,36 +23,24 @@ import {
     type MetricCollector,
 } from "../../src/harness/metrics";
 import { basicPolicy } from "../../src/harness/policy/basic";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
+import { makePublicBinding, makePublicCharacter, makePublicGameState } from "../helpers/publicTestData";
 
 const testLibrary = createEngine(1).getLibrary();
 
-function character(
+function metricCharacter(
     id: string,
     bindings: Array<{ id: string; value: number; incapacitated?: boolean }> = [],
 ): Character {
-    return {
-        id,
-        acted: false,
+    return makePublicCharacter(id, {
         standing: true,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: bindings.map((binding) => ({
-            id: binding.id,
+        bindings: bindings.map((binding) => makePublicBinding(binding.id, {
             value: binding.value,
             level: "light",
-            data: {},
             status: binding.incapacitated
                 ? [{ id: "incapacitated", value: 1 }]
                 : [],
-            tickEffects: []
         })),
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    });
 }
 
 function view(values: {
@@ -61,15 +49,14 @@ function view(values: {
     characters?: Character[];
     traps?: GameState["traps"];
 } = {}): GameState {
-    return {
+    return makePublicGameState({
         turn: {
             round: values.round ?? 1,
             step: 1,
             phase: "player",
             outcome: values.outcome ?? "ongoing",
         },
-        characters: values.characters ?? [character("hero")],
-        enemies: [],
+        characters: values.characters ?? [metricCharacter("hero")],
         traps: values.traps ?? [],
         encounter: {
             id: "test",
@@ -77,8 +64,7 @@ function view(values: {
             bindings: ["rope", "slime"],
             traps: ["trapPuddle"],
         },
-        difficulty: STANDARD_DIFFICULTY,
-    };
+    });
 }
 
 function successfulAction(
@@ -186,15 +172,15 @@ describe("metric collector framework", () => {
     it("tracks final and peak bondage independently by character and track", () => {
         const collector = createBondageCollector();
         const initial = view({
-            characters: [character("hero", [{ id: "rope", value: 2 }]), character("ally")],
+            characters: [metricCharacter("hero", [{ id: "rope", value: 2 }]), metricCharacter("ally")],
         });
         const after = view({
             characters: [
-                character("hero", [
+                metricCharacter("hero", [
                     { id: "rope", value: 1 },
                     { id: "slime", value: 4 },
                 ]),
-                character("ally", [{ id: "rope", value: 3 }]),
+                metricCharacter("ally", [{ id: "rope", value: 3 }]),
             ],
         });
 
@@ -235,7 +221,7 @@ describe("metric collector framework", () => {
     });
 
     it("collects damage, player/enemy move usage, and accuracy bands from events", () => {
-        const initial = view({ characters: [character("hero")] });
+        const initial = view({ characters: [metricCharacter("hero")] });
         const events: GameEvent[] = [
             {
                 type: "useMove",
@@ -372,10 +358,10 @@ describe("metric collector framework", () => {
 
     it("records first incapacitation transitions while leaving unsupported captures null", () => {
         const collector = createIncapacitationCollector();
-        const healthy = view({ characters: [character("hero")] });
+        const healthy = view({ characters: [metricCharacter("hero")] });
         const down = view({
             round: 2,
-            characters: [character("hero", [{ id: "rope", value: 100, incapacitated: true }])],
+            characters: [metricCharacter("hero", [{ id: "rope", value: 100, incapacitated: true }])],
         });
         collector.onFightStart?.({ view: healthy, library: testLibrary });
         collector.onAction?.(successfulAction(healthy, down, [], { type: "endTurn" }, 1));

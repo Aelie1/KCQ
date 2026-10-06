@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
 import { matsuko, obey } from "../../src/content/characters/matsuko";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
+import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
 import { s } from "../../src/engine/protected/status";
 import { gagged, servitude } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
@@ -23,6 +22,7 @@ import {
     targetPreview,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
+import { createTestEngine } from "../helpers/testCatalog";
 
 const STANDARD_ACCURACY: AccuracyProfile = {
     miss: 10,
@@ -535,6 +535,7 @@ describe("Matsuko's Compulsion moves", () => {
             move: {
                 id: obey.id,
                 type: obey.type,
+                freeOnHit: true,
                 targetSide: obey.targetSide,
                 targets: obey.targets,
                 ...(obey.traits ? { traits: [...obey.traits] } : {}),

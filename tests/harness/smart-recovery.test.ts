@@ -18,28 +18,13 @@ import {
     recoveryDebt,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const thresholds = { thresholds: { overwhelming: 80 }, max: 100 } as const;
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "heavy", data: {}, status: [], tickEffects: [] };
-}
-
-function character(id: string, bindings: Binding[] = []): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    return makePublicBinding(id, { value, level: "heavy" });
 }
 
 function enemy(incoming = 0, unknown = false): Enemy {
@@ -50,28 +35,16 @@ function enemy(incoming = 0, unknown = false): Enemy {
     if (unknown) {
         effects.push({ type: "binding", target: "hero", binding: "selected" });
     }
-    return {
-        id: "enemy",
-        defId: "enemy",
-        rank: "enemy",
-        maxHp: 100,
-        currHp: 100,
-        currDef: 0,
+    return makePublicEnemy("enemy", {
         intentions: effects.length === 0 ? [] : [{ move: "pressure", targets: [], effects }],
-        buffs: [],
-        cooldowns: {},
-    };
+    });
 }
 
 function actionView(id: string, values: Partial<Omit<ActionView, "id">> = {}): ActionView {
-    return {
-        id,
-        available: true,
-        moves: [],
-        escapes: [],
+    return makePublicActionView(id, {
         stance: { available: false, reason: "moveUnavailable" },
         ...values,
-    };
+    });
 }
 
 function context(
@@ -80,14 +53,14 @@ function context(
     incoming = 0,
     unknown = false,
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies: [enemy(incoming, unknown)],
         traps: [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions,
@@ -135,7 +108,7 @@ function recoveryCase(
     const bindings = [binding("selected", selected)];
     if (destination > 0) bindings.push(binding("splash", destination));
     return context(
-        [character("hero", bindings)],
+        [makePublicCharacter("hero", { bindings: bindings })],
         [escapeView(escapeEffects(selected - remaining, spread))],
         incoming,
     );
@@ -176,7 +149,7 @@ describe("Smart 4 recovery-debt formula", () => {
         );
         scores.forEach((score, index) => expect(score).toBeCloseTo(expected[index], 2));
         expect(weightedEscapeScore(context(
-            [character("hero", [binding("selected", 30)])],
+            [makePublicCharacter("hero", { bindings: [binding("selected", 30)] })],
             [escapeView(escapeEffects(18, 5))],
             0,
             true,
@@ -208,7 +181,7 @@ describe("Smart 4 recovery-debt formula", () => {
             }],
         };
         const fixture = context(
-            [character("hero", [binding("selected", 5)])],
+            [makePublicCharacter("hero", { bindings: [binding("selected", 5)] })],
             [actionView("hero", {
                 moves: [strike],
                 escapes: [{
@@ -227,7 +200,7 @@ describe("Smart 4 recovery-debt formula", () => {
 
     it("scores the complete preview rather than only selected-binding removal", () => {
         const fixture = context(
-            [character("hero", [binding("selected", 80)])],
+            [makePublicCharacter("hero", { bindings: [binding("selected", 80)] })],
             [actionView("hero", {
                 escapes: [
                     {
@@ -250,7 +223,7 @@ describe("Smart 4 recovery-debt formula", () => {
 
     it("applies numeric preview effects in order with per-effect bounds", () => {
         const fixture = context(
-            [character("hero", [binding("selected", 10)])],
+            [makePublicCharacter("hero", { bindings: [binding("selected", 10)] })],
             [escapeView([
                 { type: "binding", target: "hero", binding: "selected", amount: -20 },
                 { type: "binding", target: "hero", binding: "selected", amount: 5 },
@@ -282,8 +255,8 @@ describe("Smart 4 recovery-debt formula", () => {
 
 describe("Smart 4 assist decisions", () => {
     it("chooses an assist when its preview removes more severe recovery debt", () => {
-        const self = character("helper", [binding("selected", 30)]);
-        const ally = character("ally", [binding("selected", 80)]);
+        const self = makePublicCharacter("helper", { bindings: [binding("selected", 30)] });
+        const ally = makePublicCharacter("ally", { bindings: [binding("selected", 80)] });
         const fixture = context([self, ally], [actionView("helper", {
             escapes: [
                 {
@@ -315,8 +288,8 @@ describe("Smart 4 assist decisions", () => {
     it("prefers self-escape when the assist preview spreads too much onto the helper", () => {
         const fixture = context(
             [
-                character("helper", [binding("selected", 30)]),
-                character("ally", [binding("selected", 80)]),
+                makePublicCharacter("helper", { bindings: [binding("selected", 30)] }),
+                makePublicCharacter("ally", { bindings: [binding("selected", 80)] }),
             ],
             [actionView("helper", {
                 escapes: [

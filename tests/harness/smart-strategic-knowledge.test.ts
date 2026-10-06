@@ -37,43 +37,16 @@ import {
     tempoKnowledgeScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(id: string, value: number, level: Binding["level"] = "none"): Binding {
-    return { id, value, level, data: {}, status: [], tickEffects: [] };
-}
-
-function character(id: string, values: Partial<Character> = {}): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-        ...values,
-    };
+    return makePublicBinding(id, { value, level });
 }
 
 function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
     const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
-    return {
-        id,
-        defId,
-        rank: "enemy",
-        maxHp: 200,
-        currHp: 200,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-        ...values,
-    };
+    return makePublicEnemy(id, { defId, maxHp: 200, currHp: 200, ...values });
 }
 
 interface MoveOptions {
@@ -150,13 +123,10 @@ function release(enemyIds: string[], modifiers: ModifierSet): ActionInfo {
 }
 
 function action(actor: string, moves: ActionInfo[]): ActionView {
-    return {
-        id: actor,
-        available: true,
+    return makePublicActionView(actor, {
         moves,
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    };
+    });
 }
 
 function context(
@@ -164,14 +134,14 @@ function context(
     enemies: Enemy[],
     actions: ActionView[],
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     const library = createEmptyContentLibrary();
     addMoveReferences(library, actions);
     return {
@@ -253,9 +223,9 @@ function highPartyBindings(): Binding[] {
 
 describe("Smart tempo and pressure knowledge", () => {
     it("raises current party pressure with nonlinear recovery debt", () => {
-        const low = context([character("ko")], [], [action("ko", [])]);
+        const low = context([makePublicCharacter("ko")], [], [action("ko", [])]);
         const high = context(
-            [character("ko", { bindings: highPartyBindings() })],
+            [makePublicCharacter("ko", { bindings: highPartyBindings() })],
             [],
             [action("ko", [])],
         );
@@ -264,9 +234,9 @@ describe("Smart tempo and pressure knowledge", () => {
     });
 
     it("raises enemy pressure for additional enemies and committed threats", () => {
-        const quiet = context([character("ko")], [enemy("one")], [action("ko", [])]);
+        const quiet = context([makePublicCharacter("ko")], [enemy("one")], [action("ko", [])]);
         const dangerous = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [enemy("one"), dangerousEnemy("two"), dangerousEnemy("three")],
             [action("ko", [])],
         );
@@ -276,9 +246,9 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("rates Queen alone below Queen plus a dangerous wave", () => {
         const queen = enemy("queen1", { rank: "boss", maxHp: 750, currHp: 750 });
-        const alone = context([character("ko")], [queen], [action("ko", [])]);
+        const alone = context([makePublicCharacter("ko")], [queen], [action("ko", [])]);
         const wave = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [queen, dangerousEnemy("skunk1"), dangerousEnemy("skunkette1")],
             [action("ko", [])],
         );
@@ -287,7 +257,7 @@ describe("Smart tempo and pressure knowledge", () => {
     });
 
     it("adds breathing-room value to meaningful recovery on a quiet board", () => {
-        const ko = character("ko", { bindings: highPartyBindings() });
+        const ko = makePublicCharacter("ko", { bindings: highPartyBindings() });
         const view = action("ko", [move("advance", ["queen1"], { damage: 10 })]);
         view.escapes.push({
             available: true,
@@ -311,12 +281,12 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("increases value for expected removal of high enemy pressure", () => {
         const low = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [enemy("target", { currHp: 30 })],
             [action("ko", [move("finish", ["target"], { damage: 30 })])],
         );
         const high = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [dangerousEnemy("target", "ko", 80), ...[1, 2, 3].map((n) => dangerousEnemy(`add-${n}`))],
             [action("ko", [move("finish", ["target"], { damage: 200 })])],
         );
@@ -325,7 +295,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("reserves arbitrary nonlethal Queen damage while adds remain", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [
                 enemy("queen1", { rank: "boss", maxHp: 750, currHp: 650 }),
                 ...[1, 2, 3, 4].map((n) => dangerousEnemy(`add-${n}`)),
@@ -337,7 +307,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("allows normal offense when both party and enemy pressure are low", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [enemy("queen1", { rank: "boss", maxHp: 750, currHp: 700 })],
             [action("ko", [move("advance", ["queen1"], { damage: 30 })])],
         );
@@ -369,7 +339,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("does not block expected-lethal Queen damage with phase logic", () => {
         const fixture = context(
-            [character("ko", { bindings: highPartyBindings() })],
+            [makePublicCharacter("ko", { bindings: highPartyBindings() })],
             [enemy("queen1", { rank: "boss", maxHp: 750, currHp: 50 })],
             [action("ko", [move("queen-kill", ["queen1"], { damage: 50 })])],
         );
@@ -380,7 +350,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("does not penalize Queen damage that crosses no threshold", () => {
         const fixture = context(
-            [character("ko", { bindings: highPartyBindings() })],
+            [makePublicCharacter("ko", { bindings: highPartyBindings() })],
             [enemy("queen1", { rank: "boss", maxHp: 750, currHp: 650 })],
             [action("ko", [move("queen-chip", ["queen1"], { damage: 20 })])],
         );
@@ -391,7 +361,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("strongly reserves Queen damage while adds and an unreached threshold remain", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [
                 enemy("queen1", { rank: "boss", maxHp: 750, currHp: 194 }),
                 enemy("skunk1"),
@@ -430,7 +400,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("does not apply the add-clear reserve when the Queen is alone", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [enemy("queen1", { rank: "boss", maxHp: 750, currHp: 194 })],
             [action("ko", [move("queen-chip", ["queen1"], { damage: 40 })])],
         );
@@ -441,7 +411,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("removes the add-clear reserve after the final reinforcement threshold", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [
                 enemy("queen1", { rank: "boss", maxHp: 750, currHp: 145 }),
                 enemy("skunk1"),
@@ -455,7 +425,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("lets expected lethal Queen damage bypass the add-clear reserve", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [
                 enemy("queen1", { rank: "boss", maxHp: 750, currHp: 194 }),
                 enemy("skunk1"),
@@ -472,7 +442,7 @@ describe("Smart tempo and pressure knowledge", () => {
     for (const pendingMove of ["callReinforcements", "latexRainmaker"]) {
         it(`treats pending ${pendingMove} as unresolved phase pressure before the spawn exists`, () => {
             const fixture = context(
-                [character("ko")],
+                [makePublicCharacter("ko")],
                 [enemy("queen1", {
                     rank: "boss",
                     maxHp: 750,
@@ -513,7 +483,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
     it("does not reserve Queen chip that crosses no new threshold solely for a pending phase", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [enemy("queen1", {
                 rank: "boss",
                 maxHp: 750,
@@ -531,7 +501,7 @@ describe("Smart tempo and pressure knowledge", () => {
     });
     it("treats multiple Queen thresholds crossed by one action as unresolved phase pressure", () => {
         const fixture = context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             [enemy("queen1", {
                 rank: "boss",
                 maxHp: 750,
@@ -556,7 +526,7 @@ describe("Smart tempo and pressure knowledge", () => {
     });
     it("weights a possible second threshold from a multihit crit tail", () => {
         const fixture = context(
-            [character("matsuko")],
+            [makePublicCharacter("matsuko")],
             [enemy("queen1", {
                 rank: "boss",
                 maxHp: 750,
@@ -598,7 +568,7 @@ describe("Smart tempo and pressure knowledge", () => {
     for (const pendingMove of ["callReinforcements", "latexRainmaker"]) {
         it(`weights ${pendingMove} reserve by a below-EV threshold tail`, () => {
             const fixture = context(
-                [character("ko")],
+                [makePublicCharacter("ko")],
                 [enemy("queen1", {
                     rank: "boss",
                     maxHp: 750,
@@ -628,7 +598,7 @@ describe("Smart tempo and pressure knowledge", () => {
     }
     it("uses first-source reflected damage for pending Queen phase preservation", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [enemy("queen1", {
                 rank: "boss",
                 maxHp: 750,
@@ -654,7 +624,7 @@ describe("Smart tempo and pressure knowledge", () => {
 
 function queenThresholdContext(bindings: Binding[], adds: Enemy[]): PolicyContext {
     return context(
-        [character("ko", { bindings })],
+        [makePublicCharacter("ko", { bindings })],
         [enemy("queen1", { rank: "boss", maxHp: 750, currHp: 610 }), ...adds],
         [action("ko", [move("phase-push", ["queen1"], { damage: 20 })])],
     );
@@ -718,7 +688,7 @@ describe("Smart Starlight control knowledge", () => {
     it("can beat ordinary damage under high enemy pressure", () => {
         const target = dangerousEnemy("target", "ko", 80);
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [target],
             [action("ko", [
                 move("telekinesis", ["target"], { damage: 30 }),
@@ -731,7 +701,7 @@ describe("Smart Starlight control knowledge", () => {
 
     it("does not force Starlight over immediate offense on a trivial board", () => {
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [enemy("target")],
             [action("ko", [
                 move("telekinesis", ["target"], { damage: 30 }),
@@ -781,7 +751,7 @@ function releaseContext(
     modifiers: ModifierSet = { hit: -2, defense: -2 },
 ): PolicyContext {
     return context(
-        [character("hinari", { data: { subspace: 75, subspaceMax: 100 } })],
+        [makePublicCharacter("hinari", { data: { subspace: 75, subspaceMax: 100 } })],
         enemies,
         [action("hinari", [release(enemies.map(({ id }) => id), modifiers)])],
     );
@@ -789,7 +759,7 @@ function releaseContext(
 
 function starlightContext(enemies: Enemy[], modifiers?: ModifierSet): PolicyContext {
     return context(
-        [character("ko")],
+        [makePublicCharacter("ko")],
         enemies,
         [action("ko", [starlight("starlightBindings", [enemies[0].id], modifiers)])],
     );
@@ -797,7 +767,7 @@ function starlightContext(enemies: Enemy[], modifiers?: ModifierSet): PolicyCont
 
 function fairyStarlightContext(enemies: Enemy[]): PolicyContext {
     return context(
-        [character("ko", { buffs: [{ id: "empowerment" }] })],
+        [makePublicCharacter("ko", { buffs: [{ id: "empowerment" }] })],
         enemies,
         [action("ko", [starlight("fairyStarlightBindings", enemies.map(({ id }) => id))])],
     );
@@ -848,7 +818,7 @@ describe("Smart Reflect reactive knowledge", () => {
 
     it("does not credit binding pressure aimed at another character", () => {
         const fixture = context(
-            [character("ko"), character("matsuko")],
+            [makePublicCharacter("ko"), makePublicCharacter("matsuko")],
             [dangerousEnemy("source", "matsuko", 60)],
             [action("ko", [move("reflect", [])])],
         );
@@ -903,7 +873,7 @@ function reflectContext(enemies: Enemy[], currentBinding: number, includeAttack 
         move("fairyReflect", []),
     ];
     return context(
-        [character("ko", { bindings, buffs: [{ id: "empowerment" }] })],
+        [makePublicCharacter("ko", { bindings, buffs: [{ id: "empowerment" }] })],
         enemies,
         [action("ko", moves)],
     );
@@ -912,7 +882,7 @@ function reflectContext(enemies: Enemy[], currentBinding: number, includeAttack 
 describe("Smart strategic knowledge integration", () => {
     it("keeps tempo, control, and reactive diagnostics distinct", () => {
         const fixture = context(
-            [character("ko", { bindings: highPartyBindings() })],
+            [makePublicCharacter("ko", { bindings: highPartyBindings() })],
             [dangerousEnemy("target", "ko", 40)],
             [action("ko", [
                 starlight("starlightBindings", ["target"]),
@@ -973,7 +943,7 @@ describe("Smart strategic knowledge integration", () => {
         const source = dangerousEnemy("source", "ko", 40);
         source.currHp = 100;
         const fixture = context(
-            [character("ko")],
+            [makePublicCharacter("ko")],
             [source],
             [action("ko", [
                 move("nonlethal", ["source"], { damage: 99 }),

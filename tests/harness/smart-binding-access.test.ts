@@ -20,6 +20,7 @@ import {
     type SmartCandidate,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const restrictionId = "test-limb-restriction" as StatusId;
@@ -29,23 +30,7 @@ const thresholds = {
 } as const;
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: value >= 30 ? "heavy" : "moderate", data: {}, status: [], tickEffects: [] };
-}
-
-function character(bindings: Binding[]): Character {
-    return {
-        id: "test-character",
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    return makePublicBinding(id, { value, level: value >= 30 ? "heavy" : "moderate" });
 }
 
 function actionMove(id: string, type: MoveType): ActionInfo {
@@ -119,21 +104,18 @@ function context(
     content = restrictionLibrary(moveTypes),
     extraBindings: Binding[] = [],
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
-        characters: [character([binding("test-restraint", value), ...extraBindings])],
+        characters: [makePublicCharacter("test-character", { bindings: [binding("test-restraint", value), ...extraBindings] })],
         enemies: [],
         traps: [],
         encounter: null,
-    };
-    const actions: ActionView[] = [{
-        id: "test-character",
-        available: true,
+    });
+    const actions: ActionView[] = [makePublicActionView("test-character", {
         moves: Object.entries(moveTypes).map(([id, type]) => actionMove(id, type)),
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    }];
+    })];
     return {
         state,
         actions,

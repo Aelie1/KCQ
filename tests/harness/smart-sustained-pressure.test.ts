@@ -21,32 +21,24 @@ import {
     sustainedPressureProgressScorer,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 const LATEX_TRACKS = ["latexHead", "latexArms", "latexTorso", "latexLegs"];
 
 function binding(id: string, value: number): Binding {
-    return { id, value, level: "none", data: {}, status: [], tickEffects: [] };
+    return makePublicBinding(id, { value });
 }
 
-function character(
+function pressureCharacter(
     id: string,
     bindingValue = 0,
     defense = 0,
 ): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
+    return makePublicCharacter(id, {
         bindings: LATEX_TRACKS.map((track) => binding(track, bindingValue)),
-        buffs: [],
-        cooldowns: {},
         modifiers: defense === 0 ? {} : { defense },
-        blockedMoveTypes: [],
-        data: {},
-    };
+    });
 }
 
 function enemy(
@@ -54,21 +46,16 @@ function enemy(
     currHp = 100,
     committedEffects: Effect[] = [],
 ): Enemy {
-    return {
-        id,
-        defId: id,
+    return makePublicEnemy(id, {
         rank: "minion",
         maxHp: 200,
         currHp,
-        currDef: 0,
         intentions: committedEffects.length === 0 ? [] : [{
             move: "synthetic-intention",
             targets: [],
             effects: committedEffects,
         }],
-        buffs: [],
-        cooldowns: {},
-    };
+    });
 }
 
 function attack(damageByEnemy: Readonly<Record<string, number>>): ActionInfo {
@@ -97,21 +84,21 @@ function context(
     enemies: Enemy[] = [enemy("rainmaker")],
     damageByEnemy: Readonly<Record<string, number>> = { rainmaker: 20 },
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],
         encounter: null,
-    };
-    const actions: ActionView[] = [{
-        id: characters[0]?.id ?? "hero",
-        available: true,
+    });
+    const actions: ActionView[] = [makePublicActionView(
+        characters[0]?.id ?? "hero",
+        {
         moves: [attack(damageByEnemy)],
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    }];
+        },
+    )];
     return {
         state,
         actions,
@@ -133,8 +120,8 @@ function moveCandidates(fixture: PolicyContext) {
 describe("Smart sustained enemy pressure", () => {
     it("forecasts positive Rainmaker pressure on a normal party board", () => {
         const pressure = assessSustainedEnemyPressure(context([
-            character("hero"),
-            character("ally"),
+            pressureCharacter("hero"),
+            pressureCharacter("ally"),
         ]));
 
         expect(pressure).toHaveLength(1);
@@ -148,10 +135,10 @@ describe("Smart sustained enemy pressure", () => {
 
     it("increases contextually when the same Rain lands on severe bindings", () => {
         const normal = assessSustainedEnemyPressure(
-            context([character("hero", 0)]),
+            context([pressureCharacter("hero", 0)]),
         )[0];
         const severe = assessSustainedEnemyPressure(
-            context([character("hero", 70)]),
+            context([pressureCharacter("hero", 70)]),
         )[0];
 
         expect(severe.pressurePerTurn).toBeGreaterThan(normal.pressurePerTurn);
@@ -169,16 +156,16 @@ describe("Smart sustained enemy pressure", () => {
         expect(exposed.hit).toBe(35);
 
         const normalPressure = assessSustainedEnemyPressure(
-            context([character("hero")]),
+            context([pressureCharacter("hero")]),
         )[0].pressurePerTurn;
         const exposedPressure = assessSustainedEnemyPressure(
-            context([character("hero", 0, -2)]),
+            context([pressureCharacter("hero", 0, -2)]),
         )[0].pressurePerTurn;
         expect(exposedPressure).toBeGreaterThan(normalPressure);
     });
 
     it("credits partial damage against Rainmaker", () => {
-        const fixture = context([character("hero")]);
+        const fixture = context([pressureCharacter("hero")]);
         const result = evaluateSustainedPressureProgress(
             fixture,
             moveCandidates(fixture)[0],
@@ -198,7 +185,7 @@ describe("Smart sustained enemy pressure", () => {
 
     it("favors Rainmaker over an otherwise equivalent unmodeled enemy", () => {
         const fixture = context(
-            [character("hero")],
+            [pressureCharacter("hero")],
             [enemy("ordinary"), enemy("rainmaker")],
             { ordinary: 20, rainmaker: 20 },
         );
@@ -219,7 +206,7 @@ describe("Smart sustained enemy pressure", () => {
 
     it("caps lethal progress at one full turn of pressure", () => {
         const fixture = context(
-            [character("hero")],
+            [pressureCharacter("hero")],
             [enemy("rainmaker", 30)],
             { rainmaker: 100 },
         );
@@ -235,7 +222,7 @@ describe("Smart sustained enemy pressure", () => {
 
     it("does not alter incomingThreat's lethal-only behavior", () => {
         const fixture = context(
-            [character("hero", 60)],
+            [pressureCharacter("hero", 60)],
             [enemy("rainmaker", 100, [{
                 type: "binding",
                 target: "hero",
@@ -259,7 +246,7 @@ describe("Smart sustained enemy pressure", () => {
 
     it("awards no bonus to a non-damaging move targeting Rainmaker", () => {
         const fixture = context(
-            [character("hero")],
+            [pressureCharacter("hero")],
             [enemy("rainmaker")],
             { rainmaker: 0 },
         );
@@ -277,7 +264,7 @@ describe("Smart sustained enemy pressure", () => {
     });
 
     it("emits deterministic structured-cloneable scorer diagnostics", () => {
-        const fixture = context([character("hero")]);
+        const fixture = context([pressureCharacter("hero")]);
         const first = evaluateSmartDecision(
             fixture,
             [sustainedPressureProgressScorer],

@@ -15,46 +15,21 @@ import {
     createDetailedCombatCollector,
     type MetricActionObservation,
 } from "../../src/harness/metrics";
+import { makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
-function character(id: string, values: Partial<Character> = {}): Character {
-    return {
-        id,
-        acted: false,
-        standing: true,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-        ...values,
-    };
+function metricCharacter(id: string, values: Partial<Character> = {}): Character {
+    return makePublicCharacter(id, { standing: true, ...values });
 }
 
 function enemy(id: string, buffs: Buff[] = [], currDef = 0): Enemy {
     const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
-    return {
-        id,
-        defId,
-        rank: "enemy",
-        maxHp: 100,
-        currHp: 100,
-        currDef,
-        intentions: [],
-        buffs,
-        cooldowns: {},
-    };
+    return makePublicEnemy(id, { defId, currDef, buffs });
 }
 
 function view(values: Partial<GameState> = {}): GameState {
-    return {
-        turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
-        characters: [character("hero")],
-        enemies: [],
-        traps: [],
+    return makePublicGameState({
+        characters: [metricCharacter("hero")],
         encounter: {
             id: "synthetic",
             enemies: [],
@@ -63,7 +38,7 @@ function view(values: Partial<GameState> = {}): GameState {
         },
         ...values,
         difficulty: values.difficulty ?? STANDARD_DIFFICULTY,
-    };
+    });
 }
 
 function library(): ContentLibrary {
@@ -159,11 +134,11 @@ function stopBlocked(
 ): ReturnType<ReturnType<typeof createDetailedCombatCollector>["getResult"]> {
     const collector = createDetailedCombatCollector();
     const before = view({
-        characters: [character("hero")],
+        characters: [metricCharacter("hero")],
         enemies: [enemyWithIntentions("target1", beforeIntentions, signal === "intentionWeakened" ? "boss" : "enemy")],
     });
     const after = view({
-        characters: [character("hero")],
+        characters: [metricCharacter("hero")],
         enemies: [enemyWithIntentions("target1", afterIntentions, signal === "intentionWeakened" ? "boss" : "enemy")],
     });
     collector.onFightStart?.({ view: before, library: library() });
@@ -342,7 +317,7 @@ describe("detailed combat metric collector", () => {
     it("keeps Stop counterfactual value separate from buff blockage and unattributed events", () => {
         const collector = createDetailedCombatCollector();
         const initial = view({
-            characters: [character("hero")],
+            characters: [metricCharacter("hero")],
             enemies: [enemyWithIntentions("target1", [
                 intention("latexSpray", [
                     { type: "binding", target: "hero", binding: "latexArms", amount: 30 },
@@ -350,7 +325,7 @@ describe("detailed combat metric collector", () => {
             ])],
         });
         const reflected = view({
-            characters: [character("hero", { buffs: [{ id: "reflect", duration: 1 }] })],
+            characters: [metricCharacter("hero", { buffs: [{ id: "reflect", duration: 1 }] })],
             enemies: initial.enemies,
         });
         collector.onFightStart?.({ view: initial, library: library() });
@@ -432,7 +407,7 @@ describe("detailed combat metric collector", () => {
 
     it("counts ordinary, completed bonus, and unused bonus escape sequences", () => {
         const collector = createDetailedCombatCollector();
-        const initial = view({ characters: [character("single"), character("double"), character("unused")] });
+        const initial = view({ characters: [metricCharacter("single"), metricCharacter("double"), metricCharacter("unused")] });
         collector.onFightStart?.({ view: initial, library: library() });
 
         collector.onAction?.(observation(
@@ -444,7 +419,7 @@ describe("detailed combat metric collector", () => {
         ));
 
         const doublePending = view({
-            characters: [character("single"), character("double", { acted: true, bonusEscapes: 1 }), character("unused")],
+            characters: [metricCharacter("single"), metricCharacter("double", { acted: true, bonusEscapes: 1 }), metricCharacter("unused")],
         });
         collector.onAction?.(observation(
             initial,
@@ -454,7 +429,7 @@ describe("detailed combat metric collector", () => {
             2,
         ));
         const doubleFinished = view({
-            characters: [character("single"), character("double", { acted: true }), character("unused")],
+            characters: [metricCharacter("single"), metricCharacter("double", { acted: true }), metricCharacter("unused")],
         });
         collector.onAction?.(observation(
             doublePending,
@@ -465,7 +440,7 @@ describe("detailed combat metric collector", () => {
         ));
 
         const unusedPending = view({
-            characters: [character("single"), character("double"), character("unused", { acted: true, bonusEscapes: 1 })],
+            characters: [metricCharacter("single"), metricCharacter("double"), metricCharacter("unused", { acted: true, bonusEscapes: 1 })],
         });
         collector.onAction?.(observation(
             doubleFinished,
@@ -489,16 +464,16 @@ describe("detailed combat metric collector", () => {
 
     it("tracks only linked skunked transitions and attributes linked-Skunkette rescues", () => {
         const collector = createDetailedCombatCollector();
-        const healthy = view({ characters: [character("ko"), character("ordinary")] });
+        const healthy = view({ characters: [metricCharacter("ko"), metricCharacter("ordinary")] });
         collector.onFightStart?.({ view: healthy, library: library() });
         const skunked = view({
             characters: [
-                character("ko", { buffs: [{ id: "skunked", linkedEntity: "skunketteKo" }] }),
-                character("ordinary", {
-                    bindings: [{
-                        id: "rope", value: 100, level: "max", data: {}, tickEffects: [],
+                metricCharacter("ko", { buffs: [{ id: "skunked", linkedEntity: "skunketteKo" }] }),
+                metricCharacter("ordinary", {
+                    bindings: [makePublicBinding("rope", {
+                        value: 100, level: "max",
                         status: [{ id: "incapacitated", value: 1 }],
-                    }],
+                    })],
                 }),
             ],
             enemies: [enemy("skunketteKo", [{ id: "skunked", linkedEntity: "ko" }])],
@@ -510,7 +485,7 @@ describe("detailed combat metric collector", () => {
             { type: "endTurn" },
         ));
 
-        const rescued = view({ characters: [character("ko"), skunked.characters[1]], enemies: [] });
+        const rescued = view({ characters: [metricCharacter("ko"), skunked.characters[1]], enemies: [] });
         collector.onAction?.(observation(
             skunked,
             rescued,
@@ -559,7 +534,7 @@ describe("detailed combat metric collector", () => {
         const collector = createDetailedCombatCollector();
         const combatLibrary = library();
         const before = view({
-            characters: [character("hero", { modifiers: { hit: -2, hitmouth: -2, willpower: -3 } })],
+            characters: [metricCharacter("hero", { modifiers: { hit: -2, hitmouth: -2, willpower: -3 } })],
             enemies: [enemy("target-a", [], 99), enemy("target-b", [], 99)],
         });
         collector.onFightStart?.({ view: before, library: combatLibrary });
@@ -626,10 +601,10 @@ describe("detailed combat metric collector", () => {
     it("attributes delayed Reflect, Fairy Reflect, and Brace blockage only with one public buff origin", () => {
         const collector = createDetailedCombatCollector();
         const combatLibrary = library();
-        const initial = view({ characters: [character("hero")] });
+        const initial = view({ characters: [metricCharacter("hero")] });
         collector.onFightStart?.({ view: initial, library: combatLibrary });
 
-        const reflected = view({ characters: [character("hero", { buffs: [{ id: "reflect", duration: 1 }] })] });
+        const reflected = view({ characters: [metricCharacter("hero", { buffs: [{ id: "reflect", duration: 1 }] })] });
         collector.onAction?.(observation(
             initial,
             reflected,
@@ -653,7 +628,7 @@ describe("detailed combat metric collector", () => {
             2,
         ));
 
-        const braced = view({ characters: [character("hero", { buffs: [{ id: "brace", duration: 1 }] })] });
+        const braced = view({ characters: [metricCharacter("hero", { buffs: [{ id: "brace", duration: 1 }] })] });
         collector.onAction?.(observation(
             initial,
             braced,
@@ -676,7 +651,7 @@ describe("detailed combat metric collector", () => {
             4,
         ));
 
-        const fairyReflected = view({ characters: [character("hero", { buffs: [{ id: "fairyReflect", duration: 1 }] })] });
+        const fairyReflected = view({ characters: [metricCharacter("hero", { buffs: [{ id: "fairyReflect", duration: 1 }] })] });
         collector.onAction?.(observation(
             initial,
             fairyReflected,
@@ -701,7 +676,7 @@ describe("detailed combat metric collector", () => {
         ));
 
         const ambiguous = view({
-            characters: [character("hero", { buffs: [{ id: "reflect" }, { id: "brace" }] })],
+            characters: [metricCharacter("hero", { buffs: [{ id: "reflect" }, { id: "brace" }] })],
         });
         collector.onAction?.(observation(
             initial,
@@ -754,11 +729,11 @@ describe("detailed combat metric collector", () => {
     it("classifies actual bondage changes from escapes, skills, enemy moves, ticks, traps, and unknown sources", () => {
         const collector = createDetailedCombatCollector();
         const combatLibrary = library();
-        const collar = {
-            id: "latexCollar", value: 20, level: "light" as const, data: {}, status: [],
+        const collar = makePublicBinding("latexCollar", {
+            value: 20, level: "light",
             tickEffects: [{ type: "binding" as const, target: "hero", binding: "latexHead", amount: 1 }],
-        };
-        const initial = view({ characters: [character("hero", { bindings: [collar] })] });
+        });
+        const initial = view({ characters: [metricCharacter("hero", { bindings: [collar] })] });
         collector.onFightStart?.({ view: initial, library: combatLibrary });
 
         collector.onAction?.(observation(

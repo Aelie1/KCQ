@@ -4,7 +4,7 @@ import type { BatchResult, BatchRun } from "../../src/harness/batch/batch";
 import { summarizeBatch, wilsonScoreInterval } from "../../src/harness/batch/summary";
 import type { FightReplay, SingleFightResult, SingleFightTermination } from "../../src/harness/harness";
 import type { DetailedCombatMetrics } from "../../src/harness/metrics";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
+import { makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 
 interface RunFixture {
     runIndex: number;
@@ -20,26 +20,22 @@ interface RunFixture {
 
 const endTurn = (): PlayerAction => ({ type: "endTurn" });
 
-function character(id: string, bindingValues: number[]): Character {
-    return {
-        id, acted: false, standing: true, bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: bindingValues.map((value, index) => ({
-            id: `binding-${index}`, value, level: "light", data: {}, status: [], tickEffects: [],
-        })),
-        buffs: [], cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
-    };
+function summaryCharacter(id: string, bindingValues: number[]): Character {
+    return makePublicCharacter(id, {
+        standing: true,
+        bindings: bindingValues.map((value, index) => makePublicBinding(
+            `binding-${index}`,
+            { value, level: "light" },
+        )),
+    });
 }
 
 function enemy(currHp: number): Enemy {
-    return {
-        id: `enemy-${currHp}`, defId: "enemy", rank: "enemy", maxHp: 100, currHp, currDef: 0,
-        intentions: [], buffs: [], cooldowns: {},
-    };
+    return makePublicEnemy(`enemy-${currHp}`, { defId: "enemy", currHp });
 }
 
 function view(fixture: RunFixture): GameState {
-    return {
+    return makePublicGameState({
         turn: {
             round: fixture.round ?? 1,
             step: 1,
@@ -48,11 +44,9 @@ function view(fixture: RunFixture): GameState {
                 ? fixture.termination
                 : "ongoing",
         },
-        difficulty: STANDARD_DIFFICULTY,
-        characters: [character("ko", [fixture.peakBondage / 2])],
+        characters: [summaryCharacter("ko", [fixture.peakBondage / 2])],
         enemies: fixture.remainingEnemyHp === 0 ? [] : [enemy(fixture.remainingEnemyHp)],
-        traps: [], encounter: null,
-    };
+    });
 }
 
 function run(fixture: RunFixture): BatchRun {

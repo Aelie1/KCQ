@@ -18,40 +18,15 @@ import {
     type SmartCandidate,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
 function binding(value: number): Binding {
-    return { id: "rope", value, level: "heavy", data: {}, status: [], tickEffects: [] };
-}
-
-function character(bindings: Binding[] = []): Character {
-    return {
-        id: "hero",
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
+    return makePublicBinding("rope", { value, level: "heavy" });
 }
 
 function enemy(id: string, currHp = 100): Enemy {
-    return {
-        id,
-        defId: id,
-        rank: "enemy",
-        maxHp: 100,
-        currHp,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-    };
+    return makePublicEnemy(id, { currHp });
 }
 
 function move(id: string, effects: Effect[] = []): ActionInfo {
@@ -64,13 +39,10 @@ function move(id: string, effects: Effect[] = []): ActionInfo {
 }
 
 function view(moves: ActionInfo[]): ActionView {
-    return {
-        id: "hero",
-        available: true,
+    return makePublicActionView("hero", {
         moves,
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    };
+    });
 }
 
 function context(
@@ -78,14 +50,14 @@ function context(
     enemies: Enemy[] = [enemy("enemy-1")],
     bindings: Binding[] = [],
 ): PolicyContext {
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
-        characters: [character(bindings)],
+        characters: [makePublicCharacter("hero", { bindings: bindings })],
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions: [view([

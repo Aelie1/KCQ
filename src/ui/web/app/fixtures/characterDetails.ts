@@ -4,7 +4,6 @@ import type {
     ActionView,
     Binding,
     Buff,
-    Character,
     Effect,
     EntitySide,
     GameState,
@@ -14,6 +13,7 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import { Presentation } from "../../../presentation/presentation";
+import { makeFixtureCharacter } from "./publicFixture";
 
 const presentation = new Presentation(englishStrings);
 
@@ -24,26 +24,6 @@ function binding(
     status: Binding["status"] = [],
 ): Binding {
     return { id, value, level, status, data: {}, tickEffects: [] };
-}
-
-function character(
-    id: string,
-    overrides: Partial<Character> = {},
-): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-        ...overrides,
-    };
 }
 
 function validTarget(
@@ -202,7 +182,7 @@ const state = {
         outcome: "ongoing",
     },
     characters: [
-        character("ko", {
+        makeFixtureCharacter("ko", {
             bindings: [
                 binding("latexHead", 72, "severe", [
                     { id: "gagged", value: 3 },
@@ -226,8 +206,8 @@ const state = {
             },
             blockedMoveTypes: ["mouth"],
         }),
-        character("matsuko"),
-        character("hinari", { standing: true }),
+        makeFixtureCharacter("matsuko"),
+        makeFixtureCharacter("hinari", { standing: true }),
     ],
     enemies: [{
         id: "skunkette1",

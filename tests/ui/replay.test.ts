@@ -2,6 +2,13 @@ import { PassThrough, Readable } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
 import type { ActionView, GameState, PlayerAction } from "../../src/engine/public/types";
 import { runConsoleReplay, type ConsoleReplayInput } from "../../src/ui/console/replay";
+import {
+    makePublicActionView,
+    makePublicBinding,
+    makePublicCharacter,
+    makePublicEnemy,
+    makePublicGameState,
+} from "../helpers/publicTestData";
 
 // Fail if viewing ever acquires a runtime dependency on simulation or the runner.
 vi.mock("../../src/engine/private/engine", () => {
@@ -14,41 +21,24 @@ vi.mock("../../src/harness/harness", () => {
 const clearScreen = "\x1b[2J\x1b[H";
 
 function recordedState(round: number, hp: number, binding: number): GameState {
-    return {
+    return makePublicGameState({
         turn: { round, step: 1, phase: "player", outcome: "ongoing" },
-        characters: [{
-            id: "hero",
-            acted: false,
+        characters: [makePublicCharacter("hero", {
             standing: true,
-            bonusEscapes: 0,
-            bonusBlocked: false,
-            bindings: [{ id: "rope", value: binding, level: "light", data: {}, status: [], tickEffects: [] }],
-            buffs: [],
-            cooldowns: {},
-            data: {},
-            modifiers: {},
-            blockedMoveTypes: [],
-        }],
-        enemies: [{
-            id: "recorded-foe",
-            defId: "recorded-foe",
-            rank: "enemy",
+            bindings: [makePublicBinding("rope", { value: binding, level: "light" })],
+        })],
+        enemies: [makePublicEnemy("recorded-foe", {
             currHp: hp,
             maxHp: 90,
-            currDef: 0,
-            cooldowns: {},
-            buffs: [],
             intentions: [{ move: "recorded-intention", targets: [], effects: [] }],
-        }],
+        })],
         traps: [{ id: "recordedTrap", amount: round }],
         encounter: { id: "recorded-encounter", enemies: ["recorded-foe"], bindings: ["rope"], traps: ["recordedTrap"] },
         difficulty: { id: "standard", playerModifiers: {}, enemyModifiers: {} },
-    };
+    });
 }
 
-const recordedActions: ActionView[] = [{
-    id: "hero", available: true, moves: [], escapes: [], stance: { available: true },
-}];
+const recordedActions: ActionView[] = [makePublicActionView("hero")];
 
 function replayInput(): ConsoleReplayInput {
     return {

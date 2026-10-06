@@ -326,7 +326,7 @@ describe("character details view model", () => {
         );
 
         expect(focused.commands.find(({ id }) => id === "escape")?.tags.map(({ id }) => id))
-            .toEqual(["self"]);
+            .toEqual(["self", "bonus"]);
     });
 
     it("tags Change Stance with the localized destination in both directions", () => {

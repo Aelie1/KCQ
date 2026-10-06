@@ -20,38 +20,12 @@ import {
     generateSmartCandidates,
 } from "../../src/harness/policy/smart";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
-
-function character(id = "hero", bindings: Binding[] = []): Character {
-    return {
-        id,
-        acted: false,
-        standing: false,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings,
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
-}
 
 function enemy(id: string, values: Partial<Enemy> = {}): Enemy {
     const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
-    return {
-        id,
-        defId,
-        rank: "enemy",
-        maxHp: 300,
-        currHp: 300,
-        currDef: 0,
-        intentions: [],
-        buffs: [],
-        cooldowns: {},
-        ...values,
-    };
+    return makePublicEnemy(id, { defId, maxHp: 300, currHp: 300, ...values });
 }
 
 function attack(
@@ -81,19 +55,16 @@ function attack(
 }
 
 function action(actor: string, moves: ActionInfo[]): ActionView {
-    return {
-        id: actor,
-        available: true,
+    return makePublicActionView(actor, {
         moves,
-        escapes: [],
         stance: { available: false, reason: "moveUnavailable" },
-    };
+    });
 }
 
 function fixture(
     enemies: Enemy[],
     moves: ActionInfo[],
-    characters: Character[] = [character()],
+    characters: Character[] = [makePublicCharacter()],
     mutateLibrary?: (library: ContentLibrary) => void,
 ): PolicyContext {
     const actions = [action(characters[0].id, moves)];
@@ -120,14 +91,14 @@ function fixture(
         accuracy: { graze: 45, hit: 50, crit: 5 },
     };
     mutateLibrary?.(library);
-    const state: GameState = {
+    const state: GameState = makePublicGameState({
         turn: { round: 1, step: 1, phase: "player", outcome: "ongoing" },
         difficulty: STANDARD_DIFFICULTY,
         characters,
         enemies,
         traps: [],
         encounter: null,
-    };
+    });
     return {
         state,
         actions,
@@ -160,14 +131,11 @@ function knowledge(context: PolicyContext, moveId: string, targetId: string) {
 }
 
 function latexBinding(value: number, peak: number, id = "latexArms"): Binding {
-    return {
-        id,
+    return makePublicBinding(id, {
         value,
         level: "heavy",
         data: { peak },
-        status: [],
-        tickEffects: [],
-    };
+    });
 }
 
 function escapeCandidate(context: PolicyContext, amount: number) {
@@ -206,7 +174,7 @@ describe("Smart Skunk Regeneration liability", () => {
         const context = fixture(
             [enemy("wolf1")],
             [],
-            [character("hero", [latexBinding(10, 70)])],
+            [makePublicCharacter("hero", { bindings: [latexBinding(10, 70)] })],
         );
         const result = evaluateSkunkRegenerationLiability(
             context,
@@ -224,7 +192,7 @@ describe("Smart Skunk Regeneration liability", () => {
         const context = fixture(
             [enemy("skunk1")],
             [],
-            [character("hero", [latexBinding(10, 70)])],
+            [makePublicCharacter("hero", { bindings: [latexBinding(10, 70)] })],
         );
         const result = evaluateSkunkRegenerationLiability(
             context,
@@ -247,7 +215,7 @@ describe("Smart Skunk Regeneration liability", () => {
         const context = fixture(
             [enemy("skunk1")],
             [],
-            [character("hero", [latexBinding(40, 70)])],
+            [makePublicCharacter("hero", { bindings: [latexBinding(40, 70)] })],
         );
         const result = evaluateSkunkRegenerationLiability(
             context,
@@ -265,7 +233,7 @@ describe("Smart Skunk Regeneration liability", () => {
         const context = fixture(
             [enemy("skunk1")],
             [],
-            [character("hero", [latexBinding(10, 70)])],
+            [makePublicCharacter("hero", { bindings: [latexBinding(10, 70)] })],
         );
         const result = evaluateSkunkRegenerationLiability(
             context,
@@ -283,12 +251,12 @@ describe("Smart Skunk Regeneration liability", () => {
         const one = fixture(
             [enemy("skunk1")],
             [],
-            [character("hero", [latexBinding(40, 70)])],
+            [makePublicCharacter("hero", { bindings: [latexBinding(40, 70)] })],
         );
         const two = fixture(
             [enemy("skunk1"), enemy("skunk2")],
             [],
-            [character("hero", [latexBinding(40, 70)])],
+            [makePublicCharacter("hero", { bindings: [latexBinding(40, 70)] })],
         );
         expect(evaluateSkunkRegenerationLiability(
             two,
@@ -303,7 +271,7 @@ describe("Smart Skunk Regeneration liability", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("wolf1", { currHp: 100 })],
             [attack("strike", ["skunk1", "wolf1"], 25)],
-            [character("hero", [latexBinding(10, 70)])],
+            [makePublicCharacter("hero", { bindings: [latexBinding(10, 70)] })],
         );
         const skunk = evaluateSkunkRegenerationLiability(
             context,
@@ -531,13 +499,11 @@ describe("Smart Fairy Barrier knowledge", () => {
     });
 
     it("lets useful recovery beat an attack whose only result is stripping Barrier", () => {
-        const restraint: Binding = {
-            id: "restraint", value: 60, level: "heavy", data: {}, status: [], tickEffects: [],
-        };
+        const restraint: Binding = makePublicBinding("restraint", { value: 60, level: "heavy" });
         const context = fixture(
             [enemy("skunkette1", { maxHp: 200, currHp: 200, buffs: [barrier] })],
             [attack("strip", ["skunkette1"], 30, 2)],
-            [character("hero", [restraint])],
+            [makePublicCharacter("hero", { bindings: [restraint] })],
         );
         context.actions[0].escapes.push({
             available: true,
@@ -619,7 +585,7 @@ describe("Smart Skunk Explosion discipline", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("cross", ["skunk1"], 50)],
-            [character("hero"), character("ally1"), character("ally2")],
+            [makePublicCharacter("hero"), makePublicCharacter("ally1"), makePublicCharacter("ally2")],
         );
         context.actions.push(
             action("ally1", [attack("follow-a", ["skunk1"], 40)]),
@@ -646,7 +612,7 @@ describe("Smart Skunk Explosion discipline", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("cross", ["skunk1"], 50)],
-            [character("hero"), character("ally")],
+            [makePublicCharacter("hero"), makePublicCharacter("ally")],
         );
         context.actions.push(
             action("ally", [attack("follow", ["skunk1"], 40)]),
@@ -668,7 +634,7 @@ describe("Smart Skunk Explosion discipline", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("cross", ["skunk1"], 50)],
-            [character("hero"), character("spent")],
+            [makePublicCharacter("hero"), makePublicCharacter("spent")],
         );
         const spent = action("spent", [attack("follow", ["skunk1"], 100)]);
         spent.available = false;
@@ -688,7 +654,7 @@ describe("Smart Skunk Explosion discipline", () => {
         const context = fixture(
             [enemy("skunk1", { currHp: 100 }), enemy("other1")],
             [attack("cross", ["skunk1"], 50)],
-            [character("hero"), character("ally")],
+            [makePublicCharacter("hero"), makePublicCharacter("ally")],
         );
         context.actions.push(
             action("ally", [

@@ -13,62 +13,28 @@ import {
     createDetailedCombatCollector,
     type MetricActionObservation,
 } from "../../src/harness/metrics";
-import { STANDARD_DIFFICULTY } from "../helpers/state";
-
-function character(id: string): Character {
-    return {
-        id,
-        acted: false,
-        standing: true,
-        bonusEscapes: 0,
-        bonusBlocked: false,
-        bindings: [],
-        buffs: [],
-        cooldowns: {},
-        modifiers: {},
-        blockedMoveTypes: [],
-        data: {},
-    };
-}
+import { makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 
 function enemy(id: string, exploding = false): Enemy {
     const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
-    return {
-        id,
+    return makePublicEnemy(id, {
         defId,
-        rank: "enemy",
         maxHp: 300,
         currHp: 50,
-        currDef: 0,
         intentions: exploding
-            ? [{
-                move: "latexExplosion",
-                targets: [],
-                effects: [],
-            }]
+            ? [{ move: "latexExplosion", targets: [], effects: [] }]
             : [],
-        buffs: [],
-        cooldowns: {},
-    };
+    });
 }
 
 function state(): GameState {
-    return {
-        turn: {
-            round: 1,
-            step: 1,
-            phase: "player",
-            outcome: "ongoing",
-        },
-        difficulty: STANDARD_DIFFICULTY,
-        characters: [character("ko")],
+    return makePublicGameState({
+        characters: [makePublicCharacter("ko", { standing: true })],
         enemies: [
             enemy("skunk1", true),
             enemy("other"),
         ],
-        traps: [],
-        encounter: null,
-    };
+    });
 }
 
 function damagePreview(target: string): ValidTarget {
