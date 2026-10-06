@@ -66,6 +66,7 @@ export type UiLabel =
     | "characterDetails.tagHits"
     | "characterDetails.tagSelf"
     | "characterDetails.tagFree"
+    | "characterDetails.tagBonusEscape"
     | "characterDetails.tagBonusEligible"
     | "characterDetails.tagBonusStanding"
     | "characterDetails.tagBonusBlocked"

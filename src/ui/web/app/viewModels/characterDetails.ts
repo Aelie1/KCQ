@@ -429,7 +429,7 @@ function createCommands(
     if (escapeTargets.has(character.id)) {
         escapeTags.push(tag("self", presentation.ui("characterDetails.tagSelf"), "success"));
     }
-    if (availableEscape) {
+    if (!character.acted && availableEscape) {
         if (!action.bonus.available) {
             escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusBlocked"), "danger"));
         } else if (!character.standing) {

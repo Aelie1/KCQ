@@ -100,6 +100,7 @@ function escape(target: string, bindingId: string, amount?: number): EscapeInfo 
         available: true,
         target,
         binding: bindingId,
+        bonus: false,
         effects: amount === undefined ? [] : [bindingEffect(target, bindingId, amount)],
     };
 }

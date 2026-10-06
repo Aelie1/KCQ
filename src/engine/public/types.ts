@@ -402,6 +402,7 @@ export interface EscapeInfo {
     reason?: FailureReason;
     target: EntityId;
     binding: BindingId;
+    bonus?: boolean;
     effects: Effect[];
 }
 

@@ -104,7 +104,9 @@ export function createEscapeViewModel(
     if (selected && hasSpreadSideEffect(selected.escape)) {
         tags.push({ id: "spread", label: presentation.ui("escape.tagSpread"), tone: "danger" });
     }
-
+    if (selected?.escape.bonus) {
+        tags.push({ id: "bonus", label: presentation.ui("characterDetails.tagBonusEscape"), tone: "warning" });
+    }
     return {
         heading: presentation.ui("targeting.chooseOne"),
         command: { name: presentation.ui("characterDetails.escape"), tags },

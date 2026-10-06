@@ -1853,7 +1853,7 @@ button {
 
 .kcq-selected-command h2 {
     display: -webkit-box;
-    flex: 1 1 180px;
+    flex: 1 1 auto;
     min-width: 0;
     margin: 0;
     overflow: hidden;
@@ -1870,8 +1870,9 @@ button {
 
 .kcq-selected-command__tags {
     display: flex;
-    flex: 0 1 auto;
+    flex: 0 1 180px;
     flex-wrap: wrap;
+    justify-content: flex-end;
     gap: 4px;
     min-width: 0;
 }

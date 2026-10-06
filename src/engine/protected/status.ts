@@ -2,7 +2,7 @@ import { ActionType, FailureReason, FlagId, ModifierId, ModifierSet, MoveType } 
 import { StatusDef, StatusLevelDef } from "./definitions";
 import { isCharacter } from "./helpers";
 import { getBindingLevel } from "./mechanics";
-import { iBuff, iEntity, iGameState, iStatus } from "./types";
+import { iBinding, iBuff, iEntity, iGameState, iStatus } from "./types";
 
 export class GameStatus {
     private statuses: StatusLevelDef[];
@@ -271,4 +271,12 @@ export function getStatus(statuses: StatusMap, entity: iEntity): GameStatus {
 
 export function s(definition: StatusDef, value: number): iStatus {
     return { definition, value };
+}
+
+export function bindingBlocksBonus(binding: iBinding): boolean {
+    const bindingLevel = getBindingLevel(binding);
+
+    return (binding.definition.status?.[bindingLevel] ?? []).some(
+        status => status.definition.levels[status.value]?.flags?.includes("blocksBonusEscape")
+    );
 }

@@ -1,6 +1,7 @@
 import { MoveDef } from "../protected/definitions";
+import { findBinding } from "../protected/helpers";
 import { getMoves } from "../protected/mechanics";
-import { GameStatus, getStatus, StatusMap } from "../protected/status";
+import { bindingBlocksBonus, GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iCharacter, iGameState } from "../protected/types";
 import { ActionInfo, ActionView, EscapeInfo, FailureReason, PreviewProfile } from "../public/types";
 import { isValidTarget, resolveEscape, resolveMove } from "./combat";
@@ -28,6 +29,7 @@ export function getActionView(state: iGameState, statuses: StatusMap): ActionVie
         const capability = status.canAct();
         const moves = getMovesList(state, character, statuses);
         const escapes = getEscapes(state, character, statuses);
+        const stanceReason = status.canAct("stance");
         result.push({
             id: character.id,
             available: capability ? false : true,
@@ -37,7 +39,7 @@ export function getActionView(state: iGameState, statuses: StatusMap): ActionVie
             attack: status.canAttack() ? { available: true } : { available: false, reason: "attackUnavailable" },
             escape: status.canEscape() ? { available: true } : { available: false, reason: "escapeUnavailable" },
             bonus: status.canBonusEscape() ? { available: true } : { available: false, reason: "bonusUnavailable" },
-            stance: status.canMove() ? { available: true } : { available: false, reason: "actorImmobilized" },
+            stance: !stanceReason ? { available: true } : { available: false, reason: stanceReason },
         });
     }
     return result;
@@ -189,12 +191,36 @@ function getEscapes(state: iGameState, actor: iCharacter, statuses: StatusMap): 
         const targetStatus = getStatus(statuses, target);
         const available = capability ?? ((actor !== target && !actorStatus.canAssist()) ? "assistUnavailable" : undefined);
         for (const binding of target.bindings) {
+            const effects = resolveEscape(actor, actorStatus, target, targetStatus, binding);
+            let bonus = !actor.acted && actorStatus.canBonusEscape();
+
+            for (const effect of effects) {
+                if (effect.type !== "binding" || effect.target !== actor || !effect.amount) {
+                    continue;
+                }
+
+                const existingBinding = findBinding(actor, effect.binding.id);
+
+                const projected = existingBinding
+                    ? { ...existingBinding, value: existingBinding.value + effect.amount }
+                    : {
+                        definition: effect.binding,
+                        id: effect.binding.id,
+                        value: effect.amount,
+                        data: { ...effect.binding.data },
+                    };
+
+                if (bindingBlocksBonus(projected)) {
+                    bonus = false;
+                }
+            }
             result.push({
                 available: available ? false : true,
                 reason: available,
                 target: target.id,
                 binding: binding.id,
-                effects: serializeEffects(resolveEscape(actor, actorStatus, target, targetStatus, binding))
+                bonus: bonus,
+                effects: serializeEffects(effects)
             });
         }
     }

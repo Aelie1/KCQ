@@ -64,6 +64,7 @@ export const systemStrings: StringTable = {
     "ui.characterDetails.tagHits": "{count} Hits",
     "ui.characterDetails.tagSelf": "Self",
     "ui.characterDetails.tagFree": "Free",
+    "ui.characterDetails.tagBonusEscape": "Bonus Escape",
     "ui.characterDetails.tagBonusEligible": "Bonus: Eligible",
     "ui.characterDetails.tagBonusStanding": "Bonus: Standing",
     "ui.characterDetails.tagBonusBlocked": "Bonus: Blocked",
