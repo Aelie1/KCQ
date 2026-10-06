@@ -743,14 +743,9 @@ button {
 }
 
 .kcq-binding-meter__value {
-    z-index: 1;
+    z-index: 2;
     border-radius: inherit;
     background: var(--kcq-binding-meter-current);
-}
-
-.kcq-binding-meter--increase .kcq-binding-meter__value,
-.kcq-binding-meter--decrease .kcq-binding-meter__value {
-    border-radius: var(--kcq-binding-meter-radius) 0 0 var(--kcq-binding-meter-radius);
 }
 
 .kcq-binding-meter__change {

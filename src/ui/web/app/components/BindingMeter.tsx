@@ -30,6 +30,7 @@ export function BindingMeter(props: BindingMeterProps): JSX.Element {
     const changeStart = (): number => Math.min(current(), result());
     const changeSize = (): number => Math.abs(result() - current());
     const peak = (): number => clamp(props.peak ?? 0, 0, maximum());
+    const changeFromZero = (): boolean => changeStart() === 0;
 
     return (
         <span
@@ -58,8 +59,12 @@ export function BindingMeter(props: BindingMeterProps): JSX.Element {
                         "kcq-binding-meter__change--from-zero": changeStart() === 0,
                     }}
                     style={{
-                        left: `${percent(changeStart())}%`,
-                        width: `${percent(changeSize())}%`,
+                        left: changeFromZero()
+                            ? "0%"
+                            : `calc(${percent(changeStart())}% - var(--kcq-binding-meter-radius))`,
+                        width: changeFromZero()
+                            ? `${percent(changeSize())}%`
+                            : `calc(${percent(changeSize())}% + var(--kcq-binding-meter-radius))`,
                     }}
                     aria-hidden="true"
                 />
