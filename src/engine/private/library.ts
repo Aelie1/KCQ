@@ -109,6 +109,7 @@ function libraryTrap(trap: TrapDef): TrapReference {
 function libraryEncounter(encounter: EncounterDef): EncounterReference {
     return {
         id: encounter.id,
+        stars: encounter.stars,
         enemies: encounter.enemies.map(x => ({ ...x })),
         bindings: encounter.bindings.map(x => x.id),
         traps: encounter.traps.map(x => x.definition.id),

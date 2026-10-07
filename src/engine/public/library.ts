@@ -78,6 +78,7 @@ export interface ModifierReference {
 
 export interface EncounterReference {
     id: string;
+    stars: number;
     enemies: EnemySetup[];
     bindings: BindingId[];
     traps: TrapId[];

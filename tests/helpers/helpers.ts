@@ -91,6 +91,7 @@ export function makeEncounterDef(
     const { enemies = [], ...rest } = overrides;
     return {
         id,
+        stars: 1,
         enemies: enemies.map(enemy => typeof enemy === "string" ? { defId: enemy } : { ...enemy }),
         bindings: [],
         traps: [],

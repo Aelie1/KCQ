@@ -74,6 +74,7 @@ export interface StatusLevelDef {
 
 export interface EncounterDef {
     id: EncounterId;
+    stars: number;
     enemies: EnemySetup[];
     bindings: BindingDef[];
     traps: TrapSetup[];

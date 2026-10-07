@@ -73,6 +73,7 @@ const setupOutside: TowerSetup = {
 
 export const plains_1: EncounterDef = {
     id: "plains_1",
+    stars: 1,
     enemies: [skunketteSetup, skunketteSetup, skunketteSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: []
@@ -80,6 +81,7 @@ export const plains_1: EncounterDef = {
 
 export const plains_2: EncounterDef = {
     id: "plains_2",
+    stars: 2,
     enemies: [skunketteSetup, skunketteSetup, skunkSetup, skunkSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
@@ -96,6 +98,7 @@ export const plains_2: EncounterDef = {
 
 export const plains_3: EncounterDef = {
     id: "plains_3",
+    stars: 3,
     enemies: [queenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
@@ -105,6 +108,7 @@ export const plains_3: EncounterDef = {
 
 export const forest_1: EncounterDef = {
     id: "forest_1",
+    stars: 2,
     enemies: [skunketteSetup, skunketteSetup, skunketteSetup, fairySetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
@@ -143,6 +147,7 @@ export const forest_1: EncounterDef = {
 
 export const forest_2: EncounterDef = {
     id: "forest_2",
+    stars: 3,
     enemies: [skunketteSetup, skunketteSetup, skunkSetup, skunkSetup, fairySetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
@@ -159,6 +164,7 @@ export const forest_2: EncounterDef = {
 
 export const forest_3: EncounterDef = {
     id: "forest_3",
+    stars: 4,
     enemies: [skunketteSetup, skunketteSetup, queenSetup, fairySetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
@@ -197,6 +203,7 @@ export const forest_3: EncounterDef = {
 
 export const tower_1: EncounterDef = {
     id: "tower_1",
+    stars: 5,
     enemies: [empressSetup, skunketteQueenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
@@ -212,6 +219,7 @@ export const tower_1: EncounterDef = {
 
 export const tower_2: EncounterDef = {
     id: "tower_2",
+    stars: 4,
     enemies: [empressSetup, skunketteQueenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
@@ -227,6 +235,7 @@ export const tower_2: EncounterDef = {
 
 export const tower_3: EncounterDef = {
     id: "tower_3",
+    stars: 3,
     enemies: [empressSetup, skunketteQueenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
@@ -242,6 +251,7 @@ export const tower_3: EncounterDef = {
 
 export const outside: EncounterDef = {
     id: "outside",
+    stars: 5,
     enemies: [goddessSetup, skunkEmpressSetup, skunketteQueenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
