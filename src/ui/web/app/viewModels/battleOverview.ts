@@ -11,7 +11,9 @@ import { createCombatHeaderViewModel } from "./combatHeader";
 import { createEnemyCardViewModel } from "./enemyCard";
 import { createPartyCardViewModel } from "./partyCard";
 
-export const BATTLE_OVERVIEW_TRAP_MAX = 100;
+import { TRAP_METER_MAX } from "./meterValues";
+
+export const BATTLE_OVERVIEW_TRAP_MAX = TRAP_METER_MAX;
 
 export interface BattleOverviewTrapViewModel {
     amount: number;

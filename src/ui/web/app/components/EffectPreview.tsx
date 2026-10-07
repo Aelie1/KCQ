@@ -1,5 +1,6 @@
 import { For, Match, Show, Switch, type JSX } from "solid-js";
 import type { EffectPreviewViewModel } from "../viewModels/effectPreviews";
+import { ProjectedMeter } from "./ProjectedMeter";
 import { BindingMeter } from "./BindingMeter";
 import { DamageEffect } from "./DamageEffect";
 import { PipMeter } from "./PipMeter";
@@ -103,6 +104,35 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                         </For>
                                     </div>
                                 </Show>
+                            </div>
+                        </div>
+                    );
+                }}
+            </Match>
+            <Match when={(props.effect.kind === "resource" || props.effect.kind === "trap") && props.effect}>
+                {(effect) => {
+                    const numeric = effect() as Extract<EffectPreviewViewModel, { kind: "resource" | "trap" }>;
+                    const name = numeric.kind === "resource" ? numeric.resourceName : numeric.trapName;
+                    return (
+                        <div class={`kcq-preview-effect kcq-preview-effect--${numeric.tone} kcq-meter-effect`}>
+                            <span class="kcq-preview-effect__accent" aria-hidden="true" />
+                            <span class="kcq-preview-effect__tag">{numeric.label}</span>
+                            <div class="kcq-meter-effect__content">
+                                <div class="kcq-meter-effect__header">
+                                    <strong class="kcq-preview-effect__payload">{name}</strong>
+                                    <EffectRecipient recipient={numeric.kind === "resource" ? numeric.recipient : undefined} />
+                                    <strong class="kcq-meter-effect__transition">
+                                        {numeric.currentValue} → {numeric.projectedValue}
+                                    </strong>
+                                </div>
+                                <ProjectedMeter
+                                    value={numeric.currentValue}
+                                    change={numeric.change}
+                                    max={numeric.max}
+                                    tone={numeric.tone}
+                                    size="compact"
+                                    ariaLabel={name}
+                                />
                             </div>
                         </div>
                     );

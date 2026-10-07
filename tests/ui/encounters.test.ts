@@ -4,6 +4,8 @@ import type { Effect } from "../../src/engine/public/types";
 import { englishStrings } from "../../localization/en";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel, encounterStars } from "../../src/ui/web/app/viewModels/encounters";
+import { getThresholds } from "../../src/engine/public/mechanics";
+import { groupEffectPreviews } from "../../src/ui/web/app/viewModels/effectGroups";
 import { createEffectPreviewViewModels } from "../../src/ui/web/app/viewModels/effectPreviews";
 import { createTargetingViewModel } from "../../src/ui/web/app/viewModels/targeting";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
@@ -67,7 +69,10 @@ describe("encounter catalog view models", () => {
     it("formats only curated setup effects through the shared preview path", () => {
         for (const encounter of Object.values(library.encounters)) {
             const detail = createEncounterDetailsViewModel(library, encounter.id, presentation);
-            expect(detail.effects).toEqual(createEffectPreviewViewModels(encounter.setup, { presentation }, "encounter-setup"));
+            const grouped = groupEffectPreviews(encounter.setup, { presentation, encounterSetup: true, thresholds: getThresholds() }, "encounter-setup");
+            expect(detail.effects).toEqual(grouped.ungrouped);
+            expect(detail.effectGroups).toEqual(grouped.groups);
+            expect(detail.effects.length + detail.effectGroups.reduce((count, group) => count + group.effects.length, 0)).toBe(encounter.setup.length);
             expect(JSON.stringify(detail)).not.toMatch(/\{index\}|\[entity\./);
         }
         const altered = { ...library, encounters: { ...library.encounters, plains_1: { ...library.encounters.plains_1, traps: ["trapPuddle"], setup: [] } } };

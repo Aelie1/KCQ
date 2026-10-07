@@ -1,7 +1,9 @@
 import type { ContentLibrary, EncounterReference } from "../../../../engine/public/library";
 import type { DifficultyId, EncounterId, EnemyRank } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
-import { createEffectPreviewViewModels, type EffectPreviewViewModel } from "./effectPreviews";
+import { getThresholds } from "../../../../engine/public/mechanics";
+import { groupEffectPreviews, type EffectGroupViewModel } from "./effectGroups";
+import type { EffectPreviewViewModel } from "./effectPreviews";
 
 export interface EncounterSummaryViewModel {
     id: EncounterId;
@@ -28,6 +30,7 @@ export interface EncounterDetailsViewModel extends EncounterSummaryViewModel {
     description: string;
     enemies: readonly EncounterEnemyViewModel[];
     effects: readonly EffectPreviewViewModel[];
+    effectGroups: readonly EffectGroupViewModel[];
     labels: {
         settings: string; challenge: string; bestClear: string; description: string;
         enemies: string; specialRules: string; start: string; back: string;
@@ -69,6 +72,9 @@ export function createEncounterDetailsViewModel(
 ): EncounterDetailsViewModel {
     const encounter = library.encounters[encounterId];
     if (!encounter) throw new Error(`Missing encounter reference: ${encounterId}`);
+    const grouped = groupEffectPreviews(encounter.setup, {
+        presentation, encounterSetup: true, thresholds: getThresholds(),
+    }, "encounter-setup");
     return {
         ...encounterSummary(encounter, presentation, bestClear),
         description: presentation.encounter(encounter.id, "desc"),
@@ -84,7 +90,8 @@ export function createEncounterDetailsViewModel(
                 hpLabel: presentation.ui("encounter.hp", { hp: enemy.hp }),
             };
         }),
-        effects: createEffectPreviewViewModels(encounter.setup, { presentation }, "encounter-setup"),
+        effects: grouped.ungrouped,
+        effectGroups: grouped.groups,
         labels: {
             settings: presentation.ui("battleOverview.settings"),
             challenge: presentation.ui("encounter.challenge"),

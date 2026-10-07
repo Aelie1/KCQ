@@ -1,5 +1,6 @@
 import type { ActionView, BindingLevel, BuffEffect, Effect, EntityId, GameState, HitBand, ModifierId, ThresholdInfo } from "../../../../engine/public/types";
 import { getBindingProgress } from "../../../../engine/public/mechanics";
+import { clampMeterValue, TRAP_METER_MAX } from "./meterValues";
 import type { Presentation } from "../../../presentation/presentation";
 import { bindingLevelAtValue, formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
@@ -36,7 +37,15 @@ export interface BindingEffectViewModel {
     max: number; projectedLevel: BindingLevel; projectedValue: number;
     projectedLevelLabel?: string; recipient?: string; tone: "binding"; type: "binding";
 }
-export type EffectPreviewViewModel = AccuracyProfileViewModel | BindingEffectViewModel | BuffEffectViewModel | CompactEffectViewModel | DamageProfileViewModel;
+export interface ResourceEffectViewModel {
+    id: string; kind: "resource"; type: "data"; tone: "primary"; label: string;
+    resourceName: string; currentValue: number; change: number; max: number; projectedValue: number; recipient?: string;
+}
+export interface TrapEffectViewModel {
+    id: string; kind: "trap"; type: "trap"; tone: "warning"; label: string;
+    trapName: string; currentValue: number; change: number; max: number; projectedValue: number;
+}
+export type EffectPreviewViewModel = ResourceEffectViewModel | TrapEffectViewModel | AccuracyProfileViewModel | BindingEffectViewModel | BuffEffectViewModel | CompactEffectViewModel | DamageProfileViewModel;
 
 /** Runtime context is optional: public library effects need no fabricated battle state. */
 export interface EffectContext {
@@ -45,6 +54,8 @@ export interface EffectContext {
     scopeTarget?: EntityId;
     state?: GameState;
     thresholds?: ThresholdInfo;
+    /** Encounter-library setup begins from zero without a fabricated runtime state. */
+    encounterSetup?: boolean;
 }
 
 export function createEffectPreviewViewModels(
@@ -101,13 +112,23 @@ function createEffectPreview(effect: Effect, id: string, context: EffectContext)
             return compactEffect(id, effect.type, effect.operation === "defeat" ? "danger" : "primary",
                 presentation.ui(effect.operation === "defeat" ? "targeting.operationDefeat" : "targeting.operationSpawn"),
                 context.scopeTarget === effect.target ? "" : presentation.entity(effect.target), []);
-        case "trap":
-            return compactEffect(id, effect.type, "warning", presentation.ui("targeting.effectTrap"), presentation.trap(effect.trap),
-                [presentation.ui("targeting.trapAmount", { amount: effect.amount })]);
+        case "trap": return createTrapEffect(effect, id, context);
         case "move":
             return compactEffect(id, effect.type, "primary", presentation.ui("targeting.effectMove"), presentation.move(effect.move), []);
         case "data": {
             const resource = effect.name === "subspace";
+            const target = context.state?.characters.find(({ id: targetId }) => targetId === effect.target);
+            const current = target?.data.subspace;
+            const max = target?.data.subspaceMax;
+            if (resource && current !== undefined && max !== undefined && Number.isFinite(current) && Number.isFinite(max) && max >= 0 && Number.isFinite(effect.amount)) {
+                return {
+                    kind: "resource", id, type: "data", tone: "primary",
+                    label: presentation.ui("targeting.effectResource"), resourceName: presentation.data(effect.name),
+                    currentValue: current, max, change: effect.amount,
+                    projectedValue: clampMeterValue(current + effect.amount, max),
+                    ...(context.scopeTarget !== effect.target ? { recipient: presentation.entity(effect.target) } : {}),
+                };
+            }
             const name = context.scopeTarget === effect.target
                 ? presentation.data(effect.name)
                 : `${presentation.entity(effect.target)}   ${presentation.data(effect.name)}`;
@@ -171,7 +192,10 @@ function createBindingEffect(
     effect: Extract<Effect, { type: "binding" }>, id: string, context: EffectContext,
 ): EffectPreviewViewModel {
     const target = context.state?.characters.find(({ id: targetId }) => targetId === effect.target);
-    if (!target || effect.amount === undefined || !context.thresholds) {
+    const currentValue = target
+        ? target.bindings.find(({ id: binding }) => binding === effect.binding)?.value ?? 0
+        : context.encounterSetup ? 0 : undefined;
+    if (currentValue === undefined || effect.amount === undefined || !context.thresholds) {
         return compactEffect(id, "binding", "special", context.presentation.ui("targeting.effectBinding"),
             context.presentation.binding(effect.binding), [
             ...recipientDetails(effect.target, context),
@@ -180,7 +204,6 @@ function createBindingEffect(
             })]),
         ]);
     }
-    const currentValue = target.bindings.find(({ id: binding }) => binding === effect.binding)?.value ?? 0;
     const change = effect.amount > 0
         ? getBindingProgress(currentValue, effect.amount)
         : Math.max(-currentValue, effect.amount);
@@ -199,6 +222,25 @@ function createBindingEffect(
             projectedLevelLabel: context.presentation.bindingLevel(projectedLevel),
         } : {}),
         ...(context.scopeTarget !== effect.target ? { recipient: context.presentation.entity(effect.target) } : {}),
+    };
+}
+
+function createTrapEffect(
+    effect: Extract<Effect, { type: "trap" }>, id: string, context: EffectContext,
+): TrapEffectViewModel | CompactEffectViewModel {
+    const { presentation } = context;
+    const currentValue = context.state
+        ? context.state.traps.find(({ id }) => id === effect.trap)?.amount ?? 0
+        : context.encounterSetup ? 0 : undefined;
+    if (currentValue === undefined || !Number.isFinite(currentValue) || !Number.isFinite(effect.amount)) {
+        return compactEffect(id, "trap", "warning", presentation.ui("targeting.effectTrap"), presentation.trap(effect.trap),
+            [presentation.ui("targeting.trapAmount", { amount: effect.amount })]);
+    }
+    return {
+        kind: "trap", id, type: "trap", tone: "warning",
+        label: presentation.ui("targeting.effectTrap"), trapName: presentation.trap(effect.trap),
+        currentValue, change: effect.amount, max: TRAP_METER_MAX,
+        projectedValue: clampMeterValue(currentValue + effect.amount, TRAP_METER_MAX),
     };
 }
 

@@ -72,13 +72,13 @@ describe("targeting workflow composition", () => {
     it("uses the compact growing specialized-effect layout and legible damage text", () => {
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
         const previewRule = css.match(/\.kcq-preview-effect\s*\{([^}]*)\}/)?.[1] ?? "";
-        const specializedRule = css.match(/\.kcq-buff-effect,\s*\.kcq-binding-effect\s*\{([^}]*)\}/)?.[1] ?? "";
-        const accentRule = css.match(/\.kcq-buff-effect>\.kcq-preview-effect__accent,\s*\.kcq-binding-effect>\.kcq-preview-effect__accent\s*\{([^}]*)\}/)?.[1] ?? "";
+        const specializedRule = css.match(/\.kcq-buff-effect,\s*\.kcq-binding-effect,\s*\.kcq-meter-effect\s*\{([^}]*)\}/)?.[1] ?? "";
+        const accentRule = css.match(/\.kcq-buff-effect>\.kcq-preview-effect__accent,\s*\.kcq-binding-effect>\.kcq-preview-effect__accent,\s*\.kcq-meter-effect>\.kcq-preview-effect__accent\s*\{([^}]*)\}/)?.[1] ?? "";
         const modifiersRule = css.match(/\.kcq-buff-effect__modifiers\s*\{([^}]*)\}/)?.[1] ?? "";
         const detailsRule = css.match(/\.kcq-buff-effect__details\s*\{([^}]*)\}/)?.[1] ?? "";
         const bandRule = css.match(/\.kcq-damage-profile__band\s*\{([^}]*)\}/)?.[1] ?? "";
         const valueRule = css.match(/\.kcq-damage-profile__band strong\s*\{([^}]*)\}/)?.[1] ?? "";
-        const groupHeadingRule = css.match(/\.kcq-targeting__action-effect-group h3\s*\{([^}]*)\}/)?.[1] ?? "";
+        const groupHeadingRule = css.match(/\.kcq-targeting__action-effect-group h3,\s*\.kcq-encounter-details__effect-group h3\s*\{([^}]*)\}/)?.[1] ?? "";
         const actionEffectsRule = css.match(/\.kcq-targeting__action-effects\s*\{([^}]*)\}/)?.[1] ?? "";
 
         expect(previewRule).toContain("background: var(--kcq-surface-panel-alt)");
@@ -204,7 +204,7 @@ describe("targeting workflow composition", () => {
     it("uses the larger two-line command, binding, severity, and roster typography", () => {
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
         const commandNameRule = css.match(/\.kcq-command-card__name\s*\{([^}]*)\}/)?.[1] ?? "";
-        const bindingNameRule = css.match(/\.kcq-binding-effect__header \.kcq-preview-effect__payload\s*\{([^}]*)\}/)?.[1] ?? "";
+        const bindingNameRule = css.match(/\.kcq-binding-effect__header \.kcq-preview-effect__payload,\s*\.kcq-meter-effect__header \.kcq-preview-effect__payload\s*\{([^}]*)\}/)?.[1] ?? "";
         const bindingLevelRule = css.match(/\.kcq-binding-effect__level\s*\{([^}]*)\}/)?.[1] ?? "";
         const rosterStateRule = css.match(/\.kcq-character-roster__state\s*\{([^}]*)\}/)?.[1] ?? "";
         const buffTagRule = css.match(/\.kcq-buff-effect__tag\s*\{([^}]*)\}/)?.[1] ?? "";

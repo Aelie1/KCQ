@@ -165,7 +165,7 @@ export const forest_2: EncounterDef = {
 export const forest_3: EncounterDef = {
     id: "forest_3",
     stars: 4,
-    enemies: [skunketteSetup, skunketteSetup, queenSetup, fairySetup],
+    enemies: [queenSetup, skunketteSetup, skunketteSetup, fairySetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
     traps: [
         { definition: trapPuddle, amount: 100 }

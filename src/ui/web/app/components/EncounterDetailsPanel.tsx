@@ -39,10 +39,16 @@ export function EncounterDetailsPanel(props: {
                         </div>}
                     </For>
                 </section>
-                <Show when={props.model.effects.length > 0}>
+                <Show when={props.model.effects.length > 0 || props.model.effectGroups.length > 0}>
                     <section class="kcq-encounter-card kcq-encounter-details__rules">
                         <h2 class="kcq-encounter-details__heading">{props.model.labels.specialRules}</h2>
                         <For each={props.model.effects}>{(effect) => <EffectPreview effect={effect} />}</For>
+                        <For each={props.model.effectGroups}>
+                            {(group) => <div class="kcq-encounter-details__effect-group">
+                                <h3>{group.name}</h3>
+                                <For each={group.effects}>{(effect) => <EffectPreview effect={effect} />}</For>
+                            </div>}
+                        </For>
                     </section>
                 </Show>
             </div>

@@ -472,8 +472,11 @@ describe("targeting view model", () => {
         expect(model.actionEffects[0]).toMatchObject({
             label: "Data", payload: "Skunkette 1   [data.mystery.name] -4", details: [],
         });
-        expect(model.actionEffects[1]).toMatchObject({
-            label: "Resource", payload: "Hinari   Subspace +25", details: [],
+        expect(model.actionEffects).toHaveLength(1);
+        expect(model.actionEffectGroups).toHaveLength(1);
+        expect(model.actionEffectGroups[0]).toMatchObject({ id: "hinari", name: "Hinari" });
+        expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
+            kind: "compact", label: "Resource", payload: "Subspace +25", details: [],
         });
     });
 
@@ -726,11 +729,11 @@ describe("targeting view model", () => {
 
         expect(create().actionEffects).toEqual([]);
         expect(create().targets.every(({ effects }) => effects.length === 0)).toBe(true);
-        expect(create(["ko"]).actionEffects).toEqual([
-            expect.objectContaining({ label: "Resource", payload: "Hinari   Subspace -50" }),
+        expect(create(["ko"]).actionEffectGroups[0].effects).toEqual([
+            expect.objectContaining({ label: "Resource", payload: "Subspace -50" }),
         ]);
-        expect(create(["skunkette1"]).actionEffects).toEqual([
-            expect.objectContaining({ label: "Resource", payload: "Hinari   Subspace -25" }),
+        expect(create(["skunkette1"]).actionEffectGroups[0].effects).toEqual([
+            expect.objectContaining({ label: "Resource", payload: "Subspace -25" }),
         ]);
     });
 
@@ -751,9 +754,11 @@ describe("targeting view model", () => {
             fixture.actions, fixture.thresholds, selected,
         );
 
-        expect(create().actionEffects).toEqual([
-            expect.objectContaining({ payload: "Hinari   Subspace -25" }),
+        expect(create().actionEffectGroups[0].effects).toEqual([
+            expect.objectContaining({ payload: "Subspace -25" }),
         ]);
-        expect(create(["skunkette1", "skunkette2"]).actionEffects).toHaveLength(1);
+        expect(create(["skunkette1", "skunkette2"]).actionEffectGroups).toHaveLength(1);
+        expect(create(["skunkette1", "skunkette2"]).actionEffectGroups[0].effects).toHaveLength(1);
+        expect(create(["skunkette1", "skunkette2"]).actionEffects).toEqual([]);
     });
 });

@@ -1,7 +1,8 @@
 import type {
-    AccuracyProfile, ActionInfo, ActionView, BandPreview, Character, DataEffect, Effect,
+    AccuracyProfile, ActionInfo, ActionView, BandPreview, Character, DataEffect,
     EntityId, GameState, PreviewProfile, ThresholdInfo,
 } from "../../../../engine/public/types";
+import { groupEffectPreviews, type EffectGroupViewModel } from "./effectGroups";
 import type { Presentation } from "../../../presentation/presentation";
 import { createMoveTags, type CommandTagViewModel } from "./characterDetails";
 import { createCharacterActionState, createCharacterStanceState } from "./characterState";
@@ -33,8 +34,8 @@ export interface TargetingViewModel {
     labels: { actionEffects: string }; mode: TargetingMode; reasonLabel?: string;
     requiredTargetCount: number; targets: readonly TargetPreviewViewModel[];
 }
-export interface ActionEffectGroupViewModel {
-    effects: readonly EffectPreviewViewModel[]; id: EntityId; name: string; tone: PlayerTone;
+export interface ActionEffectGroupViewModel extends EffectGroupViewModel {
+    tone: PlayerTone;
 }
 const DAMAGE_BANDS = ["miss", "graze", "hit", "crit"] as const;
 
@@ -54,10 +55,12 @@ export function createTargetingViewModel(
     const requiredTargetCount = mode === "selectable" ? action.move.targets as number : 0;
     const moveName = presentation.move(action.move.id);
     const context = { actions, state, presentation, thresholds };
-    const grouped = groupActionEffects(action.effects, context);
     const selectedDataEffects = targetDataEffects(action, selectedTargets);
-    const projectedDataEffects = selectedDataEffects.flatMap((effect, index) =>
-        createEffectPreviews(effect, `selected-data-effect-${index}`, context));
+    const charactersById = new Set(state.characters.map(({ id }) => id));
+    const grouped = groupEffectPreviews(
+        [...action.effects, ...selectedDataEffects], context, "action-effect",
+        (target) => charactersById.has(target),
+    );
     const zeroTargetPreviewEffects = action.move.targets === 0
         ? action.targets.flatMap((preview, index) => preview.valid
             ? createPreviewEffects(preview, `action-preview-${index}`, context)
@@ -74,8 +77,8 @@ export function createTargetingViewModel(
         targets: action.move.targets === 0 ? [] : action.targets.map((preview, index) => createTargetPreview(
             state, actions, preview, index, presentation, thresholds,
         )),
-        actionEffects: [...zeroTargetPreviewEffects, ...grouped.ungrouped, ...projectedDataEffects],
-        actionEffectGroups: grouped.groups,
+        actionEffects: [...zeroTargetPreviewEffects, ...grouped.ungrouped],
+        actionEffectGroups: grouped.groups.map((group) => ({ ...group, tone: playerTone(group.id) })),
         labels: { actionEffects: presentation.ui("targeting.actionEffects") },
         controls: {
             backLabel: presentation.ui("targeting.back"),
@@ -275,34 +278,4 @@ function dataEffectSetSignature(effects: readonly DataEffect[]): string {
 
 function dataEffectSignature(effect: DataEffect): string {
     return JSON.stringify([effect.target, effect.name, effect.amount]);
-}
-
-function groupActionEffects(
-    effects: readonly Effect[], context: Omit<EffectContext, "scopeTarget"> & { state: GameState },
-): { groups: ActionEffectGroupViewModel[]; ungrouped: EffectPreviewViewModel[] } {
-    const charactersById = new Set(context.state.characters.map(({ id }) => id));
-    const groups: ActionEffectGroupViewModel[] = [];
-    const groupsById = new Map<EntityId, EffectPreviewViewModel[]>();
-    const ungrouped: EffectPreviewViewModel[] = [];
-    effects.forEach((effect, index) => {
-        const id = `action-effect-${index}`;
-        const target = "target" in effect ? effect.target : undefined;
-        if (target === undefined || !charactersById.has(target)) {
-            ungrouped.push(...createEffectPreviews(effect, id, context));
-            return;
-        }
-        let group = groupsById.get(target);
-        if (!group) {
-            group = [];
-            groupsById.set(target, group);
-            groups.push({
-                id: target,
-                name: context.presentation.entity(target),
-                tone: playerTone(target),
-                effects: group,
-            });
-        }
-        group.push(...createEffectPreviews(effect, id, { ...context, scopeTarget: target }));
-    });
-    return { groups, ungrouped };
 }
