@@ -1,4 +1,4 @@
-import { AccuracyProfile, BindingId, BindingLevel, Effect, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
+import { AccuracyProfile, BindingId, BindingLevel, Effect, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
 
 export interface ContentLibrary {
     characters: Record<string, CharacterReference>;
@@ -20,7 +20,7 @@ export interface CharacterReference {
 
 export interface EnemyReference {
     id: EntityId;
-    rank: "minion" | "enemy" | "boss";
+    rank: EnemyRank;
     hp: number;
     defense: number;
     moves: MoveId[];

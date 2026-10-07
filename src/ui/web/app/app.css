@@ -365,22 +365,18 @@ button {
 .kcq-battle-overview__footer {
     display: grid;
     flex: 0 0 48px;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+    grid-template-columns: 2fr 3fr;
+    gap: 6px;
+    align-items: center;
     width: 100%;
     height: 48px;
-    padding: 6px 10px;
-    overflow: hidden;
-    border: 1px solid var(--kcq-structure-border);
-    border-radius: 12px;
-    background: var(--kcq-surface-panel-alt);
 }
 
 .kcq-battle-overview__footer button {
-    height: 34px;
+    height: 42px;
     padding: 0 10px;
     overflow: hidden;
-    border-radius: 8px;
+    border-radius: 7px;
     font-size: 12px;
     font-weight: 700;
     line-height: normal;
@@ -1785,7 +1781,7 @@ button {
 
 .kcq-character-details__footer {
     display: grid;
-    grid-template-columns: 144px minmax(0, 1fr);
+    grid-template-columns: 2fr 3fr;
     gap: 6px;
     align-items: center;
     width: 100%;

@@ -68,6 +68,8 @@ export type PassiveId = string;
 
 export type DifficultyId = "casual" | "standard" | "veteran" | "extreme" | "mythic";
 
+export type EnemyRank = "minion" | "enemy" | "boss";
+
 /*******************************************************
  * Characters
  *******************************************************/
@@ -92,7 +94,7 @@ export interface Character {
 export interface Enemy {
     id: EntityId;
     defId: DefinitionId;
-    rank: "minion" | "enemy" | "boss";
+    rank: EnemyRank;
     maxHp: number;
     currHp: number;
     currDef: number;
