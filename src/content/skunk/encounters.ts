@@ -6,7 +6,6 @@ import { Effect } from "../../engine/public/types";
 import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, QUEEN_ID, SKUNK_ID, SKUNKETTE_ID } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
-import { queenReinforcements } from "./queen";
 
 const skunketteSetup = { defId: SKUNKETTE_ID };
 const skunketteQueenSetup = { defId: SKUNKETTE_ID, id: "skunketteQueen" };
@@ -99,7 +98,6 @@ export const plains_2: EncounterDef = {
 
 export const plains_3: EncounterDef = {
     id: "plains_3",
-    reinforcements: queenReinforcements(0, 0),
     stars: 3,
     enemies: [queenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
@@ -166,7 +164,6 @@ export const forest_2: EncounterDef = {
 
 export const forest_3: EncounterDef = {
     id: "forest_3",
-    reinforcements: queenReinforcements(2, 1),
     stars: 4,
     enemies: [queenSetup, skunketteSetup, skunketteSetup, fairySetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
@@ -206,7 +203,6 @@ export const forest_3: EncounterDef = {
 
 export const tower_1: EncounterDef = {
     id: "tower_1",
-    reinforcements: queenReinforcements(setupTower_1.queenWave, setupTower_1.queenWave / 2),
     stars: 5,
     enemies: [empressSetup, skunketteQueenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
@@ -223,7 +219,6 @@ export const tower_1: EncounterDef = {
 
 export const tower_2: EncounterDef = {
     id: "tower_2",
-    reinforcements: queenReinforcements(setupTower_2.queenWave, setupTower_2.queenWave / 2),
     stars: 4,
     enemies: [empressSetup, skunketteQueenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
@@ -240,7 +235,6 @@ export const tower_2: EncounterDef = {
 
 export const tower_3: EncounterDef = {
     id: "tower_3",
-    reinforcements: queenReinforcements(setupTower_3.queenWave, setupTower_3.queenWave / 2),
     stars: 3,
     enemies: [empressSetup, skunketteQueenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
@@ -257,7 +251,6 @@ export const tower_3: EncounterDef = {
 
 export const outside: EncounterDef = {
     id: "outside",
-    reinforcements: queenReinforcements(setupOutside.queenWave, setupOutside.queenWave / 2),
     stars: 5,
     enemies: [goddessSetup, skunkEmpressSetup, skunketteQueenSetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],

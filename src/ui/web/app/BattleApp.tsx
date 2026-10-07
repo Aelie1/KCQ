@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, Match, Switch, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, Match, Show, Switch, type JSX } from "solid-js";
 import { getThresholds } from "../../../engine/public/mechanics";
 import type {
     ActionInfo,
@@ -186,81 +186,89 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     };
 
     return (
-        <Switch fallback={
-            <BattleOverviewPanel
-                actions={actions()}
-                presentation={props.presentation}
-                state={state()}
-                thresholds={thresholds()}
-                onSelectCharacter={selectCharacter}
-                onGameLog={() => setScreen({ kind: "log" })}
-                onEndTurn={() => { execute({ type: "endTurn" }); }}
-            />
-        }>
-            <Match when={resultModel()} keyed>
+        <div class="kcq-battle-stage">
+            <div class="kcq-battle-stage__background" inert={!!resultModel()} aria-hidden={resultModel() ? true : undefined}>
+                <Switch fallback={
+                    <BattleOverviewPanel
+                        actions={actions()}
+                        presentation={props.presentation}
+                        state={state()}
+                        thresholds={thresholds()}
+                        onSelectCharacter={selectCharacter}
+                        onGameLog={() => setScreen({ kind: "log" })}
+                        onEndTurn={() => { execute({ type: "endTurn" }); }}
+                    />
+                }>
+                    <Match when={resultModel()}>
+                        <BattleOverviewPanel actions={actions()} presentation={props.presentation}
+                            state={state()} thresholds={thresholds()} />
+                    </Match>
+                    <Match when={characterScreen()} keyed>
+                        {(current) => (
+                            <CharacterDetailsPanel
+                                actions={actions()}
+                                focusedCharacterId={current.actorId}
+                                presentation={props.presentation}
+                                state={state()}
+                                thresholds={thresholds()}
+                                onBack={() => setScreen({ kind: "overview" })}
+                                onSelectCharacter={selectCharacter}
+                                onSelectCommand={(commandId) => selectCommand(current.actorId, commandId)}
+                            />
+                        )}
+                    </Match>
+                    <Match when={targeting()} keyed>
+                        {(current) => (
+                            <TargetingPanel
+                                action={current.action}
+                                actions={actions()}
+                                actorId={current.screen.actorId}
+                                presentation={props.presentation}
+                                state={state()}
+                                thresholds={thresholds()}
+                                onBack={() => {
+                                    setScreen({
+                                        kind: "character",
+                                        actorId: current.screen.actorId,
+                                    });
+                                    scrollToBottom();
+                                }}
+                                onHeaderBack={() => setScreen({ kind: "overview" })}
+                                onSelectCharacter={selectCharacter}
+                                onExecute={executeMove}
+                            />
+                        )}
+                    </Match>
+                    <Match when={escapeScreen()} keyed>
+                        {(current) => (
+                            <EscapePanel
+                                actions={actions()}
+                                actorId={current.actorId}
+                                presentation={props.presentation}
+                                state={state()}
+                                thresholds={thresholds()}
+                                onBack={() => setScreen({ kind: "character", actorId: current.actorId })}
+                                onHeaderBack={() => setScreen({ kind: "overview" })}
+                                onSelectCharacter={selectCharacter}
+                                onExecute={executeEscape}
+                            />
+                        )}
+                    </Match>
+                    <Match when={screen().kind === "log"}>
+                        <GameLogPanel
+                            entries={logEntries()}
+                            presentation={props.presentation}
+                            state={state()}
+                            onBack={() => setScreen({ kind: "overview" })}
+                        />
+                    </Match>
+                </Switch>
+            </div>
+            <Show when={resultModel()} keyed>
                 {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
                     onBackToLevelSelect={props.onBackToLevelSelect} />}
-            </Match>
-            <Match when={characterScreen()} keyed>
-                {(current) => (
-                    <CharacterDetailsPanel
-                        actions={actions()}
-                        focusedCharacterId={current.actorId}
-                        presentation={props.presentation}
-                        state={state()}
-                        thresholds={thresholds()}
-                        onBack={() => setScreen({ kind: "overview" })}
-                        onSelectCharacter={selectCharacter}
-                        onSelectCommand={(commandId) => selectCommand(current.actorId, commandId)}
-                    />
-                )}
-            </Match>
-            <Match when={targeting()} keyed>
-                {(current) => (
-                    <TargetingPanel
-                        action={current.action}
-                        actions={actions()}
-                        actorId={current.screen.actorId}
-                        presentation={props.presentation}
-                        state={state()}
-                        thresholds={thresholds()}
-                        onBack={() => {
-                            setScreen({
-                                kind: "character",
-                                actorId: current.screen.actorId,
-                            });
-                            scrollToBottom();
-                        }}
-                        onHeaderBack={() => setScreen({ kind: "overview" })}
-                        onSelectCharacter={selectCharacter}
-                        onExecute={executeMove}
-                    />
-                )}
-            </Match>
-            <Match when={escapeScreen()} keyed>
-                {(current) => (
-                    <EscapePanel
-                        actions={actions()}
-                        actorId={current.actorId}
-                        presentation={props.presentation}
-                        state={state()}
-                        thresholds={thresholds()}
-                        onBack={() => setScreen({ kind: "character", actorId: current.actorId })}
-                        onHeaderBack={() => setScreen({ kind: "overview" })}
-                        onSelectCharacter={selectCharacter}
-                        onExecute={executeEscape}
-                    />
-                )}
-            </Match>
-            <Match when={screen().kind === "log"}>
-                <GameLogPanel
-                    entries={logEntries()}
-                    presentation={props.presentation}
-                    state={state()}
-                    onBack={() => setScreen({ kind: "overview" })}
-                />
-            </Match>
-        </Switch>
+            </Show>
+        </div>
     );
 }
 

@@ -21,12 +21,14 @@ describe("playable Solid battle application", () => {
 
         expect(html).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
         expect(html).toContain(presentation.encounter("plains_1"));
+        expect(html).not.toContain("kcq-battle-result__overlay");
+        expect(html.match(/<div[^>]*class="kcq-battle-stage__background"[^>]*>/)?.[0]).not.toMatch(/inert|aria-hidden/);
         for (const character of engine.getGameState().characters) {
             expect(html).toContain(presentation.entity(character.id));
         }
     });
 
-    it.each(["victory", "defeat"] as const)("replaces active battle controls when loaded with %s", outcome => {
+    it.each(["victory", "defeat"] as const)("overlays the finished battle with an inert background when loaded with %s", outcome => {
         const engine = createEngine(12345);
         createBattle(engine, "plains_1", "standard");
         const state = engine.getGameState();
@@ -37,10 +39,21 @@ describe("playable Solid battle application", () => {
         }));
         expect(html).toContain("kcq-battle-result--" + outcome);
         expect(html).toContain(outcome.toUpperCase());
-        expect(html.match(/<button/g)).toHaveLength(2);
-        expect(html).not.toContain("kcq-battle-overview");
-        expect(html).not.toContain("End Turn");
-        expect(html).not.toContain("Game Log");
+        expect(html).toContain("kcq-battle-overview");
+        expect(html).toMatch(/class="kcq-battle-stage__background"[^>]*inert[^>]*aria-hidden="true"/);
+        const modal = html.slice(html.indexOf('class="kcq-battle-result__overlay"'));
+        expect(modal).toContain('role="dialog"');
+        expect(modal.match(/<button/g)).toHaveLength(2);
+        expect(modal).toContain(">Retry</button>");
+        expect(modal).toContain(">Back to Level Select</button>");
+        expect(modal).not.toContain("End Turn");
+        expect(modal).not.toContain("Game Log");
+        for (const character of state.characters) {
+            expect(html).toContain(new Presentation(englishStrings).entity(character.id));
+        }
+        for (const enemy of state.enemies) {
+            expect(html).toContain(new Presentation(englishStrings).entity(enemy.id));
+        }
     });
 
     it("keeps the static fixture panels renderable without callback props", () => {

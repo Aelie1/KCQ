@@ -45,10 +45,10 @@ export function DevApp(props: DevAppProps = {}): JSX.Element {
                                 <BattleOverviewPanel {...battleOverviewFixture} />
                             </Match>
                             <Match when={panel() === "victory"}>
-                                <BattleResultPanel model={battleResultFixtures.victory} />
+                                <ResultPreview outcome="victory" />
                             </Match>
                             <Match when={panel() === "defeat"}>
-                                <BattleResultPanel model={battleResultFixtures.defeat} />
+                                <ResultPreview outcome="defeat" />
                             </Match>
                             <Match when={panel() === "components"}>
                                 <ComponentGalleryPanel />
@@ -79,4 +79,18 @@ function PlayableBattle(): JSX.Element {
     const presentation = new Presentation(englishStrings);
 
     return <BattleApp engine={engine} presentation={presentation} />;
+}
+
+
+function ResultPreview(props: { outcome: "victory" | "defeat" }): JSX.Element {
+    return <div class="kcq-battle-stage">
+        <div class="kcq-battle-stage__background" inert aria-hidden="true">
+            <BattleOverviewPanel {...battleOverviewFixture} state={{
+                ...battleOverviewFixture.state,
+                turn: { ...battleOverviewFixture.state.turn, round: 12, outcome: props.outcome },
+                enemies: props.outcome === "victory" ? [] : battleOverviewFixture.state.enemies,
+            }} />
+        </div>
+        <BattleResultPanel model={battleResultFixtures[props.outcome]} />
+    </div>;
 }

@@ -91,6 +91,4 @@ export interface EncounterReference {
     bindings: BindingId[];
     traps: TrapId[];
     setup: Effect[];
-    /** Intended summons, including waves not yet spawned. HP is their starting workload. */
-    reinforcements?: { defId: string; hpRatio?: number }[];
 }

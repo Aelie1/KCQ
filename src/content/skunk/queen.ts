@@ -58,14 +58,6 @@ const RAINMAKER_SUMMONS: {
         [{ enemy: RAINMAKER_ID, buff: goddessBuff2 }],
     ];
 
-/** Publish the same finite waves used by onDamage, without exposing private enemy data. */
-export function queenReinforcements(waveOffset = 0, rainmakerOffset = 0): { defId: string; hpRatio?: number }[] {
-    return [
-        ...WAVE_SUMMONS.slice(waveOffset, waveOffset + WAVE_RATIOS.length).flat(),
-        ...RAINMAKER_SUMMONS.slice(rainmakerOffset, rainmakerOffset + RAINMAKER_RATIOS.length).flat(),
-    ].map(({ enemy, hpRatio }) => ({ defId: enemy, ...(hpRatio === undefined ? {} : { hpRatio }) }));
-}
-
 export const skunkGun: MoveDef = {
     id: "skunkGun",
     targetSide: "player",

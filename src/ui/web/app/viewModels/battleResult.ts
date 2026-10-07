@@ -18,7 +18,10 @@ export interface BattleResultStats {
     peakBinding: number;
     incapacitations: number;
     rescues: number;
-    progress: number;
+    progress: {
+        boss?: number;
+        enemies?: number;
+    };
 }
 
 export interface BattleResultViewModel {
@@ -48,101 +51,210 @@ const skunkLink = (character: Character): string | undefined =>
 /** Incremental UI statistics from public action frames; no replay or engine internals required. */
 export function createBattleResultTracker(initial: GameState, library: ContentLibrary) {
     const stats: BattleResultStats = {
-        rounds: initial.turn.round, actions: 0, escapes: emptySummary(), hits: emptySummary(),
-        bindings: emptySummary(), peakBinding: 0, incapacitations: 0, rescues: 0, progress: 0,
+        rounds: initial.turn.round,
+        actions: 0,
+        escapes: emptySummary(),
+        hits: emptySummary(),
+        bindings: emptySummary(),
+        peakBinding: 0,
+        incapacitations: 0,
+        rescues: 0,
+        progress: {},
     };
+
     const playerIds = new Set(initial.characters.map(character => character.id));
     const tracks = new Map<string, Map<string, number>>();
-    const enemyWork = new Map(initial.enemies.map(enemy => [enemy.id, {
-        hp: enemy.maxHp, remaining: enemy.currHp,
+
+    // Track enemies that have actually appeared.
+    // Defeated enemies remain in this map at 0 HP.
+    const enemyHp = new Map(initial.enemies.map(enemy => [enemy.id, {
+        rank: enemy.rank,
+        maxHp: enemy.maxHp,
+        currHp: enemy.currHp,
     }]));
-    const pending = (initial.encounter ? library.encounters[initial.encounter.id]?.reinforcements ?? [] : [])
-        .map(setup => ({ defId: setup.defId, hp: (library.enemies[setup.defId]?.hp ?? 0)
-            * Math.min(1, Math.max(0.1, setup.hpRatio ?? 1)) }));
+
     let previous: GameState | undefined;
     let terminal = initial.turn.outcome !== "ongoing";
 
     const peak = (): void => {
         const burden = [...tracks.values()].reduce((sum, zones) =>
             sum + [...zones.values()].reduce((total, value) => total + value, 0), 0);
+
         stats.peakBinding = Math.max(stats.peakBinding, burden);
     };
+
+    const updateProgress = (state: GameState): void => {
+        const currentIds = new Set(state.enemies.map(enemy => enemy.id));
+
+        for (const enemy of state.enemies) {
+            enemyHp.set(enemy.id, {
+                rank: enemy.rank,
+                maxHp: enemy.maxHp,
+                currHp: enemy.currHp,
+            });
+        }
+
+        // Anything we've seen before that is no longer present was defeated.
+        for (const [id, enemy] of enemyHp) {
+            if (!currentIds.has(id)) {
+                enemy.currHp = 0;
+            }
+        }
+
+        let bossHp = 0;
+        let bossMaxHp = 0;
+        let enemyHpLeft = 0;
+        let enemyMaxHp = 0;
+
+        for (const enemy of enemyHp.values()) {
+            if (enemy.rank === "boss") {
+                bossHp += enemy.currHp;
+                bossMaxHp += enemy.maxHp;
+            } else {
+                enemyHpLeft += enemy.currHp;
+                enemyMaxHp += enemy.maxHp;
+            }
+        }
+
+        stats.progress = {
+            ...(bossMaxHp > 0
+                ? { boss: bossHp / bossMaxHp }
+                : {}),
+            ...(enemyMaxHp > 0
+                ? { enemies: enemyHpLeft / enemyMaxHp }
+                : {}),
+        };
+    };
+
     const observe = (state: GameState, event?: GameEvent): void => {
         if (!terminal) {
             stats.rounds = state.turn.round;
             terminal = state.turn.outcome !== "ongoing";
         }
+
         const defeated = new Set(event ? leaves(event).flatMap(leaf =>
             leaf.type === "enemyDefeated" ? [leaf.target] : []) : []);
+
         for (const character of state.characters) {
             const before = previous?.characters.find(candidate => candidate.id === character.id);
+
             if (incapacitated(character) && (!before || !incapacitated(before))) {
                 stats.incapacitations += 1;
             }
+
             // Match the existing combat metric: release from a skunk capture by defeating its linked enemy.
             const link = before && skunkLink(before);
-            if (link && !skunkLink(character) && defeated.has(link)) stats.rescues += 1;
-            tracks.set(character.id, new Map(character.bindings.map(binding => [binding.id, binding.value])));
-        }
-        peak();
-        const currentIds = new Set(state.enemies.map(enemy => enemy.id));
-        for (const enemy of state.enemies) {
-            let work = enemyWork.get(enemy.id);
-            if (!work) {
-                const exact = pending.findIndex(setup => setup.defId === enemy.defId && setup.hp === enemy.currHp);
-                const index = exact >= 0 ? exact : pending.findIndex(setup => setup.defId === enemy.defId);
-                const planned = index >= 0 ? pending.splice(index, 1)[0] : undefined;
-                work = { hp: planned?.hp ?? enemy.currHp, remaining: enemy.currHp };
-                enemyWork.set(enemy.id, work);
+            if (link && !skunkLink(character) && defeated.has(link)) {
+                stats.rescues += 1;
             }
-            // Healing cannot erase completed progress or make repeated damage count twice.
-            work.remaining = Math.min(work.remaining, enemy.currHp);
+
+            tracks.set(
+                character.id,
+                new Map(character.bindings.map(binding => [binding.id, binding.value])),
+            );
         }
-        for (const [id, work] of enemyWork) if (!currentIds.has(id)) work.remaining = 0;
-        const reserve = pending.reduce((sum, setup) => sum + setup.hp, 0);
-        const total = reserve + [...enemyWork.values()].reduce((sum, work) => sum + work.hp, 0);
-        const remaining = reserve + [...enemyWork.values()].reduce((sum, work) => sum + work.remaining, 0);
-        stats.progress = Math.max(stats.progress, total > 0 ? Math.max(0, Math.min(1, 1 - remaining / total)) : 0);
+
+        peak();
+        updateProgress(state);
         previous = state;
     };
+
     observe(initial);
 
     return {
         record(action: PlayerAction, result: ActionResult, finalState: GameState): void {
             if (!result.success || terminal) return;
+
             stats.actions += 1;
-            const playerMoves = result.frames.filter(({ event }) => event.type === "useMove" && playerIds.has(event.actor));
-            const damagingMove = playerMoves.find(({ event }) => leaves(event).some(leaf => leaf.type === "enemyDamaged" && leaf.amount > 0));
-            const totalDamage = playerMoves.flatMap(({ event }) => leaves(event)).reduce((sum, leaf) => sum
-                + (leaf.type === "enemyDamaged" ? Math.max(0, leaf.amount) : 0), 0);
-            addSummary(stats.hits, totalDamage, damagingMove?.event.type === "useMove" ? damagingMove.event.move : undefined);
-            const escaped = action.type === "escape" ? result.frames.filter(({ event }) => event.type === "useEscape")
-                .flatMap(({ event }) => leaves(event)).reduce((sum, leaf) => sum
-                    + (isBindingChange(leaf) ? Math.max(0, -leaf.amount) : 0), 0) : 0;
+
+            const playerMoves = result.frames.filter(({ event }) =>
+                event.type === "useMove" && playerIds.has(event.actor));
+
+            const damagingMove = playerMoves.find(({ event }) =>
+                leaves(event).some(leaf =>
+                    leaf.type === "enemyDamaged" && leaf.amount > 0));
+
+            const totalDamage = playerMoves
+                .flatMap(({ event }) => leaves(event))
+                .reduce((sum, leaf) =>
+                    sum + (leaf.type === "enemyDamaged"
+                        ? Math.max(0, leaf.amount)
+                        : 0), 0);
+
+            addSummary(
+                stats.hits,
+                totalDamage,
+                damagingMove?.event.type === "useMove"
+                    ? damagingMove.event.move
+                    : undefined,
+            );
+
+            const escaped = action.type === "escape"
+                ? result.frames
+                    .filter(({ event }) => event.type === "useEscape")
+                    .flatMap(({ event }) => leaves(event))
+                    .reduce((sum, leaf) =>
+                        sum + (isBindingChange(leaf)
+                            ? Math.max(0, -leaf.amount)
+                            : 0), 0)
+                : 0;
+
             addSummary(stats.escapes, escaped);
+
             for (const frame of result.frames) {
                 const event = frame.event;
                 const effects = leaves(event);
+
                 if (event.type === "useMove" && !playerIds.has(event.actor)) {
-                    addSummary(stats.bindings, effects.reduce((sum, leaf) => sum
-                        + (isBindingChange(leaf) && playerIds.has(leaf.target) ? Math.max(0, leaf.amount) : 0), 0), event.move);
+                    addSummary(
+                        stats.bindings,
+                        effects.reduce((sum, leaf) =>
+                            sum + (
+                                isBindingChange(leaf) && playerIds.has(leaf.target)
+                                    ? Math.max(0, leaf.amount)
+                                    : 0
+                            ), 0),
+                        event.move,
+                    );
                 }
+
                 // Walk actual deltas to retain peaks that rise and fall inside one action frame.
                 for (const leaf of effects) {
                     if (!isBindingChange(leaf) || !playerIds.has(leaf.target)) continue;
+
                     const zones = tracks.get(leaf.target) ?? new Map<string, number>();
-                    zones.set(leaf.binding, leaf.type === "bondageRemoved" ? 0
-                        : Math.max(0, (zones.get(leaf.binding) ?? 0) + leaf.amount));
+
+                    zones.set(
+                        leaf.binding,
+                        leaf.type === "bondageRemoved"
+                            ? 0
+                            : Math.max(
+                                0,
+                                (zones.get(leaf.binding) ?? 0) + leaf.amount,
+                            ),
+                    );
+
                     tracks.set(leaf.target, zones);
                     peak();
                 }
+
                 observe(frame.state, event);
             }
+
             // Reconcile the public state without double-counting transitions from the last frame.
-            if (result.frames.at(-1)?.state !== finalState) observe(finalState);
+            if (result.frames.at(-1)?.state !== finalState) {
+                observe(finalState);
+            }
         },
+
         getStats(): BattleResultStats {
-            return { ...stats, escapes: { ...stats.escapes }, hits: { ...stats.hits }, bindings: { ...stats.bindings } };
+            return {
+                ...stats,
+                escapes: { ...stats.escapes },
+                hits: { ...stats.hits },
+                bindings: { ...stats.bindings },
+                progress: { ...stats.progress },
+            };
         },
     };
 }
@@ -172,13 +284,13 @@ export function createBattleResultViewModel(
             move: summary.maxMove ? presentation.move(summary.maxMove) : "",
         }) : undefined,
     });
-    const rows = [row("rounds", stats.rounds), row("actions", stats.actions), actionRow("escapes", stats.escapes, false)];
+    const rows: BattleResultViewModel["rows"] = [actionRow("escapes", stats.escapes, false)];
     if (outcome === "victory") rows.push(row("peakBinding", stats.peakBinding));
     rows.push(actionRow("hits", stats.hits, true), actionRow("bindings", stats.bindings, true));
     if (outcome === "victory" && stats.incapacitations > 0) rows.push(row("incapacitations", stats.incapacitations));
     if (stats.rescues > 0) rows.push(row("rescues", stats.rescues));
     return {
-        outcome, heading: presentation.ui(`battleResult.${outcome}`),
+        outcome, heading: presentation.battleState(outcome),
         encounter: state.encounter ? presentation.encounter(state.encounter.id) : presentation.ui("battleOverview.noEncounter"),
         difficulty: presentation.difficulty(state.difficulty.id),
         summary: presentation.ui("battleResult.summary", { rounds: stats.rounds, actions: stats.actions }),
