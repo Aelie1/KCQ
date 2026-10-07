@@ -50,6 +50,21 @@ export function createGraphicalController(
             session = prepareBattle(current.encounter, current.difficulty);
             setScreen({ screen: "battle", encounter: current.encounter, difficulty: current.difficulty, session });
         },
+        retryEncounter(): void {
+            const current = screen();
+            if (current.screen !== "battle" || current.session.engine.getGameState().turn.outcome === "ongoing") return;
+            session?.dispose();
+            session = undefined;
+            session = prepareBattle(current.encounter, current.difficulty);
+            setScreen({ ...current, session });
+        },
+        returnToLevelSelect(): void {
+            const current = screen();
+            if (current.screen !== "battle" || current.session.engine.getGameState().turn.outcome === "ongoing") return;
+            session?.dispose();
+            session = undefined;
+            setScreen({ screen: "picker" });
+        },
         dispose(): void {
             session?.dispose();
             session = undefined;

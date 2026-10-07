@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createEngine } from "../../src/engine/public/engine";
 import type { DifficultyId } from "../../src/engine/public/types";
 import { createGraphicalController } from "../../src/ui/web/app/graphicalController";
-import { DEFAULT_DIFFICULTY } from "../../src/ui/web/app";
+import { createBattle, DEFAULT_DIFFICULTY } from "../../src/ui/web/app";
 
 const difficultyIds: DifficultyId[] = ["casual", "standard", "veteran", "extreme", "mythic"];
 
@@ -87,6 +87,48 @@ describe("outer graphical controller", () => {
         controller.dispose();
         controller.dispose();
         expect(session.dispose).toHaveBeenCalledTimes(1);
+        dispose();
+    }));
+
+    it.each(["victory", "defeat"] as const)("retries a %s with a fresh session and returns to level select", outcome => createRoot(dispose => {
+        const prepare = vi.fn((encounter, difficulty) => {
+            const engine = createEngine(12345);
+            createBattle(engine, encounter, difficulty);
+            return { engine, dispose: vi.fn() };
+        });
+        const controller = createGraphicalController(prepare);
+        controller.selectEncounter("forest_3");
+        controller.chooseDifficulty();
+        controller.selectDifficulty("mythic");
+        controller.startEncounter();
+        controller.retryEncounter();
+        controller.returnToLevelSelect();
+        expect(prepare).toHaveBeenCalledTimes(1);
+        const first = prepare.mock.results[0].value;
+        const completed = first.engine.getGameState();
+        completed.turn.outcome = outcome;
+        vi.spyOn(first.engine, "getGameState").mockReturnValue(completed);
+        controller.retryEncounter();
+        expect(first.dispose).toHaveBeenCalledOnce();
+        expect(prepare).toHaveBeenNthCalledWith(2, "forest_3", "mythic");
+        const current = controller.screen();
+        expect(current.screen).toBe("battle");
+        if (current.screen !== "battle") throw new Error("Expected battle");
+        expect(current.session.engine).not.toBe(first.engine);
+        expect(current.session.engine.getGameState().turn.outcome).toBe("ongoing");
+        expect(current.session.engine.getGameState().turn.round).toBe(1);
+        expect(current.session.engine.getGameState().characters).toHaveLength(3);
+        const terminal = current.session.engine.getGameState();
+        terminal.turn.outcome = outcome;
+        vi.spyOn(current.session.engine, "getGameState").mockReturnValue(terminal);
+        controller.returnToLevelSelect();
+        expect(controller.screen()).toEqual({ screen: "picker" });
+        expect(current.session.dispose).toHaveBeenCalledOnce();
+        controller.retryEncounter();
+        controller.dispose();
+        expect(prepare).toHaveBeenCalledTimes(2);
+        expect(first.dispose).toHaveBeenCalledOnce();
+        expect(current.session.dispose).toHaveBeenCalledOnce();
         dispose();
     }));
 

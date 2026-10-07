@@ -3,6 +3,8 @@ import { For, type JSX } from "solid-js";
 export const PANEL_OPTIONS = [
     { id: "playable", label: "Playable Battle" },
     { id: "battle", label: "Battle Overview" },
+    { id: "victory", label: "Victory Result" },
+    { id: "defeat", label: "Defeat Result" },
     { id: "components", label: "Components" },
     { id: "character", label: "Character" },
     { id: "targeting", label: "Targeting" },

@@ -14,6 +14,8 @@ import type {
 } from "../../../engine/public/types";
 import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
+import { BattleResultPanel } from "./panels/BattleResultPanel";
+import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
@@ -23,6 +25,8 @@ import { TargetingPanel } from "./panels/TargetingPanel";
 export interface BattleAppProps {
     engine: Engine;
     presentation: Presentation;
+    onRetry?: () => void;
+    onBackToLevelSelect?: () => void;
     observer?: Pick<BattleTelemetryObserver, "onAction" | "onOutcome">;
 }
 
@@ -47,6 +51,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
     const [thresholds] = createSignal<ThresholdInfo>(getThresholds());
     const [screen, setScreen] = createSignal<BattleScreen>({ kind: "overview" });
+    const tracker = createBattleResultTracker(state(), props.engine.getLibrary());
+    const [resultStats, setResultStats] = createSignal(tracker.getStats());
+    const resultModel = createMemo(() => createBattleResultViewModel(state(), resultStats(), props.presentation));
     const [logEntries, setLogEntries] = createSignal<readonly GameLogEntry[]>([]);
 
     const actorExists = (actorId: EntityId): boolean =>
@@ -93,6 +100,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         notifyObserver(() => props.observer?.onAction?.(action, result, "player"));
         if (result.success) {
             const nextState = props.engine.getGameState();
+            tracker.record(action, result, nextState);
+            setResultStats(tracker.getStats());
             setState(nextState);
             setActions(result.actions);
             setLogEntries((entries) => [
@@ -110,6 +119,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     const scrollToBottom = (): void => {
         requestAnimationFrame(() => {
+            if (state().turn.outcome !== "ongoing") return;
             const body = document.querySelector<HTMLElement>(".kcq-screen-layout__body");
             body?.scrollTo(0, body.scrollHeight);
         });
@@ -145,7 +155,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             move: current.screen.moveId,
             targets: [...targets],
         });
-        if (result.success) {
+        if (result.success && state().turn.outcome === "ongoing") {
             const actions = result.actions.find(x => x.id === current.screen.actorId);
             if (actions?.available) {
                 setScreen({
@@ -168,7 +178,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             target,
             binding,
         });
-        if (!result.success) return;
+        if (!result.success || state().turn.outcome !== "ongoing") return;
         const actor = state().characters.find(({ id }) => id === current.actorId);
         setScreen(actor && actor.bonusEscapes > 0
             ? { kind: "escape", actorId: current.actorId }
@@ -187,6 +197,10 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 onEndTurn={() => { execute({ type: "endTurn" }); }}
             />
         }>
+            <Match when={resultModel()} keyed>
+                {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
+                    onBackToLevelSelect={props.onBackToLevelSelect} />}
+            </Match>
             <Match when={characterScreen()} keyed>
                 {(current) => (
                     <CharacterDetailsPanel

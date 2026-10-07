@@ -36,7 +36,7 @@ function prepareGraphicalBattle(
     encounter: EncounterId,
     difficulty: DifficultyId,
 ): GraphicalBattleSession {
-    const battle = createBattle(engine, encounter, difficulty);
+    const battle = createBattle(createEngine(), encounter, difficulty);
     const observer = createBattleTelemetryObserver({
         telemetry: gameplayTelemetry,
         replayId: createId(),

@@ -16,6 +16,29 @@ afterEach(() => {
 });
 
 describe("graphical browser startup", () => {
+    it("prepares fresh engines, party state and lifecycle listeners for each run", async () => {
+        const addEventListener = vi.fn();
+        const removeEventListener = vi.fn();
+        vi.stubGlobal("document", { getElementById: () => ({}) });
+        vi.stubGlobal("window", { addEventListener, removeEventListener });
+        vi.stubGlobal("__KCQ_RELEASE_TAG__", "test");
+        await import("../../src/ui/web/app/main");
+        vi.mocked(render).mock.calls[0][0]();
+        const props = vi.mocked(GraphicalApp).mock.calls[0][0];
+        const first = props.prepareBattle("forest_3", "mythic");
+        first.engine.executeAction({ type: "endTurn" });
+        const retry = props.prepareBattle("forest_3", "mythic");
+        expect(retry.engine).not.toBe(first.engine);
+        expect(retry.engine.getGameState().turn).toMatchObject({ round: 1, outcome: "ongoing" });
+        expect(retry.engine.getGameState().difficulty.id).toBe("mythic");
+        expect(retry.engine.getGameState().characters).toHaveLength(3);
+        expect(props.engine.getGameState().characters).toEqual([]);
+        expect(addEventListener).toHaveBeenCalledTimes(2);
+        first.dispose();
+        retry.dispose();
+        expect(removeEventListener).toHaveBeenCalledTimes(2);
+    });
+
     it.each(["", "?encounter=plains_3&difficulty=mythic", "?encounter=missing&difficulty=invalid"])("mounts the same unprepared app without reading search: %s", async (search) => {
         const root = {};
         const getSearch = vi.fn(() => search);

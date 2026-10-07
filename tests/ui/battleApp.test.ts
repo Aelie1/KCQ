@@ -1,6 +1,6 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { englishStrings } from "../../localization/en/index";
 import { createEngine } from "../../src/engine/public/engine";
 import { createBattle } from "../../src/ui/web/app";
@@ -26,8 +26,25 @@ describe("playable Solid battle application", () => {
         }
     });
 
+    it.each(["victory", "defeat"] as const)("replaces active battle controls when loaded with %s", outcome => {
+        const engine = createEngine(12345);
+        createBattle(engine, "plains_1", "standard");
+        const state = engine.getGameState();
+        state.turn.outcome = outcome;
+        vi.spyOn(engine, "getGameState").mockReturnValue(state);
+        const html = renderToString(() => createComponent(BattleApp, {
+            engine, presentation: new Presentation(englishStrings),
+        }));
+        expect(html).toContain("kcq-battle-result--" + outcome);
+        expect(html).toContain(outcome.toUpperCase());
+        expect(html.match(/<button/g)).toHaveLength(2);
+        expect(html).not.toContain("kcq-battle-overview");
+        expect(html).not.toContain("End Turn");
+        expect(html).not.toContain("Game Log");
+    });
+
     it("keeps the static fixture panels renderable without callback props", () => {
-        for (const initialPanel of ["battle", "character", "targeting", "escape", "log"] as const) {
+        for (const initialPanel of ["battle", "character", "targeting", "escape", "log", "victory", "defeat"] as const) {
             expect(() => renderToString(() => createComponent(DevApp, { initialPanel })))
                 .not.toThrow();
         }

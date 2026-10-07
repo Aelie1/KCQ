@@ -52,7 +52,8 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
             </Match>
             <Match when={battle()} keyed>
                 {(current) => <BattleApp engine={current.session.engine} presentation={props.presentation}
-                    observer={current.session.observer} />}
+                    observer={current.session.observer} onRetry={controller.retryEncounter}
+                    onBackToLevelSelect={controller.returnToLevelSelect} />}
             </Match>
         </Switch>
     </App>;

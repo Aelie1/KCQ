@@ -80,6 +80,8 @@ export interface EncounterDef {
     traps: TrapSetup[];
     setup?: (state: iGameState) => iEffect[];
     librarySetup?: () => Effect[];
+    /** Library-only workload metadata; does not drive combat spawning. */
+    reinforcements?: { defId: string; hpRatio?: number }[];
 }
 
 export interface TrapSetup {

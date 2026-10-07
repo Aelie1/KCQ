@@ -115,6 +115,7 @@ function libraryEncounter(encounter: EncounterDef): EncounterReference {
         id: encounter.id,
         stars: encounter.stars,
         enemies: encounter.enemies.map(x => ({ ...x })),
+        ...(encounter.reinforcements ? { reinforcements: encounter.reinforcements.map(x => ({ ...x })) } : {}),
         bindings: encounter.bindings.map(x => x.id),
         traps: encounter.traps.map(x => x.definition.id),
         setup: encounter.librarySetup ? encounter.librarySetup() : []

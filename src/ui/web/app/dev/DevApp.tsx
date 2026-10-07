@@ -5,6 +5,8 @@ import { Presentation } from "../../../presentation/presentation";
 import { createBattle } from "../../app";
 import { App } from "../App";
 import { BattleApp } from "../BattleApp";
+import { battleResultFixtures } from "../fixtures/battleResult";
+import { BattleResultPanel } from "../panels/BattleResultPanel";
 import { battleOverviewFixture } from "../fixtures/battleOverview";
 import { characterDetailsFixture } from "../fixtures/characterDetails";
 import { escapeFixtures } from "../fixtures/escape";
@@ -41,6 +43,12 @@ export function DevApp(props: DevAppProps = {}): JSX.Element {
                             </Match>
                             <Match when={panel() === "battle"}>
                                 <BattleOverviewPanel {...battleOverviewFixture} />
+                            </Match>
+                            <Match when={panel() === "victory"}>
+                                <BattleResultPanel model={battleResultFixtures.victory} />
+                            </Match>
+                            <Match when={panel() === "defeat"}>
+                                <BattleResultPanel model={battleResultFixtures.defeat} />
                             </Match>
                             <Match when={panel() === "components"}>
                                 <ComponentGalleryPanel />

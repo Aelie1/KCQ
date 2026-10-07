@@ -2945,3 +2945,119 @@ button {
     flex-direction: column;
     gap: 12px;
 }
+
+/* Terminal results share the encounter canvas, cards and controls. */
+.kcq-battle-result__heading {
+    padding: 18px 12px 12px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 12px;
+    background: var(--kcq-surface-panel);
+    text-align: center;
+}
+
+.kcq-battle-result__heading h1 {
+    margin: 0 0 8px;
+    color: var(--kcq-state-success);
+    font-size: 36px;
+    line-height: 1.1;
+    letter-spacing: 0.08em;
+}
+
+.kcq-battle-result--defeat .kcq-battle-result__heading h1 {
+    color: var(--kcq-state-danger);
+}
+
+.kcq-battle-result__heading p {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.kcq-battle-result__encounter {
+    color: var(--kcq-text-secondary);
+}
+
+.kcq-battle-result__summary {
+    padding-top: 8px;
+    color: var(--kcq-text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.kcq-battle-result__progress {
+    display: block;
+    margin-top: 12px;
+    color: var(--kcq-text-primary);
+    font-size: 24px;
+    line-height: 1.2;
+}
+
+.kcq-battle-result__stats {
+    margin: 0;
+    padding: 4px 12px;
+}
+
+.kcq-battle-result__row {
+    display: grid;
+    grid-template-columns: minmax(100px, 1fr) minmax(0, 1.6fr);
+    align-items: start;
+    gap: 8px;
+    padding: 9px 0;
+    font-size: 13px;
+    line-height: 1.4;
+}
+
+.kcq-battle-result__row + .kcq-battle-result__row {
+    border-top: 1px solid var(--kcq-surface-raised);
+}
+
+.kcq-battle-result__row dt {
+    color: var(--kcq-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.kcq-battle-result__row dd {
+    min-width: 0;
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.kcq-battle-result__row dd span {
+    display: block;
+    margin-top: 2px;
+    color: var(--kcq-text-muted);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+
+.kcq-battle-result__actions {
+    display: grid;
+    gap: 6px;
+}
+
+.kcq-battle-result__actions button {
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.kcq-battle-result__retry {
+    background: var(--kcq-accent-primary);
+    color: var(--kcq-surface-inset);
+}
+
+.kcq-battle-result__back {
+    background: var(--kcq-surface-raised);
+    color: var(--kcq-text-secondary);
+}
+
+.kcq-battle-result__actions button:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: 2px;
+}

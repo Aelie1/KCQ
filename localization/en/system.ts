@@ -2,6 +2,22 @@ import { StringTable } from "../../src/ui/presentation/presentation";
 
 
 export const systemStrings: StringTable = {
+    "ui.battleResult.victory": "VICTORY",
+    "ui.battleResult.defeat": "DEFEAT",
+    "ui.battleResult.summary": "{rounds} Rounds · {actions} Actions",
+    "ui.battleResult.progress": "{percent}% Progress",
+    "ui.battleResult.rounds": "Rounds",
+    "ui.battleResult.actions": "Actions",
+    "ui.battleResult.escapes": "Escapes",
+    "ui.battleResult.peakBinding": "Peak Binding",
+    "ui.battleResult.hits": "Hits",
+    "ui.battleResult.bindings": "Bindings",
+    "ui.battleResult.incapacitations": "Incapacitations",
+    "ui.battleResult.rescues": "Rescues",
+    "ui.battleResult.actionDetail": "avg {average}, max {max} — {move}",
+    "ui.battleResult.escapeDetail": "avg {average}",
+    "ui.battleResult.retry": "Retry",
+    "ui.battleResult.back": "Back to Level Select",
     "ui.encounterPicker.title": "Ko-chan’s Quest",
     "ui.encounter.challenge": "Challenge",
     "ui.encounter.challengeAccessible": "{stars} of 5 stars",

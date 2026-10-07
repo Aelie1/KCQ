@@ -10,6 +10,22 @@ type StringArg = number | string | boolean | StringKey;
 export type StringTable = Record<string, string>;
 
 export type UiLabel =
+    | "battleResult.victory"
+    | "battleResult.defeat"
+    | "battleResult.summary"
+    | "battleResult.progress"
+    | "battleResult.rounds"
+    | "battleResult.actions"
+    | "battleResult.escapes"
+    | "battleResult.peakBinding"
+    | "battleResult.hits"
+    | "battleResult.bindings"
+    | "battleResult.incapacitations"
+    | "battleResult.rescues"
+    | "battleResult.actionDetail"
+    | "battleResult.escapeDetail"
+    | "battleResult.retry"
+    | "battleResult.back"
     | "encounterPicker.title"
     | "encounter.challenge"
     | "encounter.challengeAccessible"
