@@ -223,7 +223,7 @@ export class Presentation {
         return this.translate({ id: `ui.${label}`, args });
     }
 
-    difficulty(difficulty: DifficultyId, variant: "name" | "desc" = "name"): string {
+    difficulty(difficulty: DifficultyId, variant: string = "name"): string {
         return this.translate(this.definitionKey("difficulty", difficulty, variant));
     }
 
