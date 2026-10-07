@@ -2629,6 +2629,7 @@ button {
     color: var(--kcq-text-dim);
     cursor: default;
 }
+
 /* Catalog entry screens share the combat canvas, cards, tokens and controls. */
 html:has(.kcq-encounter-screen),
 body:has(.kcq-encounter-screen),
@@ -2643,10 +2644,11 @@ body:has(.kcq-encounter-screen),
     width: 366px;
     max-width: 100%;
     min-width: 0;
-    min-height: 820px;
 }
 
-.kcq-encounter-screen > * { flex-shrink: 0; }
+.kcq-encounter-screen>* {
+    flex-shrink: 0;
+}
 
 .kcq-encounter-header {
     grid-template-columns: minmax(0, 1fr) 42px;
@@ -2664,8 +2666,15 @@ body:has(.kcq-encounter-screen),
     line-height: 24px;
 }
 
-.kcq-encounter-header__title--picker { font-size: 24px; line-height: 29px; }
-.kcq-encounter-header .kcq-combat-header__settings { height: 58px; cursor: default; }
+.kcq-encounter-header__title--picker {
+    font-size: 24px;
+    line-height: 29px;
+}
+
+.kcq-encounter-header .kcq-combat-header__settings {
+    height: 58px;
+    cursor: default;
+}
 
 .kcq-encounter-card {
     min-width: 0;
@@ -2687,19 +2696,40 @@ body:has(.kcq-encounter-screen),
     cursor: pointer;
 }
 
-.kcq-encounter-picker__row:hover { border-color: var(--kcq-structure-border-strong); }
+.kcq-encounter-picker__row:hover {
+    border-color: var(--kcq-structure-border-strong);
+}
+
 .kcq-encounter-picker__row:focus-visible,
 .kcq-encounter-details__footer button:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: 2px;
 }
 
-.kcq-encounter-picker__name { font-size: 14px; line-height: 17px; overflow-wrap: anywhere; }
-.kcq-encounter-picker__stars { color: var(--kcq-text-secondary); font-size: 11px; font-weight: 700; white-space: nowrap; }
-.kcq-encounter-picker__best-clear { font-size: 12px; line-height: 16px; }
+.kcq-encounter-picker__name {
+    font-size: 14px;
+    line-height: 17px;
+    overflow-wrap: anywhere;
+}
 
-.kcq-encounter-details__info { display: flex; padding: 9px 8px; }
-.kcq-encounter-details__info > div {
+.kcq-encounter-picker__stars {
+    color: var(--kcq-text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.kcq-encounter-picker__best-clear {
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.kcq-encounter-details__info {
+    display: flex;
+    padding: 9px 8px;
+}
+
+.kcq-encounter-details__info>div {
     display: flex;
     flex: 1;
     flex-direction: column;
@@ -2720,9 +2750,20 @@ body:has(.kcq-encounter-screen),
     text-transform: uppercase;
 }
 
-.kcq-encounter-details__info p { margin: 0; line-height: normal; }
-.kcq-encounter-details__stars { color: var(--kcq-text-secondary); font-size: 20px; font-weight: 700; }
-.kcq-encounter-details__best-clear { font-size: 16px; }
+.kcq-encounter-details__info p {
+    margin: 0;
+    line-height: normal;
+}
+
+.kcq-encounter-details__stars {
+    color: var(--kcq-text-secondary);
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.kcq-encounter-details__best-clear {
+    font-size: 16px;
+}
 
 .kcq-encounter-details__heading {
     margin: 0;
@@ -2734,10 +2775,23 @@ body:has(.kcq-encounter-screen),
     text-transform: uppercase;
 }
 
-.kcq-encounter-details__description .kcq-encounter-details__heading { min-height: 20px; }
-.kcq-encounter-details__description p { margin: 0; font-size: 14px; line-height: 19px; white-space: pre-wrap; }
+.kcq-encounter-details__description .kcq-encounter-details__heading {
+    min-height: 20px;
+}
+
+.kcq-encounter-details__description p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 19px;
+    white-space: pre-wrap;
+}
+
 .kcq-encounter-details__enemies,
-.kcq-encounter-details__rules { display: flex; flex-direction: column; gap: 5px; }
+.kcq-encounter-details__rules {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
 
 .kcq-encounter-details__enemy {
     display: grid;
@@ -2747,16 +2801,53 @@ body:has(.kcq-encounter-screen),
     min-height: 25px;
 }
 
-.kcq-encounter-details__enemy + .kcq-encounter-details__enemy {
+.kcq-encounter-details__enemy+.kcq-encounter-details__enemy {
     border-top: 1px solid var(--kcq-state-neutral-bg);
     padding-top: 5px;
 }
 
-.kcq-encounter-details__enemy-name { font-size: 14px; line-height: 17px; overflow-wrap: anywhere; }
-.kcq-encounter-details__hp { color: var(--kcq-text-secondary); font-size: 14px; line-height: 17px; text-align: right; }
-.kcq-encounter-details__rules .kcq-preview-effect { background: transparent; }
+.kcq-encounter-details__enemy-name {
+    font-size: 14px;
+    line-height: 17px;
+    overflow-wrap: anywhere;
+}
 
-.kcq-encounter-details__footer { margin-top: auto; padding-top: 12px; }
+.kcq-encounter-details__hp {
+    color: var(--kcq-text-secondary);
+    font-size: 14px;
+    line-height: 17px;
+    text-align: right;
+}
+
+.kcq-encounter-details__rules .kcq-preview-effect {
+    background: transparent;
+}
+
+.kcq-encounter-details {
+    height: calc(100dvh - 24px);
+    min-height: 0;
+    overflow: hidden;
+}
+
+.kcq-encounter-details__body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    /* important */
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.kcq-encounter-details__footer {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 12px;
+    flex: 0 0 48px;
+    margin-top: 0;
+}
+
 .kcq-encounter-details__footer button {
     width: 100%;
     height: 42px;
@@ -2766,4 +2857,10 @@ body:has(.kcq-encounter-screen),
     font-weight: 700;
     line-height: normal;
     cursor: pointer;
+}
+
+.kcq-encounter-details__footer .kcq-targeting__back {
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 7px;
+    font-size: 10px;
 }

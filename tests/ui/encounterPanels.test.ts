@@ -26,19 +26,20 @@ describe("encounter panels", () => {
 
     it("puts enemy rows in one outer card and uses shared effect previews", () => {
         const model = createEncounterDetailsViewModel(library, "outside", presentation);
-        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onStart: () => {} }));
+        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onStart: () => {}, onBack: () => {} }));
         expect(html.match(/class="kcq-encounter-card kcq-encounter-details__enemies"/g)).toHaveLength(1);
         expect(html.match(/class="kcq-encounter-details__enemy"/g)).toHaveLength(model.enemies.length);
         expect(html).toContain("kcq-status-chip--danger");
         expect(html).toContain("kcq-preview-effect");
         expect(html).toContain("Start Encounter");
+        expect(html).toContain("Go Back");
         expect(html).not.toContain("{index}");
     });
 
     it("omits special rules when the public setup is empty", () => {
         const model = createEncounterDetailsViewModel(library, "plains_1", presentation);
         expect(model.effects).toEqual([]);
-        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onStart: () => {} }));
+        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onStart: () => {}, onBack: () => {} }));
         expect(html).not.toContain("kcq-encounter-details__rules");
         expect(html).toContain("Start Encounter");
     });

@@ -30,7 +30,7 @@ export interface EncounterDetailsViewModel extends EncounterSummaryViewModel {
     effects: readonly EffectPreviewViewModel[];
     labels: {
         settings: string; challenge: string; bestClear: string; description: string;
-        enemies: string; specialRules: string; start: string;
+        enemies: string; specialRules: string; start: string; back: string;
     };
 }
 
@@ -93,6 +93,7 @@ export function createEncounterDetailsViewModel(
             enemies: presentation.ui("encounter.enemies"),
             specialRules: presentation.ui("encounter.specialRules"),
             start: presentation.ui("encounter.start"),
+            back: presentation.ui("targeting.back"),
         },
     };
 }
