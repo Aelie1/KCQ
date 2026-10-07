@@ -114,6 +114,7 @@ describe("public content library", () => {
         });
         expect(library.encounters[encounter.id]).toEqual({
             id: encounter.id,
+            stars: 1,
             enemies: [{ defId: foe.id, id: "named-foe" }],
             bindings: [restraint.id],
             traps: [trap.id],
