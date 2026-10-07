@@ -27,7 +27,6 @@ const route = selectGraphicalRoute(new URLSearchParams(window.location.search), 
 
 render(() => <GraphicalApp engine={engine} presentation={presentation} initialRoute={route}
     prepareBattle={prepareGraphicalBattle} />, root);
-setupResponsiveScale();
 
 function createId(): string {
     if (typeof crypto.randomUUID === "function") {
@@ -52,27 +51,4 @@ function prepareGraphicalBattle(
     });
     const detachLifecycle = attachBattlePageLifecycle(observer);
     return { engine: battle.engine, observer, dispose: detachLifecycle };
-}
-
-function setupResponsiveScale(): void {
-    const shell = document.querySelector<HTMLElement>(".kcq-app");
-    if (!shell) return;
-
-    const BASE_WIDTH = 366;
-    const MAX_ZOOM = 1.5;
-
-    const resizeGame = (): void => {
-        // .kcq-app has 12px padding on each side.
-        const availableWidth = shell.clientWidth - 24;
-
-        const zoom = Math.min(
-            MAX_ZOOM,
-            Math.max(1, availableWidth / BASE_WIDTH),
-        );
-
-        shell.style.setProperty("--kcq-ui-zoom", String(zoom));
-    };
-
-    new ResizeObserver(resizeGame).observe(shell);
-    resizeGame();
 }

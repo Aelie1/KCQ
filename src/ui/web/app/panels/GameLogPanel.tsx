@@ -6,6 +6,7 @@ import {
     type SemanticStyle,
 } from "../../../console/presentation";
 import type { Presentation } from "../../../presentation/presentation";
+import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { createCombatHeaderViewModel } from "../viewModels/combatHeader";
 
@@ -64,41 +65,44 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     )));
 
     return (
-        <section class="kcq-game-log" aria-label={props.presentation.ui("combatHeader.gameLog")}>
-            <CombatHeader
-                variant="subscreen"
-                encounterLabel={header().encounterLabel}
-                contextLabel={props.presentation.ui("combatHeader.gameLog")}
-                roundLabel={header().roundLabel}
-                phaseLabel={header().phaseLabel}
-                backLabel={props.presentation.ui("characterDetails.back")}
-                onBack={props.onBack}
-            />
-
-            <div class="kcq-game-log__scroll" role="log" aria-label="Chronological game events">
-                <For each={groups()}>
-                    {(group) => (
-                        <div
-                            class={`kcq-game-log__group kcq-game-log__group--${group.kind}`}
-                            data-kind={group.kind}
-                            data-actor={group.actor}
-                            data-phase={group.phase}
-                        >
-                            <For each={group.lines}>
-                                {(line) => (
-                                    <div
-                                        class={`kcq-game-log__line${line.style
-                                            ? ` ${gameLogSemanticClass(line.style)}`
-                                            : ""}`}
-                                    >
-                                        {line.text}
-                                    </div>
-                                )}
-                            </For>
-                        </div>
-                    )}
-                </For>
-            </div>
-        </section>
+        <ScreenLayout class="kcq-game-log" ariaLabel={props.presentation.ui("combatHeader.gameLog")}
+            header={
+                <CombatHeader
+                    variant="subscreen"
+                    encounterLabel={header().encounterLabel}
+                    contextLabel={props.presentation.ui("combatHeader.gameLog")}
+                    roundLabel={header().roundLabel}
+                    phaseLabel={header().phaseLabel}
+                    backLabel={props.presentation.ui("characterDetails.back")}
+                    onBack={props.onBack}
+                />
+            }
+            body={<>
+                <div class="kcq-game-log__scroll" role="log" aria-label="Chronological game events">
+                    <For each={groups()}>
+                        {(group) => (
+                            <div
+                                class={`kcq-game-log__group kcq-game-log__group--${group.kind}`}
+                                data-kind={group.kind}
+                                data-actor={group.actor}
+                                data-phase={group.phase}
+                            >
+                                <For each={group.lines}>
+                                    {(line) => (
+                                        <div
+                                            class={`kcq-game-log__line${line.style
+                                                ? ` ${gameLogSemanticClass(line.style)}`
+                                                : ""}`}
+                                        >
+                                            {line.text}
+                                        </div>
+                                    )}
+                                </For>
+                            </div>
+                        )}
+                    </For>
+                </div>
+            </>}
+        />
     );
 }

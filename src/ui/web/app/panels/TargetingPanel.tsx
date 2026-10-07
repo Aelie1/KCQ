@@ -35,18 +35,6 @@ export interface TargetingPanelProps {
     onSelectCharacter?: (id: EntityId) => void;
 }
 
-interface TargetingActionRegionProps {
-    action: ActionInfo;
-    actions: readonly ActionView[];
-    actorId: EntityId;
-    initialSelectedTargetIds?: readonly EntityId[];
-    presentation: Presentation;
-    state: GameState;
-    thresholds: ThresholdInfo;
-    onBack?: () => void;
-    onExecute?: (targets: readonly EntityId[]) => void;
-}
-
 export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
     const characterModel = createMemo(() => createCharacterDetailsViewModel(
         props.state,
@@ -56,30 +44,6 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
         props.presentation,
     ));
 
-    return (
-        <CharacterDetailsLayout
-            model={characterModel()}
-            contextLabel={props.presentation.ui("combatHeader.targeting")}
-            onHeaderBack={props.onHeaderBack}
-            onSelectCharacter={props.onSelectCharacter}
-            actionRegion={
-                <TargetingActionRegion
-                    action={props.action}
-                    actions={props.actions}
-                    actorId={props.actorId}
-                    initialSelectedTargetIds={props.initialSelectedTargetIds}
-                    presentation={props.presentation}
-                    state={props.state}
-                    thresholds={props.thresholds}
-                    onBack={props.onBack}
-                    onExecute={props.onExecute}
-                />
-            }
-        />
-    );
-}
-
-function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
     const baseModel = createMemo(() => createTargetingViewModel(
         props.state,
         props.actorId,
@@ -130,74 +94,84 @@ function TargetingActionRegion(props: TargetingActionRegionProps): JSX.Element {
     };
 
     return (
-        <section class="kcq-targeting" aria-label={model().command.name}>
-            <div class="kcq-targeting__panel">
-                <Show when={model().heading} keyed>
-                    {(heading) => <h1>{heading}</h1>}
-                </Show>
-                <SelectedCommandSummary
-                    name={model().command.name}
-                    tags={model().command.tags}
-                />
-                <Show when={model().reasonLabel}>
-                    <p class="kcq-targeting__reason">{model().reasonLabel}</p>
-                </Show>
-                <div
-                    class="kcq-targeting__targets"
-                    classList={{ "kcq-targeting__targets--predetermined": model().mode === "predetermined" }}
-                >
-                    <For each={model().targets}>
-                        {(target) => (
-                            <TargetCard
-                                disabled={!model().available}
-                                mode={model().mode}
-                                target={target}
-                                selected={target.target !== null && selectedTargets().includes(target.target)}
-                                onSelect={target.valid && target.target
-                                    ? () => selectTarget(target.target as EntityId)
-                                    : undefined}
-                            />
-                        )}
-                    </For>
-                </div>
-                <Show when={model().actionEffects.length > 0 || model().actionEffectGroups.length > 0}>
-                    <section class="kcq-targeting__action-effects" aria-labelledby="targeting-action-effects-heading">
-                        <h2 id="targeting-action-effects-heading">{model().labels.actionEffects}</h2>
-                        <For each={model().actionEffectGroups}>
-                            {(group) => (
-                                <div class="kcq-targeting__action-effect-group">
-                                    <h3 class={`kcq-player-identity--${group.tone}`}>{group.name}</h3>
-                                    <For each={group.effects}>
-                                        {(effect) => <EffectPreview effect={effect} />}
-                                    </For>
-                                </div>
-                            )}
-                        </For>
-                        <For each={model().actionEffects}>
-                            {(effect) => <EffectPreview effect={effect} />}
-                        </For>
-                    </section>
-                </Show>
-            </div>
-            <footer class="kcq-targeting__footer">
-                <button
-                    type="button"
-                    class="kcq-targeting__back"
-                    onClick={() => props.onBack?.()}
-                >
-                    <span aria-hidden="true">↶</span> {model().controls.backLabel}
-                </button>
-                <button
-                    type="button"
-                    class="kcq-targeting__execute"
-                    disabled={!ready()}
-                    onClick={() => {
-                        if (ready()) props.onExecute?.(selectedTargets());
-                    }}
-                >
-                    {model().controls.executeLabel} <span aria-hidden="true">▶</span>
-                </button>
-            </footer>
-        </section>
+        <CharacterDetailsLayout
+            model={characterModel()}
+            contextLabel={props.presentation.ui("combatHeader.targeting")}
+            onHeaderBack={props.onHeaderBack}
+            onSelectCharacter={props.onSelectCharacter}
+            actionRegion={
+                <section class="kcq-targeting" aria-label={model().command.name}>
+                    <div class="kcq-targeting__panel">
+                        <Show when={model().heading} keyed>
+                            {(heading) => <h1>{heading}</h1>}
+                        </Show>
+                        <SelectedCommandSummary
+                            name={model().command.name}
+                            tags={model().command.tags}
+                        />
+                        <Show when={model().reasonLabel}>
+                            <p class="kcq-targeting__reason">{model().reasonLabel}</p>
+                        </Show>
+                        <div
+                            class="kcq-targeting__targets"
+                            classList={{ "kcq-targeting__targets--predetermined": model().mode === "predetermined" }}
+                        >
+                            <For each={model().targets}>
+                                {(target) => (
+                                    <TargetCard
+                                        disabled={!model().available}
+                                        mode={model().mode}
+                                        target={target}
+                                        selected={target.target !== null && selectedTargets().includes(target.target)}
+                                        onSelect={target.valid && target.target
+                                            ? () => selectTarget(target.target as EntityId)
+                                            : undefined}
+                                    />
+                                )}
+                            </For>
+                        </div>
+                        <Show when={model().actionEffects.length > 0 || model().actionEffectGroups.length > 0}>
+                            <section class="kcq-targeting__action-effects" aria-labelledby="targeting-action-effects-heading">
+                                <h2 id="targeting-action-effects-heading">{model().labels.actionEffects}</h2>
+                                <For each={model().actionEffectGroups}>
+                                    {(group) => (
+                                        <div class="kcq-targeting__action-effect-group">
+                                            <h3 class={`kcq-player-identity--${group.tone}`}>{group.name}</h3>
+                                            <For each={group.effects}>
+                                                {(effect) => <EffectPreview effect={effect} />}
+                                            </For>
+                                        </div>
+                                    )}
+                                </For>
+                                <For each={model().actionEffects}>
+                                    {(effect) => <EffectPreview effect={effect} />}
+                                </For>
+                            </section>
+                        </Show>
+                    </div>
+                </section>
+            }
+            footer={
+                <footer class="kcq-screen-actions kcq-targeting__footer">
+                    <button
+                        type="button"
+                        class="kcq-targeting__back"
+                        onClick={() => props.onBack?.()}
+                    >
+                        <span aria-hidden="true">↶</span> {model().controls.backLabel}
+                    </button>
+                    <button
+                        type="button"
+                        class="kcq-targeting__execute"
+                        disabled={!ready()}
+                        onClick={() => {
+                            if (ready()) props.onExecute?.(selectedTargets());
+                        }}
+                    >
+                        {model().controls.executeLabel} <span aria-hidden="true">▶</span>
+                    </button>
+                </footer>
+            }
+        />
     );
 }

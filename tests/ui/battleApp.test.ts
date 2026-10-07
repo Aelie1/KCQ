@@ -19,7 +19,7 @@ describe("playable Solid battle application", () => {
             presentation,
         }));
 
-        expect(html).toContain("class=\"kcq-battle-overview\"");
+        expect(html).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
         expect(html).toContain(presentation.encounter("plains_1"));
         for (const character of engine.getGameState().characters) {
             expect(html).toContain(presentation.entity(character.id));
@@ -38,7 +38,7 @@ describe("playable Solid battle application", () => {
             initialPanel: "playable" as const,
         }));
 
-        expect(html).toContain("class=\"kcq-battle-overview\"");
+        expect(html).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
         expect(html).toContain(new Presentation(englishStrings).encounter("plains_1"));
     });
 });

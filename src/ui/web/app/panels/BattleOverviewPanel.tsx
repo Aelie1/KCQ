@@ -6,6 +6,7 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { EnemyCard } from "../components/EnemyCard";
 import { PartyCard } from "../components/PartyCard";
@@ -30,66 +31,70 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
     ));
 
     return (
-        <section class="kcq-battle-overview" aria-label={model().header.encounterLabel}>
-            <CombatHeader
-                variant="overview"
-                encounterLabel={model().header.encounterLabel}
-                difficultyLabel={model().header.difficultyLabel}
-                roundLabel={model().header.roundLabel}
-                phaseLabel={model().header.phaseLabel}
-                trap={model().header.trap}
-                settingsLabel={model().controls.settingsLabel}
-            />
+        <ScreenLayout class="kcq-battle-overview" ariaLabel={model().header.encounterLabel}
+            header={
+                <CombatHeader
+                    variant="overview"
+                    encounterLabel={model().header.encounterLabel}
+                    difficultyLabel={model().header.difficultyLabel}
+                    roundLabel={model().header.roundLabel}
+                    phaseLabel={model().header.phaseLabel}
+                    trap={model().header.trap}
+                    settingsLabel={model().controls.settingsLabel}
+                />
+            }
+            body={<>
+                <section class="kcq-battle-section kcq-battle-section--enemies" aria-labelledby="battle-enemies-heading">
+                    <header class="kcq-battle-section__heading">
+                        <h2 id="battle-enemies-heading">{model().enemiesHeading}</h2>
+                        <span>{model().enemiesCountLabel}</span>
+                    </header>
+                    <div class="kcq-battle-overview__enemies">
+                        <For each={model().enemies}>
+                            {(enemy) => <EnemyCard enemy={enemy} />}
+                        </For>
+                    </div>
+                </section>
 
-            <section class="kcq-battle-section kcq-battle-section--enemies" aria-labelledby="battle-enemies-heading">
-                <header class="kcq-battle-section__heading">
-                    <h2 id="battle-enemies-heading">{model().enemiesHeading}</h2>
-                    <span>{model().enemiesCountLabel}</span>
-                </header>
-                <div class="kcq-battle-overview__enemies">
-                    <For each={model().enemies}>
-                        {(enemy) => <EnemyCard enemy={enemy} />}
-                    </For>
-                </div>
-            </section>
+                <div class="kcq-battle-overview__divider" aria-hidden="true" />
 
-            <div class="kcq-battle-overview__divider" aria-hidden="true" />
-
-            <section class="kcq-battle-section kcq-battle-section--party" aria-labelledby="battle-party-heading">
-                <header class="kcq-battle-section__heading">
-                    <h2 id="battle-party-heading">{model().partyHeading}</h2>
-                    <span>{model().partyCountLabel}</span>
-                </header>
-                <div class="kcq-battle-overview__party">
-                    <For each={model().party}>
-                        {(character) => (
-                            <PartyCard
-                                character={character}
-                                onSelect={props.onSelectCharacter
-                                    ? () => props.onSelectCharacter?.(character.id)
-                                    : undefined}
-                            />
-                        )}
-                    </For>
-                </div>
-            </section>
-
-            <footer class="kcq-battle-overview__footer">
-                <button
-                    class="kcq-battle-overview__secondary-action"
-                    type="button"
-                    onClick={() => props.onGameLog?.()}
-                >
-                    {model().controls.gameLogLabel}
-                </button>
-                <button
-                    class="kcq-battle-overview__primary-action"
-                    type="button"
-                    onClick={() => props.onEndTurn?.()}
-                >
-                    {model().controls.endTurnLabel}
-                </button>
-            </footer>
-        </section>
+                <section class="kcq-battle-section kcq-battle-section--party" aria-labelledby="battle-party-heading">
+                    <header class="kcq-battle-section__heading">
+                        <h2 id="battle-party-heading">{model().partyHeading}</h2>
+                        <span>{model().partyCountLabel}</span>
+                    </header>
+                    <div class="kcq-battle-overview__party">
+                        <For each={model().party}>
+                            {(character) => (
+                                <PartyCard
+                                    character={character}
+                                    onSelect={props.onSelectCharacter
+                                        ? () => props.onSelectCharacter?.(character.id)
+                                        : undefined}
+                                />
+                            )}
+                        </For>
+                    </div>
+                </section>
+            </>}
+            footer={
+                <footer class="kcq-screen-actions kcq-battle-overview__footer">
+                    <button
+                        class="kcq-battle-overview__secondary-action"
+                        type="button"
+                        onClick={() => props.onGameLog?.()}
+                    >
+                        {model().controls.gameLogLabel}
+                    </button>
+                    <button
+                        class="kcq-battle-overview__primary-action"
+                        type="button"
+                        onClick={() => props.onEndTurn?.()}
+                    >
+                        {model().controls.endTurnLabel}
+                    </button>
+                </footer>
+            }
+        />
     );
 }

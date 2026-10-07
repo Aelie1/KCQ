@@ -30,9 +30,9 @@ html,
 body,
 #root {
     min-width: 320px;
-    min-height: 100%;
+    height: 100%;
     margin: 0;
-    scrollbar-gutter: stable;
+    overflow: hidden;
 }
 
 body {
@@ -50,7 +50,7 @@ button {
 }
 
 .kcq-app {
-    min-height: 720px;
+    min-height: 0;
     padding: 12px;
     background: var(--kcq-surface-background);
     color: var(--kcq-text-primary);
@@ -75,14 +75,76 @@ button {
     color: var(--kcq-accent-primary);
 }
 
-.kcq-battle-overview {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+.kcq-screen-layout {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: var(--kcq-screen-gap, 12px);
     width: 366px;
     max-width: 100%;
     min-width: 0;
+    height: var(--kcq-ui-height);
+    min-height: 0;
+    overflow: hidden;
     background: var(--kcq-surface-background);
+}
+
+.kcq-screen-layout__header,
+.kcq-screen-layout__footer {
+    min-width: 0;
+}
+
+.kcq-screen-layout__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--kcq-screen-gap, 12px);
+    min-width: 0;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    /* Keep the 366px canvas intact when the body needs to scroll. */
+    scrollbar-width: none;
+}
+
+.kcq-screen-layout__body > * {
+    flex-shrink: 0;
+}
+
+/* With no actions, the body occupies all of the remaining height. */
+.kcq-screen-layout:not(:has(> .kcq-screen-layout__footer)) {
+    grid-template-rows: auto minmax(0, 1fr);
+}
+
+.kcq-screen-actions {
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 6px;
+    align-items: center;
+    width: 100%;
+    height: 48px;
+}
+
+.kcq-screen-layout__header {
+    background: var(--kcq-surface-background);
+}
+
+.kcq-battle-overview > .kcq-screen-layout__header,
+.kcq-game-log > .kcq-screen-layout__header {
+    padding-bottom: 6px;
+}
+
+.kcq-character-details {
+    --kcq-screen-gap: 8px;
+}
+
+.kcq-character-details__header {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-bottom: 8px;
+}
+
+.kcq-game-log > .kcq-screen-layout__body {
+    background: var(--kcq-surface-card);
 }
 
 .kcq-combat-header {
@@ -94,41 +156,6 @@ button {
     border: 1px solid var(--kcq-surface-raised);
     border-radius: 12px;
     background: var(--kcq-surface-panel);
-}
-
-.kcq-combat-header-sticky {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-
-    margin-top: -12px;
-    padding-top: 12px;
-    padding-bottom: 6px;
-
-    background: var(--kcq-surface-background);
-}
-
-.kcq-character-details__sticky {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-
-    margin-top: -12px;
-    padding-top: 12px;
-    padding-bottom: 8px;
-
-    background: var(--kcq-surface-background);
-}
-
-.kcq-character-details__sticky .kcq-combat-header-sticky {
-    position: static;
-    margin-top: 0;
-    padding-top: 0;
-    padding-bottom: 0;
 }
 
 .kcq-combat-header--overview {
@@ -345,9 +372,6 @@ button {
     gap: 6px;
     width: 366px;
     max-width: 100%;
-    max-height: 258px;
-    overflow-x: hidden;
-    overflow-y: auto;
 }
 
 .kcq-battle-overview__divider {
@@ -360,16 +384,6 @@ button {
 .kcq-battle-overview__party {
     display: grid;
     gap: 8px;
-}
-
-.kcq-battle-overview__footer {
-    display: grid;
-    flex: 0 0 48px;
-    grid-template-columns: 2fr 3fr;
-    gap: 6px;
-    align-items: center;
-    width: 100%;
-    height: 48px;
 }
 
 .kcq-battle-overview__footer button {
@@ -1034,14 +1048,7 @@ button {
 }
 
 .kcq-game-log {
-    display: flex;
-    flex-direction: column;
-    width: 366px;
-    max-width: 100%;
-    min-width: 0;
-    height: 696px;
-    max-height: calc(100vh - 24px);
-    overflow: hidden;
+    --kcq-screen-gap: 0px;
     border: 1px solid var(--kcq-structure-border);
     border-radius: 12px;
     background: var(--kcq-surface-panel);
@@ -1049,13 +1056,9 @@ button {
 
 .kcq-game-log__scroll {
     display: flex;
-    flex: 1 1 auto;
     flex-direction: column;
     gap: 8px;
-    min-height: 0;
     padding: 10px;
-    overflow-x: hidden;
-    overflow-y: auto;
     background: var(--kcq-surface-card);
 }
 
@@ -1171,16 +1174,6 @@ button {
 
 .kcq-game-log__line--transient-highlight {
     background: var(--kcq-accent-primary-bg);
-}
-
-.kcq-character-details {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    width: 366px;
-    max-width: 100%;
-    min-width: 0;
-    background: var(--kcq-surface-background);
 }
 
 .kcq-character-details p,
@@ -1779,15 +1772,6 @@ button {
     color: var(--kcq-text-primary);
 }
 
-.kcq-character-details__footer {
-    display: grid;
-    grid-template-columns: 2fr 3fr;
-    gap: 6px;
-    align-items: center;
-    width: 100%;
-    height: 48px;
-}
-
 .kcq-character-details__footer button {
     height: 42px;
     padding: 0 10px;
@@ -2355,16 +2339,8 @@ button {
     text-transform: uppercase;
 }
 
-.kcq-targeting__footer {
-    display: grid;
-    grid-template-columns: 144px minmax(0, 1fr);
-    gap: 6px;
-    align-items: center;
-    width: 100%;
-    height: 48px;
-}
-
-.kcq-targeting__footer button {
+.kcq-targeting__footer button,
+.kcq-escape__footer button {
     height: 42px;
     padding: 0 10px;
     overflow: hidden;
@@ -2591,26 +2567,6 @@ button {
     color: var(--kcq-binding-impossible);
 }
 
-.kcq-escape__footer {
-    display: grid;
-    grid-template-columns: 144px minmax(0, 1fr);
-    gap: 6px;
-    align-items: center;
-    width: 100%;
-    height: 48px;
-}
-
-.kcq-escape__footer button {
-    height: 42px;
-    padding: 0 10px;
-    overflow: hidden;
-    border: 1px solid var(--kcq-structure-border);
-    border-radius: 7px;
-    font-weight: 700;
-    line-height: normal;
-    white-space: nowrap;
-}
-
 .kcq-escape__back {
     background: var(--kcq-surface-raised);
     color: var(--kcq-text-secondary);
@@ -2631,25 +2587,6 @@ button {
 }
 
 /* Catalog entry screens share the combat canvas, cards, tokens and controls. */
-html:has(.kcq-encounter-screen),
-body:has(.kcq-encounter-screen),
-#root:has(.kcq-encounter-screen) {
-    scrollbar-gutter: auto;
-}
-
-.kcq-encounter-screen {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    width: 366px;
-    max-width: 100%;
-    min-width: 0;
-}
-
-.kcq-encounter-screen>* {
-    flex-shrink: 0;
-}
-
 .kcq-encounter-header {
     grid-template-columns: minmax(0, 1fr) 42px;
     gap: 8px;
@@ -2823,29 +2760,10 @@ body:has(.kcq-encounter-screen),
     background: transparent;
 }
 
-.kcq-encounter-details {
-    height: calc(100dvh - 24px);
-    min-height: 0;
-    overflow: hidden;
-}
-
 .kcq-encounter-details__body {
     display: flex;
-    flex: 1 1 auto;
     flex-direction: column;
     gap: 12px;
-    min-height: 0;
-    /* important */
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
-.kcq-encounter-details__footer {
-    display: grid;
-    grid-template-columns: 2fr 3fr;
-    gap: 12px;
-    flex: 0 0 48px;
-    margin-top: 0;
 }
 
 .kcq-encounter-details__footer button {

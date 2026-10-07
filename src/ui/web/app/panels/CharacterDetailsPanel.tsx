@@ -73,20 +73,21 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                             </For>
                         </div>
                     </section>
-
-                    <footer class="kcq-character-details__footer">
-                        <button
-                            type="button"
-                            class="kcq-character-details__back"
-                            onClick={() => props.onBack?.()}
-                        >
-                            <span aria-hidden="true">↶</span> {model().controls.backLabel}
-                        </button>
-                        <button type="button" class="kcq-character-details__select" disabled>
-                            {model().controls.selectMoveLabel} <span aria-hidden="true">▶</span>
-                        </button>
-                    </footer>
                 </>
+            }
+            footer={
+                <footer class="kcq-screen-actions kcq-character-details__footer">
+                    <button
+                        type="button"
+                        class="kcq-character-details__back"
+                        onClick={() => props.onBack?.()}
+                    >
+                        <span aria-hidden="true">↶</span> {model().controls.backLabel}
+                    </button>
+                    <button type="button" class="kcq-character-details__select" disabled>
+                        {model().controls.selectMoveLabel} <span aria-hidden="true">▶</span>
+                    </button>
+                </footer>
             }
         />
     );

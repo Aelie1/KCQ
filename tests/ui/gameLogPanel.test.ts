@@ -84,7 +84,7 @@ describe("Solid game log panel", () => {
     it("uses the production panel for the Game Log debug entry", () => {
         const html = renderToString(() => createComponent(DevApp, { initialPanel: "log" as const }));
 
-        expect(html).toContain("class=\"kcq-game-log\"");
+        expect(html).toMatch(/class="[^"]*\bkcq-game-log\b[^"]*"/);
         expect(html).toContain("kcq-combat-header--subscreen");
         expect(html).toContain("kcq-combat-header__breadcrumb");
         expect(html).not.toContain("kcq-combat-header__settings");
