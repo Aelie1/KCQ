@@ -38,7 +38,7 @@ describe("playable Solid battle application", () => {
             engine, presentation: new Presentation(englishStrings),
         }));
         expect(html).toContain("kcq-battle-result--" + outcome);
-        expect(html).toContain(outcome.toUpperCase());
+        expect(html).toContain(new Presentation(englishStrings).battleState(outcome));
         expect(html).toContain("kcq-battle-overview");
         expect(html).toMatch(/class="kcq-battle-stage__background"[^>]*inert[^>]*aria-hidden="true"/);
         const modal = html.slice(html.indexOf('class="kcq-battle-result__overlay"'));

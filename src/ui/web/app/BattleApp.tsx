@@ -51,7 +51,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
     const [thresholds] = createSignal<ThresholdInfo>(getThresholds());
     const [screen, setScreen] = createSignal<BattleScreen>({ kind: "overview" });
-    const tracker = createBattleResultTracker(state(), props.engine.getLibrary());
+    const tracker = createBattleResultTracker(state());
     const [resultStats, setResultStats] = createSignal(tracker.getStats());
     const resultModel = createMemo(() => createBattleResultViewModel(state(), resultStats(), props.presentation));
     const [logEntries, setLogEntries] = createSignal<readonly GameLogEntry[]>([]);

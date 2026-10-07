@@ -1,4 +1,3 @@
-import type { ContentLibrary } from "../../../../engine/public/library";
 import type { ActionResult, BondageEvent, Character, GameEvent, GameState, LeafEvent, PlayerAction } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 
@@ -49,7 +48,7 @@ const skunkLink = (character: Character): string | undefined =>
     character.buffs.find(buff => buff.id === "skunked")?.linkedEntity;
 
 /** Incremental UI statistics from public action frames; no replay or engine internals required. */
-export function createBattleResultTracker(initial: GameState, library: ContentLibrary) {
+export function createBattleResultTracker(initial: GameState) {
     const stats: BattleResultStats = {
         rounds: initial.turn.round,
         actions: 0,
@@ -101,29 +100,16 @@ export function createBattleResultTracker(initial: GameState, library: ContentLi
             }
         }
 
-        let bossHp = 0;
-        let bossMaxHp = 0;
-        let enemyHpLeft = 0;
-        let enemyMaxHp = 0;
+        // Prefer bosses even after they are defeated; otherwise combine all observed enemies.
+        const observed = [...enemyHp.values()];
+        const bosses = observed.filter(enemy => enemy.rank === "boss");
+        const selected = bosses.length > 0 ? bosses : observed;
+        const maxHp = selected.reduce((sum, enemy) => sum + enemy.maxHp, 0);
+        const hpLeft = selected.reduce((sum, enemy) =>
+            sum + Math.max(0, Math.min(enemy.currHp, enemy.maxHp)), 0);
+        const remaining = maxHp > 0 ? hpLeft / maxHp : 0;
 
-        for (const enemy of enemyHp.values()) {
-            if (enemy.rank === "boss") {
-                bossHp += enemy.currHp;
-                bossMaxHp += enemy.maxHp;
-            } else {
-                enemyHpLeft += enemy.currHp;
-                enemyMaxHp += enemy.maxHp;
-            }
-        }
-
-        stats.progress = {
-            ...(bossMaxHp > 0
-                ? { boss: bossHp / bossMaxHp }
-                : {}),
-            ...(enemyMaxHp > 0
-                ? { enemies: enemyHpLeft / enemyMaxHp }
-                : {}),
-        };
+        stats.progress = bosses.length > 0 ? { boss: remaining } : { enemies: remaining };
     };
 
     const observe = (state: GameState, event?: GameEvent): void => {
@@ -294,7 +280,10 @@ export function createBattleResultViewModel(
         encounter: state.encounter ? presentation.encounter(state.encounter.id) : presentation.ui("battleOverview.noEncounter"),
         difficulty: presentation.difficulty(state.difficulty.id),
         summary: presentation.ui("battleResult.summary", { rounds: stats.rounds, actions: stats.actions }),
-        progress: outcome === "defeat" ? presentation.ui("battleResult.progress", { percent: Math.round(stats.progress * 100) }) : undefined,
+        progress: outcome === "defeat" ? presentation.ui(
+            stats.progress.boss !== undefined ? "battleResult.bossHp" : "battleResult.enemyHp",
+            { percent: Math.round((stats.progress.boss ?? stats.progress.enemies ?? 0) * 100) },
+        ) : undefined,
         rows, retryLabel: presentation.ui("battleResult.retry"), backLabel: presentation.ui("battleResult.back"),
     };
 }

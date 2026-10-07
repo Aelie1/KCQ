@@ -9,7 +9,7 @@ import { makePublicGameState } from "../helpers/publicTestData";
 
 const presentation = new Presentation(englishStrings);
 const stats: BattleResultStats = {
-    rounds: 12, actions: 34, peakBinding: 145, progress: 0.73, incapacitations: 0, rescues: 0,
+    rounds: 12, actions: 34, peakBinding: 145, progress: { boss: 0.27 }, incapacitations: 0, rescues: 0,
     escapes: { count: 12, total: 264, max: 40 },
     hits: { count: 14, total: 448, max: 68, maxMove: "fairyRockfall" },
     bindings: { count: 28, total: 336, max: 38, maxMove: "latexSpray" },
@@ -28,7 +28,7 @@ const render = (outcome: "victory" | "defeat", overrides?: Partial<BattleResultS
 describe("post-battle result panel", () => {
     it.each(["victory", "defeat"] as const)("renders %s heading, encounter, difficulty, summary and exactly the two result actions", outcome => {
         const html = render(outcome);
-        expect(html).toMatch(new RegExp('<h1 id="[^"]+">' + outcome.toUpperCase() + '</h1>'));
+        expect(html).toMatch(new RegExp('<h1 id="[^"]+">' + presentation.battleState(outcome) + '</h1>'));
         expect(html).toContain(presentation.encounter("forest_3"));
         expect(html).toContain("Mythic");
         expect(html).toContain("12 Rounds · 34 Actions");
@@ -56,16 +56,29 @@ describe("post-battle result panel", () => {
         expect(html.indexOf(">Retry</button>")).toBeLessThan(html.indexOf(">Back to Level Select</button>"));
     });
 
-    it("shows progress prominently on defeat and peak binding only on victory", () => {
+    it("shows remaining HP prominently on defeat and peak binding only on victory", () => {
         const defeat = render("defeat");
-        expect(defeat).toContain('class="kcq-battle-result__progress">73% Progress</strong>');
-        expect(defeat.indexOf("73% Progress")).toBeLessThan(defeat.indexOf("12 Rounds"));
+        expect(defeat).toContain('class="kcq-battle-result__progress">27% Boss HP</strong>');
+        expect(defeat.indexOf("27% Boss HP")).toBeLessThan(defeat.indexOf("12 Rounds"));
         expect(defeat).not.toContain("Peak Binding");
         expect(defeat).not.toContain("Incapacitations");
         const victory = render("victory");
         expect(victory).toContain("Peak Binding");
         expect(victory).toContain("145");
-        expect(victory).not.toContain("Progress");
+        expect(victory).not.toContain("Boss HP");
+        expect(victory).not.toContain("Enemy HP");
+    });
+
+    it.each([
+        [{ boss: 0.27, enemies: 0.91 }, "27% Boss HP"],
+        [{ boss: 0, enemies: 0.91 }, "0% Boss HP"],
+        [{ enemies: 0.73 }, "73% Enemy HP"],
+    ] as const)("shows one remaining HP percentage on defeat: %s", (progress, label) => {
+        const html = render("defeat", { progress });
+        expect(html).toContain(label);
+        expect(html.match(/class="kcq-battle-result__progress"/g)).toHaveLength(1);
+        if ("boss" in progress) expect(html).not.toContain("Enemy HP");
+        else expect(html).not.toContain("Boss HP");
     });
     it.each(["victory", "defeat"] as const)("hides zero optional stats on %s", outcome => {
         const html = render(outcome);
