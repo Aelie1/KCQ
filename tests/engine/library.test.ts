@@ -2,13 +2,13 @@ import { describe, expect, it } from "vitest";
 import type {
     BindingDef,
     CharacterDef,
-    EncounterDef,
     EnemyDef,
     PassiveDef,
     StatusDef,
     TrapDef,
 } from "../../src/engine/protected/definitions";
 import { makeBehavioralMove, makeEnemyWaitMove } from "../helpers/behavioralHelpers";
+import { makeEncounterDef } from "../helpers/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 
 describe("public content library", () => {
@@ -65,12 +65,13 @@ describe("public content library", () => {
             id: "snare",
             onTrigger: () => [],
         };
-        const encounter: EncounterDef = {
-            id: "library-encounter",
-            enemies: [foe.id],
+        const setup = [{ type: "trap" as const, trap: trap.id, amount: 25 }];
+        const encounter = makeEncounterDef("library-encounter", {
+            enemies: [{ defId: foe.id, id: "named-foe" }],
             bindings: [restraint],
             traps: [{ definition: trap, amount: 25 }],
-        };
+            librarySetup: () => setup.map(effect => ({ ...effect })),
+        });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
 
         const library = engine.getLibrary();
@@ -113,9 +114,10 @@ describe("public content library", () => {
         });
         expect(library.encounters[encounter.id]).toEqual({
             id: encounter.id,
-            enemies: [foe.id],
+            enemies: [{ defId: foe.id, id: "named-foe" }],
             bindings: [restraint.id],
-            traps: { [trap.id]: 25 },
+            traps: [trap.id],
+            setup,
         });
         expect(() => structuredClone(library)).not.toThrow();
 
@@ -126,7 +128,11 @@ describe("public content library", () => {
         library.passives.trained.immunities!.push("stunned");
         library.bindings.restraint.status!.light![0].level = 4;
         library.statuses.blinded.modifiers[1].flags!.push("skipsTurn");
-        library.encounters[encounter.id].traps[trap.id] = 0;
+        library.encounters[encounter.id].enemies[0].defId = "client-only";
+        library.encounters[encounter.id].traps[0] = "client-only";
+        const publishedSetup = library.encounters[encounter.id].setup[0];
+        if (publishedSetup.type !== "trap") throw new Error("Expected trap setup effect");
+        publishedSetup.amount = 0;
 
         const fresh = engine.getLibrary();
         expect(fresh.characters.hero.moves).toEqual([strike.id]);
@@ -136,6 +142,11 @@ describe("public content library", () => {
         expect(fresh.passives.trained.immunities).toEqual([focus.id]);
         expect(fresh.bindings.restraint.status?.light).toEqual([{ id: focus.id, level: 1 }]);
         expect(fresh.statuses.blinded.modifiers[1].flags).toEqual(["blocksAssist"]);
-        expect(fresh.encounters[encounter.id].traps).toEqual({ [trap.id]: 25 });
+        expect(fresh.encounters[encounter.id]).toMatchObject({
+            enemies: [{ defId: foe.id, id: "named-foe" }],
+            traps: [trap.id],
+            setup,
+        });
+        expect(encounter.enemies).toEqual([{ defId: foe.id, id: "named-foe" }]);
     });
 });

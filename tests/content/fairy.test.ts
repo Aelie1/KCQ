@@ -18,7 +18,7 @@ import {
     makeEnemyWaitMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { makeCharacter, makeEnemy } from "../helpers/helpers";
+import { makeCharacter, makeEncounterDef, makeEnemy } from "../helpers/helpers";
 import { makeInternalState } from "../helpers/state";
 import { createTestEngine } from "../helpers/testCatalog";
 
@@ -118,13 +118,10 @@ function makeEngine(
     setup?: EncounterDef["setup"],
     seed = 1,
 ): Engine {
-    const encounter: EncounterDef = {
-        id: "fairy-test",
+    const encounter = makeEncounterDef("fairy-test", {
         enemies: enemies.map(enemy => enemy.id),
-        bindings: [],
-        traps: [],
         setup,
-    };
+    });
     const hero = makeBehavioralCharacter("hero", moves);
     const engine = createTestEngine([encounter], [hero], seed, { enemies });
     engine.loadCharacter(hero.id);
@@ -237,12 +234,10 @@ describe("Binding Magic", () => {
     );
 
     it("executes the selected binding through the enemy phase", () => {
-        const encounter: EncounterDef = {
-            id: "fairy-binding-test",
+        const encounter = makeEncounterDef("fairy-binding-test", {
             enemies: [fairy.id],
             bindings: [latexHead, latexArms, latexTorso, latexLegs],
-            traps: [],
-        };
+        });
         const hero = makeBehavioralCharacter("hero");
         const engine = createTestEngine([encounter], [hero], 2, { enemies: [fairy, skunkette] });
         engine.loadCharacter(hero.id);
@@ -273,11 +268,9 @@ describe("Binding Magic", () => {
 
     it("does not overbind a hero whose four latex locations are already Overwhelming", () => {
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
-        const encounter: EncounterDef = {
-            id: "fairy-fully-bound-test",
+        const encounter = makeEncounterDef("fairy-fully-bound-test", {
             enemies: [fairy.id],
             bindings,
-            traps: [],
             setup: (state) => bindings.map((binding) => ({
                 type: "binding",
                 source: state.characters[0],
@@ -285,7 +278,7 @@ describe("Binding Magic", () => {
                 binding,
                 amount: 80,
             })),
-        };
+        });
         const hero = makeBehavioralCharacter("hero");
         const engine = createTestEngine([encounter], [hero], 2, { enemies: [fairy, skunkette] });
         engine.loadCharacter(hero.id);

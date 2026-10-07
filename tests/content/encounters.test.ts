@@ -14,7 +14,7 @@ import { isEnemy } from "../../src/engine/protected/helpers";
 import { actionView } from "../helpers/actionView";
 import { execute, makeBehavioralCharacter, makeBehavioralMove } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { makeEnemyDef, makeWaitMove } from "../helpers/helpers";
+import { makeEncounterDef, makeEnemyDef, makeWaitMove } from "../helpers/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 import {
     basicAttackingEnemy,
@@ -257,11 +257,8 @@ describe("encounters", () => {
                 targets: [],
             }];
         });
-        const encounter: EncounterDef = {
-            id: "test-setup",
+        const encounter = makeEncounterDef("test-setup", {
             enemies: [enemy.id],
-            bindings: [],
-            traps: [],
             setup: (state) => {
                 calls.push("setup");
                 enemiesVisibleToSetup = state.enemies.map((loaded) => loaded.id);
@@ -273,7 +270,7 @@ describe("encounters", () => {
                     visible: false,
                 }];
             },
-        };
+        });
         const engine = createTestEngine([encounter], testCharacterList, 1, { enemies: [enemy] });
         engine.loadCharacter(testHero.id);
 
@@ -311,7 +308,8 @@ describe("encounters", () => {
         expect(contentCatalog.encounters).toContain(plains_2);
         expect(plains_2.id).toBe("plains_2");
         expect(plains_2.enemies).toEqual([
-            skunkette.id, skunkette.id, skunk.id, skunk.id,
+            { defId: skunkette.id }, { defId: skunkette.id },
+            { defId: skunk.id }, { defId: skunk.id },
         ]);
         expect(plains_2.traps).toEqual([{ definition: trapPuddle, amount: 50 }]);
 

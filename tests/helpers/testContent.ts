@@ -1,5 +1,5 @@
-import type { CharacterDef, EncounterDef } from "../../src/engine/protected/definitions";
-import { makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove } from "./helpers";
+import type { CharacterDef } from "../../src/engine/protected/definitions";
+import { makeCharacterDef, makeEncounterDef, makeEnemyDef, makeMove, makeWaitMove } from "./helpers";
 
 export const waitMove = makeWaitMove();
 
@@ -11,19 +11,13 @@ export const basicAttack = makeMove("basic-attack", "none", {
 
 export const basicAttackingEnemy = makeEnemyDef("attacker", [basicAttack]);
 
-export const oneEnemyEncounter: EncounterDef = {
-    id: "one-enemy",
+export const oneEnemyEncounter = makeEncounterDef("one-enemy", {
     enemies: [waitEnemy.id],
-    bindings: [],
-    traps: [],
-};
+});
 
-export const multiEnemyEncounter: EncounterDef = {
-    id: "multi-enemy",
+export const multiEnemyEncounter = makeEncounterDef("multi-enemy", {
     enemies: [waitEnemy.id, basicAttackingEnemy.id],
-    bindings: [],
-    traps: [],
-};
+});
 
 export const testHero = makeCharacterDef("hero");
 

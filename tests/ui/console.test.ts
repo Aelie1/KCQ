@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { contentCatalog } from "../../src/content/content";
 import { latexArms } from "../../src/content/skunk/latex";
-import type { EncounterDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { helpless, stunned } from "../../src/engine/protected/statuses";
@@ -15,6 +14,7 @@ import { formatAccuracyRow, renderScreen } from "../../src/ui/console/render";
 import {
     makeBindingDef,
     makeCharacterDef,
+    makeEncounterDef,
     makeMove,
     setupBoundEngine,
 } from "../helpers/helpers";
@@ -941,16 +941,17 @@ describe("console formatting", () => {
                 operation: "add" as const,
             })),
         });
-        const encounter: EncounterDef = {
-            ...multiEnemyEncounter,
-            id: "vulnerable-all-target",
+        const encounter = makeEncounterDef("vulnerable-all-target", {
+            enemies: multiEnemyEncounter.enemies,
+            bindings: multiEnemyEncounter.bindings,
+            traps: multiEnemyEncounter.traps,
             setup: (state) => [{
                 type: "buff",
                 target: state.enemies[1],
                 operation: "add",
                 buff: { id: "vulnerable", active: true, modifiers: { vulnerability: 2 } },
             }],
-        };
+        });
         const engine = createTestEngine([encounter], [makeCharacterDef("hero", [allMove])], 1, { enemies: testEnemyList });
         engine.loadCharacter("hero");
         const events = engine.loadEncounter(encounter.id);
@@ -1007,11 +1008,9 @@ describe("console formatting", () => {
         const second = makeBindingDef("secondBinding");
         const firstUnknown = makeBindingDef("firstUnknownBinding");
         const secondUnknown = makeBindingDef("secondUnknownBinding");
-        const encounter: EncounterDef = {
-            id: "escape-order",
+        const encounter = makeEncounterDef("escape-order", {
             enemies: [waitEnemy.id],
             bindings: [first, second],
-            traps: [],
             setup: (internal) => {
                 const character = internal.characters[0];
                 return [firstUnknown, second, secondUnknown, first].map((binding) => ({
@@ -1022,7 +1021,7 @@ describe("console formatting", () => {
                     amount: 10,
                 }));
             },
-        };
+        });
         const hero = makeCharacterDef("hero");
         const engine = createTestEngine([encounter], [hero], 1, { enemies: testEnemyList });
         engine.loadCharacter(hero.id);
@@ -1065,11 +1064,9 @@ describe("console formatting", () => {
     it("shows only legal escapes and preserves their encounter-binding order", async () => {
         const firstLegal = makeBindingDef("firstLegal");
         const unavailableAssist = makeBindingDef("unavailableAssist");
-        const encounter: EncounterDef = {
-            id: "mixed-escape-availability",
+        const encounter = makeEncounterDef("mixed-escape-availability", {
             enemies: [waitEnemy.id],
             bindings: [firstLegal, latexArms, unavailableAssist],
-            traps: [],
             setup: (internal) => {
                 const [hero, ally] = internal.characters;
                 return [
@@ -1096,7 +1093,7 @@ describe("console formatting", () => {
                     },
                 ];
             },
-        };
+        });
         const hero = makeCharacterDef("hero");
         const ally = makeCharacterDef("ally");
         const engine = createTestEngine([encounter], [hero, ally], 1, { enemies: testEnemyList });

@@ -5,6 +5,7 @@ import type { Engine } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import {
     makeCharacterDef,
+    makeEncounterDef,
     makeEnemyDef,
     makeMove,
     makeWaitMove,
@@ -12,12 +13,9 @@ import {
 
 function makeCooldownEngine(moves: MoveDef[], enemy?: EnemyDef): Engine {
     const foe = enemy ?? makeEnemyDef("foe", [makeWaitMove()]);
-    const encounter = {
-        id: "cooldown-test",
+    const encounter = makeEncounterDef("cooldown-test", {
         enemies: [foe.id],
-        bindings: [],
-        traps: [],
-    };
+    });
     const hero = makeCharacterDef("hero", moves);
     const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
     engine.loadCharacter(hero.id);

@@ -80,6 +80,24 @@ export function makeCharacterDef(id: string, moves: MoveDef[] = []): CharacterDe
     return { id, moves, empoweredMoves: [], passives: [] };
 }
 
+type TestEncounterOverrides = Omit<Partial<EncounterDef>, "id" | "enemies"> & {
+    enemies?: Array<EncounterDef["enemies"][number] | string>;
+};
+
+export function makeEncounterDef(
+    id: EncounterDef["id"],
+    overrides: TestEncounterOverrides = {},
+): EncounterDef {
+    const { enemies = [], ...rest } = overrides;
+    return {
+        id,
+        enemies: enemies.map(enemy => typeof enemy === "string" ? { defId: enemy } : { ...enemy }),
+        bindings: [],
+        traps: [],
+        ...rest,
+    };
+}
+
 export function makeCharacter(
     id = "hero",
     bindings: iBinding[] = [],
@@ -168,7 +186,7 @@ export function setupBoundEngine(
     const mouthMove = makeMove("mouth-move", "mouth");
     const hero = makeCharacterDef("hero", [setupMove, armsMove, mouthMove]);
     const foe = makeEnemyDef("foe", [makeWaitMove()]);
-    const encounter: EncounterDef = { id: "bound-test", enemies: [foe.id], bindings: [], traps: [] };
+    const encounter = makeEncounterDef("bound-test", { enemies: [foe.id] });
     const engine = createTestEngine(
         [encounter, ...additionalEncounters],
         [hero, ...additionalCharacters],

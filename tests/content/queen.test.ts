@@ -15,6 +15,7 @@ import type { iBuff, iEffect, iGameState } from "../../src/engine/protected/type
 import type { ActionSuccess, DifficultyId, Engine, GameEvent, GameState, HitBand, ModifierSet } from "../../src/engine/public/types";
 import { execute, makeBehavioralCharacter, makeBehavioralMove } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
+import { makeEncounterDef } from "../helpers/helpers";
 
 const QUEEN_ID = "queen1";
 const BODY_LATEX = [latexHead, latexArms, latexTorso, latexLegs];
@@ -42,13 +43,11 @@ interface QueenSetup {
 
 function loadQueen(options: QueenSetup = {}): Engine {
     const enemies = [queen, ...(options.enemies ?? [])];
-    const encounter: EncounterDef = {
-        id: "queen-test",
+    const encounter = makeEncounterDef("queen-test", {
         enemies: enemies.map(enemy => enemy.id),
         bindings: [latexCollar, ...BODY_LATEX],
-        traps: [],
         setup: options.setup,
-    };
+    });
     const characters = options.characters ?? [makeBehavioralCharacter("hero")];
     const engine = createTestEngine([encounter], characters, options.seed ?? 1, {
         enemies: [...enemies, skunkette, skunk, fairy, rainmaker],

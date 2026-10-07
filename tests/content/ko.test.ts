@@ -17,6 +17,7 @@ import {
     makeEnemyWaitMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
+import { makeEncounterDef } from "../helpers/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 
 function loadKoEncounter(
@@ -25,13 +26,10 @@ function loadKoEncounter(
     ally = false,
     seed = 1,
 ): Engine {
-    const encounter: EncounterDef = {
-        id: "ko-test",
+    const encounter = makeEncounterDef("ko-test", {
         enemies: enemies.map(enemy => enemy.id),
-        bindings: [],
-        traps: [],
         setup,
-    };
+    });
     const allyCharacter = ally ? makeBehavioralCharacter("ally") : undefined;
     const characters = allyCharacter ? [ko, allyCharacter] : [ko];
     const engine = createTestEngine([encounter], characters, seed, { enemies });
@@ -119,11 +117,9 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
             }));
         const restrainedKo = { ...ko, moves, empoweredMoves: [] };
         const foe = makeBehavioralEnemy();
-        const encounter: EncounterDef = {
-            id: "restrained-ko",
+        const encounter = makeEncounterDef("restrained-ko", {
             enemies: [foe.id],
             bindings: [restraint],
-            traps: [],
             setup: (state) => [{
                 type: "binding",
                 source: state.characters[0],
@@ -131,7 +127,7 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
                 binding: restraint,
                 amount: 80,
             }],
-        };
+        });
         const engine = createTestEngine([encounter], [restrainedKo], 1, { enemies: [foe] });
         engine.loadCharacter(restrainedKo.id);
         engine.loadEncounter(encounter.id);
@@ -168,12 +164,10 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         });
         const helper = makeBehavioralCharacter("helper", [bindKo]);
         const foe = makeBehavioralEnemy();
-        const encounter: EncounterDef = {
-            id: "ko-escape",
+        const encounter = makeEncounterDef("ko-escape", {
             enemies: [foe.id],
             bindings: [restraint],
-            traps: [],
-        };
+        });
         const engine = createTestEngine([encounter], [ko, helper], 1, { enemies: [foe] });
         engine.loadCharacter(ko.id);
         engine.loadCharacter(helper.id);
@@ -238,12 +232,10 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         });
         const helper = makeBehavioralCharacter("helper", [apply]);
         const foe = makeBehavioralEnemy();
-        const encounter: EncounterDef = {
-            id: `ko-${status.id}`,
+        const encounter = makeEncounterDef(`ko-${status.id}`, {
             enemies: [foe.id],
             bindings: [restriction],
-            traps: [],
-        };
+        });
         const engine = createTestEngine([encounter], [ko, helper], 1, { enemies: [foe] });
         engine.loadCharacter(ko.id);
         engine.loadCharacter(helper.id);
@@ -593,13 +585,10 @@ describe("Ko's normal and Fairy move effects", () => {
             empoweredMoves: [allyFairy],
         };
         const foe = makeBehavioralEnemy();
-        const encounter: EncounterDef = {
-            id: "fairy-spread",
+        const encounter = makeEncounterDef("fairy-spread", {
             enemies: [foe.id],
-            bindings: [],
-            traps: [],
             setup: empowerKo,
-        };
+        });
         const engine = createTestEngine([encounter], [ko, ally], 1, { enemies: [foe] });
         engine.loadCharacter(ko.id);
         engine.loadCharacter(ally.id);
@@ -719,8 +708,7 @@ describe("Ko's Reflect source handling", () => {
             }],
         };
         const foe = makeBehavioralEnemy("foe");
-        const encounter: EncounterDef = {
-            id: "reflect-trap",
+        const encounter = makeEncounterDef("reflect-trap", {
             enemies: [foe.id],
             bindings: [trapBinding],
             traps: [{ definition: trap, amount: 100 }],
@@ -735,7 +723,7 @@ describe("Ko's Reflect source handling", () => {
                 }
                 return [{ ...effect, buff: { ...effect.buff } }];
             },
-        };
+        });
         const engine = createTestEngine([encounter], [ko], 1, { enemies: [foe] });
         engine.loadCharacter(ko.id);
         engine.loadEncounter(encounter.id);

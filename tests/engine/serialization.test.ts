@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { serializeGameState } from "../../src/engine/private/serialize";
-import type { EncounterDef, StatusDef } from "../../src/engine/protected/definitions";
+import type { StatusDef } from "../../src/engine/protected/definitions";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { GameStatus } from "../../src/engine/protected/status";
 import { incapacitated } from "../../src/engine/protected/statuses";
 import type { iBuff, iEntity, iGameState } from "../../src/engine/protected/types";
 import { getThresholds } from "../../src/engine/public/mechanics";
-import { makeBindingDef, makeCharacter, makeCharacterDef, makeEnemy, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
+import { makeBindingDef, makeCharacter, makeCharacterDef, makeEncounterDef, makeEnemy, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
 import { makeInternalState, STANDARD_DIFFICULTY } from "../helpers/state";
 import { createTestEngine } from "../helpers/testCatalog";
 import { multiEnemyEncounter, testAlly, testCharacterList, testEnemyList, testHero } from "../helpers/testContent";
@@ -127,11 +127,9 @@ describe("state serialization and combatant loading", () => {
             light: [{ definition: incapacitated, value: 1 }],
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter: EncounterDef = {
-            id: "defeat-state",
+        const encounter = makeEncounterDef("defeat-state", {
             enemies: [foe.id],
             bindings: [capture],
-            traps: [],
             setup: (state) => state.characters.map((character) => ({
                 type: "binding" as const,
                 source: character,
@@ -139,7 +137,7 @@ describe("state serialization and combatant loading", () => {
                 binding: capture,
                 amount: thresholds.light,
             })),
-        };
+        });
         const hero = makeCharacterDef("hero");
         const ally = makeCharacterDef("ally");
         const engine = createTestEngine([encounter], [hero, ally], 1, { enemies: [foe] });
@@ -155,11 +153,9 @@ describe("state serialization and combatant loading", () => {
             light: [{ definition: incapacitated, value: 1 }],
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter: EncounterDef = {
-            id: "ongoing-state",
+        const encounter = makeEncounterDef("ongoing-state", {
             enemies: [foe.id],
             bindings: [capture],
-            traps: [],
             setup: (state) => [{
                 type: "binding",
                 source: state.characters[0],
@@ -167,7 +163,7 @@ describe("state serialization and combatant loading", () => {
                 binding: capture,
                 amount: thresholds.light,
             }],
-        };
+        });
         const hero = makeCharacterDef("hero");
         const ally = makeCharacterDef("ally");
         const engine = createTestEngine([encounter], [hero, ally], 1, { enemies: [foe] });
@@ -232,7 +228,7 @@ describe("state serialization and combatant loading", () => {
         });
         const hero = makeCharacterDef("hero", [prepare]);
         const enemy = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "serialization", enemies: [enemy.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("serialization", { enemies: [enemy.id] });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [enemy] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);

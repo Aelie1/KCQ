@@ -4,7 +4,7 @@ import { thresholds } from "../../src/engine/protected/mechanics";
 import { immobilized, vibrating } from "../../src/engine/protected/statuses";
 import { actionView } from "../helpers/actionView";
 import { resolvedEvents, resultDetails } from "../helpers/events";
-import { makeBindingDef, makeCharacterDef, makeEnemyDef, makeMove, makeWaitMove, setupBoundEngine } from "../helpers/helpers";
+import { makeBindingDef, makeCharacterDef, makeEncounterDef, makeEnemyDef, makeMove, makeWaitMove, setupBoundEngine } from "../helpers/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 
 describe("stance toggling", () => {
@@ -39,7 +39,7 @@ describe("stance toggling", () => {
         const strike = makeMove("strike");
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "stance", enemies: [foe.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("stance", { enemies: [foe.id] });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
@@ -329,7 +329,7 @@ describe("stance toggling", () => {
             },
         });
         const enemy = makeEnemyDef("immobilizer", [immobilize]);
-        const encounter = { id: "immobilizer", enemies: [enemy.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("immobilizer", { enemies: [enemy.id] });
         const { engine, hero } = setupBoundEngine(
             restraint,
             thresholds.overwhelming,
@@ -387,12 +387,9 @@ describe("stance toggling", () => {
             move: { definition: observe },
             targets: [],
         }]);
-        const encounter = {
-            id: "pounce-transition",
+        const encounter = makeEncounterDef("pounce-transition", {
             enemies: [skunkette.id, observer.id],
-            bindings: [],
-            traps: [],
-        };
+        });
         const victim = makeCharacterDef("victim");
         const engine = createTestEngine([encounter], [victim], 3, { enemies: [skunkette, observer] });
         engine.loadCharacter(victim.id);
@@ -431,7 +428,7 @@ describe("stance toggling", () => {
                 accuracy: { miss: 50, hit: 50 },
             });
             const enemy = makeEnemyDef("attacker", [attack]);
-            const encounter = { id: "standing-defense", enemies: [enemy.id], bindings: [], traps: [] };
+            const encounter = makeEncounterDef("standing-defense", { enemies: [enemy.id] });
             const hero = makeCharacterDef("hero");
             const engine = createTestEngine([encounter], [hero], seed, { enemies: [enemy] });
             engine.loadCharacter(hero.id);

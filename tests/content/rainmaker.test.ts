@@ -14,6 +14,7 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { createTestEngine } from "../helpers/testCatalog";
+import { makeEncounterDef } from "../helpers/helpers";
 
 function loadRainmaker(
     seed: number,
@@ -21,13 +22,11 @@ function loadRainmaker(
     setup?: EncounterDef["setup"],
     bindings: BindingDef[] = [],
 ): Engine {
-    const encounter: EncounterDef = {
-        id: "rainmaker-test",
+    const encounter = makeEncounterDef("rainmaker-test", {
         enemies: [rainmaker.id],
         bindings,
-        traps: [],
         setup,
-    };
+    });
     const characters = characterIds.map((id) => makeBehavioralCharacter(id));
     const engine = createTestEngine([encounter], characters, seed, { enemies: [rainmaker] });
     for (const character of characters) engine.loadCharacter(character.id);
@@ -127,12 +126,10 @@ describe("Rainmaker Latex Rain", () => {
                 }] : [],
             ),
         });
-        const encounter: EncounterDef = {
-            id: "rainmaker-defeat-test",
+        const encounter = makeEncounterDef("rainmaker-defeat-test", {
             enemies: [rainmaker.id],
-            bindings: [],
             traps: [{ definition: trapPuddle, amount: 0 }],
-        };
+        });
         const hero = makeBehavioralCharacter("hero", [defeat]);
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [rainmaker] });
         engine.setDifficulty(difficulty);

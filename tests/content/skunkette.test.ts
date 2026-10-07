@@ -15,7 +15,7 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { makeCharacter, makeEnemy } from "../helpers/helpers";
+import { makeCharacter, makeEncounterDef, makeEnemy } from "../helpers/helpers";
 import { makeInternalState } from "../helpers/state";
 import { createTestEngine } from "../helpers/testCatalog";
 
@@ -600,7 +600,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 amount: 80,
             })),
         });
-        const encounter = { id: "select-latex", enemies: [skunkette.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("select-latex", { enemies: [skunkette.id] });
         const hero = makeBehavioralCharacter("hero", [prepare]);
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [skunkette] });
         engine.loadCharacter(hero.id);
@@ -653,7 +653,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 })),
             ],
         });
-        const encounter = { id: "mist", enemies: [skunkette.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("mist", { enemies: [skunkette.id] });
         const first = makeBehavioralCharacter("first", [prepare]);
         const second = makeBehavioralCharacter("second");
         const engine = createTestEngine([encounter], [first, second], 23, { enemies: [skunkette] });
@@ -706,7 +706,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 },
             ],
         });
-        const encounter = { id: "mist-crit", enemies: [skunkette.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("mist-crit", { enemies: [skunkette.id] });
         const hero = makeBehavioralCharacter("hero", [prepare]);
         const engine = createTestEngine([encounter], [hero], 428, { enemies: [skunkette] });
         engine.loadCharacter(hero.id);

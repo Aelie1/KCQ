@@ -22,6 +22,7 @@ import {
     makeBehavioralMove,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
+import { makeEncounterDef } from "../helpers/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 
 const rope = makeBehavioralBinding("rope");
@@ -70,13 +71,12 @@ function loadHinariEncounter(options: {
     traps?: EncounterDef["traps"];
 } = {}): Engine {
     const enemies = options.enemies ?? [durableEnemy()];
-    const encounter: EncounterDef = {
-        id: "hinari-test",
+    const encounter = makeEncounterDef("hinari-test", {
         enemies: enemies.map(enemy => enemy.id),
         bindings: options.bindings ?? [rope, tape],
         traps: options.traps ?? [],
         setup: options.setup,
-    };
+    });
     const allies = options.allies ?? [];
     const engine = createTestEngine([encounter], [hinari, ...allies], options.seed ?? 1, { enemies });
     engine.loadCharacter(hinari.id);

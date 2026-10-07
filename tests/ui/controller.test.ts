@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { contentCatalog } from "../../src/content/content";
-import type { EncounterDef } from "../../src/engine/protected/definitions";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { incapacitated } from "../../src/engine/protected/statuses";
@@ -15,6 +14,7 @@ import { playActionGroups } from "../../src/ui/console/presentation";
 import {
     makeBindingDef,
     makeCharacterDef,
+    makeEncounterDef,
     makeEnemyDef,
     makeMove,
     makeWaitMove,
@@ -35,11 +35,10 @@ describe("shared battle controller", () => {
         });
         const hero = makeCharacterDef("hero");
         const enemies = [makeEnemyDef("foeA", [bind]), makeEnemyDef("foeB", [bind]), makeEnemyDef("foeC", [bind])];
-        const encounter: EncounterDef = {
-            id: "frame-playback",
+        const encounter = makeEncounterDef("frame-playback", {
             enemies: enemies.map(enemy => enemy.id),
-            bindings: [restraint], traps: [],
-        };
+            bindings: [restraint],
+        });
         const engine = createTestEngine([encounter], [hero], 1, { enemies });
         engine.loadCharacter(hero.id);
         const loaded = engine.loadEncounter(encounter.id);
@@ -141,12 +140,9 @@ describe("shared battle controller", () => {
             makeMove(`move${index + 1}`)));
         const enemies = Array.from({ length: 10 }, (_, index) =>
             makeEnemyDef(`foe${index + 1}`, [makeWaitMove()]));
-        const encounter: EncounterDef = {
-            id: "shortcut-menu",
+        const encounter = makeEncounterDef("shortcut-menu", {
             enemies: enemies.map(enemy => enemy.id),
-            bindings: [],
-            traps: [],
-        };
+        });
         const engine = createTestEngine([encounter], [hero], 8224, { enemies });
         const events = [engine.loadCharacter(hero.id), engine.loadEncounter(encounter.id)];
         const requests: BattleChoiceRequest[] = [];
@@ -201,12 +197,9 @@ describe("shared battle controller", () => {
         });
         const hero = makeCharacterDef("hero", [ready, coolingTwo, coolingFour, zero, trigger]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter: EncounterDef = {
-            id: "cooldown-menu",
+        const encounter = makeEncounterDef("cooldown-menu", {
             enemies: [foe.id],
-            bindings: [],
-            traps: [],
-        };
+        });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         const events = [engine.loadCharacter(hero.id), engine.loadEncounter(encounter.id)];
         expect(engine.executeAction({
@@ -271,11 +264,9 @@ describe("shared battle controller", () => {
             light: [{ definition: incapacitated, value: 1 }],
         });
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter: EncounterDef = {
-            id: "defeat-state",
+        const encounter = makeEncounterDef("defeat-state", {
             enemies: [foe.id],
             bindings: [capture],
-            traps: [],
             setup: (state) => state.characters.map((character) => ({
                 type: "binding" as const,
                 source: character,
@@ -283,7 +274,7 @@ describe("shared battle controller", () => {
                 binding: capture,
                 amount: thresholds.light,
             })),
-        };
+        });
         const hero = makeCharacterDef("hero");
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
@@ -332,12 +323,9 @@ describe("shared battle controller", () => {
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [wait]);
         const foe = makeEnemyDef("foe", [wait]);
-        const encounter: EncounterDef = {
-            id: "observer-player-action",
+        const encounter = makeEncounterDef("observer-player-action", {
             enemies: [foe.id],
-            bindings: [],
-            traps: [],
-        };
+        });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
@@ -366,12 +354,9 @@ describe("shared battle controller", () => {
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [wait]);
         const foe = makeEnemyDef("foe", [wait]);
-        const encounter: EncounterDef = {
-            id: "controller-playback",
+        const encounter = makeEncounterDef("controller-playback", {
             enemies: [foe.id, foe.id],
-            bindings: [],
-            traps: [],
-        };
+        });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
@@ -400,12 +385,9 @@ describe("shared battle controller", () => {
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [wait]);
         const foe = makeEnemyDef("foe", [wait]);
-        const encounter: EncounterDef = {
-            id: "observer-automatic-action",
+        const encounter = makeEncounterDef("observer-automatic-action", {
             enemies: [foe.id],
-            bindings: [],
-            traps: [],
-        };
+        });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);
@@ -441,12 +423,9 @@ describe("shared battle controller", () => {
         const wait = makeWaitMove();
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [wait]);
-        const encounter: EncounterDef = {
-            id: "observer-outcome",
+        const encounter = makeEncounterDef("observer-outcome", {
             enemies: [foe.id],
-            bindings: [],
-            traps: [],
-        };
+        });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         const events = engine.loadEncounter(encounter.id);

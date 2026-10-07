@@ -3,12 +3,12 @@ import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/s
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import { skunk } from "../../src/content/skunk/skunk";
 import { skunkette } from "../../src/content/skunk/skunkette";
-import type { BindingDef, EncounterDef, MoveDef } from "../../src/engine/protected/definitions";
+import type { BindingDef, MoveDef } from "../../src/engine/protected/definitions";
 import { isEnemy } from "../../src/engine/protected/helpers";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type { DifficultyId, Engine } from "../../src/engine/public/types";
 import { resolvedEvents } from "../helpers/events";
-import { makeBindingDef, makeCharacterDef, makeMove } from "../helpers/helpers";
+import { makeBindingDef, makeCharacterDef, makeEncounterDef, makeMove } from "../helpers/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 
 const BODY_LATEX = [latexHead, latexArms, latexTorso, latexLegs];
@@ -33,8 +33,7 @@ function loadSkunk(options: {
     difficulty?: DifficultyId;
 }): Engine {
     const characterIds = options.characterIds ?? ["hero"];
-    const encounter: EncounterDef = {
-        id: "skunk-test",
+    const encounter = makeEncounterDef("skunk-test", {
         enemies: [skunk.id],
         bindings: BODY_LATEX,
         traps: options.trapAmount === null ? [] : [{
@@ -49,7 +48,7 @@ function loadSkunk(options: {
             effects.push(...initialBindingEffects(state, options.bindings ?? {}));
             return effects;
         },
-    };
+    });
     const characters = characterIds.map((id) => makeCharacterDef(id, options.moves));
     const engine = createTestEngine([encounter], characters, options.seed, { enemies: [skunk, skunkette] });
     engine.setDifficulty(options.difficulty ?? "standard");

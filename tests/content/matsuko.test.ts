@@ -22,6 +22,7 @@ import {
     targetPreview,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
+import { makeEncounterDef } from "../helpers/helpers";
 import { createTestEngine } from "../helpers/testCatalog";
 
 const STANDARD_ACCURACY: AccuracyProfile = {
@@ -44,13 +45,10 @@ function loadMatsukoEncounter(options: {
     seed?: number;
 } = {}): Engine {
     const enemies = options.enemies ?? [durableEnemy()];
-    const encounter: EncounterDef = {
-        id: "matsuko-test",
+    const encounter = makeEncounterDef("matsuko-test", {
         enemies: enemies.map(enemy => enemy.id),
-        bindings: [],
-        traps: [],
         setup: options.setup,
-    };
+    });
     const allies = options.allies ?? [];
     const engine = createTestEngine([encounter], [matsuko, ...allies], options.seed ?? 1, { enemies });
     engine.loadCharacter(matsuko.id);

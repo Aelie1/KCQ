@@ -10,6 +10,7 @@ import {
     makeBehavioralEnemy as makeEnemyDef, makeBehavioralMove as makeMove, makeEnemyWaitMove as makeWaitMove, targetAccuracy,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents, resultDetails } from "../helpers/events";
+import { makeEncounterDef } from "../helpers/helpers";
 
 const AUTHORED_HIT_SEED = 2;
 
@@ -33,7 +34,7 @@ function expectMoveRejection(
 }
 
 function setupAuthoredCombat(): Engine {
-    const encounter = { id: "authored-skunkette", enemies: [skunkette.id], bindings: [], traps: [] };
+    const encounter = makeEncounterDef("authored-skunkette", { enemies: [skunkette.id] });
     const engine = createTestEngine([encounter], [ko], AUTHORED_HIT_SEED, { enemies: [skunkette] });
     engine.loadCharacter(ko.id);
     engine.loadEncounter(encounter.id);
@@ -51,7 +52,7 @@ describe("move validation and player actions", () => {
         const twoTargets = makeMove("two-targets", "mouth", { targets: 2 });
         const hero = makeCharacterDef("hero", [legal, targetless, allTargets, twoTargets]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "validation", enemies: [foe.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("validation", { enemies: [foe.id] });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
@@ -123,7 +124,7 @@ describe("move validation and player actions", () => {
         });
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
-        const encounter = { id: "nonlethal-damage", enemies: [foe.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("nonlethal-damage", { enemies: [foe.id] });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
@@ -174,7 +175,7 @@ describe("move validation and player actions", () => {
         const hero = makeCharacterDef("hero", [strike]);
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         foe.hp = enemyHp;
-        const encounter = { id: "lethal-damage", enemies: [foe.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("lethal-damage", { enemies: [foe.id] });
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
@@ -242,7 +243,7 @@ describe("move validation and player actions", () => {
     it("exposes, targets, and executes Ko's authored Fairy Telekinesis", () => {
         const foe = makeEnemyDef("foe", [makeWaitMove()]);
         foe.hp = 500;
-        const encounter = { id: "fairy-telekinesis", enemies: [foe.id], bindings: [], traps: [] };
+        const encounter = makeEncounterDef("fairy-telekinesis", { enemies: [foe.id] });
         const engine = createTestEngine([encounter], [ko], AUTHORED_HIT_SEED, { enemies: [foe] });
         engine.loadCharacter(ko.id);
         engine.loadEncounter(encounter.id);
