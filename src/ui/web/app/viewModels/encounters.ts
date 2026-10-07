@@ -33,7 +33,7 @@ export interface EncounterDetailsViewModel extends EncounterSummaryViewModel {
     effectGroups: readonly EffectGroupViewModel[];
     labels: {
         settings: string; challenge: string; bestClear: string; description: string;
-        enemies: string; specialRules: string; start: string; back: string;
+        enemies: string; specialRules: string; chooseDifficulty: string; back: string;
     };
 }
 
@@ -99,7 +99,7 @@ export function createEncounterDetailsViewModel(
             description: presentation.ui("encounter.description"),
             enemies: presentation.ui("encounter.enemies"),
             specialRules: presentation.ui("encounter.specialRules"),
-            start: presentation.ui("encounter.start"),
+            chooseDifficulty: presentation.ui("encounter.chooseDifficulty"),
             back: presentation.ui("targeting.back"),
         },
     };

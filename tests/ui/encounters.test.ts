@@ -45,7 +45,7 @@ describe("encounter catalog view models", () => {
     it("derives generic enemy identities, ranks and HP from public references", () => {
         const detail = createEncounterDetailsViewModel(library, "forest_3", presentation);
         expect(detail.description).toBe(presentation.encounter("forest_3", "desc"));
-        expect(detail.enemies.map(({ name }) => name)).toEqual(["Skunkette", "Skunkette", "Skunk Queen", "Fairy"]);
+        expect(detail.enemies.map(({ name }) => name)).toEqual(["Skunk Queen", "Skunkette", "Skunkette", "Fairy"]);
         detail.enemies.forEach((enemy, index) => {
             const ref = library.enemies[library.encounters.forest_3.enemies[index].defId];
             expect(enemy.hp).toBe(ref.hp);

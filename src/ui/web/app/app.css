@@ -89,7 +89,7 @@ button {
     scrollbar-width: none;
 }
 
-.kcq-screen-layout__body > * {
+.kcq-screen-layout__body>* {
     flex-shrink: 0;
 }
 
@@ -111,8 +111,8 @@ button {
     background: var(--kcq-surface-background);
 }
 
-.kcq-battle-overview > .kcq-screen-layout__header,
-.kcq-game-log > .kcq-screen-layout__header {
+.kcq-battle-overview>.kcq-screen-layout__header,
+.kcq-game-log>.kcq-screen-layout__header {
     padding-bottom: 6px;
 }
 
@@ -127,7 +127,7 @@ button {
     padding-bottom: 8px;
 }
 
-.kcq-game-log > .kcq-screen-layout__body {
+.kcq-game-log>.kcq-screen-layout__body {
     background: var(--kcq-surface-card);
 }
 
@@ -2663,7 +2663,8 @@ button {
 }
 
 .kcq-encounter-picker__row:focus-visible,
-.kcq-encounter-details__footer button:focus-visible {
+.kcq-encounter-details__footer button:focus-visible,
+.kcq-difficulty-select__footer button:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: 2px;
 }
@@ -2791,7 +2792,8 @@ button {
     gap: 12px;
 }
 
-.kcq-encounter-details__footer button {
+.kcq-encounter-details__footer button,
+.kcq-difficulty-select__footer button {
     width: 100%;
     height: 42px;
     padding: 0 10px;
@@ -2802,12 +2804,154 @@ button {
     cursor: pointer;
 }
 
-.kcq-encounter-details__footer .kcq-targeting__back {
+.kcq-encounter-details__footer .kcq-targeting__back,
+.kcq-difficulty-select__footer .kcq-targeting__back {
     border: 1px solid var(--kcq-structure-border);
     border-radius: 7px;
     font-size: 10px;
 }
+
 .kcq-meter-effect__transition {
     flex: 0 0 auto;
     white-space: nowrap;
+}
+
+/* Difficulty selection keeps its header and actions in the shared screen regions. */
+.kcq-difficulty-select__body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kcq-difficulty-select .kcq-encounter-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+}
+
+.kcq-difficulty-select h2,
+.kcq-difficulty-select h3 {
+    margin: 0;
+    color: var(--kcq-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 16px;
+    text-transform: uppercase;
+}
+
+.kcq-difficulty-select__heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.kcq-difficulty-select__heading strong {
+    color: var(--kcq-accent-primary);
+    font-size: 12px;
+    line-height: 16px;
+    text-transform: uppercase;
+}
+
+.kcq-difficulty-select__choices {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+}
+
+.kcq-difficulty-select__choice {
+    min-width: 0;
+    min-height: 34px;
+    padding: 0 2px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 7px;
+    background: var(--kcq-surface-raised);
+    color: var(--kcq-text-primary);
+    font-size: clamp(10px, 3.08vw, 12px);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.kcq-difficulty-select__choice:hover {
+    border-color: var(--kcq-structure-border-strong);
+}
+
+.kcq-difficulty-select__choice.is-selected {
+    border-color: var(--kcq-accent-primary);
+    background: var(--kcq-accent-primary);
+    color: var(--kcq-surface-inset);
+}
+
+.kcq-difficulty-select__choice:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: 2px;
+}
+
+.kcq-difficulty-select__description {
+    margin: 0;
+    color: var(--kcq-text-muted);
+    font-size: 12px;
+    line-height: 19px;
+}
+
+.kcq-difficulty-select .kcq-difficulty-select__global-effects {
+    gap: 9px;
+}
+
+.kcq-difficulty-select__global-effects .kcq-preview-effect {
+    background: transparent;
+}
+
+.kcq-difficulty-select__rules-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.kcq-difficulty-select__rules-table th,
+.kcq-difficulty-select__rules-table td {
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    line-height: 19px;
+}
+
+.kcq-difficulty-select__rules-table th:first-child {
+    width: 105px;
+    padding-right: 10px;
+}
+
+.kcq-difficulty-select__rules-table thead th {
+    padding: 0 0 8px;
+    color: var(--kcq-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 18px;
+    text-transform: uppercase;
+}
+
+.kcq-difficulty-select__rules-table tbody tr {
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-difficulty-select__rules-table tbody th,
+.kcq-difficulty-select__rules-table tbody td {
+    padding: 8px 0;
+    font-weight: 400;
+}
+
+.kcq-difficulty-select__rules-table tbody th {
+    font-size: 13px;
+}
+
+.kcq-difficulty-select__rules-table tbody td {
+    font-size: 12px;
+}
+
+
+.kcq-difficulty-select>.kcq-screen-layout__header {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }

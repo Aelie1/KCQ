@@ -4,7 +4,7 @@ import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { englishStrings } from "../../localization/en";
 import { createEngine } from "../../src/engine/public/engine";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import { createBattle, DEFAULT_DIFFICULTY } from "../../src/ui/web/app";
+import { createBattle } from "../../src/ui/web/app";
 import * as controllers from "../../src/ui/web/app/graphicalController";
 import { GraphicalApp, type GraphicalAppProps } from "../../src/ui/web/app/GraphicalApp";
 
@@ -25,7 +25,7 @@ describe("outer graphical application", () => {
         expect(html).not.toMatch(/class="[^"]*\bkcq-battle-overview\b(?:\s|")/);
     });
 
-    it("renders Details and Battle from the controller's in-app transitions", () => {
+    it("renders Details, Difficulty and Battle from the controller's in-app transitions", () => {
         const engine = createEngine();
         const prepareBattle = vi.fn((encounter, difficulty) => {
             createBattle(engine, encounter, difficulty);
@@ -41,11 +41,19 @@ describe("outer graphical application", () => {
         controller.backToPicker();
         expect(renderScreen()).toContain("kcq-encounter-picker");
         controller.selectEncounter("plains_2");
+        controller.chooseDifficulty();
+        expect(renderScreen()).toContain("kcq-difficulty-select");
+        expect(renderScreen()).toContain("Standard");
+        controller.selectDifficulty("mythic");
+        expect(renderScreen()).toContain(presentation.difficulty("mythic", "desc"));
+        expect(prepareBattle).not.toHaveBeenCalled();
+        expect(engine.getGameState().characters).toEqual([]);
         controller.startEncounter();
         const battleHtml = renderScreen();
         expect(battleHtml).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
         expect(battleHtml).toContain(presentation.encounter("plains_2"));
-        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("plains_2", DEFAULT_DIFFICULTY);
+        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("plains_2", "mythic");
+        expect(engine.getGameState().difficulty.id).toBe("mythic");
         controller.dispose();
         expect(prepareBattle.mock.results[0].value.dispose).toHaveBeenCalledOnce();
     });

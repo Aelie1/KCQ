@@ -1,5 +1,4 @@
 import { For, Show, type JSX } from "solid-js";
-import type { EncounterId } from "../../../../engine/public/types";
 import type { EncounterDetailsViewModel } from "../viewModels/encounters";
 import { EffectPreview } from "./EffectPreview";
 import { ScreenLayout } from "./ScreenLayout";
@@ -7,7 +6,7 @@ import { EncounterHeader } from "./EncounterHeader";
 import { StatusChip } from "./StatusChip";
 
 export function EncounterDetailsPanel(props: {
-    model: EncounterDetailsViewModel; onBack: () => void; onStart: (encounter: EncounterId) => void;
+    model: EncounterDetailsViewModel; onBack: () => void; onChooseDifficulty: () => void;
 }): JSX.Element {
     return <ScreenLayout class="kcq-encounter-screen kcq-encounter-details"
         header={
@@ -58,8 +57,8 @@ export function EncounterDetailsPanel(props: {
                 <button class="kcq-targeting__back" type="button" onClick={props.onBack}>
                     <span aria-hidden="true">↶ </span>{props.model.labels.back}
                 </button>
-                <button class="kcq-battle-overview__primary-action" type="button" onClick={() => props.onStart(props.model.id)}>
-                    {props.model.labels.start}
+                <button class="kcq-battle-overview__primary-action" type="button" onClick={props.onChooseDifficulty}>
+                    {props.model.labels.chooseDifficulty}
                 </button>
             </footer>
         }

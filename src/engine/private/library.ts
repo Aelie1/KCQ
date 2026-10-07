@@ -1,6 +1,9 @@
 import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, StatusLevelDef, TrapDef } from "../protected/definitions";
 import type { ContentCatalog, iStatus } from "../protected/types";
-import type { BindingReference, CharacterReference, ContentLibrary, EncounterReference, EnemyReference, MoveReference, PassiveReference, ModifierReference as StatusDataReference, StatusLevelReference, StatusReference, TrapReference } from "../public/library";
+import type { BindingReference, CharacterReference, ContentLibrary, DifficultyReference, EncounterReference, EnemyReference, MoveReference, PassiveReference, ModifierReference as StatusDataReference, StatusLevelReference, StatusReference, TrapReference } from "../public/library";
+import { Difficulty } from "../public/types";
+
+import { difficulties } from "./constants";
 
 function mapToRecord<T extends { id: string }, R>(
     items: readonly T[],
@@ -13,6 +16,7 @@ function mapToRecord<T extends { id: string }, R>(
 
 export function serializeLibrary(catalog: ContentCatalog): ContentLibrary {
     return {
+        difficulties: mapToRecord(Object.values(difficulties), libraryDifficulty),
         characters: mapToRecord(catalog.characters, libraryCharacter),
         enemies: mapToRecord(catalog.enemies, libraryEnemy),
         moves: mapToRecord(catalog.moves, libraryMove),
@@ -115,4 +119,12 @@ function libraryEncounter(encounter: EncounterDef): EncounterReference {
         traps: encounter.traps.map(x => x.definition.id),
         setup: encounter.librarySetup ? encounter.librarySetup() : []
     }
+}
+
+function libraryDifficulty(difficulty: Difficulty): DifficultyReference {
+    return {
+        id: difficulty.id,
+        playerModifiers: { ...difficulty.playerModifiers },
+        enemyModifiers: { ...difficulty.enemyModifiers },
+    };
 }

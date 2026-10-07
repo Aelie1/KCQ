@@ -1,6 +1,7 @@
-import { AccuracyProfile, BindingId, BindingLevel, Effect, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
+import { AccuracyProfile, BindingId, BindingLevel, DifficultyId, Effect, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
 
 export interface ContentLibrary {
+    difficulties: Record<DifficultyId, DifficultyReference>;
     characters: Record<string, CharacterReference>;
     enemies: Record<string, EnemyReference>;
     moves: Record<MoveId, MoveReference>;
@@ -9,6 +10,13 @@ export interface ContentLibrary {
     traps: Record<TrapId, TrapReference>;
     statuses: Record<StatusId, StatusReference>;
     encounters: Record<string, EncounterReference>;
+}
+
+/** Static difficulty metadata, copied from the authoritative engine definitions. */
+export interface DifficultyReference {
+    id: DifficultyId;
+    playerModifiers: ModifierSet;
+    enemyModifiers: ModifierSet;
 }
 
 export interface CharacterReference {

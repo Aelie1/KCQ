@@ -4,6 +4,8 @@ import { describe, expect, it } from "vitest";
 import { englishStrings } from "../../localization/en";
 import { createEngine } from "../../src/engine/public/engine";
 import { Presentation } from "../../src/ui/presentation/presentation";
+import { DifficultySelectPanel } from "../../src/ui/web/app/components/DifficultySelectPanel";
+import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 import { EncounterDetailsPanel } from "../../src/ui/web/app/components/EncounterDetailsPanel";
 import { EncounterPickerPanel } from "../../src/ui/web/app/components/EncounterPickerPanel";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
@@ -26,8 +28,12 @@ const screens = [
         model: createEncounterPickerViewModel(library, presentation), onSelect: noop,
     }), content: "kcq-encounter-picker__row", footer: undefined, roster: false },
     { name: "Encounter Details", render: () => createComponent(EncounterDetailsPanel, {
-        model: createEncounterDetailsViewModel(library, "forest_3", presentation), onBack: noop, onStart: noop,
+        model: createEncounterDetailsViewModel(library, "forest_3", presentation), onBack: noop, onChooseDifficulty: noop,
     }), content: "kcq-encounter-details__description", footer: "kcq-encounter-details__footer", roster: false },
+    { name: "Difficulty Select", render: () => createComponent(DifficultySelectPanel, {
+        model: createDifficultySelectViewModel(library, "forest_3", "extreme", presentation),
+        onBack: noop, onStart: noop, onSelectDifficulty: noop,
+    }), content: "kcq-difficulty-select__card", footer: "kcq-difficulty-select__footer", roster: false },
     { name: "Battle Overview", render: () => createComponent(BattleOverviewPanel, battleOverviewFixture),
         content: "kcq-battle-section", footer: "kcq-battle-overview__footer", roster: false },
     { name: "Character Details", render: () => createComponent(CharacterDetailsPanel, characterDetailsFixture),
