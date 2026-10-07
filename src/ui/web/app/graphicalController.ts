@@ -5,7 +5,7 @@ import { DEFAULT_DIFFICULTY } from "../app";
 
 export interface GraphicalBattleSession {
     engine: Engine;
-    observer?: Pick<BattleTelemetryObserver, "onAction" | "onOutcome">;
+    observer?: Pick<BattleTelemetryObserver, "onAction" | "onOutcome"> & Partial<Pick<BattleTelemetryObserver, "onQuit">>;
     dispose: () => void;
 }
 
@@ -20,6 +20,19 @@ export function createGraphicalController(
 ) {
     let session: GraphicalBattleSession | undefined;
     const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "picker" });
+
+    const closeSession = (): void => {
+        if (session?.engine.getGameState().turn.outcome === "ongoing") {
+            try {
+                const pending = session.observer?.onQuit?.();
+                if (pending) void pending.catch(() => undefined);
+            } catch {
+                // Telemetry must never prevent retry or navigation.
+            }
+        }
+        session?.dispose();
+        session = undefined;
+    };
 
     return {
         screen,
@@ -52,22 +65,19 @@ export function createGraphicalController(
         },
         retryEncounter(): void {
             const current = screen();
-            if (current.screen !== "battle" || current.session.engine.getGameState().turn.outcome === "ongoing") return;
-            session?.dispose();
-            session = undefined;
+            if (current.screen !== "battle") return;
+            closeSession();
             session = prepareBattle(current.encounter, current.difficulty);
             setScreen({ ...current, session });
         },
         returnToLevelSelect(): void {
             const current = screen();
-            if (current.screen !== "battle" || current.session.engine.getGameState().turn.outcome === "ongoing") return;
-            session?.dispose();
-            session = undefined;
+            if (current.screen !== "battle") return;
+            closeSession();
             setScreen({ screen: "picker" });
         },
         dispose(): void {
-            session?.dispose();
-            session = undefined;
+            closeSession();
         },
     };
 }

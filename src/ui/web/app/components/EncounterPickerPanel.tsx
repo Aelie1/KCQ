@@ -5,11 +5,12 @@ import { ScreenLayout } from "./ScreenLayout";
 import { EncounterHeader } from "./EncounterHeader";
 
 export function EncounterPickerPanel(props: {
+    onSettings?: () => void;
     model: EncounterPickerViewModel; onSelect: (encounter: EncounterId) => void;
 }): JSX.Element {
     return <ScreenLayout class="kcq-encounter-screen kcq-encounter-picker"
         header={
-            <EncounterHeader title={props.model.title} settingsLabel={props.model.settingsLabel} picker />
+            <EncounterHeader title={props.model.title} settingsLabel={props.model.settingsLabel} onSettings={props.onSettings} picker />
         }
         body={<>
             <For each={props.model.encounters}>

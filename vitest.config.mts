@@ -5,6 +5,6 @@ export default defineConfig({
     plugins: [solid({ ssr: true })],
     test: {
         environment: "node",
-        exclude: ["**/node_modules/**", ".replay-runtimes/**", "harness-output/**"],
+        exclude: ["**/*.dom.test.ts", "**/node_modules/**", ".replay-runtimes/**", "harness-output/**"],
     },
 });

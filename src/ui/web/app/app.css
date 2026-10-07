@@ -49,6 +49,12 @@ button {
     zoom: var(--kcq-ui-zoom, 1);
 }
 
+.kcq-graphical-app__background {
+    width: 366px;
+    max-width: 100%;
+    min-width: 0;
+}
+
 .kcq-app {
     min-height: 0;
     padding: 12px;
@@ -3149,4 +3155,53 @@ button {
         padding: 6px;
         font-size: 12px;
     }
+}
+.kcq-battle-settings {
+    overflow-y: auto;
+}
+
+.kcq-battle-settings__heading {
+    margin: 0 0 4px;
+    color: var(--kcq-text-primary);
+    font-size: 18px;
+    text-align: center;
+}
+
+.kcq-battle-settings__language {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 4px 0;
+    color: var(--kcq-text-secondary);
+    font-size: 13px;
+}
+
+.kcq-battle-settings__language select {
+    min-width: 0;
+    max-width: 65%;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 8px;
+    background: var(--kcq-surface-raised);
+    color: var(--kcq-text-primary);
+    font: inherit;
+}
+
+.kcq-battle-settings__language select:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: 2px;
+}
+
+.kcq-battle-settings__divider {
+    flex-shrink: 0;
+    width: 100%;
+    margin: 2px 0;
+    border: 0;
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-battle-settings .kcq-battle-result__actions {
+    grid-template-columns: 1fr;
 }

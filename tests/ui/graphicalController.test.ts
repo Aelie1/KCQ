@@ -90,7 +90,7 @@ describe("outer graphical controller", () => {
         dispose();
     }));
 
-    it.each(["victory", "defeat"] as const)("retries a %s with a fresh session and returns to level select", outcome => createRoot(dispose => {
+    it.each(["ongoing", "victory", "defeat"] as const)("retries a %s with a fresh session and returns to level select", outcome => createRoot(dispose => {
         const prepare = vi.fn((encounter, difficulty) => {
             const engine = createEngine(12345);
             createBattle(engine, encounter, difficulty);
@@ -101,8 +101,6 @@ describe("outer graphical controller", () => {
         controller.chooseDifficulty();
         controller.selectDifficulty("mythic");
         controller.startEncounter();
-        controller.retryEncounter();
-        controller.returnToLevelSelect();
         expect(prepare).toHaveBeenCalledTimes(1);
         const first = prepare.mock.results[0].value;
         const completed = first.engine.getGameState();
@@ -136,6 +134,8 @@ describe("outer graphical controller", () => {
         const { prepare, session } = sessionFactory();
         const controller = createGraphicalController(prepare);
         controller.startEncounter();
+        controller.retryEncounter();
+        controller.returnToLevelSelect();
         controller.chooseDifficulty();
         controller.selectDifficulty("mythic");
         controller.backToDetails();

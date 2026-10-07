@@ -16,7 +16,7 @@
         "harness": "tsx src/harness/cli/launcher-main.ts",
         "replay:csv": "npm run build --silent && node dist/harness/cli/replay-csv-main.js",
         "get-replays": "npm run build --silent && node --env-file=.env dist/harness/cli/get-replays-main.js",
-        "test": "tsc -p tsconfig.test.json && vitest run",
+        "test": "tsc -p tsconfig.test.json && vitest run && vitest run --config vitest.dom.config.mts",
         "coverage": "vitest --coverage",
         "typecheck": "tsc -p tsconfig.build.json --noEmit && tsc -p tsconfig.web.json --noEmit",
         "typecheck:test": "tsc -p tsconfig.test.json"
@@ -36,6 +36,7 @@
     "devDependencies": {
         "@types/node": "^26.4.1",
         "@vitest/coverage-v8": "^5.0.0",
+        "happy-dom": "^20.14.5",
         "tsx": "^4.23.13",
         "typescript": "^7.0.2",
         "vite": "^8.2.2",

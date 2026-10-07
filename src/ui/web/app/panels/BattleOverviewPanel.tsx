@@ -17,6 +17,7 @@ export interface BattleOverviewPanelProps {
     presentation: Presentation;
     state: GameState;
     thresholds: ThresholdInfo;
+    onSettings?: () => void;
     onEndTurn?: () => void;
     onGameLog?: () => void;
     onSelectCharacter?: (id: EntityId) => void;
@@ -41,6 +42,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     phaseLabel={model().header.phaseLabel}
                     trap={model().header.trap}
                     settingsLabel={model().controls.settingsLabel}
+                    onSettings={props.onSettings}
                 />
             }
             body={<>

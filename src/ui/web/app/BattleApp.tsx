@@ -14,6 +14,8 @@ import type {
 } from "../../../engine/public/types";
 import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
+import type { LanguageSelection } from "./language";
+import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { BattleResultPanel } from "./panels/BattleResultPanel";
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
@@ -25,6 +27,7 @@ import { TargetingPanel } from "./panels/TargetingPanel";
 export interface BattleAppProps {
     engine: Engine;
     presentation: Presentation;
+    language?: LanguageSelection;
     onRetry?: () => void;
     onBackToLevelSelect?: () => void;
     observer?: Pick<BattleTelemetryObserver, "onAction" | "onOutcome">;
@@ -51,6 +54,13 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
     const [thresholds] = createSignal<ThresholdInfo>(getThresholds());
     const [screen, setScreen] = createSignal<BattleScreen>({ kind: "overview" });
+    const [settingsOpen, setSettingsOpen] = createSignal(false);
+    let settingsTrigger: Element | null = null;
+    const openSettings = (): void => {
+        settingsTrigger = document.activeElement;
+        setSettingsOpen(true);
+    };
+    const modalOpen = () => settingsOpen() || !!resultModel();
     const tracker = createBattleResultTracker(state());
     const [resultStats, setResultStats] = createSignal(tracker.getStats());
     const resultModel = createMemo(() => createBattleResultViewModel(state(), resultStats(), props.presentation));
@@ -94,7 +104,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         }
     });
 
-    const execute = (action: PlayerAction): ActionResult => {
+    const execute = (action: PlayerAction): ActionResult | undefined => {
+        if (modalOpen()) return;
         const startingRound = state().turn.round;
         const result = props.engine.executeAction(action);
         notifyObserver(() => props.observer?.onAction?.(action, result, "player"));
@@ -114,6 +125,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     };
 
     const selectCharacter = (actorId: EntityId): void => {
+        if (modalOpen()) return;
         setScreen({ kind: "character", actorId });
     };
 
@@ -126,6 +138,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     };
 
     const selectCommand = (actorId: EntityId, commandId: string): void => {
+        if (modalOpen()) return;
         if (commandId === "stance") {
             execute({ type: "stance", actor: actorId });
             return;
@@ -155,7 +168,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             move: current.screen.moveId,
             targets: [...targets],
         });
-        if (result.success && state().turn.outcome === "ongoing") {
+        if (result?.success && state().turn.outcome === "ongoing") {
             const actions = result.actions.find(x => x.id === current.screen.actorId);
             if (actions?.available) {
                 setScreen({
@@ -178,7 +191,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             target,
             binding,
         });
-        if (!result.success || state().turn.outcome !== "ongoing") return;
+        if (!result?.success || state().turn.outcome !== "ongoing") return;
         const actor = state().characters.find(({ id }) => id === current.actorId);
         setScreen(actor && actor.bonusEscapes > 0
             ? { kind: "escape", actorId: current.actorId }
@@ -187,7 +200,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     return (
         <div class="kcq-battle-stage">
-            <div class="kcq-battle-stage__background" inert={!!resultModel()} aria-hidden={resultModel() ? true : undefined}>
+            <div class="kcq-battle-stage__background" inert={modalOpen()} aria-hidden={modalOpen() ? true : undefined}>
                 <Switch fallback={
                     <BattleOverviewPanel
                         actions={actions()}
@@ -195,7 +208,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         state={state()}
                         thresholds={thresholds()}
                         onSelectCharacter={selectCharacter}
-                        onGameLog={() => setScreen({ kind: "log" })}
+                        onSettings={openSettings}
+                        onGameLog={() => { if (!modalOpen()) setScreen({ kind: "log" }); }}
                         onEndTurn={() => { execute({ type: "endTurn" }); }}
                     />
                 }>
@@ -264,6 +278,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     </Match>
                 </Switch>
             </div>
+            <Show when={settingsOpen()}>
+                <BattleSettingsPanel presentation={props.presentation} language={props.language} returnFocus={settingsTrigger}
+                    onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
+                    onBackToLevelSelect={props.onBackToLevelSelect} />
+            </Show>
             <Show when={resultModel()} keyed>
                 {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
                     onBackToLevelSelect={props.onBackToLevelSelect} />}

@@ -63,6 +63,7 @@ describe("outer graphical application", () => {
             engine: GraphicalAppProps["engine"];
             presentation: GraphicalAppProps["presentation"];
             prepareBattle: GraphicalAppProps["prepareBattle"];
+            languages?: GraphicalAppProps["languages"];
         }>();
     });
 });

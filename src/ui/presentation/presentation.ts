@@ -10,6 +10,9 @@ type StringArg = number | string | boolean | StringKey;
 export type StringTable = Record<string, string>;
 
 export type UiLabel =
+    | "battleSettings.resume"
+    | "battleSettings.language"
+    | "battleSettings.retry"
     | "battleResult.victory"
     | "battleResult.defeat"
     | "battleResult.summary"
