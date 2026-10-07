@@ -1,4 +1,5 @@
-import { AccuracyProfile, BindingId, BindingLevel, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
+import { EnemySetup } from "../protected/definitions";
+import { AccuracyProfile, BindingId, BindingLevel, Effect, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
 
 export interface ContentLibrary {
     characters: Record<string, CharacterReference>;
@@ -78,7 +79,8 @@ export interface ModifierReference {
 
 export interface EncounterReference {
     id: string;
-    enemies: EntityId[];
+    enemies: EnemySetup[];
     bindings: BindingId[];
-    traps: Record<TrapId, number>;
+    traps: TrapId[];
+    setup: Effect[];
 }

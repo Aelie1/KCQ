@@ -27,6 +27,9 @@ export const skunkStrings: StringTable = {
     "entity.skunketteQueen.desc": "The former Skunk Queen, reduced to a minion after her failure.",
     "entity.skunkEmpress.desc": "The former Skunk Empress, reduced to a minion after her failure.",
 
+    "buff.ambushed.name": "Ambushed!",
+    "buff.ambushed.desc": "...",
+
     // Skunkette
     "move.latexSpray.name": "Latex Spray",
     "move.latexSpray.desc": "...",

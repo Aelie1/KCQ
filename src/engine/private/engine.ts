@@ -154,7 +154,8 @@ export class GameEngine implements Engine {
             spawns.push({
                 type: "enemy",
                 operation: "spawn",
-                definition: enemy
+                definition: enemy.defId,
+                id: enemy.id
             });
         }
         effects.merge(spawns);
