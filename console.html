@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ko-chan's Quest</title>
+    <link rel="stylesheet" href="/src/ui/web/style.css">
+</head>
+<body>
+    <main>
+        <header class="app-header">
+            <h1 id="app-title">Ko-chan's Quest</h1>
+            <div class="battle-controls" aria-label="Battle controls">
+                <button id="end-turn" type="button" hidden>[0] End Turn</button>
+                <button id="quit-battle" type="button" hidden>[-] Quit</button>
+            </div>
+        </header>
+        <div class="battle-layout">
+            <div id="screen-container" class="screen-scroll" aria-label="Encounter selector" tabindex="0">
+                <pre id="screen">Loading...</pre>
+            </div>
+            <section id="battle-log-panel" class="battle-log-panel" aria-label="Battle log" hidden>
+                <h2>Battle Log</h2>
+                <pre id="battle-log" class="battle-log" tabindex="0"></pre>
+            </section>
+        </div>
+        <div id="choices" class="choices" aria-label="Available choices"></div>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+    </main>
+    <script type="module" src="/src/ui/web/main.ts"></script>
+</body>
+</html>

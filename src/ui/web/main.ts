@@ -258,7 +258,6 @@ function requiredElement<T extends HTMLElement>(id: string): T {
 interface EncounterSelection {
     encounter: EncounterId;
     difficulty: DifficultyId;
-    interfaceMode: "graphical" | "console";
 }
 
 function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection> {
@@ -289,18 +288,6 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection>
     difficultyLabel.append(difficultySelect);
     difficultyRow.append(difficultyLabel);
 
-    const interfaceLabel = document.createElement("label");
-    interfaceLabel.className = "difficulty-picker";
-    interfaceLabel.append("Interface");
-    const interfaceSelect = document.createElement("select");
-    interfaceSelect.setAttribute("aria-label", "Interface");
-    interfaceSelect.append(
-        new Option("Graphical", "graphical"),
-        new Option("Console", "console"),
-    );
-    interfaceSelect.value = "graphical";
-    interfaceLabel.append(interfaceSelect);
-    difficultyRow.append(interfaceLabel);
     choicesElement.append(difficultyRow);
 
     return new Promise<EncounterSelection>((resolve) => {
@@ -310,13 +297,11 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection>
                 candidate.disabled = true;
             }
             difficultySelect.disabled = true;
-            interfaceSelect.disabled = true;
             const difficulty = ENCOUNTER_DIFFICULTIES.find(({ id }) => id === difficultySelect.value)?.id
                 ?? DEFAULT_DIFFICULTY;
             resolve({
                 encounter,
                 difficulty,
-                interfaceMode: interfaceSelect.value === "console" ? "console" : "graphical",
             });
         };
         const handleKeyDown = (event: KeyboardEvent): void => {
@@ -352,13 +337,6 @@ async function start(): Promise<void> {
     while (true) {
         const engine = createEngine();
         const selection = await showEncounterSelector(engine.listEncounters());
-        if (selection.interfaceMode === "graphical") {
-            const gameUrl = new URL("game.html", window.location.href);
-            gameUrl.searchParams.set("encounter", selection.encounter);
-            gameUrl.searchParams.set("difficulty", selection.difficulty);
-            window.location.assign(gameUrl);
-            return;
-        }
         await startBattle(
             engine,
             selection.encounter,

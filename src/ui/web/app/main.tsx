@@ -9,7 +9,6 @@ import { createBattleTelemetryObserver } from "../telemetry";
 import { GraphicalApp } from "./GraphicalApp";
 import type { GraphicalBattleSession } from "./graphicalController";
 import "./app.css";
-import { selectGraphicalRoute } from "./entry";
 import "./tokens.css";
 
 declare const __KCQ_RELEASE_TAG__: string;
@@ -21,11 +20,9 @@ if (!root) {
 }
 
 const engine = createEngine();
-const library = engine.getLibrary();
 const presentation = new Presentation(englishStrings);
-const route = selectGraphicalRoute(new URLSearchParams(window.location.search), library);
 
-render(() => <GraphicalApp engine={engine} presentation={presentation} initialRoute={route}
+render(() => <GraphicalApp engine={engine} presentation={presentation}
     prepareBattle={prepareGraphicalBattle} />, root);
 
 function createId(): string {

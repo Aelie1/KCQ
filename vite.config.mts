@@ -12,7 +12,7 @@ export default defineConfig({
         rollupOptions: {
             input: {
                 main: new URL("./index.html", import.meta.url).pathname,
-                game: new URL("./game.html", import.meta.url).pathname,
+                console: new URL("./console.html", import.meta.url).pathname,
                 "ui-dev": new URL("./ui-dev.html", import.meta.url).pathname,
             },
         },

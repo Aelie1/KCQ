@@ -59,22 +59,6 @@ button {
     justify-content: center;
 }
 
-.kcq-entry-error {
-    width: min(100%, 390px);
-    padding: 16px;
-    border: 1px solid var(--kcq-structure-border);
-    border-radius: 12px;
-    background: var(--kcq-surface-panel);
-}
-
-.kcq-entry-error h1 {
-    margin-top: 0;
-}
-
-.kcq-entry-error a {
-    color: var(--kcq-accent-primary);
-}
-
 .kcq-screen-layout {
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;

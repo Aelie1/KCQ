@@ -1,41 +1,60 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { englishStrings } from "../../localization/en";
 import { createEngine } from "../../src/engine/public/engine";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import { createBattle } from "../../src/ui/web/app";
-import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
-import type { GraphicalRoute } from "../../src/ui/web/app/entry";
+import { createBattle, DEFAULT_DIFFICULTY } from "../../src/ui/web/app";
+import * as controllers from "../../src/ui/web/app/graphicalController";
+import { GraphicalApp, type GraphicalAppProps } from "../../src/ui/web/app/GraphicalApp";
 
 const presentation = new Presentation(englishStrings);
 
+afterEach(() => vi.restoreAllMocks());
+
 describe("outer graphical application", () => {
-    it.each([
-        [{ screen: "picker" }, "kcq-encounter-picker"],
-        [{ screen: "details", encounter: "forest_3" }, "kcq-encounter-details"],
-        [{ screen: "error" }, "kcq-entry-error"],
-    ] as const)("renders initial %o without loading a battle", (initialRoute, className) => {
+    it("starts at the Encounter Picker without preparing a battle", () => {
         const engine = createEngine();
         const prepareBattle = vi.fn(() => ({ engine, dispose: () => {} }));
-        const html = renderToString(() => createComponent(GraphicalApp, { engine, presentation, initialRoute, prepareBattle }));
-        expect(html).toContain(className);
+        const html = renderToString(() => createComponent(GraphicalApp, { engine, presentation, prepareBattle }));
+        expect(html).toContain("kcq-encounter-picker");
         expect(prepareBattle).not.toHaveBeenCalled();
         expect(engine.getGameState().characters).toEqual([]);
         expect(html).not.toContain("href=");
+        expect(html).not.toContain("kcq-entry-error");
+        expect(html).not.toMatch(/class="[^"]*\bkcq-battle-overview\b(?:\s|")/);
     });
 
-    it("prepares a deep-linked battle once and renders the existing BattleApp", () => {
+    it("renders Details and Battle from the controller's in-app transitions", () => {
         const engine = createEngine();
-        const initialRoute: GraphicalRoute = { screen: "battle", encounter: "plains_2", difficulty: "veteran" };
         const prepareBattle = vi.fn((encounter, difficulty) => {
             createBattle(engine, encounter, difficulty);
-            return { engine, dispose: () => {} };
+            return { engine, dispose: vi.fn() };
         });
-        const html = renderToString(() => createComponent(GraphicalApp, { engine, presentation, initialRoute, prepareBattle }));
-        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("plains_2", "veteran");
-        expect(html).toContain("kcq-battle-overview");
-        expect(html).toContain(presentation.encounter("plains_2"));
-        expect(engine.getGameState().difficulty.id).toBe("veteran");
+        const controller = controllers.createGraphicalController(prepareBattle);
+        // SSR renders one screen at a time; reuse the real controller to inspect transitions.
+        vi.spyOn(controllers, "createGraphicalController").mockReturnValue(controller);
+        const renderScreen = () => renderToString(() => createComponent(GraphicalApp, { engine, presentation, prepareBattle }));
+        controller.selectEncounter("forest_3");
+        expect(renderScreen()).toContain("kcq-encounter-details");
+        expect(prepareBattle).not.toHaveBeenCalled();
+        controller.backToPicker();
+        expect(renderScreen()).toContain("kcq-encounter-picker");
+        controller.selectEncounter("plains_2");
+        controller.startEncounter();
+        const battleHtml = renderScreen();
+        expect(battleHtml).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
+        expect(battleHtml).toContain(presentation.encounter("plains_2"));
+        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("plains_2", DEFAULT_DIFFICULTY);
+        controller.dispose();
+        expect(prepareBattle.mock.results[0].value.dispose).toHaveBeenCalledOnce();
+    });
+
+    it("accepts battle preparation without an initial route", () => {
+        expectTypeOf<GraphicalAppProps>().toEqualTypeOf<{
+            engine: GraphicalAppProps["engine"];
+            presentation: GraphicalAppProps["presentation"];
+            prepareBattle: GraphicalAppProps["prepareBattle"];
+        }>();
     });
 });

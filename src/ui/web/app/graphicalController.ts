@@ -1,7 +1,7 @@
 import { createSignal } from "solid-js";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { BattleTelemetryObserver } from "../telemetry";
-import { encounterStartRoute, type GraphicalRoute } from "./entry";
+import { DEFAULT_DIFFICULTY } from "../app";
 
 export interface GraphicalBattleSession {
     engine: Engine;
@@ -9,22 +9,16 @@ export interface GraphicalBattleSession {
     dispose: () => void;
 }
 
-export type GraphicalScreen = Exclude<GraphicalRoute, { screen: "battle" }>
-    | (Extract<GraphicalRoute, { screen: "battle" }> & { session: GraphicalBattleSession });
+export type GraphicalScreen =
+    | { screen: "picker" }
+    | { screen: "details"; encounter: EncounterId }
+    | { screen: "battle"; encounter: EncounterId; difficulty: DifficultyId; session: GraphicalBattleSession };
 
-/** URL selection is initialization only; subsequent navigation stays inside Solid. */
 export function createGraphicalController(
-    initialRoute: GraphicalRoute,
     prepareBattle: (encounter: EncounterId, difficulty: DifficultyId) => GraphicalBattleSession,
 ) {
     let session: GraphicalBattleSession | undefined;
-    const enterBattle = (route: Extract<GraphicalRoute, { screen: "battle" }>): GraphicalScreen => {
-        session = prepareBattle(route.encounter, route.difficulty);
-        return { ...route, session };
-    };
-    const [screen, setScreen] = createSignal<GraphicalScreen>(
-        initialRoute.screen === "battle" ? enterBattle(initialRoute) : initialRoute,
-    );
+    const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "picker" });
 
     return {
         screen,
@@ -33,11 +27,14 @@ export function createGraphicalController(
         },
         backToPicker(): void {
             const current = screen();
-            if (current.screen === "details" || current.screen === "error") setScreen({ screen: "picker" });
+            if (current.screen === "details") setScreen({ screen: "picker" });
         },
         startEncounter(): void {
             const current = screen();
-            if (current.screen === "details") setScreen(enterBattle(encounterStartRoute(current.encounter)));
+            if (current.screen !== "details") return;
+            // Use the shared default until the graphical difficulty selector is added.
+            session = prepareBattle(current.encounter, DEFAULT_DIFFICULTY);
+            setScreen({ screen: "battle", encounter: current.encounter, difficulty: DEFAULT_DIFFICULTY, session });
         },
         dispose(): void {
             session?.dispose();

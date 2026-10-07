@@ -196,13 +196,11 @@ The current project version is:
 
 0.11 is the first release built around the new graphical combat interface.
 
-The browser launcher now allows the player to choose:
+The project root (`/KCQ/`) opens the graphical Encounter Picker. Selecting an encounter opens its Details screen; Back returns to the Picker, and Start currently begins battle at the shared Standard default until Difficulty Select is added.
 
-* encounter;
-* difficulty;
-* interface mode — **Graphical** or **Console**.
+Graphical screens are controlled entirely by Solid/controller state. Query parameters have no effect, and refreshing returns to the Encounter Picker. There is no graphical deep-link entry.
 
-Graphical is the default. The console interface remains available as an alternate client and continues to be useful for compatibility, debugging, and comparison.
+The console interface remains available at `/KCQ/console.html` as an alternate client for compatibility, debugging, and comparison. The graphical fixture/development UI remains at `/KCQ/ui-dev.html`.
 
 ## Graphical battle interface
 
@@ -222,20 +220,20 @@ The graphical interface currently provides:
 * a graphical game log;
 * End Turn and normal battle action execution;
 * sticky/mobile-first navigation and centered desktop presentation;
-* direct battle entry through `game.html?encounter=...&difficulty=...`;
+* in-app Encounter Picker, Encounter Details, and Start navigation;
 * the existing anonymous telemetry/replay reporting used by browser playtests.
 
 The graphical client uses the same engine/public information boundaries as other consumers. It relies on public action views, previews, game state, event frames, presentation/localization data, and sanitized public definitions rather than recreating combat rules in the UI.
 
 ## Console browser interface
 
-The earlier console-style browser client remains supported and still provides its established keyboard/button battle flow, scrolling combat log, timed presentation, final battle-state handling, Quit behavior, and return-to-selector flow.
+The earlier console-style browser client at `console.html` opens its own encounter and difficulty selector, with no Interface selector or graphical redirect. It remains supported and still provides its established keyboard/button battle flow, scrolling combat log, timed presentation, final battle-state handling, Quit behavior, and return-to-selector flow.
 
 ## Still outside the 0.11 graphical baseline
 
 The following are intentionally **not blockers for 0.11** and remain post-release work:
 
-* a graphical scenario-selection screen replacing/reframing the current launcher;
+* graphical difficulty selection before battle;
 * graphical victory/defeat screens and return-to-scenario flow;
 * functional Settings UI;
 * richer enemy-detail / enemy-move inspection;
@@ -938,7 +936,7 @@ Obsolete as an absolute statement. The graphical **combat** UI now exists. What 
 
 ### “The web build still needs an encounter selector.”
 
-Obsolete. The browser launcher exposes the encounter catalogue and difficulty/interface selection. A more integrated graphical scenario-select screen remains future work.
+Obsolete. The project root opens the graphical Encounter Picker and Details flow; `console.html` provides the alternate browser-console encounter and difficulty selector. Graphical difficulty selection remains future work.
 
 ### “Analytics/replay reporting are still only a future design problem.”
 
