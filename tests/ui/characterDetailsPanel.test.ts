@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { englishStrings } from "../../localization/en";
+import { Presentation } from "../../src/ui/presentation/presentation";
 import { ModifierMeter } from "../../src/ui/web/app/components/ModifierMeter";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
 import { CharacterDetailsPanel } from "../../src/ui/web/app/panels/CharacterDetailsPanel";
@@ -34,6 +36,96 @@ describe("character details panel", () => {
         expect(html).toContain("kcq-linked-entity-chip__icon");
         expect(html).toContain("Skunkette 1");
         expect(html).not.toContain("↗ Skunkette 1");
+    });
+
+    it("renders nonzero rows and a blocked zero capability without ordinary +0 rows", () => {
+        const html = renderToString(() => createComponent(CharacterDetailsPanel, characterDetailsFixture));
+        const text = renderedText(html);
+
+        expect(text).toContain("Status &amp; Capabilities");
+        expect(text).toContain("MouthBlk");
+        expect(text).toContain("Defense-8");
+        expect(text).not.toContain("+0");
+        expect(html.match(/class="kcq-modifier-meter"/g)).toHaveLength(5);
+        expect(html.match(/class="kcq-character-binding"/g)).toHaveLength(3);
+        expect(text).toContain("Bindings / 3 Zones");
+        expect(text).not.toContain("Skunk Legs");
+        expect(text).toContain("Buffs");
+        expect(html).not.toContain(">Effects</h2>");
+    });
+
+    it.each(["modifiers", "bindings", "buffs", "all"] as const)(
+        "removes empty %s cards and their headings while keeping the screen actions",
+        (empty) => {
+            const fixture = characterDetailsFixture;
+            const state = {
+                ...fixture.state,
+                characters: fixture.state.characters.map((character) => character.id === "ko"
+                    ? {
+                        ...character,
+                        ...((empty === "modifiers" || empty === "all")
+                            ? { modifiers: {}, blockedMoveTypes: [] } : {}),
+                        ...((empty === "bindings" || empty === "all") ? { bindings: [] } : {}),
+                        ...((empty === "buffs" || empty === "all") ? { buffs: [] } : {}),
+                    }
+                    : character),
+            };
+            const html = renderToString(() => createComponent(CharacterDetailsPanel, { ...fixture, state }));
+            const text = renderedText(html);
+            for (const [kind, className, heading] of [
+                ["modifiers", "kcq-character-capabilities", "character-status-heading"],
+                ["bindings", "kcq-character-bindings", "character-bindings-heading"],
+                ["buffs", "kcq-character-effects", "character-effects-heading"],
+            ]) {
+                if (empty === kind || empty === "all") {
+                    expect(html).not.toContain(className);
+                    expect(html).not.toContain(heading);
+                } else {
+                    expect(html).toContain(className);
+                    expect(html).toContain(heading);
+                }
+            }
+            expect(text).not.toContain("None");
+            expect(html).not.toContain("kcq-character-effects__empty");
+            expect(html).toContain("kcq-character-commands");
+            expect(html).toContain("kcq-character-details__footer");
+        },
+    );
+
+    it("renders localized buff move changes as individual positive and restrictive chips", () => {
+        const fixture = characterDetailsFixture;
+        const presentation = new Presentation({
+            ...englishStrings,
+            "move.fairyTelekinesis.name": "Localized Fairy Move",
+            "move.fairyReflect.name": "Localized Reflect",
+            "move.telekinesis.name": "Localized Base Move",
+        });
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "ko"
+                ? { ...character, buffs: [{
+                    id: "transformation",
+                    moveList: {
+                        addedMoves: ["fairyTelekinesis", "fairyReflect"],
+                        blockedMoves: ["telekinesis"],
+                    },
+                }] }
+                : character),
+        };
+        const html = renderToString(() => createComponent(CharacterDetailsPanel, { ...fixture, state, presentation }));
+        const buffSection = html.match(/<section[^>]*kcq-character-effects[^>]*>([\s\S]*?)<\/section>/)?.[1] ?? "";
+        const chips = [...buffSection.matchAll(/<span[^>]*kcq-status-chip[^>]*>[\s\S]*?<\/span>/g)]
+            .map(([chip]) => chip);
+
+        expect(chips).toHaveLength(3);
+        expect(chips[0]).toContain("kcq-status-chip--success");
+        expect(renderedText(chips[0])).toBe("Add Localized Fairy Move");
+        expect(chips[1]).toContain("kcq-status-chip--success");
+        expect(renderedText(chips[1])).toBe("Add Localized Reflect");
+        expect(chips[2]).toContain("kcq-status-chip--danger");
+        expect(renderedText(chips[2])).toBe("Block Localized Base Move");
+        expect(buffSection).not.toContain("fairyTelekinesis");
+        expect(buffSection).not.toContain("telekinesis");
     });
 
     it("renders exactly eight fixed-geometry modifier pips", () => {
@@ -69,10 +161,9 @@ describe("character details panel", () => {
 
         expect(html).toContain("kcq-combat-header--subscreen");
         expect(html).toContain("kcq-character-roster");
-        expect(html).toContain("kcq-character-capabilities");
-        expect(html).toContain("kcq-character-bindings");
-        expect(html).toContain("kcq-binding-meter kcq-binding-meter--compact");
-        expect(html).toContain("kcq-character-effects");
+        expect(html).not.toContain("kcq-character-capabilities");
+        expect(html).not.toContain("kcq-character-bindings");
+        expect(html).not.toContain("kcq-character-effects");
         expect(html).toContain("kcq-character-commands");
         expect(html).toContain("kcq-character-commands__resource");
         expect(html).toContain("kcq-subspace-meter");

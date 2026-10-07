@@ -1408,14 +1408,10 @@ button {
     text-transform: uppercase;
 }
 
-.kcq-character-capabilities {
-    height: 130px;
-}
-
-.kcq-character-capabilities__columns {
+.kcq-character-capabilities__list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
+    column-gap: 16px;
 }
 
 .kcq-modifier-meter {
@@ -1489,10 +1485,6 @@ button {
 
 .kcq-modifier-meter__value--success {
     color: var(--kcq-state-success);
-}
-
-.kcq-character-bindings {
-    min-height: 188px;
 }
 
 .kcq-character-bindings__list {
@@ -1582,7 +1574,6 @@ button {
 }
 
 .kcq-character-effects {
-    min-height: 85px;
     padding: 6px 12px 4px;
 }
 
@@ -1610,15 +1601,14 @@ button {
 
 .kcq-character-effect__details {
     display: flex;
+    flex-wrap: wrap;
     gap: 3px;
     min-width: 0;
-    overflow: hidden;
 }
 
-.kcq-character-effects__empty {
-    color: var(--kcq-text-dim);
-    font-size: 10px;
-    font-weight: 600;
+.kcq-character-effect__details .kcq-status-chip {
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .kcq-character-commands__grid {

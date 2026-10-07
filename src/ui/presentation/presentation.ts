@@ -56,7 +56,7 @@ export type UiLabel =
     | "characterDetails.commandsHeading"
     | "characterDetails.cooldown"
     | "characterDetails.effectModifier"
-    | "characterDetails.effectsHeading"
+    | "characterDetails.buffsHeading"
     | "characterDetails.escape"
     | "characterDetails.noEscapeTargets"
     | "characterDetails.modifierValue"

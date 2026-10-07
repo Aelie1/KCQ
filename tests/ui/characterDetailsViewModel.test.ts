@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { englishStrings } from "../../localization/en";
+import { Presentation } from "../../src/ui/presentation/presentation";
 import type { ActionInfo } from "../../src/engine/public/types";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
 import {
@@ -54,7 +56,7 @@ describe("character details view model", () => {
         ]);
     });
 
-    it("maps modifiers verbatim and gives blocked capabilities precedence", () => {
+    it("omits +0 modifiers while keeping nonzero modifiers and blocked capabilities", () => {
         const fixture = characterDetailsFixture;
         const focused = createFocusedCharacterViewModel(
             fixture.state,
@@ -66,23 +68,55 @@ describe("character details view model", () => {
             fixture.presentation,
         );
 
-        expect(focused.modifiers.left).toEqual([
+        expect(focused.modifiers).toEqual([
             expect.objectContaining({ label: "Arms", blocked: false, value: -2, valueLabel: "-2" }),
             expect.objectContaining({ label: "Mouth", blocked: true, value: 0, valueLabel: "Blk" }),
-            expect.objectContaining({ label: "Legs", blocked: false, value: 0, valueLabel: "+0" }),
             expect.objectContaining({ label: "Escape", blocked: true, value: 0, valueLabel: "Blk" }),
             expect.objectContaining({ label: "Defense", blocked: false, value: -8, valueLabel: "-8" }),
-        ]);
-        expect(focused.modifiers.right).toEqual([
+
             expect.objectContaining({ label: "Willpower", value: -2, valueLabel: "-2" }),
             expect.objectContaining({ label: "Vulnerability", value: 2, valueLabel: "+2" }),
-            expect.objectContaining({ label: "Potency", value: 0, valueLabel: "+0" }),
-            expect.objectContaining({ label: "Trap Avoidance", value: 0, valueLabel: "+0" }),
-            expect.objectContaining({ label: "Spread", value: 0, valueLabel: "+0" }),
         ]);
     });
 
-    it("passes the public threshold maximum to each binding meter", () => {
+    it("omits explicit and missing zero modifiers when all capabilities are available", () => {
+        const fixture = characterDetailsFixture;
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "ko"
+                ? { ...character, modifiers: { hitarms: 0, defense: -0, potency: 0 }, blockedMoveTypes: [] }
+                : character),
+        };
+        const focused = createFocusedCharacterViewModel(
+            state, fixture.actions[0], fixture.thresholds, fixture.presentation,
+        );
+
+        expect(focused.modifiers).toEqual([]);
+    });
+
+    it("keeps all zero-valued attack capabilities when attacking is unavailable", () => {
+        const fixture = characterDetailsFixture;
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "ko"
+                ? { ...character, modifiers: {}, blockedMoveTypes: [] }
+                : character),
+        };
+        const focused = createFocusedCharacterViewModel(
+            state,
+            { ...fixture.actions[0], attack: { available: false } },
+            fixture.thresholds,
+            fixture.presentation,
+        );
+
+        expect(focused.modifiers.map(({ label, blocked, value, valueLabel }) => ({
+            label, blocked, value, valueLabel,
+        }))).toEqual(["Arms", "Mouth", "Legs"].map((label) => ({
+            label, blocked: true, value: 0, valueLabel: "Blk",
+        })));
+    });
+
+    it("omits zero-value bindings and passes the public threshold maximum to active meters", () => {
         const fixture = characterDetailsFixture;
         const focused = createFocusedCharacterViewModel(
             fixture.state,
@@ -95,11 +129,10 @@ describe("character details view model", () => {
             { value: 72, max: 200 },
             { value: 27, max: 200 },
             { value: 89, max: 200 },
-            { value: 0, max: 200 },
         ]);
     });
 
-    it("shows every encounter binding as a normal zero/none row for a clean character", () => {
+    it("omits missing encounter bindings for a clean character", () => {
         const fixture = characterDetailsFixture;
         const state = {
             ...fixture.state,
@@ -115,18 +148,8 @@ describe("character details view model", () => {
             fixture.presentation,
         );
 
-        expect(model.labels.bindingsHeading).toBe("Bindings / 4 Zones");
-        expect(model.focused.bindings.map(({ id, levelLabel, value, max }) => ({
-            id,
-            levelLabel,
-            value,
-            max,
-        }))).toEqual([
-            { id: "latexHead", levelLabel: "None", value: 0, max: fixture.thresholds.max },
-            { id: "latexArms", levelLabel: "None", value: 0, max: fixture.thresholds.max },
-            { id: "latexTorso", levelLabel: "None", value: 0, max: fixture.thresholds.max },
-            { id: "latexLegs", levelLabel: "None", value: 0, max: fixture.thresholds.max },
-        ]);
+        expect(model.labels.bindingsHeading).toBe("Bindings / 0 Zones");
+        expect(model.focused.bindings).toEqual([]);
     });
 
     it("applies modifier tone according to beneficial and harmful direction", () => {
@@ -152,10 +175,7 @@ describe("character details view model", () => {
             fixture.thresholds,
             fixture.presentation,
         );
-        const tones = new Map([
-            ...focused.modifiers.left,
-            ...focused.modifiers.right,
-        ].map(({ label, tone }) => [label, tone]));
+        const tones = new Map(focused.modifiers.map(({ label, tone }) => [label, tone]));
 
         expect(tones.get("Defense")).toBe("success");
         expect(tones.get("Potency")).toBe("success");
@@ -312,6 +332,41 @@ describe("character details view model", () => {
                 details: [],
                 linkedEntity: undefined,
             },
+        ]);
+    });
+
+    it("shows each added and blocked buff move with localized names and distinct tones", () => {
+        const fixture = characterDetailsFixture;
+        const presentation = new Presentation({
+            ...englishStrings,
+            "move.fairyTelekinesis.name": "Localized Fairy Move",
+            "move.fairyReflect.name": "Localized Reflect",
+            "move.telekinesis.name": "Localized Base Move",
+            "ui.targeting.addMove": "Grants {move}",
+            "ui.targeting.blockMove": "Restricts {move}",
+            "ui.characterDetails.buffsHeading": "Localized Buffs",
+        });
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "ko"
+                ? { ...character, buffs: [{
+                    id: "transformation",
+                    moveList: {
+                        addedMoves: ["fairyTelekinesis", "fairyReflect"],
+                        blockedMoves: ["telekinesis"],
+                    },
+                }] }
+                : character),
+        };
+        const model = createCharacterDetailsViewModel(
+            state, fixture.actions, fixture.focusedCharacterId, fixture.thresholds, presentation,
+        );
+
+        expect(model.labels.buffsHeading).toBe("Localized Buffs");
+        expect(model.focused.effects[0].details).toEqual([
+            { label: "Grants Localized Fairy Move", tone: "success" },
+            { label: "Grants Localized Reflect", tone: "success" },
+            { label: "Restricts Localized Base Move", tone: "danger" },
         ]);
     });
 

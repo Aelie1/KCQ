@@ -111,10 +111,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const scrollToBottom = (): void => {
         requestAnimationFrame(() => {
             const body = document.querySelector<HTMLElement>(".kcq-screen-layout__body");
-            body?.scrollTo({
-                top: body.scrollHeight,
-                behavior: "smooth",
-            });
+            body?.scrollTo(0, body.scrollHeight);
         });
     };
 

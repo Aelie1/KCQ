@@ -71,7 +71,7 @@ export interface EffectDetailViewModel {
     buff: Buff;
     details: readonly {
         label: string;
-        tone: Extract<StatusChipTone, "danger" | "neutral" | "outcome" | "warning">;
+        tone: Extract<StatusChipTone, "danger" | "neutral" | "outcome" | "success" | "warning">;
     }[];
     id: string;
     linkedEntity?: LinkedEntityViewModel;
@@ -85,10 +85,7 @@ export interface FocusedCharacterViewModel {
     effects: readonly EffectDetailViewModel[];
     id: EntityId;
     initial: string;
-    modifiers: {
-        left: readonly ModifierMeterViewModel[];
-        right: readonly ModifierMeterViewModel[];
-    };
+    modifiers: readonly ModifierMeterViewModel[];
     name: string;
     resource?: {
         current: number;
@@ -114,8 +111,7 @@ export interface CharacterDetailsViewModel {
     labels: {
         bindingsHeading: string;
         commandsHeading: string;
-        effectsEmpty: string;
-        effectsHeading: string;
+        buffsHeading: string;
         rosterLabel: string;
         statusHeading: string;
     };
@@ -130,15 +126,12 @@ export interface CharacterDetailsViewModel {
     }[];
 }
 
-const LEFT_MODIFIERS = [
+const CAPABILITIES = [
     { modifier: "hitarms", moveType: "arms" },
     { modifier: "hitmouth", moveType: "mouth" },
     { modifier: "hitlegs", moveType: "legs" },
     { modifier: "escape", availability: "escape" },
     { modifier: "defense" },
-] as const satisfies readonly CapabilityDefinition[];
-
-const RIGHT_MODIFIERS = [
     { modifier: "willpower" },
     { modifier: "vulnerability" },
     { modifier: "potency" },
@@ -212,8 +205,7 @@ export function createCharacterDetailsViewModel(
             bindingsHeading: presentation.ui("characterDetails.bindingsHeading", {
                 count: focused.bindings.length,
             }),
-            effectsHeading: presentation.ui("characterDetails.effectsHeading"),
-            effectsEmpty: presentation.ui("effects.none"),
+            buffsHeading: presentation.ui("characterDetails.buffsHeading"),
             commandsHeading: presentation.ui("characterDetails.commandsHeading", {
                 character: focused.name,
             }),
@@ -259,33 +251,27 @@ export function createFocusedCharacterViewModel(
         actionState: createCharacterActionState(character, action, presentation),
         stanceState: createCharacterStanceState(character, action, presentation),
         ...(resource ? { resource } : {}),
-        modifiers: {
-            left: LEFT_MODIFIERS.map((definition) => createModifierMeter(
-                definition,
-                character,
-                action,
-                presentation,
-            )),
-            right: RIGHT_MODIFIERS.map((definition) => createModifierMeter(
-                definition,
-                character,
-                action,
-                presentation,
-            )),
-        },
-        bindings: projectBindingZones(state.encounter?.bindings, character.bindings).map((binding) => ({
-            id: binding.id,
-            max: thresholds.max,
-            name: presentation.binding(binding.id),
-            peak: binding.peak,
-            value: binding.value,
-            valueLabel: presentation.ui("characterDetails.bindingValue", {
+        modifiers: CAPABILITIES.map((definition) => createModifierMeter(
+            definition,
+            character,
+            action,
+            presentation,
+        )).filter((metric) => metric.blocked || metric.value !== 0),
+        bindings: projectBindingZones(state.encounter?.bindings, character.bindings)
+            .filter((binding) => binding.value !== 0)
+            .map((binding) => ({
+                id: binding.id,
+                max: thresholds.max,
+                name: presentation.binding(binding.id),
+                peak: binding.peak,
                 value: binding.value,
-            }),
-            level: binding.level,
-            levelLabel: presentation.bindingLevel(binding.level),
-            statusLabels: binding.status.map((status) => statusLabel(status, presentation)),
-        })),
+                valueLabel: presentation.ui("characterDetails.bindingValue", {
+                    value: binding.value,
+                }),
+                level: binding.level,
+                levelLabel: presentation.bindingLevel(binding.level),
+                statusLabels: binding.status.map((status) => statusLabel(status, presentation)),
+            })),
         effects: character.buffs.map((buff) => createEffectDetail(buff, state, presentation)),
         commands: createCommands(state, character, action, presentation),
     };
@@ -354,6 +340,20 @@ function createEffectDetail(
                 value: formatSignedNumber(value),
             }),
             tone: "neutral",
+        });
+    }
+
+    for (const move of buff.moveList?.addedMoves ?? []) {
+        details.push({
+            label: presentation.ui("targeting.addMove", { move: presentation.move(move) }),
+            tone: "success",
+        });
+    }
+
+    for (const move of buff.moveList?.blockedMoves ?? []) {
+        details.push({
+            label: presentation.ui("targeting.blockMove", { move: presentation.move(move) }),
+            tone: "danger",
         });
     }
 

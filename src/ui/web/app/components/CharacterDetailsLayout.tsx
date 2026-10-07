@@ -74,84 +74,80 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                 </div>
             }
             body={<>
-                <section class="kcq-character-section kcq-character-capabilities" aria-labelledby="character-status-heading">
-                    <h2 id="character-status-heading">{props.model.labels.statusHeading}</h2>
-                    <div class="kcq-character-capabilities__columns">
-                        <div>
-                            <For each={props.model.focused.modifiers.left}>
+                <Show when={props.model.focused.modifiers.length > 0}>
+                    <section class="kcq-character-section kcq-character-capabilities" aria-labelledby="character-status-heading">
+                        <h2 id="character-status-heading">{props.model.labels.statusHeading}</h2>
+                        <div class="kcq-character-capabilities__list">
+                            <For each={props.model.focused.modifiers}>
                                 {(metric) => <ModifierMeter metric={metric} />}
                             </For>
                         </div>
-                        <div>
-                            <For each={props.model.focused.modifiers.right}>
-                                {(metric) => <ModifierMeter metric={metric} />}
-                            </For>
-                        </div>
-                    </div>
-                </section>
+                    </section>
+                </Show>
 
-                <section class="kcq-character-section kcq-character-bindings" aria-labelledby="character-bindings-heading">
-                    <h2 id="character-bindings-heading">{props.model.labels.bindingsHeading}</h2>
-                    <div class="kcq-character-bindings__list">
-                        <For each={props.model.focused.bindings}>
-                            {(binding) => (
-                                <div class="kcq-character-binding">
-                                    <div class="kcq-character-binding__summary">
-                                        <span class="kcq-character-binding__name">{binding.name}</span>
-                                        <span class="kcq-character-binding__statuses">
-                                            <For each={binding.statusLabels}>
-                                                {(status) => <StatusChip size="compact">{status}</StatusChip>}
+                <Show when={props.model.focused.bindings.length > 0}>
+                    <section class="kcq-character-section kcq-character-bindings" aria-labelledby="character-bindings-heading">
+                        <h2 id="character-bindings-heading">{props.model.labels.bindingsHeading}</h2>
+                        <div class="kcq-character-bindings__list">
+                            <For each={props.model.focused.bindings}>
+                                {(binding) => (
+                                    <div class="kcq-character-binding">
+                                        <div class="kcq-character-binding__summary">
+                                            <span class="kcq-character-binding__name">{binding.name}</span>
+                                            <span class="kcq-character-binding__statuses">
+                                                <For each={binding.statusLabels}>
+                                                    {(status) => <StatusChip size="compact">{status}</StatusChip>}
+                                                </For>
+                                            </span>
+                                            <span
+                                                class="kcq-character-binding__level"
+                                                classList={{ [`kcq-character-binding__level--${binding.level}`]: true }}
+                                            >
+                                                {binding.levelLabel}
+                                            </span>
+                                            <span class="kcq-character-binding__value">{binding.valueLabel}</span>
+                                        </div>
+                                        <BindingMeter
+                                            value={binding.value}
+                                            peak={binding.peak}
+                                            max={binding.max}
+                                            level={binding.level}
+                                            size="compact"
+                                            ariaLabel={binding.name}
+                                        />
+                                    </div>
+                                )}
+                            </For>
+                        </div>
+                    </section>
+                </Show>
+
+                <Show when={props.model.focused.effects.length > 0}>
+                    <section class="kcq-character-section kcq-character-effects" aria-labelledby="character-effects-heading">
+                        <h2 id="character-effects-heading">{props.model.labels.buffsHeading}</h2>
+                        <div class="kcq-character-effects__list">
+                            <For each={props.model.focused.effects}>
+                                {(effect) => (
+                                    <div class="kcq-character-effect">
+                                        <span class="kcq-character-effect__name">{effect.name}</span>
+                                        <span class="kcq-character-effect__details">
+                                            <Show when={effect.linkedEntity} keyed>
+                                                {(link) => <LinkedEntityChip link={link} />}
+                                            </Show>
+                                            <For each={effect.details}>
+                                                {(detail) => (
+                                                    <StatusChip size="compact" tone={detail.tone}>
+                                                        {detail.label}
+                                                    </StatusChip>
+                                                )}
                                             </For>
                                         </span>
-                                        <span
-                                            class="kcq-character-binding__level"
-                                            classList={{ [`kcq-character-binding__level--${binding.level}`]: true }}
-                                        >
-                                            {binding.levelLabel}
-                                        </span>
-                                        <span class="kcq-character-binding__value">{binding.valueLabel}</span>
                                     </div>
-                                    <BindingMeter
-                                        value={binding.value}
-                                        peak={binding.peak}
-                                        max={binding.max}
-                                        level={binding.level}
-                                        size="compact"
-                                        ariaLabel={binding.name}
-                                    />
-                                </div>
-                            )}
-                        </For>
-                    </div>
-                </section>
-
-                <section class="kcq-character-section kcq-character-effects" aria-labelledby="character-effects-heading">
-                    <h2 id="character-effects-heading">{props.model.labels.effectsHeading}</h2>
-                    <div class="kcq-character-effects__list">
-                        <For each={props.model.focused.effects}>
-                            {(effect) => (
-                                <div class="kcq-character-effect">
-                                    <span class="kcq-character-effect__name">{effect.name}</span>
-                                    <span class="kcq-character-effect__details">
-                                        <Show when={effect.linkedEntity} keyed>
-                                            {(link) => <LinkedEntityChip link={link} />}
-                                        </Show>
-                                        <For each={effect.details}>
-                                            {(detail) => (
-                                                <StatusChip size="compact" tone={detail.tone}>
-                                                    {detail.label}
-                                                </StatusChip>
-                                            )}
-                                        </For>
-                                    </span>
-                                </div>
-                            )}
-                        </For>
-                        <Show when={props.model.focused.effects.length === 0}>
-                            <p class="kcq-character-effects__empty">{props.model.labels.effectsEmpty}</p>
-                        </Show>
-                    </div>
-                </section>
+                                )}
+                            </For>
+                        </div>
+                    </section>
+                </Show>
 
                 {props.actionRegion}
             </>}

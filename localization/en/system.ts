@@ -58,7 +58,7 @@ export const systemStrings: StringTable = {
     "ui.characterDetails.commandsHeading": "Commands / {character}",
     "ui.characterDetails.cooldown": "Cooldown {count}",
     "ui.characterDetails.effectModifier": "{modifier} {value}",
-    "ui.characterDetails.effectsHeading": "Effects",
+    "ui.characterDetails.buffsHeading": "Buffs",
     "ui.characterDetails.escape": "Escape",
     "ui.characterDetails.noEscapeTargets": "No valid escape targets.",
     "ui.characterDetails.modifierValue": "{value}",
