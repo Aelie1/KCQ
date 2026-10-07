@@ -9,7 +9,7 @@ export const systemStrings: StringTable = {
     "stance.moving.name": "Moving",
 
     "entity.allies.name": "Allies",
-    "entity.enemies.name": "Allies",
+    "entity.enemies.name": "Enemies",
 
     "ui.action.ready": "Ready",
     "ui.action.acted": "Acted",
