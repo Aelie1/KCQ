@@ -1,5 +1,43 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.12.0 — 2026-10-07
+
+### Encounter Selection
+
+* Added a graphical Encounter Picker as the new entry point for the game.
+* Added Encounter Details screens showing:
+  * challenge rating;
+  * encounter description;
+  * enemy lineup, rank, and HP;
+  * encounter-specific starting effects and special conditions.
+
+### Difficulty Selection
+
+* Added a dedicated graphical Difficulty Select screen between Encounter Details and battle.
+* All five difficulty levels can now be selected directly in the graphical interface.
+* Difficulty descriptions are shown before starting the encounter.
+* Global difficulty modifiers are displayed using the normal buff/effect preview system.
+  * Casual shows the player Hit and Escape bonuses.
+  * Veteran, Extreme, and Mythic show the enemy Potency bonus.
+* Extreme and Mythic now show their campaign-specific enemy rule changes before battle.
+
+### Graphical Navigation / Web
+
+* The graphical interface is now the default KCQ web entry point.
+* The normal flow is now:
+  * Encounter Picker → Encounter Details → Difficulty Select → Battle.
+* The earlier browser-console interface remains available at `console.html`.
+
+### Layout / Presentation
+
+* Reworked graphical screens around a shared viewport-sized layout.
+* Headers and action buttons now remain in fixed screen regions while the main content area scrolls independently.
+* Unified Encounter Picker, Encounter Details, battle, targeting, Escape, character details, and game-log screens around the same screen shell.
+* Improved responsive scaling to account for the actual browser viewport, including mobile visual-viewport changes.
+* Reworked effect previews for numeric resources and traps to show current and projected values with reusable projected meters.
+* Effect previews can now group effects by recipient, avoiding repeated recipient labels when several effects apply to the same target.
+* Encounter setup previews now use zero-baseline projected values where appropriate, making starting traps, bindings, and other setup effects easier to read.
+
 ## 0.11.6 — 2026-10-06
 
 * Binding bars now show the peak value as a hollow section, and the main bars show the incoming binding from all current intentions as a faded section
