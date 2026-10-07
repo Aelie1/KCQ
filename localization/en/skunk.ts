@@ -31,6 +31,17 @@ export const skunkStrings: StringTable = {
     "entity.skunketteQueen.desc": "The former Skunk Queen, reduced to a minion after her failure.",
     "entity.skunkEmpress.desc": "The former Skunk Empress, reduced to a minion after her failure.",
 
+    "difficulty.skunkette.extreme": "Gets a followup Latex Spray on strong hits as well as criticals.",
+    "difficulty.skunkette.mythic": "Gets a followup Latex Spray on any hit.",
+    "difficulty.skunk.extreme": "Survives Latex Explosion when it hits a target.",
+    "difficulty.skunk.mythic": "Survives Latex Explosion whether it hits or misses.",
+    "difficulty.fairy.extreme": "Has a 50% chance to use Binding Magic as an extra attack each turn.",
+    "difficulty.fairy.mythic": "Uses Binding Magic as an extra attack each turn.",
+    "difficulty.queen.extreme": "Uses Skunk Gun as an extra attack each turn below 50% HP.",
+    "difficulty.queen.mythic": "Uses Skunk Gun as an extra attack each turn.",
+    "difficulty.rainmaker.extreme": "Explodes into 50 Latex Puddles when defeated.",
+    "difficulty.rainmaker.mythic": "Explodes into 100 Latex Puddles when defeated.",
+
     "buff.ambushed.name": "Ambushed!",
     "buff.ambushed.desc": "...",
 
