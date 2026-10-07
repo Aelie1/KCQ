@@ -631,3 +631,8 @@ export interface Encounter {
 }
 
 export type EncounterId = string;
+
+export interface EnemySetup {
+    defId: EntityId;
+    id?: EntityId;
+}

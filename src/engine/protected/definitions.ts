@@ -1,4 +1,4 @@
-import type { AccuracyProfile, BindingId, BindingLevel, Effect, EncounterId, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingId, BindingLevel, Effect, EncounterId, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
 
@@ -86,7 +86,3 @@ export interface TrapSetup {
     amount: number;
 }
 
-export interface EnemySetup {
-    defId: EntityId;
-    id?: EntityId;
-}

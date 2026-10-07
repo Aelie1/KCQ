@@ -16,7 +16,60 @@ const queenSetup = { defId: QUEEN_ID };
 const empressSetup = { defId: QUEEN_ID, id: "empress" };
 const goddessSetup = { defId: QUEEN_ID, id: "goddess" };
 
+interface TowerSetup {
+    queenName: "empress" | "goddess";
+    enemyMod: number;
+    queenWave: number;
+    collarAmount: number;
+    playerMod: number;
+    ambushed: boolean;
+    addSkunkette: boolean;
+    addSkunk: boolean;
+}
 
+const setupTower_1: TowerSetup = {
+    queenName: "empress",
+    enemyMod: 4,
+    queenWave: 4,
+    collarAmount: 50,
+    playerMod: 0,
+    ambushed: true,
+    addSkunkette: true,
+    addSkunk: false
+};
+
+const setupTower_2: TowerSetup = {
+    queenName: "empress",
+    enemyMod: 3,
+    queenWave: 4,
+    collarAmount: 40,
+    playerMod: 1,
+    ambushed: false,
+    addSkunkette: true,
+    addSkunk: false
+};
+
+const setupTower_3: TowerSetup = {
+    queenName: "empress",
+    enemyMod: 2,
+    queenWave: 4,
+    collarAmount: 30,
+    playerMod: 2,
+    ambushed: false,
+    addSkunkette: true,
+    addSkunk: false
+};
+
+const setupOutside: TowerSetup = {
+    queenName: "goddess",
+    enemyMod: 4,
+    queenWave: 6,
+    collarAmount: 0,
+    playerMod: 0,
+    ambushed: false,
+    addSkunkette: true,
+    addSkunk: true
+};
 
 export const plains_1: EncounterDef = {
     id: "plains_1",
@@ -150,10 +203,10 @@ export const tower_1: EncounterDef = {
         { definition: trapPuddle, amount: 0 }
     ],
     setup: function (state: iGameState): iEffect[] {
-        return towerBuffs(state, "empress", 4, 4, 50, 0, true);
+        return towerBuffs(state, setupTower_1);
     },
     librarySetup: function (): Effect[] {
-        return libraryTowerBuffs("empress", 4, 8, 0, 50, 0, true);
+        return libraryTowerBuffs(setupTower_1);
     }
 }
 
@@ -165,10 +218,10 @@ export const tower_2: EncounterDef = {
         { definition: trapPuddle, amount: 0 }
     ],
     setup: function (state: iGameState): iEffect[] {
-        return towerBuffs(state, "empress", 3, 4, 40, 1, false);
+        return towerBuffs(state, setupTower_2);
     },
     librarySetup: function (): Effect[] {
-        return libraryTowerBuffs("empress", 3, 6, 0, 40, 1, false);
+        return libraryTowerBuffs(setupTower_2);
     }
 }
 
@@ -180,10 +233,10 @@ export const tower_3: EncounterDef = {
         { definition: trapPuddle, amount: 0 }
     ],
     setup: function (state: iGameState): iEffect[] {
-        return towerBuffs(state, "empress", 2, 4, 30, 2, false);
+        return towerBuffs(state, setupTower_3);
     },
     librarySetup: function (): Effect[] {
-        return libraryTowerBuffs("empress", 2, 4, 0, 30, 2, false);
+        return libraryTowerBuffs(setupTower_3);
     }
 }
 
@@ -195,33 +248,33 @@ export const outside: EncounterDef = {
         { definition: trapPuddle, amount: 0 }
     ],
     setup: function (state: iGameState): iEffect[] {
-        return towerBuffs(state, "goddess", 4, 6, 0, 0, false);
+        return towerBuffs(state, setupOutside);
     },
     librarySetup: function (): Effect[] {
-        return libraryTowerBuffs("goddess", 4, 8, 8, 0, 0, false);
+        return libraryTowerBuffs(setupOutside);
     }
 }
 
-function towerBuffs(state: iGameState, queenName: string, enemyMod: number, queenWave: number, collarAmount: number, playerMod: number, ambushed: boolean): iEffect[] {
+function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
     const effects: iEffect[] = [];
     const queen = state.enemies.find(x => x.defId === QUEEN_ID);
-    const buffName = queenName === "empress" ? EMPRESS_BUFF : GODDESS_BUFF;
+    const buffName = setup.queenName === "empress" ? EMPRESS_BUFF : GODDESS_BUFF;
     if (queen) {
         effects.push({
             type: "data",
             target: queen,
             name: "wave",
-            amount: queenWave,
+            amount: setup.queenWave,
             visible: false
         });
         effects.push({
             type: "data",
             target: queen,
             name: "rainmaker",
-            amount: queenWave / 2,
+            amount: setup.queenWave / 2,
             visible: false
         });
-        if (enemyMod > 0) {
+        if (setup.enemyMod > 0) {
             effects.push({
                 type: "buff",
                 operation: "add",
@@ -229,21 +282,21 @@ function towerBuffs(state: iGameState, queenName: string, enemyMod: number, quee
                 buff: {
                     id: buffName,
                     active: true,
-                    modifiers: { hit: enemyMod, defense: enemyMod }
+                    modifiers: { hit: setup.enemyMod, defense: setup.enemyMod }
                 }
             });
         }
         for (const character of state.characters) {
-            if (collarAmount > 0) {
+            if (setup.collarAmount > 0) {
                 effects.push({
                     type: "binding",
                     source: queen,
                     target: character,
                     binding: latexCollar,
-                    amount: collarAmount
+                    amount: setup.collarAmount
                 });
             }
-            if (playerMod > 0) {
+            if (setup.playerMod > 0) {
                 effects.push({
                     type: "buff",
                     operation: "add",
@@ -251,11 +304,11 @@ function towerBuffs(state: iGameState, queenName: string, enemyMod: number, quee
                     buff: {
                         id: GODDESS_BUFF,
                         active: true,
-                        modifiers: { hit: playerMod, defense: playerMod }
+                        modifiers: { hit: setup.playerMod, defense: setup.playerMod }
                     }
                 });
             }
-            if (ambushed) {
+            if (setup.ambushed) {
                 effects.push({
                     type: "buff",
                     operation: "add",
@@ -270,95 +323,99 @@ function towerBuffs(state: iGameState, queenName: string, enemyMod: number, quee
             }
         }
     }
-    const skunkette = state.enemies.find(x => x.defId === SKUNKETTE_ID);
-    if (skunkette) {
-        if (enemyMod > 0) {
-            effects.push({
-                type: "buff",
-                operation: "add",
-                target: skunkette,
-                buff: {
-                    id: buffName,
-                    active: true,
-                    modifiers: { hit: enemyMod * 2 }
-                }
-            });
+    if (setup.addSkunkette) {
+        const skunkette = state.enemies.find(x => x.defId === SKUNKETTE_ID);
+        if (skunkette) {
+            if (setup.enemyMod > 0) {
+                effects.push({
+                    type: "buff",
+                    operation: "add",
+                    target: skunkette,
+                    buff: {
+                        id: buffName,
+                        active: true,
+                        modifiers: { hit: setup.enemyMod * 2 }
+                    }
+                });
+            }
         }
     }
-    const skunk = state.enemies.find(x => x.defId === SKUNK_ID);
-    if (skunk) {
-        if (enemyMod > 0) {
-            effects.push({
-                type: "buff",
-                operation: "add",
-                target: skunk,
-                buff: {
-                    id: buffName,
-                    active: true,
-                    modifiers: { hit: enemyMod * 2 }
-                }
-            });
+    if (setup.addSkunk) {
+        const skunk = state.enemies.find(x => x.defId === SKUNK_ID);
+        if (skunk) {
+            if (setup.enemyMod > 0) {
+                effects.push({
+                    type: "buff",
+                    operation: "add",
+                    target: skunk,
+                    buff: {
+                        id: buffName,
+                        active: true,
+                        modifiers: { hit: setup.enemyMod * 2 }
+                    }
+                });
+            }
         }
     }
     return effects;
 }
 
-function libraryTowerBuffs(queenName: string, queenMod: number, skunketteMod: number, skunkMod: number, collarAmount: number, playerMod: number, ambushed: boolean): Effect[] {
+function libraryTowerBuffs(setup: TowerSetup): Effect[] {
     const effects: Effect[] = [];
-    const buffName = queenName === "empress" ? EMPRESS_BUFF : GODDESS_BUFF;
-    if (queenMod > 0) {
+    const buffName = setup.queenName === "empress" ? EMPRESS_BUFF : GODDESS_BUFF;
+    if (setup.enemyMod > 0) {
         effects.push({
             type: "buff",
             operation: "add",
-            target: queenName,
+            target: setup.queenName,
             buff: {
                 id: buffName,
-                modifiers: { hit: queenMod, defense: queenMod }
+                modifiers: { hit: setup.enemyMod, defense: setup.enemyMod }
             }
         });
     }
-    if (skunketteMod > 0) {
+    if (setup.addSkunkette) {
         effects.push({
             type: "buff",
             operation: "add",
             target: "skunketteQueen",
             buff: {
                 id: buffName,
-                modifiers: { hit: skunketteMod * 2 }
+                modifiers: { hit: setup.enemyMod * 2 }
             }
         });
     }
-    if (skunkMod > 0) {
+    if (setup.addSkunk) {
         effects.push({
             type: "buff",
             operation: "add",
             target: "skunkEmpress",
             buff: {
                 id: buffName,
-                modifiers: { hit: skunkMod * 2 }
+                modifiers: { hit: setup.enemyMod * 2 }
             }
         });
     }
-    if (collarAmount > 0) {
+    if (setup.collarAmount > 0) {
         effects.push({
             type: "binding",
             target: "allies",
             binding: latexCollar.id,
-            amount: collarAmount
+            amount: setup.collarAmount
         });
     }
-    if (playerMod > 0) {
+    if (setup.playerMod > 0) {
         effects.push({
             type: "buff",
             operation: "add",
             target: "allies",
             buff: {
                 id: GODDESS_BUFF,
-                modifiers: { hit: playerMod, defense: playerMod }
+                modifiers: { hit: setup.playerMod, defense: setup.playerMod }
             }
         });
     }
-    if (ambushed) {
+    if (setup.ambushed) {
         effects.push({
             type: "buff",
             operation: "add",
@@ -370,5 +427,6 @@ function libraryTowerBuffs(queenName: string, queenMod: number, skunketteMod: nu
             }
         });
     }
+
     return effects;
 }
