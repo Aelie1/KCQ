@@ -11,6 +11,5 @@ export function EncounterHeader(props: { title: string; settingsLabel: string; p
                 <img src={settingsIconUrl} alt="" width="22" height="22" />
             </button>
         </header>
-        <div class="kcq-battle-overview__divider" aria-hidden="true" />
     </>;
 }
