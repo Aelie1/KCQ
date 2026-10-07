@@ -1,5 +1,5 @@
 import { For, Match, Show, Switch, type JSX } from "solid-js";
-import type { EffectPreviewViewModel } from "../viewModels/targeting";
+import type { EffectPreviewViewModel } from "../viewModels/effectPreviews";
 import { BindingMeter } from "./BindingMeter";
 import { DamageEffect } from "./DamageEffect";
 import { PipMeter } from "./PipMeter";

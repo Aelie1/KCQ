@@ -1,4 +1,4 @@
-import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
+import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
 
 interface StringKey {
     id: string;
@@ -10,6 +10,22 @@ type StringArg = number | string | boolean | StringKey;
 export type StringTable = Record<string, string>;
 
 export type UiLabel =
+    | "encounterPicker.title"
+    | "encounter.challenge"
+    | "encounter.challengeAccessible"
+    | "encounter.bestClear"
+    | "encounter.uncleared"
+    | "encounter.description"
+    | "encounter.enemies"
+    | "encounter.specialRules"
+    | "encounter.start"
+    | "encounter.hp"
+    | "encounter.invalidTitle"
+    | "encounter.invalidLink"
+    | "encounter.returnToPicker"
+    | "enemyRank.boss"
+    | "enemyRank.enemy"
+    | "enemyRank.minion"
     | "action.acted"
     | "action.ready"
     | "action.skipped"
@@ -130,6 +146,18 @@ export class Presentation {
 
     entity(entity: EntityId, variant: "name" | "desc" = "name"): string {
         return this.translate(this.entityKey(entity, variant));
+    }
+
+    /** Definition identity without the runtime numbering used in combat. */
+    enemyDefinition(id: EntityId): string {
+        const generic = this.definitionKey("entity", id, "generic");
+        return this.translate(this.strings[generic.id] !== undefined
+            ? generic
+            : this.definitionKey("entity", id, "name"));
+    }
+
+    enemyRank(rank: EnemyRank): string {
+        return this.ui(`enemyRank.${rank}`);
     }
 
     binding(

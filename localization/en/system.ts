@@ -2,6 +2,22 @@ import { StringTable } from "../../src/ui/presentation/presentation";
 
 
 export const systemStrings: StringTable = {
+    "ui.encounterPicker.title": "Ko-chan’s Quest",
+    "ui.encounter.challenge": "Challenge",
+    "ui.encounter.challengeAccessible": "{stars} of 5 stars",
+    "ui.encounter.bestClear": "Best Clear",
+    "ui.encounter.uncleared": "---",
+    "ui.encounter.description": "Description",
+    "ui.encounter.enemies": "Enemies",
+    "ui.encounter.specialRules": "Special Rules",
+    "ui.encounter.start": "Start Encounter",
+    "ui.encounter.hp": "HP: {hp}",
+    "ui.encounter.invalidTitle": "Encounter could not open",
+    "ui.encounter.invalidLink": "The encounter or difficulty in this link is invalid.",
+    "ui.encounter.returnToPicker": "Return to the encounter picker",
+    "ui.enemyRank.boss": "Boss",
+    "ui.enemyRank.enemy": "Enemy",
+    "ui.enemyRank.minion": "Minion",
     "phase.player.name": "Player",
     "phase.enemy.name": "Enemy",
 

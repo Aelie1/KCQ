@@ -3,16 +3,16 @@ import { englishStrings } from "../../../../localization/en/index";
 import { createEngine } from "../../../engine/public/engine";
 import type { DifficultyId, EncounterId } from "../../../engine/public/types";
 import { Presentation } from "../../presentation/presentation";
-import {
-    attachBattlePageLifecycle,
-    createBattle,
-    ENCOUNTER_DIFFICULTIES,
-} from "../app";
+import { attachBattlePageLifecycle, createBattle } from "../app";
 import { gameplayTelemetry } from "../posthog";
 import { createBattleTelemetryObserver } from "../telemetry";
 import { App } from "./App";
 import "./app.css";
 import { BattleApp } from "./BattleApp";
+import { EncounterPickerPanel } from "./components/EncounterPickerPanel";
+import { EncounterDetailsPanel } from "./components/EncounterDetailsPanel";
+import { createEncounterPickerViewModel, createEncounterDetailsViewModel } from "./viewModels/encounters";
+import { selectGraphicalRoute, graphicalRouteSearch, encounterStartRoute } from "./entry";
 import "./tokens.css";
 
 declare const __KCQ_RELEASE_TAG__: string;
@@ -24,15 +24,27 @@ if (!root) {
 }
 
 const engine = createEngine();
-const params = new URLSearchParams(window.location.search);
-const encounter = engine.listEncounters().find((id) => id === params.get("encounter"));
-const difficulty = ENCOUNTER_DIFFICULTIES.find(({ id }) => id === params.get("difficulty"))?.id;
+const library = engine.getLibrary();
+const presentation = new Presentation(englishStrings);
+const route = selectGraphicalRoute(new URLSearchParams(window.location.search), library);
 
-if (!encounter || !difficulty) {
-    renderEntryError(root);
+if (route.screen === "battle") {
+    startGraphicalBattle(root, route.encounter, route.difficulty);
+} else if (route.screen === "picker") {
+    render(() => <App>
+        <EncounterPickerPanel model={createEncounterPickerViewModel(library, presentation)}
+            onSelect={(encounter) => window.location.assign(graphicalRouteSearch({ screen: "details", encounter }))} />
+    </App>, root);
+} else if (route.screen === "details") {
+    render(() => <App>
+        <EncounterDetailsPanel model={createEncounterDetailsViewModel(library, route.encounter, presentation)}
+            onStart={(encounter) => window.location.assign(graphicalRouteSearch(encounterStartRoute(encounter)))} />
+    </App>, root);
 } else {
-    startGraphicalBattle(root, encounter, difficulty);
+    renderEntryError(root);
 }
+setupResponsiveScale();
+
 function createId(): string {
     if (typeof crypto.randomUUID === "function") {
         return crypto.randomUUID();
@@ -56,8 +68,6 @@ function startGraphicalBattle(
         getCurrentState: () => battle.engine.getGameState(),
     });
     attachBattlePageLifecycle(observer);
-    const presentation = new Presentation(englishStrings);
-
     render(() => (
         <App>
             <BattleApp
@@ -67,17 +77,15 @@ function startGraphicalBattle(
             />
         </App>
     ), target);
-
-    setupResponsiveScale();
 }
 
 function renderEntryError(target: HTMLElement): void {
     render(() => (
         <App>
             <section class="kcq-entry-error" role="alert">
-                <h1>Battle could not start</h1>
-                <p>The encounter or difficulty in this link is missing or invalid.</p>
-                <a href="./index.html">Return to the encounter launcher</a>
+                <h1>{presentation.ui("encounter.invalidTitle")}</h1>
+                <p>{presentation.ui("encounter.invalidLink")}</p>
+                <a href="./game.html">{presentation.ui("encounter.returnToPicker")}</a>
             </section>
         </App>
     ), target);
