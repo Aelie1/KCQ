@@ -2,19 +2,19 @@ import type {
     AccuracyProfile, ActionInfo, ActionView, BandPreview, Character, DataEffect,
     EntityId, GameState, PreviewProfile, ThresholdInfo,
 } from "../../../../engine/public/types";
-import { groupEffectPreviews, type EffectGroupViewModel } from "./effectGroups";
 import type { Presentation } from "../../../presentation/presentation";
 import { createMoveTags, type CommandTagViewModel } from "./characterDetails";
 import { createCharacterActionState, createCharacterStanceState } from "./characterState";
-import { playerTone, projectLinkedPlayers, type LinkedEntityViewModel, type PlayerTone } from "./linkedEntities";
+import { groupEffectPreviews, type EffectGroupViewModel } from "./effectGroups";
 import {
-    createEffectPreviews, type EffectContext, type EffectPreviewViewModel,
-    type DamageBandViewModel, type DamageProfileViewModel, type AccuracyProfileViewModel,
+    createEffectPreviews,
+    type AccuracyProfileViewModel,
+    type DamageBandViewModel, type DamageProfileViewModel,
+    type EffectContext, type EffectPreviewViewModel,
 } from "./effectPreviews";
+import { playerTone, projectLinkedPlayers, type LinkedEntityViewModel, type PlayerTone } from "./linkedEntities";
 export type {
-    EffectPreviewViewModel, EffectTone, DamageBandViewModel, DamageProfileViewModel,
-    AccuracyBandViewModel, AccuracyProfileViewModel, CompactEffectViewModel,
-    BuffModifierViewModel, BuffEffectViewModel, BindingEffectViewModel,
+    AccuracyBandViewModel, AccuracyProfileViewModel, BindingEffectViewModel, BuffEffectViewModel, BuffModifierViewModel, CompactEffectViewModel, DamageBandViewModel, DamageProfileViewModel, EffectPreviewViewModel, EffectTone
 } from "./effectPreviews";
 
 export type TargetingMode = "predetermined" | "selectable";
@@ -204,16 +204,22 @@ function createDamageProfile(damage: PreviewProfile, presentation: Presentation)
         )),
     };
 }
+
+function formatChance(value: number): number {
+    return Math.round(value * 10) / 10;
+}
+
 function createDamageBand(band: DamageBandViewModel["band"], value: BandPreview, presentation: Presentation): DamageBandViewModel {
     return {
         band, label: presentation.hitBand(band), chance: value.chance,
-        chanceLabel: presentation.ui("targeting.chance", { band: presentation.hitBand(band), chance: value.chance }),
+        chanceLabel: presentation.ui("targeting.chance", { band: presentation.hitBand(band), chance: formatChance(value.chance) }),
         min: value.min, max: value.max,
         rangeLabel: presentation.ui("targeting.damageRange", { min: value.min, max: value.max }),
         emphasized: value.chance > 0 && (band === "hit" || band === "crit"),
         zero: value.chance === 0,
     };
 }
+
 function createAccuracyEffect(accuracy: AccuracyProfile, presentation: Presentation): AccuracyProfileViewModel {
     return {
         kind: "accuracy-profile",
@@ -221,7 +227,7 @@ function createAccuracyEffect(accuracy: AccuracyProfile, presentation: Presentat
         tone: "primary",
         type: "accuracy",
         bands: DAMAGE_BANDS.flatMap((band) => {
-            const chance = accuracy[band] ?? 0;
+            const chance = formatChance(accuracy[band] ?? 0);
             return chance === 0 ? [] : [{
                 band,
                 chance,

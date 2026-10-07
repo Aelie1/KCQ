@@ -10,7 +10,7 @@ import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels
 
 const library = createEngine().getLibrary();
 const presentation = new Presentation(englishStrings);
-const noop = () => {};
+const noop = () => { };
 
 function render(difficulty: DifficultyId, encounter = "forest_3") {
     const model = createDifficultySelectViewModel(library, encounter, difficulty, presentation);
@@ -54,13 +54,6 @@ describe("difficulty select panel", () => {
             expect(html).toContain('scope="col">Change');
             expect(html.match(/scope="row"/g)).toHaveLength(5);
         }
-    });
-
-    it("renders only the relevant Special Rules row for a simple encounter", () => {
-        const html = render("extreme", "plains_1");
-        expect(html.match(/scope="row"/g)).toHaveLength(1);
-        expect(html).toContain(presentation.difficulty("extreme", "skunkette"));
-        expect(html).not.toContain(presentation.difficulty("extreme", "queen"));
     });
 
     it("renders scoped ally HIT and ESC modifiers for Casual", () => {

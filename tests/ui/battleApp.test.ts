@@ -1,12 +1,26 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { englishStrings } from "../../localization/en/index";
 import { createEngine } from "../../src/engine/public/engine";
 import { createBattle } from "../../src/ui/web/app";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { DevApp } from "../../src/ui/web/app/dev/DevApp";
 import { Presentation } from "../../src/ui/presentation/presentation";
+
+// Portals emit no in-stage markup; retain their separately rendered body content.
+const bodyPortals = vi.hoisted(() => [] as string[]);
+vi.mock("solid-js/web", async importOriginal => {
+    const web = await importOriginal<typeof import("solid-js/web")>();
+    return {
+        ...web,
+        Portal: (props: { children: ReturnType<typeof createComponent> }) => {
+            bodyPortals.push(web.renderToString(() => props.children));
+            return "";
+        },
+    };
+});
+beforeEach(() => { bodyPortals.length = 0; });
 
 describe("playable Solid battle application", () => {
     it("renders its initial overview from an already prepared real Engine", () => {
@@ -22,13 +36,14 @@ describe("playable Solid battle application", () => {
         expect(html).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
         expect(html).toContain(presentation.encounter("plains_1"));
         expect(html).not.toContain("kcq-battle-result__overlay");
+        expect(bodyPortals).toHaveLength(0);
         expect(html.match(/<div[^>]*class="kcq-battle-stage__background"[^>]*>/)?.[0]).not.toMatch(/inert|aria-hidden/);
         for (const character of engine.getGameState().characters) {
             expect(html).toContain(presentation.entity(character.id));
         }
     });
 
-    it.each(["victory", "defeat"] as const)("overlays the finished battle with an inert background when loaded with %s", outcome => {
+    it.each(["victory", "defeat"] as const)("renders the %s result outside the battle stage with an inert background", outcome => {
         const engine = createEngine(12345);
         createBattle(engine, "plains_1", "standard");
         const state = engine.getGameState();
@@ -37,11 +52,14 @@ describe("playable Solid battle application", () => {
         const html = renderToString(() => createComponent(BattleApp, {
             engine, presentation: new Presentation(englishStrings),
         }));
-        expect(html).toContain("kcq-battle-result--" + outcome);
-        expect(html).toContain(new Presentation(englishStrings).battleState(outcome));
+        expect(html).not.toContain("kcq-battle-result__overlay");
+        expect(bodyPortals).toHaveLength(1);
+        const modal = bodyPortals[0]!;
+        expect(modal).toContain("kcq-battle-result--" + outcome);
+        expect(modal).toContain(new Presentation(englishStrings).battleState(outcome));
         expect(html).toContain("kcq-battle-overview");
         expect(html).toMatch(/class="kcq-battle-stage__background"[^>]*inert[^>]*aria-hidden="true"/);
-        const modal = html.slice(html.indexOf('class="kcq-battle-result__overlay"'));
+        expect(modal).toContain('class="kcq-battle-result__overlay"');
         expect(modal).toContain('role="dialog"');
         expect(modal.match(/<button/g)).toHaveLength(2);
         expect(modal).toContain(">Retry</button>");

@@ -2962,13 +2962,25 @@ button {
 }
 
 .kcq-battle-result__overlay {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 3;
     display: grid;
     place-items: center;
     padding: 12px;
     background: rgb(2 6 23 / 65%);
+}
+
+.kcq-battle-result__viewport {
+    /* Preserve the battle column's sizing and padding inside the body portal. */
+    zoom: var(--kcq-ui-zoom, 1);
+    display: grid;
+    place-items: center;
+    width: 366px;
+    max-width: 100%;
+    height: var(--kcq-ui-height);
+    min-height: 0;
+    padding: 12px;
 }
 
 .kcq-battle-result {

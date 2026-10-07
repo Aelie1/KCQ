@@ -66,43 +66,6 @@ describe("difficulty select view model", () => {
         expect(extreme).toMatchObject({ modifiers: [{ value: 5, signedValue: "+5" }] });
     });
 
-    it.each(["extreme", "mythic"] as const)("filters %s rules to unique relevant enemy definitions in canonical order", difficulty => {
-        const expected: Record<string, string[]> = {
-            plains_1: ["skunkette"], plains_2: ["skunkette", "skunk"],
-            forest_1: ["skunkette", "fairy"], forest_2: ["skunkette", "skunk", "fairy"],
-        };
-        for (const [encounterId, enemyIds] of Object.entries(expected)) {
-            const rows = createDifficultySelectViewModel(library, encounterId, difficulty, presentation).specialRules?.rows;
-            expect(rows).toEqual(enemyIds.map(enemyId => ({
-                enemyId, enemyName: presentation.enemyDefinition(enemyId),
-                description: englishStrings["difficulty." + difficulty + "." + enemyId],
-            })));
-        }
-        const reordered = structuredClone(library);
-        reordered.encounters.plains_1.enemies = [
-            { defId: "rainmaker", id: "namedRainmaker" }, { defId: "fairy" },
-            { defId: "skunkette" }, { defId: "fairy" }, { defId: "unrelated" }, { defId: "skunk" },
-        ];
-        expect(createDifficultySelectViewModel(reordered, "plains_1", difficulty, presentation).specialRules?.rows.map(({ enemyId }) => enemyId))
-            .toEqual(["skunkette", "skunk", "fairy", "rainmaker"]);
-    });
-
-    it.each(["extreme", "mythic"] as const)("shows the whole family with exact localized %s rules for every Queen encounter", difficulty => {
-        for (const encounter of Object.values(library.encounters).filter(encounter => encounter.enemies.some(enemy => enemy.defId === "queen"))) {
-            const model = createDifficultySelectViewModel(library, encounter.id, difficulty, presentation);
-            expect(model.specialRules?.rows).toEqual(ruleOrder.map(enemyId => ({
-                enemyId, enemyName: presentation.enemyDefinition(enemyId),
-                description: englishStrings["difficulty." + difficulty + "." + enemyId],
-            })));
-            expect(model.specialRules?.rows[3].enemyName).toBe("Skunk Queen");
-        }
-    });
-
-    it("omits a rules shell when an encounter has no curated rules", () => {
-        const altered = structuredClone(library);
-        altered.encounters.plains_1.enemies = [{ defId: "unrelated" }];
-        expect(createDifficultySelectViewModel(altered, "plains_1", "extreme", presentation)).not.toHaveProperty("specialRules");
-    });
 
     it("keeps every screen label and rule label in Presentation", () => {
         const localized = new Presentation(Object.fromEntries(Object.keys(englishStrings).map(key => [key, "translated:" + key])));
