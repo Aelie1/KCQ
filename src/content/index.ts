@@ -1,10 +1,6 @@
-import { baseStrings, KCQLanguage } from "../../localization";
-import { hinariEnglishStrings, koEnglishStrings, matsukoEnglishStrings } from "../../localization/en/characters";
-import { skunkEnglishStrings } from "../../localization/en/skunk";
-import { ContentCatalog, ContentCatalogFragment, ContentDef } from "../engine/protected/types";
+import { ContentCatalog, ContentCatalogFragment } from "../engine/protected/types";
 import { createGameEngine } from "../engine/public/engine";
 import { Engine } from "../engine/public/types";
-import { StringTable } from "../ui/presentation/presentation";
 import { baseCatalog } from "./base";
 import { hinariCatalog } from "./characters/hinari";
 import { koCatalog } from "./characters/ko";
@@ -14,28 +10,15 @@ import { skunkCatalog } from "./skunk/content";
 export type KCQCharacter = "ko" | "matsuko" | "hinari";
 export type KCQCampaign = "skunk";
 
-export const characterList: Record<KCQCharacter, ContentDef> = {
-    "ko": {
-        catalog: koCatalog,
-        strings: { "en": koEnglishStrings }
-    },
-    "matsuko": {
-        catalog: matsukoCatalog,
-        strings: { "en": matsukoEnglishStrings }
-    },
-    "hinari": {
-        catalog: hinariCatalog,
-        strings: { "en": hinariEnglishStrings }
-    }
+export const characterCatalogs: Record<KCQCharacter, ContentCatalogFragment> = {
+    "ko": koCatalog,
+    "matsuko": matsukoCatalog,
+    "hinari": hinariCatalog,
 };
 
-export const campaignList: Record<KCQCampaign, ContentDef> = {
-    "skunk": {
-        catalog: skunkCatalog,
-        strings: { "en": skunkEnglishStrings }
-    }
+export const campaignCatalogs: Record<KCQCampaign, ContentCatalogFragment> = {
+    "skunk": skunkCatalog,
 };
-
 
 function mergeCatalogs(...catalogs: ContentCatalogFragment[]): ContentCatalog {
     return {
@@ -50,27 +33,12 @@ function mergeCatalogs(...catalogs: ContentCatalogFragment[]): ContentCatalog {
     };
 }
 
-export function getStringTable(language: KCQLanguage, characters?: KCQCharacter[], campaign?: KCQCampaign): StringTable {
-    const strings: StringTable[] = [];
-    strings.push(baseStrings[language]);
-    if (characters) {
-        for (const character of characters) {
-            strings.push(characterList[character].strings[language]);
-        }
-    }
-    if (campaign) {
-        strings.push(campaignList[campaign].strings[language]);
-    }
-    return Object.assign({}, ...strings);
-}
-
-
-export function createEngine(characters: KCQCharacter[], campaign: KCQCampaign, seed?: number): Engine {
+export function createEngine(characters: readonly KCQCharacter[], campaign: KCQCampaign, seed?: number): Engine {
     const catalogs: ContentCatalogFragment[] = [];
     catalogs.push(baseCatalog);
     for (const character of characters) {
-        catalogs.push(characterList[character].catalog);
+        catalogs.push(characterCatalogs[character]);
     }
-    catalogs.push(campaignList[campaign].catalog);
+    catalogs.push(campaignCatalogs[campaign]);
     return createGameEngine(mergeCatalogs(...catalogs), seed);
 }

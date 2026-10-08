@@ -1,4 +1,3 @@
-import { StringTable } from "../../ui/presentation/presentation";
 import {
     Binding, BindingEffect, Buff, BuffEffect, Character, DamageEffect,
     Difficulty,
@@ -20,11 +19,6 @@ export interface ContentCatalog {
 }
 
 export type ContentCatalogFragment = Partial<ContentCatalog>;
-
-export interface ContentDef {
-    catalog: ContentCatalogFragment;
-    strings: Record<string, StringTable>;
-}
 
 export type iEntity = iCharacter | iEnemy;
 
