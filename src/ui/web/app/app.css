@@ -416,6 +416,31 @@ button {
     text-overflow: ellipsis;
 }
 
+.kcq-status-chip--timed {
+    position: relative;
+    overflow: visible;
+}
+
+.kcq-status-chip__duration {
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    transform: translateX(-50%);
+
+    display: flex;
+    gap: 3px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.kcq-status-chip__segment {
+    width: 15px;
+    height: 4px;
+    flex: none;
+    border-radius: 999px;
+    background: var(--kcq-accent-primary);
+}
+
 .kcq-status-chip--standard {
     min-height: 20px;
     padding: 3px 6px;
@@ -890,7 +915,7 @@ button {
     gap: 6px;
     min-width: 0;
     height: 20px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .kcq-party-card__no-effects {
@@ -3156,6 +3181,7 @@ button {
         font-size: 12px;
     }
 }
+
 .kcq-battle-settings {
     overflow-y: auto;
 }
@@ -3270,7 +3296,7 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-title-screen__campaign > span {
+.kcq-title-screen__campaign>span {
     width: 100%;
     font-size: 14px;
     font-weight: 400;

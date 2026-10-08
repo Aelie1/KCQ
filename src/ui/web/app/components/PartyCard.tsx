@@ -1,6 +1,6 @@
 import { For, Show, type JSX } from "solid-js";
-import type { PartyCardData } from "./componentTypes";
 import { BindingMeter } from "./BindingMeter";
+import type { PartyCardData } from "./componentTypes";
 import { StatusChip } from "./StatusChip";
 
 export type { PartyCardData } from "./componentTypes";
@@ -71,7 +71,11 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
             </div>
             <div class="kcq-party-card__effects" aria-label={props.character.accessibility.effectsLabel}>
                 <For each={props.character.visibleEffects}>
-                    {(effect) => <StatusChip tone="neutral">{effect}</StatusChip>}
+                    {(effect) => (
+                        <StatusChip tone="neutral" duration={effect.duration}>
+                            {effect.name}
+                        </StatusChip>
+                    )}
                 </For>
                 <Show when={props.character.hiddenEffectCount > 0}>
                     <StatusChip tone="neutral">{props.character.effectsOverflowLabel}</StatusChip>
