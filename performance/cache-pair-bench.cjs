@@ -1,15 +1,34 @@
 const path = require("node:path");
+const { existsSync } = require("node:fs");
 const { performance } = require("node:perf_hooks");
 
-const [checkoutText, encounterId, runsText, maxActionsText = "1000", seedText = "12345"] = process.argv.slice(2);
+const [checkoutText, encounterId, runsText, maxActionsText = "1000", seedText = "12345"] =
+    process.argv.slice(2);
+
 const checkout = path.resolve(checkoutText);
-const { createEngine } = require(path.join(checkout, "dist/engine/public/engine.js"));
+
+const stockPath = path.join(checkout, "dist/stock.js");
+const contentPath = path.join(checkout, "dist/content/index.js");
+const legacyPath = path.join(checkout, "dist/engine/public/engine.js");
+
+let createEngine;
+
+if (existsSync(stockPath)) {
+    createEngine = require(stockPath).createStockEngine;
+} else if (existsSync(contentPath)) {
+    // Catalog-revamp era before src/stock.ts existed.
+    const content = require(contentPath);
+    createEngine = (seed) =>
+        content.createEngine(["ko", "matsuko", "hinari"], "skunk", seed);
+} else {
+    // Older releases where the generic engine factory also supplied stock content.
+    createEngine = require(legacyPath).createEngine;
+}
 const runs = Number(runsText);
 const maxActions = Number(maxActionsText);
 const masterSeed = Number(seedText);
 let decisions = 0;
 const terminations = {};
-
 const started = performance.now();
 for (let runIndex = 0; runIndex < runs; runIndex++) {
     const engineSeed = deriveEngineSeed(masterSeed, runIndex);
