@@ -9,9 +9,10 @@ import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import type { LanguageOption } from "../../src/ui/web/app/language";
 import { stockStrings } from "../helpers/stockStrings";
 
-const screens = ["picker", "details", "difficulty"] as const;
+const screens = ["title", "picker", "details", "difficulty"] as const;
 type SelectionScreen = typeof screens[number];
 const selectors = {
+    title: ".kcq-title-screen",
     picker: ".kcq-encounter-picker",
     details: ".kcq-encounter-details",
     difficulty: ".kcq-difficulty-select",
@@ -53,15 +54,16 @@ function selectEncounter() {
 
 function mountSelection(screen: SelectionScreen) {
     const engine = createStockEngine();
-    const prepareBattle = vi.fn((encounter: EncounterId, difficulty: DifficultyId) => {
+    const prepareBattle = vi.fn((campaign: "skunk", encounter: EncounterId, difficulty: DifficultyId) => {
         const battleEngine = createStockEngine(12345);
         createBattle(battleEngine, encounter, difficulty);
         return { engine: battleEngine, dispose: vi.fn() };
     });
     const root = document.createElement("div");
     document.body.append(root);
-    unmount = render(() => createComponent(GraphicalApp, { engine, presentation, languages, prepareBattle }), root);
-    if (screen !== "picker") selectEncounter();
+    unmount = render(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", composeCampaign: () => ({ engine, presentation, languages }), presentation, languages, prepareBattle }), root);
+    if (screen !== "title") document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+    if (screen !== "title" && screen !== "picker") selectEncounter();
     if (screen === "difficulty") {
         button("Choose Difficulty").click();
         button("Mythic").click();
@@ -140,7 +142,7 @@ describe("encounter screen settings", () => {
         changeLanguage();
         expect(document.querySelector<HTMLButtonElement>(".kcq-combat-header__settings")?.getAttribute("aria-label"))
             .toBe("Test settings");
-        expect(panel.querySelector("h1")?.textContent).toBe(screen === "picker" ? "Test Quest" : "Test Plains");
+        expect(panel.querySelector("h1")?.textContent).toBe(screen === "title" || screen === "picker" ? "Test Quest" : "Test Plains");
         button("Continue test").click();
         expect(document.querySelector(selectors[screen])).toBe(panel);
         openSettings();
@@ -152,7 +154,8 @@ describe("encounter screen settings", () => {
     it.each(screens)("blocks background navigation and battle setup on %s while settings is open", screen => {
         const { panel, prepareBattle } = mountSelection(screen);
         openSettings();
-        if (screen === "picker") selectEncounter();
+        if (screen === "title") document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+        else if (screen === "picker") selectEncounter();
         else if (screen === "details") button("Choose Difficulty").click();
         else {
             button("Standard").click();
@@ -175,7 +178,7 @@ describe("encounter screen settings", () => {
         expect(document.querySelector(".kcq-difficulty-select h1")?.textContent).toBe("Test Plains");
         button("Mythic").click();
         button("Start Encounter").click();
-        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("plains_1", "mythic");
+        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_1", "mythic");
         const { dialog } = openSettings();
         expect(dialog.querySelector("select")?.value).toBe("test");
         expect(dialog.querySelectorAll("button")).toHaveLength(3);

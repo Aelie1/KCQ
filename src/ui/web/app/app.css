@@ -3205,3 +3205,83 @@ button {
 .kcq-battle-settings .kcq-battle-result__actions {
     grid-template-columns: 1fr;
 }
+
+/* The title uses the existing canvas and card tokens with a quieter, spacious layout. */
+.kcq-title-screen > .kcq-screen-layout__header {
+    padding-top: 24px;
+}
+
+.kcq-title-screen .kcq-encounter-header {
+    min-height: 104px;
+    height: auto;
+    padding: 20px 16px;
+    border-color: var(--kcq-structure-border);
+}
+
+.kcq-title-screen .kcq-encounter-header__title {
+    font-size: 30px;
+    line-height: 1.2;
+    white-space: normal;
+}
+
+.kcq-title-screen__campaigns {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 24px;
+}
+
+.kcq-title-screen__campaigns h2 {
+    margin: 0 4px 4px;
+    color: var(--kcq-text-secondary);
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.kcq-title-screen__campaign {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 20px 16px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.kcq-title-screen__campaign strong {
+    color: var(--kcq-accent-primary);
+    font-size: 22px;
+    line-height: 1.3;
+}
+
+.kcq-title-screen__campaign span {
+    color: var(--kcq-text-secondary);
+    font-size: 16px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.kcq-title-screen__campaign:hover {
+    background: var(--kcq-surface-panel-alt);
+    border-color: var(--kcq-structure-border-strong);
+}
+
+.kcq-title-screen__campaign:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: -3px;
+}
+
+.kcq-title-screen__credits {
+    padding: 12px 0;
+    color: var(--kcq-text-muted);
+    font-size: 14px;
+    line-height: 1.5;
+    text-align: center;
+}
+
+.kcq-title-screen__credits p {
+    margin: 4px 0;
+}
+
+.kcq-encounter-picker .kcq-screen-actions {
+    grid-template-columns: 1fr;
+}

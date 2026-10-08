@@ -30,7 +30,7 @@ function button(label: string, scope: ParentNode = document): HTMLButtonElement 
 function mountBattle(languages?: readonly LanguageOption[]) {
     const capture = vi.fn();
     const sessions: { engine: ReturnType<typeof createStockEngine>; observer: ReturnType<typeof createBattleTelemetryObserver>; dispose: ReturnType<typeof vi.fn> }[] = [];
-    function prepare(encounter: EncounterId, difficulty: DifficultyId) {
+    function prepare(campaign: "skunk", encounter: EncounterId, difficulty: DifficultyId) {
         const engine = createStockEngine(12345 + sessions.length);
         createBattle(engine, encounter, difficulty);
         const observer = createBattleTelemetryObserver({
@@ -46,8 +46,11 @@ function mountBattle(languages?: readonly LanguageOption[]) {
     const root = document.createElement("div");
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, {
-        engine: createStockEngine(), presentation, prepareBattle, languages,
+        campaigns: ["skunk"], release: "test",
+        composeCampaign: () => ({ engine: createStockEngine(), presentation, languages }),
+        presentation, prepareBattle, languages,
     }), root);
+    document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
     const encounter = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
         .find(row => row.querySelector("strong")?.textContent === presentation.encounter("plains_1"));
     if (!encounter) throw new Error("Missing plains_1 encounter");
@@ -175,7 +178,7 @@ describe("battle settings interactions", () => {
         button("End Turn").click();
         openSettings();
         button("Retry Battle").click();
-        expect(prepareBattle).toHaveBeenNthCalledWith(2, "plains_1", "mythic");
+        expect(prepareBattle).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "mythic");
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
         expect(sessions[0]!.observer.lifecycleState).toBe("quit");
         expect(capture.mock.calls.filter(call => call[0] === "battle_quit")).toHaveLength(1);
@@ -200,7 +203,7 @@ describe("battle settings interactions", () => {
         expect(document.querySelector(".kcq-battle-result--" + outcome)).not.toBeNull();
         expect(sessions[0]!.observer.lifecycleState).toBe("finished");
         button("Retry").click();
-        expect(prepareBattle).toHaveBeenNthCalledWith(2, "plains_1", "mythic");
+        expect(prepareBattle).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "mythic");
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
         const fresh = sessions[1]!.engine;
         const freshState = fresh.getGameState.bind(fresh);

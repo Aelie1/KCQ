@@ -5,6 +5,7 @@ import { ScreenLayout } from "./ScreenLayout";
 import { EncounterHeader } from "./EncounterHeader";
 
 export function EncounterPickerPanel(props: {
+    onBack?: () => void;
     onSettings?: () => void;
     model: EncounterPickerViewModel; onSelect: (encounter: EncounterId) => void;
 }): JSX.Element {
@@ -22,5 +23,10 @@ export function EncounterPickerPanel(props: {
                 </button>}
             </For>
         </>}
+        footer={props.onBack && <footer class="kcq-screen-actions kcq-encounter-details__footer">
+            <button class="kcq-targeting__back" type="button" onClick={props.onBack}>
+                <span aria-hidden="true">↶ </span>{props.model.backLabel}
+            </button>
+        </footer>}
     />;
 }

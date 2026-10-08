@@ -1,6 +1,7 @@
 import { render } from "solid-js/web";
 import { getStringTable } from "../../../../localization";
-import { createStockEngine, stockCampaign, stockCharacters } from "../../../stock";
+import { stockCharacters } from "../../../stock";
+import { campaignCatalogs, createEngine, type KCQCampaign } from "../../../content";
 import type { DifficultyId, EncounterId } from "../../../engine/public/types";
 import { Presentation } from "../../presentation/presentation";
 import { attachBattlePageLifecycle, createBattle } from "../app";
@@ -19,10 +20,14 @@ if (!root) {
     throw new Error("Missing #root element for the KCQ graphical UI.");
 }
 
-const engine = createStockEngine();
-const presentation = new Presentation(getStringTable("en", stockCharacters, stockCampaign));
+const campaigns = Object.keys(campaignCatalogs) as KCQCampaign[];
+const presentation = new Presentation(getStringTable("en"));
 
-render(() => <GraphicalApp engine={engine} presentation={presentation}
+render(() => <GraphicalApp campaigns={campaigns} presentation={presentation} release={__KCQ_RELEASE_TAG__}
+    composeCampaign={campaign => ({
+        engine: createEngine(stockCharacters, campaign),
+        presentation: new Presentation(getStringTable("en", stockCharacters, campaign)),
+    })}
     prepareBattle={prepareGraphicalBattle} />, root);
 
 function createId(): string {
@@ -33,10 +38,11 @@ function createId(): string {
     return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 function prepareGraphicalBattle(
+    campaign: KCQCampaign,
     encounter: EncounterId,
     difficulty: DifficultyId,
 ): GraphicalBattleSession {
-    const battle = createBattle(createStockEngine(), encounter, difficulty);
+    const battle = createBattle(createEngine(stockCharacters, campaign), encounter, difficulty);
     const observer = createBattleTelemetryObserver({
         telemetry: gameplayTelemetry,
         replayId: createId(),

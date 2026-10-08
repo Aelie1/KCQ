@@ -13,16 +13,32 @@ function sessionFactory() {
 }
 
 describe("outer graphical controller", () => {
+    it("starts at title, selects a campaign without a battle, and clears selection on return", () => createRoot(dispose => {
+        const { prepare } = sessionFactory();
+        const controller = createGraphicalController(prepare);
+        expect(controller.screen()).toEqual({ screen: "title" });
+        controller.selectEncounter("outside");
+        controller.startEncounter();
+        expect(controller.screen()).toEqual({ screen: "title" });
+        controller.selectCampaign("skunk");
+        expect(controller.screen()).toEqual({ screen: "picker", campaign: "skunk" });
+        controller.returnToTitle();
+        expect(controller.screen()).toEqual({ screen: "title" });
+        expect(prepare).not.toHaveBeenCalled();
+        dispose();
+    }));
+
     it("switches picker to details and back without preparing a battle", () => createRoot((dispose) => {
         const { prepare } = sessionFactory();
         const controller = createGraphicalController(prepare);
-        expect(controller.screen()).toEqual({ screen: "picker" });
+        controller.selectCampaign("skunk");
+        expect(controller.screen()).toEqual({ screen: "picker", campaign: "skunk" });
         controller.selectEncounter("forest_3");
-        expect(controller.screen()).toEqual({ screen: "details", encounter: "forest_3" });
+        expect(controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "forest_3" });
         controller.backToPicker();
-        expect(controller.screen()).toEqual({ screen: "picker" });
+        expect(controller.screen()).toEqual({ screen: "picker", campaign: "skunk" });
         controller.selectEncounter("tower_2");
-        expect(controller.screen()).toEqual({ screen: "details", encounter: "tower_2" });
+        expect(controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "tower_2" });
         expect(prepare).not.toHaveBeenCalled();
         dispose();
     }));
@@ -30,20 +46,21 @@ describe("outer graphical controller", () => {
     it("enters Difficulty at Standard every time and returns to the same Details", () => createRoot((dispose) => {
         const { prepare } = sessionFactory();
         const controller = createGraphicalController(prepare);
+        controller.selectCampaign("skunk");
         controller.selectEncounter("forest_3");
         controller.chooseDifficulty();
         expect(DEFAULT_DIFFICULTY).toBe("standard");
-        expect(controller.screen()).toEqual({ screen: "difficulty", encounter: "forest_3", difficulty: DEFAULT_DIFFICULTY });
+        expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "forest_3", difficulty: DEFAULT_DIFFICULTY });
         controller.selectDifficulty("mythic");
         controller.backToDetails();
-        expect(controller.screen()).toEqual({ screen: "details", encounter: "forest_3" });
+        expect(controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "forest_3" });
         controller.chooseDifficulty();
-        expect(controller.screen()).toEqual({ screen: "difficulty", encounter: "forest_3", difficulty: DEFAULT_DIFFICULTY });
+        expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "forest_3", difficulty: DEFAULT_DIFFICULTY });
         controller.backToDetails();
         controller.backToPicker();
         controller.selectEncounter("plains_1");
         controller.chooseDifficulty();
-        expect(controller.screen()).toEqual({ screen: "difficulty", encounter: "plains_1", difficulty: DEFAULT_DIFFICULTY });
+        expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "plains_1", difficulty: DEFAULT_DIFFICULTY });
         expect(prepare).not.toHaveBeenCalled();
         dispose();
     }));
@@ -53,11 +70,12 @@ describe("outer graphical controller", () => {
         const setDifficulty = vi.spyOn(session.engine, "setDifficulty");
         const loadEncounter = vi.spyOn(session.engine, "loadEncounter");
         const controller = createGraphicalController(prepare);
+        controller.selectCampaign("skunk");
         controller.selectEncounter("outside");
         controller.chooseDifficulty();
         for (const difficulty of difficultyIds) {
             controller.selectDifficulty(difficulty);
-            expect(controller.screen()).toEqual({ screen: "difficulty", encounter: "outside", difficulty });
+            expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "outside", difficulty });
         }
         expect(prepare).not.toHaveBeenCalled();
         expect(setDifficulty).not.toHaveBeenCalled();
@@ -69,13 +87,14 @@ describe("outer graphical controller", () => {
     it.each(difficultyIds)("starts the selected encounter once at %s and preserves disposal", (difficulty) => createRoot((dispose) => {
         const { prepare, session } = sessionFactory();
         const controller = createGraphicalController(prepare);
+        controller.selectCampaign("skunk");
         controller.selectEncounter("outside");
         controller.chooseDifficulty();
         controller.selectDifficulty(difficulty);
         controller.startEncounter();
-        expect(prepare).toHaveBeenCalledExactlyOnceWith("outside", difficulty);
+        expect(prepare).toHaveBeenCalledExactlyOnceWith("skunk", "outside", difficulty);
         const battle = controller.screen();
-        expect(battle).toEqual({ screen: "battle", encounter: "outside", difficulty, session });
+        expect(battle).toEqual({ screen: "battle", campaign: "skunk", encounter: "outside", difficulty, session });
         controller.startEncounter();
         controller.selectEncounter("plains_1");
         controller.backToPicker();
@@ -91,12 +110,13 @@ describe("outer graphical controller", () => {
     }));
 
     it.each(["ongoing", "victory", "defeat"] as const)("retries a %s with a fresh session and returns to level select", outcome => createRoot(dispose => {
-        const prepare = vi.fn((encounter, difficulty) => {
+        const prepare = vi.fn((campaign, encounter, difficulty) => {
             const engine = createStockEngine(12345);
             createBattle(engine, encounter, difficulty);
             return { engine, dispose: vi.fn() };
         });
         const controller = createGraphicalController(prepare);
+        controller.selectCampaign("skunk");
         controller.selectEncounter("forest_3");
         controller.chooseDifficulty();
         controller.selectDifficulty("mythic");
@@ -108,7 +128,7 @@ describe("outer graphical controller", () => {
         vi.spyOn(first.engine, "getGameState").mockReturnValue(completed);
         controller.retryEncounter();
         expect(first.dispose).toHaveBeenCalledOnce();
-        expect(prepare).toHaveBeenNthCalledWith(2, "forest_3", "mythic");
+        expect(prepare).toHaveBeenNthCalledWith(2, "skunk", "forest_3", "mythic");
         const current = controller.screen();
         expect(current.screen).toBe("battle");
         if (current.screen !== "battle") throw new Error("Expected battle");
@@ -120,7 +140,7 @@ describe("outer graphical controller", () => {
         terminal.turn.outcome = outcome;
         vi.spyOn(current.session.engine, "getGameState").mockReturnValue(terminal);
         controller.returnToLevelSelect();
-        expect(controller.screen()).toEqual({ screen: "picker" });
+        expect(controller.screen()).toEqual({ screen: "picker", campaign: "skunk" });
         expect(current.session.dispose).toHaveBeenCalledOnce();
         controller.retryEncounter();
         controller.dispose();
@@ -133,6 +153,7 @@ describe("outer graphical controller", () => {
     it("ignores actions outside their screens and safely disposes before a battle", () => createRoot((dispose) => {
         const { prepare, session } = sessionFactory();
         const controller = createGraphicalController(prepare);
+        controller.selectCampaign("skunk");
         controller.startEncounter();
         controller.retryEncounter();
         controller.returnToLevelSelect();
@@ -140,16 +161,16 @@ describe("outer graphical controller", () => {
         controller.selectDifficulty("mythic");
         controller.backToDetails();
         controller.backToPicker();
-        expect(controller.screen()).toEqual({ screen: "picker" });
+        expect(controller.screen()).toEqual({ screen: "picker", campaign: "skunk" });
         controller.selectEncounter("plains_1");
         controller.startEncounter();
         controller.selectDifficulty("mythic");
         controller.backToDetails();
-        expect(controller.screen()).toEqual({ screen: "details", encounter: "plains_1" });
+        expect(controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "plains_1" });
         controller.chooseDifficulty();
         controller.backToPicker();
         controller.selectEncounter("outside");
-        expect(controller.screen()).toEqual({ screen: "difficulty", encounter: "plains_1", difficulty: DEFAULT_DIFFICULTY });
+        expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "plains_1", difficulty: DEFAULT_DIFFICULTY });
         controller.dispose();
         expect(prepare).not.toHaveBeenCalled();
         expect(session.dispose).not.toHaveBeenCalled();

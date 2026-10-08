@@ -13,11 +13,12 @@ const presentation = new Presentation(stockStrings);
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer graphical application", () => {
-    it("starts at the Encounter Picker without preparing a battle", () => {
+    it("starts at the title screen without preparing a battle", () => {
         const engine = createStockEngine();
         const prepareBattle = vi.fn(() => ({ engine, dispose: () => {} }));
-        const html = renderToString(() => createComponent(GraphicalApp, { engine, presentation, prepareBattle }));
-        expect(html).toContain("kcq-encounter-picker");
+        const html = renderToString(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", composeCampaign: () => ({ engine, presentation }), presentation, prepareBattle }));
+        expect(html).toContain("kcq-title-screen");
+        expect(html).not.toContain("kcq-encounter-picker");
         expect(prepareBattle).not.toHaveBeenCalled();
         expect(engine.getGameState().characters).toEqual([]);
         expect(html).not.toContain("href=");
@@ -27,14 +28,15 @@ describe("outer graphical application", () => {
 
     it("renders Details, Difficulty and Battle from the controller's in-app transitions", () => {
         const engine = createStockEngine();
-        const prepareBattle = vi.fn((encounter, difficulty) => {
+        const prepareBattle = vi.fn((campaign, encounter, difficulty) => {
             createBattle(engine, encounter, difficulty);
             return { engine, dispose: vi.fn() };
         });
         const controller = controllers.createGraphicalController(prepareBattle);
         // SSR renders one screen at a time; reuse the real controller to inspect transitions.
         vi.spyOn(controllers, "createGraphicalController").mockReturnValue(controller);
-        const renderScreen = () => renderToString(() => createComponent(GraphicalApp, { engine, presentation, prepareBattle }));
+        const renderScreen = () => renderToString(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", composeCampaign: () => ({ engine, presentation }), presentation, prepareBattle }));
+        controller.selectCampaign("skunk");
         controller.selectEncounter("forest_3");
         expect(renderScreen()).toContain("kcq-encounter-details");
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -52,7 +54,7 @@ describe("outer graphical application", () => {
         const battleHtml = renderScreen();
         expect(battleHtml).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
         expect(battleHtml).toContain(presentation.encounter("plains_2"));
-        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("plains_2", "mythic");
+        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_2", "mythic");
         expect(engine.getGameState().difficulty.id).toBe("mythic");
         controller.dispose();
         expect(prepareBattle.mock.results[0].value.dispose).toHaveBeenCalledOnce();
@@ -60,7 +62,9 @@ describe("outer graphical application", () => {
 
     it("accepts battle preparation without an initial route", () => {
         expectTypeOf<GraphicalAppProps>().toEqualTypeOf<{
-            engine: GraphicalAppProps["engine"];
+            campaigns: GraphicalAppProps["campaigns"];
+            release: string;
+            composeCampaign: GraphicalAppProps["composeCampaign"];
             presentation: GraphicalAppProps["presentation"];
             prepareBattle: GraphicalAppProps["prepareBattle"];
             languages?: GraphicalAppProps["languages"];

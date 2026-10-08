@@ -6,12 +6,13 @@ vi.mock("solid-js/web", async (importOriginal) => ({
     ...await importOriginal<typeof import("solid-js/web")>(),
     render: vi.fn(),
 }));
-vi.mock("../../src/ui/web/app/GraphicalApp", () => ({ GraphicalApp: vi.fn(() => "picker") }));
+vi.mock("../../src/ui/web/app/GraphicalApp", () => ({ GraphicalApp: vi.fn(() => "title") }));
 vi.mock("../../src/ui/web/posthog", () => ({ gameplayTelemetry: {} }));
 
 afterEach(() => {
     vi.unstubAllGlobals();
     vi.clearAllMocks();
+    vi.restoreAllMocks();
     vi.resetModules();
 });
 
@@ -22,17 +23,34 @@ describe("graphical browser startup", () => {
         vi.stubGlobal("document", { getElementById: () => ({}) });
         vi.stubGlobal("window", { addEventListener, removeEventListener });
         vi.stubGlobal("__KCQ_RELEASE_TAG__", "test");
+        const content = await import("../../src/content");
+        const localization = await import("../../localization");
+        const create = vi.spyOn(content, "createEngine");
+        const strings = vi.spyOn(localization, "getStringTable");
         await import("../../src/ui/web/app/main");
+        expect(create).not.toHaveBeenCalled();
+        expect(strings).toHaveBeenCalledExactlyOnceWith("en");
         vi.mocked(render).mock.calls[0][0]();
         const props = vi.mocked(GraphicalApp).mock.calls[0][0];
-        const first = props.prepareBattle("forest_3", "mythic");
+        expect(props.release).toBe("test");
+        expect(props.campaigns).toEqual(Object.keys(content.campaignCatalogs));
+        const selection = props.composeCampaign("skunk");
+        expect(create).toHaveBeenCalledExactlyOnceWith(["ko", "matsuko", "hinari"], "skunk");
+        expect(strings).toHaveBeenLastCalledWith("en", ["ko", "matsuko", "hinari"], "skunk");
+        expect(selection.engine.getGameState().characters).toEqual([]);
+        expect(selection.engine.getLibrary().encounters).toHaveProperty("forest_3");
+        expect(selection.presentation.encounter("forest_3")).not.toContain("[encounter.");
+        const first = props.prepareBattle("skunk", "forest_3", "mythic");
         first.engine.executeAction({ type: "endTurn" });
-        const retry = props.prepareBattle("forest_3", "mythic");
+        const retry = props.prepareBattle("skunk", "forest_3", "mythic");
         expect(retry.engine).not.toBe(first.engine);
+        expect(create).toHaveBeenNthCalledWith(2, ["ko", "matsuko", "hinari"], "skunk");
+        expect(create).toHaveBeenNthCalledWith(3, ["ko", "matsuko", "hinari"], "skunk");
         expect(retry.engine.getGameState().turn).toMatchObject({ round: 1, outcome: "ongoing" });
         expect(retry.engine.getGameState().difficulty.id).toBe("mythic");
         expect(retry.engine.getGameState().characters).toHaveLength(3);
-        expect(props.engine.getGameState().characters).toEqual([]);
+        expect(props).not.toHaveProperty("engine");
+        expect(props.composeCampaign("skunk").engine.getGameState().characters).toEqual([]);
         expect(addEventListener).toHaveBeenCalledTimes(2);
         first.dispose();
         retry.dispose();
@@ -54,7 +72,8 @@ describe("graphical browser startup", () => {
         const props = vi.mocked(GraphicalApp).mock.calls[0][0];
         expect(props).not.toHaveProperty("initialRoute");
         expect(props.prepareBattle).toBeTypeOf("function");
-        expect(props.engine.getGameState().characters).toEqual([]);
+        expect(props).not.toHaveProperty("engine");
+        expect(props.composeCampaign("skunk").engine.getGameState().characters).toEqual([]);
         expect(getSearch).not.toHaveBeenCalled();
     });
 });

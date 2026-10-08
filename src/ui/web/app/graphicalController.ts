@@ -1,3 +1,4 @@
+import type { KCQCampaign } from "../../../content";
 import { createSignal } from "solid-js";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { BattleTelemetryObserver } from "../telemetry";
@@ -9,17 +10,17 @@ export interface GraphicalBattleSession {
     dispose: () => void;
 }
 
-export type GraphicalScreen =
+export type GraphicalScreen = { screen: "title" } | ({ campaign: KCQCampaign } & (
     | { screen: "picker" }
     | { screen: "details"; encounter: EncounterId }
     | { screen: "difficulty"; encounter: EncounterId; difficulty: DifficultyId }
-    | { screen: "battle"; encounter: EncounterId; difficulty: DifficultyId; session: GraphicalBattleSession };
+    | { screen: "battle"; encounter: EncounterId; difficulty: DifficultyId; session: GraphicalBattleSession }));
 
 export function createGraphicalController(
-    prepareBattle: (encounter: EncounterId, difficulty: DifficultyId) => GraphicalBattleSession,
+    prepareBattle: (campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId) => GraphicalBattleSession,
 ) {
     let session: GraphicalBattleSession | undefined;
-    const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "picker" });
+    const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "title" });
 
     const closeSession = (): void => {
         if (session?.engine.getGameState().turn.outcome === "ongoing") {
@@ -36,17 +37,26 @@ export function createGraphicalController(
 
     return {
         screen,
+        selectCampaign(campaign: KCQCampaign): void {
+            if (screen().screen === "title") setScreen({ screen: "picker", campaign });
+        },
+        returnToTitle(): void {
+            if (screen().screen !== "picker") return;
+            closeSession();
+            setScreen({ screen: "title" });
+        },
         selectEncounter(encounter: EncounterId): void {
-            if (screen().screen === "picker") setScreen({ screen: "details", encounter });
+            const current = screen();
+            if (current.screen === "picker") setScreen({ screen: "details", campaign: current.campaign, encounter });
         },
         backToPicker(): void {
             const current = screen();
-            if (current.screen === "details") setScreen({ screen: "picker" });
+            if (current.screen === "details") setScreen({ screen: "picker", campaign: current.campaign });
         },
         chooseDifficulty(): void {
             const current = screen();
             if (current.screen === "details") {
-                setScreen({ screen: "difficulty", encounter: current.encounter, difficulty: DEFAULT_DIFFICULTY });
+                setScreen({ screen: "difficulty", campaign: current.campaign, encounter: current.encounter, difficulty: DEFAULT_DIFFICULTY });
             }
         },
         selectDifficulty(difficulty: DifficultyId): void {
@@ -55,26 +65,26 @@ export function createGraphicalController(
         },
         backToDetails(): void {
             const current = screen();
-            if (current.screen === "difficulty") setScreen({ screen: "details", encounter: current.encounter });
+            if (current.screen === "difficulty") setScreen({ screen: "details", campaign: current.campaign, encounter: current.encounter });
         },
         startEncounter(): void {
             const current = screen();
             if (current.screen !== "difficulty") return;
-            session = prepareBattle(current.encounter, current.difficulty);
-            setScreen({ screen: "battle", encounter: current.encounter, difficulty: current.difficulty, session });
+            session = prepareBattle(current.campaign, current.encounter, current.difficulty);
+            setScreen({ screen: "battle", campaign: current.campaign, encounter: current.encounter, difficulty: current.difficulty, session });
         },
         retryEncounter(): void {
             const current = screen();
             if (current.screen !== "battle") return;
             closeSession();
-            session = prepareBattle(current.encounter, current.difficulty);
+            session = prepareBattle(current.campaign, current.encounter, current.difficulty);
             setScreen({ ...current, session });
         },
         returnToLevelSelect(): void {
             const current = screen();
             if (current.screen !== "battle") return;
             closeSession();
-            setScreen({ screen: "picker" });
+            setScreen({ screen: "picker", campaign: current.campaign });
         },
         dispose(): void {
             closeSession();

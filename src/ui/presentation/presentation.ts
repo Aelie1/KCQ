@@ -160,6 +160,7 @@ export type UiLabel =
     | "targeting.value"
     | "title.name"
     | "title.campaigns"
+    | "title.back"
     | "title.credit"
     | "title.copyright"
     | "version.name";

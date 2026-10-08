@@ -16,6 +16,7 @@ export interface EncounterSummaryViewModel {
 export interface EncounterPickerViewModel {
     title: string;
     settingsLabel: string;
+    backLabel: string;
     encounters: readonly EncounterSummaryViewModel[];
 }
 export interface EncounterEnemyViewModel {
@@ -62,6 +63,7 @@ export function createEncounterPickerViewModel(
     return {
         title: presentation.ui("title.name"),
         settingsLabel: presentation.ui("battleOverview.settings"),
+        backLabel: presentation.ui("title.back"),
         encounters: Object.values(library.encounters).map((encounter) =>
             encounterSummary(encounter, presentation, bestClears[encounter.id])),
     };
