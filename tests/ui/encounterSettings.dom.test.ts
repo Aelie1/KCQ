@@ -1,8 +1,8 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { englishStrings } from "../../localization/en";
-import { createEngine } from "../../src/engine/public/engine";
+import { stockStrings } from "../helpers/stockStrings";
+import { createStockEngine } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
@@ -16,8 +16,8 @@ const selectors = {
     details: ".kcq-encounter-details",
     difficulty: ".kcq-difficulty-select",
 };
-const presentation = new Presentation(englishStrings);
-const alternate = new Presentation({ ...englishStrings,
+const presentation = new Presentation(stockStrings);
+const alternate = new Presentation({ ...stockStrings,
     "ui.battleSettings.resume": "Continue test",
     "ui.battleOverview.settings": "Test settings",
     "ui.encounterPicker.title": "Test Quest",
@@ -51,9 +51,9 @@ function selectEncounter() {
 }
 
 function mountSelection(screen: SelectionScreen) {
-    const engine = createEngine();
+    const engine = createStockEngine();
     const prepareBattle = vi.fn((encounter: EncounterId, difficulty: DifficultyId) => {
-        const battleEngine = createEngine(12345);
+        const battleEngine = createStockEngine(12345);
         createBattle(battleEngine, encounter, difficulty);
         return { engine: battleEngine, dispose: vi.fn() };
     });

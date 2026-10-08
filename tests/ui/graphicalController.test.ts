@@ -1,6 +1,6 @@
 import { createRoot } from "solid-js";
 import { describe, expect, it, vi } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type { DifficultyId } from "../../src/engine/public/types";
 import { createGraphicalController } from "../../src/ui/web/app/graphicalController";
 import { createBattle, DEFAULT_DIFFICULTY } from "../../src/ui/web/app";
@@ -8,7 +8,7 @@ import { createBattle, DEFAULT_DIFFICULTY } from "../../src/ui/web/app";
 const difficultyIds: DifficultyId[] = ["casual", "standard", "veteran", "extreme", "mythic"];
 
 function sessionFactory() {
-    const session = { engine: createEngine(), dispose: vi.fn() };
+    const session = { engine: createStockEngine(), dispose: vi.fn() };
     return { session, prepare: vi.fn(() => session) };
 }
 
@@ -92,7 +92,7 @@ describe("outer graphical controller", () => {
 
     it.each(["ongoing", "victory", "defeat"] as const)("retries a %s with a fresh session and returns to level select", outcome => createRoot(dispose => {
         const prepare = vi.fn((encounter, difficulty) => {
-            const engine = createEngine(12345);
+            const engine = createStockEngine(12345);
             createBattle(engine, encounter, difficulty);
             return { engine, dispose: vi.fn() };
         });

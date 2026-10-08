@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     Buff,
@@ -42,7 +42,7 @@ function view(values: Partial<GameState> = {}): GameState {
 }
 
 function library(): ContentLibrary {
-    const result = structuredClone(createEngine(1).getLibrary());
+    const result = structuredClone(createStockEngine(1).getLibrary());
     result.moves.syntheticMouth = {
         id: "syntheticMouth",
         targetSide: "enemy",

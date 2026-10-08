@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import { getThresholds } from "../../src/engine/public/mechanics";
 import type {
     ActionInfo,
@@ -23,7 +23,7 @@ import { resolvedEvents } from "../helpers/events";
 import { makePublicActionView, makePublicBinding, makePublicCharacter } from "../helpers/publicTestData";
 
 function stockEncounterId(): string {
-    const encounterId = createEngine(1).listEncounters()[0];
+    const encounterId = createStockEngine(1).listEncounters()[0];
     if (!encounterId) {
         throw new Error("The stock encounter catalogue is empty");
     }
@@ -64,7 +64,7 @@ function actionView(
 }
 
 function policyContext(actions: ActionView[]): PolicyContext {
-    const engine = createEngine(1);
+    const engine = createStockEngine(1);
     return {
         state: engine.getGameState(),
         actions,
@@ -153,7 +153,7 @@ describe("policy-driven single-fight harness", () => {
 
         expect(observed).toHaveLength(2);
         expect(observed[0]).toBe(observed[1]);
-        expect(observed[0]).toEqual(createEngine(engineSeed).getLibrary());
+        expect(observed[0]).toEqual(createStockEngine(engineSeed).getLibrary());
     });
 
     it("omits replay capture by default and when explicitly disabled", () => {
@@ -172,7 +172,7 @@ describe("policy-driven single-fight harness", () => {
 
     it("captures the loaded encounter state before the first policy action", () => {
         const input = { ...fightInput(basicPolicy, 101), maxActions: 1, replay: true };
-        const expectedEngine = createEngine(input.engineSeed);
+        const expectedEngine = createStockEngine(input.engineSeed);
         for (const id of expectedEngine.listCharacters()) {
             expectedEngine.loadCharacter(id);
         }
@@ -192,7 +192,7 @@ describe("policy-driven single-fight harness", () => {
     it("records one factual replay step for every successful submitted action", () => {
         const input = { ...fightInput(basicPolicy, 202), maxActions: 12, replay: true };
         const result = runSingleFight(input);
-        const replayEngine = createEngine(input.engineSeed);
+        const replayEngine = createStockEngine(input.engineSeed);
         for (const id of replayEngine.listCharacters()) {
             replayEngine.loadCharacter(id);
         }

@@ -1,20 +1,20 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
-import { englishStrings } from "../../localization/en";
-import { createEngine } from "../../src/engine/public/engine";
+import { stockStrings } from "../helpers/stockStrings";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import * as controllers from "../../src/ui/web/app/graphicalController";
 import { GraphicalApp, type GraphicalAppProps } from "../../src/ui/web/app/GraphicalApp";
 
-const presentation = new Presentation(englishStrings);
+const presentation = new Presentation(stockStrings);
 
 afterEach(() => vi.restoreAllMocks());
 
 describe("outer graphical application", () => {
     it("starts at the Encounter Picker without preparing a battle", () => {
-        const engine = createEngine();
+        const engine = createStockEngine();
         const prepareBattle = vi.fn(() => ({ engine, dispose: () => {} }));
         const html = renderToString(() => createComponent(GraphicalApp, { engine, presentation, prepareBattle }));
         expect(html).toContain("kcq-encounter-picker");
@@ -26,7 +26,7 @@ describe("outer graphical application", () => {
     });
 
     it("renders Details, Difficulty and Battle from the controller's in-app transitions", () => {
-        const engine = createEngine();
+        const engine = createStockEngine();
         const prepareBattle = vi.fn((encounter, difficulty) => {
             createBattle(engine, encounter, difficulty);
             return { engine, dispose: vi.fn() };

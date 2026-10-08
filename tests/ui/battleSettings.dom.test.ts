@@ -1,8 +1,8 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { englishStrings } from "../../localization/en";
-import { createEngine } from "../../src/engine/public/engine";
+import { stockStrings } from "../helpers/stockStrings";
+import { createStockEngine } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
@@ -10,7 +10,7 @@ import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import type { LanguageOption } from "../../src/ui/web/app/language";
 import { createBattleTelemetryObserver } from "../../src/ui/web/telemetry";
 
-const presentation = new Presentation(englishStrings);
+const presentation = new Presentation(stockStrings);
 let unmount: (() => void) | undefined;
 
 afterEach(() => {
@@ -29,9 +29,9 @@ function button(label: string, scope: ParentNode = document): HTMLButtonElement 
 
 function mountBattle(languages?: readonly LanguageOption[]) {
     const capture = vi.fn();
-    const sessions: { engine: ReturnType<typeof createEngine>; observer: ReturnType<typeof createBattleTelemetryObserver>; dispose: ReturnType<typeof vi.fn> }[] = [];
+    const sessions: { engine: ReturnType<typeof createStockEngine>; observer: ReturnType<typeof createBattleTelemetryObserver>; dispose: ReturnType<typeof vi.fn> }[] = [];
     function prepare(encounter: EncounterId, difficulty: DifficultyId) {
-        const engine = createEngine(12345 + sessions.length);
+        const engine = createStockEngine(12345 + sessions.length);
         createBattle(engine, encounter, difficulty);
         const observer = createBattleTelemetryObserver({
             telemetry: { enabled: true, capture }, replayId: "test-" + sessions.length, release: "test",
@@ -46,7 +46,7 @@ function mountBattle(languages?: readonly LanguageOption[]) {
     const root = document.createElement("div");
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, {
-        engine: createEngine(), presentation, prepareBattle, languages,
+        engine: createStockEngine(), presentation, prepareBattle, languages,
     }), root);
     const encounter = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
         .find(row => row.querySelector("strong")?.textContent === presentation.encounter("plains_1"));
@@ -144,7 +144,7 @@ describe("battle settings interactions", () => {
     });
 
     it("changes presentation immediately without recreating or mutating the battle", () => {
-        const alternate = new Presentation({ ...englishStrings,
+        const alternate = new Presentation({ ...stockStrings,
             "ui.battleSettings.resume": "Continue test", "ui.battleOverview.endTurn": "End test turn" });
         const { engine, prepareBattle, sessions } = mountBattle([
             { id: "en", label: "English", presentation },

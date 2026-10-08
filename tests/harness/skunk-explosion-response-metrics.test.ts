@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type {
     ActionView,
     Enemy,
@@ -152,7 +152,7 @@ describe("Skunk Explosion response metrics", () => {
 
         collector.onFightStart?.({
             view: before,
-            library: createEngine(1).getLibrary(),
+            library: createStockEngine(1).getLibrary(),
         });
 
         collector.onAction?.(
@@ -191,7 +191,7 @@ describe("Skunk Explosion response metrics", () => {
 
         collector.onFightStart?.({
             view: before,
-            library: createEngine(1).getLibrary(),
+            library: createStockEngine(1).getLibrary(),
         });
 
         collector.onAction?.(
@@ -242,7 +242,7 @@ describe("Skunk Explosion response metrics", () => {
 
         collector.onFightStart?.({
             view: before,
-            library: createEngine(1).getLibrary(),
+            library: createStockEngine(1).getLibrary(),
         });
 
         collector.onAction?.(
@@ -289,7 +289,7 @@ describe("Skunk Explosion response metrics", () => {
 
         collector.onFightStart?.({
             view: before,
-            library: createEngine(1).getLibrary(),
+            library: createStockEngine(1).getLibrary(),
         });
 
         collector.onAction?.(

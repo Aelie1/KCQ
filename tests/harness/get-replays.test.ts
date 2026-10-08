@@ -2,7 +2,7 @@ import { mkdtemp, readFile, readdir, rm, stat, writeFile } from "node:fs/promise
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type { PlayerAction } from "../../src/engine/public/types";
 import type { FightReplay } from "../../src/harness/harness";
 import { runSingleFight } from "../../src/harness/harness";
@@ -816,7 +816,7 @@ function emptyFightReplay(): FightReplay {
 }
 
 function loadedEngine() {
-    const engine = createEngine(12345);
+    const engine = createStockEngine(12345);
     for (const id of engine.listCharacters()) engine.loadCharacter(id);
     engine.loadEncounter("plains_1");
     return engine;

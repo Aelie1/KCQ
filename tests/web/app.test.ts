@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { baseCatalog } from "../../src/content/base";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine, stockCharacters } from "../../src/stock";
 import type { BattleUI } from "../../src/ui/console/controller";
 import {
     attachBattlePageLifecycle,
@@ -25,24 +24,24 @@ describe("web battle application", () => {
     });
 
     it("loads the full character list in order for every selectable encounter", () => {
-        for (const encounter of baseCatalog.encounters) {
-            const engine = createEngine();
-            const battle = createBattle(engine, encounter.id);
+        for (const encounter of createStockEngine().listEncounters()) {
+            const engine = createStockEngine();
+            const battle = createBattle(engine, encounter);
             const view = battle.engine.getGameState();
 
             expect(view.characters.map((character) => character.id)).toEqual(
-                baseCatalog.characters.map((character) => character.id),
+                stockCharacters,
             );
-            expect(view.encounter?.id).toBe(encounter.id);
-            expect(battle.encounterId).toBe(encounter.id);
+            expect(view.encounter?.id).toBe(encounter);
+            expect(battle.encounterId).toBe(encounter);
         }
     });
 
     it("uses the engine-selected difficulty as battle state", () => {
-        const engine = createEngine();
+        const engine = createStockEngine();
         engine.setDifficulty("mythic");
 
-        const battle = createBattle(engine, baseCatalog.encounters[0].id);
+        const battle = createBattle(engine, engine.listEncounters()[0]);
 
         expect(battle.engine.getGameState().difficulty).toEqual({
             id: "mythic",
@@ -52,10 +51,10 @@ describe("web battle application", () => {
     });
 
     it("starts the selected encounter through the engine difficulty API", () => {
-        const engine = createEngine();
+        const engine = createStockEngine();
         const setDifficulty = vi.spyOn(engine, "setDifficulty");
 
-        const battle = createBattle(engine, baseCatalog.encounters[0].id, "extreme");
+        const battle = createBattle(engine, engine.listEncounters()[0], "extreme");
 
         expect(setDifficulty).toHaveBeenCalledOnce();
         expect(setDifficulty).toHaveBeenCalledWith("extreme");
@@ -76,9 +75,9 @@ describe("web battle application", () => {
             },
             close,
         };
-        const engine = createEngine();
+        const engine = createStockEngine();
 
-        await expect(startBattle(engine, baseCatalog.encounters[0].id, ui)).resolves.toBeUndefined();
+        await expect(startBattle(engine, engine.listEncounters()[0], ui)).resolves.toBeUndefined();
         expect(close).toHaveBeenCalledOnce();
     });
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type {
     Character,
     GameEvent,
@@ -25,7 +25,7 @@ import {
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { makePublicBinding, makePublicCharacter, makePublicGameState } from "../helpers/publicTestData";
 
-const testLibrary = createEngine(1).getLibrary();
+const testLibrary = createStockEngine(1).getLibrary();
 
 function metricCharacter(
     id: string,
@@ -110,7 +110,7 @@ describe("metric collector framework", () => {
     });
 
     it("appends custom results in the runner and preserves legacy metric fields", () => {
-        const encounterId = createEngine(1).listEncounters()[0];
+        const encounterId = createStockEngine(1).listEncounters()[0];
         if (encounterId === undefined) throw new Error("Expected a stock encounter");
         const customFactory = (): MetricCollector<number> => {
             let actions = 0;

@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { baseCatalog } from "../../src/content/base";
 import { ko } from "../../src/content/characters/ko";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createStockEngine } from "../../src/stock";
 import {
     ANONYMOUS_PLAYER_ID_KEY,
     getOrCreateAnonymousPlayerId,
@@ -23,7 +22,7 @@ const OTHER_PLAYER_ID = "20000000-0000-4000-8000-000000000002";
 
 describe("browser gameplay telemetry", () => {
     it("creates a compact digest from public tactical state", () => {
-        const engine = createCustomEngine(baseCatalog, 8224);
+        const engine = createStockEngine(8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const view = engine.getGameState();
@@ -85,7 +84,7 @@ describe("browser gameplay telemetry", () => {
     });
 
     it("emits the custom battle event schema and contains capture failures", () => {
-        const engine = createCustomEngine(baseCatalog, 8224);
+        const engine = createStockEngine(8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const capture = vi.fn();
@@ -158,7 +157,7 @@ describe("browser gameplay telemetry", () => {
     });
 
     it("reports pagehide abandonment once with current state using sendBeacon", () => {
-        const engine = createCustomEngine(baseCatalog, 8224);
+        const engine = createStockEngine(8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const capture = vi.fn();
@@ -191,7 +190,7 @@ describe("browser gameplay telemetry", () => {
 
     it("does not abandon finished, explicitly quit, or bfcache battles", () => {
         const makeObserver = (replayId: string) => {
-            const engine = createCustomEngine(baseCatalog, 8224);
+            const engine = createStockEngine(8224);
             engine.loadCharacter(ko.id);
             engine.loadEncounter("plains_1");
             const capture = vi.fn();
@@ -227,7 +226,7 @@ describe("browser gameplay telemetry", () => {
     });
 
     it("swallows telemetry failures while reporting abandonment", () => {
-        const engine = createCustomEngine(baseCatalog, 8224);
+        const engine = createStockEngine(8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const observer = createBattleTelemetryObserver({

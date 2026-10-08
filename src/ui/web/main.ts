@@ -1,4 +1,4 @@
-import { createEngine } from "../../engine/public/engine";
+import { createStockEngine } from "../../stock";
 import { DifficultyId, EncounterId } from "../../engine/public/types";
 import {
     type BattleChoice,
@@ -335,7 +335,7 @@ function showEncounterSelector(list: EncounterId[]): Promise<EncounterSelection>
 
 async function start(): Promise<void> {
     while (true) {
-        const engine = createEngine();
+        const engine = createStockEngine();
         const selection = await showEncounterSelector(engine.listEncounters());
         await startBattle(
             engine,

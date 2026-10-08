@@ -1,4 +1,5 @@
-import { englishStrings } from "../../../../../localization/en/index";
+import { getStringTable } from "../../../../../localization";
+import { stockCampaign, stockCharacters } from "../../../../stock";
 import type {
     ActionInfo,
     ActionView,
@@ -21,7 +22,7 @@ export interface TargetingFixture {
     thresholds: ThresholdInfo;
 }
 
-const presentation = new Presentation(englishStrings);
+const presentation = new Presentation(getStringTable("en", stockCharacters, stockCampaign));
 
 function enemy(id: string): Enemy {
     return {

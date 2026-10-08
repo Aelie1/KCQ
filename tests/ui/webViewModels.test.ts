@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { englishStrings } from "../../localization/en";
+import { stockStrings } from "../helpers/stockStrings";
 import type {
     ActionView,
     Character,
@@ -18,7 +18,7 @@ import { createPartyCardViewModel } from "../../src/ui/web/app/viewModels/partyC
 
 import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy } from "../helpers/publicTestData";
 
-const presentation = new Presentation(englishStrings);
+const presentation = new Presentation(stockStrings);
 
 describe("enemy card view model", () => {
     it.each([

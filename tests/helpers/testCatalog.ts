@@ -8,7 +8,7 @@ import type {
     StatusDef,
     TrapDef,
 } from "../../src/engine/protected/definitions";
-import { createCustomEngine } from "../../src/engine/protected/engine";
+import { createGameEngine } from "../../src/engine/public/engine";
 import type { ContentCatalog } from "../../src/engine/protected/types";
 
 export interface TestCatalogContent {
@@ -83,5 +83,5 @@ export function createTestEngine(
     seed?: number,
     content: Omit<TestCatalogContent, "encounters" | "characters"> = {},
 ) {
-    return createCustomEngine(createTestCatalog({ ...content, encounters, characters }), seed);
+    return createGameEngine(createTestCatalog({ ...content, encounters, characters }), seed);
 }

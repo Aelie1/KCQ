@@ -1,4 +1,5 @@
-import { englishStrings } from "../../../../../localization/en/index";
+import { getStringTable } from "../../../../../localization";
+import { stockCampaign, stockCharacters } from "../../../../stock";
 import type {
     ActionView,
     Binding,
@@ -18,7 +19,7 @@ import { createIntentViewModel } from "../viewModels/intentRow";
 import { createPartyCardViewModel } from "../viewModels/partyCard";
 import { makeFixtureCharacter } from "./publicFixture";
 
-const presentation = new Presentation(englishStrings);
+const presentation = new Presentation(getStringTable("en", stockCharacters, stockCampaign));
 
 function intention(move: MoveId, target?: string, band: HitBand = "none"): Intention {
     return {

@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { englishStrings } from "../../localization/en";
-import { createEngine } from "../../src/engine/public/engine";
+import { stockStrings } from "../helpers/stockStrings";
+import { createStockEngine } from "../../src/stock";
 import type { DifficultyId } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 import { createEffectPreviewViewModels } from "../../src/ui/web/app/viewModels/effectPreviews";
 
-const library = createEngine().getLibrary();
-const presentation = new Presentation(englishStrings);
+const library = createStockEngine().getLibrary();
+const presentation = new Presentation(stockStrings);
 const difficulties: DifficultyId[] = ["casual", "standard", "veteran", "extreme", "mythic"];
 const ruleOrder = ["skunkette", "skunk", "fairy", "queen", "rainmaker"];
 
@@ -68,7 +68,7 @@ describe("difficulty select view model", () => {
 
 
     it("keeps every screen label and rule label in Presentation", () => {
-        const localized = new Presentation(Object.fromEntries(Object.keys(englishStrings).map(key => [key, "translated:" + key])));
+        const localized = new Presentation(Object.fromEntries(Object.keys(stockStrings).map(key => [key, "translated:" + key])));
         const model = createDifficultySelectViewModel(library, "forest_3", "mythic", localized);
         expect(model.encounterName).toBe("translated:encounter.forest_3.name");
         expect(model.description).toBe("translated:difficulty.mythic.desc");

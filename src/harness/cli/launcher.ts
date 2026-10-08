@@ -1,5 +1,5 @@
 import { availableParallelism } from "node:os";
-import { createEngine } from "../../engine/public/engine";
+import { createStockEngine } from "../../stock";
 import { getThresholds } from "../../engine/public/mechanics";
 import { runConsoleReplay } from "../../ui/console/replay";
 import { runBatch } from "../batch/batch";
@@ -136,7 +136,7 @@ export async function runHarnessLauncher(
     dependencies: Partial<LauncherDependencies> = {},
 ): Promise<void> {
     const deps = { ...defaultDependencies, ...dependencies };
-    const encounters = createEngine(0).listEncounters();
+    const encounters = createStockEngine(0).listEncounters();
     const policyIds = Object.keys(policies);
 
     for (; ;) {

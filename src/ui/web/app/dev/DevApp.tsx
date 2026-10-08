@@ -1,6 +1,6 @@
 import { createSignal, Match, Switch, type JSX } from "solid-js";
-import { englishStrings } from "../../../../../localization/en/index";
-import { createEngine } from "../../../../engine/public/engine";
+import { getStringTable } from "../../../../../localization";
+import { createStockEngine, stockCampaign, stockCharacters } from "../../../../stock";
 import { Presentation } from "../../../presentation/presentation";
 import { createBattle } from "../../app";
 import { App } from "../App";
@@ -74,9 +74,9 @@ export function DevApp(props: DevAppProps = {}): JSX.Element {
 }
 
 function PlayableBattle(): JSX.Element {
-    const engine = createEngine(12345);
+    const engine = createStockEngine(12345);
     createBattle(engine, "plains_1", "standard");
-    const presentation = new Presentation(englishStrings);
+    const presentation = new Presentation(getStringTable("en", stockCharacters, stockCampaign));
 
     return <BattleApp engine={engine} presentation={presentation} />;
 }

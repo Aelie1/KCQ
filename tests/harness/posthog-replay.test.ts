@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type { Engine, PlayerAction } from "../../src/engine/public/types";
 import { runSingleFight } from "../../src/harness/harness";
 import { basicPolicy } from "../../src/harness/policy/basic";
@@ -418,7 +418,7 @@ function makeFixture(options: FixtureOptions = {}): {
 }
 
 function loadedEngine(seed: number, encounter: string): Engine {
-    const engine = createEngine(seed);
+    const engine = createStockEngine(seed);
     for (const id of engine.listCharacters()) engine.loadCharacter(id);
     engine.loadEncounter(encounter);
     return engine;

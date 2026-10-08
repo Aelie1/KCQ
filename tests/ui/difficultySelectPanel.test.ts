@@ -1,15 +1,15 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { englishStrings } from "../../localization/en";
-import { createEngine } from "../../src/engine/public/engine";
+import { stockStrings } from "../helpers/stockStrings";
+import { createStockEngine } from "../../src/stock";
 import type { DifficultyId } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { DifficultySelectPanel } from "../../src/ui/web/app/components/DifficultySelectPanel";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 
-const library = createEngine().getLibrary();
-const presentation = new Presentation(englishStrings);
+const library = createStockEngine().getLibrary();
+const presentation = new Presentation(stockStrings);
 const noop = () => { };
 
 function render(difficulty: DifficultyId, encounter = "forest_3") {

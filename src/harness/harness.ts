@@ -1,4 +1,4 @@
-import { createEngine } from "../engine/public/engine";
+import { createStockEngine } from "../stock";
 import type { ContentLibrary } from "../engine/public/library";
 import { getThresholds } from "../engine/public/mechanics";
 import type {
@@ -127,7 +127,7 @@ export interface SingleFightResult {
 
 /** Runs one stock encounter, delegating every player decision to the supplied policy. */
 export function runSingleFight(input: SingleFightInput): SingleFightResult {
-    const engine = createEngine(input.engineSeed);
+    const engine = createStockEngine(input.engineSeed);
     const thresholds = getThresholds();
     const library = engine.getLibrary();
     const policyRandom = createPolicyRandom(input.policySeed);

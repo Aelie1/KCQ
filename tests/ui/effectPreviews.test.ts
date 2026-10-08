@@ -1,7 +1,7 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type { ActionInfo, DataEffect, Effect } from "../../src/engine/public/types";
 import { EffectPreview } from "../../src/ui/web/app/components/EffectPreview";
 import { EncounterDetailsPanel } from "../../src/ui/web/app/components/EncounterDetailsPanel";
@@ -14,14 +14,14 @@ import { getThresholds } from "../../src/engine/public/mechanics";
 import { groupEffectPreviews } from "../../src/ui/web/app/viewModels/effectGroups";
 
 const presentation = targetingFixtures.telekinesisChoose.presentation;
-const library = createEngine().getLibrary();
+const library = createStockEngine().getLibrary();
 const resource: DataEffect = { type: "data", target: "hinari", name: "subspace", amount: 25 };
 const trap: Effect = { type: "trap", trap: "trapPuddle", amount: 70 };
 
 const visibleMarkup = (html: string) => html.replace(/<!--.*?-->/g, "");
 
 function runtimeState() {
-    const engine = createEngine(1);
+    const engine = createStockEngine(1);
     engine.loadCharacter("hinari");
     engine.loadEncounter("plains_2");
     return engine.getGameState();

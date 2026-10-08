@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { difficulties } from "../../src/engine/private/constants";
 import type { StatusDef } from "../../src/engine/protected/definitions";
 import { GameStatus } from "../../src/engine/protected/status";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type { DifficultyId } from "../../src/engine/public/types";
 import { makeBinding, makeBindingDef, makeCharacter, makeEnemy, makeEnemyDef, makeWaitMove } from "../helpers/helpers";
 import { makeInternalState } from "../helpers/state";
 
 describe("game-wide difficulty", () => {
     it("starts at Standard and immediately exposes changes made with setDifficulty", () => {
-        const engine = createEngine(1);
+        const engine = createStockEngine(1);
 
         expect(engine.getGameState().difficulty).toEqual(difficulties.standard);
 
@@ -116,7 +116,7 @@ describe("game-wide difficulty", () => {
     });
 
     it("does not let mutations to returned difficulty data change engine definitions", () => {
-        const engine = createEngine(1);
+        const engine = createStockEngine(1);
         engine.setDifficulty("casual");
         const returned = engine.getGameState();
 
@@ -135,7 +135,7 @@ describe("game-wide difficulty", () => {
     it.each(Object.keys(difficulties) as DifficultyId[])(
         "publishes the configured %s definition",
         (difficulty) => {
-            const engine = createEngine(1);
+            const engine = createStockEngine(1);
             engine.setDifficulty(difficulty);
             expect(engine.getGameState().difficulty).toEqual(difficulties[difficulty]);
         },

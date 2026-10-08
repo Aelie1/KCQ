@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { englishStrings } from "../../localization/en";
+import { stockStrings } from "../helpers/stockStrings";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { BattleResultPanel } from "../../src/ui/web/app/panels/BattleResultPanel";
 import { createBattleResultViewModel, type BattleResultStats } from "../../src/ui/web/app/viewModels/battleResult";
@@ -20,7 +20,7 @@ vi.mock("solid-js/web", async importOriginal => ({
 }));
 beforeEach(() => portal.render.mockClear());
 
-const presentation = new Presentation(englishStrings);
+const presentation = new Presentation(stockStrings);
 const stats: BattleResultStats = {
     rounds: 12, actions: 34, peakBinding: 145, progress: { boss: 0.27 }, incapacitations: 0, rescues: 0,
     escapes: { count: 12, total: 264, max: 40 },

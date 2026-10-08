@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import {
     deriveRunSeeds,
     runBatch,
@@ -8,7 +8,7 @@ import { runSingleFight } from "../../src/harness/harness";
 import { basicPolicy } from "../../src/harness/policy/basic";
 
 function stockEncounterId(): string {
-    const encounterId = createEngine(1).listEncounters()[0];
+    const encounterId = createStockEngine(1).listEncounters()[0];
     if (!encounterId) {
         throw new Error("The stock encounter catalogue is empty");
     }

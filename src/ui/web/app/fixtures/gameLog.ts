@@ -3,7 +3,8 @@ import type {
     GameState,
     PlayerAction,
 } from "../../../../engine/public/types";
-import { englishStrings } from "../../../../../localization/en/index";
+import { getStringTable } from "../../../../../localization";
+import { stockCampaign, stockCharacters } from "../../../../stock";
 import { Presentation } from "../../../presentation/presentation";
 
 const fixtureState = {
@@ -122,7 +123,7 @@ const frames = [
 
 export const gameLogFixture = {
     state: fixtureState,
-    presentation: new Presentation(englishStrings),
+    presentation: new Presentation(getStringTable("en", stockCharacters, stockCampaign)),
     entries: [
         {
             action,

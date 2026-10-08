@@ -1,6 +1,6 @@
 import { render } from "solid-js/web";
-import { englishStrings } from "../../../../localization/en/index";
-import { createEngine } from "../../../engine/public/engine";
+import { getStringTable } from "../../../../localization";
+import { createStockEngine, stockCampaign, stockCharacters } from "../../../stock";
 import type { DifficultyId, EncounterId } from "../../../engine/public/types";
 import { Presentation } from "../../presentation/presentation";
 import { attachBattlePageLifecycle, createBattle } from "../app";
@@ -19,8 +19,8 @@ if (!root) {
     throw new Error("Missing #root element for the KCQ graphical UI.");
 }
 
-const engine = createEngine();
-const presentation = new Presentation(englishStrings);
+const engine = createStockEngine();
+const presentation = new Presentation(getStringTable("en", stockCharacters, stockCampaign));
 
 render(() => <GraphicalApp engine={engine} presentation={presentation}
     prepareBattle={prepareGraphicalBattle} />, root);
@@ -36,7 +36,7 @@ function prepareGraphicalBattle(
     encounter: EncounterId,
     difficulty: DifficultyId,
 ): GraphicalBattleSession {
-    const battle = createBattle(createEngine(), encounter, difficulty);
+    const battle = createBattle(createStockEngine(), encounter, difficulty);
     const observer = createBattleTelemetryObserver({
         telemetry: gameplayTelemetry,
         replayId: createId(),

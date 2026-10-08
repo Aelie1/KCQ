@@ -1,7 +1,7 @@
-import { createEngine } from "./engine/public/engine";
+import { createStockEngine } from "./stock";
 
 const encounterId = "forest_3";
-const engine = createEngine();
+const engine = createStockEngine();
 // const loadEvents: GameEvent[] = [];
 // loadEvents.push(engine.loadCharacter("ko"));
 // loadEvents.push(engine.loadCharacter("matsuko"));

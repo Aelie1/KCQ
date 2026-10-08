@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import { difficulties } from "../../src/engine/private/constants";
 
 describe("public difficulty references", () => {
     it("exposes all five authoritative definitions as structured-cloneable metadata", () => {
-        const references = createEngine().getLibrary().difficulties;
+        const references = createStockEngine().getLibrary().difficulties;
         expect(Object.keys(references)).toEqual(["casual", "standard", "veteran", "extreme", "mythic"]);
         expect(references).toEqual(difficulties);
         expect(structuredClone(references)).toEqual(references);
@@ -20,7 +20,7 @@ describe("public difficulty references", () => {
     });
 
     it("isolates every public modifier set from authoritative definitions and subsequent reads", () => {
-        const engine = createEngine();
+        const engine = createStockEngine();
         const references = engine.getLibrary().difficulties;
         for (const id of Object.keys(references) as (keyof typeof references)[]) {
             expect(references[id]).not.toBe(difficulties[id]);

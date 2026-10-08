@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type { ActionSuccess, GameEvent, GameState, LeafEvent } from "../../src/engine/public/types";
 import { createBattle } from "../../src/ui/web/app";
 import { createBattleResultTracker } from "../../src/ui/web/app/viewModels/battleResult";
@@ -26,7 +26,7 @@ const binding = (amount: number, target = "hero", id = "arms"): LeafEvent => ({
 
 describe("battle result statistics from public frames", () => {
     it("tracks a real engine defeat from a fresh encounter without retaining replay data", () => {
-        const engine = createEngine(12345);
+        const engine = createStockEngine(12345);
         createBattle(engine, "plains_1", "mythic");
         const tracker = createBattleResultTracker(engine.getGameState());
         let actions = 0;

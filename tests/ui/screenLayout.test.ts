@@ -1,8 +1,8 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { englishStrings } from "../../localization/en";
-import { createEngine } from "../../src/engine/public/engine";
+import { stockStrings } from "../helpers/stockStrings";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { DifficultySelectPanel } from "../../src/ui/web/app/components/DifficultySelectPanel";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
@@ -20,8 +20,8 @@ import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
 import { TargetingPanel } from "../../src/ui/web/app/panels/TargetingPanel";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel } from "../../src/ui/web/app/viewModels/encounters";
 
-const library = createEngine().getLibrary();
-const presentation = new Presentation(englishStrings);
+const library = createStockEngine().getLibrary();
+const presentation = new Presentation(stockStrings);
 const noop = () => {};
 const screens = [
     { name: "Encounter Picker", render: () => createComponent(EncounterPickerPanel, {

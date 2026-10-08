@@ -1,5 +1,5 @@
 import { isDeepStrictEqual } from "node:util";
-import { createEngine } from "../../engine/public/engine";
+import { createStockEngine } from "../../stock";
 import type {
     BattleState,
     DifficultyId,
@@ -295,7 +295,7 @@ export function reconstructFightReplay(parsed: ParsedPostHogReplay): ImportedPos
 }
 
 function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogReplay {
-    const engine = createEngine(parsed.seed);
+    const engine = createStockEngine(parsed.seed);
     engine.setDifficulty(parsed.difficulty);
     loadStockBattle(engine, parsed.encounter, parsed.replayId);
 

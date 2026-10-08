@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { createEngine } from "../../src/engine/public/engine";
+import { createStockEngine } from "../../src/stock";
 import type { Effect } from "../../src/engine/public/types";
-import { englishStrings } from "../../localization/en";
+import { stockStrings } from "../helpers/stockStrings";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel, encounterStars } from "../../src/ui/web/app/viewModels/encounters";
 import { getThresholds } from "../../src/engine/public/mechanics";
@@ -10,8 +10,8 @@ import { createEffectPreviewViewModels } from "../../src/ui/web/app/viewModels/e
 import { createTargetingViewModel } from "../../src/ui/web/app/viewModels/targeting";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
 
-const presentation = new Presentation(englishStrings);
-const library = createEngine().getLibrary();
+const presentation = new Presentation(stockStrings);
+const library = createStockEngine().getLibrary();
 
 describe("encounter catalog view models", () => {
     it("uses the public catalog in its authored order", () => {

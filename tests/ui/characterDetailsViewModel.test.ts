@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { englishStrings } from "../../localization/en";
+import { stockStrings } from "../helpers/stockStrings";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import type { ActionInfo } from "../../src/engine/public/types";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
@@ -338,7 +338,7 @@ describe("character details view model", () => {
     it("shows each added and blocked buff move with localized names and distinct tones", () => {
         const fixture = characterDetailsFixture;
         const presentation = new Presentation({
-            ...englishStrings,
+            ...stockStrings,
             "move.fairyTelekinesis.name": "Localized Fairy Move",
             "move.fairyReflect.name": "Localized Reflect",
             "move.telekinesis.name": "Localized Base Move",
