@@ -28,12 +28,12 @@ const stanceEvent = (actor: string, final: StanceId): GameEvent => ({
     type: "changeStance", actor, effects: [{ type: "stanceSet", actor, stance: final }],
 });
 
-// Public Pounce payloads from the existing level-4 and level-1 mechanics.
-const pounceInitialVictim: Buff = { id: "pounce", linkedEntity: "skunkette1",
+// Public Pounce payloads at severity 4 and 1, including each linked participant's effects.
+const pounceInitialVictim: Buff = { id: "pounce", severity: 4, linkedEntity: "skunkette1",
     statuses: [{ id: "immobilized", value: 1 }, { id: "helpless", value: 1 }], modifiers: {}, moveList: { addedMoves: ["throwOff"] } };
-const pounceFinalVictim: Buff = { ...pounceInitialVictim, statuses: [{ id: "immobilized", value: 1 }] };
-const pounceInitialEnemy: Buff = { id: "pounce", linkedEntity: "ko", modifiers: { defense: -2, hit: 8 } };
-const pounceFinalEnemy: Buff = { ...pounceInitialEnemy, modifiers: { defense: -2, hit: 2 } };
+const pounceFinalVictim: Buff = { ...pounceInitialVictim, severity: 1, statuses: [{ id: "immobilized", value: 1 }] };
+const pounceInitialEnemy: Buff = { id: "pounce", severity: 4, linkedEntity: "ko", modifiers: { defense: -2, hit: 8 } };
+const pounceFinalEnemy: Buff = { ...pounceInitialEnemy, severity: 1, modifiers: { defense: -2, hit: 2 } };
 const pounceBefore = state([character("ko", true, [pounceInitialVictim])], [enemy("skunkette1", [pounceInitialEnemy])]);
 const pounceAfter = state([character("ko", true, [pounceFinalVictim])], [enemy("skunkette1", [pounceFinalEnemy])]);
 const pounceUpdates: LeafEvent[] = [
@@ -57,7 +57,7 @@ describe("Game Log presentation aggregation", () => {
         ]);
     });
 
-    it("preserves miss/graze/hit/crit order and combines repeated linked Pounce transitions", () => {
+    it("preserves hit order and combines linked Pounce severity 4 to 1 into one outcome", () => {
         const result = outcomes([{ event: multiHitPounceExample, state: pounceAfter }], pounceBefore);
         expect(result).toHaveLength(2);
         expect(result[0]).toEqual({ kind: "damage", target: "skunkette1", damage: 27, healing: 0, blocked: 0, hits: [
@@ -120,13 +120,25 @@ describe("Game Log presentation aggregation", () => {
             .toMatchObject({ initial: undefined, final: undefined, change: 7 });
     });
 
-    it("combines repeated buff-level changes into their recorded endpoint payloads", () => {
+    it("combines repeated buff severity changes into their recorded endpoint payloads", () => {
         const event = move([], [...pounceUpdates, ...pounceUpdates, ...pounceUpdates]);
         const [buff] = outcomes([{ event, state: pounceAfter }], pounceBefore) as BuffOutcome[];
         expect(buff.participants[0]).toEqual({ target: "ko",
             initial: { present: true, details: pounceInitialVictim }, final: { present: true, details: pounceFinalVictim } });
-        expect(buff.participants[1].initial.details?.modifiers?.hit).toBe(8);
-        expect(buff.participants[1].final.details?.modifiers?.hit).toBe(2);
+        expect(buff.participants[1]).toEqual({ target: "skunkette1",
+            initial: { present: true, details: pounceInitialEnemy }, final: { present: true, details: pounceFinalEnemy } });
+    });
+
+    it("preserves non-Pounce severity-only changes without modifiers or statuses", () => {
+        const initialBuff: Buff = { id: "test-severity", severity: 3 };
+        const finalBuff: Buff = { id: "test-severity", severity: 1 };
+        const before = state([character("ko", false, [initialBuff])]);
+        const after = state([character("ko", false, [finalBuff])]);
+        const update: LeafEvent = { type: "buffUpdated", target: "ko", buff: "test-severity" };
+        expect(outcomes([{ event: move([], [update, update]), state: after }], before)).toEqual([
+            { kind: "buff", buff: "test-severity", participants: [{ target: "ko",
+                initial: { present: true, details: initialBuff }, final: { present: true, details: finalBuff } }] },
+        ]);
     });
 
     it("groups linked additions using the post-event snapshot", () => {
@@ -278,7 +290,7 @@ describe("Game Log presentation aggregation", () => {
         ]);
     });
 
-    it("does not fabricate links, buff levels, escape binding IDs or endpoints without snapshots", () => {
+    it("does not fabricate links, buff severity, escape binding IDs or endpoints without snapshots", () => {
         const result = createGameLogEntries([{ type: "useEscape", actor: "ko", target: "ko", effects: pounceUpdates }]);
         expect(result[0]).not.toHaveProperty("binding");
         expect(result[0].outcomes).toEqual([
@@ -327,8 +339,11 @@ describe("Game Log presentation aggregation", () => {
         const buffs = log[0].outcomes.filter((outcome): outcome is BuffOutcome => outcome.kind === "buff" && outcome.buff === "pounce");
         expect(buffs).toHaveLength(1);
         expect(buffs[0].participants).toHaveLength(2);
-        expect(buffs[0].participants.find(({ target }) => target === "skunkette1")).toMatchObject({
-            initial: { details: { modifiers: { hit: 8 } } }, final: { details: { modifiers: { hit: 2 } } },
-        });
+        for (const target of ["victim", "skunkette1"]) {
+            expect(buffs[0].participants.find((participant) => participant.target === target)).toMatchObject({
+                initial: { present: true, details: { id: "pounce", severity: 4 } },
+                final: { present: true, details: { id: "pounce", severity: 1 } },
+            });
+        }
     });
 });

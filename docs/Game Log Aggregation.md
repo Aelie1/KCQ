@@ -16,7 +16,7 @@ Bare `GameEvent[]` also works. Endpoints that cannot be established from leaves 
 
 ## Representative output
 
-These examples match the focused unit tests. JSON omits unknown/undefined fields. Buff details below are the public payloads, not a new calculation of buff levels.
+These examples match the focused unit tests. JSON omits unknown/undefined fields. Buff details below preserve the public payloads, including optional `Buff.severity`, directly from snapshots. Severity is not derived from modifiers or statuses.
 
 ### Single-hit Telekinesis
 
@@ -33,7 +33,7 @@ These examples match the focused unit tests. JSON omits unknown/undefined fields
 
 ### Four-hit Rockfall with three Pounce reductions
 
-One miss and three damaging hits yield one damage group and one logical Pounce group. The enemy's recorded hit modifier changes from 8 to 2; the victim loses Helpless. The three pairs of `buffUpdated` leaves become one initial-to-final change, with both participants' distinct effects retained.
+One miss and three damaging hits yield one damage group and one logical Pounce group. Both linked participants retain their recorded severity endpoints, 4 → 1. The enemy's hit modifier changes from 8 to 2; the victim loses Helpless. The three pairs of `buffUpdated` leaves become one initial-to-final change, with both participants' complete, distinct payloads retained. A future graphical renderer can use `Presentation` to localize these endpoints as `Pounce IV → I`; the aggregation layer does not generate that label.
 
 ```json
 {
@@ -55,12 +55,12 @@ One miss and three damaging hits yield one damage group and one logical Pounce g
         {
           "target": "ko",
           "initial": { "present": true, "details": {
-            "id": "pounce", "linkedEntity": "skunkette1",
+            "id": "pounce", "severity": 4, "linkedEntity": "skunkette1",
             "statuses": [{ "id": "immobilized", "value": 1 }, { "id": "helpless", "value": 1 }],
             "modifiers": {}, "moveList": { "addedMoves": ["throwOff"] }
           }},
           "final": { "present": true, "details": {
-            "id": "pounce", "linkedEntity": "skunkette1",
+            "id": "pounce", "severity": 1, "linkedEntity": "skunkette1",
             "statuses": [{ "id": "immobilized", "value": 1 }],
             "modifiers": {}, "moveList": { "addedMoves": ["throwOff"] }
           }}
@@ -68,10 +68,10 @@ One miss and three damaging hits yield one damage group and one logical Pounce g
         {
           "target": "skunkette1",
           "initial": { "present": true, "details": {
-            "id": "pounce", "linkedEntity": "ko", "modifiers": { "defense": -2, "hit": 8 }
+            "id": "pounce", "severity": 4, "linkedEntity": "ko", "modifiers": { "defense": -2, "hit": 8 }
           }},
           "final": { "present": true, "details": {
-            "id": "pounce", "linkedEntity": "ko", "modifiers": { "defense": -2, "hit": 2 }
+            "id": "pounce", "severity": 1, "linkedEntity": "ko", "modifiers": { "defense": -2, "hit": 2 }
           }}
         }
       ]
@@ -80,7 +80,7 @@ One miss and three damaging hits yield one damage group and one logical Pounce g
 }
 ```
 
-The engine integration test separately executes a real three-hit damage action against the existing Skunkette mechanic and verifies the same 8 → 2 Pounce endpoint change.
+The engine integration test separately executes a real three-hit damage action against the existing Skunkette mechanic and directly verifies severity 4 → 1 for both linked participants in one logical Pounce outcome. A non-Pounce severity-only fixture also verifies that payload preservation is generic and requires no modifiers or statuses.
 
 ### AoE Immolation
 
@@ -128,11 +128,11 @@ Starting with both characters moving: Ko stands, Hinari stands, Ko moves again. 
 - Cooldown bookkeeping and empty successful character/encounter loads are omitted. Load failures and meaningful setup outcomes remain visible.
 - Damage/healing/blocking values come directly from leaves. Misses are retained, and zero-damage accuracy groups also preserve binding/buff attack results. Damage from callbacks to a different recipient keeps that recipient and uses the unknown/untested band `none`; it does not inherit the attacked target's roll.
 - Binding endpoints and severity come from snapshots. Bare added/removed events supply a known zero endpoint, so actual emitted deltas can recover numeric endpoints. A known numeric endpoint and the emitted deltas can also recover the other numeric endpoint. Changed-only leaves without either endpoint cannot reveal an initial value or severity. No thresholds, potency or damage mechanics are recalculated.
-- Buff leaves contain only an ID and add/update/remove operation. Frames supply modifiers, statuses, duration, move lists and reciprocal links. Public buffs have no numeric `level` or active flag. Pounce level changes are therefore represented by their recorded modifier/status payloads. Intermediate states are intentionally discarded. Linked removal uses the pre-event snapshot, including when a defeated enemy disappears. A linked buff created and removed wholly within one event has no surviving link in either endpoint; it cannot be reliably paired from its ID alone. Without enough snapshots, links and payloads remain unknown; unrelated participants are not guessed to be linked.
+- Buff leaves contain only an ID and add/update/remove operation. Snapshots supply complete public buff payloads, including optional numeric `severity`, modifiers, statuses, duration, move lists and reciprocal links. `BuffOutcome` preserves severity in each participant's `initial.details` and `final.details` without special-casing any buff. Missing severity remains absent, and bare leaves cannot establish it. Public buffs still have no active flag. Intermediate states are intentionally discarded. Linked removal uses the pre-event snapshot, including when a defeated enemy disappears. A linked buff created and removed wholly within one event has no surviving link in either endpoint; it cannot be reliably paired from its ID alone. Without enough snapshots, links and payloads remain unknown; unrelated participants are not guessed to be linked.
 - Escape events omit the attempted binding ID and accuracy result. Binding outcomes identify any binding that actually changed; an interrupted/empty escape cannot identify the attempted binding from `GameEvent` alone.
 - Phase events omit the round. Frames supply it; event-only input leaves it unknown.
 - Trap trigger consumption is retained separately. Recorded trap endpoints supply net change; trigger-only traces without endpoints leave net change unknown. Current trap removal code does not emit the declared `trapRemoved` leaf.
 - Refresh, interruption, spawn/defeat, final retarget destination and cancellation/weakening remain semantic outcomes. Intention leaves lack specific move IDs and weakening amounts, which are not invented.
 - Public DataEffects have no leaf events. The existing player resource Subspace is summarized only when both recorded frame endpoints exist. Internal character/encounter data and silent buff ticks are not expanded into a technical trace.
 
-Validation: `tests/ui/gameLogAggregation.test.ts` covers all eight required cases, current leaf outcomes, unknown-data behavior, event boundaries and input immutability. Existing Game Log components and preview components are unchanged.
+Validation: `tests/ui/gameLogAggregation.test.ts` covers all eight required cases, linked Pounce severity endpoints (fixtures and engine-generated frames), generic non-Pounce severity changes, current leaf outcomes, unknown-data behavior, event boundaries and input immutability. Existing Game Log components and preview components are unchanged.
