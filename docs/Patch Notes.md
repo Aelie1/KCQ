@@ -1,5 +1,53 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.13.0 — 2026-10-08
+
+### Title Screen / Campaign Selection
+
+* Added a proper graphical title screen as the new entry point for KCQ.
+* Added campaign selection before encounter selection.
+  * The currently available campaign is **Latex Skunk Attacks!**
+* Added the language selector to the title screen.
+  * English is currently the only bundled language.
+* Added game credits, copyright, and version information to the title screen.
+* Version displays now include the build's Git revision when available.
+
+### Battle Results
+
+* Added dedicated Victory and Defeat result screens when a battle ends.
+* Battle results now summarize the encounter, difficulty, rounds, and player actions.
+* Added post-battle statistics for:
+  * successful Escapes and average binding removed;
+  * damaging attacks, including average damage and the strongest hit;
+  * enemy binding attacks, including average binding and the strongest attack;
+  * peak total party binding on victory;
+  * incapacitations and rescues when applicable.
+* Defeats now show the remaining boss HP, or remaining enemy HP for encounters without a boss.
+* Added **Retry** and **Back to Level Select** actions after battle.
+* The completed battle remains visible behind the result window while its controls are disabled.
+
+### Settings / Navigation
+
+* Added a shared graphical Settings menu to encounter-selection screens and battles.
+* Settings can be opened without leaving or resetting the current screen.
+* Added controls for:
+  * resuming the game;
+  * language selection;
+  * retrying the current battle;
+  * returning to Level Select;
+  * returning directly to the Title Screen.
+* Returning to the Title Screen from an active battle now cleanly ends and disposes that battle.
+* Settings now display the current version and Git revision in the upper-right corner.
+
+### Character Status Presentation
+
+* Reduced unused space on character screens by hiding empty status sections.
+* Zero-value capabilities are no longer displayed unless the capability is completely blocked.
+* Binding zones with no binding are no longer shown in character details.
+* Renamed the character **Effects** section to **Buffs**.
+* Buff details can now show moves granted or blocked by the buff.
+* Improved wrapping and layout for status details to avoid unnecessary blank space.
+
 ## 0.12.0 — 2026-10-07
 
 ### Encounter Selection
