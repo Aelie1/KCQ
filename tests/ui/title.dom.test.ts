@@ -7,6 +7,7 @@ import { stockCharacters } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
+import type { LanguageOption } from "../../src/ui/web/app/language";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 
 let unmount: (() => void) | undefined;
@@ -18,12 +19,12 @@ function click(selector: string) {
     button.click();
 }
 
-function mount() {
+function mount(languages?: readonly LanguageOption[]) {
     const compositions: ReturnType<typeof createEngine>[] = [];
     const composeCampaign = vi.fn((campaign: KCQCampaign) => {
         const engine = createEngine(stockCharacters, campaign, 12345);
         compositions.push(engine);
-        return { engine, presentation: new Presentation(getStringTable("en", stockCharacters, campaign)) };
+        return { engine, presentation: new Presentation(getStringTable("en", stockCharacters, campaign)), languages };
     });
     const prepareBattle = vi.fn((campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId) => {
         const engine = createEngine(stockCharacters, campaign, 12345);
@@ -33,13 +34,68 @@ function mount() {
     const root = document.createElement("div");
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, {
-        campaigns: ["skunk"], release: "test", presentation: new Presentation(getStringTable("en")),
+        campaigns: ["skunk"], release: "test", presentation: new Presentation(getStringTable("en")), languages,
         composeCampaign, prepareBattle,
     }), root);
     return { composeCampaign, prepareBattle, compositions };
 }
 
 describe("title navigation", () => {
+    it("has a labeled native language selector and a keyboard-focusable semantic campaign button", () => {
+        const { composeCampaign, prepareBattle } = mount();
+        const presentation = new Presentation(getStringTable("en"));
+        const label = document.querySelector<HTMLLabelElement>(".kcq-title-screen__language")!;
+        const select = label.querySelector("select")!;
+        expect(label.querySelector(".kcq-title-screen__language-label")?.textContent)
+            .toBe(presentation.ui("battleSettings.language"));
+        expect(select.value).toBe("en");
+        expect(select.selectedOptions[0]?.textContent).toBe(presentation.ui("language.en"));
+        select.focus();
+        expect(document.activeElement).toBe(select);
+        const campaign = document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!;
+        expect(campaign.type).toBe("button");
+        expect(campaign.disabled).toBe(false);
+        expect(campaign.tabIndex).toBe(0);
+        campaign.focus();
+        expect(document.activeElement).toBe(campaign);
+        expect(document.querySelector(".kcq-title-screen .kcq-combat-header__settings")).toBeNull();
+        expect(composeCampaign).not.toHaveBeenCalled();
+        expect(prepareBattle).not.toHaveBeenCalled();
+    });
+
+    it("updates localized title content in place and shares language with campaign screens and return to title", () => {
+        const presentation = new Presentation(getStringTable("en"));
+        const alternate = new Presentation({ ...getStringTable("en", stockCharacters, "skunk"),
+            "ui.title.name": "Test Quest", "ui.title.campaigns": "Test campaigns",
+            "ui.battleSettings.language": "Test language label",
+            "campaign.skunk.name": "Test campaign", "campaign.skunk.desc": "Test description",
+        });
+        const { composeCampaign, prepareBattle } = mount([
+            { id: "en", label: presentation.ui("language.en"), presentation },
+            { id: "test", label: "Test language", presentation: alternate },
+        ]);
+        const panel = document.querySelector(".kcq-title-screen");
+        const select = document.querySelector<HTMLSelectElement>(".kcq-title-screen__language select")!;
+        select.value = "test";
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        expect(document.querySelector(".kcq-title-screen")).toBe(panel);
+        expect(panel?.querySelector("h1")?.textContent).toBe("Test Quest");
+        expect(panel?.querySelector("h2")?.textContent).toBe("Test campaigns");
+        expect(panel?.querySelector("strong")?.textContent).toBe("Test campaign");
+        expect(panel?.querySelector(".kcq-title-screen__campaign > span")?.textContent).toBe("Test description");
+        expect(panel?.querySelector(".kcq-title-screen__language-label")?.textContent).toBe("Test language label");
+        expect(composeCampaign).not.toHaveBeenCalled();
+        click(".kcq-title-screen__campaign");
+        expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test Quest");
+        click(".kcq-encounter-picker .kcq-combat-header__settings");
+        expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings select")?.value).toBe("test");
+        document.querySelector<HTMLButtonElement>(".kcq-battle-settings__overlay button")!.click();
+        click(".kcq-encounter-picker .kcq-targeting__back");
+        expect(document.querySelector<HTMLSelectElement>(".kcq-title-screen__language select")?.value).toBe("test");
+        expect(document.querySelector(".kcq-title-screen h1")?.textContent).toBe("Test Quest");
+        expect(prepareBattle).not.toHaveBeenCalled();
+    });
+
     it("selects the campaign library without starting a battle and composes anew after returning to title", () => {
         const { composeCampaign, prepareBattle, compositions } = mount();
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();

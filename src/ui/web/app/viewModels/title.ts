@@ -7,7 +7,7 @@ export interface TitleViewModel {
     version: string;
     credit: string;
     copyright: string;
-    settingsLabel: string;
+    languageLabel: string;
     campaigns: readonly { id: KCQCampaign; name: string; description: string }[];
 }
 
@@ -20,7 +20,7 @@ export function createTitleViewModel(
         version: presentation.ui("version.name", { version: release }),
         credit: presentation.ui("title.credit"),
         copyright: presentation.ui("title.copyright"),
-        settingsLabel: presentation.ui("battleOverview.settings"),
+        languageLabel: presentation.ui("battleSettings.language"),
         campaigns: campaigns.map(id => ({
             id, name: presentation.campaign(id), description: presentation.campaign(id, "desc"),
         })),

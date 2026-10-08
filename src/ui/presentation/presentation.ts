@@ -13,6 +13,7 @@ export type StringTable = Record<string, string>;
 export type UiLabel =
     | "battleSettings.resume"
     | "battleSettings.language"
+    | "language.en"
     | "battleSettings.retry"
     | "battleResult.victory"
     | "battleResult.defeat"

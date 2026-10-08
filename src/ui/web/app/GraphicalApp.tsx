@@ -32,7 +32,7 @@ export interface GraphicalAppProps {
 
 export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     // English is the only bundled language; keep selection separate from battle sessions.
-    const options = props.languages?.length ? props.languages : [{ id: "en", label: "English", presentation: props.presentation }];
+    const options = props.languages?.length ? props.languages : [{ id: "en", label: props.presentation.ui("language.en"), presentation: props.presentation }];
     const [language, setLanguage] = createSignal(options[0]!);
     const selectLanguage = (id: string): void => {
         const option = options.find(option => option.id === id);
@@ -83,7 +83,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
             <Switch>
                 <Match when={controller.screen().screen === "title"}>
                     <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release)}
-                        onSettings={openSettings}
+                        language={languageSelection}
                         onSelect={campaign => navigate(() => controller.selectCampaign(campaign))} />
                 </Match>
                 <Match when={controller.screen().screen === "picker"}>

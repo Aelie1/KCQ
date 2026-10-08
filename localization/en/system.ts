@@ -3,7 +3,7 @@ import { StringTable } from "../../src/ui/presentation/presentation";
 
 export const systemEnglishStrings: StringTable = {
     "campaign.skunk.name": "Latex Skunk Attacks!",
-    "campaign.skunk.desc": "...",
+    "campaign.skunk.desc": "Random people are disappearing, to turn up captured in seamless rubber skunk suits, and spraying down other people with latex! Find out what the cause of all this is!",
 
     "phase.player.name": "Player",
     "phase.enemy.name": "Enemy",
@@ -30,6 +30,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.battleOverview.settings": "Settings",
     "ui.battleSettings.resume": "Resume",
     "ui.battleSettings.language": "Language",
+    "ui.language.en": "English",
     "ui.battleSettings.retry": "Retry Battle",
     "ui.battleResult.summary": "{rounds} Rounds · {actions} Actions",
     "ui.battleResult.bossHp": "{percent}% Boss HP Remaining",

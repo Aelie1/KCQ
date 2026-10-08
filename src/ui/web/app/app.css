@@ -3206,57 +3206,59 @@ button {
     grid-template-columns: 1fr;
 }
 
-/* The title uses the existing canvas and card tokens with a quieter, spacious layout. */
-.kcq-title-screen > .kcq-screen-layout__header {
-    padding-top: 24px;
-}
-
-.kcq-title-screen .kcq-encounter-header {
-    min-height: 104px;
-    height: auto;
-    padding: 20px 16px;
-    border-color: var(--kcq-structure-border);
-}
-
-.kcq-title-screen .kcq-encounter-header__title {
-    font-size: 30px;
+/* Title screen: Figma 224:832, inside the existing 366px canvas and 12px shell. */
+.kcq-title-screen__title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 300px;
+    margin: 0;
+    color: var(--kcq-text-primary);
+    font-size: 64px;
+    font-weight: 700;
     line-height: 1.2;
-    white-space: normal;
+    text-align: center;
+    overflow-wrap: anywhere;
 }
 
 .kcq-title-screen__campaigns {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    padding-top: 24px;
 }
 
 .kcq-title-screen__campaigns h2 {
-    margin: 0 4px 4px;
-    color: var(--kcq-text-secondary);
-    font-size: 18px;
-    font-weight: 600;
+    margin: 0;
+    color: var(--kcq-text-primary);
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 24px;
+    text-transform: uppercase;
+    opacity: 0.62;
 }
 
 .kcq-title-screen__campaign {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 20px 16px;
+    align-items: flex-start;
+    gap: 5px;
+    padding: 8px 7px;
     text-align: left;
     cursor: pointer;
 }
 
 .kcq-title-screen__campaign strong {
-    color: var(--kcq-accent-primary);
-    font-size: 22px;
-    line-height: 1.3;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 24px;
+    overflow-wrap: anywhere;
 }
 
-.kcq-title-screen__campaign span {
-    color: var(--kcq-text-secondary);
-    font-size: 16px;
-    line-height: 1.5;
+.kcq-title-screen__campaign > span {
+    width: 100%;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 19px;
     overflow-wrap: anywhere;
 }
 
@@ -3265,21 +3267,78 @@ button {
     border-color: var(--kcq-structure-border-strong);
 }
 
-.kcq-title-screen__campaign:focus-visible {
+.kcq-title-screen__campaign:focus-visible,
+.kcq-title-screen__language select:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: -3px;
 }
 
+.kcq-title-screen__bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.kcq-title-screen__language {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: var(--kcq-text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 19px;
+}
+
+.kcq-title-screen__language-label {
+    text-transform: uppercase;
+    opacity: 0.62;
+}
+
+.kcq-title-screen__language-control {
+    position: relative;
+    min-width: 0;
+}
+
+.kcq-title-screen__language select {
+    display: block;
+    max-width: 100%;
+    min-width: 101px;
+    padding: 3px 30px 3px 10px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 0;
+    background: var(--kcq-surface-background);
+    color: inherit;
+    font: inherit;
+    appearance: none;
+    cursor: pointer;
+}
+
+.kcq-title-screen__language-arrow {
+    position: absolute;
+    top: 4px;
+    right: 10px;
+    pointer-events: none;
+}
+
 .kcq-title-screen__credits {
-    padding: 12px 0;
-    color: var(--kcq-text-muted);
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--kcq-text-primary);
     font-size: 14px;
-    line-height: 1.5;
-    text-align: center;
+    font-weight: 700;
+    line-height: 17px;
+    opacity: 0.62;
 }
 
 .kcq-title-screen__credits p {
-    margin: 4px 0;
+    margin: 0;
+}
+
+.kcq-title-screen__version {
+    text-align: right;
 }
 
 .kcq-encounter-picker .kcq-screen-actions {

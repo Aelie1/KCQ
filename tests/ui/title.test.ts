@@ -33,6 +33,11 @@ describe("title and campaign presentation", () => {
         }
         expect(html).toContain("kcq-title-screen");
         expect(html).not.toContain("kcq-encounter-picker");
+        expect(html).not.toContain("kcq-encounter-header");
+        expect(html).not.toContain("kcq-combat-header__settings");
+        expect(html).toContain(presentation.ui("battleSettings.language"));
+        expect(html).toContain(presentation.ui("language.en"));
+        expect(html).toContain("<select");
         expect(composeCampaign).not.toHaveBeenCalled();
         expect(prepareBattle).not.toHaveBeenCalled();
     });
@@ -41,7 +46,10 @@ describe("title and campaign presentation", () => {
         const model = createTitleViewModel(["skunk", "skunk"], new Presentation({
             ...getStringTable("en"), "campaign.skunk.name": "Test campaign", "campaign.skunk.desc": "Test description",
         }), "release");
-        const html = renderToString(() => createComponent(TitleScreen, { model, onSelect: vi.fn(), onSettings: vi.fn() }));
+        const html = renderToString(() => createComponent(TitleScreen, {
+            model, onSelect: vi.fn(),
+            language: { value: "en", options: [{ id: "en", label: presentation.ui("language.en"), presentation }], onChange: vi.fn() },
+        }));
         expect(html.match(/Test campaign/g)).toHaveLength(2);
         expect(html.match(/Test description/g)).toHaveLength(2);
         expect(createTitleViewModel([], presentation, "release").campaigns).toEqual([]);

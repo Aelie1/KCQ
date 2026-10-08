@@ -9,10 +9,9 @@ import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import type { LanguageOption } from "../../src/ui/web/app/language";
 import { stockStrings } from "../helpers/stockStrings";
 
-const screens = ["title", "picker", "details", "difficulty"] as const;
+const screens = ["picker", "details", "difficulty"] as const;
 type SelectionScreen = typeof screens[number];
 const selectors = {
-    title: ".kcq-title-screen",
     picker: ".kcq-encounter-picker",
     details: ".kcq-encounter-details",
     difficulty: ".kcq-difficulty-select",
@@ -62,8 +61,8 @@ function mountSelection(screen: SelectionScreen) {
     const root = document.createElement("div");
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", composeCampaign: () => ({ engine, presentation, languages }), presentation, languages, prepareBattle }), root);
-    if (screen !== "title") document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
-    if (screen !== "title" && screen !== "picker") selectEncounter();
+    document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+    if (screen !== "picker") selectEncounter();
     if (screen === "difficulty") {
         button("Choose Difficulty").click();
         button("Mythic").click();
@@ -142,7 +141,7 @@ describe("encounter screen settings", () => {
         changeLanguage();
         expect(document.querySelector<HTMLButtonElement>(".kcq-combat-header__settings")?.getAttribute("aria-label"))
             .toBe("Test settings");
-        expect(panel.querySelector("h1")?.textContent).toBe(screen === "title" || screen === "picker" ? "Test Quest" : "Test Plains");
+        expect(panel.querySelector("h1")?.textContent).toBe(screen === "picker" ? "Test Quest" : "Test Plains");
         button("Continue test").click();
         expect(document.querySelector(selectors[screen])).toBe(panel);
         openSettings();
@@ -154,8 +153,7 @@ describe("encounter screen settings", () => {
     it.each(screens)("blocks background navigation and battle setup on %s while settings is open", screen => {
         const { panel, prepareBattle } = mountSelection(screen);
         openSettings();
-        if (screen === "title") document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
-        else if (screen === "picker") selectEncounter();
+        if (screen === "picker") selectEncounter();
         else if (screen === "details") button("Choose Difficulty").click();
         else {
             button("Standard").click();
