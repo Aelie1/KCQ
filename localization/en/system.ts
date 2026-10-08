@@ -160,7 +160,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.targeting.use": "Use {move}",
     "ui.targeting.value": "{current} / {max}",
     "ui.title.name": "Ko-chan’s Quest",
-    "ui.title.campaigns": "Camapigns",
+    "ui.title.campaigns": "Campaigns",
     "ui.title.credit": "Game by Aelie",
     "ui.title.copyright": "© 2026 Aelie",
     "ui.version.name": "{version}",

@@ -1,4 +1,4 @@
-import { KCQCampaign } from "../../content";
+import type { KCQCampaign } from "../../content";
 import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
 
 interface StringKey {
@@ -176,7 +176,7 @@ export class Presentation {
     }
 
     campaign(campaign: KCQCampaign, variant: "name" | "desc" = "name"): string {
-        return this.translate(this.definitionKey("campaign", campaign, "name"));
+        return this.translate(this.definitionKey("campaign", campaign, variant));
     }
 
     /** Definition identity without the runtime numbering used in combat. */
