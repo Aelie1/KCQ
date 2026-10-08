@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { baseCatalog } from "../../src/content/base";
 import { ko } from "../../src/content/characters/ko";
-import { contentCatalog } from "../../src/content/content";
 import { forest_3, outside, plains_1, plains_2, plains_3, tower_1, tower_2, tower_3 } from "../../src/content/skunk/encounters";
 import { fairy } from "../../src/content/skunk/fairy";
 import { trapPuddle } from "../../src/content/skunk/puddles";
@@ -136,7 +136,7 @@ describe("encounters", () => {
     });
 
     it("preserves definition ids when encounter setup renames runtime enemies", () => {
-        const engine = createCatalogEngine(contentCatalog, 1);
+        const engine = createCatalogEngine(baseCatalog, 1);
         engine.loadCharacter(ko.id);
 
         engine.loadEncounter(tower_1.id);
@@ -155,7 +155,7 @@ describe("encounters", () => {
     ] as const)(
         "applies %s setup modifiers to renamed enemies and the player before actions are published",
         (_label, encounter, queenId, enemyBuff, queenModifier, skunketteHit, collar, playerModifier, ambushed) => {
-            const engine = createCatalogEngine(contentCatalog, 7);
+            const engine = createCatalogEngine(baseCatalog, 7);
             engine.loadCharacter(ko.id);
             engine.loadEncounter(encounter.id);
             const state = engine.getGameState();
@@ -288,7 +288,7 @@ describe("encounters", () => {
     });
 
     it("loads the authored catalogue when it is explicitly injected", () => {
-        const engine = createCatalogEngine(contentCatalog, 8224);
+        const engine = createCatalogEngine(baseCatalog, 8224);
         engine.loadCharacter(ko.id);
 
         const events = engine.loadEncounter(plains_1.id);
@@ -305,7 +305,7 @@ describe("encounters", () => {
     });
 
     it("catalogues and loads plains_2 with Skunks, puddles, and valid intentions", () => {
-        expect(contentCatalog.encounters).toContain(plains_2);
+        expect(baseCatalog.encounters).toContain(plains_2);
         expect(plains_2.id).toBe("plains_2");
         expect(plains_2.enemies).toEqual([
             { defId: skunkette.id }, { defId: skunkette.id },
@@ -313,7 +313,7 @@ describe("encounters", () => {
         ]);
         expect(plains_2.traps).toEqual([{ definition: trapPuddle, amount: 50 }]);
 
-        const engine = createCatalogEngine(contentCatalog, 8224);
+        const engine = createCatalogEngine(baseCatalog, 8224);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter(plains_2.id);
         const state = engine.getGameState();

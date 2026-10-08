@@ -1,14 +1,9 @@
 import { StringTable } from "../../src/ui/presentation/presentation";
 
-export const characterStrings: StringTable = {
+export const koEnglishStrings: StringTable = {
     "entity.ko.name": "Ko-chan",
     "entity.ko.desc": "Student council president.  Self-proclaimed fairy.",
-    "entity.matsuko.name": "Matsuko",
-    "entity.matsuko.desc": "Student council vice-president.  Young Mistress of the Flame Clan.",
-    "entity.hinari.name": "Hinari",
-    "entity.hinari.desc": "Student council treasurer.  Adept of the Power of Space.",
 
-    // Ko
     "passive.thousandRestraintsBody.name": "Thousand Restraints Body",
     "passive.thousandRestraintsBody.desc": "...",
 
@@ -72,8 +67,45 @@ export const characterStrings: StringTable = {
     "buff.defenseBarrier.desc": "...",
     "buff.servitude.name": "Servitude",
     "buff.servitude.desc": "...",
+};
 
-    // Hinari
+export const matsukoEnglishStrings: StringTable = {
+    "entity.matsuko.name": "Matsuko",
+    "entity.matsuko.desc": "Student council vice-president.  Young Mistress of the Flame Clan.",
+
+    "move.punch.name": "Punch",
+    "move.punch.desc": "...",
+    "move.kick.name": "Kick",
+    "move.kick.desc": "...",
+    "move.whiteFlame.name": "White Flame",
+    "move.whiteFlame.desc": "...",
+    "move.fairyWhiteFlame.name": "Fairy White Flame",
+    "move.fairyWhiteFlame.desc": "...",
+    "move.phoenixKick.name": "Phoenix Kick",
+    "move.phoenixKick.desc": "...",
+    "move.fairyPhoenixKick.name": "Fairy Phoenix Kick",
+    "move.fairyPhoenixKick.desc": "...",
+    "move.immolation.name": "Immolation",
+    "move.immolation.desc": "...",
+    "move.obey.name": "[Power of Compulsion: Obey]",
+    "move.obey.desc": "...",
+    "move.stop.name": "[Power of Compulsion: Stop]",
+    "move.stop.desc": "...",
+    "move.attackMe.name": "[Power of Compulsion: Taunt]",
+    "move.attackMe.desc": "...",
+
+    "buff.burnout.name": "Burnout",
+    "buff.burnout.desc": "...",
+    "buff.defenseBarrier.name": "Defense Barrier",
+    "buff.defenseBarrier.desc": "...",
+    "buff.servitude.name": "Servitude",
+    "buff.servitude.desc": "...",
+};
+
+export const hinariEnglishStrings: StringTable = {
+    "entity.hinari.name": "Hinari",
+    "entity.hinari.desc": "Student council treasurer.  Adept of the Power of Space.",
+
     "passive.subspaceMovement.name": "Subspace Movement",
     "passive.subspaceMovement.desc": "...",
     "move.rockfall.name": "Rockfall",
@@ -94,5 +126,4 @@ export const characterStrings: StringTable = {
 
     "data.subspace.name": "Subspace",
     "data.subspace.short": "Sub",
-
 };

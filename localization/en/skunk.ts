@@ -1,6 +1,6 @@
 import { StringTable } from "../../src/ui/presentation/presentation";
 
-export const skunkStrings: StringTable = {
+export const skunkEnglishStrings: StringTable = {
     "entity.skunkette.generic": "Skunkette",
     "entity.skunk.generic": "Skunk",
     "entity.fairy.generic": "Fairy",

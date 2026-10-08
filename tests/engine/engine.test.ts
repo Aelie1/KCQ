@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
+import { baseCatalog } from "../../src/content/base";
 import { ko } from "../../src/content/characters/ko";
-import { contentCatalog } from "../../src/content/content";
 import { plains_1 } from "../../src/content/skunk/encounters";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import type { StatusDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { stunned } from "../../src/engine/protected/statuses";
 import type { Engine, PlayerAction } from "../../src/engine/public/types";
-import { resolvedEvents } from "../helpers/events";
 import { actionView } from "../helpers/actionView";
+import { resolvedEvents } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeEncounterDef, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 const AUTHORED_HIT_SEED = 3;
 
@@ -25,7 +25,7 @@ function setupAuthoredCombat(): Engine {
 describe("turn phases and enemy intentions", () => {
     it("replays an authored encounter identically despite aggressive public queries", () => {
         const run = (queryBetweenActions: boolean) => {
-            const engine = createCatalogEngine(contentCatalog, 123456);
+            const engine = createCatalogEngine(baseCatalog, 123456);
             engine.loadCharacter(ko.id);
             const loadEvents = engine.loadEncounter(plains_1.id);
             const snapshots = [engine.getGameState()];

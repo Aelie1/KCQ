@@ -1,7 +1,7 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
+import { baseCatalog } from "../../src/content/base";
 import { ko } from "../../src/content/characters/ko";
-import { contentCatalog } from "../../src/content/content";
 import { latexArms } from "../../src/content/skunk/latex";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/mechanics";
@@ -714,7 +714,7 @@ describe("console formatting", () => {
     });
 
     it("automatically ends the turn after the last available character acts", async () => {
-        const engine = createCatalogEngine(contentCatalog, 8224);
+        const engine = createCatalogEngine(baseCatalog, 8224);
         engine.loadCharacter(ko.id);
         const events = engine.loadEncounter("plains_1");
         const rendered = await runScriptedConsole(engine, ["1", "1", "1", "3"], events);
@@ -1126,7 +1126,7 @@ describe("console formatting", () => {
     });
 
     it("replaces stored bindings when a newer encounter event is received", async () => {
-        const engine = createCatalogEngine(contentCatalog, 8224);
+        const engine = createCatalogEngine(baseCatalog, 8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const events: GameEvent[] = [
@@ -1142,7 +1142,7 @@ describe("console formatting", () => {
 
     it("shows a fully acted character without assigning it a menu number", async () => {
         const ally = makeCharacterDef("ally");
-        const engine = createTestEngine(contentCatalog.encounters, [ko, ally], 8224, contentCatalog);
+        const engine = createTestEngine(baseCatalog.encounters, [ko, ally], 8224, baseCatalog);
         engine.loadCharacter(ko.id);
         engine.loadCharacter(ally.id);
         const events = engine.loadEncounter("plains_1");
@@ -1214,7 +1214,7 @@ describe("console formatting", () => {
     });
 
     it("stays alive while undersized and resumes normal rendering after resize", async () => {
-        const engine = createCatalogEngine(contentCatalog, 8224);
+        const engine = createCatalogEngine(baseCatalog, 8224);
         engine.loadCharacter(ko.id);
         engine.loadEncounter("plains_1");
         const input = new PassThrough();

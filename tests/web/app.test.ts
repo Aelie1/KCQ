@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { contentCatalog } from "../../src/content/content";
+import { baseCatalog } from "../../src/content/base";
 import { createEngine } from "../../src/engine/public/engine";
 import type { BattleUI } from "../../src/ui/console/controller";
 import {
@@ -25,13 +25,13 @@ describe("web battle application", () => {
     });
 
     it("loads the full character list in order for every selectable encounter", () => {
-        for (const encounter of contentCatalog.encounters) {
+        for (const encounter of baseCatalog.encounters) {
             const engine = createEngine();
             const battle = createBattle(engine, encounter.id);
             const view = battle.engine.getGameState();
 
             expect(view.characters.map((character) => character.id)).toEqual(
-                contentCatalog.characters.map((character) => character.id),
+                baseCatalog.characters.map((character) => character.id),
             );
             expect(view.encounter?.id).toBe(encounter.id);
             expect(battle.encounterId).toBe(encounter.id);
@@ -42,7 +42,7 @@ describe("web battle application", () => {
         const engine = createEngine();
         engine.setDifficulty("mythic");
 
-        const battle = createBattle(engine, contentCatalog.encounters[0].id);
+        const battle = createBattle(engine, baseCatalog.encounters[0].id);
 
         expect(battle.engine.getGameState().difficulty).toEqual({
             id: "mythic",
@@ -55,7 +55,7 @@ describe("web battle application", () => {
         const engine = createEngine();
         const setDifficulty = vi.spyOn(engine, "setDifficulty");
 
-        const battle = createBattle(engine, contentCatalog.encounters[0].id, "extreme");
+        const battle = createBattle(engine, baseCatalog.encounters[0].id, "extreme");
 
         expect(setDifficulty).toHaveBeenCalledOnce();
         expect(setDifficulty).toHaveBeenCalledWith("extreme");
@@ -78,7 +78,7 @@ describe("web battle application", () => {
         };
         const engine = createEngine();
 
-        await expect(startBattle(engine, contentCatalog.encounters[0].id, ui)).resolves.toBeUndefined();
+        await expect(startBattle(engine, baseCatalog.encounters[0].id, ui)).resolves.toBeUndefined();
         expect(close).toHaveBeenCalledOnce();
     });
 

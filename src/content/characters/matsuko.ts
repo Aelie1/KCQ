@@ -3,7 +3,7 @@ import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicDamageEffect, basicPlayerAccuracy } from "../../engine/protected/mechanics";
 import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
-import { iBuff, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
+import { ContentCatalogFragment, iBuff, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
 import { removeEmpowerment } from "./ko";
 
@@ -302,4 +302,9 @@ export const matsuko: CharacterDef = {
     moves: [whiteFlame, phoenixKick, immolation, obey, stop, attackMe],
     empoweredMoves: [fairyWhiteFlame, fairyPhoenixKick],
     passives: []
+};
+
+export const matsukoCatalog: ContentCatalogFragment = {
+    characters: [matsuko],
+    moves: [whiteFlame, phoenixKick, immolation, obey, stop, attackMe, fairyWhiteFlame, fairyPhoenixKick, punch, kick],
 };

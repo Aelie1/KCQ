@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import { baseCatalog } from "../../src/content/base";
 import { ko } from "../../src/content/characters/ko";
-import { contentCatalog } from "../../src/content/content";
 import { createCustomEngine as createCatalogEngine } from "../../src/engine/protected/engine";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { incapacitated } from "../../src/engine/protected/statuses";
@@ -76,7 +76,7 @@ describe("shared battle controller", () => {
         }
     });
     it("presents numbered choices through a UI adapter and validates its response", async () => {
-        const engine = createCatalogEngine(contentCatalog, 8224);
+        const engine = createCatalogEngine(baseCatalog, 8224);
         const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const requests: BattleChoiceRequest[] = [];
         const answers = [99, 3];
@@ -114,7 +114,7 @@ describe("shared battle controller", () => {
     });
 
     it("allows a UI adapter to quit from any active menu", async () => {
-        const engine = createCatalogEngine(contentCatalog, 8224);
+        const engine = createCatalogEngine(baseCatalog, 8224);
         const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const requests: BattleChoiceRequest[] = [];
         const close = vi.fn();
@@ -452,7 +452,7 @@ describe("shared battle controller", () => {
     });
 
     it("notifies the observer when an ongoing battle is quit", async () => {
-        const engine = createCatalogEngine(contentCatalog, 8224);
+        const engine = createCatalogEngine(baseCatalog, 8224);
         const events = [engine.loadCharacter(ko.id), engine.loadEncounter("plains_1")];
         const onQuit = vi.fn();
 

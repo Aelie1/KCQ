@@ -1,7 +1,7 @@
 import { BindingDef, CharacterDef, EMPOWERMENT_BUFF, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicDamageEffect, basicPlayerAccuracy } from "../../engine/protected/mechanics";
-import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
+import { ContentCatalogFragment, iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 
 const TELEKINESIS_DAMAGE = 30;
 
@@ -349,4 +349,13 @@ export const ko: CharacterDef = {
     moves: [telekinesis, starlightBindings, reflect, fairyTransformation, powerOfDenial],
     empoweredMoves: [fairyTelekinesis, fairyStarlightBindings, fairyReflect, fairyEmpowerment],
     passives: [thousandRestraintsBody]
+};
+
+export const koCatalog: ContentCatalogFragment = {
+    characters: [ko],
+    moves: [
+        telekinesis, starlightBindings, reflect, fairyTransformation, powerOfDenial,
+        fairyTelekinesis, fairyStarlightBindings, fairyReflect, fairyEmpowerment,
+    ],
+    passives: [thousandRestraintsBody],
 };

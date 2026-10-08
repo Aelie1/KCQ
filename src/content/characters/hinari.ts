@@ -2,7 +2,7 @@ import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/prot
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicDamageEffect, basicPlayerAccuracy, getEscapePotency } from "../../engine/protected/mechanics";
 import { hobbled } from "../../engine/protected/statuses";
-import { iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
+import { ContentCatalogFragment, iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
 import { removeEmpowerment } from "./ko";
 
@@ -327,4 +327,10 @@ export const hinari: CharacterDef = {
     empoweredMoves: [fairyRockfall],
     passives: [subspaceMovement],
     data: { "subspace": 0, "subspaceMax": SUBSPACE_MAX }
+};
+
+export const hinariCatalog: ContentCatalogFragment = {
+    characters: [hinari],
+    moves: [rockfall, store, brace, release, fairyRockfall],
+    passives: [subspaceMovement],
 };

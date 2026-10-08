@@ -16,6 +16,8 @@ export interface Engine {
     executeAction(action: PlayerAction): ActionResult;
 }
 
+export type CatalogId = string;
+
 /*******************************************************
  * State
  *******************************************************/
@@ -54,21 +56,20 @@ export interface Difficulty {
     enemyModifiers: ModifierSet;
 }
 
+export type DifficultyId = "casual" | "standard" | "veteran" | "extreme" | "mythic";
+
 export type BattleState = "ongoing" | "defeat" | "victory";
 
 export type Phase = "player" | "enemy";
 
 export type EntityId = string;
 
-export type DefinitionId = string;
-
 export type EntitySide = "either" | "player" | "enemy" | "none";
+
+export type DefinitionId = string;
 
 export type PassiveId = string;
 
-export type DifficultyId = "casual" | "standard" | "veteran" | "extreme" | "mythic";
-
-export type EnemyRank = "minion" | "enemy" | "boss";
 
 /*******************************************************
  * Characters
@@ -114,6 +115,8 @@ export interface TargetInfo {
     band: HitBand;
     effects: Effect[];
 }
+
+export type EnemyRank = "minion" | "enemy" | "boss";
 
 /*******************************************************
  * Buffs

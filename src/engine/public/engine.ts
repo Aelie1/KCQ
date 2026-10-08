@@ -1,8 +1,7 @@
-import { contentCatalog } from "../../content/content";
 import { GameEngine } from "../private/engine";
+import { ContentCatalog } from "../protected/types";
 import { Engine } from "./types";
 
-
-export function createEngine(seed?: number): Engine {
-    return new GameEngine(contentCatalog, seed);
+export function createGameEngine(catalog: ContentCatalog, seed?: number): Engine {
+    return new GameEngine(catalog, seed);
 }
