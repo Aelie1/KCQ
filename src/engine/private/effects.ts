@@ -131,7 +131,7 @@ export class GameEffects {
                     }
                     break;
                 case "data":
-                    this.setData(effect.target, effect.name, effect.amount);
+                    this.setData(effect.target, effect.name, effect.amount, effect.visible);
             }
         }
     };
@@ -552,7 +552,16 @@ export class GameEffects {
         }
     }
 
-    private setData(target: iEntity, name: string, amount: number) {
-        target.data[name] = Math.max(0, (target.data[name] ?? 0) + amount);
+    private setData(target: iEntity, name: string, amount: number, visible: boolean) {
+        const origAmount = target.data[name] ?? 0;
+        target.data[name] = Math.max(0, origAmount + amount);
+        if (visible) {
+            this.addEvent({
+                type: "dataChanged",
+                target: target.id,
+                name: name,
+                amount: target.data[name] - origAmount
+            });
+        }
     }
 };

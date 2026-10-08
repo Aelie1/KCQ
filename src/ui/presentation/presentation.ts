@@ -499,6 +499,16 @@ export class Presentation {
                     },
                 };
 
+            case "dataChanged":
+                return {
+                    id: `event.${event.type}.text`,
+                    args: {
+                        target: this.entityKey(event.target),
+                        name: this.data(event.name),
+                        amount: event.amount,
+                    },
+                };
+
             default: {
                 const exhaustive: never = event;
                 return exhaustive;

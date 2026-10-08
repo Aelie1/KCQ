@@ -510,7 +510,8 @@ export type LeafEvent =
     | TrapEvent
     | RetargetEvent
     | CancelEvent
-    | WeakenEvent;
+    | WeakenEvent
+    | DataEvent;
 
 export interface MoveEvent {
     type: "useMove";
@@ -623,6 +624,13 @@ export interface CancelEvent {
 export interface WeakenEvent {
     type: "intentionWeakened";
     target: EntityId;
+}
+
+export interface DataEvent {
+    type: "dataChanged";
+    target: EntityId;
+    name: string;
+    amount: number;
 }
 
 /*******************************************************

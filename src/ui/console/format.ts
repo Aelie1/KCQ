@@ -265,6 +265,8 @@ function formatEventLines(event: GameEvent | LeafEvent): string[] {
             return [`${event.target}'s action was weakened.`];
         case "targetChanged":
             return [`${event.target}'s action's target was changed to ${event.destination}.`];
+        case "dataChanged":
+            return [`${event.target}'s ${event.name} changed by ${event.amount}.`];
         case "useEscape":
         case "changeStance":
             return [];
