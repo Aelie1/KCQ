@@ -43,8 +43,9 @@ export interface TrapOutcome {
     triggers: { actor: EntityId; amount: number }[];
 }
 export interface ResourceOutcome {
-    kind: "resource"; target: EntityId; resource: "subspace";
-    initial: number; final: number; max?: number;
+    kind: "resource"; target: EntityId; resource: string;
+    /** Sum of emitted applied deltas; silent changes can make this differ from final - initial. */
+    change: number; initial?: number; final?: number; max?: number;
 }
 export type LogOutcome = ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
     | { kind: "enemy"; target: EntityId; operation: "spawned" | "defeated" }
@@ -150,6 +151,20 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
                 if (!after) group.participants.find(({ target }) => target === effect.target)!.final = { present: effect.type !== "buffRemoved" };
                 break;
             }
+            case "dataChanged": {
+                let group = outcomes.find((outcome): outcome is ResourceOutcome => outcome.kind === "resource"
+                    && outcome.target === effect.target && outcome.resource === effect.name);
+                if (!group) {
+                    const initial = before?.characters.find(({ id }) => id === effect.target)?.data;
+                    const final = after?.characters.find(({ id }) => id === effect.target)?.data;
+                    group = { kind: "resource", target: effect.target, resource: effect.name, change: 0,
+                        initial: initial?.[effect.name], final: final?.[effect.name],
+                        max: effect.name === "subspace" ? (final ?? initial)?.subspaceMax : undefined };
+                    outcomes.push(group);
+                }
+                group.change += effect.amount;
+                break;
+            }
             case "stanceSet": {
                 let group = outcomes.find((outcome): outcome is StanceOutcome => outcome.kind === "stance" && outcome.actor === effect.actor);
                 if (group) group.final = effect.stance;
@@ -207,18 +222,6 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
         }
         if (outcome.kind === "trap" && outcome.initial !== undefined && outcome.final !== undefined) {
             outcome.change = outcome.final - outcome.initial;
-        }
-    }
-    // Subspace is the current player resource. Data effects have no public leaf event;
-    // compare recorded endpoints only, omitting internal data such as subspaceBinding.
-    if (before && after) {
-        for (const character of after.characters) {
-            const initial = entity(before, character.id);
-            const value = initial && "data" in initial ? initial.data.subspace : undefined;
-            if (value !== undefined && character.data.subspace !== undefined && value !== character.data.subspace) {
-                outcomes.push({ kind: "resource", target: character.id, resource: "subspace",
-                    initial: value, final: character.data.subspace, max: character.data.subspaceMax });
-            }
         }
     }
     return outcomes.filter((outcome) => outcome.kind !== "stance" || outcome.initial !== outcome.final);

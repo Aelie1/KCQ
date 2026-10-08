@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Binding, Buff, Character, Enemy, EventFrame, GameEvent, GameState, LeafEvent, MoveEvent, StanceId } from "../../src/engine/public/types";
+import type { Binding, Buff, Character, DataEvent, Enemy, EventFrame, GameEvent, GameState, LeafEvent, MoveEvent, StanceId } from "../../src/engine/public/types";
 import { createGameLogEntries, type BuffOutcome, type DamageOutcome } from "../../src/ui/presentation/gameLog";
 import { isEnemy } from "../../src/engine/protected/helpers";
 import { skunkette } from "../../src/content/skunk/skunkette";
@@ -16,6 +16,7 @@ const state = (characters: Character[] = [character("ko")], enemies: Enemy[] = [
     traps: [], encounter: null, difficulty: { id: "standard", playerModifiers: {}, enemyModifiers: {} },
 });
 const damage = (target: string, amount: number): LeafEvent => ({ type: "enemyDamaged", target, amount });
+const dataChange = (target: string, name: string, amount: number): DataEvent => ({ type: "dataChanged", target, name, amount });
 const move = (targets: MoveEvent["targets"], effects: LeafEvent[] = [], id = "telekinesis"): MoveEvent => ({
     type: "useMove", actor: "ko", move: id, targets, effects,
 });
@@ -282,11 +283,107 @@ describe("Game Log presentation aggregation", () => {
         ]);
     });
 
-    it("reports Subspace from recorded frames and omits internal bookkeeping data", () => {
+    it("reports a single public data change with unknown endpoints for bare events", () => {
+        expect(outcomes([move([], [dataChange("hinari", "subspace", -25)], "release")])).toEqual([
+            { kind: "resource", target: "hinari", resource: "subspace", change: -25,
+                initial: undefined, final: undefined, max: undefined },
+        ]);
+    });
+
+    it("combines resource changes from target effects and action effects", () => {
+        const event = move([
+            { target: "hinari", result: "none", effects: [dataChange("hinari", "subspace", 10)] },
+            { target: "hinari", result: "none", effects: [dataChange("hinari", "subspace", -4)] },
+        ], [dataChange("hinari", "subspace", 2)]);
+        expect(outcomes([event])).toEqual([
+            { kind: "resource", target: "hinari", resource: "subspace", change: 8 },
+        ]);
+    });
+
+    it("keeps different resources and targets independent in first-occurrence order", () => {
+        expect(outcomes([move([], [
+            dataChange("hinari", "subspace", -5), dataChange("hinari", "energy", 3),
+            dataChange("ko", "subspace", 4), dataChange("hinari", "energy", -1),
+            dataChange("skunkette1", "energy", 2),
+        ])])).toEqual([
+            { kind: "resource", target: "hinari", resource: "subspace", change: -5 },
+            { kind: "resource", target: "hinari", resource: "energy", change: 2 },
+            { kind: "resource", target: "ko", resource: "subspace", change: 4 },
+            { kind: "resource", target: "skunkette1", resource: "energy", change: 2 },
+        ]);
+    });
+
+    it.each([
+        [true, true], [true, false], [false, true], [false, false],
+    ])("reads only recorded resource endpoints (before: %s, after: %s)", (hasBefore, hasAfter) => {
+        const initial = state([character("hinari")]); initial.characters[0].data = { subspace: 50, subspaceMax: 100 };
+        const after = structuredClone(initial); after.characters[0].data.subspace = 25;
+        const event = move([], [dataChange("hinari", "subspace", -25)], "release");
+        expect(outcomes(hasAfter ? [{ event, state: after }] : [event], hasBefore ? initial : undefined)).toEqual([
+            { kind: "resource", target: "hinari", resource: "subspace", change: -25,
+                initial: hasBefore ? 50 : undefined, final: hasAfter ? 25 : undefined,
+                max: hasBefore || hasAfter ? 100 : undefined },
+        ]);
+    });
+
+    it("does not invent zero for resource keys absent from snapshots", () => {
+        expect(outcomes([{ event: move([], [dataChange("ko", "energy", 5)]), state: state() }], state())).toEqual([
+            { kind: "resource", target: "ko", resource: "energy", change: 5, initial: undefined, final: undefined },
+        ]);
+    });
+
+    it("uses engine-applied deltas after clamping and retains a zero net change", () => {
+        const spend = makeBehavioralMove("spend", "none", {
+            targetSide: "none", targets: 0, accuracy: undefined,
+            resolve: (_state, actor) => [
+                { type: "data", target: actor, name: "subspace", amount: 5, visible: true },
+                { type: "data", target: actor, name: "subspace", amount: -20, visible: true },
+                { type: "data", target: actor, name: "subspace", amount: -1, visible: true },
+            ],
+        });
+        const engine = makeBehavioralEngine([makeBehavioralCharacter("hinari", [spend])]);
+        const initial = engine.getGameState();
+        const result = execute(engine, { type: "move", actor: "hinari", move: "spend", targets: [] });
+        expect(result.frames[0].event.effects).toEqual([
+            dataChange("hinari", "subspace", 5), dataChange("hinari", "subspace", -5), dataChange("hinari", "subspace", 0),
+        ]);
+        expect(outcomes(result.frames, initial)).toEqual([
+            { kind: "resource", target: "hinari", resource: "subspace", change: 0, initial: undefined, final: 0 },
+        ]);
+    });
+
+    it("does not report resource or bookkeeping changes without public events", () => {
         const initial = state([character("hinari")]); initial.characters[0].data = { subspace: 50, subspaceMax: 100, subspaceBinding: 0 };
         const after = structuredClone(initial); after.characters[0].data.subspace = 25; after.characters[0].data.subspaceBinding = 2;
-        expect(outcomes([{ event: move([], [], "release"), state: after }], initial)).toEqual([
-            { kind: "resource", target: "hinari", resource: "subspace", initial: 50, final: 25, max: 100 },
+        expect(outcomes([{ event: move([], [], "release"), state: after }], initial)).toEqual([]);
+    });
+
+    it("keeps emitted deltas separate from silent changes to the same resource", () => {
+        const initial = state([character("hinari")]); initial.characters[0].data.subspace = 50;
+        const after = structuredClone(initial); after.characters[0].data.subspace = 20;
+        expect(outcomes([{ event: move([], [dataChange("hinari", "subspace", -25)]), state: after }], initial)).toEqual([
+            { kind: "resource", target: "hinari", resource: "subspace", change: -25, initial: 50, final: 20 },
+        ]);
+    });
+
+    it("never combines resource changes across GameEvent boundaries", () => {
+        const initial = state([character("hinari")]); initial.characters[0].data.subspace = 50;
+        const first = structuredClone(initial); first.characters[0].data.subspace = 40;
+        const last = structuredClone(first); last.characters[0].data.subspace = 35;
+        const log = createGameLogEntries([
+            { event: move([], [dataChange("hinari", "subspace", -10)]), state: first },
+            { event: move([], [dataChange("hinari", "subspace", -5)]), state: last },
+        ], initial);
+        expect(log).toHaveLength(2);
+        expect(log.map(({ outcomes }) => outcomes)).toEqual([
+            [{ kind: "resource", target: "hinari", resource: "subspace", change: -10, initial: 50, final: 40 }],
+            [{ kind: "resource", target: "hinari", resource: "subspace", change: -5, initial: 40, final: 35 }],
+        ]);
+        expect(createGameLogEntries([
+            move([], [dataChange("hinari", "subspace", -10)]), move([], [dataChange("hinari", "subspace", -5)]),
+        ]).map(({ outcomes }) => outcomes)).toEqual([
+            [{ kind: "resource", target: "hinari", resource: "subspace", change: -10 }],
+            [{ kind: "resource", target: "hinari", resource: "subspace", change: -5 }],
         ]);
     });
 

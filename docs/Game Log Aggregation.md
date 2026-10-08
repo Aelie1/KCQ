@@ -1,6 +1,6 @@
 # Game Log aggregation (pass 1)
 
-The pure `createGameLogEntries` helper in `src/ui/presentation/gameLog.ts` produces semantic presentation data. It does not render text or change the graphical log. Entity, move, binding, buff, stance and phase IDs can be localized through the existing `Presentation` methods; `StringTable` stays in Presentation.
+The pure `createGameLogEntries` helper in `src/ui/presentation/gameLog.ts` produces semantic presentation data. It does not render text or change the graphical log. Entity, move, binding, buff, resource, stance and phase IDs can be localized through the existing `Presentation` methods; `StringTable` stays in Presentation.
 
 Pass post-event frames and the state captured immediately before the action:
 
@@ -111,6 +111,23 @@ The binding leaves +23, −5 and 4 blocked become this outcome:
 }
 ```
 
+### Resource changes from public events
+
+A public `dataChanged` leaf with `target: "hinari"`, `name: "subspace"` and `amount: -25`, together with snapshots recording 50 before and 25 after the event, yields:
+
+```json
+{
+  "kind": "resource", "target": "hinari", "resource": "subspace",
+  "change": -25, "initial": 50, "final": 25, "max": 100
+}
+```
+
+Changes to the same target and resource within one `GameEvent` share one outcome, including leaves in move target effects and action effects. `change` sums emitted applied deltas, which already account for engine clamping. Different targets/resources and separate events remain independent. An emitted zero delta or zero net change is retained.
+
+Snapshots only supply recorded endpoints for outcomes established by public events. Without snapshots, the outcome still contains the target, resource ID and applied `change`; `initial`, `final` and `max` remain unknown. A single available snapshot supplies only its endpoint; missing data keys are not assumed to be zero, and the other endpoint is not inferred from the delta. Public enemy snapshots expose no data, so enemy resource endpoints remain unknown even with frames. Subspace's existing `subspaceMax` can supply `max`; other resources have no established maximum convention. Resource IDs remain semantic, with Subspace localized through the existing `Presentation.data("subspace")` method.
+
+Only emitted `dataChanged` leaves produce resource outcomes. The engine controls emission through its `visible` flag; the aggregator applies no additional visibility filtering. Snapshot changes without a public event produce no outcome. If silent changes affect the same resource within an event, `final - initial` can differ from `change`: endpoints retain the recorded state while `change` reports only emitted deltas.
+
 ### Consecutive stance changes
 
 Starting with both characters moving: Ko stands, Hinari stands, Ko moves again. The resulting entry preserves only Hinari's change:
@@ -133,6 +150,6 @@ Starting with both characters moving: Ko stands, Hinari stands, Ko moves again. 
 - Phase events omit the round. Frames supply it; event-only input leaves it unknown.
 - Trap trigger consumption is retained separately. Recorded trap endpoints supply net change; trigger-only traces without endpoints leave net change unknown. Current trap removal code does not emit the declared `trapRemoved` leaf.
 - Refresh, interruption, spawn/defeat, final retarget destination and cancellation/weakening remain semantic outcomes. Intention leaves lack specific move IDs and weakening amounts, which are not invented.
-- Public DataEffects have no leaf events. The existing player resource Subspace is summarized only when both recorded frame endpoints exist. Internal character/encounter data and silent buff ticks are not expanded into a technical trace.
+- Resource outcomes come only from public `dataChanged` leaves, grouped by target and resource within each event. Applied deltas are preserved; snapshots supply optional endpoints and Subspace maximum only. Unreported data changes and silent buff ticks are not expanded into a technical trace.
 
-Validation: `tests/ui/gameLogAggregation.test.ts` covers all eight required cases, linked Pounce severity endpoints (fixtures and engine-generated frames), generic non-Pounce severity changes, current leaf outcomes, unknown-data behavior, event boundaries and input immutability. Existing Game Log components and preview components are unchanged.
+Validation: `tests/ui/gameLogAggregation.test.ts` covers all eight required cases, linked Pounce severity endpoints (fixtures and engine-generated frames), generic non-Pounce severity changes, resource event grouping/applied deltas/clamping/optional endpoints/visibility/event boundaries, current leaf outcomes, unknown-data behavior, event boundaries and input immutability. Existing Game Log components and preview components are unchanged.
