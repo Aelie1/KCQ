@@ -1,7 +1,7 @@
-import type { ActionView, BindingLevel, BuffEffect, Effect, EntityId, GameState, HitBand, ModifierId, ThresholdInfo } from "../../../../engine/public/types";
 import { getBindingProgress } from "../../../../engine/public/mechanics";
-import { clampMeterValue, TRAP_METER_MAX } from "./meterValues";
+import type { ActionView, BindingLevel, BuffEffect, Effect, EntityId, GameState, HitBand, ModifierId, ThresholdInfo } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { clampMeterValue, TRAP_METER_MAX } from "./meterValues";
 import { bindingLevelAtValue, formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
 export type EffectTone = "danger" | "primary" | "special" | "success" | "warning";
@@ -163,7 +163,7 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
         ?.moves.map(({ move }) => move.id) ?? []);
     return {
         kind: "buff", id, type: "buff", tone: applying === debuff ? "special" : "success", operation: effect.operation,
-        label: presentation.ui(operationKey), name: presentation.buff(effect.buff.id),
+        label: presentation.ui(operationKey), name: presentation.buff(effect.buff.id, effect.buff.severity),
         ...(applying && effect.buff.duration !== undefined
             ? { durationLabel: presentation.ui("characterDetails.rounds", { count: effect.buff.duration }) }
             : {}),

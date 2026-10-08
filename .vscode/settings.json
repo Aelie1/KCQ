@@ -26,6 +26,7 @@
         "**/temp": true,
         "**/tsconfig*": true,
         "**/vitest.config.mts": true,
+        "**/vitest.dom.config.mts": true,
         "**/vite.config.mts": true
     },
 }

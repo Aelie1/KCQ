@@ -132,18 +132,15 @@ export function detectPounceRelationships(context: PolicyContext): PounceRelatio
     for (const character of context.state.characters) {
         for (const buff of character.buffs) {
             if (buff.id !== POUNCE || buff.linkedEntity === undefined) continue;
+            const level = buff.severity;
             const enemy = context.state.enemies.find(({ id, currHp }) =>
                 id === buff.linkedEntity && currHp > 0
             );
-            const sourceBuff = enemy?.buffs.find((value) =>
-                value.id === POUNCE && value.linkedEntity === character.id
-            );
-            const hitValue = sourceBuff?.modifiers?.hit;
-            if (enemy === undefined || hitValue === undefined || hitValue <= 0) continue;
+            if (enemy === undefined || level === undefined) continue;
             relationships.push({
                 characterId: character.id,
                 enemyId: enemy.id,
-                level: hitValue / 2,
+                level: level,
             });
         }
     }

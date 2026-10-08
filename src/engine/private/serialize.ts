@@ -154,6 +154,7 @@ function serializeEffect(effect: iEffect): Effect | undefined {
 function serializeBuff(buff: iBuff): Buff {
     return {
         id: buff.id,
+        severity: buff.severity,
         duration: buff.duration,
         statuses: buff.statuses?.map(serializeStatus),
         modifiers: { ...buff.modifiers },

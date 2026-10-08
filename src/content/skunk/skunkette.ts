@@ -51,6 +51,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
 
     const cBuff: iBuff = {
         id: POUNCE_BUFF,
+        severity: level,
         statuses: tStatus,
         modifiers: tModifiers,
         active: active,
@@ -60,6 +61,7 @@ function createPounceBuffs(character: iEntity, enemy: iEntity, level: number, ac
 
     const eBuff: iBuff = {
         id: POUNCE_BUFF,
+        severity: level,
         modifiers: aModifiers,
         active: active,
         linkedEntity: character.id
@@ -185,10 +187,12 @@ export const latexMist: MoveDef = {
         }
 
         //1) Add spread buff to everyone based on the common roll
-        const modifiers: ModifierSet = { "spread": Math.ceil(move.roll * MIST_SPREAD) };
+        const level = Math.ceil(move.roll * MIST_SPREAD);
+        const modifiers: ModifierSet = { "spread": level };
 
         const buff: iBuff = {
             id: move.definition.id,
+            severity: level,
             modifiers: modifiers,
             active: false,
             duration: 1
@@ -403,7 +407,7 @@ export const skunkette: EnemyDef = {
 
         const pounceBuff = findBuff(target, POUNCE_BUFF);
         if (pounceBuff && pounceBuff.linkedEntity) {
-            const newLevel = (pounceBuff.modifiers?.hit ?? 1) / 2 - 1;
+            const newLevel = (pounceBuff.severity ?? 1) - 1;
             if (newLevel === 0) {
                 effects.push({
                     type: "buff",

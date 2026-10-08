@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { stockStrings } from "../helpers/stockStrings";
-import { createStockEngine } from "../../src/stock";
 import type { DifficultyId } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 import { createEffectPreviewViewModels } from "../../src/ui/web/app/viewModels/effectPreviews";
+import { stockStrings } from "../helpers/stockStrings";
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
@@ -45,7 +45,7 @@ describe("difficulty select view model", () => {
             type: "buff", operation: "add", target, buff: { id: "difficultyModifier", modifiers },
         }], { presentation, scopeTarget: target }, "difficulty"));
         const effect = model.globalEffects?.effects[0];
-        expect(effect).toMatchObject({ kind: "buff", tone: "success", name: presentation.buff("difficultyModifier") });
+        expect(effect).toMatchObject({ kind: "buff", tone: "success", name: presentation.buff("difficultyModifier", undefined) });
         expect(effect).not.toHaveProperty("recipient");
         if (effect?.kind !== "buff") throw new Error("Expected buff preview");
         expect(effect.modifiers.map(({ value, signedValue }) => ({ value, signedValue }))).toEqual(

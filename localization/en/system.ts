@@ -185,6 +185,17 @@ export const systemEnglishStrings: StringTable = {
     "difficulty.mythic.desc": "Stronger enemies with even stronger unique powers.",
 
     "buff.difficultyModifier.name": "Difficulty Modifier",
+    "buff.severity.text": "{name} {severity}",
+    "buff.severity.1": "I",
+    "buff.severity.2": "II",
+    "buff.severity.3": "III",
+    "buff.severity.4": "IV",
+    "buff.severity.5": "V",
+    "buff.severity.6": "VI",
+    "buff.severity.7": "VII",
+    "buff.severity.8": "VIII",
+    "buff.severity.9": "IX",
+    "buff.severity.10": "X",
 
     "bindingLevel.none.name": "None",
     "bindingLevel.light.name": "Light",

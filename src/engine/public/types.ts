@@ -129,6 +129,7 @@ export interface MoveListModifier {
 
 export interface Buff {
     id: BuffId;
+    severity?: number;
     duration?: number;
     statuses?: Status[];
     modifiers?: ModifierSet;

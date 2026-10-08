@@ -157,6 +157,7 @@ function knowledge(fixture: PolicyContext, moveId: string, targetId?: string) {
 function pounceBuff(linkedEntity: string, level?: number): Buff {
     return {
         id: "pounce",
+        severity: level,
         linkedEntity,
         ...(level === undefined ? {} : { modifiers: { hit: level * 2 } }),
     };
@@ -206,7 +207,7 @@ function pounceContext(
     attackOptions: MoveOptions = { damage: 10, hits: 1, accuracy: 100 },
     sourceAttackable = true,
 ): PolicyContext {
-    const actor = makePublicCharacter(actorId, { buffs: [pounceBuff("pounce-source")] });
+    const actor = makePublicCharacter(actorId, { buffs: [pounceBuff("pounce-source", level)] });
     const source = enemy("pounce-source", {
         buffs: [pounceBuff(actorId, level)],
     });

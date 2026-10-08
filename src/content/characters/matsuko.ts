@@ -29,6 +29,7 @@ const STOP_COMPULSION_COOLDOWN = 5;
 const STOP_BOSS_WEAKEN = 0.25;
 
 const ATTACKME_COMPULSION_COOLDOWN = 2;
+const ATTACKME_MODIFIER = 3;
 const ATTACKME_BUFF = "defenseBarrier";
 
 const DEFAULT_COMPULSION_COOLDOWN = 2;
@@ -267,7 +268,7 @@ export const attackMe: MoveDef = {
             active: true,
             duration: 1,
             modifiers: {
-                defense: 3,
+                defense: ATTACKME_MODIFIER,
             }
         }
 

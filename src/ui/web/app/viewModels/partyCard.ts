@@ -98,7 +98,7 @@ export function createPartyCardViewModel(
             };
         }),
         effects: character.buffs,
-        visibleEffects: effectSummary.visibleEffects.map((effect) => presentation.buff(effect.id)),
+        visibleEffects: effectSummary.visibleEffects.map((effect) => presentation.buff(effect.id, effect.severity)),
         hiddenEffectCount,
         ...(hiddenEffectCount > 0 ? {
             effectsOverflowLabel: presentation.ui("effects.more", { count: hiddenEffectCount }),

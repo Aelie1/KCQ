@@ -221,8 +221,18 @@ export class Presentation {
         return this.translate(this.definitionKey("encounter", encounter, variant));
     }
 
-    buff(buff: BuffId, variant: "name" | "desc" = "name"): string {
-        return this.translate(this.definitionKey("buff", buff, variant));
+    buff(buff: BuffId, severity: number | undefined, variant: "name" | "desc" = "name"): string {
+        if (severity) {
+            return this.translate({
+                id: "buff.severity.text",
+                args: {
+                    name: this.definitionKey("buff", buff, variant),
+                    severity: this.definitionKey("buff", "severity", severity.toString()),
+                },
+            });
+        } else {
+            return this.translate(this.definitionKey("buff", buff, variant));
+        }
     }
 
     failure(reason: FailureReason): string {

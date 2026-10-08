@@ -7,10 +7,15 @@ const TELEKINESIS_DAMAGE = 30;
 
 export const TRANSFORMATION_BUFF = "transformation";
 const TRANSFORMATION_COOLDOWN = 3;
+const TRANSFORMATION_DURATION_KO = 3;
+const TRANSFORMATION_MODIFIER_KO = 3;
+const TRANSFORMATION_DURATION_ALLY = 2;
+const TRANSFORMATION_MODIFIER_ALLY = 2;
 
-const STARLIGHT_BUFF = "starlightBindings"
+const STARLIGHT_BUFF = "starlightBindings";
+const STARLIGHT_MODIFIER = -2;
 
-const DENIAL_BUFF = "exhausted"
+const DENIAL_BUFF = "exhausted";
 
 function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
     const effects: iEffect[] = [];
@@ -135,8 +140,8 @@ export const starlightBindings: MoveDef = {
             duration: 3,
             active: true,
             modifiers: {
-                defense: -2,
-                hit: -2,
+                defense: STARLIGHT_MODIFIER,
+                hit: STARLIGHT_MODIFIER,
             }
         }
 
@@ -220,7 +225,7 @@ export const fairyTransformation: MoveDef = {
     cooldown: { "fairyTransformation": TRANSFORMATION_COOLDOWN },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
-        result.effects.push(createTransformBuff(actor, 3, 3));
+        result.effects.push(createTransformBuff(actor, TRANSFORMATION_DURATION_KO, TRANSFORMATION_MODIFIER_KO));
 
         const fairyBuff = findBuff(actor, EMPOWERMENT_BUFF);
         if (!fairyBuff && isCharacter(actor)) {
@@ -241,7 +246,7 @@ export const fairyEmpowerment: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
         const koEffects: iEffect[] = [];
 
-        koEffects.push(createTransformBuff(actor, 3, 3));
+        koEffects.push(createTransformBuff(actor, TRANSFORMATION_DURATION_KO, TRANSFORMATION_MODIFIER_KO));
         koEffects.push(...removeEmpowerment(actor));
         result.targets.push({
             target: actor,
@@ -253,7 +258,7 @@ export const fairyEmpowerment: MoveDef = {
         for (const target of targets) {
             if (target.target !== actor && isCharacter(target.target)) {
                 const allyEffects: iEffect[] = [];
-                allyEffects.push(createTransformBuff(target.target, 2, 2));
+                allyEffects.push(createTransformBuff(target.target, TRANSFORMATION_DURATION_ALLY, TRANSFORMATION_MODIFIER_ALLY));
                 allyEffects.push(createEmpowermentBuff(target.target));
                 result.targets.push({
                     target: target.target,

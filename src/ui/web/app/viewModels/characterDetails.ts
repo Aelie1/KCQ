@@ -372,7 +372,7 @@ function createEffectDetail(
 
     return {
         id: buff.id,
-        name: presentation.buff(buff.id),
+        name: presentation.buff(buff.id, buff.severity),
         buff,
         details,
         ...(linkedEntity ? { linkedEntity } : {}),
