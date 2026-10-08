@@ -41,7 +41,7 @@ export function createGraphicalController(
             if (screen().screen === "title") setScreen({ screen: "picker", campaign });
         },
         returnToTitle(): void {
-            if (screen().screen !== "picker") return;
+            if (screen().screen === "title") return;
             closeSession();
             setScreen({ screen: "title" });
         },

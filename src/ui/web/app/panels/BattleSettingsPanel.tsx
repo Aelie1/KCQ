@@ -3,15 +3,18 @@ import { Portal } from "solid-js/web";
 import type { Presentation } from "../../../presentation/presentation";
 import type { LanguageSelection } from "../language";
 import { setupResponsiveScale } from "../responsiveScale";
+import { displayVersion } from "../version";
 
 export function BattleSettingsPanel(props: {
     presentation: Presentation;
+    release: string;
     language?: LanguageSelection;
     returnFocus?: Element | null;
     onResume: () => void;
     showBattleActions?: boolean;
     onRetry?: () => void;
     onBackToLevelSelect?: () => void;
+    onBackToTitle?: () => void;
 }): JSX.Element {
     const headingId = createUniqueId();
     let overlay!: HTMLDivElement;
@@ -58,7 +61,10 @@ export function BattleSettingsPanel(props: {
         <div ref={viewport} class="kcq-battle-result__viewport">
             <section ref={dialog} class="kcq-encounter-card kcq-battle-result kcq-battle-settings"
                 role="dialog" aria-modal="true" aria-labelledby={headingId}>
-                <h1 id={headingId} class="kcq-battle-settings__heading">{props.presentation.ui("battleOverview.settings")}</h1>
+                <header class="kcq-battle-settings__header">
+                    <h1 id={headingId} class="kcq-battle-settings__heading">{props.presentation.ui("battleOverview.settings")}</h1>
+                    <span class="kcq-battle-settings__version">{props.presentation.ui("version.name", { version: displayVersion(props.release) })}</span>
+                </header>
                 <div class="kcq-battle-result__actions">
                     <button ref={resume} type="button" class="kcq-battle-result__retry"
                         onClick={props.onResume}>{props.presentation.ui("battleSettings.resume")}</button>
@@ -72,15 +78,19 @@ export function BattleSettingsPanel(props: {
                         </For>
                     </select>
                 </label>
-                <Show when={props.showBattleActions !== false}>
-                    <hr class="kcq-battle-settings__divider" />
-                    <div class="kcq-battle-result__actions">
+                <hr class="kcq-battle-settings__divider" />
+                <div class="kcq-battle-result__actions">
+                    <Show when={props.showBattleActions !== false}>
                         <button type="button" class="kcq-battle-result__back"
                             onClick={props.onRetry}>{props.presentation.ui("battleSettings.retry")}</button>
                         <button type="button" class="kcq-battle-result__back"
                             onClick={props.onBackToLevelSelect}>{props.presentation.ui("battleResult.back")}</button>
-                    </div>
-                </Show>
+                    </Show>
+                    <Show when={props.onBackToTitle}>
+                        <button type="button" class="kcq-battle-result__back"
+                            onClick={props.onBackToTitle}>{props.presentation.ui("battleSettings.backToTitle")}</button>
+                    </Show>
+                </div>
             </section>
         </div>
     </div></Portal>;

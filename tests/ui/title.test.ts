@@ -1,6 +1,6 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { getStringTable } from "../../localization";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
@@ -8,6 +8,8 @@ import { TitleScreen } from "../../src/ui/web/app/components/TitleScreen";
 import { createTitleViewModel } from "../../src/ui/web/app/viewModels/title";
 
 const presentation = new Presentation(getStringTable("en"));
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("title and campaign presentation", () => {
     it("resolves campaign name and description independently from base localization", () => {
@@ -19,15 +21,16 @@ describe("title and campaign presentation", () => {
         expect(presentation.ui("title.campaigns")).toBe("Campaigns");
     });
 
-    it("initially presents all title strings and the supplied release without composing a campaign", () => {
+    it.each(["v0.8-test", ""])("initially presents title strings with release %j or the development fallback without composing a campaign", release => {
+        vi.stubGlobal("__KCQ_GIT_REVISION__", "abc1234");
         const composeCampaign = vi.fn(() => { throw new Error("Premature campaign composition"); });
         const prepareBattle = vi.fn(() => { throw new Error("Premature battle preparation"); });
         const html = renderToString(() => createComponent(GraphicalApp, {
-            campaigns: ["skunk"], release: "v0.8-test", presentation, composeCampaign, prepareBattle,
+            campaigns: ["skunk"], release, presentation, composeCampaign, prepareBattle,
         }));
         for (const text of [presentation.ui("title.name"), presentation.ui("title.campaigns"),
             presentation.campaign("skunk"), presentation.campaign("skunk", "desc"),
-            presentation.ui("version.name", { version: "v0.8-test" }),
+            presentation.ui("version.name", { version: release ? `${release} · abc1234` : "rev. abc1234" }),
             presentation.ui("title.credit"), presentation.ui("title.copyright")]) {
             expect(html).toContain(text);
         }
@@ -40,6 +43,11 @@ describe("title and campaign presentation", () => {
         expect(html).toContain("<select");
         expect(composeCampaign).not.toHaveBeenCalled();
         expect(prepareBattle).not.toHaveBeenCalled();
+    });
+
+    it.each(["v0.13.0", ""])("displays release %j or the numeric fallback when Git metadata is unavailable", release => {
+        vi.stubGlobal("__KCQ_GIT_REVISION__", "");
+        expect(createTitleViewModel([], presentation, release).version).toBe(release || "v0.0.0");
     });
 
     it("renders every supplied campaign entry with presented strings, including an empty menu", () => {

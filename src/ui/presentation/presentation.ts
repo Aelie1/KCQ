@@ -15,6 +15,7 @@ export type UiLabel =
     | "battleSettings.language"
     | "language.en"
     | "battleSettings.retry"
+    | "battleSettings.backToTitle"
     | "battleResult.victory"
     | "battleResult.defeat"
     | "battleResult.summary"

@@ -1,6 +1,6 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { stockStrings } from "../helpers/stockStrings";
 import { createStockEngine } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
@@ -13,11 +13,14 @@ import { createBattleTelemetryObserver } from "../../src/ui/web/telemetry";
 const presentation = new Presentation(stockStrings);
 let unmount: (() => void) | undefined;
 
+beforeEach(() => vi.stubGlobal("__KCQ_GIT_REVISION__", "abc1234"));
+
 afterEach(() => {
     unmount?.();
     unmount = undefined;
     document.body.replaceChildren();
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
 });
 
 function button(label: string, scope: ParentNode = document): HTMLButtonElement {
@@ -27,7 +30,7 @@ function button(label: string, scope: ParentNode = document): HTMLButtonElement 
     return found;
 }
 
-function mountBattle(languages?: readonly LanguageOption[]) {
+function mountBattle(languages?: readonly LanguageOption[], release = "v0.8-settings-test") {
     const capture = vi.fn();
     const sessions: { engine: ReturnType<typeof createStockEngine>; observer: ReturnType<typeof createBattleTelemetryObserver>; dispose: ReturnType<typeof vi.fn> }[] = [];
     function prepare(campaign: "skunk", encounter: EncounterId, difficulty: DifficultyId) {
@@ -46,7 +49,7 @@ function mountBattle(languages?: readonly LanguageOption[]) {
     const root = document.createElement("div");
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, {
-        campaigns: ["skunk"], release: "test",
+        campaigns: ["skunk"], release,
         composeCampaign: () => ({ engine: createStockEngine(), presentation, languages }),
         presentation, prepareBattle, languages,
     }), root);
@@ -88,10 +91,18 @@ describe("battle settings interactions", () => {
         expect(background.getAttribute("aria-hidden")).toBe("true");
         expect(document.activeElement).toBe(button("Resume", dialog));
         const controls = [...dialog.querySelectorAll("button, label, hr")];
-        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", "LABEL", "HR", "BUTTON", "BUTTON"]);
+        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", "LABEL", "HR", "BUTTON", "BUTTON", "BUTTON"]);
         expect(button("Resume", dialog).classList.contains("kcq-battle-result__retry")).toBe(true);
         expect(dialog.querySelector("label")?.textContent).toContain("Language");
         expect(dialog.querySelector("select")?.value).toBe("en");
+        expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("v0.8-settings-test · abc1234");
+    });
+
+    it("shows the development version when the release tag is empty", () => {
+        vi.stubGlobal("__KCQ_GIT_REVISION__", "abc1234");
+        mountBattle(undefined, "");
+        const dialog = openSettings();
+        expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("rev. abc1234");
     });
 
     it.each(["Resume", "backdrop", "viewport", "Escape"])("resumes via %s without combat or lifecycle changes", async method => {
@@ -127,7 +138,7 @@ describe("battle settings interactions", () => {
         expect(document.querySelector('[role="dialog"]')).toBe(dialog);
         button("Resume").focus();
         key("Tab", true);
-        expect(document.activeElement).toBe(button("Back to Level Select"));
+        expect(document.activeElement).toBe(button("Back to Title Screen"));
         key("Tab");
         expect(document.activeElement).toBe(button("Resume"));
         // DOM emulators allow programmatic clicks on inert content; also check the action guard.
@@ -148,7 +159,8 @@ describe("battle settings interactions", () => {
 
     it("changes presentation immediately without recreating or mutating the battle", () => {
         const alternate = new Presentation({ ...stockStrings,
-            "ui.battleSettings.resume": "Continue test", "ui.battleOverview.endTurn": "End test turn" });
+            "ui.battleSettings.resume": "Continue test", "ui.battleOverview.endTurn": "End test turn",
+            "ui.battleSettings.backToTitle": "Test title screen", "ui.version.name": "Release {version}" });
         const { engine, prepareBattle, sessions } = mountBattle([
             { id: "en", label: "English", presentation },
             { id: "test", label: "Test language", presentation: alternate },
@@ -161,6 +173,8 @@ describe("battle settings interactions", () => {
         select.value = "test";
         select.dispatchEvent(new Event("change", { bubbles: true }));
         expect(button("Continue test")).toBeDefined();
+        expect(button("Test title screen")).toBeDefined();
+        expect(document.querySelector(".kcq-battle-settings__version")?.textContent).toBe("Release v0.8-settings-test · abc1234");
         expect(button("End test turn")).toBeDefined();
         expect(select.value).toBe("test");
         button("Continue test").click();
@@ -217,6 +231,25 @@ describe("battle settings interactions", () => {
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
         expect(sessions[1]!.dispose).toHaveBeenCalledOnce();
         expect(capture.mock.calls.filter(call => call[0] === "battle_quit")).toHaveLength(0);
+    });
+
+    it("returns directly to title and quits and disposes the battle once", () => {
+        const { sessions, prepareBattle, capture } = mountBattle();
+        openSettings();
+        button("Back to Title Screen").click();
+        expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
+        expect(document.querySelector(".kcq-battle-stage")).toBeNull();
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
+        expect(document.querySelector(".kcq-combat-header__settings")).toBeNull();
+        expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
+        expect(sessions[0]!.observer.lifecycleState).toBe("quit");
+        expect(capture.mock.calls.filter(call => call[0] === "battle_quit")).toHaveLength(1);
+        expect(prepareBattle).toHaveBeenCalledOnce();
+        document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+        document.querySelector<HTMLButtonElement>(".kcq-encounter-picker__row")!.click();
+        button("Choose Difficulty").click();
+        expect(document.querySelector('[aria-pressed="true"]')?.textContent).toBe("Standard");
+        expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
     });
 
     it("leaves through shared lifecycle handling and returns to encounter selection", () => {

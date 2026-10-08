@@ -49,6 +49,10 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         if (!settingsOpen()) callback();
     };
     const controller = createGraphicalController(props.prepareBattle);
+    const backToTitle = (): void => {
+        setSettingsOpen(false);
+        controller.returnToTitle();
+    };
     onCleanup(controller.dispose);
     const selectedCampaign = createMemo(() => {
         const current = controller.screen();
@@ -107,15 +111,16 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
-                        language={languageSelection}
+                        language={languageSelection} release={props.release}
                         observer={current.session.observer} onRetry={controller.retryEncounter}
-                        onBackToLevelSelect={controller.returnToLevelSelect} />}
+                        onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
             </Switch>
         </div>
         <Show when={settingsOpen()}>
-            <BattleSettingsPanel presentation={presentation()} language={languageSelection}
-                returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)} />
+            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection}
+                returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}
+                onBackToTitle={backToTitle} />
         </Show>
     </App>;
 }

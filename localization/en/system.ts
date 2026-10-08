@@ -32,6 +32,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.battleSettings.language": "Language",
     "ui.language.en": "English",
     "ui.battleSettings.retry": "Retry Battle",
+    "ui.battleSettings.backToTitle": "Back to Title Screen",
     "ui.battleResult.summary": "{rounds} Rounds · {actions} Actions",
     "ui.battleResult.bossHp": "{percent}% Boss HP Remaining",
     "ui.battleResult.enemyHp": "{percent}% Enemy HP Remaining",

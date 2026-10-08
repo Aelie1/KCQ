@@ -27,9 +27,11 @@ import { TargetingPanel } from "./panels/TargetingPanel";
 export interface BattleAppProps {
     engine: Engine;
     presentation: Presentation;
+    release?: string;
     language?: LanguageSelection;
     onRetry?: () => void;
     onBackToLevelSelect?: () => void;
+    onBackToTitle?: () => void;
     observer?: Pick<BattleTelemetryObserver, "onAction" | "onOutcome">;
 }
 
@@ -279,9 +281,10 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 </Switch>
             </div>
             <Show when={settingsOpen()}>
-                <BattleSettingsPanel presentation={props.presentation} language={props.language} returnFocus={settingsTrigger}
+                <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
+                    language={props.language} returnFocus={settingsTrigger}
                     onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
-                    onBackToLevelSelect={props.onBackToLevelSelect} />
+                    onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
             </Show>
             <Show when={resultModel()} keyed>
                 {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}

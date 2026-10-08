@@ -1,6 +1,6 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -20,6 +20,8 @@ const presentation = new Presentation(stockStrings);
 const alternate = new Presentation({
     ...stockStrings,
     "ui.battleSettings.resume": "Continue test",
+    "ui.battleSettings.backToTitle": "Test title screen",
+    "ui.version.name": "Release {version}",
     "ui.battleOverview.settings": "Test settings",
     "ui.title.name": "Test Quest",
     "encounter.plains_1.name": "Test Plains",
@@ -30,10 +32,13 @@ const languages: LanguageOption[] = [
 ];
 let unmount: (() => void) | undefined;
 
+beforeEach(() => vi.stubGlobal("__KCQ_GIT_REVISION__", "abc1234"));
+
 afterEach(() => {
     unmount?.();
     unmount = undefined;
     document.body.replaceChildren();
+    vi.unstubAllGlobals();
 });
 
 function button(label: string): HTMLButtonElement {
@@ -51,7 +56,7 @@ function selectEncounter() {
     row.click();
 }
 
-function mountSelection(screen: SelectionScreen) {
+function mountSelection(screen: SelectionScreen, release = "v0.8-settings-test") {
     const engine = createStockEngine();
     const prepareBattle = vi.fn((campaign: "skunk", encounter: EncounterId, difficulty: DifficultyId) => {
         const battleEngine = createStockEngine(12345);
@@ -60,7 +65,7 @@ function mountSelection(screen: SelectionScreen) {
     });
     const root = document.createElement("div");
     document.body.append(root);
-    unmount = render(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", composeCampaign: () => ({ engine, presentation, languages }), presentation, languages, prepareBattle }), root);
+    unmount = render(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release, composeCampaign: () => ({ engine, presentation, languages }), presentation, languages, prepareBattle }), root);
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
     if (screen !== "picker") selectEncounter();
     if (screen === "difficulty") {
@@ -91,11 +96,13 @@ function changeLanguage() {
 }
 
 describe("encounter screen settings", () => {
-    it.each(screens)("opens %s settings with only Resume and Language and traps focus", screen => {
+    it.each(screens)("opens %s settings with Resume, Language, title navigation, and release and traps focus", screen => {
         const { panel, prepareBattle } = mountSelection(screen);
         const { dialog } = openSettings();
         expect([...dialog.querySelectorAll("button, label, hr")].map(element => element.tagName))
-            .toEqual(["BUTTON", "LABEL"]);
+            .toEqual(["BUTTON", "LABEL", "HR", "BUTTON"]);
+        expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("v0.8-settings-test · abc1234");
+        expect(button("Back to Title Screen")).toBeDefined();
         expect(button("Resume")).toBe(document.activeElement);
         expect(dialog.querySelector("label")?.textContent).toContain("Language");
         expect(dialog.querySelector("select")?.value).toBe("en");
@@ -106,7 +113,7 @@ describe("encounter screen settings", () => {
         expect(panel.closest(".kcq-graphical-app__background")?.getAttribute("aria-hidden")).toBe("true");
         expect(panel.contains(dialog)).toBe(false);
         key("Tab", true);
-        expect(document.activeElement).toBe(dialog.querySelector("select"));
+        expect(document.activeElement).toBe(button("Back to Title Screen"));
         key("Tab");
         expect(document.activeElement).toBe(button("Resume"));
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -139,6 +146,8 @@ describe("encounter screen settings", () => {
         const before = engine.getGameState();
         openSettings();
         changeLanguage();
+        expect(document.querySelector(".kcq-battle-settings__version")?.textContent).toBe("Release v0.8-settings-test · abc1234");
+        expect(button("Test title screen")).toBeDefined();
         expect(document.querySelector<HTMLButtonElement>(".kcq-combat-header__settings")?.getAttribute("aria-label"))
             .toBe("Test settings");
         expect(panel.querySelector("h1")?.textContent).toBe(screen === "picker" ? "Test Quest" : "Test Plains");
@@ -165,6 +174,32 @@ describe("encounter screen settings", () => {
         expect(prepareBattle).not.toHaveBeenCalled();
     });
 
+    it.each(screens)("shows the development version in %s settings when no release is supplied", screen => {
+        vi.stubGlobal("__KCQ_GIT_REVISION__", "abc1234");
+        mountSelection(screen, "");
+        const { dialog } = openSettings();
+        expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("rev. abc1234");
+        changeLanguage();
+        expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("Release rev. abc1234");
+    });
+
+    it.each(screens)("returns from %s settings to title with language retained and settings closed", screen => {
+        const { prepareBattle } = mountSelection(screen);
+        openSettings();
+        changeLanguage();
+        button("Test title screen").click();
+        expect(document.querySelector(".kcq-title-screen h1")?.textContent).toBe("Test Quest");
+        expect(document.querySelector<HTMLSelectElement>(".kcq-title-screen__language select")?.value).toBe("test");
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
+        expect(document.querySelector(".kcq-combat-header__settings")).toBeNull();
+        expect(document.querySelector(".kcq-graphical-app__background")?.hasAttribute("inert")).toBe(false);
+        expect(prepareBattle).not.toHaveBeenCalled();
+        document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+        expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
+        openSettings();
+        expect(document.querySelector(".kcq-battle-settings__version")?.textContent).toBe("Release v0.8-settings-test · abc1234");
+    });
+
     it("shares language selection across picker, details, difficulty, battle, and return to picker", () => {
         const { prepareBattle } = mountSelection("picker");
         openSettings();
@@ -179,11 +214,11 @@ describe("encounter screen settings", () => {
         expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_1", "mythic");
         const { dialog } = openSettings();
         expect(dialog.querySelector("select")?.value).toBe("test");
-        expect(dialog.querySelectorAll("button")).toHaveLength(3);
+        expect(dialog.querySelectorAll("button")).toHaveLength(4);
         button("Back to Level Select").click();
         expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test Quest");
         openSettings();
         expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings select")?.value).toBe("test");
-        expect(document.querySelector('[role="dialog"]')?.querySelectorAll("button")).toHaveLength(1);
+        expect(document.querySelector('[role="dialog"]')?.querySelectorAll("button")).toHaveLength(2);
     });
 });

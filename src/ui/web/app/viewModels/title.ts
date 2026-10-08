@@ -1,5 +1,6 @@
 import type { KCQCampaign } from "../../../../content";
 import type { Presentation } from "../../../presentation/presentation";
+import { displayVersion } from "../version";
 
 export interface TitleViewModel {
     title: string;
@@ -17,7 +18,7 @@ export function createTitleViewModel(
     return {
         title: presentation.ui("title.name"),
         campaignsHeading: presentation.ui("title.campaigns"),
-        version: presentation.ui("version.name", { version: release }),
+        version: presentation.ui("version.name", { version: displayVersion(release) }),
         credit: presentation.ui("title.credit"),
         copyright: presentation.ui("title.copyright"),
         languageLabel: presentation.ui("battleSettings.language"),
