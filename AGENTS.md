@@ -20,3 +20,32 @@
 When implementing UI from a Figma link, always use the connected Figma MCP
 server to inspect the referenced design before writing code. Prefer structured
 Figma component/variable data over screenshots or visual guesses.
+
+## Protected areas
+
+Treat these as read-only unless the task explicitly requires changing them:
+
+- `src/engine/**`
+- `src/content/**`
+
+Do not refactor, relocate, rename, or redesign them while working on UI, harness, localization, tests, tooling, or application wiring.
+
+If a task appears to require modifying them, stop and explain why before making changes.
+
+## Repository structure
+
+- `localization/` intentionally lives at the repository root.
+- Do not relocate it under `src/`.
+- Keep `StringTable` in Presentation unless explicitly asked to change it.
+
+## Build system
+
+Do not modify:
+- TypeScript build configuration
+- build output layout
+- package scripts
+- VS Code launch configuration
+- replay runtime paths
+- performance tooling paths
+
+unless explicitly requested.
