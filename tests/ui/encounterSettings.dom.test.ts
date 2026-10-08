@@ -1,13 +1,13 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { stockStrings } from "../helpers/stockStrings";
-import { createStockEngine } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import type { LanguageOption } from "../../src/ui/web/app/language";
+import { stockStrings } from "../helpers/stockStrings";
 
 const screens = ["picker", "details", "difficulty"] as const;
 type SelectionScreen = typeof screens[number];
@@ -17,10 +17,11 @@ const selectors = {
     difficulty: ".kcq-difficulty-select",
 };
 const presentation = new Presentation(stockStrings);
-const alternate = new Presentation({ ...stockStrings,
+const alternate = new Presentation({
+    ...stockStrings,
     "ui.battleSettings.resume": "Continue test",
     "ui.battleOverview.settings": "Test settings",
-    "ui.encounterPicker.title": "Test Quest",
+    "ui.title.name": "Test Quest",
     "encounter.plains_1.name": "Test Plains",
 });
 const languages: LanguageOption[] = [

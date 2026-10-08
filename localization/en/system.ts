@@ -2,6 +2,9 @@ import { StringTable } from "../../src/ui/presentation/presentation";
 
 
 export const systemEnglishStrings: StringTable = {
+    "campaign.skunk.name": "Latex Skunk Attacks!",
+    "campaign.skunk.desc": "...",
+
     "phase.player.name": "Player",
     "phase.enemy.name": "Enemy",
 
@@ -95,7 +98,6 @@ export const systemEnglishStrings: StringTable = {
     "ui.difficulty.changeColumn": "Change",
     "ui.effects.none": "No effects",
     "ui.effects.more": "+{count} more",
-    "ui.encounterPicker.title": "Ko-chan’s Quest",
     "ui.encounter.challenge": "Challenge",
     "ui.encounter.challengeAccessible": "{stars} of 5 stars",
     "ui.encounter.bestClear": "Best Clear",
@@ -157,6 +159,11 @@ export const systemEnglishStrings: StringTable = {
     "ui.targeting.trapAmount": "Amount {amount}",
     "ui.targeting.use": "Use {move}",
     "ui.targeting.value": "{current} / {max}",
+    "ui.title.name": "Ko-chan’s Quest",
+    "ui.title.campaigns": "Camapigns",
+    "ui.title.credit": "Game by Aelie",
+    "ui.title.copyright": "© 2026 Aelie",
+    "ui.version.name": "{version}",
 
     "moveType.arms.compact": "Arms",
     "moveType.mouth.compact": "Mouth",

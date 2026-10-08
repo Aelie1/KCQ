@@ -1,7 +1,7 @@
 import type { ContentLibrary, EncounterReference } from "../../../../engine/public/library";
+import { getThresholds } from "../../../../engine/public/mechanics";
 import type { DifficultyId, EncounterId, EnemyRank } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
-import { getThresholds } from "../../../../engine/public/mechanics";
 import { groupEffectPreviews, type EffectGroupViewModel } from "./effectGroups";
 import type { EffectPreviewViewModel } from "./effectPreviews";
 
@@ -60,7 +60,7 @@ export function createEncounterPickerViewModel(
     bestClears: Readonly<Partial<Record<EncounterId, DifficultyId>>> = {},
 ): EncounterPickerViewModel {
     return {
-        title: presentation.ui("encounterPicker.title"),
+        title: presentation.ui("title.name"),
         settingsLabel: presentation.ui("battleOverview.settings"),
         encounters: Object.values(library.encounters).map((encounter) =>
             encounterSummary(encounter, presentation, bestClears[encounter.id])),

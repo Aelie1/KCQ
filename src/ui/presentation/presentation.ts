@@ -1,3 +1,4 @@
+import { KCQCampaign } from "../../content";
 import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
 
 interface StringKey {
@@ -30,7 +31,6 @@ export type UiLabel =
     | "battleResult.escapeDetail"
     | "battleResult.retry"
     | "battleResult.back"
-    | "encounterPicker.title"
     | "encounter.challenge"
     | "encounter.challengeAccessible"
     | "encounter.bestClear"
@@ -157,7 +157,12 @@ export type UiLabel =
     | "targeting.percentage"
     | "targeting.trapAmount"
     | "targeting.use"
-    | "targeting.value";
+    | "targeting.value"
+    | "title.name"
+    | "title.campaigns"
+    | "title.credit"
+    | "title.copyright"
+    | "version.name";
 
 export class Presentation {
     private readonly strings: StringTable;
@@ -168,6 +173,10 @@ export class Presentation {
 
     entity(entity: EntityId, variant: "name" | "desc" = "name"): string {
         return this.translate(this.entityKey(entity, variant));
+    }
+
+    campaign(campaign: KCQCampaign, variant: "name" | "desc" = "name"): string {
+        return this.translate(this.definitionKey("campaign", campaign, "name"));
     }
 
     /** Definition identity without the runtime numbering used in combat. */
