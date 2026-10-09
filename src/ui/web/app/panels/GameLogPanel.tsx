@@ -1,68 +1,22 @@
-import { createMemo, For, type JSX } from "solid-js";
-import type { EventFrame, GameState, PlayerAction } from "../../../../engine/public/types";
-import {
-    ActorStyleRegistry,
-    formatActionGroups,
-    type SemanticStyle,
-} from "../../../console/presentation";
+import { createMemo, For, Show, type JSX } from "solid-js";
+import type { GameState } from "../../../../engine/public/types";
+import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { createCombatHeaderViewModel } from "../viewModels/combatHeader";
-
-export interface GameLogEntry {
-    action: PlayerAction;
-    frames: readonly EventFrame[];
-    startingRound: number;
-}
+import { createGameLogViewModel } from "../viewModels/gameLog";
 
 export interface GameLogPanelProps {
-    entries: readonly GameLogEntry[];
-    actorStyles?: ActorStyleRegistry;
+    entries: readonly GameLogPresentationEntry[];
     presentation: Presentation;
     state: GameState;
     onBack?: () => void;
 }
 
-export const GAME_LOG_SEMANTIC_CLASSES = {
-    "actor-ko": "kcq-game-log__line--actor-ko",
-    "actor-matsuko": "kcq-game-log__line--actor-matsuko",
-    "actor-hinari": "kcq-game-log__line--actor-hinari",
-    "actor-enemy": "kcq-game-log__line--actor-enemy",
-    "intent-miss": "kcq-game-log__line--intent-miss",
-    "intent-graze": "kcq-game-log__line--intent-graze",
-    "intent-hit": "kcq-game-log__line--intent-hit",
-    "intent-crit": "kcq-game-log__line--intent-crit",
-    "binding-none": "kcq-game-log__line--binding-none",
-    "binding-light": "kcq-game-log__line--binding-light",
-    "binding-moderate": "kcq-game-log__line--binding-moderate",
-    "binding-heavy": "kcq-game-log__line--binding-heavy",
-    "binding-severe": "kcq-game-log__line--binding-severe",
-    "binding-overwhelming": "kcq-game-log__line--binding-overwhelming",
-    "binding-max": "kcq-game-log__line--binding-max",
-    "accuracy-good": "kcq-game-log__line--accuracy-good",
-    "accuracy-caution": "kcq-game-log__line--accuracy-caution",
-    "accuracy-poor": "kcq-game-log__line--accuracy-poor",
-    "accuracy-very-poor": "kcq-game-log__line--accuracy-very-poor",
-    "encounter-separator": "kcq-game-log__line--encounter-separator",
-    "phase-separator": "kcq-game-log__line--phase-separator",
-    "current-log-action": "kcq-game-log__line--current-log-action",
-    "transient-highlight": "kcq-game-log__line--transient-highlight",
-} as const satisfies Readonly<Record<SemanticStyle, string>>;
-
-export function gameLogSemanticClass(style: SemanticStyle): string {
-    return GAME_LOG_SEMANTIC_CLASSES[style];
-}
-
 export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
-    const actorStyles = props.actorStyles ?? new ActorStyleRegistry();
     const header = createMemo(() => createCombatHeaderViewModel(props.state, props.presentation));
-    const groups = createMemo(() => props.entries.flatMap((entry) => formatActionGroups(
-        entry.action,
-        entry.frames,
-        actorStyles,
-        entry.startingRound,
-    )));
+    const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation));
 
     return (
         <ScreenLayout class="kcq-game-log" ariaLabel={props.presentation.ui("combatHeader.gameLog")}
@@ -77,32 +31,50 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                     onBack={props.onBack}
                 />
             }
-            body={<>
-                <div class="kcq-game-log__scroll" role="log" aria-label="Chronological game events">
-                    <For each={groups()}>
-                        {(group) => (
-                            <div
-                                class={`kcq-game-log__group kcq-game-log__group--${group.kind}`}
-                                data-kind={group.kind}
-                                data-actor={group.actor}
-                                data-phase={group.phase}
-                            >
-                                <For each={group.lines}>
-                                    {(line) => (
-                                        <div
-                                            class={`kcq-game-log__line${line.style
-                                                ? ` ${gameLogSemanticClass(line.style)}`
-                                                : ""}`}
-                                        >
-                                            {line.text}
+            body={
+                <div class="kcq-game-log__scroll" role="log" aria-label={props.presentation.ui("gameLog.chronological")}>
+                    <Show when={entries().length} fallback={
+                        <p class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</p>
+                    }>
+                        <For each={entries()}>
+                            {(entry) => (
+                                <article class={"kcq-game-log__entry kcq-game-log__entry--" + entry.kind}
+                                    data-kind={entry.kind} data-actor={entry.actorId} data-phase={entry.phase}>
+                                    <Show when={entry.title}>
+                                        <div class="kcq-game-log__heading">
+                                            <Show when={entry.actor}>
+                                                <strong class={"kcq-game-log__actor kcq-game-log__actor--" + entry.actorTone}>{entry.actor}</strong>
+                                                <span aria-hidden="true">—</span>
+                                            </Show>
+                                            <strong class="kcq-game-log__title">{entry.title}</strong>
+                                            <Show when={entry.target}>
+                                                <span class="kcq-game-log__escape-target">→ {entry.target}</span>
+                                            </Show>
                                         </div>
-                                    )}
-                                </For>
-                            </div>
-                        )}
-                    </For>
+                                    </Show>
+                                    <div class="kcq-game-log__outcomes">
+                                        <For each={entry.rows}>
+                                            {(row) => (
+                                                <div class={"kcq-game-log__row kcq-game-log__row--" + row.kind} data-outcome={row.kind}>
+                                                    <span class="kcq-game-log__recipient">
+                                                        <Show when={row.target}><span class="kcq-game-log__target">{row.target}</span></Show>
+                                                        <Show when={row.label}><strong class="kcq-game-log__label">{row.label}</strong></Show>
+                                                    </span>
+                                                    <div class="kcq-game-log__values">
+                                                        <For each={row.values}>
+                                                            {(value) => <span class={"kcq-game-log__value kcq-game-log__value--" + (value.tone ?? "neutral")}>{value.text}</span>}
+                                                        </For>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </For>
+                                    </div>
+                                </article>
+                            )}
+                        </For>
+                    </Show>
                 </div>
-            </>}
+            }
         />
     );
 }

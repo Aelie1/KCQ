@@ -43,7 +43,7 @@ const screens = [
     { name: "Escape", render: () => createComponent(EscapePanel, escapeFixtures.selectedAssist),
         content: "kcq-escape__panel", footer: "kcq-escape__footer", roster: true },
     { name: "Game Log", render: () => createComponent(GameLogPanel, gameLogFixture),
-        content: "kcq-game-log__group", footer: undefined, roster: false },
+        content: "kcq-game-log__entry", footer: undefined, roster: false },
 ];
 
 describe("graphical screen regions", () => {

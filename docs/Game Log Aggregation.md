@@ -1,6 +1,6 @@
 # Game Log aggregation (pass 1)
 
-The pure `createGameLogEntries` helper in `src/ui/presentation/gameLog.ts` produces semantic presentation data. It does not render text or change the graphical log. Entity, move, binding, buff, resource, stance and phase IDs can be localized through the existing `Presentation` methods; `StringTable` stays in Presentation.
+The pure `createGameLogEntries` helper in `src/ui/presentation/gameLog.ts` produces semantic presentation data. It does not render text. The graphical Game Log consumes these entries through its localized view model. Entity, move, binding, buff, resource, stance and phase IDs can be localized through the existing `Presentation` methods; `StringTable` stays in Presentation.
 
 Pass post-event frames and the state captured immediately before the action:
 
@@ -33,7 +33,7 @@ These examples match the focused unit tests. JSON omits unknown/undefined fields
 
 ### Four-hit Rockfall with three Pounce reductions
 
-One miss and three damaging hits yield one damage group and one logical Pounce group. Both linked participants retain their recorded severity endpoints, 4 → 1. The enemy's hit modifier changes from 8 to 2; the victim loses Helpless. The three pairs of `buffUpdated` leaves become one initial-to-final change, with both participants' complete, distinct payloads retained. A future graphical renderer can use `Presentation` to localize these endpoints as `Pounce IV → I`; the aggregation layer does not generate that label.
+One miss and three damaging hits yield one damage group and one logical Pounce group. Both linked participants retain their recorded severity endpoints, 4 → 1. The enemy's hit modifier changes from 8 to 2; the victim loses Helpless. The three pairs of `buffUpdated` leaves become one initial-to-final change, with both participants' complete, distinct payloads retained. The graphical renderer uses `Presentation` to localize these endpoints as `Pounce IV → I`; the aggregation layer does not generate that label.
 
 ```json
 {
@@ -153,3 +153,11 @@ Starting with both characters moving: Ko stands, Hinari stands, Ko moves again. 
 - Resource outcomes come only from public `dataChanged` leaves, grouped by target and resource within each event. Applied deltas are preserved; snapshots supply optional endpoints and Subspace maximum only. Unreported data changes and silent buff ticks are not expanded into a technical trace.
 
 Validation: `tests/ui/gameLogAggregation.test.ts` covers all eight required cases, linked Pounce severity endpoints (fixtures and engine-generated frames), generic non-Pounce severity changes, resource event grouping/applied deltas/clamping/optional endpoints/visibility/event boundaries, current leaf outcomes, unknown-data behavior, event boundaries and input immutability. Existing Game Log components and preview components are unchanged.
+
+## Graphical integration (pass 2)
+
+`BattleApp` creates one `createGameLogHistory` per mounted battle session, capturing the prepared state before the first player action. Each successful action appends its recorded frames, including enemy actions and phase transitions during end turn, and calls the existing `createGameLogEntries` over that history. Keeping the original baseline and every event boundary lets Pass 1 aggregate stance runs across actions. Navigation and localization changes never record frames. The keyed battle session in `GraphicalApp` creates a fresh history on retry or encounter replacement.
+
+`createGameLogViewModel` localizes semantic entries with `Presentation`; `GameLogPanel` only renders the resulting headings and compact outcome rows. Hits stay ordered within target rows, reciprocal buffs share one row, and resource deltas remain separate from snapshot endpoints. Unknown optional data stays unknown. Binding levels and buff severity come from recorded payloads; the historical renderer does not run previews or mechanics.
+
+For screenshot review, open `/ui-dev.html` and select **Game Log**. Its production-panel fixture includes deterministic escape, single and multiple hits, AoE, linked Pounce IV → I, binding/resource changes, stance aggregation and phase outcomes. The **Playable Battle** entry exercises live history.

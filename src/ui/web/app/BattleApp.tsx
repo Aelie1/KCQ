@@ -21,7 +21,9 @@ import { createBattleResultTracker, createBattleResultViewModel } from "./viewMo
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
-import { GameLogPanel, type GameLogEntry } from "./panels/GameLogPanel";
+import { GameLogPanel } from "./panels/GameLogPanel";
+import type { GameLogPresentationEntry } from "../../presentation/gameLog";
+import { createGameLogHistory } from "./viewModels/gameLogHistory";
 import { TargetingPanel } from "./panels/TargetingPanel";
 
 export interface BattleAppProps {
@@ -66,7 +68,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const tracker = createBattleResultTracker(state());
     const [resultStats, setResultStats] = createSignal(tracker.getStats());
     const resultModel = createMemo(() => createBattleResultViewModel(state(), resultStats(), props.presentation));
-    const [logEntries, setLogEntries] = createSignal<readonly GameLogEntry[]>([]);
+    const logHistory = createGameLogHistory(state());
+    const [logEntries, setLogEntries] = createSignal<readonly GameLogPresentationEntry[]>([]);
 
     const actorExists = (actorId: EntityId): boolean =>
         state().characters.some(({ id }) => id === actorId)
@@ -108,7 +111,6 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     const execute = (action: PlayerAction): ActionResult | undefined => {
         if (modalOpen()) return;
-        const startingRound = state().turn.round;
         const result = props.engine.executeAction(action);
         notifyObserver(() => props.observer?.onAction?.(action, result, "player"));
         if (result.success) {
@@ -117,10 +119,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             setResultStats(tracker.getStats());
             setState(nextState);
             setActions(result.actions);
-            setLogEntries((entries) => [
-                ...entries,
-                { action, frames: result.frames, startingRound },
-            ]);
+            setLogEntries(logHistory.record(result.frames));
             notifyObserver(() => props.observer?.onOutcome?.(nextState.turn.outcome));
         }
         return result;

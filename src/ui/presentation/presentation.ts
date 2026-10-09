@@ -11,6 +11,28 @@ type StringArg = number | string | boolean | StringKey;
 export type StringTable = Record<string, string>;
 
 export type UiLabel =
+    | "gameLog.chronological"
+    | "gameLog.empty"
+    | "gameLog.transition"
+    | "gameLog.from"
+    | "gameLog.to"
+    | "gameLog.bindingEndpoint"
+    | "gameLog.hitDamage"
+    | "gameLog.healed"
+    | "gameLog.blocked"
+    | "gameLog.added"
+    | "gameLog.removed"
+    | "gameLog.updated"
+    | "gameLog.linkedTargets"
+    | "gameLog.participantChange"
+    | "gameLog.trapTriggered"
+    | "gameLog.interrupted"
+    | "gameLog.refreshed"
+    | "gameLog.spawned"
+    | "gameLog.defeated"
+    | "gameLog.cancelled"
+    | "gameLog.weakened"
+    | "gameLog.retargeted"
     | "battleSettings.resume"
     | "battleSettings.language"
     | "language.en"
@@ -227,12 +249,16 @@ export class Presentation {
                 id: "buff.severity.text",
                 args: {
                     name: this.definitionKey("buff", buff, variant),
-                    severity: this.definitionKey("buff", "severity", severity.toString()),
+                    severity: this.buffSeverity(severity),
                 },
             });
         } else {
             return this.translate(this.definitionKey("buff", buff, variant));
         }
+    }
+
+    buffSeverity(severity: number): string {
+        return this.translate(this.definitionKey("buff", "severity", severity.toString()));
     }
 
     failure(reason: FailureReason): string {
