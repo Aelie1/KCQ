@@ -8,6 +8,8 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { choiceShortcuts, COMBAT_SHORTCUTS } from "../keyboard";
+import { Shortcut } from "../components/Shortcut";
 import { CharacterDetailsLayout } from "../components/CharacterDetailsLayout";
 import { SelectedCommandSummary } from "../components/SelectedCommandSummary";
 import { createCharacterDetailsViewModel } from "../viewModels/characterDetails";
@@ -83,6 +85,11 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
         }
     });
 
+    const shortcuts = createMemo(() => choiceShortcuts(
+        model().groups.flatMap(group => [...group.choices]),
+        choice => choice.available && !choice.displayOnly,
+    ));
+
     const execute = (): void => {
         const transition = beginEscapeExecution(selectedEscapeId(), actorAction().escapes);
         if (!transition.escape) return;
@@ -120,13 +127,14 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
                                                 {(choice) => (
                                                     <button
                                                         type="button"
-                                                        class="kcq-escape-choice"
+                                                        class="kcq-escape-choice kcq-shortcut-host"
                                                         classList={{
                                                             "is-selected": choice.selected,
                                                             "is-increase": (choice.projection?.amount ?? 0) > 0,
                                                             "is-display-only": choice.displayOnly,
                                                         }}
                                                         disabled={!choice.available}
+                                                        data-kcq-shortcut={shortcuts().get(choice)}
                                                         aria-pressed={choice.selected}
                                                         title={choice.reasonLabel}
                                                         onClick={() => {
@@ -135,6 +143,7 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
                                                             }
                                                         }}
                                                     >
+                                                        <Shortcut shortcut={shortcuts().get(choice)} />
                                                         <span class="kcq-escape-choice__name">{choice.bindingName}</span>
                                                         <span class="kcq-escape-choice__value">
                                                             <span class={`kcq-escape-value--${choice.currentTone}`}>
@@ -171,18 +180,19 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
                 <footer class="kcq-screen-actions kcq-escape__footer">
                     <button
                         type="button"
-                        class="kcq-escape__back"
+                        class="kcq-escape__back kcq-shortcut-host"
                         onClick={() => props.onBack?.()}
                     >
-                        <span aria-hidden="true">{"\u21b6"}</span> {model().controls.backLabel}
+                        <Shortcut shortcut={COMBAT_SHORTCUTS.back} /> <span aria-hidden="true">{"\u21b6"}</span> {model().controls.backLabel}
                     </button>
                     <button
                         type="button"
-                        class="kcq-escape__execute"
+                        class="kcq-escape__execute kcq-shortcut-host"
+                        data-kcq-shortcut={props.onExecute ? "enter" : undefined}
                         disabled={!model().selectedEscapeId}
                         onClick={execute}
                     >
-                        {model().controls.executeLabel} <span aria-hidden="true">{"\u25b6"}</span>
+                        <Shortcut shortcut="Enter" /> {model().controls.executeLabel} <span aria-hidden="true">{"\u25b6"}</span>
                     </button>
                 </footer>
             }

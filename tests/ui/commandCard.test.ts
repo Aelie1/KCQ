@@ -21,13 +21,16 @@ describe("command card", () => {
                 id: "power-of-compulsion",
                 name,
                 reasonLabel,
-                shortcutLabel: "[8]",
+                shortcutKey: "8",
+                shortcutLabel: "8",
                 available: false,
                 tags,
             },
         }));
 
         expect(html).toContain(name);
+        expect(html).toContain('class="kcq-shortcut" aria-hidden="true">8</span>');
+        expect(html).not.toContain("[8]");
         expect(html).toContain(reasonLabel);
         for (const tag of tags) expect(html).toContain(tag.label);
     });

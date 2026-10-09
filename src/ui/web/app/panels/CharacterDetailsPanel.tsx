@@ -6,6 +6,8 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { COMBAT_SHORTCUTS } from "../keyboard";
+import { Shortcut } from "../components/Shortcut";
 import { CharacterDetailsLayout } from "../components/CharacterDetailsLayout";
 import { CommandCard } from "../components/CommandCard";
 import { createCharacterDetailsViewModel } from "../viewModels/characterDetails";
@@ -79,10 +81,10 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                 <footer class="kcq-screen-actions kcq-character-details__footer">
                     <button
                         type="button"
-                        class="kcq-character-details__back"
+                        class="kcq-character-details__back kcq-shortcut-host"
                         onClick={() => props.onBack?.()}
                     >
-                        <span aria-hidden="true">↶</span> {model().controls.backLabel}
+                        <Shortcut shortcut={COMBAT_SHORTCUTS.back} /> <span aria-hidden="true">↶</span> {model().controls.backLabel}
                     </button>
                     <button type="button" class="kcq-character-details__select" disabled>
                         {model().controls.selectMoveLabel} <span aria-hidden="true">▶</span>

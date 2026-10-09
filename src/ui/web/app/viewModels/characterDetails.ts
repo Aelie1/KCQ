@@ -20,6 +20,7 @@ import type {
     PartyConditionState,
     StatusChipTone,
 } from "../components/componentTypes";
+import { combatShortcut, COMBAT_SHORTCUTS, shortcutBadgeLabel } from "../keyboard";
 import { projectBindingZones } from "./bindingZones";
 import {
     createCharacterActionState,
@@ -44,6 +45,7 @@ export interface CommandCardViewModel {
     name: string;
     reasonLabel?: string;
     shortcutLabel: string;
+    shortcutKey?: string;
     tags: readonly CommandTagViewModel[];
 }
 
@@ -406,7 +408,8 @@ function createCommands(
     commands.push({
         id: "stance",
         name: presentation.ui("characterDetails.changeStance"),
-        shortcutLabel: shortcutLabel(action.moves.length + 1, presentation),
+        shortcutKey: COMBAT_SHORTCUTS.stance,
+        shortcutLabel: shortcutBadgeLabel(COMBAT_SHORTCUTS.stance),
         available: action.available && action.stance.available,
         ...reasonLabel(action.available && action.stance.available, action.reason ?? action.stance.reason, presentation),
         tags: [tag(
@@ -442,7 +445,8 @@ function createCommands(
     commands.push({
         id: "escape",
         name: presentation.ui("characterDetails.escape"),
-        shortcutLabel: shortcutLabel(0, presentation),
+        shortcutKey: COMBAT_SHORTCUTS.escape,
+        shortcutLabel: shortcutBadgeLabel(COMBAT_SHORTCUTS.escape),
         available: availableEscape,
         ...(action.escape.available && action.escapes.length === 0
             ? { reasonLabel: presentation.ui("characterDetails.noEscapeTargets") }
@@ -460,6 +464,7 @@ function createMoveCommand(
     character: Character,
     presentation: Presentation,
 ): CommandCardViewModel {
+    const shortcutKey = combatShortcut(shortcut - 1);
     const tags = createMoveTags(info, state, character, presentation);
     const cooldown = character.cooldowns[info.move.id];
     if (cooldown !== undefined && cooldown > 0) {
@@ -473,7 +478,8 @@ function createMoveCommand(
     return {
         id: info.move.id,
         name: presentation.move(info.move.id),
-        shortcutLabel: shortcutLabel(shortcut, presentation),
+        shortcutKey,
+        shortcutLabel: shortcutKey ? shortcutBadgeLabel(shortcutKey) : "",
         available: info.available,
         ...reasonLabel(info.available, info.reason, presentation),
         tags,
@@ -607,10 +613,6 @@ function reasonLabel(
             ? presentation.failure(reason)
             : presentation.ui("action.unavailable"),
     };
-}
-
-function shortcutLabel(shortcut: number, presentation: Presentation): string {
-    return presentation.ui("characterDetails.shortcut", { shortcut });
 }
 
 function tag(

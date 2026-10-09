@@ -22,7 +22,11 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 function button(label: string, scope: ParentNode = document): HTMLButtonElement {
-    const found = [...scope.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent?.trim() === label);
+    const found = [...scope.querySelectorAll<HTMLButtonElement>("button")].find(button => {
+            const content = button.cloneNode(true) as HTMLElement;
+            content.querySelectorAll(".kcq-shortcut").forEach(shortcut => shortcut.remove());
+            return content.textContent?.trim() === label;
+        });
     if (!found) throw new Error("Missing button: " + label);
     return found;
 }

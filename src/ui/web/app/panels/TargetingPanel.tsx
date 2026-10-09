@@ -7,6 +7,8 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { choiceShortcuts, COMBAT_SHORTCUTS } from "../keyboard";
+import { Shortcut } from "../components/Shortcut";
 import { CharacterDetailsLayout } from "../components/CharacterDetailsLayout";
 import { EffectPreview } from "../components/EffectPreview";
 import { SelectedCommandSummary } from "../components/SelectedCommandSummary";
@@ -85,6 +87,9 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
         previousActionIdentity = nextActionIdentity;
     });
 
+    const shortcuts = createMemo(() => choiceShortcuts(model().targets,
+        target => model().mode === "selectable" && target.valid && target.target !== null));
+
     const ready = createMemo(() => isTargetingReady(model(), selectedTargets()));
 
     const submit = (targets: readonly EntityId[]): void => {
@@ -135,6 +140,7 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
                                         disabled={submitted() || !model().available}
                                         mode={model().mode}
                                         target={target}
+                                        shortcut={shortcuts().get(target)}
                                         selected={target.target !== null && selectedTargets().includes(target.target)}
                                         onSelect={target.valid && target.target
                                             ? () => selectTarget(target.target as EntityId)
@@ -168,18 +174,19 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
                 <footer class="kcq-screen-actions kcq-targeting__footer">
                     <button
                         type="button"
-                        class="kcq-targeting__back"
+                        class="kcq-targeting__back kcq-shortcut-host"
                         onClick={() => props.onBack?.()}
                     >
-                        <span aria-hidden="true">↶</span> {model().controls.backLabel}
+                        <Shortcut shortcut={COMBAT_SHORTCUTS.back} /> <span aria-hidden="true">↶</span> {model().controls.backLabel}
                     </button>
                     <button
                         type="button"
-                        class="kcq-targeting__execute"
+                        class="kcq-targeting__execute kcq-shortcut-host"
+                        data-kcq-shortcut={props.onExecute ? "enter" : undefined}
                         disabled={submitted() || !ready()}
                         onClick={() => submit(selectedTargets())}
                     >
-                        {model().controls.executeLabel} <span aria-hidden="true">▶</span>
+                        <Shortcut shortcut="Enter" /> {model().controls.executeLabel} <span aria-hidden="true">▶</span>
                     </button>
                 </footer>
             }

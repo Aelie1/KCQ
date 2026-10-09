@@ -17,7 +17,7 @@ describe("escape workflow composition", () => {
             EscapePanel,
             escapeFixtures.unselected,
         ));
-        const executeButton = html.match(/<button[^>]*class="kcq-escape__execute"[^>]*>/)?.[0];
+        const executeButton = html.match(/<button[^>]*class="[^"]*\bkcq-escape__execute\b[^"]*"[^>]*>/)?.[0];
 
         expect(countClass(html, "kcq-combat-header--subscreen")).toBe(1);
         expect(html).toContain("kcq-combat-header__breadcrumb");
@@ -49,7 +49,7 @@ describe("escape workflow composition", () => {
             EscapePanel,
             escapeFixtures.selectedAssist,
         ));
-        const executeButton = html.match(/<button[^>]*class="kcq-escape__execute"[^>]*>/)?.[0];
+        const executeButton = html.match(/<button[^>]*class="[^"]*\bkcq-escape__execute\b[^"]*"[^>]*>/)?.[0];
 
         expect(countClass(html, "is-selected")).toBe(1);
         expect(countClass(html, "is-increase")).toBe(1);

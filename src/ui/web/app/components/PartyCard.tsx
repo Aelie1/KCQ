@@ -1,6 +1,7 @@
 import { For, Show, type JSX } from "solid-js";
 import { BindingMeter } from "./BindingMeter";
 import type { PartyCardData } from "./componentTypes";
+import { Shortcut } from "./Shortcut";
 import { StatusChip } from "./StatusChip";
 
 export type { PartyCardData } from "./componentTypes";
@@ -8,6 +9,7 @@ export type { PartyCardData } from "./componentTypes";
 export interface PartyCardProps {
     character: PartyCardData;
     onSelect?: () => void;
+    shortcut?: string;
 }
 
 export function PartyCard(props: PartyCardProps): JSX.Element {
@@ -15,8 +17,9 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
 
     return (
         <article
-            class="kcq-party-card"
+            class="kcq-party-card kcq-shortcut-host"
             classList={{ "kcq-party-card--ready": props.character.actionState.kind === "ready" }}
+            data-kcq-shortcut={interactive() ? props.shortcut : undefined}
             aria-label={props.character.name}
             role={interactive() ? "button" : undefined}
             tabIndex={interactive() ? 0 : undefined}
@@ -28,6 +31,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                 }
             }}
         >
+            <Shortcut shortcut={props.shortcut} />
             <header class="kcq-party-card__header">
                 <div class="kcq-party-card__identity">
                     <h3 class="kcq-party-card__name" classList={{ [`kcq-player-identity--${props.character.tone}`]: true }} title={props.character.name}>

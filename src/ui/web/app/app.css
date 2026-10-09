@@ -1835,15 +1835,6 @@ button {
     line-height: normal;
 }
 
-.kcq-command-card__shortcut {
-    flex: 0 0 auto;
-    color: var(--kcq-accent-primary);
-}
-
-.kcq-command-card--disabled .kcq-command-card__shortcut {
-    color: var(--kcq-text-dim);
-}
-
 .kcq-command-card__name {
     display: -webkit-box;
     min-width: 0;
@@ -3518,4 +3509,47 @@ button {
 
 .kcq-encounter-picker .kcq-screen-actions {
     grid-template-columns: 1fr;
+}
+
+.kcq-shortcut-host {
+    position: relative;
+}
+
+/* Keep badges inside borders: combat cards and their containers clip overflow. */
+.kcq-shortcut {
+    display: inline-flex;
+    position: absolute;
+    inset-block-start: 3px;
+    inset-inline-end: 3px;
+    align-items: center;
+    justify-content: center;
+    min-width: 14px;
+    height: 14px;
+    padding: 0 2px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 3px;
+    background: var(--kcq-surface-card);
+    color: var(--kcq-text-muted);
+    font-size: 8px;
+    font-weight: 500;
+    line-height: 1;
+    pointer-events: none;
+}
+
+@media (min-width: 481px) {
+    .kcq-party-card:has(> .kcq-shortcut) .kcq-party-card__header,
+    .kcq-command-card:has(> .kcq-shortcut) .kcq-command-card__heading,
+    .kcq-target-card:has(> .kcq-shortcut) .kcq-target-header {
+        padding-inline-end: 14px;
+    }
+
+    .kcq-escape-choice:has(> .kcq-shortcut) {
+        padding-inline-end: 22px;
+    }
+}
+
+@media (max-width: 480px) {
+    .kcq-shortcut {
+        display: none;
+    }
 }

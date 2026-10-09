@@ -6,6 +6,8 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { COMBAT_SHORTCUTS } from "../keyboard";
+import { Shortcut } from "../components/Shortcut";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { EnemyCard } from "../components/EnemyCard";
@@ -67,9 +69,10 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     </header>
                     <div class="kcq-battle-overview__party">
                         <For each={model().party}>
-                            {(character) => (
+                            {(character, index) => (
                                 <PartyCard
                                     character={character}
+                                    shortcut={index() < 3 ? String(index() + 1) : undefined}
                                     onSelect={props.onSelectCharacter
                                         ? () => props.onSelectCharacter?.(character.id)
                                         : undefined}
@@ -89,12 +92,12 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         {model().controls.gameLogLabel}
                     </button>
                     <button
-                        class="kcq-battle-overview__primary-action"
+                        class="kcq-battle-overview__primary-action kcq-shortcut-host"
                         classList={{ "is-dimmed": model().controls.endTurnDimmed }}
                         type="button"
                         onClick={() => props.onEndTurn?.()}
                     >
-                        {model().controls.endTurnLabel}
+                        <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {model().controls.endTurnLabel}
                     </button>
                 </footer>
             }

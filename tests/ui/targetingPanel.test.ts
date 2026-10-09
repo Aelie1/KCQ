@@ -38,7 +38,7 @@ describe("targeting workflow composition", () => {
             TargetingPanel,
             targetingFixtures.telekinesisReady,
         ));
-        const executeButton = html.match(/<button[^>]*class="kcq-targeting__execute"[^>]*>/)?.[0];
+        const executeButton = html.match(/<button[^>]*class="[^"]*\bkcq-targeting__execute\b[^"]*"[^>]*>/)?.[0];
 
         expect(countClass(html, "is-selected")).toBe(1);
         expect(executeButton).toBeDefined();
