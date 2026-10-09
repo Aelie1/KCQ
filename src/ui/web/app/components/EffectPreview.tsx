@@ -1,9 +1,9 @@
 import { For, Match, Show, Switch, type JSX } from "solid-js";
 import type { EffectPreviewViewModel } from "../viewModels/effectPreviews";
-import { ProjectedMeter } from "./ProjectedMeter";
 import { BindingMeter } from "./BindingMeter";
 import { DamageEffect } from "./DamageEffect";
 import { PipMeter } from "./PipMeter";
+import { ProjectedMeter } from "./ProjectedMeter";
 import { StatusChip } from "./StatusChip";
 
 export interface EffectPreviewProps {
@@ -168,6 +168,7 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                     value={binding.currentValue}
                                     change={binding.change}
                                     max={binding.max}
+                                    peak={binding.peak}
                                     level={binding.currentLevel}
                                     resultLevel={binding.projectedLevel}
                                     size="compact"

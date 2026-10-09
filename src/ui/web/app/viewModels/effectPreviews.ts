@@ -35,7 +35,7 @@ export interface BuffEffectViewModel {
 export interface BindingEffectViewModel {
     bindingName: string; change: number; currentLevel: BindingLevel; currentLevelLabel: string; currentValue: number;
     id: string; kind: "binding"; label: string;
-    max: number; projectedLevel: BindingLevel; projectedValue: number;
+    max: number; peak?: number; projectedLevel: BindingLevel; projectedValue: number;
     projectedLevelLabel?: string; recipient?: string; tone: "binding"; type: "binding";
 }
 export interface ResourceEffectViewModel {
@@ -195,8 +195,10 @@ function createBindingEffect(
     effect: Extract<Effect, { type: "binding" }>, id: string, context: EffectContext,
 ): EffectPreviewViewModel {
     const target = context.state?.characters.find(({ id: targetId }) => targetId === effect.target);
+    const binding = target?.bindings.find(({ id }) => id === effect.binding);
+    const peak = binding?.data["peak"];
     const currentValue = target
-        ? target.bindings.find(({ id: binding }) => binding === effect.binding)?.value ?? 0
+        ? binding?.value ?? 0
         : context.encounterSetup ? 0 : undefined;
     if (currentValue === undefined || effect.amount === undefined || !context.thresholds) {
         return compactEffect(id, "binding", "special", context.presentation.ui("targeting.effectBinding"),
@@ -218,6 +220,7 @@ function createBindingEffect(
         label: context.presentation.ui("targeting.effectBinding"),
         bindingName: context.presentation.binding(effect.binding), currentValue, change, projectedValue,
         max: context.thresholds.max,
+        peak: peak,
         currentLevel,
         currentLevelLabel: context.presentation.bindingLevel(currentLevel),
         projectedLevel,
