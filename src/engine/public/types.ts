@@ -217,7 +217,6 @@ export interface RefreshEffect {
     target: EntityId;
 }
 
-
 /*******************************************************
  * Moves
  *******************************************************/
@@ -512,7 +511,8 @@ export type LeafEvent =
     | CancelEvent
     | WeakenEvent
     | DataEvent
-    | IncapacitateEvent;
+    | IncapacitateEvent
+    | TickEvent;
 
 export interface MoveEvent {
     type: "useMove";
@@ -639,6 +639,12 @@ export interface DataEvent {
 export interface IncapacitateEvent {
     type: "characterIncapacitated" | "characterRescued";
     target: EntityId;
+}
+
+export interface TickEvent {
+    type: "bindingTick";
+    target: EntityId;
+    binding: BindingId;
 }
 
 /*******************************************************

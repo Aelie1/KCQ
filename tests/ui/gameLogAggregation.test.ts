@@ -488,3 +488,166 @@ describe("recorded inactive buff endpoints", () => {
             move: "move" in leaf ? leaf.move : undefined, operation: leaf.type === "intentionCancelled" ? "cancelled" : "weakened" })));
     });
 });
+
+
+describe("outcome prioritization aggregation", () => {
+    it.each([
+        ["hit", "hit", "miss", "crit"],
+        ["miss", "hit", "miss"],
+        ["hit", "hit", "graze", "hit", "crit", "miss", "none"],
+    ] as const)("cuts off every empty accuracy result after defeat: %j", (...bands) => {
+        const targets = bands.map((result, index) => ({ target: "skunkette1", result, effects: index === 1
+            ? [damage("skunkette1", 9), { type: "enemyDefeated" as const, target: "skunkette1" }]
+            : index === 0 && result !== "miss" ? [damage("skunkette1", 4)] : [] }));
+        const result = outcomes([move(targets)]);
+        expect(result[0]).toMatchObject({ damage: bands[0] === "miss" ? 9 : 13,
+            hits: [{ result: bands[0] }, { result: bands[1], damage: 9 }] });
+        expect((result[0] as DamageOutcome).hits).toHaveLength(2);
+        expect(result[1]).toEqual({ kind: "enemy", target: "skunkette1", operation: "defeated" });
+    });
+
+    it("keeps genuine zero-damage hits and misses before defeat and handles AoE per recipient", () => {
+        const result = outcomes([move([
+            { target: "skunkette1", result: "graze", effects: [damage("skunkette1", 0)] },
+            { target: "skunkette2", result: "miss", effects: [] },
+            { target: "skunkette1", result: "miss", effects: [] },
+            { target: "skunkette1", result: "hit", effects: [damage("skunkette1", 5), { type: "enemyDefeated", target: "skunkette1" }] },
+            { target: "skunkette1", result: "miss", effects: [] },
+            { target: "skunkette2", result: "crit", effects: [damage("skunkette2", 12)] },
+        ])]);
+        expect(result.filter(outcome => outcome.kind === "damage")).toMatchObject([
+            { target: "skunkette1", damage: 5, hits: [{ result: "graze", damage: 0, recordedZeroEffect: true }, { result: "miss" }, { result: "hit", damage: 5 }] },
+            { target: "skunkette2", damage: 12, hits: [{ result: "miss" }, { result: "crit", damage: 12 }] },
+        ]);
+    });
+
+    it("retains actual effects after defeat and resets the cutoff at a recorded respawn", () => {
+        const result = outcomes([move([
+            { target: "skunkette1", result: "hit", effects: [damage("skunkette1", 2), { type: "enemyDefeated", target: "skunkette1" }] },
+            { target: "skunkette1", result: "miss", effects: [dataChange("hinari", "subspace", 2)] },
+            { target: "skunkette2", result: "none", effects: [{ type: "enemySpawned", target: "skunkette1" }] },
+            { target: "skunkette1", result: "hit", effects: [damage("skunkette1", 3)] },
+        ])]);
+        expect(result[0]).toMatchObject({ damage: 5, hits: [{ result: "hit", damage: 2 }, { result: "miss" }, { result: "hit", damage: 3 }] });
+        expect(result).toContainEqual({ kind: "resource", target: "hinari", resource: "subspace", change: 2 });
+    });
+
+    it("preserves both explicit transitions in their originating event without repeating them", () => {
+        const events = [move([], [{ type: "characterIncapacitated", target: "ko" }]),
+            move([], [{ type: "buffUpdated", target: "ko", buff: "unknown" }]),
+            move([], [{ type: "characterRescued", target: "ko" }])];
+        expect(createGameLogEntries(events).map(entry => entry.outcomes.filter(outcome => outcome.kind === "character")))
+            .toEqual([[{ kind: "character", target: "ko", operation: "incapacitated" }], [], [{ kind: "character", target: "ko", operation: "rescued" }]]);
+        const incapacitated = state([character("ko", false, [{ id: "test", statuses: [{ id: "incapacitated", value: 1 }] }])]);
+        expect(outcomes([{ event: move([], [{ type: "buffAdded", target: "ko", buff: "test" }]), state: incapacitated }], state()))
+            .not.toContainEqual(expect.objectContaining({ kind: "character" }));
+    });
+
+    it("retains transition consequences as semantic data, marking only proven cleanup for presentation", () => {
+        const before = structuredClone(pounceBefore);
+        const after = state([character("ko", false, [{ id: "incap-buff" }])]);
+        const leaves: LeafEvent[] = [
+            { type: "bondageChanged", target: "ko", binding: "latexTorso", amount: 26 },
+            { type: "buffRemoved", target: "ko", buff: "pounce" },
+            { type: "stanceSet", actor: "ko", stance: "moving" },
+            { type: "buffRemoved", target: "skunkette1", buff: "pounce" },
+            { type: "buffAdded", target: "ko", buff: "incap-buff" },
+            { type: "characterIncapacitated", target: "ko" },
+            { type: "enemySpawned", target: "skunketteKo" },
+            damage("skunkette2", 7),
+            { type: "buffAdded", target: "ko", buff: "unrelated" },
+            { type: "stanceSet", actor: "hinari", stance: "moving" },
+        ];
+        const event = move([{ target: "ko", result: "hit", effects: leaves }]);
+        const saved = JSON.stringify(event);
+        const result = outcomes([{ event, state: after }], before);
+        expect(result.filter(outcome => "summarized" in outcome && outcome.summarized).map(outcome => outcome.kind)).toEqual(["buff", "stance", "buff"]);
+        expect(result).toContainEqual(expect.objectContaining({ kind: "binding", change: 26 }));
+        expect(result).toContainEqual(expect.objectContaining({ kind: "enemy", operation: "spawned" }));
+        expect(result).toContainEqual(expect.objectContaining({ kind: "damage", target: "skunkette2", damage: 7 }));
+        expect(result.find(outcome => outcome.kind === "buff" && outcome.buff === "unrelated")).not.toHaveProperty("summarized");
+        expect(JSON.stringify(event)).toBe(saved);
+    });
+
+    it("does not summarize uncertain cleanup, separated effects, or independent mutations of a shared group", () => {
+        for (const initial of [undefined, pounceBefore]) {
+            const result = outcomes([move([], [
+                { type: "buffRemoved", target: "ko", buff: "pounce" },
+                { type: "stanceSet", actor: "ko", stance: "moving" },
+                { type: "buffRemoved", target: "skunkette1", buff: "pounce" },
+                dataChange("hinari", "subspace", 2),
+                { type: "buffAdded", target: "ko", buff: "incap-buff" },
+                { type: "characterIncapacitated", target: "ko" },
+                { type: "buffUpdated", target: "ko", buff: "incap-buff" },
+            ])], initial);
+            expect(result.filter(outcome => "summarized" in outcome && outcome.summarized)).toEqual([]);
+        }
+    });
+
+    it("summarizes rescue's causal linked buff removal and adjacent stance, retaining other recovery effects", () => {
+        const before = state([character("ko", true, [{ id: "captured", linkedEntity: "skunkette1" }])],
+            [enemy("skunkette1", [{ id: "captured", linkedEntity: "ko" }])]);
+        const result = outcomes([{ event: move([], [
+            { type: "buffRemoved", target: "ko", buff: "captured" },
+            { type: "characterRescued", target: "ko" },
+            { type: "stanceSet", actor: "ko", stance: "moving" },
+            { type: "buffRemoved", target: "skunkette1", buff: "captured" },
+            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -20 },
+            { type: "enemyDefeated", target: "skunkette1" },
+            { type: "actionRefreshed", target: "ko" },
+        ]), state: state() }], before);
+        expect(result.filter(outcome => "summarized" in outcome && outcome.summarized).map(outcome => outcome.kind)).toEqual(["buff", "stance"]);
+        expect(result).toContainEqual({ kind: "character", target: "ko", operation: "rescued" });
+        expect(result).toContainEqual(expect.objectContaining({ kind: "binding", change: -20 }));
+        expect(result).toContainEqual({ kind: "enemy", target: "skunkette1", operation: "defeated" });
+        expect(result).toContainEqual({ kind: "refresh", target: "ko" });
+    });
+});
+
+
+describe("conservative transition evidence", () => {
+    it("retains nearby linked cleanup when its payload and relationship are unknown", () => {
+        const result = outcomes([move([], [
+            { type: "buffRemoved", target: "ko", buff: "pounce" },
+            { type: "buffRemoved", target: "skunkette1", buff: "pounce" },
+            { type: "stanceSet", actor: "ko", stance: "moving" },
+            { type: "buffAdded", target: "ko", buff: "incap-buff" },
+            { type: "characterIncapacitated", target: "ko" },
+        ])]);
+        expect(result.filter(outcome => "summarized" in outcome && outcome.summarized)).toEqual([
+            expect.objectContaining({ kind: "buff", buff: "incap-buff" }),
+        ]);
+        expect(result.filter(outcome => outcome.kind === "buff" && outcome.buff === "pounce")).toHaveLength(2);
+        expect(result.find(outcome => outcome.kind === "stance")).not.toHaveProperty("summarized");
+    });
+
+    it("keeps independent changes when a cleanup buff or stance has additional evidence in the same action", () => {
+        const event = move([], [
+            { type: "buffUpdated", target: "ko", buff: "pounce" },
+            { type: "stanceSet", actor: "ko", stance: "standing" },
+            { type: "buffRemoved", target: "ko", buff: "pounce" },
+            { type: "buffRemoved", target: "skunkette1", buff: "pounce" },
+            { type: "stanceSet", actor: "ko", stance: "moving" },
+            { type: "buffAdded", target: "ko", buff: "incap-buff" },
+            { type: "characterIncapacitated", target: "ko" },
+        ]);
+        const result = outcomes([event], pounceBefore);
+        expect(result.find(outcome => outcome.kind === "buff" && outcome.buff === "pounce")).not.toHaveProperty("summarized");
+        expect(result.find(outcome => outcome.kind === "stance")).not.toHaveProperty("summarized");
+    });
+});
+
+
+describe("bounded recovery cleanup", () => {
+    it("keeps repeated stance evidence and does not absorb another recovery mutation", () => {
+        const result = outcomes([move([], [
+            { type: "buffRemoved", target: "ko", buff: "captured" },
+            { type: "characterRescued", target: "ko" },
+            { type: "stanceSet", actor: "ko", stance: "moving" },
+            { type: "stanceSet", actor: "ko", stance: "moving" },
+            { type: "buffAdded", target: "ko", buff: "independent" },
+        ])], state([character("ko", true, [{ id: "captured" }])]));
+        expect(result.find(outcome => outcome.kind === "stance")).not.toHaveProperty("summarized");
+        expect(result.find(outcome => outcome.kind === "buff" && outcome.buff === "independent")).not.toHaveProperty("summarized");
+    });
+});

@@ -373,6 +373,7 @@ describe("Skunkette behavior through GameEngine", () => {
                 amount: -30,
             },
             { type: "buffAdded", target: SKUNKED_CHARACTER_ID, buff: SKUNKED_ID },
+            { type: "characterIncapacitated", target: SKUNKED_CHARACTER_ID },
             { type: "enemySpawned", target: LINKED_SKUNKETTE_ID },
             { type: "buffAdded", target: LINKED_SKUNKETTE_ID, buff: SKUNKED_ID },
         ]);
@@ -447,6 +448,7 @@ describe("Skunkette behavior through GameEngine", () => {
             { type: "buffAdded", target: LINKED_SKUNKETTE_ID, buff: "resistance" },
             { type: "buffRemoved", target: LINKED_SKUNKETTE_ID, buff: SKUNKED_ID },
             { type: "buffRemoved", target: SKUNKED_CHARACTER_ID, buff: SKUNKED_ID },
+            { type: "characterRescued", target: SKUNKED_CHARACTER_ID },
             ...LATEX_BODY_BINDINGS.map((binding) => ({
                 type: "bondageChanged" as const,
                 target: SKUNKED_CHARACTER_ID,

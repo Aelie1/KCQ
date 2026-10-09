@@ -9,6 +9,8 @@ export interface LogHit {
     damage: number;
     healing: number;
     blocked: number;
+    /** An emitted zero HP effect is an executed hit, even when its totals are zero. */
+    recordedZeroEffect?: true;
 }
 export interface DamageOutcome {
     kind: "damage";
@@ -34,8 +36,10 @@ export interface BuffOutcome {
     kind: "buff"; buff: BuffId;
     /** A reciprocal linked buff has one row with both participants' distinct payloads. */
     participants: BuffParticipant[];
+    /** Retained semantic data, summarized by an explicit character transition in the graphical log. */
+    summarized?: true;
 }
-export interface StanceOutcome { kind: "stance"; actor: EntityId; initial?: StanceId; final: StanceId }
+export interface StanceOutcome { kind: "stance"; actor: EntityId; initial?: StanceId; final: StanceId; summarized?: true }
 export interface TrapOutcome {
     kind: "trap"; trap: TrapId;
     change?: number; initial?: number; final?: number;
@@ -48,6 +52,7 @@ export interface ResourceOutcome {
     change: number; initial?: number; final?: number; max?: number;
 }
 export type LogOutcome = ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
+    | { kind: "character"; target: EntityId; operation: "incapacitated" | "rescued" }
     | { kind: "enemy"; target: EntityId; operation: "spawned" | "defeated" }
     | { kind: "interrupt"; actor: EntityId; reason: FailureReason }
     | { kind: "refresh"; target: EntityId }
@@ -92,8 +97,78 @@ function linkedTarget(before: GameState | undefined, after: GameState | undefine
     return undefined;
 }
 
+/** Explicit transitions identify their immediately preceding buff mutation. Only
+ * contiguous, recorded immobilizing linked-buff cleanup plus its Moving stance
+ * is also summarized. Unknown payloads and intervening gameplay effects stay visible.
+ * Status payloads describe the cleanup buff; they never detect a transition here. */
+function transitionConsequences(event: GameEvent, before: GameState | undefined, after: GameState | undefined, recorded: RecordedBuffs): Set<LeafEvent> {
+    const summarized = new Set<LeafEvent>();
+    const sequences = [...(event.type === "useMove" ? event.targets.map(target => target.effects) : []), event.effects];
+    for (const leaves of sequences) {
+        for (const [index, transition] of leaves.entries()) {
+            if (transition.type !== "characterIncapacitated" && transition.type !== "characterRescued") continue;
+            const cause = leaves[index - 1];
+            const rescued = transition.type === "characterRescued";
+            if (!cause || !(rescued ? cause.type === "buffRemoved" : cause.type === "buffAdded" || cause.type === "buffUpdated")
+                || !("target" in cause) || cause.target !== transition.target || !("buff" in cause)) continue;
+            summarized.add(cause);
+            const linked = linkedTarget(before, after, cause.target, cause.buff, recorded);
+            // removeBuff emits rescue before queued stance restoration and linked removal.
+            if (rescued) {
+                const partnerRemoval = leaves[index - 2];
+                if (linked && partnerRemoval?.type === "buffRemoved" && partnerRemoval.target === linked && partnerRemoval.buff === cause.buff) {
+                    summarized.add(partnerRemoval);
+                }
+                let restored = false;
+                let unlinked = false;
+                for (const leaf of leaves.slice(index + 1, index + 3)) {
+                    if (!restored && leaf.type === "stanceSet" && leaf.actor === transition.target && leaf.stance === "moving") {
+                        summarized.add(leaf);
+                        restored = true;
+                    } else if (!unlinked && leaf.type === "buffRemoved" && leaf.target === linked && leaf.buff === cause.buff) {
+                        summarized.add(leaf);
+                        unlinked = true;
+                    } else break;
+                }
+                continue;
+            }
+            const spawn = leaves[index + 1];
+            const partnerBuff = leaves[index + 2];
+            if (linked && spawn?.type === "enemySpawned" && spawn.target === linked
+                && partnerBuff?.type === "buffAdded" && partnerBuff.target === linked && partnerBuff.buff === cause.buff) {
+                summarized.add(partnerBuff);
+            }
+            // One reciprocal removal and one stance restoration immediately before
+            // the causal buff. Do not absorb earlier independent cleanup in this action.
+            const cleanup = leaves.slice(Math.max(0, index - 4), index - 1);
+            if (cleanup.length !== 3 || cleanup.some(leaf => leaf.type !== "buffRemoved"
+                && !(leaf.type === "stanceSet" && leaf.actor === transition.target && leaf.stance === "moving"))) continue;
+            const moving = cleanup.find(leaf => leaf.type === "stanceSet");
+            if (!moving) continue;
+            for (const removal of cleanup) {
+                if (removal.type !== "buffRemoved" || removal.target !== transition.target) continue;
+                const payload = recordedBuff(before, new Map(), removal.target, removal.buff);
+                const partner = linkedTarget(before, after, removal.target, removal.buff, recorded);
+                const reciprocal = cleanup.find(leaf => leaf.type === "buffRemoved" && leaf.target === partner && leaf.buff === removal.buff);
+                if (!partner || !reciprocal || !payload?.statuses?.some(status => status.id === "immobilized" && status.value > 0)) continue;
+                summarized.add(removal);
+                summarized.add(reciprocal);
+                summarized.add(moving);
+            }
+        }
+    }
+    return summarized;
+}
+
 function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameState, recorded: RecordedBuffs = new Map()): LogOutcome[] {
     const outcomes: LogOutcome[] = [];
+    const summarized = transitionConsequences(event, before, after, recorded);
+    const evidence = new Map<BuffOutcome | StanceOutcome, LeafEvent[]>();
+    const record = (outcome: BuffOutcome | StanceOutcome, effect: LeafEvent) => {
+        const leaves = evidence.get(outcome) ?? [];
+        leaves.push(effect);
+        evidence.set(outcome, leaves);
+    };
     const damageGroup = (target: EntityId): DamageOutcome => {
         let group = outcomes.find((outcome): outcome is DamageOutcome => outcome.kind === "damage" && outcome.target === target);
         if (!group) {
@@ -110,7 +185,10 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
                 const group = damageGroup(effect.target);
                 const field = effect.type === "enemyDamaged" ? "damage" : effect.type === "enemyHealed" ? "healing" : "blocked";
                 group[field] += effect.amount;
-                if (hit?.target === effect.target) hit.value[field] += effect.amount;
+                if (hit?.target === effect.target) {
+                    hit.value[field] += effect.amount;
+                    if (effect.amount === 0) hit.value.recordedZeroEffect = true;
+                }
                 else group.hits.push({ result: "none", damage: 0, healing: 0, blocked: 0, [field]: effect.amount });
                 break;
             }
@@ -153,6 +231,7 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
                     }
                     outcomes.push(group);
                 }
+                record(group, effect);
                 const participant = group.participants.find(({ target }) => target === effect.target)!;
                 if (effect.type === "buffRemoved") participant.final = { present: false };
                 else if (!participant.final.present) participant.final = { present: true };
@@ -175,7 +254,11 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
             case "stanceSet": {
                 let group = outcomes.find((outcome): outcome is StanceOutcome => outcome.kind === "stance" && outcome.actor === effect.actor);
                 if (group) group.final = effect.stance;
-                else outcomes.push({ kind: "stance", actor: effect.actor, initial: stance(before, effect.actor), final: effect.stance });
+                else {
+                    group = { kind: "stance", actor: effect.actor, initial: stance(before, effect.actor), final: effect.stance };
+                    outcomes.push(group);
+                }
+                record(group, effect);
                 break;
             }
             case "trapAdded":
@@ -194,6 +277,9 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
                 } else if (group.change !== undefined) group.change += effect.type === "trapRemoved" ? -effect.amount : effect.amount;
                 break;
             }
+            case "characterIncapacitated":
+            case "characterRescued": outcomes.push({ kind: "character", target: effect.target,
+                operation: effect.type === "characterIncapacitated" ? "incapacitated" : "rescued" }); break;
             case "enemySpawned":
             case "enemyDefeated": outcomes.push({ kind: "enemy", target: effect.target, operation: effect.type === "enemySpawned" ? "spawned" : "defeated" }); break;
             case "actionInterrupted": outcomes.push({ kind: "interrupt", actor: effect.actor, reason: effect.reason }); break;
@@ -212,9 +298,10 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
     if (event.type === "useMove") {
         const defeated = new Set<EntityId>();
         for (const target of event.targets) {
-            // Effects are rejected by the engine once the entity has been removed.
-            // Misses are separately recorded accuracy results and remain useful.
-            if (defeated.has(target.target) && target.result !== "miss" && target.effects.length === 0) continue;
+            // Empty results after the recorded removal are unexecuted, for every band.
+            // Effects can still resolve on other recipients (e.g. callbacks/resources),
+            // so a nonempty result must retain its gameplay events and accuracy evidence.
+            if (defeated.has(target.target) && target.effects.length === 0) continue;
             const hit: LogHit = { result: target.result, damage: 0, healing: 0, blocked: 0 };
             // Accuracy remains useful even when a binding/buff attack has no HP damage.
             if (target.result !== "none" || target.effects.some((effect) =>
@@ -238,6 +325,9 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
         if (outcome.kind === "trap" && outcome.initial !== undefined && outcome.final !== undefined) {
             outcome.change = outcome.final - outcome.initial;
         }
+    }
+    for (const [outcome, leaves] of evidence) {
+        if (leaves.every(leaf => summarized.has(leaf))) outcome.summarized = true;
     }
     return outcomes.filter((outcome) => outcome.kind !== "stance" || outcome.initial !== outcome.final);
 }

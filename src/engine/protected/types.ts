@@ -3,7 +3,8 @@ import {
     Difficulty,
     Enemy, EnemyEffect, EntityId,
     HitBand,
-    StanceId, TargetInfo, Trap, TrapEffect, Turn
+    StanceId, TargetInfo,
+    Trap, TrapEffect, Turn
 } from "../public/types";
 import { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, TrapDef } from "./definitions";
 
@@ -125,7 +126,8 @@ export type iEffect =
     | iRefreshEffect
     | iRetargetEffect
     | iCancelEffect
-    | iDataEffect;
+    | iDataEffect
+    | iTickEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -208,4 +210,10 @@ interface iDataEffect {
     name: string;
     amount: number;
     visible: boolean;
+}
+
+interface iTickEffect {
+    type: "tick"
+    target: iEntity;
+    binding: iBinding;
 }

@@ -16,7 +16,7 @@ export interface GameLogRow {
     target?: string;
     targetParts?: GameLogText[];
     label?: string;
-    emphasis?: "defeat";
+    emphasis?: "defeat" | "incapacitated" | "rescued";
     values: GameLogValue[];
 }
 export interface GameLogViewModelEntry {
@@ -133,6 +133,10 @@ export function createGameLogViewModel(
                     ...outcome.triggers.map(trigger => ({ text: p.ui("gameLog.trapTriggered", { actor: p.entity(trigger.actor), amount: trigger.amount }), tone: "warning" })),
                 ] };
             }
+            case "character": return { kind: outcome.kind, target: p.entity(outcome.target),
+                emphasis: outcome.operation,
+                values: [{ text: p.ui(outcome.operation === "incapacitated" ? "gameLog.incapacitated" : "gameLog.rescued"),
+                    tone: outcome.operation === "incapacitated" ? "incapacitated" : "success" }] };
             case "enemy": return { kind: outcome.kind, target: p.entity(outcome.target),
                 emphasis: outcome.operation === "defeated" ? "defeat" : undefined,
                 values: [{ text: p.ui(outcome.operation === "spawned" ? "gameLog.spawned" : "gameLog.defeated"), tone: "warning" }] };
@@ -152,9 +156,9 @@ export function createGameLogViewModel(
         const groups = new Map<string, BuffOutcome>();
         const grouped = new Set<BuffOutcome>();
         const buffGroups = new Map<BuffOutcome, BuffOutcome>();
-        const skipped = new Set<LogOutcome>();
+        const skipped = new Set<LogOutcome>(entry.outcomes.filter(outcome => "summarized" in outcome && outcome.summarized));
         for (const outcome of entry.outcomes) {
-            if (outcome.kind !== "buff" || outcome.participants.length !== 1) continue;
+            if (skipped.has(outcome) || outcome.kind !== "buff" || outcome.participants.length !== 1) continue;
             const participant = outcome.participants[0]!;
             if (participant.initial.details?.linkedEntity || participant.final.details?.linkedEntity) continue;
             const key = JSON.stringify([outcome.buff, buffOperation(participant), participant.initial.present, participant.final.present,
@@ -192,12 +196,13 @@ export function createGameLogViewModel(
         if (entry.kind === "move") {
             for (const outcome of entry.outcomes) {
                 if (outcome.kind !== "damage" || outcome.hits.length !== 1 || outcome.hits[0]!.result === "none") continue;
-                const hitRow = rows.get(outcome)!;
+                const hitRow = rows.get(outcome);
+                if (!hitRow) continue;
                 for (const effect of entry.outcomes) {
                     const effectRow = rows.get(effect);
                     if (!effectRow) continue;
                     const binding = effect.kind === "binding" && effect.target === outcome.target;
-                    const buff = effect.kind === "buff" && effect.participants.some(participant => participant.target === outcome.target)
+                    const buff = outcome.hits[0]!.result !== "miss" && effect.kind === "buff" && effect.participants.some(participant => participant.target === outcome.target)
                         && effect.participants.every(participant => participant.target === outcome.target || participant.target === entry.actor)
                         && effect.participants.filter(participant => entry.outcomes.some(candidate =>
                             candidate.kind === "damage" && candidate.target === participant.target)).length === 1
@@ -209,6 +214,27 @@ export function createGameLogViewModel(
                     }
                 }
             }
+        }
+        // Accuracy-only rows explain failed attacks, but shared buffs do not need
+        // one roll per participant. HP effects (including recorded zeroes) and
+        // binding sequences retain all executed bands and their damage totals.
+        for (const outcome of entry.outcomes) {
+            if (outcome.kind !== "damage") continue;
+            const formatted = rows.get(outcome);
+            if (!formatted) continue;
+            const hpEffect = outcome.hits.some(hit => hit.damage !== 0 || hit.healing !== 0 || hit.blocked !== 0 || hit.recordedZeroEffect);
+            const related = entry.outcomes.filter(effect => effect !== outcome && !("summarized" in effect && effect.summarized) && (
+                ("target" in effect && effect.target === outcome.target)
+                || (effect.kind === "buff" && effect.participants.some(participant => participant.target === outcome.target))
+                || (effect.kind === "stance" && effect.actor === outcome.target)));
+            const binding = related.some(effect => effect.kind === "binding");
+            const significant = related.some(effect => effect.kind === "character" || effect.kind === "enemy");
+            const inline = formatted.values.length > outcome.hits.filter(hit => hit.result !== "none").length;
+            if (hpEffect || binding || significant || inline) continue;
+            // Preserve a target's failed attack unless an effect on that target succeeded.
+            formatted.values = related.length === 0 ? outcome.hits.filter(hit => hit.result === "miss")
+                .map(hit => ({ text: p.hitBand(hit.result), tone: hit.result })) : [];
+            if (!formatted.values.length) rows.delete(outcome);
         }
         const model: GameLogViewModelEntry = { kind: entry.kind, rows: [...rows.values()] };
         switch (entry.kind) {

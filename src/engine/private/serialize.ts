@@ -147,7 +147,6 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 type: effect.type,
                 target: effect.target.id,
             }
-
     }
 }
 

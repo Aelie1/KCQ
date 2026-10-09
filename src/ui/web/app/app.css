@@ -1108,7 +1108,7 @@ button {
     gap: 0;
     padding: 8px 12px;
     background: var(--kcq-surface-card);
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     line-height: 1.5;
 }
 
@@ -1221,7 +1221,7 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-game-log__value + .kcq-game-log__value::before {
+.kcq-game-log__value+.kcq-game-log__value::before {
     content: "·";
     margin-right: 0.35em;
     color: var(--kcq-text-dim);
@@ -1279,14 +1279,28 @@ button {
     margin-left: 4px;
 }
 
-.kcq-game-log__value + .kcq-game-log__value--total::before {
+.kcq-game-log__value+.kcq-game-log__value--total::before {
     content: none;
 }
 
-.kcq-game-log__row--defeat {
+.kcq-game-log__row--defeat,
+.kcq-game-log__row--incapacitated,
+.kcq-game-log__row--rescued {
     border-left: 2px solid var(--kcq-state-warning);
     padding-left: 6px;
     font-weight: 700;
+}
+
+.kcq-game-log__row--incapacitated {
+    border-left-color: var(--kcq-state-danger);
+}
+
+.kcq-game-log__value--incapacitated {
+    color: var(--kcq-state-danger);
+}
+
+.kcq-game-log__row--rescued {
+    border-left-color: var(--kcq-state-success);
 }
 
 .kcq-game-log__empty {

@@ -35,6 +35,8 @@ export type UiLabel =
     | "gameLog.interrupted"
     | "gameLog.refreshed"
     | "gameLog.spawned"
+    | "gameLog.incapacitated"
+    | "gameLog.rescued"
     | "gameLog.defeated"
     | "gameLog.cancelled"
     | "gameLog.weakened"
@@ -548,6 +550,14 @@ export class Presentation {
                         target: this.entityKey(event.target),
                         name: this.data(event.name),
                         amount: event.amount,
+                    },
+                };
+            case "bindingTick":
+                return {
+                    id: `event.${event.type}.text`,
+                    args: {
+                        target: this.entityKey(event.target),
+                        binding: this.data(event.binding),
                     },
                 };
 

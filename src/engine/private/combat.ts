@@ -321,6 +321,11 @@ export function tickBindings(state: iGameState): iEffect[] {
     for (const character of state.characters) {
         for (const binding of character.bindings) {
             if (binding.definition.onTick) {
+                effects.push({
+                    type: "tick",
+                    target: character,
+                    binding: binding
+                });
                 effects.push(...binding.definition.onTick(character, binding));
             }
         }

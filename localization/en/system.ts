@@ -72,6 +72,8 @@ export const systemEnglishStrings: StringTable = {
     "ui.gameLog.interrupted": "Interrupted · {reason}",
     "ui.gameLog.refreshed": "Action Refreshed",
     "ui.gameLog.spawned": "Spawned",
+    "ui.gameLog.incapacitated": "Incapacitated",
+    "ui.gameLog.rescued": "Rescued",
     "ui.gameLog.defeated": "Defeated",
     "ui.gameLog.cancelled": "{move} Cancelled",
     "ui.gameLog.weakened": "{move} Weakened",

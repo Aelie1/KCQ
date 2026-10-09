@@ -4,7 +4,7 @@ import { findBinding, findBuff, findEntity, isCharacter, isEnemy, isValidEntity 
 import { getBindingPotency } from "../protected/mechanics";
 import { Random } from "../protected/random";
 import { GameStatus } from "../protected/status";
-import { ContentCatalog, iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
+import { ContentCatalog, iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, LeafEvent, StanceId } from "../public/types";
 import { TRAP_MAX } from "./constants";
 import { iEngineEffect } from "./types";
@@ -132,6 +132,9 @@ export class GameEffects {
                     break;
                 case "data":
                     this.setData(effect.target, effect.name, effect.amount, effect.visible);
+                    break;
+                case "tick":
+                    this.tickEffect(effect.target, effect.binding);
             }
         }
     };
@@ -587,5 +590,13 @@ export class GameEffects {
                 amount: target.data[name] - origAmount
             });
         }
+    }
+
+    private tickEffect(target: iEntity, binding: iBinding) {
+        this.addEvent({
+            type: "bindingTick",
+            target: target.id,
+            binding: binding.id
+        });
     }
 };
