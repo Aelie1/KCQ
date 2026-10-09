@@ -77,30 +77,37 @@ export function createGameLogViewModel(
         if (changed) return phrase("gameLog.transition", {
             initial: buffLabel, final: { text: p.buffSeverity(after), tone: "special" },
         });
-        return phrase("gameLog.buffOutcome", { buff: buffLabel,
-            operation: { text: p.ui(`gameLog.${operation}`), tone: operation === "added" ? "success" : operation === "removed" ? "warning" : "special" } });
+        return phrase("gameLog.buffOutcome", {
+            buff: buffLabel,
+            operation: { text: p.ui(`gameLog.${operation}`), tone: operation === "added" ? "success" : operation === "removed" ? "warning" : "special" }
+        });
     };
     const buffRow = (outcome: BuffOutcome, grouped = false): GameLogRow => {
         const target = targets(outcome.participants.map(participant => participant.target), !grouped && outcome.participants.length > 1);
         const changes = outcome.participants.map(participant => buffChange(outcome.buff, participant));
         const shared = changes.every(change => change.text === changes[0]?.text);
-        return { kind: "buff", target: target.text, targetParts: target.parts,
+        return {
+            kind: "buff", target: target.text, targetParts: target.parts,
             values: shared ? changes.slice(0, 1) : changes.map((change, index) =>
                 phrase("gameLog.participantChange", { target: name(outcome.participants[index]!.target), change })),
         };
     };
     const stanceRow = (change: StanceOutcome): GameLogRow => ({
-        kind: "stance", target: p.entity(change.actor), targetParts: [name(change.actor)], values: [{ text: change.initial
-            ? transition(p.stance(change.initial), p.stance(change.final)) : p.stance(change.final) }],
+        kind: "stance", target: p.entity(change.actor), targetParts: [name(change.actor)], values: [{
+            text: change.initial
+                ? transition(p.stance(change.initial), p.stance(change.final)) : p.stance(change.final)
+        }],
     });
     const row = (outcome: LogOutcome): GameLogRow => {
         switch (outcome.kind) {
             case "damage": return {
                 kind: outcome.kind, target: p.entity(outcome.target), values: outcome.hits.flatMap(hit => {
                     const values: GameLogValue[] = [];
-                    if (hit.result !== "none") values.push({ text: hit.damage
-                        ? p.ui("gameLog.hitDamage", { band: p.hitBand(hit.result), amount: hit.damage })
-                        : p.hitBand(hit.result), tone: hit.result });
+                    if (hit.result !== "none") values.push({
+                        text: hit.damage
+                            ? p.ui("gameLog.hitDamage", { band: p.hitBand(hit.result), amount: hit.damage })
+                            : p.hitBand(hit.result), tone: hit.result
+                    });
                     else if (hit.damage) values.push({ text: p.ui("targeting.damageAmount", { amount: hit.damage }), tone: "hit" });
                     if (hit.healing) values.push({ text: p.ui("gameLog.healed", { amount: hit.healing }), tone: "success" });
                     if (hit.blocked) values.push({ text: p.ui("gameLog.blocked", { amount: hit.blocked }), tone: "muted" });
@@ -113,41 +120,63 @@ export function createGameLogViewModel(
                         initial: { text: bindingValue(outcome.initial), tone: outcome.initial.level ? "binding-" + outcome.initial.level : undefined },
                         final: { text: bindingValue(outcome.final), tone: outcome.final.level ? "binding-" + outcome.final.level : undefined },
                     }) : { text: formatSignedNumber(outcome.change) };
-                return { kind: outcome.kind, target: p.entity(outcome.target),
+                return {
+                    kind: outcome.kind, target: p.entity(outcome.target),
                     values: [phrase("gameLog.bindingOutcome", { binding: { text: p.binding(outcome.binding), tone: "label" }, value }),
-                        ...(outcome.blocked ? [{ text: p.ui("gameLog.blocked", { amount: outcome.blocked }), tone: "muted" }] : [])] };
+                    ...(outcome.blocked ? [{ text: p.ui("gameLog.blocked", { amount: outcome.blocked }), tone: "muted" }] : [])]
+                };
             }
             case "buff": return buffRow(outcome);
             case "resource": {
                 const endpoints = numeric(outcome.initial, outcome.final);
                 const change = outcome.initial !== undefined && outcome.final !== undefined ? outcome.final - outcome.initial : outcome.change;
-                return { kind: outcome.kind, target: p.entity(outcome.target), label: p.data(outcome.resource),
-                    values: [{ text: outcome.initial !== undefined && outcome.final !== undefined
-                        ? endpoints! : formatSignedNumber(outcome.change), tone: change < 0 ? "warning" : change > 0 ? "success" : "muted" }] };
+                return {
+                    kind: outcome.kind, target: p.entity(outcome.target), label: p.data(outcome.resource),
+                    values: [{
+                        text: outcome.initial !== undefined && outcome.final !== undefined
+                            ? endpoints! : formatSignedNumber(outcome.change), tone: change < 0 ? "warning" : change > 0 ? "success" : "muted"
+                    }]
+                };
             }
             case "stance": return stanceRow(outcome);
             case "trap": {
                 const endpoints = numeric(outcome.initial, outcome.final);
-                return { kind: outcome.kind, label: p.trap(outcome.trap), values: [
-                    ...(endpoints ? [{ text: endpoints }] : outcome.change !== undefined ? [{ text: formatSignedNumber(outcome.change) }] : []),
-                    ...outcome.triggers.map(trigger => ({ text: p.ui("gameLog.trapTriggered", { actor: p.entity(trigger.actor), amount: trigger.amount }), tone: "warning" })),
-                ] };
+                return {
+                    kind: outcome.kind, label: p.trap(outcome.trap), values: [
+                        ...(endpoints ? [{ text: endpoints }] : outcome.change !== undefined ? [{ text: formatSignedNumber(outcome.change) }] : []),
+                        ...outcome.triggers.map(trigger => ({ text: p.ui("gameLog.trapTriggered", { actor: p.entity(trigger.actor), amount: trigger.amount }), tone: "warning" })),
+                    ]
+                };
             }
-            case "character": return { kind: outcome.kind, target: p.entity(outcome.target),
+            case "character": return {
+                kind: outcome.kind, target: p.entity(outcome.target),
                 emphasis: outcome.operation,
-                values: [{ text: p.ui(outcome.operation === "incapacitated" ? "gameLog.incapacitated" : "gameLog.rescued"),
-                    tone: outcome.operation === "incapacitated" ? "incapacitated" : "success" }] };
-            case "enemy": return { kind: outcome.kind, target: p.entity(outcome.target),
+                values: [{
+                    text: p.ui(outcome.operation === "incapacitated" ? "gameLog.incapacitated" : "gameLog.rescued"),
+                    tone: outcome.operation === "incapacitated" ? "incapacitated" : "success"
+                }]
+            };
+            case "enemy": return {
+                kind: outcome.kind, target: p.entity(outcome.target),
                 emphasis: outcome.operation === "defeated" ? "defeat" : undefined,
-                values: [{ text: p.ui(outcome.operation === "spawned" ? "gameLog.spawned" : "gameLog.defeated"), tone: "warning" }] };
-            case "interrupt": return { kind: outcome.kind, target: p.entity(outcome.actor),
-                values: [{ text: p.ui("gameLog.interrupted", { reason: p.failure(outcome.reason) }), tone: "warning" }] };
-            case "refresh": return { kind: outcome.kind, target: p.entity(outcome.target),
-                values: [{ text: p.ui("gameLog.refreshed"), tone: "success" }] };
-            case "retarget": return { kind: outcome.kind, target: p.entity(outcome.target),
-                values: [{ text: p.ui("gameLog.retargeted", { destination: p.entity(outcome.destination) }) }] };
-            case "intention": return { kind: outcome.kind, target: p.entity(outcome.target),
-                values: [{ text: p.ui(outcome.operation === "cancelled" ? "gameLog.cancelled" : "gameLog.weakened", { move: p.move(outcome.move) }) }] };
+                values: [{ text: p.ui(outcome.operation === "spawned" ? "gameLog.spawned" : "gameLog.defeated"), tone: "warning" }]
+            };
+            case "interrupt": return {
+                kind: outcome.kind, target: p.entity(outcome.actor),
+                values: [{ text: p.ui("gameLog.interrupted", { reason: p.failure(outcome.reason) }), tone: "warning" }]
+            };
+            case "refresh": return {
+                kind: outcome.kind, target: p.entity(outcome.target),
+                values: [{ text: p.ui("gameLog.refreshed"), tone: "success" }]
+            };
+            case "retarget": return {
+                kind: outcome.kind, target: p.entity(outcome.target),
+                values: [{ text: p.ui("gameLog.retargeted", { destination: p.entity(outcome.destination) }) }]
+            };
+            case "intention": return {
+                kind: outcome.kind, target: p.entity(outcome.target),
+                values: [{ text: p.ui(outcome.operation === "cancelled" ? "gameLog.cancelled" : "gameLog.weakened", { move: p.move(outcome.move) }) }]
+            };
         }
     };
     return entries.map(entry => {
@@ -162,7 +191,7 @@ export function createGameLogViewModel(
             const participant = outcome.participants[0]!;
             if (participant.initial.details?.linkedEntity || participant.final.details?.linkedEntity) continue;
             const key = JSON.stringify([outcome.buff, buffOperation(participant), participant.initial.present, participant.final.present,
-                participant.initial.details?.severity, participant.final.details?.severity]);
+            participant.initial.details?.severity, participant.final.details?.severity]);
             const first = groups.get(key);
             if (first) {
                 first.participants.push(participant);
@@ -252,12 +281,14 @@ export function createGameLogViewModel(
             case "phase":
                 model.phase = entry.phase;
                 model.title = [entry.round !== undefined ? p.ui("battleOverview.round", { round: entry.round }) : undefined,
-                    p.ui("battleOverview.phase", { phase: p.phase(entry.phase) })].filter(Boolean).join(" · ");
+                p.ui("battleOverview.phase", { phase: p.phase(entry.phase) })].filter(Boolean).join(" · ");
                 break;
-            case "stance": model.rows.unshift(...entry.changes.map(stanceRow)); break;
+            case "stance":
+                model.rows.unshift(...entry.changes.map(stanceRow)); break;
             case "encounter":
-            case "character": model.title = p.event({ type: entry.kind === "encounter" ? "loadEncounter" : "loadCharacter",
-                id: entry.id, success: entry.success, bindings: [], effects: [] }); break;
+            case "character":
+                model.title = p.load(entry.kind === "encounter" ? "Encounter" : "Character", entry.id, entry.success);
+                break;
         }
         return model;
     });

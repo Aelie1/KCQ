@@ -1,5 +1,5 @@
 import type { KCQCampaign } from "../../content";
-import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, GameEvent, HitBand, LeafEvent, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
+import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, HitBand, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
 
 interface StringKey {
     id: string;
@@ -11,75 +11,6 @@ type StringArg = number | string | boolean | StringKey;
 export type StringTable = Record<string, string>;
 
 export type UiLabel =
-    | "gameLog.chronological"
-    | "gameLog.empty"
-    | "gameLog.transition"
-    | "gameLog.from"
-    | "gameLog.to"
-    | "gameLog.bindingEndpoint"
-    | "gameLog.allies"
-    | "gameLog.targetList"
-    | "gameLog.buffOutcome"
-    | "gameLog.bindingOutcome"
-    | "gameLog.damageTotal"
-    | "gameLog.hitDamage"
-    | "gameLog.healed"
-    | "gameLog.blocked"
-    | "gameLog.added"
-    | "gameLog.removed"
-    | "gameLog.buffRefreshed"
-    | "gameLog.buffExtended"
-    | "gameLog.linkedTargets"
-    | "gameLog.participantChange"
-    | "gameLog.trapTriggered"
-    | "gameLog.interrupted"
-    | "gameLog.refreshed"
-    | "gameLog.spawned"
-    | "gameLog.incapacitated"
-    | "gameLog.rescued"
-    | "gameLog.defeated"
-    | "gameLog.cancelled"
-    | "gameLog.weakened"
-    | "gameLog.retargeted"
-    | "battleSettings.resume"
-    | "battleSettings.language"
-    | "language.en"
-    | "battleSettings.retry"
-    | "battleSettings.backToTitle"
-    | "battleResult.victory"
-    | "battleResult.defeat"
-    | "battleResult.summary"
-    | "battleResult.bossHp"
-    | "battleResult.enemyHp"
-    | "battleResult.rounds"
-    | "battleResult.actions"
-    | "battleResult.escapes"
-    | "battleResult.peakBinding"
-    | "battleResult.hits"
-    | "battleResult.bindings"
-    | "battleResult.incapacitations"
-    | "battleResult.rescues"
-    | "battleResult.actionDetail"
-    | "battleResult.escapeDetail"
-    | "battleResult.retry"
-    | "battleResult.back"
-    | "encounter.challenge"
-    | "encounter.challengeAccessible"
-    | "encounter.bestClear"
-    | "encounter.uncleared"
-    | "encounter.description"
-    | "encounter.enemies"
-    | "encounter.specialRules"
-    | "encounter.chooseDifficulty"
-    | "difficulty.title"
-    | "difficulty.globalEffects"
-    | "difficulty.enemyColumn"
-    | "difficulty.changeColumn"
-    | "encounter.start"
-    | "encounter.hp"
-    | "enemyRank.boss"
-    | "enemyRank.enemy"
-    | "enemyRank.minion"
     | "action.acted"
     | "action.ready"
     | "action.skipped"
@@ -94,61 +25,134 @@ export type UiLabel =
     | "battleOverview.phase"
     | "battleOverview.round"
     | "battleOverview.settings"
-    | "combatHeader.character"
-    | "combatHeader.escape"
-    | "combatHeader.gameLog"
-    | "combatHeader.targeting"
+    | "battleResult.actionDetail"
+    | "battleResult.actions"
+    | "battleResult.back"
+    | "battleResult.bindings"
+    | "battleResult.bossHp"
+    | "battleResult.defeat"
+    | "battleResult.enemyHp"
+    | "battleResult.escapeDetail"
+    | "battleResult.escapes"
+    | "battleResult.hits"
+    | "battleResult.incapacitations"
+    | "battleResult.peakBinding"
+    | "battleResult.rescues"
+    | "battleResult.retry"
+    | "battleResult.rounds"
+    | "battleResult.summary"
+    | "battleResult.victory"
+    | "battleSettings.backToTitle"
+    | "battleSettings.language"
+    | "battleSettings.resume"
+    | "battleSettings.retry"
     | "characterDetails.back"
     | "characterDetails.bindingValue"
     | "characterDetails.bindingsHeading"
     | "characterDetails.blocked"
+    | "characterDetails.buffsHeading"
     | "characterDetails.changeStance"
-    | "characterDetails.stanceTransitionIndicator"
-    | "characterDetails.stanceTransition"
     | "characterDetails.commandsHeading"
     | "characterDetails.cooldown"
     | "characterDetails.effectModifier"
-    | "characterDetails.buffsHeading"
     | "characterDetails.escape"
-    | "characterDetails.noEscapeTargets"
     | "characterDetails.modifierValue"
+    | "characterDetails.noEscapeTargets"
     | "characterDetails.rosterLabel"
     | "characterDetails.rounds"
     | "characterDetails.selectMove"
     | "characterDetails.shortcut"
+    | "characterDetails.stanceTransition"
+    | "characterDetails.stanceTransitionIndicator"
     | "characterDetails.statusHeading"
     | "characterDetails.statusValue"
     | "characterDetails.subtitle"
     | "characterDetails.tagAlly"
     | "characterDetails.tagAoe"
+    | "characterDetails.tagBonusBlocked"
+    | "characterDetails.tagBonusEligible"
+    | "characterDetails.tagBonusEscape"
+    | "characterDetails.tagBonusStanding"
     | "characterDetails.tagBuff"
     | "characterDetails.tagDamage"
     | "characterDetails.tagDebuff"
+    | "characterDetails.tagDefeat"
     | "characterDetails.tagEnemy"
     | "characterDetails.tagEscape"
+    | "characterDetails.tagFree"
+    | "characterDetails.tagHeal"
+    | "characterDetails.tagHits"
     | "characterDetails.tagOnetime"
     | "characterDetails.tagRefresh"
-    | "characterDetails.tagHeal"
-    | "characterDetails.tagDefeat"
+    | "characterDetails.tagRetarget"
+    | "characterDetails.tagSelf"
     | "characterDetails.tagSpawn"
     | "characterDetails.tagTrap"
-    | "characterDetails.tagRetarget"
-    | "characterDetails.tagHits"
-    | "characterDetails.tagSelf"
-    | "characterDetails.tagFree"
-    | "characterDetails.tagBonusEscape"
-    | "characterDetails.tagBonusEligible"
-    | "characterDetails.tagBonusStanding"
-    | "characterDetails.tagBonusBlocked"
+    | "combatHeader.character"
+    | "combatHeader.escape"
+    | "combatHeader.gameLog"
+    | "combatHeader.targeting"
+    | "difficulty.changeColumn"
+    | "difficulty.enemyColumn"
+    | "difficulty.globalEffects"
+    | "difficulty.title"
+    | "effects.more"
+    | "effects.none"
+    | "encounter.bestClear"
+    | "encounter.challenge"
+    | "encounter.challengeAccessible"
+    | "encounter.chooseDifficulty"
+    | "encounter.description"
+    | "encounter.enemies"
+    | "encounter.hp"
+    | "encounter.specialRules"
+    | "encounter.start"
+    | "encounter.uncleared"
+    | "enemyRank.boss"
+    | "enemyRank.enemy"
+    | "enemyRank.minion"
     | "escape.assist"
     | "escape.tagSpread"
     | "escape.use"
-    | "effects.more"
-    | "effects.none"
+    | "gameLog.added"
+    | "gameLog.allies"
+    | "gameLog.bindingEndpoint"
+    | "gameLog.bindingOutcome"
+    | "gameLog.blocked"
+    | "gameLog.buffExtended"
+    | "gameLog.buffOutcome"
+    | "gameLog.buffRefreshed"
+    | "gameLog.cancelled"
+    | "gameLog.chronological"
+    | "gameLog.damageTotal"
+    | "gameLog.defeated"
+    | "gameLog.empty"
+    | "gameLog.from"
+    | "gameLog.healed"
+    | "gameLog.hitDamage"
+    | "gameLog.incapacitated"
+    | "gameLog.interrupted"
+    | "gameLog.linkedTargets"
+    | "gameLog.participantChange"
+    | "gameLog.refreshed"
+    | "gameLog.removed"
+    | "gameLog.rescued"
+    | "gameLog.retargeted"
+    | "gameLog.spawned"
+    | "gameLog.targetList"
+    | "gameLog.to"
+    | "gameLog.transition"
+    | "gameLog.trapTriggered"
+    | "gameLog.weakened"
+    | "intentions.all"
     | "intentions.more"
     | "intentions.moreAccessible"
-    | "intentions.all"
+    | "language.en"
     | "linkedEntity.linkedTo"
+    | "loadCharacter.failure"
+    | "loadCharacter.success"
+    | "loadEncounter.failure"
+    | "loadEncounter.success"
     | "partyCard.bindings"
     | "partyCard.blockedCapabilities"
     | "partyCard.effects"
@@ -173,28 +177,28 @@ export type UiLabel =
     | "targeting.effectAddDebuff"
     | "targeting.effectBinding"
     | "targeting.effectBuff"
-    | "targeting.effectDamage"
-    | "targeting.effectMove"
-    | "targeting.effectTrap"
-    | "targeting.effectData"
-    | "targeting.effectResource"
     | "targeting.effectCancel"
-    | "targeting.effectWeaken"
-    | "targeting.effectRetarget"
+    | "targeting.effectDamage"
+    | "targeting.effectData"
+    | "targeting.effectMove"
     | "targeting.effectRefresh"
     | "targeting.effectRemoveBuff"
     | "targeting.effectRemoveDebuff"
+    | "targeting.effectResource"
+    | "targeting.effectRetarget"
+    | "targeting.effectTrap"
+    | "targeting.effectWeaken"
     | "targeting.operationDefeat"
     | "targeting.operationSpawn"
     | "targeting.percentage"
     | "targeting.trapAmount"
     | "targeting.use"
     | "targeting.value"
-    | "title.name"
-    | "title.campaigns"
     | "title.back"
-    | "title.credit"
+    | "title.campaigns"
     | "title.copyright"
+    | "title.credit"
+    | "title.name"
     | "version.name";
 
 export class Presentation {
@@ -297,7 +301,7 @@ export class Presentation {
         return this.translate(this.definitionKey("data", type, variant));
     }
 
-    ui(label: UiLabel, args?: Record<string, number | string | boolean>): string {
+    ui(label: UiLabel, args?: Record<string, StringArg>): string {
         return this.translate({ id: `ui.${label}`, args });
     }
 
@@ -313,12 +317,15 @@ export class Presentation {
         return this.translate(this.definitionKey("modifier", modifier, variant));
     }
 
-    flag(flag: FlagId): string {
-        return this.translate(this.definitionKey("flag", flag, "name"));
+    load(type: "Character" | "Encounter", id: EntityId, success: boolean) {
+        return this.ui(
+            `load${type}.${success ? "success" : "failure"}`,
+            { id: success ? (type === "Character" ? this.entityKey(id) : this.encounter(id)) : id }
+        );
     }
 
-    event(event: GameEvent | LeafEvent): string {
-        return this.translate(this.eventTextKey(event));
+    flag(flag: FlagId): string {
+        return this.translate(this.definitionKey("flag", flag, "name"));
     }
 
     private isStringKey(value: unknown): value is StringKey {
@@ -367,204 +374,5 @@ export class Presentation {
         return variant === "name"
             ? { ...key, args: { index: Number(match[2]) } }
             : key;
-    }
-
-    private eventTextKey(event: GameEvent | LeafEvent): StringKey {
-        switch (event.type) {
-            case "useMove":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        actor: this.entityKey(event.actor),
-                        move: this.definitionKey("move", event.move, "name"),
-                    },
-                };
-
-            case "useEscape":
-                return {
-                    id: `event.${event.type}.${event.actor === event.target ? "escape" : "assist"}`,
-                    args: {
-                        actor: this.entityKey(event.actor),
-                        target: this.entityKey(event.target),
-                    },
-                };
-
-            case "changePhase":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        phase: this.definitionKey("phase", event.phase, "name"),
-                    },
-                };
-
-            case "changeStance":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        actor: this.entityKey(event.actor),
-                    },
-                };
-
-            case "loadCharacter":
-                return {
-                    id: `event.${event.type}.${event.success ? "success" : "failure"}`,
-                    args: {
-                        id: event.success ? this.entityKey(event.id) : event.id,
-                    },
-                };
-
-            case "loadEncounter":
-                return {
-                    id: `event.${event.type}.${event.success ? "success" : "failure"}`,
-                    args: {
-                        id: event.success
-                            ? this.definitionKey("encounter", event.id, "name")
-                            : event.id,
-                    },
-                };
-
-            case "enemyDamaged":
-            case "enemyHealed":
-            case "damageBlocked":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                        amount: event.amount,
-                    },
-                };
-
-            case "bondageChanged":
-            case "bondageAdded":
-            case "bondageRemoved":
-            case "bondageBlocked":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                        binding: this.definitionKey("binding", event.binding, "name"),
-                        amount: event.amount,
-                    },
-                };
-
-            case "buffAdded":
-            case "buffRemoved":
-            case "buffUpdated":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                        buff: this.definitionKey("buff", event.buff, "name"),
-                    },
-                };
-
-            case "enemySpawned":
-            case "enemyDefeated":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                    },
-                };
-
-            case "stanceSet":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        actor: this.entityKey(event.actor),
-                        stance: this.definitionKey("stance", event.stance, "name"),
-                    },
-                };
-
-            case "cooldownChanged":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                        move: this.definitionKey("move", event.move, "name"),
-                        value: event.value,
-                    },
-                };
-
-            case "trapAdded":
-            case "trapRemoved":
-            case "trapTriggered":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        actor: this.entityKey(event.actor),
-                        trap: this.definitionKey("trap", event.trap, "name"),
-                        amount: event.amount,
-                    },
-                };
-
-            case "actionInterrupted":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        actor: this.entityKey(event.actor),
-                        reason: this.failure(event.reason),
-                    },
-                };
-
-            case "actionRefreshed":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                    },
-                };
-
-            case "targetChanged":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                        destination: this.entityKey(event.destination),
-                    },
-                };
-
-            case "characterIncapacitated":
-            case "characterRescued":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                    },
-                };
-
-            case "intentionCancelled":
-            case "intentionWeakened":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                        move: this.definitionKey("move", event.move, "name"),
-                    },
-                };
-
-            case "dataChanged":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                        name: this.data(event.name),
-                        amount: event.amount,
-                    },
-                };
-            case "bindingTick":
-                return {
-                    id: `event.${event.type}.text`,
-                    args: {
-                        target: this.entityKey(event.target),
-                        binding: this.binding(event.binding),
-                    },
-                };
-
-            default: {
-                const exhaustive: never = event;
-                return exhaustive;
-            }
-        }
     }
 }

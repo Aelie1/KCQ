@@ -1,15 +1,14 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { rockfall } from "../../src/content/characters/hinari";
-import { latexMist, latexSpray, skunkette } from "../../src/content/skunk/skunkette";
-import { execute, makeBehavioralCharacter, makeBehavioralEngine, makeBehavioralMove } from "../helpers/behavioralHelpers";
-import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
-import { isCharacter, isEnemy } from "../../src/engine/protected/helpers";
-import { s } from "../../src/engine/protected/status";
-import { immobilized } from "../../src/engine/protected/statuses";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { rockfall } from "../../src/content/characters/hinari";
+import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
+import { latexMist, latexSpray, skunkette } from "../../src/content/skunk/skunkette";
+import { isCharacter, isEnemy } from "../../src/engine/protected/helpers";
+import { s } from "../../src/engine/protected/status";
+import { immobilized } from "../../src/engine/protected/statuses";
 import type { Buff, Enemy, EventFrame, GameState, LeafEvent, MoveEvent } from "../../src/engine/public/types";
 import { createGameLogEntries, type GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -18,6 +17,7 @@ import { gameLogFixture } from "../../src/ui/web/app/fixtures/gameLog";
 import { makeFixtureCharacter } from "../../src/ui/web/app/fixtures/publicFixture";
 import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
 import { createGameLogViewModel } from "../../src/ui/web/app/viewModels/gameLog";
+import { execute, makeBehavioralCharacter, makeBehavioralEngine, makeBehavioralMove } from "../helpers/behavioralHelpers";
 import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
@@ -90,11 +90,13 @@ describe("compact graphical Game Log", () => {
         const after = structuredClone(before);
         after.characters[0]!.bindings[0]!.value = 28;
         after.characters[0]!.bindings[0]!.level = "moderate";
-        const html = renderEntries(createGameLogEntries([{ state: after, event: move([], [
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 23 },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -5 },
-            { type: "bondageBlocked", target: "ko", binding: "latexArms", amount: 4 },
-        ]) }], before));
+        const html = renderEntries(createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 23 },
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -5 },
+                { type: "bondageBlocked", target: "ko", binding: "latexArms", amount: 4 },
+            ])
+        }], before));
         expect(count(html, "binding")).toBe(1);
         expect(text(html)).toContain("Ko-chanSkunk Arms 10 (Light) → 28 (Moderate)Blocked 4");
         expect(html).toContain("kcq-game-log__value--binding-moderate");
@@ -105,11 +107,13 @@ describe("compact graphical Game Log", () => {
         before.characters[0]!.buffs = [{ id: "burnout", severity: 4 }, { id: "pounce", severity: 2 }];
         const after = structuredClone(before);
         after.characters[0]!.buffs = [{ id: "burnout", severity: 1 }, { id: "brace", severity: 3, modifiers: { defense: 99 } }];
-        const html = renderEntries(createGameLogEntries([{ state: after, event: move([], [
-            { type: "buffUpdated", target: "ko", buff: "burnout" },
-            { type: "buffRemoved", target: "ko", buff: "pounce" },
-            { type: "buffAdded", target: "ko", buff: "brace" },
-        ]) }], before));
+        const html = renderEntries(createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "buffUpdated", target: "ko", buff: "burnout" },
+                { type: "buffRemoved", target: "ko", buff: "pounce" },
+                { type: "buffAdded", target: "ko", buff: "brace" },
+            ])
+        }], before));
         expect(count(html, "buff")).toBe(3);
         expect(text(html)).toContain("Burnout IV → I");
         expect(text(html)).toContain("Pounce II Removed");
@@ -126,12 +130,14 @@ describe("compact graphical Game Log", () => {
     });
 
     it("keeps distinct linked participant severities in one logical outcome", () => {
-        const entries: GameLogPresentationEntry[] = [{ kind: "move", actor: "ko", move: "telekinesis", outcomes: [{
-            kind: "buff", buff: "pounce", participants: [
-                { target: "ko", initial: { present: true, details: { id: "pounce", severity: 4 } }, final: { present: true, details: { id: "pounce", severity: 1 } } },
-                { target: "skunkette1", initial: { present: true, details: { id: "pounce", severity: 3 } }, final: { present: true, details: { id: "pounce", severity: 2 } } },
-            ],
-        }] }];
+        const entries: GameLogPresentationEntry[] = [{
+            kind: "move", actor: "ko", move: "telekinesis", outcomes: [{
+                kind: "buff", buff: "pounce", participants: [
+                    { target: "ko", initial: { present: true, details: { id: "pounce", severity: 4 } }, final: { present: true, details: { id: "pounce", severity: 1 } } },
+                    { target: "skunkette1", initial: { present: true, details: { id: "pounce", severity: 3 } }, final: { present: true, details: { id: "pounce", severity: 2 } } },
+                ],
+            }]
+        }];
         const html = renderEntries(entries);
         expect(count(html, "buff")).toBe(1);
         expect(text(html)).toContain("Ko-chan: Pounce IV → I");
@@ -143,9 +149,11 @@ describe("compact graphical Game Log", () => {
         before.characters[1]!.data = { subspace: 50, subspaceMax: 100, secret: 123 };
         const after = structuredClone(before);
         after.characters[1]!.data = { subspace: 20, subspaceMax: 100, secret: 456 };
-        const html = renderEntries(createGameLogEntries([{ state: after, event: move([], [
-            { type: "dataChanged", target: "hinari", name: "subspace", amount: -25 },
-        ]) }], before));
+        const html = renderEntries(createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "dataChanged", target: "hinari", name: "subspace", amount: -25 },
+            ])
+        }], before));
         expect(count(html, "resource")).toBe(1);
         expect(text(html)).toContain("HinariSubspace50 → 20");
         expect(text(html)).not.toMatch(/secret|123|456|-30|-25/);
@@ -189,18 +197,20 @@ describe("compact graphical Game Log", () => {
         before.traps = [{ id: "trapPuddle", amount: 10 }];
         const after = structuredClone(before);
         after.traps[0]!.amount = 5;
-        const html = renderEntries(createGameLogEntries([{ state: after, event: move([], [
-            { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
-            { type: "trapRemoved", actor: "hinari", trap: "trapPuddle", amount: 2 },
-            { type: "intentionCancelled", target: "skunkette1", move: "pounce" },
-            { type: "intentionWeakened", target: "skunkette2", move: "latexMist" },
-            { type: "targetChanged", target: "skunkette1", destination: "matsuko" },
-            { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
-            { type: "actionRefreshed", target: "hinari" },
-            { type: "enemySpawned", target: "skunkette3" },
-            { type: "enemyDefeated", target: "skunkette2" },
-            { type: "stanceSet", actor: "ko", stance: "standing" },
-        ]) }], before));
+        const html = renderEntries(createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 3 },
+                { type: "trapRemoved", actor: "hinari", trap: "trapPuddle", amount: 2 },
+                { type: "intentionCancelled", target: "skunkette1", move: "pounce" },
+                { type: "intentionWeakened", target: "skunkette2", move: "latexMist" },
+                { type: "targetChanged", target: "skunkette1", destination: "matsuko" },
+                { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
+                { type: "actionRefreshed", target: "hinari" },
+                { type: "enemySpawned", target: "skunkette3" },
+                { type: "enemyDefeated", target: "skunkette2" },
+                { type: "stanceSet", actor: "ko", stance: "standing" },
+            ])
+        }], before));
         expect(count(html, "trap")).toBe(1);
         for (const label of ["Latex Puddle10 → 5", "Triggered by Ko-chan ×3", "Pounce Cancelled", "Latex Mist Weakened", "Retargeted → Matsuko",
             "Interrupted · Bindings prevent this action.", "HinariAction Refreshed", "Skunkette 3Spawned", "Skunkette 2Defeated", "Moving → Standing"]) expect(text(html)).toContain(label);
@@ -237,26 +247,31 @@ describe("compact graphical Game Log", () => {
     it("preserves known partial endpoints and describes same-severity buff updates", () => {
         const before = state();
         before.characters[0]!.buffs = [{ id: "pounce", severity: 4 }];
-        const html = renderEntries(createGameLogEntries([{ state: before, event: move([], [
-            { type: "buffUpdated", target: "ko", buff: "pounce" },
-        ]) }], before));
+        const html = renderEntries(createGameLogEntries([{
+            state: before, event: move([], [
+                { type: "buffUpdated", target: "ko", buff: "pounce" },
+            ])
+        }], before));
         expect(text(html)).toContain("Pounce IV Refreshed");
         expect(text(html)).not.toContain("IV → IV");
 
         const after = state();
         after.characters[1]!.data.subspace = 25;
         after.characters[0]!.buffs = [{ id: "pounce", severity: 1 }];
-        const partial = renderEntries(createGameLogEntries([{ state: after, event: move([], [
-            { type: "dataChanged", target: "hinari", name: "subspace", amount: 5 },
-            { type: "buffUpdated", target: "ko", buff: "pounce" },
-        ]) }]));
+        const partial = renderEntries(createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "dataChanged", target: "hinari", name: "subspace", amount: 5 },
+                { type: "buffUpdated", target: "ko", buff: "pounce" },
+            ])
+        }]));
         expect(text(partial)).toContain("Subspace+5");
         expect(text(partial)).toContain("Pounce I Refreshed");
         expect(text(partial)).not.toContain("20 → 25");
     });
 
     it("localizes names, severity, outcomes, transitions, accessibility, and empty state", () => {
-        const p = new Presentation({ ...stockStrings,
+        const p = new Presentation({
+            ...stockStrings,
             "entity.ko.name": "Actor test", "entity.skunkette.name": "Target {index}",
             "move.telekinesis.name": "Move test", "binding.latexArms.name": "Binding test",
             "buff.pounce.name": "Buff test", "data.subspace.name": "Resource test",
@@ -269,13 +284,15 @@ describe("compact graphical Game Log", () => {
         before.characters[0]!.buffs = [{ id: "pounce", severity: 4 }];
         const after = structuredClone(before);
         after.characters[0]!.buffs[0]!.severity = 1;
-        const html = renderEntries(createGameLogEntries([{ state: after, event: move([
-            { target: "skunkette1", result: "hit", effects: [damaged("skunkette1", 18)] },
-        ], [
-            { type: "buffUpdated", target: "ko", buff: "pounce" },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 2 },
-            { type: "dataChanged", target: "ko", name: "subspace", amount: 3 },
-        ]) }], before), p);
+        const html = renderEntries(createGameLogEntries([{
+            state: after, event: move([
+                { target: "skunkette1", result: "hit", effects: [damaged("skunkette1", 18)] },
+            ], [
+                { type: "buffUpdated", target: "ko", buff: "pounce" },
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 2 },
+                { type: "dataChanged", target: "ko", name: "subspace", amount: 3 },
+            ])
+        }], before), p);
         for (const label of ["Actor test", "Target 1", "Move test", "Result test 18", "Binding test", "Buff test Level four becomes Level one", "Resource test+3"]) expect(text(html)).toContain(label);
         expect(html).toContain('aria-label="History test"');
         expect(text(renderEntries([], p))).toContain("Empty test");
@@ -314,9 +331,13 @@ describe("Game Log presentation refinements", () => {
         const after = structuredClone(before);
         after.enemies[0]!.buffs = [{ id: "pounce", severity: 3, linkedEntity: "hinari" }];
         after.characters[1]!.buffs = [{ id: "pounce", severity: 3, linkedEntity: "skunkette1" }];
-        const entries = createGameLogEntries([{ state: after, event: { ...move([
-            { target: "hinari", result: "hit", effects: [{ type: "buffAdded", target: "hinari", buff: "pounce" }] },
-        ], [{ type: "buffAdded", target: "skunkette1", buff: "pounce" }], "pounce"), actor: "skunkette1" } }], before);
+        const entries = createGameLogEntries([{
+            state: after, event: {
+                ...move([
+                    { target: "hinari", result: "hit", effects: [{ type: "buffAdded", target: "hinari", buff: "pounce" }] },
+                ], [{ type: "buffAdded", target: "skunkette1", buff: "pounce" }], "pounce"), actor: "skunkette1"
+            }
+        }], before);
         const rows = models(entries)[0]!.rows;
         expect(rows).toHaveLength(1);
         expect(rows[0]!.target).toBe("Hinari");
@@ -330,9 +351,13 @@ describe("Game Log presentation refinements", () => {
 
     it("shows binding accuracy inline and colors initial, arrow, and final independently", () => {
         const { before, after } = mistFrames(["ko"]);
-        const entries = createGameLogEntries([{ state: after, event: { ...move([
-            { target: "ko", result: "graze", effects: [{ type: "bondageChanged", target: "ko", binding: "latexLegs", amount: 13 }] },
-        ], [], "latexSpray"), actor: "skunkette1" } }], before);
+        const entries = createGameLogEntries([{
+            state: after, event: {
+                ...move([
+                    { target: "ko", result: "graze", effects: [{ type: "bondageChanged", target: "ko", binding: "latexLegs", amount: 13 }] },
+                ], [], "latexSpray"), actor: "skunkette1"
+            }
+        }], before);
         const rows = models(entries)[0]!.rows;
         expect(rows).toHaveLength(1);
         expect(rows[0]!.values.map(value => value.text)).toEqual(["Graze", "Skunk Legs 0 (None) → 13 (Light)"]);
@@ -350,9 +375,11 @@ describe("Game Log presentation refinements", () => {
         before.characters[0]!.bindings[0]!.level = "heavy";
         const after = structuredClone(before);
         after.characters[0]!.bindings = [];
-        const html = renderEntries(createGameLogEntries([{ state: after, event: move([], [
-            { type: "bondageRemoved", target: "ko", binding: "latexLegs", amount: -40 },
-        ]) }], before));
+        const html = renderEntries(createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "bondageRemoved", target: "ko", binding: "latexLegs", amount: -40 },
+            ])
+        }], before));
         expect(html).toContain('class="kcq-game-log__value--binding-heavy">40 (Heavy)');
         expect(html).toContain('class="kcq-game-log__value--binding-none">0 (None)');
     });
@@ -406,8 +433,10 @@ describe("Game Log presentation refinements", () => {
 
     it("preserves multi-hit ambiguity and AoE targets while totaling only recorded damage", () => {
         const entries = createGameLogEntries([move([
-            ...[10, 3, 3, 10].map((amount, index) => ({ target: "skunkette1", result: index === 1 || index === 2 ? "graze" as const : "hit" as const,
-                effects: [damaged("skunkette1", amount)] })),
+            ...[10, 3, 3, 10].map((amount, index) => ({
+                target: "skunkette1", result: index === 1 || index === 2 ? "graze" as const : "hit" as const,
+                effects: [damaged("skunkette1", amount)]
+            })),
             { target: "skunkette2", result: "hit", effects: [damaged("skunkette2", 9)] },
         ], [{ type: "buffRemoved", target: "skunkette1", buff: "pounce" }], "rockfall")]);
         const rows = models(entries)[0]!.rows;
@@ -429,9 +458,11 @@ describe("Game Log presentation refinements", () => {
         const after = structuredClone(before);
         after.characters[0]!.buffs = [];
         after.enemies[0]!.buffs = [];
-        const entries = createGameLogEntries([{ state: after, event: move([], [
-            { type: "buffRemoved", target: "ko", buff: "pounce" }, { type: "buffRemoved", target: "skunkette1", buff: "pounce" },
-        ], "rockfall") }], before);
+        const entries = createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "buffRemoved", target: "ko", buff: "pounce" }, { type: "buffRemoved", target: "skunkette1", buff: "pounce" },
+            ], "rockfall")
+        }], before);
         const rows = models(entries)[0]!.rows;
         expect(rows).toHaveLength(1);
         expect(rows[0]!.target).toBe("Ko-chan ↔ Skunkette 1");
@@ -439,12 +470,14 @@ describe("Game Log presentation refinements", () => {
     });
 
     it("shows Subspace endpoints once, actual fallback deltas, Action Refreshed, and restrained enemy defeat emphasis", () => {
-        const entries: GameLogPresentationEntry[] = [{ kind: "move", actor: "hinari", move: "rockfall", outcomes: [
-            { kind: "resource", target: "hinari", resource: "subspace", initial: 0, final: 25, change: 25 },
-            { kind: "resource", target: "hinari", resource: "subspace", final: 10, change: -15 },
-            { kind: "refresh", target: "ko" }, { kind: "enemy", target: "skunkette1", operation: "defeated" },
-            { kind: "enemy", target: "skunkette2", operation: "spawned" },
-        ] }];
+        const entries: GameLogPresentationEntry[] = [{
+            kind: "move", actor: "hinari", move: "rockfall", outcomes: [
+                { kind: "resource", target: "hinari", resource: "subspace", initial: 0, final: 25, change: 25 },
+                { kind: "resource", target: "hinari", resource: "subspace", final: 10, change: -15 },
+                { kind: "refresh", target: "ko" }, { kind: "enemy", target: "skunkette1", operation: "defeated" },
+                { kind: "enemy", target: "skunkette2", operation: "spawned" },
+            ]
+        }];
         const rows = models(entries)[0]!.rows;
         expect(rows[0]!.values).toEqual([{ text: "0 → 25", tone: "success" }]);
         expect(rows[1]!.values).toEqual([{ text: "-15", tone: "warning" }]);
@@ -458,7 +491,8 @@ describe("Game Log presentation refinements", () => {
     });
 
     it("localizes complete buff and binding phrases with reordered colored slots, target lists, totals, and refreshes", () => {
-        const p = new Presentation({ ...stockStrings,
+        const p = new Presentation({
+            ...stockStrings,
             "ui.gameLog.allies": "Party test", "ui.gameLog.targetList": "{second} / {first}",
             "buff.severity.text": "{severity} of {name}", "ui.gameLog.buffOutcome": "{operation}: {buff}",
             "ui.gameLog.added": "Added test", "buff.severity.3": "Third test",
@@ -486,12 +520,20 @@ describe("Game Log presentation refinements", () => {
         const rows = models(createGameLogEntries([{ state: after, event }], before))[0]!.rows;
         expect(rows).toHaveLength(1);
         expect(rows[0]!.values.map(value => value.text)).toEqual(["Graze", "Latex Mist III Added", "Skunk Legs 0 (None) → 13 (Light)"]);
-        const entries: GameLogPresentationEntry[] = [{ kind: "move", actor: "skunkette1", move: "pounce", outcomes: [
-            ...["ko", "skunkette1"].map(target => ({ kind: "damage" as const, target,
-                hits: [{ result: "hit" as const, damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 })),
-            { kind: "buff", buff: "pounce", participants: ["ko", "skunkette1"].map(target => ({ target,
-                initial: { present: false }, final: { present: true, details: { id: "pounce", severity: 3 } } })) },
-        ] }];
+        const entries: GameLogPresentationEntry[] = [{
+            kind: "move", actor: "skunkette1", move: "pounce", outcomes: [
+                ...["ko", "skunkette1"].map(target => ({
+                    kind: "damage" as const, target,
+                    hits: [{ result: "hit" as const, damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0
+                })),
+                {
+                    kind: "buff", buff: "pounce", participants: ["ko", "skunkette1"].map(target => ({
+                        target,
+                        initial: { present: false }, final: { present: true, details: { id: "pounce", severity: 3 } }
+                    }))
+                },
+            ]
+        }];
         expect(models(entries)[0]!.rows.map(row => row.kind)).toEqual(["buff"]);
         expect(models(entries)[0]!.rows[0]!.target).toBe("Ko-chan ↔ Skunkette 1");
     });
@@ -527,16 +569,20 @@ describe("combat log polish regressions", () => {
         before.characters[0]!.buffs = [{ id: "pounce", severity: initialSeverity, duration: initialDuration }];
         const after = structuredClone(before);
         after.characters[0]!.buffs = [{ id: "pounce", severity: finalSeverity, duration: finalDuration }];
-        const html = renderEntries(createGameLogEntries([{ state: after, event: move([], [
-            { type: "buffUpdated", target: "ko", buff: "pounce" },
-        ]) }], before));
+        const html = renderEntries(createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "buffUpdated", target: "ko", buff: "pounce" },
+            ])
+        }], before));
         expect(text(html)).toContain(label);
     });
 
     it("uses canonical buff localization for known severities, including reordered names and severity zero", () => {
         expect(presentation.buff("pounce", 0)).toBe("Pounce 0");
-        const p = new Presentation({ ...stockStrings, "buff.severity.text": "{severity} / {name}",
-            "buff.severity.0": "Zero", "ui.gameLog.buffRefreshed": "Renewed test", "ui.gameLog.buffExtended": "Longer test" });
+        const p = new Presentation({
+            ...stockStrings, "buff.severity.text": "{severity} / {name}",
+            "buff.severity.0": "Zero", "ui.gameLog.buffRefreshed": "Renewed test", "ui.gameLog.buffExtended": "Longer test"
+        });
         const before = state();
         before.characters[0]!.buffs = [{ id: "pounce", severity: 0, duration: 1 }];
         const after = structuredClone(before);
@@ -547,9 +593,11 @@ describe("combat log polish regressions", () => {
     });
 
     it("renders real Latex Mist as Added on application and Refreshed on reapplication, consolidated across binding leaves", () => {
-        const caster = { ...skunkette, ai: (_state: Parameters<typeof skunkette.ai>[0], actor: Parameters<typeof skunkette.ai>[1]) => [{
-            type: "move" as const, actor, move: { definition: latexMist }, targets: _state.characters,
-        }] };
+        const caster = {
+            ...skunkette, ai: (_state: Parameters<typeof skunkette.ai>[0], actor: Parameters<typeof skunkette.ai>[1]) => [{
+                type: "move" as const, actor, move: { definition: latexMist }, targets: _state.characters,
+            }]
+        };
         const engine = makeBehavioralEngine([makeBehavioralCharacter("ko"), makeBehavioralCharacter("hinari"), makeBehavioralCharacter("matsuko")], [caster], 3);
         const initial = engine.getGameState();
         const first = execute(engine, { type: "endTurn" });
@@ -608,9 +656,11 @@ describe("combat log polish regressions", () => {
         // A final snapshot alone cannot identify which zero-damage result was unexecuted.
         const before = state();
         const after = state(); after.enemies = [];
-        const ambiguous = createGameLogEntries([{ state: after, event: move([
-            { target: "skunkette1", result: "hit", effects: [] },
-        ], [{ type: "enemyDefeated", target: "skunkette1" }]) }], before);
+        const ambiguous = createGameLogEntries([{
+            state: after, event: move([
+                { target: "skunkette1", result: "hit", effects: [] },
+            ], [{ type: "enemyDefeated", target: "skunkette1" }])
+        }], before);
         expect(models(ambiguous)[0]!.rows[0]!.values[0]!.text).toBe("Hit");
     });
 
@@ -621,16 +671,16 @@ describe("combat log polish regressions", () => {
             { type: "intentionWeakened", target: "skunkette2", move: "pounce" },
             { type: "intentionWeakened", target: "skunkette2", move: "latexMist" },
         ];
-        const p = new Presentation({ ...stockStrings, "move.pounce.name": "Leap test", "move.latexMist.name": "Mist test",
-            "ui.gameLog.cancelled": "Cancelled test: {move}", "ui.gameLog.weakened": "Weakened test: {move}" });
+        const p = new Presentation({
+            ...stockStrings, "move.pounce.name": "Leap test", "move.latexMist.name": "Mist test",
+            "ui.gameLog.cancelled": "Cancelled test: {move}", "ui.gameLog.weakened": "Weakened test: {move}"
+        });
         const entries = createGameLogEntries([move([{ target: "skunkette1", result: "hit", effects: effects.slice(0, 2) }], effects.slice(2))]);
         expect(entries[0]!.outcomes.filter(outcome => outcome.kind === "intention").map(outcome => outcome.move))
             .toEqual(["pounce", "latexMist", "pounce", "latexMist"]);
         const html = renderEntries(entries, p);
         expect(count(html, "intention")).toBe(4);
         for (const label of ["Cancelled test: Leap test", "Cancelled test: Mist test", "Weakened test: Leap test", "Weakened test: Mist test"]) expect(text(html)).toContain(label);
-        expect(p.event(effects[0]!)).toContain("Leap test is cancelled");
-        expect(p.event(effects[3]!)).toContain("Mist test is weakened");
         expect(text(html)).not.toMatch(/pounce|latexMist/);
     });
 
@@ -673,14 +723,16 @@ describe("Game Log outcome prioritization", () => {
         const before = state(); before.characters[0]!.standing = true;
         before.characters[0]!.buffs = [{ id: "captured" }];
         const after = structuredClone(before); after.characters[0]!.standing = false; after.characters[0]!.buffs = [];
-        const entries = createGameLogEntries([{ state: after, event: move([], [
-            { type: "buffRemoved", target: "ko", buff: "captured" },
-            { type: "characterRescued", target: "ko" },
-            { type: "stanceSet", actor: "ko", stance: "moving" },
-            { type: "buffAdded", target: "hinari", buff: "servitude" },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -10 },
-            { type: "enemyDefeated", target: "skunkette1" },
-        ]) }], before);
+        const entries = createGameLogEntries([{
+            state: after, event: move([], [
+                { type: "buffRemoved", target: "ko", buff: "captured" },
+                { type: "characterRescued", target: "ko" },
+                { type: "stanceSet", actor: "ko", stance: "moving" },
+                { type: "buffAdded", target: "hinari", buff: "servitude" },
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -10 },
+                { type: "enemyDefeated", target: "skunkette1" },
+            ])
+        }], before);
         const html = renderEntries(entries);
         expect(text(html)).toContain("Ko-chanRescued");
         expect(text(html)).not.toContain("captured");
@@ -712,9 +764,11 @@ describe("Game Log outcome prioritization", () => {
     });
 
     it("suppresses an orphan miss even when its successful buff could otherwise merge inline", () => {
-        const rows = models(createGameLogEntries([move([{ target: "ko", result: "miss", effects: [
-            { type: "buffAdded", target: "ko", buff: "latexMist" },
-        ] }])]))[0]!.rows;
+        const rows = models(createGameLogEntries([move([{
+            target: "ko", result: "miss", effects: [
+                { type: "buffAdded", target: "ko", buff: "latexMist" },
+            ]
+        }])]))[0]!.rows;
         expect(rows.map(row => row.kind)).toEqual(["buff"]);
         expect(rows[0]!.values[0]!.text).toBe("Latex Mist Added");
     });
@@ -742,25 +796,35 @@ describe("Game Log outcome prioritization", () => {
     });
 
     it("summarizes real engine Latex Spray incapacitation and rescue without changing their recorded leaves", () => {
-        const prepare = makeBehavioralMove("prepare", "none", { targetSide: "none", targets: 0,
+        const prepare = makeBehavioralMove("prepare", "none", {
+            targetSide: "none", targets: 0,
             resolve: (_state, actor) => {
                 if (!isCharacter(actor) || !_state.enemies[0]) return [];
                 return [
-                { type: "stance", actor, stance: "standing" },
-                ...[latexHead, latexArms, latexLegs, latexTorso].map(binding => ({ type: "binding" as const, source: actor, target: actor,
-                    binding, amount: binding === latexTorso ? 56 : 80 })),
-                { type: "buff", target: actor, operation: "add", buff: { id: "pounce", active: true, severity: 2,
-                    statuses: [s(immobilized, 1)], linkedEntity: "skunkette1" } },
-                { type: "buff", target: _state.enemies[0]!, operation: "add", buff: { id: "pounce", active: true, severity: 2, linkedEntity: "ko" } },
+                    { type: "stance", actor, stance: "standing" },
+                    ...[latexHead, latexArms, latexLegs, latexTorso].map(binding => ({
+                        type: "binding" as const, source: actor, target: actor,
+                        binding, amount: binding === latexTorso ? 56 : 80
+                    })),
+                    {
+                        type: "buff", target: actor, operation: "add", buff: {
+                            id: "pounce", active: true, severity: 2,
+                            statuses: [s(immobilized, 1)], linkedEntity: "skunkette1"
+                        }
+                    },
+                    { type: "buff", target: _state.enemies[0]!, operation: "add", buff: { id: "pounce", active: true, severity: 2, linkedEntity: "ko" } },
                 ];
             },
         });
-        const free = makeBehavioralMove("free", "none", { targets: "all", baseDamage: 999,
+        const free = makeBehavioralMove("free", "none", {
+            targets: "all", baseDamage: 999,
             resolve: (_state, actor, _move, targets) => targets.flatMap(({ target }) => isEnemy(target) ? [{ type: "damage" as const, source: actor, target, amount: 999 }] : []),
         });
-        const caster = { ...skunkette, ai: (_state: Parameters<typeof skunkette.ai>[0], actor: Parameters<typeof skunkette.ai>[1]) => actor.id !== "skunkette1" ? [] : [{
-            type: "move" as const, actor, move: { definition: { ...latexSpray, accuracy: { hit: 100 } }, binding: latexTorso }, targets: [_state.characters[0]!],
-        }] };
+        const caster = {
+            ...skunkette, ai: (_state: Parameters<typeof skunkette.ai>[0], actor: Parameters<typeof skunkette.ai>[1]) => actor.id !== "skunkette1" ? [] : [{
+                type: "move" as const, actor, move: { definition: { ...latexSpray, accuracy: { hit: 100 } }, binding: latexTorso }, targets: [_state.characters[0]!],
+            }]
+        };
         const engine = makeBehavioralEngine([makeBehavioralCharacter("ko", [prepare]), makeBehavioralCharacter("hinari", [free])], [caster], 3);
         execute(engine, { type: "move", actor: "ko", move: "prepare", targets: [] });
         const initial = engine.getGameState();
