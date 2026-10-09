@@ -3,7 +3,7 @@ import type { KCQCampaign } from "../../../content";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { Presentation } from "../../presentation/presentation";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
-import type { LanguageOption } from "./language";
+import { loadLanguage, saveLanguage, type LanguageOption } from "./language";
 import { createShortcutHintPreference } from "./shortcutHints";
 import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import { App } from "./App";
@@ -35,11 +35,15 @@ export interface GraphicalAppProps {
 export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     const shortcutHints = createShortcutHintPreference();
     // English is the only bundled language; keep selection separate from battle sessions.
-    const options = props.languages?.length ? props.languages : [{ id: "en", label: props.presentation.ui("language.en"), presentation: props.presentation }];
-    const [language, setLanguage] = createSignal(options[0]!);
+    const english = { id: "en", label: props.presentation.ui("language.en"), presentation: props.presentation };
+    const options = props.languages?.some(option => option.id === "en") ? props.languages : [english, ...(props.languages ?? [])];
+    const [language, setLanguage] = createSignal(loadLanguage(options));
     const selectLanguage = (id: string): void => {
         const option = options.find(option => option.id === id);
-        if (option) setLanguage(option);
+        if (option) {
+            setLanguage(option);
+            saveLanguage(option.id);
+        }
     };
     const languageSelection = { get value() { return language().id; }, options, onChange: selectLanguage };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
@@ -106,13 +110,13 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                         onSelect={campaign => navigate(() => controller.selectCampaign(campaign))} />
                 </Match>
                 <Match when={controller.screen().screen === "picker"}>
-                    <EncounterPickerPanel model={createEncounterPickerViewModel(library(), presentation())}
+                    <EncounterPickerPanel model={createEncounterPickerViewModel(library(), presentation(), controller.bestClears())}
                         onSettings={openSettings} onBack={() => navigate(controller.returnToTitle)}
                         onSelect={encounter => navigate(() => controller.selectEncounter(encounter))} />
                 </Match>
                 <Match when={details()} keyed>
                     {(current) => <EncounterDetailsPanel
-                        model={createEncounterDetailsViewModel(library(), current.encounter, presentation())}
+                        model={createEncounterDetailsViewModel(library(), current.encounter, presentation(), controller.bestClears()[current.encounter])}
                         onSettings={openSettings} onBack={() => navigate(controller.backToPicker)}
                         onChooseDifficulty={() => navigate(controller.chooseDifficulty)} />}
                 </Match>
@@ -127,7 +131,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
                         language={languageSelection} shortcutHints={shortcutHints} keyboard={keyboard} release={props.release}
-                        observer={current.session.observer} onRetry={controller.retryEncounter}
+                        observer={current.session.observer} onVictory={controller.recordVictory} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
             </Switch>

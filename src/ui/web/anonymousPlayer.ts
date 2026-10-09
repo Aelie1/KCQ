@@ -1,4 +1,4 @@
-export const ANONYMOUS_PLAYER_ID_KEY = "kcq_anonymous_player_id";
+export const ANONYMOUS_PLAYER_ID_KEY = "kcq.anonymousPlayerId";
 
 export interface AnonymousIdStorage {
     getItem(key: string): string | null;

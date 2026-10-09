@@ -36,6 +36,7 @@ export interface BattleAppProps {
     language?: LanguageSelection;
     shortcutHints?: ShortcutHintPreference;
     keyboard?: SharedKeyboard;
+    onVictory?: () => void;
     onRetry?: () => void;
     onBackToLevelSelect?: () => void;
     onBackToTitle?: () => void;
@@ -126,6 +127,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             notifyObserver(() => props.observer?.onAction?.(action, result, "player"));
             if (result.success) {
                 const nextState = props.engine.getGameState();
+                if (nextState.turn.outcome === "victory") props.onVictory?.();
                 tracker.record(action, result, nextState);
                 setResultStats(tracker.getStats());
                 setState(nextState);

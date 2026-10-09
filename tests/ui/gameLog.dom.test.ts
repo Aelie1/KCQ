@@ -13,7 +13,10 @@ import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
 let unmount: (() => void) | undefined;
-beforeEach(() => vi.stubGlobal("__KCQ_GIT_REVISION__", "test"));
+beforeEach(() => {
+    window.localStorage.clear();
+    vi.stubGlobal("__KCQ_GIT_REVISION__", "test");
+});
 afterEach(() => {
     unmount?.();
     unmount = undefined;

@@ -2,7 +2,8 @@ import type { KCQCampaign } from "../../../content";
 import { createSignal } from "solid-js";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { BattleTelemetryObserver } from "../telemetry";
-import { DEFAULT_DIFFICULTY } from "../app";
+import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES } from "../app";
+import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "./encounterClears";
 
 export interface GraphicalBattleSession {
     engine: Engine;
@@ -18,8 +19,10 @@ export type GraphicalScreen = { screen: "title" } | ({ campaign: KCQCampaign } &
 
 export function createGraphicalController(
     prepareBattle: (campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId) => GraphicalBattleSession,
+    storage?: Pick<Storage, "getItem" | "setItem">,
 ) {
     let session: GraphicalBattleSession | undefined;
+    const [bestClears, setBestClears] = createSignal<EncounterClears>(loadEncounterClears(storage));
     const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "title" });
 
     const closeSession = (): void => {
@@ -37,6 +40,16 @@ export function createGraphicalController(
 
     return {
         screen,
+        bestClears,
+        recordVictory(): void {
+            const current = screen();
+            if (current.screen !== "battle" || session?.engine.getGameState().turn.outcome !== "victory") return;
+            const rank = (difficulty: DifficultyId | undefined) => ENCOUNTER_DIFFICULTIES.findIndex(({ id }) => id === difficulty);
+            if (rank(current.difficulty) <= rank(bestClears()[current.encounter])) return;
+            const updated = { ...bestClears(), [current.encounter]: current.difficulty };
+            setBestClears(updated);
+            saveEncounterClears(updated, storage);
+        },
         selectCampaign(campaign: KCQCampaign): void {
             if (screen().screen === "title") setScreen({ screen: "picker", campaign });
         },
