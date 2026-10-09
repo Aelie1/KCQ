@@ -72,7 +72,6 @@ function useTelekinesis(): void {
     card.click();
     click('.kcq-command-card[aria-label="Telekinesis"]');
     click("button.kcq-target-card");
-    click(".kcq-targeting__execute");
 }
 function logEntries(): HTMLElement[] {
     return [...document.querySelectorAll<HTMLElement>(".kcq-game-log__entry")];

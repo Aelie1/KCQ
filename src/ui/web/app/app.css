@@ -400,6 +400,10 @@ button {
     color: var(--kcq-surface-inset);
 }
 
+.kcq-battle-overview__primary-action.is-dimmed {
+    opacity: 0.65;
+}
+
 .kcq-status-chip {
     display: inline-flex;
     flex: 0 0 auto;

@@ -160,9 +160,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         }
     };
 
-    const executeMove = (targets: readonly EntityId[]): void => {
+    const executeMove = (targets: readonly EntityId[]): boolean => {
         const current = targeting();
-        if (!current) return;
+        if (!current) return false;
         const result = execute({
             type: "move",
             actor: current.screen.actorId,
@@ -181,6 +181,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 setScreen({ kind: "overview" });
             }
         }
+        return result?.success === true;
     };
 
     const executeEscape = (target: EntityId, binding: BindingId): void => {

@@ -90,6 +90,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     </button>
                     <button
                         class="kcq-battle-overview__primary-action"
+                        classList={{ "is-dimmed": model().controls.endTurnDimmed }}
                         type="button"
                         onClick={() => props.onEndTurn?.()}
                     >

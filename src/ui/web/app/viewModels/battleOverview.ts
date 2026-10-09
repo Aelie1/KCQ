@@ -36,6 +36,7 @@ export interface BattleOverviewHeaderViewModel {
 export interface BattleOverviewViewModel {
     controls: {
         endTurnLabel: string;
+        endTurnDimmed: boolean;
         gameLogLabel: string;
         settingsLabel: string;
     };
@@ -112,6 +113,8 @@ export function createBattleOverviewViewModel(
             settingsLabel: presentation.ui("battleOverview.settings"),
             gameLogLabel: presentation.ui("battleOverview.gameLog"),
             endTurnLabel: presentation.ui("battleOverview.endTurn"),
+            endTurnDimmed: state.turn.phase === "player"
+                && state.characters.some(({ id }) => actionsById.get(id)?.available),
         },
     };
 }

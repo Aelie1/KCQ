@@ -30,7 +30,7 @@ export interface TargetingPanelProps {
     state: GameState;
     thresholds: ThresholdInfo;
     onBack?: () => void;
-    onExecute?: (targets: readonly EntityId[]) => void;
+    onExecute?: (targets: readonly EntityId[]) => boolean | void;
     onHeaderBack?: () => void;
     onSelectCharacter?: (id: EntityId) => void;
 }
@@ -57,6 +57,7 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
         props.action,
     ));
     let previousActionIdentity = actionIdentity();
+    const [submitted, setSubmitted] = createSignal(false);
     const [selectedTargets, setSelectedTargets] = createSignal(
         sanitizeTargetSelection(props.initialSelectedTargetIds ?? [], baseModel()),
     );
@@ -73,6 +74,7 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
     createEffect(() => {
         const nextActionIdentity = actionIdentity();
         const nextModel = baseModel();
+        if (previousActionIdentity !== nextActionIdentity) setSubmitted(false);
         setSelectedTargets((currentSelection) => reconcileTargetSelection(
             previousActionIdentity,
             nextActionIdentity,
@@ -85,12 +87,23 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
 
     const ready = createMemo(() => isTargetingReady(model(), selectedTargets()));
 
+    const submit = (targets: readonly EntityId[]): void => {
+        if (submitted() || !props.onExecute || !isTargetingReady(model(), targets)) return;
+        // Lock before the callback, which can synchronously update or unmount this panel.
+        setSubmitted(true);
+        if (props.onExecute(targets) === false) setSubmitted(false);
+    };
+
     const selectTarget = (targetId: EntityId): void => {
-        setSelectedTargets((selected) => toggleTargetSelection(
-            selected,
-            targetId,
-            model().requiredTargetCount,
-        ));
+        const current = model();
+        if (submitted() || !current.available || current.mode !== "selectable"
+            || !current.targets.some(target => target.target === targetId && target.valid)) return;
+
+        const next = current.requiredTargetCount === 1
+            ? [targetId]
+            : toggleTargetSelection(selectedTargets(), targetId, current.requiredTargetCount);
+        setSelectedTargets(next);
+        if (current.requiredTargetCount === 1) submit(next);
     };
 
     return (
@@ -119,7 +132,7 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
                             <For each={model().targets}>
                                 {(target) => (
                                     <TargetCard
-                                        disabled={!model().available}
+                                        disabled={submitted() || !model().available}
                                         mode={model().mode}
                                         target={target}
                                         selected={target.target !== null && selectedTargets().includes(target.target)}
@@ -163,10 +176,8 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
                     <button
                         type="button"
                         class="kcq-targeting__execute"
-                        disabled={!ready()}
-                        onClick={() => {
-                            if (ready()) props.onExecute?.(selectedTargets());
-                        }}
+                        disabled={submitted() || !ready()}
+                        onClick={() => submit(selectedTargets())}
                     >
                         {model().controls.executeLabel} <span aria-hidden="true">▶</span>
                     </button>
