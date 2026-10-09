@@ -84,19 +84,34 @@ button {
 }
 
 .kcq-screen-layout__body {
-    display: flex;
-    flex-direction: column;
-    gap: var(--kcq-screen-gap, 12px);
     min-width: 0;
     min-height: 0;
-    overflow-x: visible;
+    overflow-x: hidden;
     overflow-y: auto;
     /* Keep the 366px canvas intact when the body needs to scroll. */
     scrollbar-width: none;
 }
 
-.kcq-screen-layout__body>* {
+.kcq-screen-layout__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--kcq-screen-gap, 12px);
+    min-width: 0;
+}
+
+.kcq-screen-layout__content>* {
     flex-shrink: 0;
+}
+
+@media (min-width: 481px) {
+    /* Expand the clip boundary into the app's outer padding, then inset the
+       content by the same amount. Cards keep their width and position while
+       the 14px badges' 25% overhang fits inside the scroll viewport.
+       Keep this space fixed even when hints are hidden to avoid layout shifts. */
+    .kcq-screen-layout__body:has(.kcq-shortcut) {
+        margin: -4px -8px;
+        padding: 4px 8px;
+    }
 }
 
 /* With no actions, the body occupies all of the remaining height. */
@@ -3521,7 +3536,7 @@ button {
     overflow: visible;
 }
 
-/* Cross the top border, staying inside the scroll viewport's right edge. */
+/* Overlap the top-right corner; the screen viewport provides overhang space. */
 .kcq-shortcut {
     display: inline-flex;
     visibility: hidden;
@@ -3551,6 +3566,12 @@ button {
 }
 
 @media (max-width: 480px) {
+    /* Hints are suppressed on phones. Contain fixed-width content within the
+       vertical viewport without changing card dimensions. */
+    .kcq-screen-layout__content {
+        overflow-x: clip;
+    }
+
     .kcq-shortcut {
         display: none;
     }

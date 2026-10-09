@@ -90,7 +90,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     };
     onMount(() => {
         // ScreenLayout's middle row owns scrolling; the log div is its content.
-        viewport = content.parentElement!;
+        viewport = content.closest<HTMLElement>(".kcq-screen-layout__body")!;
         viewport.addEventListener("scroll", trackScroll, { passive: true });
         const observer = new ResizeObserver(scheduleFollow);
         observer.observe(viewport);
