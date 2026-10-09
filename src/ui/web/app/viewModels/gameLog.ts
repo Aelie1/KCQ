@@ -18,6 +18,8 @@ export interface GameLogRow {
     label?: string;
     emphasis?: "defeat" | "incapacitated" | "rescued";
     values: GameLogValue[];
+    /** Activation consequences retain the same row styling inside their causal group. */
+    rows?: GameLogRow[];
 }
 export interface GameLogViewModelEntry {
     kind: GameLogPresentationEntry["kind"];
@@ -100,6 +102,24 @@ export function createGameLogViewModel(
     });
     const row = (outcome: LogOutcome): GameLogRow => {
         switch (outcome.kind) {
+            case "bindingTick": {
+                const visible = outcome.outcomes.filter(effect => {
+                    if (effect.kind === "binding") return effect.change !== 0 || effect.blocked !== 0
+                        || effect.initial?.value !== effect.final?.value;
+                    if (effect.kind === "resource") return effect.change !== 0 || effect.initial !== effect.final;
+                    return true;
+                });
+                const children = renderOutcomes(visible).filter(child => child.values.length || child.label || child.rows?.length);
+                for (const child of children) {
+                    if (child.target === p.entity(outcome.target) && child.targetParts?.length === 1) {
+                        child.target = undefined;
+                        child.targetParts = undefined;
+                    }
+                }
+                return { kind: outcome.kind, target: p.entity(outcome.target),
+                    label: p.ui("gameLog.bindingActivation", { binding: p.binding(outcome.binding), activated: p.ui("gameLog.activated") }),
+                    values: [], rows: children };
+            }
             case "damage": return {
                 kind: outcome.kind, target: p.entity(outcome.target), values: outcome.hits.flatMap(hit => {
                     const values: GameLogValue[] = [];
@@ -179,14 +199,14 @@ export function createGameLogViewModel(
             };
         }
     };
-    return entries.map(entry => {
+    const renderScope = (outcomes: LogOutcome[], actor?: string): GameLogRow[] => {
         // Group only independent, equivalent buff applications within this event. Linked
         // participants remain the single logical outcome supplied by Pass 1.
         const groups = new Map<string, BuffOutcome>();
         const grouped = new Set<BuffOutcome>();
         const buffGroups = new Map<BuffOutcome, BuffOutcome>();
-        const skipped = new Set<LogOutcome>(entry.outcomes.filter(outcome => "summarized" in outcome && outcome.summarized));
-        for (const outcome of entry.outcomes) {
+        const skipped = new Set<LogOutcome>(outcomes.filter(outcome => "summarized" in outcome && outcome.summarized));
+        for (const outcome of outcomes) {
             if (skipped.has(outcome) || outcome.kind !== "buff" || outcome.participants.length !== 1) continue;
             const participant = outcome.participants[0]!;
             if (participant.initial.details?.linkedEntity || participant.final.details?.linkedEntity) continue;
@@ -204,7 +224,7 @@ export function createGameLogViewModel(
             }
         }
         const rows = new Map<LogOutcome, GameLogRow>();
-        for (const outcome of entry.outcomes) {
+        for (const outcome of outcomes) {
             if (skipped.has(outcome)) continue;
             let formatted: GameLogRow;
             if (outcome.kind === "buff" && outcome.participants.length === 1) {
@@ -220,20 +240,31 @@ export function createGameLogViewModel(
             }
             rows.set(outcome, formatted);
         }
-        // Pass 1 records per-target net outcomes, not per-hit attribution. Only a
-        // single hit to a target can safely share its binding/buff outcomes inline.
-        if (entry.kind === "move") {
-            for (const outcome of entry.outcomes) {
-                if (outcome.kind !== "damage" || outcome.hits.length !== 1 || outcome.hits[0]!.result === "none") continue;
+        // A target's zones share one row within this aggregation scope. Tick
+        // boundaries have already separated independent activation consequences.
+        const bindingRows = new Map<string, GameLogRow>();
+        for (const outcome of outcomes) {
+            if (outcome.kind !== "binding") continue;
+            const formatted = rows.get(outcome);
+            if (!formatted) continue;
+            const first = bindingRows.get(outcome.target);
+            if (first) { first.values.push(...formatted.values); rows.delete(outcome); }
+            else bindingRows.set(outcome.target, formatted);
+        }
+        // Net binding changes can share all executed target bands. Buff attribution
+        // remains restricted to a single hit, preserving shared-buff suppression.
+        if (actor !== undefined) {
+            for (const outcome of outcomes) {
+                if (outcome.kind !== "damage" || !outcome.hits.some(hit => hit.result !== "none")) continue;
                 const hitRow = rows.get(outcome);
                 if (!hitRow) continue;
-                for (const effect of entry.outcomes) {
+                for (const effect of outcomes) {
                     const effectRow = rows.get(effect);
                     if (!effectRow) continue;
                     const binding = effect.kind === "binding" && effect.target === outcome.target;
-                    const buff = outcome.hits[0]!.result !== "miss" && effect.kind === "buff" && effect.participants.some(participant => participant.target === outcome.target)
-                        && effect.participants.every(participant => participant.target === outcome.target || participant.target === entry.actor)
-                        && effect.participants.filter(participant => entry.outcomes.some(candidate =>
+                    const buff = outcome.hits.length === 1 && outcome.hits[0]!.result !== "miss" && effect.kind === "buff" && effect.participants.some(participant => participant.target === outcome.target)
+                        && effect.participants.every(participant => participant.target === outcome.target || participant.target === actor)
+                        && effect.participants.filter(participant => outcomes.some(candidate =>
                             candidate.kind === "damage" && candidate.target === participant.target)).length === 1
                         && effectRow.values.length === 1
                         && !grouped.has(buffGroups.get(effect)!);
@@ -247,12 +278,12 @@ export function createGameLogViewModel(
         // Accuracy-only rows explain failed attacks, but shared buffs do not need
         // one roll per participant. HP effects (including recorded zeroes) and
         // binding sequences retain all executed bands and their damage totals.
-        for (const outcome of entry.outcomes) {
+        for (const outcome of outcomes) {
             if (outcome.kind !== "damage") continue;
             const formatted = rows.get(outcome);
             if (!formatted) continue;
             const hpEffect = outcome.hits.some(hit => hit.damage !== 0 || hit.healing !== 0 || hit.blocked !== 0 || hit.recordedZeroEffect);
-            const related = entry.outcomes.filter(effect => effect !== outcome && !("summarized" in effect && effect.summarized) && (
+            const related = outcomes.filter(effect => effect !== outcome && !("summarized" in effect && effect.summarized) && (
                 ("target" in effect && effect.target === outcome.target)
                 || (effect.kind === "buff" && effect.participants.some(participant => participant.target === outcome.target))
                 || (effect.kind === "stance" && effect.actor === outcome.target)));
@@ -265,7 +296,21 @@ export function createGameLogViewModel(
                 .map(hit => ({ text: p.hitBand(hit.result), tone: hit.result })) : [];
             if (!formatted.values.length) rows.delete(outcome);
         }
-        const model: GameLogViewModelEntry = { kind: entry.kind, rows: [...rows.values()] };
+        return [...rows.values()];
+    };
+    const renderOutcomes = (outcomes: LogOutcome[], actor?: string): GameLogRow[] => {
+        const rendered: GameLogRow[] = [];
+        let start = 0;
+        for (const [index, outcome] of outcomes.entries()) {
+            if (outcome.kind !== "bindingTick") continue;
+            rendered.push(...renderScope(outcomes.slice(start, index), actor), ...renderScope([outcome]));
+            start = index + 1;
+        }
+        rendered.push(...renderScope(outcomes.slice(start), actor));
+        return rendered;
+    };
+    return entries.map(entry => {
+        const model: GameLogViewModelEntry = { kind: entry.kind, rows: renderOutcomes(entry.outcomes, entry.kind === "move" ? entry.actor : undefined) };
         switch (entry.kind) {
             case "move":
             case "escape":

@@ -62,6 +62,8 @@ export const systemEnglishStrings: StringTable = {
     "ui.gameLog.hitDamage": "{band} {amount}",
     "ui.gameLog.healed": "Heal {amount}",
     "ui.gameLog.blocked": "Blocked {amount}",
+    "ui.gameLog.activated": "Activated",
+    "ui.gameLog.bindingActivation": "{binding} {activated}",
     "ui.gameLog.added": "Added",
     "ui.gameLog.removed": "Removed",
     "ui.gameLog.buffRefreshed": "Refreshed",

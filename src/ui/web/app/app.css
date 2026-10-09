@@ -1187,6 +1187,17 @@ button {
     gap: 0 0.35em;
 }
 
+.kcq-game-log__row--bindingTick {
+    margin-top: 0.2em;
+}
+
+.kcq-game-log__tick-outcomes {
+    flex-basis: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.18em;
+}
+
 .kcq-game-log__recipient {
     display: flex;
     flex-wrap: wrap;

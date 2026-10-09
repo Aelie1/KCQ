@@ -232,6 +232,25 @@ function mountScrollingLog() {
 }
 
 describe("Game Log bottom following", () => {
+    it("keeps activation consequences nested and relocalizes the live activation heading", () => {
+        const log = mountScrollingLog();
+        log.setEntries(createGameLogEntries([{ type: "changePhase", phase: "player", effects: [
+            { type: "bindingTickStart", target: "ko", binding: "latexCollar" },
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 10 },
+            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 2 },
+            { type: "bindingTickEnd", target: "ko", binding: "latexCollar" },
+            { type: "actionRefreshed", target: "hinari" },
+        ] }]));
+        const activation = log.viewport.querySelector('[data-outcome="bindingTick"]')!;
+        expect(activation.querySelector(':scope > .kcq-game-log__tick-outcomes > [data-outcome="binding"]')).not.toBeNull();
+        expect(log.viewport.querySelectorAll('[data-outcome="binding"]')).toHaveLength(1);
+        expect(log.viewport.querySelectorAll('.kcq-game-log__outcomes > .kcq-game-log__row')).toHaveLength(2);
+        expect(activation.textContent?.match(/Ko-chan/g)).toHaveLength(1);
+        expect(activation.textContent).toContain("Skunk Collar Activated");
+        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.activated": "Translated activation" }));
+        expect(log.viewport.querySelector('[data-outcome="bindingTick"]')?.textContent).toContain("Skunk Collar Translated activation");
+    });
+
     it("starts at the bottom and follows new entries while at or near the bottom", () => {
         const log = mountScrollingLog();
         log.flush();

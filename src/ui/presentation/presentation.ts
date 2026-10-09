@@ -114,6 +114,8 @@ export type UiLabel =
     | "escape.assist"
     | "escape.tagSpread"
     | "escape.use"
+    | "gameLog.activated"
+    | "gameLog.bindingActivation"
     | "gameLog.added"
     | "gameLog.allies"
     | "gameLog.bindingEndpoint"

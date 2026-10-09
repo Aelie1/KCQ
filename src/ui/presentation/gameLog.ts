@@ -3,6 +3,8 @@ import type {
     GameEvent, GameState, HitBand, LeafEvent, MoveId, Phase, StanceId, TrapId,
 } from "../../engine/public/types";
 
+import { getThresholds } from "../../engine/public/mechanics";
+
 /** Semantic IDs are localized by Presentation at render time. No preview mechanics run here. */
 export interface LogHit {
     result: HitBand;
@@ -51,7 +53,11 @@ export interface ResourceOutcome {
     /** Sum of emitted applied deltas; silent changes can make this differ from final - initial. */
     change: number; initial?: number; final?: number; max?: number;
 }
-export type LogOutcome = ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
+/** Explicit onTick boundaries own all consequences, including indirect effects. */
+export interface BindingTickOutcome {
+    kind: "bindingTick"; target: EntityId; binding: BindingId; outcomes: LogOutcome[];
+}
+export type LogOutcome = BindingTickOutcome | ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
     | { kind: "character"; target: EntityId; operation: "incapacitated" | "rescued" }
     | { kind: "enemy"; target: EntityId; operation: "spawned" | "defeated" }
     | { kind: "interrupt"; actor: EntityId; reason: FailureReason }
@@ -161,7 +167,29 @@ function transitionConsequences(event: GameEvent, before: GameState | undefined,
 }
 
 function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameState, recorded: RecordedBuffs = new Map()): LogOutcome[] {
-    const outcomes: LogOutcome[] = [];
+    const result: LogOutcome[] = [];
+    let outcomes = result;
+    let segmentStart = 0;
+    const scopes: { outcomes: LogOutcome[]; segmentStart: number }[] = [];
+    // Validate each sequence independently. Unmatched markers cannot claim effects.
+    const boundaries = new Map<LeafEvent, LeafEvent>();
+    const sequences = [...(event.type === "useMove" ? event.targets.map(target => target.effects) : []), event.effects];
+    for (const leaves of sequences) {
+        const starts: Extract<LeafEvent, { type: "bindingTickStart" | "bindingTickEnd" }>[] = [];
+        for (const leaf of leaves) {
+            if (leaf.type === "bindingTickStart") starts.push(leaf);
+            else if (leaf.type === "bindingTickEnd") {
+                const start = starts.at(-1);
+                if (start?.target === leaf.target && start.binding === leaf.binding) {
+                    starts.pop();
+                    boundaries.set(start, leaf);
+                    boundaries.set(leaf, start);
+                }
+            }
+        }
+    }
+    const current = () => outcomes.slice(segmentStart);
+    const trapDeltas = new Map<TrapOutcome, number>();
     const summarized = transitionConsequences(event, before, after, recorded);
     const evidence = new Map<BuffOutcome | StanceOutcome, LeafEvent[]>();
     const record = (outcome: BuffOutcome | StanceOutcome, effect: LeafEvent) => {
@@ -170,7 +198,7 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
         evidence.set(outcome, leaves);
     };
     const damageGroup = (target: EntityId): DamageOutcome => {
-        let group = outcomes.find((outcome): outcome is DamageOutcome => outcome.kind === "damage" && outcome.target === target);
+        let group = current().find((outcome): outcome is DamageOutcome => outcome.kind === "damage" && outcome.target === target);
         if (!group) {
             group = { kind: "damage", target, hits: [], damage: 0, healing: 0, blocked: 0 };
             outcomes.push(group);
@@ -179,13 +207,30 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
     };
     const consume = (effect: LeafEvent, hit?: { target: EntityId; value: LogHit }): void => {
         switch (effect.type) {
+            case "bindingTickStart": {
+                if (!boundaries.has(effect)) break;
+                const tick: BindingTickOutcome = { kind: "bindingTick", target: effect.target, binding: effect.binding, outcomes: [] };
+                outcomes.push(tick);
+                // Aggregation on either side must not move an outcome across an activation.
+                scopes.push({ outcomes, segmentStart: outcomes.length });
+                outcomes = tick.outcomes;
+                segmentStart = 0;
+                break;
+            }
+            case "bindingTickEnd": {
+                if (!boundaries.has(effect)) break;
+                const parent = scopes.pop()!;
+                outcomes = parent.outcomes;
+                segmentStart = parent.segmentStart;
+                break;
+            }
             case "enemyDamaged":
             case "enemyHealed":
             case "damageBlocked": {
                 const group = damageGroup(effect.target);
                 const field = effect.type === "enemyDamaged" ? "damage" : effect.type === "enemyHealed" ? "healing" : "blocked";
                 group[field] += effect.amount;
-                if (hit?.target === effect.target) {
+                if (scopes.length === 0 && hit?.target === effect.target && group.hits.includes(hit.value)) {
                     hit.value[field] += effect.amount;
                     if (effect.amount === 0) hit.value.recordedZeroEffect = true;
                 }
@@ -196,7 +241,7 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
             case "bondageChanged":
             case "bondageRemoved":
             case "bondageBlocked": {
-                let group = outcomes.find((outcome): outcome is BindingOutcome => outcome.kind === "binding"
+                let group = current().find((outcome): outcome is BindingOutcome => outcome.kind === "binding"
                     && outcome.target === effect.target && outcome.binding === effect.binding);
                 if (!group) {
                     group = { kind: "binding", target: effect.target, binding: effect.binding, change: 0, blocked: 0,
@@ -220,7 +265,7 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
             case "buffUpdated":
             case "buffRemoved": {
                 const linked = linkedTarget(before, after, effect.target, effect.buff, recorded);
-                let group = outcomes.find((outcome): outcome is BuffOutcome => outcome.kind === "buff"
+                let group = current().find((outcome): outcome is BuffOutcome => outcome.kind === "buff"
                     && outcome.buff === effect.buff && outcome.participants.some(({ target }) => target === effect.target));
                 if (!group) {
                     group = { kind: "buff", buff: effect.buff, participants: [] };
@@ -238,7 +283,7 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
                 break;
             }
             case "dataChanged": {
-                let group = outcomes.find((outcome): outcome is ResourceOutcome => outcome.kind === "resource"
+                let group = current().find((outcome): outcome is ResourceOutcome => outcome.kind === "resource"
                     && outcome.target === effect.target && outcome.resource === effect.name);
                 if (!group) {
                     const initial = before?.characters.find(({ id }) => id === effect.target)?.data;
@@ -252,7 +297,7 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
                 break;
             }
             case "stanceSet": {
-                let group = outcomes.find((outcome): outcome is StanceOutcome => outcome.kind === "stance" && outcome.actor === effect.actor);
+                let group = current().find((outcome): outcome is StanceOutcome => outcome.kind === "stance" && outcome.actor === effect.actor);
                 if (group) group.final = effect.stance;
                 else {
                     group = { kind: "stance", actor: effect.actor, initial: stance(before, effect.actor), final: effect.stance };
@@ -264,13 +309,14 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
             case "trapAdded":
             case "trapRemoved":
             case "trapTriggered": {
-                let group = outcomes.find((outcome): outcome is TrapOutcome => outcome.kind === "trap" && outcome.trap === effect.trap);
+                let group = current().find((outcome): outcome is TrapOutcome => outcome.kind === "trap" && outcome.trap === effect.trap);
                 if (!group) {
                     group = { kind: "trap", trap: effect.trap, change: 0, triggers: [],
                         initial: before ? before.traps.find(({ id }) => id === effect.trap)?.amount ?? 0 : undefined,
                         final: after ? after.traps.find(({ id }) => id === effect.trap)?.amount ?? 0 : undefined };
                     outcomes.push(group);
                 }
+                trapDeltas.set(group, (trapDeltas.get(group) ?? 0) + (effect.type === "trapAdded" ? effect.amount : -effect.amount));
                 if (effect.type === "trapTriggered") {
                     group.triggers.push({ actor: effect.actor, amount: effect.amount });
                     group.change = undefined;
@@ -285,7 +331,7 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
             case "actionInterrupted": outcomes.push({ kind: "interrupt", actor: effect.actor, reason: effect.reason }); break;
             case "actionRefreshed": outcomes.push({ kind: "refresh", target: effect.target }); break;
             case "targetChanged": {
-                const previous = outcomes.find((outcome) => outcome.kind === "retarget" && outcome.target === effect.target);
+                const previous = current().find((outcome) => outcome.kind === "retarget" && outcome.target === effect.target);
                 if (previous?.kind === "retarget") previous.destination = effect.destination;
                 else outcomes.push({ kind: "retarget", target: effect.target, destination: effect.destination });
                 break;
@@ -316,7 +362,10 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
         }
     }
     for (const effect of event.effects) consume(effect);
-    for (const outcome of outcomes) {
+    const flatten = (items: LogOutcome[]): LogOutcome[] => items.flatMap(outcome =>
+        outcome.kind === "bindingTick" ? flatten(outcome.outcomes) : [outcome]);
+    const all = flatten(result);
+    for (const outcome of all) {
         if (outcome.kind === "binding") {
             // Leaf amounts are resolved deltas, so a known endpoint establishes the other value.
             if (!outcome.initial && outcome.final) outcome.initial = { value: outcome.final.value - outcome.change };
@@ -329,7 +378,106 @@ function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameSta
     for (const [outcome, leaves] of evidence) {
         if (leaves.every(leaf => summarized.has(leaf))) outcome.summarized = true;
     }
-    return outcomes.filter((outcome) => outcome.kind !== "stance" || outcome.initial !== outcome.final);
+    if (boundaries.size) {
+        // Frames describe the entire action. Split known numeric endpoints using
+        // emitted applied deltas so repeated activations get their own transitions.
+        const bindings = new Map<string, BindingOutcome[]>();
+        const resources = new Map<string, ResourceOutcome[]>();
+        const traps = new Map<TrapId, TrapOutcome[]>();
+        const stances = new Map<EntityId, StanceOutcome[]>();
+        const buffs = new Map<string, { outcome: BuffOutcome; participant: BuffParticipant }[]>();
+        for (const outcome of all) {
+            if (outcome.kind === "binding") {
+                const key = JSON.stringify([outcome.target, outcome.binding]);
+                bindings.set(key, [...(bindings.get(key) ?? []), outcome]);
+            } else if (outcome.kind === "resource") {
+                const key = JSON.stringify([outcome.target, outcome.resource]);
+                resources.set(key, [...(resources.get(key) ?? []), outcome]);
+            } else if (outcome.kind === "trap") {
+                traps.set(outcome.trap, [...(traps.get(outcome.trap) ?? []), outcome]);
+            } else if (outcome.kind === "stance") {
+                stances.set(outcome.actor, [...(stances.get(outcome.actor) ?? []), outcome]);
+            } else if (outcome.kind === "buff") {
+                for (const participant of outcome.participants) {
+                    const key = JSON.stringify([participant.target, outcome.buff]);
+                    buffs.set(key, [...(buffs.get(key) ?? []), { outcome, participant }]);
+                }
+            }
+        }
+        const thresholds = Object.entries(getThresholds().thresholds) as [BindingLevel, number][];
+        const endpoint = (value: number, knownLevels: boolean): BindingEndpoint => ({ value,
+            ...(value === 0 ? { level: "none" as const } : knownLevels ? {
+                level: thresholds.filter(([, threshold]) => value >= threshold)
+                    .sort((a, b) => b[1] - a[1])[0]?.[0] ?? "none",
+            } : {}) });
+        for (const groups of bindings.values()) {
+            if (groups.length < 2) continue;
+            const first = groups[0]!;
+            const last = groups.at(-1)!;
+            const initial = bindingEndpoint(before, first.target, first.binding);
+            const final = bindingEndpoint(after, first.target, first.binding);
+            let value = initial?.value ?? (final ? final.value - groups.reduce((sum, group) => sum + group.change, 0) : undefined);
+            if (value === undefined) {
+                let preceding = 0;
+                for (const group of groups) {
+                    if (group.initial) { value = group.initial.value - preceding; break; }
+                    preceding += group.change;
+                }
+            }
+            if (value === undefined) continue;
+            for (const group of groups) {
+                group.initial = group === first && initial ? initial : endpoint(value, !!before || !!after);
+                value += group.change;
+                group.final = group === last && final ? final : endpoint(value, !!before || !!after);
+            }
+        }
+        for (const groups of resources.values()) {
+            if (groups.length < 2) continue;
+            let value = groups[0]!.initial ?? (groups.at(-1)!.final === undefined ? undefined
+                : groups.at(-1)!.final! - groups.reduce((sum, group) => sum + group.change, 0));
+            if (value === undefined) continue;
+            for (const group of groups) {
+                group.initial = value;
+                value += group.change;
+                group.final = group === groups.at(-1) ? group.final ?? value : value;
+            }
+        }
+        for (const groups of traps.values()) {
+            if (groups.length < 2) continue;
+            let value = groups[0]!.initial ?? (groups.at(-1)!.final === undefined ? undefined
+                : groups.at(-1)!.final! - groups.reduce((sum, group) => sum + trapDeltas.get(group)!, 0));
+            if (value === undefined) continue;
+            for (const group of groups) {
+                group.initial = value;
+                value += trapDeltas.get(group)!;
+                group.final = group === groups.at(-1) ? group.final ?? value : value;
+                group.change = group.final - group.initial;
+            }
+        }
+        for (const groups of stances.values()) {
+            let previous = groups[0]!.initial;
+            for (const group of groups) { group.initial = previous; previous = group.final; }
+        }
+        for (const groups of buffs.values()) {
+            if (groups.length < 2) continue;
+            // Intermediate buff payloads are absent from flat leaves. Keep presence
+            // and operations, but do not borrow a later activation's severity.
+            let previous = groups[0]!.participant.initial;
+            for (const [index, { outcome, participant }] of groups.entries()) {
+                participant.initial = previous;
+                const leaves = evidence.get(outcome)!.filter(leaf => "target" in leaf && leaf.target === participant.target);
+                const mutation = leaves.at(-1);
+                participant.final = index === groups.length - 1 ? participant.final
+                    : { present: mutation ? mutation.type !== "buffRemoved" : participant.final.present };
+                previous = participant.final;
+            }
+        }
+    }
+    const visible = (items: LogOutcome[]): LogOutcome[] => items.filter(outcome => {
+        if (outcome.kind === "bindingTick") outcome.outcomes = visible(outcome.outcomes);
+        return outcome.kind !== "stance" || outcome.initial !== outcome.final;
+    });
+    return visible(result);
 }
 
 /** Inactive buffs first appear after activation. Recover only the first recorded

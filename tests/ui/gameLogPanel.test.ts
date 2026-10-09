@@ -447,7 +447,8 @@ describe("Game Log presentation refinements", () => {
         const noDamage = models(createGameLogEntries([move([
             { target: "ko", result: "hit", effects: [] }, { target: "ko", result: "graze", effects: [] },
         ], [{ type: "bondageChanged", target: "ko", binding: "latexLegs", amount: 3 }])]))[0]!.rows;
-        expect(noDamage.map(row => row.kind)).toEqual(["damage", "binding"]);
+        expect(noDamage.map(row => row.kind)).toEqual(["damage"]);
+        expect(noDamage[0]!.values.map(value => value.text)).toEqual(["Hit", "Graze", "Skunk Legs +3"]);
         expect(noDamage.flatMap(row => row.values).some(value => value.tone === "total")).toBe(false);
     });
 

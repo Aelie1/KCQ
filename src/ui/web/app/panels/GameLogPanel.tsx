@@ -5,13 +5,43 @@ import type { Presentation } from "../../../presentation/presentation";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { createCombatHeaderViewModel } from "../viewModels/combatHeader";
-import { createGameLogViewModel } from "../viewModels/gameLog";
+import { createGameLogViewModel, type GameLogRow } from "../viewModels/gameLog";
 
 export interface GameLogPanelProps {
     entries: readonly GameLogPresentationEntry[];
     presentation: Presentation;
     state: GameState;
     onBack?: () => void;
+}
+
+function OutcomeRow(props: { row: GameLogRow }): JSX.Element {
+    const row = props.row;
+    return (
+        <div class={"kcq-game-log__row kcq-game-log__row--" + row.kind + (row.emphasis ? " kcq-game-log__row--" + row.emphasis : "")} data-outcome={row.kind}>
+            <span class="kcq-game-log__recipient">
+                <Show when={row.target}><span class="kcq-game-log__target">
+                    <For each={row.targetParts ?? [{ text: row.target! }]}>
+                        {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
+                    </For>
+                </span></Show>
+                <Show when={row.label}><strong class="kcq-game-log__label">{row.label}</strong></Show>
+            </span>
+            <div class="kcq-game-log__values">
+                <For each={row.values}>
+                    {(value) => <span class={"kcq-game-log__value kcq-game-log__value--" + (value.tone ?? "neutral")}>
+                        <For each={value.parts ?? [{ text: value.text, tone: value.tone }]}>
+                            {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
+                        </For>
+                    </span>}
+                </For>
+            </div>
+            <Show when={row.rows?.length}>
+                <div class="kcq-game-log__tick-outcomes">
+                    <For each={row.rows}>{child => <OutcomeRow row={child} />}</For>
+                </div>
+            </Show>
+        </div>
+    );
 }
 
 export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
@@ -97,25 +127,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                                     <div class="kcq-game-log__outcomes">
                                         <For each={entry.rows}>
                                             {(row) => (
-                                                <div class={"kcq-game-log__row kcq-game-log__row--" + row.kind + (row.emphasis ? " kcq-game-log__row--" + row.emphasis : "")} data-outcome={row.kind}>
-                                                    <span class="kcq-game-log__recipient">
-                                                        <Show when={row.target}><span class="kcq-game-log__target">
-                                                            <For each={row.targetParts ?? [{ text: row.target! }]}>
-                                                                {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
-                                                            </For>
-                                                        </span></Show>
-                                                        <Show when={row.label}><strong class="kcq-game-log__label">{row.label}</strong></Show>
-                                                    </span>
-                                                    <div class="kcq-game-log__values">
-                                                        <For each={row.values}>
-                                                            {(value) => <span class={"kcq-game-log__value kcq-game-log__value--" + (value.tone ?? "neutral")}>
-                                                                <For each={value.parts ?? [{ text: value.text, tone: value.tone }]}>
-                                                                    {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
-                                                                </For>
-                                                            </span>}
-                                                        </For>
-                                                    </div>
-                                                </div>
+                                                <OutcomeRow row={row} />
                                             )}
                                         </For>
                                     </div>
