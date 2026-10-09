@@ -317,7 +317,7 @@ export class Presentation {
         return this.translate(this.definitionKey("modifier", modifier, variant));
     }
 
-    load(type: "Character" | "Encounter", id: EntityId, success: boolean) {
+    load(type: "Character" | "Encounter", id: EntityId | EncounterId, success: boolean) {
         return this.ui(
             `load${type}.${success ? "success" : "failure"}`,
             { id: success ? (type === "Character" ? this.entityKey(id) : this.encounter(id)) : id }
