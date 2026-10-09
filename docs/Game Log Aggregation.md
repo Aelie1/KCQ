@@ -149,7 +149,7 @@ Starting with both characters moving: Ko stands, Hinari stands, Ko moves again. 
 - Escape events omit the attempted binding ID and accuracy result. Binding outcomes identify any binding that actually changed; an interrupted/empty escape cannot identify the attempted binding from `GameEvent` alone.
 - Phase events omit the round. Frames supply it; event-only input leaves it unknown.
 - Trap trigger consumption is retained separately. Recorded trap endpoints supply net change; trigger-only traces without endpoints leave net change unknown. Current trap removal code does not emit the declared `trapRemoved` leaf.
-- Refresh, interruption, spawn/defeat, final retarget destination and cancellation/weakening remain semantic outcomes. Intention leaves lack specific move IDs and weakening amounts, which are not invented.
+- Refresh, interruption, spawn/defeat, final retarget destination and cancellation/weakening remain semantic outcomes. Intention outcomes retain the leaf’s specific move ID for each cancellation or weakening. Different moves remain separate; weakening amounts are unavailable and are not invented.
 - Resource outcomes come only from public `dataChanged` leaves, grouped by target and resource within each event. Applied deltas are preserved; snapshots supply optional endpoints and Subspace maximum only. Unreported data changes and silent buff ticks are not expanded into a technical trace.
 
 Validation: `tests/ui/gameLogAggregation.test.ts` covers all eight required cases, linked Pounce severity endpoints (fixtures and engine-generated frames), generic non-Pounce severity changes, resource event grouping/applied deltas/clamping/optional endpoints/visibility/event boundaries, current leaf outcomes, unknown-data behavior, event boundaries and input immutability. Existing Game Log components and preview components are unchanged.
@@ -161,3 +161,16 @@ Validation: `tests/ui/gameLogAggregation.test.ts` covers all eight required case
 `createGameLogViewModel` localizes semantic entries with `Presentation`; `GameLogPanel` only renders the resulting headings and compact outcome rows. Hits stay ordered within target rows, reciprocal buffs share one row, and resource deltas remain separate from snapshot endpoints. Unknown optional data stays unknown. Binding levels and buff severity come from recorded payloads; the historical renderer does not run previews or mechanics.
 
 For screenshot review, open `/ui-dev.html` and select **Game Log**. Its production-panel fixture includes deterministic escape, single and multiple hits, AoE, linked Pounce IV → I, binding/resource changes, stance aggregation and phase outcomes. The **Playable Battle** entry exercises live history.
+
+
+## Combat log polish (pass 4)
+
+New Pounce and Latex Mist buffs are inactive until the phase tick. Public entity snapshots omit inactive buffs, and buff leaves carry only IDs. Previously, missing post-event payloads were treated as absent buffs, producing severity-less `Updated` labels even for genuine additions. Aggregation now preserves presence established by the leaf and recovers the first recorded payload after activation. A later add/update/remove for the same target and buff, an entity disappearing, or a bare event stops recovery. If no payload is recorded, severity stays unknown. Reciprocal links in recovered payloads still produce one logical outcome. Snapshot payloads are cloned; inputs remain untouched.
+
+The view model uses `Presentation.buff(id, severity)` for known severity. Additions use final severity, removals initial severity, and changes show initial → final. Other updates display `Extended` only when unchanged severity and two recorded durations establish an increase; otherwise they display `Refreshed`. Reapplication replaces the engine buff; hidden post-event payloads do not turn it into a removal. Latex Mist applications remain consolidated across intervening binding leaves. Full-party groups display `All Allies`; partial groups list names.
+
+Multi-hit aggregation tracks `enemyDefeated` leaves while reading target results. Subsequent empty non-miss results for that defeated target are unexecuted placeholders and are omitted. Misses, effects-bearing results, and zero-damage hits before defeat remain. A final absent enemy or action-level defeat alone cannot locate the defeat within the hit sequence, so ambiguous results are retained. Damage totals still use recorded leaves.
+
+Cancellation and weakening outcomes carry `move` from the public leaf through Pass 1 to the view model, which localizes it with `Presentation.move`. The localized leaf-event path also substitutes the move name. Damage rows now use the same content-sized wrapping flex layout as other outcomes, removing the reserved 92px target column; separator spacing is consistent in font-relative units.
+
+Rendering regressions execute real Pounce, Latex Mist and Rockfall events in addition to endpoint, localization, grouping, spacing, zero-damage, miss and intention identity fixtures.

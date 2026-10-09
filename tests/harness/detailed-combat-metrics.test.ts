@@ -122,7 +122,7 @@ function stopEvent(target: string, signal?: "intentionCancelled" | "intentionWea
         targets: [{
             target,
             result: signal ? "hit" : "miss",
-            effects: signal ? [{ type: signal, target }] : [],
+            effects: signal ? [{ type: signal, target, move: "attack" }] : [],
         }],
     };
 }

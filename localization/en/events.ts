@@ -29,6 +29,7 @@ export const eventEnglishStrings: StringTable = {
     "event.enemyDefeated.text": "{target} is defeated.",
 
     "event.stanceSet.text": "{actor} changes stance to {stance}.",
+    "event.dataChanged.text": "{target}'s {name} changed by {amount}.",
 
     "event.cooldownChanged.text": "{target}'s {move} cooldown changes to {value}.",
 
@@ -40,7 +41,9 @@ export const eventEnglishStrings: StringTable = {
     "event.actionRefreshed.text": "{target}'s action is refreshed.",
 
     "event.targetChanged.text": "{target}'s target changes to {destination}.",
+    "event.characterIncapacitated.text": "{target} was incapacitated.",
+    "event.characterRescued.text": "{target} was rescued.",
 
-    "event.intentionCancelled.text": "{target}'s action is cancelled.",
-    "event.intentionWeakened.text": "{target}'s action is weakened.",
+    "event.intentionCancelled.text": "{target}'s {move} is cancelled.",
+    "event.intentionWeakened.text": "{target}'s {move} is weakened.",
 };

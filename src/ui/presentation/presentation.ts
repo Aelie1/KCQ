@@ -19,7 +19,6 @@ export type UiLabel =
     | "gameLog.bindingEndpoint"
     | "gameLog.allies"
     | "gameLog.targetList"
-    | "gameLog.buffSeverity"
     | "gameLog.buffOutcome"
     | "gameLog.bindingOutcome"
     | "gameLog.damageTotal"
@@ -28,7 +27,8 @@ export type UiLabel =
     | "gameLog.blocked"
     | "gameLog.added"
     | "gameLog.removed"
-    | "gameLog.updated"
+    | "gameLog.buffRefreshed"
+    | "gameLog.buffExtended"
     | "gameLog.linkedTargets"
     | "gameLog.participantChange"
     | "gameLog.trapTriggered"
@@ -250,7 +250,7 @@ export class Presentation {
     }
 
     buff(buff: BuffId, severity: number | undefined, variant: "name" | "desc" = "name"): string {
-        if (severity) {
+        if (severity !== undefined) {
             return this.translate({
                 id: "buff.severity.text",
                 args: {
@@ -522,12 +522,22 @@ export class Presentation {
                     },
                 };
 
+            case "characterIncapacitated":
+            case "characterRescued":
+                return {
+                    id: `event.${event.type}.text`,
+                    args: {
+                        target: this.entityKey(event.target),
+                    },
+                };
+
             case "intentionCancelled":
             case "intentionWeakened":
                 return {
                     id: `event.${event.type}.text`,
                     args: {
                         target: this.entityKey(event.target),
+                        move: this.definitionKey("move", event.move, "name"),
                     },
                 };
 

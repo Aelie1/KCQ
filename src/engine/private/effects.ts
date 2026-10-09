@@ -212,6 +212,8 @@ export class GameEffects {
     private addBuff(target: iEntity, buff: iBuff) {
         const oldBuff = findBuff(target, buff.id);
         const newBuff = { ...buff };
+        const oldStatus = new GameStatus(this.state, target);
+        const wasIncapacitated = oldStatus.isIncapacitated();
         if (oldBuff) {
             const index = target.buffs.indexOf(oldBuff);
             target.buffs[index] = newBuff;
@@ -228,13 +230,23 @@ export class GameEffects {
                 buff: newBuff.id
             });
         }
+        const newStatus = new GameStatus(this.state, target);
+        const isIncapacitated = newStatus.isIncapacitated();
+        if (!wasIncapacitated && isIncapacitated) {
+            this.addEvent({
+                type: "characterIncapacitated",
+                target: target.id,
+            });
+        }
         return;
     };
 
     private removeBuff(target: iEntity, buff: iBuff) {
         const index = target.buffs.indexOf(buff);
         if (index >= 0) {
-            const couldMove = isCharacter(target) ? new GameStatus(this.state, target).canMove() : true;
+            const oldStatus = new GameStatus(this.state, target);
+            const couldMove = oldStatus.canMove();
+            const wasIncapacitated = oldStatus.isIncapacitated();
             target.buffs.splice(index, 1);
             this.addEvent({
                 type: "buffRemoved",
@@ -242,13 +254,21 @@ export class GameEffects {
                 buff: buff.id
             });
             if (isCharacter(target)) {
-                const canMove = new GameStatus(this.state, target).canMove();
+                const newStatus = new GameStatus(this.state, target);
+                const canMove = newStatus.canMove();
+                const isIncapacitated = newStatus.isIncapacitated();
                 if (!couldMove && canMove) {
                     this.stack([{
                         type: "stance",
                         actor: target,
                         stance: "moving"
                     }]);
+                }
+                if (wasIncapacitated && !isIncapacitated) {
+                    this.addEvent({
+                        type: "characterRescued",
+                        target: target.id,
+                    });
                 }
             }
         }

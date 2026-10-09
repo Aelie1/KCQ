@@ -377,6 +377,7 @@ describe("normal Latex Skunk", () => {
         expect(resolvedEvents(result.frames)).toContainEqual({
             type: "intentionCancelled",
             target: "skunk1",
+            move: "latexShower",
         });
         expect(result.frames.at(-1)!.state.enemies[0]).toMatchObject({
             currHp: BELOW_THRESHOLD,
@@ -418,7 +419,7 @@ describe("normal Latex Skunk", () => {
 
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected threshold-crossing attack to succeed");
-        expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "skunk1" });
+        expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "skunk1", move: oldIntention.move });
         expect(result.frames.at(-1)!.state.enemies[0]).toMatchObject({
             currHp: BELOW_THRESHOLD,
             intentions: [{

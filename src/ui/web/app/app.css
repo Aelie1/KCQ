@@ -1184,19 +1184,14 @@ button {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0 8px;
-}
-
-.kcq-game-log__row--damage {
-    display: grid;
-    grid-template-columns: 92px minmax(0, 1fr);
+    gap: 0 0.35em;
 }
 
 .kcq-game-log__recipient {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0 6px;
+    gap: 0 0.35em;
     min-width: 0;
     overflow-wrap: anywhere;
 }
@@ -1215,7 +1210,7 @@ button {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 0 6px;
+    gap: 0 0.35em;
     min-width: 0;
     font-variant-numeric: tabular-nums;
 }
@@ -1228,7 +1223,7 @@ button {
 
 .kcq-game-log__value + .kcq-game-log__value::before {
     content: "·";
-    margin-right: 6px;
+    margin-right: 0.35em;
     color: var(--kcq-text-dim);
 }
 

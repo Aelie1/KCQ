@@ -61,23 +61,22 @@ export function createGameLogViewModel(
             first.text ? phrase(linked ? "gameLog.linkedTargets" : "gameLog.targetList", { first, second }) : second, { text: "" });
     };
     const buffOperation = ({ initial, final }: BuffParticipant) => !initial.present && final.present ? "added"
-        : initial.present && !final.present ? "removed" : "updated";
+        : initial.present && !final.present ? "removed"
+            : initial.details?.severity === final.details?.severity
+                && initial.details?.duration !== undefined && final.details?.duration !== undefined
+                && final.details.duration > initial.details.duration ? "buffExtended" : "buffRefreshed";
     const buffChange = (buff: string, participant: BuffParticipant): GameLogValue => {
         const { initial, final } = participant;
         const before = initial.details?.severity;
         const after = final.details?.severity;
         const operation = buffOperation(participant);
-        const buffName = { text: p.buff(buff, undefined), tone: "special" };
+        const changed = initial.present && final.present && before !== undefined && after !== undefined && before !== after;
         const severity = operation === "added" ? after : operation === "removed" ? before : after ?? before;
-        const severityText = before !== undefined && after !== undefined && before !== after && operation === "updated"
-            ? transition(p.buffSeverity(before), p.buffSeverity(after))
-            : operation === "updated" && before === undefined && after !== undefined ? p.ui("gameLog.to", { value: p.buffSeverity(after) })
-                : operation === "updated" && after === undefined && before !== undefined ? p.ui("gameLog.from", { value: p.buffSeverity(before) })
-                    : severity !== undefined ? p.buffSeverity(severity) : undefined;
-        const buffLabel = severityText === undefined ? buffName : phrase("gameLog.buffSeverity", {
-            buff: buffName, severity: { text: severityText, tone: "special" },
+        // Canonical buff localization owns the name + severity phrase, including its order.
+        const buffLabel: GameLogText = { text: p.buff(buff, changed ? before : severity), tone: "special" };
+        if (changed) return phrase("gameLog.transition", {
+            initial: buffLabel, final: { text: p.buffSeverity(after), tone: "special" },
         });
-        if (operation === "updated" && before !== undefined && after !== undefined && before !== after) return buffLabel;
         return phrase("gameLog.buffOutcome", { buff: buffLabel,
             operation: { text: p.ui(`gameLog.${operation}`), tone: operation === "added" ? "success" : operation === "removed" ? "warning" : "special" } });
     };
@@ -144,7 +143,7 @@ export function createGameLogViewModel(
             case "retarget": return { kind: outcome.kind, target: p.entity(outcome.target),
                 values: [{ text: p.ui("gameLog.retargeted", { destination: p.entity(outcome.destination) }) }] };
             case "intention": return { kind: outcome.kind, target: p.entity(outcome.target),
-                values: [{ text: p.ui(outcome.operation === "cancelled" ? "gameLog.cancelled" : "gameLog.weakened") }] };
+                values: [{ text: p.ui(outcome.operation === "cancelled" ? "gameLog.cancelled" : "gameLog.weakened", { move: p.move(outcome.move) }) }] };
         }
     };
     return entries.map(entry => {

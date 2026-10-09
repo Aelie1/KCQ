@@ -813,6 +813,7 @@ describe("Hinari's Release", () => {
         expect(moveEvent(result).targets).toEqual([{
             target: "foe1", result: "none", effects: [
                 { type: "buffAdded", target: "foe1", buff: "subspaceClutter" },
+                { type: "dataChanged", target: hinari.id, name: "subspace", amount: -25 },
             ]
         }]);
     });

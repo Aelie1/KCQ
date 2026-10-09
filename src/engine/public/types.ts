@@ -511,7 +511,8 @@ export type LeafEvent =
     | RetargetEvent
     | CancelEvent
     | WeakenEvent
-    | DataEvent;
+    | DataEvent
+    | IncapacitateEvent;
 
 export interface MoveEvent {
     type: "useMove";
@@ -633,6 +634,11 @@ export interface DataEvent {
     target: EntityId;
     name: string;
     amount: number;
+}
+
+export interface IncapacitateEvent {
+    type: "characterIncapacitated" | "characterRescued";
+    target: EntityId;
 }
 
 /*******************************************************

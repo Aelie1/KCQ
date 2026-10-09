@@ -259,6 +259,10 @@ function formatEventLines(event: GameEvent | LeafEvent): string[] {
             return [`${event.actor}'s action was interrupted due to ${event.reason}.`];
         case "actionRefreshed":
             return [`${event.target}'s action was refreshed.`];
+        case "characterIncapacitated":
+            return [`${event.target} was incapacitated.`];
+        case "characterRescued":
+            return [`${event.target} was rescued.`];
         case "intentionCancelled":
             return [`${event.target}'s ${event.move} was cancelled.`];
         case "intentionWeakened":

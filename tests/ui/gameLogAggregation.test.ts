@@ -255,8 +255,8 @@ describe("Game Log presentation aggregation", () => {
             { type: "actionRefreshed", target: "hinari" },
             { type: "targetChanged", target: "skunkette1", destination: "ko" },
             { type: "targetChanged", target: "skunkette1", destination: "hinari" },
-            { type: "intentionCancelled", target: "skunkette2" },
-            { type: "intentionWeakened", target: "empress" },
+            { type: "intentionCancelled", target: "skunkette2", move: "pounce" },
+            { type: "intentionWeakened", target: "empress", move: "latexMist" },
             { type: "cooldownChanged", target: "skunkette1", move: "pounce", value: 2 },
         ])])).toEqual([
             { kind: "damage", target: "skunkette1", damage: 7, healing: 4, blocked: 5, hits: [
@@ -265,8 +265,8 @@ describe("Game Log presentation aggregation", () => {
             { kind: "interrupt", actor: "ko", reason: "bindingRestriction" },
             { kind: "refresh", target: "hinari" },
             { kind: "retarget", target: "skunkette1", destination: "hinari" },
-            { kind: "intention", target: "skunkette2", operation: "cancelled" },
-            { kind: "intention", target: "empress", operation: "weakened" },
+            { kind: "intention", target: "skunkette2", move: "pounce", operation: "cancelled" },
+            { kind: "intention", target: "empress", move: "latexMist", operation: "weakened" },
         ]);
     });
 
@@ -442,5 +442,49 @@ describe("Game Log presentation aggregation", () => {
                 final: { present: true, details: { id: "pounce", severity: 1 } },
             });
         }
+    });
+});
+
+
+describe("recorded inactive buff endpoints", () => {
+    const added = move([], [{ type: "buffAdded", target: "ko", buff: "pounce" }]);
+    const updated = move([], [{ type: "buffUpdated", target: "ko", buff: "pounce" }]);
+    const phase: GameEvent = { type: "changePhase", phase: "player", effects: [] };
+    const active = state([character("ko", false, [{ id: "pounce", severity: 3, duration: 1 }])]);
+    it("recovers the first visible payload and never borrows across a later buff mutation", () => {
+        const entries = createGameLogEntries([
+            { event: added, state: state() }, { event: updated, state: state() }, { event: phase, state: active },
+        ], state());
+        expect((entries[0]!.outcomes[0] as BuffOutcome).participants[0]!.final).toEqual({ present: true });
+        expect((entries[1]!.outcomes[0] as BuffOutcome).participants[0]!.final).toEqual({ present: true, details: active.characters[0]!.buffs[0] });
+        expect((entries[1]!.outcomes[0] as BuffOutcome).participants[0]!.initial).toEqual({ present: true });
+        const later = structuredClone(active); later.characters[0]!.buffs[0]!.severity = 1;
+        const unchanged = createGameLogEntries([
+            { event: added, state: state() }, { event: phase, state: active }, { event: phase, state: later },
+        ], state());
+        expect((unchanged[0]!.outcomes[0] as BuffOutcome).participants[0]!.final.details?.severity).toBe(3);
+    });
+    it("does not fabricate payloads when activation is unrecorded or a bare event interrupts the chain", () => {
+        for (const input of [[{ event: added, state: state() }], [{ event: added, state: state() }, phase, { event: phase, state: active }]]) {
+            const entries = createGameLogEntries(input, state());
+            expect((entries[0]!.outcomes[0] as BuffOutcome).participants[0]!).toEqual({ target: "ko", initial: { present: false }, final: { present: true } });
+        }
+    });
+    it("keeps a hidden reapplication present and recognizes an add-then-remove net endpoint", () => {
+        const refreshed = createGameLogEntries([{ event: updated, state: state() }, { event: phase, state: active }], active);
+        expect((refreshed[0]!.outcomes[0] as BuffOutcome).participants[0]!).toMatchObject({ initial: { present: true, details: { severity: 3 } }, final: { present: true, details: { severity: 3 } } });
+        const removed: LeafEvent = { type: "buffRemoved", target: "ko", buff: "pounce" };
+        expect((outcomes([{ event: move([], [...added.effects, removed]), state: state() }], state())[0] as BuffOutcome).participants[0]!)
+            .toEqual({ target: "ko", initial: { present: false }, final: { present: false } });
+    });
+    it("retains separate semantic intention outcomes for distinct moves on the same target", () => {
+        const leaves: LeafEvent[] = [
+            { type: "intentionCancelled", target: "skunkette1", move: "pounce" },
+            { type: "intentionCancelled", target: "skunkette1", move: "latexMist" },
+            { type: "intentionWeakened", target: "skunkette1", move: "pounce" },
+            { type: "intentionWeakened", target: "skunkette1", move: "latexMist" },
+        ];
+        expect(outcomes([move([], leaves)])).toEqual(leaves.map(leaf => ({ kind: "intention", target: "skunkette1",
+            move: "move" in leaf ? leaf.move : undefined, operation: leaf.type === "intentionCancelled" ? "cancelled" : "weakened" })));
     });
 });

@@ -674,7 +674,9 @@ describe("Matsuko's Compulsion moves", () => {
             targets: ["caster1"],
         });
 
-        expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "caster1" });
+        for (const move of [first, second]) {
+            expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "caster1", move: move.id });
+        }
         expect(engine.getGameState().enemies[0].intentions).toEqual([]);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
         expect(characterState(engine, matsuko.id).cooldowns).toEqual({
@@ -727,7 +729,9 @@ describe("Matsuko's Compulsion moves", () => {
             targets: ["boss1"],
         });
 
-        expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionWeakened", target: "boss1" });
+        for (const move of [first, second]) {
+            expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionWeakened", target: "boss1", move: move.id });
+        }
         expect(engine.getGameState().enemies[0].intentions).toHaveLength(2);
         expect(engine.getGameState().enemies[0].intentions.map(
             ({ targets }) => targets[0]?.band,

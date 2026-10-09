@@ -360,6 +360,8 @@ export function formatEvent(event: GameEvent | LeafEvent): string {
         case "trapTriggered": return `${event.actor} triggered ${event.amount} ${plural(event.trap, event.amount)}.`;
         case "actionInterrupted": return `${event.actor}'s action was interrupted due to ${event.reason}.`;
         case "actionRefreshed": return `${event.target}'s action was refreshed.`;
+        case "characterIncapacitated": return `${event.target} was incapacitated.`;
+        case "characterRescued": return `${event.target} was rescued.`;
         case "intentionCancelled": return `${event.target}'s ${event.move} was cancelled.`;
         case "intentionWeakened": return `${event.target}'s ${event.move} was weakened.`;
         case "targetChanged": return `${event.target}'s action's target was changed to ${event.destination}.`;

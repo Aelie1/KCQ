@@ -166,7 +166,9 @@ describe("party card view model", () => {
             { kind: "legs", label: "Legs" },
         ]);
         expect(model.effects).toBe(source.buffs);
-        expect(model.visibleEffects).toEqual(["Pounce", "Burnout"]);
+        expect(model.visibleEffects).toEqual([
+            { name: "Pounce", duration: undefined }, { name: "Burnout", duration: undefined },
+        ]);
         expect(model.hiddenEffectCount).toBe(2);
         expect(model.effectsOverflowLabel).toBe("+2 more");
     });
