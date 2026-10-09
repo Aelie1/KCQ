@@ -214,6 +214,7 @@ interface iDataEffect {
 
 interface iTickEffect {
     type: "tick"
+    operation: "start" | "end";
     target: iEntity;
     binding: iBinding;
 }

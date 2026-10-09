@@ -323,10 +323,17 @@ export function tickBindings(state: iGameState): iEffect[] {
             if (binding.definition.onTick) {
                 effects.push({
                     type: "tick",
+                    operation: "start",
                     target: character,
                     binding: binding
                 });
                 effects.push(...binding.definition.onTick(character, binding));
+                effects.push({
+                    type: "tick",
+                    operation: "end",
+                    target: character,
+                    binding: binding
+                });
             }
         }
     }

@@ -366,7 +366,8 @@ export function formatEvent(event: GameEvent | LeafEvent): string {
         case "intentionWeakened": return `${event.target}'s ${event.move} was weakened.`;
         case "targetChanged": return `${event.target}'s action's target was changed to ${event.destination}.`;
         case "dataChanged": return `${event.target}'s ${event.name} changed by ${event.amount}.`;
-        case "bindingTick": return `${event.target}'s ${event.binding} activated!`;
+        case "bindingTickStart": return `${event.target}'s ${event.binding} activated!`;
+        case "bindingTickEnd":
         case "useEscape":
         case "changeStance": return "";
     }

@@ -134,7 +134,7 @@ export class GameEffects {
                     this.setData(effect.target, effect.name, effect.amount, effect.visible);
                     break;
                 case "tick":
-                    this.tickEffect(effect.target, effect.binding);
+                    this.tickEffect(effect.operation, effect.target, effect.binding);
             }
         }
     };
@@ -592,11 +592,19 @@ export class GameEffects {
         }
     }
 
-    private tickEffect(target: iEntity, binding: iBinding) {
-        this.addEvent({
-            type: "bindingTick",
-            target: target.id,
-            binding: binding.id
-        });
+    private tickEffect(operation: string, target: iEntity, binding: iBinding) {
+        if (operation === "start") {
+            this.addEvent({
+                type: "bindingTickStart",
+                target: target.id,
+                binding: binding.id
+            });
+        } else {
+            this.addEvent({
+                type: "bindingTickEnd",
+                target: target.id,
+                binding: binding.id
+            });
+        }
     }
 };

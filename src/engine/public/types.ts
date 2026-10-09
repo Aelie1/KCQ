@@ -642,7 +642,7 @@ export interface IncapacitateEvent {
 }
 
 export interface TickEvent {
-    type: "bindingTick";
+    type: "bindingTickStart" | "bindingTickEnd";
     target: EntityId;
     binding: BindingId;
 }
