@@ -12,23 +12,23 @@ import type {
     PlayerAction,
     ThresholdInfo,
 } from "../../../engine/public/types";
+import type { GameLogPresentationEntry } from "../../presentation/gameLog";
 import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
-import type { LanguageSelection } from "./language";
-import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
-import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
-import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
-import { BattleResultPanel } from "./panels/BattleResultPanel";
-import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
+import type { LanguageSelection } from "./language";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
+import { BattleResultPanel } from "./panels/BattleResultPanel";
+import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
 import { EnemyDetailsPanel } from "./panels/EnemyDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
 import { GameLogPanel } from "./panels/GameLogPanel";
-import type { GameLogPresentationEntry } from "../../presentation/gameLog";
-import { createGameLogHistory } from "./viewModels/gameLogHistory";
 import { TargetingPanel } from "./panels/TargetingPanel";
+import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
+import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
+import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
+import { createGameLogHistory } from "./viewModels/gameLogHistory";
 
 export interface BattleAppProps {
     engine: Engine;
@@ -233,9 +233,12 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         });
         if (!result?.success || state().turn.outcome !== "ongoing") return;
         const actor = state().characters.find(({ id }) => id === current.actorId);
-        setScreen(actor && actor.bonusEscapes > 0
-            ? { kind: "escape", actorId: current.actorId }
-            : { kind: "overview" });
+        if (actor && actor.bonusEscapes > 0) {
+            setScreen({ kind: "escape", actorId: current.actorId });
+            scrollToBottom();
+        } else {
+            setScreen({ kind: "overview" });
+        }
     };
 
     const back = (): boolean => {
