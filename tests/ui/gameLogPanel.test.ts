@@ -699,6 +699,10 @@ describe("combat log polish regressions", () => {
         const defaultRule = css.indexOf(".kcq-game-log__recipient:has(.kcq-game-log__target)::after");
         expect(headingRule).toBeGreaterThan(defaultRule);
         expect(css.slice(headingRule).split("}")[0]).toContain("content: none");
+        const recipientRule = css.indexOf(".kcq-game-log__values--bindings .kcq-game-log__recipient::after");
+        expect(recipientRule).toBeGreaterThan(defaultRule);
+        expect(css.slice(recipientRule).split("}")[0]).toContain("content: none");
+        expect(css.match(/\.kcq-game-log__values \{([^}]+)\}/)![1]!).toContain("flex-wrap: wrap");
     });
 
     it("uses content-sized wrapping rows and consistent inline separators for every outcome type", () => {

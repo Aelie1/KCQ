@@ -10,7 +10,7 @@ export interface GameLogText {
 export interface GameLogValue extends GameLogText {
     /** Localized phrase parts retain semantic colors even when a locale reorders them. */
     parts?: GameLogText[];
-    /** Compact binding transitions flow on their own line below target accuracy. */
+    /** Compact binding transitions use the shared wrapping flow. */
     binding?: true;
 }
 export interface GameLogRow {
