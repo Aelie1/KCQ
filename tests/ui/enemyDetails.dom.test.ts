@@ -139,6 +139,57 @@ describe("Enemy Details navigation and live state", () => {
 });
 
 describe("compact intention target rows", () => {
+    it("hides only participant chips across intention recipients and preserves persistent links", () => {
+        const fixture = enemyDetailsFixture;
+        const state: GameState = {
+            ...fixture.state,
+            enemies: fixture.state.enemies.map(enemy => ({
+                ...enemy,
+                intentions: ["ko", "matsuko"].map(target => ({
+                    move: "pounce",
+                    targets: [{ target, band: "hit", effects: [
+                        { type: "buff", target, operation: "add", buff: {
+                            id: "pounce", severity: 3, linkedEntity: enemy.id,
+                            statuses: [{ id: "immobilized", value: 1 }, { id: "stunned", value: 1 }],
+                            moveList: { addedMoves: ["throwOff"] },
+                        } },
+                        { type: "buff", target: enemy.id, operation: "add", buff: {
+                            id: "pounce", severity: 3, linkedEntity: target, modifiers: { defense: -2, hit: 8 },
+                        } },
+                        { type: "move", move: "latexSpray" },
+                    ] }],
+                    effects: [],
+                })),
+            })),
+        };
+        const before = JSON.stringify(state);
+        mount(() => createComponent(EnemyDetailsPanel, { ...fixture, state }));
+        const intentions = [...document.querySelectorAll(".kcq-enemy-details__intention")];
+        expect(intentions).toHaveLength(2);
+        intentions.forEach((intention, index) => {
+            const cards = [...intention.querySelectorAll(".kcq-target-card")];
+            expect(cards.map(card => card.querySelector(".kcq-target-header__name")?.textContent))
+                .toEqual([index === 0 ? "Ko-chan" : "Matsuko", "Skunkette 1"]);
+            const debuff = cards[0]!.querySelector(".kcq-buff-effect")!;
+            const buff = cards[1]!.querySelector(".kcq-buff-effect")!;
+            expect(debuff.classList.contains("kcq-preview-effect--special")).toBe(true);
+            expect(buff.classList.contains("kcq-preview-effect--success")).toBe(true);
+            expect(debuff.querySelector(".kcq-buff-effect__tag")?.textContent).toBe("Add Debuff");
+            expect(buff.querySelector(".kcq-buff-effect__tag")?.textContent).toBe("Add Buff");
+            expect([...intention.querySelectorAll(".kcq-preview-effect .kcq-status-chip")]
+                .map(chip => chip.textContent)).toEqual(["Add Throw Off", "Immobilized", "Stunned"]);
+            expect([...intention.querySelectorAll(".kcq-buff-effect .kcq-preview-effect__payload")]
+                .map(name => name.textContent)).toEqual(["Pounce III", "Pounce III"]);
+            expect([...buff.querySelectorAll(".kcq-effect-modifier strong")]
+                .map(value => value.textContent)).toEqual(["-2", "+8"]);
+            expect(buff.querySelector(".kcq-buff-effect__details")).toBeNull();
+            expect(intention.querySelector(".kcq-status-chip--outcome-hit")?.textContent).toBe("Hit");
+            expect(cards[1]!.textContent).toContain("Latex Spray");
+        });
+        expect(element('.kcq-character-effects .kcq-linked-entity-chip').textContent).toBe("Ko-chan");
+        expect(JSON.stringify(state)).toBe(before);
+    });
+
     it.each([320, 390])("keeps localized names and every outcome inline at width %i", width => {
         const viewport = (window as unknown as HappyWindow).happyDOM;
         const originalViewport = { width: window.innerWidth, height: window.innerHeight };

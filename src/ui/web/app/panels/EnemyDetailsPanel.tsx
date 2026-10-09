@@ -67,14 +67,14 @@ export function EnemyDetailsPanel(props: EnemyDetailsPanelProps): JSX.Element {
                                 <SelectedCommandSummary name={intention.name} tags={[]} />
                                 <div class="kcq-targeting__targets">
                                     <For each={intention.targets}>
-                                        {target => <TargetCard mode="predetermined" selected={false}
+                                        {target => <TargetCard mode="predetermined" selected={false} showLinkedEntities={false}
                                             target={target.preview} outcome={target.outcome} />}
                                     </For>
                                     <For each={intention.effectTargets}>
-                                        {target => <TargetCard mode="predetermined" selected={false} target={target} />}
+                                        {target => <TargetCard mode="predetermined" selected={false} target={target} showLinkedEntities={false} />}
                                     </For>
                                 </div>
-                                <For each={intention.effects}>{effect => <EffectPreview effect={effect} />}</For>
+                                <For each={intention.effects}>{effect => <EffectPreview effect={effect} showLinkedEntities={false} />}</For>
                             </section>
                         )}
                     </For>

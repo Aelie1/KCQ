@@ -28,6 +28,7 @@ export interface BuffModifierViewModel {
 }
 export interface BuffEffectViewModel {
     details: readonly string[]; durationLabel?: string; id: string; kind: "buff"; label: string;
+    linkedEntity?: string;
     modifiers: readonly BuffModifierViewModel[]; moveList: readonly string[]; name: string;
     operation: BuffEffect["operation"]; recipient?: string; tone: "special" | "success"; type: "buff";
 }
@@ -184,8 +185,8 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
             ...(effect.buff.statuses ?? []).map((status) => status.value > 1
                 ? presentation.ui("characterDetails.statusValue", { status: presentation.status(status.id), value: status.value })
                 : presentation.status(status.id)),
-            ...(effect.buff.linkedEntity ? [presentation.entity(effect.buff.linkedEntity)] : []),
         ] : [],
+        ...(applying && effect.buff.linkedEntity ? { linkedEntity: presentation.entity(effect.buff.linkedEntity) } : {}),
         ...(context.scopeTarget !== effect.target ? { recipient: presentation.entity(effect.target) } : {}),
     };
 }

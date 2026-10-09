@@ -11,10 +11,11 @@ export interface TargetCardProps {
     onSelect?: () => void;
     selected: boolean;
     shortcut?: string;
+    showLinkedEntities?: boolean;
     target: TargetPreviewViewModel;
 }
 
-function TargetCardContent(props: Pick<TargetCardProps, "target" | "outcome">): JSX.Element {
+function TargetCardContent(props: Pick<TargetCardProps, "target" | "outcome" | "showLinkedEntities">): JSX.Element {
     return (
         <>
             <TargetHeader target={props.target} outcome={props.outcome} />
@@ -22,7 +23,7 @@ function TargetCardContent(props: Pick<TargetCardProps, "target" | "outcome">): 
                 <span class="kcq-target-card__reason">{props.target.reasonLabel}</span>
             </Show>
             <For each={props.target.effects}>
-                {(effect) => <EffectPreview effect={effect} />}
+                {(effect) => <EffectPreview effect={effect} showLinkedEntities={props.showLinkedEntities} />}
             </For>
         </>
     );
@@ -34,7 +35,7 @@ export function TargetCard(props: TargetCardProps): JSX.Element {
             when={props.mode === "selectable"}
             fallback={
                 <div class="kcq-target-card kcq-target-card--predetermined">
-                    <TargetCardContent target={props.target} outcome={props.outcome} />
+                    <TargetCardContent target={props.target} outcome={props.outcome} showLinkedEntities={props.showLinkedEntities} />
                 </div>
             }
         >
@@ -51,7 +52,7 @@ export function TargetCard(props: TargetCardProps): JSX.Element {
                 onClick={() => props.onSelect?.()}
             >
                 <Shortcut shortcut={props.shortcut} />
-                <TargetCardContent target={props.target} outcome={props.outcome} />
+                <TargetCardContent target={props.target} outcome={props.outcome} showLinkedEntities={props.showLinkedEntities} />
             </button>
         </Show>
     );

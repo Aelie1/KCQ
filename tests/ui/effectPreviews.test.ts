@@ -29,6 +29,40 @@ function runtimeState() {
     return engine.getGameState();
 }
 
+describe("linked buff preview chips", () => {
+    it.each(["pounce", "skunked"])("keeps %s link data and hides only its chip when requested", id => {
+        const [effect] = createEffectPreviewViewModels([{
+            type: "buff", operation: "add", target: "ko",
+            buff: { id, linkedEntity: "skunkette1", statuses: [{ id: "immobilized", value: 1 }] },
+        }], { presentation, scopeTarget: "ko" });
+        expect(effect).toMatchObject({ linkedEntity: "Skunkette 1", details: ["Immobilized"] });
+        const renderPreview = (showLinkedEntities?: boolean) => visibleMarkup(renderToString(() =>
+            createComponent(EffectPreview, { effect, showLinkedEntities })));
+        for (const showLinkedEntities of [undefined, true]) {
+            expect(renderPreview(showLinkedEntities)).toMatch(/kcq-status-chip[^>]*>Skunkette 1<\/span>/);
+        }
+        expect(renderPreview(false)).not.toContain("Skunkette 1");
+        expect(renderPreview(false)).toMatch(/kcq-status-chip[^>]*>Immobilized<\/span>/);
+        expect(effect).toHaveProperty("linkedEntity", "Skunkette 1");
+    });
+
+    it("retains participant chips in ordinary Targeting target cards and action effect groups", () => {
+        const fixture = targetingFixtures.telekinesisChoose;
+        const action: ActionInfo = {
+            ...fixture.action,
+            targets: [{ valid: true, target: "skunkette1", effects: [{
+                type: "buff", operation: "add", target: "skunkette1",
+                buff: { id: "pounce", linkedEntity: "ko" },
+            }] }],
+            effects: [{ type: "buff", operation: "add", target: "ko",
+                buff: { id: "pounce", linkedEntity: "skunkette1" } }],
+        };
+        const html = visibleMarkup(renderToString(() => createComponent(TargetingPanel, { ...fixture, action })));
+        expect(html).toMatch(/kcq-status-chip[^>]*>Ko-chan<\/span>/);
+        expect(html).toMatch(/kcq-status-chip[^>]*>Skunkette 1<\/span>/);
+    });
+});
+
 describe("bounded numeric effect previews", () => {
     it("derives Subspace current/max/change/projected from public runtime state without mutation", () => {
         const state = runtimeState();
