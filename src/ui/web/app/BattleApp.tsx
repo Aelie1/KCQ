@@ -15,6 +15,7 @@ import type {
 import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
 import type { LanguageSelection } from "./language";
+import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
 import { COMBAT_SHORTCUTS, useCombatKeyboard } from "./keyboard";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
@@ -33,6 +34,7 @@ export interface BattleAppProps {
     presentation: Presentation;
     release?: string;
     language?: LanguageSelection;
+    shortcutHints?: ShortcutHintPreference;
     onRetry?: () => void;
     onBackToLevelSelect?: () => void;
     onBackToTitle?: () => void;
@@ -56,6 +58,7 @@ interface CurrentTargeting {
 }
 
 export function BattleApp(props: BattleAppProps): JSX.Element {
+    const shortcutHints = props.shortcutHints ?? createShortcutHintPreference();
     const [state, setState] = createSignal<GameState>(props.engine.getGameState());
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
     const [thresholds] = createSignal<ThresholdInfo>(getThresholds());
@@ -219,7 +222,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     };
     const endTurn = (): void => { execute({ type: "endTurn" }); };
     let stage: HTMLDivElement | undefined;
-    useCombatKeyboard(() => stage, () => !modalOpen(), key => {
+    const hintsVisible = useCombatKeyboard(() => stage, () => !modalOpen(), key => {
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
@@ -234,10 +237,10 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (!command?.available || (commandId === "escape" && current.kind === "escape")) return false;
         selectCommand(current.actorId, commandId);
         return true;
-    });
+    }, () => shortcutHints.value);
 
     return (
-        <div class="kcq-battle-stage" ref={stage}>
+        <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()}>
             <div class="kcq-battle-stage__background" inert={modalOpen()} aria-hidden={modalOpen() ? true : undefined}>
                 <Switch fallback={
                     <BattleOverviewPanel
@@ -312,7 +315,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             </div>
             <Show when={settingsOpen()}>
                 <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
-                    language={props.language} returnFocus={settingsTrigger}
+                    language={props.language} shortcutHints={shortcutHints} returnFocus={settingsTrigger}
                     onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                     onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
             </Show>

@@ -74,7 +74,7 @@ button {
     min-width: 0;
     height: var(--kcq-ui-height);
     min-height: 0;
-    overflow: hidden;
+    overflow: visible;
     background: var(--kcq-surface-background);
 }
 
@@ -89,8 +89,6 @@ button {
     gap: var(--kcq-screen-gap, 12px);
     min-width: 0;
     min-height: 0;
-    overflow-x: hidden;
-    overflow-y: auto;
     /* Keep the 366px canvas intact when the body needs to scroll. */
     scrollbar-width: none;
 }
@@ -1250,14 +1248,14 @@ button {
     overflow: hidden;
 }
 
-.kcq-game-log__values--bindings > .kcq-game-log__value {
+.kcq-game-log__values--bindings>.kcq-game-log__value {
     position: relative;
     flex: 0 0 auto;
     width: max-content;
     max-width: 100%;
 }
 
-.kcq-game-log__values--bindings > .kcq-game-log__value + .kcq-game-log__value::before {
+.kcq-game-log__values--bindings>.kcq-game-log__value+.kcq-game-log__value::before {
     position: absolute;
     left: -0.6em;
     margin-right: 0;
@@ -1310,8 +1308,8 @@ button {
 }
 
 .kcq-game-log__values--bindings .kcq-game-log__recipient::after,
-.kcq-game-log__row--bindingTick > .kcq-game-log__recipient::after,
-.kcq-game-log__row--compactBindings:not(:has(> .kcq-game-log__values:not(.kcq-game-log__values--bindings))) > .kcq-game-log__recipient::after {
+.kcq-game-log__row--bindingTick>.kcq-game-log__recipient::after,
+.kcq-game-log__row--compactBindings:not(:has(> .kcq-game-log__values:not(.kcq-game-log__values--bindings)))>.kcq-game-log__recipient::after {
     content: none;
 }
 
@@ -3515,12 +3513,19 @@ button {
     position: relative;
 }
 
-/* Keep badges inside borders: combat cards and their containers clip overflow. */
+.kcq-shortcut-host:has(> .kcq-shortcut) {
+    overflow: visible;
+}
+
+/* Cross the top border, staying inside the scroll viewport's right edge. */
 .kcq-shortcut {
     display: inline-flex;
+    visibility: hidden;
     position: absolute;
-    inset-block-start: 3px;
-    inset-inline-end: 3px;
+    inset-block-start: 0;
+    inset-inline-end: 0;
+    transform: translate3d(25%, -25%, 0);
+    z-index: 1;
     align-items: center;
     justify-content: center;
     min-width: 14px;
@@ -3536,16 +3541,8 @@ button {
     pointer-events: none;
 }
 
-@media (min-width: 481px) {
-    .kcq-party-card:has(> .kcq-shortcut) .kcq-party-card__header,
-    .kcq-command-card:has(> .kcq-shortcut) .kcq-command-card__heading,
-    .kcq-target-card:has(> .kcq-shortcut) .kcq-target-header {
-        padding-inline-end: 14px;
-    }
-
-    .kcq-escape-choice:has(> .kcq-shortcut) {
-        padding-inline-end: 22px;
-    }
+.kcq-battle-stage[data-kcq-hints-visible="true"] .kcq-shortcut {
+    visibility: visible;
 }
 
 @media (max-width: 480px) {

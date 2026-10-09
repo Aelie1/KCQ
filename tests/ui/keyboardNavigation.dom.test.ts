@@ -9,7 +9,7 @@ import { createBattle } from "../../src/ui/web/app";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { escapeFixtures } from "../../src/ui/web/app/fixtures/escape";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
-import { combatShortcut } from "../../src/ui/web/app/keyboard";
+import { combatShortcut, COMBAT_SHORTCUTS } from "../../src/ui/web/app/keyboard";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
@@ -19,6 +19,8 @@ afterEach(() => {
     unmount = undefined;
     document.body.replaceChildren();
     vi.restoreAllMocks();
+    vi.useRealTimers();
+    window.localStorage.clear();
     viewport.setViewport(initialViewport);
 });
 
@@ -89,7 +91,7 @@ describe("combat keyboard navigation", () => {
             expect(document.querySelector(".kcq-targeting")?.getAttribute("aria-label")).toBe(fixture.presentation.move("variant" + index));
             press("Backspace");
         }
-        expect(commands().slice(-2).map(command => command.dataset.kcqShortcut)).toEqual(["0", "9"]);
+        expect(commands().slice(-2).map(command => command.dataset.kcqShortcut)).toEqual([COMBAT_SHORTCUTS.stance, COMBAT_SHORTCUTS.escape]);
         expect(combatShortcut(keys.length)).toBeUndefined();
     });
 
@@ -144,7 +146,7 @@ describe("combat keyboard navigation", () => {
 
     it("opens escape, carries choices across groups and confirms an assist", () => {
         const { execute } = mountBattle();
-        press("1"); press("9");
+        press("1"); press(COMBAT_SHORTCUTS.escape);
         const choices = [...document.querySelectorAll<HTMLButtonElement>(".kcq-escape-choice[data-kcq-shortcut]")];
         expect(choices.map(choice => choice.dataset.kcqShortcut)).toEqual("12345678qwer".split(""));
         press("8");
@@ -174,9 +176,9 @@ describe("combat keyboard navigation", () => {
         press("=");
         expect(execute).toHaveBeenLastCalledWith({ type: "endTurn" });
         openTargeting();
-        press("0");
+        press(COMBAT_SHORTCUTS.stance);
         expect(execute).toHaveBeenLastCalledWith({ type: "stance", actor: "ko" });
-        press("9");
+        press(COMBAT_SHORTCUTS.escape);
         expect(document.querySelector(".kcq-escape")).not.toBeNull();
         press("=");
         expect(execute).toHaveBeenLastCalledWith({ type: "endTurn" });
@@ -331,7 +333,7 @@ describe("combat keyboard navigation", () => {
         expect(document.querySelector(".kcq-command-card__heading .kcq-shortcut")).toBeNull();
         press("1");
         assertBadges("button.kcq-target-card");
-        press("9");
+        press(COMBAT_SHORTCUTS.escape);
         assertBadges(".kcq-escape-choice[data-kcq-shortcut]");
     });
 
@@ -341,12 +343,15 @@ describe("combat keyboard navigation", () => {
         style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
         document.body.append(style);
         mountBattle();
+        press("Shift");
         const assertVisibility = (): void => {
             const badges = [...document.querySelectorAll<HTMLElement>(".kcq-shortcut")];
             expect(badges.length).toBeGreaterThan(0);
             for (const badge of badges) {
                 const computed = getComputedStyle(badge);
                 expect(computed.display).toBe(width <= 480 ? "none" : "inline-flex");
+                expect(computed.visibility).toBe("visible");
+                expect(computed.pointerEvents).toBe("none");
                 expect(computed.position).toBe("absolute");
                 expect(getComputedStyle(badge.parentElement!).position).toBe("relative");
                 expect(getComputedStyle(badge.parentElement!).display).not.toBe("none");
@@ -358,8 +363,215 @@ describe("combat keyboard navigation", () => {
         press("1");
         assertVisibility();
         press("Backspace");
-        press("9");
+        press(COMBAT_SHORTCUTS.escape);
         assertVisibility();
         expect(press("Backspace").defaultPrevented).toBe(true);
+    });
+});
+
+const hintsVisible = () => document.querySelector(".kcq-battle-stage")?.getAttribute("data-kcq-hints-visible") === "true";
+function shiftDown(code = "ShiftLeft", repeat = false): KeyboardEvent {
+    return keydown("Shift", { code, shiftKey: true, repeat });
+}
+function shiftUp(code = "ShiftLeft"): void {
+    document.dispatchEvent(new KeyboardEvent("keyup", { key: "Shift", code, bubbles: true }));
+}
+function hintPreference(mode: "always" | "temporary"): void {
+    button(".kcq-combat-header__settings").click();
+    const select = document.querySelector<HTMLSelectElement>(".kcq-battle-settings__shortcut-hints select")!;
+    select.value = mode;
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    button(".kcq-battle-result__retry").click();
+}
+function addShortcutStyles(): void {
+    const style = document.createElement("style");
+    style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
+    document.body.append(style);
+}
+
+describe("keyboard shortcut hint visibility", () => {
+    it("defaults to temporary hints and keeps hidden shortcuts and mouse activation working", () => {
+        addShortcutStyles();
+        const { execute } = mountBattle();
+        expect(hintsVisible()).toBe(false);
+        expect(getComputedStyle(document.querySelector(".kcq-shortcut")!).visibility).toBe("hidden");
+        button(".kcq-combat-header__settings").click();
+        const select = document.querySelector<HTMLSelectElement>(".kcq-battle-settings__shortcut-hints select")!;
+        expect(select.value).toBe("temporary");
+        expect(select.labels?.[0]?.textContent).toContain("Keyboard Shortcut Hints");
+        expect([...select.options].map(option => option.text)).toEqual(["Always Show", "Show Temporarily"]);
+        button(".kcq-battle-result__retry").click();
+        press("1");
+        expect(document.querySelector(".kcq-character-commands")).not.toBeNull();
+        button('.kcq-command-card[data-kcq-shortcut="1"]').click();
+        expect(document.querySelector(".kcq-targeting")).not.toBeNull();
+        expect(hintsVisible()).toBe(false);
+        press("1");
+        expect(execute).toHaveBeenCalledOnce();
+        press("Backspace"); press("Backspace"); press("=");
+        expect(execute).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(["ShiftLeft", "ShiftRight"])("reveals on %s, stays visible while held and hides exactly three seconds after release", code => {
+        vi.useFakeTimers();
+        const { execute } = mountBattle();
+        expect(shiftDown(code).defaultPrevented).toBe(false);
+        expect(hintsVisible()).toBe(true);
+        expect(execute).not.toHaveBeenCalled();
+        vi.advanceTimersByTime(10000);
+        shiftDown(code, true);
+        vi.advanceTimersByTime(10000);
+        expect(hintsVisible()).toBe(true);
+        shiftUp(code);
+        vi.advanceTimersByTime(2999);
+        expect(hintsVisible()).toBe(true);
+        vi.advanceTimersByTime(1);
+        expect(hintsVisible()).toBe(false);
+    });
+
+    it("waits until both Shift keys are released before starting the timeout", () => {
+        vi.useFakeTimers();
+        mountBattle();
+        shiftDown(); shiftDown("ShiftRight"); shiftUp();
+        vi.advanceTimersByTime(5000);
+        expect(hintsVisible()).toBe(true);
+        shiftUp("ShiftRight");
+        vi.advanceTimersByTime(3000);
+        expect(hintsVisible()).toBe(false);
+    });
+
+    it("resets the release timeout on a new Shift press and ignores repeats", () => {
+        vi.useFakeTimers();
+        mountBattle();
+        shiftDown(); shiftUp();
+        vi.advanceTimersByTime(2500);
+        shiftDown();
+        vi.advanceTimersByTime(5000);
+        expect(hintsVisible()).toBe(true);
+        shiftUp();
+        vi.advanceTimersByTime(2000);
+        shiftDown("ShiftLeft", true);
+        vi.advanceTimersByTime(1000);
+        expect(hintsVisible()).toBe(false);
+    });
+
+    it("clears active timers when changing modes and persists Always Show across remounts", () => {
+        vi.useFakeTimers();
+        mountBattle();
+        shiftDown(); shiftUp();
+        vi.advanceTimersByTime(1000);
+        hintPreference("always");
+        expect(window.localStorage.getItem("kcq.keyboardShortcutHints")).toBe("always");
+        vi.advanceTimersByTime(10000);
+        expect(hintsVisible()).toBe(true);
+        unmount!();
+        mountBattle();
+        expect(hintsVisible()).toBe(true);
+        hintPreference("temporary");
+        expect(hintsVisible()).toBe(false);
+        expect(window.localStorage.getItem("kcq.keyboardShortcutHints")).toBe("temporary");
+        unmount!();
+        mountBattle();
+        expect(hintsVisible()).toBe(false);
+    });
+
+    it("keeps a held Shift visible when switching to temporary mode", () => {
+        vi.useFakeTimers();
+        mountBattle();
+        hintPreference("always");
+        shiftDown();
+        hintPreference("temporary");
+        vi.advanceTimersByTime(5000);
+        expect(hintsVisible()).toBe(true);
+        shiftUp();
+        vi.advanceTimersByTime(3000);
+        expect(hintsVisible()).toBe(false);
+    });
+
+    it.each(["held", "released"])("clears %s Shift state and its timeout on blur", state => {
+        vi.useFakeTimers();
+        mountBattle();
+        shiftDown();
+        if (state === "released") shiftUp();
+        window.dispatchEvent(new Event("blur"));
+        expect(hintsVisible()).toBe(false);
+        shiftUp();
+        vi.advanceTimersByTime(5000);
+        expect(hintsVisible()).toBe(false);
+        shiftDown();
+        expect(hintsVisible()).toBe(true);
+        shiftUp();
+        vi.advanceTimersByTime(3000);
+        expect(hintsVisible()).toBe(false);
+    });
+
+    it("removes keyboard listeners and pending hint timers when disposed", () => {
+        vi.useFakeTimers();
+        const listen = vi.spyOn(document, "addEventListener");
+        const remove = vi.spyOn(document, "removeEventListener");
+        mountBattle();
+        const timers = vi.getTimerCount();
+        shiftDown(); shiftUp();
+        expect(vi.getTimerCount()).toBe(timers + 1);
+        const stage = document.querySelector(".kcq-battle-stage")!;
+        unmount!(); unmount = undefined;
+        expect(vi.getTimerCount()).toBe(timers);
+        for (const type of ["keydown", "keyup"]) {
+            const listeners = listen.mock.calls.filter(call => call[0] === type);
+            expect(listeners).toHaveLength(1);
+            expect(remove).toHaveBeenCalledWith(type, listeners[0]![1]);
+        }
+        vi.advanceTimersByTime(5000);
+        expect(stage.getAttribute("data-kcq-hints-visible")).toBe("true");
+    });
+
+    it.each(["temporary", "always"] as const)("suppresses %s hints on phones and updates when resizing", mode => {
+        addShortcutStyles();
+        viewport.setViewport({ width: 1024 });
+        mountBattle();
+        hintPreference(mode);
+        shiftDown();
+        for (const navigate of [() => {}, () => press("1"), () => press("1"), () => press(COMBAT_SHORTCUTS.escape)]) {
+            navigate();
+            const badges = [...document.querySelectorAll(".kcq-shortcut")];
+            expect(badges.length).toBeGreaterThan(0);
+            for (const width of [480, 390, 320, 481, 1024]) {
+                viewport.setViewport({ width });
+                // Happy DOM does not invalidate computed-style caches on viewport changes.
+                document.body.setAttribute("data-test-viewport", String(width));
+                for (const badge of badges) {
+                    expect(getComputedStyle(badge).display).toBe(width <= 480 ? "none" : "inline-flex");
+                    expect(getComputedStyle(badge).visibility).toBe("visible");
+                }
+            }
+        }
+    });
+
+    it("keeps card content styles and nodes fixed while revealing and hiding overlays", () => {
+        addShortcutStyles();
+        mountBattle();
+        const capture = () => [...document.querySelectorAll<HTMLElement>(
+            ".kcq-shortcut-host, .kcq-party-card__header, .kcq-command-card__heading, .kcq-target-header, .kcq-party-card__bindings"
+        )].map(element => {
+            const style = getComputedStyle(element);
+            return { element, width: style.width, height: style.height, padding: style.padding, gap: style.gap, position: style.position };
+        });
+        for (const navigate of [() => {}, () => press("1"), () => press("1")]) {
+            navigate();
+            window.dispatchEvent(new Event("blur"));
+            const hidden = capture();
+            shiftDown();
+            expect(capture()).toEqual(hidden);
+            for (const badge of document.querySelectorAll<HTMLElement>(".kcq-shortcut")) {
+                const style = getComputedStyle(badge);
+                expect(style.position).toBe("absolute");
+                expect(style.pointerEvents).toBe("none");
+                expect(style.transform).toBe("translateY(-50%)");
+                expect(style.zIndex).toBe("1");
+                expect(getComputedStyle(badge.parentElement!).overflow).toBe("visible");
+            }
+            window.dispatchEvent(new Event("blur"));
+            expect(capture()).toEqual(hidden);
+        }
     });
 });

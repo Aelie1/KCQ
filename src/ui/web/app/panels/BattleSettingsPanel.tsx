@@ -2,6 +2,7 @@ import { createUniqueId, For, onCleanup, onMount, Show, type JSX } from "solid-j
 import { Portal } from "solid-js/web";
 import type { Presentation } from "../../../presentation/presentation";
 import type { LanguageSelection } from "../language";
+import type { ShortcutHintPreference, ShortcutHintMode } from "../shortcutHints";
 import { setupResponsiveScale } from "../responsiveScale";
 import { displayVersion } from "../version";
 
@@ -9,6 +10,7 @@ export function BattleSettingsPanel(props: {
     presentation: Presentation;
     release: string;
     language?: LanguageSelection;
+    shortcutHints?: ShortcutHintPreference;
     returnFocus?: Element | null;
     onResume: () => void;
     showBattleActions?: boolean;
@@ -78,6 +80,16 @@ export function BattleSettingsPanel(props: {
                         </For>
                     </select>
                 </label>
+                <Show when={props.shortcutHints}>
+                    <label class="kcq-battle-settings__language kcq-battle-settings__shortcut-hints">
+                        <span>{props.presentation.ui("battleSettings.shortcutHints")}</span>
+                        <select value={props.shortcutHints?.value}
+                            onChange={event => props.shortcutHints?.onChange(event.currentTarget.value as ShortcutHintMode)}>
+                            <option value="always">{props.presentation.ui("battleSettings.shortcutHintsAlways")}</option>
+                            <option value="temporary">{props.presentation.ui("battleSettings.shortcutHintsTemporary")}</option>
+                        </select>
+                    </label>
+                </Show>
                 <hr class="kcq-battle-settings__divider" />
                 <div class="kcq-battle-result__actions">
                     <Show when={props.showBattleActions !== false}>

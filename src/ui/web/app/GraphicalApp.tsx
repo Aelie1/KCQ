@@ -4,6 +4,7 @@ import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/t
 import type { Presentation } from "../../presentation/presentation";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import type { LanguageOption } from "./language";
+import { createShortcutHintPreference } from "./shortcutHints";
 import { App } from "./App";
 import { TitleScreen } from "./components/TitleScreen";
 import { createTitleViewModel } from "./viewModels/title";
@@ -31,6 +32,7 @@ export interface GraphicalAppProps {
 }
 
 export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
+    const shortcutHints = createShortcutHintPreference();
     // English is the only bundled language; keep selection separate from battle sessions.
     const options = props.languages?.length ? props.languages : [{ id: "en", label: props.presentation.ui("language.en"), presentation: props.presentation }];
     const [language, setLanguage] = createSignal(options[0]!);
@@ -111,14 +113,14 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
-                        language={languageSelection} release={props.release}
+                        language={languageSelection} shortcutHints={shortcutHints} release={props.release}
                         observer={current.session.observer} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
             </Switch>
         </div>
         <Show when={settingsOpen()}>
-            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection}
+            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints}
                 returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}
                 onBackToTitle={backToTitle} />
         </Show>

@@ -20,6 +20,7 @@ afterEach(() => {
     unmount = undefined;
     document.body.replaceChildren();
     vi.restoreAllMocks();
+    window.localStorage.clear();
     vi.unstubAllGlobals();
 });
 
@@ -95,7 +96,7 @@ describe("battle settings interactions", () => {
         expect(background.getAttribute("aria-hidden")).toBe("true");
         expect(document.activeElement).toBe(button("Resume", dialog));
         const controls = [...dialog.querySelectorAll("button, label, hr")];
-        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", "LABEL", "HR", "BUTTON", "BUTTON", "BUTTON"]);
+        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", "LABEL", "LABEL", "HR", "BUTTON", "BUTTON", "BUTTON"]);
         expect(button("Resume", dialog).classList.contains("kcq-battle-result__retry")).toBe(true);
         expect(dialog.querySelector("label")?.textContent).toContain("Language");
         expect(dialog.querySelector("select")?.value).toBe("en");
@@ -189,6 +190,33 @@ describe("battle settings interactions", () => {
         expect(execute).not.toHaveBeenCalled();
         expect(engine.getGameState()).toEqual(before);
         expect(sessions[0]!.observer.lifecycleState).toBe("active");
+    });
+
+    it("shares the hint preference across retries, selection settings and new battles without combat changes", () => {
+        const { engine, prepareBattle } = mountBattle();
+        const execute = vi.spyOn(engine, "executeAction");
+        openSettings();
+        const changeHints = (mode: "always" | "temporary") => {
+            const select = document.querySelector<HTMLSelectElement>(".kcq-battle-settings__shortcut-hints select")!;
+            select.value = mode;
+            select.dispatchEvent(new Event("change", { bubbles: true }));
+        };
+        changeHints("always");
+        expect(document.querySelector(".kcq-battle-stage")?.getAttribute("data-kcq-hints-visible")).toBe("true");
+        expect(execute).not.toHaveBeenCalled();
+        button("Retry Battle").click();
+        expect(document.querySelector(".kcq-battle-stage")?.getAttribute("data-kcq-hints-visible")).toBe("true");
+        openSettings();
+        expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings__shortcut-hints select")?.value).toBe("always");
+        button("Back to Level Select").click();
+        document.querySelector<HTMLButtonElement>(".kcq-combat-header__settings")!.click();
+        changeHints("temporary");
+        button("Resume").click();
+        document.querySelector<HTMLButtonElement>(".kcq-encounter-picker__row")!.click();
+        button("Choose Difficulty").click();
+        button("Start Encounter").click();
+        expect(document.querySelector(".kcq-battle-stage")?.getAttribute("data-kcq-hints-visible")).toBe("false");
+        expect(prepareBattle).toHaveBeenCalledTimes(3);
     });
 
     it("retries through shared preparation with the same encounter and difficulty and a fresh session", () => {
