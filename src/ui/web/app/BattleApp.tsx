@@ -287,6 +287,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     <Switch fallback={
                         <BattleOverviewPanel
                             actions={actions()}
+                            history={logEntries()}
                             presentation={props.presentation}
                             state={state()}
                             thresholds={thresholds()}
@@ -299,7 +300,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     }>
                         <Match when={resultModel()}>
                             <BattleOverviewPanel actions={actions()} presentation={props.presentation}
-                                state={state()} thresholds={thresholds()} />
+                                state={state()} thresholds={thresholds()} history={logEntries()} />
                         </Match>
                         <Match when={enemyScreen()} keyed>
                             {(current) => <EnemyDetailsPanel

@@ -22,6 +22,7 @@ import type {
 } from "../components/componentTypes";
 import { COMBAT_SHORTCUTS, combatShortcut, shortcutBadgeLabel } from "../keyboard";
 import { projectBindingZones } from "./bindingZones";
+import { projectBuffMoveList } from "./buffMoveList";
 import {
     createCharacterActionState,
     createCharacterStanceState,
@@ -352,19 +353,7 @@ export function createEffectDetail(
         });
     }
 
-    for (const move of buff.moveList?.addedMoves ?? []) {
-        details.push({
-            label: presentation.ui("targeting.addMove", { move: presentation.move(move) }),
-            tone: "success",
-        });
-    }
-
-    for (const move of buff.moveList?.blockedMoves ?? []) {
-        details.push({
-            label: presentation.ui("targeting.blockMove", { move: presentation.move(move) }),
-            tone: "danger",
-        });
-    }
+    details.push(...projectBuffMoveList(buff, presentation));
 
     if (buff.duration !== undefined) {
         details.push({

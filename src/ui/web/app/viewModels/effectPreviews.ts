@@ -1,8 +1,9 @@
 import { getBindingProgress } from "../../../../engine/public/mechanics";
 import type { ActionView, BindingLevel, BuffEffect, Effect, EntityId, GameState, HitBand, ModifierId, ThresholdInfo } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
+import { projectBuffMoveList } from "./buffMoveList";
 import { clampMeterValue, TRAP_METER_MAX } from "./meterValues";
-import { bindingLevelAtValue, formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
+import { bindingLevelAtValue, formatSignedNumber, isHarmfulModifierChange, isDebuff } from "./presentationHelpers";
 
 export type EffectTone = "danger" | "primary" | "special" | "success" | "warning";
 
@@ -29,7 +30,7 @@ export interface BuffModifierViewModel {
 export interface BuffEffectViewModel {
     details: readonly string[]; durationLabel?: string; id: string; kind: "buff"; label: string;
     linkedEntity?: string;
-    modifiers: readonly BuffModifierViewModel[]; moveList: readonly string[]; name: string;
+    modifiers: readonly BuffModifierViewModel[]; moveList: ReturnType<typeof projectBuffMoveList>; name: string;
     operation: BuffEffect["operation"]; recipient?: string; tone: "special" | "success"; type: "buff";
 }
 export interface BindingEffectViewModel {
@@ -155,8 +156,7 @@ function createEffectPreview(effect: Effect, id: string, context: EffectContext)
 function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext): BuffEffectViewModel {
     const { presentation } = context;
     const modifierEntries = Object.entries(effect.buff.modifiers ?? {}) as [ModifierId, number][];
-    const classifications = modifierEntries.map(([modifier, value]) => isHarmfulModifierChange(modifier, value));
-    const debuff = (effect.buff.statuses?.length ?? 0) > 0 || (classifications.length > 0 && classifications.every((value) => value === true));
+    const debuff = isDebuff(effect.buff);
     const operationKey = effect.operation === "add"
         ? (debuff ? "targeting.effectAddDebuff" : "targeting.effectAddBuff")
         : (debuff ? "targeting.effectRemoveDebuff" : "targeting.effectRemoveBuff");
@@ -175,12 +175,8 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
             harmful: isHarmfulModifierChange(modifier, value) === true,
             direction: value >= 0 ? "left" : "right",
         })) : [],
-        moveList: applying ? [
-            ...(effect.buff.moveList?.addedMoves ?? []).map((move) => presentation.ui("targeting.addMove", { move: presentation.move(move) })),
-            ...(effect.buff.moveList?.blockedMoves ?? [])
-                .filter((move) => context.actions === undefined || currentMoves.has(move))
-                .map((move) => presentation.ui("targeting.blockMove", { move: presentation.move(move) })),
-        ] : [],
+        moveList: applying ? projectBuffMoveList(effect.buff, presentation,
+            context.actions === undefined ? undefined : currentMoves) : [],
         details: applying ? [
             ...(effect.buff.statuses ?? []).map((status) => status.value > 1
                 ? presentation.ui("characterDetails.statusValue", { status: presentation.status(status.id), value: status.value })

@@ -177,7 +177,7 @@ describe("compact intention target rows", () => {
             expect(debuff.querySelector(".kcq-buff-effect__tag")?.textContent).toBe("Add Debuff");
             expect(buff.querySelector(".kcq-buff-effect__tag")?.textContent).toBe("Add Buff");
             expect([...intention.querySelectorAll(".kcq-preview-effect .kcq-status-chip")]
-                .map(chip => chip.textContent)).toEqual(["Add Throw Off", "Immobilized", "Stunned"]);
+                .map(chip => chip.textContent)).toEqual(["Adds Throw Off", "Immobilized", "Stunned"]);
             expect([...intention.querySelectorAll(".kcq-buff-effect .kcq-preview-effect__payload")]
                 .map(name => name.textContent)).toEqual(["Pounce III", "Pounce III"]);
             expect([...buff.querySelectorAll(".kcq-effect-modifier strong")]

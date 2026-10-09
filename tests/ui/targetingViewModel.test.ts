@@ -266,7 +266,7 @@ describe("targeting view model", () => {
             label: "Add Buff",
             name: "Fairy Transformation",
             modifiers: [expect.objectContaining({ label: "DEF", signedValue: "+3" })],
-            moveList: ["Add Reflect"],
+            moveList: [{ label: "Add Reflect", tone: "success" }],
         });
     });
 
@@ -510,7 +510,7 @@ describe("targeting view model", () => {
                 expect.objectContaining({ signedValue: "+3" }),
                 expect.objectContaining({ signedValue: "+2" }),
             ],
-            moveList: ["Add Fairy Telekinesis", "Add Fairy Starlight Bindings"],
+            moveList: [{ label: "Add Fairy Telekinesis", tone: "success" }, { label: "Add Fairy Starlight Bindings", tone: "success" }],
         });
     });
 
@@ -577,7 +577,7 @@ describe("targeting view model", () => {
         });
     });
 
-    it("filters blocked moves through the target's public ActionView but keeps absent added moves", () => {
+    it("consolidates move categories while filtering through the target's public ActionView", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const action: ActionInfo = {
             ...fixture.action,
@@ -611,9 +611,8 @@ describe("targeting view model", () => {
         expect(model.actionEffectGroups[0].effects[0]).toMatchObject({
             kind: "buff",
             moveList: [
-                "Add Fairy White Flame",
-                "Block White Flame",
-                "Block Immolation",
+                { label: "Adds Basic Moves", tone: "success" },
+                { label: "Seals Flame Moves", tone: "danger" },
             ],
         });
         expect(JSON.stringify(model)).not.toContain("Block Fairy White Flame");

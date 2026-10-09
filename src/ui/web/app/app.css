@@ -448,10 +448,13 @@ button {
     left: 50%;
     transform: translateX(-50%);
 
+    z-index: 1;
+}
+
+.kcq-duration-pips {
     display: flex;
     gap: 3px;
     pointer-events: none;
-    z-index: 1;
 }
 
 .kcq-status-chip__segment {
@@ -610,6 +613,7 @@ button {
 }
 
 .kcq-enemy-card {
+    position: relative;
     display: flex;
     flex: 0 0 180px;
     flex-direction: column;
@@ -618,29 +622,66 @@ button {
     width: 180px;
     height: auto;
     padding: 8px 7px;
-    overflow: hidden;
+    overflow: visible;
     border: 1px solid var(--kcq-structure-border);
     border-radius: 12px;
     background: var(--kcq-surface-card);
 }
 
+/* Keep clusters on the straight top border, clear of rounded corners and shortcuts.
+   Pips shrink within each separate cluster when space is tight; no extra card row. */
+.kcq-enemy-card__debuffs {
+    position: absolute;
+    top: -3px;
+    left: 16px;
+    right: 22px;
+    display: flex;
+    gap: 8px;
+    pointer-events: none;
+}
+
+.kcq-enemy-card__debuff {
+    display: flex;
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.kcq-enemy-card__debuff .kcq-duration-pips {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 2px;
+}
+
+.kcq-enemy-card__debuff .kcq-status-chip__segment {
+    flex: 1 1 8px;
+    width: 8px;
+    min-width: 1px;
+    background: currentColor;
+    box-shadow: 0 0 0 1px var(--kcq-surface-card);
+}
+
 .kcq-enemy-card__header {
     display: flex;
-    flex: 0 0 16px;
+    flex: 0 0 auto;
     align-items: center;
     gap: 5px;
     min-width: 0;
-    height: 16px;
+    min-height: 16px;
 }
 
 .kcq-enemy-card__name,
 .kcq-enemy-card__hp {
     margin: 0;
     line-height: normal;
-    white-space: nowrap;
 }
 
 .kcq-enemy-card__name {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    max-height: 2lh;
+    white-space: normal;
+    overflow-wrap: anywhere;
     flex: 1 1 auto;
     min-width: 0;
     overflow: hidden;
@@ -651,6 +692,7 @@ button {
 }
 
 .kcq-enemy-card__hp {
+    white-space: nowrap;
     flex: 0 0 auto;
     color: var(--kcq-text-secondary);
     font-size: 11px;
@@ -838,7 +880,7 @@ button {
 .kcq-projected-meter__peak,
 .kcq-binding-meter__peak {
     z-index: 2;
-    border: 2px solid var(--kcq-projected-meter-current, var(--kcq-binding-meter-current));
+    border: 1.5px solid var(--kcq-projected-meter-current, var(--kcq-binding-meter-current));
     border-radius: inherit;
     background: transparent;
 }
@@ -3645,6 +3687,7 @@ button {
 .kcq-enemy-details .kcq-selected-command__tags:empty {
     display: none;
 }
+
 /* Inline outcomes are opt-in; ordinary Targeting headers keep their layout. */
 .kcq-target-header__identity {
     display: inline-flex;
@@ -3655,7 +3698,7 @@ button {
     max-width: 100%;
 }
 
-.kcq-target-header__identity > .kcq-status-chip {
+.kcq-target-header__identity>.kcq-status-chip {
     flex: 0 0 auto;
 }
 
@@ -3664,7 +3707,7 @@ button {
     gap: 4px;
 }
 
-.kcq-enemy-details__intention + .kcq-enemy-details__intention {
+.kcq-enemy-details__intention+.kcq-enemy-details__intention {
     padding-top: 6px;
 }
 
@@ -3734,7 +3777,7 @@ button {
     gap: 3px;
 }
 
-.kcq-enemy-details__intentions .kcq-effect-modifier > span:first-child {
+.kcq-enemy-details__intentions .kcq-effect-modifier>span:first-child {
     min-width: 0;
     white-space: normal;
     overflow-wrap: anywhere;

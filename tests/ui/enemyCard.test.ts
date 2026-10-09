@@ -3,6 +3,11 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { createStockEngine } from "../../src/stock";
+import type { Buff } from "../../src/engine/public/types";
+import type { GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
+import { createGameLogHistory } from "../../src/ui/web/app/viewModels/gameLogHistory";
+import { createBattleOverviewViewModel } from "../../src/ui/web/app/viewModels/battleOverview";
 import { skunk } from "../../src/content/skunk/skunk";
 import { trapPuddle } from "../../src/content/skunk/puddles";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -305,5 +310,118 @@ describe("enemy card", () => {
         expect(html).toContain("kcq-intent-row__target--ko");
         expect(html).toContain("kcq-intent-row__target--matsuko");
         expect(html).not.toContain("ALL");
+    });
+});
+
+function application(actor: string, buff: Buff, target = battleOverviewFixture.state.enemies[0]!.id): GameLogPresentationEntry {
+    return { kind: "move", actor, move: "arbitrary-move", outcomes: [{
+        kind: "buff", buff: buff.id, participants: [{ target,
+            initial: { present: false }, final: { present: true, details: buff },
+        }],
+    }] };
+}
+
+describe("enemy card names and duration clusters", () => {
+    it("allows two name lines with bounded overflow while HP remains unwrapped", () => {
+        const fixture = battleOverviewFixture;
+        const model = { ...createEnemyCardViewModel(fixture.state.enemies[0]!, fixture.presentation), name: "Skunkette Queen" };
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
+        expect(html).toContain('title="Skunkette Queen"');
+        expect(html).toContain("Skunkette Queen</h3>");
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+        const name = css.match(/\.kcq-enemy-card__name\s*\{([^}]*)\}/)![1];
+        const header = css.match(/\.kcq-enemy-card__header\s*\{([^}]*)\}/)![1];
+        const hp = [...css.matchAll(/\.kcq-enemy-card__hp\s*\{([^}]*)\}/g)].at(-1)![1];
+        expect(name).toContain("white-space: normal");
+        expect(name).toContain("-webkit-line-clamp: 2");
+        expect(name).toContain("overflow: hidden");
+        expect(name).toContain("overflow-wrap: anywhere");
+        expect(header).toContain("min-height: 16px");
+        expect(header).not.toMatch(/(^|\n)\s*height:/);
+        expect(hp).toContain("white-space: nowrap");
+        expect(hp).toContain("flex: 0 0 auto");
+    });
+
+    it("projects separately spaced clusters from actual actors and current durations without mutation", () => {
+        const fixture = battleOverviewFixture;
+        const buffs: Buff[] = [
+            { id: "effect-a", duration: 3, modifiers: { hit: -2 } },
+            { id: "effect-b", duration: 2, statuses: [{ id: "servitude", value: 1 }] },
+            { id: "effect-c", duration: 1, modifiers: { defense: -2 }, linkedEntity: "ko" },
+        ];
+        const enemy = { ...fixture.state.enemies[0]!, buffs };
+        const history = buffs.map((buff, i) => application(["ko", "matsuko", "hinari"][i]!, buff));
+        const before = JSON.stringify({ enemy, history });
+        const model = createEnemyCardViewModel(enemy, fixture.presentation, fixture.state.characters, history);
+        expect(model.debuffDurations.map(({ tone, duration }) => [tone, duration]))
+            .toEqual([["ko", 3], ["matsuko", 2], ["hinari", 1]]);
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model, shortcut: "4", onSelect: () => {} }));
+        expect(html.match(/kcq-enemy-card__debuff kcq-player-identity--/g)).toHaveLength(3);
+        expect(html.match(/kcq-status-chip__segment/g)).toHaveLength(6);
+        expect(html).toContain("Hinari: [buff.effect-c.name]");
+        expect(html).not.toContain("kcq-status-chip--timed");
+        expect(JSON.stringify({ enemy, history })).toBe(before);
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+        const border = css.match(/\.kcq-enemy-card__debuffs\s*\{([^}]*)\}/)![1];
+        expect(border).toContain("position: absolute");
+        expect(border).toContain("top: -3px");
+        expect(border).toContain("right: 22px");
+        expect(border).toContain("gap: 8px");
+    });
+
+    it("omits ordinary buffs, expired/permanent effects, and unknown or nonplayer sources", () => {
+        const fixture = battleOverviewFixture;
+        const buffs: Buff[] = [
+            { id: "beneficial", duration: 2, modifiers: { defense: 2 } },
+            { id: "expired", duration: 0, modifiers: { hit: -2 } },
+            { id: "negative", duration: -1, modifiers: { hit: -2 } },
+            { id: "permanent", modifiers: { hit: -2 } },
+            { id: "unknown", duration: 2, modifiers: { hit: -2 }, linkedEntity: "ko" },
+            { id: "enemy-source", duration: 2, modifiers: { hit: -2 } },
+        ];
+        const history = buffs.filter(buff => buff.id !== "unknown")
+            .map(buff => application(buff.id === "enemy-source" ? "skunkette1" : "ko", buff));
+        const model = createEnemyCardViewModel({ ...fixture.state.enemies[0]!, buffs }, fixture.presentation, fixture.state.characters, history);
+        expect(model.debuffDurations).toEqual([]);
+        expect(renderToString(() => createComponent(EnemyCard, { enemy: model }))).not.toContain("kcq-enemy-card__debuffs");
+    });
+
+    it("uses the latest application actor and cannot revive ownership across an unowned reapplication", () => {
+        const fixture = battleOverviewFixture;
+        const buff: Buff = { id: "control", duration: 2, modifiers: { hit: -2 } };
+        const enemy = { ...fixture.state.enemies[0]!, buffs: [buff] };
+        const added = application("ko", buff);
+        const refreshed = application("matsuko", buff);
+        const removal: GameLogPresentationEntry = { kind: "phase", phase: "player", outcomes: [{ kind: "buff", buff: buff.id,
+            participants: [{ target: enemy.id, initial: { present: true, details: buff }, final: { present: false } }],
+        }] };
+        const unowned: GameLogPresentationEntry = { ...removal, outcomes: added.outcomes };
+        const project = (history: GameLogPresentationEntry[]) => createEnemyCardViewModel(enemy, fixture.presentation, fixture.state.characters, history).debuffDurations;
+        expect(project([added, refreshed])).toMatchObject([{ tone: "matsuko", duration: 2 }]);
+        expect(project([added, removal])).toEqual([]);
+        expect(project([added, removal, unowned])).toEqual([]);
+        expect(project([added, removal, unowned, refreshed])).toMatchObject([{ tone: "matsuko" }]);
+    });
+
+    it("uses stock application history when Buff lacks a source, then counts down from current state", () => {
+        const engine = createStockEngine(1);
+        engine.loadCharacter("ko"); engine.loadEncounter("plains_2");
+        const initial = engine.getGameState();
+        const target = initial.enemies[0]!.id;
+        const history = createGameLogHistory(initial);
+        const result = engine.executeAction({ type: "move", actor: "ko", move: "starlightBindings", targets: [target] });
+        expect(result.success).toBe(true);
+        if (!result.success) throw Error(result.reason);
+        const entries = history.record(result.frames);
+        const current = engine.getGameState();
+        expect(current.enemies[0]!.buffs.find(buff => buff.id === "starlightBindings")?.linkedEntity).toBeUndefined();
+        const project = (state: typeof current, entries: GameLogPresentationEntry[]) => createBattleOverviewViewModel(
+            state, engine.getActionView(), battleOverviewFixture.thresholds, battleOverviewFixture.presentation, entries,
+        ).enemies[0]!.debuffDurations;
+        expect(project(current, entries)).toMatchObject([{ tone: "ko", duration: 3 }]);
+        const next = engine.executeAction({ type: "endTurn" });
+        expect(next.success).toBe(true);
+        if (!next.success) throw Error(next.reason);
+        expect(project(engine.getGameState(), history.record(next.frames))).toMatchObject([{ tone: "ko", duration: 2 }]);
     });
 });

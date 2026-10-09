@@ -1,4 +1,5 @@
-import { For, Show, type JSX } from "solid-js";
+import { Show, type JSX } from "solid-js";
+import { DurationPips } from "./DurationPips";
 import type { StatusChipSize, StatusChipTone } from "./componentTypes";
 
 export type { StatusChipSize, StatusChipTone } from "./componentTypes";
@@ -22,11 +23,7 @@ export function StatusChip(props: StatusChipProps): JSX.Element {
         >
             {props.children}
             <Show when={(props.duration ?? 0) > 0}>
-                <span class="kcq-status-chip__duration" aria-hidden="true">
-                    <For each={Array.from({ length: props.duration ?? 0 })}>
-                        {() => <span class="kcq-status-chip__segment" />}
-                    </For>
-                </span>
+                <DurationPips class="kcq-status-chip__duration" duration={props.duration ?? 0} />
             </Show>
         </span>
     );

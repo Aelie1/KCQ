@@ -5,6 +5,7 @@ import type {
     GameState,
     ThresholdInfo,
 } from "../../../../engine/public/types";
+import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import { combatShortcut, COMBAT_SHORTCUTS } from "../keyboard";
 import { Shortcut } from "../components/Shortcut";
@@ -19,6 +20,7 @@ export interface BattleOverviewPanelProps {
     presentation: Presentation;
     state: GameState;
     thresholds: ThresholdInfo;
+    history?: readonly GameLogPresentationEntry[];
     onSettings?: () => void;
     onEndTurn?: () => void;
     onGameLog?: () => void;
@@ -32,6 +34,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
         props.actions,
         props.thresholds,
         props.presentation,
+        props.history,
     ));
 
     return (

@@ -281,6 +281,12 @@ export class Presentation {
         }
     }
 
+    /** Optional category descriptions must not fall back to a missing-key identifier. */
+    buffMoveList(buff: BuffId, variant: "allow" | "block"): string | undefined {
+        const key = this.definitionKey("buff", buff, variant);
+        return this.strings[key.id] === undefined ? undefined : this.translate(key);
+    }
+
     buffSeverity(severity: number): string {
         return this.translate(this.definitionKey("buff", "severity", severity.toString()));
     }

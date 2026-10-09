@@ -42,6 +42,11 @@ export interface IntentViewModel extends IntentRowData {
 
 export interface EnemyCardData {
     currentHp: number;
+    debuffDurations: readonly {
+        accessibleLabel: string;
+        duration: number;
+        tone: Exclude<PlayerTone, "neutral">;
+    }[];
     id: EntityId;
     intentions: readonly IntentViewModel[];
     linkedEntities: readonly LinkedEntityViewModel[];

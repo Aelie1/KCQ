@@ -1,5 +1,6 @@
 import { For, Show, type JSX } from "solid-js";
 import type { EnemyCardData } from "./componentTypes";
+import { DurationPips } from "./DurationPips";
 import { IntentRow } from "./IntentRow";
 import { LinkedEntityChip } from "./LinkedEntityChip";
 import { Shortcut } from "./Shortcut";
@@ -29,6 +30,18 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
             }}
         >
             <Show when={props.onSelect}><Shortcut shortcut={props.shortcut} /></Show>
+            <Show when={props.enemy.debuffDurations.length > 0}>
+                <div class="kcq-enemy-card__debuffs">
+                    <For each={props.enemy.debuffDurations}>
+                        {(effect) => (
+                            <span class={"kcq-enemy-card__debuff kcq-player-identity--" + effect.tone}
+                                role="img" aria-label={effect.accessibleLabel} title={effect.accessibleLabel}>
+                                <DurationPips duration={effect.duration} />
+                            </span>
+                        )}
+                    </For>
+                </div>
+            </Show>
             <header class="kcq-enemy-card__header">
                 <h3 class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
                 <For each={props.enemy.linkedEntities}>

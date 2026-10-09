@@ -5,6 +5,7 @@ import type {
     ThresholdInfo,
     Trap,
 } from "../../../../engine/public/types";
+import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import type { EnemyCardData, PartyCardData } from "../components/componentTypes";
 import { createCombatHeaderViewModel } from "./combatHeader";
@@ -54,6 +55,7 @@ export function createBattleOverviewViewModel(
     actions: readonly ActionView[],
     thresholds: ThresholdInfo,
     presentation: Presentation,
+    history: readonly GameLogPresentationEntry[] = [],
 ): BattleOverviewViewModel {
     const actionsById = new Map(actions.map((action) => [action.id, action]));
     const traps = state.traps.map((trap) => createTrapViewModel(trap, presentation));
@@ -98,7 +100,7 @@ export function createBattleOverviewViewModel(
                 : {}),
         },
         enemies: state.enemies.map((enemy) =>
-            createEnemyCardViewModel(enemy, presentation, state.characters)),
+            createEnemyCardViewModel(enemy, presentation, state.characters, history)),
         enemiesHeading: presentation.ui("battleOverview.enemies"),
         enemiesCountLabel: presentation.ui("battleOverview.enemiesRemaining", {
             count: state.enemies.length,

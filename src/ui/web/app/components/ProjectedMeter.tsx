@@ -71,7 +71,7 @@ export function ProjectedMeter(props: ProjectedMeterProps): JSX.Element {
                     aria-hidden="true"
                 />
             </Show>
-            <Show when={props.peak !== undefined}>
+            <Show when={props.peak !== undefined && props.peak > current()}>
                 <span
                     class={`${prefix()}__peak`}
                     style={{ width: `${percent(peak())}%` }}
