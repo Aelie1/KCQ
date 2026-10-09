@@ -398,11 +398,13 @@ describe("character details view model", () => {
             };
             return createFocusedCharacterViewModel(
                 state, fixture.actions[0], fixture.thresholds, fixture.presentation,
-            ).commands.find(({ id }) => id === "stance")?.stanceTransition;
+            ).commands.find(({ id }) => id === "stance");
         };
 
-        expect(stanceTag(true)).toBe("Standing → Moving");
-        expect(stanceTag(false)).toBe("Moving → Standing");
+        expect(stanceTag(true)).toMatchObject({ stanceTransition: "Standing → Moving",
+            tags: [{ id: "stance-destination", label: "Moving", tone: "success", leadingSymbol: "→" }] });
+        expect(stanceTag(false)).toMatchObject({ stanceTransition: "Moving → Standing",
+            tags: [{ id: "stance-destination", label: "Standing", tone: "warning", leadingSymbol: "→" }] });
     });
 
     it("distinguishes no EscapeInfo targets from an engine-provided failure", () => {

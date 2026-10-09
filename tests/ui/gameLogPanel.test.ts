@@ -3,6 +3,10 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { skunk } from "../../src/content/skunk/skunk";
+import { trapPuddle } from "../../src/content/skunk/puddles";
+import { makeCharacterDef, makeEncounterDef } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 import { rockfall } from "../../src/content/characters/hinari";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { latexMist, latexSpray, skunkette } from "../../src/content/skunk/skunkette";
@@ -40,6 +44,27 @@ const text = (html: string): string => html.replace(/<[^>]*>/g, "").replaceAll("
 const count = (html: string, kind: string) => (html.match(new RegExp('data-outcome="' + kind + '"', "g")) ?? []).length;
 
 describe("compact graphical Game Log", () => {
+    it("renders the actual Latex Puddle roll from execution through localized log output", () => {
+        const hero = makeCharacterDef("ko");
+        const encounter = makeEncounterDef("puddle-log", {
+            enemies: [skunk.id], traps: [{ definition: trapPuddle, amount: 0 }],
+        });
+        const engine = createTestEngine([encounter], [hero], 16, { enemies: [skunk] });
+        engine.loadCharacter(hero.id); engine.loadEncounter(encounter.id);
+        const before = engine.getGameState();
+        const projected = before.enemies[0]!.intentions[0]!.effects.find(effect => effect.type === "trap");
+        const result = execute(engine, { type: "endTurn" });
+        const frame = result.frames.find(frame => frame.event.type === "useMove" && frame.event.move === "latexPuddle")!;
+        expect(frame.event).toMatchObject({ type: "useMove", targets: [], band: "graze",
+            effects: [{ type: "trapAdded", amount: projected?.amount }] });
+        const saved = JSON.stringify(result.frames);
+        const entries = createGameLogEntries(result.frames, before).filter(entry => entry.kind === "move" && entry.move === "latexPuddle");
+        const translated = new Presentation({ ...stockStrings, "hitBand.graze.name": "Effleure" });
+        const html = renderEntries(entries, translated);
+        expect(text(html)).toContain("Skunk 1—Latex PuddleEffleure");
+        expect(html).toContain("kcq-game-log__value--graze");
+        expect(JSON.stringify(result.frames)).toBe(saved);
+    });
     it.each(["miss", "graze", "hit", "crit"] as const)("retains the recorded %s band for zero-target moves", band => {
         const entries = createGameLogEntries([{ ...move([], [{ type: "trapAdded", actor: "skunk1", trap: "trapPuddle", amount: 16 }], "latexPuddle"), band }]);
         expect(entries[0]).toMatchObject({ kind: "move", band });

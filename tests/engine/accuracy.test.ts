@@ -609,6 +609,30 @@ describe("accuracy", () => {
         expect(moveUsed(engine.executeAction({ type: "move", actor: hero.id, move: move.id, targets: [] }))).not.toHaveProperty("band");
     });
 
+    it.each(["miss", "graze", "hit", "crit", "none"] as const)("emits enemy zero-target accuracy only when rolled (%s)", band => {
+        let resolvedBand: string | undefined;
+        const move = makeMove("enemy-zero", "none", {
+            targetSide: "none", targets: 0,
+            accuracy: band === "none" ? undefined : { [band]: 100 },
+            resolve: (_state, _actor, resolved) => {
+                if (resolved.band !== undefined) resolvedBand = resolved.band;
+                return [];
+            },
+        });
+        const hero = makeCharacterDef("hero", [makeWaitMove()]);
+        const foe = makeEnemyDef("foe", [move]);
+        const encounter = makeEncounterDef("enemy-zero", { enemies: [foe.id] });
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
+        engine.loadCharacter(hero.id); engine.loadEncounter(encounter.id);
+        const result = engine.executeAction({ type: "endTurn" });
+        if (!result.success) throw new Error("Expected successful enemy phase");
+        const event = result.frames.find(frame => frame.event.type === "useMove" && frame.event.move === move.id)?.event;
+        expect(event).toMatchObject({ type: "useMove", targets: [] });
+        if (band === "none") expect(event).not.toHaveProperty("band");
+        else expect(event).toMatchObject({ band: resolvedBand });
+        expect(resolvedBand).toBe(band);
+    });
+
     it("resolves zero-target moves with a move-level accuracy roll", () => {
         let resolutions = 0;
         const zeroTarget = makeAccuracyMove({ hit: 100 }, {

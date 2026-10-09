@@ -7,7 +7,7 @@ export interface EffectGroupViewModel {
 
 /** Groups recipients in first-occurrence order; each group retains source effect order. */
 export function groupEffectPreviews(
-    effects: readonly Effect[], context: Omit<EffectContext, "scopeTarget">,
+    effects: readonly Effect[], context: Omit<EffectContext, "scopeTarget"> & { actor?: EntityId },
     idPrefix = "effect", shouldGroup: (target: EntityId) => boolean = () => true,
 ): { groups: EffectGroupViewModel[]; ungrouped: EffectPreviewViewModel[] } {
     const groups: EffectGroupViewModel[] = [];
@@ -16,8 +16,9 @@ export function groupEffectPreviews(
     effects.forEach((effect, index) => {
         const id = `${idPrefix}-${index}`;
         // A projected spawn names a definition, not an existing recipient.
+        // Follow-up moves belong to the actor, even when nested in target effects.
         const target = "target" in effect && !(effect.type === "enemy" && effect.operation === "spawn")
-            ? effect.target : undefined;
+            ? effect.target : effect.type === "move" ? context.actor : undefined;
         if (target === undefined || !shouldGroup(target)) {
             ungrouped.push(...createEffectPreviews(effect, id, context));
             return;

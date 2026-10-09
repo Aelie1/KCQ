@@ -17,7 +17,7 @@ export function createEnemyDetailsViewModel(
     if (!enemy) throw new Error(`Missing Enemy for details ${enemyId}.`);
     const identity = createTargetPreviewViewModel(state, actions,
         { valid: true, target: enemy.id, effects: [] }, 0, presentation, thresholds);
-    const context = { actions, state, presentation, thresholds };
+    const context = { actions, state, presentation, thresholds, actor: enemy.id };
     // Calculated totals must come from the engine, never be reconstructed from buffs.
     const modifiers = enemy.modifiers;
 

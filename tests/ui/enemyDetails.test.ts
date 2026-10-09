@@ -100,13 +100,26 @@ describe("Enemy Details", () => {
         expect(intention.targets[0]!.preview.effects.map(effect => "type" in effect ? effect.type : effect.kind)).toEqual(["buff", "damage", "binding"]);
         expect(intention.targets[1]!.preview.effects.map(effect => "type" in effect ? effect.type : effect.kind)).toEqual(["binding"]);
         expect(intention.effectTargets.map(target => target.target)).toEqual(["skunkette1"]);
-        expect(intention.effectTargets[0]!.effects.map(effect => "type" in effect ? effect.type : effect.kind)).toEqual(["buff", "damage"]);
+        expect(intention.effectTargets[0]!.effects.map(effect => "type" in effect ? effect.type : effect.kind)).toEqual(["buff", "move", "damage"]);
         expect(intention.effectTargets[0]!.effects[0]).not.toHaveProperty("recipient");
         expect(intention.targets[0]!.preview.effects[0]).not.toHaveProperty("recipient");
-        expect(intention.effects).toMatchObject([{ type: "move" }]);
+        expect(intention.effects).toEqual([]);
         const html = renderToString(() => createComponent(EnemyDetailsPanel, { ...fixture, state }));
         expect(html.match(/class="kcq-selected-command"/g)).toHaveLength(1);
         expect(html.match(/kcq-target-card--predetermined/g)).toHaveLength(3);
+    });
+
+    it("groups a move-only projection under its actor for other intentions", () => {
+        const state: GameState = { ...fixture.state,
+            enemies: fixture.state.enemies.map(enemy => ({ ...enemy, intentions: [{
+                move: "latexMist", targets: [], effects: [{ type: "move", move: "latexSpray" }],
+            }] })),
+        };
+        const intention = modelFor(state).intentions[0]!;
+        expect(intention.effects).toEqual([]);
+        expect(intention.effectTargets).toMatchObject([{ target: "skunkette1", effects: [{
+            kind: "compact", type: "move", payload: "Latex Spray",
+        }] }]);
     });
 
     it("renders the existing displays in the shared scrolling body with a Backspace hint", () => {

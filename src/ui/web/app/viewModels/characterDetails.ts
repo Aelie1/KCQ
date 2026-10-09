@@ -20,7 +20,7 @@ import type {
     PartyConditionState,
     StatusChipTone,
 } from "../components/componentTypes";
-import { combatShortcut, COMBAT_SHORTCUTS, shortcutBadgeLabel } from "../keyboard";
+import { COMBAT_SHORTCUTS, combatShortcut, shortcutBadgeLabel } from "../keyboard";
 import { projectBindingZones } from "./bindingZones";
 import {
     createCharacterActionState,
@@ -43,7 +43,6 @@ export interface CommandCardViewModel {
     available: boolean;
     id: string;
     name: string;
-    stanceTransition?: string;
     reasonLabel?: string;
     shortcutLabel: string;
     shortcutKey?: string;
@@ -416,15 +415,21 @@ function createCommands(
     commands.push({
         id: "stance",
         name: presentation.ui("characterDetails.changeStance"),
-        stanceTransition: presentation.ui("gameLog.transition", {
-            initial: presentation.stance(character.standing ? "standing" : "moving"),
-            final: presentation.stance(stanceDestination),
-        }),
         shortcutKey: COMBAT_SHORTCUTS.stance,
         shortcutLabel: shortcutBadgeLabel(COMBAT_SHORTCUTS.stance),
         available: action.available && action.stance.available,
         ...reasonLabel(action.available && action.stance.available, action.reason ?? action.stance.reason, presentation),
-        tags: [],
+        tags: [
+            tag(
+                "stance-destination",
+                presentation.stance(character.standing ? "standing" : "moving"),
+                character.standing ? "warning" : "success"),
+            tag(
+                "stance-destination",
+                presentation.stance(stanceDestination),
+                stanceDestination === "moving" ? "success" : "warning",
+                presentation.ui("characterDetails.stanceTransitionIndicator"),
+            )],
     });
 
     const availableEscape = action.escape.available && action.escapes.some(({ available }) => available);
