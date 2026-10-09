@@ -530,11 +530,14 @@ export class GameEffects {
 
     private cancelIntentions(target: iEnemy, amount: number) {
         if (target.rank !== "boss") {
+            for (const intention of target.intentions) {
+                this.addEvent({
+                    type: "intentionCancelled",
+                    target: target.id,
+                    move: intention.move.definition.id
+                });
+            }
             target.intentions.length = 0;
-            this.addEvent({
-                type: "intentionCancelled",
-                target: target.id,
-            });
         }
         else {
             for (const intention of target.intentions) {
@@ -544,11 +547,12 @@ export class GameEffects {
                 for (const roll of intention.rolls) {
                     roll.roll = Math.max(0, roll.roll - amount * 100);
                 }
+                this.addEvent({
+                    type: "intentionWeakened",
+                    target: target.id,
+                    move: intention.move.definition.id
+                });
             }
-            this.addEvent({
-                type: "intentionWeakened",
-                target: target.id,
-            });
         }
     }
 

@@ -619,11 +619,13 @@ export interface RetargetEvent {
 export interface CancelEvent {
     type: "intentionCancelled";
     target: EntityId;
+    move: MoveId;
 }
 
 export interface WeakenEvent {
     type: "intentionWeakened";
     target: EntityId;
+    move: MoveId;
 }
 
 export interface DataEvent {

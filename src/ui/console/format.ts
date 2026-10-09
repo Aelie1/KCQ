@@ -260,9 +260,9 @@ function formatEventLines(event: GameEvent | LeafEvent): string[] {
         case "actionRefreshed":
             return [`${event.target}'s action was refreshed.`];
         case "intentionCancelled":
-            return [`${event.target}'s action was cancelled.`];
+            return [`${event.target}'s ${event.move} was cancelled.`];
         case "intentionWeakened":
-            return [`${event.target}'s action was weakened.`];
+            return [`${event.target}'s ${event.move} was weakened.`];
         case "targetChanged":
             return [`${event.target}'s action's target was changed to ${event.destination}.`];
         case "dataChanged":
