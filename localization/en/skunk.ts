@@ -57,6 +57,7 @@ export const skunkEnglishStrings: StringTable = {
 
     "buff.pounce.name": "Pounce",
     "buff.pounce.desc": "...",
+    "buff.pounce.allow": "Adds Throw Off",
     "buff.latexMist.name": "Latex Mist",
     "buff.latexMist.desc": "...",
     "buff.resistance.name": "Victim Resistance",

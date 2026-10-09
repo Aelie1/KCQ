@@ -60,9 +60,6 @@ export class GameEffects {
             }
             switch (effect.type) {
                 case "binding":
-                    if (effect.onResolve) {
-                        this.stack(effect.onResolve(effect));
-                    }
                     if (effect.amount !== undefined) {
                         if (effect.amount > 0) {
                             this.addBinding(effect.source, effect.target, effect.binding, effect.amount);

@@ -53,7 +53,6 @@ function regenerateCallback(effect: iEffect): iEffect[] {
                 amount: Math.min(effect.amount, binding.data["peak"] - binding.value)
             });
         }
-        effect.amount = undefined;
         return effects;
     }
 

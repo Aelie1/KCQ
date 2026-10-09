@@ -38,35 +38,7 @@ export const koEnglishStrings: StringTable = {
     "buff.starlightBindings.desc": "...",
     "buff.exhausted.name": "Exhausted",
     "buff.exhausted.desc": "...",
-
-    // Matsuko
-    "move.punch.name": "Punch",
-    "move.punch.desc": "...",
-    "move.kick.name": "Kick",
-    "move.kick.desc": "...",
-    "move.whiteFlame.name": "White Flame",
-    "move.whiteFlame.desc": "...",
-    "move.fairyWhiteFlame.name": "Fairy White Flame",
-    "move.fairyWhiteFlame.desc": "...",
-    "move.phoenixKick.name": "Phoenix Kick",
-    "move.phoenixKick.desc": "...",
-    "move.fairyPhoenixKick.name": "Fairy Phoenix Kick",
-    "move.fairyPhoenixKick.desc": "...",
-    "move.immolation.name": "Immolation",
-    "move.immolation.desc": "...",
-    "move.obey.name": "[Power of Compulsion: Obey]",
-    "move.obey.desc": "...",
-    "move.stop.name": "[Power of Compulsion: Stop]",
-    "move.stop.desc": "...",
-    "move.attackMe.name": "[Power of Compulsion: Taunt]",
-    "move.attackMe.desc": "...",
-
-    "buff.burnout.name": "Burnout",
-    "buff.burnout.desc": "...",
-    "buff.defenseBarrier.name": "Defense Barrier",
-    "buff.defenseBarrier.desc": "...",
-    "buff.servitude.name": "Servitude",
-    "buff.servitude.desc": "...",
+    "buff.exhausted.block": "Seals [Power of Denial]",
 };
 
 export const matsukoEnglishStrings: StringTable = {
@@ -96,6 +68,8 @@ export const matsukoEnglishStrings: StringTable = {
 
     "buff.burnout.name": "Burnout",
     "buff.burnout.desc": "...",
+    "buff.burnout.block": "Seals Flame Moves",
+    "buff.burnout.allow": "Adds Basic Moves",
     "buff.defenseBarrier.name": "Defense Barrier",
     "buff.defenseBarrier.desc": "...",
     "buff.servitude.name": "Servitude",

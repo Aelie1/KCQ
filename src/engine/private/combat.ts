@@ -359,11 +359,21 @@ export function resolveEscape(actor: iCharacter, actorStatus: GameStatus, target
     return effects;
 }
 
+function resolveEffects(effects: iEffect[]): iEffect[] {
+    return effects.flatMap(effect =>
+        (effect.type === "binding" && effect.onResolve)
+            ? effect.onResolve(effect)
+            : [effect]
+    );
+}
+
 export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targets: iTargetInfo[]): iMoveResult {
     const successfulTargets = targets.filter(target => target.band !== "miss");
     const result: iMoveResult = move.definition.resolve(state, actor, move, successfulTargets);
+    result.effects = resolveEffects(result.effects);
     result.effects.forEach(normalizeEffect);
     for (const target of result.targets) {
+        target.effects = resolveEffects(target.effects);
         target.effects.forEach(normalizeEffect);
     }
     const unsuccessfulTargets = targets.filter(target => target.band === "miss");
