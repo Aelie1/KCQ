@@ -1,16 +1,22 @@
-import type { BindingEndpoint, BuffParticipant, GameLogPresentationEntry, LogOutcome, StanceOutcome } from "../../../presentation/gameLog";
-import type { Presentation } from "../../../presentation/presentation";
+import type { BindingEndpoint, BuffOutcome, BuffParticipant, GameLogPresentationEntry, LogOutcome, StanceOutcome } from "../../../presentation/gameLog";
+import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import { playerTone, type PlayerTone } from "./linkedEntities";
 import { formatSignedNumber } from "./presentationHelpers";
 
-export interface GameLogValue {
+export interface GameLogText {
     text: string;
     tone?: string;
+}
+export interface GameLogValue extends GameLogText {
+    /** Localized phrase parts retain semantic colors even when a locale reorders them. */
+    parts?: GameLogText[];
 }
 export interface GameLogRow {
     kind: LogOutcome["kind"];
     target?: string;
+    targetParts?: GameLogText[];
     label?: string;
+    emphasis?: "defeat";
     values: GameLogValue[];
 }
 export interface GameLogViewModelEntry {
@@ -20,13 +26,14 @@ export interface GameLogViewModelEntry {
     actorTone?: PlayerTone;
     title?: string;
     target?: string;
+    targetTone?: PlayerTone;
     phase?: string;
     rows: GameLogRow[];
 }
 
-/** Formatting only: event grouping and historical endpoints come from Pass 1. */
+/** Compact presentation of Pass 1 outcomes; event boundaries and historical state stay intact. */
 export function createGameLogViewModel(
-    entries: readonly GameLogPresentationEntry[], p: Presentation,
+    entries: readonly GameLogPresentationEntry[], p: Presentation, party: readonly string[] = [],
 ): GameLogViewModelEntry[] {
     const transition = (initial: string, final: string) => p.ui("gameLog.transition", { initial, final });
     const numeric = (initial?: number, final?: number): string | undefined =>
@@ -36,20 +43,55 @@ export function createGameLogViewModel(
     const bindingValue = (endpoint: BindingEndpoint) => endpoint.level
         ? p.ui("gameLog.bindingEndpoint", { value: endpoint.value, level: p.bindingLevel(endpoint.level) })
         : String(endpoint.value);
-    const buffChange = ({ initial, final }: BuffParticipant): string => {
+    // Substitute colored slots through Presentation, so complete phrases can be reordered.
+    const phrase = (key: UiLabel, slots: Record<string, GameLogText | GameLogValue>): GameLogValue => {
+        const args = Object.fromEntries(Object.keys(slots).map(name => [name, "\uE000" + name + "\uE001"]));
+        const parts = p.ui(key, args).split(/(\uE000[^\uE001]+\uE001)/).filter(Boolean).flatMap(text => {
+            const slot = slots[text.slice(1, -1)];
+            return text.startsWith("\uE000") && slot ? ("parts" in slot && slot.parts ? slot.parts : [slot]) : [{ text, tone: "muted" }];
+        });
+        return { text: parts.map(part => part.text).join(""), parts };
+    };
+    const name = (id: string): GameLogText => ({ text: p.entity(id), tone: "entity-" + playerTone(id) });
+    const targets = (ids: string[], linked = false): GameLogValue => {
+        if (!linked && ids.length > 1 && party.length > 0 && ids.length === party.length && party.every(id => ids.includes(id))) {
+            return { text: p.ui("gameLog.allies"), parts: [{ text: p.ui("gameLog.allies"), tone: "muted" }] };
+        }
+        return ids.map(id => ({ ...name(id), parts: [name(id)] })).reduce<GameLogValue>((first, second) =>
+            first.text ? phrase(linked ? "gameLog.linkedTargets" : "gameLog.targetList", { first, second }) : second, { text: "" });
+    };
+    const buffOperation = ({ initial, final }: BuffParticipant) => !initial.present && final.present ? "added"
+        : initial.present && !final.present ? "removed" : "updated";
+    const buffChange = (buff: string, participant: BuffParticipant): GameLogValue => {
+        const { initial, final } = participant;
         const before = initial.details?.severity;
         const after = final.details?.severity;
-        if (!initial.present && final.present) return [p.ui("gameLog.added"), after !== undefined ? p.buffSeverity(after) : undefined].filter(Boolean).join(" · ");
-        if (initial.present && !final.present) return [p.ui("gameLog.removed"), before !== undefined ? p.buffSeverity(before) : undefined].filter(Boolean).join(" · ");
-        if (before !== undefined && after !== undefined) return before === after
-            ? [p.ui("gameLog.updated"), p.buffSeverity(after)].join(" · ")
-            : transition(p.buffSeverity(before), p.buffSeverity(after));
-        if (before !== undefined) return p.ui("gameLog.from", { value: p.buffSeverity(before) });
-        if (after !== undefined) return p.ui("gameLog.to", { value: p.buffSeverity(after) });
-        return p.ui("gameLog.updated");
+        const operation = buffOperation(participant);
+        const buffName = { text: p.buff(buff, undefined), tone: "special" };
+        const severity = operation === "added" ? after : operation === "removed" ? before : after ?? before;
+        const severityText = before !== undefined && after !== undefined && before !== after && operation === "updated"
+            ? transition(p.buffSeverity(before), p.buffSeverity(after))
+            : operation === "updated" && before === undefined && after !== undefined ? p.ui("gameLog.to", { value: p.buffSeverity(after) })
+                : operation === "updated" && after === undefined && before !== undefined ? p.ui("gameLog.from", { value: p.buffSeverity(before) })
+                    : severity !== undefined ? p.buffSeverity(severity) : undefined;
+        const buffLabel = severityText === undefined ? buffName : phrase("gameLog.buffSeverity", {
+            buff: buffName, severity: { text: severityText, tone: "special" },
+        });
+        if (operation === "updated" && before !== undefined && after !== undefined && before !== after) return buffLabel;
+        return phrase("gameLog.buffOutcome", { buff: buffLabel,
+            operation: { text: p.ui(`gameLog.${operation}`), tone: operation === "added" ? "success" : operation === "removed" ? "warning" : "special" } });
+    };
+    const buffRow = (outcome: BuffOutcome, grouped = false): GameLogRow => {
+        const target = targets(outcome.participants.map(participant => participant.target), !grouped && outcome.participants.length > 1);
+        const changes = outcome.participants.map(participant => buffChange(outcome.buff, participant));
+        const shared = changes.every(change => change.text === changes[0]?.text);
+        return { kind: "buff", target: target.text, targetParts: target.parts,
+            values: shared ? changes.slice(0, 1) : changes.map((change, index) =>
+                phrase("gameLog.participantChange", { target: name(outcome.participants[index]!.target), change })),
+        };
     };
     const stanceRow = (change: StanceOutcome): GameLogRow => ({
-        kind: "stance", target: p.entity(change.actor), values: [{ text: change.initial
+        kind: "stance", target: p.entity(change.actor), targetParts: [name(change.actor)], values: [{ text: change.initial
             ? transition(p.stance(change.initial), p.stance(change.final)) : p.stance(change.final) }],
     });
     const row = (outcome: LogOutcome): GameLogRow => {
@@ -67,29 +109,22 @@ export function createGameLogViewModel(
                 }),
             };
             case "binding": {
-                const text = outcome.initial && outcome.final
-                    ? transition(bindingValue(outcome.initial), bindingValue(outcome.final))
-                    : formatSignedNumber(outcome.change);
-                return { kind: outcome.kind, target: p.entity(outcome.target), label: p.binding(outcome.binding),
-                    values: [{ text, tone: outcome.final?.level ? "binding-" + outcome.final.level : undefined },
+                const value: GameLogValue = outcome.initial && outcome.final
+                    ? phrase("gameLog.transition", {
+                        initial: { text: bindingValue(outcome.initial), tone: outcome.initial.level ? "binding-" + outcome.initial.level : undefined },
+                        final: { text: bindingValue(outcome.final), tone: outcome.final.level ? "binding-" + outcome.final.level : undefined },
+                    }) : { text: formatSignedNumber(outcome.change) };
+                return { kind: outcome.kind, target: p.entity(outcome.target),
+                    values: [phrase("gameLog.bindingOutcome", { binding: { text: p.binding(outcome.binding), tone: "label" }, value }),
                         ...(outcome.blocked ? [{ text: p.ui("gameLog.blocked", { amount: outcome.blocked }), tone: "muted" }] : [])] };
             }
-            case "buff": {
-                const names = outcome.participants.map(participant => p.entity(participant.target));
-                const changes = outcome.participants.map(buffChange);
-                const shared = changes.every(change => change === changes[0]);
-                return { kind: outcome.kind,
-                    target: names.length ? names.reduce((first, second) => p.ui("gameLog.linkedTargets", { first, second })) : undefined,
-                    label: p.buff(outcome.buff, undefined), values: shared
-                        ? (changes.length ? [{ text: changes[0], tone: "special" }] : [])
-                        : changes.map((change, index) => ({ text: p.ui("gameLog.participantChange", { target: names[index], change }), tone: "special" })),
-                };
-            }
+            case "buff": return buffRow(outcome);
             case "resource": {
                 const endpoints = numeric(outcome.initial, outcome.final);
+                const change = outcome.initial !== undefined && outcome.final !== undefined ? outcome.final - outcome.initial : outcome.change;
                 return { kind: outcome.kind, target: p.entity(outcome.target), label: p.data(outcome.resource),
-                    values: [{ text: formatSignedNumber(outcome.change) },
-                        ...(endpoints ? [{ text: endpoints, tone: "muted" }] : [])] };
+                    values: [{ text: outcome.initial !== undefined && outcome.final !== undefined
+                        ? endpoints! : formatSignedNumber(outcome.change), tone: change < 0 ? "warning" : change > 0 ? "success" : "muted" }] };
             }
             case "stance": return stanceRow(outcome);
             case "trap": {
@@ -100,6 +135,7 @@ export function createGameLogViewModel(
                 ] };
             }
             case "enemy": return { kind: outcome.kind, target: p.entity(outcome.target),
+                emphasis: outcome.operation === "defeated" ? "defeat" : undefined,
                 values: [{ text: p.ui(outcome.operation === "spawned" ? "gameLog.spawned" : "gameLog.defeated"), tone: "warning" }] };
             case "interrupt": return { kind: outcome.kind, target: p.entity(outcome.actor),
                 values: [{ text: p.ui("gameLog.interrupted", { reason: p.failure(outcome.reason) }), tone: "warning" }] };
@@ -112,7 +148,70 @@ export function createGameLogViewModel(
         }
     };
     return entries.map(entry => {
-        const model: GameLogViewModelEntry = { kind: entry.kind, rows: entry.outcomes.map(row) };
+        // Group only independent, equivalent buff applications within this event. Linked
+        // participants remain the single logical outcome supplied by Pass 1.
+        const groups = new Map<string, BuffOutcome>();
+        const grouped = new Set<BuffOutcome>();
+        const buffGroups = new Map<BuffOutcome, BuffOutcome>();
+        const skipped = new Set<LogOutcome>();
+        for (const outcome of entry.outcomes) {
+            if (outcome.kind !== "buff" || outcome.participants.length !== 1) continue;
+            const participant = outcome.participants[0]!;
+            if (participant.initial.details?.linkedEntity || participant.final.details?.linkedEntity) continue;
+            const key = JSON.stringify([outcome.buff, buffOperation(participant), participant.initial.present, participant.final.present,
+                participant.initial.details?.severity, participant.final.details?.severity]);
+            const first = groups.get(key);
+            if (first) {
+                first.participants.push(participant);
+                grouped.add(first);
+                skipped.add(outcome);
+            } else {
+                const group = { ...outcome, participants: [...outcome.participants] };
+                groups.set(key, group);
+                buffGroups.set(outcome, group);
+            }
+        }
+        const rows = new Map<LogOutcome, GameLogRow>();
+        for (const outcome of entry.outcomes) {
+            if (skipped.has(outcome)) continue;
+            let formatted: GameLogRow;
+            if (outcome.kind === "buff" && outcome.participants.length === 1) {
+                const group = buffGroups.get(outcome);
+                formatted = group ? buffRow(group, grouped.has(group)) : row(outcome);
+            } else formatted = row(outcome);
+            if (formatted.target && !formatted.targetParts) {
+                const id = "target" in outcome ? outcome.target : "actor" in outcome ? outcome.actor : undefined;
+                if (id) formatted.targetParts = [name(id)];
+            }
+            if (outcome.kind === "damage" && outcome.hits.filter(hit => hit.result !== "none" || hit.damage !== 0).length > 1 && outcome.hits.some(hit => hit.damage !== 0)) {
+                formatted.values.push({ text: p.ui("gameLog.damageTotal", { amount: outcome.hits.reduce((sum, hit) => sum + hit.damage, 0) }), tone: "total" });
+            }
+            rows.set(outcome, formatted);
+        }
+        // Pass 1 records per-target net outcomes, not per-hit attribution. Only a
+        // single hit to a target can safely share its binding/buff outcomes inline.
+        if (entry.kind === "move") {
+            for (const outcome of entry.outcomes) {
+                if (outcome.kind !== "damage" || outcome.hits.length !== 1 || outcome.hits[0]!.result === "none") continue;
+                const hitRow = rows.get(outcome)!;
+                for (const effect of entry.outcomes) {
+                    const effectRow = rows.get(effect);
+                    if (!effectRow) continue;
+                    const binding = effect.kind === "binding" && effect.target === outcome.target;
+                    const buff = effect.kind === "buff" && effect.participants.some(participant => participant.target === outcome.target)
+                        && effect.participants.every(participant => participant.target === outcome.target || participant.target === entry.actor)
+                        && effect.participants.filter(participant => entry.outcomes.some(candidate =>
+                            candidate.kind === "damage" && candidate.target === participant.target)).length === 1
+                        && effectRow.values.length === 1
+                        && !grouped.has(buffGroups.get(effect)!);
+                    if (binding || buff) {
+                        hitRow.values.push(...effectRow.values);
+                        rows.delete(effect);
+                    }
+                }
+            }
+        }
+        const model: GameLogViewModelEntry = { kind: entry.kind, rows: [...rows.values()] };
         switch (entry.kind) {
             case "move":
             case "escape":
@@ -120,7 +219,10 @@ export function createGameLogViewModel(
                 model.actor = p.entity(entry.actor);
                 model.actorTone = playerTone(entry.actor);
                 model.title = entry.kind === "move" ? p.move(entry.move) : p.ui("characterDetails.escape");
-                if (entry.kind === "escape") model.target = p.entity(entry.target);
+                if (entry.kind === "escape") {
+                    model.target = p.entity(entry.target);
+                    model.targetTone = playerTone(entry.target);
+                }
                 break;
             case "phase":
                 model.phase = entry.phase;

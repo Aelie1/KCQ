@@ -1,4 +1,4 @@
-import { createMemo, For, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, For, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { GameState } from "../../../../engine/public/types";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
@@ -16,7 +16,49 @@ export interface GameLogPanelProps {
 
 export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     const header = createMemo(() => createCombatHeaderViewModel(props.state, props.presentation));
-    const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation));
+    const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation, props.state.characters.map(character => character.id)));
+
+    let content!: HTMLDivElement;
+    let viewport: HTMLElement | undefined;
+    let following = true;
+    let frame: number | undefined;
+    let previousCount = props.entries.length;
+    let previousEncounter = props.state.encounter?.id;
+    let previousRound = props.state.turn.round;
+    const scheduleFollow = () => {
+        if (!viewport || frame !== undefined) return;
+        frame = requestAnimationFrame(() => {
+            frame = undefined;
+            if (following && viewport) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+        });
+    };
+    const trackScroll = () => {
+        if (viewport) following = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 32;
+    };
+    onMount(() => {
+        // ScreenLayout's middle row owns scrolling; the log div is its content.
+        viewport = content.parentElement!;
+        viewport.addEventListener("scroll", trackScroll, { passive: true });
+        const observer = new ResizeObserver(scheduleFollow);
+        observer.observe(viewport);
+        observer.observe(content);
+        scheduleFollow();
+        onCleanup(() => {
+            viewport?.removeEventListener("scroll", trackScroll);
+            observer.disconnect();
+            if (frame !== undefined) cancelAnimationFrame(frame);
+        });
+    });
+    createEffect(() => {
+        const count = entries().length;
+        const encounter = props.state.encounter?.id;
+        const round = props.state.turn.round;
+        if ((count === 0 && previousCount > 0) || encounter !== previousEncounter || round < previousRound) following = true;
+        previousCount = count;
+        previousEncounter = encounter;
+        previousRound = round;
+        scheduleFollow();
+    });
 
     return (
         <ScreenLayout class="kcq-game-log" ariaLabel={props.presentation.ui("combatHeader.gameLog")}
@@ -32,7 +74,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                 />
             }
             body={
-                <div class="kcq-game-log__scroll" role="log" aria-label={props.presentation.ui("gameLog.chronological")}>
+                <div ref={content} class="kcq-game-log__scroll" role="log" aria-label={props.presentation.ui("gameLog.chronological")}>
                     <Show when={entries().length} fallback={
                         <p class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</p>
                     }>
@@ -48,21 +90,29 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                                             </Show>
                                             <strong class="kcq-game-log__title">{entry.title}</strong>
                                             <Show when={entry.target}>
-                                                <span class="kcq-game-log__escape-target">→ {entry.target}</span>
+                                                <span class={"kcq-game-log__escape-target kcq-game-log__value--entity-" + entry.targetTone}>→ {entry.target}</span>
                                             </Show>
                                         </div>
                                     </Show>
                                     <div class="kcq-game-log__outcomes">
                                         <For each={entry.rows}>
                                             {(row) => (
-                                                <div class={"kcq-game-log__row kcq-game-log__row--" + row.kind} data-outcome={row.kind}>
+                                                <div class={"kcq-game-log__row kcq-game-log__row--" + row.kind + (row.emphasis ? " kcq-game-log__row--" + row.emphasis : "")} data-outcome={row.kind}>
                                                     <span class="kcq-game-log__recipient">
-                                                        <Show when={row.target}><span class="kcq-game-log__target">{row.target}</span></Show>
+                                                        <Show when={row.target}><span class="kcq-game-log__target">
+                                                            <For each={row.targetParts ?? [{ text: row.target! }]}>
+                                                                {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
+                                                            </For>
+                                                        </span></Show>
                                                         <Show when={row.label}><strong class="kcq-game-log__label">{row.label}</strong></Show>
                                                     </span>
                                                     <div class="kcq-game-log__values">
                                                         <For each={row.values}>
-                                                            {(value) => <span class={"kcq-game-log__value kcq-game-log__value--" + (value.tone ?? "neutral")}>{value.text}</span>}
+                                                            {(value) => <span class={"kcq-game-log__value kcq-game-log__value--" + (value.tone ?? "neutral")}>
+                                                                <For each={value.parts ?? [{ text: value.text, tone: value.tone }]}>
+                                                                    {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
+                                                                </For>
+                                                            </span>}
                                                         </For>
                                                     </div>
                                                 </div>

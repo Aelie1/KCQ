@@ -8,6 +8,7 @@ import { DevApp } from "../../src/ui/web/app/dev/DevApp";
 import { gameLogFixture } from "../../src/ui/web/app/fixtures/gameLog";
 import { makeFixtureCharacter } from "../../src/ui/web/app/fixtures/publicFixture";
 import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
+import { createGameLogViewModel } from "../../src/ui/web/app/viewModels/gameLog";
 import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
@@ -86,7 +87,7 @@ describe("compact graphical Game Log", () => {
             { type: "bondageBlocked", target: "ko", binding: "latexArms", amount: 4 },
         ]) }], before));
         expect(count(html, "binding")).toBe(1);
-        expect(text(html)).toContain("Ko-chanSkunk Arms10 (Light) → 28 (Moderate)Blocked 4");
+        expect(text(html)).toContain("Ko-chanSkunk Arms 10 (Light) → 28 (Moderate)Blocked 4");
         expect(html).toContain("kcq-game-log__value--binding-moderate");
     });
 
@@ -101,9 +102,9 @@ describe("compact graphical Game Log", () => {
             { type: "buffAdded", target: "ko", buff: "brace" },
         ]) }], before));
         expect(count(html, "buff")).toBe(3);
-        expect(text(html)).toContain("BurnoutIV → I");
-        expect(text(html)).toContain("PounceRemoved · II");
-        expect(text(html)).toContain("BraceAdded · III");
+        expect(text(html)).toContain("Burnout IV → I");
+        expect(text(html)).toContain("Pounce II Removed");
+        expect(text(html)).toContain("Brace III Added");
         expect(text(html)).not.toMatch(/99|Defense|modifier|status/);
     });
 
@@ -111,7 +112,7 @@ describe("compact graphical Game Log", () => {
         const html = renderToString(() => createComponent(GameLogPanel, gameLogFixture));
         const rows = html.match(/<div[^>]+data-outcome="buff"[\s\S]*?(?=<\/article>)/g) ?? [];
         expect(rows.filter(row => text(row).includes("Pounce"))).toHaveLength(1);
-        expect(text(html)).toContain("Ko-chan ↔ Skunkette 1PounceIV → I");
+        expect(text(html)).toContain("Ko-chan ↔ Skunkette 1Pounce IV → I");
         expect(text(html).match(/IV → I/g)).toHaveLength(1);
     });
 
@@ -124,11 +125,11 @@ describe("compact graphical Game Log", () => {
         }] }];
         const html = renderEntries(entries);
         expect(count(html, "buff")).toBe(1);
-        expect(text(html)).toContain("Ko-chan: IV → I");
-        expect(text(html)).toContain("Skunkette 1: III → II");
+        expect(text(html)).toContain("Ko-chan: Pounce IV → I");
+        expect(text(html)).toContain("Skunkette 1: Pounce III → II");
     });
 
-    it("displays applied resource deltas from emitted events separately from snapshot endpoints", () => {
+    it("shows resource endpoints without a redundant applied delta", () => {
         const before = state();
         before.characters[1]!.data = { subspace: 50, subspaceMax: 100, secret: 123 };
         const after = structuredClone(before);
@@ -137,8 +138,8 @@ describe("compact graphical Game Log", () => {
             { type: "dataChanged", target: "hinari", name: "subspace", amount: -25 },
         ]) }], before));
         expect(count(html, "resource")).toBe(1);
-        expect(text(html)).toContain("HinariSubspace-2550 → 20");
-        expect(text(html)).not.toMatch(/secret|123|456|-30/);
+        expect(text(html)).toContain("HinariSubspace50 → 20");
+        expect(text(html)).not.toMatch(/secret|123|456|-30|-25/);
         const silent = renderEntries(createGameLogEntries([{ state: after, event: move() }], before));
         expect(count(silent, "resource")).toBe(0);
     });
@@ -150,7 +151,7 @@ describe("compact graphical Game Log", () => {
             ],
         }]));
         expect(text(html)).toContain("Hinari—Escape→ Ko-chan");
-        expect(text(html)).toContain("Ko-chanSkunk Arms12 → 0 (None)");
+        expect(text(html)).toContain("Ko-chanSkunk Arms 12 → 0 (None)");
         expect(text(html)).not.toMatch(/fail|accuracy|chance|attempt|Miss/);
     });
 
@@ -193,7 +194,7 @@ describe("compact graphical Game Log", () => {
         ]) }], before));
         expect(count(html, "trap")).toBe(1);
         for (const label of ["Latex Puddle10 → 5", "Triggered by Ko-chan ×3", "Intention cancelled", "Intention weakened", "Retargeted → Matsuko",
-            "Interrupted · Bindings prevent this action.", "Refreshed", "Skunkette 3Spawned", "Skunkette 2Defeated", "Moving → Standing"]) expect(text(html)).toContain(label);
+            "Interrupted · Bindings prevent this action.", "HinariAction Refreshed", "Skunkette 3Spawned", "Skunkette 2Defeated", "Moving → Standing"]) expect(text(html)).toContain(label);
     });
 
     it("shows only meaningful encounter and character entries supplied by Pass 1", () => {
@@ -220,7 +221,7 @@ describe("compact graphical Game Log", () => {
             ]),
             { type: "changePhase", phase: "enemy", effects: [] },
         ]));
-        for (const label of ["BraceAdded", "PounceUpdated", "BurnoutRemoved", "Skunk Arms+7", "Subspace+10", "Enemy Phase"]) expect(text(html)).toContain(label);
+        for (const label of ["Brace Added", "Pounce Updated", "Burnout Removed", "Skunk Arms +7", "Subspace+10", "Enemy Phase"]) expect(text(html)).toContain(label);
         expect(text(html)).not.toMatch(/undefined|NaN|Round undefined|\[buff.severity/);
     });
 
@@ -230,7 +231,7 @@ describe("compact graphical Game Log", () => {
         const html = renderEntries(createGameLogEntries([{ state: before, event: move([], [
             { type: "buffUpdated", target: "ko", buff: "pounce" },
         ]) }], before));
-        expect(text(html)).toContain("PounceUpdated · IV");
+        expect(text(html)).toContain("Pounce IV Updated");
         expect(text(html)).not.toContain("IV → IV");
 
         const after = state();
@@ -240,8 +241,8 @@ describe("compact graphical Game Log", () => {
             { type: "dataChanged", target: "hinari", name: "subspace", amount: 5 },
             { type: "buffUpdated", target: "ko", buff: "pounce" },
         ]) }]));
-        expect(text(partial)).toContain("Subspace+5To 25");
-        expect(text(partial)).toContain("PounceTo I");
+        expect(text(partial)).toContain("Subspace+5");
+        expect(text(partial)).toContain("Pounce To I Updated");
         expect(text(partial)).not.toContain("20 → 25");
     });
 
@@ -266,7 +267,7 @@ describe("compact graphical Game Log", () => {
             { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 2 },
             { type: "dataChanged", target: "ko", name: "subspace", amount: 3 },
         ]) }], before), p);
-        for (const label of ["Actor test", "Target 1", "Move test", "Result test 18", "Binding test", "Buff testLevel four becomes Level one", "Resource test+3"]) expect(text(html)).toContain(label);
+        for (const label of ["Actor test", "Target 1", "Move test", "Result test 18", "Binding test", "Buff test Level four becomes Level one", "Resource test+3"]) expect(text(html)).toContain(label);
         expect(html).toContain('aria-label="History test"');
         expect(text(renderEntries([], p))).toContain("Empty test");
     });
@@ -276,7 +277,214 @@ describe("compact graphical Game Log", () => {
         expect(html).toMatch(/class="[^"]*\bkcq-game-log\b[^"]*"/);
         expect(html).toContain("kcq-combat-header--subscreen");
         expect(html).not.toContain("kcq-combat-header__settings");
-        expect(text(html)).toContain("PounceIV → I");
+        expect(text(html)).toContain("Pounce IV → I");
         expect(html).not.toContain("Gallery placeholder");
     });
+});
+
+
+const models = (entries: readonly GameLogPresentationEntry[], p = presentation, party = state().characters.map(character => character.id)) =>
+    createGameLogViewModel(entries, p, party);
+const mistFrames = (ids: string[], severities: number[] = ids.map(() => 3)) => {
+    const before = state();
+    const after = structuredClone(before);
+    const effects: LeafEvent[] = [];
+    for (const [index, id] of ids.entries()) {
+        const character = after.characters.find(character => character.id === id)!;
+        character.buffs = [{ id: "latexMist", severity: severities[index]! }];
+        character.bindings = [{ id: "latexLegs", value: 13, level: "light", data: {}, status: [], tickEffects: [] }];
+        effects.push({ type: "buffUpdated", target: id, buff: "latexMist" },
+            { type: "bondageChanged", target: id, binding: "latexLegs", amount: 13 });
+    }
+    return { before, after, event: { ...move(ids.map(target => ({ target, result: "graze", effects: [] })), effects, "latexMist"), actor: "skunkette1" } as MoveEvent };
+};
+
+describe("Game Log presentation refinements", () => {
+    it("combines a single Pounce hit and its reciprocal buff into one target row using snapshot presence", () => {
+        const before = state();
+        const after = structuredClone(before);
+        after.enemies[0]!.buffs = [{ id: "pounce", severity: 3, linkedEntity: "hinari" }];
+        after.characters[1]!.buffs = [{ id: "pounce", severity: 3, linkedEntity: "skunkette1" }];
+        const entries = createGameLogEntries([{ state: after, event: { ...move([
+            { target: "hinari", result: "hit", effects: [{ type: "buffUpdated", target: "hinari", buff: "pounce" }] },
+        ], [{ type: "buffUpdated", target: "skunkette1", buff: "pounce" }], "pounce"), actor: "skunkette1" } }], before);
+        const rows = models(entries)[0]!.rows;
+        expect(rows).toHaveLength(1);
+        expect(rows[0]!.target).toBe("Hinari");
+        expect(rows[0]!.values.map(value => value.text)).toEqual(["Hit", "Pounce III Added"]);
+        const html = renderEntries(entries);
+        expect(text(html).match(/Pounce III Added/g)).toHaveLength(1);
+        expect(count(html, "buff")).toBe(0);
+        expect(html).toContain('class="kcq-game-log__value--entity-hinari"');
+        expect(html).toContain('class="kcq-game-log__value--success">Added');
+    });
+
+    it("shows binding accuracy inline and colors initial, arrow, and final independently", () => {
+        const { before, after } = mistFrames(["ko"]);
+        const entries = createGameLogEntries([{ state: after, event: { ...move([
+            { target: "ko", result: "graze", effects: [{ type: "bondageChanged", target: "ko", binding: "latexLegs", amount: 13 }] },
+        ], [], "latexSpray"), actor: "skunkette1" } }], before);
+        const rows = models(entries)[0]!.rows;
+        expect(rows).toHaveLength(1);
+        expect(rows[0]!.values.map(value => value.text)).toEqual(["Graze", "Skunk Legs 0 (None) → 13 (Light)"]);
+        const html = renderEntries(entries);
+        expect(html).toContain('class="kcq-game-log__value--binding-none">0 (None)');
+        expect(html).toContain('class="kcq-game-log__value--muted"> → ');
+        expect(html).toContain('class="kcq-game-log__value--binding-light">13 (Light)');
+        expect(html).toContain('class="kcq-game-log__value--entity-ko">Ko-chan');
+        expect(count(html, "binding")).toBe(0);
+    });
+
+    it("keeps endpoint colors correct for reductions and removals", () => {
+        const { after: before } = mistFrames(["ko"]);
+        before.characters[0]!.bindings[0]!.value = 40;
+        before.characters[0]!.bindings[0]!.level = "heavy";
+        const after = structuredClone(before);
+        after.characters[0]!.bindings = [];
+        const html = renderEntries(createGameLogEntries([{ state: after, event: move([], [
+            { type: "bondageRemoved", target: "ko", binding: "latexLegs", amount: -40 },
+        ]) }], before));
+        expect(html).toContain('class="kcq-game-log__value--binding-heavy">40 (Heavy)');
+        expect(html).toContain('class="kcq-game-log__value--binding-none">0 (None)');
+    });
+
+    it("consolidates nonadjacent Latex Mist applications across the whole event while retaining target-specific bindings", () => {
+        const { before, after, event } = mistFrames(["ko", "matsuko", "hinari"]);
+        const entries = createGameLogEntries([{ state: after, event }], before);
+        const saved = JSON.stringify(entries);
+        const rows = models(entries)[0]!.rows;
+        const buffs = rows.filter(row => row.kind === "buff");
+        expect(buffs).toHaveLength(1);
+        expect(buffs[0]!.target).toBe("Allies");
+        expect(buffs[0]!.values.map(value => value.text)).toEqual(["Latex Mist III Added"]);
+        expect(rows.filter(row => row.kind === "damage").map(row => [row.target, ...row.values.map(value => value.text)]))
+            .toEqual(["Ko-chan", "Matsuko", "Hinari"].map(target => [target, "Graze", "Skunk Legs 0 (None) → 13 (Light)"]));
+        expect(count(renderEntries(entries), "buff")).toBe(1);
+        expect(JSON.stringify(entries)).toBe(saved);
+    });
+
+    it("uses colored character names for a partial party and the supplied current party for Allies", () => {
+        const { before, after, event } = mistFrames(["ko", "matsuko"]);
+        const entries = createGameLogEntries([{ state: after, event }], before);
+        const buff = models(entries)[0]!.rows.find(row => row.kind === "buff")!;
+        expect(buff.target).toBe("Ko-chan, Matsuko");
+        expect(buff.targetParts).toContainEqual({ text: "Ko-chan", tone: "entity-ko" });
+        expect(buff.targetParts).toContainEqual({ text: "Matsuko", tone: "entity-matsuko" });
+        expect(models(entries, presentation, ["ko", "matsuko"])[0]!.rows.find(row => row.kind === "buff")!.target).toBe("Allies");
+    });
+
+    it("keeps different severities and operations separate and never groups across events", () => {
+        const { before, after, event } = mistFrames(["ko", "matsuko", "hinari"], [3, 3, 2]);
+        before.characters.find(character => character.id === "hinari")!.buffs = [{ id: "latexMist", severity: 2 }];
+        event.targets = [];
+        const entries = createGameLogEntries([{ state: after, event }, { state: after, event }], before);
+        const first = models(entries)[0]!.rows.filter(row => row.kind === "buff");
+        expect(first).toHaveLength(2);
+        expect(first.map(row => row.target)).toEqual(["Ko-chan, Matsuko", "Hinari"]);
+        expect(first.map(row => row.values[0]!.text)).toEqual(["Latex Mist III Added", "Latex Mist II Updated"]);
+        expect(models(entries)).toHaveLength(2);
+        expect(models(entries)[1]!.rows.filter(row => row.kind === "buff")).toHaveLength(2);
+    });
+
+    it("keeps distinct initial-to-final severity transitions separate", () => {
+        const { before, after, event } = mistFrames(["ko", "matsuko"]);
+        before.characters[0]!.buffs = [{ id: "latexMist", severity: 4 }];
+        before.characters.find(character => character.id === "matsuko")!.buffs = [{ id: "latexMist", severity: 2 }];
+        event.targets = [];
+        const rows = models(createGameLogEntries([{ state: after, event }], before))[0]!.rows.filter(row => row.kind === "buff");
+        expect(rows.map(row => row.values[0]!.text)).toEqual(["Latex Mist IV → III", "Latex Mist II → III"]);
+    });
+
+    it("preserves multi-hit ambiguity and AoE targets while totaling only recorded damage", () => {
+        const entries = createGameLogEntries([move([
+            ...[10, 3, 3, 10].map((amount, index) => ({ target: "skunkette1", result: index === 1 || index === 2 ? "graze" as const : "hit" as const,
+                effects: [damaged("skunkette1", amount)] })),
+            { target: "skunkette2", result: "hit", effects: [damaged("skunkette2", 9)] },
+        ], [{ type: "buffRemoved", target: "skunkette1", buff: "pounce" }], "rockfall")]);
+        const rows = models(entries)[0]!.rows;
+        expect(rows.filter(row => row.kind === "damage").map(row => row.values.map(value => value.text)))
+            .toEqual([["Hit 10", "Graze 3", "Graze 3", "Hit 10", "= 26"], ["Hit 9"]]);
+        expect(rows.find(row => row.kind === "buff")!.values[0]!.text).toBe("Pounce Removed");
+        expect(renderEntries(entries)).toContain("kcq-game-log__value--total");
+        const noDamage = models(createGameLogEntries([move([
+            { target: "ko", result: "hit", effects: [] }, { target: "ko", result: "graze", effects: [] },
+        ], [{ type: "bondageChanged", target: "ko", binding: "latexLegs", amount: 3 }])]))[0]!.rows;
+        expect(noDamage.map(row => row.kind)).toEqual(["damage", "binding"]);
+        expect(noDamage.flatMap(row => row.values).some(value => value.tone === "total")).toBe(false);
+    });
+
+    it("shows linked removals once with initial severity attached to the buff name", () => {
+        const before = state();
+        before.characters[0]!.buffs = [{ id: "pounce", severity: 3, linkedEntity: "skunkette1" }];
+        before.enemies[0]!.buffs = [{ id: "pounce", severity: 3, linkedEntity: "ko" }];
+        const after = structuredClone(before);
+        after.characters[0]!.buffs = [];
+        after.enemies[0]!.buffs = [];
+        const entries = createGameLogEntries([{ state: after, event: move([], [
+            { type: "buffRemoved", target: "ko", buff: "pounce" }, { type: "buffRemoved", target: "skunkette1", buff: "pounce" },
+        ], "rockfall") }], before);
+        const rows = models(entries)[0]!.rows;
+        expect(rows).toHaveLength(1);
+        expect(rows[0]!.target).toBe("Ko-chan ↔ Skunkette 1");
+        expect(rows[0]!.values[0]!.text).toBe("Pounce III Removed");
+    });
+
+    it("shows Subspace endpoints once, actual fallback deltas, Action Refreshed, and restrained enemy defeat emphasis", () => {
+        const entries: GameLogPresentationEntry[] = [{ kind: "move", actor: "hinari", move: "rockfall", outcomes: [
+            { kind: "resource", target: "hinari", resource: "subspace", initial: 0, final: 25, change: 25 },
+            { kind: "resource", target: "hinari", resource: "subspace", final: 10, change: -15 },
+            { kind: "refresh", target: "ko" }, { kind: "enemy", target: "skunkette1", operation: "defeated" },
+            { kind: "enemy", target: "skunkette2", operation: "spawned" },
+        ] }];
+        const rows = models(entries)[0]!.rows;
+        expect(rows[0]!.values).toEqual([{ text: "0 → 25", tone: "success" }]);
+        expect(rows[1]!.values).toEqual([{ text: "-15", tone: "warning" }]);
+        expect(rows[2]!.values[0]!.text).toBe("Action Refreshed");
+        expect(rows[3]!.emphasis).toBe("defeat");
+        expect(rows[4]!.emphasis).toBeUndefined();
+        const html = renderEntries(entries);
+        expect(html).toContain("kcq-game-log__row--defeat");
+        expect(html).toContain('class="kcq-game-log__value--entity-neutral">Skunkette 1');
+        expect(text(html)).not.toContain("+25");
+    });
+
+    it("localizes complete buff and binding phrases with reordered colored slots, target lists, totals, and refreshes", () => {
+        const p = new Presentation({ ...stockStrings,
+            "ui.gameLog.allies": "Party test", "ui.gameLog.targetList": "{second} / {first}",
+            "ui.gameLog.buffSeverity": "{severity} of {buff}", "ui.gameLog.buffOutcome": "{operation}: {buff}",
+            "ui.gameLog.added": "Added test", "buff.severity.3": "Third test",
+            "ui.gameLog.bindingOutcome": "{value} in {binding}", "ui.gameLog.transition": "{final} after {initial}",
+            "ui.gameLog.refreshed": "Action test", "ui.gameLog.damageTotal": "Total test {amount}",
+        });
+        const { before, after, event } = mistFrames(["ko", "matsuko", "hinari"]);
+        const entries = createGameLogEntries([{ state: after, event }], before);
+        const html = renderEntries(entries, p);
+        expect(text(html)).toContain("Party testAdded test: Third test of Latex Mist");
+        expect(text(html)).toContain("13 (Light) after 0 (None) in Skunk Legs");
+        expect(html).toContain('class="kcq-game-log__value--success">Added test');
+        expect(html).toContain('class="kcq-game-log__value--binding-none">0 (None)');
+        expect(models(entries, p, ["ko", "hinari"])[0]!.rows.find(row => row.kind === "buff")!.target).toBe("Hinari / Matsuko / Ko-chan");
+        const other = renderEntries(createGameLogEntries([move([
+            { target: "skunkette1", result: "hit", effects: [damaged("skunkette1", 4)] },
+            { target: "skunkette1", result: "graze", effects: [damaged("skunkette1", 2)] },
+        ], [{ type: "actionRefreshed", target: "ko" }])]), p);
+        expect(text(other)).toContain("Total test 6");
+        expect(text(other)).toContain("Ko-chanAction test");
+    });
+
+    it("combines multiple unambiguous outcomes but keeps linked outcomes separate when both participants have hits", () => {
+        const { before, after, event } = mistFrames(["ko"]);
+        const rows = models(createGameLogEntries([{ state: after, event }], before))[0]!.rows;
+        expect(rows).toHaveLength(1);
+        expect(rows[0]!.values.map(value => value.text)).toEqual(["Graze", "Latex Mist III Added", "Skunk Legs 0 (None) → 13 (Light)"]);
+        const entries: GameLogPresentationEntry[] = [{ kind: "move", actor: "skunkette1", move: "pounce", outcomes: [
+            ...["ko", "skunkette1"].map(target => ({ kind: "damage" as const, target,
+                hits: [{ result: "hit" as const, damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 })),
+            { kind: "buff", buff: "pounce", participants: ["ko", "skunkette1"].map(target => ({ target,
+                initial: { present: false }, final: { present: true, details: { id: "pounce", severity: 3 } } })) },
+        ] }];
+        expect(models(entries)[0]!.rows.map(row => row.kind)).toEqual(["damage", "damage", "buff"]);
+        expect(models(entries)[0]!.rows[2]!.target).toBe("Ko-chan ↔ Skunkette 1");
+    });
+
 });

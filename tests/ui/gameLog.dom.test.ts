@@ -1,12 +1,13 @@
-import { createComponent } from "solid-js";
+import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionResult, DifficultyId, EncounterId, GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
-import { createGameLogEntries } from "../../src/ui/presentation/gameLog";
+import { createGameLogEntries, type GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
+import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
 import { createGameLogViewModel } from "../../src/ui/web/app/viewModels/gameLog";
 import { stockStrings } from "../helpers/stockStrings";
 
@@ -77,7 +78,7 @@ function logEntries(): HTMLElement[] {
     return [...document.querySelectorAll<HTMLElement>(".kcq-game-log__entry")];
 }
 function expectHistory(results: readonly ActionResult[], initial: GameState): void {
-    const expected = createGameLogViewModel(createGameLogEntries(results.flatMap(result => result.success ? result.frames : []), initial), presentation);
+    const expected = createGameLogViewModel(createGameLogEntries(results.flatMap(result => result.success ? result.frames : []), initial), presentation, initial.characters.map(character => character.id));
     const actual = logEntries();
     expect(actual.map(entry => entry.dataset.kind)).toEqual(expected.map(entry => entry.kind));
     expected.forEach((entry, index) => {
@@ -191,5 +192,141 @@ describe("live graphical Game Log history", () => {
         expect(logEntries()[0]!.dataset.kind).toBe("stance");
         expect(document.querySelectorAll('[data-outcome="stance"]')).toHaveLength(2);
         expect(document.querySelector(".kcq-game-log__scroll")?.textContent).toContain("Moving → Standing");
+    });
+});
+
+
+function mountScrollingLog() {
+    let nextFrame = 0;
+    const pending = new Map<number, FrameRequestCallback>();
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++nextFrame, callback); return nextFrame; });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => pending.delete(id));
+    let resize!: () => void;
+    const disconnect = vi.fn();
+    const observe = vi.fn();
+    vi.stubGlobal("ResizeObserver", class {
+        constructor(callback: () => void) { resize = callback; }
+        observe = observe;
+        disconnect = disconnect;
+    });
+    const entry = (round: number): GameLogPresentationEntry => ({ kind: "phase", phase: "player", round, outcomes: [] });
+    const [entries, setEntries] = createSignal<GameLogPresentationEntry[]>([entry(1), entry(2)]);
+    const [state, setState] = createSignal(createStockEngine().getGameState());
+    const [language, setLanguage] = createSignal(presentation);
+    const host = document.createElement("div");
+    document.body.append(host);
+    unmount = render(() => createComponent(GameLogPanel, {
+        get entries() { return entries(); }, get state() { return state(); }, get presentation() { return language(); },
+    }), host);
+    const viewport = host.querySelector<HTMLElement>(".kcq-screen-layout__body")!;
+    let height = 1000;
+    let client = 200;
+    Object.defineProperties(viewport, {
+        scrollHeight: { configurable: true, get: () => height }, clientHeight: { configurable: true, get: () => client },
+    });
+    const flush = () => { for (const [id, callback] of [...pending]) { pending.delete(id); callback(0); } };
+    const scroll = (top: number) => { viewport.scrollTop = top; viewport.dispatchEvent(new Event("scroll")); };
+    const append = () => { height += 100; setEntries(previous => [...previous, entry(previous.length + 1)]); };
+    return { viewport, flush, scroll, append, resize: () => resize(), setEntries, entry, setState, state, setLanguage, disconnect, observe,
+        setHeight: (value: number) => { height = value; }, setClient: (value: number) => { client = value; }, pending };
+}
+
+describe("Game Log bottom following", () => {
+    it("starts at the bottom and follows new entries while at or near the bottom", () => {
+        const log = mountScrollingLog();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(800);
+        log.append();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(900);
+        log.scroll(880);
+        log.append();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(1000);
+        expect(log.observe).toHaveBeenCalledTimes(2);
+    });
+
+    it("preserves user scrollback, including a scroll before a queued follow, and resumes at the bottom", () => {
+        const log = mountScrollingLog();
+        log.flush();
+        log.append();
+        log.scroll(200);
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(200);
+        log.append();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(200);
+        log.scroll(1000);
+        log.append();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(1100);
+    });
+
+    it("responds to layout and localization changes without interrupting scrollback", () => {
+        const log = mountScrollingLog();
+        log.flush();
+        log.setClient(300);
+        log.resize();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(700);
+        log.scroll(100);
+        log.setHeight(1400);
+        log.setLanguage(new Presentation({ ...stockStrings, "ui.battleOverview.round": "Long translated round {round}" }));
+        log.resize();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(100);
+        log.scroll(1100);
+        log.setClient(200);
+        log.resize();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(1200);
+    });
+
+    it("preserves scrollback when Pass 1 collapses a stance entry within the same battle", () => {
+        const log = mountScrollingLog();
+        log.flush();
+        log.scroll(100);
+        log.setEntries(previous => previous.slice(0, 1));
+        log.resize();
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(100);
+    });
+
+    it("reanchors after clearing battle history and changing encounters", () => {
+        const log = mountScrollingLog();
+        log.flush();
+        log.scroll(100);
+        log.setHeight(0);
+        log.setEntries([]);
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(0);
+        log.setHeight(900);
+        log.setEntries([log.entry(1)]);
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(700);
+        log.scroll(100);
+        log.setState(previous => ({ ...previous, encounter: { id: "plains_2", enemies: [], bindings: [], traps: [] } }));
+        log.setHeight(1200);
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(1000);
+    });
+
+    it("reanchors on round resets and disconnects observers and queued work on unmount", () => {
+        const log = mountScrollingLog();
+        log.setState(previous => ({ ...previous, turn: { ...previous.turn, round: 4 } }));
+        log.flush();
+        log.scroll(100);
+        log.setState(previous => ({ ...previous, turn: { ...previous.turn, round: 1 } }));
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(800);
+        log.append();
+        expect(log.pending.size).toBe(1);
+        unmount!();
+        unmount = undefined;
+        expect(log.pending.size).toBe(0);
+        expect(log.disconnect).toHaveBeenCalledOnce();
+        log.viewport.scrollTop = 100;
+        log.flush();
+        expect(log.viewport.scrollTop).toBe(100);
     });
 });

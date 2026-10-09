@@ -134,6 +134,7 @@ button {
 }
 
 .kcq-game-log>.kcq-screen-layout__body {
+    overflow-anchor: none;
     background: var(--kcq-surface-card);
 }
 
@@ -1135,19 +1136,23 @@ button {
     color: var(--kcq-text-primary);
 }
 
-.kcq-game-log__actor--ko {
+.kcq-game-log__actor--ko,
+.kcq-game-log__value--entity-ko {
     color: var(--kcq-state-special);
 }
 
-.kcq-game-log__actor--matsuko {
+.kcq-game-log__actor--matsuko,
+.kcq-game-log__value--entity-matsuko {
     color: var(--kcq-state-warning);
 }
 
-.kcq-game-log__actor--hinari {
+.kcq-game-log__actor--hinari,
+.kcq-game-log__value--entity-hinari {
     color: var(--kcq-binding-light);
 }
 
-.kcq-game-log__actor--neutral {
+.kcq-game-log__actor--neutral,
+.kcq-game-log__value--entity-neutral {
     color: var(--kcq-state-danger);
 }
 
@@ -1200,7 +1205,8 @@ button {
     color: var(--kcq-text-muted);
 }
 
-.kcq-game-log__label {
+.kcq-game-log__label,
+.kcq-game-log__value--label {
     color: var(--kcq-text-secondary);
     font-weight: 600;
 }
@@ -1264,6 +1270,27 @@ button {
 .kcq-game-log__value--binding-overwhelming,
 .kcq-game-log__value--binding-max {
     color: var(--kcq-binding-impossible);
+    font-weight: 700;
+}
+
+.kcq-game-log__recipient:has(.kcq-game-log__target)::after {
+    content: "·";
+    color: var(--kcq-text-dim);
+}
+
+.kcq-game-log__value--total {
+    color: var(--kcq-text-primary);
+    font-weight: 700;
+    margin-left: 4px;
+}
+
+.kcq-game-log__value + .kcq-game-log__value--total::before {
+    content: none;
+}
+
+.kcq-game-log__row--defeat {
+    border-left: 2px solid var(--kcq-state-warning);
+    padding-left: 6px;
     font-weight: 700;
 }
 
