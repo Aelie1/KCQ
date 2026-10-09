@@ -30,7 +30,7 @@ export const eventEnglishStrings: StringTable = {
 
     "event.stanceSet.text": "{actor} changes stance to {stance}.",
     "event.dataChanged.text": "{target}'s {name} changed by {amount}.",
-    "event.bindingTick.text": "{target}'s ${binding} activated!",
+    "event.bindingTick.text": "{target}'s {binding} activated!",
 
 
     "event.cooldownChanged.text": "{target}'s {move} cooldown changes to {value}.",

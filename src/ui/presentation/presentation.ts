@@ -557,7 +557,7 @@ export class Presentation {
                     id: `event.${event.type}.text`,
                     args: {
                         target: this.entityKey(event.target),
-                        binding: this.data(event.binding),
+                        binding: this.binding(event.binding),
                     },
                 };
 
