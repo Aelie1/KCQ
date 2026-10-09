@@ -237,6 +237,48 @@ describe("battle settings interactions", () => {
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
 
+    it.each(["victory", "defeat"] as const)("views the full log and returns to the same %s result with focus and history intact", outcome => {
+        const { engine, sessions, prepareBattle, capture } = mountBattle();
+        const getState = engine.getGameState.bind(engine);
+        vi.spyOn(engine, "getGameState").mockImplementation(() => {
+            const state = getState(); state.turn.outcome = outcome; return state;
+        });
+        button("End Turn").click();
+        const completed = engine.getGameState();
+        const execute = vi.spyOn(engine, "executeAction");
+        const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+        const resultText = dialog.textContent;
+        const captures = capture.mock.calls.length;
+        const stats = dialog.querySelector<HTMLElement>(".kcq-battle-result__stats")!;
+        stats.focus(); key("Tab", true);
+        expect(document.activeElement).toBe(button("Back to Level Select"));
+        key("Tab"); expect(document.activeElement).toBe(stats);
+        button("View Game Log").click();
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
+        expect(document.querySelector(".kcq-game-log")).not.toBeNull();
+        expect(document.querySelector(".kcq-battle-stage__background")?.hasAttribute("inert")).toBe(false);
+        expect(document.activeElement?.classList.contains("kcq-combat-header__back")).toBe(true);
+        const history = document.querySelector(".kcq-game-log__scroll")!.textContent;
+        expect(document.querySelectorAll(".kcq-game-log__entry").length).toBeGreaterThan(0);
+        // Completed battle controls remain guarded even while its log is active.
+        button("End Turn").click(); key("=");
+        expect(execute).not.toHaveBeenCalled();
+        key("Backspace");
+        expect(document.querySelector('[role="dialog"]')!.textContent).toBe(resultText);
+        expect(document.activeElement).toBe(button("View Game Log"));
+        expect(document.querySelector(".kcq-battle-stage__background")?.hasAttribute("inert")).toBe(true);
+        key("Escape"); expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+        button("View Game Log").click();
+        expect(document.querySelector(".kcq-game-log__scroll")!.textContent).toBe(history);
+        document.querySelector<HTMLButtonElement>(".kcq-game-log .kcq-combat-header__back")!.click();
+        expect(document.querySelector('[role="dialog"]')!.textContent).toBe(resultText);
+        expect(engine.getGameState()).toEqual(completed);
+        expect(prepareBattle).toHaveBeenCalledTimes(1);
+        expect(sessions[0]!.dispose).not.toHaveBeenCalled();
+        expect(sessions[0]!.observer.lifecycleState).toBe("finished");
+        expect(capture).toHaveBeenCalledTimes(captures);
+    });
+
     it.each(["victory", "defeat"] as const)("preserves result-modal retry and leave handling after %s", outcome => {
         const { engine, sessions, prepareBattle, capture } = mountBattle();
         const getState = engine.getGameState.bind(engine);

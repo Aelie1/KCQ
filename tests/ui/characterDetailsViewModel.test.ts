@@ -387,7 +387,7 @@ describe("character details view model", () => {
             .toEqual(["self", "bonus"]);
     });
 
-    it("tags Change Stance with the localized destination in both directions", () => {
+    it("shows the current and destination stance in both directions", () => {
         const fixture = characterDetailsFixture;
         const stanceTag = (standing: boolean) => {
             const state = {
@@ -398,15 +398,11 @@ describe("character details view model", () => {
             };
             return createFocusedCharacterViewModel(
                 state, fixture.actions[0], fixture.thresholds, fixture.presentation,
-            ).commands.find(({ id }) => id === "stance")?.tags[0];
+            ).commands.find(({ id }) => id === "stance")?.stanceTransition;
         };
 
-        expect(stanceTag(true)).toMatchObject({
-            id: "stance-destination", leadingSymbol: "→", label: "Moving",
-        });
-        expect(stanceTag(false)).toMatchObject({
-            id: "stance-destination", leadingSymbol: "→", label: "Standing",
-        });
+        expect(stanceTag(true)).toBe("Standing → Moving");
+        expect(stanceTag(false)).toBe("Moving → Standing");
     });
 
     it("distinguishes no EscapeInfo targets from an engine-provided failure", () => {

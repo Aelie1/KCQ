@@ -40,6 +40,38 @@ const text = (html: string): string => html.replace(/<[^>]*>/g, "").replaceAll("
 const count = (html: string, kind: string) => (html.match(new RegExp('data-outcome="' + kind + '"', "g")) ?? []).length;
 
 describe("compact graphical Game Log", () => {
+    it.each(["miss", "graze", "hit", "crit"] as const)("retains the recorded %s band for zero-target moves", band => {
+        const entries = createGameLogEntries([{ ...move([], [{ type: "trapAdded", actor: "skunk1", trap: "trapPuddle", amount: 16 }], "latexPuddle"), band }]);
+        expect(entries[0]).toMatchObject({ kind: "move", band });
+        expect(createGameLogViewModel(entries, presentation)[0]!.band).toEqual({ text: presentation.hitBand(band), tone: band });
+        const html = renderEntries(entries);
+        expect(html).toContain("kcq-game-log__value--" + band);
+        expect(text(html)).toContain(presentation.move("latexPuddle") + presentation.hitBand(band));
+        expect(count(html, "trap")).toBe(1);
+        expect(count(html, "damage")).toBe(0);
+    });
+    it("never invents an accuracy band for zero-target events without one", () => {
+        const entries = createGameLogEntries([move([], [], "callReinforcements")]);
+        expect(createGameLogViewModel(entries, presentation)[0]!.band).toBeUndefined();
+    });
+    it("omits trap trigger quantities with numeric endpoints but keeps amounts when endpoints are missing", () => {
+        const event = move([], [{ type: "trapTriggered", actor: "matsuko", trap: "trapPuddle", amount: 16 }]);
+        const before = state(); before.traps = [{ id: "trapPuddle", amount: 16 }];
+        const after = state();
+        const known = text(renderEntries(createGameLogEntries([{ event, state: after }], before)));
+        expect(known).toContain("Latex Puddle16 → 0Triggered by Matsuko");
+        expect(known).not.toContain("×16");
+        const unknown = text(renderEntries(createGameLogEntries([event])));
+        expect(unknown).toContain("Triggered by Matsuko ×16");
+        expect(text(renderEntries(createGameLogEntries([event], before)))).toContain("Triggered by Matsuko ×16");
+        const partial = createGameLogEntries([event]);
+        const trap = partial[0]!.outcomes[0]!;
+        if (trap.kind !== "trap") throw new Error("Expected trap outcome");
+        trap.final = 0;
+        expect(text(renderEntries(partial))).toContain("Triggered by Matsuko ×16");
+        const translated = new Presentation({ ...stockStrings, "ui.gameLog.trapTriggeredActor": "Activation: {actor}" });
+        expect(text(renderEntries(createGameLogEntries([{ event, state: after }], before), translated))).toContain("Activation: Matsuko");
+    });
     it("renders localized fixture entries in chronological event order", () => {
         const html = renderToString(() => createComponent(GameLogPanel, gameLogFixture));
         const body = text(html);
@@ -212,7 +244,7 @@ describe("compact graphical Game Log", () => {
             ])
         }], before));
         expect(count(html, "trap")).toBe(1);
-        for (const label of ["Latex Puddle10 → 5", "Triggered by Ko-chan ×3", "Pounce Cancelled", "Latex Mist Weakened", "Retargeted → Matsuko",
+        for (const label of ["Latex Puddle10 → 5", "Triggered by Ko-chan", "Pounce Cancelled", "Latex Mist Weakened", "Retargeted → Matsuko",
             "Interrupted · Bindings prevent this action.", "HinariAction Refreshed", "Skunkette 3Spawned", "Skunkette 2Defeated", "Moving → Standing"]) expect(text(html)).toContain(label);
     });
 

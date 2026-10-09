@@ -444,6 +444,7 @@ export class GameEngine implements Engine {
                     type: "useMove",
                     actor: actor.id,
                     move: move.id,
+                    ...(iMove.band && iMove.band !== "none" ? { band: iMove.band } : {}),
                     effects: [],
                     targets: []
                 }
@@ -631,6 +632,7 @@ export class GameEngine implements Engine {
             type: "useMove",
             actor: actor.id,
             move: move.definition.id,
+            ...(move.band && move.band !== "none" ? { band: move.band } : {}),
             effects: [],
             targets: []
         }

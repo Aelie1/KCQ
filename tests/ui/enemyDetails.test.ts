@@ -75,6 +75,40 @@ describe("Enemy Details", () => {
         expect(intention.effects).toHaveLength(1);
     });
 
+    it("groups crossed target effects and action effects under actual recipients without repeating the move", () => {
+        const state: GameState = {
+            ...fixture.state,
+            enemies: fixture.state.enemies.map(enemy => ({ ...enemy, intentions: [{
+                move: "pounce", targets: [
+                    { target: "ko", band: "hit", effects: [
+                        { type: "buff", target: "ko", operation: "add", buff: { id: "pounce", linkedEntity: "skunkette1" } },
+                        { type: "buff", target: "skunkette1", operation: "add", buff: { id: "pounce", linkedEntity: "ko" } },
+                        { type: "move", move: "pounce" },
+                    ] },
+                    { target: "matsuko", band: "graze", effects: [
+                        { type: "binding", target: "matsuko", binding: "latexArms", amount: 5 },
+                        { type: "damage", target: "ko", amount: 2 },
+                    ] },
+                ], effects: [
+                    { type: "damage", target: "skunkette1", amount: 3 },
+                    { type: "binding", target: "ko", binding: "latexArms", amount: 4 },
+                ],
+            }] })),
+        };
+        const intention = modelFor(state).intentions[0]!;
+        expect(intention.targets.map(target => target.outcome?.band)).toEqual(["hit", "graze"]);
+        expect(intention.targets[0]!.preview.effects.map(effect => "type" in effect ? effect.type : effect.kind)).toEqual(["buff", "damage", "binding"]);
+        expect(intention.targets[1]!.preview.effects.map(effect => "type" in effect ? effect.type : effect.kind)).toEqual(["binding"]);
+        expect(intention.effectTargets.map(target => target.target)).toEqual(["skunkette1"]);
+        expect(intention.effectTargets[0]!.effects.map(effect => "type" in effect ? effect.type : effect.kind)).toEqual(["buff", "damage"]);
+        expect(intention.effectTargets[0]!.effects[0]).not.toHaveProperty("recipient");
+        expect(intention.targets[0]!.preview.effects[0]).not.toHaveProperty("recipient");
+        expect(intention.effects).toMatchObject([{ type: "move" }]);
+        const html = renderToString(() => createComponent(EnemyDetailsPanel, { ...fixture, state }));
+        expect(html.match(/class="kcq-selected-command"/g)).toHaveLength(1);
+        expect(html.match(/kcq-target-card--predetermined/g)).toHaveLength(3);
+    });
+
     it("renders the existing displays in the shared scrolling body with a Backspace hint", () => {
         const html = renderToString(() => createComponent(EnemyDetailsPanel, { ...fixture, onBack: () => {} }));
         expect(html).toContain("kcq-combat-header--subscreen");

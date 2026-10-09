@@ -37,18 +37,25 @@ export function createEnemyDetailsViewModel(
         effects: enemy.buffs.map(buff => createEffectDetail(buff, state, presentation)),
         intentions: enemy.intentions.map((intention, intentionIndex) => {
             const summary = createIntentViewModel(intention, presentation);
-            const grouped = groupEffectPreviews(intention.effects, context, `intent-${intentionIndex}`);
+            const grouped = groupEffectPreviews([
+                ...intention.targets.flatMap(target => target.effects), ...intention.effects,
+            ], context, `intent-${intentionIndex}`);
+            const effectsByRecipient = new Map(grouped.groups.map(group => [group.id, group.effects]));
+            const targetIds = new Set(intention.targets.map(target => target.target));
             return {
                 name: summary.moveLabel,
                 targets: intention.targets.map((target, index) => ({
-                    preview: createTargetPreviewViewModel(state, actions,
-                        { valid: true, target: target.target, effects: target.effects }, index, presentation, thresholds, false),
+                    preview: {
+                        ...createTargetPreviewViewModel(state, actions,
+                            { valid: true, target: target.target, effects: [] }, index, presentation, thresholds),
+                        effects: effectsByRecipient.get(target.target) ?? [],
+                    },
                     ...(target.band !== "none" ? { outcome: {
                         band: target.band,
                         label: presentation.hitBand(target.band),
                     } } : {}),
                 })),
-                effectTargets: grouped.groups.map((group, index) => ({
+                effectTargets: grouped.groups.filter(group => !targetIds.has(group.id)).map((group, index) => ({
                     ...createTargetPreviewViewModel(state, actions,
                         { valid: true, target: group.id, effects: [] }, index, presentation, thresholds),
                     effects: group.effects,

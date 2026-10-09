@@ -125,6 +125,8 @@ describe("normal Latex Skunk", () => {
             type: "trapAdded", actor: "skunk1", trap: trapPuddle.id, amount: previewEffect.amount,
         });
         expect(result.frames.at(-1)!.state.traps).toEqual([{ id: trapPuddle.id, amount: previewEffect.amount }]);
+        const event = result.frames.find(frame => frame.event.type === "useMove" && frame.event.move === "latexPuddle")!.event;
+        expect(event).toMatchObject({ type: "useMove", targets: [], band: "graze" });
     });
 
     it.each([

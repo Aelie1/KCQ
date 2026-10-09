@@ -1851,6 +1851,20 @@ button {
     line-height: normal;
 }
 
+.kcq-command-card__stance {
+    display: block;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--kcq-text-secondary);
+    overflow-wrap: anywhere;
+}
+
+.kcq-command-card__heading:has(.kcq-command-card__stance) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+}
+
 .kcq-command-card__name {
     display: -webkit-box;
     min-width: 0;
@@ -3277,6 +3291,7 @@ button {
     color: var(--kcq-surface-inset);
 }
 
+.kcq-battle-result__log,
 .kcq-battle-result__back {
     background: var(--kcq-surface-raised);
     color: var(--kcq-text-secondary);
@@ -3314,6 +3329,10 @@ button {
 
     .kcq-battle-result__actions {
         grid-template-columns: 1fr 1fr;
+    }
+
+    .kcq-battle-result__log {
+        grid-column: 1 / -1;
     }
 
     .kcq-battle-result__actions button {

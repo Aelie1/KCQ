@@ -521,6 +521,8 @@ export interface MoveEvent {
     move: MoveId;
     effects: LeafEvent[];
     targets: MoveResult[];
+    /** Actual move-level accuracy result for a resolved zero-target move. */
+    band?: Exclude<HitBand, "none">;
 }
 
 export interface EscapeEvent {

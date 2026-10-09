@@ -67,7 +67,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [thresholds] = createSignal<ThresholdInfo>(getThresholds());
     const [screen, setScreen] = createSignal<BattleScreen>({ kind: "overview" });
     const [logOpen, setLogOpen] = createSignal(false);
-    const toggleLog = (): void => { if (!modalOpen()) setLogOpen(open => !open); };
+    const toggleLog = (): void => { if (!dialogOpen()) setLogOpen(open => !open); };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
     let settingsTrigger: Element | null = null;
     const openSettings = (): void => {
@@ -75,6 +75,12 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         setSettingsOpen(true);
     };
     const modalOpen = () => settingsOpen() || !!resultModel();
+    const dialogOpen = () => settingsOpen() || (!!resultModel() && !logOpen());
+    const [resultLogVisited, setResultLogVisited] = createSignal(false);
+    const openResultLog = (): void => {
+        setResultLogVisited(true);
+        setLogOpen(true);
+    };
     const tracker = createBattleResultTracker(state());
     const [resultStats, setResultStats] = createSignal(tracker.getStats());
     const resultModel = createMemo(() => createBattleResultViewModel(state(), resultStats(), props.presentation));
@@ -245,7 +251,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const endTurn = (): void => { execute({ type: "endTurn" }); };
     let stage: HTMLDivElement | undefined;
     const globalKeyboardAction = (key: string): boolean => {
-        if (modalOpen()) return false;
+        if (dialogOpen()) return false;
         if (key === COMBAT_SHORTCUTS.gameLog) { toggleLog(); return true; }
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
@@ -266,13 +272,13 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     // The graphical shell owns the listener; standalone battles use the same hook.
     if (props.keyboard) onCleanup(props.keyboard.registerGlobalAction(globalKeyboardAction));
     const hintsVisible = props.keyboard?.hintsVisible
-        ?? useCombatKeyboard(() => stage, () => !modalOpen(), globalKeyboardAction, () => shortcutHints.value);
+        ?? useCombatKeyboard(() => stage, () => !dialogOpen(), globalKeyboardAction, () => shortcutHints.value);
 
     return (
         <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()}>
-            <div class="kcq-battle-stage__background" inert={modalOpen()} aria-hidden={modalOpen() ? true : undefined}>
+            <div class="kcq-battle-stage__background" inert={dialogOpen()} aria-hidden={dialogOpen() ? true : undefined}>
                 <Show when={logOpen()}>
-                    <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} />
+                    <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
                 </Show>
                 <div hidden={logOpen()} inert={logOpen()} aria-hidden={logOpen() ? true : undefined}>
                     <Switch fallback={
@@ -352,9 +358,10 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                     onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
             </Show>
-            <Show when={resultModel()} keyed>
+            <Show when={!logOpen() && resultModel()} keyed>
                 {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
-                    onBackToLevelSelect={props.onBackToLevelSelect} />}
+                    onBackToLevelSelect={props.onBackToLevelSelect} onGameLog={openResultLog}
+                    focusGameLog={resultLogVisited()} />}
             </Show>
         </div>
     );

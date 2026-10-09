@@ -58,7 +58,7 @@ describe("buff behavior through GameEngine", () => {
         });
 
         expect(result.frames.map((frame) => frame.event)).toEqual([{
-            type: "useMove", actor: "hero", move: add.id, targets: [],
+            type: "useMove", actor: "hero", move: add.id, band: "hit", targets: [],
             effects: [{ type: "buffAdded", target: "foe1", buff: "test-buff" }],
         }]);
         expect(buffState(engine, "test-buff", "foe1")).toMatchObject({

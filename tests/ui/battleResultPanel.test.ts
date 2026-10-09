@@ -39,6 +39,17 @@ const render = (outcome: "victory" | "defeat", overrides?: Partial<BattleResultS
     renderToString(() => createComponent(BattleResultPanel, { model: model(outcome, overrides) }));
 
 describe("post-battle result panel", () => {
+    it.each(["victory", "defeat"] as const)("offers View Game Log alongside existing actions on %s", outcome => {
+        const html = renderToString(() => createComponent(BattleResultPanel, { model: model(outcome), onGameLog: () => {} }));
+        expect(html.match(/<button/g)).toHaveLength(3);
+        expect(html).toContain(">View Game Log</button>");
+        expect(html).toContain(">Retry</button>");
+        expect(html).toContain(">Back to Level Select</button>");
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+        expect(css.match(/\.kcq-battle-result__stats\s*\{([^}]+)\}/)?.[1]).toContain("overflow-y: auto");
+        expect(css.match(/\.kcq-battle-result__actions\s*\{([^}]+)\}/)?.[1]).toContain("flex-shrink: 0");
+        expect(css).toMatch(/\.kcq-battle-result__log\s*\{\s*grid-column: 1 \/ -1;/);
+    });
     it.each(["victory", "defeat"] as const)("renders %s heading, encounter, difficulty, summary and exactly the two result actions", outcome => {
         const html = render(outcome);
         expect(html).toMatch(new RegExp('<h1 id="[^"]+">' + presentation.battleState(outcome) + '</h1>'));

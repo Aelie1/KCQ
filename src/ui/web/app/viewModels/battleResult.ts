@@ -33,6 +33,7 @@ export interface BattleResultViewModel {
     rows: { label: string; value: string; detail?: string }[];
     retryLabel: string;
     backLabel: string;
+    gameLogLabel: string;
 }
 
 const emptySummary = (): ActionSummary => ({ count: 0, total: 0, max: 0 });
@@ -284,6 +285,7 @@ export function createBattleResultViewModel(
             stats.progress.boss !== undefined ? "battleResult.bossHp" : "battleResult.enemyHp",
             { percent: Math.round((stats.progress.boss ?? stats.progress.enemies ?? 0) * 100) },
         ) : undefined,
+        gameLogLabel: presentation.ui("battleResult.gameLog"),
         rows, retryLabel: presentation.ui("battleResult.retry"), backLabel: presentation.ui("battleResult.back"),
     };
 }

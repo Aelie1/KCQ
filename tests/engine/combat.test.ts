@@ -536,7 +536,7 @@ describe("move and effect resolution through GameEngine", () => {
         });
 
         expect(result.frames.map((frame) => frame.event)).toEqual([{
-            type: "useMove", actor: "hero", move: "chain", targets: [], effects: [
+            type: "useMove", actor: "hero", move: "chain", band: "hit", targets: [], effects: [
                 { type: "bondageAdded", target: "hero", binding: "trigger", amount: 1 },
                 { type: "bondageAdded", target: "hero", binding: "chained", amount: 2 },
                 { type: "buffAdded", target: "hero", buff: "chain-finished" },

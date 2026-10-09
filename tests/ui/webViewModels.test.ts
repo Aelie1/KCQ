@@ -168,9 +168,10 @@ describe("party card view model", () => {
         expect(model.effects).toBe(source.buffs);
         expect(model.visibleEffects).toEqual([
             { name: "Pounce", duration: undefined }, { name: "Burnout", duration: undefined },
+            { name: "Fairy Empowerment", duration: undefined },
         ]);
-        expect(model.hiddenEffectCount).toBe(2);
-        expect(model.effectsOverflowLabel).toBe("+2 more");
+        expect(model.hiddenEffectCount).toBe(1);
+        expect(model.effectsOverflowLabel).toBe("+1");
     });
 
     it("projects incoming binding as an effective signed delta with a result level", () => {

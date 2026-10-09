@@ -17,13 +17,12 @@ export function CommandCard(props: CommandCardProps): JSX.Element {
             type="button"
             disabled={!props.command.available}
             onClick={() => props.onSelect?.()}
-            aria-label={props.command.reasonLabel
-                ? `${props.command.name}: ${props.command.reasonLabel}`
-                : props.command.name}
+            aria-label={[props.command.name, props.command.stanceTransition, props.command.reasonLabel].filter(Boolean).join(": ")}
         >
             <Shortcut shortcut={props.command.shortcutKey} />
             <span class="kcq-command-card__heading">
                 <span class="kcq-command-card__name">{props.command.name}</span>
+                <Show when={props.command.stanceTransition}><span class="kcq-command-card__stance">{props.command.stanceTransition}</span></Show>
             </span>
             <Show when={!props.command.available && props.command.reasonLabel}>
                 <span class="kcq-command-card__reason">{props.command.reasonLabel}</span>

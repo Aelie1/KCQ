@@ -186,11 +186,11 @@ describe("live graphical Game Log history", () => {
         const { engine } = mountBattle();
         const execute = vi.spyOn(engine, "executeAction");
         click(".kcq-party-card");
-        click('.kcq-command-card[aria-label="Change Stance"]');
+        click('.kcq-command-card[aria-label^="Change Stance:"]');
         click(".kcq-combat-header__back");
         const cards = [...document.querySelectorAll<HTMLElement>(".kcq-party-card")];
         cards[1]!.click();
-        click('.kcq-command-card[aria-label="Change Stance"]');
+        click('.kcq-command-card[aria-label^="Change Stance:"]');
         click(".kcq-combat-header__back");
         button("Game Log").click();
         expect(execute).toHaveBeenCalledTimes(2);

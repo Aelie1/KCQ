@@ -13,6 +13,7 @@ export interface GameLogPanelProps {
     presentation: Presentation;
     state: GameState;
     onBack?: () => void;
+    focusBackOnMount?: boolean;
 }
 
 function OutcomeValues(props: { values: GameLogValue[]; bindings?: boolean; recipient?: JSX.Element }): JSX.Element {
@@ -91,6 +92,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     onMount(() => {
         // ScreenLayout's middle row owns scrolling; the log div is its content.
         viewport = content.closest<HTMLElement>(".kcq-screen-layout__body")!;
+        if (props.focusBackOnMount) content.closest(".kcq-screen-layout")?.querySelector<HTMLButtonElement>(".kcq-combat-header__back")?.focus();
         viewport.addEventListener("scroll", trackScroll, { passive: true });
         const observer = new ResizeObserver(scheduleFollow);
         observer.observe(viewport);
@@ -143,6 +145,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                                                 <span aria-hidden="true">—</span>
                                             </Show>
                                             <strong class="kcq-game-log__title">{entry.title}</strong>
+                                            <Show when={entry.band}>{band => <span class={"kcq-game-log__value kcq-game-log__value--" + band().tone}>{band().text}</span>}</Show>
                                             <Show when={entry.target}>
                                                 <span class={"kcq-game-log__escape-target kcq-game-log__value--entity-" + entry.targetTone}>→ {entry.target}</span>
                                             </Show>

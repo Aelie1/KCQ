@@ -580,6 +580,35 @@ describe("accuracy", () => {
         expect(resolved).toEqual(["hit1"]);
     });
 
+    it.each(["miss", "graze", "hit", "crit"] as const)("emits the actual %s result used by a zero-target resolver", band => {
+        let resolvedBand: string | undefined;
+        const move = makeAccuracyMove({ [band]: 100 }, {
+            targetSide: "none", targets: 0,
+            resolve: (_state, _actor, resolved) => {
+                if (resolved.band !== undefined) resolvedBand = resolved.band;
+                return [];
+            },
+        });
+        const hero = makeCharacterDef("hero", [move]);
+        const foe = makeEnemyDef("foe", [makeWaitMove()]);
+        const encounter = makeEncounterDef("zero-target-band", { enemies: [foe.id] });
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
+        engine.loadCharacter(hero.id); engine.loadEncounter(encounter.id);
+        const event = moveUsed(engine.executeAction({ type: "move", actor: hero.id, move: move.id, targets: [] }));
+        expect(event.band).toBe(band);
+        expect(event.band).toBe(resolvedBand);
+        expect(event.targets).toEqual([]);
+    });
+    it("omits move-level accuracy for a zero-target move without accuracy", () => {
+        const move = makeMove("zero-no-accuracy", "none", { targetSide: "none", targets: 0, accuracy: undefined, resolve: () => [] });
+        const hero = makeCharacterDef("hero", [move]);
+        const foe = makeEnemyDef("foe", [makeWaitMove()]);
+        const encounter = makeEncounterDef("zero-no-accuracy", { enemies: [foe.id] });
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
+        engine.loadCharacter(hero.id); engine.loadEncounter(encounter.id);
+        expect(moveUsed(engine.executeAction({ type: "move", actor: hero.id, move: move.id, targets: [] }))).not.toHaveProperty("band");
+    });
+
     it("resolves zero-target moves with a move-level accuracy roll", () => {
         let resolutions = 0;
         const zeroTarget = makeAccuracyMove({ hit: 100 }, {
@@ -620,6 +649,7 @@ describe("accuracy", () => {
             eventSequence: [{ type: "useMove", targets: [] }],
         });
         expect(moveUsed(zeroResult).targets).toEqual([]);
+        expect(moveUsed(zeroResult).band).toBe("hit");
         expect(resolutions).toBe(1);
 
         const afterZeroTarget = moveUsed(challenged.engine.executeAction({

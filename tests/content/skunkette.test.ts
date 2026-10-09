@@ -319,7 +319,7 @@ describe("Skunkette behavior through GameEngine", () => {
             targets: [],
         });
         expect(missResult.frames.map((frame) => frame.event)).toEqual([{
-            type: "useMove", actor: "victim", move: THROW_OFF_ID, targets: [], effects: [],
+            type: "useMove", actor: "victim", move: THROW_OFF_ID, band: "miss", targets: [], effects: [],
         }]);
         expect(buffState(missed, POUNCE_ID, "victim")).toBeDefined();
         expect(buffState(missed, POUNCE_ID, "skunkette1")).toBeDefined();

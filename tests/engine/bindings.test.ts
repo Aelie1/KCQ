@@ -44,7 +44,7 @@ describe("binding behavior through GameEngine", () => {
         const engine = makeBehavioralEngine([makeBehavioralCharacter("hero", moves)]);
 
         expect(use(engine, "hero", "add-75").frames.map((frame) => frame.event)).toEqual([{
-            type: "useMove", actor: "hero", move: "add-75", targets: [],
+            type: "useMove", actor: "hero", move: "add-75", band: "hit", targets: [],
             effects: [{ type: "bondageAdded", target: "hero", binding: "rope", amount: 75 }],
         }]);
 
@@ -89,7 +89,7 @@ describe("binding behavior through GameEngine", () => {
         ]);
 
         expect(use(engine, "hero", remove.id).frames.map((frame) => frame.event)).toEqual([{
-            type: "useMove", actor: "hero", move: remove.id, targets: [], effects: [],
+            type: "useMove", actor: "hero", move: remove.id, band: "hit", targets: [], effects: [],
         }]);
         expect(characterState(engine).bindings).toEqual([]);
     });

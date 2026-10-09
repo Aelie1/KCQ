@@ -206,15 +206,14 @@ describe("character details panel", () => {
         expect(warningRule).toContain("color: var(--kcq-state-warning)");
     });
 
-    it("renders the Change Stance arrow outside its destination chip", () => {
+    it("renders Change Stance with a second line containing both stances", () => {
         const html = renderToString(() => createComponent(
             CharacterDetailsPanel,
             characterDetailsFixture,
         ));
 
-        expect(html).toContain('class="kcq-command-tag__leading-symbol" aria-hidden="true">→</span>');
-        expect(html).toMatch(/class="kcq-command-tag kcq-command-tag--(?:success|warning)">(?:Moving|Standing)<\/span>/);
-        expect(html).not.toContain(">→ Moving</span>");
-        expect(html).not.toContain(">→ Standing</span>");
+        expect(html).toContain('class="kcq-command-card__name">Change Stance</span>');
+        expect(html).toContain('class="kcq-command-card__stance">Moving → Standing</span>');
+        expect(html).toContain('aria-label="Change Stance: Moving → Standing:');
     });
 });

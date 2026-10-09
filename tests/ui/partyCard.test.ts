@@ -3,13 +3,31 @@ import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
 import { PartyCard } from "../../src/ui/web/app/components/PartyCard";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
-import { createPartyCardViewModel } from "../../src/ui/web/app/viewModels/partyCard";
+import { createPartyCardViewModel, summarizeEffects } from "../../src/ui/web/app/viewModels/partyCard";
 
 function renderedText(html: string): string {
     return html.replace(/<!--.*?-->/g, "").replace(/<[^>]+>/g, "");
 }
 
 describe("party card", () => {
+    it.each([0, 1, 2, 3, 4, 5])("shows three actual buffs plus separate overflow for %i buffs", count => {
+        const buffs = Array.from({ length: count }, (_, index) => ({ id: String(index) }));
+        const summary = summarizeEffects(buffs);
+        expect(summary.visibleEffects).toEqual(buffs.slice(0, 3));
+        expect(summary.hiddenEffectCount).toBe(Math.max(0, count - 3));
+    });
+    it("sorts timed buffs ascending, preserves ties and untimed order, and leaves source data alone", () => {
+        const buffs = [
+            { id: "untimed-a" }, { id: "long", duration: 4 }, { id: "tie-a", duration: 1 },
+            { id: "untimed-b" }, { id: "tie-b", duration: 1 }, { id: "zero", duration: 0 },
+        ];
+        const original = [...buffs];
+        expect(summarizeEffects(buffs)).toEqual({
+            visibleEffects: [buffs[5], buffs[2], buffs[4]], hiddenEffectCount: 3,
+        });
+        expect(summarizeEffects([buffs[0]!, buffs[1]!, buffs[3]!]).visibleEffects).toEqual([buffs[1], buffs[0], buffs[3]]);
+        expect(buffs).toEqual(original);
+    });
     it("renders the four binding zones in order as unlabeled severity meters", () => {
         const fixture = battleOverviewFixture;
         const character = fixture.state.characters[0];

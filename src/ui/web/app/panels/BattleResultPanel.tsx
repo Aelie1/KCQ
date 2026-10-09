@@ -6,17 +6,20 @@ import type { BattleResultViewModel } from "../viewModels/battleResult";
 export function BattleResultPanel(props: {
     model: BattleResultViewModel;
     onRetry?: () => void;
+    onGameLog?: () => void;
+    focusGameLog?: boolean;
     onBackToLevelSelect?: () => void;
 }): JSX.Element {
     const headingId = createUniqueId();
     let overlay!: HTMLDivElement;
     let stats!: HTMLDListElement;
     let retry!: HTMLButtonElement;
+    let gameLog: HTMLButtonElement | undefined;
     let back!: HTMLButtonElement;
     onMount(() => {
         onCleanup(setupResponsiveScale(overlay));
         const previousFocus = document.activeElement;
-        retry.focus();
+        (props.focusGameLog && gameLog ? gameLog : retry).focus();
         onCleanup(() => {
             if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
         });
@@ -54,6 +57,7 @@ export function BattleResultPanel(props: {
                     </div>}</For>
                 </dl>
                 <footer class="kcq-battle-result__actions">
+                    <Show when={props.onGameLog}><button ref={gameLog} type="button" class="kcq-battle-result__log" onClick={props.onGameLog}>{props.model.gameLogLabel}</button></Show>
                     <button ref={retry} type="button" class="kcq-battle-result__retry" onClick={props.onRetry}>{props.model.retryLabel}</button>
                     <button ref={back} type="button" class="kcq-battle-result__back" onClick={props.onBackToLevelSelect}>{props.model.backLabel}</button>
                 </footer>

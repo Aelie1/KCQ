@@ -30,14 +30,15 @@ export interface EffectSummary {
 }
 
 export function summarizeEffects(effects: readonly Buff[]): EffectSummary {
-    if (effects.length <= PARTY_CARD_EFFECT_SLOTS) {
-        return { visibleEffects: effects, hiddenEffectCount: 0 };
-    }
-
-    const visibleCount = PARTY_CARD_EFFECT_SLOTS - 1;
+    // Stable sort keeps ties and untimed buffs in their original order.
+    const ordered = [...effects].sort((a, b) => {
+        if (a.duration === undefined) return b.duration === undefined ? 0 : 1;
+        if (b.duration === undefined) return -1;
+        return a.duration - b.duration;
+    });
     return {
-        visibleEffects: effects.slice(0, visibleCount),
-        hiddenEffectCount: effects.length - visibleCount,
+        visibleEffects: ordered.slice(0, PARTY_CARD_EFFECT_SLOTS),
+        hiddenEffectCount: Math.max(0, effects.length - PARTY_CARD_EFFECT_SLOTS),
     };
 }
 

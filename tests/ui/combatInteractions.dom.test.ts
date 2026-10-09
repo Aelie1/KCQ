@@ -219,6 +219,23 @@ describe("explicit target execution", () => {
 });
 
 describe("combat action submission integration", () => {
+    it("updates the localized stance transition immediately after clicks and the existing shortcut", () => {
+        const engine = createStockEngine(12345);
+        createBattle(engine, "plains_1", "standard");
+        mount(() => createComponent(BattleApp, { engine, presentation: battleOverviewFixture.presentation }));
+        button(".kcq-party-card").click();
+        const stance = () => button('.kcq-command-card[data-kcq-shortcut="9"]');
+        expect(stance().querySelector(".kcq-command-card__name")!.textContent).toBe("Change Stance");
+        expect(stance().querySelector(".kcq-command-card__stance")!.textContent).toBe("Moving → Standing");
+        expect(stance().disabled).toBe(false);
+        stance().click();
+        expect(engine.getGameState().characters[0]!.standing).toBe(true);
+        expect(stance().querySelector(".kcq-command-card__stance")!.textContent).toBe("Standing → Moving");
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "9", bubbles: true }));
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "9", bubbles: true }));
+        expect(engine.getGameState().characters[0]!.standing).toBe(false);
+        expect(stance().querySelector(".kcq-command-card__stance")!.textContent).toBe("Moving → Standing");
+    });
     it("executes through the real engine once and returns to overview after the action", () => {
         const engine = createStockEngine(12345);
         createBattle(engine, "plains_1", "standard");
