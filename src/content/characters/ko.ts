@@ -137,6 +137,7 @@ export const starlightBindings: MoveDef = {
 
         const buff: iBuff = {
             id: STARLIGHT_BUFF,
+            icon: "shield-off",
             duration: 3,
             active: true,
             modifiers: {

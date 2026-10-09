@@ -132,6 +132,7 @@ export interface MoveListModifier {
 
 export interface Buff {
     id: BuffId;
+    icon?: "shield" | "sword" | "shield-off";
     severity?: number;
     duration?: number;
     statuses?: Status[];

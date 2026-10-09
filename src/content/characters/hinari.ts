@@ -256,6 +256,7 @@ export const release: MoveDef = {
             if (isEnemy(target.target)) {
                 const buff: iBuff = {
                     id: RELEASE_BUFF,
+                    icon: "shield-off",
                     duration: 2,
                     active: true,
                     modifiers: {

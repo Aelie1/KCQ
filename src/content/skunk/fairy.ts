@@ -121,8 +121,9 @@ export const empoweringMagic: MoveDef = {
             return result;
         }
 
-        const buff = {
+        const buff: iBuff = {
             id: move.definition.id,
+            icon: "sword",
             duration: EMPOWERING_MAGIC_DURATION,
             modifiers: { potency: EMPOWERING_MAGIC_POTENCY },
             active: false,
@@ -189,8 +190,9 @@ export const barrierMagic: MoveDef = {
 
         const duration = durationByBand[targets[0].band];
 
-        const buff = {
+        const buff: iBuff = {
             id: move.definition.id,
+            icon: "shield",
             duration: duration,
             active: false,
             modifyDamage: barrierCallback
