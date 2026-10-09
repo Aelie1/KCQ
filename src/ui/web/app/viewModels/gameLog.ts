@@ -10,6 +10,8 @@ export interface GameLogText {
 export interface GameLogValue extends GameLogText {
     /** Localized phrase parts retain semantic colors even when a locale reorders them. */
     parts?: GameLogText[];
+    /** Compact binding transitions flow on their own line below target accuracy. */
+    binding?: true;
 }
 export interface GameLogRow {
     kind: LogOutcome["kind"];
@@ -100,7 +102,7 @@ export function createGameLogViewModel(
                 ? transition(p.stance(change.initial), p.stance(change.final)) : p.stance(change.final)
         }],
     });
-    const row = (outcome: LogOutcome): GameLogRow => {
+    const row = (outcome: LogOutcome, compactBinding = false): GameLogRow => {
         switch (outcome.kind) {
             case "bindingTick": {
                 const visible = outcome.outcomes.filter(effect => {
@@ -109,7 +111,7 @@ export function createGameLogViewModel(
                     if (effect.kind === "resource") return effect.change !== 0 || effect.initial !== effect.final;
                     return true;
                 });
-                const children = renderOutcomes(visible).filter(child => child.values.length || child.label || child.rows?.length);
+                const children = renderOutcomes(visible, undefined, true).filter(child => child.values.length || child.label || child.rows?.length);
                 for (const child of children) {
                     if (child.target === p.entity(outcome.target) && child.targetParts?.length === 1) {
                         child.target = undefined;
@@ -137,14 +139,23 @@ export function createGameLogViewModel(
             case "binding": {
                 const value: GameLogValue = outcome.initial && outcome.final
                     ? phrase("gameLog.transition", {
-                        initial: { text: bindingValue(outcome.initial), tone: outcome.initial.level ? "binding-" + outcome.initial.level : undefined },
-                        final: { text: bindingValue(outcome.final), tone: outcome.final.level ? "binding-" + outcome.final.level : undefined },
+                        initial: { text: compactBinding ? String(outcome.initial.value) : bindingValue(outcome.initial), tone: outcome.initial.level ? "binding-" + outcome.initial.level : undefined },
+                        final: { text: compactBinding ? String(outcome.final.value) : bindingValue(outcome.final), tone: outcome.final.level ? "binding-" + outcome.final.level : undefined },
                     }) : { text: formatSignedNumber(outcome.change) };
-                return {
-                    kind: outcome.kind, target: p.entity(outcome.target),
-                    values: [phrase("gameLog.bindingOutcome", { binding: { text: p.binding(outcome.binding), tone: "label" }, value }),
-                    ...(outcome.blocked ? [{ text: p.ui("gameLog.blocked", { amount: outcome.blocked }), tone: "muted" }] : [])]
-                };
+                const change = phrase("gameLog.bindingOutcome", {
+                    binding: { text: p.binding(outcome.binding, compactBinding ? "short" : "name"), tone: "label" }, value,
+                });
+                const blocked: GameLogValue = { text: p.ui("gameLog.blocked", { amount: outcome.blocked }), tone: "muted" };
+                if (compactBinding) {
+                    // Keep blocking attached to its zone when the sequence wraps.
+                    if (outcome.blocked) {
+                        change.parts!.push({ text: " (" + blocked.text + ")", tone: blocked.tone });
+                        change.text = change.parts!.map(part => part.text).join("");
+                    }
+                    change.binding = true;
+                }
+                return { kind: outcome.kind, target: p.entity(outcome.target),
+                    values: [change, ...(!compactBinding && outcome.blocked ? [blocked] : [])] };
             }
             case "buff": return buffRow(outcome);
             case "resource": {
@@ -199,7 +210,7 @@ export function createGameLogViewModel(
             };
         }
     };
-    const renderScope = (outcomes: LogOutcome[], actor?: string): GameLogRow[] => {
+    const renderScope = (outcomes: LogOutcome[], actor?: string, compactBindings = false): GameLogRow[] => {
         // Group only independent, equivalent buff applications within this event. Linked
         // participants remain the single logical outcome supplied by Pass 1.
         const groups = new Map<string, BuffOutcome>();
@@ -223,6 +234,10 @@ export function createGameLogViewModel(
                 buffGroups.set(outcome, group);
             }
         }
+        const bindingCounts = new Map<string, number>();
+        for (const outcome of outcomes) {
+            if (outcome.kind === "binding") bindingCounts.set(outcome.target, (bindingCounts.get(outcome.target) ?? 0) + 1);
+        }
         const rows = new Map<LogOutcome, GameLogRow>();
         for (const outcome of outcomes) {
             if (skipped.has(outcome)) continue;
@@ -230,7 +245,7 @@ export function createGameLogViewModel(
             if (outcome.kind === "buff" && outcome.participants.length === 1) {
                 const group = buffGroups.get(outcome);
                 formatted = group ? buffRow(group, grouped.has(group)) : row(outcome);
-            } else formatted = row(outcome);
+            } else formatted = row(outcome, compactBindings || (outcome.kind === "binding" && bindingCounts.get(outcome.target)! > 1));
             if (formatted.target && !formatted.targetParts) {
                 const id = "target" in outcome ? outcome.target : "actor" in outcome ? outcome.actor : undefined;
                 if (id) formatted.targetParts = [name(id)];
@@ -298,15 +313,15 @@ export function createGameLogViewModel(
         }
         return [...rows.values()];
     };
-    const renderOutcomes = (outcomes: LogOutcome[], actor?: string): GameLogRow[] => {
+    const renderOutcomes = (outcomes: LogOutcome[], actor?: string, compactBindings = false): GameLogRow[] => {
         const rendered: GameLogRow[] = [];
         let start = 0;
         for (const [index, outcome] of outcomes.entries()) {
             if (outcome.kind !== "bindingTick") continue;
-            rendered.push(...renderScope(outcomes.slice(start, index), actor), ...renderScope([outcome]));
+            rendered.push(...renderScope(outcomes.slice(start, index), actor, compactBindings), ...renderScope([outcome]));
             start = index + 1;
         }
-        rendered.push(...renderScope(outcomes.slice(start), actor));
+        rendered.push(...renderScope(outcomes.slice(start), actor, compactBindings));
         return rendered;
     };
     return entries.map(entry => {

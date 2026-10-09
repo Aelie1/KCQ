@@ -247,8 +247,37 @@ describe("Game Log bottom following", () => {
         expect(log.viewport.querySelectorAll('.kcq-game-log__outcomes > .kcq-game-log__row')).toHaveLength(2);
         expect(activation.textContent?.match(/Ko-chan/g)).toHaveLength(1);
         expect(activation.textContent).toContain("Skunk Collar Activated");
+        expect(activation.querySelector(':scope > .kcq-game-log__values')).toBeNull();
+        const bindings = activation.querySelector('.kcq-game-log__values--bindings')!;
+        expect(bindings.children).toHaveLength(2);
+        expect(bindings.closest('[data-outcome="binding"]')!.querySelector('.kcq-game-log__recipient')).toBeNull();
+        expect(activation.querySelector('.kcq-game-log__recipient')!.textContent).toBe("Ko-chan—Skunk Collar Activated");
         log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.activated": "Translated activation" }));
         expect(log.viewport.querySelector('[data-outcome="bindingTick"]')?.textContent).toContain("Skunk Collar Translated activation");
+    });
+
+    it("keeps target accuracy above one flowing binding sequence for each AoE recipient", () => {
+        const log = mountScrollingLog();
+        log.setEntries(createGameLogEntries([{ type: "useMove", actor: "rainmaker1", move: "latexRain", effects: [], targets: [
+            { target: "ko", result: "hit", effects: [
+                { type: "bondageAdded", target: "ko", binding: "latexHead", amount: 10 },
+                { type: "bondageAdded", target: "ko", binding: "latexArms", amount: 15 },
+            ] },
+            { target: "hinari", result: "crit", effects: [
+                { type: "bondageAdded", target: "hinari", binding: "latexArms", amount: 20 },
+                { type: "bondageAdded", target: "hinari", binding: "latexLegs", amount: 30 },
+            ] },
+        ] }]));
+        const rows = [...log.viewport.querySelectorAll('.kcq-game-log__row--compactBindings')];
+        expect(rows).toHaveLength(2);
+        expect(rows.map(row => row.querySelector('.kcq-game-log__target')!.textContent)).toEqual(["Ko-chan", "Hinari"]);
+        expect(rows.map(row => row.querySelector(':scope > .kcq-game-log__values:not(.kcq-game-log__values--bindings)')!.textContent)).toEqual(["Hit", "Crit"]);
+        for (const row of rows) {
+            const flowing = row.querySelector(':scope > .kcq-game-log__values--bindings')!;
+            expect(flowing.children).toHaveLength(2);
+            expect(flowing.textContent).not.toMatch(/Skunk|None|Light|Moderate|Hit|Crit/);
+            expect(row.querySelectorAll('.kcq-game-log__recipient')).toHaveLength(1);
+        }
     });
 
     it("starts at the bottom and follows new entries while at or near the bottom", () => {

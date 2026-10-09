@@ -685,6 +685,22 @@ describe("combat log polish regressions", () => {
         expect(text(html)).not.toMatch(/pounce|latexMist/);
     });
 
+    it("scopes binding wrapping and separator clipping without changing ordinary value separators", () => {
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+        const flow = css.match(/\.kcq-game-log__values--bindings \{([^}]+)\}/)![1]!;
+        expect(flow).toContain("flex-basis: 100%");
+        expect(flow).toContain("overflow: hidden");
+        const value = css.match(/\.kcq-game-log__values--bindings > \.kcq-game-log__value \{([^}]+)\}/)![1]!;
+        expect(value).toContain("flex: 0 0 auto");
+        expect(value).toContain("width: max-content");
+        expect(value).toContain("max-width: 100%");
+        expect(css).toContain("left: -0.6em");
+        const headingRule = css.indexOf(".kcq-game-log__row--bindingTick > .kcq-game-log__recipient::after");
+        const defaultRule = css.indexOf(".kcq-game-log__recipient:has(.kcq-game-log__target)::after");
+        expect(headingRule).toBeGreaterThan(defaultRule);
+        expect(css.slice(headingRule).split("}")[0]).toContain("content: none");
+    });
+
     it("uses content-sized wrapping rows and consistent inline separators for every outcome type", () => {
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
         const row = css.match(/\.kcq-game-log__row \{([^}]+)\}/)![1]!;

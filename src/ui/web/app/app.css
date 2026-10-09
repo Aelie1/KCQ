@@ -1238,6 +1238,27 @@ button {
     color: var(--kcq-text-dim);
 }
 
+/* Compact binding sequences own a full line; each transition is one flex item.
+   Out-of-flow separators occupy only gaps and are clipped at wrapped line starts. */
+.kcq-game-log__values--bindings {
+    flex-basis: 100%;
+    column-gap: 0.9em;
+    overflow: hidden;
+}
+
+.kcq-game-log__values--bindings > .kcq-game-log__value {
+    position: relative;
+    flex: 0 0 auto;
+    width: max-content;
+    max-width: 100%;
+}
+
+.kcq-game-log__values--bindings > .kcq-game-log__value + .kcq-game-log__value::before {
+    position: absolute;
+    left: -0.6em;
+    margin-right: 0;
+}
+
 .kcq-game-log__value--muted,
 .kcq-game-log__value--miss,
 .kcq-game-log__value--binding-none {
@@ -1282,6 +1303,11 @@ button {
 .kcq-game-log__recipient:has(.kcq-game-log__target)::after {
     content: "·";
     color: var(--kcq-text-dim);
+}
+
+.kcq-game-log__row--bindingTick > .kcq-game-log__recipient::after,
+.kcq-game-log__row--compactBindings:not(:has(> .kcq-game-log__values:not(.kcq-game-log__values--bindings))) > .kcq-game-log__recipient::after {
+    content: none;
 }
 
 .kcq-game-log__value--total {

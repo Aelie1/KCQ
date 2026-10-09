@@ -176,8 +176,8 @@ describe("Pass 6 rendered activation and multi-zone rows", () => {
         expect(model.rows[0]!.rows).toHaveLength(1);
         expect(model.rows[0]!.rows![0]!.target).toBeUndefined();
         expect(model.rows[0]!.rows![0]!.values.map(value => value.text)).toEqual([
-            "Skunk Head 40 (Heavy) → 50 (Severe)", "Skunk Arms 86 (Overwhelming) → 87 (Overwhelming)",
-            "Skunk Torso 40 (Heavy) → 50 (Severe)", "Skunk Legs 40 (Heavy) → 50 (Severe)",
+            "Head 40 → 50", "Arms 86 → 87",
+            "Torso 40 → 50", "Legs 40 → 50",
         ]);
         const html = render(event, before, after);
         expect(count(html, "bindingTick")).toBe(1); expect(count(html, "binding")).toBe(1);
@@ -185,6 +185,32 @@ describe("Pass 6 rendered activation and multi-zone rows", () => {
         for (const level of ["heavy", "severe", "overwhelming"]) expect(html).toContain("kcq-game-log__value--binding-" + level);
         const translated = new Presentation({ ...stockStrings, "ui.gameLog.activated": "Awoke", "binding.latexCollar.name": "Test Collar", "ui.gameLog.bindingActivation": "{activated}: {binding}" });
         expect(models(event, before, after, translated).rows[0]!.label).toBe("Awoke: Test Collar");
+    });
+
+    it("uses localized short labels and numeric endpoints while keeping independent severity tones", () => {
+        const before = state(); before.characters[0]!.bindings = [binding("latexArms", 72, "severe"), binding("latexLegs", 30, "heavy")];
+        const after = structuredClone(before); after.characters[0]!.bindings = [binding("latexArms", 81, "overwhelming"), binding("latexLegs", 15, "light")];
+        const event = phase(tick("ko", [change("ko", "latexArms", 9), change("ko", "latexLegs", -15),
+            { type: "bondageBlocked", target: "ko", binding: "latexArms", amount: 4 },
+        ]));
+        const translated = new Presentation({ ...stockStrings,
+            "binding.latexArms.name": "Full name that must stay out of compact rows", "binding.latexArms.short": "Sleeves",
+            "ui.gameLog.bindingOutcome": "{binding}: {value}", "ui.gameLog.blocked": "Stopped {amount}",
+        });
+        const values = models(event, before, after, translated).rows[0]!.rows![0]!.values;
+        expect(values.map(value => value.text)).toEqual(["Sleeves: 72 → 81 (Stopped 4)", "Legs: 30 → 15"]);
+        expect(values.every(value => value.binding)).toBe(true);
+        expect(values[0]!.parts).toEqual([
+            { text: "Sleeves", tone: "label" }, { text: ": ", tone: "muted" },
+            { text: "72", tone: "binding-severe" }, { text: " → ", tone: "muted" },
+            { text: "81", tone: "binding-overwhelming" }, { text: " (Stopped 4)", tone: "muted" },
+        ]);
+        expect(values[1]!.parts).toContainEqual({ text: "30", tone: "binding-heavy" });
+        expect(values[1]!.parts).toContainEqual({ text: "15", tone: "binding-light" });
+        const html = render(event, before, after, translated);
+        expect(text(html)).not.toMatch(/Full name|Severe|Overwhelming|Heavy|Light/);
+        expect(html).toContain("kcq-game-log__values--bindings");
+        expect(html).toContain("kcq-game-log__value--binding-overwhelming");
     });
 
     it("renders distinct repeated and multi-character activations, including empty groups", () => {
@@ -218,7 +244,7 @@ describe("Pass 6 rendered activation and multi-zone rows", () => {
         ]));
         const rows = models(event).rows[0]!.rows!;
         expect(rows.map(row => row.kind)).toEqual(["binding", "damage", "buff", "resource"]);
-        expect(rows[0]!.values.map(value => value.text)).toEqual(["Skunk Head +10", "Blocked 4", "Skunk Arms +2", "Blocked 3"]);
+        expect(rows[0]!.values.map(value => value.text)).toEqual(["Head +10 (Blocked 4)", "Arms +2 (Blocked 3)"]);
         expect(rows[1]!.target).toBe("Skunkette 1"); expect(rows[2]!.target).toBe("Hinari");
         const html = render(event); expect(count(html, "damage")).toBe(1); expect(count(html, "buff")).toBe(1); expect(count(html, "resource")).toBe(1);
     });
@@ -236,8 +262,8 @@ describe("Pass 6 rendered activation and multi-zone rows", () => {
         const rows = models(event, before, after).rows;
         expect(rows.map(row => row.target)).toEqual(["Ko-chan", "Hinari", "Matsuko"]);
         expect(rows.map(row => row.values[0]!.text)).toEqual(["Graze", "Crit", "Miss"]);
-        expect(rows[0]!.values.slice(1).map(value => value.text)).toEqual(["Skunk Head 20 (Moderate) → 35 (Heavy)", "Skunk Arms 40 (Heavy) → 55 (Severe)", "Skunk Legs 10 (Light) → 25 (Moderate)"]);
-        expect(rows[1]!.values.map(value => value.text)).toContain("Blocked 5");
+        expect(rows[0]!.values.slice(1).map(value => value.text)).toEqual(["Head 20 → 35", "Arms 40 → 55", "Legs 10 → 25"]);
+        expect(rows[1]!.values.map(value => value.text)).toContain("Arms 40 → 55 (Blocked 5)");
         const html = render(event, before, after);
         expect(count(html, "damage")).toBe(3); expect(count(html, "binding")).toBe(0);
         expect(text(html).match(/Hinari/g)).toHaveLength(1); expect(text(html).match(/Ko-chan/g)).toHaveLength(1);
@@ -250,7 +276,7 @@ describe("Pass 6 rendered activation and multi-zone rows", () => {
             { target: "ko", result: "hit", effects: [effects[0]!] }, { target: "ko", result: "graze", effects: [effects[1]!] }, { target: "ko", result: "miss", effects: [] },
         ]);
         expect(models(event).rows).toHaveLength(1);
-        expect(models(event).rows[0]!.values.map(value => value.text)).toEqual(["Hit", "Graze", "Miss", "Skunk Head +3", "Skunk Arms +4"]);
+        expect(models(event).rows[0]!.values.map(value => value.text)).toEqual(["Hit", "Graze", "Miss", "Head +3", "Arms +4"]);
         expect(createGameLogViewModel(createGameLogEntries([event, event]), p).map(entry => entry.rows.length)).toEqual([1, 1]);
     });
 
@@ -309,7 +335,7 @@ describe("Pass 6 real-engine boundaries", () => {
         for (const row of rows) {
             expect(row.values[0]!.text).toBe("Hit");
             expect(row.values).toHaveLength(4);
-            expect(row.values.slice(1).every(value => value.text.startsWith("Skunk "))).toBe(true);
+            expect(row.values.slice(1).every(value => /^(Head|Arms|Torso|Legs) /.test(value.text))).toBe(true);
         }
     });
 });

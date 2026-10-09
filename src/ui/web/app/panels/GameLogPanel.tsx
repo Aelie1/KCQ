@@ -5,7 +5,7 @@ import type { Presentation } from "../../../presentation/presentation";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { createCombatHeaderViewModel } from "../viewModels/combatHeader";
-import { createGameLogViewModel, type GameLogRow } from "../viewModels/gameLog";
+import { createGameLogViewModel, type GameLogRow, type GameLogValue } from "../viewModels/gameLog";
 
 export interface GameLogPanelProps {
     entries: readonly GameLogPresentationEntry[];
@@ -14,27 +14,38 @@ export interface GameLogPanelProps {
     onBack?: () => void;
 }
 
+function OutcomeValues(props: { values: GameLogValue[]; bindings?: boolean }): JSX.Element {
+    return <div class={"kcq-game-log__values" + (props.bindings ? " kcq-game-log__values--bindings" : "")}>
+        <For each={props.values}>
+            {(value) => <span class={"kcq-game-log__value kcq-game-log__value--" + (value.tone ?? "neutral")}>
+                <For each={value.parts ?? [{ text: value.text, tone: value.tone }]}>
+                    {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
+                </For>
+            </span>}
+        </For>
+    </div>;
+}
+
 function OutcomeRow(props: { row: GameLogRow }): JSX.Element {
     const row = props.row;
+    const bindingValues = row.values.filter(value => value.binding);
+    const inlineValues = row.values.filter(value => !value.binding);
     return (
-        <div class={"kcq-game-log__row kcq-game-log__row--" + row.kind + (row.emphasis ? " kcq-game-log__row--" + row.emphasis : "")} data-outcome={row.kind}>
-            <span class="kcq-game-log__recipient">
-                <Show when={row.target}><span class="kcq-game-log__target">
-                    <For each={row.targetParts ?? [{ text: row.target! }]}>
-                        {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
-                    </For>
-                </span></Show>
-                <Show when={row.label}><strong class="kcq-game-log__label">{row.label}</strong></Show>
-            </span>
-            <div class="kcq-game-log__values">
-                <For each={row.values}>
-                    {(value) => <span class={"kcq-game-log__value kcq-game-log__value--" + (value.tone ?? "neutral")}>
-                        <For each={value.parts ?? [{ text: value.text, tone: value.tone }]}>
+        <div class={"kcq-game-log__row kcq-game-log__row--" + row.kind + (row.emphasis ? " kcq-game-log__row--" + row.emphasis : "")
+            + (bindingValues.length ? " kcq-game-log__row--compactBindings" : "")} data-outcome={row.kind}>
+            <Show when={row.target || row.label}>
+                <span class="kcq-game-log__recipient">
+                    <Show when={row.target}><span class="kcq-game-log__target">
+                        <For each={row.targetParts ?? [{ text: row.target! }]}>
                             {(part) => <span class={"kcq-game-log__value--" + (part.tone ?? "neutral")}>{part.text}</span>}
                         </For>
-                    </span>}
-                </For>
-            </div>
+                    </span></Show>
+                    <Show when={row.kind === "bindingTick" && row.target && row.label}><span aria-hidden="true">—</span></Show>
+                    <Show when={row.label}><strong class="kcq-game-log__label">{row.label}</strong></Show>
+                </span>
+            </Show>
+            <Show when={inlineValues.length}><OutcomeValues values={inlineValues} /></Show>
+            <Show when={bindingValues.length}><OutcomeValues values={bindingValues} bindings /></Show>
             <Show when={row.rows?.length}>
                 <div class="kcq-game-log__tick-outcomes">
                     <For each={row.rows}>{child => <OutcomeRow row={child} />}</For>
