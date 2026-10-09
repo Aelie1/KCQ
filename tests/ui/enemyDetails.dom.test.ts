@@ -1,3 +1,7 @@
+import { readFileSync } from "node:fs";
+import type { Window as HappyWindow } from "happy-dom";
+import { Presentation } from "../../src/ui/presentation/presentation";
+import { stockStrings } from "../helpers/stockStrings";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -131,5 +135,65 @@ describe("Enemy Details navigation and live state", () => {
         press("=");
         expect(document.querySelector(".kcq-enemy-details")).toBeNull();
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
+    });
+});
+
+describe("compact intention target rows", () => {
+    it.each([320, 390])("keeps localized names and every outcome inline at width %i", width => {
+        const viewport = (window as unknown as HappyWindow).happyDOM;
+        const originalViewport = { width: window.innerWidth, height: window.innerHeight };
+        viewport.setViewport({ width, height: 844 });
+        try {
+            const style = document.createElement("style");
+            style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
+            document.body.append(style);
+            const localizedName = "TrèsLongNomDePersonnageLocaliséSansEspaces";
+            const presentation = new Presentation({
+                ...stockStrings,
+                "entity.ko.name": localizedName,
+            });
+            const state: GameState = {
+                ...enemyDetailsFixture.state,
+                enemies: enemyDetailsFixture.state.enemies.map(enemy => ({
+                    ...enemy,
+                    intentions: [{
+                        move: "latexSpray",
+                        targets: (["miss", "graze", "hit", "crit", "none"] as const).map(band => ({
+                            target: "ko", band, effects: [],
+                        })),
+                        effects: [],
+                    }],
+                })),
+            };
+            mount(() => createComponent(EnemyDetailsPanel, { ...enemyDetailsFixture, state, presentation }));
+            const cards = [...document.querySelectorAll<HTMLElement>(".kcq-enemy-details__intentions .kcq-target-card")];
+            expect(cards).toHaveLength(5);
+            for (const [index, card] of cards.entries()) {
+                const name = card.querySelector<HTMLElement>(".kcq-target-header__name")!;
+                const outcome = card.querySelector(".kcq-status-chip");
+                expect(name.textContent).toBe(localizedName);
+                expect(name.title).toBe(localizedName);
+                expect(card.querySelector(":scope > .kcq-status-chip")).toBeNull();
+                if (index < 4) {
+                    expect(outcome?.previousElementSibling).toBe(name);
+                    expect(outcome?.closest(".kcq-target-header")).not.toBeNull();
+                    expect(getComputedStyle(name.parentElement!).display).toBe("inline-flex");
+                    expect(getComputedStyle(outcome!).flexShrink).toBe("0");
+                } else expect(outcome).toBeNull();
+                expect(parseFloat(getComputedStyle(card).minHeight)).toBe(0);
+                expect(getComputedStyle(card).gap).toBe("3px");
+                expect(getComputedStyle(name).fontSize).toBe("11px");
+                expect(getComputedStyle(name).textOverflow).toBe("ellipsis");
+            }
+            expect(getComputedStyle(element(".kcq-enemy-details__intentions .kcq-selected-command")).minHeight).toBe("24px");
+            expect(getComputedStyle(element(".kcq-enemy-details__intentions .kcq-selected-command h2")).fontSize).toBe("12px");
+            expect(getComputedStyle(element(".kcq-enemy-details__identity .kcq-target-header__name")).fontSize).toBe("14px");
+            expect(getComputedStyle(element(".kcq-enemy-details__intentions .kcq-target-header")).flexWrap).toBe("wrap");
+            const summary = element(".kcq-enemy-details__intentions .kcq-target-header__character-state");
+            expect(getComputedStyle(summary).marginLeft).toBe("auto");
+            expect(getComputedStyle(summary).whiteSpace).toBe("normal");
+        } finally {
+            viewport.setViewport(originalViewport);
+        }
     });
 });

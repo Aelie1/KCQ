@@ -1,14 +1,12 @@
 import { For, Show, type JSX } from "solid-js";
-import type { HitBand } from "../../../../engine/public/types";
 import type { TargetPreviewViewModel } from "../viewModels/targeting";
 import { EffectPreview } from "./EffectPreview";
 import { Shortcut } from "./Shortcut";
-import { StatusChip } from "./StatusChip";
-import { TargetHeader } from "./TargetHeader";
+import { TargetHeader, type TargetHeaderProps } from "./TargetHeader";
 
 export interface TargetCardProps {
     disabled?: boolean;
-    outcome?: { band: Exclude<HitBand, "none">; label: string };
+    outcome?: TargetHeaderProps["outcome"];
     mode: "predetermined" | "selectable";
     onSelect?: () => void;
     selected: boolean;
@@ -19,10 +17,7 @@ export interface TargetCardProps {
 function TargetCardContent(props: Pick<TargetCardProps, "target" | "outcome">): JSX.Element {
     return (
         <>
-            <TargetHeader target={props.target} />
-            <Show when={props.outcome} keyed>
-                {(outcome) => <StatusChip size="compact" tone={`outcome-${outcome.band}`}>{outcome.label}</StatusChip>}
-            </Show>
+            <TargetHeader target={props.target} outcome={props.outcome} />
             <Show when={props.target.reasonLabel}>
                 <span class="kcq-target-card__reason">{props.target.reasonLabel}</span>
             </Show>

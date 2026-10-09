@@ -111,7 +111,9 @@ function createEffectPreview(effect: Effect, id: string, context: EffectContext)
         case "enemy":
             return compactEffect(id, effect.type, effect.operation === "defeat" ? "danger" : "primary",
                 presentation.ui(effect.operation === "defeat" ? "targeting.operationDefeat" : "targeting.operationSpawn"),
-                context.scopeTarget === effect.target ? "" : presentation.entity(effect.target), []);
+                effect.operation === "spawn"
+                    ? presentation.enemyDefinition(effect.target)
+                    : context.scopeTarget === effect.target ? "" : presentation.entity(effect.target), []);
         case "trap": return createTrapEffect(effect, id, context);
         case "move":
             return compactEffect(id, effect.type, "primary", presentation.ui("targeting.effectMove"), presentation.move(effect.move), []);

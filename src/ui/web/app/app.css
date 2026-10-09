@@ -3616,9 +3616,6 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-enemy-details .kcq-target-card>.kcq-status-chip {
-    align-self: flex-start;
-}
 
 .kcq-enemy-details__empty {
     margin: 0;
@@ -3628,4 +3625,98 @@ button {
 
 .kcq-enemy-details .kcq-selected-command__tags:empty {
     display: none;
+}
+/* Inline outcomes are opt-in; ordinary Targeting headers keep their layout. */
+.kcq-target-header__identity {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+}
+
+.kcq-target-header__identity > .kcq-status-chip {
+    flex: 0 0 auto;
+}
+
+.kcq-enemy-details__intentions,
+.kcq-enemy-details__intention {
+    gap: 4px;
+}
+
+.kcq-enemy-details__intention + .kcq-enemy-details__intention {
+    padding-top: 6px;
+}
+
+.kcq-enemy-details__intentions .kcq-selected-command {
+    min-height: 24px;
+    padding: 4px 7px;
+}
+
+.kcq-enemy-details__intentions .kcq-selected-command h2 {
+    font-size: 12px;
+    line-height: 14px;
+}
+
+.kcq-enemy-details__intentions .kcq-targeting__targets {
+    gap: 0;
+}
+
+.kcq-enemy-details__intentions .kcq-target-card {
+    min-height: 0;
+    gap: 3px;
+    padding: 5px 4px;
+}
+
+.kcq-enemy-details__intentions .kcq-target-header {
+    gap: 3px 6px;
+}
+
+.kcq-enemy-details__intentions .kcq-target-header__name {
+    font-size: 11px;
+    line-height: 14px;
+}
+
+.kcq-enemy-details__intentions .kcq-target-header__character-state {
+    font-size: 10px;
+    line-height: 14px;
+    text-align: right;
+}
+
+.kcq-enemy-details__intentions .kcq-preview-effect {
+    min-height: 26px;
+    gap: 5px;
+}
+
+.kcq-enemy-details__intentions .kcq-preview-effect__accent {
+    min-height: 22px;
+}
+
+.kcq-enemy-details__intentions .kcq-buff-effect__content,
+.kcq-enemy-details__intentions .kcq-binding-effect__content,
+.kcq-enemy-details__intentions .kcq-meter-effect__content {
+    gap: 3px;
+}
+
+.kcq-enemy-details__intentions .kcq-buff-effect__header,
+.kcq-enemy-details__intentions .kcq-binding-effect__header,
+.kcq-enemy-details__intentions .kcq-meter-effect__header {
+    flex-wrap: wrap;
+    gap: 3px 6px;
+}
+
+.kcq-enemy-details__intentions .kcq-buff-effect__modifiers {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 110px), 1fr));
+    gap: 3px 6px;
+}
+
+.kcq-enemy-details__intentions .kcq-effect-modifier {
+    gap: 3px;
+}
+
+.kcq-enemy-details__intentions .kcq-effect-modifier > span:first-child {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }

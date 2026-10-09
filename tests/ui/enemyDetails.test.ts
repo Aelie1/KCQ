@@ -91,6 +91,44 @@ describe("Enemy Details", () => {
         expect(html.indexOf("kcq-enemy-details__identity")).toBeGreaterThan(html.indexOf("kcq-screen-layout__body"));
     });
 
+
+    it("renders multiple moves, misses, buffs, bindings and unindexed summons without losing projected details", () => {
+        const state: GameState = {
+            ...fixture.state,
+            enemies: fixture.state.enemies.map(enemy => ({
+                ...enemy,
+                intentions: [
+                    ...enemy.intentions,
+                    { move: "callReinforcements", targets: [], effects: [
+                        { type: "enemy", operation: "spawn", target: "skunk" },
+                        { type: "enemy", operation: "spawn", target: "fairy" },
+                    ] },
+                    { move: "latexSpray", targets: [
+                        { target: "ko", band: "miss", effects: [] },
+                        { target: "matsuko", band: "crit", effects: [{
+                            type: "buff", operation: "add", target: "matsuko",
+                            buff: { id: "pounce", modifiers: { defense: -2, hit: 2 } },
+                        }] },
+                    ], effects: [] },
+                ],
+            })),
+        };
+        const model = modelFor(state);
+        expect(model.intentions).toHaveLength(4);
+        expect(model.intentions[2]!.effectTargets).toEqual([]);
+        expect(model.intentions[2]!.effects).toMatchObject([{ payload: "Skunk" }, { payload: "Fairy" }]);
+        const html = renderToString(() => createComponent(EnemyDetailsPanel, { ...fixture, state }));
+        expect(html).not.toContain("{index}");
+        expect(html.match(/class="kcq-selected-command"/g)).toHaveLength(4);
+        expect(html).toContain("kcq-status-chip--outcome-miss");
+        expect(html).toContain("kcq-status-chip--outcome-crit");
+        expect(html).toContain("kcq-effect-modifier");
+        expect(html).toContain("kcq-binding-effect__level");
+        expect(html).toContain("kcq-binding-effect__transition");
+        expect(html).toContain(">Skunk</strong>");
+        expect(html).toContain(">Fairy</strong>");
+    });
+
     it("handles absent intentions and never reconstructs buffs from characters", () => {
         const state = { ...fixture.state, enemies: fixture.state.enemies.map(enemy => ({
             ...enemy, buffs: [], intentions: [], modifiers: {},

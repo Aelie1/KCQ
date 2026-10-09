@@ -11,6 +11,8 @@ import { createEffectPreviewViewModels } from "../../src/ui/web/app/viewModels/e
 import { createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { createTargetingViewModel } from "../../src/ui/web/app/viewModels/targeting";
 import { getThresholds } from "../../src/engine/public/mechanics";
+import { Presentation } from "../../src/ui/presentation/presentation";
+import { stockStrings } from "../helpers/stockStrings";
 import { groupEffectPreviews } from "../../src/ui/web/app/viewModels/effectGroups";
 
 const presentation = targetingFixtures.telekinesisChoose.presentation;
@@ -193,5 +195,35 @@ describe("encounter setup recipient groups", () => {
         expect(grouped.ungrouped).toHaveLength(1);
         expect(grouped.ungrouped[0]).toMatchObject({ kind: "trap", currentValue: 0 });
         expect(grouped.ungrouped[0]).not.toHaveProperty("recipient");
+    });
+});
+
+describe("projected spawn identities", () => {
+    it.each(["skunk", "fairy"])("uses the generic definition name for %s, even in a scoped preview", definition => {
+        const [preview] = createEffectPreviewViewModels([
+            { type: "enemy", operation: "spawn", target: definition },
+        ], { presentation, scopeTarget: definition });
+        expect(preview).toMatchObject({
+            kind: "compact", label: "Spawn", payload: presentation.enemyDefinition(definition),
+        });
+        expect(JSON.stringify(preview)).not.toContain("{index}");
+    });
+
+    it("uses localized generic names and preserves indexed existing enemies", () => {
+        const localized = new Presentation({
+            ...stockStrings,
+            "entity.skunk.generic": "Créature invoquée",
+            "entity.skunk.name": "Créature {index}",
+        });
+        const grouped = groupEffectPreviews([
+            { type: "enemy", operation: "spawn", target: "skunk" },
+            { type: "enemy", operation: "defeat", target: "skunk2" },
+        ], { presentation: localized });
+        expect(grouped.groups.map(group => group.name)).toEqual(["Créature 2"]);
+        expect(grouped.ungrouped).toHaveLength(1);
+        expect(grouped.ungrouped[0]).toMatchObject({ payload: "Créature invoquée" });
+        expect(createEffectPreviewViewModels([
+            { type: "enemy", operation: "defeat", target: "skunk2" },
+        ], { presentation: localized })[0]).toMatchObject({ payload: "Créature 2" });
     });
 });

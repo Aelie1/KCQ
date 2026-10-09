@@ -15,7 +15,9 @@ export function groupEffectPreviews(
     const ungrouped: EffectPreviewViewModel[] = [];
     effects.forEach((effect, index) => {
         const id = `${idPrefix}-${index}`;
-        const target = "target" in effect ? effect.target : undefined;
+        // A projected spawn names a definition, not an existing recipient.
+        const target = "target" in effect && !(effect.type === "enemy" && effect.operation === "spawn")
+            ? effect.target : undefined;
         if (target === undefined || !shouldGroup(target)) {
             ungrouped.push(...createEffectPreviews(effect, id, context));
             return;
