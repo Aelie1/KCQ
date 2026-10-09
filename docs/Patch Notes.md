@@ -1,5 +1,26 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.14.0 — 2026-10-09
+
+### Game Log Improvements
+
+The combat log has received a major overhaul!
+
+- **Binding activations:** Recurring effects such as Skunk Collar now identify themselves in the log instead of silently increasing restraints.
+- **Grouped binding changes:** Attacks affecting multiple binding zones now display their results together instead of filling the log with separate entries.
+- **Compact formatting:** Binding changes use short names and numeric transitions, with colors indicating severity.
+- **Improved accuracy display:** Hits, grazes, misses, and critical hits are displayed alongside the affected character.
+- **Incapacitation and rescue:** These events are now highlighted, with redundant cleanup messages suppressed.
+- **Cleaner attack results:** Unnecessary accuracy messages, including rolls against already-defeated enemies, have been removed.
+- **Better buff reporting:** Buff additions, removals, refreshes, extensions, and severity changes are presented more clearly.
+- **Improved readability:** Reduced text size, fewer repeated labels, and better grouping make the log significantly easier to follow, particularly on smaller screens.
+
+### Combat UI Improvements
+
+- **End Turn indicator:** The End Turn button is dimmed while party members still have actions available. It remains usable if you want to end your turn early.
+- **Faster targeting:** Single-target attacks execute immediately when you select a valid target, removing the extra confirmation click.
+- **Multi-target attacks:** Moves requiring multiple target selections retain their existing confirmation flow.
+
 ## 0.13.0 — 2026-10-08
 
 ### Title Screen / Campaign Selection
