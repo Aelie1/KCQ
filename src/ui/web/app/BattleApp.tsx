@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, Match, Show, Switch, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } from "solid-js";
 import { getThresholds } from "../../../engine/public/mechanics";
 import type {
     ActionInfo,
@@ -16,7 +16,7 @@ import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
 import type { LanguageSelection } from "./language";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
-import { COMBAT_SHORTCUTS, useCombatKeyboard } from "./keyboard";
+import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { BattleResultPanel } from "./panels/BattleResultPanel";
@@ -35,6 +35,7 @@ export interface BattleAppProps {
     release?: string;
     language?: LanguageSelection;
     shortcutHints?: ShortcutHintPreference;
+    keyboard?: SharedKeyboard;
     onRetry?: () => void;
     onBackToLevelSelect?: () => void;
     onBackToTitle?: () => void;
@@ -45,8 +46,7 @@ export type BattleScreen =
     | { kind: "overview" }
     | { kind: "character"; actorId: EntityId }
     | { kind: "targeting"; actorId: EntityId; moveId: MoveId }
-    | { kind: "escape"; actorId: EntityId }
-    | { kind: "log" };
+    | { kind: "escape"; actorId: EntityId };
 
 type CharacterScreen = Extract<BattleScreen, { kind: "character" }>;
 type EscapeScreen = Extract<BattleScreen, { kind: "escape" }>;
@@ -63,6 +63,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
     const [thresholds] = createSignal<ThresholdInfo>(getThresholds());
     const [screen, setScreen] = createSignal<BattleScreen>({ kind: "overview" });
+    const [logOpen, setLogOpen] = createSignal(false);
+    const toggleLog = (): void => { if (!modalOpen()) setLogOpen(open => !open); };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
     let settingsTrigger: Element | null = null;
     const openSettings = (): void => {
@@ -73,6 +75,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const tracker = createBattleResultTracker(state());
     const [resultStats, setResultStats] = createSignal(tracker.getStats());
     const resultModel = createMemo(() => createBattleResultViewModel(state(), resultStats(), props.presentation));
+    createEffect(() => { if (resultModel()) setLogOpen(false); });
     const logHistory = createGameLogHistory(state());
     const [logEntries, setLogEntries] = createSignal<readonly GameLogPresentationEntry[]>([]);
 
@@ -212,6 +215,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     };
 
     const back = (): boolean => {
+        if (logOpen()) { setLogOpen(false); return true; }
         const current = screen();
         if (current.kind === "overview") return false;
         setScreen(current.kind === "targeting" || current.kind === "escape"
@@ -222,13 +226,16 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     };
     const endTurn = (): void => { execute({ type: "endTurn" }); };
     let stage: HTMLDivElement | undefined;
-    const hintsVisible = useCombatKeyboard(() => stage, () => !modalOpen(), key => {
+    const globalKeyboardAction = (key: string): boolean => {
+        if (modalOpen()) return false;
+        if (key === COMBAT_SHORTCUTS.gameLog) { toggleLog(); return true; }
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
             endTurn();
             return true;
         }
+        if (logOpen()) return false;
         const current = screen();
         if (current.kind !== "character" && current.kind !== "targeting" && current.kind !== "escape") return false;
         const commandId = key === COMBAT_SHORTCUTS.stance ? "stance" : "escape";
@@ -237,81 +244,82 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (!command?.available || (commandId === "escape" && current.kind === "escape")) return false;
         selectCommand(current.actorId, commandId);
         return true;
-    }, () => shortcutHints.value);
+    };
+    // The graphical shell owns the listener; standalone battles use the same hook.
+    if (props.keyboard) onCleanup(props.keyboard.registerGlobalAction(globalKeyboardAction));
+    const hintsVisible = props.keyboard?.hintsVisible
+        ?? useCombatKeyboard(() => stage, () => !modalOpen(), globalKeyboardAction, () => shortcutHints.value);
 
     return (
         <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()}>
             <div class="kcq-battle-stage__background" inert={modalOpen()} aria-hidden={modalOpen() ? true : undefined}>
-                <Switch fallback={
-                    <BattleOverviewPanel
-                        actions={actions()}
-                        presentation={props.presentation}
-                        state={state()}
-                        thresholds={thresholds()}
-                        onSelectCharacter={selectCharacter}
-                        onSettings={openSettings}
-                        onGameLog={() => { if (!modalOpen()) setScreen({ kind: "log" }); }}
-                        onEndTurn={endTurn}
-                    />
-                }>
-                    <Match when={resultModel()}>
-                        <BattleOverviewPanel actions={actions()} presentation={props.presentation}
-                            state={state()} thresholds={thresholds()} />
-                    </Match>
-                    <Match when={characterScreen()} keyed>
-                        {(current) => (
-                            <CharacterDetailsPanel
-                                actions={actions()}
-                                focusedCharacterId={current.actorId}
-                                presentation={props.presentation}
-                                state={state()}
-                                thresholds={thresholds()}
-                                onBack={back}
-                                onSelectCharacter={selectCharacter}
-                                onSelectCommand={(commandId) => selectCommand(current.actorId, commandId)}
-                            />
-                        )}
-                    </Match>
-                    <Match when={targeting()} keyed>
-                        {(current) => (
-                            <TargetingPanel
-                                action={current.action}
-                                actions={actions()}
-                                actorId={current.screen.actorId}
-                                presentation={props.presentation}
-                                state={state()}
-                                thresholds={thresholds()}
-                                onBack={back}
-                                onHeaderBack={() => setScreen({ kind: "overview" })}
-                                onSelectCharacter={selectCharacter}
-                                onExecute={executeMove}
-                            />
-                        )}
-                    </Match>
-                    <Match when={escapeScreen()} keyed>
-                        {(current) => (
-                            <EscapePanel
-                                actions={actions()}
-                                actorId={current.actorId}
-                                presentation={props.presentation}
-                                state={state()}
-                                thresholds={thresholds()}
-                                onBack={back}
-                                onHeaderBack={() => setScreen({ kind: "overview" })}
-                                onSelectCharacter={selectCharacter}
-                                onExecute={executeEscape}
-                            />
-                        )}
-                    </Match>
-                    <Match when={screen().kind === "log"}>
-                        <GameLogPanel
-                            entries={logEntries()}
+                <Show when={logOpen()}>
+                    <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} />
+                </Show>
+                <div hidden={logOpen()} inert={logOpen()} aria-hidden={logOpen() ? true : undefined}>
+                    <Switch fallback={
+                        <BattleOverviewPanel
+                            actions={actions()}
                             presentation={props.presentation}
                             state={state()}
-                            onBack={() => setScreen({ kind: "overview" })}
+                            thresholds={thresholds()}
+                            onSelectCharacter={selectCharacter}
+                            onSettings={openSettings}
+                            onGameLog={toggleLog}
+                            onEndTurn={endTurn}
                         />
-                    </Match>
-                </Switch>
+                    }>
+                        <Match when={resultModel()}>
+                            <BattleOverviewPanel actions={actions()} presentation={props.presentation}
+                                state={state()} thresholds={thresholds()} />
+                        </Match>
+                        <Match when={characterScreen()} keyed>
+                            {(current) => (
+                                <CharacterDetailsPanel
+                                    actions={actions()}
+                                    focusedCharacterId={current.actorId}
+                                    presentation={props.presentation}
+                                    state={state()}
+                                    thresholds={thresholds()}
+                                    onBack={back}
+                                    onSelectCharacter={selectCharacter}
+                                    onSelectCommand={(commandId) => selectCommand(current.actorId, commandId)}
+                                />
+                            )}
+                        </Match>
+                        <Match when={targeting()} keyed>
+                            {(current) => (
+                                <TargetingPanel
+                                    action={current.action}
+                                    actions={actions()}
+                                    actorId={current.screen.actorId}
+                                    presentation={props.presentation}
+                                    state={state()}
+                                    thresholds={thresholds()}
+                                    onBack={back}
+                                    onHeaderBack={() => setScreen({ kind: "overview" })}
+                                    onSelectCharacter={selectCharacter}
+                                    onExecute={executeMove}
+                                />
+                            )}
+                        </Match>
+                        <Match when={escapeScreen()} keyed>
+                            {(current) => (
+                                <EscapePanel
+                                    actions={actions()}
+                                    actorId={current.actorId}
+                                    presentation={props.presentation}
+                                    state={state()}
+                                    thresholds={thresholds()}
+                                    onBack={back}
+                                    onHeaderBack={() => setScreen({ kind: "overview" })}
+                                    onSelectCharacter={selectCharacter}
+                                    onExecute={executeEscape}
+                                />
+                            )}
+                        </Match>
+                    </Switch>
+                </div>
             </div>
             <Show when={settingsOpen()}>
                 <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}

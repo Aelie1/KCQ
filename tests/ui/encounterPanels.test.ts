@@ -15,7 +15,7 @@ describe("encounter panels", () => {
     it("renders a selectable row for every catalog entry with accessible challenge values", () => {
         const model = createEncounterPickerViewModel(library, presentation);
         const html = renderToString(() => createComponent(EncounterPickerPanel, { model, onSelect: () => {} }));
-        expect(html.match(/class="kcq-encounter-card kcq-encounter-picker__row"/g)).toHaveLength(model.encounters.length);
+        expect(html.match(/class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host"/g)).toHaveLength(model.encounters.length);
         for (const encounter of model.encounters) {
             expect(html).toContain(encounter.name);
             expect(html).toContain(encounter.stars);

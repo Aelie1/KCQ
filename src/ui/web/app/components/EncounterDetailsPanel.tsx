@@ -1,6 +1,8 @@
 import { For, Show, type JSX } from "solid-js";
 import type { EncounterDetailsViewModel } from "../viewModels/encounters";
 import { EffectPreview } from "./EffectPreview";
+import { COMBAT_SHORTCUTS } from "../keyboard";
+import { Shortcut } from "./Shortcut";
 import { ScreenLayout } from "./ScreenLayout";
 import { EncounterHeader } from "./EncounterHeader";
 import { StatusChip } from "./StatusChip";
@@ -55,10 +57,12 @@ export function EncounterDetailsPanel(props: {
         }
         footer={
             <footer class="kcq-screen-actions kcq-encounter-details__footer">
-                <button class="kcq-targeting__back" type="button" onClick={props.onBack}>
+                <button class="kcq-targeting__back kcq-shortcut-host" data-kcq-shortcut={COMBAT_SHORTCUTS.back} type="button" onClick={props.onBack}>
+                    <Shortcut shortcut={COMBAT_SHORTCUTS.back} />
                     <span aria-hidden="true">↶ </span>{props.model.labels.back}
                 </button>
-                <button class="kcq-battle-overview__primary-action" type="button" onClick={props.onChooseDifficulty}>
+                <button class="kcq-battle-overview__primary-action kcq-shortcut-host" data-kcq-shortcut="enter" type="button" onClick={props.onChooseDifficulty}>
+                    <Shortcut shortcut="Enter" />
                     {props.model.labels.chooseDifficulty}
                 </button>
             </footer>

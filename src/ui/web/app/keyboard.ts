@@ -7,7 +7,13 @@ export const COMBAT_SHORTCUTS = {
     stance: "9",
     escape: "0",
     endTurn: "=",
+    gameLog: "-",
 } as const;
+export interface SharedKeyboard {
+    hintsVisible: Accessor<boolean>;
+    registerGlobalAction: (handler: (key: string) => boolean) => () => void;
+}
+
 const GLOBAL_SHORTCUT_KEYS: ReadonlySet<string> = new Set(Object.values(COMBAT_SHORTCUTS));
 
 export function shortcutBadgeLabel(key: string): string {
@@ -72,14 +78,20 @@ export function useCombatKeyboard(
                 setHintsVisible(true);
                 return;
             }
-            if (!enabled() || event.defaultPrevented || event.repeat || event.isComposing
+            if (!enabled() || event.defaultPrevented || event.isComposing
                 || event.ctrlKey || event.altKey || event.metaKey) return;
             const target = event.target instanceof Element ? event.target : document.activeElement;
             if (target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
             const key = event.key.toLowerCase();
-            // Preserve native Enter activation on the focused control.
-            if (key === "enter" && target?.closest('button, [role="button"], a[href]')) return;
-            if (held.has(key) || handling) return;
+            const focusedControl = target?.closest('button, [role="button"], a[href]');
+            const focusedConfirmation = key === "enter" && focusedControl?.matches('[data-kcq-shortcut="enter"]');
+            if (event.repeat || held.has(key) || handling) {
+                // Prevent the browser from repeating native confirmation clicks too.
+                if (focusedConfirmation || (held.has(key) && key === COMBAT_SHORTCUTS.back)) event.preventDefault();
+                return;
+            }
+            // Preserve native Enter activation on other focused controls.
+            if (key === "enter" && focusedControl && !focusedConfirmation) return;
             handling = true;
             // Lock before callbacks: they can synchronously replace the current panel.
             held.add(key);
@@ -87,7 +99,8 @@ export function useCombatKeyboard(
             try {
                 if (GLOBAL_SHORTCUT_KEYS.has(key)) {
                     handled = globalAction(key);
-                } else {
+                }
+                if (!handled) {
                     const choice = [...(root()?.querySelectorAll<HTMLElement>("[data-kcq-shortcut]") ?? [])]
                         .find(element => element.dataset.kcqShortcut === key
                             && !element.matches(":disabled, [aria-disabled=true]")

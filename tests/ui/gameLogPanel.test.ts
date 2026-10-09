@@ -686,7 +686,8 @@ describe("combat log polish regressions", () => {
     });
 
     it("scopes binding wrapping and separator clipping without changing ordinary value separators", () => {
-        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
+        // Ignore selector formatting while checking the same layout rules.
+        const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8").replace(/\s*>\s*/g, " > ");
         const flow = css.match(/\.kcq-game-log__values--bindings \{([^}]+)\}/)![1]!;
         expect(flow).toContain("flex-basis: 100%");
         expect(flow).toContain("overflow: hidden");

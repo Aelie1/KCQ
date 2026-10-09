@@ -30,7 +30,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.battleOverview.settings": "Settings",
     "ui.battleSettings.resume": "Resume",
     "ui.battleSettings.language": "Language",
-    "ui.battleSettings.shortcutHints": "Keyboard Shortcut Hints",
+    "ui.battleSettings.shortcutHints": "Keyboard Shortcut Hints (Press Shift to Display)",
     "ui.battleSettings.shortcutHintsAlways": "Always Show",
     "ui.battleSettings.shortcutHintsTemporary": "Show Temporarily",
     "ui.language.en": "English",

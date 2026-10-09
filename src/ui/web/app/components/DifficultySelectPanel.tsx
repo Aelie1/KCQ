@@ -3,6 +3,8 @@ import type { DifficultyId } from "../../../../engine/public/types";
 import type { DifficultySelectViewModel } from "../viewModels/difficulty";
 import { EffectPreview } from "./EffectPreview";
 import { EncounterHeader } from "./EncounterHeader";
+import { COMBAT_SHORTCUTS } from "../keyboard";
+import { Shortcut } from "./Shortcut";
 import { ScreenLayout } from "./ScreenLayout";
 
 export function DifficultySelectPanel(props: {
@@ -55,10 +57,12 @@ export function DifficultySelectPanel(props: {
         }
         footer={
             <footer class="kcq-screen-actions kcq-difficulty-select__footer">
-                <button class="kcq-targeting__back" type="button" onClick={props.onBack}>
+                <button class="kcq-targeting__back kcq-shortcut-host" data-kcq-shortcut={COMBAT_SHORTCUTS.back} type="button" onClick={props.onBack}>
+                    <Shortcut shortcut={COMBAT_SHORTCUTS.back} />
                     <span aria-hidden="true">↶ </span>{props.model.labels.back}
                 </button>
-                <button class="kcq-battle-overview__primary-action" type="button" onClick={props.onStart}>
+                <button class="kcq-battle-overview__primary-action kcq-shortcut-host" data-kcq-shortcut="enter" type="button" onClick={props.onStart}>
+                    <Shortcut shortcut="Enter" />
                     {props.model.labels.start}
                 </button>
             </footer>

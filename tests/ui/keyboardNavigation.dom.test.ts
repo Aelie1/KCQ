@@ -221,7 +221,7 @@ describe("combat keyboard navigation", () => {
         const child = document.createElement("span");
         field.append(child);
         document.body.append(field);
-        for (const key of ["1", "Backspace", "0", "9", "="]) expect(keydown(key, {}, kind === "editable-child" ? child : field).defaultPrevented).toBe(false);
+        for (const key of ["1", "Backspace", "0", "9", "=", "-"]) expect(keydown(key, {}, kind === "editable-child" ? child : field).defaultPrevented).toBe(false);
         expect(execute).not.toHaveBeenCalled();
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
@@ -566,12 +566,102 @@ describe("keyboard shortcut hint visibility", () => {
                 const style = getComputedStyle(badge);
                 expect(style.position).toBe("absolute");
                 expect(style.pointerEvents).toBe("none");
-                expect(style.transform).toBe("translateY(-50%)");
+                expect(style.transform).toBe("translate3d(25%, -25%, 0)");
                 expect(style.zIndex).toBe("1");
                 expect(getComputedStyle(badge.parentElement!).overflow).toBe("visible");
             }
             window.dispatchEvent(new Event("blur"));
             expect(capture()).toEqual(hidden);
         }
+    });
+});
+
+
+describe("Game Log keyboard navigation", () => {
+    it("toggles the log with Minus, restores the same overview and supports its Back button", () => {
+        const { execute } = mountBattle();
+        const overview = document.querySelector(".kcq-battle-overview")!;
+        const logButton = button(".kcq-battle-overview__secondary-action");
+        expect(logButton.querySelector(".kcq-shortcut")?.textContent).toBe("-");
+        expect(press("-").defaultPrevented).toBe(true);
+        expect(document.querySelector(".kcq-game-log")).not.toBeNull();
+        expect(overview.closest("[hidden]")).not.toBeNull();
+        expect(button(".kcq-game-log .kcq-combat-header__back").querySelector(".kcq-shortcut")?.textContent).toBe("⌫");
+        expect(press("-").defaultPrevented).toBe(true);
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
+        expect(document.querySelector(".kcq-battle-overview")).toBe(overview);
+        logButton.click();
+        button(".kcq-game-log .kcq-combat-header__back").click();
+        expect(overview.closest("[hidden]")).toBeNull();
+        expect(execute).not.toHaveBeenCalled();
+    });
+
+    it("returns to the selected character via Backspace and does not navigate hidden combat controls", () => {
+        mountBattle();
+        press("2");
+        const character = document.querySelector(".kcq-character-commands")!;
+        const body = document.querySelector<HTMLElement>(".kcq-screen-layout__body")!;
+        body.scrollTop = 42;
+        press("-");
+        expect(press("1").defaultPrevented).toBe(false);
+        expect(press("Enter").defaultPrevented).toBe(false);
+        expect(press("Backspace").defaultPrevented).toBe(true);
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
+        expect(document.querySelector(".kcq-character-commands")).toBe(character);
+        expect(body.scrollTop).toBe(42);
+        expect(button(".kcq-character-roster__card--focused").textContent).toContain(escapeFixtures.unselected.presentation.entity("matsuko"));
+    });
+
+    it("preserves multi-target selection and confirmation when returning from the log", () => {
+        const base = targetingFixtures.telekinesisChoose.action;
+        const { execute } = mountBattle({ move: { ...base, move: { ...base.move, targets: 2 } } });
+        openTargeting();
+        press("1"); press("2");
+        const targeting = document.querySelector(".kcq-targeting");
+        const selected = targets().filter(target => target.getAttribute("aria-pressed") === "true");
+        press("-");
+        expect(execute).not.toHaveBeenCalled();
+        press("Backspace");
+        expect(document.querySelector(".kcq-targeting")).toBe(targeting);
+        expect(targets().filter(target => target.getAttribute("aria-pressed") === "true")).toEqual(selected);
+        press("Enter");
+        expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "move", actor: "ko", move: base.move.id, targets: ["skunkette1", "skunketteQueen"] });
+    });
+
+    it("preserves escape selection across log toggles", () => {
+        const { execute } = mountBattle();
+        press("1"); press(COMBAT_SHORTCUTS.escape); press("8");
+        const choice = button('.kcq-escape-choice[data-kcq-shortcut="8"]');
+        const escape = document.querySelector(".kcq-escape");
+        press("-"); press("-");
+        expect(document.querySelector(".kcq-escape")).toBe(escape);
+        expect(choice.getAttribute("aria-pressed")).toBe("true");
+        press("Enter");
+        expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "escape", actor: "ko", target: "matsuko", binding: "latexLegs" });
+    });
+
+    it("returns to the finished battle beneath the result dialog when End Turn finishes from the log", () => {
+        const { engine, execute, state, actions } = mountBattle();
+        vi.mocked(engine.getGameState).mockReturnValue({ ...state, turn: { ...state.turn, outcome: "victory" } });
+        execute.mockReturnValue({ success: true, frames: [], actions: [...actions] });
+        press("-"); press("=");
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
+        expect(document.querySelector(".kcq-battle-result--victory")).not.toBeNull();
+        expect(document.querySelector(".kcq-battle-overview")?.closest("[hidden]")).toBeNull();
+    });
+
+    it("ignores held Minus, blocks modal shortcuts, and keeps End Turn distinct", () => {
+        const { execute } = mountBattle();
+        keydown("-"); keydown("-"); keydown("-", { repeat: true });
+        expect(document.querySelector(".kcq-game-log")).not.toBeNull();
+        expect(execute).not.toHaveBeenCalled();
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "-" }));
+        press("-");
+        button(".kcq-combat-header__settings").click();
+        expect(press("-").defaultPrevented).toBe(false);
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
+        button(".kcq-battle-result__retry").click();
+        press("=");
+        expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "endTurn" });
     });
 });

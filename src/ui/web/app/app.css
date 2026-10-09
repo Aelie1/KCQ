@@ -3335,15 +3335,17 @@ button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 12px;
     padding: 4px 0;
     color: var(--kcq-text-secondary);
     font-size: 13px;
 }
 
+.kcq-battle-settings__language span {
+    width: 180px;
+}
+
 .kcq-battle-settings__language select {
     min-width: 0;
-    max-width: 65%;
     min-height: 44px;
     padding: 8px 12px;
     border: 1px solid var(--kcq-structure-border);
@@ -3541,6 +3543,7 @@ button {
     pointer-events: none;
 }
 
+.kcq-graphical-app__background[data-kcq-hints-visible="true"] .kcq-shortcut,
 .kcq-battle-stage[data-kcq-hints-visible="true"] .kcq-shortcut {
     visibility: visible;
 }

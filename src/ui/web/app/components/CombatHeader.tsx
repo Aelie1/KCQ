@@ -1,4 +1,5 @@
 import { Show, type JSX } from "solid-js";
+import { Shortcut } from "./Shortcut";
 import settingsIconUrl from "../assets/settings.svg";
 
 export interface CombatHeaderTrap {
@@ -25,6 +26,7 @@ interface CombatHeaderOverviewProps extends CombatHeaderBaseProps {
 
 interface CombatHeaderSubscreenProps extends CombatHeaderBaseProps {
     backLabel: string;
+    backShortcut?: string;
     characterLabel?: string;
     contextLabel: string;
     onBack?: () => void;
@@ -45,10 +47,13 @@ export function CombatHeader(props: CombatHeaderProps): JSX.Element {
             {props.variant === "subscreen" && (
                 <button
                     class="kcq-combat-header__back"
+                    classList={{ "kcq-shortcut-host": !!props.backShortcut }}
+                    data-kcq-shortcut={props.onBack ? props.backShortcut : undefined}
                     type="button"
                     aria-label={props.backLabel}
                     onClick={() => props.onBack?.()}
                 >
+                    <Shortcut shortcut={props.backShortcut} />
                     <span aria-hidden="true">{"\u2190"}</span>
                 </button>
             )}

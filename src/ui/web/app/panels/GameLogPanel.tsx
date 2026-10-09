@@ -2,6 +2,7 @@ import { createEffect, createMemo, For, onCleanup, onMount, Show, type JSX } fro
 import type { GameState } from "../../../../engine/public/types";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
+import { COMBAT_SHORTCUTS } from "../keyboard";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { createCombatHeaderViewModel } from "../viewModels/combatHeader";
@@ -122,6 +123,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                     roundLabel={header().roundLabel}
                     phaseLabel={header().phaseLabel}
                     backLabel={props.presentation.ui("characterDetails.back")}
+                    backShortcut={COMBAT_SHORTCUTS.back}
                     onBack={props.onBack}
                 />
             }

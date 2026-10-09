@@ -5,6 +5,7 @@ import type { Presentation } from "../../presentation/presentation";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import type { LanguageOption } from "./language";
 import { createShortcutHintPreference } from "./shortcutHints";
+import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import { App } from "./App";
 import { TitleScreen } from "./components/TitleScreen";
 import { createTitleViewModel } from "./viewModels/title";
@@ -84,8 +85,20 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         return current.screen === "battle" ? current : undefined;
     };
 
+    let background: HTMLDivElement | undefined;
+    let battleGlobalAction: ((key: string) => boolean) | undefined;
+    const hintsVisible = useCombatKeyboard(() => background, () => !settingsOpen(),
+        key => battle() ? battleGlobalAction?.(key) ?? false : false, () => shortcutHints.value);
+    const keyboard: SharedKeyboard = {
+        hintsVisible,
+        registerGlobalAction(handler) {
+            battleGlobalAction = handler;
+            return () => { if (battleGlobalAction === handler) battleGlobalAction = undefined; };
+        },
+    };
+
     return <App>
-        <div class="kcq-graphical-app__background" inert={settingsOpen()} aria-hidden={settingsOpen() ? true : undefined}>
+        <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} inert={settingsOpen()} aria-hidden={settingsOpen() ? true : undefined}>
             <Switch>
                 <Match when={controller.screen().screen === "title"}>
                     <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release)}
@@ -113,7 +126,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
-                        language={languageSelection} shortcutHints={shortcutHints} release={props.release}
+                        language={languageSelection} shortcutHints={shortcutHints} keyboard={keyboard} release={props.release}
                         observer={current.session.observer} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>

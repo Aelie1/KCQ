@@ -85,11 +85,12 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
             footer={
                 <footer class="kcq-screen-actions kcq-battle-overview__footer">
                     <button
-                        class="kcq-battle-overview__secondary-action"
+                        class="kcq-battle-overview__secondary-action kcq-shortcut-host"
+                        data-kcq-shortcut={props.onGameLog ? COMBAT_SHORTCUTS.gameLog : undefined}
                         type="button"
                         onClick={() => props.onGameLog?.()}
                     >
-                        {model().controls.gameLogLabel}
+                        <Shortcut shortcut={COMBAT_SHORTCUTS.gameLog} /> {model().controls.gameLogLabel}
                     </button>
                     <button
                         class="kcq-battle-overview__primary-action kcq-shortcut-host"
