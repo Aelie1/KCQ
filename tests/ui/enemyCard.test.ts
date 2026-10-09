@@ -3,6 +3,13 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { skunk } from "../../src/content/skunk/skunk";
+import { trapPuddle } from "../../src/content/skunk/puddles";
+import { Presentation } from "../../src/ui/presentation/presentation";
+import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
+import { makeCharacterDef, makeEncounterDef } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
+import { stockStrings } from "../helpers/stockStrings";
 import { EnemyCard } from "../../src/ui/web/app/components/EnemyCard";
 import { IntentRow } from "../../src/ui/web/app/components/IntentRow";
 import { TargetHeader } from "../../src/ui/web/app/components/TargetHeader";
@@ -11,6 +18,63 @@ import { createEnemyCardViewModel } from "../../src/ui/web/app/viewModels/enemyC
 import { createIntentViewModel } from "../../src/ui/web/app/viewModels/intentRow";
 
 describe("enemy card", () => {
+    it("renders the real Latex Puddle preview band on Battle Overview without changing the stored roll", () => {
+        const fixture = battleOverviewFixture;
+        const hero = makeCharacterDef("ko");
+        const encounter = makeEncounterDef("puddle-overview", {
+            enemies: [skunk.id], traps: [{ definition: trapPuddle, amount: 0 }],
+        });
+        const load = () => {
+            const engine = createTestEngine([encounter], [hero], 16, { enemies: [skunk] });
+            engine.loadCharacter(hero.id); engine.loadEncounter(encounter.id);
+            return engine;
+        };
+        const engine = load();
+        const control = load();
+        const state = engine.getGameState();
+        expect(state.enemies[0]!.intentions[0]).toMatchObject({ move: "latexPuddle", targets: [], band: "graze" });
+        const presentation = new Presentation({ ...stockStrings, "hitBand.graze.name": "Effleure" });
+        const html = renderToString(() => createComponent(BattleOverviewPanel, {
+            state, actions: engine.getActionView(), thresholds: fixture.thresholds, presentation,
+        }));
+        expect(html).toContain("Latex Puddle");
+        expect(html).toContain("kcq-status-chip--outcome-graze");
+        expect(html).toContain("Effleure");
+        expect(engine.getGameState()).toEqual(state);
+        expect(engine.executeAction({ type: "endTurn" })).toEqual(control.executeAction({ type: "endTurn" }));
+    });
+
+    it.each(["miss", "graze", "hit", "crit"] as const)("reuses the existing positioned chip for a zero-target %s preview", band => {
+        const intent = createIntentViewModel({ move: "throwOff", targets: [], effects: [], band }, battleOverviewFixture.presentation);
+        expect(intent).toMatchObject({ outcome: band, outcomeLabel: battleOverviewFixture.presentation.hitBand(band) });
+        const html = renderToString(() => createComponent(IntentRow, { intent }));
+        expect(html).toMatch(new RegExp('kcq-intent-row__content[^>]*>.*</span>.*kcq-status-chip--outcome-' + band, "s"));
+        expect(html).not.toContain("kcq-intent-row--move-only");
+        expect(html).not.toContain("kcq-intent-row__target-group");
+    });
+
+    it("keeps targeted and zero-target accuracy independent on a card and no-accuracy moves unchanged", () => {
+        const fixture = battleOverviewFixture;
+        const model = createEnemyCardViewModel({ ...fixture.state.enemies[0]!, intentions: [
+            { move: "latexSpray", targets: [{ target: "ko", band: "hit", effects: [] }], effects: [] },
+            { move: "latexPuddle", targets: [], effects: [], band: "graze" },
+        ] }, fixture.presentation, fixture.state.characters);
+        expect(model.visibleIntentions.map(intent => intent.outcome)).toEqual(["hit", "graze"]);
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
+        expect(html.match(/kcq-enemy-card__intent-slot/g)).toHaveLength(2);
+        expect(html.match(/kcq-status-chip--outcome-/g)).toHaveLength(2);
+        expect(html).toContain("kcq-status-chip--outcome-hit");
+        expect(html).toContain("kcq-status-chip--outcome-graze");
+        const noAccuracy = createEnemyCardViewModel({ ...fixture.state.enemies[0]!, intentions: [
+            { move: "callReinforcements", targets: [], effects: [] },
+        ] }, fixture.presentation, fixture.state.characters);
+        expect(noAccuracy.visibleIntentions[0]!.outcome).toBeUndefined();
+        const noAccuracyHtml = renderToString(() => createComponent(EnemyCard, { enemy: noAccuracy }));
+        expect(noAccuracyHtml).toContain("kcq-intent-row--move-only");
+        expect(noAccuracyHtml).not.toContain("kcq-status-chip--outcome-");
+    });
+
+
     it("renders only actual intention rows without an empty placeholder slot", () => {
         const fixture = battleOverviewFixture;
         const enemy = fixture.state.enemies[0];

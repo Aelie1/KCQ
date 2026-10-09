@@ -17,7 +17,7 @@ export function createIntentViewModel(
     }));
     const outcome = intention.targets.length === 1 && intention.targets[0].band !== "none"
         ? intention.targets[0].band as IntentOutcome
-        : undefined;
+        : intention.targets.length === 0 ? intention.band : undefined;
 
     return {
         intention,

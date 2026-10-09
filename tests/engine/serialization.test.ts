@@ -69,6 +69,29 @@ describe("character catalogue", () => {
 });
 
 describe("state serialization and combatant loading", () => {
+    it.each(["miss", "graze", "hit", "crit", "none"] as const)("publishes only the existing zero-target preview band (%s)", band => {
+        const move = makeMove("zero-preview", "none", {
+            targetSide: "none", targets: 0,
+            accuracy: band === "none" ? undefined : { [band]: 100 },
+        });
+        const character = makeCharacter();
+        const enemy = makeEnemy(makeEnemyDef("foe", [move]));
+        enemy.intentions = [{ actor: enemy, move: { definition: move }, rolls: [{ target: null, roll: 25 }] }];
+        const state = makeInternalState({ characters: [character], enemies: [enemy] });
+        const statuses = new Map<iEntity, GameStatus>([
+            [character, new GameStatus(state, character)], [enemy, new GameStatus(state, enemy)],
+        ]);
+        const snapshot = serializeGameState(state, statuses);
+        const intention = snapshot.enemies[0]!.intentions[0]!;
+        expect(intention).toMatchObject({ move: move.id, targets: [], effects: [] });
+        if (band === "none") expect(intention).not.toHaveProperty("band");
+        else expect(intention).toHaveProperty("band", band);
+        expect(enemy.intentions[0]!.move.band).toBeUndefined();
+        expect(enemy.intentions[0]!.rolls).toEqual([{ target: null, roll: 25 }]);
+        expect(serializeGameState(state, statuses)).toEqual(snapshot);
+    });
+
+
     it("publishes calculated enemy modifiers including difficulty and active buffs", () => {
         const enemy = makeEnemy(makeEnemyDef("foe", [makeWaitMove()]));
         enemy.buffs = [

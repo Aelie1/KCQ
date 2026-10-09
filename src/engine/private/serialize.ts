@@ -68,6 +68,8 @@ function serializeIntention(state: iGameState, statuses: StatusMap, intention: i
     }
     return {
         move: intention.move.definition.id,
+        ...(preview.move.definition.targets === 0 && preview.move.band && preview.move.band !== "none"
+            ? { band: preview.move.band } : {}),
         targets: targets,
         effects: serializeEffects(result.effects)
     };
