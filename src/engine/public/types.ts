@@ -102,6 +102,7 @@ export interface Enemy {
     intentions: Intention[];
     buffs: Buff[];
     cooldowns: Record<MoveId, number>;
+    modifiers: ModifierSet;
 }
 
 export interface Intention {

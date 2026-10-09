@@ -32,6 +32,8 @@ function enemy(id: string): Enemy {
         maxHp: 200,
         currHp: 152,
         currDef: 0,
+
+        modifiers: {},
         intentions: [],
         buffs: [],
         cooldowns: {},

@@ -50,6 +50,7 @@ function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): 
         intentions: enemy.intentions.map(x => (serializeIntention(state, statuses, x))),
         buffs: enemy.buffs.filter(x => x.active).map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
+        modifiers: getStatus(statuses, enemy).getModifiers(),
     };
 }
 

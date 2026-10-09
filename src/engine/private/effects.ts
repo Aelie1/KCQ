@@ -399,7 +399,7 @@ export class GameEffects {
             currDef: definition.defense,
             intentions: [],
             cooldowns: {},
-            data: {}
+            data: {},
         };
         this.state.enemies.push(enemy);
 

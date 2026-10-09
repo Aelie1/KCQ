@@ -75,7 +75,7 @@ describe("playable Solid battle application", () => {
     });
 
     it("keeps the static fixture panels renderable without callback props", () => {
-        for (const initialPanel of ["battle", "character", "targeting", "escape", "log", "victory", "defeat"] as const) {
+        for (const initialPanel of ["battle", "character", "enemy", "targeting", "escape", "log", "victory", "defeat"] as const) {
             expect(() => renderToString(() => createComponent(DevApp, { initialPanel })))
                 .not.toThrow();
         }

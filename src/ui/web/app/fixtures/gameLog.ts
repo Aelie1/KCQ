@@ -6,7 +6,7 @@ import { Presentation } from "../../../presentation/presentation";
 import { makeFixtureCharacter } from "./publicFixture";
 
 const enemy = (id: string): Enemy => ({
-    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, currDef: 0,
+    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, currDef: 0, modifiers: {},
     intentions: [], cooldowns: {}, buffs: id === "skunkette1" ? [{ id: "pounce", severity: 4, linkedEntity: "ko" }] : [],
 });
 const initialState: GameState = {

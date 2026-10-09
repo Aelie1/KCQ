@@ -51,6 +51,8 @@ function enemy(
         currHp,
         maxHp,
         currDef: 0,
+
+        modifiers: {},
         intentions,
         buffs: [],
         cooldowns: {},

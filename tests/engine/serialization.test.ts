@@ -69,6 +69,30 @@ describe("character catalogue", () => {
 });
 
 describe("state serialization and combatant loading", () => {
+    it("publishes calculated enemy modifiers including difficulty and active buffs", () => {
+        const enemy = makeEnemy(makeEnemyDef("foe", [makeWaitMove()]));
+        enemy.buffs = [
+            { id: "active", active: true, modifiers: { defense: -2, hit: 8 } },
+            { id: "inactive", active: false, modifiers: { hit: 100 } },
+        ];
+        const character = makeCharacter();
+        const state = makeInternalState({
+            characters: [character],
+            enemies: [enemy],
+            difficulty: { ...STANDARD_DIFFICULTY, enemyModifiers: { potency: 2, hit: 1 } },
+        });
+        const statuses = new Map<iEntity, GameStatus>([
+            [character, new GameStatus(state, character)],
+            [enemy, new GameStatus(state, enemy)],
+        ]);
+        const snapshot = serializeGameState(state, statuses);
+        expect(snapshot.enemies[0].modifiers).toEqual({ potency: 2, hit: 9, defense: -2 });
+        expect(snapshot.enemies[0].buffs).toHaveLength(1);
+        snapshot.enemies[0].modifiers.hit = 999;
+        expect(enemy.buffs[0].modifiers?.hit).toBe(8);
+        expect(serializeGameState(state, statuses).enemies[0].modifiers.hit).toBe(9);
+    });
+
     it("starts with an empty public player phase", () => {
         const state = createTestEngine([], [], 1).getGameState();
 

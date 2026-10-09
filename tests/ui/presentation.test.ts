@@ -390,6 +390,7 @@ describe("combat presentation", () => {
             maxHp: 200,
             currHp: 200,
             currDef: 0,
+            modifiers: {},
             intentions: [{ move: "latexSpray", targets: [], effects: [] }],
             buffs: withBuff ? [{ id: "pounce" }] : [],
             cooldowns: { pounce: 1 },

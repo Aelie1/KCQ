@@ -7,6 +7,7 @@ export const PANEL_OPTIONS = [
     { id: "defeat", label: "Defeat Result" },
     { id: "components", label: "Components" },
     { id: "character", label: "Character" },
+    { id: "enemy", label: "Enemy Details" },
     { id: "targeting", label: "Targeting" },
     { id: "escape", label: "Escape" },
     { id: "log", label: "Game Log" },

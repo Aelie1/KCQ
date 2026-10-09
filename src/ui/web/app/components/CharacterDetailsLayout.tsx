@@ -3,7 +3,7 @@ import type { EntityId } from "../../../../engine/public/types";
 import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
 import { BindingMeter } from "./BindingMeter";
 import { CombatHeader } from "./CombatHeader";
-import { LinkedEntityChip } from "./LinkedEntityChip";
+import { EffectDetails } from "./EffectDetails";
 import { ModifierMeter } from "./ModifierMeter";
 import { ScreenLayout } from "./ScreenLayout";
 import { StatusChip } from "./StatusChip";
@@ -125,27 +125,7 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                 <Show when={props.model.focused.effects.length > 0}>
                     <section class="kcq-character-section kcq-character-effects" aria-labelledby="character-effects-heading">
                         <h2 id="character-effects-heading">{props.model.labels.buffsHeading}</h2>
-                        <div class="kcq-character-effects__list">
-                            <For each={props.model.focused.effects}>
-                                {(effect) => (
-                                    <div class="kcq-character-effect">
-                                        <span class="kcq-character-effect__name">{effect.name}</span>
-                                        <span class="kcq-character-effect__details">
-                                            <Show when={effect.linkedEntity} keyed>
-                                                {(link) => <LinkedEntityChip link={link} />}
-                                            </Show>
-                                            <For each={effect.details}>
-                                                {(detail) => (
-                                                    <StatusChip size="compact" tone={detail.tone}>
-                                                        {detail.label}
-                                                    </StatusChip>
-                                                )}
-                                            </For>
-                                        </span>
-                                    </div>
-                                )}
-                            </For>
-                        </div>
+                        <EffectDetails effects={props.model.focused.effects} />
                     </section>
                 </Show>
 

@@ -22,7 +22,7 @@ import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
 const enemy = (id: string, buffs: Buff[] = []): Enemy => ({
-    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, currDef: 0, buffs, intentions: [], cooldowns: {},
+    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, currDef: 0, modifiers: {}, buffs, intentions: [], cooldowns: {},
 });
 const state = (): GameState => ({
     turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },

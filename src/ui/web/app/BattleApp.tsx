@@ -23,6 +23,7 @@ import { BattleResultPanel } from "./panels/BattleResultPanel";
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
+import { EnemyDetailsPanel } from "./panels/EnemyDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
 import { GameLogPanel } from "./panels/GameLogPanel";
 import type { GameLogPresentationEntry } from "../../presentation/gameLog";
@@ -45,6 +46,7 @@ export interface BattleAppProps {
 
 export type BattleScreen =
     | { kind: "overview" }
+    | { kind: "enemy"; enemyId: EntityId }
     | { kind: "character"; actorId: EntityId }
     | { kind: "targeting"; actorId: EntityId; moveId: MoveId }
     | { kind: "escape"; actorId: EntityId };
@@ -90,6 +92,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             ? current
             : undefined;
     });
+    const enemyScreen = createMemo(() => {
+        const current = screen();
+        return current.kind === "enemy" && state().enemies.some(({ id }) => id === current.enemyId)
+            ? current : undefined;
+    });
     const escapeScreen = createMemo<EscapeScreen | undefined>(() => {
         const current = screen();
         return current.kind === "escape" && actorExists(current.actorId)
@@ -107,6 +114,10 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     createEffect(() => {
         const current = screen();
+        if (current.kind === "enemy") {
+            if (!enemyScreen()) setScreen({ kind: "overview" });
+            return;
+        }
         if (current.kind === "character" || current.kind === "escape") {
             if (!actorExists(current.actorId)) setScreen({ kind: "overview" });
             return;
@@ -144,6 +155,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const selectCharacter = (actorId: EntityId): void => {
         if (modalOpen()) return;
         setScreen({ kind: "character", actorId });
+    };
+
+    const selectEnemy = (enemyId: EntityId): void => {
+        if (modalOpen() || !state().enemies.some(({ id }) => id === enemyId)) return;
+        setScreen({ kind: "enemy", enemyId });
     };
 
     const scrollToBottom = (): void => {
@@ -266,6 +282,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                             state={state()}
                             thresholds={thresholds()}
                             onSelectCharacter={selectCharacter}
+                            onSelectEnemy={selectEnemy}
                             onSettings={openSettings}
                             onGameLog={toggleLog}
                             onEndTurn={endTurn}
@@ -274,6 +291,12 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         <Match when={resultModel()}>
                             <BattleOverviewPanel actions={actions()} presentation={props.presentation}
                                 state={state()} thresholds={thresholds()} />
+                        </Match>
+                        <Match when={enemyScreen()} keyed>
+                            {(current) => <EnemyDetailsPanel
+                                actions={actions()} enemyId={current.enemyId}
+                                presentation={props.presentation} state={state()} thresholds={thresholds()}
+                                onBack={back} />}
                         </Match>
                         <Match when={characterScreen()} keyed>
                             {(current) => (

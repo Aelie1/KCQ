@@ -8,6 +8,8 @@ import { BattleApp } from "../BattleApp";
 import { battleResultFixtures } from "../fixtures/battleResult";
 import { BattleResultPanel } from "../panels/BattleResultPanel";
 import { battleOverviewFixture } from "../fixtures/battleOverview";
+import { enemyDetailsFixture } from "../fixtures/enemyDetails";
+import { EnemyDetailsPanel } from "../panels/EnemyDetailsPanel";
 import { characterDetailsFixture } from "../fixtures/characterDetails";
 import { escapeFixtures } from "../fixtures/escape";
 import { gameLogFixture } from "../fixtures/gameLog";
@@ -55,6 +57,9 @@ export function DevApp(props: DevAppProps = {}): JSX.Element {
                             </Match>
                             <Match when={panel() === "character"}>
                                 <CharacterDetailsPanel {...characterDetailsFixture} />
+                            </Match>
+                            <Match when={panel() === "enemy"}>
+                                <EnemyDetailsPanel {...enemyDetailsFixture} />
                             </Match>
                             <Match when={panel() === "targeting"}>
                                 <TargetingPanel {...targetingFixtures.telekinesisChoose} />

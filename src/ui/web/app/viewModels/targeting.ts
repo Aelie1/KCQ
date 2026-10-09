@@ -74,7 +74,7 @@ export function createTargetingViewModel(
         available: action.available,
         ...(heading ? { heading } : {}),
         command: { id: action.move.id, name: moveName, tags: createMoveTags(action, state, actor, presentation) },
-        targets: action.move.targets === 0 ? [] : action.targets.map((preview, index) => createTargetPreview(
+        targets: action.move.targets === 0 ? [] : action.targets.map((preview, index) => createTargetPreviewViewModel(
             state, actions, preview, index, presentation, thresholds,
         )),
         actionEffects: [...zeroTargetPreviewEffects, ...grouped.ungrouped],
@@ -130,9 +130,9 @@ function targetingHeading(action: ActionInfo, presentation: Presentation): strin
     return undefined;
 }
 
-function createTargetPreview(
+export function createTargetPreviewViewModel(
     state: GameState, actions: readonly ActionView[], preview: ActionInfo["targets"][number], index: number,
-    presentation: Presentation, thresholds?: ThresholdInfo,
+    presentation: Presentation, thresholds?: ThresholdInfo, omitDataEffects = true,
 ): TargetPreviewViewModel {
     const targetId = preview.target;
     const enemy = targetId ? state.enemies.find(({ id }) => id === targetId) : undefined;
@@ -152,7 +152,7 @@ function createTargetPreview(
         ...base, ...identity, valid: true, accuracy: preview.accuracy, damage: preview.damage,
         effects: createPreviewEffects(preview, base.id, {
             actions, state, presentation, thresholds, ...(targetId ? { scopeTarget: targetId } : {}),
-        }, true),
+        }, omitDataEffects),
     };
 }
 

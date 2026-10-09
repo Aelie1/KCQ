@@ -6,7 +6,7 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
-import { COMBAT_SHORTCUTS } from "../keyboard";
+import { combatShortcut, COMBAT_SHORTCUTS } from "../keyboard";
 import { Shortcut } from "../components/Shortcut";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
@@ -22,6 +22,7 @@ export interface BattleOverviewPanelProps {
     onSettings?: () => void;
     onEndTurn?: () => void;
     onGameLog?: () => void;
+    onSelectEnemy?: (id: EntityId) => void;
     onSelectCharacter?: (id: EntityId) => void;
 }
 
@@ -55,7 +56,9 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     </header>
                     <div class="kcq-battle-overview__enemies">
                         <For each={model().enemies}>
-                            {(enemy) => <EnemyCard enemy={enemy} />}
+                            {(enemy, index) => <EnemyCard enemy={enemy}
+                                shortcut={combatShortcut(index() + 3)}
+                                onSelect={props.onSelectEnemy ? () => props.onSelectEnemy?.(enemy.id) : undefined} />}
                         </For>
                     </div>
                 </section>

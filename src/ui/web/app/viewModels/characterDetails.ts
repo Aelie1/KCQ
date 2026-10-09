@@ -290,18 +290,25 @@ function createModifierMeter(
         : (definition.availability === "escape" && !action.escape.available);
     const value = character.modifiers[definition.modifier] ?? 0;
 
+    return createModifierMeterViewModel(definition.modifier, value, presentation, blocked,
+        definition.moveType ? presentation.moveType(definition.moveType) : undefined);
+}
+
+export function createModifierMeterViewModel(
+    modifier: ModifierId,
+    value: number,
+    presentation: Presentation,
+    blocked = false,
+    label = presentation.modifier(modifier),
+): ModifierMeterViewModel {
     return {
-        label: definition.moveType
-            ? presentation.moveType(definition.moveType)
-            : presentation.modifier(definition.modifier),
+        label,
         blocked,
         value,
         valueLabel: blocked
             ? presentation.ui("characterDetails.blocked")
-            : presentation.ui("characterDetails.modifierValue", {
-                value: formatSignedNumber(value),
-            }),
-        tone: modifierTone(definition.modifier, value, blocked),
+            : presentation.ui("characterDetails.modifierValue", { value: formatSignedNumber(value) }),
+        tone: modifierTone(modifier, value, blocked),
     };
 }
 
@@ -321,7 +328,7 @@ function modifierTone(
     return beneficial ? "success" : "danger";
 }
 
-function createEffectDetail(
+export function createEffectDetail(
     buff: Buff,
     state: GameState,
     presentation: Presentation,

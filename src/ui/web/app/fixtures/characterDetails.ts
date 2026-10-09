@@ -220,6 +220,8 @@ const state = {
         maxHp: 200,
         currHp: 200,
         currDef: 0,
+
+        modifiers: {},
         intentions: [],
         buffs: [],
         cooldowns: {},

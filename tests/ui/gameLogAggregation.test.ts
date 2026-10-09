@@ -9,7 +9,7 @@ const character = (id: string, standing = false, buffs: Buff[] = [], bindings: B
     id, standing, buffs, bindings, acted: false, bonusEscapes: 0, cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
 });
 const enemy = (id: string, buffs: Buff[] = []): Enemy => ({
-    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, currDef: 0, intentions: [], buffs, cooldowns: {},
+    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, currDef: 0, modifiers: {}, intentions: [], buffs, cooldowns: {},
 });
 const state = (characters: Character[] = [character("ko")], enemies: Enemy[] = [enemy("skunkette1")]): GameState => ({
     characters, enemies, turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },

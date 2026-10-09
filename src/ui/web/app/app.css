@@ -104,6 +104,7 @@ button {
 }
 
 @media (min-width: 481px) {
+
     /* Expand the clip boundary into the app's outer padding, then inset the
        content by the same amount. Cards keep their width and position while
        the 14px badges' 25% overhang fits inside the scroll viewport.
@@ -1595,7 +1596,7 @@ button {
 
 .kcq-modifier-meter {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 60px 17px;
+    grid-template-columns: minmax(0, 1fr) 60px 20px;
     gap: 2px;
     align-items: center;
     width: 100%;
@@ -1650,7 +1651,7 @@ button {
 }
 
 .kcq-modifier-meter__value {
-    width: 17px;
+    width: 20px;
     overflow: hidden;
     color: var(--kcq-text-muted);
     font-weight: 600;
@@ -3566,6 +3567,7 @@ button {
 }
 
 @media (max-width: 480px) {
+
     /* Hints are suppressed on phones. Contain fixed-width content within the
        vertical viewport without changing card dimensions. */
     .kcq-screen-layout__content {
@@ -3575,4 +3577,55 @@ button {
     .kcq-shortcut {
         display: none;
     }
+}
+
+.kcq-enemy-details__identity {
+    height: auto;
+    min-height: 50px;
+}
+
+.kcq-enemy-details__intentions,
+.kcq-enemy-details__intention {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+}
+
+.kcq-enemy-details__intention+.kcq-enemy-details__intention {
+    padding-top: 7px;
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-enemy-details .kcq-target-header {
+    flex-wrap: wrap;
+    height: auto;
+}
+
+.kcq-enemy-details .kcq-target-header__character-state {
+    flex-shrink: 1;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.kcq-enemy-details .kcq-character-effect {
+    grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+}
+
+.kcq-enemy-details .kcq-character-effect__name {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.kcq-enemy-details .kcq-target-card>.kcq-status-chip {
+    align-self: flex-start;
+}
+
+.kcq-enemy-details__empty {
+    margin: 0;
+    color: var(--kcq-text-muted);
+    font-size: 11px;
+}
+
+.kcq-enemy-details .kcq-selected-command__tags:empty {
+    display: none;
 }

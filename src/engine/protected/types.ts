@@ -41,7 +41,7 @@ export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modi
     bindings: iBinding[];
 }
 
-export interface iEnemy extends Omit<Enemy, "buffs" | "intentions"> {
+export interface iEnemy extends Omit<Enemy, "buffs" | "intentions" | "modifiers"> {
     definition: EnemyDef;
     intentions: iIntention[];
     buffs: iBuff[];

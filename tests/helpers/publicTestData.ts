@@ -43,6 +43,8 @@ export function makePublicEnemy(
         maxHp: 100,
         currHp: 100,
         currDef: 0,
+
+        modifiers: {},
         intentions: [],
         buffs: [],
         cooldowns: {},

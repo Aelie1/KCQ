@@ -10,6 +10,8 @@ import { EncounterDetailsPanel } from "../../src/ui/web/app/components/Encounter
 import { EncounterPickerPanel } from "../../src/ui/web/app/components/EncounterPickerPanel";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
+import { enemyDetailsFixture } from "../../src/ui/web/app/fixtures/enemyDetails";
+import { EnemyDetailsPanel } from "../../src/ui/web/app/panels/EnemyDetailsPanel";
 import { escapeFixtures } from "../../src/ui/web/app/fixtures/escape";
 import { gameLogFixture } from "../../src/ui/web/app/fixtures/gameLog";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
@@ -38,6 +40,8 @@ const screens = [
         content: "kcq-battle-section", footer: "kcq-battle-overview__footer", roster: false },
     { name: "Character Details", render: () => createComponent(CharacterDetailsPanel, characterDetailsFixture),
         content: "kcq-character-commands", footer: "kcq-character-details__footer", roster: true },
+    { name: "Enemy Details", render: () => createComponent(EnemyDetailsPanel, enemyDetailsFixture),
+        content: "kcq-enemy-details__intentions", footer: undefined, roster: false },
     { name: "Targeting", render: () => createComponent(TargetingPanel, targetingFixtures.telekinesisReady),
         content: "kcq-targeting__panel", footer: "kcq-targeting__footer", roster: true },
     { name: "Escape", render: () => createComponent(EscapePanel, escapeFixtures.selectedAssist),

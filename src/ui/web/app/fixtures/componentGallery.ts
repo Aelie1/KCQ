@@ -53,6 +53,8 @@ function enemy(id: string, currHp: number, maxHp: number, intentions: Intention[
         currHp,
         maxHp,
         currDef: 0,
+
+        modifiers: {},
         intentions,
         buffs: [],
         cooldowns: {},

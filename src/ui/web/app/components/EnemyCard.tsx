@@ -2,17 +2,33 @@ import { For, Show, type JSX } from "solid-js";
 import type { EnemyCardData } from "./componentTypes";
 import { IntentRow } from "./IntentRow";
 import { LinkedEntityChip } from "./LinkedEntityChip";
+import { Shortcut } from "./Shortcut";
 import { StatusChip } from "./StatusChip";
 
 export type { EnemyCardData } from "./componentTypes";
 
 export interface EnemyCardProps {
     enemy: EnemyCardData;
+    onSelect?: () => void;
+    shortcut?: string;
 }
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
     return (
-        <article class="kcq-enemy-card" aria-label={props.enemy.name}>
+        <article class="kcq-enemy-card" classList={{ "kcq-shortcut-host": !!props.onSelect }}
+            aria-label={props.enemy.name}
+            role={props.onSelect ? "button" : undefined}
+            tabIndex={props.onSelect ? 0 : undefined}
+            data-kcq-shortcut={props.onSelect ? props.shortcut : undefined}
+            onClick={() => props.onSelect?.()}
+            onKeyDown={event => {
+                if (props.onSelect && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    props.onSelect();
+                }
+            }}
+        >
+            <Show when={props.onSelect}><Shortcut shortcut={props.shortcut} /></Show>
             <header class="kcq-enemy-card__header">
                 <h3 class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
                 <For each={props.enemy.linkedEntities}>
