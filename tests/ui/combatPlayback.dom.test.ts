@@ -212,6 +212,36 @@ describe("BattleApp playback integration", () => {
         for (const entry of expected) if (entry.title) expect(element(".kcq-game-log__scroll").textContent).toContain(entry.title);
         expect(b.engine.getGameState()).toEqual(b.final);
     });
+    it("retains independent binding glows after normal enemy playback completes", () => {
+        const b = mountBattle();
+        endTurn(); b.paint(); b.paint();
+        const glows = () => [...document.querySelectorAll<HTMLElement>(".kcq-party-card .kcq-binding-reaction")];
+        const first = glows();
+        expect(first).toHaveLength(2);
+        vi.advanceTimersByTime(500);
+        const second = glows()[2]!;
+        vi.advanceTimersByTime(500);
+        const final = glows().slice(3);
+        expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("false");
+        expect(glows()).toHaveLength(5);
+        expect(glows().slice(0, 2)).toEqual(first);
+        expect(final).toHaveLength(2);
+        vi.advanceTimersByTime(1499);
+        expect(glows()).toHaveLength(5);
+        vi.advanceTimersByTime(1);
+        expect(first.every(glow => !glow.isConnected)).toBe(true);
+        expect(glows()).toEqual([second, ...final]);
+        vi.advanceTimersByTime(500);
+        expect(second.isConnected).toBe(false);
+        expect(glows()).toEqual(final);
+        vi.advanceTimersByTime(499);
+        expect(glows()).toEqual(final);
+        vi.advanceTimersByTime(1);
+        expect(glows()).toEqual([]);
+        expect(vi.getTimerCount()).toBe(0);
+        expect(b.execute).toHaveBeenCalledOnce();
+        expect(binding()).toBe(36);
+    });
     it.each([false, true])("blocks mouse and keyboard throughout playback (shared keyboard: %s)", shared => {
         const b = mountBattle(undefined, undefined, shared); const party = element(".kcq-party-card"); const enemy = element(".kcq-enemy-card");
         endTurn();
@@ -237,6 +267,8 @@ describe("BattleApp playback integration", () => {
     });
     it("keeps Instant immediate and lets settings change speed during the same battle", () => {
         const b = mountBattle("instant"); endTurn();
+        expect(document.querySelector(".kcq-binding-reaction")).toBeNull();
+        expect(vi.getTimerCount()).toBe(0);
         expect(binding()).toBe(36); expect(actors()).toHaveLength(3); expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("false");
         element(".kcq-combat-header__settings").click();
         const select = element<HTMLSelectElement>(".kcq-battle-settings__playback-speed select"); expect(select.value).toBe("instant");
@@ -260,6 +292,8 @@ describe("BattleApp playback integration", () => {
         expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(499); expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(1); expect(document.querySelector(".kcq-battle-result--" + outcome)).not.toBeNull();
+        expect(document.querySelector(".kcq-binding-reaction")).toBeNull();
+        expect(vi.getTimerCount()).toBe(0);
         expect(b.onVictory).toHaveBeenCalledTimes(outcome === "victory" ? 1 : 0);
         expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(true);
         element(".kcq-battle-result__log").click();

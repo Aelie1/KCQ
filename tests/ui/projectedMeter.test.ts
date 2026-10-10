@@ -1,6 +1,6 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ProjectedMeter, type ProjectedMeterProps } from "../../src/ui/web/app/components/ProjectedMeter";
 
 const render = (props: ProjectedMeterProps) => renderToString(() => createComponent(ProjectedMeter, props));
@@ -36,6 +36,29 @@ describe("projected meter", () => {
         expect(html).toContain('aria-valuenow="' + current + '"');
         expect(html).toContain('class="kcq-projected-meter__value" style="width:' + fill + '%"');
         expect(html).toContain(fill === 0 ? "left:0%;width:" + delta + "%" : "width:calc(" + delta + "% + var(--kcq-projected-meter-radius))");
+    });
+
+    it.each([
+        { treatment: "increase", from: 20, to: 30, left: 20, width: 10 },
+        { treatment: "recovery", from: 30, to: 20, left: 20, width: 10 },
+        { treatment: "increase", from: 90, to: 120, left: 90, width: 10 },
+        { treatment: "recovery", from: 20, to: -5, left: 0, width: 20 },
+    ])("keeps $treatment glow geometry precise and resumes its remaining lifetime", ({ treatment, from, to, left, width }) => {
+        const clock = vi.spyOn(Date, "now").mockReturnValue(1750);
+        try {
+            const html = render({ value: 30, max: 100, tone: "heavy", classPrefix: "kcq-binding-meter", reactions: [{
+                kind: "binding", entity: "ko", detail: "latexHead", treatment, from, to,
+                serial: 1, started: 1000, duration: 2500,
+            }] });
+            expect(html).toContain('data-combat-reaction="' + treatment + '"');
+            expect(html).toContain('left:' + left + '%;width:' + width + '%');
+            expect(html).toContain("kcq-react-binding-fade 2500ms linear -750ms forwards");
+            expect(html).toContain("kcq-binding-meter--heavy");
+            expect(html).toContain('aria-valuenow="30"');
+            expect(html).toContain('class="kcq-binding-meter__value" style="width:30%"');
+        } finally {
+            clock.mockRestore();
+        }
     });
 
     it("handles zero capacity without invalid geometry and clamps the peak", () => {

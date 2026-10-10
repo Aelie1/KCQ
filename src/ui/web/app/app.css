@@ -4053,36 +4053,25 @@ button {
     inset: 0 auto 0 0;
     z-index: 3;
     pointer-events: none;
+    opacity: 0;
+    /* Inset light survives the meter's clipping and stays inside this segment.
+       The transparent center retains the underlying severity fill. */
+    box-shadow: inset 0 3px 4px -1px var(--kcq-binding-reaction-glow),
+        inset 0 -3px 4px -1px var(--kcq-binding-reaction-glow);
+    mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
 }
 
 .kcq-binding-reaction[data-combat-reaction="increase"] {
-    background: repeating-linear-gradient(115deg, #ffe6afcc 0 2px, #fff4c455 2px 5px);
+    --kcq-binding-reaction-glow: #ff2424;
 }
 
 .kcq-binding-reaction[data-combat-reaction="recovery"] {
-    background: repeating-linear-gradient(25deg, #94ead9bb 0 2px, transparent 2px 5px);
-    border-block: 1px solid #94ead9;
+    --kcq-binding-reaction-glow: #94ead9;
 }
 
-@keyframes kcq-react-binding-increase {
-
-    0%,
-    35% {
-        opacity: .9;
-    }
-
-    65% {
-        opacity: .5;
-    }
-
-    100% {
-        opacity: 0;
-    }
-}
-
-@keyframes kcq-react-binding-recovery {
+@keyframes kcq-react-binding-fade {
     from {
-        opacity: .85;
+        opacity: 1;
     }
 
     to {

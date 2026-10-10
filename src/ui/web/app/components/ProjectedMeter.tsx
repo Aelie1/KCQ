@@ -81,14 +81,17 @@ export function ProjectedMeter(props: ProjectedMeterProps): JSX.Element {
                     aria-hidden="true"
                 />
             </Show>
-            <For each={props.reactions}>{cue => (
-                <span class="kcq-binding-reaction" data-combat-reaction={cue.treatment}
+            <For each={props.reactions}>{cue => {
+                // Capture elapsed time once per cue so reactive geometry updates
+                // cannot seek or restart an earlier segment's fade.
+                const animation = `kcq-react-binding-fade ${cue.duration}ms linear ${-Math.max(0, Date.now() - cue.started)}ms forwards`;
+                return <span class="kcq-binding-reaction" data-combat-reaction={cue.treatment}
                     style={{
                         left: `${percent(clamp(Math.min(cue.from!, cue.to!), 0, maximum()))}%`,
                         width: `${percent(Math.abs(clamp(cue.to!, 0, maximum()) - clamp(cue.from!, 0, maximum())))}%`,
-                        animation: `kcq-react-binding-${cue.treatment} ${cue.duration}ms ease-out ${-Math.max(0, Date.now() - cue.started)}ms`,
-                    }} aria-hidden="true" />
-            )}</For>
+                        animation,
+                    }} aria-hidden="true" />;
+            }}</For>
         </span>
     );
 }

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EventFrame, GameEvent } from "../../src/engine/public/types";
 import { CombatReactionsContext, createCombatReactions } from "../../src/ui/web/app/combatReactions";
 import { createCombatPlayback } from "../../src/ui/web/app/combatPlayback";
+import { ProjectedMeter } from "../../src/ui/web/app/components/ProjectedMeter";
 import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
 import { battleOverviewFixture as fixture } from "../../src/ui/web/app/fixtures/battleOverview";
 
@@ -50,7 +51,7 @@ function element(selector: string) {
 }
 
 describe("combat reaction rendering and lifecycle", () => {
-    it("restarts repeated actor actions on stable card and name nodes, without unrelated flashes", () => {
+    it("restarts repeated actor actions on stable cards without flashing names or unrelated entities", () => {
         const b = mount();
         const enemy = element(".kcq-enemy-card");
         const name = element(".kcq-enemy-card__name");
@@ -60,8 +61,11 @@ describe("combat reaction rendering and lifecycle", () => {
         b.present(move());
         const firstSerial = b.reactions.matching("actor", "skunkette1")[0]!.serial;
         expect(enemy.style.animation).not.toBe("");
-        expect(name.dataset.combatReaction).toBe("actor");
-        expect(party.dataset.combatReaction).toBe("target");
+        expect(name.dataset.combatReaction).toBeUndefined();
+        expect(name.style.animation).toBe("");
+        expect(party.dataset.combatReaction).toBeUndefined();
+        expect(party.style.animation).toBe("");
+        expect(element(".kcq-party-card__name").dataset.combatReaction).toBeUndefined();
         expect(otherEnemy.dataset.combatReaction).toBeUndefined();
         vi.advanceTimersByTime(100);
         b.present(move());
@@ -79,23 +83,96 @@ describe("combat reaction rendering and lifecycle", () => {
         const initialValue = Number(meter.getAttribute("aria-valuenow"));
         b.present(move(5), state => { state.characters[0]!.bindings[0]!.value += 5; });
         const first = element(".kcq-binding-reaction");
+        const firstAnimation = first.style.animation;
+        const maximum = Number(meter.getAttribute("aria-valuemax"));
+        expect(first.style.left).toBe(`${initialValue / maximum * 100}%`);
+        expect(first.style.width).toBe(`${5 / maximum * 100}%`);
+        expect(firstAnimation).toBe("kcq-react-binding-fade 2500ms linear 0ms forwards");
+        expect(first.getAttribute("aria-hidden")).toBe("true");
+        expect(meter.style.animation).toBe("");
         expect(Number(meter.getAttribute("aria-valuenow"))).toBe(initialValue + 5);
         expect(b.reactions.matching("binding", "ko", "latexHead")[0]).toMatchObject({ from: initialValue, to: initialValue + 5 });
         vi.advanceTimersByTime(500);
         b.present(move(3), state => { state.characters[0]!.bindings[0]!.value += 3; });
+        const second = document.querySelectorAll<HTMLElement>(".kcq-party-card .kcq-binding-reaction")[1]!;
         expect(document.querySelectorAll(".kcq-party-card .kcq-binding-reaction")).toHaveLength(2);
+        expect(second.style.left).toBe(`${(initialValue + 5) / maximum * 100}%`);
+        expect(second.style.width).toBe(`${3 / maximum * 100}%`);
+        expect(second.style.animation).toBe(firstAnimation);
+        expect(first.style.animation).toBe(firstAnimation);
         expect(element(".kcq-binding-reaction")).toBe(first);
         expect(element(".kcq-party-card [role=progressbar]")).toBe(meter);
         expect(Number(meter.getAttribute("aria-valuenow"))).toBe(initialValue + 8);
         expect(document.querySelector(".kcq-binding-meter__change")).not.toBeNull();
-        vi.advanceTimersByTime(500);
+        vi.advanceTimersByTime(1999);
+        expect(first.isConnected).toBe(true);
+        expect(first.style.animation).toBe(firstAnimation);
+        vi.advanceTimersByTime(1);
         expect(first.isConnected).toBe(false);
-        expect(document.querySelectorAll(".kcq-party-card .kcq-binding-reaction")).toHaveLength(1);
+        expect(element(".kcq-binding-reaction")).toBe(second);
+        expect(second.style.animation).toBe(firstAnimation);
         b.present(move(-8), state => { state.characters[0]!.bindings[0]!.value -= 8; });
-        expect(b.reactions.matching("binding", "ko", "latexHead").at(-1)).toMatchObject({ treatment: "recovery" });
+        const recovery = document.querySelectorAll<HTMLElement>(".kcq-party-card .kcq-binding-reaction")[1]!;
+        expect(recovery.dataset.combatReaction).toBe("recovery");
+        expect(recovery.style.animation).toBe(firstAnimation);
+        expect(b.reactions.matching("binding", "ko", "latexHead").at(-1)).toMatchObject({
+            treatment: "recovery", from: initialValue + 8, to: initialValue, duration: 2500,
+        });
         expect(Number(meter.getAttribute("aria-valuenow"))).toBe(initialValue);
-        vi.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(500);
+        expect(second.isConnected).toBe(false);
+        expect(element(".kcq-binding-reaction")).toBe(recovery);
+        vi.advanceTimersByTime(1999);
+        expect(recovery.isConnected).toBe(true);
+        vi.advanceTimersByTime(1);
+        expect(recovery.isConnected).toBe(false);
         expect(b.reactions.cues()).toEqual([]);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+    it("preserves a glow's animation timing when reactive meter geometry changes", () => {
+        const [maximum, setMaximum] = createSignal(100);
+        const host = document.createElement("div"); document.body.append(host);
+        dispose = render(() => createComponent(ProjectedMeter, {
+            value: 30, tone: "heavy", classPrefix: "kcq-binding-meter",
+            get max() { return maximum(); },
+            reactions: [{ kind: "binding", entity: "ko", treatment: "increase", from: 20, to: 30,
+                serial: 1, started: Date.now(), duration: 2500 }],
+        }), host);
+        const glow = element(".kcq-binding-reaction");
+        const animation = glow.style.animation;
+        expect(glow.style.left).toBe("20%");
+        expect(glow.style.width).toBe("10%");
+        vi.advanceTimersByTime(750);
+        setMaximum(200);
+        expect(element(".kcq-binding-reaction")).toBe(glow);
+        expect(glow.style.left).toBe("10%");
+        expect(glow.style.width).toBe("5%");
+        expect(glow.style.animation).toBe(animation);
+    });
+    it("keeps spatially overlapping hits on separate nodes without restarting earlier fades", () => {
+        const b = mount();
+        b.present(move(5));
+        const first = element(".kcq-binding-reaction");
+        const animation = first.style.animation;
+        const firstCue = b.reactions.matching("binding", "ko", "latexHead")[0]!;
+        vi.advanceTimersByTime(1000);
+        b.present(move(5));
+        const second = document.querySelectorAll<HTMLElement>(".kcq-party-card .kcq-binding-reaction")[1]!;
+        const cues = b.reactions.matching("binding", "ko", "latexHead");
+        expect(cues[0]).toBe(firstCue);
+        expect(cues[1]!.started - firstCue.started).toBe(1000);
+        expect(second.style.left).toBe(first.style.left);
+        expect(second.style.width).toBe(first.style.width);
+        expect(first.style.animation).toBe(animation);
+        expect(second).not.toBe(first);
+        vi.advanceTimersByTime(1500);
+        expect(first.isConnected).toBe(false);
+        expect(element(".kcq-binding-reaction")).toBe(second);
+        expect(second.style.animation).toBe(animation);
+        vi.advanceTimersByTime(999);
+        expect(second.isConnected).toBe(true);
+        vi.advanceTimersByTime(1);
+        expect(second.isConnected).toBe(false);
         expect(vi.getTimerCount()).toBe(0);
     });
     it("pulses explicit buff events, silently ticks duration on the same chip and removes gameplay buffs immediately", () => {
@@ -171,7 +248,7 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(document.querySelector(".kcq-buff-exit")).toBeNull();
         expect(vi.getTimerCount()).toBe(0);
     });
-    it.each([250, 500, 1000])("lets playback at %sms finish while its final pulses expire, with no queued publications", interval => {
+    it.each([250, 500, 1000])("lets playback at %sms finish while its final glows expire, with no queued publications", interval => {
         const host = document.createElement("div");
         const initial = structuredClone(fixture.state);
         let reactions!: ReturnType<typeof createCombatReactions>;
@@ -188,8 +265,10 @@ describe("combat reaction rendering and lifecycle", () => {
         vi.advanceTimersByTime(interval);
         expect(playback.active()).toBe(false);
         expect(complete).toHaveBeenCalledOnce();
-        expect(reactions.matching("binding", "ko", "latexHead")).toHaveLength(interval < 1000 ? 2 : 1);
-        vi.advanceTimersByTime(1000);
+        expect(reactions.matching("binding", "ko", "latexHead")).toHaveLength(2);
+        vi.advanceTimersByTime(2499);
+        expect(reactions.matching("binding", "ko", "latexHead")).toHaveLength(1);
+        vi.advanceTimersByTime(1);
         expect(reactions.cues()).toEqual([]);
         expect(vi.getTimerCount()).toBe(0);
     });
