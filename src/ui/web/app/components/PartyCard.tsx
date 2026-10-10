@@ -21,7 +21,6 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
 
     return (
         <article
-            ref={cardReaction}
             class="kcq-party-card kcq-shortcut-host"
             classList={{ "kcq-party-card--ready": props.character.actionState.kind === "ready" }}
             data-kcq-shortcut={interactive() ? props.shortcut : undefined}
@@ -39,7 +38,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
             <Shortcut shortcut={props.shortcut} />
             <header class="kcq-party-card__header">
                 <div class="kcq-party-card__identity">
-                    <h3 ref={reactionRef("actor", () => props.character.id)} class="kcq-party-card__name" classList={{ [`kcq-player-identity--${props.character.tone}`]: true }} title={props.character.name}>
+                    <h3 class="kcq-party-card__name" classList={{ [`kcq-player-identity--${props.character.tone}`]: true }} title={props.character.name}>
                         {props.character.name}
                     </h3>
                     <Show when={props.character.resourceLabel !== undefined}>

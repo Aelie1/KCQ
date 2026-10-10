@@ -110,7 +110,11 @@ describe("state serialization and combatant loading", () => {
         ]);
         const snapshot = serializeGameState(state, statuses);
         expect(snapshot.enemies[0].modifiers).toEqual({ potency: 2, hit: 9, defense: -2 });
-        expect(snapshot.enemies[0].buffs).toHaveLength(1);
+        expect(snapshot.enemies[0].buffs).toHaveLength(2);
+        expect(snapshot.enemies[0].buffs).toMatchObject([
+            { id: "active", modifiers: { defense: -2, hit: 8 } },
+            { id: "inactive", modifiers: { hit: 100 } },
+        ]);
         snapshot.enemies[0].modifiers.hit = 999;
         expect(enemy.buffs[0].modifiers?.hit).toBe(8);
         expect(serializeGameState(state, statuses).enemies[0].modifiers.hit).toBe(9);
@@ -396,7 +400,22 @@ describe("state serialization and combatant loading", () => {
             modifiers: {},
             linkedEntity: undefined,
         });
-        expect(serialized.enemies[0].buffs).toHaveLength(1);
+        expect(serialized.characters[0].buffs).toHaveLength(2);
+        expect(serialized.characters[0].buffs[1]).toEqual({
+            id: "inactive-focus",
+            duration: undefined,
+            statuses: [{ id: status.id, value: 1 }],
+            modifiers: { hit: -100, defense: -100 },
+            linkedEntity: undefined,
+        });
+        expect(serialized.enemies[0].buffs).toHaveLength(2);
+        expect(serialized.enemies[0].buffs[1]).toEqual({
+            id: "inactive-enemy-focus",
+            duration: undefined,
+            statuses: [{ id: status.id, value: 1 }],
+            modifiers: {},
+            linkedEntity: undefined,
+        });
         expect(serialized.enemies[0].intentions).toEqual([{
             resolved: false,
             move: enemyMove.id,
@@ -423,6 +442,17 @@ describe("state serialization and combatant loading", () => {
         expect(internalStatus.value).toBe(1);
         expect(characterBuff.modifiers?.hit).toBe(-1);
         expect(enemyBuff.statuses?.[0].value).toBe(1);
+        expect(serialized.characters[0].buffs[1]).not.toHaveProperty("active");
+        expect(serialized.enemies[0].buffs[1]).not.toHaveProperty("active");
+        expect(serialized.characters[0].buffs[1]).not.toBe(inactiveCharacterBuff);
+        expect(serialized.enemies[0].buffs[1]).not.toBe(inactiveEnemyBuff);
+        serialized.characters[0].buffs[1].statuses![0].value = 77;
+        serialized.characters[0].buffs[1].modifiers!.hit = 77;
+        serialized.enemies[0].buffs[1].statuses![0].value = 66;
+        expect(inactiveCharacterBuff.statuses?.[0].value).toBe(1);
+        expect(inactiveCharacterBuff.modifiers?.hit).toBe(-100);
+        expect(inactiveCharacterBuff.active).toBe(false);
+        expect(inactiveEnemyBuff.statuses?.[0].value).toBe(1);
         expect(inactiveEnemyBuff.active).toBe(false);
     });
 });

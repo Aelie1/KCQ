@@ -98,16 +98,20 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(b.reactions.cues()).toEqual([]);
         expect(vi.getTimerCount()).toBe(0);
     });
-    it("pulses added and refreshed chips, ticks duration on the same chip and removes gameplay buffs immediately", () => {
+    it("pulses explicit buff events, silently ticks duration on the same chip and removes gameplay buffs immediately", () => {
         const b = mount();
         const buff = element(".kcq-party-card__effects .kcq-status-chip");
         b.present({ type: "changePhase", phase: "player", effects: [{ type: "buffUpdated", target: "ko", buff: "guarded" }] },
             state => { state.characters[0]!.buffs[0]!.duration = 5; });
         expect(element(".kcq-party-card__effects .kcq-status-chip")).toBe(buff);
         expect(buff.dataset.combatReaction).toBe("updated");
+        vi.advanceTimersByTime(1000);
+        expect(buff.dataset.combatReaction).toBeUndefined();
         b.present({ type: "changePhase", phase: "enemy", effects: [] },
             state => { state.characters[0]!.buffs[0]!.duration = 4; });
-        expect(buff.dataset.combatReaction).toBe("duration");
+        expect(element(".kcq-party-card__effects .kcq-status-chip")).toBe(buff);
+        expect(buff.dataset.combatReaction).toBeUndefined();
+        expect(b.reactions.matching("buff", "ko", "guarded")).toEqual([]);
         b.present({ type: "changePhase", phase: "player", effects: [{ type: "buffRemoved", target: "ko", buff: "guarded" }] },
             state => { state.characters[0]!.buffs = []; });
         expect(b.state().characters[0]!.buffs).toEqual([]);

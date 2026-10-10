@@ -50,7 +50,7 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                 </div>
             </Show>
             <header class="kcq-enemy-card__header">
-                <h3 ref={reactionRef("actor", () => props.enemy.id)} class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
+                <h3 class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
                 <For each={props.enemy.linkedEntities}>
                     {(link) => <LinkedEntityChip link={link} iconOnly />}
                 </For>

@@ -32,7 +32,7 @@ function serializeCharacter(character: iCharacter, status: GameStatus): Characte
         bonusEscapes: character.bonusEscapes,
         modifiers: status.getModifiers(),
         bindings: character.bindings.map(x => serializeBinding(character, x)),
-        buffs: character.buffs.filter(x => x.active).map(serializeBuff),
+        buffs: character.buffs.map(serializeBuff),
         cooldowns: { ...character.cooldowns },
         blockedMoveTypes: status.getBlockedMoveTypes(),
         data: { ...character.data }
@@ -48,7 +48,7 @@ function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): 
         currHp: enemy.currHp,
         currDef: enemy.currDef,
         intentions: enemy.intentions.map(x => (serializeIntention(state, statuses, x))),
-        buffs: enemy.buffs.filter(x => x.active).map(serializeBuff),
+        buffs: enemy.buffs.map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
         modifiers: getStatus(statuses, enemy).getModifiers(),
     };
@@ -163,7 +163,7 @@ function serializeBuff(buff: iBuff): Buff {
         statuses: buff.statuses?.map(serializeStatus),
         modifiers: { ...buff.modifiers },
         moveList: serializeMoveList(buff.moveList),
-        linkedEntity: buff.linkedEntity
+        linkedEntity: buff.linkedEntity,
     };
 }
 

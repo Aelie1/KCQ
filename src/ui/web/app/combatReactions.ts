@@ -87,19 +87,6 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
                 }
             }
         }
-        // Round ticking reduces durations without emitting buffUpdated. Compare
-        // only the stable buff's duration, never combat state to identify attacks.
-        for (const entity of entities(state)) {
-            const previous = entities(before).find(candidate => candidate.id === entity.id);
-            for (const buff of entity.buffs) {
-                const old = previous?.buffs.find(candidate => candidate.id === buff.id);
-                if (old?.duration !== undefined && buff.duration !== undefined && buff.duration < old.duration
-                    && !explicitBuffs.has(JSON.stringify([entity.id, buff.id]))) {
-                    cues.push({ kind: "buff", entity: entity.id, detail: buff.id, treatment: "duration" });
-                }
-            }
-        }
-        before = state;
     }
     return cues;
 }

@@ -15,8 +15,11 @@ import type {
 import type { GameLogPresentationEntry } from "../../presentation/gameLog";
 import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
+import { createCombatPlayback } from "./combatPlayback";
+import { CombatReactionsContext, createCombatReactions } from "./combatReactions";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import type { LanguageSelection } from "./language";
+import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
 import { BattleResultPanel } from "./panels/BattleResultPanel";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
@@ -25,10 +28,7 @@ import { EnemyDetailsPanel } from "./panels/EnemyDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
 import { GameLogPanel } from "./panels/GameLogPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
-import { CombatReactionsContext, createCombatReactions } from "./combatReactions";
-import { createCombatPlayback } from "./combatPlayback";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
-import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
@@ -186,8 +186,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     setLogOpen(false);
                     setScreen({ kind: "overview" });
                 }
-                playback.start(result.frames, nextState, action.type === "endTurn" ? positionOverview : undefined);
-                if (action.type === "endTurn" && playbackSpeed.value === "instant") scrollToBottom();
+                playback.start(result.frames, nextState);
                 notifyObserver(() => props.observer?.onOutcome?.(nextState.turn.outcome));
             }
             return result;
@@ -219,16 +218,6 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         for (const id of animationFrames) cancelAnimationFrame(id);
         animationFrames.clear();
     });
-    const overviewBody = () => stage?.querySelector<HTMLElement>(".kcq-battle-overview .kcq-screen-layout__body");
-    const positionOverview = (ready: () => void): (() => void) => {
-        let id = nextPaint(() => {
-            const body = overviewBody();
-            body?.scrollTo({ top: body.scrollHeight, behavior: "instant" });
-            // Wait for the scroll/layout to reach the viewport before revealing actions.
-            id = nextPaint(ready);
-        });
-        return () => { cancelAnimationFrame(id); animationFrames.delete(id); };
-    };
     const scrollToBottom = (): void => {
         nextPaint(() => {
             if (state().turn.outcome !== "ongoing" || playback.active()) return;
@@ -341,95 +330,95 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     return (
         <CombatReactionsContext.Provider value={reactions}>
-        <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
-            <div class="kcq-battle-stage__background" inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
-                <Show when={logOpen()}>
-                    <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
-                </Show>
-                <div hidden={logOpen()} inert={logOpen()} aria-hidden={logOpen() ? true : undefined}>
-                    <Switch fallback={
-                        <BattleOverviewPanel
-                            actions={actions()}
-                            gameLogLines={logOpen() ? 0 : overviewGameLog.value}
-                            history={logEntries()}
-                            library={library}
-                            presentation={props.presentation}
-                            state={state()}
-                            thresholds={thresholds()}
-                            onSelectCharacter={selectCharacter}
-                            onSelectEnemy={selectEnemy}
-                            inputBlocked={playback.active() || !!resultModel()}
-                            onSettings={resultModel() ? undefined : openSettings}
-                            onGameLog={resultModel() ? openResultLog : toggleLog}
-                            onEndTurn={endTurn}
-                        />
-                    }>
-                        <Match when={enemyScreen()}>
-                            {(current) => <EnemyDetailsPanel
-                                actions={actions()} enemyId={current().enemyId}
-                                presentation={props.presentation} state={state()} thresholds={thresholds()}
-                                onBack={back} />}
-                        </Match>
-                        <Match when={characterScreen()}>
-                            {(current) => (
-                                <CharacterDetailsPanel
-                                    actions={actions()}
-                                    focusedCharacterId={current().actorId}
-                                    presentation={props.presentation}
-                                    state={state()}
-                                    thresholds={thresholds()}
-                                    onBack={back}
-                                    onSelectCharacter={selectCharacter}
-                                    onSelectCommand={(commandId) => selectCommand(current().actorId, commandId)}
-                                />
-                            )}
-                        </Match>
-                        <Match when={targeting()} keyed>
-                            {(current) => (
-                                <TargetingPanel
-                                    action={current.action}
-                                    actions={actions()}
-                                    actorId={current.screen.actorId}
-                                    presentation={props.presentation}
-                                    state={state()}
-                                    thresholds={thresholds()}
-                                    onBack={back}
-                                    onHeaderBack={() => { if (!playback.active()) setScreen({ kind: "overview" }); }}
-                                    onSelectCharacter={selectCharacter}
-                                    onExecute={executeMove}
-                                />
-                            )}
-                        </Match>
-                        <Match when={escapeScreen()} keyed>
-                            {(current) => (
-                                <EscapePanel
-                                    actions={actions()}
-                                    actorId={current.actorId}
-                                    presentation={props.presentation}
-                                    state={state()}
-                                    thresholds={thresholds()}
-                                    onBack={back}
-                                    onHeaderBack={() => { if (!playback.active()) setScreen({ kind: "overview" }); }}
-                                    onSelectCharacter={selectCharacter}
-                                    onExecute={executeEscape}
-                                />
-                            )}
-                        </Match>
-                    </Switch>
+            <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
+                <div class="kcq-battle-stage__background" inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
+                    <Show when={logOpen()}>
+                        <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
+                    </Show>
+                    <div hidden={logOpen()} inert={logOpen()} aria-hidden={logOpen() ? true : undefined}>
+                        <Switch fallback={
+                            <BattleOverviewPanel
+                                actions={actions()}
+                                gameLogLines={logOpen() ? 0 : overviewGameLog.value}
+                                history={logEntries()}
+                                library={library}
+                                presentation={props.presentation}
+                                state={state()}
+                                thresholds={thresholds()}
+                                onSelectCharacter={selectCharacter}
+                                onSelectEnemy={selectEnemy}
+                                inputBlocked={playback.active() || !!resultModel()}
+                                onSettings={resultModel() ? undefined : openSettings}
+                                onGameLog={resultModel() ? openResultLog : toggleLog}
+                                onEndTurn={endTurn}
+                            />
+                        }>
+                            <Match when={enemyScreen()}>
+                                {(current) => <EnemyDetailsPanel
+                                    actions={actions()} enemyId={current().enemyId}
+                                    presentation={props.presentation} state={state()} thresholds={thresholds()}
+                                    onBack={back} />}
+                            </Match>
+                            <Match when={characterScreen()}>
+                                {(current) => (
+                                    <CharacterDetailsPanel
+                                        actions={actions()}
+                                        focusedCharacterId={current().actorId}
+                                        presentation={props.presentation}
+                                        state={state()}
+                                        thresholds={thresholds()}
+                                        onBack={back}
+                                        onSelectCharacter={selectCharacter}
+                                        onSelectCommand={(commandId) => selectCommand(current().actorId, commandId)}
+                                    />
+                                )}
+                            </Match>
+                            <Match when={targeting()} keyed>
+                                {(current) => (
+                                    <TargetingPanel
+                                        action={current.action}
+                                        actions={actions()}
+                                        actorId={current.screen.actorId}
+                                        presentation={props.presentation}
+                                        state={state()}
+                                        thresholds={thresholds()}
+                                        onBack={back}
+                                        onHeaderBack={() => { if (!playback.active()) setScreen({ kind: "overview" }); }}
+                                        onSelectCharacter={selectCharacter}
+                                        onExecute={executeMove}
+                                    />
+                                )}
+                            </Match>
+                            <Match when={escapeScreen()} keyed>
+                                {(current) => (
+                                    <EscapePanel
+                                        actions={actions()}
+                                        actorId={current.actorId}
+                                        presentation={props.presentation}
+                                        state={state()}
+                                        thresholds={thresholds()}
+                                        onBack={back}
+                                        onHeaderBack={() => { if (!playback.active()) setScreen({ kind: "overview" }); }}
+                                        onSelectCharacter={selectCharacter}
+                                        onExecute={executeEscape}
+                                    />
+                                )}
+                            </Match>
+                        </Switch>
+                    </div>
                 </div>
+                <Show when={settingsOpen()}>
+                    <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
+                        language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} returnFocus={settingsTrigger}
+                        onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
+                        onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
+                </Show>
+                <Show when={!logOpen() && resultModel()} keyed>
+                    {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
+                        onBackToLevelSelect={props.onBackToLevelSelect} onGameLog={openResultLog}
+                        focusGameLog={resultLogVisited()} />}
+                </Show>
             </div>
-            <Show when={settingsOpen()}>
-                <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
-                    language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} returnFocus={settingsTrigger}
-                    onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
-                    onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
-            </Show>
-            <Show when={!logOpen() && resultModel()} keyed>
-                {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
-                    onBackToLevelSelect={props.onBackToLevelSelect} onGameLog={openResultLog}
-                    focusGameLog={resultLogVisited()} />}
-            </Show>
-        </div>
         </CombatReactionsContext.Provider>
     );
 }

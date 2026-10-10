@@ -69,7 +69,7 @@ describe("semantic combat reactions", () => {
         expect(collectCombatReactions([f], initial()).filter(cue => cue.kind === "buff").map(cue => [cue.entity, cue.detail, cue.treatment]))
             .toEqual([["ko", "guarded", "added"], ["ko", "guarded", "updated"], ["queen", "weakened", "removed"]]);
     });
-    it("detects silent duration reduction without inferring attacks from changing state", () => {
+    it("does not react to silent duration reduction or infer attacks from changing state", () => {
         const before = initial();
         const buff = before.characters[0]!.buffs[0]!;
         buff.duration = 3;
@@ -77,7 +77,7 @@ describe("semantic combat reactions", () => {
         after.characters[0]!.buffs[0]!.duration = 2;
         after.enemies[0]!.currHp -= 10;
         const cues = collectCombatReactions([{ state: after, event: { type: "changePhase", phase: "player", effects: [] } }], before);
-        expect(cues).toEqual([{ kind: "buff", entity: "ko", detail: buff.id, treatment: "duration" }]);
+        expect(cues).toEqual([]);
     });
     it("does not flash an interrupted actor and includes escape actions", () => {
         const interrupted = frame({

@@ -384,7 +384,7 @@ describe("Barrier Magic", () => {
         const engine = makeEngine([testEnemy("skunk")], [move]);
 
         cast(engine, move, "skunk1");
-        expect(buffState(engine, BARRIER_ID, "skunk1")).toBeUndefined();
+        expect(buffState(engine, BARRIER_ID, "skunk1")).toMatchObject({ id: BARRIER_ID, duration });
         execute(engine, { type: "endTurn" });
 
         expect(buffState(engine, BARRIER_ID, "skunk1")).toMatchObject({ duration });
@@ -396,12 +396,13 @@ describe("Barrier Magic", () => {
         const engine = makeEngine([testEnemy("skunk")], [castBarrier, strike]);
 
         cast(engine, castBarrier, "skunk1");
-        expect(buffState(engine, BARRIER_ID, "skunk1")).toBeUndefined();
+        expect(buffState(engine, BARRIER_ID, "skunk1")).toMatchObject({ id: BARRIER_ID, duration: 2 });
         const result = cast(engine, strike, "skunk1");
 
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "enemyDamaged", target: "skunk1", amount: 7 });
         expect(resolvedEvents(result.frames).some((event) => event.type === "damageBlocked")).toBe(false);
         expect(enemyState(engine, "skunk1").currHp).toBe(93);
+        expect(buffState(engine, BARRIER_ID, "skunk1")?.duration).toBe(2);
     });
 
     it("blocks one positive damage effect and consumes one duration", () => {
@@ -525,13 +526,17 @@ describe("Empowering Magic", () => {
         const engine = makeEngine([testEnemy("skunk")], [move]);
 
         cast(engine, move, "skunk1");
-        expect(buffState(engine, EMPOWER_ID, "skunk1")).toBeUndefined();
+        expect(buffState(engine, EMPOWER_ID, "skunk1")).toMatchObject({
+            id: EMPOWER_ID, duration: 1, modifiers: { potency: 5 },
+        });
+        expect(enemyState(engine, "skunk1").modifiers.potency).toBeUndefined();
         execute(engine, { type: "endTurn" });
 
         expect(buffState(engine, EMPOWER_ID, "skunk1")).toMatchObject({
             duration: 1,
             modifiers: { potency: 5 },
         });
+        expect(enemyState(engine, "skunk1").modifiers.potency).toBe(5);
     });
 
     it("increases move effectiveness by its authored potency modifier", () => {

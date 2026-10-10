@@ -611,13 +611,14 @@ describe("Game Log presentation refinements", () => {
 
 
 describe("combat log polish regressions", () => {
-    it("renders severity on real engine Pounce application even though its first snapshot hides the inactive buff", () => {
+    it("renders severity on real engine Pounce application with the pending buff immediately visible", () => {
         const engine = makeBehavioralEngine([makeBehavioralCharacter("hinari")], [skunkette], 3);
         const initial = engine.getGameState();
         const result = execute(engine, { type: "endTurn" });
         const application = result.frames.find(frame => frame.event.type === "useMove" && frame.event.move === "pounce")!;
         expect(application).toBeDefined();
-        expect(application.state.characters[0]!.buffs.find(buff => buff.id === "pounce")).toBeUndefined();
+        expect(application.state.characters[0]!.buffs.find(buff => buff.id === "pounce"))
+            .toMatchObject({ id: "pounce", severity: 4, linkedEntity: "skunkette1" });
         const entries = createGameLogEntries(result.frames, initial);
         const pounce = entries.find(entry => entry.kind === "move" && entry.move === "pounce")!;
         const buffs = pounce.outcomes.filter(outcome => outcome.kind === "buff");

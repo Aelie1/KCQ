@@ -102,7 +102,12 @@ describe("buff behavior through GameEngine", () => {
             move: strike.id,
             targets: ["foe1"],
         });
-        expect(buffState(engine, "enemy-debuff")).toBeUndefined();
+        expect(buffState(engine, "enemy-debuff")).toMatchObject({
+            id: "enemy-debuff",
+            duration: 3,
+            statuses: [{ id: "blinded", value: 1 }],
+        });
+        expect(characterState(engine).modifiers).toEqual({});
 
         execute(engine, { type: "endTurn" });
         expect(buffState(engine, "enemy-debuff")).toMatchObject({
@@ -110,6 +115,7 @@ describe("buff behavior through GameEngine", () => {
             statuses: [{ id: "blinded", value: 1 }],
         });
         expect(buffState(engine, "enemy-debuff")).not.toHaveProperty("active");
+        expect(characterState(engine).modifiers).toEqual({ hit: -2, defense: -3 });
     });
 
     it("updates an existing buff with the same id and emits buffUpdated", () => {
@@ -327,7 +333,7 @@ describe("buff status integration through GameEngine", () => {
         });
     });
 
-    it("withholds pending statuses, modifiers, and added moves until activation", () => {
+    it("publishes pending buff data while withholding its gameplay effects until activation", () => {
         const granted = makeBehavioralMove("buff-granted", "arms");
         const accuracyCheck = makeBehavioralMove("accuracy-check", "mouth", {
             accuracy: { miss: 20, hit: 80 },
@@ -361,7 +367,14 @@ describe("buff status integration through GameEngine", () => {
             move: addPending.id,
             targets: [],
         });
-        expect(buffState(engine, "pending-kit")).toBeUndefined();
+        expect(buffState(engine, "pending-kit")).toMatchObject({
+            id: "pending-kit",
+            duration: 1,
+            statuses: [{ id: "blinded", value: 1 }],
+            modifiers: { hit: -1 },
+            moveList: { addedMoves: [granted.id] },
+        });
+        expect(buffState(engine, "pending-kit")).not.toHaveProperty("active");
         expect(characterState(engine).modifiers).toEqual({});
         expect(actionView(engine, "hero").moves.some(({ move }) => move.id === granted.id)).toBe(false);
         expect(targetAccuracy(engine, "hero", accuracyCheck.id, "foe1")).toEqual({
