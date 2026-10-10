@@ -1758,6 +1758,7 @@ button {
 }
 
 .kcq-character-binding__name {
+    font-size: 12px;
     font-weight: 600;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -1780,7 +1781,7 @@ button {
 }
 
 .kcq-character-binding__level {
-    font-size: 9px;
+    font-size: 12px;
     font-weight: 600;
 }
 
@@ -1810,6 +1811,7 @@ button {
 }
 
 .kcq-character-binding__value {
+    font-size: 12px;
     min-width: 24px;
     font-weight: 700;
     text-align: right;
@@ -1884,7 +1886,6 @@ button {
     align-items: flex-start;
     gap: 5px;
     min-width: 0;
-    min-height: 75px;
     padding: 8px 9px;
     overflow: hidden;
     border: 1px solid var(--kcq-structure-border);
@@ -2456,7 +2457,6 @@ button {
 
 .kcq-binding-effect__level {
     flex: 0 0 auto;
-    font-size: 11px;
     font-weight: 700;
     white-space: nowrap;
 }
@@ -2494,7 +2494,7 @@ button {
 .kcq-binding-effect__header,
 .kcq-meter-effect__header {
     color: var(--kcq-text-secondary);
-    font-size: 10px;
+    font-size: 11px;
 }
 
 .kcq-binding-effect>.kcq-preview-effect__tag {
