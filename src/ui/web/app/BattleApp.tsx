@@ -25,6 +25,7 @@ import { EnemyDetailsPanel } from "./panels/EnemyDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
 import { GameLogPanel } from "./panels/GameLogPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
+import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
@@ -35,6 +36,7 @@ export interface BattleAppProps {
     presentation: Presentation;
     release?: string;
     language?: LanguageSelection;
+    overviewGameLog?: OverviewGameLogPreference;
     shortcutHints?: ShortcutHintPreference;
     keyboard?: SharedKeyboard;
     onVictory?: () => void;
@@ -61,6 +63,7 @@ interface CurrentTargeting {
 }
 
 export function BattleApp(props: BattleAppProps): JSX.Element {
+    const overviewGameLog = props.overviewGameLog ?? createOverviewGameLogPreference();
     const shortcutHints = props.shortcutHints ?? createShortcutHintPreference();
     const [state, setState] = createSignal<GameState>(props.engine.getGameState());
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
@@ -287,6 +290,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     <Switch fallback={
                         <BattleOverviewPanel
                             actions={actions()}
+                            gameLogLines={logOpen() ? 0 : overviewGameLog.value}
                             history={logEntries()}
                             presentation={props.presentation}
                             state={state()}
@@ -300,7 +304,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     }>
                         <Match when={resultModel()}>
                             <BattleOverviewPanel actions={actions()} presentation={props.presentation}
-                                state={state()} thresholds={thresholds()} history={logEntries()} />
+                                state={state()} thresholds={thresholds()} history={logEntries()}
+                                gameLogLines={logOpen() ? 0 : overviewGameLog.value} onGameLog={openResultLog} />
                         </Match>
                         <Match when={enemyScreen()} keyed>
                             {(current) => <EnemyDetailsPanel
@@ -358,7 +363,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             </div>
             <Show when={settingsOpen()}>
                 <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
-                    language={props.language} shortcutHints={shortcutHints} returnFocus={settingsTrigger}
+                    language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} returnFocus={settingsTrigger}
                     onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                     onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
             </Show>

@@ -3,6 +3,7 @@ import { Portal } from "solid-js/web";
 import type { Presentation } from "../../../presentation/presentation";
 import type { LanguageSelection } from "../language";
 import type { ShortcutHintPreference, ShortcutHintMode } from "../shortcutHints";
+import type { OverviewGameLogPreference } from "../overviewGameLogLines";
 import { setupResponsiveScale } from "../responsiveScale";
 import { displayVersion } from "../version";
 
@@ -10,6 +11,7 @@ export function BattleSettingsPanel(props: {
     presentation: Presentation;
     release: string;
     language?: LanguageSelection;
+    overviewGameLog?: OverviewGameLogPreference;
     shortcutHints?: ShortcutHintPreference;
     returnFocus?: Element | null;
     onResume: () => void;
@@ -30,7 +32,7 @@ export function BattleSettingsPanel(props: {
             event.stopPropagation();
             props.onResume();
         } else if (event.key === "Tab") {
-            const controls = dialog.querySelectorAll<HTMLElement>("button, select");
+            const controls = dialog.querySelectorAll<HTMLElement>("button, select, input");
             const first = controls[0];
             const last = controls[controls.length - 1];
             if (event.shiftKey && document.activeElement === first) {
@@ -88,6 +90,15 @@ export function BattleSettingsPanel(props: {
                             <option value="always">{props.presentation.ui("battleSettings.shortcutHintsAlways")}</option>
                             <option value="temporary">{props.presentation.ui("battleSettings.shortcutHintsTemporary")}</option>
                         </select>
+                    </label>
+                </Show>
+                <Show when={props.overviewGameLog}>
+                    <label class="kcq-battle-settings__language kcq-battle-settings__log-lines">
+                        <span>{props.presentation.ui("battleSettings.overviewGameLogLines")}</span>
+                        <input type="range" min="0" max="8" step="1" value={props.overviewGameLog?.value}
+                            aria-valuetext={String(props.overviewGameLog?.value)}
+                            onInput={event => props.overviewGameLog?.onChange(Number(event.currentTarget.value))} />
+                        <output>{props.overviewGameLog?.value}</output>
                     </label>
                 </Show>
                 <hr class="kcq-battle-settings__divider" />

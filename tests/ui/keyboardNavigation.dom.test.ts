@@ -509,13 +509,14 @@ describe("keyboard shortcut hint visibility", () => {
         vi.useFakeTimers();
         const listen = vi.spyOn(document, "addEventListener");
         const remove = vi.spyOn(document, "removeEventListener");
+        const baselineTimers = vi.getTimerCount();
         mountBattle();
         const timers = vi.getTimerCount();
         shiftDown(); shiftUp();
         expect(vi.getTimerCount()).toBe(timers + 1);
         const stage = document.querySelector(".kcq-battle-stage")!;
         unmount!(); unmount = undefined;
-        expect(vi.getTimerCount()).toBe(timers);
+        expect(vi.getTimerCount()).toBe(baselineTimers);
         for (const type of ["keydown", "keyup"]) {
             const listeners = listen.mock.calls.filter(call => call[0] === type);
             expect(listeners).toHaveLength(1);

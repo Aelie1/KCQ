@@ -100,6 +100,62 @@ function expectHistory(results: readonly ActionResult[], initial: GameState): vo
 }
 
 describe("live graphical Game Log history", () => {
+    it("updates the overview preview after player and enemy actions and opens the existing full log", () => {
+        const { engine } = mountBattle();
+        const execute = vi.spyOn(engine, "executeAction");
+        const preview = () => document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!;
+        expect(preview().textContent).toContain("No combat events yet.");
+        expect(document.querySelector(".kcq-screen-layout__content")!.firstElementChild).toBe(preview());
+        useTelekinesis();
+        expect(preview().textContent).toContain("Telekinesis");
+        preview().click();
+        expect(document.querySelector(".kcq-game-log__scroll")).not.toBeNull();
+        click(".kcq-combat-header__back");
+        expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
+        button("End Turn").click();
+        const recent = [...preview().querySelectorAll<HTMLElement>(".kcq-game-log__entry")];
+        expect(recent.some(entry => entry.dataset.actor?.startsWith("skunkette"))).toBe(true);
+        expect(recent.at(-1)!.dataset.kind).toBe("phase");
+        expect(execute).toHaveBeenCalledTimes(2);
+    });
+
+    it.each(["Enter", " "])("allows native %s activation of the preview without a combat shortcut", key => {
+        const { engine } = mountBattle();
+        const execute = vi.spyOn(engine, "executeAction");
+        const preview = document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!;
+        preview.focus();
+        const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+        preview.dispatchEvent(event);
+        expect(event.defaultPrevented).toBe(false);
+        // happy-dom does not synthesize native keyboard clicks; perform the browser default.
+        preview.click();
+        expect(document.querySelector(".kcq-game-log__scroll")).not.toBeNull();
+        expect(execute).not.toHaveBeenCalled();
+        click(".kcq-combat-header__back");
+        expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
+    });
+
+    it("changes preview lines immediately without recreating the battle and keeps full-log access at zero", () => {
+        const { prepareBattle } = mountBattle();
+        useTelekinesis();
+        click(".kcq-combat-header__settings");
+        const slider = document.querySelector<HTMLInputElement>('input[type="range"]')!;
+        slider.value = "0"; slider.dispatchEvent(new Event("input", { bubbles: true }));
+        expect(document.querySelector(".kcq-compact-game-log")).toBeNull();
+        button("Resume").click();
+        button("Game Log").click();
+        expect(document.querySelector(".kcq-game-log__scroll")!.textContent).toContain("Telekinesis");
+        click(".kcq-combat-header__back");
+        click(".kcq-combat-header__settings");
+        const nextSlider = document.querySelector<HTMLInputElement>('input[type="range"]')!;
+        expect(nextSlider.value).toBe("0");
+        nextSlider.value = "8"; nextSlider.dispatchEvent(new Event("input", { bubbles: true }));
+        expect(document.querySelector(".kcq-compact-game-log")!.textContent).toContain("Telekinesis");
+        button("Resume").click();
+        expect(prepareBattle).toHaveBeenCalledTimes(1);
+        expect(window.localStorage.getItem("kcq.overviewGameLogLines")).toBe("8");
+    });
+
     it("preserves player and enemy events across actions and reopening the log without duplication", () => {
         const { engine } = mountBattle();
         const initial = engine.getGameState();
@@ -186,11 +242,11 @@ describe("live graphical Game Log history", () => {
         const { engine } = mountBattle();
         const execute = vi.spyOn(engine, "executeAction");
         click(".kcq-party-card");
-        click('.kcq-command-card[aria-label^="Change Stance:"]');
+        click('.kcq-command-card[aria-label="Change Stance"]');
         click(".kcq-combat-header__back");
         const cards = [...document.querySelectorAll<HTMLElement>(".kcq-party-card")];
         cards[1]!.click();
-        click('.kcq-command-card[aria-label^="Change Stance:"]');
+        click('.kcq-command-card[aria-label="Change Stance"]');
         click(".kcq-combat-header__back");
         button("Game Log").click();
         expect(execute).toHaveBeenCalledTimes(2);

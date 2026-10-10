@@ -11,6 +11,8 @@ import { combatShortcut, COMBAT_SHORTCUTS } from "../keyboard";
 import { Shortcut } from "../components/Shortcut";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
+import { CompactGameLog } from "../components/CompactGameLog";
+import { DEFAULT_OVERVIEW_GAME_LOG_LINES } from "../overviewGameLogLines";
 import { EnemyCard } from "../components/EnemyCard";
 import { PartyCard } from "../components/PartyCard";
 import { createBattleOverviewViewModel } from "../viewModels/battleOverview";
@@ -20,6 +22,7 @@ export interface BattleOverviewPanelProps {
     presentation: Presentation;
     state: GameState;
     thresholds: ThresholdInfo;
+    gameLogLines?: number;
     history?: readonly GameLogPresentationEntry[];
     onSettings?: () => void;
     onEndTurn?: () => void;
@@ -52,6 +55,9 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                 />
             }
             body={<>
+                <CompactGameLog entries={props.history ?? []} presentation={props.presentation}
+                    party={props.state.characters.map(character => character.id)}
+                    lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog} />
                 <section class="kcq-battle-section kcq-battle-section--enemies" aria-labelledby="battle-enemies-heading">
                     <header class="kcq-battle-section__heading">
                         <h2 id="battle-enemies-heading">{model().enemiesHeading}</h2>

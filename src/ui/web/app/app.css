@@ -3802,3 +3802,78 @@ button {
     white-space: normal;
     overflow-wrap: anywhere;
 }
+/* The Overview owns scrolling; the preview crops only older complete text lines. */
+.kcq-compact-game-log {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    padding: 5px 8px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 8px;
+    background: var(--kcq-surface-card);
+    color: var(--kcq-text-secondary);
+    font: inherit;
+    font-size: 12.5px;
+    line-height: 1.25;
+    text-align: left;
+    cursor: pointer;
+}
+
+.kcq-compact-game-log:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: 2px;
+}
+
+.kcq-compact-game-log__heading {
+    display: block;
+    margin-bottom: 2px;
+    color: var(--kcq-text-muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.kcq-compact-game-log__viewport {
+    overflow: clip;
+    display: flow-root;
+}
+
+.kcq-compact-game-log .kcq-game-log__entry {
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+.kcq-compact-game-log .kcq-game-log__heading {
+    margin: 0;
+    font-size: inherit;
+}
+
+.kcq-compact-game-log .kcq-game-log__outcomes,
+.kcq-compact-game-log .kcq-game-log__tick-outcomes {
+    gap: 0;
+}
+
+.kcq-compact-game-log .kcq-game-log__row--bindingTick {
+    margin-top: 0;
+}
+
+.kcq-battle-settings__log-lines {
+    gap: 8px;
+}
+
+.kcq-battle-settings__log-lines input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    accent-color: var(--kcq-accent-primary);
+}
+
+.kcq-battle-settings__log-lines output {
+    min-width: 1ch;
+    color: var(--kcq-text-primary);
+}
+
+.kcq-battle-settings__log-lines input:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: 2px;
+}
