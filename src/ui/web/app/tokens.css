@@ -41,5 +41,8 @@
 
     --kcq-glow-negative: #ff2424;
     --kcq-glow-positive: #34d399;
+    --kcq-glow-graze: #f1f5f9;
+    --kcq-glow-hit: #ffd54f;
+    --kcq-glow-crit: #ff2424;
     --kcq-shadow-raised: rgb(0 0 0 / 35%);
 }

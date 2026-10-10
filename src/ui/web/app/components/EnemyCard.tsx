@@ -1,4 +1,4 @@
-import { For, onCleanup, Show, useContext, type JSX } from "solid-js";
+import { For, Show, useContext, type JSX } from "solid-js";
 import { CombatReactionsContext, reactionRef } from "../combatReactions";
 import type { EnemyCardData } from "./componentTypes";
 import { DurationPips } from "./DurationPips";
@@ -17,7 +17,6 @@ export interface EnemyCardProps {
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
     const reactions = useContext(CombatReactionsContext);
-    const hpLanes = new Set<number>();
     const actorReaction = reactionRef("actor", () => props.enemy.id);
     const cardReaction = (element: HTMLElement) => { actorReaction(element); };
     return (
@@ -60,19 +59,30 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                         {props.enemy.currentHp} / {props.enemy.maxHp}
                     </p>
                     <For each={reactions?.matching("hp", props.enemy.id).filter(cue => (cue.amount ?? 0) > 0)}>{cue => {
-                        // Keep each cue's lane and animation clock stable as other hits arrive or expire.
-                        let lane = 0;
-                        while (hpLanes.has(lane)) lane++;
-                        hpLanes.add(lane);
-                        onCleanup(() => hpLanes.delete(lane));
-                        const delay = `${-Math.max(0, Date.now() - cue.started)}ms`;
-                        return <span class="kcq-hp-reaction" data-combat-reaction={cue.treatment}
+                        const trajectories = [
+                            [-8, -25],
+                            [8, -30],
+                            [-16, -28],
+                            [16, -25],
+                            [-24, -32],
+                            [24, -28],
+                        ] as const;
+
+                        const index = Math.round((cue.floatDelay ?? 0) / 180);
+                        const [x, y] = trajectories[index % trajectories.length]!;
+                        const delay = `${(cue.floatDelay ?? 0) - Math.max(0, Date.now() - cue.started)}ms`;
+                        return <span
+                            class="kcq-hp-reaction"
+                            data-combat-reaction={cue.treatment}
+                            data-hit-strength={cue.strength}
                             style={{
-                                right: `calc(100% + ${4 + lane * 32}px)`,
                                 animation: `kcq-react-hp-float 2000ms ease-out ${delay} forwards`,
                                 "--kcq-hp-reaction-delay": delay,
+                                "--float-x": `${x}px`,
+                                "--float-y": `${y}px`,
                             }} aria-hidden="true">
                             {cue.treatment === "healing" ? "+" : "-"}{cue.amount}
+                            {cue.treatment === "damage" && cue.strength === "crit" ? "!" : ""}
                         </span>;
                     }}</For>
                 </div>

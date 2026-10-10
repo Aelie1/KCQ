@@ -12,6 +12,7 @@ export interface CombatReaction {
     amount?: number;
     from?: number;
     to?: number;
+    floatDelay?: number;
 }
 export interface ActiveReaction extends CombatReaction {
     serial: number;
@@ -53,15 +54,26 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
         }
         const endpoints = new Map<string, number>();
         const explicitBuffs = new Set<string>();
+        const hpHitCounts = new Map<string, number>();
         for (const { effect, band } of leaves) {
             switch (effect.type) {
-                case "enemyDamaged": case "enemyHealed":
-                    if (effect.amount > 0) cues.push({
-                        kind: "hp", entity: effect.target, amount: effect.amount,
+                case "enemyDamaged":
+                case "enemyHealed": {
+                    if (effect.amount <= 0) break;
+
+                    const index = hpHitCounts.get(effect.target) ?? 0;
+                    hpHitCounts.set(effect.target, index + 1);
+
+                    cues.push({
+                        kind: "hp",
+                        entity: effect.target,
+                        amount: effect.amount,
                         treatment: effect.type === "enemyHealed" ? "healing" : "damage",
-                        strength: strength(band) ?? "hit"
+                        strength: strength(band) ?? "hit",
+                        floatDelay: index * 180,
                     });
                     break;
+                }
                 case "bondageAdded": case "bondageChanged": case "bondageRemoved": {
                     if (!effect.amount) break;
                     const key = JSON.stringify([effect.target, effect.binding]);
@@ -134,7 +146,7 @@ export function createCombatReactions() {
             if (instant) { clear(); return; }
             const added = collectCombatReactions(frames, before).map(cue => ({
                 ...cue,
-                serial: ++serial, started: Date.now(), duration: durations[cue.kind]
+                serial: ++serial, started: Date.now(), duration: (cue.kind === "hp" && cue.strength === "crit") ? durations[cue.kind] * 1.5 : durations[cue.kind]
             }));
             setCues(current => [...current, ...added]);
             for (const cue of added) {

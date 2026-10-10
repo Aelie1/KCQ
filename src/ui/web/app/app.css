@@ -4040,7 +4040,7 @@ button {
 
 .kcq-hp-reaction {
     position: absolute;
-    top: 0;
+    left: 50%;
     z-index: 5;
     pointer-events: none;
     white-space: nowrap;
@@ -4049,10 +4049,49 @@ button {
     font-weight: 800;
     line-height: 1;
     text-shadow: 0 0 5px currentColor;
+    animation-fill-mode: both;
 }
 
 .kcq-hp-reaction[data-combat-reaction="damage"] {
-    color: var(--kcq-glow-negative);
+    color: var(--kcq-glow-hit);
+    font-size: 16px;
+}
+
+.kcq-hp-reaction[data-hit-strength="graze"] {
+    color: var(--kcq-glow-graze);
+    font-size: 12px;
+}
+
+.kcq-hp-reaction[data-hit-strength="crit"] {
+    color: var(--kcq-glow-crit);
+    animation-name: kcq-react-hp-crit !important;
+    animation-duration: 3000ms !important;
+    animation-timing-function: ease-out !important;
+}
+
+@keyframes kcq-react-hp-crit {
+    0% {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+
+    35% {
+        opacity: 1;
+        transform: translate(calc(-50% + var(--float-x, 0px) * 0.7),
+                calc(-50% + var(--float-y, -25px) * 0.7));
+    }
+
+    70% {
+        opacity: 1;
+        transform: translate(calc(-50% + var(--float-x, 0px)),
+                calc(-50% + var(--float-y, -25px)));
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(calc(-50% + var(--float-x, 0px)),
+                calc(-50% + var(--float-y, -25px)));
+    }
 }
 
 .kcq-hp-reaction[data-combat-reaction="healing"] {
@@ -4062,12 +4101,12 @@ button {
 @keyframes kcq-react-hp-float {
     from {
         opacity: 1;
-        transform: translate(0, 0);
+        transform: translate(-50%, -50%);
     }
 
     to {
         opacity: 0;
-        transform: translate(-6px, -28px);
+        transform: translate(calc(-50% + var(--float-x, 0px)), calc(-50% + var(--float-y, -25px)));
     }
 }
 
@@ -4143,6 +4182,6 @@ button {
     }
 
     .kcq-hp-reaction {
-        animation: kcq-react-binding-fade 2000ms ease-out var(--kcq-hp-reaction-delay, 0ms) forwards !important;
+        animation: kcq-react-binding-fade 2000ms ease-out var(--kcq-hp-reaction-delay, 0ms) both !important;
     }
 }
