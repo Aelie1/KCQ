@@ -1,5 +1,8 @@
-import { For, Show, useContext, type JSX } from "solid-js";
-import { CombatReactionsContext, reactionRef } from "../combatReactions";
+import { createMemo, For, Show, useContext, type JSX } from "solid-js";
+import {
+    CombatReactionsContext, ENEMY_DEFEAT_FADE_DURATION, ENEMY_DEFEAT_GLOW_DURATION,
+    HP_FLOAT_DURATION, reactionRef, type ActiveReaction,
+} from "../combatReactions";
 import type { EnemyCardData } from "./componentTypes";
 import { DurationPips } from "./DurationPips";
 import { IntentRow } from "./IntentRow";
@@ -12,28 +15,45 @@ export type { EnemyCardData } from "./componentTypes";
 export interface EnemyCardProps {
     enemy: EnemyCardData;
     onSelect?: () => void;
+    defeat?: ActiveReaction;
     shortcut?: string;
 }
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
     const reactions = useContext(CombatReactionsContext);
+    const selectable = () => !!props.onSelect && !props.defeat;
+    const deathCue = createMemo(() => props.defeat);
+    const deathTiming = createMemo(() => {
+        const cue = deathCue();
+        if (!cue) return undefined;
+        const elapsed = Math.max(0, Date.now() - cue.started);
+        return { glow: (cue.delay ?? 0) - elapsed, fade: (cue.delay ?? 0) + ENEMY_DEFEAT_GLOW_DURATION - elapsed };
+    });
     const actorReaction = reactionRef("actor", () => props.enemy.id);
     const cardReaction = (element: HTMLElement) => { actorReaction(element); };
     return (
-        <article ref={cardReaction} class="kcq-enemy-card" classList={{ "kcq-shortcut-host": !!props.onSelect }}
+        <article ref={cardReaction} class="kcq-enemy-card" classList={{ "kcq-shortcut-host": selectable() }}
+            data-enemy-defeat={props.defeat ? "true" : undefined}
+            inert={!!props.defeat}
+            style={{
+                "--kcq-death-glow-delay": deathTiming() ? `${deathTiming()!.glow}ms` : undefined,
+                "--kcq-death-fade-delay": deathTiming() ? `${deathTiming()!.fade}ms` : undefined,
+                "--kcq-death-glow-duration": `${ENEMY_DEFEAT_GLOW_DURATION}ms`,
+                "--kcq-death-fade-duration": `${ENEMY_DEFEAT_FADE_DURATION}ms`,
+            }}
             aria-label={props.enemy.name}
-            role={props.onSelect ? "button" : undefined}
-            tabIndex={props.onSelect ? 0 : undefined}
-            data-kcq-shortcut={props.onSelect ? props.shortcut : undefined}
-            onClick={() => props.onSelect?.()}
+            role={selectable() ? "button" : undefined}
+            tabIndex={selectable() ? 0 : undefined}
+            data-kcq-shortcut={selectable() ? props.shortcut : undefined}
+            onClick={() => { if (selectable()) props.onSelect?.(); }}
             onKeyDown={event => {
-                if (props.onSelect && (event.key === "Enter" || event.key === " ")) {
+                if (selectable() && (event.key === "Enter" || event.key === " ")) {
                     event.preventDefault();
-                    props.onSelect();
+                    props.onSelect?.();
                 }
             }}
         >
-            <Show when={props.onSelect}><Shortcut shortcut={props.shortcut} /></Show>
+            <Show when={selectable()}><Shortcut shortcut={props.shortcut} /></Show>
             <Show when={props.enemy.effectDurations.length > 0}>
                 <div class="kcq-enemy-card__debuffs">
                     <For each={props.enemy.effectDurations.map((effect, index) => effect.id ?? String(index))}>
@@ -76,7 +96,7 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                             data-combat-reaction={cue.treatment}
                             data-hit-strength={cue.strength}
                             style={{
-                                animation: `kcq-react-hp-float 2000ms ease-out ${delay} forwards`,
+                                animation: `kcq-react-hp-float ${HP_FLOAT_DURATION}ms ease-out ${delay} forwards`,
                                 "--kcq-hp-reaction-delay": delay,
                                 "--float-x": `${x}px`,
                                 "--float-y": `${y}px`,

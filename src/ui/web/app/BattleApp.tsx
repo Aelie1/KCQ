@@ -17,6 +17,7 @@ import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
 import { createCombatPlayback } from "./combatPlayback";
 import { CombatReactionsContext, createCombatReactions } from "./combatReactions";
+import { createEnemyDefeats } from "./enemyDefeats";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import type { LanguageSelection } from "./language";
 import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
@@ -98,12 +99,15 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [logEntries, setLogEntries] = createSignal<readonly GameLogPresentationEntry[]>([]);
     let finalActions = actions();
     const reactions = createCombatReactions();
+    const defeats = createEnemyDefeats(reactions);
     const playback = createCombatPlayback({
+        settle: defeats.remaining,
         interval: () => PLAYBACK_INTERVALS[playbackSpeed.value],
         present: (frames, displayed) => batch(() => {
             reactions.present(frames, state(), playbackSpeed.value === "instant");
+            defeats.present(frames, state(), props.presentation, logEntries());
             setState(displayed);
-            if (displayed.turn.outcome !== "ongoing") setScreen({ kind: "overview" });
+            if (displayed.turn.outcome !== "ongoing" || defeats.active()) setScreen({ kind: "overview" });
             setLogEntries(logHistory.record(frames));
         }),
         complete: final => batch(() => {
@@ -257,7 +261,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             move: current.screen.moveId,
             targets: [...targets],
         });
-        if (result?.success && engineState.turn.outcome === "ongoing") {
+        if (result?.success && engineState.turn.outcome === "ongoing" && !defeats.active()) {
             const actions = result.actions.find(x => x.id === current.screen.actorId);
             if (actions?.available) {
                 setScreen({
@@ -347,6 +351,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                                 thresholds={thresholds()}
                                 onSelectCharacter={selectCharacter}
                                 onSelectEnemy={selectEnemy}
+                                enemyDefeats={defeats}
                                 inputBlocked={playback.active() || !!resultModel()}
                                 onSettings={resultModel() ? undefined : openSettings}
                                 onGameLog={resultModel() ? openResultLog : toggleLog}

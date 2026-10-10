@@ -10,7 +10,7 @@ import { ModifierSet } from "../../engine/public/types";
 import { POUNCE_BUFF, SKUNKED_BUFF, SKUNKETTE_ID } from "./constants";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
-const SKUNKETTE_HP = 200;
+const SKUNKETTE_HP = 20;
 const SKUNKETTE_DEF = 0;
 
 const SPRAY_DAMAGE = 30;

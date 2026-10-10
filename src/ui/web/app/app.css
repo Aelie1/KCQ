@@ -3947,6 +3947,36 @@ button {
     position: relative;
 }
 
+.kcq-enemy-presentation-slot {
+    display: grid;
+    min-width: 0;
+}
+
+.kcq-enemy-presentation-slot[data-defeated] > .kcq-enemy-card {
+    height: 100%;
+}
+
+/* Death runs after floating feedback and wins over the actor flash on the
+   full card. Opacity leaves its grid cell intact through the final frame. */
+.kcq-enemy-card[data-enemy-defeat] {
+    pointer-events: none;
+    animation: var(--kcq-react-actor, none),
+        kcq-enemy-defeat-glow var(--kcq-death-glow-duration) linear var(--kcq-death-glow-delay) forwards,
+        kcq-enemy-defeat-fade var(--kcq-death-fade-duration) linear var(--kcq-death-fade-delay) forwards !important;
+}
+
+@keyframes kcq-enemy-defeat-glow {
+    from, to {
+        background-color: #ff2424cc;
+        box-shadow: inset 0 0 20px 4px #ff3030, 0 0 12px 3px #ff2424;
+    }
+}
+
+@keyframes kcq-enemy-defeat-fade {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
 @keyframes kcq-react-actor {
 
     0%,

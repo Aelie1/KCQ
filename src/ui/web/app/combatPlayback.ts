@@ -27,6 +27,8 @@ export function createCombatPlayback(options: {
     interval: () => number;
     present: (frames: readonly EventFrame[], state: GameState) => void;
     complete: (state: GameState) => void;
+    /** Remaining presentation time before input or result transitions resume. */
+    settle?: () => number;
 }) {
     const [active, setActive] = createSignal(false);
     let steps: readonly EventFrame[][] = [];
@@ -57,15 +59,17 @@ export function createCombatPlayback(options: {
                 if (step) options.present(step, step[step.length - 1]!.state);
             }
             if (index >= steps.length && (options.interval() === 0
-                || finalState.turn.outcome === "ongoing" || steps.length === 0)) finish();
+                || ((finalState.turn.outcome === "ongoing" || steps.length === 0)
+                    && (options.settle?.() ?? 0) <= 0))) finish();
             else schedule();
         });
     };
     const schedule = () => {
         clearTimer();
         if (options.interval() === 0) advance();
-        // A terminal action gets time on screen before its result dialog covers it.
-        else timer = setTimeout(index >= steps.length ? () => batch(finish) : advance, options.interval());
+        // Final feedback settles before input resumes or a result dialog covers it.
+        else timer = setTimeout(index >= steps.length ? () => batch(finish) : advance,
+            index >= steps.length ? Math.max(options.interval(), options.settle?.() ?? 0) : options.interval());
     };
     createEffect(on(options.interval, () => {
         if (active() && !preparing) schedule();

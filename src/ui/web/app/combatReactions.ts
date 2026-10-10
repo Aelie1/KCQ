@@ -1,7 +1,7 @@
 import { createContext, createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import type { EventFrame, GameState, HitBand, LeafEvent } from "../../../engine/public/types";
 
-export type ReactionKind = "actor" | "hp" | "binding" | "buff";
+export type ReactionKind = "actor" | "hp" | "binding" | "buff" | "defeat";
 export type ReactionStrength = "graze" | "hit" | "crit";
 export interface CombatReaction {
     kind: ReactionKind;
@@ -13,6 +13,7 @@ export interface CombatReaction {
     from?: number;
     to?: number;
     floatDelay?: number;
+    delay?: number;
 }
 export interface ActiveReaction extends CombatReaction {
     serial: number;
@@ -74,6 +75,9 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
                     });
                     break;
                 }
+                case "enemyDefeated":
+                    cues.push({ kind: "defeat", entity: effect.target, treatment: "defeated" });
+                    break;
                 case "bondageAdded": case "bondageChanged": case "bondageRemoved": {
                     if (!effect.amount) break;
                     const key = JSON.stringify([effect.target, effect.binding]);
@@ -102,7 +106,17 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
     return cues;
 }
 
-const durations: Record<ReactionKind, number> = { actor: 500, hp: 4000, binding: 2500, buff: 2500 };
+// Visible number animation lengths (cue lifetimes are intentionally longer).
+export const HP_FLOAT_DURATION = 2000;
+export const HP_CRIT_FLOAT_DURATION = 3000;
+export const ENEMY_DEFEAT_GLOW_DURATION = 400;
+export const ENEMY_DEFEAT_FADE_DURATION = 500;
+export const hpFloatDuration = (cue: CombatReaction) =>
+    cue.strength === "crit" ? HP_CRIT_FLOAT_DURATION : HP_FLOAT_DURATION;
+const durations: Record<ReactionKind, number> = {
+    actor: 500, hp: 4000, binding: 2500, buff: 2500,
+    defeat: ENEMY_DEFEAT_GLOW_DURATION + ENEMY_DEFEAT_FADE_DURATION,
+};
 export function createCombatReactions() {
     const [cues, setCues] = createSignal<readonly ActiveReaction[]>([]);
     let serial = 0;
@@ -148,6 +162,15 @@ export function createCombatReactions() {
                 ...cue,
                 serial: ++serial, started: Date.now(), duration: (cue.kind === "hp" && cue.strength === "crit") ? durations[cue.kind] * 1.5 : durations[cue.kind]
             }));
+            // Include still-visible numbers from preceding playback steps. Each
+            // defeated enemy waits for its own last number, including crit/stagger.
+            for (const cue of added) {
+                if (cue.kind !== "defeat") continue;
+                cue.delay = Math.max(0, ...[...cues(), ...added]
+                    .filter(hit => hit.kind === "hp" && hit.entity === cue.entity)
+                    .map(hit => hit.started + (hit.floatDelay ?? 0) + hpFloatDuration(hit) - cue.started));
+                cue.duration += cue.delay;
+            }
             setCues(current => [...current, ...added]);
             for (const cue of added) {
                 const timer = setTimeout(() => {

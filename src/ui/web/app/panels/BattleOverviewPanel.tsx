@@ -1,4 +1,4 @@
-import { createMemo, For, type JSX } from "solid-js";
+import { createEffect, createMemo, For, Show, type JSX } from "solid-js";
 import type { ContentLibrary } from "../../../../engine/public/library";
 import type {
     ActionView,
@@ -14,6 +14,7 @@ import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { CompactGameLog } from "../components/CompactGameLog";
 import { DEFAULT_OVERVIEW_GAME_LOG_LINES } from "../overviewGameLogLines";
+import type { createEnemyDefeats, EnemyPresentationSlot } from "../enemyDefeats";
 import { EnemyCard } from "../components/EnemyCard";
 import { PartyCard } from "../components/PartyCard";
 import { createBattleOverviewViewModel } from "../viewModels/battleOverview";
@@ -25,6 +26,7 @@ export interface BattleOverviewPanelProps {
     thresholds: ThresholdInfo;
     gameLogLines?: number;
     inputBlocked?: boolean;
+    enemyDefeats?: ReturnType<typeof createEnemyDefeats>;
     history?: readonly GameLogPresentationEntry[];
     library?: ContentLibrary;
     onSettings?: () => void;
@@ -43,6 +45,9 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
         props.history,
         props.library,
     ));
+
+    const enemySlots = createMemo<readonly EnemyPresentationSlot[]>(() => props.enemyDefeats?.slots(model().enemies)
+        ?? model().enemies.map(enemy => ({ enemy })));
 
     return (
         <ScreenLayout class="kcq-battle-overview" ariaLabel={model().header.encounterLabel}
@@ -68,10 +73,25 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         <span>{model().enemiesCountLabel}</span>
                     </header>
                     <div class="kcq-battle-overview__enemies">
-                        <For each={model().enemies.map(enemy => enemy.id)}>
-                            {(id, index) => <EnemyCard enemy={model().enemies.find(enemy => enemy.id === id)!}
-                                shortcut={combatShortcut(index() + 3)}
-                                onSelect={props.onSelectEnemy ? () => props.onSelectEnemy?.(id) : undefined} />}
+                        <For each={enemySlots().map(slot => slot.enemy.id)}>
+                            {(id, index) => {
+                                const slot = () => enemySlots().find(slot => slot.enemy.id === id)!;
+                                let element!: HTMLDivElement;
+                                createEffect(() => {
+                                    if (!slot().defeat) return;
+                                    // Keep the measured grid cell after its card is removed,
+                                    // so another death cannot move while it is fading.
+                                    const height = element.offsetHeight;
+                                    if (height) element.style.height = `${height}px`;
+                                });
+                                return <div ref={element} class="kcq-enemy-presentation-slot" data-defeated={slot().defeat ? "true" : undefined}>
+                                    <Show when={!slot().finished}>
+                                        <EnemyCard enemy={slot().enemy} defeat={slot().defeat}
+                                            shortcut={combatShortcut(index() + 3)}
+                                            onSelect={!slot().defeat && props.onSelectEnemy ? () => props.onSelectEnemy?.(id) : undefined} />
+                                    </Show>
+                                </div>;
+                            }}
                         </For>
                     </div>
                 </section>
