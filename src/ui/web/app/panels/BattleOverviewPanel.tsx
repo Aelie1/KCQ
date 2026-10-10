@@ -1,4 +1,5 @@
 import { createMemo, For, type JSX } from "solid-js";
+import type { ContentLibrary } from "../../../../engine/public/library";
 import type {
     ActionView,
     EntityId,
@@ -25,6 +26,7 @@ export interface BattleOverviewPanelProps {
     gameLogLines?: number;
     inputBlocked?: boolean;
     history?: readonly GameLogPresentationEntry[];
+    library?: ContentLibrary;
     onSettings?: () => void;
     onEndTurn?: () => void;
     onGameLog?: () => void;
@@ -39,6 +41,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
         props.thresholds,
         props.presentation,
         props.history,
+        props.library,
     ));
 
     return (

@@ -29,7 +29,6 @@ export interface GameLogViewModelEntry {
     actor?: string;
     actorTone?: PlayerTone;
     title?: string;
-    band?: GameLogValue;
     target?: string;
     targetTone?: PlayerTone;
     phase?: string;
@@ -362,7 +361,6 @@ export function createGameLogViewModel(
                 model.actor = p.entity(entry.actor);
                 model.actorTone = playerTone(entry.actor);
                 model.title = entry.kind === "move" ? p.move(entry.move) : p.ui("characterDetails.escape");
-                if (entry.kind === "move" && entry.band) model.band = { text: p.hitBand(entry.band), tone: entry.band };
                 if (entry.kind === "escape") {
                     model.target = p.entity(entry.target);
                     model.targetTone = playerTone(entry.target);

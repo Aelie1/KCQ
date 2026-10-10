@@ -1,4 +1,5 @@
 import { isCharacter } from "../../src/engine/protected/helpers";
+import type { StatusDef } from "../../src/engine/protected/definitions";
 import type { iEffect } from "../../src/engine/protected/types";
 import type { GameState } from "../../src/engine/public/types";
 import { makeBindingDef, makeCharacterDef, makeEncounterDef, makeEnemyDef, makeMove } from "./helpers";
@@ -13,6 +14,10 @@ export function incomingBindingBattle(options: {
     repeatFirst?: boolean;
     nextRound?: boolean;
 } = {}) {
+    const interruptionStatus: StatusDef = { id: "stunned", levels: [{}, {
+        flags: options.interruption === "blocksAttack" || options.interruption === "skipsTurn"
+            ? [options.interruption] : [],
+    }] };
     const head = makeBindingDef("latexHead");
     const arms = makeBindingDef("latexArms");
     const attack = (id: string, headAmount: number, armsAmount: number, first = false) => makeMove(id, "none", {
@@ -33,7 +38,7 @@ export function incomingBindingBattle(options: {
                     else if (options.interruption === "defeat") effects.push({ type: "enemy", operation: "defeat", target: next });
                     else effects.push({ type: "buff", operation: "add", target: next,
                         buff: { id: "interrupted", active: true, statuses: [{ value: 1,
-                            definition: { id: "stunned", levels: [{}, { flags: [options.interruption] }] } }] } });
+                            definition: interruptionStatus }] } });
                 }
             }
             return effects;
@@ -61,10 +66,10 @@ export function incomingBindingBattle(options: {
             { type: "binding", source: state.enemies[0]!, target: state.characters[0]!, binding: arms, amount: 35 },
         ],
     });
-    const engine = createTestEngine([encounter], [hero], 2, { enemies });
+    const engine = createTestEngine([encounter], [hero], 2, { enemies, statuses: [interruptionStatus] });
     engine.loadCharacter(hero.id);
     engine.loadEncounter(encounter.id);
     const initial: GameState = engine.getGameState();
     const actions = engine.getActionView();
-    return { engine, initial, actions };
+    return { engine, initial, actions, library: engine.getLibrary() };
 }

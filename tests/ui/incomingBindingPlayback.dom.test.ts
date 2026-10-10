@@ -53,7 +53,7 @@ function expectMeters(expected: readonly (readonly [number, number | undefined])
 }
 function authoritativeMeters(battle: ReturnType<typeof incomingBindingBattle>) {
     return createBattleOverviewViewModel(battle.engine.getGameState(), battle.engine.getActionView(),
-        getThresholds(), battleOverviewFixture.presentation).party[0]!.bindings
+        getThresholds(), battleOverviewFixture.presentation, [], battle.library).party[0]!.bindings
         .map(({ current, change }) => [current, change] as const);
 }
 const loggedActors = () => [...document.querySelectorAll<HTMLElement>(".kcq-compact-game-log [data-kind=move]")]
@@ -86,6 +86,17 @@ describe("BattleApp incoming binding playback", () => {
         vi.advanceTimersByTime(500); expectMeters([[81, 1], [41, 4]]);
         expect(loggedActors()).toEqual(["skunkette1", "skunk1"]);
         vi.advanceTimersByTime(500); expectMeters([[82, undefined], [45, undefined]]);
+        expectMeters(authoritativeMeters(b));
+    });
+    it.each(["cancel", "defeat", "blocksAttack", "skipsTurn"] as const)("excludes %s attacks as soon as playback makes them non-actionable", interruption => {
+        const b = mount({ interruption });
+        expectMeters([[72, 11], [35, 20]]);
+        b.endTurn(); b.paint(); b.paint();
+        expectMeters([[81, 1], [41, 4]]);
+        expect(loggedActors()).toEqual(["skunkette1"]);
+        vi.advanceTimersByTime(500);
+        expectMeters([[82, undefined], [45, undefined]]);
+        expect(loggedActors()).toEqual(["skunkette1", "queen1"]);
         expectMeters(authoritativeMeters(b));
     });
     it.each([false, true])("Instant presents the authoritative final meters (next round intentions: %s)", nextRound => {

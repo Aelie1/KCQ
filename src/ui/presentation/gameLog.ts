@@ -66,7 +66,7 @@ export type LogOutcome = BindingTickOutcome | ResourceOutcome | DamageOutcome | 
     | { kind: "intention"; target: EntityId; move: MoveId; operation: "cancelled" | "weakened" };
 
 export type GameLogPresentationEntry =
-    | { kind: "move"; actor: EntityId; move: MoveId; band?: Exclude<HitBand, "none">; outcomes: LogOutcome[] }
+    | { kind: "move"; actor: EntityId; move: MoveId; outcomes: LogOutcome[] }
     | { kind: "escape"; actor: EntityId; target: EntityId; outcomes: LogOutcome[] }
     | { kind: "phase"; phase: Phase; round?: number; outcomes: LogOutcome[] }
     | { kind: "stance"; changes: StanceOutcome[]; outcomes: LogOutcome[] }
@@ -551,7 +551,7 @@ export function createGameLogEntries(
         } else {
             flushStance();
             switch (event.type) {
-                case "useMove": entries.push({ kind: "move", actor: event.actor, move: event.move, ...(event.band ? { band: event.band } : {}), outcomes }); break;
+                case "useMove": entries.push({ kind: "move", actor: event.actor, move: event.move, outcomes }); break;
                 case "useEscape": entries.push({ kind: "escape", actor: event.actor, target: event.target, outcomes }); break;
                 case "changePhase": entries.push({ kind: "phase", phase: event.phase, round: after?.turn.round, outcomes }); break;
                 case "changeStance": entries.push({ kind: "stance", changes: outcomes.filter((outcome): outcome is StanceOutcome => outcome.kind === "stance"),

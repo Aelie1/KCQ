@@ -1,7 +1,10 @@
+import type { ContentLibrary } from "../../../../engine/public/library";
 import type {
     ActionView,
     BindingId,
+    Enemy,
     GameState,
+    Status,
     ThresholdInfo,
     Trap,
 } from "../../../../engine/public/types";
@@ -56,6 +59,7 @@ export function createBattleOverviewViewModel(
     thresholds: ThresholdInfo,
     presentation: Presentation,
     history: readonly GameLogPresentationEntry[] = [],
+    library?: ContentLibrary,
 ): BattleOverviewViewModel {
     const actionsById = new Map(actions.map((action) => [action.id, action]));
     const traps = state.traps.map((trap) => createTrapViewModel(trap, presentation));
@@ -67,7 +71,9 @@ export function createBattleOverviewViewModel(
         const incomingBindings: Record<BindingId, number> = {};
 
         for (const enemy of state.enemies) {
+            if (!canProjectAttack(enemy, library)) continue;
             for (const intention of enemy.intentions) {
+                if (intention.resolved) continue;
                 const target = intention.targets.find(target => target.target === character.id);
                 if (target) {
                     for (const effect of target.effects) {
@@ -134,4 +140,25 @@ function createTrapViewModel(
             (trap.amount * 100) / BATTLE_OVERVIEW_TRAP_MAX)),
         valueLabel: `${trap.amount}/${BATTLE_OVERVIEW_TRAP_MAX}`,
     };
+}
+
+/** Eligibility comes from public status metadata, not buff names or past events. */
+function canProjectAttack(enemy: Enemy, library: ContentLibrary | undefined): boolean {
+    if (enemy.currHp <= 0) return false;
+    const passives = (library?.enemies[enemy.defId]?.passives ?? [])
+        .flatMap(id => library?.passives[id] ? [library.passives[id]!] : []);
+    const immunities = new Set(passives.flatMap(passive => passive.immunities ?? []));
+    const statuses = new Map<Status["id"], number>();
+    for (const buff of enemy.buffs) {
+        for (const status of buff.statuses ?? []) {
+            if (!immunities.has(status.id)) {
+                statuses.set(status.id, Math.max(statuses.get(status.id) ?? 0, status.value));
+            }
+        }
+    }
+    const flags = [
+        ...passives.flatMap(passive => passive.status?.flags ?? []),
+        ...[...statuses].flatMap(([id, level]) => library?.statuses[id]?.modifiers[level]?.flags ?? []),
+    ];
+    return !flags.includes("blocksAttack") && !flags.includes("skipsTurn");
 }

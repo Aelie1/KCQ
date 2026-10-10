@@ -364,8 +364,9 @@ describe("normal Latex Skunk", () => {
             moves: [crossThreshold],
         });
 
-        expect(engine.getGameState().enemies[0].intentions[0]?.move)
-            .not.toBe("latexExplosion");
+        const oldIntention = engine.getGameState().enemies[0].intentions[0];
+        expect(oldIntention.resolved).toBe(false);
+        expect(oldIntention.move).not.toBe("latexExplosion");
 
         const result = engine.executeAction({
             type: "move",
@@ -383,11 +384,13 @@ describe("normal Latex Skunk", () => {
         });
         expect(result.frames.at(-1)!.state.enemies[0]).toMatchObject({
             currHp: BELOW_THRESHOLD,
-            intentions: [{
-                move: "latexExplosion",
-                targets: [{ target: "hero" }],
-            }],
+            intentions: [
+                { move: oldIntention.move, resolved: true },
+                { move: "latexExplosion", resolved: false, targets: [{ target: "hero" }] },
+            ],
         });
+        expect(result.frames.at(-1)!.state.enemies[0].intentions).toHaveLength(2);
+        expect(oldIntention.resolved).toBe(false);
     });
 
     it("cancels its old intention and targets the threshold-crossing attacker with Explosion", () => {
@@ -407,6 +410,7 @@ describe("normal Latex Skunk", () => {
         const oldIntention = engine.getGameState().enemies[0].intentions[0];
         expect(oldIntention).toMatchObject({
             move: "latexShower",
+            resolved: false,
             targets: [{ target: expect.any(String) }],
         });
         const oldTarget = oldIntention.targets[0]?.target;
@@ -424,12 +428,13 @@ describe("normal Latex Skunk", () => {
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "skunk1", move: oldIntention.move });
         expect(result.frames.at(-1)!.state.enemies[0]).toMatchObject({
             currHp: BELOW_THRESHOLD,
-            intentions: [{
-                move: "latexExplosion",
-                targets: [{ target: attacker }],
-            }],
+            intentions: [
+                { move: oldIntention.move, resolved: true, targets: [{ target: oldTarget }] },
+                { move: "latexExplosion", resolved: false, targets: [{ target: attacker }] },
+            ],
         });
-        expect(result.frames.at(-1)!.state.enemies[0].intentions).toHaveLength(1);
+        expect(result.frames.at(-1)!.state.enemies[0].intentions).toHaveLength(2);
+        expect(oldIntention.resolved).toBe(false);
     });
 
     it.each([true, false])(

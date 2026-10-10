@@ -70,6 +70,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const overviewGameLog = props.overviewGameLog ?? createOverviewGameLogPreference();
     const shortcutHints = props.shortcutHints ?? createShortcutHintPreference();
     const playbackSpeed = props.playbackSpeed ?? createPlaybackSpeedPreference();
+    const library = props.engine.getLibrary();
     let engineState = props.engine.getGameState();
     const [state, setState] = createSignal<GameState>(engineState);
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
@@ -351,6 +352,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                             actions={actions()}
                             gameLogLines={logOpen() ? 0 : overviewGameLog.value}
                             history={logEntries()}
+                            library={library}
                             presentation={props.presentation}
                             state={state()}
                             thresholds={thresholds()}

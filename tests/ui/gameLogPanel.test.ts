@@ -44,7 +44,7 @@ const text = (html: string): string => html.replace(/<[^>]*>/g, "").replaceAll("
 const count = (html: string, kind: string) => (html.match(new RegExp('data-outcome="' + kind + '"', "g")) ?? []).length;
 
 describe("compact graphical Game Log", () => {
-    it("renders the actual Latex Puddle roll from execution through localized log output", () => {
+    it("renders the actual Latex Puddle effects without inventing an unavailable accuracy result", () => {
         const hero = makeCharacterDef("ko");
         const encounter = makeEncounterDef("puddle-log", {
             enemies: [skunk.id], traps: [{ definition: trapPuddle, amount: 0 }],
@@ -59,27 +59,36 @@ describe("compact graphical Game Log", () => {
             type: "useMove", targets: [],
             effects: [{ type: "trapAdded", amount: projected?.amount }]
         });
+        expect(frame.event).not.toHaveProperty("band");
         const saved = JSON.stringify(result.frames);
         const entries = createGameLogEntries(result.frames, before).filter(entry => entry.kind === "move" && entry.move === "latexPuddle");
         const translated = new Presentation({ ...stockStrings, "hitBand.graze.name": "Effleure" });
         const html = renderEntries(entries, translated);
-        expect(text(html)).toContain("Skunk 1—Latex PuddleEffleure");
-        expect(html).toContain("kcq-game-log__value--graze");
+        expect(text(html)).toContain("Skunk 1—Latex Puddle");
+        expect(text(html)).not.toContain("Effleure");
+        expect(entries[0]).not.toHaveProperty("band");
+        expect(createGameLogViewModel(entries, translated)[0]).not.toHaveProperty("band");
+        expect(html).not.toMatch(/kcq-game-log__value--(?:miss|graze|hit|crit)/);
+        expect(count(html, "trap")).toBe(1);
+        expect(entries[0]!.outcomes).toContainEqual(expect.objectContaining({
+            kind: "trap", trap: trapPuddle.id, change: projected?.amount,
+        }));
         expect(JSON.stringify(result.frames)).toBe(saved);
     });
-    it.each(["miss", "graze", "hit", "crit"] as const)("retains the recorded %s band for zero-target moves", band => {
-        const entries = createGameLogEntries([{ ...move([], [{ type: "trapAdded", actor: "skunk1", trap: "trapPuddle", amount: 16 }], "latexPuddle"), band }]);
-        expect(entries[0]).toMatchObject({ kind: "move", band });
-        expect(createGameLogViewModel(entries, presentation)[0]!.band).toEqual({ text: presentation.hitBand(band), tone: band });
+    it.each([0, 8, 16, 32])("does not infer zero-target accuracy from a trap amount of %i", amount => {
+        const entries = createGameLogEntries([move([], [{ type: "trapAdded", actor: "skunk1", trap: "trapPuddle", amount }], "latexPuddle")]);
+        expect(entries[0]).toMatchObject({ kind: "move", move: "latexPuddle" });
+        expect(entries[0]).not.toHaveProperty("band");
+        expect(createGameLogViewModel(entries, presentation)[0]).not.toHaveProperty("band");
         const html = renderEntries(entries);
-        expect(html).toContain("kcq-game-log__value--" + band);
-        expect(text(html)).toContain(presentation.move("latexPuddle") + presentation.hitBand(band));
+        expect(html).not.toMatch(/kcq-game-log__value--(?:miss|graze|hit|crit)/);
+        expect(text(html)).toContain(presentation.move("latexPuddle"));
         expect(count(html, "trap")).toBe(1);
         expect(count(html, "damage")).toBe(0);
     });
     it("never invents an accuracy band for zero-target events without one", () => {
         const entries = createGameLogEntries([move([], [], "callReinforcements")]);
-        expect(createGameLogViewModel(entries, presentation)[0]!.band).toBeUndefined();
+        expect(createGameLogViewModel(entries, presentation)[0]).not.toHaveProperty("band");
     });
     it("omits trap trigger quantities with numeric endpoints but keeps amounts when endpoints are missing", () => {
         const event = move([], [{ type: "trapTriggered", actor: "matsuko", trap: "trapPuddle", amount: 16 }]);

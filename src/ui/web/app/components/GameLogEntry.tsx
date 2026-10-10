@@ -65,7 +65,6 @@ export function GameLogEntry(props: { entry: GameLogViewModelEntry; hidden?: boo
                         <span aria-hidden="true">—</span>
                     </Show>
                     <strong class="kcq-game-log__title">{entry.title}</strong>
-                    <Show when={entry.band}>{band => <span class={"kcq-game-log__value kcq-game-log__value--" + band().tone}>{band().text}</span>}</Show>
                     <Show when={entry.target}>
                         <span class={"kcq-game-log__escape-target kcq-game-log__value--entity-" + entry.targetTone}>→ {entry.target}</span>
                     </Show>
