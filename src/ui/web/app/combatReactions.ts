@@ -9,6 +9,7 @@ export interface CombatReaction {
     detail?: string;
     treatment: string;
     strength?: ReactionStrength;
+    amount?: number;
     from?: number;
     to?: number;
 }
@@ -56,7 +57,7 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
             switch (effect.type) {
                 case "enemyDamaged": case "enemyHealed":
                     if (effect.amount > 0) cues.push({
-                        kind: "hp", entity: effect.target,
+                        kind: "hp", entity: effect.target, amount: effect.amount,
                         treatment: effect.type === "enemyHealed" ? "healing" : "damage",
                         strength: strength(band) ?? "hit"
                     });

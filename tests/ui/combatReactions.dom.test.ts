@@ -1,4 +1,5 @@
 import { batch, createComponent, createSignal } from "solid-js";
+import { readFileSync } from "node:fs";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { EventFrame, GameEvent } from "../../src/engine/public/types";
@@ -182,7 +183,7 @@ describe("combat reaction rendering and lifecycle", () => {
             state => { state.characters[0]!.buffs[0]!.duration = 5; });
         expect(element(".kcq-party-card__effects .kcq-status-chip")).toBe(buff);
         expect(buff.dataset.combatReaction).toBe("updated");
-        vi.advanceTimersByTime(1000);
+        vi.advanceTimersByTime(b.reactions.matching("buff", "ko", "guarded")[0]!.duration);
         expect(buff.dataset.combatReaction).toBeUndefined();
         b.present({ type: "changePhase", phase: "enemy", effects: [] },
             state => { state.characters[0]!.buffs[0]!.duration = 4; });
@@ -217,19 +218,122 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(hp.dataset.combatReaction).toBe("healing");
         expect(hp.textContent).toContain(String(b.initial.enemies[0]!.currHp - 5));
     });
+    it("shows -14 beside only the damaged enemy's unchanged HP glow host", () => {
+        const b = mount();
+        const cards = document.querySelectorAll<HTMLElement>(".kcq-enemy-card");
+        const enemy = b.initial.enemies[1]!;
+        const hp = cards[1]!.querySelector<HTMLElement>(".kcq-enemy-card__hp")!;
+        b.present({ type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [
+            { target: enemy.id, result: "hit", effects: [{ type: "enemyDamaged", target: enemy.id, amount: 14 }] },
+        ] }, state => { state.enemies[1]!.currHp -= 14; });
+        const number = cards[1]!.querySelector<HTMLElement>(".kcq-hp-reaction")!;
+        expect(number.textContent).toBe("-14");
+        expect(number.parentElement).toBe(hp.parentElement);
+        expect(number.getAttribute("aria-hidden")).toBe("true");
+        expect(number.dataset.combatReaction).toBe("damage");
+        expect(number.style.animation).toBe("kcq-react-hp-float 2000ms ease-out 0ms forwards");
+        expect(hp.textContent).toBe((enemy.currHp - 14) + " / " + enemy.maxHp);
+        expect(hp.dataset.combatReaction).toBe("damage");
+        expect(hp.style.getPropertyValue("--kcq-react-hp")).toContain("kcq-react-damage 4000ms");
+        expect(cards[0]!.querySelector(".kcq-hp-reaction")).toBeNull();
+        expect(cards[1]!.querySelector<HTMLElement>(".kcq-enemy-card__name")!.style.animation).toBe("");
+    });
+    it("shows positive healing and no numbers or glows for zero-value events", () => {
+        const b = mount();
+        const enemy = b.initial.enemies[0]!;
+        const hp = element(".kcq-enemy-card__hp");
+        b.present({ type: "changePhase", phase: "enemy", effects: [
+            { type: "enemyDamaged", target: enemy.id, amount: 0 },
+            { type: "enemyHealed", target: enemy.id, amount: 0 },
+        ] });
+        expect(document.querySelector(".kcq-hp-reaction")).toBeNull();
+        expect(hp.dataset.combatReaction).toBeUndefined();
+        expect(vi.getTimerCount()).toBe(0);
+        b.present({ type: "changePhase", phase: "enemy", effects: [
+            { type: "enemyHealed", target: enemy.id, amount: 14 },
+        ] }, state => { state.enemies[0]!.currHp += 14; });
+        expect(element(".kcq-hp-reaction").textContent).toBe("+14");
+        expect(element(".kcq-hp-reaction").dataset.combatReaction).toBe("healing");
+        expect(hp.dataset.combatReaction).toBe("healing");
+        expect(hp.textContent).toBe((enemy.currHp + 14) + " / " + enemy.maxHp);
+    });
+    it("keeps simultaneous and repeated hits separate until their independent cue expiry", () => {
+        const b = mount();
+        const enemyId = b.initial.enemies[0]!.id;
+        const hp = element(".kcq-enemy-card__hp");
+        const hpText = hp.textContent;
+        const hit = { type: "enemyDamaged", target: enemyId, amount: 14 } as const;
+        b.present({ type: "changePhase", phase: "enemy", effects: [hit, hit] });
+        const numbers = () => [...document.querySelectorAll<HTMLElement>(".kcq-hp-reaction")];
+        const first = numbers();
+        expect(first.map(number => number.textContent)).toEqual(["-14", "-14"]);
+        expect(first[0]!.style.right).not.toBe(first[1]!.style.right);
+        vi.advanceTimersByTime(500);
+        b.present({ type: "changePhase", phase: "enemy", effects: [hit] });
+        const third = numbers()[2]!;
+        const animation = third.style.animation;
+        const position = third.style.right;
+        expect(numbers()).toHaveLength(3);
+        expect(new Set(numbers().map(number => number.style.right)).size).toBe(3);
+        expect(new Set(b.reactions.matching("hp", enemyId).map(cue => cue.serial)).size).toBe(3);
+        expect(numbers().slice(0, 2)).toEqual(first);
+        // Floating values use their HP cue timers, while the visual fade ends after 2s.
+        expect(vi.getTimerCount()).toBe(3);
+        vi.advanceTimersByTime(3499);
+        expect(numbers()).toHaveLength(3);
+        vi.advanceTimersByTime(1);
+        expect(first.every(number => !number.isConnected)).toBe(true);
+        expect(numbers()).toEqual([third]);
+        expect(third.style.animation).toBe(animation);
+        expect(third.style.right).toBe(position);
+        b.present({ type: "changePhase", phase: "enemy", effects: [hit] });
+        expect(numbers()[1]!.style.right).toBe(first[0]!.style.right);
+        vi.advanceTimersByTime(500);
+        expect(third.isConnected).toBe(false);
+        expect(numbers()).toHaveLength(1);
+        vi.advanceTimersByTime(3500);
+        expect(numbers()).toEqual([]);
+        expect(element(".kcq-enemy-card__hp")).toBe(hp);
+        expect(hp.textContent).toBe(hpText);
+        expect(hp.dataset.combatReaction).toBeUndefined();
+        expect(vi.getTimerCount()).toBe(0);
+    });
+    it("keeps the floating layer outside layout and fades without movement for reduced motion", () => {
+        const css = readFileSync("src/ui/web/app/app.css", "utf8");
+        const style = document.createElement("style"); style.textContent = css; document.body.append(style);
+        const b = mount();
+        b.present({ type: "changePhase", phase: "enemy", effects: [
+            { type: "enemyDamaged", target: b.initial.enemies[0]!.id, amount: 14 },
+        ] });
+        const number = element(".kcq-hp-reaction");
+        expect(getComputedStyle(number).position).toBe("absolute");
+        expect(getComputedStyle(number).pointerEvents).toBe("none");
+        expect(getComputedStyle(number.parentElement!).overflow).toBe("visible");
+        expect(getComputedStyle(element(".kcq-enemy-card")).overflow).toBe("visible");
+        expect(css).toContain("color: var(--kcq-glow-negative)");
+        expect(css).toContain("color: var(--kcq-glow-positive)");
+        expect(css).toContain("transform: translate(-6px, -28px)");
+        const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
+        expect(reduced).toMatch(/\.kcq-hp-reaction\s*\{\s*animation: kcq-react-binding-fade 2000ms[^}]*forwards !important;/);
+    });
     it("Instant clears current effects and creates no delayed reactions, and unmount cancels outstanding work", () => {
         const b = mount();
-        b.present(move());
+        const event: GameEvent = { type: "changePhase", phase: "enemy", effects: [
+            { type: "enemyDamaged", target: b.initial.enemies[0]!.id, amount: 14 },
+        ] };
+        b.present(event);
+        expect(element(".kcq-hp-reaction").textContent).toBe("-14");
         expect(vi.getTimerCount()).toBeGreaterThan(0);
-        b.present(move(), undefined, true);
+        b.present(event, undefined, true);
         expect(b.reactions.cues()).toEqual([]);
+        expect(document.querySelector(".kcq-hp-reaction")).toBeNull();
         expect(document.querySelector("[data-combat-reaction]")).toBeNull();
         expect(vi.getTimerCount()).toBe(0);
-        b.present(move());
+        b.present(event);
         dispose!(); dispose = undefined;
         expect(vi.getTimerCount()).toBe(0);
         vi.advanceTimersByTime(5000);
-        b.reactions.present([{ event: move(), state: b.initial }], b.initial);
+        b.reactions.present([{ event: event, state: b.initial }], b.initial);
         expect(b.reactions.cues()).toEqual([]);
     });
     it("cleans up a pending buff exit on unmount and skips exits for Instant removals", () => {

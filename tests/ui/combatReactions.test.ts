@@ -14,12 +14,9 @@ function move(band: HitBand, effects: LeafEvent[] = []): GameEvent {
 function frame(event: GameEvent): EventFrame { return { event, state: initial() }; }
 
 describe("semantic combat reactions", () => {
-    it.each(["miss", "none", "graze", "hit", "crit"] as const)("uses resolved %s accuracy for the target", band => {
+    it.each(["miss", "none", "graze", "hit", "crit"] as const)("keeps %s accuracy local to resolved effects", band => {
         const cues = collectCombatReactions([frame(move(band))], initial());
-        expect(cues.filter(cue => cue.kind === "actor")).toEqual([{ kind: "actor", entity: "skunkette1", treatment: "actor" }]);
-        const targets = cues.filter(cue => cue.kind === "target");
-        if (band === "miss" || band === "none") expect(targets).toEqual([]);
-        else expect(targets).toEqual([{ kind: "target", entity: "ko", treatment: "target", strength: band }]);
+        expect(cues).toEqual([{ kind: "actor", entity: "skunkette1", treatment: "actor" }]);
     });
     it("anchors multiple resolved changes to each frame's actual binding endpoint", () => {
         const first = frame(move("hit", [
@@ -54,8 +51,23 @@ describe("semantic combat reactions", () => {
             ], targets: [{ target: "queen", result: band, effects: [{ type: "enemyDamaged", target: "queen", amount: 10 }] }]
         });
         expect(collectCombatReactions([f], initial()).filter(cue => cue.kind === "hp")).toEqual([
-            { kind: "hp", entity: "queen", treatment: "damage", strength: band },
-            { kind: "hp", entity: "queen", treatment: "healing", strength: "hit" },
+            { kind: "hp", entity: "queen", amount: 10, treatment: "damage", strength: band },
+            { kind: "hp", entity: "queen", amount: 5, treatment: "healing", strength: "hit" },
+        ]);
+    });
+    it("retains each HP event amount and ignores zero damage and healing", () => {
+        const event: GameEvent = { type: "changePhase", phase: "player", effects: [
+            { type: "enemyDamaged", target: "queen", amount: 14 },
+            { type: "enemyDamaged", target: "queen", amount: 14 },
+            { type: "enemyHealed", target: "skunk1", amount: 7 },
+            { type: "enemyDamaged", target: "queen", amount: 0 },
+            { type: "enemyHealed", target: "queen", amount: 0 },
+        ] };
+        // Identical snapshots still produce every resolved nonzero event.
+        expect(collectCombatReactions([frame(event)], initial())).toEqual([
+            { kind: "hp", entity: "queen", amount: 14, treatment: "damage", strength: "hit" },
+            { kind: "hp", entity: "queen", amount: 14, treatment: "damage", strength: "hit" },
+            { kind: "hp", entity: "skunk1", amount: 7, treatment: "healing", strength: "hit" },
         ]);
     });
     it("cues buff additions, updates and removals by stable owner and buff IDs", () => {

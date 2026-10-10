@@ -242,6 +242,46 @@ describe("BattleApp playback integration", () => {
         expect(b.execute).toHaveBeenCalledOnce();
         expect(binding()).toBe(36);
     });
+    it("lets HP numbers finish independently after normal playback completes", () => {
+        const b = mountBattle();
+        const enemyId = b.initial.enemies[0]!.id;
+        b.frames[1]!.event.effects.push({ type: "enemyDamaged", target: enemyId, amount: 14 });
+        b.frames[4]!.event.effects.push({ type: "enemyHealed", target: enemyId, amount: 5 });
+        const hp = element(".kcq-enemy-card__hp");
+        const hpText = hp.textContent;
+        endTurn(); b.paint(); b.paint();
+        const damage = element(".kcq-hp-reaction");
+        expect(damage.textContent).toBe("-14");
+        vi.advanceTimersByTime(1000);
+        const healing = document.querySelectorAll<HTMLElement>(".kcq-hp-reaction")[1]!;
+        expect(healing.textContent).toBe("+5");
+        expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("false");
+        expect(damage.isConnected).toBe(true);
+        vi.advanceTimersByTime(2999);
+        expect(damage.isConnected).toBe(true);
+        vi.advanceTimersByTime(1);
+        expect(damage.isConnected).toBe(false);
+        expect(healing.isConnected).toBe(true);
+        vi.advanceTimersByTime(1000);
+        expect(document.querySelector(".kcq-hp-reaction")).toBeNull();
+        expect(element(".kcq-enemy-card__hp")).toBe(hp);
+        expect(hp.textContent).toBe(hpText);
+        expect(vi.getTimerCount()).toBe(0);
+        expect(b.execute).toHaveBeenCalledOnce();
+    });
+    it("leaves no HP numbers or reaction timers after Instant playback", () => {
+        const b = mountBattle("instant");
+        const enemyId = b.initial.enemies[0]!.id;
+        b.frames[1]!.event.effects.push({ type: "enemyDamaged", target: enemyId, amount: 14 });
+        b.frames[4]!.event.effects.push({ type: "enemyHealed", target: enemyId, amount: 5 });
+        endTurn();
+        expect(document.querySelector(".kcq-hp-reaction")).toBeNull();
+        expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("false");
+        expect(vi.getTimerCount()).toBe(0);
+        vi.advanceTimersByTime(5000);
+        expect(document.querySelector(".kcq-hp-reaction")).toBeNull();
+        expect(b.execute).toHaveBeenCalledOnce();
+    });
     it.each([false, true])("blocks mouse and keyboard throughout playback (shared keyboard: %s)", shared => {
         const b = mountBattle(undefined, undefined, shared); const party = element(".kcq-party-card"); const enemy = element(".kcq-enemy-card");
         endTurn();

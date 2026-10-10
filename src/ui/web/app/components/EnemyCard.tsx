@@ -1,5 +1,5 @@
-import { For, Show, type JSX } from "solid-js";
-import { reactionRef } from "../combatReactions";
+import { For, onCleanup, Show, useContext, type JSX } from "solid-js";
+import { CombatReactionsContext, reactionRef } from "../combatReactions";
 import type { EnemyCardData } from "./componentTypes";
 import { DurationPips } from "./DurationPips";
 import { IntentRow } from "./IntentRow";
@@ -16,6 +16,8 @@ export interface EnemyCardProps {
 }
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
+    const reactions = useContext(CombatReactionsContext);
+    const hpLanes = new Set<number>();
     const actorReaction = reactionRef("actor", () => props.enemy.id);
     const cardReaction = (element: HTMLElement) => { actorReaction(element); };
     return (
@@ -53,9 +55,27 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                 <For each={props.enemy.linkedEntities}>
                     {(link) => <LinkedEntityChip link={link} iconOnly />}
                 </For>
-                <p ref={reactionRef("hp", () => props.enemy.id)} class="kcq-enemy-card__hp">
-                    {props.enemy.currentHp} / {props.enemy.maxHp}
-                </p>
+                <div class="kcq-enemy-card__hp-anchor">
+                    <p ref={reactionRef("hp", () => props.enemy.id)} class="kcq-enemy-card__hp">
+                        {props.enemy.currentHp} / {props.enemy.maxHp}
+                    </p>
+                    <For each={reactions?.matching("hp", props.enemy.id).filter(cue => (cue.amount ?? 0) > 0)}>{cue => {
+                        // Keep each cue's lane and animation clock stable as other hits arrive or expire.
+                        let lane = 0;
+                        while (hpLanes.has(lane)) lane++;
+                        hpLanes.add(lane);
+                        onCleanup(() => hpLanes.delete(lane));
+                        const delay = `${-Math.max(0, Date.now() - cue.started)}ms`;
+                        return <span class="kcq-hp-reaction" data-combat-reaction={cue.treatment}
+                            style={{
+                                right: `calc(100% + ${4 + lane * 32}px)`,
+                                animation: `kcq-react-hp-float 2000ms ease-out ${delay} forwards`,
+                                "--kcq-hp-reaction-delay": delay,
+                            }} aria-hidden="true">
+                            {cue.treatment === "healing" ? "+" : "-"}{cue.amount}
+                        </span>;
+                    }}</For>
+                </div>
             </header>
             <div class="kcq-enemy-card__intentions">
                 <For each={props.enemy.visibleIntentions}>

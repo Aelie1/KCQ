@@ -725,6 +725,13 @@ button {
     text-overflow: ellipsis;
 }
 
+.kcq-enemy-card__hp-anchor {
+    position: relative;
+    display: flex;
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
 .kcq-enemy-card__hp {
     white-space: nowrap;
     flex: 0 0 auto;
@@ -4031,6 +4038,39 @@ button {
     }
 }
 
+.kcq-hp-reaction {
+    position: absolute;
+    top: 0;
+    z-index: 5;
+    pointer-events: none;
+    white-space: nowrap;
+    opacity: 0;
+    font-size: 14px;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow: 0 0 5px currentColor;
+}
+
+.kcq-hp-reaction[data-combat-reaction="damage"] {
+    color: var(--kcq-glow-negative);
+}
+
+.kcq-hp-reaction[data-combat-reaction="healing"] {
+    color: var(--kcq-glow-positive);
+}
+
+@keyframes kcq-react-hp-float {
+    from {
+        opacity: 1;
+        transform: translate(0, 0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-6px, -28px);
+    }
+}
+
 @keyframes kcq-react-buff {
     0% {
         box-shadow: 0 0 6px 2px var(--kcq-buff-reaction-glow),
@@ -4100,5 +4140,9 @@ button {
     .kcq-binding-reaction,
     .kcq-buff-exit {
         display: none;
+    }
+
+    .kcq-hp-reaction {
+        animation: kcq-react-binding-fade 2000ms ease-out var(--kcq-hp-reaction-delay, 0ms) forwards !important;
     }
 }
