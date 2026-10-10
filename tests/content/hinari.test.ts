@@ -802,7 +802,7 @@ describe("Hinari's Release", () => {
                 {
                     type: "buff", target: "foe1", operation: "add",
                     buff: {
-                        id: "subspaceClutter", duration: 2, linkedEntity: undefined,
+                        id: "subspaceClutter", icon: "shield-off", duration: 2, linkedEntity: undefined,
                         modifiers: { defense: -2, hit: -2 }, moveList: undefined, statuses: undefined,
                     },
                 },

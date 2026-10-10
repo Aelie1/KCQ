@@ -653,6 +653,27 @@ export class GameEngine implements Engine {
         return moveEvent;
     }
 
+    /** Internal commitments stay intact while the phase executes. Export only the
+     * pending suffix at each action boundary, without changing iteration or effects. */
+    private getEnemyPhaseState(consumed?: iIntention): GameState {
+        const state = this.getGameState();
+        return {
+            ...state,
+            enemies: state.enemies.map((enemy, index) => {
+                const actor = this.state.enemies[index]!;
+                const status = new GameStatus(this.state, actor);
+                // Cancellation may already have removed the consumed commitment.
+                const count = consumed && actor === consumed.actor
+                    ? actor.intentions.indexOf(consumed) + 1 : 0;
+                return {
+                    ...enemy,
+                    intentions: status.canAttack() && !status.isSkipped()
+                        ? enemy.intentions.slice(count) : [],
+                };
+            }),
+        };
+    }
+
     private executeEnemyPhase(): EventFrame[] {
         const result: EventFrame[] = [];
         for (const enemy of [...this.state.enemies]) {
@@ -662,7 +683,7 @@ export class GameEngine implements Engine {
                     if (event) {
                         this.state.turn.step++;
                         this.refreshState();
-                        result.push({ event: event, state: this.getGameState() });
+                        result.push({ event: event, state: this.getEnemyPhaseState(intention) });
                     }
                 }
             }
@@ -694,7 +715,7 @@ export class GameEngine implements Engine {
                 phase: this.state.turn.phase,
                 effects: result.getEvents()
             },
-            state: this.getGameState()
+            state: this.state.turn.phase === "enemy" ? this.getEnemyPhaseState() : this.getGameState()
         };
 
     }

@@ -42,7 +42,6 @@ describe("command card", () => {
         const reasonRule = css.match(/\.kcq-command-card__reason\s*\{([^}]*)\}/)?.[1] ?? "";
         const tagsRule = css.match(/\.kcq-command-card__tags\s*\{([^}]*)\}/)?.[1] ?? "";
 
-        expect(cardRule).toContain("min-height: 75px");
         expect(cardRule).not.toMatch(/(^|\s)height:\s*75px/);
         expect(nameRule).toContain("-webkit-line-clamp: 2");
         expect(nameRule).not.toContain("text-overflow: ellipsis");

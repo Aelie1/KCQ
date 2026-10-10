@@ -3,24 +3,24 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { createStockEngine } from "../../src/stock";
-import type { Buff } from "../../src/engine/public/types";
-import type { GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
-import { createGameLogHistory } from "../../src/ui/web/app/viewModels/gameLogHistory";
-import { createBattleOverviewViewModel } from "../../src/ui/web/app/viewModels/battleOverview";
-import { skunk } from "../../src/content/skunk/skunk";
 import { trapPuddle } from "../../src/content/skunk/puddles";
+import { skunk } from "../../src/content/skunk/skunk";
+import type { Buff } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
+import type { GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
-import { makeCharacterDef, makeEncounterDef } from "../helpers/helpers";
-import { createTestEngine } from "../helpers/testCatalog";
-import { stockStrings } from "../helpers/stockStrings";
 import { EnemyCard } from "../../src/ui/web/app/components/EnemyCard";
 import { IntentRow } from "../../src/ui/web/app/components/IntentRow";
 import { TargetHeader } from "../../src/ui/web/app/components/TargetHeader";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
+import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
+import { createBattleOverviewViewModel } from "../../src/ui/web/app/viewModels/battleOverview";
 import { createEnemyCardViewModel } from "../../src/ui/web/app/viewModels/enemyCard";
+import { createGameLogHistory } from "../../src/ui/web/app/viewModels/gameLogHistory";
 import { createIntentViewModel } from "../../src/ui/web/app/viewModels/intentRow";
+import { makeCharacterDef, makeEncounterDef } from "../helpers/helpers";
+import { stockStrings } from "../helpers/stockStrings";
+import { createTestEngine } from "../helpers/testCatalog";
 
 describe("enemy card", () => {
     it("renders the real Latex Puddle preview band on Battle Overview without changing the stored roll", () => {
@@ -60,19 +60,23 @@ describe("enemy card", () => {
 
     it("keeps targeted and zero-target accuracy independent on a card and no-accuracy moves unchanged", () => {
         const fixture = battleOverviewFixture;
-        const model = createEnemyCardViewModel({ ...fixture.state.enemies[0]!, intentions: [
-            { move: "latexSpray", targets: [{ target: "ko", band: "hit", effects: [] }], effects: [] },
-            { move: "latexPuddle", targets: [], effects: [], band: "graze" },
-        ] }, fixture.presentation, fixture.state.characters);
+        const model = createEnemyCardViewModel({
+            ...fixture.state.enemies[0]!, intentions: [
+                { move: "latexSpray", targets: [{ target: "ko", band: "hit", effects: [] }], effects: [] },
+                { move: "latexPuddle", targets: [], effects: [], band: "graze" },
+            ]
+        }, fixture.presentation, fixture.state.characters);
         expect(model.visibleIntentions.map(intent => intent.outcome)).toEqual(["hit", "graze"]);
         const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
         expect(html.match(/kcq-enemy-card__intent-slot/g)).toHaveLength(2);
         expect(html.match(/kcq-status-chip--outcome-/g)).toHaveLength(2);
         expect(html).toContain("kcq-status-chip--outcome-hit");
         expect(html).toContain("kcq-status-chip--outcome-graze");
-        const noAccuracy = createEnemyCardViewModel({ ...fixture.state.enemies[0]!, intentions: [
-            { move: "callReinforcements", targets: [], effects: [] },
-        ] }, fixture.presentation, fixture.state.characters);
+        const noAccuracy = createEnemyCardViewModel({
+            ...fixture.state.enemies[0]!, intentions: [
+                { move: "callReinforcements", targets: [], effects: [] },
+            ]
+        }, fixture.presentation, fixture.state.characters);
         expect(noAccuracy.visibleIntentions[0]!.outcome).toBeUndefined();
         const noAccuracyHtml = renderToString(() => createComponent(EnemyCard, { enemy: noAccuracy }));
         expect(noAccuracyHtml).toContain("kcq-intent-row--move-only");
@@ -314,11 +318,14 @@ describe("enemy card", () => {
 });
 
 function application(actor: string, buff: Buff, target = battleOverviewFixture.state.enemies[0]!.id): GameLogPresentationEntry {
-    return { kind: "move", actor, move: "arbitrary-move", outcomes: [{
-        kind: "buff", buff: buff.id, participants: [{ target,
-            initial: { present: false }, final: { present: true, details: buff },
-        }],
-    }] };
+    return {
+        kind: "move", actor, move: "arbitrary-move", outcomes: [{
+            kind: "buff", buff: buff.id, participants: [{
+                target,
+                initial: { present: false }, final: { present: true, details: buff },
+            }],
+        }]
+    };
 }
 
 describe("enemy card names and duration clusters", () => {
@@ -355,7 +362,7 @@ describe("enemy card names and duration clusters", () => {
         const model = createEnemyCardViewModel(enemy, fixture.presentation, fixture.state.characters, history);
         expect(model.effectDurations.map(({ tone, duration }) => [tone, duration]))
             .toEqual([["ko", 3], ["matsuko", 2], ["hinari", 1]]);
-        const html = renderToString(() => createComponent(EnemyCard, { enemy: model, shortcut: "4", onSelect: () => {} }));
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model, shortcut: "4", onSelect: () => { } }));
         expect(html.match(/kcq-enemy-card__debuff kcq-player-identity--/g)).toHaveLength(3);
         expect(html.match(/kcq-status-chip__segment/g)).toHaveLength(6);
         expect(html).toContain("Hinari: [buff.effect-c.name]");
@@ -364,7 +371,7 @@ describe("enemy card names and duration clusters", () => {
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
         const border = css.match(/\.kcq-enemy-card__debuffs\s*\{([^}]*)\}/)![1];
         expect(border).toContain("position: absolute");
-        expect(border).toContain("top: -3px");
+        expect(border).toContain("top: -1px");
         expect(border).toContain("right: 22px");
         expect(border).toContain("gap: 8px");
     });
@@ -403,7 +410,8 @@ describe("enemy card names and duration clusters", () => {
         ];
         const state = { ...fixture.state, enemies: [{ ...target, buffs }, ...fixture.state.enemies.slice(1)] };
         const history = [application(source, buffs[0]!), application(source, buffs[1]!), application("ko", buffs[2]!)];
-        const presentation = new Presentation({ ...stockStrings,
+        const presentation = new Presentation({
+            ...stockStrings,
             "buff.arbitrary-shield.name": "Bouclier",
             "ui.characterDetails.rounds": "{count} Tours",
         });
@@ -438,9 +446,12 @@ describe("enemy card names and duration clusters", () => {
         const enemy = { ...fixture.state.enemies[0]!, buffs: [buff] };
         const added = application("ko", buff);
         const refreshed = application("matsuko", buff);
-        const removal: GameLogPresentationEntry = { kind: "phase", phase: "player", outcomes: [{ kind: "buff", buff: buff.id,
-            participants: [{ target: enemy.id, initial: { present: true, details: buff }, final: { present: false } }],
-        }] };
+        const removal: GameLogPresentationEntry = {
+            kind: "phase", phase: "player", outcomes: [{
+                kind: "buff", buff: buff.id,
+                participants: [{ target: enemy.id, initial: { present: true, details: buff }, final: { present: false } }],
+            }]
+        };
         const unowned: GameLogPresentationEntry = { ...removal, outcomes: added.outcomes };
         const project = (history: GameLogPresentationEntry[]) => createEnemyCardViewModel(enemy, fixture.presentation, fixture.state.characters, history).effectDurations;
         expect(project([added, refreshed])).toMatchObject([{ tone: "matsuko", duration: 2 }]);

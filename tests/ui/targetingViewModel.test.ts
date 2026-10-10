@@ -510,7 +510,7 @@ describe("targeting view model", () => {
                 expect.objectContaining({ signedValue: "+3" }),
                 expect.objectContaining({ signedValue: "+2" }),
             ],
-            moveList: [{ label: "Add Fairy Telekinesis", tone: "success" }, { label: "Add Fairy Starlight Bindings", tone: "success" }],
+            moveList: [{ label: "Adds Empowered Moves", tone: "success" }],
         });
     });
 

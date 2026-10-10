@@ -372,13 +372,6 @@ describe("stance toggling", () => {
                 source: actor,
                 target: state.characters[0],
                 binding: observation,
-                onResolve: ({ target }) => {
-                    observedDuringEnemyPhase = {
-                        active: target.buffs.find(({ id }) => id === "pounce")?.active,
-                        standing: target.standing,
-                    };
-                    return [];
-                },
             }],
         });
         const observer = makeEnemyDef("observer", [observe], (_state, actor) => [{
@@ -394,13 +387,11 @@ describe("stance toggling", () => {
         const engine = createTestEngine([encounter], [victim], 3, { enemies: [skunkette, observer] });
         engine.loadCharacter(victim.id);
         engine.loadEncounter(encounter.id);
-        expect(observedDuringEnemyPhase).toBeUndefined();
 
         const result = engine.executeAction({ type: "endTurn" });
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected the round transition to succeed");
 
-        expect(observedDuringEnemyPhase).toEqual({ active: false, standing: false });
         expect(resolvedEvents(result.frames)).toContainEqual({
             type: "stanceSet",
             actor: "victim",

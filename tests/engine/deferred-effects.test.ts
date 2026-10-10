@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { BindingDef } from "../../src/engine/protected/definitions";
-import { createTestEngine } from "../helpers/testCatalog";
 import { isCharacter } from "../../src/engine/protected/helpers";
 import type { Engine } from "../../src/engine/public/types";
 import { resolvedEvents } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeEncounterDef, makeEnemyDef, makeMove } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 function engineFor(move: ReturnType<typeof makeMove>): Engine {
     const encounter = makeEncounterDef("deferred-effects");
@@ -43,12 +43,11 @@ describe("deferred binding onResolve effects", () => {
         expect(result.success).toBe(true);
         if (!result.success) throw new Error("Expected deferred move success");
         expect(resolvedEvents(result.frames).filter((event) => event.type.startsWith("bondage"))).toEqual([
-            { type: "bondageAdded", target: "hero", binding: original.id, amount: 4 },
             { type: "bondageAdded", target: "hero", binding: first.id, amount: 2 },
             { type: "bondageAdded", target: "hero", binding: second.id, amount: 3 },
         ]);
         expect(result.frames.at(-1)!.state.characters[0].bindings.map(({ id }) => id)).toEqual([
-            original.id, first.id, second.id,
+            first.id, second.id,
         ]);
     });
 
@@ -125,7 +124,7 @@ describe("deferred binding onResolve effects", () => {
         ]);
     });
 
-    it("serializes an unresolved deferred amount as unknown without leaking callbacks", () => {
+    it("omits deferred binding placeholders when resolution produces no effects", () => {
         const placeholder = makeBindingDef("previewPlaceholder");
         const deferred = makeMove("deferredPreview", "none", {
             targetSide: "player",
@@ -150,10 +149,8 @@ describe("deferred binding onResolve effects", () => {
         engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
-        const effect = engine.getGameState().enemies[0].intentions[0]?.targets[0]?.effects[0];
-        expect(effect).toEqual({
-            type: "binding", target: "hero", binding: placeholder.id, amount: undefined,
-        });
-        expect(effect).not.toHaveProperty("onResolve");
+        const effects = engine.getGameState().enemies[0].intentions[0]?.targets[0]?.effects;
+
+        expect(effects).toEqual([]);
     });
 });

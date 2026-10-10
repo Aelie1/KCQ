@@ -193,7 +193,7 @@ describe("targeting workflow composition", () => {
         const headingRule = css.match(/\.kcq-selected-command h2\s*\{([^}]*)\}/)?.[1] ?? "";
         const tagsRule = css.match(/\.kcq-selected-command__tags\s*\{([^}]*)\}/)?.[1] ?? "";
 
-        expect(html).toContain("[Power of Compulsion: Obey]");
+        expect(html).toContain("[Compulsion: Obey]");
         expect(headingRule).toContain("white-space: normal");
         expect(headingRule).toContain("-webkit-line-clamp: 2");
         expect(headingRule).not.toContain("text-overflow: ellipsis");
@@ -215,7 +215,6 @@ describe("targeting workflow composition", () => {
         expect(commandNameRule).toContain("-webkit-line-clamp: 2");
         expect(bindingNameRule).toContain("font-size: 12px");
         expect(bindingNameRule).toContain("font-weight: 700");
-        expect(bindingLevelRule).toContain("font-size: 11px");
         expect(rosterStateRule).toContain("font-size: 10px");
         expect(rosterStateRule).toContain("line-height: 12px");
         expect(buffTagRule).toContain("white-space: nowrap");

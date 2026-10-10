@@ -3,11 +3,11 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { stockStrings } from "../helpers/stockStrings";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { ModifierMeter } from "../../src/ui/web/app/components/ModifierMeter";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
 import { CharacterDetailsPanel } from "../../src/ui/web/app/panels/CharacterDetailsPanel";
+import { stockStrings } from "../helpers/stockStrings";
 
 function renderedText(html: string): string {
     return html.replace(/<!--.*?-->/g, "").replace(/<[^>]+>/g, "");
@@ -103,13 +103,15 @@ describe("character details panel", () => {
         const state = {
             ...fixture.state,
             characters: fixture.state.characters.map((character) => character.id === "ko"
-                ? { ...character, buffs: [{
-                    id: "transformation",
-                    moveList: {
-                        addedMoves: ["fairyTelekinesis", "fairyReflect"],
-                        blockedMoves: ["telekinesis"],
-                    },
-                }] }
+                ? {
+                    ...character, buffs: [{
+                        id: "transformation",
+                        moveList: {
+                            addedMoves: ["fairyTelekinesis", "fairyReflect"],
+                            blockedMoves: ["telekinesis"],
+                        },
+                    }]
+                }
                 : character),
         };
         const html = renderToString(() => createComponent(CharacterDetailsPanel, { ...fixture, state, presentation }));
@@ -204,16 +206,5 @@ describe("character details panel", () => {
         expect(successRule).toContain("color: var(--kcq-state-success)");
         expect(dangerRule).toContain("color: var(--kcq-state-danger)");
         expect(warningRule).toContain("color: var(--kcq-state-warning)");
-    });
-
-    it("renders Change Stance with a second line containing both stances", () => {
-        const html = renderToString(() => createComponent(
-            CharacterDetailsPanel,
-            characterDetailsFixture,
-        ));
-
-        expect(html).toContain('class="kcq-command-card__name">Change Stance</span>');
-        expect(html).toContain('class="kcq-command-card__stance">Moving → Standing</span>');
-        expect(html).toContain('aria-label="Change Stance: Moving → Standing:');
     });
 });

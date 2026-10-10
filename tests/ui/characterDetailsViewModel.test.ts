@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { stockStrings } from "../helpers/stockStrings";
-import { Presentation } from "../../src/ui/presentation/presentation";
 import type { ActionInfo } from "../../src/engine/public/types";
+import { Presentation } from "../../src/ui/presentation/presentation";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
 import {
     createCharacterDetailsViewModel,
     createFocusedCharacterViewModel,
     createMoveTags,
 } from "../../src/ui/web/app/viewModels/characterDetails";
+import { stockStrings } from "../helpers/stockStrings";
 
 describe("character details view model", () => {
     it("composes the focused public character and independent action/stance states", () => {
@@ -349,13 +349,15 @@ describe("character details view model", () => {
         const state = {
             ...fixture.state,
             characters: fixture.state.characters.map((character) => character.id === "ko"
-                ? { ...character, buffs: [{
-                    id: "transformation",
-                    moveList: {
-                        addedMoves: ["fairyTelekinesis", "fairyReflect"],
-                        blockedMoves: ["telekinesis"],
-                    },
-                }] }
+                ? {
+                    ...character, buffs: [{
+                        id: "transformation",
+                        moveList: {
+                            addedMoves: ["fairyTelekinesis", "fairyReflect"],
+                            blockedMoves: ["telekinesis"],
+                        },
+                    }]
+                }
                 : character),
         };
         const model = createCharacterDetailsViewModel(
@@ -401,10 +403,14 @@ describe("character details view model", () => {
             ).commands.find(({ id }) => id === "stance");
         };
 
-        expect(stanceTag(true)).toMatchObject({ stanceTransition: "Standing → Moving",
-            tags: [{ id: "stance-destination", label: "Moving", tone: "success", leadingSymbol: "→" }] });
-        expect(stanceTag(false)).toMatchObject({ stanceTransition: "Moving → Standing",
-            tags: [{ id: "stance-destination", label: "Standing", tone: "warning", leadingSymbol: "→" }] });
+        expect(stanceTag(true)).toMatchObject({
+            tags: [{ "id": "stance-destination", "label": "Standing", "tone": "warning" },
+            { id: "stance-destination", label: "Moving", tone: "success", leadingSymbol: "→" }]
+        });
+        expect(stanceTag(false)).toMatchObject({
+            tags: [{ "id": "stance-destination", "label": "Moving", "tone": "success" },
+            { id: "stance-destination", label: "Standing", tone: "warning", leadingSymbol: "→" }]
+        });
     });
 
     it("distinguishes no EscapeInfo targets from an engine-provided failure", () => {
