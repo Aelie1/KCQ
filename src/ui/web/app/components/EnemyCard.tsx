@@ -17,8 +17,7 @@ export interface EnemyCardProps {
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
     const actorReaction = reactionRef("actor", () => props.enemy.id);
-    const targetReaction = reactionRef("target", () => props.enemy.id);
-    const cardReaction = (element: HTMLElement) => { actorReaction(element); targetReaction(element); };
+    const cardReaction = (element: HTMLElement) => { actorReaction(element); };
     return (
         <article ref={cardReaction} class="kcq-enemy-card" classList={{ "kcq-shortcut-host": !!props.onSelect }}
             aria-label={props.enemy.name}

@@ -15,8 +15,7 @@ export interface PartyCardProps {
 
 export function PartyCard(props: PartyCardProps): JSX.Element {
     const actorReaction = reactionRef("actor", () => props.character.id);
-    const targetReaction = reactionRef("target", () => props.character.id);
-    const cardReaction = (element: HTMLElement) => { actorReaction(element); targetReaction(element); };
+    const cardReaction = (element: HTMLElement) => { actorReaction(element); };
     const interactive = (): boolean => props.onSelect !== undefined;
 
     return (

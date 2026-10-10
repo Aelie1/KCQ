@@ -869,6 +869,14 @@ button {
     background: var(--kcq-surface-raised);
 }
 
+.kcq-projected-meter__fill-clip,
+.kcq-binding-meter__fill-clip {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    border-radius: inherit;
+}
+
 .kcq-projected-meter--compact,
 .kcq-binding-meter--compact {
     height: 7px;
@@ -3998,32 +4006,28 @@ button {
 }
 
 @keyframes kcq-react-damage {
-
-    0%,
-    25% {
-        background-color: rgb(219 85 85 / var(--kcq-reaction-strength, .6));
-        text-shadow: 0 0 4px #ed9c8d;
-        transform: scale(var(--kcq-reaction-scale, 1.025));
+    0% {
+        text-shadow:
+            0 0 4px var(--kcq-glow-negative),
+            0 0 10px var(--kcq-glow-negative),
+            0 0 18px var(--kcq-glow-negative);
     }
 
     100% {
-        background-color: transparent;
         text-shadow: none;
-        transform: scale(1);
     }
 }
 
 @keyframes kcq-react-healing {
-
-    0%,
-    25% {
-        background-color: #54b99355;
-        box-shadow: inset 0 -2px #8fe4c5;
+    0% {
+        text-shadow:
+            0 0 4px var(--kcq-glow-positive),
+            0 0 10px var(--kcq-glow-positive),
+            0 0 18px var(--kcq-glow-positive);
     }
 
     100% {
-        background-color: transparent;
-        box-shadow: inset 0 -2px transparent;
+        text-shadow: none;
     }
 }
 

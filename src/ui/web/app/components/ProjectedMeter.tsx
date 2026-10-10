@@ -51,36 +51,38 @@ export function ProjectedMeter(props: ProjectedMeterProps): JSX.Element {
             aria-valuemax={maximum()}
             aria-valuenow={current()}
         >
-            <span
-                class={`${prefix()}__value`}
-                style={{ width: `${percent(solidEnd())}%` }}
-                aria-hidden="true"
-            />
-            <Show when={changeSize() > 0}>
+            <span class={`${prefix()}__fill-clip`}>
                 <span
-                    class={`${prefix()}__change`}
-                    classList={{
-                        [`${prefix()}__change--${props.resultTone ?? props.tone}`]: true,
-                        [`${prefix()}__change--from-zero`]: changeStart() === 0,
-                    }}
-                    style={{
-                        left: changeFromZero()
-                            ? "0%"
-                            : `calc(${percent(changeStart())}% - var(--${prefix()}-radius))`,
-                        width: changeFromZero()
-                            ? `${percent(changeSize())}%`
-                            : `calc(${percent(changeSize())}% + var(--${prefix()}-radius))`,
-                    }}
+                    class={`${prefix()}__value`}
+                    style={{ width: `${percent(solidEnd())}%` }}
                     aria-hidden="true"
                 />
-            </Show>
-            <Show when={props.peak !== undefined && props.peak > current()}>
-                <span
-                    class={`${prefix()}__peak`}
-                    style={{ width: `${percent(peak())}%` }}
-                    aria-hidden="true"
-                />
-            </Show>
+                <Show when={changeSize() > 0}>
+                    <span
+                        class={`${prefix()}__change`}
+                        classList={{
+                            [`${prefix()}__change--${props.resultTone ?? props.tone}`]: true,
+                            [`${prefix()}__change--from-zero`]: changeStart() === 0,
+                        }}
+                        style={{
+                            left: changeFromZero()
+                                ? "0%"
+                                : `calc(${percent(changeStart())}% - var(--${prefix()}-radius))`,
+                            width: changeFromZero()
+                                ? `${percent(changeSize())}%`
+                                : `calc(${percent(changeSize())}% + var(--${prefix()}-radius))`,
+                        }}
+                        aria-hidden="true"
+                    />
+                </Show>
+                <Show when={props.peak !== undefined && props.peak > current()}>
+                    <span
+                        class={`${prefix()}__peak`}
+                        style={{ width: `${percent(peak())}%` }}
+                        aria-hidden="true"
+                    />
+                </Show>
+            </span>
             <For each={props.reactions}>{cue => {
                 // Capture elapsed time once per cue so reactive geometry updates
                 // cannot seek or restart an earlier segment's fade.

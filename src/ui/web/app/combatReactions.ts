@@ -1,7 +1,7 @@
 import { createContext, createEffect, createSignal, onCleanup, useContext } from "solid-js";
 import type { EventFrame, GameState, HitBand, LeafEvent } from "../../../engine/public/types";
 
-export type ReactionKind = "actor" | "target" | "hp" | "binding" | "buff";
+export type ReactionKind = "actor" | "hp" | "binding" | "buff";
 export type ReactionStrength = "graze" | "hit" | "crit";
 export interface CombatReaction {
     kind: ReactionKind;
@@ -34,8 +34,6 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
         const leaves: { effect: LeafEvent; band: HitBand }[] = [];
         if (event.type === "useMove") {
             for (const target of event.targets) {
-                const hit = strength(target.result);
-                if (hit) cues.push({ kind: "target", entity: target.target, treatment: "target", strength: hit });
                 for (const effect of target.effects) leaves.push({
                     effect,
                     band: "target" in effect && effect.target === target.target ? target.result : "none"
@@ -91,7 +89,7 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
     return cues;
 }
 
-const durations: Record<ReactionKind, number> = { actor: 500, target: 350, hp: 2500, binding: 2500, buff: 2500 };
+const durations: Record<ReactionKind, number> = { actor: 500, hp: 4000, binding: 2500, buff: 2500 };
 export function createCombatReactions() {
     const [cues, setCues] = createSignal<readonly ActiveReaction[]>([]);
     let serial = 0;
@@ -178,8 +176,7 @@ export function reactionRef(kind: ReactionKind, entity: () => string | null | un
             element.style.setProperty("--kcq-reaction-strength", cue.strength === "crit" ? "1" : cue.strength === "graze" ? ".25" : ".6");
             element.style.setProperty("--kcq-reaction-scale", cue.strength === "crit" ? "1.05" : cue.strength === "graze" ? "1.01" : "1.025");
             void element.offsetWidth;
-            const animation = kind === "target" ? `target-${cue.strength}`
-                : kind === "hp" ? cue.treatment : kind === "buff" ? "buff" : "actor";
+            const animation = kind === "hp" ? cue.treatment : kind === "buff" ? "buff" : "actor";
             element.style.setProperty(`--kcq-react-${kind}`, `kcq-react-${animation} ${cue.duration}ms ease-out ${-Math.max(0, Date.now() - cue.started)}ms`);
         });
         onCleanup(() => {
