@@ -34,6 +34,7 @@ export interface IntentRowData {
     outcomeLabel?: string;
     targetLabel?: string;
     targets?: readonly IntentTargetViewModel[];
+    resolved: boolean;
 }
 
 export interface IntentViewModel extends IntentRowData {

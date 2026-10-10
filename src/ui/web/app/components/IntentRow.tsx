@@ -12,7 +12,10 @@ export function IntentRow(props: IntentRowProps): JSX.Element {
     return (
         <div
             class="kcq-intent-row"
-            classList={{ "kcq-intent-row--move-only": !props.intent.targetLabel && !props.intent.outcome }}
+            classList={{
+                "kcq-intent-row--move-only": !props.intent.targetLabel && !props.intent.outcome,
+                "kcq-intent-row--resolved": props.intent.resolved,
+            }}
         >
             <span class="kcq-intent-row__content">
                 <span class="kcq-intent-row__move" title={props.intent.moveLabel}>

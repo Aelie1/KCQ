@@ -536,6 +536,10 @@ button {
     line-height: 20px;
 }
 
+.kcq-intent-row--resolved {
+    opacity: 0.35;
+}
+
 .kcq-intent-row__content {
     display: flex;
     flex-wrap: wrap;
@@ -3909,6 +3913,7 @@ button {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: 2px;
 }
+
 /* Combat feedback stays local and never changes card or meter geometry. */
 .kcq-party-card,
 .kcq-enemy-card,
@@ -3917,68 +3922,181 @@ button {
 }
 
 @keyframes kcq-react-actor {
-    0%, 35% { box-shadow: inset 0 0 0 2px #db626277; background-color: #b9363626; }
-    100% { box-shadow: inset 0 0 0 2px transparent; }
+
+    0%,
+    35% {
+        box-shadow: inset 0 0 0 2px #db626277;
+        background-color: #b9363626;
+    }
+
+    100% {
+        box-shadow: inset 0 0 0 2px transparent;
+    }
 }
+
 @keyframes kcq-react-target-graze {
-    0%, 25% { box-shadow: inset 0 0 0 1px #e7b79266; }
-    100% { box-shadow: inset 0 0 0 1px transparent; }
+
+    0%,
+    25% {
+        box-shadow: inset 0 0 0 1px #e7b79266;
+    }
+
+    100% {
+        box-shadow: inset 0 0 0 1px transparent;
+    }
 }
+
 @keyframes kcq-react-target-hit {
-    0%, 25% { box-shadow: inset 0 0 0 2px #e79e92aa; transform: translateX(2px); }
-    55% { transform: translateX(-1px); }
-    100% { box-shadow: inset 0 0 0 2px transparent; transform: translateX(0); }
+
+    0%,
+    25% {
+        box-shadow: inset 0 0 0 2px #e79e92aa;
+        transform: translateX(2px);
+    }
+
+    55% {
+        transform: translateX(-1px);
+    }
+
+    100% {
+        box-shadow: inset 0 0 0 2px transparent;
+        transform: translateX(0);
+    }
 }
+
 @keyframes kcq-react-target-crit {
-    0%, 25% { box-shadow: inset 0 0 0 3px #f2bd9edd; transform: translateX(4px); }
-    40% { transform: translateX(-3px); }
-    65% { transform: translateX(2px); }
-    100% { box-shadow: inset 0 0 0 3px transparent; transform: translateX(0); }
+
+    0%,
+    25% {
+        box-shadow: inset 0 0 0 3px #f2bd9edd;
+        transform: translateX(4px);
+    }
+
+    40% {
+        transform: translateX(-3px);
+    }
+
+    65% {
+        transform: translateX(2px);
+    }
+
+    100% {
+        box-shadow: inset 0 0 0 3px transparent;
+        transform: translateX(0);
+    }
 }
+
 @keyframes kcq-react-damage {
-    0%, 25% { background-color: rgb(219 85 85 / var(--kcq-reaction-strength, .6)); text-shadow: 0 0 4px #ed9c8d; transform: scale(var(--kcq-reaction-scale, 1.025)); }
-    100% { background-color: transparent; text-shadow: none; transform: scale(1); }
+
+    0%,
+    25% {
+        background-color: rgb(219 85 85 / var(--kcq-reaction-strength, .6));
+        text-shadow: 0 0 4px #ed9c8d;
+        transform: scale(var(--kcq-reaction-scale, 1.025));
+    }
+
+    100% {
+        background-color: transparent;
+        text-shadow: none;
+        transform: scale(1);
+    }
 }
+
 @keyframes kcq-react-healing {
-    0%, 25% { background-color: #54b99355; box-shadow: inset 0 -2px #8fe4c5; }
-    100% { background-color: transparent; box-shadow: inset 0 -2px transparent; }
+
+    0%,
+    25% {
+        background-color: #54b99355;
+        box-shadow: inset 0 -2px #8fe4c5;
+    }
+
+    100% {
+        background-color: transparent;
+        box-shadow: inset 0 -2px transparent;
+    }
 }
+
 @keyframes kcq-react-buff {
-    0%, 30% { box-shadow: 0 0 0 2px #e8d8a488; filter: brightness(1.4); }
-    100% { box-shadow: 0 0 0 2px transparent; filter: brightness(1); }
+
+    0%,
+    30% {
+        box-shadow: 0 0 0 2px #e8d8a488;
+        filter: brightness(1.4);
+    }
+
+    100% {
+        box-shadow: 0 0 0 2px transparent;
+        filter: brightness(1);
+    }
 }
+
 .kcq-buff-exit {
     position: absolute;
     pointer-events: none;
     z-index: 5;
 }
+
 @keyframes kcq-react-removed {
-    from { opacity: .75; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(-4px); }
+    from {
+        opacity: .75;
+        transform: translateY(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
 }
+
 .kcq-binding-reaction {
     position: absolute;
     inset: 0 auto 0 0;
     z-index: 3;
     pointer-events: none;
 }
+
 .kcq-binding-reaction[data-combat-reaction="increase"] {
     background: repeating-linear-gradient(115deg, #ffe6afcc 0 2px, #fff4c455 2px 5px);
 }
+
 .kcq-binding-reaction[data-combat-reaction="recovery"] {
     background: repeating-linear-gradient(25deg, #94ead9bb 0 2px, transparent 2px 5px);
     border-block: 1px solid #94ead9;
 }
+
 @keyframes kcq-react-binding-increase {
-    0%, 35% { opacity: .9; }
-    65% { opacity: .5; }
-    100% { opacity: 0; }
+
+    0%,
+    35% {
+        opacity: .9;
+    }
+
+    65% {
+        opacity: .5;
+    }
+
+    100% {
+        opacity: 0;
+    }
 }
+
 @keyframes kcq-react-binding-recovery {
-    from { opacity: .85; }
-    to { opacity: 0; }
+    from {
+        opacity: .85;
+    }
+
+    to {
+        opacity: 0;
+    }
 }
+
 @media (prefers-reduced-motion: reduce) {
-    [data-combat-reaction] { animation: none !important; }
-    .kcq-binding-reaction, .kcq-buff-exit { display: none; }
+    [data-combat-reaction] {
+        animation: none !important;
+    }
+
+    .kcq-binding-reaction,
+    .kcq-buff-exit {
+        display: none;
+    }
 }

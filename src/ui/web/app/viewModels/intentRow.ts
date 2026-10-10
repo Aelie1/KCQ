@@ -20,6 +20,7 @@ export function createIntentViewModel(
         : intention.targets.length === 0 ? intention.band : undefined;
 
     return {
+        resolved: intention.resolved,
         intention,
         moveLabel: presentation.move(intention.move),
         ...(targetLabel ? { targetLabel } : {}),
