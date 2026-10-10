@@ -4,7 +4,6 @@ import type { Presentation } from "../../../presentation/presentation";
 import type { EnemyCardData } from "../components/componentTypes";
 import { createIntentViewModel } from "./intentRow";
 import { playerTone, projectLinkedPlayers } from "./linkedEntities";
-import { isDebuff } from "./presentationHelpers";
 
 export const ENEMY_CARD_VISIBLE_INTENTIONS = 2;
 
@@ -25,8 +24,10 @@ export function createEnemyCardViewModel(
     presentation: Presentation,
     characters: readonly Character[] = [],
     history: readonly GameLogPresentationEntry[] = [],
+    enemies: readonly Enemy[] = [enemy],
 ): EnemyCardData {
     const partyIds = new Set(characters.map(({ id }) => id));
+    const enemyIds = new Set(enemies.map(({ id }) => id));
     const intentions = enemy.intentions.map((intention) => {
         const model = createIntentViewModel(intention, presentation);
         const targetIds = new Set(intention.targets.map(({ target }) => target));
@@ -51,16 +52,17 @@ export function createEnemyCardViewModel(
         currentHp: enemy.currHp,
         maxHp: enemy.maxHp,
         linkedEntities: projectLinkedPlayers(enemy.buffs, characters, presentation),
-        debuffDurations: enemy.buffs.flatMap(buff => {
+        effectDurations: enemy.buffs.flatMap(buff => {
             const duration = buff.duration;
-            if (duration === undefined || !Number.isInteger(duration) || duration <= 0 || !isDebuff(buff)) return [];
-            const source = debuffSource(enemy.id, buff, history);
-            if (source === undefined || !partyIds.has(source)) return [];
-            const tone = playerTone(source);
-            if (tone === "neutral") return [];
+            if (duration === undefined || !Number.isInteger(duration) || duration <= 0) return [];
+            const source = effectSource(enemy.id, buff, history);
+            const tone = source === undefined ? "neutral"
+                : partyIds.has(source) ? playerTone(source)
+                : enemyIds.has(source) ? "enemy" : "neutral";
             return [{
-                duration, tone,
-                accessibleLabel: presentation.entity(source) + ": " + presentation.buff(buff.id, buff.severity)
+                duration, tone, icon: buff.icon,
+                accessibleLabel: (source === undefined ? "" : presentation.entity(source) + ": ")
+                    + presentation.buff(buff.id, buff.severity)
                     + " (" + presentation.ui("characterDetails.rounds", { count: duration }) + ")",
             }];
         }),
@@ -78,7 +80,7 @@ export function createEnemyCardViewModel(
 /** Public Buff has no source. Use recorded application actors, never buff names or
  * linkedEntity (which can identify a victim rather than the effect's applier).
  * A later removal or mutation without a move actor invalidates earlier ownership. */
-function debuffSource(target: EntityId, buff: Buff, history: readonly GameLogPresentationEntry[]): EntityId | undefined {
+function effectSource(target: EntityId, buff: Buff, history: readonly GameLogPresentationEntry[]): EntityId | undefined {
     for (let index = history.length - 1; index >= 0; index--) {
         const entry = history[index]!;
         for (const outcome of [...entry.outcomes].reverse()) {

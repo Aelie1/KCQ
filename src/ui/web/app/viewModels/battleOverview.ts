@@ -100,7 +100,7 @@ export function createBattleOverviewViewModel(
                 : {}),
         },
         enemies: state.enemies.map((enemy) =>
-            createEnemyCardViewModel(enemy, presentation, state.characters, history)),
+            createEnemyCardViewModel(enemy, presentation, state.characters, history, state.enemies)),
         enemiesHeading: presentation.ui("battleOverview.enemies"),
         enemiesCountLabel: presentation.ui("battleOverview.enemiesRemaining", {
             count: state.enemies.length,

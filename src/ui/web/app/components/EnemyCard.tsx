@@ -30,13 +30,13 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
             }}
         >
             <Show when={props.onSelect}><Shortcut shortcut={props.shortcut} /></Show>
-            <Show when={props.enemy.debuffDurations.length > 0}>
+            <Show when={props.enemy.effectDurations.length > 0}>
                 <div class="kcq-enemy-card__debuffs">
-                    <For each={props.enemy.debuffDurations}>
+                    <For each={props.enemy.effectDurations}>
                         {(effect) => (
                             <span class={"kcq-enemy-card__debuff kcq-player-identity--" + effect.tone}
                                 role="img" aria-label={effect.accessibleLabel} title={effect.accessibleLabel}>
-                                <DurationPips duration={effect.duration} />
+                                <DurationPips duration={effect.duration} icon={effect.icon} />
                             </span>
                         )}
                     </For>

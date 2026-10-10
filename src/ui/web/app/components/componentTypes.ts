@@ -42,10 +42,11 @@ export interface IntentViewModel extends IntentRowData {
 
 export interface EnemyCardData {
     currentHp: number;
-    debuffDurations: readonly {
+    effectDurations: readonly {
         accessibleLabel: string;
         duration: number;
-        tone: Exclude<PlayerTone, "neutral">;
+        icon?: Buff["icon"];
+        tone: PlayerTone | "enemy";
     }[];
     id: EntityId;
     intentions: readonly IntentViewModel[];

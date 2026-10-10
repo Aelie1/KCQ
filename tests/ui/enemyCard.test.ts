@@ -353,7 +353,7 @@ describe("enemy card names and duration clusters", () => {
         const history = buffs.map((buff, i) => application(["ko", "matsuko", "hinari"][i]!, buff));
         const before = JSON.stringify({ enemy, history });
         const model = createEnemyCardViewModel(enemy, fixture.presentation, fixture.state.characters, history);
-        expect(model.debuffDurations.map(({ tone, duration }) => [tone, duration]))
+        expect(model.effectDurations.map(({ tone, duration }) => [tone, duration]))
             .toEqual([["ko", 3], ["matsuko", 2], ["hinari", 1]]);
         const html = renderToString(() => createComponent(EnemyCard, { enemy: model, shortcut: "4", onSelect: () => {} }));
         expect(html.match(/kcq-enemy-card__debuff kcq-player-identity--/g)).toHaveLength(3);
@@ -369,12 +369,14 @@ describe("enemy card names and duration clusters", () => {
         expect(border).toContain("gap: 8px");
     });
 
-    it("omits ordinary buffs, expired/permanent effects, and unknown or nonplayer sources", () => {
+    it("includes buffs and unknown sources while omitting expired, permanent, and invalid durations", () => {
         const fixture = battleOverviewFixture;
         const buffs: Buff[] = [
             { id: "beneficial", duration: 2, modifiers: { defense: 2 } },
             { id: "expired", duration: 0, modifiers: { hit: -2 } },
             { id: "negative", duration: -1, modifiers: { hit: -2 } },
+            { id: "fractional", duration: 1.5 },
+            { id: "infinite", duration: Infinity },
             { id: "permanent", modifiers: { hit: -2 } },
             { id: "unknown", duration: 2, modifiers: { hit: -2 }, linkedEntity: "ko" },
             { id: "enemy-source", duration: 2, modifiers: { hit: -2 } },
@@ -382,8 +384,52 @@ describe("enemy card names and duration clusters", () => {
         const history = buffs.filter(buff => buff.id !== "unknown")
             .map(buff => application(buff.id === "enemy-source" ? "skunkette1" : "ko", buff));
         const model = createEnemyCardViewModel({ ...fixture.state.enemies[0]!, buffs }, fixture.presentation, fixture.state.characters, history);
-        expect(model.debuffDurations).toEqual([]);
-        expect(renderToString(() => createComponent(EnemyCard, { enemy: model }))).not.toContain("kcq-enemy-card__debuffs");
+        expect(model.effectDurations.map(({ tone, duration }) => [tone, duration]))
+            .toEqual([["ko", 2], ["neutral", 2], ["enemy", 2]]);
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
+        expect(html.match(/kcq-status-chip__segment/g)).toHaveLength(6);
+        expect(model.effectDurations[1]!.accessibleLabel).not.toContain("Ko-chan");
+    });
+
+    it("uses serialized icons for both buffs and debuffs, with enemy and neutral sources", () => {
+        const fixture = battleOverviewFixture;
+        const target = fixture.state.enemies[0]!;
+        const source = fixture.state.enemies[1]!.id;
+        const buffs: Buff[] = [
+            { id: "arbitrary-shield", duration: 3, icon: "shield", modifiers: { defense: 2 } },
+            { id: "arbitrary-sword", duration: 2, icon: "sword" },
+            { id: "arbitrary-disabled", duration: 4, icon: "shield-off", modifiers: { defense: -2 } },
+            { id: "barrierMagic", duration: 1 },
+        ];
+        const state = { ...fixture.state, enemies: [{ ...target, buffs }, ...fixture.state.enemies.slice(1)] };
+        const history = [application(source, buffs[0]!), application(source, buffs[1]!), application("ko", buffs[2]!)];
+        const presentation = new Presentation({ ...stockStrings,
+            "buff.arbitrary-shield.name": "Bouclier",
+            "ui.characterDetails.rounds": "{count} Tours",
+        });
+        const model = createBattleOverviewViewModel(state, fixture.actions, fixture.thresholds, presentation, history).enemies[0]!;
+        expect(model.effectDurations.map(({ tone, icon, duration }) => [tone, icon, duration])).toEqual([
+            ["enemy", "shield", 3], ["enemy", "sword", 2], ["ko", "shield-off", 4], ["neutral", undefined, 1],
+        ]);
+        expect(model.effectDurations[0]!.accessibleLabel).toContain("Bouclier (3 Tours)");
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
+        expect(html.match(/data-icon="shield"/g)).toHaveLength(3);
+        expect(html.match(/data-icon="sword"/g)).toHaveLength(2);
+        expect(html.match(/data-icon="shield-off"/g)).toHaveLength(4);
+        expect(html.match(/kcq-status-chip__segment/g)).toHaveLength(1);
+        expect(html.match(/kcq-player-identity--enemy/g)).toHaveLength(2);
+        expect(html).toContain('title="' + model.effectDurations[0]!.accessibleLabel + '"');
+    });
+
+    it.each(["ko", "matsuko", "hinari"])("colors the same icon by its %s source", source => {
+        const fixture = battleOverviewFixture;
+        const buff: Buff = { id: "arbitrary-icon", duration: 1, icon: "shield" };
+        const model = createEnemyCardViewModel({ ...fixture.state.enemies[0]!, buffs: [buff] },
+            fixture.presentation, fixture.state.characters, [application(source, buff)]);
+        expect(model.effectDurations).toMatchObject([{ tone: source, icon: "shield" }]);
+        const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
+        expect(html).toContain("kcq-player-identity--" + source);
+        expect(html).toContain('data-icon="shield"');
     });
 
     it("uses the latest application actor and cannot revive ownership across an unowned reapplication", () => {
@@ -396,10 +442,10 @@ describe("enemy card names and duration clusters", () => {
             participants: [{ target: enemy.id, initial: { present: true, details: buff }, final: { present: false } }],
         }] };
         const unowned: GameLogPresentationEntry = { ...removal, outcomes: added.outcomes };
-        const project = (history: GameLogPresentationEntry[]) => createEnemyCardViewModel(enemy, fixture.presentation, fixture.state.characters, history).debuffDurations;
+        const project = (history: GameLogPresentationEntry[]) => createEnemyCardViewModel(enemy, fixture.presentation, fixture.state.characters, history).effectDurations;
         expect(project([added, refreshed])).toMatchObject([{ tone: "matsuko", duration: 2 }]);
-        expect(project([added, removal])).toEqual([]);
-        expect(project([added, removal, unowned])).toEqual([]);
+        expect(project([added, removal])).toMatchObject([{ tone: "neutral", duration: 2 }]);
+        expect(project([added, removal, unowned])).toMatchObject([{ tone: "neutral", duration: 2 }]);
         expect(project([added, removal, unowned, refreshed])).toMatchObject([{ tone: "matsuko" }]);
     });
 
@@ -417,7 +463,7 @@ describe("enemy card names and duration clusters", () => {
         expect(current.enemies[0]!.buffs.find(buff => buff.id === "starlightBindings")?.linkedEntity).toBeUndefined();
         const project = (state: typeof current, entries: GameLogPresentationEntry[]) => createBattleOverviewViewModel(
             state, engine.getActionView(), battleOverviewFixture.thresholds, battleOverviewFixture.presentation, entries,
-        ).enemies[0]!.debuffDurations;
+        ).enemies[0]!.effectDurations;
         expect(project(current, entries)).toMatchObject([{ tone: "ko", duration: 3 }]);
         const next = engine.executeAction({ type: "endTurn" });
         expect(next.success).toBe(true);

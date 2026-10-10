@@ -35,9 +35,9 @@ describe("enemy card live durations", () => {
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
         expect(document.querySelector(".kcq-enemy-card__debuff")?.getAttribute("aria-label"))
             .toBe("Ko-chan: Starlight Bindings (3 Rounds)");
-        expect(document.querySelectorAll(".kcq-enemy-card__debuff .kcq-status-chip__segment")).toHaveLength(3);
+        expect(document.querySelectorAll('.kcq-enemy-card__debuff svg[data-icon="shield-off"]')).toHaveLength(3);
         click(".kcq-battle-overview__primary-action");
-        expect(document.querySelectorAll(".kcq-enemy-card__debuff .kcq-status-chip__segment")).toHaveLength(2);
+        expect(document.querySelectorAll('.kcq-enemy-card__debuff svg[data-icon="shield-off"]')).toHaveLength(2);
     });
 
     it.each([320, 390])("keeps full name/HP and distinct clusters reactive at viewport width %i", width => {
@@ -48,9 +48,9 @@ describe("enemy card live durations", () => {
             const fixture = battleOverviewFixture;
             const enemy = fixture.state.enemies[0]!;
             const buffs: Buff[] = [
-                { id: "starlightBindings", duration: 3, modifiers: { defense: -2 } },
-                { id: "servitude", duration: 2, statuses: [{ id: "servitude", value: 1 }] },
-                { id: "subspaceClutter", duration: 1, modifiers: { hit: -2 } },
+                { id: "starlightBindings", duration: 5, icon: "shield-off", modifiers: { defense: -2 } },
+                { id: "servitude", duration: 5, icon: "shield", statuses: [{ id: "servitude", value: 1 }] },
+                { id: "subspaceClutter", duration: 5, icon: "sword", modifiers: { hit: -2 } },
             ];
             const history: GameLogPresentationEntry[] = buffs.map((buff, index) => ({
                 kind: "move", actor: ["ko", "matsuko", "hinari"][index]!, move: "applied-effect", outcomes: [{
@@ -67,17 +67,22 @@ describe("enemy card live durations", () => {
             expect(card.querySelector("h3")?.textContent).toBe("Skunkette Queen");
             expect(card.querySelector(".kcq-enemy-card__hp")?.textContent).toBe(enemy.currHp + " / " + enemy.maxHp);
             expect([...card.querySelectorAll(".kcq-enemy-card__debuff")].map(cluster => [
-                cluster.className, cluster.querySelectorAll(".kcq-status-chip__segment").length,
+                cluster.className, cluster.querySelectorAll("svg").length,
             ])).toEqual([
-                ["kcq-enemy-card__debuff kcq-player-identity--ko", 3],
-                ["kcq-enemy-card__debuff kcq-player-identity--matsuko", 2],
-                ["kcq-enemy-card__debuff kcq-player-identity--hinari", 1],
+                ["kcq-enemy-card__debuff kcq-player-identity--ko", 5],
+                ["kcq-enemy-card__debuff kcq-player-identity--matsuko", 5],
+                ["kcq-enemy-card__debuff kcq-player-identity--hinari", 5],
             ]);
+            expect(card.querySelectorAll("svg")).toHaveLength(15);
+            expect(card.querySelectorAll(".kcq-status-chip__segment")).toHaveLength(0);
             expect(card.querySelector(".kcq-shortcut")).not.toBeNull();
             expect(card.querySelector(".kcq-enemy-card__header .kcq-enemy-card__debuffs")).toBeNull();
-            setState({ ...state(), enemies: [{ ...enemy, buffs: [{ ...buffs[0]!, duration: 1 }] }] });
+            setState({ ...state(), enemies: [{ ...enemy, buffs: [{ ...buffs[0]!, duration: 1, icon: undefined }] }] });
             expect(document.querySelectorAll(".kcq-enemy-card__debuff")).toHaveLength(1);
             expect(document.querySelectorAll(".kcq-enemy-card__debuff .kcq-status-chip__segment")).toHaveLength(1);
+            setState({ ...state(), enemies: [{ ...enemy, buffs: [{ ...buffs[0]!, duration: 2, icon: "sword" }] }] });
+            expect(document.querySelectorAll('.kcq-enemy-card__debuff svg[data-icon="sword"]')).toHaveLength(2);
+            expect(document.querySelectorAll(".kcq-enemy-card__debuff .kcq-status-chip__segment")).toHaveLength(0);
             setState({ ...state(), enemies: [{ ...enemy, buffs: [] }] });
             expect(document.querySelector(".kcq-enemy-card__debuffs")).toBeNull();
         } finally { viewport.setViewport(previous); }
