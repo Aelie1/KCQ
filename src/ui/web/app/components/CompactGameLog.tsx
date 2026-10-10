@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import { createGameLogViewModel } from "../viewModels/gameLog";
@@ -16,6 +16,7 @@ export interface CompactGameLogProps {
 function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
     const entries = createMemo(() => recentGameLogEntries(
         createGameLogViewModel(props.entries, props.presentation, props.party), props.lines));
+    const headingId = createUniqueId();
     const [offset, setOffset] = createSignal(0);
     const [hiddenCount, setHiddenCount] = createSignal(0);
     let content!: HTMLDivElement;
@@ -25,8 +26,9 @@ function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
     const measure = (): void => {
         const bounds = content.getBoundingClientRect();
         // ResponsiveScale transforms the app; convert viewport coordinates back to CSS pixels.
-        if (!bounds.height || !content.offsetHeight) return;
-        const scale = bounds.height / content.offsetHeight;
+        const height = parseFloat(getComputedStyle(content).height) || content.offsetHeight;
+        if (!bounds.height || !height) return;
+        const scale = bounds.height / height;
         const localTop = (top: number) => (top - bounds.top) / scale;
         const fragments: { top: number; bottom: number }[] = [];
         const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT);
@@ -70,17 +72,21 @@ function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
         });
     });
 
-    return <button type="button" class="kcq-compact-game-log" aria-label={props.presentation.ui("gameLog.openFull")}
-        onClick={() => props.onOpen?.()}>
-        <span class="kcq-compact-game-log__heading">{props.presentation.ui("combatHeader.gameLog")}</span>
-        <div class="kcq-compact-game-log__viewport">
-            <div ref={content} class="kcq-compact-game-log__content" style={{ "margin-top": -offset() + "px" }}>
-                <Show when={entries().length} fallback={<span class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</span>}>
-                    <For each={entries()}>{(entry, index) => <GameLogEntry entry={entry} hidden={index() < hiddenCount()} />}</For>
-                </Show>
+    return <section class="kcq-battle-section kcq-battle-section--game-log" aria-labelledby={headingId}>
+        <header class="kcq-battle-section__heading">
+            <h2 id={headingId}>{props.presentation.ui("combatHeader.gameLog")}</h2>
+        </header>
+        <button type="button" class="kcq-compact-game-log" aria-label={props.presentation.ui("gameLog.openFull")}
+            onClick={() => props.onOpen?.()}>
+            <div class="kcq-compact-game-log__viewport">
+                <div ref={content} class="kcq-compact-game-log__content" style={{ "margin-top": -offset() + "px" }}>
+                    <Show when={entries().length} fallback={<span class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</span>}>
+                        <For each={entries()}>{(entry, index) => <GameLogEntry entry={entry} hidden={index() < hiddenCount()} />}</For>
+                    </Show>
+                </div>
             </div>
-        </div>
-    </button>;
+        </button>
+    </section>;
 }
 
 export function CompactGameLog(props: CompactGameLogProps): JSX.Element {

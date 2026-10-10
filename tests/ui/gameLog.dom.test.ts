@@ -105,7 +105,7 @@ describe("live graphical Game Log history", () => {
         const execute = vi.spyOn(engine, "executeAction");
         const preview = () => document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!;
         expect(preview().textContent).toContain("No combat events yet.");
-        expect(document.querySelector(".kcq-screen-layout__content")!.firstElementChild).toBe(preview());
+        expect(document.querySelector(".kcq-screen-layout__content")!.firstElementChild).toBe(preview().closest(".kcq-battle-section--game-log"));
         useTelekinesis();
         expect(preview().textContent).toContain("Telekinesis");
         preview().click();
@@ -115,7 +115,9 @@ describe("live graphical Game Log history", () => {
         button("End Turn").click();
         const recent = [...preview().querySelectorAll<HTMLElement>(".kcq-game-log__entry")];
         expect(recent.some(entry => entry.dataset.actor?.startsWith("skunkette"))).toBe(true);
-        expect(recent.at(-1)!.dataset.kind).toBe("phase");
+        expect(recent.every(entry => entry.dataset.kind !== "phase")).toBe(true);
+        preview().click();
+        expect(document.querySelector('.kcq-game-log__scroll [data-kind="phase"]')).not.toBeNull();
         expect(execute).toHaveBeenCalledTimes(2);
     });
 

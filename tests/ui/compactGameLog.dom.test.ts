@@ -96,6 +96,43 @@ describe("compact Game Log preview", () => {
         log.setEntries([action("ko")]);
         expect(log.host.querySelector(".kcq-game-log__actor--ko")!.textContent).toBe("Ko-chan");
     });
+    it("removes enemy phases with binding ticks, expiration and stance resets before counting candidates", () => {
+        const phase: GameLogPresentationEntry = { kind: "phase", phase: "enemy", round: 7, outcomes: [
+            { kind: "bindingTick", target: "ko", binding: "latexCollar", outcomes: [
+                { kind: "resource", target: "ko", resource: "ribbonPower", change: -2, initial: 10, final: 8 },
+            ] },
+            { kind: "bindingTick", target: "matsuko", binding: "latexLegs", outcomes: [] },
+            { kind: "buff", buff: "pounce", participants: [{ target: "ko", initial: { present: true }, final: { present: false } }] },
+            { kind: "stance", actor: "ko", initial: "standing", final: "moving" },
+            { kind: "stance", actor: "hinari", initial: "standing", final: "moving" },
+        ] };
+        const log = mountPreview([action("queen1"), action("queen2"), action("skunkette1"), phase]);
+        expect([...log.host.querySelectorAll<HTMLElement>("article")].map(article => article.dataset.actor))
+            .toEqual(["queen1", "queen2", "skunkette1"]);
+        expect(log.host.querySelector('[data-kind="phase"]')).toBeNull();
+        expect(log.host.querySelector("[data-outcome]")).toBeNull();
+        log.setLines(1);
+        expect(log.host.querySelectorAll("article")).toHaveLength(1);
+        expect(log.host.querySelector<HTMLElement>("article")!.dataset.actor).toBe("skunkette1");
+        log.setEntries([phase]);
+        expect(log.host.querySelectorAll("article")).toHaveLength(0);
+        expect(log.host.textContent).toContain("No combat events yet.");
+    });
+    it("retains damage bands and binding levels for multi-target actions", () => {
+        const log = mountPreview([{ kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
+            { kind: "damage", target: "ko", hits: [{ result: "hit", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
+            { kind: "binding", target: "ko", binding: "latexLegs", change: 23, blocked: 0,
+                initial: { value: 58, level: "heavy" }, final: { value: 81, level: "severe" } },
+            { kind: "damage", target: "matsuko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
+        ] }]);
+        expect(log.host.querySelector(".kcq-game-log__value--hit")!.textContent).toBe("Hit");
+        expect(log.host.querySelector(".kcq-game-log__value--binding-heavy")!.textContent).toBe("58 (Heavy)");
+        expect(log.host.querySelector(".kcq-game-log__value--binding-severe")!.textContent).toBe("81 (Severe)");
+        expect(log.host.querySelectorAll('[data-outcome="damage"]')).toHaveLength(2);
+        expect(log.host.textContent).toContain(presentation.binding("latexLegs"));
+        log.setLines(1);
+        expect(log.host.querySelectorAll('[data-outcome="damage"]')).toHaveLength(2);
+    });
     it("measures wrapped text at responsive scale, trims older lines and remeasures on resize", () => {
         const pending = new Map<number, FrameRequestCallback>(); let id = 0; let resize!: () => void;
         vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++id, callback); return id; });
@@ -120,6 +157,8 @@ describe("compact Game Log preview", () => {
         expect(articles[0]!.getAttribute("aria-hidden")).toBe("true");
         expect(articles[2]!.getAttribute("aria-hidden")).toBeNull();
         wrapped = true; resize(); flush(); expect(content.style.marginTop).toBe("-32px");
+        log.setLines(1); flush(); expect(content.style.marginTop).toBe("0px");
+        expect(content.children).toHaveLength(1);
         expect(articles[2]!.getAttribute("aria-hidden")).toBeNull();
         log.setLines(8); flush(); expect(content.style.marginTop).toBe("0px");
         unmount?.(); unmount = undefined; expect(disconnect).toHaveBeenCalledOnce();

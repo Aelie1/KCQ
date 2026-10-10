@@ -340,7 +340,8 @@ button {
     min-width: 0;
 }
 
-.kcq-battle-section--enemies {
+.kcq-battle-section--enemies,
+.kcq-battle-section--game-log {
     gap: 6px;
 }
 
@@ -3802,6 +3803,7 @@ button {
     white-space: normal;
     overflow-wrap: anywhere;
 }
+
 /* The Overview owns scrolling; the preview crops only older complete text lines. */
 .kcq-compact-game-log {
     display: block;
@@ -3813,8 +3815,8 @@ button {
     background: var(--kcq-surface-card);
     color: var(--kcq-text-secondary);
     font: inherit;
-    font-size: 12.5px;
-    line-height: 1.25;
+    font-size: 11px;
+    line-height: 17px;
     text-align: left;
     cursor: pointer;
 }
@@ -3822,14 +3824,6 @@ button {
 .kcq-compact-game-log:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: 2px;
-}
-
-.kcq-compact-game-log__heading {
-    display: block;
-    margin-bottom: 2px;
-    color: var(--kcq-text-muted);
-    font-size: 12px;
-    font-weight: 600;
 }
 
 .kcq-compact-game-log__viewport {
@@ -3855,6 +3849,43 @@ button {
 
 .kcq-compact-game-log .kcq-game-log__row--bindingTick {
     margin-top: 0;
+}
+
+/* Let recipients and outcomes share one inline wrapping flow instead of
+   moving an entire flex group to the next line after a stranded recipient. */
+.kcq-compact-game-log .kcq-game-log__row {
+    display: block;
+}
+
+.kcq-compact-game-log .kcq-game-log__recipient,
+.kcq-compact-game-log .kcq-game-log__values {
+    display: inline;
+}
+
+.kcq-compact-game-log .kcq-game-log__values--bindings>.kcq-game-log__value {
+    position: static;
+    width: auto;
+}
+
+.kcq-compact-game-log .kcq-game-log__row>.kcq-game-log__recipient {
+    margin-right: 0.35em;
+}
+
+.kcq-compact-game-log .kcq-game-log__row>.kcq-game-log__values+.kcq-game-log__values {
+    margin-left: 0.35em;
+}
+
+.kcq-compact-game-log .kcq-game-log__recipient>*+* {
+    margin-left: 0.35em;
+}
+
+.kcq-compact-game-log .kcq-game-log__recipient::after {
+    margin-left: 0.35em;
+}
+
+.kcq-compact-game-log .kcq-game-log__values--bindings>.kcq-game-log__value+.kcq-game-log__value::before {
+    position: static;
+    margin: 0 0.35em;
 }
 
 .kcq-battle-settings__log-lines {
