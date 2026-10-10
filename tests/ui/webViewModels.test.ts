@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { stockStrings } from "../helpers/stockStrings";
 import type {
     ActionView,
-    Character,
     Enemy,
     FailureReason,
-    ThresholdInfo,
+    ThresholdInfo
 } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
@@ -15,6 +13,7 @@ import {
     summarizeIntentions,
 } from "../../src/ui/web/app/viewModels/enemyCard";
 import { createPartyCardViewModel } from "../../src/ui/web/app/viewModels/partyCard";
+import { stockStrings } from "../helpers/stockStrings";
 
 import { makePublicActionView, makePublicBinding, makePublicCharacter, makePublicEnemy } from "../helpers/publicTestData";
 
@@ -168,8 +167,8 @@ describe("party card view model", () => {
         ]);
         expect(model.effects).toBe(source.buffs);
         expect(model.visibleEffects).toEqual([
-            { id: "pounce", name: "Pounce", duration: undefined }, { id: "burnout", name: "Burnout", duration: undefined },
-            { id: "empowerment", name: "Fairy Empowerment", duration: undefined },
+            { id: "pounce", glowTone: "buff", name: "Pounce", duration: undefined }, { id: "burnout", glowTone: "buff", name: "Burnout", duration: undefined },
+            { id: "empowerment", glowTone: "buff", name: "Fairy Empowerment", duration: undefined },
         ]);
         expect(model.hiddenEffectCount).toBe(1);
         expect(model.effectsOverflowLabel).toBe("+1");

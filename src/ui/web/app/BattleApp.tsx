@@ -23,6 +23,7 @@ import type { LanguageSelection } from "./language";
 import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
 import { BattleResultPanel } from "./panels/BattleResultPanel";
+import { LibraryPanel } from "./panels/LibraryPanel";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
 import { EnemyDetailsPanel } from "./panels/EnemyDetailsPanel";
@@ -80,14 +81,15 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [logOpen, setLogOpen] = createSignal(false);
     const toggleLog = (): void => { if (!dialogOpen() && !playback.active()) setLogOpen(open => !open); };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
+    const [libraryOpen, setLibraryOpen] = createSignal(false);
     let settingsTrigger: Element | null = null;
     const openSettings = (): void => {
         if (playback.active()) return;
         settingsTrigger = document.activeElement;
         setSettingsOpen(true);
     };
-    const modalOpen = () => settingsOpen() || !!resultModel();
-    const dialogOpen = () => settingsOpen() || (!!resultModel() && !logOpen());
+    const modalOpen = () => libraryOpen() || settingsOpen() || !!resultModel();
+    const dialogOpen = () => libraryOpen() || settingsOpen() || (!!resultModel() && !logOpen());
     const [resultLogVisited, setResultLogVisited] = createSignal(false);
     const openResultLog = (): void => {
         setResultLogVisited(true);
@@ -335,7 +337,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     return (
         <CombatReactionsContext.Provider value={reactions}>
             <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
-                <div class="kcq-battle-stage__background" inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
+                <div class="kcq-battle-stage__background" hidden={libraryOpen()} inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
                     <Show when={logOpen()}>
                         <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
                     </Show>
@@ -412,10 +414,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         </Switch>
                     </div>
                 </div>
-                <Show when={settingsOpen()}>
+                <Show when={libraryOpen()}><LibraryPanel library={library} presentation={props.presentation} onClose={() => setLibraryOpen(false)} /></Show>
+                <Show when={settingsOpen() && !libraryOpen()}>
                     <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
                         language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} returnFocus={settingsTrigger}
-                        onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
+                        onLibrary={() => setLibraryOpen(true)} onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                         onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
                 </Show>
                 <Show when={!logOpen() && resultModel()} keyed>

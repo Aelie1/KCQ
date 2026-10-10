@@ -100,7 +100,7 @@ export const incapacitated: StatusDef = {
     levels: [
         {},
         {
-            flags: ["skipsTurn", "incapacitated"]
+            flags: ["incapacitated"]
         }
     ]
 };

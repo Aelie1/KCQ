@@ -2,6 +2,7 @@ import { createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } fr
 import type { KCQCampaign } from "../../../content";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { Presentation } from "../../presentation/presentation";
+import { LibraryPanel } from "./panels/LibraryPanel";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { loadLanguage, saveLanguage, type LanguageOption } from "./language";
 import { createOverviewGameLogPreference } from "./overviewGameLogLines";
@@ -51,17 +52,25 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     };
     const languageSelection = { get value() { return language().id; }, options, onChange: selectLanguage };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
+    const [libraryOpen, setLibraryOpen] = createSignal(false);
+    let libraryTrigger: Element | null = null;
+    const openLibrary = (): void => { libraryTrigger = document.activeElement; setLibraryOpen(true); };
+    const closeLibrary = (): void => {
+        setLibraryOpen(false);
+        if (!settingsOpen() && libraryTrigger instanceof HTMLElement && libraryTrigger.isConnected) libraryTrigger.focus();
+    };
     let settingsTrigger: Element | null = null;
     const openSettings = (): void => {
         settingsTrigger = document.activeElement;
         setSettingsOpen(true);
     };
     const navigate = (callback: () => void): void => {
-        if (!settingsOpen()) callback();
+        if (!settingsOpen() && !libraryOpen()) callback();
     };
     const controller = createGraphicalController(props.prepareBattle);
     const backToTitle = (): void => {
         setSettingsOpen(false);
+        setLibraryOpen(false);
         controller.returnToTitle();
     };
     onCleanup(controller.dispose);
@@ -79,7 +88,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
             ? selected.languages?.find(option => option.id === language().id)?.presentation ?? selected.presentation
             : language().presentation;
     };
-    const library = () => composition()!.engine.getLibrary();
+    const library = createMemo(() => composition()?.engine.getLibrary());
     const details = () => {
         const current = controller.screen();
         return current.screen === "details" ? current : undefined;
@@ -95,7 +104,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
 
     let background: HTMLDivElement | undefined;
     let battleGlobalAction: ((key: string) => boolean) | undefined;
-    const hintsVisible = useCombatKeyboard(() => background, () => !settingsOpen(),
+    const hintsVisible = useCombatKeyboard(() => background, () => !settingsOpen() && !libraryOpen(),
         key => battle() ? battleGlobalAction?.(key) ?? false : false, () => shortcutHints.value);
     const keyboard: SharedKeyboard = {
         hintsVisible,
@@ -106,7 +115,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     };
 
     return <App>
-        <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} inert={settingsOpen()} aria-hidden={settingsOpen() ? true : undefined}>
+        <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} hidden={libraryOpen()} inert={settingsOpen() || libraryOpen()} aria-hidden={settingsOpen() || libraryOpen() ? true : undefined}>
             <Switch>
                 <Match when={controller.screen().screen === "title"}>
                     <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release)}
@@ -114,19 +123,19 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                         onSelect={campaign => navigate(() => controller.selectCampaign(campaign))} />
                 </Match>
                 <Match when={controller.screen().screen === "picker"}>
-                    <EncounterPickerPanel model={createEncounterPickerViewModel(library(), presentation(), controller.bestClears())}
-                        onSettings={openSettings} onBack={() => navigate(controller.returnToTitle)}
+                    <EncounterPickerPanel model={createEncounterPickerViewModel(library()!, presentation(), controller.bestClears())}
+                        onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")} onBack={() => navigate(controller.returnToTitle)}
                         onSelect={encounter => navigate(() => controller.selectEncounter(encounter))} />
                 </Match>
                 <Match when={details()} keyed>
                     {(current) => <EncounterDetailsPanel
-                        model={createEncounterDetailsViewModel(library(), current.encounter, presentation(), controller.bestClears()[current.encounter])}
+                        model={createEncounterDetailsViewModel(library()!, current.encounter, presentation(), controller.bestClears()[current.encounter])}
                         onSettings={openSettings} onBack={() => navigate(controller.backToPicker)}
                         onChooseDifficulty={() => navigate(controller.chooseDifficulty)} />}
                 </Match>
                 <Match when={difficulty()} keyed>
                     {(current) => <DifficultySelectPanel
-                        model={createDifficultySelectViewModel(library(), current.encounter, current.difficulty, presentation())}
+                        model={createDifficultySelectViewModel(library()!, current.encounter, current.difficulty, presentation())}
                         onSettings={openSettings}
                         onSelectDifficulty={difficulty => navigate(() => controller.selectDifficulty(difficulty))}
                         onBack={() => navigate(controller.backToDetails)}
@@ -140,9 +149,10 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
             </Switch>
         </div>
-        <Show when={settingsOpen()}>
+        <Show when={libraryOpen() && library()}>{current => <LibraryPanel library={current()} presentation={presentation()} onClose={closeLibrary} />}</Show>
+        <Show when={settingsOpen() && !libraryOpen()}>
             <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed}
-                returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}
+                returnFocus={settingsTrigger} showBattleActions={false} onLibrary={library() ? openLibrary : undefined} onResume={() => setSettingsOpen(false)}
                 onBackToTitle={backToTitle} />
         </Show>
     </App>;

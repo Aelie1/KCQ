@@ -8,6 +8,8 @@ import { EncounterHeader } from "./EncounterHeader";
 
 export function EncounterPickerPanel(props: {
     onBack?: () => void;
+    onLibrary?: () => void;
+    libraryLabel?: string;
     onSettings?: () => void;
     model: EncounterPickerViewModel; onSelect: (encounter: EncounterId) => void;
 }): JSX.Element {
@@ -16,6 +18,7 @@ export function EncounterPickerPanel(props: {
             <EncounterHeader title={props.model.title} settingsLabel={props.model.settingsLabel} onSettings={props.onSettings} picker />
         }
         body={<>
+            {props.onLibrary && <button type="button" class="kcq-library-access kcq-encounter-card" onClick={props.onLibrary}>{props.libraryLabel}</button>}
             <For each={props.model.encounters}>
                 {(encounter, index) => <button class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host" type="button"
                     data-kcq-shortcut={combatShortcut(index())}

@@ -1,4 +1,4 @@
-import { AccuracyProfile, BindingId, BindingLevel, DifficultyId, Effect, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
+import { AccuracyProfile, BindingId, BindingLevel, DifficultyId, Effect, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveTrait, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
 
 export interface ContentLibrary {
     difficulties: Record<DifficultyId, DifficultyReference>;
@@ -23,6 +23,8 @@ export interface CharacterReference {
     moves: MoveId[];
     passives: PassiveId[];
     empoweredMoves: MoveId[];
+    /** Starting resources, detached from the character definition. */
+    data?: Record<string, number>;
 }
 
 export interface EnemyReference {
@@ -40,6 +42,7 @@ export interface MoveReference {
     targets: TargetCount;
     hits?: number;
     type: MoveType;
+    traits?: MoveTrait[];
     bindings: BindingId[];
     accuracy?: AccuracyProfile;
     check?: "accuracy" | "willpower";

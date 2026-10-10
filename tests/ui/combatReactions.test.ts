@@ -51,23 +51,25 @@ describe("semantic combat reactions", () => {
             ], targets: [{ target: "queen", result: band, effects: [{ type: "enemyDamaged", target: "queen", amount: 10 }] }]
         });
         expect(collectCombatReactions([f], initial()).filter(cue => cue.kind === "hp")).toEqual([
-            { kind: "hp", entity: "queen", amount: 10, treatment: "damage", strength: band },
-            { kind: "hp", entity: "queen", amount: 5, treatment: "healing", strength: "hit" },
+            { kind: "hp", entity: "queen", "floatDelay": 0, amount: 10, treatment: "damage", strength: band },
+            { kind: "hp", entity: "queen", "floatDelay": 180, amount: 5, treatment: "healing", strength: "hit" },
         ]);
     });
     it("retains each HP event amount and ignores zero damage and healing", () => {
-        const event: GameEvent = { type: "changePhase", phase: "player", effects: [
-            { type: "enemyDamaged", target: "queen", amount: 14 },
-            { type: "enemyDamaged", target: "queen", amount: 14 },
-            { type: "enemyHealed", target: "skunk1", amount: 7 },
-            { type: "enemyDamaged", target: "queen", amount: 0 },
-            { type: "enemyHealed", target: "queen", amount: 0 },
-        ] };
+        const event: GameEvent = {
+            type: "changePhase", phase: "player", effects: [
+                { type: "enemyDamaged", target: "queen", amount: 14 },
+                { type: "enemyDamaged", target: "queen", amount: 14 },
+                { type: "enemyHealed", target: "skunk1", amount: 7 },
+                { type: "enemyDamaged", target: "queen", amount: 0 },
+                { type: "enemyHealed", target: "queen", amount: 0 },
+            ]
+        };
         // Identical snapshots still produce every resolved nonzero event.
         expect(collectCombatReactions([frame(event)], initial())).toEqual([
-            { kind: "hp", entity: "queen", amount: 14, treatment: "damage", strength: "hit" },
-            { kind: "hp", entity: "queen", amount: 14, treatment: "damage", strength: "hit" },
-            { kind: "hp", entity: "skunk1", amount: 7, treatment: "healing", strength: "hit" },
+            { kind: "hp", entity: "queen", "floatDelay": 0, amount: 14, treatment: "damage", strength: "hit" },
+            { kind: "hp", entity: "queen", "floatDelay": 180, amount: 14, treatment: "damage", strength: "hit" },
+            { kind: "hp", entity: "skunk1", "floatDelay": 0, amount: 7, treatment: "healing", strength: "hit" },
         ]);
     });
     it("cues buff additions, updates and removals by stable owner and buff IDs", () => {

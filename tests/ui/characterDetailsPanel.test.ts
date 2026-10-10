@@ -195,8 +195,8 @@ describe("character details panel", () => {
 
         expect(html).toContain("kcq-character-roster__condition--danger\">Immob</span>");
         expect(html).toContain("kcq-character-roster__action--danger\">Incap</span>");
-        expect(html).toContain("kcq-character-roster__condition--success\">Moving</span>");
-        expect(html).toContain("kcq-character-roster__condition--warning\">Standing</span>");
+        expect(html).toContain("kcq-character-roster__condition--neutral\">Moving</span>");
+        expect(html).toContain("kcq-character-roster__condition--neutral\">Standing</span>");
         expect(html).toContain('aria-label="Ready · Immobilized"');
         expect(html).toContain('aria-label="Incapacitated · Moving"');
 

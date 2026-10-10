@@ -34,6 +34,7 @@ function libraryCharacter(character: CharacterDef): CharacterReference {
         moves: character.moves.map(x => x.id),
         passives: character.passives.map(x => x.id),
         empoweredMoves: character.empoweredMoves.map(x => x.id),
+        data: character.data ? { ...character.data } : undefined,
     };
 }
 
@@ -55,6 +56,7 @@ export function libraryMove(move: MoveDef): MoveReference {
         targets: move.targets,
         hits: move.baseHits,
         type: move.type,
+        traits: move.traits ? [...move.traits] : undefined,
         accuracy: move.accuracy ? { ...move.accuracy } : undefined,
         check: move.check,
         alwaysAvailable: move.alwaysAvailable,

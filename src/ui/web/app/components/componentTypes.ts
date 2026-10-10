@@ -122,6 +122,6 @@ export interface PartyCardData {
         id?: string;
         name: string;
         duration?: number;
-        tone: "debuff" | "buff";
+        glowTone: "debuff" | "buff";
     }[];
 }

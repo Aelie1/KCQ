@@ -18,7 +18,7 @@ export function isHarmfulModifierChange(modifier: ModifierId, value: number): bo
 export function isDebuff(buff: Buff): boolean {
     const classifications = (Object.entries(buff.modifiers ?? {}) as [ModifierId, number][])
         .map(([modifier, value]) => isHarmfulModifierChange(modifier, value));
-    return (buff.statuses?.length ?? 0) > 0
+    return (buff.moveList?.blockedMoves?.length ?? 0) > 0 || (buff.statuses?.length ?? 0) > 0
         || (classifications.length > 0 && classifications.every(value => value === true));
 }
 

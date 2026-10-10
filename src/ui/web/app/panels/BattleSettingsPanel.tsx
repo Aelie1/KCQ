@@ -17,6 +17,7 @@ export function BattleSettingsPanel(props: {
     playbackSpeed?: PlaybackSpeedPreference;
     returnFocus?: Element | null;
     onResume: () => void;
+    onLibrary?: () => void;
     showBattleActions?: boolean;
     onRetry?: () => void;
     onBackToLevelSelect?: () => void;
@@ -114,6 +115,7 @@ export function BattleSettingsPanel(props: {
                         </select>
                     </label>
                 </Show>
+                <Show when={props.onLibrary}><button type="button" class="kcq-library-access kcq-encounter-card" onClick={props.onLibrary}>{props.presentation.ui("library.title")}</button></Show>
                 <hr class="kcq-battle-settings__divider" />
                 <div class="kcq-battle-result__actions">
                     <Show when={props.showBattleActions !== false}>
