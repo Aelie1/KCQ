@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionInfo, ActionView, GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { createBattle } from "../../src/ui/web/app";
@@ -14,6 +14,8 @@ import { combatShortcut, COMBAT_SHORTCUTS } from "../../src/ui/web/app/keyboard"
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let unmount: (() => void) | undefined;
+// Keep these navigation tests synchronous; combatPlayback covers timed input locking.
+beforeEach(() => window.localStorage.setItem("kcq.playbackSpeed", "instant"));
 afterEach(() => {
     unmount?.();
     unmount = undefined;

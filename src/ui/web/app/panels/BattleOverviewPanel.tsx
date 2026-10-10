@@ -23,6 +23,7 @@ export interface BattleOverviewPanelProps {
     state: GameState;
     thresholds: ThresholdInfo;
     gameLogLines?: number;
+    inputBlocked?: boolean;
     history?: readonly GameLogPresentationEntry[];
     onSettings?: () => void;
     onEndTurn?: () => void;
@@ -64,10 +65,10 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         <span>{model().enemiesCountLabel}</span>
                     </header>
                     <div class="kcq-battle-overview__enemies">
-                        <For each={model().enemies}>
-                            {(enemy, index) => <EnemyCard enemy={enemy}
+                        <For each={model().enemies.map(enemy => enemy.id)}>
+                            {(id, index) => <EnemyCard enemy={model().enemies.find(enemy => enemy.id === id)!}
                                 shortcut={combatShortcut(index() + 3)}
-                                onSelect={props.onSelectEnemy ? () => props.onSelectEnemy?.(enemy.id) : undefined} />}
+                                onSelect={props.onSelectEnemy ? () => props.onSelectEnemy?.(id) : undefined} />}
                         </For>
                     </div>
                 </section>
@@ -80,13 +81,13 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         <span>{model().partyCountLabel}</span>
                     </header>
                     <div class="kcq-battle-overview__party">
-                        <For each={model().party}>
-                            {(character, index) => (
+                        <For each={model().party.map(character => character.id)}>
+                            {(id, index) => (
                                 <PartyCard
-                                    character={character}
+                                    character={model().party.find(character => character.id === id)!}
                                     shortcut={index() < 3 ? String(index() + 1) : undefined}
                                     onSelect={props.onSelectCharacter
-                                        ? () => props.onSelectCharacter?.(character.id)
+                                        ? () => props.onSelectCharacter?.(id)
                                         : undefined}
                                 />
                             )}
@@ -108,6 +109,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         class="kcq-battle-overview__primary-action kcq-shortcut-host"
                         classList={{ "is-dimmed": model().controls.endTurnDimmed }}
                         type="button"
+                        disabled={props.inputBlocked}
                         onClick={() => props.onEndTurn?.()}
                     >
                         <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {model().controls.endTurnLabel}

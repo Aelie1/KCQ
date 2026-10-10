@@ -5,6 +5,7 @@ import type { Presentation } from "../../presentation/presentation";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { loadLanguage, saveLanguage, type LanguageOption } from "./language";
 import { createOverviewGameLogPreference } from "./overviewGameLogLines";
+import { createPlaybackSpeedPreference } from "./playbackSpeed";
 import { createShortcutHintPreference } from "./shortcutHints";
 import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import { App } from "./App";
@@ -36,6 +37,7 @@ export interface GraphicalAppProps {
 export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     const overviewGameLog = createOverviewGameLogPreference();
     const shortcutHints = createShortcutHintPreference();
+    const playbackSpeed = createPlaybackSpeedPreference();
     // English is the only bundled language; keep selection separate from battle sessions.
     const english = { id: "en", label: props.presentation.ui("language.en"), presentation: props.presentation };
     const options = props.languages?.some(option => option.id === "en") ? props.languages : [english, ...(props.languages ?? [])];
@@ -132,14 +134,14 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
-                        language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} keyboard={keyboard} release={props.release}
+                        language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} keyboard={keyboard} release={props.release}
                         observer={current.session.observer} onVictory={controller.recordVictory} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
             </Switch>
         </div>
         <Show when={settingsOpen()}>
-            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog}
+            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed}
                 returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}
                 onBackToTitle={backToTitle} />
         </Show>

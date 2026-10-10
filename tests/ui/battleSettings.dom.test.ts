@@ -13,7 +13,11 @@ import { createBattleTelemetryObserver } from "../../src/ui/web/telemetry";
 const presentation = new Presentation(stockStrings);
 let unmount: (() => void) | undefined;
 
-beforeEach(() => vi.stubGlobal("__KCQ_GIT_REVISION__", "abc1234"));
+// These lifecycle tests exercise the preserved immediate behavior; playback has its own suite.
+beforeEach(() => {
+    vi.stubGlobal("__KCQ_GIT_REVISION__", "abc1234");
+    window.localStorage.setItem("kcq.playbackSpeed", "instant");
+});
 
 afterEach(() => {
     unmount?.();
@@ -96,7 +100,7 @@ describe("battle settings interactions", () => {
         expect(background.getAttribute("aria-hidden")).toBe("true");
         expect(document.activeElement).toBe(button("Resume", dialog));
         const controls = [...dialog.querySelectorAll("button, label, hr")];
-        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "HR", "BUTTON", "BUTTON", "BUTTON"]);
+        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "LABEL", "HR", "BUTTON", "BUTTON", "BUTTON"]);
         expect(button("Resume", dialog).classList.contains("kcq-battle-result__retry")).toBe(true);
         expect(dialog.querySelector("label")?.textContent).toContain("Language");
         expect(dialog.querySelector("select")?.value).toBe("en");

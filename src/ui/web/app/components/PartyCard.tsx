@@ -59,18 +59,19 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                 </div>
             </header>
             <div class="kcq-party-card__bindings" aria-label={props.character.accessibility.bindingsLabel}>
-                <For each={props.character.bindings}>
-                    {(binding) => (
-                        <BindingMeter
-                            value={binding.current}
-                            change={binding.change}
-                            peak={binding.peak}
-                            max={binding.max}
-                            level={binding.level}
-                            resultLevel={binding.resultLevel}
-                            ariaLabel={binding.label}
-                        />
-                    )}
+                <For each={props.character.bindings.map(binding => binding.id)}>
+                    {id => {
+                        const binding = () => props.character.bindings.find(binding => binding.id === id)!;
+                        return <BindingMeter
+                            value={binding().current}
+                            change={binding().change}
+                            peak={binding().peak}
+                            max={binding().max}
+                            level={binding().level}
+                            resultLevel={binding().resultLevel}
+                            ariaLabel={binding().label}
+                        />;
+                    }}
                 </For>
             </div>
             <div class="kcq-party-card__effects" aria-label={props.character.accessibility.effectsLabel}>

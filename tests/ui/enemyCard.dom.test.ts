@@ -28,7 +28,7 @@ describe("enemy card live durations", () => {
     it("wires real BattleApp application history into overview cards and updates after End Turn", () => {
         const engine = createStockEngine(1);
         engine.loadCharacter("ko"); engine.loadEncounter("plains_2");
-        mount(() => createComponent(BattleApp, { engine, presentation: new Presentation(stockStrings) }));
+        mount(() => createComponent(BattleApp, { engine, presentation: new Presentation(stockStrings), playbackSpeed: { value: "instant", onChange: () => {} } }));
         click(".kcq-party-card");
         click('.kcq-command-card[aria-label="Starlight Bindings"]');
         click(".kcq-target-card");

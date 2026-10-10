@@ -15,6 +15,7 @@ const presentation = new Presentation(stockStrings);
 let unmount: (() => void) | undefined;
 beforeEach(() => {
     window.localStorage.clear();
+    window.localStorage.setItem("kcq.playbackSpeed", "instant");
     vi.stubGlobal("__KCQ_GIT_REVISION__", "test");
 });
 afterEach(() => {

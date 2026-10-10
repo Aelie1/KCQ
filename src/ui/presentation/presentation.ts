@@ -45,6 +45,8 @@ export type UiLabel =
     | "battleResult.victory"
     | "battleSettings.backToTitle"
     | "battleSettings.language"
+    | "battleSettings.playbackSpeed"
+    | `battleSettings.playbackSpeed.${"instant" | "fast" | "normal" | "slow"}`
     | "battleSettings.overviewGameLogLines"
     | "battleSettings.shortcutHints"
     | "battleSettings.shortcutHintsAlways"

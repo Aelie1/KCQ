@@ -105,7 +105,7 @@ describe("encounter screen settings", () => {
         const { panel, prepareBattle } = mountSelection(screen);
         const { dialog } = openSettings();
         expect([...dialog.querySelectorAll("button, label, hr")].map(element => element.tagName))
-            .toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "HR", "BUTTON"]);
+            .toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "LABEL", "HR", "BUTTON"]);
         expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("v0.8-settings-test · abc1234");
         expect(button("Back to Title Screen")).toBeDefined();
         expect(button("Resume")).toBe(document.activeElement);

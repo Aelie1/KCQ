@@ -15,7 +15,7 @@ const languages = [
     { id: "test", label: "Test", presentation: alternate },
 ];
 let unmount: (() => void) | undefined;
-beforeEach(() => { window.localStorage.clear(); vi.stubGlobal("__KCQ_GIT_REVISION__", "test"); });
+beforeEach(() => { window.localStorage.clear(); window.localStorage.setItem("kcq.playbackSpeed", "instant"); vi.stubGlobal("__KCQ_GIT_REVISION__", "test"); });
 afterEach(() => {
     unmount?.(); unmount = undefined;
     document.body.replaceChildren();
@@ -119,7 +119,13 @@ describe("player persistence in the graphical application", () => {
         vi.spyOn(window, "localStorage", "get").mockImplementation(() => { throw new Error("blocked"); });
         const { sessions } = mount(); selectLanguage("test");
         expect(document.querySelector<HTMLSelectElement>(".kcq-title-screen select")?.value).toBe("test");
-        start(); finish(sessions[0]!, "victory"); button("Back to Level Select");
+        start();
+        // The in-session speed still works when persistence is unavailable.
+        click(".kcq-battle-overview .kcq-combat-header__settings");
+        const speed = document.querySelector<HTMLSelectElement>(".kcq-battle-settings__playback-speed select")!;
+        speed.value = "instant"; speed.dispatchEvent(new Event("change", { bubbles: true }));
+        button("Resume");
+        finish(sessions[0]!, "victory"); button("Back to Level Select");
         expect(clearLabel()).toBe("👑 Standard");
     });
 

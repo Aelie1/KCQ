@@ -45,7 +45,7 @@ function mountBattle() {
     vi.spyOn(engine, "getGameState").mockReturnValue({ ...battleOverviewFixture.state, turn: { ...battleOverviewFixture.state.turn, phase: "player" } });
     vi.spyOn(engine, "getActionView").mockReturnValue(battleOverviewFixture.actions);
     const execute = vi.spyOn(engine, "executeAction").mockReturnValue({ success: false, reason: "wrongPhase" });
-    mount(() => createComponent(BattleApp, { engine, presentation: battleOverviewFixture.presentation }));
+    mount(() => createComponent(BattleApp, { engine, presentation: battleOverviewFixture.presentation, playbackSpeed: { value: "instant", onChange: () => {} } }));
     return { engine, execute };
 }
 
@@ -119,7 +119,7 @@ describe("Enemy Details navigation and live state", () => {
         expect(document.querySelector("button.kcq-target-card")).toBeNull();
     });
 
-    it("refreshes a surviving selected enemy and returns to overview if it disappears", () => {
+    it("returns to overview on End Turn and refreshes a surviving enemy when reopened", () => {
         const { engine, execute } = mountBattle();
         const state = { ...battleOverviewFixture.state, turn: { ...battleOverviewFixture.state.turn, phase: "player" as const } };
         vi.mocked(engine.getGameState).mockReturnValue(state);
@@ -130,6 +130,8 @@ describe("Enemy Details navigation and live state", () => {
             enemies: state.enemies.map(enemy => ({ ...enemy, currHp: 123 })),
         });
         press("=");
+        expect(document.querySelector(".kcq-enemy-details")).toBeNull();
+        press("4");
         expect(element(".kcq-enemy-details__identity").textContent).toContain("123 / 200");
         vi.mocked(engine.getGameState).mockReturnValue({ ...state, enemies: state.enemies.slice(1) });
         press("=");

@@ -3,6 +3,7 @@ import { Portal } from "solid-js/web";
 import type { Presentation } from "../../../presentation/presentation";
 import type { LanguageSelection } from "../language";
 import type { ShortcutHintPreference, ShortcutHintMode } from "../shortcutHints";
+import { PLAYBACK_INTERVALS, type PlaybackSpeedPreference, type PlaybackSpeed } from "../playbackSpeed";
 import type { OverviewGameLogPreference } from "../overviewGameLogLines";
 import { setupResponsiveScale } from "../responsiveScale";
 import { displayVersion } from "../version";
@@ -13,6 +14,7 @@ export function BattleSettingsPanel(props: {
     language?: LanguageSelection;
     overviewGameLog?: OverviewGameLogPreference;
     shortcutHints?: ShortcutHintPreference;
+    playbackSpeed?: PlaybackSpeedPreference;
     returnFocus?: Element | null;
     onResume: () => void;
     showBattleActions?: boolean;
@@ -99,6 +101,17 @@ export function BattleSettingsPanel(props: {
                             aria-valuetext={String(props.overviewGameLog?.value)}
                             onInput={event => props.overviewGameLog?.onChange(Number(event.currentTarget.value))} />
                         <output>{props.overviewGameLog?.value}</output>
+                    </label>
+                </Show>
+                <Show when={props.playbackSpeed}>
+                    <label class="kcq-battle-settings__language kcq-battle-settings__playback-speed">
+                        <span>{props.presentation.ui("battleSettings.playbackSpeed")}</span>
+                        <select value={props.playbackSpeed?.value}
+                            onChange={event => props.playbackSpeed?.onChange(event.currentTarget.value as PlaybackSpeed)}>
+                            <For each={Object.keys(PLAYBACK_INTERVALS) as PlaybackSpeed[]}>
+                                {speed => <option value={speed}>{props.presentation.ui(`battleSettings.playbackSpeed.${speed}`)}</option>}
+                            </For>
+                        </select>
                     </label>
                 </Show>
                 <hr class="kcq-battle-settings__divider" />
