@@ -90,7 +90,7 @@ export interface PartyConditionState {
     compactLabel: string;
     kind: StanceId | "immobilized";
     label: string;
-    tone: Extract<StatusChipTone, "danger" | "success" | "warning">;
+    tone: Extract<StatusChipTone, "danger" | "neutral">;
 }
 
 export interface BlockedCapabilityData {
@@ -122,6 +122,6 @@ export interface PartyCardData {
         id?: string;
         name: string;
         duration?: number;
-        tone: StatusChipTone;
+        tone: "debuff" | "buff";
     }[];
 }

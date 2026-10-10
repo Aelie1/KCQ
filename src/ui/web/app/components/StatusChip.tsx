@@ -11,6 +11,7 @@ export interface StatusChipProps {
     buffId?: string;
     size?: StatusChipSize;
     tone?: StatusChipTone;
+    glowTone?: "debuff" | "buff";
     duration?: number;
 }
 
@@ -23,6 +24,8 @@ export function StatusChip(props: StatusChipProps): JSX.Element {
                 [`kcq-status-chip--${props.tone ?? "neutral"}`]: true,
                 [`kcq-status-chip--${props.size ?? "standard"}`]: true,
                 "kcq-status-chip--timed": (props.duration ?? 0) > 0,
+                "kcq-status-chip--glow-debuff": props.glowTone === "debuff",
+                "kcq-status-chip--glow-buff": props.glowTone === "buff",
             }}
         >
             {props.children}

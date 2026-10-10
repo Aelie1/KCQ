@@ -67,13 +67,13 @@ export function createCharacterStanceState(
             compactLabel: presentation.stance("standing"),
             kind: "standing",
             label: presentation.stance("standing"),
-            tone: "warning",
+            tone: "neutral",
         }
         : {
             compactLabel: presentation.stance("moving"),
             kind: "moving",
             label: presentation.stance("moving"),
-            tone: "success",
+            tone: "neutral",
         };
 }
 

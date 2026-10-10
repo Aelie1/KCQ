@@ -480,7 +480,6 @@ button {
     border-color: var(--kcq-state-success);
     background: var(--kcq-state-success-bg);
     color: var(--kcq-state-success);
-    --kcq-buff-reaction-glow: var(--kcq-glow-positive);
 }
 
 .kcq-status-chip--warning {
@@ -493,7 +492,6 @@ button {
     border-color: var(--kcq-state-danger);
     background: var(--kcq-state-danger-bg);
     color: var(--kcq-state-danger);
-    --kcq-buff-reaction-glow: var(--kcq-glow-negative);
 }
 
 .kcq-status-chip--outcome {
@@ -524,6 +522,14 @@ button {
     border-color: var(--kcq-state-danger);
     background: var(--kcq-state-danger-bg);
     color: var(--kcq-state-danger);
+}
+
+.kcq-status-chip--glow-debuff {
+    --kcq-buff-reaction-glow: var(--kcq-glow-negative);
+}
+
+.kcq-status-chip--glow-buff {
+    --kcq-buff-reaction-glow: var(--kcq-glow-positive);
 }
 
 .kcq-intent-row {
@@ -1574,7 +1580,7 @@ button {
 }
 
 .kcq-subspace-value {
-    color: var(--kcq-binding-light);
+    color: var(--kcq-text-muted);
     font-size: 9px;
     font-weight: 700;
     line-height: 11px;
@@ -1583,8 +1589,11 @@ button {
 
 .kcq-party-card__resource {
     padding: 3px 5px;
-    border: 1px solid var(--kcq-binding-light);
+    background: var(--kcq-state-neutral-bg);
+    border: 1px solid var(--kcq-structure-border);
     border-radius: 6px;
+    padding: 3px 6px;
+    min-height: 20px;
 }
 
 .kcq-character-commands__header .kcq-subspace-value {
@@ -4019,15 +4028,14 @@ button {
 }
 
 @keyframes kcq-react-buff {
-
-    0%,
-    30% {
-        box-shadow: 0 0 0 2px #e8d8a488;
-        filter: brightness(1.4);
+    0% {
+        box-shadow: 0 0 6px 2px var(--kcq-buff-reaction-glow),
+            0 0 14px 4px var(--kcq-buff-reaction-glow);
+        filter: brightness(1.3);
     }
 
     100% {
-        box-shadow: 0 0 0 2px transparent;
+        box-shadow: 0 0 0 transparent;
         filter: brightness(1);
     }
 }
@@ -4058,8 +4066,7 @@ button {
     opacity: 0;
     border-radius: inherit;
 
-    box-shadow:
-        0 0 5px 2px var(--kcq-binding-reaction-glow),
+    box-shadow: 0 0 5px 2px var(--kcq-binding-reaction-glow),
         0 0 12px 4px var(--kcq-binding-reaction-glow);
 }
 

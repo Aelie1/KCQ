@@ -103,7 +103,7 @@ export function createPartyCardViewModel(
             id: effect.id,
             name: presentation.buff(effect.id, effect.severity),
             duration: effect.duration,
-            tone: isDebuff(effect) ? "danger" : "success"
+            tone: isDebuff(effect) ? "debuff" : "buff"
         })),
         hiddenEffectCount,
         ...(hiddenEffectCount > 0 ? {

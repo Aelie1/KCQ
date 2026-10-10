@@ -91,7 +91,7 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
     return cues;
 }
 
-const durations: Record<ReactionKind, number> = { actor: 250, target: 350, hp: 650, binding: 2500, buff: 850 };
+const durations: Record<ReactionKind, number> = { actor: 500, target: 350, hp: 2500, binding: 2500, buff: 2500 };
 export function createCombatReactions() {
     const [cues, setCues] = createSignal<readonly ActiveReaction[]>([]);
     let serial = 0;
