@@ -122,5 +122,6 @@ export interface PartyCardData {
         id?: string;
         name: string;
         duration?: number;
+        tone: StatusChipTone;
     }[];
 }

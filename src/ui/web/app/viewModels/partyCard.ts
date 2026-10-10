@@ -18,7 +18,7 @@ import {
     createCharacterStanceState,
 } from "./characterState";
 import { playerTone } from "./linkedEntities";
-import { bindingLevelAtValue } from "./presentationHelpers";
+import { bindingLevelAtValue, isDebuff } from "./presentationHelpers";
 
 export const PARTY_CARD_EFFECT_SLOTS = 3;
 
@@ -103,6 +103,7 @@ export function createPartyCardViewModel(
             id: effect.id,
             name: presentation.buff(effect.id, effect.severity),
             duration: effect.duration,
+            tone: isDebuff(effect) ? "danger" : "success"
         })),
         hiddenEffectCount,
         ...(hiddenEffectCount > 0 ? {

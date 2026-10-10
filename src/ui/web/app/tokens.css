@@ -39,5 +39,7 @@
     --kcq-binding-severe: #fb7185;
     --kcq-binding-impossible: #e879f9;
 
+    --kcq-glow-negative: #ff2424;
+    --kcq-glow-positive: #94ead9;
     --kcq-shadow-raised: rgb(0 0 0 / 35%);
 }

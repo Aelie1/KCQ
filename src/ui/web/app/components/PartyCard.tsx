@@ -83,7 +83,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                 <For each={props.character.visibleEffects.map((effect, index) => effect.id ?? String(index))}>
                     {id => {
                         const effect = () => props.character.visibleEffects.find((effect, index) => (effect.id ?? String(index)) === id)!;
-                        return <StatusChip tone="neutral" duration={effect().duration}
+                        return <StatusChip tone={effect().tone} duration={effect().duration}
                             entityId={props.character.id} buffId={effect().id}>
                             {effect().name}
                         </StatusChip>;

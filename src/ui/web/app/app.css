@@ -480,6 +480,7 @@ button {
     border-color: var(--kcq-state-success);
     background: var(--kcq-state-success-bg);
     color: var(--kcq-state-success);
+    --kcq-buff-reaction-glow: var(--kcq-glow-positive);
 }
 
 .kcq-status-chip--warning {
@@ -492,6 +493,7 @@ button {
     border-color: var(--kcq-state-danger);
     background: var(--kcq-state-danger-bg);
     color: var(--kcq-state-danger);
+    --kcq-buff-reaction-glow: var(--kcq-glow-negative);
 }
 
 .kcq-status-chip--outcome {
@@ -823,7 +825,7 @@ button {
     gap: 6px;
     height: 27px;
     padding: 8px;
-    overflow: hidden;
+    overflow: visible;
     border-radius: 6px;
     background: var(--kcq-surface-inset);
 }
@@ -856,7 +858,7 @@ button {
     position: relative;
     display: block;
     width: 100%;
-    overflow: hidden;
+    overflow: visible;
     border-radius: var(--kcq-projected-meter-radius, var(--kcq-binding-meter-radius));
     background: var(--kcq-surface-raised);
 }
@@ -4051,22 +4053,22 @@ button {
 .kcq-binding-reaction {
     position: absolute;
     inset: 0 auto 0 0;
-    z-index: 3;
+    z-index: 1;
     pointer-events: none;
     opacity: 0;
-    /* Inset light survives the meter's clipping and stays inside this segment.
-       The transparent center retains the underlying severity fill. */
-    box-shadow: inset 0 3px 4px -1px var(--kcq-binding-reaction-glow),
-        inset 0 -3px 4px -1px var(--kcq-binding-reaction-glow);
-    mask-image: linear-gradient(to right, transparent, #000 12%, #000 88%, transparent);
+    border-radius: inherit;
+
+    box-shadow:
+        0 0 5px 2px var(--kcq-binding-reaction-glow),
+        0 0 12px 4px var(--kcq-binding-reaction-glow);
 }
 
 .kcq-binding-reaction[data-combat-reaction="increase"] {
-    --kcq-binding-reaction-glow: #ff2424;
+    --kcq-binding-reaction-glow: var(--kcq-glow-negative);
 }
 
 .kcq-binding-reaction[data-combat-reaction="recovery"] {
-    --kcq-binding-reaction-glow: #94ead9;
+    --kcq-binding-reaction-glow: var(--kcq-glow-positive);
 }
 
 @keyframes kcq-react-binding-fade {
