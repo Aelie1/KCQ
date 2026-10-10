@@ -69,7 +69,7 @@ const numbers = (card: HTMLElement) => [...card.querySelectorAll<HTMLElement>(".
 const busy = () => element(".kcq-battle-stage").getAttribute("aria-busy");
 
 describe("enemy defeat presentation", () => {
-    it("retains the same card and geometry through staggered damage, 400ms glow and 500ms fade", () => {
+    it("retains the same card and geometry through staggered damage, 500ms glow and 500ms fade", () => {
         const b = mount({ bands: [["hit", "hit", "hit"]] });
         const original = cards(); const dead = original[0]!;
         const slot = dead.parentElement!;
@@ -84,8 +84,8 @@ describe("enemy defeat presentation", () => {
         expect(numbers(dead).map(number => number.textContent)).toEqual(["-14", "-14", "-14"]);
         expect(numbers(dead).map(number => number.style.getPropertyValue("--kcq-hp-reaction-delay"))).toEqual(["0ms", "180ms", "360ms"]);
         expect(numbers(dead).map(number => number.style.getPropertyValue("--float-x"))).toEqual(["-8px", "8px", "-16px"]);
-        expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("2360ms");
-        expect(dead.style.getPropertyValue("--kcq-death-fade-delay")).toBe("2760ms");
+        expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("360ms");
+        expect(dead.style.getPropertyValue("--kcq-death-fade-delay")).toBe("860ms");
         expect(dead.dataset.combatActor).toBe("actor");
         expect(dead.dataset.enemyDefeat).toBe("true");
         expect(dead.hasAttribute("inert")).toBe(true);
@@ -95,11 +95,12 @@ describe("enemy defeat presentation", () => {
         dead.click(); dead.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
         expect(document.querySelector(".kcq-enemy-details")).toBeNull();
         expect(b.execute).toHaveBeenCalledOnce();
-        vi.advanceTimersByTime(2360);
-        // Actor expiry must not reset the delayed death timeline.
-        expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("2360ms");
+        vi.advanceTimersByTime(360);
+        expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("360ms");
         expect(cards()).toEqual(original); expect(busy()).toBe("true");
-        vi.advanceTimersByTime(400); expect(dead.isConnected).toBe(true);
+        vi.advanceTimersByTime(500); expect(dead.isConnected).toBe(true);
+        // Actor expiry must not reset the death timeline.
+        expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("360ms");
         vi.advanceTimersByTime(499); expect(dead.isConnected).toBe(true);
         vi.advanceTimersByTime(1); expect(dead.isConnected).toBe(false);
         expect(cards()).toEqual(original.slice(1)); expect(busy()).toBe("false");
@@ -107,7 +108,7 @@ describe("enemy defeat presentation", () => {
         original[1]!.click(); expect(document.querySelector(".kcq-enemy-details")).not.toBeNull();
     });
 
-    it("waits for an earlier step's critical number and retains the latest enemy presentation", () => {
+    it("starts with the killing number despite an earlier critical number and retains the latest presentation", () => {
         const b = mount({ victory: true });
         const previous = structuredClone(b.initial);
         previous.enemies[0]!.currHp = 7;
@@ -122,15 +123,15 @@ describe("enemy defeat presentation", () => {
         vi.advanceTimersByTime(500);
         expect(cards()[0]).toBe(dead);
         expect(dead.querySelector(".kcq-enemy-card__hp")!.textContent).toContain("7 /");
-        expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("2500ms");
+        expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("0ms");
         expect(numbers(dead).map(number => number.textContent)).toEqual(["-14!", "-14"]);
-        vi.advanceTimersByTime(3399); expect(dead.isConnected).toBe(true);
+        vi.advanceTimersByTime(999); expect(dead.isConnected).toBe(true);
         expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(1); expect(dead.isConnected).toBe(false);
         expect(b.onVictory).toHaveBeenCalledOnce();
     });
 
-    it("plays a defeat without damage feedback directly for 900ms", () => {
+    it("plays a defeat without damage feedback directly for 1000ms", () => {
         const b = mount({ victory: true });
         b.frame.event = { type: "changePhase", phase: "player", effects: [
             { type: "enemyDefeated", target: b.ids[0]! },
@@ -138,7 +139,7 @@ describe("enemy defeat presentation", () => {
         b.kill(); const dead = cards()[0]!;
         expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("0ms");
         expect(numbers(dead)).toHaveLength(0);
-        vi.advanceTimersByTime(899); expect(dead.isConnected).toBe(true);
+        vi.advanceTimersByTime(999); expect(dead.isConnected).toBe(true);
         vi.advanceTimersByTime(1); expect(dead.isConnected).toBe(false);
         expect(b.onVictory).toHaveBeenCalledOnce();
     });
@@ -149,29 +150,29 @@ describe("enemy defeat presentation", () => {
         const firstSlot = first.parentElement!;
         vi.spyOn(firstSlot, "offsetHeight", "get").mockReturnValue(100);
         b.kill();
-        expect(first.style.getPropertyValue("--kcq-death-glow-delay")).toBe("2000ms");
-        expect(second.style.getPropertyValue("--kcq-death-glow-delay")).toBe("3180ms");
+        expect(first.style.getPropertyValue("--kcq-death-glow-delay")).toBe("0ms");
+        expect(second.style.getPropertyValue("--kcq-death-glow-delay")).toBe("180ms");
         expect(numbers(second).map(number => number.textContent)).toEqual(["-14!", "-14!"]);
         expect(numbers(second).every(number => number.dataset.hitStrength === "crit")).toBe(true);
-        vi.advanceTimersByTime(2900);
+        vi.advanceTimersByTime(1000);
         expect(first.isConnected).toBe(false); expect(second.isConnected).toBe(true);
         expect(firstSlot.isConnected).toBe(true); expect(firstSlot.style.height).toBe("100px");
         expect(firstSlot.children).toHaveLength(0);
         expect(second.parentElement!.previousElementSibling).toBe(firstSlot);
         expect(busy()).toBe("true");
-        vi.advanceTimersByTime(1179); expect(second.isConnected).toBe(true);
+        vi.advanceTimersByTime(179); expect(second.isConnected).toBe(true);
         vi.advanceTimersByTime(1); expect(second.isConnected).toBe(false);
         expect(firstSlot.isConnected).toBe(false); expect(cards()).toEqual(original.slice(2));
         expect(busy()).toBe("false");
     });
 
-    it.each(["fast", "normal", "slow"] as const)("holds final-enemy victory through the full critical death at %s speed", speed => {
+    it.each(["fast", "normal", "slow"] as const)("holds final-enemy victory through the killing-hit glow and fade at %s speed", speed => {
         const b = mount({ speed, bands: [["crit"]], victory: true, playerMove: true });
         b.kill();
         const dead = cards()[0]!;
         expect(dead).toBeDefined(); expect(numbers(dead)[0]!.textContent).toBe("-14!");
         expect(document.querySelector("[role=dialog]")).toBeNull(); expect(b.onVictory).not.toHaveBeenCalled();
-        vi.advanceTimersByTime(3899);
+        vi.advanceTimersByTime(999);
         expect(dead.isConnected).toBe(true); expect(b.onVictory).not.toHaveBeenCalled();
         expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(1);
@@ -189,13 +190,13 @@ describe("enemy defeat presentation", () => {
     });
 
     it("cancels an in-progress defeat when switching to Instant", () => {
-        const b = mount({ victory: true }); b.kill(); vi.advanceTimersByTime(2400);
+        const b = mount({ victory: true }); b.kill(); vi.advanceTimersByTime(600);
         b.preference.onChange("instant");
         expect(cards()).toHaveLength(0); expect(b.onVictory).toHaveBeenCalledOnce();
         expect(vi.getTimerCount()).toBe(0);
     });
 
-    it.each([100, 2200, 2600])("cancels pending timers on unmount at %sms without publishing victory", elapsed => {
+    it.each([100, 600, 900])("cancels pending timers on unmount at %sms without publishing victory", elapsed => {
         const b = mount({ victory: true }); b.kill(); vi.advanceTimersByTime(elapsed);
         unmount!(); unmount = undefined;
         expect(vi.getTimerCount()).toBe(0); vi.advanceTimersByTime(10000);

@@ -56,6 +56,7 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
         const endpoints = new Map<string, number>();
         const explicitBuffs = new Set<string>();
         const hpHitCounts = new Map<string, number>();
+        const lastDamage = new Map<string, CombatReaction>();
         for (const { effect, band } of leaves) {
             switch (effect.type) {
                 case "enemyDamaged":
@@ -65,18 +66,25 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
                     const index = hpHitCounts.get(effect.target) ?? 0;
                     hpHitCounts.set(effect.target, index + 1);
 
-                    cues.push({
+                    const cue: CombatReaction = {
                         kind: "hp",
                         entity: effect.target,
                         amount: effect.amount,
                         treatment: effect.type === "enemyHealed" ? "healing" : "damage",
                         strength: strength(band) ?? "hit",
                         floatDelay: index * 180,
-                    });
+                    };
+                    cues.push(cue);
+                    if (effect.type === "enemyDamaged") lastDamage.set(effect.target, cue);
                     break;
                 }
                 case "enemyDefeated":
-                    cues.push({ kind: "defeat", entity: effect.target, treatment: "defeated" });
+                    // Defeat follows its killing damage leaf. Reuse that number
+                    // cue's stagger, excluding healing and damage from other frames.
+                    cues.push({
+                        kind: "defeat", entity: effect.target, treatment: "defeated",
+                        delay: lastDamage.get(effect.target)?.floatDelay ?? 0,
+                    });
                     break;
                 case "bondageAdded": case "bondageChanged": case "bondageRemoved": {
                     if (!effect.amount) break;
@@ -108,11 +116,8 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
 
 // Visible number animation lengths (cue lifetimes are intentionally longer).
 export const HP_FLOAT_DURATION = 2000;
-export const HP_CRIT_FLOAT_DURATION = 3000;
-export const ENEMY_DEFEAT_GLOW_DURATION = 400;
+export const ENEMY_DEFEAT_GLOW_DURATION = 500;
 export const ENEMY_DEFEAT_FADE_DURATION = 500;
-export const hpFloatDuration = (cue: CombatReaction) =>
-    cue.strength === "crit" ? HP_CRIT_FLOAT_DURATION : HP_FLOAT_DURATION;
 const durations: Record<ReactionKind, number> = {
     actor: 500, hp: 4000, binding: 2500, buff: 2500,
     defeat: ENEMY_DEFEAT_GLOW_DURATION + ENEMY_DEFEAT_FADE_DURATION,
@@ -158,19 +163,13 @@ export function createCombatReactions() {
         present(frames: readonly EventFrame[], before: GameState, instant = false) {
             if (disposed) return;
             if (instant) { clear(); return; }
+            const started = Date.now();
             const added = collectCombatReactions(frames, before).map(cue => ({
                 ...cue,
-                serial: ++serial, started: Date.now(), duration: (cue.kind === "hp" && cue.strength === "crit") ? durations[cue.kind] * 1.5 : durations[cue.kind]
+                serial: ++serial, started,
+                duration: cue.kind === "defeat" ? durations.defeat + (cue.delay ?? 0)
+                    : cue.kind === "hp" && cue.strength === "crit" ? durations.hp * 1.5 : durations[cue.kind]
             }));
-            // Include still-visible numbers from preceding playback steps. Each
-            // defeated enemy waits for its own last number, including crit/stagger.
-            for (const cue of added) {
-                if (cue.kind !== "defeat") continue;
-                cue.delay = Math.max(0, ...[...cues(), ...added]
-                    .filter(hit => hit.kind === "hp" && hit.entity === cue.entity)
-                    .map(hit => hit.started + (hit.floatDelay ?? 0) + hpFloatDuration(hit) - cue.started));
-                cue.duration += cue.delay;
-            }
             setCues(current => [...current, ...added]);
             for (const cue of added) {
                 const timer = setTimeout(() => {
