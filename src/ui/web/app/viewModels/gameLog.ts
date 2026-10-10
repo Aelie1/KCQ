@@ -58,8 +58,8 @@ export function createGameLogViewModel(
         return { text: parts.map(part => part.text).join(""), parts };
     };
     const name = (id: string): GameLogText => ({ text: p.entity(id), tone: "entity-" + playerTone(id) });
-    const targets = (ids: string[], linked = false): GameLogValue => {
-        if (!linked && ids.length > 1 && party.length > 0 && ids.length === party.length && party.every(id => ids.includes(id))) {
+    const targets = (ids: string[], linked = false, collapseParty = true): GameLogValue => {
+        if (collapseParty && !linked && ids.length > 1 && party.length > 0 && ids.length === party.length && party.every(id => ids.includes(id))) {
             return { text: p.ui("gameLog.allies"), parts: [{ text: p.ui("gameLog.allies"), tone: "muted" }] };
         }
         return ids.map(id => ({ ...name(id), parts: [name(id)] })).reduce<GameLogValue>((first, second) =>
@@ -311,6 +311,34 @@ export function createGameLogViewModel(
             formatted.values = related.length === 0 ? outcome.hits.filter(hit => hit.result === "miss")
                 .map(hit => ({ text: p.hitBand(hit.result), tone: hit.result })) : [];
             if (!formatted.values.length) rows.delete(outcome);
+        }
+        // Only consecutive, effect-free recipients in a move can share accuracy.
+        // Use semantic bands, including their order and count, rather than localized
+        // text. Even suppressed outcomes break a run, preserving event ordering.
+        if (actor !== undefined) {
+            let previous: { bands: string; row: GameLogRow; ids: string[] } | undefined;
+            for (const outcome of outcomes) {
+                const formatted = rows.get(outcome);
+                const accuracyOnly = outcome.kind === "damage" && formatted
+                    && outcome.hits.every(hit => !hit.damage && !hit.healing && !hit.blocked && !hit.recordedZeroEffect)
+                    && !outcomes.some(effect => effect !== outcome && (
+                        ("target" in effect && effect.target === outcome.target)
+                        || ("actor" in effect && effect.actor === outcome.target)
+                        || (effect.kind === "buff" && effect.participants.some(participant => participant.target === outcome.target))
+                        || (effect.kind === "trap" && effect.triggers.some(trigger => trigger.actor === outcome.target))));
+                if (!accuracyOnly || outcome.kind !== "damage" || !formatted) {
+                    previous = undefined;
+                    continue;
+                }
+                const bands = JSON.stringify(outcome.hits.map(hit => hit.result));
+                if (previous && previous.bands === bands) {
+                    previous.ids.push(outcome.target);
+                    const recipients = targets(previous.ids, false, false);
+                    previous.row.target = recipients.text;
+                    previous.row.targetParts = recipients.parts;
+                    rows.delete(outcome);
+                } else previous = { bands, row: formatted, ids: [outcome.target] };
+            }
         }
         return [...rows.values()];
     };

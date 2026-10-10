@@ -238,6 +238,30 @@ function mountScrollingLog() {
 }
 
 describe("Game Log bottom following", () => {
+    it("renders grouped misses with localized colored names and a separate successful buff recipient", () => {
+        const log = mountScrollingLog();
+        log.setEntries(createGameLogEntries([{ type: "useMove", actor: "queen1", move: "skunkPerfume", effects: [], targets: [
+            { target: "ko", result: "miss", effects: [] },
+            { target: "matsuko", result: "miss", effects: [] },
+            { target: "hinari", result: "hit", effects: [{ type: "buffAdded", target: "hinari", buff: "escapePerfume" }] },
+        ] }]));
+        const rows = () => [...log.viewport.querySelectorAll('[data-outcome="damage"]')];
+        expect(rows()).toHaveLength(2);
+        expect(rows()[0]!.querySelector('.kcq-game-log__target')!.textContent).toBe("Ko-chan, Matsuko");
+        expect(rows()[0]!.querySelector('.kcq-game-log__value--entity-ko')!.textContent).toBe("Ko-chan");
+        expect(rows()[0]!.querySelector('.kcq-game-log__value--entity-matsuko')!.textContent).toBe("Matsuko");
+        expect(rows()[0]!.querySelector(':scope > .kcq-game-log__values')!.textContent).toBe("Miss");
+        expect(rows()[1]!.querySelector('.kcq-game-log__value--entity-hinari')!.textContent).toBe("Hinari");
+        expect(rows()[1]!.querySelector(':scope > .kcq-game-log__values')!.textContent).toBe("HitEscape Perfume Added");
+        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.targetList": "{second} / {first}",
+            "entity.ko.name": "Localized Ko", "entity.matsuko.name": "Localized Matsuko",
+        }));
+        expect(rows()).toHaveLength(2);
+        expect(rows()[0]!.querySelector('.kcq-game-log__target')!.textContent).toBe("Localized Matsuko / Localized Ko");
+        expect(rows()[0]!.querySelector('.kcq-game-log__value--entity-ko')!.textContent).toBe("Localized Ko");
+        expect(rows()[0]!.querySelector('.kcq-game-log__value--entity-matsuko')!.textContent).toBe("Localized Matsuko");
+    });
+
     it("keeps activation consequences nested and relocalizes the live activation heading", () => {
         const log = mountScrollingLog();
         log.setEntries(createGameLogEntries([{ type: "changePhase", phase: "player", effects: [

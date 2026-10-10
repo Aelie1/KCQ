@@ -782,6 +782,150 @@ describe("combat log polish regressions", () => {
 });
 
 
+describe("Game Log accuracy-only recipient groups", () => {
+    const perfume = () => createGameLogEntries([{
+        ...move([
+            { target: "ko", result: "miss", effects: [] },
+            { target: "matsuko", result: "miss", effects: [] },
+            { target: "hinari", result: "hit", effects: [{ type: "buffAdded", target: "hinari", buff: "escapePerfume" }] },
+        ], [], "skunkPerfume"), actor: "queen1",
+    }]);
+
+    it("groups two identical misses and keeps the hit with its buff separate", () => {
+        const entries = perfume();
+        const original = JSON.stringify(entries);
+        const rows = models(entries)[0]!.rows;
+        expect(rows.map(row => [row.target, ...row.values.map(value => value.text)])).toEqual([
+            ["Ko-chan, Matsuko", "Miss"],
+            ["Hinari", "Hit", "Escape Perfume Added"],
+        ]);
+        expect(rows[0]!.targetParts).toEqual([
+            { text: "Ko-chan", tone: "entity-ko" }, { text: ", ", tone: "muted" }, { text: "Matsuko", tone: "entity-matsuko" },
+        ]);
+        const html = renderEntries(entries);
+        expect(count(html, "damage")).toBe(2);
+        expect(text(html)).toContain("Ko-chan, MatsukoMiss");
+        expect(text(html)).toContain("HinariHitEscape Perfume Added");
+        expect(models(entries)[0]!.rows).toEqual(rows);
+        expect(JSON.stringify(entries)).toBe(original);
+    });
+
+    it("lists all missed recipients in original order with their colors instead of collapsing the party label", () => {
+        const entries = createGameLogEntries([move(["matsuko", "ko", "hinari"].map(target => ({ target, result: "miss", effects: [] })))]);
+        const row = models(entries)[0]!.rows[0]!;
+        expect(models(entries)[0]!.rows).toHaveLength(1);
+        expect(row.target).toBe("Matsuko, Ko-chan, Hinari");
+        expect(row.targetParts?.filter(part => part.tone !== "muted")).toEqual([
+            { text: "Matsuko", tone: "entity-matsuko" }, { text: "Ko-chan", tone: "entity-ko" }, { text: "Hinari", tone: "entity-hinari" },
+        ]);
+    });
+
+    it("uses localized list ordering and separators without losing individual name colors", () => {
+        const p = new Presentation({ ...stockStrings,
+            "ui.gameLog.targetList": "{second} / {first}", "entity.ko.name": "Localized Ko", "entity.matsuko.name": "Localized Matsuko",
+        });
+        const entries = perfume();
+        const row = models(entries, p)[0]!.rows[0]!;
+        expect(row.target).toBe("Localized Matsuko / Localized Ko");
+        expect(row.targetParts).toEqual([
+            { text: "Localized Matsuko", tone: "entity-matsuko" }, { text: " / ", tone: "muted" }, { text: "Localized Ko", tone: "entity-ko" },
+        ]);
+        const html = renderEntries(entries, p);
+        expect(html).toContain('class="kcq-game-log__value--entity-matsuko">Localized Matsuko');
+        expect(html).toContain('class="kcq-game-log__value--entity-ko">Localized Ko');
+        expect(text(html)).toContain("Localized Matsuko / Localized KoMiss");
+    });
+
+    it("does not equate different original hit bands even when suppression leaves the same miss text", () => {
+        const entries = createGameLogEntries([move([
+            { target: "ko", result: "miss", effects: [] }, { target: "ko", result: "graze", effects: [] },
+            { target: "matsuko", result: "miss", effects: [] }, { target: "matsuko", result: "hit", effects: [] },
+            { target: "hinari", result: "miss", effects: [] }, { target: "hinari", result: "crit", effects: [] },
+        ])]);
+        expect(models(entries)[0]!.rows.map(row => [row.target, ...row.values.map(value => value.text)]))
+            .toEqual([["Ko-chan", "Miss"], ["Matsuko", "Miss"], ["Hinari", "Miss"]]);
+    });
+
+    it("does not equate a single miss and a multi-hit miss sequence", () => {
+        const entries = createGameLogEntries([move([
+            { target: "ko", result: "miss", effects: [] },
+            { target: "matsuko", result: "miss", effects: [] }, { target: "matsuko", result: "miss", effects: [] },
+        ])]);
+        expect(models(entries)[0]!.rows.map(row => [row.target, ...row.values.map(value => value.text)]))
+            .toEqual([["Ko-chan", "Miss"], ["Matsuko", "Miss", "Miss"]]);
+    });
+
+    it.each(["graze", "hit", "crit"] as const)("keeps an executed zero-damage %s separate from misses", result => {
+        const rows = models(createGameLogEntries([move([
+            { target: "ko", result: "miss", effects: [] },
+            { target: "matsuko", result, effects: [damaged("matsuko", 0)] },
+            { target: "hinari", result: "miss", effects: [] },
+        ])]))[0]!.rows;
+        expect(rows.map(row => row.target)).toEqual(["Ko-chan", "Matsuko", "Hinari"]);
+        expect(rows[1]!.values).toEqual([{ text: presentation.hitBand(result), tone: result }]);
+    });
+
+    const meaningfulEffects: [string, LeafEvent][] = [
+        ["binding", { type: "bondageAdded", target: "matsuko", binding: "latexArms", amount: 10 }],
+        ["buff", { type: "buffAdded", target: "matsuko", buff: "escapePerfume" }],
+        ["damage", damaged("matsuko", 4)],
+        ["healing", { type: "enemyHealed", target: "matsuko", amount: 4 }],
+        ["blocking", { type: "damageBlocked", target: "matsuko", amount: 4 }],
+        ["resource", { type: "dataChanged", target: "matsuko", name: "mana", amount: -4 }],
+        ["interrupt", { type: "actionInterrupted", actor: "matsuko", reason: "bindingRestriction" }],
+        ["transition", { type: "characterIncapacitated", target: "matsuko" }],
+        ["stance", { type: "stanceSet", actor: "matsuko", stance: "standing" }],
+        ["trap trigger", { type: "trapTriggered", actor: "matsuko", trap: "trapPuddle", amount: 10 }],
+    ];
+    it.each(meaningfulEffects)("keeps a miss with a meaningful %s separate and preserves its effects", (_label, effect) => {
+        const entries = createGameLogEntries([move([
+            { target: "ko", result: "miss", effects: [] },
+            { target: "matsuko", result: "miss", effects: [effect] },
+            { target: "hinari", result: "miss", effects: [] },
+        ])]);
+        const rows = models(entries)[0]!.rows;
+        expect(rows.find(row => row.target === "Ko-chan")!.values).toEqual([{ text: "Miss", tone: "miss" }]);
+        expect(rows.find(row => row.target === "Hinari")!.values).toEqual([{ text: "Miss", tone: "miss" }]);
+        expect(rows.every(row => !row.target?.includes(","))).toBe(true);
+        expect(rows.some(row => row.values.some(value => value.text !== "Miss"))).toBe(true);
+    });
+
+    it("does not group across an intervening suppressed target or another meaningful event", () => {
+        const entries = createGameLogEntries([move([
+            { target: "ko", result: "miss", effects: [] },
+            { target: "matsuko", result: "hit", effects: [] },
+            { target: "hinari", result: "miss", effects: [] },
+        ])]);
+        expect(models(entries)[0]!.rows.map(row => row.target)).toEqual(["Ko-chan", "Hinari"]);
+        const separated: GameLogPresentationEntry[] = [{ ...entries[0]!, outcomes: [
+            entries[0]!.outcomes[0]!, { kind: "refresh", target: "matsuko" }, entries[0]!.outcomes[2]!,
+        ] }];
+        expect(models(separated)[0]!.rows.map(row => row.target)).toEqual(["Ko-chan", "Matsuko", "Hinari"]);
+    });
+
+    it("never groups across separate actions, phases, or binding-tick scopes", () => {
+        const entries = createGameLogEntries([
+            move([{ target: "ko", result: "miss", effects: [] }]),
+            { type: "changePhase", phase: "enemy", effects: [] },
+            move([{ target: "matsuko", result: "miss", effects: [] }]),
+        ]);
+        expect(models(entries).map(entry => entry.rows.map(row => row.target))).toEqual([["Ko-chan"], [], ["Matsuko"]]);
+        const first = entries[0]!.outcomes[0]!;
+        const second = entries[2]!.outcomes[0]!;
+        const ticks: GameLogPresentationEntry[] = [{ kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
+            first, { kind: "bindingTick", target: "hinari", binding: "latexCollar", outcomes: [first, second] }, second,
+            { kind: "bindingTick", target: "hinari", binding: "latexCollar", outcomes: [first, second] }, first,
+        ] }, { kind: "phase", phase: "enemy", outcomes: [first, second] }];
+        const result = models(ticks);
+        expect(result[0]!.rows.map(row => row.target)).toEqual(["Ko-chan", "Hinari", "Matsuko", "Hinari", "Ko-chan"]);
+        for (const tick of result[0]!.rows.filter(row => row.kind === "bindingTick")) {
+            expect(tick.rows?.map(row => row.target)).toEqual(["Ko-chan", "Matsuko"]);
+        }
+        expect(result[1]!.rows.map(row => row.target)).toEqual(["Ko-chan", "Matsuko"]);
+    });
+});
+
+
 describe("Game Log outcome prioritization", () => {
     it.each(["characterIncapacitated", "characterRescued"] as const)("renders %s with a localized accent and normal character name color", type => {
         const operation = type === "characterIncapacitated" ? "incapacitated" : "rescued";
