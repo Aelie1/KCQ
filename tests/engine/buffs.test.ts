@@ -2,12 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { MoveDef, StatusDef } from "../../src/engine/protected/definitions";
 import { immobilized } from "../../src/engine/protected/statuses";
 import type { iBuff, iEnemy, iEntity } from "../../src/engine/protected/types";
+import { actionView } from "../helpers/actionView";
 import {
     buffState, characterState, enemyState, execute, makeBehavioralCharacter,
     makeBehavioralEnemy, makeBehavioralEngine, makeBehavioralMove, makeEnemyWaitMove, targetAccuracy,
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents } from "../helpers/events";
-import { actionView } from "../helpers/actionView";
 
 const blinded: StatusDef = {
     id: "blinded",
@@ -58,7 +58,7 @@ describe("buff behavior through GameEngine", () => {
         });
 
         expect(result.frames.map((frame) => frame.event)).toEqual([{
-            type: "useMove", actor: "hero", move: add.id, band: "hit", targets: [],
+            type: "useMove", actor: "hero", move: add.id, targets: [],
             effects: [{ type: "buffAdded", target: "foe1", buff: "test-buff" }],
         }]);
         expect(buffState(engine, "test-buff", "foe1")).toMatchObject({

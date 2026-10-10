@@ -12,7 +12,6 @@ export interface ContentLibrary {
     encounters: Record<string, EncounterReference>;
 }
 
-/** Static difficulty metadata, copied from the authoritative engine definitions. */
 export interface DifficultyReference {
     id: DifficultyId;
     playerModifiers: ModifierSet;

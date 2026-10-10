@@ -6,8 +6,10 @@ import { incomingBindingBattle } from "../helpers/incomingBindingBattle";
 
 const initial = () => structuredClone(fixture.state);
 function move(band: HitBand, effects: LeafEvent[] = []): GameEvent {
-    return { type: "useMove", actor: "skunkette1", move: "pounce", effects: [],
-        targets: [{ target: "ko", result: band, effects }] };
+    return {
+        type: "useMove", actor: "skunkette1", move: "pounce", effects: [],
+        targets: [{ target: "ko", result: band, effects }]
+    };
 }
 function frame(event: GameEvent): EventFrame { return { event, state: initial() }; }
 
@@ -45,28 +47,25 @@ describe("semantic combat reactions", () => {
             .toEqual([{ kind: "binding", entity: "ko", detail: "latexHead", treatment: "recovery", from: 20, to: 0 }]);
     });
     it.each(["graze", "hit", "crit"] as const)("uses %s for HP damage and distinguishes healing", band => {
-        const f = frame({ type: "useMove", actor: "ko", move: "telekinesis", effects: [
-            { type: "enemyHealed", target: "queen", amount: 5 },
-            { type: "damageBlocked", target: "queen", amount: 50 },
-        ], targets: [{ target: "queen", result: band, effects: [{ type: "enemyDamaged", target: "queen", amount: 10 }] }] });
+        const f = frame({
+            type: "useMove", actor: "ko", move: "telekinesis", effects: [
+                { type: "enemyHealed", target: "queen", amount: 5 },
+                { type: "damageBlocked", target: "queen", amount: 50 },
+            ], targets: [{ target: "queen", result: band, effects: [{ type: "enemyDamaged", target: "queen", amount: 10 }] }]
+        });
         expect(collectCombatReactions([f], initial()).filter(cue => cue.kind === "hp")).toEqual([
             { kind: "hp", entity: "queen", treatment: "damage", strength: band },
             { kind: "hp", entity: "queen", treatment: "healing", strength: "hit" },
         ]);
     });
-    it("uses zero-target move accuracy and does not assign a primary critical band to secondary damage", () => {
-        const f = frame({ type: "useMove", actor: "ko", move: "telekinesis", band: "crit", targets: [],
-            effects: [{ type: "enemyDamaged", target: "queen", amount: 10 }] });
-        expect(collectCombatReactions([f], initial()).find(cue => cue.kind === "hp")?.strength).toBe("crit");
-        const secondary = frame(move("crit", [{ type: "enemyDamaged", target: "queen", amount: 10 }]));
-        expect(collectCombatReactions([secondary], initial()).find(cue => cue.kind === "hp")?.strength).toBe("hit");
-    });
     it("cues buff additions, updates and removals by stable owner and buff IDs", () => {
-        const f = frame({ type: "changePhase", phase: "player", effects: [
-            { type: "buffAdded", target: "ko", buff: "guarded" },
-            { type: "buffUpdated", target: "ko", buff: "guarded" },
-            { type: "buffRemoved", target: "queen", buff: "weakened" },
-        ] });
+        const f = frame({
+            type: "changePhase", phase: "player", effects: [
+                { type: "buffAdded", target: "ko", buff: "guarded" },
+                { type: "buffUpdated", target: "ko", buff: "guarded" },
+                { type: "buffRemoved", target: "queen", buff: "weakened" },
+            ]
+        });
         expect(collectCombatReactions([f], initial()).filter(cue => cue.kind === "buff").map(cue => [cue.entity, cue.detail, cue.treatment]))
             .toEqual([["ko", "guarded", "added"], ["ko", "guarded", "updated"], ["queen", "weakened", "removed"]]);
     });
@@ -81,9 +80,11 @@ describe("semantic combat reactions", () => {
         expect(cues).toEqual([{ kind: "buff", entity: "ko", detail: buff.id, treatment: "duration" }]);
     });
     it("does not flash an interrupted actor and includes escape actions", () => {
-        const interrupted = frame({ type: "useMove", actor: "ko", move: "telekinesis", targets: [], effects: [
-            { type: "actionInterrupted", actor: "ko", reason: "actorIncapacitated" },
-        ] });
+        const interrupted = frame({
+            type: "useMove", actor: "ko", move: "telekinesis", targets: [], effects: [
+                { type: "actionInterrupted", actor: "ko", reason: "actorIncapacitated" },
+            ]
+        });
         expect(collectCombatReactions([interrupted], initial())).toEqual([]);
         expect(collectCombatReactions([frame({ type: "useEscape", actor: "ko", target: "ko", effects: [] })], initial()))
             .toEqual([{ kind: "actor", entity: "ko", treatment: "actor" }]);

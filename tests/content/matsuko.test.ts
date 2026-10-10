@@ -677,7 +677,7 @@ describe("Matsuko's Compulsion moves", () => {
         for (const move of [first, second]) {
             expect(resolvedEvents(result.frames)).toContainEqual({ type: "intentionCancelled", target: "caster1", move: move.id });
         }
-        expect(engine.getGameState().enemies[0].intentions).toEqual([]);
+        expect(engine.getGameState().enemies[0].intentions[0].resolved).toEqual(true);
         expect(characterState(engine, matsuko.id).acted).toBe(false);
         expect(characterState(engine, matsuko.id).cooldowns).toEqual({
             stop: 5,

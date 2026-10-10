@@ -444,7 +444,6 @@ export class GameEngine implements Engine {
                     type: "useMove",
                     actor: actor.id,
                     move: move.id,
-                    ...(iMove.band && iMove.band !== "none" ? { band: iMove.band } : {}),
                     effects: [],
                     targets: []
                 }
@@ -632,7 +631,6 @@ export class GameEngine implements Engine {
             type: "useMove",
             actor: actor.id,
             move: move.definition.id,
-            ...(move.band && move.band !== "none" ? { band: move.band } : {}),
             effects: [],
             targets: []
         }
@@ -653,38 +651,18 @@ export class GameEngine implements Engine {
         return moveEvent;
     }
 
-    /** Internal commitments stay intact while the phase executes. Export only the
-     * pending suffix at each action boundary, without changing iteration or effects. */
-    private getEnemyPhaseState(consumed?: iIntention): GameState {
-        const state = this.getGameState();
-        return {
-            ...state,
-            enemies: state.enemies.map((enemy, index) => {
-                const actor = this.state.enemies[index]!;
-                const status = new GameStatus(this.state, actor);
-                // Cancellation may already have removed the consumed commitment.
-                const count = consumed && actor === consumed.actor
-                    ? actor.intentions.indexOf(consumed) + 1 : 0;
-                return {
-                    ...enemy,
-                    intentions: status.canAttack() && !status.isSkipped()
-                        ? enemy.intentions.slice(count) : [],
-                };
-            }),
-        };
-    }
-
     private executeEnemyPhase(): EventFrame[] {
         const result: EventFrame[] = [];
         for (const enemy of [...this.state.enemies]) {
             for (const intention of enemy.intentions) {
+                if (intention.resolved) continue;
                 if (isValidEntity(this.state, enemy)) {
                     const event = this.executeEnemyAction(intention);
                     intention.resolved = true;
                     if (event) {
                         this.state.turn.step++;
                         this.refreshState();
-                        result.push({ event: event, state: this.getEnemyPhaseState(intention) });
+                        result.push({ event: event, state: this.getGameState() });
                     }
                 }
             }
@@ -715,7 +693,7 @@ export class GameEngine implements Engine {
                 phase: this.state.turn.phase,
                 effects: result.getEvents()
             },
-            state: this.state.turn.phase === "enemy" ? this.getEnemyPhaseState() : this.getGameState()
+            state: this.getGameState()
         };
 
     }

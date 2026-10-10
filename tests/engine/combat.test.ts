@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { ko } from "../../src/content/characters/ko";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { isEnemy } from "../../src/engine/protected/helpers";
-import { createTestEngine } from "../helpers/testCatalog";
 import type { Engine, FailureReason, PlayerAction } from "../../src/engine/public/types";
 import { actionView } from "../helpers/actionView";
 import {
@@ -11,6 +10,7 @@ import {
 } from "../helpers/behavioralHelpers";
 import { resolvedEvents, resultDetails } from "../helpers/events";
 import { makeEncounterDef } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
 
 const AUTHORED_HIT_SEED = 2;
 
@@ -536,7 +536,7 @@ describe("move and effect resolution through GameEngine", () => {
         });
 
         expect(result.frames.map((frame) => frame.event)).toEqual([{
-            type: "useMove", actor: "hero", move: "chain", band: "hit", targets: [], effects: [
+            type: "useMove", actor: "hero", move: "chain", targets: [], effects: [
                 { type: "bondageAdded", target: "hero", binding: "trigger", amount: 1 },
                 { type: "bondageAdded", target: "hero", binding: "chained", amount: 2 },
                 { type: "buffAdded", target: "hero", buff: "chain-finished" },

@@ -3,12 +3,10 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { skunk } from "../../src/content/skunk/skunk";
-import { trapPuddle } from "../../src/content/skunk/puddles";
-import { makeCharacterDef, makeEncounterDef } from "../helpers/helpers";
-import { createTestEngine } from "../helpers/testCatalog";
 import { rockfall } from "../../src/content/characters/hinari";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
+import { trapPuddle } from "../../src/content/skunk/puddles";
+import { skunk } from "../../src/content/skunk/skunk";
 import { latexMist, latexSpray, skunkette } from "../../src/content/skunk/skunkette";
 import { isCharacter, isEnemy } from "../../src/engine/protected/helpers";
 import { s } from "../../src/engine/protected/status";
@@ -22,7 +20,9 @@ import { makeFixtureCharacter } from "../../src/ui/web/app/fixtures/publicFixtur
 import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
 import { createGameLogViewModel } from "../../src/ui/web/app/viewModels/gameLog";
 import { execute, makeBehavioralCharacter, makeBehavioralEngine, makeBehavioralMove } from "../helpers/behavioralHelpers";
+import { makeCharacterDef, makeEncounterDef } from "../helpers/helpers";
 import { stockStrings } from "../helpers/stockStrings";
+import { createTestEngine } from "../helpers/testCatalog";
 
 const presentation = new Presentation(stockStrings);
 const enemy = (id: string, buffs: Buff[] = []): Enemy => ({
@@ -55,8 +55,10 @@ describe("compact graphical Game Log", () => {
         const projected = before.enemies[0]!.intentions[0]!.effects.find(effect => effect.type === "trap");
         const result = execute(engine, { type: "endTurn" });
         const frame = result.frames.find(frame => frame.event.type === "useMove" && frame.event.move === "latexPuddle")!;
-        expect(frame.event).toMatchObject({ type: "useMove", targets: [], band: "graze",
-            effects: [{ type: "trapAdded", amount: projected?.amount }] });
+        expect(frame.event).toMatchObject({
+            type: "useMove", targets: [],
+            effects: [{ type: "trapAdded", amount: projected?.amount }]
+        });
         const saved = JSON.stringify(result.frames);
         const entries = createGameLogEntries(result.frames, before).filter(entry => entry.kind === "move" && entry.move === "latexPuddle");
         const translated = new Presentation({ ...stockStrings, "hitBand.graze.name": "Effleure" });
@@ -821,7 +823,8 @@ describe("Game Log accuracy-only recipient groups", () => {
     });
 
     it("uses localized list ordering and separators without losing individual name colors", () => {
-        const p = new Presentation({ ...stockStrings,
+        const p = new Presentation({
+            ...stockStrings,
             "ui.gameLog.targetList": "{second} / {first}", "entity.ko.name": "Localized Ko", "entity.matsuko.name": "Localized Matsuko",
         });
         const entries = perfume();
@@ -897,9 +900,11 @@ describe("Game Log accuracy-only recipient groups", () => {
             { target: "hinari", result: "miss", effects: [] },
         ])]);
         expect(models(entries)[0]!.rows.map(row => row.target)).toEqual(["Ko-chan", "Hinari"]);
-        const separated: GameLogPresentationEntry[] = [{ ...entries[0]!, outcomes: [
-            entries[0]!.outcomes[0]!, { kind: "refresh", target: "matsuko" }, entries[0]!.outcomes[2]!,
-        ] }];
+        const separated: GameLogPresentationEntry[] = [{
+            ...entries[0]!, outcomes: [
+                entries[0]!.outcomes[0]!, { kind: "refresh", target: "matsuko" }, entries[0]!.outcomes[2]!,
+            ]
+        }];
         expect(models(separated)[0]!.rows.map(row => row.target)).toEqual(["Ko-chan", "Matsuko", "Hinari"]);
     });
 
@@ -912,10 +917,12 @@ describe("Game Log accuracy-only recipient groups", () => {
         expect(models(entries).map(entry => entry.rows.map(row => row.target))).toEqual([["Ko-chan"], [], ["Matsuko"]]);
         const first = entries[0]!.outcomes[0]!;
         const second = entries[2]!.outcomes[0]!;
-        const ticks: GameLogPresentationEntry[] = [{ kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
-            first, { kind: "bindingTick", target: "hinari", binding: "latexCollar", outcomes: [first, second] }, second,
-            { kind: "bindingTick", target: "hinari", binding: "latexCollar", outcomes: [first, second] }, first,
-        ] }, { kind: "phase", phase: "enemy", outcomes: [first, second] }];
+        const ticks: GameLogPresentationEntry[] = [{
+            kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
+                first, { kind: "bindingTick", target: "hinari", binding: "latexCollar", outcomes: [first, second] }, second,
+                { kind: "bindingTick", target: "hinari", binding: "latexCollar", outcomes: [first, second] }, first,
+            ]
+        }, { kind: "phase", phase: "enemy", outcomes: [first, second] }];
         const result = models(ticks);
         expect(result[0]!.rows.map(row => row.target)).toEqual(["Ko-chan", "Hinari", "Matsuko", "Hinari", "Ko-chan"]);
         for (const tick of result[0]!.rows.filter(row => row.kind === "bindingTick")) {

@@ -557,8 +557,8 @@ export class GameEffects {
                     target: target.id,
                     move: intention.move.definition.id
                 });
+                intention.resolved = true;
             }
-            target.intentions.length = 0;
         }
         else {
             for (const intention of target.intentions) {

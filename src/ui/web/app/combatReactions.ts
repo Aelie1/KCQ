@@ -36,12 +36,15 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
             for (const target of event.targets) {
                 const hit = strength(target.result);
                 if (hit) cues.push({ kind: "target", entity: target.target, treatment: "target", strength: hit });
-                for (const effect of target.effects) leaves.push({ effect,
-                    band: "target" in effect && effect.target === target.target ? target.result : "none" });
+                for (const effect of target.effects) leaves.push({
+                    effect,
+                    band: "target" in effect && effect.target === target.target ? target.result : "none"
+                });
             }
         }
-        for (const effect of event.effects) leaves.push({ effect,
-            band: event.type === "useMove" && event.targets.length === 0 ? event.band ?? "none" : "none" });
+        for (const effect of event.effects) {
+            leaves.push({ effect, band: "none" });
+        }
         const bindingTotals = new Map<string, number>();
         for (const { effect } of leaves) {
             if (effect.type === "bondageAdded" || effect.type === "bondageChanged" || effect.type === "bondageRemoved") {
@@ -54,9 +57,11 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
         for (const { effect, band } of leaves) {
             switch (effect.type) {
                 case "enemyDamaged": case "enemyHealed":
-                    if (effect.amount > 0) cues.push({ kind: "hp", entity: effect.target,
+                    if (effect.amount > 0) cues.push({
+                        kind: "hp", entity: effect.target,
                         treatment: effect.type === "enemyHealed" ? "healing" : "damage",
-                        strength: strength(band) ?? "hit" });
+                        strength: strength(band) ?? "hit"
+                    });
                     break;
                 case "bondageAdded": case "bondageChanged": case "bondageRemoved": {
                     if (!effect.amount) break;
@@ -66,14 +71,18 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
                     const from = endpoints.get(key) ?? final - bindingTotals.get(key)!;
                     const to = from + effect.amount;
                     endpoints.set(key, to);
-                    cues.push({ kind: "binding", entity: effect.target, detail: effect.binding,
-                        treatment: effect.amount > 0 ? "increase" : "recovery", from, to });
+                    cues.push({
+                        kind: "binding", entity: effect.target, detail: effect.binding,
+                        treatment: effect.amount > 0 ? "increase" : "recovery", from, to
+                    });
                     break;
                 }
                 case "buffAdded": case "buffUpdated": case "buffRemoved": {
                     explicitBuffs.add(JSON.stringify([effect.target, effect.buff]));
-                    cues.push({ kind: "buff", entity: effect.target, detail: effect.buff,
-                        treatment: effect.type === "buffAdded" ? "added" : effect.type === "buffRemoved" ? "removed" : "updated" });
+                    cues.push({
+                        kind: "buff", entity: effect.target, detail: effect.buff,
+                        treatment: effect.type === "buffAdded" ? "added" : effect.type === "buffRemoved" ? "removed" : "updated"
+                    });
                     break;
                 }
             }
@@ -137,8 +146,10 @@ export function createCombatReactions() {
         present(frames: readonly EventFrame[], before: GameState, instant = false) {
             if (disposed) return;
             if (instant) { clear(); return; }
-            const added = collectCombatReactions(frames, before).map(cue => ({ ...cue,
-                serial: ++serial, started: Date.now(), duration: durations[cue.kind] }));
+            const added = collectCombatReactions(frames, before).map(cue => ({
+                ...cue,
+                serial: ++serial, started: Date.now(), duration: durations[cue.kind]
+            }));
             setCues(current => [...current, ...added]);
             for (const cue of added) {
                 const timer = setTimeout(() => {
