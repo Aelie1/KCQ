@@ -1,4 +1,5 @@
 import { For, Show, type JSX } from "solid-js";
+import { reactionRef } from "../combatReactions";
 import type { EnemyCardData } from "./componentTypes";
 import { DurationPips } from "./DurationPips";
 import { IntentRow } from "./IntentRow";
@@ -15,8 +16,11 @@ export interface EnemyCardProps {
 }
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
+    const actorReaction = reactionRef("actor", () => props.enemy.id);
+    const targetReaction = reactionRef("target", () => props.enemy.id);
+    const cardReaction = (element: HTMLElement) => { actorReaction(element); targetReaction(element); };
     return (
-        <article class="kcq-enemy-card" classList={{ "kcq-shortcut-host": !!props.onSelect }}
+        <article ref={cardReaction} class="kcq-enemy-card" classList={{ "kcq-shortcut-host": !!props.onSelect }}
             aria-label={props.enemy.name}
             role={props.onSelect ? "button" : undefined}
             tabIndex={props.onSelect ? 0 : undefined}
@@ -32,22 +36,25 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
             <Show when={props.onSelect}><Shortcut shortcut={props.shortcut} /></Show>
             <Show when={props.enemy.effectDurations.length > 0}>
                 <div class="kcq-enemy-card__debuffs">
-                    <For each={props.enemy.effectDurations}>
-                        {(effect) => (
-                            <span class={"kcq-enemy-card__debuff kcq-player-identity--" + effect.tone}
-                                role="img" aria-label={effect.accessibleLabel} title={effect.accessibleLabel}>
-                                <DurationPips duration={effect.duration} icon={effect.icon} />
-                            </span>
-                        )}
+                    <For each={props.enemy.effectDurations.map((effect, index) => effect.id ?? String(index))}>
+                        {id => {
+                            const effect = () => props.enemy.effectDurations.find((effect, index) => (effect.id ?? String(index)) === id)!;
+                            return (
+                                <span ref={reactionRef("buff", () => props.enemy.id, () => effect().id)} class={"kcq-enemy-card__debuff kcq-player-identity--" + effect().tone}
+                                    role="img" aria-label={effect().accessibleLabel} title={effect().accessibleLabel}>
+                                    <DurationPips duration={effect().duration} icon={effect().icon} />
+                                </span>
+                            );
+                        }}
                     </For>
                 </div>
             </Show>
             <header class="kcq-enemy-card__header">
-                <h3 class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
+                <h3 ref={reactionRef("actor", () => props.enemy.id)} class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
                 <For each={props.enemy.linkedEntities}>
                     {(link) => <LinkedEntityChip link={link} iconOnly />}
                 </For>
-                <p class="kcq-enemy-card__hp">
+                <p ref={reactionRef("hp", () => props.enemy.id)} class="kcq-enemy-card__hp">
                     {props.enemy.currentHp} / {props.enemy.maxHp}
                 </p>
             </header>

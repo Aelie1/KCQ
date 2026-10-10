@@ -76,7 +76,7 @@ describe("state serialization and combatant loading", () => {
         });
         const character = makeCharacter();
         const enemy = makeEnemy(makeEnemyDef("foe", [move]));
-        enemy.intentions = [{ actor: enemy, move: { definition: move }, rolls: [{ target: null, roll: 25 }] }];
+        enemy.intentions = [{ resolved: false, actor: enemy, move: { definition: move }, rolls: [{ target: null, roll: 25 }] }];
         const state = makeInternalState({ characters: [character], enemies: [enemy] });
         const statuses = new Map<iEntity, GameStatus>([
             [character, new GameStatus(state, character)], [enemy, new GameStatus(state, enemy)],
@@ -360,6 +360,7 @@ describe("state serialization and combatant loading", () => {
         enemy.buffs.push(enemyBuff, inactiveEnemyBuff);
         enemy.data.previewOnly = 7;
         enemy.intentions = [{
+            resolved: false,
             actor: enemy,
             move: { definition: enemyMove },
             rolls: [{ target: null, roll: 25 }]
@@ -397,6 +398,7 @@ describe("state serialization and combatant loading", () => {
         });
         expect(serialized.enemies[0].buffs).toHaveLength(1);
         expect(serialized.enemies[0].intentions).toEqual([{
+            resolved: false,
             move: enemyMove.id,
             targets: [],
             effects: [],

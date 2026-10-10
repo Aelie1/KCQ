@@ -1,5 +1,4 @@
 import { getStringTable } from "../../../../../localization";
-import { stockCampaign, stockCharacters } from "../../../../stock";
 import type {
     ActionView,
     Binding,
@@ -13,6 +12,7 @@ import type {
     MoveId,
     ThresholdInfo,
 } from "../../../../engine/public/types";
+import { stockCampaign, stockCharacters } from "../../../../stock";
 import { Presentation } from "../../../presentation/presentation";
 import { createEnemyCardViewModel } from "../viewModels/enemyCard";
 import { createIntentViewModel } from "../viewModels/intentRow";
@@ -26,6 +26,7 @@ function intention(move: MoveId, target?: string, band: HitBand = "none"): Inten
         move,
         targets: target ? [{ target, band, effects: [] }] : [],
         effects: [],
+        resolved: false,
     };
 }
 

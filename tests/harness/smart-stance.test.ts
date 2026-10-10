@@ -49,6 +49,7 @@ function enemy(intentions: Intention[] = [], id = "test-enemy"): Enemy {
 
 function targetedBindingIntention(amount: number, bindingId: string): Intention {
     return {
+        resolved: false,
         move: `test-intention-${bindingId}`,
         targets: [{
             target: "test-hero",
@@ -184,6 +185,7 @@ describe("Smart stance and movement-trap reasoning", () => {
     it("charges approximately zero defense cost when no intention targets the actor", () => {
         const fixture = context({
             intentions: [{
+                resolved: false,
                 move: "test-other-target",
                 targets: [{ target: "someone-else", band: "hit", effects: [] }],
                 effects: [],

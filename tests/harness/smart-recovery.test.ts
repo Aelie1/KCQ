@@ -36,7 +36,7 @@ function enemy(incoming = 0, unknown = false): Enemy {
         effects.push({ type: "binding", target: "hero", binding: "selected" });
     }
     return makePublicEnemy("enemy", {
-        intentions: effects.length === 0 ? [] : [{ move: "pressure", targets: [], effects }],
+        intentions: effects.length === 0 ? [] : [{ resolved: false, move: "pressure", targets: [], effects }],
     });
 }
 

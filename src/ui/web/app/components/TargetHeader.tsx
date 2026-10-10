@@ -1,6 +1,7 @@
 import { For, Show, type JSX } from "solid-js";
 import type { HitBand } from "../../../../engine/public/types";
 import type { TargetPreviewViewModel } from "../viewModels/targeting";
+import { reactionRef } from "../combatReactions";
 import { StatusChip } from "./StatusChip";
 import { LinkedEntityChip } from "./LinkedEntityChip";
 
@@ -12,6 +13,7 @@ export interface TargetHeaderProps {
 export function TargetHeader(props: TargetHeaderProps): JSX.Element {
     const name = () => (
         <strong
+            ref={reactionRef("actor", () => props.target.target)}
             class="kcq-target-header__name"
             classList={{ [`kcq-player-identity--${props.target.tone}`]: true }}
             title={props.target.name}
@@ -36,10 +38,10 @@ export function TargetHeader(props: TargetHeaderProps): JSX.Element {
             <Show when={props.target.health} keyed>
                 {(health) => (
                     <>
-                        <span class="kcq-target-header__meter" aria-hidden="true">
+                        <span ref={reactionRef("hp", () => props.target.target)} class="kcq-target-header__meter" aria-hidden="true">
                             <span style={{ width: `${health.fillPercent}%` }} />
                         </span>
-                        <span class="kcq-target-header__value">{health.currentLabel}</span>
+                        <span ref={reactionRef("hp", () => props.target.target)} class="kcq-target-header__value">{health.currentLabel}</span>
                     </>
                 )}
             </Show>

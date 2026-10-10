@@ -54,6 +54,7 @@ describe("Enemy Details", () => {
             enemies: fixture.state.enemies.map(enemy => ({
                 ...enemy,
                 intentions: [{
+                    resolved: false,
                     move: "latexSpray",
                     targets: [{ target: "hinari", band: "none", effects: [
                         { type: "data", target: "hinari", name: "subspace", amount: 5 },
@@ -79,6 +80,7 @@ describe("Enemy Details", () => {
         const state: GameState = {
             ...fixture.state,
             enemies: fixture.state.enemies.map(enemy => ({ ...enemy, intentions: [{
+                resolved: false,
                 move: "pounce", targets: [
                     { target: "ko", band: "hit", effects: [
                         { type: "buff", target: "ko", operation: "add", buff: { id: "pounce", linkedEntity: "skunkette1" } },
@@ -112,6 +114,7 @@ describe("Enemy Details", () => {
     it("groups a move-only projection under its actor for other intentions", () => {
         const state: GameState = { ...fixture.state,
             enemies: fixture.state.enemies.map(enemy => ({ ...enemy, intentions: [{
+                resolved: false,
                 move: "latexMist", targets: [], effects: [{ type: "move", move: "latexSpray" }],
             }] })),
         };
@@ -146,11 +149,11 @@ describe("Enemy Details", () => {
                 ...enemy,
                 intentions: [
                     ...enemy.intentions,
-                    { move: "callReinforcements", targets: [], effects: [
+                    { resolved: false, move: "callReinforcements", targets: [], effects: [
                         { type: "enemy", operation: "spawn", target: "skunk" },
                         { type: "enemy", operation: "spawn", target: "fairy" },
                     ] },
-                    { move: "latexSpray", targets: [
+                    { resolved: false, move: "latexSpray", targets: [
                         { target: "ko", band: "miss", effects: [] },
                         { target: "matsuko", band: "crit", effects: [{
                             type: "buff", operation: "add", target: "matsuko",

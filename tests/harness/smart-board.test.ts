@@ -195,6 +195,7 @@ describe("Smart 3 intention and trap pressure", () => {
         const first = enemy("first", {
             rank: "boss",
             intentions: [{
+                resolved: false,
                 move: "visible-one",
                 targets: [{
                     target: "hero",
@@ -215,6 +216,7 @@ describe("Smart 3 intention and trap pressure", () => {
         });
         const second = enemy("second", {
             intentions: [{
+                resolved: false,
                 move: "visible-two",
                 targets: [{ target: "ally", band: "graze", effects: [] }],
                 effects: [

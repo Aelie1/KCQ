@@ -51,6 +51,7 @@ function enemy(
         maxHp: 200,
         currHp,
         intentions: committedEffects.length === 0 ? [] : [{
+            resolved: false,
             move: "synthetic-intention",
             targets: [],
             effects: committedEffects,

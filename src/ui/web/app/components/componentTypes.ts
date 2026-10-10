@@ -43,6 +43,7 @@ export interface IntentViewModel extends IntentRowData {
 export interface EnemyCardData {
     currentHp: number;
     effectDurations: readonly {
+        id?: string;
         accessibleLabel: string;
         duration: number;
         icon?: Buff["icon"];
@@ -117,6 +118,7 @@ export interface PartyCardData {
     stanceState: PartyConditionState;
     resourceLabel?: string;
     visibleEffects: readonly {
+        id?: string;
         name: string;
         duration?: number;
     }[];

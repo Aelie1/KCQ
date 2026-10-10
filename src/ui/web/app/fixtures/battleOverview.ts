@@ -1,5 +1,4 @@
 import { getStringTable } from "../../../../../localization";
-import { stockCampaign, stockCharacters } from "../../../../stock";
 import type {
     ActionView,
     Binding,
@@ -13,6 +12,7 @@ import type {
     Intention,
     ThresholdInfo,
 } from "../../../../engine/public/types";
+import { stockCampaign, stockCharacters } from "../../../../stock";
 import { Presentation } from "../../../presentation/presentation";
 import { makeFixtureCharacter } from "./publicFixture";
 
@@ -35,6 +35,7 @@ function intention(move: string, target?: string, band: HitBand = "none"): Inten
         move,
         targets: target ? [{ target, band, effects: [] }] : [],
         effects: [],
+        resolved: false
     };
 }
 

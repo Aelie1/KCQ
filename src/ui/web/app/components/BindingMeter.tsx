@@ -1,8 +1,11 @@
-import type { JSX } from "solid-js";
+import { useContext, type JSX } from "solid-js";
 import type { BindingLevel } from "../../../../engine/public/types";
+import { CombatReactionsContext } from "../combatReactions";
 import { ProjectedMeter } from "./ProjectedMeter";
 
 export interface BindingMeterProps {
+    entityId?: string;
+    bindingId?: string;
     value: number;
     change?: number;
     peak?: number;
@@ -15,7 +18,9 @@ export interface BindingMeterProps {
 
 
 export function BindingMeter(props: BindingMeterProps): JSX.Element {
+    const reactions = useContext(CombatReactionsContext);
     return <ProjectedMeter
+        reactions={reactions?.matching("binding", props.entityId, props.bindingId)}
         value={props.value}
         change={props.change}
         peak={props.peak}

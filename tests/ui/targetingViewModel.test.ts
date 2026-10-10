@@ -627,8 +627,8 @@ describe("targeting view model", () => {
                     ...enemy,
                     rank: "enemy" as const,
                     intentions: [
-                        { move: "latexSpray", targets: [], effects: [] },
-                        { move: "pounce", targets: [], effects: [] },
+                        { resolved: false, move: "latexSpray", targets: [], effects: [] },
+                        { resolved: false, move: "pounce", targets: [], effects: [] },
                     ],
                 }
                 : enemy),
@@ -654,7 +654,7 @@ describe("targeting view model", () => {
         const state = {
             ...fixture.state,
             enemies: fixture.state.enemies.map((enemy) => enemy.id === "skunkette1"
-                ? { ...enemy, intentions: [{ move: "latexSpray", targets: [], effects: [] }] }
+                ? { ...enemy, intentions: [{ resolved: false, move: "latexSpray", targets: [], effects: [] }] }
                 : enemy),
         };
         const action: ActionInfo = {
@@ -679,8 +679,8 @@ describe("targeting view model", () => {
                     ...enemy,
                     rank: "boss" as const,
                     intentions: [
-                        { move: "skunkGun", targets: [], effects: [] },
-                        { move: "latexRain", targets: [], effects: [] },
+                        { resolved: false, move: "skunkGun", targets: [], effects: [] },
+                        { resolved: false, move: "latexRain", targets: [], effects: [] },
                     ],
                 }
                 : enemy),

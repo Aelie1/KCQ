@@ -159,6 +159,7 @@ function escapeCandidate(context: PolicyContext, amount: number) {
 
 function healingIntention(target: Enemy, amount: number, extras: Effect[] = []): Intention {
     return {
+        resolved: false,
         move: "healingMagic",
         targets: [{
             target: target.id,

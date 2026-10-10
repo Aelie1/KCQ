@@ -28,7 +28,7 @@ function binding(id: string, value: number): Binding {
 }
 
 function intention(effects: Effect[]): Intention {
-    return { move: "synthetic-threat", targets: [], effects };
+    return { resolved: false, move: "synthetic-threat", targets: [], effects };
 }
 
 function enemy(id: string, effects: Effect[] = [], currHp = 100): Enemy {

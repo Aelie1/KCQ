@@ -25,6 +25,7 @@ import { EnemyDetailsPanel } from "./panels/EnemyDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
 import { GameLogPanel } from "./panels/GameLogPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
+import { CombatReactionsContext, createCombatReactions } from "./combatReactions";
 import { createCombatPlayback } from "./combatPlayback";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
 import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
@@ -95,14 +96,19 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const logHistory = createGameLogHistory(state());
     const [logEntries, setLogEntries] = createSignal<readonly GameLogPresentationEntry[]>([]);
     let finalActions = actions();
+    const reactions = createCombatReactions();
     const playback = createCombatPlayback({
         interval: () => PLAYBACK_INTERVALS[playbackSpeed.value],
         present: (frames, displayed) => batch(() => {
+            reactions.present(frames, state(), playbackSpeed.value === "instant");
             setState(displayed);
             if (displayed.turn.outcome !== "ongoing") setScreen({ kind: "overview" });
             setLogEntries(logHistory.record(frames));
         }),
         complete: final => batch(() => {
+            // Ongoing battles let final pulses expire naturally. Instant and result
+            // dialogs discard all transient work immediately.
+            if (playbackSpeed.value === "instant" || final.turn.outcome !== "ongoing") reactions.clear();
             setState(final);
             setActions(finalActions);
             if (final.turn.outcome !== "ongoing") {
@@ -333,6 +339,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         ?? useCombatKeyboard(() => stage, () => !dialogOpen() && !playback.active(), globalKeyboardAction, () => shortcutHints.value);
 
     return (
+        <CombatReactionsContext.Provider value={reactions}>
         <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
             <div class="kcq-battle-stage__background" inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
                 <Show when={logOpen()}>
@@ -421,6 +428,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     focusGameLog={resultLogVisited()} />}
             </Show>
         </div>
+        </CombatReactionsContext.Provider>
     );
 }
 

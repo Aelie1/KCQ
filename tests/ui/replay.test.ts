@@ -30,7 +30,7 @@ function recordedState(round: number, hp: number, binding: number): GameState {
         enemies: [makePublicEnemy("recorded-foe", {
             currHp: hp,
             maxHp: 90,
-            intentions: [{ move: "recorded-intention", targets: [], effects: [] }],
+            intentions: [{ resolved: false, move: "recorded-intention", targets: [], effects: [] }],
         })],
         traps: [{ id: "recordedTrap", amount: round }],
         encounter: { id: "recorded-encounter", enemies: ["recorded-foe"], bindings: ["rope"], traps: ["recordedTrap"] },

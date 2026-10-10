@@ -680,6 +680,7 @@ export class GameEngine implements Engine {
             for (const intention of enemy.intentions) {
                 if (isValidEntity(this.state, enemy)) {
                     const event = this.executeEnemyAction(intention);
+                    intention.resolved = true;
                     if (event) {
                         this.state.turn.step++;
                         this.refreshState();
@@ -687,7 +688,6 @@ export class GameEngine implements Engine {
                     }
                 }
             }
-            enemy.intentions.length = 0;
         }
         return result;
     }

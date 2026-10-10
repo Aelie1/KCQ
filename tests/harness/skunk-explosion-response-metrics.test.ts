@@ -21,7 +21,7 @@ function enemy(id: string, exploding = false): Enemy {
         maxHp: 300,
         currHp: 50,
         intentions: exploding
-            ? [{ move: "latexExplosion", targets: [], effects: [] }]
+            ? [{ resolved: false, move: "latexExplosion", targets: [], effects: [] }]
             : [],
     });
 }

@@ -52,6 +52,7 @@ export interface iIntention {
     actor: iEntity;
     move: iMove;
     rolls: iIntentionRoll[];
+    resolved: boolean;
 }
 
 export interface iIntentionRoll {

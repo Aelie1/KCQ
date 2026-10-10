@@ -60,7 +60,7 @@ export function createEnemyCardViewModel(
                 : partyIds.has(source) ? playerTone(source)
                 : enemyIds.has(source) ? "enemy" : "neutral";
             return [{
-                duration, tone, icon: buff.icon,
+                id: buff.id, duration, tone, icon: buff.icon,
                 accessibleLabel: (source === undefined ? "" : presentation.entity(source) + ": ")
                     + presentation.buff(buff.id, buff.severity)
                     + " (" + presentation.ui("characterDetails.rounds", { count: duration }) + ")",

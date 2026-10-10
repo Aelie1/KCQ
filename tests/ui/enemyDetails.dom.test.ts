@@ -148,6 +148,7 @@ describe("compact intention target rows", () => {
             enemies: fixture.state.enemies.map(enemy => ({
                 ...enemy,
                 intentions: ["ko", "matsuko"].map(target => ({
+                    resolved: false,
                     move: "pounce",
                     targets: [{ target, band: "hit", effects: [
                         { type: "buff", target, operation: "add", buff: {
@@ -210,6 +211,7 @@ describe("compact intention target rows", () => {
                 enemies: enemyDetailsFixture.state.enemies.map(enemy => ({
                     ...enemy,
                     intentions: [{
+                        resolved: false,
                         move: "latexSpray",
                         targets: (["miss", "graze", "hit", "crit", "none"] as const).map(band => ({
                             target: "ko", band, effects: [],

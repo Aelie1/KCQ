@@ -56,7 +56,7 @@ export function EnemyDetailsPanel(props: EnemyDetailsPanelProps): JSX.Element {
                 <Show when={model().effects.length > 0}>
                     <section class="kcq-character-section kcq-character-effects" aria-labelledby="enemy-effects-heading">
                         <h2 id="enemy-effects-heading">{model().labels.effects}</h2>
-                        <EffectDetails effects={model().effects} />
+                        <EffectDetails entityId={props.enemyId} effects={model().effects} />
                     </section>
                 </Show>
                 <section class="kcq-character-section kcq-enemy-details__intentions" aria-labelledby="enemy-intentions-heading">

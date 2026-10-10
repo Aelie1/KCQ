@@ -1,4 +1,5 @@
 import { Show, type JSX } from "solid-js";
+import { reactionRef } from "../combatReactions";
 import { DurationPips } from "./DurationPips";
 import type { StatusChipSize, StatusChipTone } from "./componentTypes";
 
@@ -6,6 +7,8 @@ export type { StatusChipSize, StatusChipTone } from "./componentTypes";
 
 export interface StatusChipProps {
     children: JSX.Element;
+    entityId?: string;
+    buffId?: string;
     size?: StatusChipSize;
     tone?: StatusChipTone;
     duration?: number;
@@ -14,6 +17,7 @@ export interface StatusChipProps {
 export function StatusChip(props: StatusChipProps): JSX.Element {
     return (
         <span
+            ref={reactionRef("buff", () => props.entityId, () => props.buffId)}
             class="kcq-status-chip"
             classList={{
                 [`kcq-status-chip--${props.tone ?? "neutral"}`]: true,

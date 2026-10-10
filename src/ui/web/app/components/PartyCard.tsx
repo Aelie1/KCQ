@@ -1,4 +1,5 @@
 import { For, Show, type JSX } from "solid-js";
+import { reactionRef } from "../combatReactions";
 import { BindingMeter } from "./BindingMeter";
 import type { PartyCardData } from "./componentTypes";
 import { Shortcut } from "./Shortcut";
@@ -13,10 +14,14 @@ export interface PartyCardProps {
 }
 
 export function PartyCard(props: PartyCardProps): JSX.Element {
+    const actorReaction = reactionRef("actor", () => props.character.id);
+    const targetReaction = reactionRef("target", () => props.character.id);
+    const cardReaction = (element: HTMLElement) => { actorReaction(element); targetReaction(element); };
     const interactive = (): boolean => props.onSelect !== undefined;
 
     return (
         <article
+            ref={cardReaction}
             class="kcq-party-card kcq-shortcut-host"
             classList={{ "kcq-party-card--ready": props.character.actionState.kind === "ready" }}
             data-kcq-shortcut={interactive() ? props.shortcut : undefined}
@@ -34,7 +39,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
             <Shortcut shortcut={props.shortcut} />
             <header class="kcq-party-card__header">
                 <div class="kcq-party-card__identity">
-                    <h3 class="kcq-party-card__name" classList={{ [`kcq-player-identity--${props.character.tone}`]: true }} title={props.character.name}>
+                    <h3 ref={reactionRef("actor", () => props.character.id)} class="kcq-party-card__name" classList={{ [`kcq-player-identity--${props.character.tone}`]: true }} title={props.character.name}>
                         {props.character.name}
                     </h3>
                     <Show when={props.character.resourceLabel !== undefined}>
@@ -63,6 +68,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                     {id => {
                         const binding = () => props.character.bindings.find(binding => binding.id === id)!;
                         return <BindingMeter
+                            entityId={props.character.id} bindingId={id}
                             value={binding().current}
                             change={binding().change}
                             peak={binding().peak}
@@ -75,12 +81,14 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                 </For>
             </div>
             <div class="kcq-party-card__effects" aria-label={props.character.accessibility.effectsLabel}>
-                <For each={props.character.visibleEffects}>
-                    {(effect) => (
-                        <StatusChip tone="neutral" duration={effect.duration}>
-                            {effect.name}
-                        </StatusChip>
-                    )}
+                <For each={props.character.visibleEffects.map((effect, index) => effect.id ?? String(index))}>
+                    {id => {
+                        const effect = () => props.character.visibleEffects.find((effect, index) => (effect.id ?? String(index)) === id)!;
+                        return <StatusChip tone="neutral" duration={effect().duration}
+                            entityId={props.character.id} buffId={effect().id}>
+                            {effect().name}
+                        </StatusChip>;
+                    }}
                 </For>
                 <Show when={props.character.hiddenEffectCount > 0}>
                     <StatusChip tone="neutral">{props.character.effectsOverflowLabel}</StatusChip>

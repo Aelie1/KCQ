@@ -45,6 +45,7 @@ const state: GameState = makePublicGameState({
         currHp: 12,
         maxHp: 20,
         intentions: [{
+            resolved: false,
             move: "latexSpray",
             targets: [{
                 target: "ko",
@@ -64,6 +65,7 @@ const state: GameState = makePublicGameState({
 const bindingThresholds = getThresholds();
 
 const longIntention: Intention = {
+    resolved: false,
     move: "royalMist",
     targets: [{
         target: "ko",
@@ -124,6 +126,7 @@ async function runScriptedConsole(
 describe("console formatting", () => {
     it("formats each target's effects beneath that target and keeps move-wide effects last", () => {
         expect(formatIntention({
+            resolved: false,
             move: "royalMist",
             targets: [
                 {

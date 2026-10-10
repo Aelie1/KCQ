@@ -100,6 +100,7 @@ export function createPartyCardViewModel(
         }),
         effects: character.buffs,
         visibleEffects: effectSummary.visibleEffects.map((effect) => ({
+            id: effect.id,
             name: presentation.buff(effect.id, effect.severity),
             duration: effect.duration,
         })),

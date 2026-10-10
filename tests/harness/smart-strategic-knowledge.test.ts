@@ -196,6 +196,7 @@ function reactive(fixture: PolicyContext, moveId: string) {
 
 function bindingIntention(enemyMove: string, target: string, effects: Effect[]): Enemy["intentions"][number] {
     return {
+        resolved: false,
         move: enemyMove,
         targets: [{ target, band: "hit", effects }],
         effects: [],
@@ -447,7 +448,7 @@ describe("Smart tempo and pressure knowledge", () => {
                     rank: "boss",
                     maxHp: 750,
                     currHp: 610,
-                    intentions: [{ move: pendingMove, targets: [], effects: [] }],
+                    intentions: [{ resolved: false, move: pendingMove, targets: [], effects: [] }],
                 })],
                 [action("ko", [
                     move("multi-phase-push", ["queen1"], {
@@ -488,7 +489,7 @@ describe("Smart tempo and pressure knowledge", () => {
                 rank: "boss",
                 maxHp: 750,
                 currHp: 650,
-                intentions: [{ move: "callReinforcements", targets: [], effects: [] }],
+                intentions: [{ resolved: false, move: "callReinforcements", targets: [], effects: [] }],
             })],
             [action("ko", [move("queen-chip", ["queen1"], { damage: 20 })])],
         );
@@ -573,7 +574,7 @@ describe("Smart tempo and pressure knowledge", () => {
                     rank: "boss",
                     maxHp: 750,
                     currHp: 248,
-                    intentions: [{ move: pendingMove, targets: [], effects: [] }],
+                    intentions: [{ resolved: false, move: pendingMove, targets: [], effects: [] }],
                 })],
                 [action("ko", [move("crit-tail", ["queen1"], {
                     damagePreview: {
@@ -604,7 +605,7 @@ describe("Smart tempo and pressure knowledge", () => {
                 maxHp: 750,
                 currHp: 610,
                 intentions: [
-                    { move: "callReinforcements", targets: [], effects: [] },
+                    { resolved: false, move: "callReinforcements", targets: [], effects: [] },
                     bindingIntention("queen-bind", "ko", [{
                         type: "binding",
                         target: "ko",

@@ -50,7 +50,7 @@ describe("enemy card", () => {
     });
 
     it.each(["miss", "graze", "hit", "crit"] as const)("reuses the existing positioned chip for a zero-target %s preview", band => {
-        const intent = createIntentViewModel({ move: "throwOff", targets: [], effects: [], band }, battleOverviewFixture.presentation);
+        const intent = createIntentViewModel({ resolved: false, move: "throwOff", targets: [], effects: [], band }, battleOverviewFixture.presentation);
         expect(intent).toMatchObject({ outcome: band, outcomeLabel: battleOverviewFixture.presentation.hitBand(band) });
         const html = renderToString(() => createComponent(IntentRow, { intent }));
         expect(html).toMatch(new RegExp('kcq-intent-row__content[^>]*>.*</span>.*kcq-status-chip--outcome-' + band, "s"));
@@ -62,8 +62,8 @@ describe("enemy card", () => {
         const fixture = battleOverviewFixture;
         const model = createEnemyCardViewModel({
             ...fixture.state.enemies[0]!, intentions: [
-                { move: "latexSpray", targets: [{ target: "ko", band: "hit", effects: [] }], effects: [] },
-                { move: "latexPuddle", targets: [], effects: [], band: "graze" },
+                { resolved: false, move: "latexSpray", targets: [{ target: "ko", band: "hit", effects: [] }], effects: [] },
+                { resolved: false, move: "latexPuddle", targets: [], effects: [], band: "graze" },
             ]
         }, fixture.presentation, fixture.state.characters);
         expect(model.visibleIntentions.map(intent => intent.outcome)).toEqual(["hit", "graze"]);
@@ -74,7 +74,7 @@ describe("enemy card", () => {
         expect(html).toContain("kcq-status-chip--outcome-graze");
         const noAccuracy = createEnemyCardViewModel({
             ...fixture.state.enemies[0]!, intentions: [
-                { move: "callReinforcements", targets: [], effects: [] },
+                { resolved: false, move: "callReinforcements", targets: [], effects: [] },
             ]
         }, fixture.presentation, fixture.state.characters);
         expect(noAccuracy.visibleIntentions[0]!.outcome).toBeUndefined();
@@ -145,6 +145,7 @@ describe("enemy card", () => {
     it("colors intention targets from EntityId and outcomes from HitBand", () => {
         const fixture = battleOverviewFixture;
         const multiTarget = createIntentViewModel({
+            resolved: false,
             move: "latexSpray",
             targets: [
                 { target: "ko", band: "none", effects: [] },
@@ -169,6 +170,7 @@ describe("enemy card", () => {
 
         for (const band of ["miss", "graze", "hit", "crit"] as const) {
             const intent = createIntentViewModel({
+                resolved: false,
                 move: "latexSpray",
                 targets: [{ target: "ko", band, effects: [] }],
                 effects: [],
@@ -193,6 +195,7 @@ describe("enemy card", () => {
     it("keeps short intentions inline and wraps long target groups without displacing outcomes", () => {
         const fixture = battleOverviewFixture;
         const shortIntent = createIntentViewModel({
+            resolved: false,
             move: "pounce",
             targets: [{ target: "ko", band: "graze", effects: [] }],
             effects: [],
@@ -258,6 +261,7 @@ describe("enemy card", () => {
         const enemy = {
             ...fixture.state.enemies[0],
             intentions: [{
+                resolved: false,
                 move: "latexSpray",
                 targets: fixture.state.characters.map(({ id }) => ({
                     target: id,
@@ -291,6 +295,7 @@ describe("enemy card", () => {
         const enemy = {
             ...fixture.state.enemies[0],
             intentions: [{
+                resolved: false,
                 move: "latexSpray",
                 targets: [
                     { target: "ko", band: "none" as const, effects: [] },

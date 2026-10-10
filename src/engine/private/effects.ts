@@ -515,6 +515,7 @@ export class GameEffects {
             actor: actor,
             move: moveState,
             rolls: iTargets,
+            resolved: false,
         });
     };
 

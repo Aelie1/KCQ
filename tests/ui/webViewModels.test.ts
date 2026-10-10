@@ -47,6 +47,7 @@ describe("enemy card view model", () => {
             currHp: 234,
             maxHp: 750,
             intentions: Array.from({ length: 5 }, () => ({
+                resolved: false,
                 move: "skunkGun",
                 targets: [{ target: "ko", band: "crit", effects: [] }],
                 effects: [],
@@ -167,8 +168,8 @@ describe("party card view model", () => {
         ]);
         expect(model.effects).toBe(source.buffs);
         expect(model.visibleEffects).toEqual([
-            { name: "Pounce", duration: undefined }, { name: "Burnout", duration: undefined },
-            { name: "Fairy Empowerment", duration: undefined },
+            { id: "pounce", name: "Pounce", duration: undefined }, { id: "burnout", name: "Burnout", duration: undefined },
+            { id: "empowerment", name: "Fairy Empowerment", duration: undefined },
         ]);
         expect(model.hiddenEffectCount).toBe(1);
         expect(model.effectsOverflowLabel).toBe("+1");

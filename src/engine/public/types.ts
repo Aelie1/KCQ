@@ -107,10 +107,10 @@ export interface Enemy {
 
 export interface Intention {
     move: MoveId;
-    /** Projected move-level accuracy band for a zero-target intention. */
     band?: Exclude<HitBand, "none">;
     targets: TargetInfo[];
     effects: Effect[];  //this is any effects not attached to a target
+    resolved: boolean;
 }
 
 export interface TargetInfo {

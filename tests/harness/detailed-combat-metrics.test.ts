@@ -102,7 +102,7 @@ function intention(
     effects: Effect[] = [],
     band: Intention["targets"][number]["band"] = "hit",
 ): Intention {
-    return { move, targets: [{ target: "hero", band, effects: targetEffects }], effects };
+    return { resolved: false, move, targets: [{ target: "hero", band, effects: targetEffects }], effects };
 }
 
 function enemyWithIntentions(

@@ -21,16 +21,20 @@ const state: GameState = {
                 effects: [{ type: "binding", target: "ko", binding: "latexArms", amount: 15 }],
             }],
             effects: [],
+            resolved: false,
         }, {
             move: "pounce",
             targets: [
                 { target: "ko", band: "graze", effects: [{ type: "damage", target: "ko", amount: 12 }] },
-                { target: "matsuko", band: "hit", effects: [{
-                    type: "buff", operation: "add", target: "matsuko",
-                    buff: { id: "pounce", statuses: [{ id: "immobilized", value: 1 }], linkedEntity: enemyId },
-                }] },
+                {
+                    target: "matsuko", band: "hit", effects: [{
+                        type: "buff", operation: "add", target: "matsuko",
+                        buff: { id: "pounce", statuses: [{ id: "immobilized", value: 1 }], linkedEntity: enemyId },
+                    }]
+                },
             ],
             effects: [{ type: "trap", trap: "trapPuddle", amount: 10 }],
+            resolved: false,
         }],
     } : enemy),
 };

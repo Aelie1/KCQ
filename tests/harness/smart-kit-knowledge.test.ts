@@ -171,6 +171,7 @@ function bindingIntention(
     band: "miss" | "hit" = "hit",
 ): Enemy["intentions"][number] {
     return {
+        resolved: false,
         move: moveId,
         targets: [{
             target,
@@ -449,6 +450,7 @@ describe("Smart Matsuko kit knowledge", () => {
             [makePublicCharacter("matsuko")],
             [enemy("target", {
                 intentions: [{
+                    resolved: false,
                     move: "trap",
                     targets: [],
                     effects: [{ type: "trap", trap: "puddle", amount: 20 }],
@@ -617,6 +619,7 @@ describe("Smart Hinari kit knowledge", () => {
     it("treats only the first incoming application as intercepted", () => {
         const source = enemy("source", {
             intentions: [{
+                resolved: false,
                 move: "multi",
                 targets: [{
                     target: "hinari",

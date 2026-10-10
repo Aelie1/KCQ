@@ -328,6 +328,7 @@ describe("combat presentation", () => {
                 enemies: [makePublicEnemy("skunk1", {
                     defId: "skunk", maxHp: 20, currHp: 20,
                     intentions: [{
+                        resolved: false,
                         move: "spray",
                         targets: [{ target: "ko", band: "crit", effects: [] }],
                         effects: [],
@@ -391,7 +392,7 @@ describe("combat presentation", () => {
             currHp: 200,
             currDef: 0,
             modifiers: {},
-            intentions: [{ move: "latexSpray", targets: [], effects: [] }],
+            intentions: [{ resolved: false, move: "latexSpray", targets: [], effects: [] }],
             buffs: withBuff ? [{ id: "pounce" }] : [],
             cooldowns: { pounce: 1 },
         });
