@@ -1,7 +1,7 @@
 import type { AccuracyProfile, BindingLevel, MoveId } from "../public/types";
-import type { MoveDef } from "./definitions";
+import type { BindingDef, MoveDef } from "./definitions";
 import { isCharacter, isEnemy } from "./helpers";
-import type { iBinding, iCharacter, iEntity, iMove, iMoveResult, iTargetInfo } from "./types";
+import type { iBinding, iCharacter, iEffect, iEntity, iMove, iMoveResult, iTargetInfo, iTrap } from "./types";
 
 export const BINDING_MODIFIER = 0.1;
 export const BASE_ESCAPE_POTENCY = 20;
@@ -130,4 +130,20 @@ export function basicBindingEffect(actor: iEntity, move: iMove, targets: iTarget
         }
     }
     return result;
+}
+
+export function basicTrapEffect(target: iCharacter, trap: iTrap, binding: BindingDef, size: number): iEffect[] {
+    const effects: iEffect[] = [];
+    const amount = Math.min(size, trap.amount);
+    trap.amount -= amount;
+    if (amount > 0) {
+        effects.push({
+            type: "binding",
+            source: target,
+            target: target,
+            binding: binding,
+            amount: amount
+        });
+    }
+    return effects;
 }

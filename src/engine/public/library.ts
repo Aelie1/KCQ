@@ -37,6 +37,8 @@ export interface EnemyReference {
 }
 
 export interface MoveReference {
+    /** Owner of moves added during an encounter rather than present in the starting roster. */
+    owner?: { category: "characters" | "enemies"; id: EntityId };
     id: MoveId;
     targetSide: EntitySide;
     targets: TargetCount;
@@ -50,8 +52,18 @@ export interface MoveReference {
     baseDamage?: number;
     baseHits?: number;
     cooldown?: Record<MoveId, number>;
+    /** Static buff mechanics; never evaluated against a fabricated combat state. */
+    effects?: MoveBuffReference[];
     freeOnHit?: boolean;
     modifiers?: ModifierSet;
+}
+
+export interface MoveBuffReference {
+    id: string;
+    recipient: "self" | "selected" | "allies";
+    duration?: number;
+    modifiers?: ModifierSet;
+    statuses?: StatusLevelReference[];
 }
 
 export interface PassiveReference {
@@ -67,6 +79,7 @@ export interface BindingReference {
 
 export interface TrapReference {
     id: TrapId;
+    effects: Record<number, Record<BindingId, number>>;
 }
 
 export interface StatusLevelReference {

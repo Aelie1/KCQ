@@ -5,6 +5,8 @@ import type {
     ActionResult,
     ActionView,
     BindingId,
+    DifficultyId,
+    EncounterId,
     Engine,
     EntityId,
     GameState,
@@ -40,6 +42,7 @@ export interface BattleAppProps {
     engine: Engine;
     presentation: Presentation;
     release?: string;
+    bestClears?: Readonly<Partial<Record<EncounterId, DifficultyId>>>;
     language?: LanguageSelection;
     overviewGameLog?: OverviewGameLogPreference;
     shortcutHints?: ShortcutHintPreference;
@@ -414,7 +417,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         </Switch>
                     </div>
                 </div>
-                <Show when={libraryOpen()}><LibraryPanel library={library} presentation={props.presentation} onClose={() => setLibraryOpen(false)} /></Show>
+                <Show when={libraryOpen()}><LibraryPanel library={library} presentation={props.presentation} bestClears={props.bestClears} onClose={() => setLibraryOpen(false)} /></Show>
                 <Show when={settingsOpen() && !libraryOpen()}>
                     <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
                         language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} returnFocus={settingsTrigger}

@@ -1,7 +1,8 @@
 import { createSignal } from "solid-js";
-import type { ContentLibrary, ModifierReference } from "../../../../engine/public/library";
-import type { Effect, ModifierId, ModifierSet, MoveTrait } from "../../../../engine/public/types";
+import type { ContentLibrary, ModifierReference, MoveReference } from "../../../../engine/public/library";
+import type { BindingId, Effect, ModifierId, ModifierSet, MoveTrait } from "../../../../engine/public/types";
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
+import type { CommandTagViewModel } from "./characterDetails";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
 export const LIBRARY_CATEGORIES = ["difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses", "encounters"] as const;
@@ -153,4 +154,38 @@ export function libraryRelated(entry: LibraryEntry, library: ContentLibrary, p: 
         seen.add(key);
         return true;
     });
+}
+
+/** Contextual ownership uses only the campaign's sanitized roster. */
+export function libraryOwners(library: ContentLibrary, category: "moves" | "passives", id: string): LibraryEntry[] {
+    const explicitOwner = category === "moves" ? library.moves[id]?.owner : undefined;
+    if (explicitOwner) return [{ ...explicitOwner }];
+    return (["characters", "enemies"] as const).flatMap(ownerCategory => Object.values(library[ownerCategory])
+        .filter(owner => category === "passives" ? owner.passives.includes(id)
+            : owner.moves.includes(id) || ("empoweredMoves" in owner && owner.empoweredMoves.includes(id)))
+        .map(owner => ({ category: ownerCategory, id: owner.id })));
+}
+
+export function libraryMoveTags(move: MoveReference, p: Presentation): CommandTagViewModel[] {
+    const tags: CommandTagViewModel[] = [];
+    if (move.type !== "none") tags.push({ id: "type", label: p.moveType(move.type), tone: "warning" });
+    if (move.targets === 0) tags.push({ id: "self", label: p.ui("characterDetails.tagSelf"), tone: "success" });
+    else {
+        if (move.targetSide === "player" || move.targetSide === "either") tags.push({ id: "ally", label: p.ui("characterDetails.tagAlly"), tone: "ally" });
+        if (move.targetSide === "enemy" || move.targetSide === "either") tags.push({ id: "enemy", label: p.ui("characterDetails.tagEnemy"), tone: "primary" });
+    }
+    tags.push(...libraryTags(move.traits, p));
+    if (move.targets === "all") tags.push({ id: "aoe", label: p.ui("characterDetails.tagAoe"), tone: "neutral" });
+    if ((move.hits ?? move.baseHits ?? 1) > 1) tags.push({ id: "hits", label: p.ui("characterDetails.tagHits", { count: move.hits ?? move.baseHits ?? 1 }), tone: "special" });
+    return tags;
+}
+
+/** Cumulative roll-ratio boundaries become conditional outcome bands. */
+export function libraryTrapOutcomes(chances: Record<number, Record<BindingId, number>>) {
+    const boundaries = Object.entries(chances).sort(([left], [right]) => Number(left) - Number(right));
+    return boundaries.map(([boundary, bindings], index) => ({
+        boundary: Number(boundary),
+        chance: Math.round((Number(boundary) - (index === 0 ? 0 : Number(boundaries[index - 1]![0]))) * 100),
+        bindings: Object.entries(bindings),
+    })).reverse();
 }

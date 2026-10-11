@@ -70,18 +70,18 @@ describe("Library mechanical detail", () => {
     it("renders binding thresholds with matching status intensity and restrictions", () => {
         libraryMount({ kind: "entry", category: "bindings", id: "latexArms" });
         expect(document.querySelectorAll("[data-binding-level]")).toHaveLength(5);
-        expect(element('[data-binding-level="light"]').textContent).toContain("Easy");
-        expect(element('[data-binding-level="light"]').textContent).toContain("No status");
+        expect(element('[data-binding-level="light"]').textContent).toContain("Light");
+        expect(element('[data-binding-level="light"]').querySelector(".kcq-library__binding-status")).toBeNull();
         expect(element('[data-binding-level="moderate"]').textContent).toContain("Bound 1");
         expect(element('[data-binding-level="severe"]').textContent).toContain("Bound 3");
         expect(element('[data-binding-level="severe"]').textContent).toContain("Blocks Arms moves");
         expect(element('[data-binding-level="severe"]').textContent).toContain("Cannot Assist");
-        expect(element('[data-binding-level="overwhelming"]').textContent).toContain("Impossible");
+        expect(element('[data-binding-level="overwhelming"]').textContent).toContain("Overwhelming");
         expect(element('[data-binding-level="overwhelming"]').textContent).toContain("-1");
     });
     it("renders full status levels and distinguishes baseline damage from combat", () => {
         libraryMount({ kind: "entry", category: "statuses", id: "bound" });
-        expect(document.querySelectorAll("[data-status-intensity]")).toHaveLength(5);
+        expect(document.querySelectorAll("[data-status-intensity]")).toHaveLength(4);
         expect(element('[data-status-intensity="4"]').textContent).toContain("-8");
         expect(element('[data-status-intensity="4"]').textContent).toContain("Escape");
         unmount!(); libraryMount({ kind: "entry", category: "moves", id: "fairyTelekinesis" });
@@ -165,5 +165,122 @@ describe("Library campaign selection and localization", () => {
         expect(element(".kcq-library__breadcrumbs").textContent).toContain("Personnages");
         back(); await tick(); expect(element(".kcq-library__header h1").textContent).toBe("Personnages");
         expect(element(".kcq-library__actions button").textContent).toContain("Retour");
+    });
+});
+
+
+describe("Library category layouts", () => {
+    it("uses roster navigation and move cards, and omits absent character sections", async () => {
+        libraryMount({ kind: "entry", category: "characters", id: "ko" });
+        expect(document.querySelectorAll(".kcq-library__move-grid")).toHaveLength(2);
+        const move = element<HTMLButtonElement>('[data-library-focus="moves:fairyTelekinesis"]');
+        expect(move.classList.contains("kcq-library__move-card")).toBe(true);
+        expect(move.textContent).toContain("2 Hits");
+        element('[data-library-focus="characters:matsuko"]').click(); await tick();
+        expect(document.querySelector(".kcq-library__passive-card")).toBeNull();
+        expect(document.querySelector(".kcq-library__resource")).toBeNull();
+        expect(element(".kcq-library__detail").textContent).not.toContain("No innate");
+        back(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("ko");
+    });
+    it("places owner links near the move summary and returns through history", async () => {
+        libraryMount({ kind: "entry", category: "moves", id: "punch" });
+        element('.kcq-library__owner [data-library-focus="characters:matsuko"]').click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("matsuko");
+        back(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("punch");
+    });
+    it.each([ ["skunkette", 3], ["skunk", 4], ["fairy", 3], ["queen", 3], ["rainmaker", 1] ] as const)("renders authored %s strategy in decision order", (id, steps) => {
+        libraryMount({ kind: "entry", category: "enemies", id });
+        expect(document.querySelectorAll(".kcq-library__strategy > li")).toHaveLength(steps);
+        expect(element(".kcq-library__detail").firstElementChild?.classList.contains("kcq-library__facts")).toBe(true);
+        expect(document.querySelectorAll(".kcq-library__strategy [data-library-focus^='moves:']").length).toBeGreaterThan(0);
+        expect(element(".kcq-library__detail").textContent).not.toContain("Related Entries");
+    });
+    it("renders static transformation effects without combat state and separates differing durations", () => {
+        libraryMount({ kind: "entry", category: "moves", id: "fairyTransformation" });
+        expect(element(".kcq-library__facts").textContent).toContain("3 Rounds");
+        expect(element(".kcq-buff-effect").textContent).toContain("+3");
+        unmount!(); libraryMount({ kind: "entry", category: "moves", id: "fairyEmpowerment" });
+        expect(document.querySelectorAll(".kcq-buff-effect")).toHaveLength(2);
+        expect(element(".kcq-library__detail").textContent).toContain("2 Rounds");
+        expect(element(".kcq-library__detail").textContent).toContain("3 Rounds");
+        expect(document.querySelector(".kcq-damage-profile")).toBeNull();
+    });
+    it.each(["latexHead", "latexArms", "latexTorso", "latexLegs", "latexCollar"])("preserves all five %s tiers and navigable status intensities", id => {
+        const library = createStockEngine(12345).getLibrary();
+        libraryMount({ kind: "entry", category: "bindings", id }, library);
+        expect(document.querySelectorAll("[data-binding-level]")).toHaveLength(5);
+        for (const [level, statuses] of Object.entries(library.bindings[id]!.status ?? {})) {
+            const tier = element('[data-binding-level="' + level + '"]');
+            for (const status of statuses) {
+                expect(tier.querySelector('[data-library-focus="statuses:' + status.id + '"]')?.textContent).toContain(String(status.level));
+            }
+        }
+        expect(element(".kcq-library__detail").textContent).not.toContain("No status");
+    });
+    it("uses global effects and an enemy rules table for difficulty, omitting empty effects", () => {
+        libraryMount({ kind: "entry", category: "difficulties", id: "extreme" });
+        expect(element(".kcq-library__global-effects").textContent).toContain("+2");
+        expect(document.querySelectorAll(".kcq-library__rules-table tbody tr")).toHaveLength(5);
+        expect(document.querySelectorAll(".kcq-library__rules-table [data-library-focus^='enemies:']")).toHaveLength(5);
+        unmount!(); libraryMount({ kind: "entry", category: "difficulties", id: "standard" });
+        expect(document.querySelector(".kcq-library__global-effects")).toBeNull();
+        expect(document.querySelector(".kcq-library__rules-table")).toBeNull();
+    });
+    it.each([
+        ["characters", "hinari"], ["moves", "immolation"], ["moves", "obey"], ["moves", "release"],
+        ["passives", "thousandRestraintsBody"], ["passives", "subspaceMovement"],
+        ["statuses", "bound"], ["statuses", "vibrating"], ["encounters", "forest_3"], ["encounters", "tower_1"],
+    ] as const)("renders %s/%s without generic related sections or missing strings", (category, id) => {
+        libraryMount({ kind: "entry", category, id });
+        expect(element(".kcq-library__detail").textContent).not.toContain("Related Entries");
+        expect(element(".kcq-library__detail").textContent).not.toMatch(/\[(ui|entity|status|buff|binding)\./);
+        expect([...document.querySelectorAll(".kcq-library__muted")].some(node => node.textContent === "None")).toBe(false);
+    });
+});
+
+
+describe("Library trap outcomes", () => {
+    it("groups serialized campaign binding amounts by probability and navigates directly to bindings", async () => {
+        const library = createStockEngine(12345).getLibrary();
+        expect(library.traps.trapPuddle.effects).toEqual({
+            1: { latexLegs: 10 }, 0.75: { latexLegs: 20 },
+            0.35: { latexLegs: 20, latexArms: 20 },
+            0.1: { latexLegs: 20, latexArms: 20, latexTorso: 20, latexHead: 20 },
+        });
+        const before = JSON.stringify(library);
+        libraryMount({ kind: "entry", category: "traps", id: "trapPuddle" }, library);
+        const outcomes = [...document.querySelectorAll(".kcq-library__trap-outcome")];
+        expect(outcomes.map(outcome => outcome.querySelector("h3")?.textContent)).toEqual(["25%", "40%", "25%", "10%"]);
+        expect(outcomes.map(outcome => outcome.querySelectorAll(".kcq-library__trap-binding").length)).toEqual([1, 1, 2, 4]);
+        expect(outcomes[0]?.textContent).toContain("Up to 10");
+        expect(outcomes[3]?.textContent).toContain("Up to 20");
+        expect(element(".kcq-library__detail").textContent).toContain("conditional on triggering");
+        expect(element(".kcq-library__detail").textContent).toContain("Trigger Probability");
+        expect(element(".kcq-library__detail").textContent).not.toContain("None 0");
+        element('.kcq-library__trap-outcome [data-library-focus="bindings:latexLegs"]').click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("latexLegs");
+        back(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("trapPuddle");
+        expect(JSON.stringify(library)).toBe(before);
+    });
+});
+
+
+describe("Library encounter context", () => {
+    it("shows injected best-clear progress and links to difficulty without changing the progress", async () => {
+        const library = createStockEngine(12345).getLibrary();
+        const progress = { forest_3: "extreme" as const };
+        mount(() => createComponent(LibraryPanel, { library, presentation, bestClears: progress, onClose: () => {}, initialPage: { kind: "entry", category: "encounters", id: "forest_3" } }));
+        expect(element(".kcq-library__facts").textContent).toContain("Best Clear");
+        element('.kcq-library__facts [data-library-focus="difficulties:extreme"]').click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("extreme");
+        back(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("forest_3");
+        expect(progress).toEqual({ forest_3: "extreme" });
+    });
+    it("groups starting effects by their real recipient and keeps binding references navigable", async () => {
+        libraryMount({ kind: "entry", category: "encounters", id: "tower_1" });
+        expect(document.querySelectorAll(".kcq-encounter-details__effect-group")).toHaveLength(3);
+        expect(element(".kcq-library__setup").textContent).toContain("Skunk Empress");
+        element('.kcq-library__setup [data-library-focus="bindings:latexCollar"]').click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("latexCollar");
     });
 });

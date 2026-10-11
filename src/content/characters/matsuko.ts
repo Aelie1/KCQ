@@ -36,6 +36,7 @@ const DEFAULT_COMPULSION_COOLDOWN = 2;
 
 export const punch: MoveDef = {
     id: "punch",
+    libraryOwner: { category: "characters", id: "matsuko" },
     index: 1,
     targetSide: "enemy",
     targets: 1,
@@ -50,6 +51,7 @@ export const punch: MoveDef = {
 
 export const kick: MoveDef = {
     id: "kick",
+    libraryOwner: { category: "characters", id: "matsuko" },
     index: 2,
     targetSide: "enemy",
     targets: 1,

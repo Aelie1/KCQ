@@ -13,6 +13,7 @@ function trapThatConsumes(
 ): TrapDef {
     return {
         id,
+        outcomes: [],
         onTrigger: (target, trap) => [
             ...(binding ? [{
                 type: "binding" as const,
@@ -230,6 +231,7 @@ describe("generic traps through GameEngine", () => {
         const marker = makeBindingDef("should-not-resolve");
         const trap: TrapDef = {
             id: "resource-drain",
+            outcomes: [],
             onTrigger: (target, state) => [{
                 type: "data",
                 target,

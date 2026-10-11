@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
-import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryRelated, referenceParts } from "../../src/ui/web/app/viewModels/library";
+import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryRelated, libraryTrapOutcomes, referenceParts } from "../../src/ui/web/app/viewModels/library";
 import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
@@ -12,6 +12,15 @@ const engine = createStockEngine(12345);
 const library = engine.getLibrary();
 
 describe("Library reference browser", () => {
+    it("converts cumulative trap ratios to conditional probabilities without fabricating effects", () => {
+        const chances = { 1: { latexLegs: 10 }, 0.1: { latexLegs: 20, latexArms: 20, latexTorso: 20, latexHead: 20 }, 0.75: { latexLegs: 20 }, 0.35: { latexLegs: 20, latexArms: 20 } };
+        const before = structuredClone(chances);
+        const outcomes = libraryTrapOutcomes(chances);
+        expect(outcomes.map(outcome => outcome.chance)).toEqual([25, 40, 25, 10]);
+        expect(outcomes.map(outcome => outcome.bindings.length)).toEqual([1, 1, 2, 4]);
+        expect(outcomes.reduce((sum, outcome) => sum + outcome.chance, 0)).toBe(100);
+        expect(chances).toEqual(before);
+    });
     it("retains cross-category history, list query, scroll, and focus", () => createRoot(dispose => {
         const nav = createLibraryNavigation();
         nav.open({ kind: "home" });

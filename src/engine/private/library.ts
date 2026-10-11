@@ -52,6 +52,7 @@ function libraryEnemy(enemy: EnemyDef): EnemyReference {
 export function libraryMove(move: MoveDef): MoveReference {
     return {
         id: move.id,
+        owner: move.libraryOwner ? { ...move.libraryOwner } : undefined,
         targetSide: move.targetSide,
         targets: move.targets,
         hits: move.baseHits,
@@ -63,6 +64,11 @@ export function libraryMove(move: MoveDef): MoveReference {
         baseDamage: move.baseDamage,
         cooldown: { ...move.cooldown },
         freeOnHit: move.freeOnHit,
+        effects: move.libraryEffects?.map(effect => ({
+            ...effect,
+            modifiers: effect.modifiers ? { ...effect.modifiers } : undefined,
+            statuses: effect.statuses?.map(status => ({ ...status })),
+        })),
         modifiers: move.modifiers ? { ...move.modifiers } : undefined,
         bindings: move.bindings ? move.bindings.map(x => x.id) : [],
     };
@@ -109,6 +115,12 @@ function libraryStatusData(status: StatusLevelDef): StatusDataReference {
 function libraryTrap(trap: TrapDef): TrapReference {
     return {
         id: trap.id,
+        effects: Object.fromEntries(
+            trap.outcomes.map(({ threshold, bindings }) => [
+                threshold,
+                Object.fromEntries(bindings.map(([def, amount]) => [def.id, amount])),
+            ])
+        )
     }
 }
 

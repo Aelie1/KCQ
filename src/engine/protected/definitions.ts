@@ -1,3 +1,4 @@
+import type { MoveBuffReference, MoveReference } from "../public/library";
 import type { AccuracyProfile, BindingId, BindingLevel, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
@@ -25,6 +26,9 @@ export interface EnemyDef {
 }
 
 export interface MoveDef extends Move {
+    /** Detached static reference information; not used by combat resolution. */
+    libraryEffects?: MoveBuffReference[];
+    libraryOwner?: MoveReference["owner"];
     index?: number;
     accuracy?: AccuracyProfile;
     check?: "accuracy" | "willpower";
@@ -57,8 +61,14 @@ export interface BindingDef {
 
 export interface TrapDef {
     id: TrapId;
+    outcomes: TrapOutcome[];
     onTrigger: (target: iCharacter, trap: iTrap, roll: number) => iEffect[];
 }
+
+export type TrapOutcome = {
+    threshold: number;
+    bindings: [BindingDef, number][];
+};
 
 export interface StatusDef {
     id: StatusId;
@@ -86,4 +96,3 @@ export interface TrapSetup {
     definition: TrapDef;
     amount: number;
 }
-

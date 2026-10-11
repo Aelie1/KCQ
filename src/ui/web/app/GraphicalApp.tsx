@@ -144,12 +144,12 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
                         language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} keyboard={keyboard} release={props.release}
-                        observer={current.session.observer} onVictory={controller.recordVictory} onRetry={controller.retryEncounter}
+                        bestClears={controller.bestClears()} observer={current.session.observer} onVictory={controller.recordVictory} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
             </Switch>
         </div>
-        <Show when={libraryOpen() && library()}>{current => <LibraryPanel library={current()} presentation={presentation()} onClose={closeLibrary} />}</Show>
+        <Show when={libraryOpen() && library()}>{current => <LibraryPanel library={current()} presentation={presentation()} bestClears={controller.bestClears()} onClose={closeLibrary} />}</Show>
         <Show when={settingsOpen() && !libraryOpen()}>
             <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed}
                 returnFocus={settingsTrigger} showBattleActions={false} onLibrary={library() ? openLibrary : undefined} onResume={() => setSettingsOpen(false)}

@@ -14,6 +14,7 @@ const TRANSFORMATION_MODIFIER_ALLY = 2;
 
 const STARLIGHT_BUFF = "starlightBindings";
 const STARLIGHT_MODIFIER = -2;
+const STARLIGHT_DURATION = 3;
 
 const DENIAL_BUFF = "exhausted";
 
@@ -127,6 +128,7 @@ export const fairyTelekinesis: MoveDef = {
 
 export const starlightBindings: MoveDef = {
     id: "starlightBindings",
+    libraryEffects: [{ id: STARLIGHT_BUFF, recipient: "selected", duration: STARLIGHT_DURATION, modifiers: { defense: STARLIGHT_MODIFIER, hit: STARLIGHT_MODIFIER } }],
     index: 3,
     targetSide: "enemy",
     targets: 1,
@@ -138,7 +140,7 @@ export const starlightBindings: MoveDef = {
         const buff: iBuff = {
             id: STARLIGHT_BUFF,
             icon: "shield-off",
-            duration: 3,
+            duration: STARLIGHT_DURATION,
             active: true,
             modifiers: {
                 defense: STARLIGHT_MODIFIER,
@@ -218,6 +220,7 @@ export const fairyReflect: MoveDef = {
 
 export const fairyTransformation: MoveDef = {
     id: "fairyTransformation",
+    libraryEffects: [{ id: TRANSFORMATION_BUFF, recipient: "self", duration: TRANSFORMATION_DURATION_KO, modifiers: { defense: TRANSFORMATION_MODIFIER_KO } }],
     index: 7,
     targetSide: "player",
     targets: 0,
@@ -240,6 +243,10 @@ export const fairyTransformation: MoveDef = {
 export const fairyEmpowerment: MoveDef = {
     ...fairyTransformation,
     id: "fairyEmpowerment",
+    libraryEffects: [
+        { id: TRANSFORMATION_BUFF, recipient: "self", duration: TRANSFORMATION_DURATION_KO, modifiers: { defense: TRANSFORMATION_MODIFIER_KO } },
+        { id: TRANSFORMATION_BUFF, recipient: "allies", duration: TRANSFORMATION_DURATION_ALLY, modifiers: { defense: TRANSFORMATION_MODIFIER_ALLY } },
+    ],
     index: 8,
     targets: "all",
     cooldown: { "fairyEmpowerment": TRANSFORMATION_COOLDOWN },

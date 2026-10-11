@@ -694,6 +694,7 @@ describe("Ko's Reflect source handling", () => {
         const trapBinding = makeBehavioralBinding("trap-rope");
         const trap: TrapDef = {
             id: "reflectTrap",
+            outcomes: [],
             onTrigger: (target, instance) => [{
                 type: "binding",
                 source: target,
