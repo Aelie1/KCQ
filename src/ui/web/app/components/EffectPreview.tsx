@@ -117,10 +117,10 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                     );
                 }}
             </Match>
-            <Match when={(props.effect.kind === "resource" || props.effect.kind === "trap") && props.effect}>
+            <Match when={(props.effect.kind === "resource" || props.effect.kind === "trap" || props.effect.kind === "heal") && props.effect}>
                 {(effect) => {
-                    const numeric = effect() as Extract<EffectPreviewViewModel, { kind: "resource" | "trap" }>;
-                    const name = numeric.kind === "resource" ? numeric.resourceName : numeric.trapName;
+                    const numeric = effect() as Extract<EffectPreviewViewModel, { kind: "resource" | "trap" | "heal" }>;
+                    const name = numeric.kind === "resource" ? numeric.resourceName : numeric.kind === "trap" ? numeric.trapName : "";
                     return (
                         <div class={`kcq-preview-effect kcq-preview-effect--${numeric.tone} kcq-meter-effect`}>
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
@@ -130,7 +130,9 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                     <strong class="kcq-preview-effect__payload">{name}</strong>
                                     <EffectRecipient recipient={numeric.kind === "resource" ? numeric.recipient : undefined} />
                                     <strong class="kcq-meter-effect__transition">
-                                        {numeric.currentValue} → {numeric.projectedValue}
+                                        {numeric.kind === "heal"
+                                            ? `${numeric.currentValue}% → ${numeric.projectedValue}%`
+                                            : `${numeric.currentValue} → ${numeric.projectedValue}`}
                                     </strong>
                                 </div>
                                 <ProjectedMeter

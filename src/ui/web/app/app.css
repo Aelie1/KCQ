@@ -866,6 +866,12 @@ button {
     --kcq-projected-meter-change: var(--kcq-state-warning);
 }
 
+.kcq-projected-meter--success,
+.kcq-projected-meter__change--success {
+    --kcq-projected-meter-current: var(--kcq-state-success);
+    --kcq-projected-meter-change: var(--kcq-state-success);
+}
+
 .kcq-projected-meter,
 .kcq-binding-meter {
     position: relative;
@@ -5049,11 +5055,6 @@ button {
     .kcq-library__header:has(.kcq-library__owner) h1 {
         font-size: 18px;
     }
-}
-
-.kcq-library__effect-row+.kcq-library__effect-row {
-    border-top: 1px solid var(--kcq-structure-border);
-    padding-top: 4px;
 }
 
 .kcq-library__reference-effect {

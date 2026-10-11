@@ -12,7 +12,7 @@ export interface DamageBandViewModel {
     label: string; max: number; min: number; rangeLabel: string; zero: boolean;
 }
 export interface DamageProfileViewModel {
-    bands: readonly DamageBandViewModel[]; kind: "damage-profile"; label: string; tone: "danger" | "warning";
+    bands: readonly DamageBandViewModel[]; kind: "damage-profile"; label: string; tone: EffectTone;
 }
 export interface AccuracyBandViewModel {
     band: Exclude<HitBand, "none">; chance: number; chanceLabel: string; label: string; zero: boolean;
@@ -31,7 +31,7 @@ export interface BuffEffectViewModel {
     details: readonly string[]; durationLabel?: string; id: string; kind: "buff"; label: string;
     linkedEntity?: string;
     modifiers: readonly BuffModifierViewModel[]; moveList: ReturnType<typeof projectBuffMoveList>; name: string;
-    operation: BuffEffect["operation"]; recipient?: string; tone: "special" | "success"; type: "buff";
+    operation: BuffEffect["operation"]; recipient?: string; tone: EffectTone; type: "buff";
 }
 export interface BindingAmountEffectViewModel {
     bindingName: string; amountLabel: string; magnitude?: number; max: number; level: BindingLevel;
@@ -53,7 +53,20 @@ export interface TrapEffectViewModel {
     id: string; kind: "trap"; type: "trap"; tone: "warning"; label: string;
     trapName: string; currentValue: number; change: number; max: number; projectedValue: number;
 }
-export type EffectPreviewViewModel = ResourceEffectViewModel | TrapEffectViewModel | AccuracyProfileViewModel | BindingEffectViewModel | BindingAmountEffectViewModel | BuffEffectViewModel | CompactEffectViewModel | DamageProfileViewModel;
+export interface HealingEffectViewModel {
+    id: string; kind: "heal"; type: "heal"; tone: "success"; label: string;
+    currentValue: number; change: number; max: number; projectedValue: number;
+}
+export type EffectPreviewViewModel =
+    | ResourceEffectViewModel
+    | TrapEffectViewModel
+    | HealingEffectViewModel
+    | AccuracyProfileViewModel
+    | BindingEffectViewModel
+    | BindingAmountEffectViewModel
+    | BuffEffectViewModel
+    | CompactEffectViewModel
+    | DamageProfileViewModel;
 
 /** Runtime context is optional: public library effects need no fabricated battle state. */
 export interface EffectContext {

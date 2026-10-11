@@ -49,9 +49,12 @@ export function libraryDamageProfile(move: MoveReference, p: Presentation, playe
             const chance = accuracy[band] ?? 0;
             const min = chance === 0 ? 0 : Math.ceil(range[0] * move.baseDamage! * multiplier);
             const max = chance === 0 ? 0 : Math.ceil(range[1] * move.baseDamage! * multiplier);
-            return { band, chance, min, max, label: p.hitBand(band),
+            const label = p.ui("targeting.damageRange", { min, max });
+            return {
+                band, chance, min, max, label: p.hitBand(band),
                 chanceLabel: p.ui("targeting.chance", { band: p.hitBand(band), chance: Math.round(chance * 10) / 10 }),
-                rangeLabel: p.ui("targeting.damageRange", { min, max }), zero: chance === 0, emphasized: false };
+                rangeLabel: p.referenceText("move", move.id, `effect.amount.${band}`) ?? label, zero: chance === 0, emphasized: false
+            };
         }),
     };
 }

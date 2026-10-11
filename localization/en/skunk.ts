@@ -71,7 +71,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.latexPuddle.name": "Latex Puddle",
     "move.latexPuddle.desc": "Add latex puddles to the field.",
     "move.latexRegeneration.name": "Latex Regeneration",
-    "move.latexRegeneration.desc": "Restore living latex toward its previous peak.",
+    "move.latexRegeneration.desc": "Regenerate partially escaped bindings to their highest reached level.",
     "move.latexExplosion.name": "Latex Explosion",
     "move.latexExplosion.desc": "Explode into latex across all of a target’s body zones.",
 
@@ -83,7 +83,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.empoweringMagic.name": "Empowering Magic",
     "move.empoweringMagic.desc": "Increase the potency of enemy allies.",
     "move.barrierMagic.name": "Barrier Magic",
-    "move.barrierMagic.desc": "Shield an enemy from incoming damage.",
+    "move.barrierMagic.desc": "Shield an enemy from incoming damage.  Absorbing hits drains duration.",
 
     "buff.empoweringMagic.name": "Empowering Magic",
     "buff.empoweringMagic.desc": "...",

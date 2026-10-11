@@ -60,7 +60,7 @@ export interface MoveReference {
 
 export interface MoveBuffReference {
     id: string;
-    recipient: "self" | "selected" | "allies";
+    recipient: string;
     duration?: number;
     modifiers?: ModifierSet;
     statuses?: StatusLevelReference[];

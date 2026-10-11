@@ -1,9 +1,9 @@
 import { For, type JSX } from "solid-js";
-import type { DamageProfileViewModel } from "../viewModels/targeting";
+import type { DamageProfileViewModel, EffectTone } from "../viewModels/targeting";
 
 export interface DamageEffectProps {
     effect: DamageProfileViewModel;
-    tone?: "danger" | "warning";
+    tone?: EffectTone;
 }
 
 export function DamageEffect(props: DamageEffectProps): JSX.Element {

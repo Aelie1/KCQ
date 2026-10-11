@@ -197,6 +197,7 @@ export type UiLabel =
     | "targeting.effectCancel"
     | "targeting.effectDamage"
     | "targeting.effectData"
+    | "targeting.effectHealing"
     | "targeting.effectMove"
     | "targeting.effectRefresh"
     | "targeting.effectRemoveBuff"

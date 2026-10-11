@@ -201,6 +201,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.targeting.effectDamage": "Damage",
     "ui.targeting.effectMove": "Move",
     "ui.targeting.effectTrap": "Trap",
+    "ui.targeting.effectHealing": "Healing",
     "ui.targeting.effectData": "Data",
     "ui.targeting.effectResource": "Resource",
     "ui.targeting.effectCancel": "Cancel",
