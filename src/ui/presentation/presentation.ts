@@ -321,6 +321,26 @@ export type UiLabel =
     | "library.immune"
     | "library.immunityExplanation"
     | "library.statusColumn"
+    | "library.baseHits"
+    | "library.modifiersHeading"
+    | "library.heal"
+    | "library.untilConsumed"
+    | "library.encounterDuration"
+    | "library.oneChargeThisRound"
+    | "library.buffRules"
+    | "library.compulsionCooldown"
+    | "library.selectedBinding"
+    | "library.severity"
+    | "library.spreadAmount"
+    | "library.recipient.self"
+    | "library.recipient.allies"
+    | "library.recipient.enemies"
+    | "library.recipient.boss"
+    | "library.recipient.enemy"
+    | "library.recipient.players"
+    | "library.recipient.field"
+    | "library.recipient.selectedEnemy"
+    | "library.recipient.enemyAllies"
     | "library.skunk.spreading"
     | "library.skunk.transformation"
     | "library.skunk.rescue"
@@ -384,7 +404,7 @@ export class Presentation {
     }
 
     /** Optional authored reference text; incomplete descriptions are omitted. */
-    referenceText(namespace: "entity" | "move" | "passive" | "binding" | "trap" | "status" | "encounter" | "difficulty", id: string, variant: string = "desc"): string | undefined {
+    referenceText(namespace: "buff" | "entity" | "move" | "passive" | "binding" | "trap" | "status" | "encounter" | "difficulty", id: string, variant: string = "desc"): string | undefined {
         const text = this.strings[this.definitionKey(namespace, id, variant).id];
         return text === undefined || text.trim() === "..." || text.trim() === "" ? undefined : text;
     }

@@ -33,3 +33,20 @@ export function groupEffectPreviews(
     });
     return { groups, ungrouped };
 }
+
+/** Static reference rows use the same first-recipient ordering as encounter setup. */
+export function groupReferenceRecipients<T extends { recipient: string }>(rows: readonly T[], force = false): {
+    groups: { id: string; effects: T[] }[]; ungrouped: T[];
+} {
+    const recipients = new Set(rows.map(row => row.recipient).filter(Boolean));
+    if (!force && recipients.size <= 1) return { groups: [], ungrouped: [...rows] };
+    const groups: { id: string; effects: T[] }[] = [];
+    const ungrouped: T[] = [];
+    for (const row of rows) {
+        if (!row.recipient) { ungrouped.push(row); continue; }
+        let group = groups.find(group => group.id === row.recipient);
+        if (!group) { group = { id: row.recipient, effects: [] }; groups.push(group); }
+        group.effects.push(row);
+    }
+    return { groups, ungrouped };
+}

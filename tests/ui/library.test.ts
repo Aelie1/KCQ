@@ -1,12 +1,15 @@
+import { readFileSync } from "node:fs";
 import { createComponent, createRoot } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
-import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryMoveGroups, libraryPassiveSummary, SKUNK_BINDINGS_ID, libraryRelated, libraryTrapOutcomes, referenceParts } from "../../src/ui/web/app/viewModels/library";
+import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryMoveGroups, libraryPassiveSummary, libraryMoveTags, SKUNK_BINDINGS_ID, libraryRelated, libraryTrapOutcomes, referenceParts } from "../../src/ui/web/app/viewModels/library";
 import { LIBRARY_EFFECTIVENESS, LIBRARY_HIT_STEP, LIBRARY_POTENCY_STEP, libraryAccuracy, libraryDamageProfile } from "../../src/ui/web/app/viewModels/libraryMechanics";
 import { effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER, EFFECTIVENESS_MODIFIER } from "../../src/engine/private/constants";
+import { libraryMoveEffectRows, libraryCompulsionCooldown } from "../../src/ui/web/app/viewModels/libraryMoveEffects";
+import { groupReferenceRecipients } from "../../src/ui/web/app/viewModels/effectGroups";
 import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
@@ -136,5 +139,65 @@ describe("Library static reference projections", () => {
         const html = renderToString(() => createComponent(LibraryPanel, { library, presentation, onClose: () => {}, initialPage: { kind: "entry", category: "bindings", id: SKUNK_BINDINGS_ID } }));
         expect(html).toContain("Skunk Bindings");
         expect(html).not.toMatch(/\[(?:ui|binding|entity)\./);
+    });
+});
+
+
+describe("Library structured effect projections", () => {
+    it("represents every published move and preserves static effects without touching source data", () => {
+        const before = JSON.stringify(library);
+        for (const move of Object.values(library.moves)) {
+            const rows = libraryMoveEffectRows(move, library, presentation);
+            expect(rows.length, move.id).toBeGreaterThan(0);
+            for (const row of rows) {
+                expect(row.name ?? "", move.id).not.toMatch(/\[(ui|buff|move)\./);
+                if (row.preview?.kind === "buff") expect(row.preview.name, move.id).not.toMatch(/\[buff\./);
+            }
+            for (const effect of move.effects ?? []) {
+                expect(rows.some(row => row.preview?.kind === "buff" && row.preview.id === "library-" + effect.id), move.id).toBe(true);
+            }
+        }
+        expect(JSON.stringify(library)).toBe(before);
+        expect(engine.getGameState().characters).toEqual([]);
+    });
+    it("projects all supplied intrinsic modifiers, including non-damage moves, without making them buffs", () => {
+        const modified = { ...library.moves.obey!, modifiers: { potency: 7, hit: -2, willpower: 3 } };
+        const rows = libraryMoveEffectRows(modified, library, presentation);
+        const row = rows.find(row => row.label === "Modifiers")!;
+        expect(row.modifiers).toEqual(modified.modifiers);
+        expect(row.preview).toBeUndefined();
+        expect(row.recipient).toBe("");
+    });
+    it("preserves recipient and effect order, leaving one-recipient moves compact", () => {
+        const rows = [{ recipient: "ko", name: "first" }, { recipient: "allies", name: "second" }, { recipient: "ko", name: "third" }, { recipient: "", name: "modifier" }];
+        const grouped = groupReferenceRecipients(rows);
+        expect(grouped.groups.map(group => [group.id, group.effects.map(row => row.name)])).toEqual([["ko", ["first", "third"]], ["allies", ["second"]]]);
+        expect(grouped.ungrouped.map(row => row.name)).toEqual(["modifier"]);
+        expect(groupReferenceRecipients(rows.slice(0, 1)).groups).toEqual([]);
+        expect(groupReferenceRecipients(rows.slice(0, 1), true).groups).toHaveLength(1);
+    });
+    it("uses public cooldown relationships and falls back when they differ", () => {
+        for (const id of ["obey", "stop", "attackMe"]) expect(libraryCompulsionCooldown(library.moves[id]!)).toBe(2);
+        expect(libraryCompulsionCooldown({ ...library.moves.obey!, cooldown: { obey: 3, stop: 7, attackMe: 2 } })).toBeUndefined();
+        expect(libraryCompulsionCooldown({ ...library.moves.obey!, cooldown: {} })).toBeUndefined();
+        expect(libraryCompulsionCooldown(library.moves.fairyTransformation!)).toBeUndefined();
+    });
+    it("puts AOE before all target-side tags", () => {
+        for (const move of Object.values(library.moves).filter(move => move.targets === "all")) {
+            const ids = libraryMoveTags(move, presentation).map(tag => tag.id);
+            for (const side of ["ally", "enemy"]) if (ids.includes(side)) expect(ids.indexOf("aoe")).toBeLessThan(ids.indexOf(side));
+        }
+    });
+    it("keeps headers content-sized and damage columns shrinkable at the 320px CSS breakpoint", () => {
+        // happy-dom does not perform text layout. Protect the responsive rules directly;
+        // actual glyph fitting still requires a browser visual check.
+        const css = readFileSync("src/ui/web/app/app.css", "utf8");
+        const owner = css.match(/\.kcq-library__header \.kcq-library__owner \{([^}]+)\}/)![1]!;
+        expect(owner).toContain("flex: 0 1 auto;");
+        expect(css).not.toMatch(/kcq-library__header \.kcq-library__owner \{[^}]*flex-basis:/);
+        expect(css).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
+        expect(css).toContain(".kcq-library__effect-cards .kcq-damage-profile__band { font-size: 11px; line-height: 15px; white-space: nowrap; }");
+        expect(css).toContain(".kcq-library__effect-cards .kcq-damage-profile__band strong { font-size: 13px; line-height: 16px; }");
+        expect(css).toContain(".kcq-library__effect-cards .kcq-damage-profile { grid-column: 2; }");
     });
 });

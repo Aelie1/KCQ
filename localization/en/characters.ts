@@ -68,7 +68,7 @@ export const matsukoEnglishStrings: StringTable = {
     "move.attackMe.desc": "Draw enemy attacks toward the caster while raising defense.",
 
     "buff.burnout.name": "Burnout",
-    "buff.burnout.desc": "...",
+    "buff.burnout.desc": "Seals [moves:whiteFlame], [moves:fairyWhiteFlame], [moves:phoenixKick], [moves:fairyPhoenixKick], and [moves:immolation]. Makes [moves:punch] and [moves:kick] available.",
     "buff.burnout.block": "Seals Flame Moves",
     "buff.burnout.allow": "Adds Basic Moves",
     "buff.defenseBarrier.name": "Defense Barrier",

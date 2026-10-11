@@ -177,13 +177,13 @@ export function libraryOwners(library: ContentLibrary, category: "moves" | "pass
 export function libraryMoveTags(move: MoveReference, p: Presentation): CommandTagViewModel[] {
     const tags: CommandTagViewModel[] = [];
     if (move.type !== "none") tags.push({ id: "type", label: p.moveType(move.type), tone: "warning" });
+    if (move.targets === "all") tags.push({ id: "aoe", label: p.ui("characterDetails.tagAoe"), tone: "neutral" });
     if (move.targets === 0) tags.push({ id: "self", label: p.ui("characterDetails.tagSelf"), tone: "success" });
     else {
         if (move.targetSide === "player" || move.targetSide === "either") tags.push({ id: "ally", label: p.ui("characterDetails.tagAlly"), tone: "ally" });
         if (move.targetSide === "enemy" || move.targetSide === "either") tags.push({ id: "enemy", label: p.ui("characterDetails.tagEnemy"), tone: "primary" });
     }
     tags.push(...libraryTags(move.traits, p));
-    if (move.targets === "all") tags.push({ id: "aoe", label: p.ui("characterDetails.tagAoe"), tone: "neutral" });
     if ((move.hits ?? move.baseHits ?? 1) > 1) tags.push({ id: "hits", label: p.ui("characterDetails.tagHits", { count: move.hits ?? move.baseHits ?? 1 }), tone: "special" });
     return tags;
 }
