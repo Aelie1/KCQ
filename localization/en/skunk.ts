@@ -49,7 +49,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.latexSpray.name": "Latex Spray",
     "move.latexSpray.desc": "Spray living latex onto one body zone.",
     "move.pounce.name": "Pounce",
-    "move.pounce.desc": "Pin and link a victim, with stronger restrictions at higher severity.",
+    "move.pounce.desc": "Pin a victim, with stronger restrictions or even follow-up attacks at higher severity.  Grip deteriorates with damage taken.",
     "move.latexMist.name": "Latex Mist",
     "move.latexMist.desc": "Coat the party in mist that increases escape spreading and strengthens bindings.",
     "move.throwOff.name": "Throw Off",
@@ -107,7 +107,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.latexRainmaker.name": "Construct Rainmaker",
     "move.latexRainmaker.desc": "Construct increasingly powerful contraptions to spray the party.",
     "move.skunkPerfume.name": "Skunk Perfume",
-    "move.skunkPerfume.desc": "Apply weakening perfume or heal enemy allies.",
+    "move.skunkPerfume.desc": "Apply one of two weakening perfumes or heal enemy allies.",
 
     "buff.defensePerfume.name": "Defense Perfume",
     "buff.defensePerfume.desc": "...",

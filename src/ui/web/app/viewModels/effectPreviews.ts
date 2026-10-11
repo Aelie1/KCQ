@@ -1,5 +1,5 @@
 import { getBindingProgress } from "../../../../engine/public/mechanics";
-import type { ActionView, BindingLevel, BuffEffect, Effect, EntityId, GameState, HitBand, ModifierId, ThresholdInfo } from "../../../../engine/public/types";
+import type { ActionView, BindingLevel, BuffEffect, Effect, EntityId, GameState, HitBand, ModifierId, StatusId, ThresholdInfo } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 import { projectBuffMoveList } from "./buffMoveList";
 import { clampMeterValue, TRAP_METER_MAX } from "./meterValues";
@@ -30,6 +30,7 @@ export interface BuffModifierViewModel {
 export interface BuffEffectViewModel {
     details: readonly string[]; durationLabel?: string; id: string; kind: "buff"; label: string;
     linkedEntity?: string;
+    statuses?: readonly { id: StatusId; label: string }[];
     modifiers: readonly BuffModifierViewModel[]; moveList: ReturnType<typeof projectBuffMoveList>; name: string;
     operation: BuffEffect["operation"]; recipient?: string; tone: EffectTone; type: "buff";
 }

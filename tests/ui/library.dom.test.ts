@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -96,7 +97,7 @@ describe("Library mechanical detail", () => {
         expect(element(".kcq-library__cooldown-summary").textContent).toContain("Shared:2");
         expect(document.querySelector(".kcq-library__shared-cooldown")).toBeNull();
         expect(element(".kcq-library__effect-cards").textContent).toContain("Servitude");
-        expect(element(".kcq-library__effect-cards").textContent).toContain("Blocks Escape");
+        expect(element('.kcq-buff-effect__details [data-library-focus="statuses:servitude"]').textContent).toBe("Servitude");
         unmount!(); libraryMount({ kind: "entry", category: "passives", id: "subspaceMovement" });
         expect(element(".kcq-library__detail").textContent).toContain("Ignores Traps");
         expect(element('[data-library-focus="statuses:hobbled"]').textContent).toBe("Immune to Hobbled");
@@ -548,26 +549,126 @@ describe("Library Round 5 systematic presentation", () => {
         expect(element('.kcq-library__availability-link[data-library-focus="moves:powerOfDenial"] .kcq-status-chip--danger').textContent).toContain("Block");
         expect(element('[data-library-recipient="ko"]').querySelector(".kcq-library__effect-note")).toBeNull();
     });
-    it("expands every public buff status into restriction badges and modifier pips", () => {
+    it("links buff statuses inside details and leaves their mechanics on status pages", async () => {
         const library = createStockEngine().getLibrary();
         library.moves.starlightBindings!.effects![0]!.statuses = [{ id: "bound", level: 3 }];
         libraryMount({ kind: "entry", category: "moves", id: "starlightBindings" }, library);
-        const status = element(".kcq-library__buff-status");
-        expect(status.textContent).toContain("Bound 3");
-        expect(status.querySelector(".kcq-pip-meter")).not.toBeNull();
-        expect(status.querySelectorAll(".kcq-status-chip--danger")).toHaveLength(2);
-        unmount!(); libraryMount({ kind: "entry", category: "moves", id: "obey" });
-        expect(element(".kcq-library__buff-status .kcq-status-chip--danger").textContent).toBe("Blocks Escape");
-        expect(element(".kcq-library__buff-status").textContent).not.toContain("Servitude 1");
-        expect(element(".kcq-library__notes").textContent).toContain("already acted");
+        const details = element(".kcq-buff-effect__details");
+        const link = element<HTMLButtonElement>('.kcq-buff-effect__details [data-library-focus="statuses:bound"]');
+        expect(link.textContent).toBe("Bound 3");
+        expect(link.classList.contains("kcq-library__inline-link")).toBe(true);
+        expect(link.querySelector(".kcq-status-chip")).toBeNull();
+        expect(details.querySelector(".kcq-pip-meter")).toBeNull();
+        expect(details.querySelector(".kcq-library__restrictions")).toBeNull();
+        expect(document.querySelector(".kcq-library__buff-statuses")).toBeNull();
+        link.focus(); expect(document.activeElement).toBe(link);
+        link.click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("bound");
+        expect(element('[data-status-intensity="3"]').querySelector(".kcq-library__restrictions")).not.toBeNull();
+        back(); await tick(); expect(document.activeElement).toBe(element('.kcq-buff-effect__details [data-library-focus="statuses:bound"]'));
     });
-    it("exposes Pounce's movement/action restrictions and granted move at every severity", () => {
+    it("links Servitude inside Obey's buff without expanded restrictions", async () => {
+        libraryMount({ kind: "entry", category: "moves", id: "obey" });
+        const link = element<HTMLButtonElement>('.kcq-buff-effect__details [data-library-focus="statuses:servitude"]');
+        expect(link.textContent).toBe("Servitude");
+        expect(element(".kcq-library__facts").textContent).toContain("2 Rounds");
+        expect(element(".kcq-library__effect-cards").textContent).not.toContain("Blocks Escape");
+        link.click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("servitude");
+        expect(element(".kcq-library__restrictions").textContent).toContain("Blocks Escape");
+    });
+    it("links the correct statuses and granted move for Pounce I–IV", async () => {
         libraryMount({ kind: "entry", category: "moves", id: "pounce" });
-        expect(document.querySelectorAll('.kcq-library__availability-link[data-library-focus="moves:throwOff"]')).toHaveLength(4);
-        const statuses = element('[data-library-recipient="players"]');
-        expect(statuses.textContent).toContain(presentation.flag("blocksMoving"));
-        expect(statuses.textContent).toContain(presentation.flag("blocksAttack"));
-        expect(statuses.textContent).toContain(presentation.flag("skipsTurn"));
+        const buffs = [...element('[data-library-recipient="players"]').querySelectorAll(".kcq-buff-effect")];
+        expect(buffs.map(buff => buff.querySelector(".kcq-preview-effect__payload")!.textContent)).toEqual(["Pounce I", "Pounce II", "Pounce III", "Pounce IV"]);
+        expect(buffs.map(buff => [...buff.querySelectorAll('[data-library-focus^="statuses:"]')].map(link => link.textContent)))
+            .toEqual([["Immobilized"], ["Immobilized"], ["Immobilized", "Stunned"], ["Immobilized", "Helpless"]]);
+        for (const buff of buffs) {
+            expect(buff.querySelector('[data-library-focus="moves:throwOff"]')!.textContent).toBe("Add Throw Off");
+            expect(buff.querySelector(".kcq-library__restrictions")).toBeNull();
+            for (const flag of ["blocksMoving", "blocksAttack", "skipsTurn"] as const) expect(buff.textContent).not.toContain(presentation.flag(flag));
+        }
+        expect(element('[data-library-recipient="skunkette"]').querySelectorAll(".kcq-buff-effect__modifiers .kcq-pip-meter")).toHaveLength(8);
+        element('.kcq-buff-effect__details [data-library-focus="statuses:helpless"]').click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("helpless");
+        expect(element(".kcq-library__restrictions").textContent).toContain(presentation.flag("skipsTurn"));
+    });
+    it("links encounter setup buff statuses inside the same details area", async () => {
+        libraryMount({ kind: "entry", category: "encounters", id: "tower_1" });
+        const link = element<HTMLButtonElement>('.kcq-library__setup .kcq-buff-effect__details [data-library-focus="statuses:helpless"]');
+        expect(link.textContent).toBe("Helpless"); expect(link.querySelector(".kcq-status-chip")).toBeNull();
+        expect(link.closest(".kcq-buff-effect")!.textContent).toContain("1 Rounds");
+        link.click(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("helpless");
+    });
+    it("keeps unavailable buff statuses and move chips disabled", () => {
+        const library = createStockEngine().getLibrary();
+        Reflect.deleteProperty(library.statuses, "servitude");
+        libraryMount({ kind: "entry", category: "moves", id: "obey" }, library);
+        const status = element<HTMLButtonElement>('.kcq-buff-effect__details [data-library-focus="statuses:servitude"]');
+        expect(status.disabled).toBe(true); expect(status.title).toBe(presentation.ui("library.unavailable"));
+        status.click(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("obey");
+        unmount!(); delete library.moves.punch;
+        libraryMount({ kind: "entry", category: "moves", id: "immolation" }, library);
+        const move = element<HTMLButtonElement>('.kcq-library__availability-link[data-library-focus="moves:punch"]');
+        expect(move.disabled).toBe(true); expect(move.textContent).toBe("Add Punch");
+        move.click(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("immolation");
+    });
+    it("keeps Add and Block chip tones while separating blue move names", () => {
+        libraryMount({ kind: "entry", category: "moves", id: "immolation" });
+        for (const [id, tone, operation, name] of [["punch", "success", "Add", "Punch"], ["whiteFlame", "danger", "Block", "White Flame"]]) {
+            const link = element('.kcq-library__availability-link[data-library-focus="moves:' + id + '"]');
+            const chip = link.querySelector(".kcq-status-chip--" + tone)!;
+            expect(chip.textContent).toBe(operation + " " + name);
+            expect(chip.querySelector(".kcq-library__availability-name")!.textContent).toBe(name);
+            expect(chip.firstElementChild!.firstChild!.textContent).toBe(operation + " ");
+        }
+    });
+    it("removes inline reference boxes while retaining blue names and colored chip surfaces", () => {
+        const style = document.createElement("style");
+        style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
+        document.head.append(style);
+        const colors = "--kcq-accent-primary: #55aaff; --kcq-structure-border: #333333; --kcq-surface-raised: #222222; --kcq-state-success: #00ff00; --kcq-state-danger: #ff0000; --kcq-state-success-bg: #002200; --kcq-state-danger-bg: #220000;";
+        const plain = (selector: string) => {
+            const link = element(selector); const css = getComputedStyle(link);
+            expect(css.color).toBe("#55aaff");
+            expect(css.borderTopWidth).toBe("0px");
+            expect(css.padding).toBe("0px");
+            expect(css.backgroundColor).toBe("transparent");
+        };
+        try {
+            libraryMount({ kind: "entry", category: "moves", id: "pounce" });
+            element(".kcq-library-host").style.cssText = colors;
+            plain('.kcq-buff-effect__details [data-library-focus="statuses:immobilized"]');
+            plain('.kcq-library__reference-content [data-library-focus="moves:latexSpray"]');
+            unmount!(); libraryMount({ kind: "entry", category: "moves", id: "callReinforcements" });
+            element(".kcq-library-host").style.cssText = colors;
+            for (const id of ["skunkette", "skunk", "fairy"]) plain('.kcq-library__reference-content [data-library-focus="enemies:' + id + '"]');
+            unmount!(); libraryMount({ kind: "entry", category: "moves", id: "immolation" });
+            element(".kcq-library-host").style.cssText = colors;
+            for (const [id, color, background] of [["punch", "#00ff00", "#002200"], ["whiteFlame", "#ff0000", "#220000"]]) {
+                const link = element('.kcq-library__availability-link[data-library-focus="moves:' + id + '"]');
+                const chip = getComputedStyle(link.querySelector(".kcq-status-chip")!);
+                expect(chip.color).toBe(color); expect(chip.borderTopColor).toBe(color);
+                expect(chip.backgroundColor).toBe(background); expect(chip.borderTopWidth).toBe("1px");
+                expect(getComputedStyle(link.querySelector(".kcq-library__availability-name")!).color).toBe("#55aaff");
+            }
+            unmount!(); libraryMount({ kind: "entry", category: "characters", id: "matsuko" });
+            element(".kcq-library-host").style.cssText = colors;
+            const card = getComputedStyle(element(".kcq-library__move-card"));
+            expect(card.borderTopWidth).toBe("1px"); expect(card.backgroundColor).not.toBe("transparent");
+        } finally { style.remove(); }
+    });
+    it.each([
+        ["pounce", "moves:latexSpray", ["Latex Spray"], "Move"],
+        ["callReinforcements", "enemies:skunkette", ["Skunkette", "Skunk", "Fairy"], "Spawn"],
+    ])("keeps %s inline effect labels and navigable reference names", async (id, focus, names, label) => {
+        libraryMount({ kind: "entry", category: "moves", id });
+        const link = element<HTMLButtonElement>('.kcq-library__reference-content [data-library-focus="' + focus + '"]');
+        const effect = link.closest(".kcq-library__reference-effect")!;
+        expect(effect.querySelector(".kcq-preview-effect__tag")!.textContent).toBe(label);
+        expect([...effect.querySelectorAll(".kcq-library__link")].map(link => link.textContent)).toEqual(names);
+        link.click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe(focus.split(":")[1]);
     });
     it("places Brace duration in the summary and keeps its callback and capacity condition", () => {
         libraryMount({ kind: "entry", category: "moves", id: "brace" });

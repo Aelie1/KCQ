@@ -4401,13 +4401,15 @@ button {
     padding: 4px 6px;
     color: var(--kcq-accent-primary);
     background: var(--kcq-surface-raised);
-    font-size: 12px;
+    font-size: 10px;
     text-align: left;
     cursor: pointer;
     overflow-wrap: anywhere;
     max-width: 100%;
 }
 
+.kcq-library__inline-link,
+.kcq-library__reference-content .kcq-library__link,
 .kcq-library__notes .kcq-library__link,
 .kcq-library__description .kcq-library__link,
 .kcq-library__owner .kcq-library__link,
@@ -4420,6 +4422,14 @@ button {
     background: transparent;
     font-weight: 600;
     line-height: inherit;
+}
+
+.kcq-library__link .kcq-status-chip {
+    font-size: 9px;
+}
+
+.kcq-library__inline-link .kcq-status-chip {
+    color: var(--kcq-accent-primary);
 }
 
 .kcq-library__link:hover {
@@ -5118,21 +5128,12 @@ button {
     text-align: left;
 }
 
-.kcq-library__buff-statuses {
-    display: grid;
-    gap: 4px;
-    margin: 3px 0 0 8px;
+.kcq-library__availability-name {
+    color: var(--kcq-accent-primary);
 }
 
-.kcq-library__buff-status {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 8px;
-}
-
-.kcq-library__buff-status .kcq-library__status-effects {
-    flex: 1 1 auto;
+.kcq-library__availability-link:disabled .kcq-library__availability-name {
+    color: var(--kcq-text-muted);
 }
 
 .kcq-library__cooldown-stack {

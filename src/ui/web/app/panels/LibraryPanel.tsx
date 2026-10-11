@@ -16,7 +16,7 @@ import { type EffectPreviewViewModel } from "../viewModels/effectPreviews";
 import { encounterStars } from "../viewModels/encounters";
 import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryModifiers, libraryMoveGroups, libraryMoveTags, libraryName, libraryOwners, libraryPassiveRows, libraryPassiveSummary, libraryRestrictions, libraryText, libraryTrapOutcomes, referenceParts, SKUNK_BINDING_IDS, SKUNK_BINDINGS_ID, type LibraryCategory, type LibraryEntry, type LibraryPage } from "../viewModels/library";
 import { libraryAccuracy } from "../viewModels/libraryMechanics";
-import { libraryMoveEffectRows, libraryMoveRecipient, type LibraryMoveEffectRow } from "../viewModels/libraryMoveEffects";
+import { libraryBuffStatuses, libraryMoveEffectRows, libraryMoveRecipient, type LibraryMoveEffectRow } from "../viewModels/libraryMoveEffects";
 import { formatSignedNumber, isHarmfulModifierChange } from "../viewModels/presentationHelpers";
 
 export interface LibraryPanelProps { library: ContentLibrary; presentation: Presentation; onClose: () => void; initialPage?: LibraryPage; bestClears?: Readonly<Partial<Record<EncounterId, DifficultyId>>> }
@@ -253,35 +253,46 @@ function StaticBuff(props: { effect: MoveBuffReference; showDuration?: boolean }
         label: c.presentation.modifier(id, "compact"), value: Math.abs(value), signedValue: formatSignedNumber(value),
         harmful: isHarmfulModifierChange(id, value) === true, direction: value >= 0 ? "left" as const : "right" as const,
     }));
-    return <><EffectPreview effect={{
+    return <EffectPreview renderStatus={status => (
+        <ReferenceLink entry={{ category: "statuses", id: status.id }} class="kcq-library__inline-link">
+            <StatusChip size="compact" tone="danger">
+                {status.label}
+            </StatusChip>
+        </ReferenceLink>
+    )} effect={{
         kind: "buff", type: "buff", id: props.effect.id, operation: "add",
         label: c.presentation.ui(modifiers().some(modifier => modifier.harmful) ? "targeting.effectAddDebuff" : "targeting.effectAddBuff"),
         name: c.presentation.buff(props.effect.id, undefined), tone: modifiers().some(modifier => modifier.harmful) ? "special" : "success",
         recipient: props.effect.recipient === "selected" ? undefined : c.presentation.ui(props.effect.recipient === "self" ? "characterDetails.tagSelf" : "characterDetails.tagAlly"),
         durationLabel: props.showDuration === false || props.effect.duration === undefined ? undefined : c.presentation.ui("characterDetails.rounds", { count: props.effect.duration }),
-        modifiers: modifiers(), moveList: [], details: [],
-    }} /><Show when={props.effect.statuses?.length}><div class="kcq-library__links"><For each={props.effect.statuses}>{status => <ReferenceLink entry={{ category: "statuses", id: status.id }}>{c.presentation.ui("characterDetails.statusValue", { status: c.presentation.status(status.id), value: status.level })}</ReferenceLink>}</For></div></Show></>;
+        modifiers: modifiers(), moveList: [], details: [], statuses: libraryBuffStatuses(props.effect, c.library, c.presentation),
+    }} />;
 }
 function StatusName(props: { id: keyof ContentLibrary["statuses"]; level: number }): JSX.Element {
     const c = context();
-    return <>{c.library.statuses[props.id]?.modifiers.length === 2 ? c.presentation.status(props.id)
-        : c.presentation.ui("characterDetails.statusValue", { status: c.presentation.status(props.id), value: props.level })}</>;
+    return <>{c.library.statuses[props.id]?.modifiers.length === 2 ? libraryName({ category: "statuses", id: props.id }, c.presentation)
+        : c.presentation.ui("characterDetails.statusValue", { status: libraryName({ category: "statuses", id: props.id }, c.presentation), value: props.level })}</>;
 }
 function MoveAvailability(detail: Extract<EffectPreviewViewModel, { kind: "buff" }>["moveList"][number]): JSX.Element {
-    return detail.move ? <ReferenceLink entry={{ category: "moves", id: detail.move }} class="kcq-library__availability-link"><StatusChip size="compact" tone={detail.tone}>{detail.label}</StatusChip></ReferenceLink>
+    return detail.move ? <ReferenceLink entry={{ category: "moves", id: detail.move }} class="kcq-library__availability-link">
+        <StatusChip size="compact" tone={detail.tone}><span><For each={detail.parts ?? [detail.label]}>
+            {part => typeof part === "string" ? part : <span class="kcq-library__availability-name">{part.moveName}</span>}
+        </For></span></StatusChip></ReferenceLink>
         : <StatusChip size="compact" tone={detail.tone}>{detail.label}</StatusChip>;
 }
 function MoveEffectRow(props: { row: LibraryMoveEffectRow; hideDuration?: boolean }): JSX.Element {
-    const c = context();
     return <div class="kcq-library__effect-row">
-        <Show when={props.row.preview}>{preview => <EffectPreview renderMoveAvailability={MoveAvailability} effect={props.hideDuration && preview().kind === "buff" ? { ...(preview() as Extract<EffectPreviewViewModel, { kind: "buff" }>), durationLabel: undefined } : preview()} />}</Show>
+        <Show when={props.row.preview}>{preview => <EffectPreview renderMoveAvailability={MoveAvailability} renderStatus={status => (
+            <ReferenceLink entry={{ category: "statuses", id: status.id }} class="kcq-library__inline-link">
+                <StatusChip size="compact" tone="danger">
+                    {status.label}
+                </StatusChip>
+            </ReferenceLink>
+        )} effect={props.hideDuration && preview().kind === "buff" ? { ...(preview() as Extract<EffectPreviewViewModel, { kind: "buff" }>), durationLabel: undefined } : preview()} />}</Show>
         <Show when={props.row.label}><div class={"kcq-preview-effect kcq-library__reference-effect kcq-preview-effect--" + props.row.tone}>
             <span class="kcq-preview-effect__accent" aria-hidden="true" /><span class="kcq-preview-effect__tag">{props.row.label}</span>
             <div class="kcq-library__reference-content"><Show when={props.row.name}><strong class="kcq-preview-effect__payload"><ReferenceText text={props.row.name!} /></strong></Show><Modifiers modifiers={props.row.modifiers} /></div>
         </div></Show>
-        <Show when={props.row.statusReferences?.length}><div class="kcq-library__buff-statuses"><For each={props.row.statusReferences}>{status => <div class="kcq-library__buff-status">
-            <Show when={c.library.statuses[status.id]?.modifiers[status.level]}>{mechanics => <StatusEffects reference={mechanics()} />}</Show>
-        </div>}</For></div></Show>
         <Show when={props.row.note}><p class="kcq-library__effect-note"><ReferenceText text={props.row.note!} /></p></Show>
     </div>;
 }
@@ -480,7 +491,18 @@ function EncounterDetail(props: { reference: EncounterReference }): JSX.Element 
             : source?.type === "binding" ? { category: "bindings", id: source.binding }
                 : source?.type === "move" ? { category: "moves", id: source.move }
                     : source?.type === "enemy" && source.operation === "spawn" ? { category: "enemies", id: source.target } : undefined;
-        return entry ? <ReferenceLink entry={entry} class="kcq-library__effect-link"><EffectPreview effect={effect} /></ReferenceLink> : <EffectPreview effect={effect} />;
+        const model = effect.kind === "buff" && source?.type === "buff" ? {
+            ...effect, details: [],
+            statuses: effect.operation === "add" ? libraryBuffStatuses({ statuses: source.buff.statuses?.map(status => ({ id: status.id, level: status.value })) }, c.library, c.presentation) : [],
+        } : effect;
+        return entry ? <ReferenceLink entry={entry} class="kcq-library__effect-link"><EffectPreview effect={model} /></ReferenceLink>
+            : <EffectPreview effect={model} renderStatus={status => (
+                <ReferenceLink entry={{ category: "statuses", id: status.id }} class="kcq-library__inline-link">
+                    <StatusChip size="compact" tone="danger">
+                        {status.label}
+                    </StatusChip>
+                </ReferenceLink>
+            )} />;
     };
     const missingTraps = () => props.reference.traps.filter(id => !props.reference.setup.some(effect => effect.type === "trap" && effect.trap === id));
     return <>

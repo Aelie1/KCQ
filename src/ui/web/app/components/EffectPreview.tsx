@@ -9,6 +9,7 @@ import { StatusChip } from "./StatusChip";
 export interface EffectPreviewProps {
     effect: EffectPreviewViewModel;
     showLinkedEntities?: boolean;
+    renderStatus?: (status: NonNullable<Extract<EffectPreviewViewModel, { kind: "buff" }>["statuses"]>[number]) => JSX.Element;
     renderMoveAvailability?: (detail: Extract<EffectPreviewViewModel, { kind: "buff" }>["moveList"][number]) => JSX.Element;
 }
 
@@ -99,10 +100,13 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                         </For>
                                     </div>
                                 </Show>
-                                <Show when={buff.moveList.length > 0 || buff.details.length > 0 || (props.showLinkedEntities !== false && buff.linkedEntity)}>
+                                <Show when={buff.moveList.length > 0 || (buff.statuses?.length ?? 0) > 0 || buff.details.length > 0 || (props.showLinkedEntities !== false && buff.linkedEntity)}>
                                     <div class="kcq-buff-effect__details">
                                         <For each={buff.moveList}>
                                             {(detail) => props.renderMoveAvailability?.(detail) ?? <StatusChip size="compact" tone={detail.tone}>{detail.label}</StatusChip>}
+                                        </For>
+                                        <For each={buff.statuses}>
+                                            {(status) => props.renderStatus?.(status) ?? <StatusChip size="compact">{status.label}</StatusChip>}
                                         </For>
                                         <For each={buff.details}>
                                             {(detail) => <StatusChip size="compact">{detail}</StatusChip>}

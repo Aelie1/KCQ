@@ -41,7 +41,7 @@ export function libraryName(entry: LibraryEntry, p: Presentation): string {
         case "passives": return p.passive(entry.id);
         case "bindings": return p.binding(entry.id);
         case "traps": return p.trap(entry.id);
-        case "statuses": return p.status(entry.id as keyof ContentLibrary["statuses"]);
+        case "statuses": return p.referenceText("status", entry.id, "libraryName") ?? p.status(entry.id as keyof ContentLibrary["statuses"]);
         case "encounters": return p.encounter(entry.id);
     }
 }

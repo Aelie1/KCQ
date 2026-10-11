@@ -4,7 +4,7 @@ import type { ModifierId, ModifierSet, MoveListModifier } from "../../../../engi
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import { projectBuffMoveList } from "./buffMoveList";
 import type { EffectPreviewViewModel, EffectTone } from "./effectPreviews";
-import { libraryOwners } from "./library";
+import { libraryName, libraryOwners } from "./library";
 import { libraryDamageProfile } from "./libraryMechanics";
 import { bindingLevelAtValue, formatSignedNumber, isDebuff, isHarmfulModifierChange } from "./presentationHelpers";
 
@@ -19,7 +19,6 @@ export interface LibraryMoveEffectRow {
     modifiers?: ModifierSet;
     note?: string;
     duration?: number;
-    statusReferences?: MoveBuffReference["statuses"];
 }
 export function libraryMoveEffectRows(move: MoveReference, library: ContentLibrary, p: Presentation): LibraryMoveEffectRow[] {
     const rows: LibraryMoveEffectRow[] = [];
@@ -40,9 +39,9 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
         rows.push({
             recipient: effect.recipient === "self" ? actor : effect.recipient === "allies" ? "allies" : effect.recipient === "selected" ? selected : effect.recipient,
             duration: operation === "add" ? effect.duration : undefined,
-            statusReferences: operation === "add" ? effect.statuses : undefined,
             preview: {
                 kind: "buff", type: "buff", id: "library-" + effect.id, operation,
+                statuses: operation === "add" ? libraryBuffStatuses(effect, library, p) : [],
                 label: p.ui(operation === "remove" ? harmful ? "targeting.effectRemoveDebuff" : "targeting.effectRemoveBuff" : harmful ? "targeting.effectAddDebuff" : "targeting.effectAddBuff"),
                 name: p.buff(effect.id, undefined), tone: operation === "remove" || harmful ? "special" : "success",
                 durationLabel: durationLabel ?? (effect.duration === undefined ? undefined : p.ui("characterDetails.rounds", { count: effect.duration })),
@@ -145,12 +144,6 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
                 id: "servitude", recipient: "selected", duration: 2,
                 statuses: [{ id: "servitude", level: 1 }]
             }, "add", true);
-
-            const servitude = rows[rows.length - 1]!;
-            if (servitude.preview?.kind === "buff") {
-                servitude.preview.details = [p.status("servitude")];
-            }
-            servitude.statusReferences = undefined;
             break;
         case "stop":
             row("targeting.effectWeaken", "weaken", "boss"); row("targeting.effectCancel", "cancel", "enemy");
@@ -176,17 +169,12 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
         case "pounce":
             for (let severity = 1; severity <= 4; severity++) {
                 buff({
-                    id: "pounce", recipient: "selected", modifiers: severity === 2 ? { hit: -1 } : severity === 3 ? { hit: -2 } : {},
+                    id: "player", recipient: `pounce${severity}`, modifiers: severity === 2 ? { hit: -1 } : severity === 3 ? { hit: -2 } : {},
                     moveList: { addedMoves: ["throwOff"] }, statuses: [{ id: "immobilized", level: 1 }, ...(severity === 3 ? [{ id: "stunned" as const, level: 1 }] : severity === 4 ? [{ id: "helpless" as const, level: 1 }] : [])]
                 }, "add", true);
-                const victim = rows[rows.length - 1]!;
-                victim.recipient = "players";
-                if (victim.preview?.kind === "buff") victim.preview.name = p.buff("pounce", severity);
-                buff({ id: "pounce", recipient: "self", modifiers: { defense: -2, hit: severity * 2 } }, "add", false);
-                const attacker = rows[rows.length - 1]!;
-                if (attacker.preview?.kind === "buff") attacker.preview.name = p.buff("pounce", severity);
+                buff({ id: "skunkette", recipient: `pounce${severity}`, modifiers: { defense: -2, hit: severity * 2 } }, "add", false);
             }
-            row("targeting.effectMove", "spray", "players", "warning");
+            row("targeting.effectMove", "spray", "followUp", "warning");
             break;
         case "latexMist":
             buff({ id: "latexMist", recipient: "onGrazeHitCrit", duration: 1, modifiers: { spread: 5 } }, "add", true, text("effect.spread.note"));
@@ -237,6 +225,15 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
     if (move.id !== "fairyEmpowerment" && Object.values(library.characters).some(character => character.empoweredMoves.includes(move.id))) empowerment("self", "remove");
     if (Object.keys(move.modifiers ?? {}).length) rows.push({ recipient: "", label: p.ui("library.modifiersHeading"), tone: "primary", modifiers: move.modifiers });
     return rows;
+}
+
+/** Buff status names follow the same level-count convention as Library status headings. */
+export function libraryBuffStatuses(effect: Pick<MoveBuffReference, "statuses">, library: ContentLibrary, p: Presentation) {
+    return (effect.statuses ?? []).map(status => ({
+        id: status.id,
+        label: library.statuses[status.id]?.modifiers.length === 2 ? libraryName({ category: "statuses", id: status.id }, p)
+            : p.ui("characterDetails.statusValue", { status: libraryName({ category: "statuses", id: status.id }, p), value: status.level }),
+    }));
 }
 
 export function libraryMoveRecipient(id: string, library: ContentLibrary, p: Presentation): string {

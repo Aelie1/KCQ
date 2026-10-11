@@ -69,13 +69,28 @@ describe("buff move-list descriptions", () => {
 
     it("can expand authored categories into localized move references without live state", () => {
         const translated = new Presentation({ ...stockStrings, "move.whiteFlame.name": "Flamme blanche" });
-        expect(projectBuffMoveList(burnout, translated, undefined, true)).toEqual([
+        expect(projectBuffMoveList(burnout, translated, undefined, true)).toMatchObject([
             { label: "Add Punch", tone: "success", move: "punch" },
             { label: "Add Kick", tone: "success", move: "kick" },
             { label: "Block Flamme blanche", tone: "danger", move: "whiteFlame" },
             { label: "Block Immolation", tone: "danger", move: "immolation" },
         ]);
         expect(projectBuffMoveList({ id: "unknown" }, translated, undefined, true)).toEqual([]);
+    });
+
+    it("preserves localized word order and repeated move placeholders in reference labels", () => {
+        const translated = new Presentation({ ...stockStrings,
+            "ui.targeting.addMove": "{move} : ajouter {move}", "ui.targeting.blockMove": "{move} bloqué",
+            "move.punch.name": "Ajouter", "move.whiteFlame.name": "Flamme blanche",
+        });
+        const details = projectBuffMoveList(burnout, translated, undefined, true);
+        expect(details[0]).toMatchObject({ label: "Ajouter : ajouter Ajouter", move: "punch",
+            parts: ["", { moveName: "Ajouter" }, " : ajouter ", { moveName: "Ajouter" }, ""],
+        });
+        expect(details[2]).toMatchObject({ label: "Flamme blanche bloqué", move: "whiteFlame",
+            parts: ["", { moveName: "Flamme blanche" }, " bloqué"],
+        });
+        expect(projectBuffMoveList(burnout, translated)[0]).toEqual(positive("Adds Basic Moves"));
     });
 
     it("renders the same consolidated category chips in Character and Enemy Details", () => {

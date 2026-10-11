@@ -7,13 +7,19 @@ export function projectBuffMoveList(
     presentation: Presentation,
     currentMoves?: ReadonlySet<MoveId>,
     references = false,
-): { label: string; tone: "success" | "danger"; move?: MoveId }[] {
+): { label: string; tone: "success" | "danger"; move?: MoveId; parts?: readonly (string | { moveName: string })[] }[] {
     const category = (moves: readonly MoveId[], variant: "allow" | "block") => {
         if (moves.length === 0) return [];
         const summary = presentation.buffMoveList(buff.id, variant);
         return summary !== undefined && !references ? [{ label: summary }] : moves.map(move => ({
             label: presentation.ui(variant === "allow" ? "targeting.addMove" : "targeting.blockMove", { move: presentation.move(move) }),
-            ...(references ? { move } : {}),
+            ...(references ? {
+                move,
+                // Split the localized template token, never the translated move name or English label.
+                parts: presentation.ui(variant === "allow" ? "targeting.addMove" : "targeting.blockMove", { move: "{move}" })
+                    .split("{move}").flatMap<string | { moveName: string }>((part, index) =>
+                        index === 0 ? [part] : [{ moveName: presentation.move(move) }, part]),
+            } : {}),
         }));
     };
     return [
