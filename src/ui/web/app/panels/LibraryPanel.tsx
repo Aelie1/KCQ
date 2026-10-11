@@ -234,7 +234,7 @@ function EnemyDetail(props: { reference: EnemyReference }): JSX.Element {
         <dl class="kcq-library__facts kcq-encounter-card">
             <Stat label={c.presentation.ui("library.rank")}><StatusChip tone={props.reference.rank === "boss" ? "danger" : props.reference.rank === "enemy" ? "warning" : "neutral"}>{c.presentation.enemyRank(props.reference.rank)}</StatusChip></Stat>
             <Stat label={c.presentation.ui("library.hp")}>{props.reference.hp}</Stat>
-            <Stat label={c.presentation.ui("library.defense")}>{formatSignedNumber(props.reference.defense)}</Stat>
+            <Show when={props.reference.defense !== 0}><Stat label={c.presentation.ui("library.defense")}>{formatSignedNumber(props.reference.defense)}</Stat></Show>
         </dl>
         <Description entry={{ category: "enemies", id: props.reference.id }} />
         <Show when={strategy()} fallback={<Show when={props.reference.moves.length}><SurfaceCard title={c.presentation.ui("library.moves")}><MoveCards ids={props.reference.moves} /></SurfaceCard></Show>}>
@@ -384,14 +384,8 @@ function SkunkBindingsDetail(): JSX.Element {
     const c = context();
     return <>
         <Description entry={{ category: "bindings", id: SKUNK_BINDINGS_ID }} />
-        <SurfaceCard title={c.presentation.ui("library.skunk.spreading")}>
-            <Notes text={c.presentation.referenceText("binding", SKUNK_BINDINGS_ID, "spreading")} />
-            <table class="kcq-library__mechanics-table kcq-library__spread-table"><thead><tr><th>{c.presentation.ui("library.severity")}</th><th>{c.presentation.ui("library.spreadAmount")}</th></tr></thead>
-                <tbody><For each={["heavy", "severe", "overwhelming"] as const}>{level => <tr><th scope="row">{c.presentation.bindingLevel(level)}</th><td>{c.presentation.referenceText("binding", SKUNK_BINDINGS_ID, "spread." + level)}</td></tr>}</For></tbody>
-            </table>
-            <Notes text={c.presentation.referenceText("binding", SKUNK_BINDINGS_ID, "spreadScaling")} />
-        </SurfaceCard>
-        <SurfaceCard title={c.presentation.ui("library.skunk.transformation")}><Notes ordered text={c.presentation.referenceText("binding", SKUNK_BINDINGS_ID, "transformation")} /></SurfaceCard>
+        <SurfaceCard title={c.presentation.ui("library.skunk.spreading")}><Notes text={c.presentation.referenceText("binding", SKUNK_BINDINGS_ID, "spreading")} /></SurfaceCard>
+        <SurfaceCard title={c.presentation.ui("library.skunk.transformation")}><Notes text={c.presentation.referenceText("binding", SKUNK_BINDINGS_ID, "transformation")} /></SurfaceCard>
         <SurfaceCard title={c.presentation.ui("library.skunk.restoration")}><Notes text={c.presentation.referenceText("binding", SKUNK_BINDINGS_ID, "restoration")} /></SurfaceCard>
         <SurfaceCard title={c.presentation.ui("library.bindings")}><Links category="bindings" ids={SKUNK_BINDING_IDS.filter(id => id !== "latexCollar" && libraryHas(c.library, { category: "bindings", id }))} /></SurfaceCard>
     </>;

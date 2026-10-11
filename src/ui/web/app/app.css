@@ -4401,7 +4401,7 @@ button {
     padding: 4px 6px;
     color: var(--kcq-accent-primary);
     background: var(--kcq-surface-raised);
-    font-size: 10px;
+    font-size: 12px;
     text-align: left;
     cursor: pointer;
     overflow-wrap: anywhere;
@@ -4422,6 +4422,10 @@ button {
     background: transparent;
     font-weight: 600;
     line-height: inherit;
+}
+
+.kcq-preview-effect .kcq-library__link {
+    font-size: 10px;
 }
 
 .kcq-library__link .kcq-status-chip {
