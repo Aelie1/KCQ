@@ -146,6 +146,12 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
             <Match when={props.effect.kind === "binding" && props.effect}>
                 {(effect) => {
                     const binding = effect() as Extract<EffectPreviewViewModel, { kind: "binding" }>;
+                    const meter = binding.mode === "amount"
+                        ? { value: binding.magnitude ?? 0, max: binding.max, level: binding.level, ariaLabel: binding.bindingName + " " + binding.amountLabel }
+                        : {
+                            value: binding.currentValue, change: binding.change, max: binding.max, peak: binding.peak,
+                            level: binding.currentLevel, resultLevel: binding.change < 0 ? binding.currentLevel : binding.projectedLevel, ariaLabel: binding.bindingName
+                        };
                     return (
                         <div class="kcq-preview-effect kcq-preview-effect--special kcq-binding-effect">
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
@@ -154,27 +160,22 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                 <div class="kcq-binding-effect__header">
                                     <strong class="kcq-preview-effect__payload">{binding.bindingName}</strong>
                                     <EffectRecipient recipient={binding.recipient} />
-                                    <span class={`kcq-binding-effect__level kcq-escape-value--${binding.currentLevel}`}>
-                                        {binding.currentLevelLabel}
-                                    </span>
-                                    <strong class="kcq-binding-effect__transition">
-                                        {binding.currentValue} → {binding.projectedLevelLabel && (
-                                            <span class={`kcq-binding-effect__projected-level kcq-escape-value--${binding.projectedLevel}`}>
-                                                {binding.projectedLevelLabel}{" "}
+                                    {binding.mode === "amount"
+                                        ? <strong class="kcq-binding-effect__transition">{binding.amountLabel}</strong>
+                                        : <>
+                                            <span class={`kcq-binding-effect__level kcq-escape-value--${binding.currentLevel}`}>
+                                                {binding.currentLevelLabel}
                                             </span>
-                                        )}{binding.projectedValue}
-                                    </strong>
+                                            <strong class="kcq-binding-effect__transition">
+                                                {binding.currentValue} → {binding.projectedLevelLabel && (
+                                                    <span class={`kcq-binding-effect__projected-level kcq-escape-value--${binding.projectedLevel}`}>
+                                                        {binding.projectedLevelLabel}{" "}
+                                                    </span>
+                                                )}{binding.projectedValue}
+                                            </strong>
+                                        </>}
                                 </div>
-                                <BindingMeter
-                                    value={binding.currentValue}
-                                    change={binding.change}
-                                    max={binding.max}
-                                    peak={binding.peak}
-                                    level={binding.currentLevel}
-                                    resultLevel={binding.projectedLevel}
-                                    size="compact"
-                                    ariaLabel={binding.bindingName}
-                                />
+                                <BindingMeter {...meter} size="compact" />
                             </div>
                         </div>
                     );

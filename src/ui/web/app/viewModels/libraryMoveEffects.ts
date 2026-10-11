@@ -1,11 +1,12 @@
 import type { ContentLibrary, MoveBuffReference, MoveReference } from "../../../../engine/public/library";
+import { getThresholds } from "../../../../engine/public/mechanics";
 import type { ModifierId, ModifierSet, MoveListModifier } from "../../../../engine/public/types";
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import { projectBuffMoveList } from "./buffMoveList";
 import type { EffectPreviewViewModel, EffectTone } from "./effectPreviews";
 import { libraryOwners } from "./library";
 import { libraryDamageProfile } from "./libraryMechanics";
-import { formatSignedNumber, isDebuff, isHarmfulModifierChange } from "./presentationHelpers";
+import { bindingLevelAtValue, formatSignedNumber, isDebuff, isHarmfulModifierChange } from "./presentationHelpers";
 
 /** Reference presentation only. Callback mechanics are authored descriptions, never executable effects.
  * Public static effects and intrinsic modifiers take precedence over these stock reference annotations. */
@@ -27,6 +28,7 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
     const actor = owner?.id ?? "self";
     const selected = move.targets === 0 ? actor : move.targetSide === "player" ? "allies" : "enemies";
     const text = (key: string) => p.referenceText("move", move.id, key);
+    const thresholds = getThresholds();
     const row = (type: UiLabel, key: string, recipient = selected, tone: EffectTone = "primary", modifiers?: ModifierSet): void => {
         if (type === "targeting.effectBinding") {
             bindingRow(recipient, text("effect." + key) ?? p.ui(type), p.ui("library.variableAmount"), text("effect." + key + ".note"));
@@ -61,17 +63,31 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
     }, operation, false, operation === "add" ? text("effect.empowerment.note") : undefined,
         operation === "add" ? p.ui("library.untilConsumed") : undefined);
     const damage = move.traits?.includes("damage") ? libraryDamageProfile(move, p, owner?.category === "characters") : undefined;
-    const bindingRow = (recipient: string, name: string, change: string, note?: string): void => {
+
+    const bindingRow = (
+        recipient: string, name: string, change: string, note?: string,
+        meter?: { value: number; change?: number; max?: number },
+    ): void => {
+        const id = `library-${move.id}-binding-${rows.length}`;
+        const label = p.ui("targeting.effectBinding");
+        const max = meter?.max ?? thresholds.max;
+        const projected = Math.max(0, Math.min(max, (meter?.value ?? 0) + (meter?.change ?? 0)));
+        const currentLevel = bindingLevelAtValue(meter?.value ?? 0, thresholds);
+        const projectedLevel = bindingLevelAtValue(projected, thresholds);
         rows.push({
             recipient,
-            preview: {
-                kind: "compact",
-                id: `library-${move.id}-binding-${rows.length}`,
-                type: "binding",
-                tone: "special",
-                label: p.ui("targeting.effectBinding"),
-                payload: `${name} ${change}`,
-                details: [],
+            preview: meter?.change === undefined ? {
+                kind: "binding", mode: "amount", id, type: "binding", tone: "binding", label,
+                bindingName: name, amountLabel: change, magnitude: meter?.value, max,
+                level: bindingLevelAtValue(meter?.value ?? 0, thresholds),
+            } : {
+                kind: "binding", id, type: "binding", tone: "binding", label,
+                bindingName: name, currentValue: meter.value, change: meter.change,
+                projectedValue: projected, max,
+                currentLevel,
+                currentLevelLabel: p.bindingLevel(currentLevel),
+                projectedLevel,
+                projectedLevelLabel: p.bindingLevel(projectedLevel),
             },
             note,
         });
@@ -90,15 +106,25 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
         case "powerOfDenial":
             row("targeting.operationDefeat", "defeat", "enemies", "danger");
 
-            bindingRow("allies", p.ui("library.strongestBinding"), "−100", text("effect.binding.note"));
-            buff({ id: "exhausted", recipient: "self", moveList: { blockedMoves: [move.id] } }, "add", false, undefined, p.ui("library.encounterDuration")); break;
+            bindingRow("allies", p.ui("library.strongestBinding"), "−100", text("effect.binding.note"), { value: 100, change: -100 });
+            buff({ id: "exhausted", recipient: "self", moveList: { blockedMoves: [move.id] } }, "add", false); break;
         case "immolation":
-            bindingRow(actor, p.ui("library.allBindings"), "−50%", text("effect.binding.note"));
-            buff({ id: "burnout", recipient: "self", moveList: { addedMoves: ["punch", "kick"], blockedMoves: ["whiteFlame", "fairyWhiteFlame", "phoenixKick", "fairyPhoenixKick", "immolation"] } }, "add", false, undefined, p.ui("library.encounterDuration"));
+            bindingRow(actor, `${p.ui("library.allBindings")} −50%`, "−50", text("effect.binding.note"), { value: 100, change: -50 });
+            buff({ id: "burnout", recipient: "self", moveList: { addedMoves: ["punch", "kick"], blockedMoves: ["whiteFlame", "fairyWhiteFlame", "phoenixKick", "fairyPhoenixKick", "immolation"] } }, "add", false);
             break;
         case "obey":
             row("targeting.effectRefresh", "refresh", "allies");
-            buff({ id: "servitude", recipient: "selected", duration: 2, statuses: [{ id: "servitude", level: 1 }] }, "add", true); break;
+            buff({
+                id: "servitude", recipient: "selected", duration: 2,
+                statuses: [{ id: "servitude", level: 1 }]
+            }, "add", true);
+
+            const servitude = rows[rows.length - 1]!;
+            if (servitude.preview?.kind === "buff") {
+                servitude.preview.details = [p.status("servitude")];
+            }
+            servitude.statusReferences = undefined;
+            break;
         case "stop":
             row("targeting.effectWeaken", "weaken", "boss"); row("targeting.effectCancel", "cancel", "enemy"); break;
         case "attackMe":
@@ -107,7 +133,7 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
         case "store":
             bindingRow("allies", p.ui("library.strongestBinding"), p.ui("library.bindingReduction"), text("effect.binding.note"));
             row("targeting.effectResource", "resource", actor);
-            row("targeting.effectBinding", "overflow", actor, "warning"); break;
+            break;
         case "release":
             buff({ id: "subspaceClutter", recipient: "selected", duration: 2, modifiers: { defense: -2, hit: -2 } }, "add", true);
             rows[rows.length - 1]!.recipient = "enemies";
@@ -153,7 +179,8 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
         case "barrierMagic":
             buff({ id: "barrierMagic", recipient: "selected" }, "add", false, text("effect.barrier.note")); break;
         case "latexRain":
-            bindingRow("players", p.ui("library.bodyZones"), move.baseDamage?.toString() ?? "", text("effect.binding.note"));
+            bindingRow("players", p.ui("library.bodyZones"), move.baseDamage?.toString() ?? "", text("effect.binding.note"), { value: move.baseDamage ?? 0 });
+            break;
         case "callReinforcements": case "latexRainmaker": row("targeting.operationSpawn", "spawn", "field"); break;
         case "skunkPerfume":
             buff({ id: "defensePerfume", recipient: "selected", duration: 4, modifiers: { defense: -2 } }, "add", true, text("effect.defense.note"));

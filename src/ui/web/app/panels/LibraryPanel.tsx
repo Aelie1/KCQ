@@ -282,7 +282,6 @@ function MoveEffectRow(props: { row: LibraryMoveEffectRow; hideDuration?: boolea
             <div class="kcq-library__reference-content"><Show when={props.row.name}><strong class="kcq-preview-effect__payload"><ReferenceText text={props.row.name!} /></strong></Show><Modifiers modifiers={props.row.modifiers} /></div>
         </div></Show>
         <Show when={props.row.statusReferences?.length}><div class="kcq-library__buff-statuses"><For each={props.row.statusReferences}>{status => <div class="kcq-library__buff-status">
-            <ReferenceLink entry={{ category: "statuses", id: status.id }}><StatusName id={status.id} level={status.level} /></ReferenceLink>
             <Show when={c.library.statuses[status.id]?.modifiers[status.level]}>{mechanics => <StatusEffects reference={mechanics()} />}</Show>
         </div>}</For></div></Show>
         <Show when={props.row.note}><p class="kcq-library__effect-note"><ReferenceText text={props.row.note!} /></p></Show>
@@ -309,17 +308,28 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
             <Stat label={c.presentation.ui("library.type")}><CommandTag tag={{ id: "type", label: c.presentation.moveType(props.reference.type), tone: "warning" }} /></Stat>
             <Show when={hits() > 1}><Stat label={c.presentation.ui("library.hits")}><CommandTag tag={{ id: "hits", label: c.presentation.ui("library.hitCount", { count: hits() }), tone: "neutral" }} /></Stat></Show>
             <Show when={props.reference.id === "brace" || props.reference.id === "reflect" || props.reference.id === "fairyReflect" || durations().length === 1}><Stat label={c.presentation.ui("library.duration")}><CommandTag tag={{ id: "duration", label: props.reference.id === "brace" ? c.presentation.ui("library.thisRound") : c.presentation.ui("characterDetails.rounds", { count: durations()[0]! }), tone: "special" }} /></Stat></Show>
-            <Show when={cooldown() !== undefined || sharedCooldowns().length}><Stat label={c.presentation.ui("library.cooldownHeading")}>
-                <Show when={sharedCooldowns().length} fallback={<CommandTag tag={{ id: "cooldown", label: c.presentation.ui("characterDetails.rounds", { count: cooldown()! }), tone: "warning" }} />}>
-                    <div class="kcq-library__cooldown-summary">
-                        <Show when={cooldown() !== undefined}><div><span>{c.presentation.ui("library.moveCooldown")}</span><CommandTag tag={{ id: "cooldown", label: String(cooldown()), tone: "warning" }} /></div></Show>
-                        <Show when={sharedCooldowns().every(([, count]) => count === sharedCooldowns()[0]?.[1])} fallback={<For each={sharedCooldowns()}>{([id, count]) => <div><ReferenceLink entry={{ category: "moves", id }} /><CommandTag tag={{ id: "shared-" + id, label: String(count), tone: "warning" }} /></div>}</For>}>
-                            <div><span>{c.presentation.ui("library.sharedCooldown")}</span><CommandTag tag={{ id: "shared-cooldown", label: String(sharedCooldowns()[0]?.[1]), tone: "warning" }} /></div>
-                            <div class="kcq-library__cooldown-references"><For each={sharedCooldowns()}>{([id]) => <ReferenceLink entry={{ category: "moves", id }} />}</For></div>
-                        </Show>
-                    </div>
-                </Show>
-            </Stat></Show>
+            <Show when={cooldown() !== undefined || sharedCooldowns().length}>
+                <div class="kcq-library__cooldown-stack">
+                    <Show when={cooldown() !== undefined}>
+                        <Stat label={c.presentation.ui("library.cooldownHeading")}>
+                            <CommandTag tag={{
+                                id: "cooldown",
+                                label: c.presentation.ui("characterDetails.rounds", { count: cooldown()! }),
+                                tone: "warning"
+                            }} />
+                        </Stat>
+                    </Show>
+                    <Show when={sharedCooldowns().length}>
+                        <Stat label={c.presentation.ui("library.sharedCooldown")}>
+                            <CommandTag tag={{
+                                id: "shared-cooldown",
+                                label: c.presentation.ui("characterDetails.rounds", { count: sharedCooldowns()[0]![1] }),
+                                tone: "warning"
+                            }} />
+                        </Stat>
+                    </Show>
+                </div>
+            </Show>
         </dl>
         <Description entry={{ category: "moves", id: props.reference.id }} />
         <SurfaceCard title={c.presentation.ui("library.effects")}>

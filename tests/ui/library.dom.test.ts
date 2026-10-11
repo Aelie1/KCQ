@@ -445,7 +445,7 @@ describe("Library Round 4 corrections", () => {
         libraryMount({ kind: "entry", category: "moves", id: "powerOfDenial" });
         expect([...document.querySelectorAll("[data-library-recipient] h3")].map(node => node.textContent)).toEqual(["Enemies", "Allies", "Ko-chan"]);
         expect(element('[data-library-recipient="enemies"]').textContent).toContain("DefeatTarget Non-Boss Enemy");
-        expect(element('[data-library-recipient="allies"]').textContent).toContain("Strongest Binding−100");
+        expect(element('[data-library-recipient="allies"]').textContent).toContain("Strongest Binding");
         expect(element('[data-library-recipient="allies"]').textContent).toContain("Requires an existing binding");
         expect(element('[data-library-recipient="ko"]').textContent).toContain("Exhausted");
         expect(element('[data-library-recipient="ko"]').textContent).toContain("Block [Power of Denial]");
@@ -511,16 +511,30 @@ describe("Library Round 4 corrections", () => {
 
 
 describe("Library Round 5 systematic presentation", () => {
-    it("renders binding reductions as amount bars without invented current or resulting values", () => {
-        for (const id of ["powerOfDenial", "immolation", "store"]) {
+    it("shows illustrative binding decreases on the shared projected meter", () => {
+        for (const [id, transition, resultingFill] of [
+            ["powerOfDenial", "100 → 0 (−100)", "0%"],
+            ["immolation", "100 → 50 (−50)", "50%"],
+        ] as const) {
             libraryMount({ kind: "entry", category: "moves", id });
             const binding = element(".kcq-binding-effect");
-            expect(binding.querySelector(".kcq-binding-meter")).not.toBeNull();
-            expect(binding.querySelector(".kcq-binding-effect__transition")!.textContent).toContain("−");
-            expect(binding.textContent).not.toContain("→");
-            if (id === "powerOfDenial") expect(binding.querySelector(".kcq-binding-effect__transition")!.textContent).toBe("−100");
+            expect(binding.classList.contains("kcq-preview-effect--special")).toBe(true);
+            expect(binding.querySelector(".kcq-preview-effect__tag")!.textContent).toBe("Binding");
+            expect(binding.querySelector(".kcq-binding-effect__transition")!.textContent).toBe(transition);
+            const meter = element<HTMLElement>(".kcq-binding-effect .kcq-binding-meter");
+            expect(meter.classList.contains("kcq-binding-meter--decrease")).toBe(true);
+            expect(meter.getAttribute("aria-valuenow")).toBe("100");
+            expect((meter.querySelector(".kcq-binding-meter__value") as HTMLElement).style.width).toBe(resultingFill);
+            expect(meter.querySelector(".kcq-binding-meter__change")).not.toBeNull();
             unmount!();
         }
+    });
+    it("keeps an unfilled binding meter for variable reductions", () => {
+        libraryMount({ kind: "entry", category: "moves", id: "store" });
+        const meter = element<HTMLElement>(".kcq-binding-effect .kcq-binding-meter");
+        expect((meter.querySelector(".kcq-binding-meter__value") as HTMLElement).style.width).toBe("0%");
+        expect(meter.querySelector(".kcq-binding-meter__change")).toBeNull();
+        expect(element(".kcq-binding-effect__transition").textContent).toContain("−Escape potency ×2");
     });
     it("keeps linked Burnout and Exhausted availability visible with navigation history", async () => {
         libraryMount({ kind: "entry", category: "moves", id: "immolation" });

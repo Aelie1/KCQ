@@ -2476,8 +2476,6 @@ button {
 .kcq-binding-effect__header .kcq-preview-effect__payload,
 .kcq-meter-effect__header .kcq-preview-effect__payload {
     flex: 1 1 auto;
-    font-size: 12px;
-    font-weight: 700;
 }
 
 .kcq-buff-effect__duration {
@@ -5136,10 +5134,18 @@ button {
     flex: 1 1 auto;
 }
 
-.kcq-library__cooldown-summary {
-    display: grid;
-    gap: 4px;
+.kcq-library__cooldown-stack {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
     min-width: 0;
+}
+
+.kcq-library__facts .kcq-library__cooldown-stack>.kcq-library__stat {
+    flex: 0 0 auto;
+    min-height: 0;
 }
 
 .kcq-library__cooldown-summary>div {
@@ -5148,12 +5154,4 @@ button {
     align-items: center;
     justify-content: center;
     gap: 4px;
-}
-
-.kcq-library__cooldown-summary .kcq-library__link {
-    font-size: 10px;
-}
-
-.kcq-library__cooldown-references {
-    max-width: 140px;
 }
