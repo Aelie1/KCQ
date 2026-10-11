@@ -207,6 +207,7 @@ export const store: MoveDef = {
 
 export const brace: MoveDef = {
     id: "brace",
+    libraryEffects: [{ id: "brace", recipient: "self", duration: 1 }],
     index: 4,
     targetSide: "none",
     targets: 0,

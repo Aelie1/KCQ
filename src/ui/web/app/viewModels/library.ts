@@ -204,7 +204,7 @@ export const SKUNK_BINDING_IDS: readonly string[] = ["latexHead", "latexArms", "
 
 export function libraryModifierLabel(id: ModifierId, p: Presentation): string {
     const types = { hitarms: "arms", hitmouth: "mouth", hitlegs: "legs" } as const;
-    return id in types ? p.moveType(types[id as keyof typeof types]) : p.modifier(id);
+    return id in types ? p.moveType(types[id as keyof typeof types]) : p.modifier(id, "compact");
 }
 
 export function libraryMoveGroups(library: ContentLibrary, p: Presentation) {
@@ -230,13 +230,21 @@ export function libraryPassiveSummary(library: ContentLibrary, characterId: stri
 
 export function libraryPassiveRows(reference: ContentLibrary["passives"][string], p: Presentation) {
     return [
-        ...libraryModifiers(reference.status?.modifiers, p).map(metric => ({ label: metric.label + " " + metric.valueLabel, tone: metric.tone,
-            explanation: p.ui("library.modifierExplanation", { modifier: metric.label, value: metric.valueLabel }) })),
-        ...(reference.status?.flags ?? []).map(flag => ({ label: flag === "blocksEscape" ? p.ui("library.blocksEscape") : p.flag(flag), tone: flag === "skipsTraps" ? "success" as const : "danger" as const,
-            explanation: p.referenceText("passive", reference.id, "effect." + flag) ?? p.flag(flag) })),
-        ...(reference.status?.blockedMoveTypes ?? []).map(type => ({ label: p.ui("library.blocked", { type: p.moveType(type) }), tone: "danger" as const,
-            explanation: p.ui("library.blockedExplanation", { type: p.moveType(type) }) })),
-        ...(reference.status?.allowedMoveTypes ?? []).map(type => ({ label: p.ui("library.allowed", { type: p.moveType(type) }), tone: "success" as const,
-            explanation: p.ui("library.allowedExplanation", { type: p.moveType(type) }) })),
+        ...libraryModifiers(reference.status?.modifiers, p).map(metric => ({
+            label: metric.label + " " + metric.valueLabel, tone: metric.tone,
+            explanation: p.ui("library.modifierExplanation", { modifier: metric.label, value: metric.valueLabel })
+        })),
+        ...(reference.status?.flags ?? []).map(flag => ({
+            label: flag === "blocksEscape" ? p.ui("library.blocksEscape") : p.flag(flag), tone: flag === "skipsTraps" ? "success" as const : "danger" as const,
+            explanation: p.referenceText("passive", reference.id, "effect." + flag) ?? p.flag(flag)
+        })),
+        ...(reference.status?.blockedMoveTypes ?? []).map(type => ({
+            label: p.ui("library.blocked", { type: p.moveType(type) }), tone: "danger" as const,
+            explanation: p.ui("library.blockedExplanation", { type: p.moveType(type) })
+        })),
+        ...(reference.status?.allowedMoveTypes ?? []).map(type => ({
+            label: p.ui("library.allowed", { type: p.moveType(type) }), tone: "success" as const,
+            explanation: p.ui("library.allowedExplanation", { type: p.moveType(type) })
+        })),
     ];
 }

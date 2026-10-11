@@ -103,9 +103,9 @@ export const skunkEnglishStrings: StringTable = {
     "move.skunkCollar.name": "Skunk Collar",
     "move.skunkCollar.desc": "Apply a collar that steadily grows other latex bindings.",
     "move.callReinforcements.name": "Call Reinforcements",
-    "move.callReinforcements.desc": "Summon the next wave of enemy allies.",
+    "move.callReinforcements.desc": "Summon increasingly powerful waves of enemy allies.",
     "move.latexRainmaker.name": "Construct Rainmaker",
-    "move.latexRainmaker.desc": "Construct a Rainmaker to spray the party.",
+    "move.latexRainmaker.desc": "Construct increasingly powerful contraptions to spray the party.",
     "move.skunkPerfume.name": "Skunk Perfume",
     "move.skunkPerfume.desc": "Apply weakening perfume or heal enemy allies.",
 

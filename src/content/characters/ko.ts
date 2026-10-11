@@ -181,6 +181,7 @@ export const fairyStarlightBindings: MoveDef = {
 
 export const reflect: MoveDef = {
     id: "reflect",
+    libraryEffects: [{ id: "reflect", recipient: "self", duration: 1 }],
     index: 5,
     targetSide: "player",
     targets: 0,
@@ -210,6 +211,7 @@ export const reflect: MoveDef = {
 export const fairyReflect: MoveDef = {
     ...reflect,
     id: "fairyReflect",
+    libraryEffects: [{ id: "fairyReflect", recipient: "self", duration: 1 }],
     index: 6,
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = reflect.resolve(state, actor, move, targets);

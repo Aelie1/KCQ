@@ -313,7 +313,6 @@ export type UiLabel =
     | "library.cooldownHeading"
     | "library.sharedCooldowns"
     | "library.freeAction"
-    | "library.perHit"
     | "library.specialResource"
     | "library.allowedExplanation"
     | "library.blockedExplanation"
