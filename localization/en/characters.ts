@@ -3,9 +3,12 @@ import { StringTable } from "../../src/ui/presentation/presentation";
 export const koEnglishStrings: StringTable = {
     "entity.ko.name": "Ko-chan",
     "entity.ko.desc": "Student council president.  Self-proclaimed fairy.",
+    "entity.ko.library": "[moves:fairyTransformation] unlocks empowered moves. Each empowered move consumes empowerment.",
 
     "passive.thousandRestraintsBody.name": "Thousand Restraints Body",
     "passive.thousandRestraintsBody.desc": "Fight through restraints while relying on others for escape assistance.",
+    "passive.thousandRestraintsBody.effect.blocksEscape": "Cannot Escape or Assist. Other characters can still assist the owner.",
+    "passive.thousandRestraintsBody.summary": "Keeps Mouth moves available through binding restrictions.",
 
     "move.telekinesis.name": "Telekinesis",
     "move.telekinesis.desc": "Strike an enemy with telekinetic force.",
@@ -25,6 +28,7 @@ export const koEnglishStrings: StringTable = {
     "move.fairyEmpowerment.desc": "Share defensive magic and empowerment with the party.",
     "move.powerOfDenial.name": "[Power of Denial]",
     "move.powerOfDenial.desc": "Destroy a binding or defeat a non-boss enemy once per encounter.",
+    "move.powerOfDenial.effect.defeat": "Target Non-Boss Enemy",
 
     "buff.transformation.name": "Fairy Transformation",
     "buff.transformation.desc": "...",
@@ -45,6 +49,7 @@ export const koEnglishStrings: StringTable = {
 export const matsukoEnglishStrings: StringTable = {
     "entity.matsuko.name": "Matsuko",
     "entity.matsuko.desc": "Student council vice-president.  Young Mistress of the Flame Clan.",
+    "entity.matsuko.library": "Matsuko's Compulsion moves share cooldowns and do not consume her action.",
 
     "move.punch.name": "Punch",
     "move.punch.desc": "A basic punch.",
@@ -62,10 +67,14 @@ export const matsukoEnglishStrings: StringTable = {
     "move.immolation.desc": "Burn away restraints in an all-enemy attack at the cost of the use of her flame powers for the rest of the encounter.",
     "move.obey.name": "[Compulsion: Obey]",
     "move.obey.desc": "Compel an ally to act again, temporarily sealing their Escape.",
+    "move.obey.effect.refresh": "Target Ally's Action",
     "move.stop.name": "[Compulsion: Stop]",
     "move.stop.desc": "Interrupt or weaken an enemy’s planned actions.",
+    "move.stop.effect.cancel": "All Moves",
+    "move.stop.effect.weaken": "Move Effect −25%",
     "move.attackMe.name": "[Compulsion: Taunt]",
     "move.attackMe.desc": "Draw enemy attacks toward the caster while raising defense.",
+    "move.attackMe.effect.retarget": "Matsuko",
 
     "buff.burnout.name": "Burnout",
     "buff.burnout.desc": "Seals [moves:whiteFlame], [moves:fairyWhiteFlame], [moves:phoenixKick], [moves:fairyPhoenixKick], and [moves:immolation]. Makes [moves:punch] and [moves:kick] available.",
@@ -80,19 +89,27 @@ export const matsukoEnglishStrings: StringTable = {
 export const hinariEnglishStrings: StringTable = {
     "entity.hinari.name": "Hinari",
     "entity.hinari.desc": "Student council treasurer.  Adept of the Power of Space.",
+    "entity.hinari.library": "Subspace starts empty and can hold up to 100.\nThe emptier Subspace is, the more hits [moves:rockfall] deals.\n[moves:store] and [moves:brace] increase Subspace, while [moves:release] empties it.",
 
     "passive.subspaceMovement.name": "Subspace Movement",
     "passive.subspaceMovement.desc": "Ignore traps and resist leg-restricting statuses.",
+    "passive.subspaceMovement.effect.skipsTraps": "Movement does not trigger traps.",
     "move.rockfall.name": "Rockfall",
     "move.rockfall.desc": "Strike an enemy with multiple falling rocks.  Deals less hits as Subspace fills.",
     "move.fairyRockfall.name": "Fairy Rockfall",
     "move.fairyRockfall.desc": "An empowered barrage of falling rocks.  Deals less hits as Subspace fills.",
     "move.store.name": "Store",
     "move.store.desc": "Store material from a character’s strongest binding in Subspace.  Doesn't work if Subspace is full.",
+    "move.store.effect.binding": "Strongest Binding ↓",
+    "move.store.effect.resource": "Subspace +25 (up to capacity)",
     "move.brace.name": "Brace",
     "move.brace.desc": "Prepare to absorb an enemy binding into Subspace.  Doesn't work if Subspace is full.",
     "move.release.name": "Release",
     "move.release.desc": "Release stored material as a binding or an enemy debuff.  Doesn't work if Subspace is empty.",
+    "move.release.effect.binding": "Remembered Binding",
+    "move.release.effect.binding.note": "Adds half the Subspace spent on the ally, rounded up.",
+    "move.release.effect.resource": "Subspace −25 / up to −50",
+    "move.release.effect.resource.note": "Spends 25 when targeting an enemy, or up to 50 when targeting an ally.",
 
     "buff.brace.name": "Brace",
     "buff.brace.desc": "...",
