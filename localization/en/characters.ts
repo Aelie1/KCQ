@@ -5,7 +5,7 @@ export const koEnglishStrings: StringTable = {
     "entity.ko.desc": "Student council president.  Self-proclaimed fairy.",
 
     "passive.thousandRestraintsBody.name": "Thousand Restraints Body",
-    "passive.thousandRestraintsBody.desc": "Use limb-based moves despite binding restrictions, but lose the ability to Escape.",
+    "passive.thousandRestraintsBody.desc": "Fight through restraints while relying on others for escape assistance.",
 
     "move.telekinesis.name": "Telekinesis",
     "move.telekinesis.desc": "Strike an enemy with telekinetic force.",

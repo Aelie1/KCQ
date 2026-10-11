@@ -310,6 +310,23 @@ export type UiLabel =
     | "library.heavy"
     | "library.severe"
     | "library.overwhelming"
+    | "library.cooldownHeading"
+    | "library.sharedCooldowns"
+    | "library.freeAction"
+    | "library.perHit"
+    | "library.specialResource"
+    | "library.allowedExplanation"
+    | "library.blockedExplanation"
+    | "library.modifierExplanation"
+    | "library.immune"
+    | "library.immunityExplanation"
+    | "library.statusColumn"
+    | "library.skunk.spreading"
+    | "library.skunk.transformation"
+    | "library.skunk.rescue"
+    | "library.skunk.restoration"
+    | "library.skunk.collar"
+    | "library.blocksEscape"
     | "version.name";
 
 export class Presentation {

@@ -11,11 +11,12 @@ import { ProjectedMeter } from "../components/ProjectedMeter";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { StatusChip } from "../components/StatusChip";
 import { SurfaceCard } from "../components/SurfaceCard";
+import { libraryAccuracy, libraryDamageProfile } from "../viewModels/libraryMechanics";
 import { type EffectPreviewViewModel } from "../viewModels/effectPreviews";
 import { formatSignedNumber, isHarmfulModifierChange } from "../viewModels/presentationHelpers";
 import { groupEffectPreviews } from "../viewModels/effectGroups";
 import { encounterStars } from "../viewModels/encounters";
-import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryModifiers, libraryName, libraryOwners, libraryRestrictions, libraryMoveTags, libraryTrapOutcomes, libraryText, referenceParts, type LibraryCategory, type LibraryEntry, type LibraryPage } from "../viewModels/library";
+import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryMoveGroups, libraryPassiveSummary, libraryPassiveRows, SKUNK_BINDINGS_ID, SKUNK_BINDING_IDS, libraryHas, libraryModifiers, libraryName, libraryOwners, libraryRestrictions, libraryMoveTags, libraryTrapOutcomes, libraryText, referenceParts, type LibraryCategory, type LibraryEntry, type LibraryPage } from "../viewModels/library";
 
 export interface LibraryPanelProps { library: ContentLibrary; presentation: Presentation; onClose: () => void; initialPage?: LibraryPage; bestClears?: Readonly<Partial<Record<EncounterId, DifficultyId>>> }
 interface LibraryContextValue { library: ContentLibrary; presentation: Presentation; openEntry: (entry: LibraryEntry) => void; bestClears?: LibraryPanelProps["bestClears"] }
@@ -85,6 +86,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                     </Show>
                 </nav>
                 </div>
+                <Show when={page().kind === "entry" && (page() as LibraryEntry).category === "moves"}><Owner category="moves" id={(page() as LibraryEntry).id} /></Show>
             </div>}
             body={<Switch>
                 <Match when={page().kind === "home"}>
@@ -93,24 +95,26 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                         <button type="button" class="kcq-library__category kcq-encounter-card" data-library-focus={category}
                             onClick={() => open({ kind: "category", category })}>
                             <strong>{label(props.presentation, category)}</strong>
-                            <span>{props.presentation.ui("library.count", { count: Object.keys(props.library[category]).length })}</span>
+                            <span>{props.presentation.ui("library.count", { count: libraryEntries(props.library, category, props.presentation).length })}</span>
                             <span aria-hidden="true">›</span>
                         </button>}
                     </For></div>
                 </Match>
                 <Match when={page().kind === "category" && page()} keyed>{current => {
                     const category = (current as Extract<LibraryPage, { kind: "category" }>).category;
-                    const entries = () => libraryEntries(props.library, category, props.presentation, navigation.current().search);
-                    return <>
-                        <label class="kcq-library__search"><span>{props.presentation.ui("library.search")}</span>
-                            <input type="search" value={navigation.current().search} data-library-focus="search"
-                                onInput={event => navigation.remember(event.currentTarget.value, 0, "search")} />
-                        </label>
-                        <div class="kcq-library__entries"><For each={entries()} fallback={<p class="kcq-library__empty">{props.presentation.ui(Object.keys(props.library[category]).length ? "library.noResults" : "library.empty")}</p>}>
-                            {entry => <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}
-                                onClick={() => value.openEntry(entry)}><strong>{libraryName(entry, props.presentation)}</strong><span aria-hidden="true">›</span></button>}
-                        </For></div>
-                    </>;
+                    const entries = () => libraryEntries(props.library, category, props.presentation);
+                    const entryButton = (entry: LibraryEntry): JSX.Element => <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}
+                        onClick={() => value.openEntry(entry)}><strong>{libraryName(entry, props.presentation)}</strong></button>;
+                    return <Show when={entries().length} fallback={<p class="kcq-library__empty">{props.presentation.ui("library.empty")}</p>}>
+                        <Show when={category === "moves"} fallback={<div class="kcq-library__entries"><For each={entries()}>{entryButton}</For></div>}>
+                            <div class="kcq-library__move-groups"><For each={libraryMoveGroups(props.library, props.presentation)}>{group =>
+                                <section class="kcq-library__move-group">
+                                    <h2>{group.owner ? libraryName(group.owner, props.presentation) : props.presentation.ui("library.moves")}</h2>
+                                    <div class="kcq-library__move-list"><For each={group.entries}>{entryButton}</For></div>
+                                </section>}
+                            </For></div>
+                        </Show>
+                    </Show>;
                 }}</Match>
                 <Match when={page().kind === "entry" && page()} keyed>{current => <LibraryDetail entry={current as LibraryEntry} />}</Match>
             </Switch>}
@@ -179,7 +183,7 @@ function LibraryDetail(props: { entry: LibraryEntry }): JSX.Element {
                 <Match when={props.entry.category === "enemies"}><EnemyDetail reference={c.library.enemies[props.entry.id]!} /></Match>
                 <Match when={props.entry.category === "moves"}><MoveDetail reference={c.library.moves[props.entry.id]!} /></Match>
                 <Match when={props.entry.category === "passives"}><PassiveDetail reference={c.library.passives[props.entry.id]!} /></Match>
-                <Match when={props.entry.category === "bindings"}><BindingDetail reference={c.library.bindings[props.entry.id]!} /></Match>
+                <Match when={props.entry.category === "bindings"}><Show when={props.entry.id === SKUNK_BINDINGS_ID} fallback={<BindingDetail reference={c.library.bindings[props.entry.id]!} />}><SkunkBindingsDetail /></Show></Match>
                 <Match when={props.entry.category === "traps"}><TrapDetail reference={c.library.traps[props.entry.id]!} /></Match>
                 <Match when={props.entry.category === "statuses"}><StatusDetail reference={c.library.statuses[props.entry.id as keyof ContentLibrary["statuses"]]!} /></Match>
                 <Match when={props.entry.category === "difficulties"}><DifficultyDetail reference={c.library.difficulties[props.entry.id as keyof ContentLibrary["difficulties"]]} /></Match>
@@ -197,29 +201,31 @@ function MoveCards(props: { ids: readonly string[] }): JSX.Element {
 }
 function CharacterDetail(props: { reference: CharacterReference }): JSX.Element {
     const c = context();
-    const resources = () => Object.entries(props.reference.data ?? {}).filter(([id]) => !id.endsWith("Max"));
     return <>
         <Show when={Object.keys(c.library.characters).length > 1}><nav class="kcq-library__roster" aria-label={c.presentation.ui("characterDetails.rosterLabel")}>
             <For each={Object.values(c.library.characters)}>{character => <ReferenceLink class="kcq-library__roster-choice" selected={character.id === props.reference.id} entry={{ category: "characters", id: character.id }} />}</For>
         </nav></Show>
         <Description entry={{ category: "characters", id: props.reference.id }} />
-        <Show when={resources().length}><SurfaceCard title={c.presentation.ui("library.startingResources")}><For each={resources()}>
-            {([id, value]) => <div class="kcq-library__resource"><span>{c.presentation.ui(props.reference.data?.[id + "Max"] === undefined ? "library.resource" : "library.resourceRange", {
-                name: c.presentation.data(id), value, max: props.reference.data?.[id + "Max"] ?? 0,
-            })}</span><Show when={props.reference.data?.[id + "Max"] !== undefined}><ProjectedMeter value={value} max={props.reference.data![id + "Max"]!} change={0} tone="primary" size="compact" ariaLabel={c.presentation.data(id)} /></Show></div>}
-        </For></SurfaceCard></Show>
+        <Show when={c.presentation.referenceText("entity", props.reference.id, "library")}>
+            {text => <SurfaceCard title={c.presentation.ui("library.specialRules")}>
+                <Show when={props.reference.id === "hinari"}><h3 class="kcq-library__resource-title">{c.presentation.ui("library.specialResource", { name: c.presentation.data("subspace") })}</h3></Show>
+                <Notes text={text()} />
+            </SurfaceCard>}
+        </Show>
         <Show when={props.reference.passives.length}><SurfaceCard title={c.presentation.ui("library.passives")}><div class="kcq-library__levels"><For each={props.reference.passives}>
-            {id => <div class="kcq-library__passive-card"><ReferenceLink class="kcq-library__passive-name" entry={{ category: "passives", id }} />
-                <Show when={c.presentation.referenceText("passive", id)}>{text => <p class="kcq-library__description"><ReferenceText text={text()} /></p>}</Show>
-                <Show when={c.library.passives[id]?.status}>{status => <><Modifiers modifiers={status().modifiers} /><Restrictions reference={status()} /></>}</Show>
-                <Show when={c.library.passives[id]?.immunities?.length}><Links category="statuses" ids={c.library.passives[id]!.immunities!} /></Show>
-            </div>}
+            {id => <ReferenceLink class="kcq-library__passive-card" entry={{ category: "passives", id }}>
+                <strong class="kcq-library__passive-name">{c.presentation.passive(id)}</strong>
+                <Show when={c.presentation.referenceText("passive", id, "summary") ?? c.presentation.referenceText("passive", id)}>{text => <span class="kcq-library__description">{text()}</span>}</Show>
+                <div class="kcq-library__restrictions"><For each={libraryRestrictions(libraryPassiveSummary(c.library, props.reference.id, id), c.presentation)}>
+                    {restriction => <StatusChip size="compact" tone={restriction.tone}>{restriction.label}</StatusChip>}
+                </For></div>
+                <Show when={c.library.passives[id]?.immunities?.length}><span class="kcq-library__restrictions"><For each={c.library.passives[id]?.immunities}>
+                    {status => <StatusChip size="compact">{c.presentation.ui("library.immune", { status: c.presentation.status(status) })}</StatusChip>}
+                </For></span></Show>
+            </ReferenceLink>}
         </For></div></SurfaceCard></Show>
         <Show when={props.reference.moves.length}><SurfaceCard title={c.presentation.ui("library.baseMoves")}><MoveCards ids={props.reference.moves} /></SurfaceCard></Show>
         <Show when={props.reference.empoweredMoves.length}><SurfaceCard title={c.presentation.ui("library.empoweredMoves")}><MoveCards ids={props.reference.empoweredMoves} /></SurfaceCard></Show>
-        <Show when={c.presentation.referenceText("entity", props.reference.id, "library")}>
-            {text => <SurfaceCard title={c.presentation.ui("library.specialRules")}><Notes text={text()} /></SurfaceCard>}
-        </Show>
     </>;
 }
 function EnemyDetail(props: { reference: EnemyReference }): JSX.Element {
@@ -263,36 +269,59 @@ function StaticBuff(props: { effect: MoveBuffReference; showDuration?: boolean }
 }
 function MoveDetail(props: { reference: MoveReference }): JSX.Element {
     const c = context();
-    const accuracy = () => (Object.entries(props.reference.accuracy ?? {}) as [HitBand, number][]).filter(([band]) => band !== "none");
+    const player = () => libraryOwners(c.library, "moves", props.reference.id)[0]?.category === "characters";
+    const accuracy = () => Object.entries(libraryAccuracy(props.reference, player()) ?? {}).filter(([band]) => band !== "none") as [Exclude<HitBand, "none">, number][];
+    const damage = () => props.reference.traits?.includes("damage") ? libraryDamageProfile(props.reference, c.presentation, player()) : undefined;
+    // These authored content families apply one selected binding with linear effectiveness.
+    // Conditional effects (Mist, Rain, Explosion, Regeneration) retain their specific notes.
+    const scaledBinding = () => ["latexSpray", "latexShower", "bindingMagic", "skunkGun", "skunkCollar"].includes(props.reference.id)
+        ? libraryDamageProfile(props.reference, c.presentation, player()) : undefined;
     const durations = () => [...new Set(props.reference.effects?.flatMap(effect => effect.duration === undefined ? [] : [effect.duration]) ?? [])];
+    const cooldown = () => props.reference.cooldown?.[props.reference.id];
+    const sharedCooldowns = () => Object.entries(props.reference.cooldown ?? {}).filter(([id]) => id !== props.reference.id);
+    const consumesEmpowerment = () => Object.values(c.library.characters).some(character => character.empoweredMoves.includes(props.reference.id));
     const targetLabel = () => props.reference.targets === 0 ? c.presentation.ui("characterDetails.tagSelf")
         : props.reference.targetSide === "none" ? c.presentation.ui("library.untargeted") : label(c.presentation, props.reference.targetSide);
     return <>
-        <Owner category="moves" id={props.reference.id} />
-        <dl class="kcq-library__facts kcq-encounter-card">
+        <dl class="kcq-library__facts kcq-library__move-facts kcq-encounter-card">
             <Stat label={c.presentation.ui("library.target")}><CommandTag tag={{ id: "target", label: targetLabel(), tone: props.reference.targetSide === "enemy" ? "primary" : "success" }} />
                 <Show when={props.reference.targets === "all"}><CommandTag tag={{ id: "aoe", label: c.presentation.ui("characterDetails.tagAoe"), tone: "neutral" }} /></Show>
                 <Show when={typeof props.reference.targets === "number" && props.reference.targets > 1}>{props.reference.targets}</Show>
             </Stat>
-            <Show when={props.reference.type !== "none"}><Stat label={c.presentation.ui("library.type")}><CommandTag tag={{ id: "type", label: c.presentation.moveType(props.reference.type), tone: "warning" }} /></Stat></Show>
+            <Stat label={c.presentation.ui("library.type")}><CommandTag tag={{ id: "type", label: c.presentation.moveType(props.reference.type), tone: "warning" }} /></Stat>
             <Show when={durations().length === 1}><Stat label={c.presentation.ui("library.duration")}><CommandTag tag={{ id: "duration", label: c.presentation.ui("characterDetails.rounds", { count: durations()[0]! }), tone: "special" }} /></Stat></Show>
-            <Show when={(props.reference.hits ?? props.reference.baseHits ?? 1) > 1}><Stat label={c.presentation.ui("library.hits")}>{props.reference.hits ?? props.reference.baseHits}</Stat></Show>
+            <Show when={cooldown() !== undefined}><Stat label={c.presentation.ui("library.cooldownHeading")}><CommandTag tag={{ id: "cooldown", label: c.presentation.ui("characterDetails.rounds", { count: cooldown()! }), tone: "warning" }} /></Stat></Show>
         </dl>
         <Description entry={{ category: "moves", id: props.reference.id }} />
         <SurfaceCard title={c.presentation.ui("library.effects")}>
-            <Show when={props.reference.baseDamage !== undefined}><EffectPreview effect={{ kind: "compact", id: "library-base", type: "damage", tone: props.reference.bindings.length ? "warning" : "danger",
-                label: c.presentation.ui(props.reference.traits?.includes("damage") ? "library.baseDamage" : "library.baseAmount"), payload: String(props.reference.baseDamage), details: [],
-            }} /><p class="kcq-library__muted">{c.presentation.ui("library.baseNote")}</p></Show>
-            <Show when={accuracy().length}><EffectPreview effect={{ kind: "accuracy-profile", type: "accuracy", tone: "primary", label: c.presentation.ui("library.accuracy"),
-                bands: accuracy().map(([band, chance]) => ({ band: band as Exclude<HitBand, "none">, chance, chanceLabel: c.presentation.ui("targeting.chance", { band: c.presentation.hitBand(band), chance }), label: c.presentation.hitBand(band), zero: chance === 0 })),
-            }} /><Show when={props.reference.check === "willpower"}><p class="kcq-library__muted">{c.presentation.ui("library.willpower")}</p></Show></Show>
-            <For each={props.reference.effects}>{effect => <StaticBuff effect={effect} showDuration={durations().length !== 1} />}</For>
-            <Modifiers modifiers={props.reference.modifiers} />
+            <div class="kcq-library__effect-cards">
+                <Show when={damage()}>{effect => <EffectPreview effect={effect()} />}</Show>
+                <Show when={scaledBinding()}>{profile => <div class="kcq-preview-effect kcq-preview-effect--warning">
+                    <span class="kcq-preview-effect__accent" aria-hidden="true" />
+                    <span class="kcq-preview-effect__tag">{c.presentation.ui("targeting.effectBinding")}</span>
+                    <div class="kcq-damage-profile"><For each={profile().bands}>{band => <span class="kcq-damage-profile__band" classList={{ "is-zero": band.zero }}>
+                        <span>{band.chanceLabel}</span><strong>{band.rangeLabel}</strong>
+                    </span>}</For></div>
+                </div>}</Show>
+                <Show when={damage() && (props.reference.hits ?? props.reference.baseHits ?? 1) > 1}><p class="kcq-library__muted">{c.presentation.ui("library.perHit", { count: props.reference.hits ?? props.reference.baseHits ?? 1 })}</p></Show>
+                <Show when={!damage() && !scaledBinding() && props.reference.baseDamage !== undefined}><EffectPreview effect={{ kind: "compact", id: "library-base-effect", type: "binding", tone: "warning",
+                    label: c.presentation.ui("library.baseAmount"), payload: String(props.reference.baseDamage), details: [],
+                }} /></Show>
+                <Show when={!damage() && !scaledBinding() && accuracy().length}><EffectPreview effect={{ kind: "accuracy-profile", type: "accuracy", tone: "primary", label: c.presentation.ui("library.accuracy"),
+                    bands: accuracy().map(([band, chance]) => ({ band, chance, chanceLabel: c.presentation.ui("targeting.chance", { band: c.presentation.hitBand(band), chance }), label: c.presentation.hitBand(band), zero: chance === 0 })),
+                }} /></Show>
+                <Show when={props.reference.check === "willpower"}><p class="kcq-library__muted">{c.presentation.ui("library.willpower")}</p></Show>
+                <For each={props.reference.effects}>{effect => <StaticBuff effect={effect} showDuration={durations().length !== 1} />}</For>
+                <Show when={consumesEmpowerment()}><EffectPreview effect={{ kind: "buff", type: "buff", id: "library-remove-empowerment", operation: "remove",
+                    label: c.presentation.ui("targeting.effectRemoveBuff"), name: c.presentation.buff("empowerment", undefined), tone: "special",
+                    recipient: c.presentation.ui("characterDetails.tagSelf"), modifiers: [], moveList: [], details: [],
+                }} /></Show>
+            </div>
             <Notes text={c.presentation.referenceText("move", props.reference.id, "library")} />
-            <Show when={props.reference.bindings.length}><div class="kcq-library__effect-bindings"><h3>{c.presentation.ui("library.bindings")}</h3><Links category="bindings" ids={props.reference.bindings} /></div></Show>
-            <Show when={props.reference.freeOnHit}><p class="kcq-library__muted">{c.presentation.ui("library.freeOnHit")}</p></Show>
+            <Show when={props.reference.bindings.length}><div class="kcq-library__effect-bindings"><Links category="bindings" ids={props.reference.bindings} /></div></Show>
+            <Show when={props.reference.freeOnHit}><p class="kcq-library__muted">{c.presentation.ui(props.reference.accuracy ? "library.freeOnHit" : "library.freeAction")}</p></Show>
             <Show when={props.reference.alwaysAvailable}><p class="kcq-library__muted">{c.presentation.ui("library.alwaysAvailable")}</p></Show>
-            <Show when={Object.keys(props.reference.cooldown ?? {}).length}><div class="kcq-library__cooldowns"><h3>{c.presentation.ui("library.cooldowns")}</h3><For each={Object.entries(props.reference.cooldown ?? {})}>
+            <Show when={sharedCooldowns().length}><div class="kcq-library__cooldowns"><h3>{c.presentation.ui("library.sharedCooldowns")}</h3><For each={sharedCooldowns()}>
                 {([id, count]) => <div class="kcq-library__cooldown"><ReferenceLink entry={{ category: "moves", id }} /><StatusChip size="compact" tone="warning">{c.presentation.ui("library.cooldown", { count })}</StatusChip></div>}
             </For></div></Show>
         </SurfaceCard>
@@ -300,16 +329,38 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
 }
 function PassiveDetail(props: { reference: PassiveReference }): JSX.Element {
     const c = context();
+    const rows = () => libraryPassiveRows(props.reference, c.presentation);
     return <>
         <Owner category="passives" id={props.reference.id} />
         <Description entry={{ category: "passives", id: props.reference.id }} />
-        <Show when={Object.keys(props.reference.status?.modifiers ?? {}).length || libraryRestrictions(props.reference.status ?? {}, c.presentation).length || props.reference.immunities?.length || c.presentation.referenceText("passive", props.reference.id, "library")}>
+        <Show when={rows().length || props.reference.immunities?.length}>
             <SurfaceCard title={c.presentation.ui("library.effects")}><div class="kcq-library__level">
-                <Modifiers modifiers={props.reference.status?.modifiers} /><Restrictions reference={props.reference.status ?? {}} />
-                <Show when={props.reference.immunities?.length}><div class="kcq-library__immunities"><h3>{c.presentation.ui("library.immunities")}</h3><Links category="statuses" ids={props.reference.immunities!} /></div></Show>
-                <Notes text={c.presentation.referenceText("passive", props.reference.id, "library")} />
+                <table class="kcq-library__mechanics-table"><tbody>
+                    <For each={rows()}>{row => <tr><th scope="row"><StatusChip size="compact" tone={row.tone}>{row.label}</StatusChip></th><td><ReferenceText text={row.explanation} /></td></tr>}</For>
+                    <For each={props.reference.immunities}>{id => <tr><th scope="row"><ReferenceLink class="kcq-library__status-link" entry={{ category: "statuses", id }}><StatusChip size="compact" tone="success">{c.presentation.ui("library.immune", { status: c.presentation.status(id) })}</StatusChip></ReferenceLink></th>
+                        <td>{c.presentation.ui("library.immunityExplanation", { status: c.presentation.status(id) })}</td></tr>}</For>
+                </tbody></table>
             </div></SurfaceCard>
         </Show>
+    </>;
+}
+function StatusEffects(props: { reference: ModifierReference }): JSX.Element {
+    const c = context();
+    return <div class="kcq-library__status-effects">
+        <For each={libraryModifiers(props.reference.modifiers, c.presentation)}>{metric =>
+            <span class={"kcq-library__status-modifier kcq-library__status-modifier--" + metric.tone}>{metric.label} <strong>{metric.valueLabel}</strong></span>}
+        </For>
+        <Restrictions reference={props.reference} />
+    </div>;
+}
+function SkunkBindingsDetail(): JSX.Element {
+    const c = context();
+    return <>
+        <Description entry={{ category: "bindings", id: SKUNK_BINDINGS_ID }} />
+        <For each={["spreading", "transformation", "rescue", "restoration", "collar"]}>{section =>
+            <SurfaceCard title={label(c.presentation, "skunk." + section)}><Notes text={c.presentation.referenceText("binding", SKUNK_BINDINGS_ID, section)} /></SurfaceCard>}
+        </For>
+        <SurfaceCard title={c.presentation.ui("library.bindings")}><Links category="bindings" ids={SKUNK_BINDING_IDS.filter(id => libraryHas(c.library, { category: "bindings", id }))} /></SurfaceCard>
     </>;
 }
 const LEVELS = ["light", "moderate", "heavy", "severe", "overwhelming"] as const;
@@ -324,14 +375,16 @@ function BindingDetail(props: { reference: BindingReference }): JSX.Element {
                 <h3 class={"kcq-escape-value--" + level}><span>{c.presentation.bindingLevel(level)}</span><span>{c.presentation.ui("library.range", { min, max })}</span></h3>
                 <BindingMeter value={min} change={0} max={info.max} level={level} resultLevel={level} size="compact" ariaLabel={c.presentation.ui("library.range", { min, max })} />
                 <Show when={c.presentation.referenceText("binding", props.reference.id, level)}>{text => <p class="kcq-library__description"><ReferenceText text={text()} /></p>}</Show>
-                <For each={props.reference.status?.[level] ?? []}>
-                    {status => <div class="kcq-library__binding-status"><ReferenceLink class="kcq-library__status-link" entry={{ category: "statuses", id: status.id }}><StatusChip size="compact">{c.presentation.ui("characterDetails.statusValue", { status: c.presentation.status(status.id), value: status.level })}</StatusChip></ReferenceLink>
-                        <Show when={c.library.statuses[status.id]?.modifiers[status.level]}>{mechanics => <details class="kcq-library__tier-mechanics"><summary>{c.presentation.ui("library.modifiersAndRestrictions")}</summary><Modifiers modifiers={mechanics().modifiers} /><Restrictions reference={mechanics()} /></details>}</Show>
-                    </div>}
-                </For>
+                <Show when={props.reference.status?.[level]?.length}><table class="kcq-library__mechanics-table kcq-library__binding-status-table">
+                    <thead><tr><th scope="col">{c.presentation.ui("library.statusColumn")}</th><th scope="col">{c.presentation.ui("library.effects")}</th></tr></thead>
+                    <tbody><For each={props.reference.status?.[level] ?? []}>{status => <tr class="kcq-library__binding-status">
+                        <th scope="row"><ReferenceLink class="kcq-library__status-link" entry={{ category: "statuses", id: status.id }}><StatusChip size="compact">{c.presentation.ui("characterDetails.statusValue", { status: c.presentation.status(status.id), value: status.level })}</StatusChip></ReferenceLink></th>
+                        <td><Show when={c.library.statuses[status.id]?.modifiers[status.level]}>{mechanics => <StatusEffects reference={mechanics()} />}</Show></td>
+                    </tr>}</For></tbody>
+                </table></Show>
             </section>;
         }}</For></div></SurfaceCard>
-        <div class="kcq-library__binding-notes"><p class="kcq-library__muted">{c.presentation.ui("library.progressionNote")}</p><p class="kcq-library__muted">{c.presentation.ui("library.belowThreshold", { min: info.thresholds.light ?? 0 })}</p><p class="kcq-library__muted">{c.presentation.ui("library.growthNote")}</p><p class="kcq-library__muted">{c.presentation.ui("library.maximum", { max: info.max })}</p></div>
+        <Show when={SKUNK_BINDING_IDS.includes(props.reference.id)}><div class="kcq-library__binding-context"><ReferenceLink entry={{ category: "bindings", id: SKUNK_BINDINGS_ID }} /></div></Show>
         <Show when={c.presentation.referenceText("binding", props.reference.id, "library")}>
             {text => <SurfaceCard title={c.presentation.ui("library.specialRules")}><Notes text={text()} /></SurfaceCard>}
         </Show>
@@ -346,13 +399,12 @@ function TrapOutcomes(props: { chances: Record<number, Record<BindingId, number>
                 <span class="kcq-preview-effect kcq-preview-effect--warning kcq-library__trap-binding">
                     <span class="kcq-preview-effect__accent" aria-hidden="true" />
                     <span class="kcq-preview-effect__tag">{c.presentation.ui("targeting.effectBinding")}</span>
-                    <span class="kcq-library__binding-amount"><span class="kcq-library__binding-amount-heading"><strong>{c.presentation.binding(id)}</strong><span>{c.presentation.ui("library.upTo", { amount })}</span></span>
+                    <span class="kcq-library__binding-amount"><span class="kcq-library__binding-amount-heading"><strong>{c.presentation.binding(id)}</strong><strong class="kcq-library__binding-limit">{c.presentation.ui("library.upTo", { amount })}</strong></span>
                         <ProjectedMeter value={amount} max={getThresholds().max} tone="warning" size="compact" ariaLabel={c.presentation.ui("library.upTo", { amount })} />
                     </span>
                 </span>
             </ReferenceLink>}</For>
         </section>}</For></div>
-        <p class="kcq-library__muted">{c.presentation.ui("library.outcomeProbability")}</p>
     </SurfaceCard>;
 }
 function TrapDetail(props: { reference: TrapReference }): JSX.Element {
@@ -360,9 +412,6 @@ function TrapDetail(props: { reference: TrapReference }): JSX.Element {
     return <>
         <Description entry={{ category: "traps", id: props.reference.id }} />
         <Show when={Object.keys(props.reference.effects ?? {}).length}><TrapOutcomes chances={props.reference.effects ?? {}} /></Show>
-        <Show when={c.presentation.referenceText("trap", props.reference.id, "library")}>{text =>
-            <SurfaceCard title={c.presentation.ui("library.triggerProbability")}><Notes text={text()} /></SurfaceCard>}
-        </Show>
     </>;
 }
 function StatusDetail(props: { reference: StatusReference }): JSX.Element {
@@ -377,7 +426,6 @@ function StatusDetail(props: { reference: StatusReference }): JSX.Element {
                 <Modifiers modifiers={reference.modifiers} /><Restrictions reference={reference} />
             </section>}</For></div>
         </SurfaceCard></Show>
-        <p class="kcq-library__muted">{c.presentation.ui("library.intensityNote")}</p>
     </>;
 }
 function DifficultyDetail(props: { reference: DifficultyReference }): JSX.Element {
@@ -426,7 +474,7 @@ function EncounterDetail(props: { reference: EncounterReference }): JSX.Element 
         <Show when={props.reference.setup.length || missingTraps().length}><SurfaceCard title={c.presentation.ui("library.specialRules")}><div class="kcq-library__setup">
             <For each={grouped().ungrouped}>{preview}</For>
             <For each={grouped().groups}>{group => <div class="kcq-encounter-details__effect-group"><h3>{group.name}</h3><For each={group.effects}>{preview}</For></div>}</For>
-            <Show when={missingTraps().length}><Links category="traps" ids={missingTraps()} /></Show>
+            <For each={missingTraps()}>{id => <ReferenceLink entry={{ category: "traps", id }} class="kcq-library__effect-link"><EffectPreview effect={{ kind: "compact", type: "trap", id: "library-trap-" + id, tone: "warning", label: c.presentation.ui("targeting.effectTrap"), payload: c.presentation.trap(id), details: [] }} /></ReferenceLink>}</For>
         </div></SurfaceCard></Show>
         <Show when={props.reference.bindings.length}><SurfaceCard title={c.presentation.ui("library.bindings")}><Links category="bindings" ids={props.reference.bindings} /></SurfaceCard></Show>
     </>;

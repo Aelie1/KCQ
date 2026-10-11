@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
-import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryRelated, libraryTrapOutcomes, referenceParts } from "../../src/ui/web/app/viewModels/library";
+import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryMoveGroups, libraryPassiveSummary, SKUNK_BINDINGS_ID, libraryRelated, libraryTrapOutcomes, referenceParts } from "../../src/ui/web/app/viewModels/library";
+import { LIBRARY_EFFECTIVENESS, LIBRARY_HIT_STEP, LIBRARY_POTENCY_STEP, libraryAccuracy, libraryDamageProfile } from "../../src/ui/web/app/viewModels/libraryMechanics";
+import { effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER, EFFECTIVENESS_MODIFIER } from "../../src/engine/private/constants";
 import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
@@ -76,5 +78,63 @@ describe("Library reference browser", () => {
         expect(engine.getLibrary().characters.hinari!.data!.subspace).toBe(0);
         expect(engine.getLibrary().moves.telekinesis!.traits).toEqual(["damage"]);
         expect(() => structuredClone(reference)).not.toThrow();
+    });
+});
+
+describe("Library static reference projections", () => {
+    it("matches the engine effectiveness bands and coefficients without importing internals into the UI", () => {
+        for (const [band, range] of Object.entries(LIBRARY_EFFECTIVENESS)) {
+            expect(range).toEqual(effectivenessRange[band as keyof typeof effectivenessRange]);
+        }
+        expect(LIBRARY_HIT_STEP).toBe(HIT_MODIFIER);
+        expect(LIBRARY_HIT_STEP).toBe(WILLPOWER_MODIFIER);
+        expect(LIBRARY_POTENCY_STEP).toBe(EFFECTIVENESS_MODIFIER);
+    });
+    it("multiplies out per-hit damage with upward rounding and intrinsic move bonuses", () => {
+        expect(libraryDamageProfile(library.moves.telekinesis!, presentation)?.bands.map(band => [band.chance, band.min, band.max]))
+            .toEqual([[10, 0, 0], [15, 6, 15], [65, 24, 30], [10, 45, 60]]);
+        expect(libraryDamageProfile(library.moves.fairyTelekinesis!, presentation)?.bands.map(band => [band.min, band.max]))
+            .toEqual([[0, 0], [3, 8], [12, 15], [23, 30]]);
+        expect(libraryAccuracy(library.moves.whiteFlame!)).toEqual({ miss: 0, graze: 5, hit: 83, crit: 12 });
+        expect(libraryDamageProfile(library.moves.phoenixKick!, presentation)?.bands.map(band => [band.min, band.max]))
+            .toEqual([[0, 0], [8, 20], [32, 39], [59, 78]]);
+        const changed = { ...library.moves.telekinesis!, baseDamage: 11 };
+        expect(libraryDamageProfile(changed, presentation)?.bands.map(band => [band.min, band.max]))
+            .toEqual([[0, 0], [3, 6], [9, 11], [17, 22]]);
+        expect(libraryDamageProfile(library.moves.starlightBindings!, presentation)).toBeUndefined();
+        expect(engine.getGameState().characters).toEqual([]);
+    });
+    it("preserves missing accuracy bands and uses Willpower and enemy critical rules", () => {
+        const template = library.moves.telekinesis!;
+        expect(libraryAccuracy({ ...template, accuracy: { hit: 90, crit: 10 }, modifiers: { hit: -2 } }))
+            .toEqual({ hit: 92, crit: 8 });
+        expect(libraryAccuracy({ ...template, accuracy: { miss: 50, hit: 50 }, modifiers: { hit: 2 } }))
+            .toEqual({ miss: 30, hit: 70 });
+        expect(libraryAccuracy({ ...template, check: "willpower", modifiers: { hit: 9, willpower: 1 } }))
+            .toEqual({ miss: 5, graze: 10, hit: 74, crit: 11 });
+        expect(libraryAccuracy({ ...template, modifiers: { hit: 1 } }, false))
+            .toEqual({ miss: 5, graze: 10, hit: 75, crit: 10 });
+    });
+    it("groups each available move once using campaign ownership and authored sources", () => {
+        const groups = libraryMoveGroups(library, presentation);
+        const ids = groups.flatMap(group => group.entries.map(entry => entry.id));
+        expect(ids.length).toBe(Object.keys(library.moves).length);
+        expect(new Set(ids).size).toBe(ids.length);
+        expect(groups.find(group => group.owner?.id === "matsuko")?.entries.map(entry => entry.id)).toContain("punch");
+        expect(groups.find(group => group.owner?.id === "skunkette")?.entries.map(entry => entry.id)).toContain("throwOff");
+        expect(libraryPassiveSummary(library, "ko", "thousandRestraintsBody").allowedMoveTypes).toEqual(["mouth"]);
+    });
+    it("filters informational entries by the current campaign and counts them without mutating bindings", () => {
+        const before = JSON.stringify(library.bindings);
+        expect(libraryEntries(library, "bindings", presentation).map(entry => entry.id)).toContain(SKUNK_BINDINGS_ID);
+        expect(libraryHas(library, { category: "bindings", id: SKUNK_BINDINGS_ID })).toBe(true);
+        expect(libraryRelated({ category: "bindings", id: "latexHead" }, library, presentation)).toContainEqual({ category: "bindings", id: SKUNK_BINDINGS_ID });
+        const other = { ...library, bindings: { rope: { id: "rope", status: {} } } };
+        expect(libraryHas(other, { category: "bindings", id: SKUNK_BINDINGS_ID })).toBe(false);
+        expect(libraryEntries(other, "bindings", presentation).map(entry => entry.id)).toEqual(["rope"]);
+        expect(JSON.stringify(library.bindings)).toBe(before);
+        const html = renderToString(() => createComponent(LibraryPanel, { library, presentation, onClose: () => {}, initialPage: { kind: "entry", category: "bindings", id: SKUNK_BINDINGS_ID } }));
+        expect(html).toContain("Skunk Bindings");
+        expect(html).not.toMatch(/\[(?:ui|binding|entity)\./);
     });
 });

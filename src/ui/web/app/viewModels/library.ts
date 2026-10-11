@@ -49,11 +49,14 @@ export function libraryText(entry: LibraryEntry, p: Presentation, variant = "des
     return p.referenceText(NAMESPACES[entry.category], entry.id, variant);
 }
 export function libraryHas(library: ContentLibrary, entry: LibraryEntry): boolean {
+    if (entry.category === "bindings" && entry.id === SKUNK_BINDINGS_ID) return SKUNK_BINDING_IDS.some(id => Object.hasOwn(library.bindings, id));
     return Object.hasOwn(library[entry.category], entry.id);
 }
 export function libraryEntries(library: ContentLibrary, category: LibraryCategory, p: Presentation, search = ""): LibraryEntry[] {
     const query = search.trim().toLocaleLowerCase();
-    return Object.keys(library[category]).map(id => ({ category, id }))
+    const ids = Object.keys(library[category]);
+    if (category === "bindings" && libraryHas(library, { category, id: SKUNK_BINDINGS_ID })) ids.unshift(SKUNK_BINDINGS_ID);
+    return ids.map(id => ({ category, id }))
         .filter(entry => libraryName(entry, p).toLocaleLowerCase().includes(query));
 }
 
@@ -73,14 +76,14 @@ export function referenceParts(text: string): ReferencePart[] {
 
 export function libraryModifiers(modifiers: ModifierSet | undefined, p: Presentation) {
     return (Object.entries(modifiers ?? {}) as [ModifierId, number][]).map(([id, value]) => ({
-        id, label: p.modifier(id), value: Math.abs(value), valueLabel: formatSignedNumber(value),
+        id, label: libraryModifierLabel(id, p), value: Math.abs(value), valueLabel: formatSignedNumber(value),
         tone: value === 0 ? "neutral" as const : isHarmfulModifierChange(id, value) ? "danger" as const : "success" as const,
         blocked: false,
     }));
 }
 export function libraryRestrictions(reference: ModifierReference, p: Presentation) {
     return [
-        ...(reference.flags ?? []).map(flag => ({ label: p.flag(flag), tone: flag === "skipsTraps" ? "success" as const : "danger" as const })),
+        ...(reference.flags ?? []).map(flag => ({ label: flag === "blocksEscape" ? p.ui("library.blocksEscape") : p.flag(flag), tone: flag === "skipsTraps" ? "success" as const : "danger" as const })),
         ...(reference.blockedMoveTypes ?? []).map(type => ({ label: p.ui("library.blocked", { type: p.moveType(type) }), tone: "danger" as const })),
         ...(reference.allowedMoveTypes ?? []).map(type => ({ label: p.ui("library.allowed", { type: p.moveType(type) }), tone: "success" as const })),
     ];
@@ -129,7 +132,12 @@ export function libraryReferences(entry: LibraryEntry, library: ContentLibrary, 
             break;
         }
         case "passives": add("statuses", library.passives[entry.id]?.immunities ?? []); break;
-        case "bindings": add("statuses", Object.values(library.bindings[entry.id]?.status ?? {}).flatMap(list => list.map(status => status.id))); break;
+        case "bindings": {
+            add("statuses", Object.values(library.bindings[entry.id]?.status ?? {}).flatMap(list => list.map(status => status.id)));
+            if (entry.id === SKUNK_BINDINGS_ID) add("bindings", SKUNK_BINDING_IDS);
+            else if (SKUNK_BINDING_IDS.includes(entry.id)) add("bindings", [SKUNK_BINDINGS_ID]);
+            break;
+        }
         case "encounters": {
             const ref = library.encounters[entry.id];
             if (ref) { add("enemies", ref.enemies.map(enemy => enemy.defId)); add("bindings", ref.bindings); add("traps", ref.traps); refs.push(...effectReferences(ref.setup, library)); }
@@ -188,4 +196,47 @@ export function libraryTrapOutcomes(chances: Record<number, Record<BindingId, nu
         chance: Math.round((Number(boundary) - (index === 0 ? 0 : Number(boundaries[index - 1]![0]))) * 100),
         bindings: Object.entries(bindings),
     })).reverse();
+}
+
+/** Authored content reference, deliberately separate from engine BindingReference. */
+export const SKUNK_BINDINGS_ID = "skunkBindings";
+export const SKUNK_BINDING_IDS: readonly string[] = ["latexHead", "latexArms", "latexTorso", "latexLegs", "latexCollar"];
+
+export function libraryModifierLabel(id: ModifierId, p: Presentation): string {
+    const types = { hitarms: "arms", hitmouth: "mouth", hitlegs: "legs" } as const;
+    return id in types ? p.moveType(types[id as keyof typeof types]) : p.modifier(id);
+}
+
+export function libraryMoveGroups(library: ContentLibrary, p: Presentation) {
+    const groups = new Map<string, { owner?: LibraryEntry; entries: LibraryEntry[] }>();
+    for (const entry of libraryEntries(library, "moves", p)) {
+        const source = referenceParts(p.referenceText("move", entry.id, "source") ?? "")
+            .find((part): part is LibraryEntry => typeof part !== "string" && (part.category === "characters" || part.category === "enemies"));
+        const owner = libraryOwners(library, "moves", entry.id)[0] ?? source;
+        const key = owner ? owner.category + ":" + owner.id : "unowned";
+        if (!groups.has(key)) groups.set(key, { owner, entries: [] });
+        groups.get(key)!.entries.push(entry);
+    }
+    return [...groups.values()];
+}
+
+/** Kit summaries expose only move-type allowances relevant to that character. */
+export function libraryPassiveSummary(library: ContentLibrary, characterId: string, passiveId: string): ModifierReference {
+    const reference = library.passives[passiveId]?.status ?? {};
+    const character = library.characters[characterId];
+    const types = new Set([...(character?.moves ?? []), ...(character?.empoweredMoves ?? [])].map(id => library.moves[id]?.type));
+    return { ...reference, allowedMoveTypes: reference.allowedMoveTypes?.filter(type => types.has(type)) };
+}
+
+export function libraryPassiveRows(reference: ContentLibrary["passives"][string], p: Presentation) {
+    return [
+        ...libraryModifiers(reference.status?.modifiers, p).map(metric => ({ label: metric.label + " " + metric.valueLabel, tone: metric.tone,
+            explanation: p.ui("library.modifierExplanation", { modifier: metric.label, value: metric.valueLabel }) })),
+        ...(reference.status?.flags ?? []).map(flag => ({ label: flag === "blocksEscape" ? p.ui("library.blocksEscape") : p.flag(flag), tone: flag === "skipsTraps" ? "success" as const : "danger" as const,
+            explanation: p.referenceText("passive", reference.id, "effect." + flag) ?? p.flag(flag) })),
+        ...(reference.status?.blockedMoveTypes ?? []).map(type => ({ label: p.ui("library.blocked", { type: p.moveType(type) }), tone: "danger" as const,
+            explanation: p.ui("library.blockedExplanation", { type: p.moveType(type) }) })),
+        ...(reference.status?.allowedMoveTypes ?? []).map(type => ({ label: p.ui("library.allowed", { type: p.moveType(type) }), tone: "success" as const,
+            explanation: p.ui("library.allowedExplanation", { type: p.moveType(type) }) })),
+    ];
 }

@@ -95,7 +95,7 @@ function createEmpowermentBuff(target: iCharacter): iEffect {
 
 export const thousandRestraintsBody: PassiveDef = {
     id: "thousandRestraintsBody",
-    status: { allowedMoveTypes: ["arms", "legs", "mouth"], flags: ["blocksEscape"] }
+    status: { allowedMoveTypes: ["mouth"], flags: ["blocksEscape"] }
 }
 
 export const telekinesis: MoveDef = {
