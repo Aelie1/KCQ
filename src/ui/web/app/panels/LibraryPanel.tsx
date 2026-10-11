@@ -5,7 +5,6 @@ import type { BindingId, DifficultyId, EncounterId, HitBand, ModifierId, Modifie
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import { BindingMeter } from "../components/BindingMeter";
 import { CommandTag } from "../components/CommandTag";
-import { DamageEffect } from "../components/DamageEffect";
 import { EffectPreview } from "../components/EffectPreview";
 import { ModifierMeter } from "../components/ModifierMeter";
 import { ProjectedMeter } from "../components/ProjectedMeter";
@@ -276,7 +275,6 @@ function MoveEffectRow(props: { row: LibraryMoveEffectRow; hideDuration?: boolea
     const c = context();
     return <div class="kcq-library__effect-row">
         <Show when={props.row.preview}>{preview => <EffectPreview renderMoveAvailability={MoveAvailability} effect={props.hideDuration && preview().kind === "buff" ? { ...(preview() as Extract<EffectPreviewViewModel, { kind: "buff" }>), durationLabel: undefined } : preview()} />}</Show>
-        <Show when={props.row.bindingProfile}>{profile => <DamageEffect effect={{ ...profile(), label: c.presentation.ui("targeting.effectBinding") }} tone="warning" />}</Show>
         <Show when={props.row.label}><div class={"kcq-preview-effect kcq-library__reference-effect kcq-preview-effect--" + props.row.tone}>
             <span class="kcq-preview-effect__accent" aria-hidden="true" /><span class="kcq-preview-effect__tag">{props.row.label}</span>
             <div class="kcq-library__reference-content"><Show when={props.row.name}><strong class="kcq-preview-effect__payload"><ReferenceText text={props.row.name!} /></strong></Show><Modifiers modifiers={props.row.modifiers} /></div>
@@ -296,8 +294,8 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
     const cooldown = () => props.reference.cooldown?.[props.reference.id];
     const sharedCooldowns = () => Object.entries(props.reference.cooldown ?? {}).filter(([id]) => id !== props.reference.id);
     const accuracy = () => Object.entries(libraryAccuracy(props.reference, libraryOwners(c.library, "moves", props.reference.id)[0]?.category === "characters") ?? {}).filter(([band]) => band !== "none") as [Exclude<HitBand, "none">, number][];
-    const targetLabel = () => props.reference.targets === 0 ? c.presentation.ui("characterDetails.tagSelf")
-        : props.reference.targetSide === "none" ? c.presentation.ui("library.untargeted") : label(c.presentation, props.reference.targetSide);
+    const targetLabel = () => props.reference.targetSide === "none" ? c.presentation.ui("library.untargeted") : props.reference.targets === 0 ? c.presentation.ui("characterDetails.tagSelf")
+        : label(c.presentation, props.reference.targetSide);
     return <>
         <dl class="kcq-library__facts kcq-library__move-facts kcq-encounter-card">
             <Stat label={c.presentation.ui("library.target")}>
@@ -305,7 +303,7 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
                 <CommandTag tag={{ id: "target", label: targetLabel(), tone: props.reference.targetSide === "enemy" ? "primary" : "success" }} />
                 <Show when={typeof props.reference.targets === "number" && props.reference.targets > 1}>{props.reference.targets}</Show>
             </Stat>
-            <Stat label={c.presentation.ui("library.type")}><CommandTag tag={{ id: "type", label: c.presentation.moveType(props.reference.type), tone: "warning" }} /></Stat>
+            <Show when={props.reference.type != "none"} > <Stat label={c.presentation.ui("library.type")}><CommandTag tag={{ id: "type", label: c.presentation.moveType(props.reference.type), tone: "warning" }} /></Stat></Show>
             <Show when={hits() > 1}><Stat label={c.presentation.ui("library.hits")}><CommandTag tag={{ id: "hits", label: c.presentation.ui("library.hitCount", { count: hits() }), tone: "neutral" }} /></Stat></Show>
             <Show when={props.reference.id === "brace" || props.reference.id === "reflect" || props.reference.id === "fairyReflect" || durations().length === 1}><Stat label={c.presentation.ui("library.duration")}><CommandTag tag={{ id: "duration", label: props.reference.id === "brace" ? c.presentation.ui("library.thisRound") : c.presentation.ui("characterDetails.rounds", { count: durations()[0]! }), tone: "special" }} /></Stat></Show>
             <Show when={cooldown() !== undefined || sharedCooldowns().length}>
@@ -330,12 +328,12 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
                     </Show>
                 </div>
             </Show>
-        </dl>
+        </dl >
         <Description entry={{ category: "moves", id: props.reference.id }} />
         <SurfaceCard title={c.presentation.ui("library.effects")}>
             <Show when={props.reference.check === "willpower"}><p class="kcq-library__muted">{c.presentation.ui("library.willpower")}</p></Show>
             <div class="kcq-library__effect-cards">
-                <Show when={!rows().some(row => row.preview?.kind === "damage-profile" || row.bindingProfile) && accuracy().length}><EffectPreview effect={{
+                <Show when={!rows().some(row => row.preview?.kind === "damage-profile") && accuracy().length}><EffectPreview effect={{
                     kind: "accuracy-profile", type: "accuracy", tone: "primary", label: c.presentation.ui("library.accuracy"),
                     bands: accuracy().map(([band, chance]) => ({ band, chance, chanceLabel: c.presentation.ui("targeting.chance", { band: c.presentation.hitBand(band), chance }), label: c.presentation.hitBand(band), zero: chance === 0 })),
                 }} /></Show>
@@ -343,7 +341,6 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
                 <For each={grouped().ungrouped}>{row => <MoveEffectRow row={row} hideDuration={durations().length === 1 && row.duration !== undefined} />}</For>
             </div>
             <Notes text={c.presentation.referenceText("move", props.reference.id, "library")} />
-            <Show when={props.reference.bindings.length}><div class="kcq-library__effect-bindings"><Links category="bindings" ids={props.reference.bindings} /></div></Show>
             <Show when={props.reference.freeOnHit}><p class="kcq-library__muted">{c.presentation.ui(props.reference.accuracy ? "library.freeOnHit" : "library.freeAction")}</p></Show>
             <Show when={props.reference.alwaysAvailable}><p class="kcq-library__muted">{c.presentation.ui("library.alwaysAvailable")}</p></Show>
         </SurfaceCard>

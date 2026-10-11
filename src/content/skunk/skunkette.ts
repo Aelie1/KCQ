@@ -96,6 +96,7 @@ export const latexSpray: MoveDef = {
         crit: 3
     },
     type: "none",
+    traits: ["binding"],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);

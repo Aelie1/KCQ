@@ -253,7 +253,8 @@ export type MoveTrait =
     | "defeat"
     | "spawn"
     | "trap"
-    | "retarget";
+    | "retarget"
+    | "binding";
 
 export type MoveId = string;
 

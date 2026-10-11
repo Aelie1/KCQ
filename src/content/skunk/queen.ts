@@ -70,6 +70,7 @@ export const skunkGun: MoveDef = {
         crit: 1
     },
     type: "none",
+    traits: ["binding"],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);
@@ -89,6 +90,7 @@ export const skunkCollar: MoveDef = {
         crit: 1
     },
     type: "none",
+    traits: ["binding"],
     bindings: [latexCollar],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicBindingEffect(actor, move, targets);

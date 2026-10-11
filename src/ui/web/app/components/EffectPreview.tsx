@@ -42,7 +42,10 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                 }}
             </Match>
             <Match when={props.effect.kind === "damage-profile" && props.effect}>
-                {(effect) => <DamageEffect effect={effect() as Extract<EffectPreviewViewModel, { kind: "damage-profile" }>} />}
+                {(effect) => {
+                    const profile = effect() as Extract<EffectPreviewViewModel, { kind: "damage-profile" }>;
+                    return <DamageEffect effect={profile} tone={profile.tone} />;
+                }}
             </Match>
             <Match when={props.effect.kind === "compact" && props.effect}>
                 {(effect) => {

@@ -30,6 +30,7 @@ export const latexRain: MoveDef = {
         crit: 5,
     },
     type: "none",
+    traits: ["binding"],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };

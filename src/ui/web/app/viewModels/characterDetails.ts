@@ -590,6 +590,7 @@ function semanticTraitTag(
         case "spawn": return tag(trait, presentation.ui("characterDetails.tagSpawn"), "primary");
         case "trap": return tag(trait, presentation.ui("characterDetails.tagTrap"), "warning");
         case "retarget": return tag(trait, presentation.ui("characterDetails.tagRetarget"), "primary");
+        case "binding": return tag(trait, presentation.ui("characterDetails.tagBinding"), "primary");
     }
 }
 

@@ -12,7 +12,7 @@ export interface DamageBandViewModel {
     label: string; max: number; min: number; rangeLabel: string; zero: boolean;
 }
 export interface DamageProfileViewModel {
-    bands: readonly DamageBandViewModel[]; kind: "damage-profile"; label: string; tone: "danger";
+    bands: readonly DamageBandViewModel[]; kind: "damage-profile"; label: string; tone: "danger" | "warning";
 }
 export interface AccuracyBandViewModel {
     band: Exclude<HitBand, "none">; chance: number; chanceLabel: string; label: string; zero: boolean;

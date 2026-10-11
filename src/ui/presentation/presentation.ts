@@ -76,6 +76,7 @@ export type UiLabel =
     | "characterDetails.subtitle"
     | "characterDetails.tagAlly"
     | "characterDetails.tagAoe"
+    | "characterDetails.tagBinding"
     | "characterDetails.tagBonusBlocked"
     | "characterDetails.tagBonusEligible"
     | "characterDetails.tagBonusEscape"

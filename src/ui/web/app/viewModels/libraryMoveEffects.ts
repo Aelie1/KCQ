@@ -13,7 +13,6 @@ import { bindingLevelAtValue, formatSignedNumber, isDebuff, isHarmfulModifierCha
 export interface LibraryMoveEffectRow {
     recipient: string;
     preview?: EffectPreviewViewModel;
-    bindingProfile?: ReturnType<typeof libraryDamageProfile>;
     label?: string;
     name?: string;
     tone?: EffectTone;
@@ -62,7 +61,7 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
         }
     }, operation, false, operation === "add" ? text("effect.empowerment.note") : undefined,
         operation === "add" ? p.ui("library.untilConsumed") : undefined);
-    const damage = move.traits?.includes("damage") ? libraryDamageProfile(move, p, owner?.category === "characters") : undefined;
+    const damage = move.baseDamage ?? 0 > 0 ? libraryDamageProfile(move, p, owner?.category === "characters") : undefined;
 
     const bindingRow = (
         recipient: string, name: string, change: string, note?: string,
@@ -92,12 +91,19 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             note,
         });
     };
-    if (damage) rows.push({ recipient: selected, preview: damage });
-    if (["latexSpray", "latexShower", "bindingMagic", "skunkGun", "skunkCollar"].includes(move.id)) {
-        rows.push({ recipient: selected, bindingProfile: libraryDamageProfile(move, p, false), note: p.ui("library.selectedBinding") });
+    if (damage) {
+        if (move.traits?.includes("binding")) {
+            rows.push({ recipient: selected, preview: { ...damage, tone: "warning", label: p.ui("targeting.effectBinding") } });
+        }
+        else if (move.traits?.includes("trap")) {
+            rows.push({ recipient: "field", preview: { ...damage, tone: "warning", label: p.ui("targeting.effectTrap") } });
+        }
+        else {
+            rows.push({ recipient: selected, preview: damage });
+        }
     }
     for (const effect of move.effects ?? []) buff(effect);
-    if (move.baseDamage !== undefined && !damage && !rows.some(row => row.bindingProfile)) rows.push({ recipient: "", label: p.ui("library.baseAmount"), name: String(move.baseDamage), tone: "warning" });
+    if (move.baseDamage !== undefined && move.id !== "latexRain" && !damage) rows.push({ recipient: "", label: p.ui("library.baseAmount"), name: String(move.baseDamage), tone: "warning" });
     switch (move.id) {
         case "fairyTransformation": empowerment("self", "add"); break;
         case "fairyEmpowerment":
@@ -161,7 +167,6 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             rows[rows.length - 1]!.recipient = "players";
             { const spread = rows[rows.length - 1]!.preview; if (spread?.kind === "buff") spread.modifiers = spread.modifiers.map(modifier => ({ ...modifier, signedValue: "+1–+5" })); }
             row("targeting.effectBinding", "binding", "players", "warning"); break;
-        case "latexPuddle": row("targeting.effectTrap", "trap", "field", "warning"); break;
         case "latexRegeneration": row("targeting.effectBinding", "restore", "players", "warning"); break;
         case "latexExplosion":
             row("targeting.effectBinding", "binding", "players", "warning");

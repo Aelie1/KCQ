@@ -131,6 +131,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.characterDetails.tagSpawn": "Spawn",
     "ui.characterDetails.tagTrap": "Trap",
     "ui.characterDetails.tagRetarget": "Retarget",
+    "ui.characterDetails.tagBinding": "Binding",
     "ui.characterDetails.tagHits": "{count} Hits",
     "ui.characterDetails.tagSelf": "Self",
     "ui.characterDetails.tagFree": "Free",

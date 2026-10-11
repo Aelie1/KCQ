@@ -91,7 +91,7 @@ export function libraryRestrictions(reference: ModifierReference, p: Presentatio
 const TRAIT_LABELS: Record<MoveTrait, UiLabel> = {
     damage: "characterDetails.tagDamage", buff: "characterDetails.tagBuff", debuff: "characterDetails.tagDebuff", escape: "characterDetails.tagEscape",
     onetime: "characterDetails.tagOnetime", refresh: "characterDetails.tagRefresh", heal: "characterDetails.tagHeal", defeat: "characterDetails.tagDefeat",
-    spawn: "characterDetails.tagSpawn", trap: "characterDetails.tagTrap", retarget: "characterDetails.tagRetarget",
+    spawn: "characterDetails.tagSpawn", trap: "characterDetails.tagTrap", retarget: "characterDetails.tagRetarget", binding: "characterDetails.tagBinding",
 };
 export function libraryTags(traits: readonly MoveTrait[] | undefined, p: Presentation) {
     return (traits ?? []).map(trait => ({ id: trait, label: p.ui(TRAIT_LABELS[trait]), tone: trait === "damage" ? "danger" as const : trait === "debuff" ? "special" as const : "neutral" as const }));
