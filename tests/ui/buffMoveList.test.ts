@@ -67,6 +67,17 @@ describe("buff move-list descriptions", () => {
             .toEqual([positive("Adds Basic Moves")]);
     });
 
+    it("can expand authored categories into localized move references without live state", () => {
+        const translated = new Presentation({ ...stockStrings, "move.whiteFlame.name": "Flamme blanche" });
+        expect(projectBuffMoveList(burnout, translated, undefined, true)).toEqual([
+            { label: "Add Punch", tone: "success", move: "punch" },
+            { label: "Add Kick", tone: "success", move: "kick" },
+            { label: "Block Flamme blanche", tone: "danger", move: "whiteFlame" },
+            { label: "Block Immolation", tone: "danger", move: "immolation" },
+        ]);
+        expect(projectBuffMoveList({ id: "unknown" }, translated, undefined, true)).toEqual([]);
+    });
+
     it("renders the same consolidated category chips in Character and Enemy Details", () => {
         const character = characterDetailsFixture;
         const enemy = enemyDetailsFixture;

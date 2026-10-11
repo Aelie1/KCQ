@@ -1,10 +1,11 @@
 import type { ContentLibrary, MoveReference, MoveBuffReference } from "../../../../engine/public/library";
-import type { ModifierId, ModifierSet } from "../../../../engine/public/types";
+import type { ModifierId, ModifierSet, MoveListModifier } from "../../../../engine/public/types";
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import type { EffectPreviewViewModel, EffectTone } from "./effectPreviews";
+import { projectBuffMoveList } from "./buffMoveList";
 import { libraryOwners } from "./library";
 import { libraryDamageProfile } from "./libraryMechanics";
-import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
+import { formatSignedNumber, isDebuff, isHarmfulModifierChange } from "./presentationHelpers";
 
 /** Reference presentation only. Callback mechanics are authored descriptions, never executable effects.
  * Public static effects and intrinsic modifiers take precedence over these stock reference annotations. */
@@ -17,7 +18,7 @@ export interface LibraryMoveEffectRow {
     tone?: EffectTone;
     modifiers?: ModifierSet;
     note?: string;
-    referenceDescription?: string;
+    bindingAmount?: { name: string; amount?: number; percent?: number; reduction?: boolean; changeLabel: string };
     duration?: number;
     statusReferences?: MoveBuffReference["statuses"];
 }
@@ -28,10 +29,11 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
     const selected = move.targets === 0 ? actor : move.targetSide === "player" ? "allies" : "enemies";
     const text = (key: string) => p.referenceText("move", move.id, key);
     const row = (type: UiLabel, key: string, recipient = selected, tone: EffectTone = "primary", modifiers?: ModifierSet): void => {
-        rows.push({ recipient, label: p.ui(type), name: text("effect." + key), tone, modifiers, note: text("effect." + key + ".note") });
+        if (type === "targeting.effectBinding") rows.push({ recipient, bindingAmount: { name: text("effect." + key) ?? p.ui(type), changeLabel: p.ui("library.variableAmount") }, note: text("effect." + key + ".note") });
+        else rows.push({ recipient, label: p.ui(type), name: text("effect." + key), tone, modifiers, note: text("effect." + key + ".note") });
     };
-    const buff = (effect: MoveBuffReference, operation: "add" | "remove" = "add", debuff?: boolean, note?: string, durationLabel?: string): void => {
-        const harmful = debuff ?? Object.entries(effect.modifiers ?? {}).some(([id, value]) => isHarmfulModifierChange(id as ModifierId, value));
+    const buff = (effect: MoveBuffReference & { moveList?: MoveListModifier }, operation: "add" | "remove" = "add", debuff?: boolean, note?: string, durationLabel?: string): void => {
+        const harmful = debuff ?? isDebuff({ ...effect, statuses: effect.statuses?.map(status => ({ id: status.id, value: status.level })) });
         rows.push({ recipient: effect.recipient === "self" ? actor : effect.recipient === "allies" ? "allies" : selected,
             duration: operation === "add" ? effect.duration : undefined,
             statusReferences: operation === "add" ? effect.statuses : undefined,
@@ -42,11 +44,12 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
                 modifiers: operation === "remove" ? [] : Object.entries(effect.modifiers ?? {}).map(([id, value]) => ({
                     label: p.modifier(id as ModifierId, "compact"), value: Math.abs(value), signedValue: formatSignedNumber(value),
                     harmful: isHarmfulModifierChange(id as ModifierId, value) === true, direction: value >= 0 ? "left" : "right",
-                })), moveList: [], details: [],
+                })), moveList: operation === "add" ? projectBuffMoveList(effect, p, undefined, true) : [], details: [],
             }, note });
     };
-    const empowerment = (recipient: "self" | "allies", operation: "add" | "remove") => buff({ id: "empowerment", recipient }, operation, false,
-        operation === "add" ? p.referenceText("buff", "empowerment", "library") : undefined,
+    const empowerment = (recipient: "self" | "allies", operation: "add" | "remove") => buff({ id: "empowerment", recipient, moveList: { addedMoves: [...new Set(Object.values(library.characters)
+        .filter(character => recipient === "self" ? character.id === actor : character.id !== actor)
+        .flatMap(character => character.empoweredMoves))] } }, operation, false, operation === "add" ? text("effect.empowerment.note") : undefined,
         operation === "add" ? p.ui("library.untilConsumed") : undefined);
     const damage = move.traits?.includes("damage") ? libraryDamageProfile(move, p, owner?.category === "characters") : undefined;
     if (damage) rows.push({ recipient: selected, preview: damage });
@@ -64,26 +67,26 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             empowerment("allies", "add"); break;
         case "powerOfDenial":
             row("targeting.operationDefeat", "defeat", "enemies", "danger");
-            row("targeting.effectBinding", "binding", "allies", "success");
-            buff({ id: "exhausted", recipient: "self" }, "add", false, text("effect.exhausted.note"), p.ui("library.encounterDuration")); break;
+            rows.push({ recipient: "allies", bindingAmount: { name: p.ui("library.strongestBinding"), amount: -100, changeLabel: "−100" }, note: text("effect.binding.note") });
+            buff({ id: "exhausted", recipient: "self", moveList: { blockedMoves: [move.id] } }, "add", false, undefined, p.ui("library.encounterDuration")); break;
         case "immolation":
-            row("targeting.effectBinding", "binding", actor, "success");
-            buff({ id: "burnout", recipient: "self" }, "add", false, undefined, p.ui("library.encounterDuration"));
-            rows[rows.length - 1]!.referenceDescription = p.referenceText("buff", "burnout", "desc"); break;
+            rows.push({ recipient: actor, bindingAmount: { name: p.ui("library.allBindings"), percent: -50, changeLabel: "−50%" }, note: text("effect.binding.note") });
+            buff({ id: "burnout", recipient: "self", moveList: { addedMoves: ["punch", "kick"], blockedMoves: ["whiteFlame", "fairyWhiteFlame", "phoenixKick", "fairyPhoenixKick", "immolation"] } }, "add", false, undefined, p.ui("library.encounterDuration"));
+            break;
         case "obey":
             row("targeting.effectRefresh", "refresh", "allies");
-            buff({ id: "servitude", recipient: "selected", duration: 2 }, "add", true, text("effect.servitude.note")); break;
+            buff({ id: "servitude", recipient: "selected", duration: 2, statuses: [{ id: "servitude", level: 1 }] }, "add", true); break;
         case "stop":
             row("targeting.effectWeaken", "weaken", "boss"); row("targeting.effectCancel", "cancel", "enemy"); break;
         case "attackMe":
             row("targeting.effectRetarget", "retarget", "enemies");
             buff({ id: "defenseBarrier", recipient: "self", duration: 1, modifiers: { defense: 3 } }); break;
         case "store":
-            row("targeting.effectBinding", "binding", "allies", "success");
+            rows.push({ recipient: "allies", bindingAmount: { name: p.ui("library.strongestBinding"), reduction: true, changeLabel: p.ui("library.bindingReduction") }, note: text("effect.binding.note") });
             row("targeting.effectResource", "resource", actor);
             row("targeting.effectBinding", "overflow", actor, "warning"); break;
         case "brace":
-            buff({ id: "brace", recipient: "self" }, "add", false, text("effect.brace.note"), p.ui("library.oneChargeThisRound")); break;
+            buff({ id: "brace", recipient: "self" }, "add", false, text("effect.brace.note")); break;
         case "release":
             buff({ id: "subspaceClutter", recipient: "selected", duration: 2, modifiers: { defense: -2, hit: -2 } }, "add", true);
             rows[rows.length - 1]!.recipient = "enemies";
@@ -95,7 +98,7 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
         case "pounce":
             for (let severity = 1; severity <= 4; severity++) {
                 buff({ id: "pounce", recipient: "selected", modifiers: severity === 2 ? { hit: -1 } : severity === 3 ? { hit: -2 } : {},
-                    statuses: [{ id: "immobilized", level: 1 }, ...(severity === 3 ? [{ id: "stunned" as const, level: 1 }] : severity === 4 ? [{ id: "helpless" as const, level: 1 }] : [])] }, "add", true, text("effect.victim.note"));
+                    moveList: { addedMoves: ["throwOff"] }, statuses: [{ id: "immobilized", level: 1 }, ...(severity === 3 ? [{ id: "stunned" as const, level: 1 }] : severity === 4 ? [{ id: "helpless" as const, level: 1 }] : [])] }, "add", true);
                 const victim = rows[rows.length - 1]!;
                 victim.recipient = "players";
                 if (victim.preview?.kind === "buff") victim.preview.name = p.buff("pounce", severity);
@@ -105,7 +108,9 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             }
             row("targeting.effectMove", "spray", "players", "warning"); break;
         case "latexMist":
-            row("targeting.effectAddDebuff", "spread", "players", "special");
+            buff({ id: "latexMist", recipient: "selected", duration: 1, modifiers: { spread: 5 } }, "add", true, text("effect.spread.note"));
+            rows[rows.length - 1]!.recipient = "players";
+            { const spread = rows[rows.length - 1]!.preview; if (spread?.kind === "buff") spread.modifiers = spread.modifiers.map(modifier => ({ ...modifier, signedValue: "+1–+5" })); }
             row("targeting.effectBinding", "binding", "players", "warning"); break;
         case "latexPuddle": row("targeting.effectTrap", "trap", "field", "warning"); break;
         case "latexRegeneration": row("targeting.effectBinding", "restore", "players", "warning"); break;
@@ -124,7 +129,8 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             rows[rows.length - 1]!.recipient = "enemyAllies"; break;
         case "barrierMagic":
             buff({ id: "barrierMagic", recipient: "selected" }, "add", false, text("effect.barrier.note")); break;
-        case "latexRain": row("targeting.effectBinding", "binding", "players", "warning"); break;
+        case "latexRain":
+            rows.push({ recipient: "players", bindingAmount: { name: p.ui("library.bodyZones"), amount: move.baseDamage, changeLabel: p.ui("library.bindingEach", { amount: formatSignedNumber(move.baseDamage ?? 0) }) }, note: text("effect.binding.note") }); break;
         case "callReinforcements": case "latexRainmaker": row("targeting.operationSpawn", "spawn", "field"); break;
         case "skunkPerfume":
             buff({ id: "defensePerfume", recipient: "selected", duration: 4, modifiers: { defense: -2 } }, "add", true, text("effect.defense.note"));

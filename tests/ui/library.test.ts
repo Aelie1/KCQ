@@ -144,6 +144,13 @@ describe("Library static reference projections", () => {
 
 
 describe("Library structured effect projections", () => {
+    it("includes every published move exactly once in the owner-grouped audit", () => {
+        const report = readFileSync("docs/Library Round 5 Effect Audit.md", "utf8");
+        const ids = [...report.matchAll(/^\| [^\n]*?\(`([^`]+)`\) \|/gm)].map(match => match[1]);
+        expect(ids.sort()).toEqual(Object.keys(library.moves).sort());
+        expect(new Set(ids).size).toBe(ids.length);
+    });
+
     it("represents every published move and preserves static effects without touching source data", () => {
         const before = JSON.stringify(library);
         for (const move of Object.values(library.moves)) {
@@ -198,6 +205,7 @@ describe("Library structured effect projections", () => {
         expect(css).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
         expect(css).toContain(".kcq-library__effect-cards .kcq-damage-profile__band { font-size: 11px; line-height: 15px; white-space: nowrap; }");
         expect(css).toContain(".kcq-library__effect-cards .kcq-damage-profile__band strong { font-size: 13px; line-height: 16px; }");
-        expect(css).toContain(".kcq-library__effect-cards .kcq-damage-profile { grid-column: 2; }");
+        expect(css).toContain("width: min(100%, 268px);");
+        expect(css).toContain("gap: 4px; justify-self: start;");
     });
 });

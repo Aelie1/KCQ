@@ -3,11 +3,12 @@ import type { DamageProfileViewModel } from "../viewModels/targeting";
 
 export interface DamageEffectProps {
     effect: DamageProfileViewModel;
+    tone?: "danger" | "warning";
 }
 
 export function DamageEffect(props: DamageEffectProps): JSX.Element {
     return (
-        <div class="kcq-preview-effect kcq-preview-effect--danger">
+        <div class={"kcq-preview-effect kcq-preview-effect--" + (props.tone ?? "danger")}>
             <span class="kcq-preview-effect__accent" aria-hidden="true" />
             <span class="kcq-preview-effect__tag">{props.effect.label}</span>
             <div class="kcq-damage-profile">
