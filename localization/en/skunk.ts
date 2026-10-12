@@ -80,7 +80,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.latexShower.name": "Latex Shower",
     "move.latexShower.desc": "Shower a character’s body with living latex.",
     "move.latexPuddle.name": "Latex Puddle",
-    "move.latexPuddle.desc": "Spray the ground, trees, and everything else nearby in latex, causing characters to get covered a little more with every action they take.",
+    "move.latexPuddle.desc": "Spray the ground, trees, and everything else nearby in latex, causing characters to get covered a little more every time they move.",
     "move.latexRegeneration.name": "Latex Regeneration",
     "move.latexRegeneration.desc": "Skunk magic regenerates partially escaped bindings to their highest reached level.",
     "move.latexRegeneration.effect.onCrit": "All Bindings",
@@ -98,10 +98,10 @@ export const skunkEnglishStrings: StringTable = {
     "move.healingMagic.desc": "Uses latex to fill in the gaps in its allies' bodies, healing damage they have taken.",
     "move.healingMagic.effect.others.note": "Heals all damaged [enemies:skunkette], [enemies:skunk], and [enemies:fairy].",
     "move.empoweringMagic.name": "Empowering Magic",
-    "move.empoweringMagic.desc": "Strange fairy magic causes its allies' next attacks to become strangely powerful.",
+    "move.empoweringMagic.desc": "Arcane fairy magic causes its allies' next attacks to become strangely powerful.",
     "move.empoweringMagic.effect.others.note": "Empowers all [enemies:skunkette], [enemies:skunk], [enemies:fairy], and [enemies:queen].",
     "move.barrierMagic.name": "Barrier Magic",
-    "move.barrierMagic.desc": "A translucent black shield protects enemy from incoming damage.  Absorbing hits drains duration.",
+    "move.barrierMagic.desc": "A translucent black shield protects an enemy from incoming damage.  Absorbing hits drains duration.",
 
     "buff.empoweringMagic.name": "Empowering Magic",
     "buff.barrierMagic.name": "Barrier Magic",
@@ -117,9 +117,9 @@ export const skunkEnglishStrings: StringTable = {
 
     // Queen
     "move.skunkGun.name": "Skunk Gun",
-    "move.skunkGun.desc": "The Queen's gun shoots compressed globs of latex at its targets.  They explode and start to cover anything they hit on impact.",
+    "move.skunkGun.desc": "The Queen's gun shoots compressed globs of latex at its targets. They explode and start to cover anything they hit on impact.",
     "move.skunkCollar.name": "Skunk Collar",
-    "move.skunkCollar.desc": "This collar is specially made to turn girls into skunks!	 It will continuously cover its wearer in latex until she is a perfect skunk.",
+    "move.skunkCollar.desc": "This collar is specially made to turn girls into skunks! It will continuously cover its wearer in latex until she is a perfect skunk.",
     "move.callReinforcements.name": "Call Reinforcements",
     "move.callReinforcements.desc": "The Skunk Queen never fights alone! You'll need to go through her creations to finish her for good! Summons increasingly powerful waves of enemy allies.",
     "move.callReinforcements.effect.spawn": "[enemies:skunkette] / [enemies:skunk] / [enemies:fairy]",
@@ -127,7 +127,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.latexRainmaker.desc": "The Skunk Queen is adept at static weapons as well as living constructs. Activates increasingly powerful contraptions to spray the party.",
     "move.latexRainmaker.effect.spawn": "[enemies:rainmaker]",
     "move.skunkPerfume.name": "Skunk Perfume",
-    "move.skunkPerfume.desc": "The Skunk Queen sprays her perfume, but it's a sweet, rubbery scent that makes those who smell it more attracted to skunks... Randomly apply one of two weakening perfumes or a regenerative perfume.",
+    "move.skunkPerfume.desc": "The Skunk Queen sprays her perfume, but it's a sweet, rubbery scent that makes those who smell it more attracted to skunks... Randomly applies one of two weakening perfumes or a regenerative perfume.",
     "move.skunkPerfume.effect.heal.note": "Heals damaged [enemies:skunkette], [enemies:skunk], and [enemies:fairy].",
 
     "buff.defensePerfume.name": "Defense Perfume",
