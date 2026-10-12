@@ -3,10 +3,10 @@ import { numberedShortcut } from "../../console/shortcuts";
 import type { ShortcutHintMode } from "./shortcutHints";
 
 export const COMBAT_SHORTCUTS = {
-    back: "backspace",
+    back: "escape",
     stance: "9",
     escape: "0",
-    endTurn: "=",
+    endTurn: " ",
     gameLog: "-",
 } as const;
 export interface SharedKeyboard {
@@ -17,8 +17,9 @@ export interface SharedKeyboard {
 const GLOBAL_SHORTCUT_KEYS: ReadonlySet<string> = new Set(Object.values(COMBAT_SHORTCUTS));
 
 export function shortcutBadgeLabel(key: string): string {
-    if (key.toLowerCase() === COMBAT_SHORTCUTS.back) return "⌫";
+    if (key.toLowerCase() === "escape") return "Esc";
     if (key.toLowerCase() === "enter") return "↵";
+    if (key.toLowerCase() === " ") return "␣";
     return key.toUpperCase();
 }
 
@@ -82,32 +83,66 @@ export function useCombatKeyboard(
                 || event.ctrlKey || event.altKey || event.metaKey) return;
             const target = event.target instanceof Element ? event.target : document.activeElement;
             if (target?.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])')) return;
+
             const key = event.key.toLowerCase();
+            const isSpace = key === " ";
             const focusedControl = target?.closest('button, [role="button"], a[href]');
-            const focusedConfirmation = key === "enter" && focusedControl?.matches('[data-kcq-shortcut="enter"]');
+            const focusedConfirmation =
+                key === "enter" &&
+                focusedControl?.matches('[data-kcq-shortcut="enter"]');
+
+            // Leave native keyboard interaction inside modal dialogs alone.
+            if (isSpace && target?.closest('[role="dialog"][aria-modal="true"]')) return;
+
             if (event.repeat || held.has(key) || handling) {
-                // Prevent the browser from repeating native confirmation clicks too.
-                if (focusedConfirmation || (held.has(key) && key === COMBAT_SHORTCUTS.back)) event.preventDefault();
+                if (isSpace || focusedConfirmation ||
+                    (held.has(key) && key === COMBAT_SHORTCUTS.back)) {
+                    event.preventDefault();
+                }
                 return;
             }
+
             // Preserve native Enter activation on other focused controls.
             if (key === "enter" && focusedControl && !focusedConfirmation) return;
+
+            const findShortcut = (shortcut: string): HTMLElement | undefined =>
+                [...(root()?.querySelectorAll<HTMLElement>("[data-kcq-shortcut]") ?? [])]
+                    .find(element =>
+                        element.dataset.kcqShortcut === shortcut &&
+                        !element.matches(":disabled, [aria-disabled=true]") &&
+                        !element.closest("[inert], [hidden]")
+                    );
+
             handling = true;
-            // Lock before callbacks: they can synchronously replace the current panel.
             held.add(key);
             let handled = false;
+
             try {
-                if (GLOBAL_SHORTCUT_KEYS.has(key)) {
-                    handled = globalAction(key);
-                }
-                if (!handled) {
-                    const choice = [...(root()?.querySelectorAll<HTMLElement>("[data-kcq-shortcut]") ?? [])]
-                        .find(element => element.dataset.kcqShortcut === key
-                            && !element.matches(":disabled, [aria-disabled=true]")
-                            && !element.closest("[inert], [hidden]"));
-                    if (choice) {
+                if (isSpace) {
+                    // Confirmation takes priority over End Turn.
+                    const confirm = findShortcut("enter");
+
+                    if (confirm) {
                         handled = true;
-                        choice.click();
+                        confirm.click();
+                    } else if (root()?.querySelector('[data-kcq-shortcut="enter"]')) {
+                        // A confirmation exists but is disabled.
+                        // Consume Space without performing another action.
+                        handled = true;
+                    } else {
+                        handled = globalAction(key);
+                    }
+                } else {
+                    if (GLOBAL_SHORTCUT_KEYS.has(key)) {
+                        handled = globalAction(key);
+                    }
+
+                    if (!handled) {
+                        const choice = findShortcut(key);
+                        if (choice) {
+                            handled = true;
+                            choice.click();
+                        }
                     }
                 }
             } finally {
@@ -115,10 +150,20 @@ export function useCombatKeyboard(
                 if (handled) event.preventDefault();
                 else held.delete(key);
             }
+
         };
         const keyup = (event: KeyboardEvent): void => {
+            if (event.key === " " && held.has(" ")) {
+                event.preventDefault();
+            }
+
             held.delete(event.key.toLowerCase());
-            if (event.key === "Shift" && heldShift.delete(event.code || "Shift") && heldShift.size === 0) releaseShift();
+
+            if (event.key === "Shift" &&
+                heldShift.delete(event.code || "Shift") &&
+                heldShift.size === 0) {
+                releaseShift();
+            }
         };
         const blur = (): void => {
             held.clear();

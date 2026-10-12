@@ -1,5 +1,5 @@
 import { ContentCatalogFragment } from "../../engine/protected/types";
-import { forest_1, forest_2, forest_3, outside, plains_1, plains_2, plains_3, tower_1, tower_2, tower_3 } from "./encounters";
+import { epilogue, forest_1, forest_2, forest_3, outside, plains_1, plains_2, plains_3, prologue, tower_1, tower_2, tower_3 } from "./encounters";
 import { barrierMagic, bindingMagic, empoweringMagic, fairy, healingMagic } from "./fairy";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
@@ -43,6 +43,7 @@ export const skunkCatalog: ContentCatalogFragment = {
     ],
 
     encounters: [
+        prologue,
         plains_1,
         plains_2,
         plains_3,
@@ -52,6 +53,7 @@ export const skunkCatalog: ContentCatalogFragment = {
         tower_1,
         tower_2,
         tower_3,
+        epilogue,
         outside
     ],
 };

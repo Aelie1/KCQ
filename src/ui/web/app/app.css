@@ -3017,9 +3017,10 @@ button {
 
 .kcq-encounter-details__description p {
     margin: 0;
-    font-size: 14px;
+    font-size: 12px;
     line-height: 19px;
-    white-space: pre-wrap;
+    white-space: pre-line;
+    line-height: 1.6;
 }
 
 .kcq-encounter-details__enemies,
@@ -4309,6 +4310,11 @@ button {
     overflow-wrap: anywhere;
 }
 
+.kcq-library__description p {
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
 .kcq-library__intro {
     padding: 0 4px;
 }
@@ -5162,13 +5168,12 @@ button {
     gap: 4px;
 }
 
-/* Optional narrative screen shares the result overlay, with its own reading area. */
 .kcq-victory-story {
-    height: min(100%, 600px);
+    max-height: min(100%, 600px);
 }
 
 .kcq-victory-story__narrative {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
     margin: 0;
     padding: 8px 4px;

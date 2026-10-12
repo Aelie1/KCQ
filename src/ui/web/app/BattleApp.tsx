@@ -25,14 +25,14 @@ import type { LanguageSelection } from "./language";
 import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
 import { BattleResultPanel } from "./panels/BattleResultPanel";
-import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
-import { LibraryPanel } from "./panels/LibraryPanel";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
 import { EnemyDetailsPanel } from "./panels/EnemyDetailsPanel";
 import { EscapePanel } from "./panels/EscapePanel";
 import { GameLogPanel } from "./panels/GameLogPanel";
+import { LibraryPanel } from "./panels/LibraryPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
+import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
@@ -325,6 +325,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
+            if (logOpen() || screen().kind !== "overview") return false;
+
             endTurn();
             return true;
         }

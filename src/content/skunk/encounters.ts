@@ -71,6 +71,22 @@ const setupOutside: TowerSetup = {
     addSkunk: true
 };
 
+export const prologue: EncounterDef = {
+    id: "prologue",
+    stars: 0,
+    enemies: [],
+    bindings: [],
+    traps: []
+}
+
+export const epilogue: EncounterDef = {
+    id: "epilogue",
+    stars: 0,
+    enemies: [],
+    bindings: [],
+    traps: []
+}
+
 export const plains_1: EncounterDef = {
     id: "plains_1",
     stars: 1,

@@ -161,7 +161,8 @@ function createPreviewEffects(
     omitDataEffects = false,
 ): EffectPreviewViewModel[] {
     const effects: EffectPreviewViewModel[] = [];
-    if (preview.damage) effects.push(createDamageProfile(preview.damage, context.presentation));
+    const enemyHp = context.state?.enemies.find(enemy => enemy.id === context.scopeTarget)?.currHp ?? 0;
+    if (preview.damage) effects.push(createDamageProfile(preview.damage, enemyHp, context.presentation));
     else if (preview.accuracy) effects.push(createAccuracyEffect(preview.accuracy, context.presentation));
     effects.push(...preview.effects.flatMap((effect, index) =>
         omitDataEffects && effect.type === "data"
@@ -194,12 +195,13 @@ function targetIdentity(
     };
 }
 
-function createDamageProfile(damage: PreviewProfile, presentation: Presentation): DamageProfileViewModel {
+function createDamageProfile(damage: PreviewProfile, enemyHp: number, presentation: Presentation): DamageProfileViewModel {
     return {
         kind: "damage-profile", label: presentation.ui("targeting.effectDamage"), tone: "danger",
         bands: DAMAGE_BANDS.map((band) => createDamageBand(
             band,
             damage[band] ?? { chance: 0, min: 0, max: 0 },
+            enemyHp,
             presentation,
         )),
     };
@@ -209,13 +211,16 @@ function formatChance(value: number): number {
     return Math.round(value * 10) / 10;
 }
 
-function createDamageBand(band: DamageBandViewModel["band"], value: BandPreview, presentation: Presentation): DamageBandViewModel {
+function createDamageBand(band: DamageBandViewModel["band"], value: BandPreview, enemyHp: number, presentation: Presentation): DamageBandViewModel {
     return {
         band, label: presentation.hitBand(band), chance: value.chance,
         chanceLabel: presentation.ui("targeting.chance", { band: presentation.hitBand(band), chance: formatChance(value.chance) }),
         min: value.min, max: value.max,
         rangeLabel: presentation.ui("targeting.damageRange", { min: value.min, max: value.max }),
-        emphasized: value.chance > 0 && (band === "hit" || band === "crit"),
+        emphasized: enemyHp !== undefined
+            && enemyHp > 0
+            && value.chance > 0
+            && value.max >= enemyHp,
         zero: value.chance === 0,
     };
 }

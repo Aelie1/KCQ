@@ -188,12 +188,54 @@ export const skunkEnglishStrings: StringTable = {
     "trap.trapPuddle.desc": "A field hazard that consumes puddles to bind moving characters.",
 
     // Encounters
-    "encounter.plains_1.name": "Fight with Skunkettes",
-    "encounter.plains_1.desc": "Face three Skunkettes and learn to manage the four body-zone bindings.",
-    "encounter.plains_2.name": "Fight with Skunks",
-    "encounter.plains_2.desc": "Face two Skunkettes and two Skunks on a field with 50 latex puddles.",
-    "encounter.plains_3.name": "Fight with Skunk Queen",
-    "encounter.plains_3.desc": "Challenge the Skunk Queen, whose collar and reinforcements create growing pressure.",
+    "encounter.prologue.name": "Ko-chan's New Game",
+    "encounter.prologue.desc": `"My Lady!  I found an interesting game!"  Ko-chan bounded into the foyer of the dormitory excitedly.
+    Matsuko looked up from some papers she was reviewing and smiled.  "Found another way to ignore your work, did you?  What is this new game you found about?"
+    "Hu hu.  I found it at a used game store.  It's one of *those* games, you see.  It has multiplayer, so I thought we could all play together.  You have to save some girls from an angry bondage maniac."  Ko-chan hurriedly explained the game to Matsuko.
+    Matsuko held the game in her hand and read the back of the case. "Hmm... Interesting enough, I guess.  Let's see if the others want to try it."
+    * * *
+    "So, how do we play this?"  Hinari spun the disc around her finger and pushed it into the gaming console.
+    Ko-chan held up a pair of VR goggles.  "Once you put on the goggles, you enter a battle and try to defeat the enemies before they can completely restrain you.  If we work as a team, we should be able to free each other before things get out of hand."
+    Sakari put on the goggles and sat down on a chair.  "You don't need to convince me more.  Let's give it a try."
+    "Interest high. Evaluating cooperative potential."  Naruyo seemed like she was already starting to develop her strategies.
+    "Very well.  We'll try it out for a while and see if it's worth a deeper look."  Matsuko put on her own goggles and sat on the couch.
+    Ko-chan pumped her arm and smiled.  "I can't wait!  Hurry up and start, game!"  She started the game and began to configure her character.`,
+
+    "encounter.plains_1.name": "Ko-chan's First Fight",
+    "encounter.plains_1.desc": `Ko-chan appeared outside a small town clad in a fancy white tutu, ballet boots, and long gloves.  Behind her, a pair of fake wings clung to her back.  She looked herself over and smiled.  "It's perfect."
+    "A whole character creator and you recreated the same outfit you wear every day?"  Hinari scoffed a bit when she saw Ko-chan's costume.
+    Naruyo spoke up for her.  "Understands good workmanship.  I approve."
+    "Of course you approve, you made her costume in the first place!"  Sakari ribbed back at her.
+    "That's enough.  She can pick whatever she wants and look just as cute, right?"  Matsuko caused Ko-chan to blush with a single comment, as usual.
+    Hinari looked around. "So what are we supposed to do anyhow?"
+    "There's two quests in the log already.  We can either go check a clearing nearby where some skunk sightings were reported, or we can do some information gathering in town."  Ko-chan read from the system interface.
+    Matsuko nodded.  "Let's split up.  Two of us can check around town, and the other three can go investigate that clearing."
+    "Sounds good to me."  The rest nodded as they agreed with the plan.
+    * * *
+    When they got to the clearing, they found a pair of girls already trapped on their elbows and knees in latex skunk suits.  They were spraying down a third girl, who was quickly trapped and controlled by the magic latex bondage.  The three skunks turned towards the party when they approached and immediately started to race towards them.`,
+
+    "encounter.plains_1.victory": `As the skunkettes took more and more damage, their control over their victims faltered, allowing them to start to fight the control from the inside.  Before they could be completely freed, however, their suits forced them to turn tail and run off towards the forest border.
+    The party decided to chase them down and save those girls for good before they were forced to assault more people against their wills.`,
+
+    "encounter.plains_2.name": "Ko-chan's Trap",
+    "encounter.plains_2.desc": `The party chases the skunkettes to the edge of the forest where they find them resting on the ground. Nearby, a pair of normal sized skunks are spraying them with latex, which patches up the gaps that had been created by the previous battle and restores them to full strength.
+    When they notice the party approaching, one of the three skunkettes runs off away from the group while the other two get back to their "feet" and prepare to fight once more.  The two smaller skunks waste no time to start spreading liquid latex all over the area, causing the battlefield to become perilous quickly.
+    "Ugh.  Do they have to make it into a slip and slide out here?"
+    "Careful, they're coming!"
+    The party readies themselves for another battle with the skunk creatures.`,
+
+    "encounter.plains_2.victory": `"Gross.  It's getting everywhere."
+    The last skunk exploded into liquid latex and at last, the scene was quiet.  The girls trapped in the suits were freed, but unconscious, so they propped them up under a tree and looked around to see if they could find anything that would explain what was going on.  Finally they found a trail of liquid latex leading to the north that was left by the skunkette that escaped.
+    "I guess we should follow the trail?  Be wary of an attack though."
+    The party followed the trail for some time, and eventually they found a wooden shack along the edge of the woods.  As they approached, they heard a loud clang and a scream.`,
+
+    "encounter.plains_3.name": "Skunk Queen's Manifesto",
+    "encounter.plains_3.desc": `"Argh!  Where is it?!"  The girl was hunched over a box, throwing things over her shoulder every few seconds.  She noticed the party approaching and stood up, turning to face them.
+    She was wearing an outfit made out of shiny latex, complete with a bunnysuit, tall boots, and long gloves.  On her head was even a crown coated in black latex and reflecting the sun with its glossy sheen.  "Oooh.  Volunteers.  My second favorite thing after skunks!"
+    "Just who volunteered for anything? You must be related to the skunk creatures that have been running around everywhere lately, then?"
+    "THEY! ARE! NOT CREATURES!  I have worked very hard to give birth to them, and I won't stand for you insulting them!"  The girl pulled out the gun hanging from her belt and shots it at the party.  They were able to dodge, but the glob of latex coated a nearby tree with a wide band of latex that quickly grew in both directions.
+    "I'll turn you all into skunks and make you respect the name of the Skunk Queen! You'll realize the sheer genius of my inventions!"  The Skunk Queen reloads her gun and aims it at the party again.
+    "I guess diplomacy was never an option, then?  Let's get this over with."`,
     "encounter.forest_1.name": "Skunkette Ambush",
     "encounter.forest_1.desc": "Three Skunkettes and a Fairy ambush the party. All characters skip the opening turn.",
     "encounter.forest_2.name": "Fight in the Latex Swamp",
@@ -206,6 +248,8 @@ export const skunkEnglishStrings: StringTable = {
     "encounter.tower_2.desc": "The Goddess assists the party against the Skunk Empress’s strengthened forces.",
     "encounter.tower_3.name": "Goddess's Resurgence",
     "encounter.tower_3.desc": "Stronger divine assistance gives the party another chance against the Skunk Empress.",
+    "encounter.epilogue.name": "Goddess's Resurgence",
+    "encounter.epilogue.desc": "Stronger divine assistance gives the party another chance against the Skunk Empress.",
     "encounter.outside.name": "Goddess's Trial",
     "encounter.outside.desc": "Face the Goddess with the former rulers serving as her minions.",
 

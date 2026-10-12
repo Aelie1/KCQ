@@ -3,7 +3,7 @@ import { StringTable } from "../../src/ui/presentation/presentation";
 
 export const systemEnglishStrings: StringTable = {
     "campaign.skunk.name": "Latex Skunk Attacks!",
-    "campaign.skunk.desc": "Random people are disappearing, to turn up captured in seamless rubber skunk suits, and spraying down other people with latex! Find out what the cause of all this is!",
+    "campaign.skunk.desc": "Random people are disappearing, and turning up later trapped in seamless latex skunk suits. The latex that they spray is spreading these living suits and their number is starting to grow out of hand! Find out what the cause of all this is!",
 
     "phase.player.name": "Player",
     "phase.enemy.name": "Enemy",
