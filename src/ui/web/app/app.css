@@ -5161,3 +5161,32 @@ button {
     justify-content: center;
     gap: 4px;
 }
+
+/* Optional narrative screen shares the result overlay, with its own reading area. */
+.kcq-victory-story {
+    height: min(100%, 600px);
+}
+
+.kcq-victory-story__narrative {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    padding: 8px 4px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    color: var(--kcq-text-primary);
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.kcq-victory-story__narrative:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: -2px;
+}
+
+.kcq-victory-story__continue {
+    grid-column: 1 / -1;
+}

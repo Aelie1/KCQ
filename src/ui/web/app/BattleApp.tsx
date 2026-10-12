@@ -25,6 +25,7 @@ import type { LanguageSelection } from "./language";
 import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
 import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
 import { BattleResultPanel } from "./panels/BattleResultPanel";
+import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { LibraryPanel } from "./panels/LibraryPanel";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
@@ -37,6 +38,7 @@ import { createShortcutHintPreference, type ShortcutHintPreference } from "./sho
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
 import { createGameLogHistory } from "./viewModels/gameLogHistory";
+import { createVictoryStoryViewModel } from "./viewModels/victoryStory";
 
 export interface BattleAppProps {
     engine: Engine;
@@ -93,6 +95,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     };
     const modalOpen = () => libraryOpen() || settingsOpen() || !!resultModel();
     const dialogOpen = () => libraryOpen() || settingsOpen() || (!!resultModel() && !logOpen());
+    // Session state survives result-panel remounts when visiting the Game Log.
+    const [storyDismissed, setStoryDismissed] = createSignal(false);
     const [resultLogVisited, setResultLogVisited] = createSignal(false);
     const openResultLog = (): void => {
         setResultLogVisited(true);
@@ -129,6 +133,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     });
     const resultModel = createMemo(() => playback.active() ? undefined
         : createBattleResultViewModel(state(), resultStats(), props.presentation));
+    const storyModel = createMemo(() => resultModel() && !storyDismissed()
+        ? createVictoryStoryViewModel(state(), props.presentation) : undefined);
     createEffect(() => { if (resultModel()) setLogOpen(false); });
 
     const actorExists = (actorId: EntityId): boolean =>
@@ -424,7 +430,10 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         onLibrary={() => setLibraryOpen(true)} onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                         onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
                 </Show>
-                <Show when={!logOpen() && resultModel()} keyed>
+                <Show when={!logOpen() && storyModel()} keyed>
+                    {(model) => <VictoryStoryPanel model={model} onContinue={() => setStoryDismissed(true)} />}
+                </Show>
+                <Show when={!logOpen() && !storyModel() && resultModel()} keyed>
                     {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
                         onBackToLevelSelect={props.onBackToLevelSelect} onGameLog={openResultLog}
                         focusGameLog={resultLogVisited()} />}

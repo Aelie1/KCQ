@@ -355,6 +355,7 @@ export type UiLabel =
     | "library.skunk.restoration"
     | "library.skunk.collar"
     | "library.blocksEscape"
+    | "victoryStory.continue"
     | "version.name";
 
 export class Presentation {
