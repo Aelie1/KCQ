@@ -299,7 +299,7 @@ export const plains_3: EncounterDef = {
 export const forest_1: EncounterDef = {
     id: "forest_1",
     stars: 2,
-    enemies: [skunketteSetup, skunketteSetup, skunketteSetup, fairySetup],
+    enemies: [skunketteSetup, skunketteSetup, skunketteSetup, skunketteSetup, fairySetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
         { definition: trapPuddle, amount: 0 }
@@ -323,7 +323,7 @@ export const forest_1: EncounterDef = {
 export const forest_2: EncounterDef = {
     id: "forest_2",
     stars: 3,
-    enemies: [skunketteSetup, skunketteSetup, skunkSetup, skunkSetup, fairySetup],
+    enemies: [skunketteSetup, skunketteSetup, skunkSetup, skunkSetup, skunkSetup, fairySetup],
     bindings: [latexHead, latexArms, latexTorso, latexLegs],
     traps: [
         { definition: trapPuddle, amount: 100 }

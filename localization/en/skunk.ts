@@ -263,20 +263,65 @@ export const skunkEnglishStrings: StringTable = {
     "Not so fast.  Two of you have to stay behind to make sure the other three are properly... motivated." She snapped her fingers and two of the party were instantly skunked onto their elbows and knees.
     "The rest of you had better get a move on. Even if you fail, come back here and I'll give you another chance... after some light reeducation."  The mage laughed and sent the remaining girls out of her tower.`,
 
-    "encounter.forest_1.name": "Skunkette Ambush",
-    "encounter.forest_1.desc": "Three Skunkettes and a Fairy ambush the party. All characters skip the opening turn.",
-    "encounter.forest_2.name": "Fight in the Latex Swamp",
-    "encounter.forest_2.desc": "Two Skunkettes, two Skunks, and a Fairy defend a field saturated with 100 latex puddles.",
-    "encounter.forest_3.name": "Skunk Queen's Rematch",
-    "encounter.forest_3.desc": "The Skunk Queen returns with two Skunkettes, a Fairy, and 100 latex puddles.",
+    "encounter.forest_1.name": "Ko-chan's Ambush",
+    "encounter.forest_1.desc": `The party set off for the forest to try and capture the Skunk Queen for good.  They didn't see a single latex creature out on the plains, making them wonder if they had retreated to the forest to protect their creator.  As they entered the forest, an unsettling feeling washed over them.
+    "...Something is definitely watching us."
+    "Unsurprising, considering we are infringing on their territory now."
+    "Keep an eye out.  We could be attacked at any time."
+    The party advanced slowly through the forest until they got to a small clearing.  Looking around, they found a burnt-out fire, and some remains of camping gear.
+    "Look at this!  There's latex on this ruined tent!"
+    As the party took a closer look, they failed to keep watch around them, and before they knew it, they were surrounded by skunkettes and a strange fairy creature, who wasted no time in ambushing them!`,
+
+    "encounter.forest_1.victory": `As the last skunkette fell, one of the girls immediately threw up her arms.
+    "Literally seconds after I said to keep an eye out--"
+    "Yes, yes, we know. We're okay, aren't we? Let's just move on."
+    "...Fine! Let's just not get ambushed again..."
+    The party quickly moved on from the campsite deeper into the forest.`,
+
+    "encounter.forest_2.name": "Ko-chan's Quagmire",
+    "encounter.forest_2.desc": `The further they went into the forest, the more latex they started to see.  Tree trunks were covered, bushes were dripping, and puddles covered the ground.  It started to get rather dangerous to move around without stepping in the latex.
+    "Just who would do something like this..."
+    They reached another clearing, but its contents were nothing like what they were expecting.  Before them stretched a vast swamp of latex.  When they entered the clearing they were immediately noticed by some skunks that were busy 'repairing' the damage on a pair of skunkettes.  Another one of those fairy creatures was nearby as well.`,
+
+    "encounter.forest_2.victory": `Finally, they defeated the largest group of the skunk creatures yet.  After moving the rescued girls to a dry patch of ground, they looked around to try and find the path forward again.
+    "Just how many of these things are there?"
+    "She's certainly been busy in the time we spent trying to get free..."
+    "Let's hurry up and find her so we can get out of here."
+    After a while, they found something of a trail leading deeper into the woods and started to follow it.`,
+
+    "encounter.forest_3.name": "Skunk Queen's Empire",
+    "encounter.forest_3.desc": `After a few hours of wandering the forest, the party reached the deepest part. By this point, there wasn't a single piece of foliage around that wasn't covered in shiny latex. The latex-coated trees thinned, revealing a clearing where the Skunk Queen was sitting on a makeshift throne of latex-covered branches and rocks. On either side sat a skunkette with a glittering collar, and a skunk fairy fluttered around like a loyal attendant.
+    "We meet again, my dear volunteers. I am so glad you are so eager to become my pets!"
+    "I'll make you pay for the humiliation I've suffered!"
+    "I see you managed to escape the suits I gave you girls. How disappointing. Well, don't worry, I'll make sure you don't escape them this time."
+    "Enough talk! Prepare to meet your maker!"
+    "As you wish. I've got the perfect place for all of you in my new empire of skunks! Have at you!"`,
+
+    "encounter.forest_3.victory": `After a grueling battle, an unblocked hit to the side sent the Skunk Queen sprawling to the ground.  She hit the ground hard, her gun spinning away on the latex-coated ground.  Before she could scramble over to it, a knee pressed into her back...
+    "Not so fast, your highness." One of the girls put more weight onto the Skunk Queen's back, making her groan and struggle in pain.
+    "G-get off me, you bitch!" The Skunk Queen struggled more vigorously before her head was pressed into the ground as well.
+    "I've been wanting to do this for a long time now." One of the party approached with the Skunk Gun and turned it up to its maximum level.  She aimed carefully at the Skunk Queen as she begged for mercy, and just before she fired, the one holding the Skunk Queen down stepped back.  Huge globs of latex were fired by the gun, which collided directly with the Skunk Queen's head and back.
+    She kept shooting as the latex quickly spread over the struggling girl's body, and before long, she was heavily suited in the shiny latex.  Eventually, a dull click indicated that the gun was empty, and she stood down.
+    "That should be enough.  Let's finish this up, then."
+    The discarded Skunk Collar was fitted around the Skunk Queen's neck.  It closed seamlessly with a dull click, and glowed brightly with magic, causing green lines to spread over the surface of the latex skunk suit.  The Skunk Queen could only whine and struggle weakly.
+    "Good work.  Let's get her back to the mage so we can get out of our own collars."
+    All three girls nodded and made their way out of the latex forest with their target in hand.`,
+
+    "encounter.interlude_2.name": "Ko-chan's Triumph",
+    "encounter.interlude_2.desc": ``,
+
     "encounter.tower_1.name": "Skunk Empress's Scheme",
     "encounter.tower_1.desc": "The Skunk Empress opens with strengthened forces, collars on the party, and an ambush.",
+
     "encounter.tower_2.name": "Goddess's Assistance",
     "encounter.tower_2.desc": "The Goddess assists the party against the Skunk Empress’s strengthened forces.",
+
     "encounter.tower_3.name": "Goddess's Resurgence",
     "encounter.tower_3.desc": "Stronger divine assistance gives the party another chance against the Skunk Empress.",
+
     "encounter.epilogue.name": "Goddess's Resurgence",
     "encounter.epilogue.desc": "Stronger divine assistance gives the party another chance against the Skunk Empress.",
+
     "encounter.outside.name": "Goddess's Trial",
     "encounter.outside.desc": "Face the Goddess with the former rulers serving as her minions.",
 
