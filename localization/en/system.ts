@@ -147,7 +147,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.effects.none": "No effects",
     "ui.effects.more": "+{count}",
     "ui.encounter.challenge": "Challenge",
-    "ui.encounter.challengeAccessible": "{stars} of 5 stars",
+    "ui.encounter.challengeAccessible": "{stars} stars",
     "ui.encounter.bestClear": "Best Clear",
     "ui.encounter.uncleared": "---",
     "ui.encounter.description": "Description",

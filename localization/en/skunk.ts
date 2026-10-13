@@ -340,7 +340,7 @@ export const skunkEnglishStrings: StringTable = {
     She drew her weapon and attacked the party.`,
 
     "encounter.tower_2.victory": `"W-w-w-hat?!?"
-    The Skunk Empress was knocked backwards into her desk, and grimaced in pain as the edge pressed into her back like a knife.  She landed on the ground groaning and squirming, grasping her back.  The wasted no time pressing their advantage and twist her arms behind her back.
+    The Skunk Empress was knocked backwards into her desk, and grimaced in pain as the edge pressed into her back like a knife.  She landed on the ground groaning and squirming, grasping her back.  The wasted no time pressing their advantage and twisting her arms behind her back.
     "OW! GET OFF ME THAT HURTS!"
     "Good. Let's make it hurt more."
     The party released their friends and started to look around the room for a way to restrain the Skunk Empress.`,
@@ -392,7 +392,7 @@ export const skunkEnglishStrings: StringTable = {
     "Any time you like, dear.  Or you can always wimp out if you're scared~"`,
 
     "encounter.outside.victory": `The Goddess found herself defeated, but didn't seem worried.  She vanished out from under the party and appeared back in front of them, floating softly.
-    "A well-fought battle.  You truely are touched by the gods.  I have nothing more for you, though.  Come back for a rematch anytime."`
+    "A well-fought battle.  You truly are touched by the gods.  I have nothing more for you, though.  Come back for a rematch anytime."`
 
 };
 

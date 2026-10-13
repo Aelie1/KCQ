@@ -30,7 +30,6 @@ export interface EncounterEnemyViewModel {
 }
 export interface EncounterDetailsViewModel extends EncounterSummaryViewModel {
     description: string;
-    storyOnly: boolean;
     enemies: readonly EncounterEnemyViewModel[];
     effects: readonly EffectPreviewViewModel[];
     effectGroups: readonly EffectGroupViewModel[];
@@ -82,7 +81,6 @@ export function createEncounterDetailsViewModel(
     }, "encounter-setup");
     return {
         ...encounterSummary(encounter, presentation, bestClear),
-        storyOnly: encounter.enemies.length === 0,
         description: presentation.encounter(encounter.id, "desc"),
         enemies: encounter.enemies.map((setup) => {
             const enemy = library.enemies[setup.defId];

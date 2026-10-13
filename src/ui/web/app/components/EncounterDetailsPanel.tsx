@@ -17,11 +17,11 @@ export function EncounterDetailsPanel(props: {
         }
         body={
             <div class="kcq-encounter-details__body">
-                <Show when={!props.model.storyOnly}>
+                <Show when={props.model.stars > 0}>
                     <section class="kcq-encounter-card kcq-encounter-details__info">
                         <div>
                             <h2>{props.model.labels.challenge}</h2>
-                            <p class="kcq-encounter-details__stars" aria-label={props.model.challengeLabel}>{props.model.stars}</p>
+                            <p class="kcq-encounter-details__stars" aria-label={props.model.challengeLabel}>{props.model.starsText}</p>
                         </div>
                         <div>
                             <h2>{props.model.labels.bestClear}</h2>
@@ -65,7 +65,7 @@ export function EncounterDetailsPanel(props: {
                     <Shortcut shortcut={COMBAT_SHORTCUTS.back} />
                     <span aria-hidden="true">↶ </span>{props.model.labels.back}
                 </button>
-                <Show when={!props.model.storyOnly}>
+                <Show when={props.model.stars > 0}>
                     <button class="kcq-battle-overview__primary-action kcq-shortcut-host" data-kcq-shortcut="enter" type="button" onClick={props.onChooseDifficulty}>
                         <Shortcut shortcut="Enter" />
                         {props.model.labels.chooseDifficulty}
