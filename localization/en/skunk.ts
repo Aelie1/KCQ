@@ -340,7 +340,7 @@ export const skunkEnglishStrings: StringTable = {
     She drew her weapon and attacked the party.`,
 
     "encounter.tower_2.victory": `"W-w-w-hat?!?"
-    The Skunk Empress was knocked backwards into her desk, and grimaced in pain as the edge pressed into her back like a knife.  She landed on the ground groaning and squirming, grasping her back.  The wasted no time pressing their advantage and twisting her arms behind her back.
+    The Skunk Empress was knocked backwards into her desk, and grimaced in pain as the edge pressed into her back like a knife.  She landed on the ground groaning and squirming, grasping her back.  They wasted no time pressing their advantage and twisting her arms behind her back.
     "OW! GET OFF ME THAT HURTS!"
     "Good. Let's make it hurt more."
     The party released their friends and started to look around the room for a way to restrain the Skunk Empress.`,
