@@ -51,6 +51,7 @@ export const skunkEnglishStrings: StringTable = {
     "difficulty.mythic.rainmaker": "Explodes into 100 Latex Puddles when defeated.",
 
     "buff.ambushed.name": "Ambushed!",
+    "buff.collar.name": "Slave Collar",
 
     // Skunkette
     "move.latexSpray.name": "Latex Spray",
@@ -236,6 +237,32 @@ export const skunkEnglishStrings: StringTable = {
     "THEY! ARE! NOT CREATURES!  I have worked very hard to give birth to them, and I won't stand for you insulting them!"  The girl pulled out the gun hanging from her belt and shots it at the party.  They were able to dodge, but the glob of latex coated a nearby tree with a wide band of latex that quickly grew in both directions.
     "I'll turn you all into skunks and make you respect the name of the Skunk Queen! You'll realize the sheer genius of my inventions!"  The Skunk Queen reloads her gun and aims it at the party again.
     "I guess diplomacy was never an option, then?  Let's get this over with."`,
+
+    "encounter.plains_3.victory": `The Skunk Queen staggered away and fell to the ground, the broken bits of her inventions all around her, and the destroyed remains of her skunk creations strewn around the area.
+    "That's impossible... I can't lose!"  Without another word, she jumped to her feet and started running.
+    "Just give up already. You lost and it's time to face the music." The party gave chase, but the Skunk Queen was quite fast.  Even after a minute or two they were not catching up to her.  The chase was cut off when the Skunk Queen stopped suddenly.  Across from her were two people standing in her way.
+    "Right where the reports said you would come.  Good job chasing her here."  One of the two people spoke up.  When they got a good view, the party noticed that it was the two of them that had split off to ask around town.
+    "So... you teamed up to corner me, huh?  But don't think you've won just yet! TAKE THIS!" She threw some device on the ground in front of her, and it exploded into a giant wave of latex! The party was thoroughly covered in the latex, which spread to cover their entire bodies! The latex formed mitten paws on their hands, and they were forced onto their toes as the latex formed paws on their feet too.
+    "...What th-----hghmmmph"  The party's cries were forcibly muffled by the latex filling their mouths and forming new skunk snouts, while tails sprouted from their behinds that were linked to pairs of vibrators.
+    The Skunk Queen laughed maniacally as she watched the results of her handiwork.  She turned around and noticed the party's state before frowning.  "Damn, you didn't get fully skunked like these two... I'll get you next time! You'll never take me alive, heathens!!" She turned and bolted for the forest, and with their newly mittened hands and high heeled feet, the party was in no shape to give chase.
+    They reconvened with the other two girls, but they were all in the same shiny condition. Despite their struggles, they were unable to make any headway on their bondage and were stuck quite securely.
+    With no way to escape on their own, all they could do was return to town to report their failure and to try and find someone to help them out of their bondage...`,
+
+    "encounter.interlude_1.name": "Ko-chan's Frustration",
+    "encounter.interlude_1.desc": `The party suffered greatly in the aftermath of their failure.  The latex suits they were trapped in confined their ability to communicate, and the regenerative power of the latex confounded any attempts to cut them free.  On top of that, they were banned from the guild for letting the Skunk Queen escape.
+    With the guild's decree, none of the rest of the townsfolk would help the girls, leaving them trapped without hope for escape.  After a fruitless day or two of trying to get someone to help them, a mage that lived nearby heard about their plight and offered to help.
+    "What a predicament you girls are in.  I can help, but it's going to cost you dearly.  You girls now work for me, understand?"
+    Having run out of options, the party had no choice but to submit.  They obediently allowed the mage to lock slave collars around their necks.  After all five girls were locked in, the mage dispelled the latex suits with surprising ease.
+    "What....How?" Ko-chan immediately questioned the mage's abilities.
+    The mage smirked. "Why so surprised? I created the Latex Magic in the first place as a way to capture fugitives. That girl that calls herself the 'Skunk Queen' stole my magical equipment and ran off with it to start abducting girls and making minions."
+    Matsuko crossed her arms. "So... you created this problem, why aren't you the one solving it?"
+    "She stole all of the prototypes I made, how do you want me to stop her?  For example, the Latex Bomb she used on you girls contains magic-infused latex, which is why your suits regenerated on their own. I can't stand her using my research like this!" The mage seemed incensed.
+    "Ugh... So what do we have to do?  And why do we have to wear collars to do it?" Hinari seemed annoyed at this point.
+    The mage gave a menacing glare. "This is where you girls come in.  If you ever want those collars off you better get your asses out there and bring me that bitch.  And she had better be properly humbled."
+    Sakari laughed. "So.. that's how it is then?  Seems like we have no choice then. Let's get going."
+    "Not so fast.  Two of you have to stay behind to make sure the other three are properly... motivated." She snapped her fingers and two of the party were instantly skunked onto their elbows and knees.
+    "The rest of you had better get a move on. Even if you fail, come back here and I'll give you another chance... after some light reeducation."  The mage laughed and sent the remaining girls out of her tower.`,
+
     "encounter.forest_1.name": "Skunkette Ambush",
     "encounter.forest_1.desc": "Three Skunkettes and a Fairy ambush the party. All characters skip the opening turn.",
     "encounter.forest_2.name": "Fight in the Latex Swamp",

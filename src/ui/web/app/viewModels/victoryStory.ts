@@ -11,11 +11,18 @@ export interface VictoryStoryViewModel {
 export function createVictoryStoryViewModel(
     state: GameState, presentation: Presentation,
 ): VictoryStoryViewModel | undefined {
-    if (state.turn.outcome !== "victory" || !state.encounter) return undefined;
-    const narrative = presentation.referenceText("encounter", state.encounter.id, "victory");
+    const outcome = state.turn.outcome;
+
+    if (outcome === "ongoing" || !state.encounter) return undefined;
+
+    const narrative = presentation.referenceText(
+        "encounter", state.encounter.id, outcome
+    );
+
     if (!narrative) return undefined;
+
     return {
-        heading: presentation.battleState("victory"),
+        heading: presentation.battleState(outcome),
         encounter: presentation.encounter(state.encounter.id),
         narrative,
         continueLabel: presentation.ui("victoryStory.continue"),

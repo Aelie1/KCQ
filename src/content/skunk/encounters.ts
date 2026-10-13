@@ -1,20 +1,49 @@
 import { EncounterDef } from "../../engine/protected/definitions";
 import { s } from "../../engine/protected/status";
 import { helpless } from "../../engine/protected/statuses";
-import { iEffect, iGameState } from "../../engine/protected/types";
-import { Effect } from "../../engine/public/types";
+import { iEffect, iEntity, iGameState } from "../../engine/protected/types";
+import { Effect, EnemySetup } from "../../engine/public/types";
 import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, QUEEN_ID, SKUNK_ID, SKUNKETTE_ID } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 
-const skunketteSetup = { defId: SKUNKETTE_ID };
-const skunketteQueenSetup = { defId: SKUNKETTE_ID, id: "skunketteQueen" };
-const skunkSetup = { defId: SKUNK_ID };
-const skunkEmpressSetup = { defId: SKUNK_ID, id: "skunkEmpress" };
-const fairySetup = { defId: FAIRY_ID };
-const queenSetup = { defId: QUEEN_ID };
-const empressSetup = { defId: QUEEN_ID, id: "empress" };
-const goddessSetup = { defId: QUEEN_ID, id: "goddess" };
+const skunketteSetup: EnemySetup = { defId: SKUNKETTE_ID };
+const skunketteQueenSetup: EnemySetup = { defId: SKUNKETTE_ID, id: "skunketteQueen" };
+const skunkSetup: EnemySetup = { defId: SKUNK_ID };
+const skunkEmpressSetup: EnemySetup = { defId: SKUNK_ID, id: "skunkEmpress" };
+const fairySetup: EnemySetup = { defId: FAIRY_ID };
+const queenSetup: EnemySetup = { defId: QUEEN_ID };
+const empressSetup: EnemySetup = { defId: QUEEN_ID, id: "empress" };
+const goddessSetup: EnemySetup = { defId: QUEEN_ID, id: "goddess" };
+const ambushSetup: Effect = { type: "buff", buff: { id: "ambushed", duration: 1, statuses: [{ id: "helpless", value: 1 }] }, operation: "add", target: "allies" };
+const collarSetup: Effect = { type: "buff", buff: { id: "collar", modifiers: { willpower: -2 } }, operation: "add", target: "allies" };
+
+function ambushBuff(character: iEntity): iEffect {
+    return {
+        type: "buff",
+        operation: "add",
+        target: character,
+        buff: {
+            id: "ambushed",
+            active: true,
+            duration: 1,
+            statuses: [s(helpless, 1)]
+        }
+    }
+}
+
+function collarBuff(character: iEntity): iEffect {
+    return {
+        type: "buff",
+        operation: "add",
+        target: character,
+        buff: {
+            id: "collar",
+            active: true,
+            modifiers: { willpower: -2 }
+        }
+    }
+}
 
 interface TowerSetup {
     queenName: "empress" | "goddess";
@@ -71,215 +100,6 @@ const setupOutside: TowerSetup = {
     addSkunk: true
 };
 
-export const prologue: EncounterDef = {
-    id: "prologue",
-    stars: 0,
-    enemies: [],
-    bindings: [],
-    traps: []
-}
-
-export const epilogue: EncounterDef = {
-    id: "epilogue",
-    stars: 0,
-    enemies: [],
-    bindings: [],
-    traps: []
-}
-
-export const plains_1: EncounterDef = {
-    id: "plains_1",
-    stars: 1,
-    enemies: [skunketteSetup, skunketteSetup, skunketteSetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs],
-    traps: []
-}
-
-export const plains_2: EncounterDef = {
-    id: "plains_2",
-    stars: 2,
-    enemies: [skunketteSetup, skunketteSetup, skunkSetup, skunkSetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs],
-    traps: [
-        { definition: trapPuddle, amount: 50 }
-    ],
-    librarySetup: function (): Effect[] {
-        return [{
-            type: "trap",
-            trap: "trapPuddle",
-            amount: 50
-        }];
-    }
-}
-
-export const plains_3: EncounterDef = {
-    id: "plains_3",
-    stars: 3,
-    enemies: [queenSetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
-    traps: [
-        { definition: trapPuddle, amount: 0 }
-    ]
-}
-
-export const forest_1: EncounterDef = {
-    id: "forest_1",
-    stars: 2,
-    enemies: [skunketteSetup, skunketteSetup, skunketteSetup, fairySetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs],
-    traps: [
-        { definition: trapPuddle, amount: 0 }
-    ],
-    setup: function (state: iGameState): iEffect[] {
-        const effects: iEffect[] = [];
-        for (const character of state.characters) {
-            effects.push({
-                type: "buff",
-                operation: "add",
-                target: character,
-                buff: {
-                    id: "ambushed",
-                    active: true,
-                    duration: 1,
-                    statuses: [s(helpless, 1)]
-                }
-            });
-        }
-        return effects;
-    },
-    librarySetup: function (): Effect[] {
-        return [{
-            type: "buff",
-            buff: {
-                id: "ambushed",
-                duration: 1,
-                statuses: [{ id: "helpless", value: 1 }]
-            },
-            operation: "add",
-            target: "allies"
-        }];
-    }
-}
-
-export const forest_2: EncounterDef = {
-    id: "forest_2",
-    stars: 3,
-    enemies: [skunketteSetup, skunketteSetup, skunkSetup, skunkSetup, fairySetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs],
-    traps: [
-        { definition: trapPuddle, amount: 100 }
-    ],
-    librarySetup: function (): Effect[] {
-        return [{
-            type: "trap",
-            trap: "trapPuddle",
-            amount: 100
-        }];
-    }
-}
-
-export const forest_3: EncounterDef = {
-    id: "forest_3",
-    stars: 4,
-    enemies: [queenSetup, skunketteSetup, skunketteSetup, fairySetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
-    traps: [
-        { definition: trapPuddle, amount: 100 }
-    ],
-    setup: function (state: iGameState): iEffect[] {
-        const effects: iEffect[] = [];
-        const queen = state.enemies.find(x => x.defId === QUEEN_ID);
-        if (queen) {
-            effects.push({
-                type: "data",
-                target: queen,
-                name: "wave",
-                amount: 2,
-                visible: false
-            });
-            effects.push({
-                type: "data",
-                target: queen,
-                name: "rainmaker",
-                amount: 1,
-                visible: false
-            });
-        }
-        return effects;
-    },
-    librarySetup: function (): Effect[] {
-        return [{
-            type: "trap",
-            trap: "trapPuddle",
-            amount: 100
-        }];
-    }
-}
-
-
-export const tower_1: EncounterDef = {
-    id: "tower_1",
-    stars: 5,
-    enemies: [empressSetup, skunketteQueenSetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
-    traps: [
-        { definition: trapPuddle, amount: 0 }
-    ],
-    setup: function (state: iGameState): iEffect[] {
-        return towerBuffs(state, setupTower_1);
-    },
-    librarySetup: function (): Effect[] {
-        return libraryTowerBuffs(setupTower_1);
-    }
-}
-
-export const tower_2: EncounterDef = {
-    id: "tower_2",
-    stars: 4,
-    enemies: [empressSetup, skunketteQueenSetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
-    traps: [
-        { definition: trapPuddle, amount: 0 }
-    ],
-    setup: function (state: iGameState): iEffect[] {
-        return towerBuffs(state, setupTower_2);
-    },
-    librarySetup: function (): Effect[] {
-        return libraryTowerBuffs(setupTower_2);
-    }
-}
-
-export const tower_3: EncounterDef = {
-    id: "tower_3",
-    stars: 3,
-    enemies: [empressSetup, skunketteQueenSetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
-    traps: [
-        { definition: trapPuddle, amount: 0 }
-    ],
-    setup: function (state: iGameState): iEffect[] {
-        return towerBuffs(state, setupTower_3);
-    },
-    librarySetup: function (): Effect[] {
-        return libraryTowerBuffs(setupTower_3);
-    }
-}
-
-export const outside: EncounterDef = {
-    id: "outside",
-    stars: 5,
-    enemies: [goddessSetup, skunkEmpressSetup, skunketteQueenSetup],
-    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
-    traps: [
-        { definition: trapPuddle, amount: 0 }
-    ],
-    setup: function (state: iGameState): iEffect[] {
-        return towerBuffs(state, setupOutside);
-    },
-    librarySetup: function (): Effect[] {
-        return libraryTowerBuffs(setupOutside);
-    }
-}
 
 function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
     const effects: iEffect[] = [];
@@ -335,17 +155,7 @@ function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
                 });
             }
             if (setup.ambushed) {
-                effects.push({
-                    type: "buff",
-                    operation: "add",
-                    target: character,
-                    buff: {
-                        id: "ambushed",
-                        active: true,
-                        duration: 1,
-                        statuses: [s(helpless, 1)]
-                    }
-                });
+                effects.push(ambushBuff(character));
             }
         }
     }
@@ -442,17 +252,198 @@ function libraryTowerBuffs(setup: TowerSetup): Effect[] {
         });
     }
     if (setup.ambushed) {
-        effects.push({
-            type: "buff",
-            operation: "add",
-            target: "allies",
-            buff: {
-                id: "ambushed",
-                duration: 1,
-                statuses: [{ id: "helpless", value: 1 }]
-            }
-        });
+        effects.push(ambushSetup);
     }
 
     return effects;
+}
+
+export const prologue: EncounterDef = { id: "prologue", stars: 0, enemies: [], bindings: [], traps: [] }
+export const interlude_1: EncounterDef = { id: "interlude_1", stars: 0, enemies: [], bindings: [], traps: [] }
+export const interlude_2: EncounterDef = { id: "interlude_2", stars: 0, enemies: [], bindings: [], traps: [] }
+export const epilogue: EncounterDef = { id: "epilogue", stars: 0, enemies: [], bindings: [], traps: [] }
+
+export const plains_1: EncounterDef = {
+    id: "plains_1",
+    stars: 1,
+    enemies: [skunketteSetup, skunketteSetup, skunketteSetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
+    traps: []
+}
+
+export const plains_2: EncounterDef = {
+    id: "plains_2",
+    stars: 2,
+    enemies: [skunketteSetup, skunketteSetup, skunkSetup, skunkSetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
+    traps: [
+        { definition: trapPuddle, amount: 50 }
+    ],
+    librarySetup: function (): Effect[] {
+        return [
+            { type: "trap", trap: "trapPuddle", amount: 50 }
+        ];
+    }
+}
+
+export const plains_3: EncounterDef = {
+    id: "plains_3",
+    stars: 3,
+    enemies: [queenSetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
+    traps: [
+        { definition: trapPuddle, amount: 0 }
+    ]
+}
+
+export const forest_1: EncounterDef = {
+    id: "forest_1",
+    stars: 2,
+    enemies: [skunketteSetup, skunketteSetup, skunketteSetup, fairySetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
+    traps: [
+        { definition: trapPuddle, amount: 0 }
+    ],
+    setup: function (state: iGameState): iEffect[] {
+        const effects: iEffect[] = [];
+        for (const character of state.characters) {
+            effects.push(collarBuff(character));
+            effects.push(ambushBuff(character));
+        }
+        return effects;
+    },
+    librarySetup: function (): Effect[] {
+        return [
+            collarSetup,
+            ambushSetup,
+        ];
+    }
+}
+
+export const forest_2: EncounterDef = {
+    id: "forest_2",
+    stars: 3,
+    enemies: [skunketteSetup, skunketteSetup, skunkSetup, skunkSetup, fairySetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs],
+    traps: [
+        { definition: trapPuddle, amount: 100 }
+    ],
+    setup: function (state: iGameState): iEffect[] {
+        const effects: iEffect[] = [];
+        for (const character of state.characters) {
+            effects.push(collarBuff(character));
+        }
+        return effects;
+    },
+    librarySetup: function (): Effect[] {
+        return [
+            collarSetup,
+            { type: "trap", trap: "trapPuddle", amount: 100 }
+        ];
+    }
+}
+
+export const forest_3: EncounterDef = {
+    id: "forest_3",
+    stars: 4,
+    enemies: [queenSetup, skunketteSetup, skunketteSetup, fairySetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
+    traps: [
+        { definition: trapPuddle, amount: 100 }
+    ],
+    setup: function (state: iGameState): iEffect[] {
+        const effects: iEffect[] = [];
+        const queen = state.enemies.find(x => x.defId === QUEEN_ID);
+        if (queen) {
+            effects.push({
+                type: "data",
+                target: queen,
+                name: "wave",
+                amount: 2,
+                visible: false
+            });
+            effects.push({
+                type: "data",
+                target: queen,
+                name: "rainmaker",
+                amount: 1,
+                visible: false
+            });
+        }
+        for (const character of state.characters) {
+            effects.push(collarBuff(character));
+        }
+        return effects;
+    },
+    librarySetup: function (): Effect[] {
+        return [
+            collarSetup,
+            { type: "trap", trap: "trapPuddle", amount: 100 }
+        ];
+    }
+}
+
+
+export const tower_1: EncounterDef = {
+    id: "tower_1",
+    stars: 5,
+    enemies: [empressSetup, skunketteQueenSetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
+    traps: [
+        { definition: trapPuddle, amount: 0 }
+    ],
+    setup: function (state: iGameState): iEffect[] {
+        return towerBuffs(state, setupTower_1);
+    },
+    librarySetup: function (): Effect[] {
+        return libraryTowerBuffs(setupTower_1);
+    }
+}
+
+export const tower_2: EncounterDef = {
+    id: "tower_2",
+    stars: 4,
+    enemies: [empressSetup, skunketteQueenSetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
+    traps: [
+        { definition: trapPuddle, amount: 0 }
+    ],
+    setup: function (state: iGameState): iEffect[] {
+        return towerBuffs(state, setupTower_2);
+    },
+    librarySetup: function (): Effect[] {
+        return libraryTowerBuffs(setupTower_2);
+    }
+}
+
+export const tower_3: EncounterDef = {
+    id: "tower_3",
+    stars: 3,
+    enemies: [empressSetup, skunketteQueenSetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
+    traps: [
+        { definition: trapPuddle, amount: 0 }
+    ],
+    setup: function (state: iGameState): iEffect[] {
+        return towerBuffs(state, setupTower_3);
+    },
+    librarySetup: function (): Effect[] {
+        return libraryTowerBuffs(setupTower_3);
+    }
+}
+
+export const outside: EncounterDef = {
+    id: "outside",
+    stars: 5,
+    enemies: [goddessSetup, skunkEmpressSetup, skunketteQueenSetup],
+    bindings: [latexHead, latexArms, latexTorso, latexLegs, latexCollar],
+    traps: [
+        { definition: trapPuddle, amount: 0 }
+    ],
+    setup: function (state: iGameState): iEffect[] {
+        return towerBuffs(state, setupOutside);
+    },
+    librarySetup: function (): Effect[] {
+        return libraryTowerBuffs(setupOutside);
+    }
 }

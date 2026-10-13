@@ -7,7 +7,7 @@ import { systemEnglishStrings } from "./en/system";
 export type KCQLanguage = "en";
 
 export const baseStrings: Record<KCQLanguage, StringTable> = {
-    "en": { ...systemEnglishStrings }
+    "en": systemEnglishStrings
 };
 
 export const characterStrings: Record<KCQCharacter, Record<KCQLanguage, StringTable>> = {
