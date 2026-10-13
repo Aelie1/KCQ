@@ -1,10 +1,10 @@
-import { For, type JSX } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 import type { EncounterId } from "../../../../engine/public/types";
+import { COMBAT_SHORTCUTS, combatShortcut } from "../keyboard";
 import type { EncounterPickerViewModel } from "../viewModels/encounters";
-import { combatShortcut, COMBAT_SHORTCUTS } from "../keyboard";
-import { Shortcut } from "./Shortcut";
-import { ScreenLayout } from "./ScreenLayout";
 import { EncounterHeader } from "./EncounterHeader";
+import { ScreenLayout } from "./ScreenLayout";
+import { Shortcut } from "./Shortcut";
 
 export function EncounterPickerPanel(props: {
     onBack?: () => void;
@@ -25,16 +25,21 @@ export function EncounterPickerPanel(props: {
                     onClick={() => props.onSelect(encounter.id)}>
                     <Shortcut shortcut={combatShortcut(index())} />
                     <strong class="kcq-encounter-picker__name">{encounter.name}</strong>
-                    <span class="kcq-encounter-picker__stars" aria-label={encounter.challengeLabel}>{encounter.stars}</span>
-                    <span class="kcq-encounter-picker__best-clear">{encounter.bestClearLabel}</span>
+                    <Show when={encounter.stars > 0}>
+                        <span class="kcq-encounter-picker__stars" aria-label={encounter.challengeLabel}>{encounter.starsText}</span>
+                        <span class="kcq-encounter-picker__best-clear">{encounter.bestClearLabel}</span>
+                    </Show>
                 </button>}
             </For>
-        </>}
-        footer={props.onBack && <footer class="kcq-screen-actions kcq-encounter-details__footer">
-            <button class="kcq-targeting__back kcq-shortcut-host" data-kcq-shortcut={COMBAT_SHORTCUTS.back} type="button" onClick={props.onBack}>
-                <Shortcut shortcut={COMBAT_SHORTCUTS.back} />
-                <span aria-hidden="true">↶ </span>{props.model.backLabel}
-            </button>
-        </footer>}
+        </>
+        }
+        footer={
+            props.onBack && <footer class="kcq-screen-actions kcq-encounter-details__footer">
+                <button class="kcq-targeting__back kcq-shortcut-host" data-kcq-shortcut={COMBAT_SHORTCUTS.back} type="button" onClick={props.onBack}>
+                    <Shortcut shortcut={COMBAT_SHORTCUTS.back} />
+                    <span aria-hidden="true">↶ </span>{props.model.backLabel}
+                </button>
+            </footer>
+        }
     />;
 }

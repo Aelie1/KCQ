@@ -8,7 +8,8 @@ import type { EffectPreviewViewModel } from "./effectPreviews";
 export interface EncounterSummaryViewModel {
     id: EncounterId;
     name: string;
-    stars: string;
+    stars: number;
+    starsText: string;
     challengeLabel: string;
     bestClear?: DifficultyId;
     bestClearLabel: string;
@@ -40,8 +41,8 @@ export interface EncounterDetailsViewModel extends EncounterSummaryViewModel {
 }
 
 export function encounterStars(stars: number): string {
-    const filled = Math.min(5, Math.max(0, Math.trunc(stars)));
-    return "★".repeat(filled) + "☆".repeat(5 - filled);
+    const filled = Math.max(0, Math.trunc(stars));
+    return "★".repeat(filled);
 }
 
 function encounterSummary(
@@ -50,7 +51,8 @@ function encounterSummary(
     return {
         id: encounter.id,
         name: presentation.encounter(encounter.id),
-        stars: encounterStars(encounter.stars),
+        stars: encounter.stars,
+        starsText: encounterStars(encounter.stars),
         challengeLabel: presentation.ui("encounter.challengeAccessible", { stars: encounter.stars }),
         ...(bestClear ? { bestClear } : {}),
         bestClearLabel: `👑 ${bestClear ? presentation.difficulty(bestClear) : presentation.ui("encounter.uncleared")}`,

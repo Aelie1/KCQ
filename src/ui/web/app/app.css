@@ -2950,7 +2950,7 @@ button {
 
 .kcq-encounter-picker__stars {
     color: var(--kcq-text-secondary);
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 700;
     white-space: nowrap;
 }

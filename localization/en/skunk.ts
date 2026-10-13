@@ -308,22 +308,91 @@ export const skunkEnglishStrings: StringTable = {
     All three girls nodded and made their way out of the latex forest with their target in hand.`,
 
     "encounter.interlude_2.name": "Ko-chan's Triumph",
-    "encounter.interlude_2.desc": ``,
+    "encounter.interlude_2.desc": `The party brought all of the Skunk Queen's gadgets with them as they made their way out of the forest.  It was slow going, because the Skunk Queen fought them every step of the way.
+    Finally, they made it back to the tower and met an incredulous mage at the entrance.
+    "Wow, I'm impressed.  I didn't think that you all would actually succeed... Let's get her inside."
+    The mage helped bring the Skunk Queen back to her laboratory.  After she paralyzed the Skunk Queen with a spell, it was much easier to move her up the stairs.  Once the group reached the top floor, the mage turned back to them.
+    "You even brought back the inventions she stole! I can't tell you how helpful this is to me."
+    "This is all well and good, but now can you please fulfill your side of the deal?"
+    "What do you mean?"
+    "I mean these collars.  We agreed that you would remove them after we caught the Skunk Queen.  And release our friends too!"`,
 
     "encounter.tower_1.name": "Skunk Empress's Scheme",
-    "encounter.tower_1.desc": "The Skunk Empress opens with strengthened forces, collars on the party, and an ambush.",
+    "encounter.tower_1.desc": `"You promised to remove our collars and release our friends if we captured the Skunk Queen.  Please do so."
+    "I think you misunderstand.  This girl is no queen.  Maybe a queen of skunkettes."
+    The mage caressed the skunked girl as she whimpered softly, before turning back to the party, grinning evilly.
+    "If you want the REAL Skunk Queen, then you probably mean.... me!"
+    As she said this, power began to surround her.  Her robes disintegrated and latex gear materialized around her body.  She wore the same bunny suit, gloves, and boots ensemble that the other girl had worn, but her much curvier body and larger bust filled out the costume in ways that the other girl could never dream of.
+    "It was you?!?  Then that means..."
+    "That's right.  I was in a heap of trouble when this wretched girl ran off with my inventions and staged her rebellion in the forest.  But now that I have them back... I think a new title is in order.  Behold, the Skunk Empress!!!"
+    The magic in the skunked girl's collar turned red, and she took up a hostile pose, even if her eyes seemed reluctant.  The mage finished reloading the gun and snapped her fingers.  The girls gasped as the collars they were wearing began to spread latex onto their bodies.  Before they had any time to react, the Skunk Empress had already fired the first salvo, and the skunked girl was aiming to pounce!`,
+
+    "encounter.tower_1.victory": `"W-W-W-What?!  T-T-That's impossible..."  The Skunk Empress fell to the ground, surrounded by broken pieces of latex creatures and her costume in tatters.  She watched in disbelief as the party freed their friends and surrounded her.
+    "I had every advantage... How did this happen..." The Skunk Empress muttered to herself.
+    Ko-chan smiled. "Well, you see, we're a bit good at this escaping thing."
+    Matsuko snorted from the side. "Well, at least some of us are."
+    "Less talking, more binding.  Don't allow another escape." Naruyo ordered grimly.`,
 
     "encounter.tower_2.name": "Goddess's Assistance",
-    "encounter.tower_2.desc": "The Goddess assists the party against the Skunk Empress’s strengthened forces.",
+    "encounter.tower_2.desc": `"Enough! I know how this will end."  The party didn't wait for the mage's speech or grand reveal and simply attacked from the start.
+    The mage was surprised, but she regained her composure and transformed her robes into the Skunk Empress's outfit in an instant.
+    "I don't know how you saw through my deception, but good job.  Too bad it won't change the outcome!"
+    She drew her weapon and attacked the party.`,
+
+    "encounter.tower_2.victory": `"W-w-w-hat?!?"
+    The Skunk Empress was knocked backwards into her desk, and grimaced in pain as the edge pressed into her back like a knife.  She landed on the ground groaning and squirming, grasping her back.  The wasted no time pressing their advantage and twist her arms behind her back.
+    "OW! GET OFF ME THAT HURTS!"
+    "Good. Let's make it hurt more."
+    The party released their friends and started to look around the room for a way to restrain the Skunk Empress.`,
 
     "encounter.tower_3.name": "Goddess's Resurgence",
-    "encounter.tower_3.desc": "Stronger divine assistance gives the party another chance against the Skunk Empress.",
+    "encounter.tower_3.desc": `Right as the mage was about to start her speech, the party erupted with divine power, stunning the mage for a second.  They started their attack before the mage could even react, getting a free swing in the process.
+    "I've had enough of this, won't you please just lie down and get defeated already?!" One of the party vented her frustration at having to repeat the same battle multiple times as she attacked.`,
 
-    "encounter.epilogue.name": "Goddess's Resurgence",
-    "encounter.epilogue.desc": "Stronger divine assistance gives the party another chance against the Skunk Empress.",
+    "encounter.tower_3.victory": `Eventually, the Skunk Empress found herself laid out on the ground with several unnaturally strong girls pressing her body to the ground.  "What... just happened?!"
+    "It seems that even the gods of this world want to see you defeated, that's what."
+    "Quit gloating and let's finish the job already."
+    They quickly freed their friends and looked around the room.`,
+
+    "encounter.interlude_3.name": "Skunk Empress's Punishment",
+    "encounter.interlude_3.desc": `Sakari investigated some of the devices in the room.  "This thing looks interesting, let's shove her in here~"
+    The Skunk Empress struggled and fought as she saw what Sakari was referring to, but Matsuko was easily strong enough to keep her resistance to a minimum.  She forced her into the large clear tube device and slammed the door shut.
+    "He he, I'll take it from here, My Lady."  Ko-chan smiled cheerfully as she manipulated various levers and knobs.  She finally pulled a large red lever and the machine engaged.
+    The machine sputtered to life, and inside the tube, large sprayers began spraying latex onto the Skunk Empress from all directions.  Her yelling and cursing were quieted as her mouth was filled with the latex, and she was forced down to the ground as her arms and legs folded over and merged together.  The machine shut off, leaving a securely skunked Skunk Empress struggling in the tube.
+    Hinari watched the Skunk Empress get encased just like they had been earlier. "You look good like this.  But I think we can do better.  Give her another round, Ko-chan!"
+    "You think so?  Alright." Ko-chan engaged the machine again and watched as the sprayers turned back on.  This time when the machine shut off, the Skunk Empress was stuck in considerably thicker and tighter latex, and you could see her curves clearly all over her body.  Her eyes reflected her despair as she realized there was no point in struggling further.
+    Matsuko smiled as she put her hand on the tube. "I think the next part needed a bit of heat?" She conjured some white flames which raised the internal temperature of the tube enough to start the heat sealing process.
+    A few minutes later, the heat sealing cycle finished, leaving the Skunk Empress with a dull matte finish.  Matsuko opened the door and dragged her out of the tube before locking a collar around her neck.  The collar glowed green and drew lines in the shape of a harness onto her suit, sealing the suit even more securely.
+    "Final step.  Use these."  Naruyo carried over a pair of transparent shells in the shape of skunks and placed them on the ground.  
+    Immediately upon seeing them, Ko-chan's eyes flashed as she realized what they were for. "...Wow...these...are...amazing! Let's use them right away!"
+    Hinari came over and helped open the top of the shells. "From the way these clips work, if you close them with someone inside, I don't think it will be possible to open them again."
+    Sakari shrugged and looked over at the Skunk Empress. "Not my problem.  She should have thought of that before she tried to take over the kingdom.  Now, in you go."
+    Between the girls, they managed to force the violently struggling Skunk Empress into the bottom half of the shell, and then close the top half over it.  With a series of clicks, the shell closed and sealed the Empress into an impenetrable, form-fitting transparent shell.  They repeated the process on the former Skunk Queen with the other shell before looking back at each other.
+    Matsuko clapped her hands together. "Mission accomplished. Let's get out of here and see what the reward for solving the mystery is."
+    The rest of the girls looked around and nodded to each other. "We are all in agreement then.  Let us turn in the quest and move on."`,
+
+    "encounter.epilogue.name": "Ko-chan's Review",
+    "encounter.epilogue.desc": `After turning the Skunk Queen and Empress into the guild and each receiving a medal, they watched the credits roll and then the VR goggles disengaged.
+    Ko-chan put her goggles on the table and stood up, stretching a bit. "That was great!  I had so much fun!"
+    Matsuko patted her head a bit. "Maybe next time you'll try escaping sometime instead of making us free you from whatever trouble you get into?"
+    "She does that in real life too, why do you think it would be different in a game?" Hinari laughed as she replied.
+    Ko-chan stomped her foot. "Hey! Come on, I helped!"
+    "Very useful. Godly power unleashed. Sadly, only in game." Naruyo consoled Ko-chan a bit.
+    Sakari read the back of the game case. "So... Was there really only that one scenario in it?"
+    Ko-chan put a finger on her chin. "Apparently they only made one scenario so far. I guess they're waiting to see if people like it before making more."
+    "Ah... So maybe if we send them our thoughts, they might make a second mission? What could even top this one?"  Hinari mused to herself.
+    "Who knows.  Maybe a castle scenario could be fun?" Matsuko threw out her suggestion.
+    "Hey, don't get my hopes up guys!" Ko-chan seemed annoyed by the flow of the conversation. "Did you see that last option before we exited though? Apparently there's a secret battle that's super hard. We should give it a try sometime."
+    "Sure, I don't mind. Just let me know when." Sakari agreed to the proposal and the rest of the girls started to look forward to their next game day.`,
 
     "encounter.outside.name": "Goddess's Trial",
-    "encounter.outside.desc": "Face the Goddess with the former rulers serving as her minions.",
+    "encounter.outside.desc": `The Goddess of the Realm appeared before the party once more. "Oh, isn't this embarrassing.  I was sure that last fight would be enough to satisfy you.  Well, I hate to disappoint."
+    "Beware though: All I can promise you is a swift defeat.  Absolutely no help whatsoever.  And just so you know, there's no prize for winning either."
+    The Goddess of the Realm dissolved her own armor and conjured the Skunk Empress's outfit instead.  Next to her appeared the Skunk Queen and the Skunk Empress, ready to take their revenge!
+    "Any time you like, dear.  Or you can always wimp out if you're scared~"`,
+
+    "encounter.outside.victory": `The Goddess found herself defeated, but didn't seem worried.  She vanished out from under the party and appeared back in front of them, floating softly.
+    "A well-fought battle.  You truely are touched by the gods.  I have nothing more for you, though.  Come back for a rematch anytime."`
 
 };
 
