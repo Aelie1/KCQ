@@ -566,8 +566,7 @@ describe("Smart 2 selection and integration", () => {
     });
 
     it("registers smart and completes a real stock encounter without rejected actions", () => {
-        const encounterId = createStockEngine(1).listEncounters()[0];
-        if (!encounterId) throw new Error("The stock encounter catalogue is empty");
+        const encounterId = "plains_1";
 
         expect(getPolicy("smart")).toBe(smartPolicy);
         expect(policies.smart).toBe(smartPolicy);
@@ -594,8 +593,7 @@ describe("Smart 2 selection and integration", () => {
     });
 
     it("captures every Smart decision only for replay and executes the recorded selection", () => {
-        const encounterId = createStockEngine(1).listEncounters()[0];
-        if (!encounterId) throw new Error("The stock encounter catalogue is empty");
+        const encounterId = "plains_1";
 
         const result = runSingleFight({
             encounterId,
@@ -671,8 +669,7 @@ describe("Smart 2 selection and integration", () => {
     });
 
     it("executes the same actions with replay diagnostics enabled", () => {
-        const encounterId = createStockEngine(1).listEncounters()[0];
-        if (!encounterId) throw new Error("The stock encounter catalogue is empty");
+        const encounterId = "plains_1";
         const input = {
             encounterId,
             engineSeed: 8642,
@@ -690,8 +687,7 @@ describe("Smart 2 selection and integration", () => {
     });
 
     it("leaves expected-damage scoring unchanged when recovery scoring is added", () => {
-        const encounterId = createStockEngine(1).listEncounters()[0];
-        if (!encounterId) throw new Error("The stock encounter catalogue is empty");
+        const encounterId = "plains_1";
         const input = {
             encounterId,
             engineSeed: 8642,
@@ -726,8 +722,7 @@ describe("Smart 2 selection and integration", () => {
     });
 
     it("does not evaluate or retain detailed decisions in ordinary fights or batches", () => {
-        const encounterId = createStockEngine(1).listEncounters()[0];
-        if (!encounterId) throw new Error("The stock encounter catalogue is empty");
+        const encounterId = "plains_1";
         let detailedEvaluations = 0;
         const observedSmart: FightPolicy = {
             ...smartPolicy,
@@ -760,8 +755,7 @@ describe("Smart 2 selection and integration", () => {
     });
 
     it("leaves non-Smart replay steps unchanged", () => {
-        const encounterId = createStockEngine(1).listEncounters()[0];
-        if (!encounterId) throw new Error("The stock encounter catalogue is empty");
+        const encounterId = "plains_1";
 
         const result = runSingleFight({
             encounterId,

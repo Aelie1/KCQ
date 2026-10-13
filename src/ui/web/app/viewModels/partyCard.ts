@@ -87,7 +87,7 @@ export function createPartyCardViewModel(
                     : Math.max(-binding.value, incomingAmount);
             return {
                 id: binding.id,
-                label: presentation.binding(binding.id, "compact"),
+                label: presentation.binding(binding.id),
                 current: binding.value,
                 max: thresholds.max,
                 level: binding.level,

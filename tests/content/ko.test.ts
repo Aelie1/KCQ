@@ -95,7 +95,7 @@ function enemyTargetingCharacter(
 }
 
 describe("Ko's dynamic kit and Thousand Restraints Body", () => {
-    it("permits Arms, Legs, and Mouth moves through ordinary binding restrictions", () => {
+    it("permits Mouth moves through bindings while preserving other move restrictions", () => {
         const unrelatedRestriction: StatusDef = {
             id: "stunned",
             levels: [{}, { blockedMoveTypes: ["none"] }],
@@ -132,17 +132,15 @@ describe("Ko's dynamic kit and Thousand Restraints Body", () => {
         engine.loadCharacter(restrainedKo.id);
         engine.loadEncounter(encounter.id);
 
-        expect(engine.getGameState().characters[0].blockedMoveTypes).toEqual([]);
+        expect(engine.getGameState().characters[0].blockedMoveTypes).toEqual(["arms", "legs"]);
         expect(actionView(engine, ko.id).moves.map(({ move, available, reason }) => ({
             move: move.id,
             available,
             reason,
         }))).toEqual([
-            ...moves.slice(0, 3).map((move) => ({
-                move: move.id,
-                available: true,
-                reason: undefined,
-            })),
+            { move: "arms-move", available: false, reason: "bindingRestriction" },
+            { move: "legs-move", available: false, reason: "bindingRestriction" },
+            { move: "mouth-move", available: true, reason: undefined },
             { move: "none-move", available: false, reason: "bindingRestriction" },
         ]);
     });

@@ -22,6 +22,9 @@ afterEach(() => {
     vi.restoreAllMocks(); vi.unstubAllGlobals(); window.localStorage.clear();
 });
 
+function continueStory(): void {
+    document.querySelector<HTMLButtonElement>(".kcq-victory-story__continue")?.click();
+}
 function click(selector: string) {
     const element = document.querySelector<HTMLButtonElement>(selector);
     if (!element) throw new Error("Missing " + selector);
@@ -58,7 +61,7 @@ function selectLanguage(id: string) {
 }
 function start(difficulty = "Standard") {
     if (document.querySelector(".kcq-title-screen")) click(".kcq-title-screen__campaign");
-    click(".kcq-encounter-picker__row"); button("Choose Difficulty"); button(difficulty); button("Start Encounter");
+    click('.kcq-encounter-picker__row[data-kcq-shortcut="2"]'); button("Choose Difficulty"); button(difficulty); button("Start Encounter");
 }
 function finish(engine: ReturnType<typeof createStockEngine>, outcome: BattleState) {
     const getState = engine.getGameState.bind(engine);
@@ -66,6 +69,7 @@ function finish(engine: ReturnType<typeof createStockEngine>, outcome: BattleSta
         const state = getState(); state.turn.outcome = outcome; return state;
     });
     button("End Turn");
+    continueStory();
 }
 const clearLabel = () => document.querySelector(".kcq-encounter-picker__best-clear")?.textContent;
 
@@ -93,7 +97,7 @@ describe("player persistence in the graphical application", () => {
         mount(); click(".kcq-title-screen__campaign");
         const labels = [...document.querySelectorAll(".kcq-encounter-picker__best-clear")].map(row => row.textContent);
         expect(labels.slice(0, 3)).toEqual(["👑 Extreme", "👑 Casual", "👑 ---"]);
-        click(".kcq-encounter-picker__row");
+        click('.kcq-encounter-picker__row[data-kcq-shortcut="2"]');
         expect(document.querySelector(".kcq-encounter-details__best-clear")?.textContent).toBe("👑 Extreme");
     });
 

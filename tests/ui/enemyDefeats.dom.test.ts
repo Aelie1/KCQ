@@ -17,6 +17,9 @@ afterEach(() => {
     vi.useRealTimers(); vi.restoreAllMocks(); window.localStorage.clear();
 });
 
+function continueStory(): void {
+    document.querySelector<HTMLButtonElement>(".kcq-victory-story__continue")?.click();
+}
 function mount(options: { speed?: PlaybackSpeed; bands?: HitBand[][]; victory?: boolean; playerMove?: boolean; defeated?: boolean } = {}) {
     const initial: GameState = structuredClone(fixture.state);
     initial.turn.phase = "player";
@@ -176,7 +179,8 @@ describe("enemy defeat presentation", () => {
         expect(dead.isConnected).toBe(true); expect(b.onVictory).not.toHaveBeenCalled();
         expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(1);
-        expect(cards()).toHaveLength(0); expect(element(".kcq-battle-result--victory")).toBeDefined();
+        expect(cards()).toHaveLength(0); continueStory();
+        expect(element(".kcq-battle-result--victory")).toBeDefined();
         expect(b.onVictory).toHaveBeenCalledOnce(); expect(vi.getTimerCount()).toBe(0);
     });
 
@@ -185,6 +189,7 @@ describe("enemy defeat presentation", () => {
         b.kill();
         expect(cards()).toHaveLength(0); expect(document.querySelector(".kcq-hp-reaction")).toBeNull();
         expect(document.querySelector(".kcq-enemy-presentation-slot")).toBeNull();
+        continueStory();
         expect(element(".kcq-battle-result--victory")).toBeDefined(); expect(b.onVictory).toHaveBeenCalledOnce();
         expect(vi.getTimerCount()).toBe(0);
     });
@@ -217,7 +222,7 @@ describe("enemy defeat presentation", () => {
         expect(rule).toContain("forwards !important");
         const animations = css.slice(css.indexOf("@keyframes kcq-enemy-defeat-glow"), css.indexOf("@keyframes kcq-react-actor"));
         expect(animations).toContain("background-color: #ff2424cc"); expect(animations).toContain("box-shadow:");
-        expect(animations).toContain("to { opacity: 0; }");
+        expect(animations).toMatch(/to\s*\{\s*opacity:\s*0;\s*\}/);
         expect(animations).not.toMatch(/transform|height|width|scale/);
     });
 });

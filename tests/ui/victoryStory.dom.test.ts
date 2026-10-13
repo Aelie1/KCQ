@@ -37,7 +37,10 @@ function button(label: string): HTMLButtonElement {
     return found;
 }
 function mount(strings: StringTable = victoryStoryStrings) {
-    const presentation = new Presentation({ ...stockStrings, ...strings });
+    const base = { ...stockStrings };
+    delete base["encounter.plains_1.victory"];
+    delete base["encounter.plains_1.defeat"];
+    const presentation = new Presentation({ ...base, ...strings });
     const sessions: { engine: ReturnType<typeof createStockEngine>; dispose: ReturnType<typeof vi.fn> }[] = [];
     const host = document.createElement("div"); document.body.append(host);
     const prepareBattle = vi.fn((_campaign: "skunk", encounter: EncounterId, difficulty: DifficultyId) => {
@@ -49,7 +52,7 @@ function mount(strings: StringTable = victoryStoryStrings) {
         composeCampaign: () => ({ engine: createStockEngine(), presentation }),
     }), host);
     element(".kcq-title-screen__campaign").click();
-    element(".kcq-encounter-picker__row").click();
+    element('.kcq-encounter-picker__row[data-kcq-shortcut="2"]').click();
     button("Choose Difficulty").click(); button("Start Encounter").click();
     return { sessions, prepareBattle, presentation };
 }
@@ -132,6 +135,21 @@ describe("victory story screen flow", () => {
         expect(element(".kcq-encounter-picker")).toBeDefined();
     });
 
+    it("shows an authored defeat narrative before statistics without recording a clear", () => {
+        const { sessions } = mount({ ...victoryStoryStrings, "encounter.plains_1.defeat": "Defeat narrative fixture." });
+        finish(sessions[0]!.engine, "defeat");
+        expect(element(".kcq-victory-story h1").textContent).toBe("Defeat");
+        expect(element(".kcq-victory-story__narrative").textContent).toBe("Defeat narrative fixture.");
+        expect(document.querySelector(".kcq-battle-result--defeat")).toBeNull();
+        expect(window.localStorage.getItem("kcq.clears")).toBeNull();
+        button("Continue").click();
+        expect(element(".kcq-battle-result--defeat").textContent).toContain("Enemy HP Remaining");
+        button("View Game Log").click();
+        element(".kcq-game-log .kcq-combat-header__back").click();
+        expect(document.querySelector(".kcq-victory-story")).toBeNull();
+        expect(element(".kcq-battle-result--defeat")).toBeDefined();
+    });
+
     it("keeps a dismissed story dismissed through repeated Game Log visits", () => {
         const { sessions } = mount(); const execute = finish(sessions[0]!.engine);
         button("Continue").click();
@@ -140,7 +158,7 @@ describe("victory story screen flow", () => {
             expect(document.querySelector('[role="dialog"]')).toBeNull();
             const back = element<HTMLButtonElement>(".kcq-game-log .kcq-combat-header__back");
             expect(document.activeElement).toBe(back);
-            if (visit === 0) back.click(); else key(back, "Backspace");
+            if (visit === 0) back.click(); else key(back, "Escape");
             expect(document.querySelector(".kcq-victory-story")).toBeNull();
             expect(element(".kcq-battle-result--victory")).toBeDefined();
             expect(document.activeElement).toBe(button("View Game Log"));
@@ -177,7 +195,7 @@ describe("victory story screen flow", () => {
         expect(key(narrative, "Tab", true).defaultPrevented).toBe(true);
         expect(document.activeElement).toBe(proceed);
         expect(key(proceed, "Escape").defaultPrevented).toBe(true);
-        for (const shortcut of ["-", "Backspace", "=", "1"]) key(proceed, shortcut);
+        for (const shortcut of ["-", "Escape", " ", "1"]) key(proceed, shortcut);
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-victory-story")).toBe(story);
         expect(execute).toHaveBeenCalledTimes(1);

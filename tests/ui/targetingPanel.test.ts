@@ -213,8 +213,11 @@ describe("targeting workflow composition", () => {
         expect(commandNameRule).toContain("line-height: 14px");
         expect(commandNameRule).toContain("max-height: 28px");
         expect(commandNameRule).toContain("-webkit-line-clamp: 2");
-        expect(bindingNameRule).toContain("font-size: 12px");
-        expect(bindingNameRule).toContain("font-weight: 700");
+        // Names share compact preview typography; the header only controls shrinking.
+        const payloadRule = css.match(/\.kcq-preview-effect__payload\s*\{([^}]*)\}/)?.[1] ?? "";
+        expect(bindingNameRule).toContain("flex: 1 1 auto");
+        expect(payloadRule).toContain("min-width: 0");
+        expect(payloadRule).toContain("text-overflow: ellipsis");
         expect(rosterStateRule).toContain("font-size: 10px");
         expect(rosterStateRule).toContain("line-height: 12px");
         expect(buffTagRule).toContain("white-space: nowrap");
@@ -255,7 +258,7 @@ describe("targeting workflow composition", () => {
         expect(severe).toContain("kcq-binding-meter__change--severe");
         expect(visibleText(lower)).toContain('kcq-binding-effect__projected-level kcq-escape-value--none">None </span>2');
         expect(lower).toContain("kcq-binding-meter--decrease");
-        expect(lower).toContain("kcq-binding-meter__change--none");
+        expect(lower).toContain("kcq-binding-meter__change--moderate");
         expect(lower).toContain('style="left:calc(2% - var(--kcq-binding-meter-radius));width:calc(25% + var(--kcq-binding-meter-radius))');
     });
 

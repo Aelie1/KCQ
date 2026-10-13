@@ -27,17 +27,34 @@ describe("victory story view model", () => {
 
     it.each([undefined, "", " \n\t ", "...", "  ...\n"])("omits missing or incomplete text: %s", text => {
         const strings = { ...stockStrings };
+        delete strings["encounter.plains_1.victory"];
         if (text !== undefined) strings["encounter.plains_1.victory"] = text;
         expect(createVictoryStoryViewModel(victory(), new Presentation(strings))).toBeUndefined();
     });
 
-    it.each(["ongoing", "defeat"] as const)("does not look up stories for %s", outcome => {
+    it("does not look up stories for ongoing battles", () => {
         const state = victory();
-        state.turn.outcome = outcome;
+        state.turn.outcome = "ongoing";
         const presentation = new Presentation({ ...stockStrings, ...victoryStoryStrings });
         const reference = vi.spyOn(presentation, "referenceText");
         expect(createVictoryStoryViewModel(state, presentation)).toBeUndefined();
         expect(reference).not.toHaveBeenCalled();
+    });
+
+    it("uses defeat text and labels without falling back to the victory story", () => {
+        const state = victory();
+        state.turn.outcome = "defeat";
+        const strings: typeof stockStrings = { ...stockStrings, ...victoryStoryStrings,
+            "encounter.plains_1.defeat": "Defeat fixture narrative.",
+        };
+        const presentation = new Presentation(strings);
+        const reference = vi.spyOn(presentation, "referenceText");
+        expect(createVictoryStoryViewModel(state, presentation)).toMatchObject({
+            heading: "Defeat", narrative: "Defeat fixture narrative.",
+        });
+        expect(reference).toHaveBeenCalledExactlyOnceWith("encounter", "plains_1", "defeat");
+        delete strings["encounter.plains_1.defeat"];
+        expect(createVictoryStoryViewModel(state, new Presentation(strings))).toBeUndefined();
     });
 
     it("omits stories for a battle without an encounter", () => {

@@ -387,7 +387,7 @@ export class Presentation {
 
     binding(
         binding: BindingId,
-        variant: "name" | "short" | "compact" | "desc" = "name",
+        variant: "name" | "short" | "desc" = "name",
     ): string {
         return this.translate(this.definitionKey("binding", binding, variant));
     }

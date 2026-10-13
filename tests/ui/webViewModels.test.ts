@@ -156,7 +156,9 @@ describe("party card view model", () => {
 
         expect(model.bindings).toEqual([{
             id: "latexArms",
-            label: "A",
+            label: "Skunk Arms",
+            peak: undefined,
+            change: undefined,
             current: 41,
             max: 123,
             level: "heavy",
@@ -248,7 +250,7 @@ describe("battle overview view model", () => {
         );
 
         expect(model.header).toMatchObject({
-            encounterLabel: "Fight with Skunks",
+            encounterLabel: presentation.encounter("plains_2"),
             difficultyLabel: "Standard",
             roundLabel: "Round 4",
             phaseLabel: "Enemy Phase",

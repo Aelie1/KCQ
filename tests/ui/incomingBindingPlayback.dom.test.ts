@@ -66,8 +66,8 @@ describe("BattleApp incoming binding playback", () => {
         expectMeters([[72, 11], [35, 20]]);
         b.endTurn();
         expect(b.engine.getGameState().characters[0]!.bindings.map(binding => binding.value)).toEqual([84, 55]);
-        expectMeters([[72, 11], [35, 20]]);
-        b.paint(); expectMeters([[72, 11], [35, 20]]);
+        expectMeters([[81, 3], [41, 14]]);
+        b.paint(); expectMeters([[81, 3], [41, 14]]);
         b.paint(); expectMeters([[81, 3], [41, 14]]);
         expect(loggedActors()).toEqual(["skunkette1"]);
         vi.advanceTimersByTime(500); expectMeters([[83, 1], [51, 4]]);

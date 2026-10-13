@@ -28,6 +28,9 @@ afterEach(() => {
     vi.unstubAllGlobals();
 });
 
+function continueStory(): void {
+    document.querySelector<HTMLButtonElement>(".kcq-victory-story__continue")?.click();
+}
 function button(label: string, scope: ParentNode = document): HTMLButtonElement {
     const found = [...scope.querySelectorAll<HTMLButtonElement>("button")]
         .find(button => {
@@ -216,7 +219,7 @@ describe("battle settings interactions", () => {
         document.querySelector<HTMLButtonElement>(".kcq-combat-header__settings")!.click();
         changeHints("temporary");
         button("Resume").click();
-        document.querySelector<HTMLButtonElement>(".kcq-encounter-picker__row")!.click();
+        document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="2"]')!.click();
         button("Choose Difficulty").click();
         button("Start Encounter").click();
         expect(document.querySelector(".kcq-battle-stage")?.getAttribute("data-kcq-hints-visible")).toBe("false");
@@ -248,6 +251,7 @@ describe("battle settings interactions", () => {
             const state = getState(); state.turn.outcome = outcome; return state;
         });
         button("End Turn").click();
+        continueStory();
         const completed = engine.getGameState();
         const execute = vi.spyOn(engine, "executeAction");
         const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
@@ -265,9 +269,9 @@ describe("battle settings interactions", () => {
         const history = document.querySelector(".kcq-game-log__scroll")!.textContent;
         expect(document.querySelectorAll(".kcq-game-log__entry").length).toBeGreaterThan(0);
         // Completed battle controls remain guarded even while its log is active.
-        button("End Turn").click(); key("=");
+        button("End Turn").click(); key(" ");
         expect(execute).not.toHaveBeenCalled();
-        key("Backspace");
+        key("Escape");
         expect(document.querySelector('[role="dialog"]')!.textContent).toBe(resultText);
         expect(document.activeElement).toBe(button("View Game Log"));
         expect(document.querySelector(".kcq-battle-stage__background")?.hasAttribute("inert")).toBe(true);
@@ -292,6 +296,7 @@ describe("battle settings interactions", () => {
             return state;
         });
         button("End Turn").click();
+        continueStory();
         expect(document.querySelector(".kcq-battle-result--" + outcome)).not.toBeNull();
         expect(sessions[0]!.observer.lifecycleState).toBe("finished");
         button("Retry").click();
@@ -305,6 +310,7 @@ describe("battle settings interactions", () => {
             return state;
         });
         button("End Turn").click();
+        continueStory();
         button("Back to Level Select").click();
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
         expect(sessions[1]!.dispose).toHaveBeenCalledOnce();
@@ -324,7 +330,7 @@ describe("battle settings interactions", () => {
         expect(capture.mock.calls.filter(call => call[0] === "battle_quit")).toHaveLength(1);
         expect(prepareBattle).toHaveBeenCalledOnce();
         document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
-        document.querySelector<HTMLButtonElement>(".kcq-encounter-picker__row")!.click();
+        document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="2"]')!.click();
         button("Choose Difficulty").click();
         expect(document.querySelector('[aria-pressed="true"]')?.textContent).toBe("Standard");
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();

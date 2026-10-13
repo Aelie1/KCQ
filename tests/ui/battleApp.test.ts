@@ -50,7 +50,7 @@ describe("playable Solid battle application", () => {
         state.turn.outcome = outcome;
         vi.spyOn(engine, "getGameState").mockReturnValue(state);
         const html = renderToString(() => createComponent(BattleApp, {
-            engine, presentation: new Presentation(stockStrings),
+            engine, presentation: new Presentation({ ...stockStrings, "encounter.plains_1.victory": "" }),
         }));
         expect(html).not.toContain("kcq-battle-result__overlay");
         expect(bodyPortals).toHaveLength(1);

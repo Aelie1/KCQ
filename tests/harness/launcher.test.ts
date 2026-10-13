@@ -164,7 +164,7 @@ describe("encounter-set execution", () => {
 
 describe("replay launcher path", () => {
     it("generates replay data and launches the existing console viewer", async () => {
-        const answers = ["4", "1", "2149783249", "1", "1543602598", ""];
+        const answers = ["4", "2", "2149783249", "1", "1543602598", ""];
         const close = vi.fn();
         const io: LauncherIO = {
             question: vi.fn(async () => answers.shift() ?? ""),

@@ -27,7 +27,7 @@ function mount(view: Parameters<typeof render>[0], width: number): void {
 }
 
 describe("combat cleanup at mobile width", () => {
-    it.each([320, 390])("keeps both stance lines and the original destination chip at %ipx", width => {
+    it.each([320, 390])("keeps current and destination stance chips at %ipx", width => {
         const selected = vi.fn();
         const command = (standing: boolean) => createFocusedCharacterViewModel({
             ...fixture.state,
@@ -40,13 +40,15 @@ describe("combat cleanup at mobile width", () => {
             const heading = card.querySelector<HTMLElement>(".kcq-command-card__heading")!;
             const tags = card.querySelector<HTMLElement>(".kcq-command-card__tags")!;
             expect(card.querySelector(".kcq-command-card__name")?.textContent).toBe("Change Stance");
-            expect(card.querySelector(".kcq-command-card__stance")?.textContent).toBe(index === 0 ? "Moving → Standing" : "Standing → Moving");
-            expect(tags.querySelector(".kcq-command-tag")?.textContent).toBe(index === 0 ? "Standing" : "Moving");
+            const chips = [...tags.querySelectorAll(".kcq-command-tag")];
+            expect(chips.map(chip => chip.textContent)).toEqual(index === 0 ? ["Moving", "Standing"] : ["Standing", "Moving"]);
             expect(tags.querySelector(".kcq-command-tag__leading-symbol")?.textContent).toBe("→");
             expect(heading.nextElementSibling).toBe(tags);
             expect(card.querySelector(".kcq-shortcut")?.textContent).toBe("9");
-            expect(getComputedStyle(heading).flexDirection).toBe("column");
-            expect(getComputedStyle(card).minHeight).toBe("75px");
+            expect(getComputedStyle(heading).display).toBe("flex");
+            expect(getComputedStyle(tags).flexWrap).toBe("wrap");
+            expect(getComputedStyle(card).flexDirection).toBe("column");
+            expect(parseFloat(getComputedStyle(card).minWidth)).toBe(0);
             card.click();
         }
         expect(selected).toHaveBeenCalledTimes(2);
@@ -61,7 +63,7 @@ describe("combat cleanup at mobile width", () => {
         const card = document.querySelector<HTMLButtonElement>(".kcq-command-card")!;
         expect(card.disabled).toBe(true);
         expect(card.querySelector(".kcq-command-card__reason")?.textContent).toBe(command.reasonLabel);
-        expect(card.querySelectorAll(".kcq-command-tag")).toHaveLength(1);
+        expect(card.querySelectorAll(".kcq-command-tag")).toHaveLength(2);
         card.click();
         expect(selected).not.toHaveBeenCalled();
     });

@@ -121,7 +121,7 @@ describe("title navigation", () => {
     it("keeps campaign composition through difficulty, battle, retry, and level select, then clears it at title", () => {
         const { composeCampaign, prepareBattle } = mount();
         click(".kcq-title-screen__campaign");
-        click(".kcq-encounter-picker__row");
+        click('.kcq-encounter-picker__row[data-kcq-shortcut="2"]');
         click(".kcq-encounter-details .kcq-battle-overview__primary-action");
         click(".kcq-difficulty-select .kcq-battle-overview__primary-action");
         expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_1", "standard");

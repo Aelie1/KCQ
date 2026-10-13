@@ -180,11 +180,13 @@ describe("encounter setup recipient groups", () => {
         const model = createEncounterDetailsViewModel(library, "tower_1", presentation);
         expect(model.effects).toEqual([]);
         expect(model.effectGroups.map(({ id, name }) => ({ id, name }))).toEqual([
-            { id: "empress", name: "Skunk Empress" },
-            { id: "skunketteQueen", name: "Skunkette Queen" },
             { id: "allies", name: "Allies" },
+            { id: "enemies", name: "Enemies" },
         ]);
-        const allies = model.effectGroups[2];
+        expect(model.effectGroups[1].effects).toMatchObject([{
+            kind: "buff", modifiers: [{ value: 8, signedValue: "+8" }],
+        }]);
+        const allies = model.effectGroups[0];
         expect(allies.effects).toHaveLength(2);
         expect(allies.effects[0]).toMatchObject({
             kind: "binding", bindingName: "Skunk Collar", currentValue: 0, change: 50, projectedValue: 50,
@@ -193,8 +195,9 @@ describe("encounter setup recipient groups", () => {
         expect(allies.effects[1]).toMatchObject({ kind: "buff", name: "Ambushed!", durationLabel: "1 Rounds", details: ["Helpless"] });
         model.effectGroups.flatMap(({ effects }) => effects).forEach((effect) => expect(effect).not.toHaveProperty("recipient"));
         const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => {}, onBack: () => {} }));
-        expect(html.match(/class="kcq-encounter-details__effect-group"/g)).toHaveLength(3);
+        expect(html.match(/class="kcq-encounter-details__effect-group"/g)).toHaveLength(2);
         expect(visibleMarkup(html)).toContain("<h3>Allies</h3>");
+        expect(visibleMarkup(html)).toContain("<h3>Enemies</h3>");
         expect(html).toContain("kcq-binding-meter--increase");
         expect(visibleMarkup(html)).toContain("0 → ");
         expect(html).not.toMatch(/kcq-status-chip[^>]*>Allies/);

@@ -22,6 +22,9 @@ afterEach(() => {
     window.localStorage.clear();
 });
 
+function continueStory(): void {
+    document.querySelector<HTMLButtonElement>(".kcq-victory-story__continue")?.click();
+}
 function sequence(outcome: GameState["turn"]["outcome"] = "ongoing") {
     const initial: GameState = structuredClone(fixture.state);
     initial.turn.phase = "player";
@@ -187,23 +190,23 @@ function key(key: string) {
 }
 
 describe("BattleApp playback integration", () => {
-    it("scrolls before presenting moves, updates stable party cards and synchronizes both logs", () => {
+    it("presents moves immediately, updates stable party cards and synchronizes both logs", () => {
         const b = mountBattle();
         const overview = element(".kcq-battle-overview"); const party = element(".kcq-party-card");
         const enemy = element(".kcq-enemy-card"); const meter = element(".kcq-party-card [role=progressbar]"); const body = element(".kcq-screen-layout__body");
         Object.defineProperty(body, "scrollHeight", { value: 1200, configurable: true });
         endTurn();
-        expect(b.engine.getGameState()).toEqual(b.final); expect(binding()).toBe(0); expect(actors()).toEqual([]);
+        expect(b.engine.getGameState()).toEqual(b.final); expect(binding()).toBe(15); expect(actors()).toEqual(["skunkette1"]);
         expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("true");
-        b.paint(); expect(b.scroll).toHaveBeenCalledExactlyOnceWith({ top: 1200, behavior: "instant" });
-        expect(binding()).toBe(0); expect(body.scrollTop).toBe(1200);
+        b.paint(); expect(b.scroll).not.toHaveBeenCalled();
+        expect(binding()).toBe(15); expect(body.scrollTop).toBe(0);
         b.paint(); expect(binding()).toBe(15); expect(actors()).toEqual(["skunkette1"]);
         vi.advanceTimersByTime(500); expect(binding()).toBe(25); expect(actors()).toEqual(["skunkette1", "skunk1"]);
         vi.advanceTimersByTime(500); expect(binding()).toBe(36); expect(actors()).toEqual(["skunkette1", "skunk1", "queen"]);
         expect(element(".kcq-battle-overview")).toBe(overview); expect(element(".kcq-party-card")).toBe(party);
         expect(element(".kcq-enemy-card")).toBe(enemy); expect(element(".kcq-party-card [role=progressbar]")).toBe(meter);
         expect(element(".kcq-screen-layout__body")).toBe(body);
-        expect(body.scrollTop).toBe(1200); expect(b.scroll).toHaveBeenCalledOnce(); expect(b.execute).toHaveBeenCalledOnce();
+        expect(body.scrollTop).toBe(0); expect(b.scroll).not.toHaveBeenCalled(); expect(b.execute).toHaveBeenCalledOnce();
         expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("false");
         expect(element(".kcq-battle-overview__primary-action").classList.contains("is-dimmed")).toBe(false);
         element(".kcq-battle-overview__secondary-action").click();
@@ -289,21 +292,25 @@ describe("BattleApp playback integration", () => {
             advance(); endTurn(); party.click(); enemy.click();
             party.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
             element(".kcq-battle-overview__secondary-action").click(); element(".kcq-combat-header__settings").click();
-            for (const shortcut of ["=", "1", "4", "9", "0", "-", "Backspace"]) key(shortcut);
+            for (const shortcut of [" ", "1", "4", "9", "0", "-", "Escape"]) key(shortcut);
             expect(b.execute).toHaveBeenCalledOnce(); expect(document.querySelector(".kcq-character-details, .kcq-enemy-details, .kcq-game-log, [role=dialog]")).toBeNull();
             expect(element<HTMLButtonElement>(".kcq-battle-overview__primary-action").disabled).toBe(true);
             expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(true);
         }
         vi.advanceTimersByTime(500); party.click(); expect(document.querySelector(".kcq-character-details")).not.toBeNull();
     });
-    it.each(["character", "enemy", "log"])("returns from %s to Overview before scrolling on keyboard End Turn", screen => {
+    it.each(["character", "enemy", "log"])("blocks keyboard End Turn from %s and returns to Overview on click", screen => {
         const b = mountBattle();
         element(screen === "character" ? ".kcq-party-card" : screen === "enemy" ? ".kcq-enemy-card" : ".kcq-battle-overview__secondary-action").click();
         const selector = screen === "character" ? ".kcq-character-details" : screen === "enemy" ? ".kcq-enemy-details" : ".kcq-game-log";
-        expect(document.querySelector(selector)).not.toBeNull(); key("=");
+        expect(document.querySelector(selector)).not.toBeNull(); key(" ");
+        expect(b.execute).not.toHaveBeenCalled();
+        expect(document.querySelector(selector)).not.toBeNull();
+        key("Escape");
+        endTurn();
         expect(document.querySelector(selector)).toBeNull(); expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
-        b.paint(); expect(binding()).toBe(0); b.paint(); expect(binding()).toBe(15);
-        expect(b.scroll.mock.instances[0]).toBe(element(".kcq-battle-overview .kcq-screen-layout__body"));
+        expect(binding()).toBe(15);
+        expect(b.scroll).not.toHaveBeenCalled();
     });
     it("keeps Instant immediate and lets settings change speed during the same battle", () => {
         const b = mountBattle("instant"); endTurn();
@@ -331,14 +338,14 @@ describe("BattleApp playback integration", () => {
         vi.advanceTimersByTime(1); expect(binding()).toBe(36); expect(actors()).toHaveLength(3);
         expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(499); expect(document.querySelector("[role=dialog]")).toBeNull();
-        vi.advanceTimersByTime(1); expect(document.querySelector(".kcq-battle-result--" + outcome)).not.toBeNull();
+        vi.advanceTimersByTime(1); continueStory(); expect(document.querySelector(".kcq-battle-result--" + outcome)).not.toBeNull();
         expect(document.querySelector(".kcq-binding-reaction")).toBeNull();
         expect(vi.getTimerCount()).toBe(0);
         expect(b.onVictory).toHaveBeenCalledTimes(outcome === "victory" ? 1 : 0);
         expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(true);
         element(".kcq-battle-result__log").click();
         expect(document.querySelectorAll(".kcq-game-log__scroll [data-kind=move]")).toHaveLength(3);
-        key("="); expect(b.execute).toHaveBeenCalledOnce();
+        key(" "); expect(b.execute).toHaveBeenCalledOnce();
     });
     it("presents a single lethal player move before opening victory", () => {
         const b = mountBattle(undefined, "victory", false, true);
@@ -354,6 +361,7 @@ describe("BattleApp playback integration", () => {
         expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("true");
         expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(500);
+        continueStory();
         expect(document.querySelector(".kcq-battle-result--victory")).not.toBeNull();
         expect(b.execute).toHaveBeenCalledExactlyOnceWith({ type: "move", actor: "ko", move: "telekinesis", targets: ["skunkette1"] });
         expect(b.onVictory).toHaveBeenCalledOnce();

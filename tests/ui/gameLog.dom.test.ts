@@ -122,7 +122,8 @@ describe("live graphical Game Log history", () => {
         expect(execute).toHaveBeenCalledTimes(2);
     });
 
-    it.each(["Enter", " "])("allows native %s activation of the preview without a combat shortcut", key => {
+    it("allows native Enter activation of the preview", () => {
+        const key = "Enter";
         const { engine } = mountBattle();
         const execute = vi.spyOn(engine, "executeAction");
         const preview = document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!;
@@ -136,6 +137,19 @@ describe("live graphical Game Log history", () => {
         expect(execute).not.toHaveBeenCalled();
         click(".kcq-combat-header__back");
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
+    });
+
+    it("uses Space for End Turn from Overview even when the log preview has focus", () => {
+        const { engine } = mountBattle();
+        const execute = vi.spyOn(engine, "executeAction");
+        const preview = document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!;
+        preview.focus();
+        const event = new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true });
+        preview.dispatchEvent(event);
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: " ", bubbles: true }));
+        expect(event.defaultPrevented).toBe(true);
+        expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "endTurn" });
+        expect(document.querySelector(".kcq-game-log__scroll")).toBeNull();
     });
 
     it("changes preview lines immediately without recreating the battle and keeps full-log access at zero", () => {

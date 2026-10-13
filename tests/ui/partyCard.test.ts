@@ -42,6 +42,8 @@ describe("party card", () => {
 
         expect(model.bindings.map(({ id }) => id)).toEqual(fixture.state.encounter.bindings);
         expect(html.match(/role="progressbar"/g)).toHaveLength(model.bindings.length);
+        expect(model.bindings.map(({ label, id }) => label)).toEqual(model.bindings.map(({ id }) => fixture.presentation.binding(id)));
+        expect(html).not.toMatch(/\[binding\./);
         expect(html).not.toContain("kcq-binding-metric__label");
         expect(html).not.toContain("kcq-binding-metric__value");
 

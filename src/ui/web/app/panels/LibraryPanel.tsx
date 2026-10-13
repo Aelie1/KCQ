@@ -316,7 +316,15 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
             </Stat>
             <Show when={props.reference.type != "none"} > <Stat label={c.presentation.ui("library.type")}><CommandTag tag={{ id: "type", label: c.presentation.moveType(props.reference.type), tone: "warning" }} /></Stat></Show>
             <Show when={hits() > 1}><Stat label={c.presentation.ui("library.hits")}><CommandTag tag={{ id: "hits", label: c.presentation.ui("library.hitCount", { count: hits() }), tone: "neutral" }} /></Stat></Show>
-            <Show when={props.reference.id === "brace" || props.reference.id === "reflect" || props.reference.id === "fairyReflect" || durations().length === 1}><Stat label={c.presentation.ui("library.duration")}><CommandTag tag={{ id: "duration", label: props.reference.id === "brace" ? c.presentation.ui("library.thisRound") : c.presentation.ui("characterDetails.rounds", { count: durations()[0]! }), tone: "special" }} /></Stat></Show>
+            <Show when={durations().length === 1}>
+                <Stat label={c.presentation.ui("library.duration")}>
+                    <CommandTag tag={{
+                        id: "duration",
+                        label: c.presentation.ui("characterDetails.rounds", { count: durations()[0]! }),
+                        tone: "special"
+                    }} />
+                </Stat>
+            </Show>
             <Show when={cooldown() !== undefined || sharedCooldowns().length}>
                 <div class="kcq-library__cooldown-stack">
                     <Show when={cooldown() !== undefined}>
@@ -330,11 +338,17 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
                     </Show>
                     <Show when={sharedCooldowns().length}>
                         <Stat label={c.presentation.ui("library.sharedCooldown")}>
-                            <CommandTag tag={{
-                                id: "shared-cooldown",
-                                label: c.presentation.ui("characterDetails.rounds", { count: sharedCooldowns()[0]![1] }),
-                                tone: "warning"
-                            }} />
+                            <Show when={new Set(sharedCooldowns().map(([, rounds]) => rounds)).size > 1}
+                                fallback={<CommandTag tag={{
+                                    id: "shared-cooldown",
+                                    label: c.presentation.ui("characterDetails.rounds", { count: sharedCooldowns()[0]![1] }),
+                                    tone: "warning"
+                                }} />}>
+                                <For each={sharedCooldowns()}>{([id, rounds]) => <span>
+                                    <ReferenceLink entry={{ category: "moves", id }} />
+                                    <CommandTag tag={{ id, label: c.presentation.ui("characterDetails.rounds", { count: rounds }), tone: "warning" }} />
+                                </span>}</For>
+                            </Show>
                         </Stat>
                     </Show>
                 </div>

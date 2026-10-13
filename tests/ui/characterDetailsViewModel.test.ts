@@ -22,7 +22,7 @@ describe("character details view model", () => {
 
         expect(model.header).toEqual({
             characterLabel: "Ko-chan",
-            encounterLabel: "Fight with Skunks",
+            encounterLabel: fixture.presentation.encounter(fixture.state.encounter!.id),
             roundLabel: "Round 4",
             phaseLabel: "Player Phase",
         });

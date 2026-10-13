@@ -26,6 +26,9 @@ afterEach(() => {
     viewport.setViewport(initialViewport);
 });
 
+function continueStory(): void {
+    document.querySelector<HTMLButtonElement>(".kcq-victory-story__continue")?.click();
+}
 function keydown(key: string, options: KeyboardEventInit = {}, target: EventTarget = document): KeyboardEvent {
     const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true, ...options });
     target.dispatchEvent(event);
@@ -75,7 +78,7 @@ describe("combat keyboard navigation", () => {
         expect(press(String(number)).defaultPrevented).toBe(true);
         const focused = button(".kcq-character-roster__card--focused");
         expect(focused.textContent).toContain(fixture.presentation.entity(state.characters[number - 1]!.id));
-        press("Backspace");
+        press("Escape");
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
 
@@ -91,7 +94,7 @@ describe("combat keyboard navigation", () => {
             expect(commands()[index]!.querySelector(".kcq-shortcut")?.textContent).toContain(key.toUpperCase());
             press(key.toUpperCase());
             expect(document.querySelector(".kcq-targeting")?.getAttribute("aria-label")).toBe(fixture.presentation.move("variant" + index));
-            press("Backspace");
+            press("Escape");
         }
         expect(commands().slice(-2).map(command => command.dataset.kcqShortcut)).toEqual([COMBAT_SHORTCUTS.stance, COMBAT_SHORTCUTS.escape]);
         expect(combatShortcut(keys.length)).toBeUndefined();
@@ -156,7 +159,7 @@ describe("combat keyboard navigation", () => {
         expect(execute).not.toHaveBeenCalled();
         press("Enter");
         expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "escape", actor: "ko", target: "matsuko", binding: "latexLegs" });
-        press("Backspace");
+        press("Escape");
         expect(document.querySelector(".kcq-character-commands")).not.toBeNull();
     });
 
@@ -175,14 +178,17 @@ describe("combat keyboard navigation", () => {
         const fixture = escapeFixtures.unselected;
         const { execute } = mountBattle({ actions: fixture.actions.map(action => ({ ...action, available: true, stance: { available: true }, moves: [targetingFixtures.telekinesisChoose.action] })) });
         expect(button(".kcq-battle-overview__primary-action").classList.contains("is-dimmed")).toBe(true);
-        press("=");
+        press(" ");
         expect(execute).toHaveBeenLastCalledWith({ type: "endTurn" });
         openTargeting();
         press(COMBAT_SHORTCUTS.stance);
         expect(execute).toHaveBeenLastCalledWith({ type: "stance", actor: "ko" });
         press(COMBAT_SHORTCUTS.escape);
         expect(document.querySelector(".kcq-escape")).not.toBeNull();
-        press("=");
+        // Space is consumed by the disabled escape confirmation, without ending the turn.
+        expect(press(" ").defaultPrevented).toBe(true);
+        expect(execute).toHaveBeenCalledTimes(2);
+        press("Escape"); press("Escape"); press(" ");
         expect(execute).toHaveBeenLastCalledWith({ type: "endTurn" });
     });
 
@@ -210,9 +216,11 @@ describe("combat keyboard navigation", () => {
     it("restricts End Turn outside the player phase and blocks combat shortcuts behind modals", () => {
         const fixture = escapeFixtures.unselected;
         const { execute } = mountBattle({ state: { ...fixture.state, turn: { ...fixture.state.turn, phase: "enemy" } } });
-        expect(press("=").defaultPrevented).toBe(false);
+        expect(press(" ").defaultPrevented).toBe(false);
         button(".kcq-combat-header__settings").click();
-        for (const key of ["1", "Backspace", "0", "8", "9", "="]) expect(press(key).defaultPrevented).toBe(false);
+        for (const key of ["1", "0", "8", "9", " "]) expect(press(key).defaultPrevented).toBe(false);
+        expect(press("Escape").defaultPrevented).toBe(true);
+        expect(document.querySelector(".kcq-battle-settings")).toBeNull();
         expect(execute).not.toHaveBeenCalled();
     });
 
@@ -223,14 +231,14 @@ describe("combat keyboard navigation", () => {
         const child = document.createElement("span");
         field.append(child);
         document.body.append(field);
-        for (const key of ["1", "Backspace", "0", "9", "=", "-"]) expect(keydown(key, {}, kind === "editable-child" ? child : field).defaultPrevented).toBe(false);
+        for (const key of ["1", "Escape", "0", "9", " ", "-"]) expect(keydown(key, {}, kind === "editable-child" ? child : field).defaultPrevented).toBe(false);
         expect(execute).not.toHaveBeenCalled();
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
 
     it.each([{ ctrlKey: true }, { altKey: true }, { metaKey: true }, { isComposing: true }])("ignores modified or composing keydown: %j", options => {
         const { execute } = mountBattle();
-        expect(keydown("=", options).defaultPrevented).toBe(false);
+        expect(keydown(" ", options).defaultPrevented).toBe(false);
         expect(execute).not.toHaveBeenCalled();
     });
 
@@ -241,14 +249,15 @@ describe("combat keyboard navigation", () => {
         expect(document.querySelector(".kcq-targeting")).toBeNull();
         document.dispatchEvent(new KeyboardEvent("keyup", { key: "1" }));
         press("1");
+        press("Escape"); press("Escape");
         execute.mockImplementation(() => {
-            keydown("=");
+            keydown(" ");
             return { success: false, reason: "actorAlreadyActed" };
         });
-        keydown("="); keydown("="); keydown("=", { repeat: true });
+        keydown(" "); keydown(" "); keydown(" ", { repeat: true });
         expect(execute).toHaveBeenCalledOnce();
-        document.dispatchEvent(new KeyboardEvent("keyup", { key: "=" }));
-        press("=");
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: " " }));
+        press(" ");
         expect(execute).toHaveBeenCalledTimes(2);
     });
 
@@ -274,11 +283,11 @@ describe("combat keyboard navigation", () => {
         expect(document.querySelector(".kcq-targeting")).toBeNull();
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
         document.dispatchEvent(new KeyboardEvent("keyup", { key: "1" }));
-        keydown("="); keydown("=", { repeat: true }); keydown("=");
+        keydown(" "); keydown(" ", { repeat: true }); keydown(" ");
         expect(execute).toHaveBeenCalledTimes(2);
         expect(execute.mock.results[1]!.value.success).toBe(true);
         expect(engine.getGameState().characters[0]!.acted).toBe(false);
-        document.dispatchEvent(new KeyboardEvent("keyup", { key: "=" }));
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: " " }));
         openTargeting();
         expect(targets().some(target => !target.disabled)).toBe(true);
         expect(execute).toHaveBeenCalledTimes(2);
@@ -287,29 +296,29 @@ describe("combat keyboard navigation", () => {
     it("removes listeners on unmount and handles a fresh battle once", () => {
         const first = mountBattle();
         unmount?.(); unmount = undefined;
-        expect(press("=").defaultPrevented).toBe(false);
+        expect(press(" ").defaultPrevented).toBe(false);
         expect(first.execute).not.toHaveBeenCalled();
         const second = mountBattle();
-        press("=");
+        press(" ");
         expect(second.execute).toHaveBeenCalledOnce();
         expect(first.execute).not.toHaveBeenCalled();
     });
 
-    it("uses Backspace for cancellation, suppresses browser navigation only when handled, and ignores held or modified keys", () => {
+    it("uses Escape for cancellation, consumes cancellation only when handled, and ignores held or modified keys", () => {
         const { execute } = mountBattle();
-        expect(press("Backspace").defaultPrevented).toBe(false);
+        expect(press("Escape").defaultPrevented).toBe(false);
         openTargeting();
-        expect(keydown("Backspace", { ctrlKey: true }).defaultPrevented).toBe(false);
-        expect(keydown("Backspace", { altKey: true }).defaultPrevented).toBe(false);
-        expect(keydown("Backspace", { metaKey: true }).defaultPrevented).toBe(false);
-        expect(keydown("Backspace", { repeat: true }).defaultPrevented).toBe(false);
+        expect(keydown("Escape", { ctrlKey: true }).defaultPrevented).toBe(false);
+        expect(keydown("Escape", { altKey: true }).defaultPrevented).toBe(false);
+        expect(keydown("Escape", { metaKey: true }).defaultPrevented).toBe(false);
+        expect(keydown("Escape", { repeat: true }).defaultPrevented).toBe(false);
         expect(document.querySelector(".kcq-targeting")).not.toBeNull();
-        expect(keydown("Backspace").defaultPrevented).toBe(true);
+        expect(keydown("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-character-commands")).not.toBeNull();
-        keydown("Backspace");
+        keydown("Escape");
         expect(document.querySelector(".kcq-character-commands")).not.toBeNull();
-        document.dispatchEvent(new KeyboardEvent("keyup", { key: "Backspace" }));
-        expect(press("Backspace").defaultPrevented).toBe(true);
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "Escape" }));
+        expect(press("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
         expect(execute).not.toHaveBeenCalled();
     });
@@ -331,7 +340,7 @@ describe("combat keyboard navigation", () => {
         assertBadges(".kcq-party-card");
         press("1");
         assertBadges(".kcq-command-card");
-        expect(button(".kcq-character-details__back").querySelector(".kcq-shortcut")?.textContent).toBe("⌫");
+        expect(button(".kcq-character-details__back").querySelector(".kcq-shortcut")?.textContent).toBe("Esc");
         expect(document.querySelector(".kcq-command-card__heading .kcq-shortcut")).toBeNull();
         press("1");
         assertBadges("button.kcq-target-card");
@@ -364,10 +373,10 @@ describe("combat keyboard navigation", () => {
         assertVisibility();
         press("1");
         assertVisibility();
-        press("Backspace");
+        press("Escape");
         press(COMBAT_SHORTCUTS.escape);
         assertVisibility();
-        expect(press("Backspace").defaultPrevented).toBe(true);
+        expect(press("Escape").defaultPrevented).toBe(true);
     });
 });
 
@@ -410,7 +419,7 @@ describe("keyboard shortcut hint visibility", () => {
         expect(hintsVisible()).toBe(false);
         press("1");
         expect(execute).toHaveBeenCalledOnce();
-        press("Backspace"); press("Backspace"); press("=");
+        press("Escape"); press("Escape"); press(" ");
         expect(execute).toHaveBeenCalledTimes(2);
     });
 
@@ -589,7 +598,7 @@ describe("Game Log keyboard navigation", () => {
         expect(press("-").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-game-log")).not.toBeNull();
         expect(overview.closest("[hidden]")).not.toBeNull();
-        expect(button(".kcq-game-log .kcq-combat-header__back").querySelector(".kcq-shortcut")?.textContent).toBe("⌫");
+        expect(button(".kcq-game-log .kcq-combat-header__back").querySelector(".kcq-shortcut")?.textContent).toBe("Esc");
         expect(press("-").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(document.querySelector(".kcq-battle-overview")).toBe(overview);
@@ -599,7 +608,7 @@ describe("Game Log keyboard navigation", () => {
         expect(execute).not.toHaveBeenCalled();
     });
 
-    it("returns to the selected character via Backspace and does not navigate hidden combat controls", () => {
+    it("returns to the selected character via Escape and does not navigate hidden combat controls", () => {
         mountBattle();
         press("2");
         const character = document.querySelector(".kcq-character-commands")!;
@@ -608,7 +617,7 @@ describe("Game Log keyboard navigation", () => {
         press("-");
         expect(press("1").defaultPrevented).toBe(false);
         expect(press("Enter").defaultPrevented).toBe(false);
-        expect(press("Backspace").defaultPrevented).toBe(true);
+        expect(press("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(document.querySelector(".kcq-character-commands")).toBe(character);
         expect(body.scrollTop).toBe(42);
@@ -624,7 +633,7 @@ describe("Game Log keyboard navigation", () => {
         const selected = targets().filter(target => target.getAttribute("aria-pressed") === "true");
         press("-");
         expect(execute).not.toHaveBeenCalled();
-        press("Backspace");
+        press("Escape");
         expect(document.querySelector(".kcq-targeting")).toBe(targeting);
         expect(targets().filter(target => target.getAttribute("aria-pressed") === "true")).toEqual(selected);
         press("Enter");
@@ -643,11 +652,15 @@ describe("Game Log keyboard navigation", () => {
         expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "escape", actor: "ko", target: "matsuko", binding: "latexLegs" });
     });
 
-    it("returns to the finished battle beneath the result dialog when End Turn finishes from the log", () => {
+    it("blocks End Turn in the log and shows the result after returning to Overview", () => {
         const { engine, execute, state, actions } = mountBattle();
         vi.mocked(engine.getGameState).mockReturnValue({ ...state, turn: { ...state.turn, outcome: "victory" } });
         execute.mockReturnValue({ success: true, frames: [], actions: [...actions] });
-        press("-"); press("=");
+        press("-"); press(" ");
+        expect(execute).not.toHaveBeenCalled();
+        expect(document.querySelector(".kcq-game-log")).not.toBeNull();
+        press("-"); press(" ");
+        continueStory();
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(document.querySelector(".kcq-battle-result--victory")).not.toBeNull();
         expect(document.querySelector(".kcq-battle-overview")?.closest("[hidden]")).toBeNull();
@@ -664,7 +677,7 @@ describe("Game Log keyboard navigation", () => {
         expect(press("-").defaultPrevented).toBe(false);
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         button(".kcq-battle-result__retry").click();
-        press("=");
+        press(" ");
         expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "endTurn" });
     });
 });

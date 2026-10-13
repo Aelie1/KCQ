@@ -86,7 +86,7 @@ describe("encounter keyboard navigation", () => {
             expect(row.querySelector(".kcq-shortcut")?.textContent).toBe(combatShortcut(index)?.toUpperCase());
             expect(press(combatShortcut(index)!).defaultPrevented).toBe(true);
             expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter(encounter.id));
-            press("Backspace");
+            press("Escape");
         }
         expect(prepareBattle).not.toHaveBeenCalled();
     });
@@ -111,20 +111,20 @@ describe("encounter keyboard navigation", () => {
         press("Q"); press("r");
         expect(onSelect.mock.calls).toEqual([["test8"], ["test11"]]);
         expect(rows[1]!.querySelector(".kcq-shortcut")?.textContent).toBe("2");
-        expect(press("Backspace").defaultPrevented).toBe(false);
+        expect(press("Escape").defaultPrevented).toBe(false);
     });
 
     it("reuses Back navigation on difficulty, details and picker and does nothing at title", () => {
         const { prepareBattle } = mountApp();
-        press("1"); press("Enter");
+        press("2"); press("Enter");
         expect(document.querySelector(".kcq-difficulty-select")).not.toBeNull();
-        expect(press("Backspace").defaultPrevented).toBe(true);
+        expect(press("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-encounter-details")).not.toBeNull();
-        expect(press("Backspace").defaultPrevented).toBe(true);
+        expect(press("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
-        expect(press("Backspace").defaultPrevented).toBe(true);
+        expect(press("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
-        expect(press("Backspace").defaultPrevented).toBe(false);
+        expect(press("Escape").defaultPrevented).toBe(false);
         expect(prepareBattle).not.toHaveBeenCalled();
     });
 
@@ -143,7 +143,7 @@ describe("encounter keyboard navigation", () => {
 
     it("respects disabled confirmations and suppresses held Enter across screen transitions", () => {
         const { prepareBattle } = mountApp();
-        press("1");
+        press("2");
         const confirm = button('[data-kcq-shortcut="enter"]');
         confirm.disabled = true;
         expect(press("Enter").defaultPrevented).toBe(false);
@@ -166,15 +166,15 @@ describe("encounter keyboard navigation", () => {
         expect(prepareBattle).toHaveBeenCalledOnce();
     });
 
-    it("does not cascade held encounter or Backspace keys across screens", () => {
+    it("does not cascade held encounter or Escape keys across screens", () => {
         mountApp();
         keydown("1"); keydown("1", { repeat: true }); keydown("1");
         expect(document.querySelector(".kcq-encounter-details")).not.toBeNull();
         release("1");
-        keydown("Backspace"); keydown("Backspace", { repeat: true }); keydown("Backspace");
+        keydown("Escape"); keydown("Escape", { repeat: true }); keydown("Escape");
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
-        release("Backspace");
-        press("Backspace");
+        release("Escape");
+        press("Escape");
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
     });
 
@@ -183,10 +183,10 @@ describe("encounter keyboard navigation", () => {
         const field = document.createElement(kind === "editable" ? "div" : kind);
         if (kind === "editable") field.setAttribute("contenteditable", "true");
         document.body.append(field);
-        for (const key of ["1", "Backspace", "Enter", "-"]) expect(keydown(key, {}, field).defaultPrevented).toBe(false);
+        for (const key of ["1", "Escape", "Enter", "-"]) expect(keydown(key, {}, field).defaultPrevented).toBe(false);
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
         press("1");
-        for (const key of ["Backspace", "Enter"]) expect(keydown(key, {}, field).defaultPrevented).toBe(false);
+        for (const key of ["Escape", "Enter"]) expect(keydown(key, {}, field).defaultPrevented).toBe(false);
         expect(document.querySelector(".kcq-encounter-details")).not.toBeNull();
         expect(prepareBattle).not.toHaveBeenCalled();
     });
@@ -196,13 +196,14 @@ describe("encounter keyboard navigation", () => {
         const remove = vi.spyOn(document, "removeEventListener");
         const { prepareBattle } = mountApp();
         button(".kcq-combat-header__settings").click();
-        for (const key of ["1", "Backspace", "Enter"]) expect(press(key).defaultPrevented).toBe(false);
-        button(".kcq-battle-result__retry").click();
-        press("1"); press("Enter"); press("Enter");
+        for (const key of ["1", "Enter"]) expect(press(key).defaultPrevented).toBe(false);
+        expect(press("Escape").defaultPrevented).toBe(true);
+        expect(document.querySelector(".kcq-battle-settings")).toBeNull();
+        press("2"); press("Enter"); press("Enter");
         expect(prepareBattle).toHaveBeenCalledOnce();
         button(".kcq-combat-header__settings").click();
         button(".kcq-battle-settings .kcq-battle-result__back").click();
-        press("-"); press("Backspace");
+        press("-"); press("Escape");
         const listeners = listen.mock.calls.filter(call => call[0] === "keydown" && call[2] !== true);
         expect(listeners).toHaveLength(1);
         expect(listen.mock.calls.filter(call => call[0] === "keyup")).toHaveLength(1);

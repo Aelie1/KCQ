@@ -149,13 +149,13 @@ describe("encounters", () => {
     });
 
     it.each([
-        ["tower_1", tower_1, "empress", "empressMight", 4, 8, 50, undefined, true],
-        ["tower_2", tower_2, "empress", "empressMight", 3, 6, 40, 1, false],
-        ["tower_3", tower_3, "empress", "empressMight", 2, 4, 30, 2, false],
-        ["outside", outside, "goddess", "goddessMight", 4, 8, undefined, undefined, false],
+        ["tower_1", tower_1, "empress", "empressMight", 8, 50, undefined, true, false],
+        ["tower_2", tower_2, "empress", "empressMight", 4, 30, 1, false, false],
+        ["tower_3", tower_3, "empress", "empressMight", 2, 10, 2, false, true],
+        ["outside", outside, "goddess", "goddessMight", 8, undefined, undefined, false, false],
     ] as const)(
         "applies %s setup modifiers to renamed enemies and the player before actions are published",
-        (_label, encounter, queenId, enemyBuff, queenModifier, skunketteHit, collar, playerModifier, ambushed) => {
+        (_label, encounter, queenId, enemyBuff, enemyHit, collar, playerModifier, ambushed, enemyAmbushed) => {
             const engine = createStockEngine(7);
             engine.loadCharacter(ko.id);
             engine.loadEncounter(encounter.id);
@@ -169,17 +169,23 @@ describe("encounters", () => {
                 defId: queen.id,
                 buffs: [expect.objectContaining({
                     id: enemyBuff,
-                    modifiers: { hit: queenModifier, defense: queenModifier },
-                })],
+                    modifiers: { hit: enemyHit },
+                }), ...(enemyAmbushed ? [expect.objectContaining({
+                    id: "ambushed", duration: 1, statuses: [{ id: "helpless", value: 1 }],
+                })] : [])],
             });
             expect(loadedSkunkette).toMatchObject({
                 id: "skunketteQueen",
                 defId: skunkette.id,
                 buffs: [expect.objectContaining({
                     id: enemyBuff,
-                    modifiers: { hit: skunketteHit },
-                })],
+                    modifiers: { hit: enemyHit },
+                }), ...(enemyAmbushed ? [expect.objectContaining({
+                    id: "ambushed", duration: 1, statuses: [{ id: "helpless", value: 1 }],
+                })] : [])],
             });
+            expect(loadedQueen?.buffs.find(({ id }) => id === enemyBuff)?.modifiers).toEqual({ hit: enemyHit });
+            expect(loadedSkunkette?.buffs.find(({ id }) => id === enemyBuff)?.modifiers).toEqual({ hit: enemyHit });
             expect(character.bindings.find(({ id }) => id === "latexCollar")?.value)
                 .toBe(collar);
             if (playerModifier === undefined) {

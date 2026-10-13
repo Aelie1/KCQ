@@ -62,7 +62,7 @@ describe("Enemy Details navigation and live state", () => {
         expect(execute).not.toHaveBeenCalled();
     });
 
-    it("keeps party shortcuts, adds enemy hints, supports focus activation and Backspace", () => {
+    it("keeps party shortcuts, adds enemy hints, supports focus activation and Escape", () => {
         mountBattle();
         expect([...document.querySelectorAll<HTMLElement>(".kcq-party-card")].map(card => card.dataset.kcqShortcut)).toEqual(["1", "2", "3"]);
         const card = element('.kcq-enemy-card[data-kcq-shortcut="5"]');
@@ -71,8 +71,8 @@ describe("Enemy Details navigation and live state", () => {
         expect(document.activeElement).toBe(card);
         press("Enter", card);
         expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 2");
-        expect(element(".kcq-combat-header__back .kcq-shortcut").textContent).toBe("⌫");
-        expect(press("Backspace").defaultPrevented).toBe(true);
+        expect(element(".kcq-combat-header__back .kcq-shortcut").textContent).toBe("Esc");
+        expect(press("Escape").defaultPrevented).toBe(true);
         expect(press("4").defaultPrevented).toBe(true);
         expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 1");
         press("Shift");
@@ -88,7 +88,7 @@ describe("Enemy Details navigation and live state", () => {
         press("-");
         expect(document.querySelector(".kcq-game-log")).not.toBeNull();
         expect(press("5").defaultPrevented).toBe(false);
-        press("Backspace");
+        press("Escape");
         expect(element(".kcq-enemy-details")).toBe(screen);
         expect(body.scrollTop).toBe(42);
     });
@@ -129,12 +129,14 @@ describe("Enemy Details navigation and live state", () => {
             ...state,
             enemies: state.enemies.map(enemy => ({ ...enemy, currHp: 123 })),
         });
-        press("=");
+        expect(press(" ").defaultPrevented).toBe(false);
+        expect(document.querySelector(".kcq-enemy-details")).not.toBeNull();
+        press("Escape"); press(" ");
         expect(document.querySelector(".kcq-enemy-details")).toBeNull();
         press("4");
         expect(element(".kcq-enemy-details__identity").textContent).toContain("123 / 200");
         vi.mocked(engine.getGameState).mockReturnValue({ ...state, enemies: state.enemies.slice(1) });
-        press("=");
+        press("Escape"); press(" ");
         expect(document.querySelector(".kcq-enemy-details")).toBeNull();
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });

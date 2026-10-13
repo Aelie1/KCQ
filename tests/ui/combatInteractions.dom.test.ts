@@ -226,15 +226,15 @@ describe("combat action submission integration", () => {
         button(".kcq-party-card").click();
         const stance = () => button('.kcq-command-card[data-kcq-shortcut="9"]');
         expect(stance().querySelector(".kcq-command-card__name")!.textContent).toBe("Change Stance");
-        expect(stance().querySelector(".kcq-command-card__stance")!.textContent).toBe("Moving → Standing");
+        expect([...stance().querySelectorAll(".kcq-command-tag")].map(tag => tag.textContent).join(" ")).toBe("Moving Standing");
         expect(stance().disabled).toBe(false);
         stance().click();
         expect(engine.getGameState().characters[0]!.standing).toBe(true);
-        expect(stance().querySelector(".kcq-command-card__stance")!.textContent).toBe("Standing → Moving");
+        expect([...stance().querySelectorAll(".kcq-command-tag")].map(tag => tag.textContent).join(" ")).toBe("Standing Moving");
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "9", bubbles: true }));
         document.dispatchEvent(new KeyboardEvent("keyup", { key: "9", bubbles: true }));
         expect(engine.getGameState().characters[0]!.standing).toBe(false);
-        expect(stance().querySelector(".kcq-command-card__stance")!.textContent).toBe("Moving → Standing");
+        expect([...stance().querySelectorAll(".kcq-command-tag")].map(tag => tag.textContent).join(" ")).toBe("Moving Standing");
     });
     it("executes through the real engine once and returns to overview after the action", () => {
         const engine = createStockEngine(12345);

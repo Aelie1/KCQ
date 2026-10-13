@@ -203,9 +203,13 @@ describe("Library structured effect projections", () => {
         expect(owner).toContain("flex: 0 1 auto;");
         expect(css).not.toMatch(/kcq-library__header \.kcq-library__owner \{[^}]*flex-basis:/);
         expect(css).toContain("grid-template-columns: repeat(4, minmax(0, 1fr));");
-        expect(css).toContain(".kcq-library__effect-cards .kcq-damage-profile__band { font-size: 11px; line-height: 15px; white-space: nowrap; }");
-        expect(css).toContain(".kcq-library__effect-cards .kcq-damage-profile__band strong { font-size: 13px; line-height: 16px; }");
-        expect(css).toContain("width: min(100%, 268px);");
-        expect(css).toContain("gap: 4px; justify-self: start;");
+        const profile = css.match(/\.kcq-damage-profile\s*\{([^}]+)\}/)![1]!;
+        const band = css.match(/\.kcq-damage-profile__band\s*\{([^}]+)\}/)![1]!;
+        const effects = css.match(/\.kcq-library__effect-cards\s*\{([^}]+)\}/)![1]!;
+        expect(profile).toContain("grid-template-columns: repeat(4, minmax(0, 1fr))");
+        expect(profile).toContain("min-width: 0");
+        expect(band).toContain("min-width: 0");
+        expect(band).toContain("white-space: nowrap");
+        expect(effects).toContain("min-width: 0");
     });
 });

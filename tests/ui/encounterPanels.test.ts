@@ -18,10 +18,28 @@ describe("encounter panels", () => {
         expect(html.match(/class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host"/g)).toHaveLength(model.encounters.length);
         for (const encounter of model.encounters) {
             expect(html).toContain(encounter.name);
-            expect(html).toContain(encounter.stars);
-            expect(html).toContain(encounter.challengeLabel);
+            if (encounter.stars > 0) {
+                expect(html).toContain(encounter.starsText);
+                expect(html).toContain(encounter.challengeLabel);
+            } else {
+                expect(html).not.toContain(encounter.challengeLabel);
+            }
         }
         expect(html).toContain("👑 ---");
+    });
+
+    it.each(["prologue", "interlude_1", "interlude_2", "interlude_3", "epilogue"])("renders %s as story-only details", id => {
+        const model = createEncounterDetailsViewModel(library, id, presentation);
+        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => {}, onBack: () => {} }));
+        expect(model.stars).toBe(0);
+        expect(model.enemies).toEqual([]);
+        expect(model.description).not.toMatch(/\[encounter\./);
+        expect(model.description.trim()).not.toBe("");
+        expect(html).toContain("kcq-encounter-details__description");
+        expect(html).toContain("Go Back");
+        expect(html).not.toContain("kcq-encounter-details__info");
+        expect(html).not.toContain("kcq-encounter-details__enemies");
+        expect(html).not.toContain("Choose Difficulty");
     });
 
     it("puts enemy rows in one outer card and uses shared effect previews", () => {

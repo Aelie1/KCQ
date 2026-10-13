@@ -23,11 +23,8 @@ import { resolvedEvents } from "../helpers/events";
 import { makePublicActionView, makePublicBinding, makePublicCharacter } from "../helpers/publicTestData";
 
 function stockEncounterId(): string {
-    const encounterId = createStockEngine(1).listEncounters()[0];
-    if (!encounterId) {
-        throw new Error("The stock encounter catalogue is empty");
-    }
-    return encounterId;
+    // Combat coverage must not depend on story entries' position in the catalog.
+    return "plains_1";
 }
 
 function fightInput(policy: FightPolicy, engineSeed = 12345, policySeed = 0) {

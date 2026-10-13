@@ -125,10 +125,10 @@ describe("Enemy Details", () => {
         }] }]);
     });
 
-    it("renders the existing displays in the shared scrolling body with a Backspace hint", () => {
+    it("renders the existing displays in the shared scrolling body with an Escape hint", () => {
         const html = renderToString(() => createComponent(EnemyDetailsPanel, { ...fixture, onBack: () => {} }));
         expect(html).toContain("kcq-combat-header--subscreen");
-        expect(html).toContain('data-kcq-shortcut="backspace"');
+        expect(html).toContain('data-kcq-shortcut="escape"');
         expect(html).toContain("kcq-target-header__meter");
         expect(html).toContain("kcq-modifier-meter");
         expect(html).toContain("kcq-character-effects__list");

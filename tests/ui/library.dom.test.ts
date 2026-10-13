@@ -11,6 +11,7 @@ import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
 import type { LibraryPage } from "../../src/ui/web/app/viewModels/library";
 import { createEmptyContentLibrary } from "../helpers/library";
+import { libraryDamageProfile } from "../../src/ui/web/app/viewModels/libraryMechanics";
 import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
@@ -81,10 +82,11 @@ describe("Library mechanical detail", () => {
         libraryMount({ kind: "entry", category: "statuses", id: "bound" });
         expect(document.querySelectorAll("[data-status-intensity]")).toHaveLength(4);
         expect(element('[data-status-intensity="4"]').textContent).toContain("-8");
-        expect(element('[data-status-intensity="4"]').textContent).toContain("Escape");
+        expect(element('[data-status-intensity="4"]').textContent).toContain(presentation.modifier("escape", "compact"));
         unmount!(); libraryMount({ kind: "entry", category: "moves", id: "fairyTelekinesis" });
         expect([...document.querySelectorAll(".kcq-damage-profile__band strong")].map(node => node.textContent)).toEqual(["0–0", "3–8", "12–15", "23–30"]);
-        expect(element(".kcq-library__detail").textContent).toContain("Damage per hit");
+        expect(element(".kcq-library__facts").textContent).toContain("Hits2 HITS");
+        expect(document.querySelectorAll(".kcq-damage-profile__band")).toHaveLength(4);
         expect(element(".kcq-library__detail").textContent).not.toContain("Base Damage");
         expect(element(".kcq-buff-effect").textContent).toContain("Remove Buff");
         expect(element(".kcq-buff-effect").textContent).toContain("Fairy Empowerment");
@@ -92,9 +94,9 @@ describe("Library mechanical detail", () => {
     });
     it("shows resource conditions, shared cooldowns, immunities, and encounter aliases", () => {
         libraryMount({ kind: "entry", category: "moves", id: "release" });
-        expect(element(".kcq-library__notes").textContent).toContain("at least 25 Subspace");
+        expect(element(".kcq-library__description").textContent).toBe(presentation.referenceText("move", "release", "desc"));
         unmount!(); libraryMount({ kind: "entry", category: "moves", id: "obey" });
-        expect(element(".kcq-library__cooldown-summary").textContent).toContain("Shared:2");
+        expect(element(".kcq-library__cooldown-stack").textContent).toContain("Shared2 Rounds");
         expect(document.querySelector(".kcq-library__shared-cooldown")).toBeNull();
         expect(element(".kcq-library__effect-cards").textContent).toContain("Servitude");
         expect(element('.kcq-buff-effect__details [data-library-focus="statuses:servitude"]').textContent).toBe("Servitude");
@@ -142,7 +144,7 @@ describe("Library campaign selection and localization", () => {
         const engine = createStockEngine(12345);
         const prepareBattle = vi.fn(() => ({ engine, dispose: vi.fn() }));
         mount(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ engine, presentation }), prepareBattle }));
-        element(".kcq-title-screen__campaign").click(); element(".kcq-encounter-picker__row").click();
+        element(".kcq-title-screen__campaign").click(); element('.kcq-encounter-picker__row[data-kcq-shortcut="2"]').click();
         if (screen === "difficulty") {
             element(".kcq-encounter-details__footer button:last-child").click();
             const mythic = [...document.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent === "Mythic")!;
@@ -188,7 +190,7 @@ describe("Library category layouts", () => {
         expect(element(".kcq-library__detail").dataset.libraryId).toBe("matsuko");
         back(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("punch");
     });
-    it.each([ ["skunkette", 3], ["skunk", 4], ["fairy", 3], ["queen", 3], ["rainmaker", 1] ] as const)("renders authored %s strategy in decision order", (id, steps) => {
+    it.each([ ["skunkette", 3], ["skunk", 4], ["fairy", 2], ["queen", 3], ["rainmaker", 1] ] as const)("renders authored %s strategy in decision order", (id, steps) => {
         libraryMount({ kind: "entry", category: "enemies", id });
         expect(document.querySelectorAll(".kcq-library__strategy > li")).toHaveLength(steps);
         expect(element(".kcq-library__detail").firstElementChild?.classList.contains("kcq-library__facts")).toBe(true);
@@ -254,7 +256,7 @@ describe("Library trap outcomes", () => {
         expect(outcomes.map(outcome => outcome.querySelectorAll(".kcq-library__trap-binding").length)).toEqual([1, 1, 2, 4]);
         expect(outcomes[0]?.textContent).toContain("Up to 10");
         expect(outcomes[3]?.textContent).toContain("Up to 20");
-        expect(element(".kcq-library__detail").textContent).toContain("when triggered");
+        expect(element(".kcq-library__description").textContent).toBe(presentation.referenceText("trap", "trapPuddle", "desc"));
         expect(element(".kcq-library__binding-limit").tagName).toBe("STRONG");
         expect(element(".kcq-library__detail").textContent).not.toContain("Trigger Probability");
         expect(element(".kcq-library__detail").textContent).not.toContain("None 0");
@@ -279,8 +281,8 @@ describe("Library encounter context", () => {
     });
     it("groups starting effects by their real recipient and keeps binding references navigable", async () => {
         libraryMount({ kind: "entry", category: "encounters", id: "tower_1" });
-        expect(document.querySelectorAll(".kcq-encounter-details__effect-group")).toHaveLength(3);
-        expect(element(".kcq-library__setup").textContent).toContain("Skunk Empress");
+        expect(document.querySelectorAll(".kcq-encounter-details__effect-group")).toHaveLength(2);
+        expect(element(".kcq-library__setup").textContent).toContain("Enemies");
         element('.kcq-library__setup [data-library-focus="bindings:latexCollar"]').click(); await tick();
         expect(element(".kcq-library__detail").dataset.libraryId).toBe("latexCollar");
     });
@@ -310,12 +312,12 @@ describe("Library visual review corrections", () => {
     it("keeps only Matsuko's compulsion rule and replaces Hinari's resource panel", () => {
         libraryMount({ kind: "entry", category: "characters", id: "matsuko" });
         expect(document.querySelectorAll(".kcq-library__notes li")).toHaveLength(1);
-        expect(element(".kcq-library__notes").textContent).toBe("Compulsion moves share cooldowns and do not consume Matsuko's action.");
+        expect(element(".kcq-library__notes").textContent).toBe(presentation.referenceText("entity", "matsuko", "library"));
         expect(element(".kcq-library__notes").textContent).not.toContain("success");
         unmount!(); libraryMount({ kind: "entry", category: "characters", id: "hinari" });
         expect(element(".kcq-library__resource-title").textContent).toBe("Special Resource: Subspace");
-        expect(element(".kcq-library__notes").textContent).toContain("Starts empty and has a max of 100");
-        expect(element(".kcq-library__notes").textContent).toContain("Rockfall deals more hits the lower Subspace is");
+        expect(element(".kcq-library__notes").textContent).toContain("starts empty and can hold up to 100");
+        expect(element(".kcq-library__notes").textContent).toContain("The emptier Subspace is, the more hits Rockfall deals");
         expect(document.querySelectorAll(".kcq-library__notes li")).toHaveLength(3);
         expect(document.querySelector(".kcq-library__resource")).toBeNull();
         expect(document.querySelectorAll(".kcq-library__move-card")).toHaveLength(5);
@@ -324,20 +326,29 @@ describe("Library visual review corrections", () => {
         libraryMount({ kind: "entry", category: "moves", id: "obey" });
         expect(element(".kcq-library__header .kcq-library__owner").textContent).toContain("Matsuko");
         expect(document.querySelector(".kcq-library__detail > .kcq-library__owner")).toBeNull();
-        expect(element(".kcq-library__facts").textContent).toContain("CooldownMove:3Shared:2");
-        expect(element(".kcq-library__cooldown-summary").textContent).toContain("Shared:2");
+        expect(element(".kcq-library__facts").textContent).toContain("Cooldown3 RoundsShared2 Rounds");
+        expect(element(".kcq-library__cooldown-stack").textContent).toContain("Shared2 Rounds");
         expect(document.querySelector(".kcq-library__shared-cooldown")).toBeNull();
         expect(document.querySelector(".kcq-library__cooldowns")).toBeNull();
         expect(element(".kcq-library__detail").textContent).toContain("Does not consume the action.");
         expect(element(".kcq-library__detail").textContent).not.toContain("successful hit");
     });
-    it.each(["latexMist", "latexPuddle", "latexRegeneration", "latexExplosion"])("preserves the public base amount and conditional mechanics for %s", id => {
+    it.each(["latexMist", "latexPuddle", "latexRegeneration", "latexExplosion"])("projects authored amounts and conditional mechanics for %s", id => {
         const library = createStockEngine().getLibrary();
         libraryMount({ kind: "entry", category: "moves", id }, library);
-        const amount = element(".kcq-library__effect-cards");
-        expect(amount.textContent).toContain("Base Effect Amount");
-        expect(amount.textContent).toContain(String(library.moves[id]!.baseDamage));
-        expect(document.querySelector(".kcq-library__effect-note")).not.toBeNull();
+        const effects = element(".kcq-library__effect-cards");
+        expect(effects.querySelector(".kcq-preview-effect")).not.toBeNull();
+        expect(effects.textContent).not.toMatch(/undefined|NaN|\[(ui|buff|move|entity)\./);
+        if (id === "latexMist" || id === "latexRegeneration") {
+            expect(effects.querySelector(".kcq-accuracy-profile")).not.toBeNull();
+            expect(effects.querySelectorAll(".kcq-binding-meter")).toHaveLength(id === "latexMist" ? 2 : 3);
+            const fills = [...effects.querySelectorAll<HTMLElement>(".kcq-binding-meter__value")].map(fill => fill.style.width);
+            expect(fills).toEqual(id === "latexMist" ? ["50%", "50%"] : ["30%", "30%", "30%"]);
+        } else {
+            const profile = libraryDamageProfile(library.moves[id]!, presentation, false)!;
+            expect([...effects.querySelectorAll(".kcq-damage-profile__band strong")].map(band => band.textContent))
+                .toEqual(profile.bands.map(band => band.rangeLabel));
+        }
     });
     it("uses concise status labels and always-visible severity effect tables from public data", () => {
         const library = createStockEngine().getLibrary();
@@ -447,33 +458,33 @@ describe("Library Round 4 corrections", () => {
         expect([...document.querySelectorAll("[data-library-recipient] h3")].map(node => node.textContent)).toEqual(["Enemies", "Allies", "Ko-chan"]);
         expect(element('[data-library-recipient="enemies"]').textContent).toContain("DefeatTarget Non-Boss Enemy");
         expect(element('[data-library-recipient="allies"]').textContent).toContain("Strongest Binding");
-        expect(element('[data-library-recipient="allies"]').textContent).toContain("Requires an existing binding");
+        expect(element('[data-library-recipient="allies"] .kcq-binding-meter').getAttribute("aria-valuenow")).toBe("100");
         expect(element('[data-library-recipient="ko"]').textContent).toContain("Exhausted");
         expect(element('[data-library-recipient="ko"]').textContent).toContain("Block [Power of Denial]");
     });
     it.each(["obey", "stop", "attackMe"])("preserves %s own cooldown and no-action cost with compact shared cooldown", id => {
         const library = createStockEngine().getLibrary();
         libraryMount({ kind: "entry", category: "moves", id }, library);
-        expect(element(".kcq-library__facts").textContent).toContain("CooldownMove:" + library.moves[id]!.cooldown![id]);
-        expect(element(".kcq-library__cooldown-summary").textContent).toContain("Shared:2");
+        expect(element(".kcq-library__facts").textContent).toContain("Cooldown" + library.moves[id]!.cooldown![id] + " Rounds");
+        expect(element(".kcq-library__cooldown-stack").textContent).toContain("Shared2 Rounds");
         expect(document.querySelector(".kcq-library__shared-cooldown")).toBeNull();
         expect(document.querySelector(".kcq-library__cooldowns")).toBeNull();
         expect(element(".kcq-library__detail").textContent).toContain("Does not consume the action.");
         if (id === "obey") {
             expect(element('[data-library-recipient="allies"]').textContent).toContain("RefreshTarget Ally's Action");
-            expect(element('[data-library-recipient="allies"]').textContent).toContain("Add DebuffServitude");
+            expect(element('[data-library-recipient="target"]').textContent).toContain("Add DebuffServitude");
             expect(element(".kcq-library__facts").textContent).toContain("Duration2 Rounds");
-            expect(element(".kcq-library__notes").textContent).toContain("not affected by Servitude");
+            expect(element('.kcq-buff-effect__details [data-library-focus="statuses:servitude"]').textContent).toBe("Servitude");
         } else if (id === "stop") {
-            expect(element('[data-library-recipient="boss"]').textContent).toContain("WeakenIntentions −25%");
-            expect(element('[data-library-recipient="enemy"]').textContent).toContain("CancelIntentions");
+            expect(element('[data-library-recipient="boss"]').textContent).toContain("WeakenMove Effect −25%");
+            expect(element('[data-library-recipient="enemy"]').textContent).toContain("CancelAll Moves");
         }
     });
     it("represents reflect as a one-charge buff and renders linked Burnout move rules", () => {
         libraryMount({ kind: "entry", category: "moves", id: "reflect" });
         expect(element(".kcq-buff-effect").textContent).toContain("Add BuffReflect");
-        expect(element(".kcq-buff-effect").textContent).toContain("1 charge · this round");
-        expect(element(".kcq-library__effect-note").textContent).toContain("original incoming binding amount");
+        expect(element(".kcq-library__facts").textContent).toContain("DurationTHIS ROUND");
+        expect(element(".kcq-library__description").textContent).toBe(presentation.referenceText("move", "reflect", "desc"));
         expect(document.querySelector(".kcq-library__notes")).toBeNull();
         unmount!(); libraryMount({ kind: "entry", category: "moves", id: "immolation" });
         expect(element(".kcq-buff-effect").textContent).toContain("Add BuffBurnout");
@@ -489,15 +500,14 @@ describe("Library Round 4 corrections", () => {
         expect(element(".kcq-library__detail").textContent).toContain("Cannot Assist");
         expect(document.querySelector('[data-library-focus="bindings:skunkBindings"]')).toBeNull();
     });
-    it("uses a spread table and exact conversion wording, with collar rules on its own page", () => {
+    it("renders authored spreading, conversion and restoration rules with navigable references", () => {
         libraryMount({ kind: "entry", category: "bindings", id: "skunkBindings" });
-        expect([...document.querySelectorAll(".kcq-library__spread-table tbody tr")].map(node => node.textContent)).toEqual(["Heavy25% → 50%", "Severe50% → 100%", "Overwhelming100% → 200%"]);
-        expect([...document.querySelectorAll(".kcq-library__strategy li")].map(node => node.textContent)).toEqual([
-            "When all four body zones reach Overwhelming, the character becomes Incapacitated and converts into a hostile Skunkette.",
-            "Skunk Queen will reclaim her collar from converted characters.",
-            "Defeat the converted Skunkette to rescue the character, allowing them to reduce their bindings by half and rejoin the battle.",
-        ]);
-        expect(element(".kcq-library__detail").textContent).not.toContain("one-fifth");
+        const rules = element(".kcq-library__detail");
+        expect(rules.textContent).toContain("At Heavy and above");
+        expect(rules.textContent).toContain("converts into a hostile Skunkette");
+        expect(rules.textContent).toContain("rescue the character");
+        expect(rules.textContent).toContain("resets its peak amount");
+        expect(element('[data-library-focus="moves:latexRegeneration"]').textContent).toBe("Latex Regeneration");
         unmount!(); libraryMount({ kind: "entry", category: "bindings", id: "latexCollar" });
         expect(element(".kcq-library__notes").textContent).toContain("1/5");
         expect(document.querySelectorAll(".kcq-library__notes [data-library-focus^='bindings:']")).toHaveLength(4);
@@ -505,7 +515,7 @@ describe("Library Round 4 corrections", () => {
     it.each(["store", "brace", "release", "pounce", "latexMist", "latexPuddle", "latexRegeneration", "latexExplosion", "healingMagic", "empoweringMagic", "barrierMagic", "latexRain", "callReinforcements", "latexRainmaker", "skunkPerfume", "throwOff"])("keeps %s secondary and conditional effects structured and localized", id => {
         libraryMount({ kind: "entry", category: "moves", id });
         expect(document.querySelector(".kcq-library__effect-row")).not.toBeNull();
-        expect(document.querySelector(".kcq-library__effect-note")).not.toBeNull();
+        expect(element(".kcq-library__description").textContent).toBe(presentation.referenceText("move", id, "desc"));
         expect(element(".kcq-library__detail").textContent).not.toMatch(/\[(ui|buff|move|entity)\./);
     });
 });
@@ -514,8 +524,8 @@ describe("Library Round 4 corrections", () => {
 describe("Library Round 5 systematic presentation", () => {
     it("shows illustrative binding decreases on the shared projected meter", () => {
         for (const [id, transition, resultingFill] of [
-            ["powerOfDenial", "100 → 0 (−100)", "0%"],
-            ["immolation", "100 → 50 (−50)", "50%"],
+            ["powerOfDenial", "100 → None 0", "0%"],
+            ["immolation", "100 → Severe 50", "50%"],
         ] as const) {
             libraryMount({ kind: "entry", category: "moves", id });
             const binding = element(".kcq-binding-effect");
@@ -535,7 +545,7 @@ describe("Library Round 5 systematic presentation", () => {
         const meter = element<HTMLElement>(".kcq-binding-effect .kcq-binding-meter");
         expect((meter.querySelector(".kcq-binding-meter__value") as HTMLElement).style.width).toBe("0%");
         expect(meter.querySelector(".kcq-binding-meter__change")).toBeNull();
-        expect(element(".kcq-binding-effect__transition").textContent).toContain("−Escape potency ×2");
+        expect(element(".kcq-binding-effect__transition").textContent).toContain("Escape potency ×2");
     });
     it("keeps linked Burnout and Exhausted availability visible with navigation history", async () => {
         libraryMount({ kind: "entry", category: "moves", id: "immolation" });
@@ -557,7 +567,7 @@ describe("Library Round 5 systematic presentation", () => {
         const link = element<HTMLButtonElement>('.kcq-buff-effect__details [data-library-focus="statuses:bound"]');
         expect(link.textContent).toBe("Bound 3");
         expect(link.classList.contains("kcq-library__inline-link")).toBe(true);
-        expect(link.querySelector(".kcq-status-chip")).toBeNull();
+        expect(link.querySelector(".kcq-status-chip--danger")).not.toBeNull();
         expect(details.querySelector(".kcq-pip-meter")).toBeNull();
         expect(details.querySelector(".kcq-library__restrictions")).toBeNull();
         expect(document.querySelector(".kcq-library__buff-statuses")).toBeNull();
@@ -579,8 +589,9 @@ describe("Library Round 5 systematic presentation", () => {
     });
     it("links the correct statuses and granted move for Pounce I–IV", async () => {
         libraryMount({ kind: "entry", category: "moves", id: "pounce" });
-        const buffs = [...element('[data-library-recipient="players"]').querySelectorAll(".kcq-buff-effect")];
-        expect(buffs.map(buff => buff.querySelector(".kcq-preview-effect__payload")!.textContent)).toEqual(["Pounce I", "Pounce II", "Pounce III", "Pounce IV"]);
+        const groups = [1, 2, 3, 4].map(level => element('[data-library-recipient="pounce' + level + '"]'));
+        const buffs = groups.map(group => group.querySelector(".kcq-buff-effect")!);
+        expect(buffs.map(buff => buff.querySelector(".kcq-preview-effect__payload")!.textContent)).toEqual(["Character", "Character", "Character", "Character"]);
         expect(buffs.map(buff => [...buff.querySelectorAll('[data-library-focus^="statuses:"]')].map(link => link.textContent)))
             .toEqual([["Immobilized"], ["Immobilized"], ["Immobilized", "Stunned"], ["Immobilized", "Helpless"]]);
         for (const buff of buffs) {
@@ -588,7 +599,7 @@ describe("Library Round 5 systematic presentation", () => {
             expect(buff.querySelector(".kcq-library__restrictions")).toBeNull();
             for (const flag of ["blocksMoving", "blocksAttack", "skipsTurn"] as const) expect(buff.textContent).not.toContain(presentation.flag(flag));
         }
-        expect(element('[data-library-recipient="skunkette"]').querySelectorAll(".kcq-buff-effect__modifiers .kcq-pip-meter")).toHaveLength(8);
+        expect(element(".kcq-library__effect-cards").querySelectorAll(".kcq-buff-effect__modifiers .kcq-pip-meter")).toHaveLength(10);
         element('.kcq-buff-effect__details [data-library-focus="statuses:helpless"]').click(); await tick();
         expect(element(".kcq-library__detail").dataset.libraryId).toBe("helpless");
         expect(element(".kcq-library__restrictions").textContent).toContain(presentation.flag("skipsTurn"));
@@ -596,7 +607,7 @@ describe("Library Round 5 systematic presentation", () => {
     it("links encounter setup buff statuses inside the same details area", async () => {
         libraryMount({ kind: "entry", category: "encounters", id: "tower_1" });
         const link = element<HTMLButtonElement>('.kcq-library__setup .kcq-buff-effect__details [data-library-focus="statuses:helpless"]');
-        expect(link.textContent).toBe("Helpless"); expect(link.querySelector(".kcq-status-chip")).toBeNull();
+        expect(link.textContent).toBe("Helpless"); expect(link.querySelector(".kcq-status-chip--danger")).not.toBeNull();
         expect(link.closest(".kcq-buff-effect")!.textContent).toContain("1 Rounds");
         link.click(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("helpless");
     });
@@ -675,22 +686,29 @@ describe("Library Round 5 systematic presentation", () => {
         expect(element(".kcq-library__facts").textContent).toContain("DurationTHIS ROUND");
         expect(element(".kcq-buff-effect").textContent).toBe("Add BuffBrace");
         expect(element(".kcq-library__detail").textContent).not.toContain("charge");
-        expect(element(".kcq-library__effect-note").textContent).toContain("exceeding 100 capacity");
-        expect(element(".kcq-library__notes").textContent).toContain("Subspace below 100");
+        expect(element(".kcq-library__description").textContent).toContain("Subspace is full");
+        expect(element(".kcq-library__facts").textContent).not.toMatch(/undefined|NaN/);
+    });
+    it.each(["reflect", "fairyReflect"])("shows %s duration without an undefined round count", id => {
+        libraryMount({ kind: "entry", category: "moves", id });
+        const facts = element(".kcq-library__facts");
+        expect(facts.textContent).toContain("DurationTHIS ROUND");
+        expect(facts.textContent).not.toMatch(/undefined|NaN/);
+        expect(element(".kcq-buff-effect").textContent).toContain(presentation.move(id));
     });
     it("keeps differing related cooldowns and related-only cooldowns in the summary", () => {
         const library = createStockEngine().getLibrary();
         library.moves.stop!.cooldown = { stop: 5, obey: 3, attackMe: 2 };
         libraryMount({ kind: "entry", category: "moves", id: "stop" }, library);
-        const summary = element(".kcq-library__cooldown-summary");
-        expect(summary.textContent).toContain("Move:5");
+        const summary = element(".kcq-library__cooldown-stack");
+        expect(summary.textContent).toContain("Cooldown5 Rounds");
         expect(summary.querySelector('[data-library-focus="moves:obey"]')!.parentElement!.textContent).toContain("3");
         expect(summary.querySelector('[data-library-focus="moves:attackMe"]')!.parentElement!.textContent).toContain("2");
         expect(element(".kcq-library__effect-cards").textContent).not.toContain("Cooldown");
         unmount!(); library.moves.stop!.cooldown = { obey: 4 };
         libraryMount({ kind: "entry", category: "moves", id: "stop" }, library);
-        expect(element(".kcq-library__cooldown-summary").textContent).toContain("Shared:4");
-        expect(element(".kcq-library__cooldown-summary").textContent).not.toContain("Move:");
+        expect(element(".kcq-library__cooldown-stack").textContent).toContain("Shared4 Rounds");
+        expect(element(".kcq-library__cooldown-stack").textContent).not.toContain("Cooldown5 Rounds");
     });
     it("uses definition level count for status headings, including levels without mechanics", () => {
         const library = createStockEngine().getLibrary();

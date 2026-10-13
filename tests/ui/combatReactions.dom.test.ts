@@ -267,14 +267,14 @@ describe("combat reaction rendering and lifecycle", () => {
         const numbers = () => [...document.querySelectorAll<HTMLElement>(".kcq-hp-reaction")];
         const first = numbers();
         expect(first.map(number => number.textContent)).toEqual(["-14", "-14"]);
-        expect(first[0]!.style.right).not.toBe(first[1]!.style.right);
+        expect(first[0]!.style.getPropertyValue("--float-x")).not.toBe(first[1]!.style.getPropertyValue("--float-x"));
         vi.advanceTimersByTime(500);
         b.present({ type: "changePhase", phase: "enemy", effects: [hit] });
         const third = numbers()[2]!;
         const animation = third.style.animation;
-        const position = third.style.right;
+        const position = third.style.getPropertyValue("--float-x");
         expect(numbers()).toHaveLength(3);
-        expect(new Set(numbers().map(number => number.style.right)).size).toBe(3);
+        expect(third.style.getPropertyValue("--float-x")).toBe(first[0]!.style.getPropertyValue("--float-x"));
         expect(new Set(b.reactions.matching("hp", enemyId).map(cue => cue.serial)).size).toBe(3);
         expect(numbers().slice(0, 2)).toEqual(first);
         // Floating values use their HP cue timers, while the visual fade ends after 2s.
@@ -285,9 +285,9 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(first.every(number => !number.isConnected)).toBe(true);
         expect(numbers()).toEqual([third]);
         expect(third.style.animation).toBe(animation);
-        expect(third.style.right).toBe(position);
+        expect(third.style.getPropertyValue("--float-x")).toBe(position);
         b.present({ type: "changePhase", phase: "enemy", effects: [hit] });
-        expect(numbers()[1]!.style.right).toBe(first[0]!.style.right);
+        expect(numbers()[1]!.style.getPropertyValue("--float-x")).toBe(first[0]!.style.getPropertyValue("--float-x"));
         vi.advanceTimersByTime(500);
         expect(third.isConnected).toBe(false);
         expect(numbers()).toHaveLength(1);
@@ -310,11 +310,12 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(getComputedStyle(number).pointerEvents).toBe("none");
         expect(getComputedStyle(number.parentElement!).overflow).toBe("visible");
         expect(getComputedStyle(element(".kcq-enemy-card")).overflow).toBe("visible");
-        expect(css).toContain("color: var(--kcq-glow-negative)");
+        expect(css).toMatch(/\.kcq-hp-reaction\[data-combat-reaction="damage"\]\s*\{[^}]*color: var\(--kcq-glow-hit\)/);
         expect(css).toContain("color: var(--kcq-glow-positive)");
-        expect(css).toContain("transform: translate(-6px, -28px)");
+        expect(css).toContain("var(--float-x, 0px)");
+        expect(css).toContain("var(--float-y, -25px)");
         const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
-        expect(reduced).toMatch(/\.kcq-hp-reaction\s*\{\s*animation: kcq-react-binding-fade 2000ms[^}]*forwards !important;/);
+        expect(reduced).toMatch(/\.kcq-hp-reaction\s*\{\s*animation: kcq-react-binding-fade 2000ms[^}]*both !important;/);
     });
     it("Instant clears current effects and creates no delayed reactions, and unmount cancels outstanding work", () => {
         const b = mount();

@@ -17,8 +17,9 @@ describe("encounter catalog view models", () => {
     it("uses the public catalog in its authored order", () => {
         const model = createEncounterPickerViewModel(library, presentation);
         expect(model.encounters.map(({ id }) => id)).toEqual([
-            "plains_1", "plains_2", "plains_3", "forest_1", "forest_2", "forest_3",
-            "tower_1", "tower_2", "tower_3", "outside",
+            "prologue", "plains_1", "plains_2", "plains_3", "interlude_1",
+            "forest_1", "forest_2", "forest_3", "interlude_2",
+            "tower_1", "tower_2", "tower_3", "interlude_3", "epilogue", "outside",
         ]);
         expect(model.encounters.map(({ name }) => name)).toEqual(
             Object.values(library.encounters).map(({ id }) => presentation.encounter(id)),
@@ -28,8 +29,9 @@ describe("encounter catalog view models", () => {
     });
 
     it.each([
-        [1, "★☆☆☆☆"], [2, "★★☆☆☆"], [3, "★★★☆☆"], [4, "★★★★☆"], [5, "★★★★★"],
-    ])("renders %i challenge stars in a five-star display", (stars, expected) => {
+        [0, ""], [1, "★"], [2, "★★"], [3, "★★★"], [4, "★★★★"], [5, "★★★★★"],
+        [6, "★★★★★★"], [8, "★★★★★★★★"],
+    ])("renders only filled challenge stars without a cap: %i", (stars, expected) => {
         expect(encounterStars(stars as number)).toBe(expected);
     });
 
@@ -39,7 +41,7 @@ describe("encounter catalog view models", () => {
         expect(detail.bestClear).toBeUndefined();
         expect(detail.bestClearLabel).toBe("👑 ---");
         expect(createEncounterDetailsViewModel(library, "outside", presentation, "veteran").bestClearLabel).toBe("👑 Veteran");
-        expect(createEncounterPickerViewModel(library, presentation, { outside: "standard" }).encounters.at(-1)?.bestClearLabel).toBe("👑 Standard");
+        expect(createEncounterPickerViewModel(library, presentation, { outside: "standard" }).encounters.find(({ id }) => id === "outside")?.bestClearLabel).toBe("👑 Standard");
     });
 
     it("derives generic enemy identities, ranks and HP from public references", () => {
