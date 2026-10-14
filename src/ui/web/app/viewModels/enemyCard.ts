@@ -1,9 +1,10 @@
-import type { Buff, Character, Enemy, EntityId } from "../../../../engine/public/types";
+import type { Buff, Character, Enemy, EntityId, ModifierId } from "../../../../engine/public/types";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import type { EnemyCardData } from "../components/componentTypes";
 import { createIntentViewModel } from "./intentRow";
 import { playerTone, projectLinkedPlayers } from "./linkedEntities";
+import { formatSignedNumber } from "./presentationHelpers";
 
 export const ENEMY_CARD_VISIBLE_INTENTIONS = 2;
 
@@ -52,6 +53,19 @@ export function createEnemyCardViewModel(
         currentHp: enemy.currHp,
         maxHp: enemy.maxHp,
         linkedEntities: projectLinkedPlayers(enemy.buffs, characters, presentation),
+        permanentEffects: enemy.buffs.flatMap(buff => {
+            if (buff.duration !== undefined || !buff.icon) return [];
+            const modifiers = (Object.entries(buff.modifiers ?? {}) as [ModifierId, number][])
+                .map(([modifier, value]) => presentation.ui("characterDetails.effectModifier", {
+                    modifier: presentation.modifier(modifier), value: formatSignedNumber(value),
+                }));
+            return [{
+                id: buff.id, icon: buff.icon,
+                // The compact bonus is hit; all authored modifiers remain in the tooltip and Details.
+                valueLabel: buff.modifiers?.hit === undefined ? undefined : formatSignedNumber(buff.modifiers.hit),
+                accessibleLabel: [presentation.buff(buff.id, buff.severity), ...modifiers].join(": "),
+            }];
+        }),
         effectDurations: enemy.buffs.flatMap(buff => {
             const duration = buff.duration;
             if (duration === undefined || !Number.isInteger(duration) || duration <= 0) return [];

@@ -43,6 +43,12 @@ export interface IntentViewModel extends IntentRowData {
 
 export interface EnemyCardData {
     currentHp: number;
+    permanentEffects: readonly {
+        id: string;
+        accessibleLabel: string;
+        icon: NonNullable<Buff["icon"]>;
+        valueLabel?: string;
+    }[];
     effectDurations: readonly {
         id?: string;
         accessibleLabel: string;

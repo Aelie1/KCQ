@@ -641,16 +641,52 @@ button {
     background: var(--kcq-surface-card);
 }
 
-/* Keep clusters on the straight top border, clear of rounded corners and shortcuts.
-   Indicators shrink within each separate cluster when space is tight; no extra card row. */
+/* Keep both groups on the straight top border, clear of rounded corners and shortcuts. */
 .kcq-enemy-card__debuffs {
     position: absolute;
     top: -1px;
     left: 16px;
     right: 22px;
     display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
     gap: 8px;
     pointer-events: none;
+}
+
+.kcq-enemy-card__temporary-effects {
+    display: flex;
+    flex: 1 1 0;
+    min-width: 0;
+    gap: 8px;
+}
+
+.kcq-enemy-card__permanent-effects {
+    display: flex;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+    max-width: 100%;
+    margin-left: auto;
+}
+
+.kcq-enemy-card__permanent-effect {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    height: 4px;
+    background: var(--kcq-surface-card);
+    color: var(--kcq-text-muted);
+    font-size: 10px;
+    line-height: 1;
+    white-space: nowrap;
+    pointer-events: auto;
+}
+
+.kcq-enemy-card__permanent-effect .kcq-duration-pips__icon {
+    flex: 0 0 10px;
 }
 
 .kcq-enemy-card__debuff {
