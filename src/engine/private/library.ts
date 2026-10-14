@@ -1,6 +1,6 @@
-import type { BindingDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, StatusLevelDef, TrapDef } from "../protected/definitions";
+import type { BindingDef, CampaignDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, StatusLevelDef, TrapDef } from "../protected/definitions";
 import type { ContentCatalog, iStatus } from "../protected/types";
-import type { BindingReference, CharacterReference, ContentLibrary, DifficultyReference, EncounterReference, EnemyReference, MoveReference, PassiveReference, ModifierReference as StatusDataReference, StatusLevelReference, StatusReference, TrapReference } from "../public/library";
+import type { BindingReference, CampaignReference, CharacterReference, ContentLibrary, DifficultyReference, EncounterReference, EnemyReference, MoveReference, PassiveReference, ModifierReference as StatusDataReference, StatusLevelReference, StatusReference, TrapReference } from "../public/library";
 import { Difficulty } from "../public/types";
 
 import { difficulties } from "./constants";
@@ -25,6 +25,7 @@ export function serializeLibrary(catalog: ContentCatalog): ContentLibrary {
         traps: mapToRecord(catalog.traps, libraryTrap),
         statuses: mapToRecord(catalog.statuses, libraryStatus),
         encounters: mapToRecord(catalog.encounters, libraryEncounter),
+        campaigns: mapToRecord(catalog.campaigns, libraryCampaign),
     };
 }
 
@@ -116,10 +117,7 @@ function libraryTrap(trap: TrapDef): TrapReference {
     return {
         id: trap.id,
         effects: Object.fromEntries(
-            trap.outcomes.map(({ threshold, bindings }) => [
-                threshold,
-                Object.fromEntries(bindings.map(([def, amount]) => [def.id, amount])),
-            ])
+            trap.outcomes.map(({ threshold, bindings }) => [threshold, Object.fromEntries(bindings.map(([def, amount]) => [def.id, amount]))])
         )
     }
 }
@@ -141,4 +139,12 @@ function libraryDifficulty(difficulty: Difficulty): DifficultyReference {
         playerModifiers: { ...difficulty.playerModifiers },
         enemyModifiers: { ...difficulty.enemyModifiers },
     };
+}
+
+function libraryCampaign(campaign: CampaignDef): CampaignReference {
+    return {
+        initial: [...campaign.initial],
+        victory: Object.fromEntries(Object.entries(campaign.victory).map(([id, unlocks]) => [id, [...unlocks]])),
+        defeat: Object.fromEntries(Object.entries(campaign.defeat).map(([id, unlocks]) => [id, [...unlocks]])),
+    }
 }

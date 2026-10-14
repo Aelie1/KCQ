@@ -1,4 +1,4 @@
-import { EncounterDef } from "../../engine/protected/definitions";
+import { CampaignDef, EncounterDef } from "../../engine/protected/definitions";
 import { s } from "../../engine/protected/status";
 import { helpless } from "../../engine/protected/statuses";
 import { iEffect, iEntity, iGameState } from "../../engine/protected/types";
@@ -405,5 +405,25 @@ export const outside: EncounterDef = {
     },
     librarySetup: function (): Effect[] {
         return libraryTowerBuffs(setupOutside);
+    }
+}
+
+export const skunkCampaign: CampaignDef = {
+    id: "skunk",
+    initial: ["prologue", "plains_1"],
+    victory: {
+        plains_1: ["plains_2"],
+        plains_2: ["plains_3"],
+        plains_3: ["interlude_1", "forest_1"],
+        forest_1: ["forest_2"],
+        forest_2: ["forest_3"],
+        forest_3: ["interlude_2", "tower_1"],
+        tower_1: ["tower_2", "tower_3", "interlude_3", "epilogue", "outside"],
+        tower_2: ["tower_3", "interlude_3", "epilogue", "outside"],
+        tower_3: ["interlude_3", "epilogue", "outside"],
+    },
+    defeat: {
+        tower_1: ["tower_2"],
+        tower_2: ["tower_3"],
     }
 }

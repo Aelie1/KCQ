@@ -1,5 +1,5 @@
 import type { MoveBuffReference, MoveReference } from "../public/library";
-import type { AccuracyProfile, BindingId, BindingLevel, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingId, BindingLevel, CampaignId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
 
@@ -95,4 +95,11 @@ export interface EncounterDef {
 export interface TrapSetup {
     definition: TrapDef;
     amount: number;
+}
+
+export interface CampaignDef {
+    id: CampaignId,
+    initial: EncounterId[];
+    victory: Record<EncounterId, EncounterId[]>;
+    defeat: Record<EncounterId, EncounterId[]>;
 }

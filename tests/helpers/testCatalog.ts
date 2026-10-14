@@ -1,5 +1,6 @@
 import type {
     BindingDef,
+    CampaignDef,
     CharacterDef,
     EncounterDef,
     EnemyDef,
@@ -8,8 +9,8 @@ import type {
     StatusDef,
     TrapDef,
 } from "../../src/engine/protected/definitions";
-import { createGameEngine } from "../../src/engine/public/engine";
 import type { ContentCatalog } from "../../src/engine/protected/types";
+import { createGameEngine } from "../../src/engine/public/engine";
 
 export interface TestCatalogContent {
     characters?: CharacterDef[];
@@ -20,6 +21,7 @@ export interface TestCatalogContent {
     traps?: TrapDef[];
     statuses?: StatusDef[];
     encounters?: EncounterDef[];
+    campaigns?: CampaignDef[];
 }
 
 function values<T>(record: Partial<Record<string, T[]>> | undefined): T[] {
@@ -35,6 +37,7 @@ export function createTestCatalog(content: TestCatalogContent = {}): ContentCata
     const characters = content.characters ?? [];
     const enemies = content.enemies ?? [];
     const encounters = content.encounters ?? [];
+    const campaigns = content.campaigns ?? [];
 
     const moves = [
         ...(content.moves ?? []),
@@ -73,6 +76,7 @@ export function createTestCatalog(content: TestCatalogContent = {}): ContentCata
         traps: unique(traps),
         statuses: unique(statuses),
         encounters: unique(encounters),
+        campaigns: unique(campaigns),
     };
 }
 

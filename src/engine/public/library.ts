@@ -1,4 +1,4 @@
-import { AccuracyProfile, BindingId, BindingLevel, DifficultyId, Effect, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveTrait, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
+import { AccuracyProfile, BindingId, BindingLevel, DifficultyId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveTrait, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
 
 export interface ContentLibrary {
     difficulties: Record<DifficultyId, DifficultyReference>;
@@ -10,6 +10,7 @@ export interface ContentLibrary {
     traps: Record<TrapId, TrapReference>;
     statuses: Record<StatusId, StatusReference>;
     encounters: Record<string, EncounterReference>;
+    campaigns: Record<string, CampaignReference>;
 }
 
 export interface DifficultyReference {
@@ -106,4 +107,10 @@ export interface EncounterReference {
     bindings: BindingId[];
     traps: TrapId[];
     setup: Effect[];
+}
+
+export interface CampaignReference {
+    initial: EncounterId[];
+    victory: Record<EncounterId, EncounterId[]>;
+    defeat: Record<EncounterId, EncounterId[]>;
 }

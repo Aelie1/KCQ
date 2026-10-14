@@ -70,6 +70,8 @@ export type DefinitionId = string;
 
 export type PassiveId = string;
 
+export type CampaignId = string;
+
 
 /*******************************************************
  * Characters

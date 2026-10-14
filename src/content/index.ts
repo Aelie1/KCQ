@@ -30,6 +30,7 @@ function mergeCatalogs(...catalogs: ContentCatalogFragment[]): ContentCatalog {
         traps: catalogs.flatMap(c => c.traps ?? []),
         statuses: catalogs.flatMap(c => c.statuses ?? []),
         encounters: catalogs.flatMap(c => c.encounters ?? []),
+        campaigns: catalogs.flatMap(c => c.campaigns ?? []),
     };
 }
 
