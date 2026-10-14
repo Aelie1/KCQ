@@ -19,8 +19,8 @@ export function BuffIcon(props: { icon: NonNullable<Buff["icon"]> }): JSX.Elemen
                     <path d="m9 4 3-1 9 4v5c0 2-.8 3.8-2.1 5.3M5 5.9 3 7v5c0 5 5 8 9 10 1.6-.8 3.4-1.9 4.9-3.2M2 2l20 20" />
                 </Match>
                 <Match when={props.icon === "crown"}>
-                    <path d="M2 18h20" />
                     <path d="m2 8 6 4 4-8 4 8 6-4-2 12H4L2 8Z" />
+                    <path d="M4 22h16" />
                 </Match>
                 <Match when={props.icon === "sun"}>
                     <circle cx="12" cy="12" r="4" />

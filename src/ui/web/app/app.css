@@ -678,11 +678,22 @@ button {
     gap: 2px;
     height: 4px;
     background: var(--kcq-surface-card);
-    color: var(--kcq-text-muted);
     font-size: 10px;
     line-height: 1;
     white-space: nowrap;
     pointer-events: auto;
+}
+
+.kcq-enemy-card__permanent-effect:has([data-icon="crown"]) {
+    color: #e8ba5c;
+}
+
+.kcq-enemy-card__permanent-effect:has([data-icon="sun"]) {
+    color: #a6d9f2;
+}
+
+.kcq-enemy-card__permanent-effect>span {
+    font-weight: 700;
 }
 
 .kcq-enemy-card__permanent-effect .kcq-duration-pips__icon {
