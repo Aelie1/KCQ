@@ -103,8 +103,9 @@ describe("battle settings interactions", () => {
         expect(background.getAttribute("aria-hidden")).toBe("true");
         expect(document.activeElement).toBe(button("Resume", dialog));
         const controls = [...dialog.querySelectorAll("button, label, hr")];
-        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "LABEL", "BUTTON", "HR", "BUTTON", "BUTTON", "BUTTON"]);
+        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "LABEL", "HR", "BUTTON", "BUTTON", "BUTTON"]);
         expect(button("Resume", dialog).classList.contains("kcq-battle-result__retry")).toBe(true);
+        expect([...dialog.querySelectorAll("button")].map(control => control.textContent)).not.toContain(presentation.ui("library.title"));
         expect(dialog.querySelector("label")?.textContent).toContain("Language");
         expect(dialog.querySelector("select")?.value).toBe("en");
         expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("v0.8-settings-test · abc1234");

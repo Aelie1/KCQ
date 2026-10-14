@@ -9,11 +9,14 @@ import { StatusChip } from "./StatusChip";
 
 export function EncounterDetailsPanel(props: {
     onSettings?: () => void;
+    onLibrary?: () => void;
+    libraryLabel?: string;
     model: EncounterDetailsViewModel; onBack: () => void; onChooseDifficulty: () => void;
 }): JSX.Element {
     return <ScreenLayout class="kcq-encounter-screen kcq-encounter-details"
         header={
-            <EncounterHeader title={props.model.name} settingsLabel={props.model.labels.settings} onSettings={props.onSettings} />
+            <EncounterHeader title={props.model.name} settingsLabel={props.model.labels.settings} onSettings={props.onSettings}
+                libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} />
         }
         body={
             <div class="kcq-encounter-details__body">

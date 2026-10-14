@@ -292,6 +292,8 @@ describe("BattleApp playback integration", () => {
             advance(); endTurn(); party.click(); enemy.click();
             party.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
             element(".kcq-battle-overview__secondary-action").click(); element(".kcq-combat-header__settings").click();
+            element(".kcq-combat-header__library").click();
+            expect(document.querySelector(".kcq-library")).toBeNull();
             for (const shortcut of [" ", "1", "4", "9", "0", "-", "Escape"]) key(shortcut);
             expect(b.execute).toHaveBeenCalledOnce(); expect(document.querySelector(".kcq-character-details, .kcq-enemy-details, .kcq-game-log, [role=dialog]")).toBeNull();
             expect(element<HTMLButtonElement>(".kcq-battle-overview__primary-action").disabled).toBe(true);

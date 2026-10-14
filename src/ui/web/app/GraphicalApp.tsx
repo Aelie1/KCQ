@@ -130,13 +130,14 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 <Match when={details()} keyed>
                     {(current) => <EncounterDetailsPanel
                         model={createEncounterDetailsViewModel(library()!, current.encounter, presentation(), controller.bestClears()[current.encounter])}
-                        onSettings={openSettings} onBack={() => navigate(controller.backToPicker)}
+                        onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")}
+                        onBack={() => navigate(controller.backToPicker)}
                         onChooseDifficulty={() => navigate(controller.chooseDifficulty)} />}
                 </Match>
                 <Match when={difficulty()} keyed>
                     {(current) => <DifficultySelectPanel
                         model={createDifficultySelectViewModel(library()!, current.encounter, current.difficulty, presentation())}
-                        onSettings={openSettings}
+                        onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")}
                         onSelectDifficulty={difficulty => navigate(() => controller.selectDifficulty(difficulty))}
                         onBack={() => navigate(controller.backToDetails)}
                         onStart={() => navigate(controller.startEncounter)} />}
@@ -152,7 +153,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         <Show when={libraryOpen() && library()}>{current => <LibraryPanel library={current()} presentation={presentation()} onClose={closeLibrary} />}</Show>
         <Show when={settingsOpen() && !libraryOpen()}>
             <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed}
-                returnFocus={settingsTrigger} showBattleActions={false} onLibrary={library() ? openLibrary : undefined} onResume={() => setSettingsOpen(false)}
+                returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}
                 onBackToTitle={backToTitle} />
         </Show>
     </App>;

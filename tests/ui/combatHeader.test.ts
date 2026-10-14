@@ -29,6 +29,9 @@ describe("combat header", () => {
         expect(html).toContain("kcq-combat-header__difficulty\">Veteran");
         expect(html).toContain("kcq-combat-header__trap-meter");
         expect(html).toContain("kcq-combat-header__settings");
+        expect(html).toContain("kcq-header-controls");
+        expect(html).toContain("kcq-combat-header__library");
+        expect(html.indexOf("kcq-combat-header__library")).toBeLessThan(html.indexOf("kcq-combat-header__settings"));
     });
 
     it("renders a mode-first subscreen breadcrumb without overview controls", () => {
@@ -47,6 +50,7 @@ describe("combat header", () => {
         expect(html).toContain("A Very Long Encounter Name That Must Truncate Cleanly");
         expect(html).not.toContain("kcq-combat-header__difficulty");
         expect(html).not.toContain("kcq-combat-header__settings");
+        expect(html).not.toContain("kcq-header-controls");
         expect(html).not.toContain("kcq-combat-header__trap");
 
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");

@@ -94,6 +94,9 @@ export function useCombatKeyboard(
             // Leave native keyboard interaction inside modal dialogs alone.
             if (isSpace && target?.closest('[role="dialog"][aria-modal="true"]')) return;
 
+            // Header actions retain native activation even when a screen has a confirmation shortcut.
+            if ((key === "enter" || isSpace) && focusedControl?.closest(".kcq-header-controls")) return;
+
             if (event.repeat || held.has(key) || handling) {
                 if (isSpace || focusedConfirmation ||
                     (held.has(key) && key === COMBAT_SHORTCUTS.back)) {

@@ -9,13 +9,16 @@ import { ScreenLayout } from "./ScreenLayout";
 
 export function DifficultySelectPanel(props: {
     onSettings?: () => void;
+    onLibrary?: () => void;
+    libraryLabel?: string;
     model: DifficultySelectViewModel;
     onSelectDifficulty: (difficulty: DifficultyId) => void;
     onBack: () => void;
     onStart: () => void;
 }): JSX.Element {
     return <ScreenLayout class="kcq-encounter-screen kcq-difficulty-select"
-        header={<EncounterHeader title={props.model.encounterName} settingsLabel={props.model.labels.settings} onSettings={props.onSettings} />}
+        header={<EncounterHeader title={props.model.encounterName} settingsLabel={props.model.labels.settings} onSettings={props.onSettings}
+            libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} />}
         body={
             <div class="kcq-difficulty-select__body">
                 <section class="kcq-encounter-card kcq-difficulty-select__card">

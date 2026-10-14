@@ -84,6 +84,16 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const toggleLog = (): void => { if (!dialogOpen() && !playback.active()) setLogOpen(open => !open); };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
     const [libraryOpen, setLibraryOpen] = createSignal(false);
+    let libraryTrigger: Element | null = null;
+    const openLibrary = (): void => {
+        if (modalOpen() || playback.active()) return;
+        libraryTrigger = document.activeElement;
+        setLibraryOpen(true);
+    };
+    const closeLibrary = (): void => {
+        setLibraryOpen(false);
+        if (libraryTrigger instanceof HTMLElement && libraryTrigger.isConnected) libraryTrigger.focus();
+    };
     let settingsTrigger: Element | null = null;
     const openSettings = (): void => {
         if (playback.active()) return;
@@ -364,6 +374,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                                 enemyDefeats={defeats}
                                 inputBlocked={playback.active() || !!resultModel()}
                                 onSettings={resultModel() ? undefined : openSettings}
+                                onLibrary={resultModel() ? undefined : openLibrary}
                                 onGameLog={resultModel() ? openResultLog : toggleLog}
                                 onEndTurn={endTurn}
                             />
@@ -422,11 +433,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         </Switch>
                     </div>
                 </div>
-                <Show when={libraryOpen()}><LibraryPanel library={library} presentation={props.presentation} onClose={() => setLibraryOpen(false)} /></Show>
+                <Show when={libraryOpen()}><LibraryPanel library={library} presentation={props.presentation} onClose={closeLibrary} /></Show>
                 <Show when={settingsOpen() && !libraryOpen()}>
                     <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
                         language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} returnFocus={settingsTrigger}
-                        onLibrary={() => setLibraryOpen(true)} onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
+                        onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                         onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
                 </Show>
                 <Show when={!logOpen() && storyModel()} keyed>

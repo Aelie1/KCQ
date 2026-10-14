@@ -1,6 +1,6 @@
 import { Show, type JSX } from "solid-js";
 import { Shortcut } from "./Shortcut";
-import settingsIconUrl from "../assets/settings.svg";
+import { LibrarySettingsControls } from "./LibrarySettingsControls";
 
 export interface CombatHeaderTrap {
     amount: number;
@@ -20,6 +20,8 @@ interface CombatHeaderOverviewProps extends CombatHeaderBaseProps {
     difficultyLabel: string;
     onSettings?: () => void;
     settingsLabel: string;
+    onLibrary?: () => void;
+    libraryLabel?: string;
     trap?: CombatHeaderTrap;
     variant: "overview";
 }
@@ -102,14 +104,8 @@ export function CombatHeader(props: CombatHeaderProps): JSX.Element {
             </div>
 
             {props.variant === "overview" && (
-                <button
-                    class="kcq-combat-header__settings"
-                    type="button"
-                    aria-label={props.settingsLabel}
-                    onClick={() => props.onSettings?.()}
-                >
-                    <img src={settingsIconUrl} alt="" width="22" height="22" />
-                </button>
+                <LibrarySettingsControls libraryLabel={props.libraryLabel} settingsLabel={props.settingsLabel}
+                    onLibrary={props.onLibrary} onSettings={props.onSettings} />
             )}
         </header>
     );

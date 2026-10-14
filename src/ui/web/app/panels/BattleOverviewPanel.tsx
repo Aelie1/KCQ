@@ -30,6 +30,7 @@ export interface BattleOverviewPanelProps {
     history?: readonly GameLogPresentationEntry[];
     library?: ContentLibrary;
     onSettings?: () => void;
+    onLibrary?: () => void;
     onEndTurn?: () => void;
     onGameLog?: () => void;
     onSelectEnemy?: (id: EntityId) => void;
@@ -61,6 +62,8 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     trap={model().header.trap}
                     settingsLabel={model().controls.settingsLabel}
                     onSettings={props.onSettings}
+                    libraryLabel={props.presentation.ui("library.title")}
+                    onLibrary={props.onLibrary}
                 />
             }
             body={<>
