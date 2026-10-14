@@ -1,5 +1,4 @@
-import type { KCQCampaign } from "../../content";
-import { BattleState, BindingId, BindingLevel, BuffId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, HitBand, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
+import { BattleState, BindingId, BindingLevel, BuffId, CampaignId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, HitBand, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
 
 interface StringKey {
     id: string;
@@ -368,7 +367,7 @@ export class Presentation {
         return this.translate(this.entityKey(entity, variant));
     }
 
-    campaign(campaign: KCQCampaign, variant: "name" | "desc" = "name"): string {
+    campaign(campaign: CampaignId, variant: "name" | "desc" = "name"): string {
         return this.translate(this.definitionKey("campaign", campaign, variant));
     }
 

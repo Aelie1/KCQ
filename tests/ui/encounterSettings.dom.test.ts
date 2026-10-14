@@ -24,6 +24,7 @@ const alternate = new Presentation({
     "ui.version.name": "Release {version}",
     "ui.battleOverview.settings": "Test settings",
     "ui.title.name": "Test Quest",
+    "campaign.skunk.name": "Test campaign",
     "encounter.plains_1.name": "Test Plains",
 });
 const languages: LanguageOption[] = [
@@ -157,7 +158,7 @@ describe("encounter screen settings", () => {
         expect(button("Test title screen")).toBeDefined();
         expect(document.querySelector<HTMLButtonElement>(".kcq-combat-header__settings")?.getAttribute("aria-label"))
             .toBe("Test settings");
-        expect(panel.querySelector("h1")?.textContent).toBe(screen === "picker" ? "Test Quest" : "Test Plains");
+        expect(panel.querySelector("h1")?.textContent).toBe(screen === "picker" ? "Test campaign" : "Test Plains");
         button("Continue test").click();
         expect(document.querySelector(selectors[screen])).toBe(panel);
         openSettings();
@@ -223,7 +224,7 @@ describe("encounter screen settings", () => {
         expect(dialog.querySelector("select")?.value).toBe("test");
         expect(dialog.querySelectorAll("button")).toHaveLength(5);
         button("Back to Level Select").click();
-        expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test Quest");
+        expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test campaign");
         openSettings();
         expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings select")?.value).toBe("test");
         expect(document.querySelector('[role="dialog"]')?.querySelectorAll("button")).toHaveLength(3);

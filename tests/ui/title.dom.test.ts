@@ -86,7 +86,7 @@ describe("title navigation", () => {
         expect(panel?.querySelector(".kcq-title-screen__language-label")?.textContent).toBe("Test language label");
         expect(composeCampaign).not.toHaveBeenCalled();
         click(".kcq-title-screen__campaign");
-        expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test Quest");
+        expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test campaign");
         click(".kcq-encounter-picker .kcq-combat-header__settings");
         expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings select")?.value).toBe("test");
         document.querySelector<HTMLButtonElement>(".kcq-battle-settings__overlay button")!.click();

@@ -21,6 +21,7 @@ const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 const presentation = new Presentation({
     ...stockStrings, "ui.library.title": "Bibliotheque", "ui.battleOverview.settings": "Options",
+    "campaign.skunk.name": "Localized campaign", "ui.encounter.showAll": "Afficher tout",
 });
 const library = createStockEngine().getLibrary();
 let unmount: (() => void) | undefined;
@@ -80,7 +81,15 @@ describe("shared Library and Settings header controls", () => {
         expect(label.nextElementSibling).toBe(controls);
         expect(getComputedStyle(header).gridTemplateColumns).toBe("minmax(0, 1fr) auto 42px");
         expect(parseFloat(getComputedStyle(header.querySelector("h1")!).minWidth)).toBe(0);
-        expect(getComputedStyle(label).whiteSpace).toBe("nowrap");
+        expect(header.querySelector("h1")?.textContent).toBe("Localized campaign");
+        expect(getComputedStyle(label).display).toBe("flex");
+        expect(getComputedStyle(label).alignItems).toBe("center");
+        const text = label.querySelector("span")!;
+        expect(checkbox.nextElementSibling).toBe(text);
+        expect(getComputedStyle(text).width).toBe("min-content");
+        expect(getComputedStyle(text).whiteSpace).toBe("normal");
+        expect(text.textContent).toBe(presentation.ui("encounter.showAll"));
+        expect(text.childElementCount).toBe(0);
         expect(getComputedStyle(controls).gridTemplateRows).toBe("repeat(2, minmax(0, 1fr))");
         expect(host.querySelector(".kcq-screen-layout__body .kcq-encounter-picker__show-all")).toBeNull();
         expect(checkbox.type).toBe("checkbox");

@@ -2963,8 +2963,9 @@ button {
 }
 
 .kcq-encounter-header__title--picker {
-    font-size: 24px;
-    line-height: 29px;
+    font-size: 22px;
+    line-height: 26px;
+    letter-spacing: -0.01em;
 }
 
 .kcq-header-controls {
@@ -3785,9 +3786,13 @@ button {
     gap: 6px;
     padding: 8px 0;
     font-size: 14px;
-    white-space: nowrap;
     color: var(--kcq-text-primary);
     cursor: pointer;
+}
+
+.kcq-encounter-picker__show-all span {
+    width: min-content;
+    white-space: normal;
 }
 
 .kcq-encounter-picker__show-all input {

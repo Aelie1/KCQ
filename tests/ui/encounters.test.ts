@@ -14,6 +14,15 @@ const presentation = new Presentation(stockStrings);
 const library = createStockEngine().getLibrary();
 
 describe("encounter catalog view models", () => {
+    it.each(["skunk", "custom-campaign"])("uses the localized name of campaign %s as the picker title", id => {
+        const localized = new Presentation({
+            ...stockStrings, [`campaign.${id}.name`]: "Localized campaign", "ui.title.name": "Generic game title",
+        });
+        const campaign = { ...library.campaigns.skunk, id };
+        expect(localized.campaign(campaign.id)).toBe("Localized campaign");
+        expect(createEncounterPickerViewModel(library, localized, campaign).title).toBe("Localized campaign");
+    });
+
     it("does not load locked outcome narratives", () => {
         const localized = new Presentation(stockStrings);
         const referenceText = vi.spyOn(localized, "referenceText");

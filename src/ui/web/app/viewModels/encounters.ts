@@ -1,8 +1,8 @@
 import type { CampaignReference, ContentLibrary, EncounterReference } from "../../../../engine/public/library";
 import { getThresholds } from "../../../../engine/public/mechanics";
 import type { CampaignId, DifficultyId, EncounterId, EnemyRank } from "../../../../engine/public/types";
-import { getNextEncounter } from "../nextEncounter";
 import type { Presentation } from "../../../presentation/presentation";
+import { getNextEncounter } from "../nextEncounter";
 import { groupEffectPreviews, type EffectGroupViewModel } from "./effectGroups";
 import type { EffectPreviewViewModel } from "./effectPreviews";
 
@@ -72,7 +72,7 @@ export function createEncounterPickerViewModel(
 ): EncounterPickerViewModel {
     const available = new Set([...campaign.initial, ...unlocked]);
     return {
-        title: presentation.ui("title.name"),
+        title: presentation.campaign(campaign.id),
         settingsLabel: presentation.ui("battleOverview.settings"),
         backLabel: presentation.ui("title.back"),
         showAllLabel: presentation.ui("encounter.showAll"),

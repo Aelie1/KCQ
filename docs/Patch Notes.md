@@ -1,5 +1,174 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.15.0 — 2026-10-14
+
+### Story and Campaign Progression
+
+* Added a connected progression path for **Latex Skunk Attacks!**, linking the existing combat encounters into a single story.
+* Added five non-combat story scenes: **Prologue**, three **Interludes**, and **Epilogue**.
+* Expanded encounter descriptions into full narrative introductions featuring Ko-chan and the student council.
+* Added victory and defeat stories for combat encounters.
+* Battle endings now display their story scene, when available, before showing the final results.
+* Encounter Details now allows players to revisit story introductions and view victory/defeat narratives after clearing an encounter.
+* Added encounter unlocking. Completing a level unlocks the next part of the campaign.
+  * Defeating the Skunk Empress is no longer the only way forward. Losing certain Tower battles unlocks easier encounters with additional assistance.
+* The Encounter Picker now shows unlocked levels by default.
+  * Added a **Show All** option to access the full encounter list without following progression.
+* Added **Next Level** navigation after completing battles and when viewing non-combat story scenes.
+
+### Persistent Progress
+
+* The game now remembers completed encounters between browser sessions.
+* Added **Best Clear** tracking, recording the highest difficulty on which each encounter has been defeated.
+* Encounter selection and details screens display the best recorded clear using a crown indicator.
+* Campaign unlocks and clear records are stored locally in the browser.
+
+### In-Game Library
+
+Added a comprehensive **Library** for exploring the game's characters, abilities, and mechanics.
+
+* The Library can be opened from encounter-selection screens or during combat without resetting the current battle.
+* Added reference sections for:
+  * Difficulties
+  * Characters
+  * Enemies
+  * Moves
+  * Passives
+  * Bindings
+  * Traps
+  * Statuses
+* Character and enemy entries display their attributes, available abilities, and passive effects.
+* Move entries include targeting, accuracy, damage, cooldowns, durations, modifiers, and other relevant mechanics.
+* Binding and status entries explain their effects, severity levels, restrictions, and immunities.
+* Trap entries describe their possible outcomes.
+* Added links between related entries, making it easier to navigate from an ability to its effects or from a character to their moves.
+* Expanded descriptions and explanatory text throughout the Library.
+
+### Combat Animations and Feedback
+
+Combat now provides significantly more visual feedback when actions resolve.
+
+* Player and enemy actions are presented sequentially instead of displaying the entire enemy phase immediately.
+* Added animated feedback for attacking characters, damage, healing, binding changes, and buff/debuff changes.
+* Damage and healing numbers now float above affected enemies.
+  * Multi-hit attacks display separate numbers.
+  * Critical hits receive distinct visual treatment.
+* Binding meters animate when restraints are added or removed.
+* Buffs and debuffs receive visual feedback when applied, updated, or removed.
+* Defeated enemies now glow and fade out instead of disappearing instantly.
+* Battle results wait for the final combat presentation to finish before appearing.
+
+### Combat Playback Settings
+
+* Added adjustable **Combat Playback Speed**:
+  * **Instant** — No playback delays.
+  * **Fast** — 250 ms between actions.
+  * **Normal** — 500 ms between actions.
+  * **Slow** — 1000 ms between actions.
+* Playback speed is saved between browser sessions.
+
+### Enemy Inspection
+
+* Enemy cards on the battle overview can now be selected to open a dedicated **Enemy Details** screen.
+* Enemy Details displays:
+  * Current and maximum HP.
+  * Active modifiers and effects.
+  * Upcoming intentions.
+  * Intended targets, accuracy outcomes, and projected effects.
+* Enemy cards now display up to two intentions directly, with an indicator when additional intentions are available.
+* Cancelled enemy intentions remain visible but are dimmed, making it easier to see which attacks have been prevented.
+* Improved the presentation of intentions that target the entire party.
+
+### Game Log Improvements
+
+* Added a compact, continuously updated Game Log to the battle overview.
+* Clicking the compact log opens the full Game Log.
+* Added a setting to display between **0 and 8 lines** of recent combat activity on the overview.
+* The full Game Log now automatically follows new activity while allowing players to scroll back and inspect earlier events.
+* Added a **View Game Log** option to the battle-result screen.
+* Improved log scrolling, layout, and presentation during combat transitions.
+
+### Keyboard Controls
+
+Added keyboard support throughout the graphical interface.
+
+* Number keys can select characters, enemies, moves, and other available choices.
+* Added dedicated combat shortcuts:
+  * **9** — Change Stance.
+  * **0** — Escape.
+  * **Space** — End Turn or confirm an available action.
+  * **-** — Open/close the Game Log.
+  * **Esc** — Return to the previous screen.
+  * **Enter** — Confirm selections where applicable.
+* Holding **Shift** displays available keyboard shortcuts.
+* Added a setting to choose whether shortcut hints are always visible or appear temporarily.
+* Improved keyboard navigation and input handling to avoid repeated actions and accidental commands.
+
+### Status and Effect Presentation
+
+* Added new icons for several buffs and debuffs, including defensive effects, offensive effects, ambushes, and boss enhancements.
+* Temporary effects now have more prominent duration indicators.
+* Enemy cards display permanent enhancements separately from temporary effects.
+* Improved the display of buff ownership, remaining duration, and numerical modifiers.
+* Improved projected binding meters and other combat effect displays.
+
+### Character Changes
+
+**Hinari**
+
+* Added **Power of Space**, a powerful new attack that releases everything stored in Subspace.
+  * Hits scale with stored Subspace, gaining one hit for every 10 Subspace.
+  * Deals 10 base damage per hit.
+  * Applies Hit −2 and Defense −2 to the target when enough Subspace is available, with a duration that increases with stored Subspace.
+  * Consumes all stored Subspace.
+  * Applies Instability to Hinari, preventing Power of Space from being used again during the encounter.
+
+**Ko-chan**
+
+* Adjusted **Thousand Restraints Body**. Only Mouth-type abilities now bypass ordinary binding-based move restrictions; Arms and Legs abilities no longer receive this exception.
+
+### Difficulty and Encounter Balance
+
+**Global Difficulty**
+
+* Reduced enemy Potency on **Veteran** and **Extreme** from +2 to +1.
+* **Mythic** retains its +2 enemy Potency bonus.
+
+**Forest Encounters**
+
+* **Forest 1:** Added an additional Skunkette and a starting Willpower penalty to the party.
+* **Forest 2:** Added an additional Fairy and a starting Willpower penalty to the party.
+* **Forest 3:** Added a starting Willpower penalty to the party.
+* Increased the challenge ratings of all three Forest encounters by one star.
+
+**Tower Encounters**
+
+* Rebalanced the Skunk Empress encounters, adjusting enemy Hit bonuses, defensive bonuses, and starting binding pressure.
+* **Tower 1:** Increased enemy Hit pressure.
+* **Tower 2:** Reduced starting Collar binding from 40 to 30.
+* **Tower 3:** Reduced starting Collar binding from 30 to 10 and added an opening ambush against the enemy party.
+* Removed the additional Defense modifiers previously granted to Tower bosses by their encounter-specific enhancements.
+* Increased the challenge ratings of all three Tower encounters by one star.
+
+**Outside Realm**
+
+* Rebalanced the Goddess encounter's starting enemy enhancements, increasing offensive pressure while removing the previous boss Defense bonus.
+* Increased its challenge rating from five to six stars.
+
+**Boss Reinforcements**
+
+* Standardized the enhancement effects granted to summoned enemies and Rainmakers.
+* Added distinct buff names and icons to make reinforcement enhancements easier to identify.
+
+### Fixes and Polish
+
+* Improved handling and presentation of cancelled or already-resolved enemy intentions.
+* Improved combat event processing for effects that generate additional effects during resolution.
+* Updated public combat-state information to expose enemy modifiers and pending effects more consistently.
+* Fixed several scrolling, clipping, and navigation issues.
+* Improved the presentation of effect previews and combat-status information.
+* Expanded automated tests covering progression, persistent records, keyboard navigation, the Library, animations, enemy details, and combat playback.
+
 ## 0.14.0 — 2026-10-09
 
 ### Game Log Improvements
