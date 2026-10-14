@@ -31,12 +31,12 @@ export const difficulties: Record<DifficultyId, Difficulty> = {
     veteran: {
         id: "veteran",
         playerModifiers: {},
-        enemyModifiers: { potency: 2 },
+        enemyModifiers: { potency: 1 },
     },
     extreme: {
         id: "extreme",
         playerModifiers: {},
-        enemyModifiers: { potency: 2 },
+        enemyModifiers: { potency: 1 },
     },
     mythic: {
         id: "mythic",
