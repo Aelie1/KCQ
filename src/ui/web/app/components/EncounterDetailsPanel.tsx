@@ -65,8 +65,8 @@ export function EncounterDetailsPanel(props: {
                     </section>
                 </Show>
                 <section class="kcq-encounter-card kcq-encounter-details__description">
-                    <div class="kcq-encounter-details__tabs" role="tablist" aria-label={props.model.labels.description}>
-                        <Show when={props.model.stars > 0}>
+                    <Show when={props.model.stars > 0} fallback={<p>{props.model.description}</p>}>
+                        <div class="kcq-encounter-details__tabs" role="tablist" aria-label={props.model.labels.description}>
                             <For each={narrativeTabs}>{tab => <button
                                 ref={element => { tabButtons[tab] = element; }}
                                 id={`${tabId}-${tab}`} type="button" role="tab"
@@ -76,11 +76,11 @@ export function EncounterDetailsPanel(props: {
                                 disabled={tab !== "description" && !props.model.bestClear}
                                 onClick={() => setSelectedTab(tab)} onKeyDown={event => tabKeydown(event, tab)}
                             >{props.model.labels[tab]}</button>}</For>
-                        </Show>
-                    </div>
-                    <div id={`${tabId}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${activeTab()}`} tabIndex={0}>
-                        <p>{props.model[activeTab()] ?? props.model.labels.narrativeUnavailable}</p>
-                    </div>
+                        </div>
+                        <div id={`${tabId}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${activeTab()}`} tabIndex={0}>
+                            <p>{props.model[activeTab()] ?? props.model.labels.narrativeUnavailable}</p>
+                        </div>
+                    </Show>
                 </section>
                 <Show when={props.model.enemies.length > 0}>
                     <section class="kcq-encounter-card kcq-encounter-details__enemies">
