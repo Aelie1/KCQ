@@ -7,3 +7,4 @@ export const RAINMAKER_ID = "rainmaker";
 export const QUEEN_ID = "queen";
 export const EMPRESS_BUFF = "empressMight";
 export const GODDESS_BUFF = "goddessMight";
+export const MIGHT_BUFF = "might";

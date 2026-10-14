@@ -135,6 +135,7 @@ export const skunkEnglishStrings: StringTable = {
     "buff.escapePerfume.name": "Escape Perfume",
     "buff.empressMight.name": "Empress's Might",
     "buff.goddessMight.name": "Goddess's Might",
+    "buff.might.name": "Might",
 
     // Bindings
     "binding.latexHead.name": "Skunk Head",

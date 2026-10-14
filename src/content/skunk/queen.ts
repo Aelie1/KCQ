@@ -20,17 +20,20 @@ const PERFUME_HEAL_RATIO = 0.10;
 const DEFENSE_BUFF = "defensePerfume";
 const ESCAPE_BUFF = "escapePerfume";
 
-const rainmakerBuff: iBuff = { id: "extraSprayers", modifiers: { hit: 2 }, active: true };
-const empressBuff1: iBuff = { id: EMPRESS_BUFF, modifiers: { hit: 2 }, active: true };
-const empressBuff2: iBuff = { id: EMPRESS_BUFF, modifiers: { hit: 4 }, active: true };
-const goddessBuff1: iBuff = { id: GODDESS_BUFF, modifiers: { hit: 6 }, active: true };
-const goddessBuff2: iBuff = { id: GODDESS_BUFF, modifiers: { hit: 8 }, active: true };
+function makeMightBuff(name: string, severity: number): iBuff {
+    return {
+        id: name,
+        icon: name === EMPRESS_BUFF ? "crown" : name === GODDESS_BUFF ? "sun" : "sprayer",
+        modifiers: { hit: severity * 2 },
+        active: true
+    }
+}
 
 const WAVE_RATIOS = [0.8, 0.6, 0.4, 0.2];
 const WAVE_SUMMONS: {
     enemy: EntityId;
     hpRatio?: number;
-    buff?: iBuff;
+    might?: number;
 }[][] = [
         [{ enemy: SKUNKETTE_ID, hpRatio: 0.5 }],
         [{ enemy: SKUNKETTE_ID }],
@@ -38,10 +41,10 @@ const WAVE_SUMMONS: {
         [{ enemy: SKUNKETTE_ID }, { enemy: SKUNK_ID }],
         [{ enemy: SKUNK_ID }, { enemy: FAIRY_ID }],
         [{ enemy: SKUNKETTE_ID }, { enemy: SKUNK_ID }, { enemy: FAIRY_ID }],
-        [{ enemy: SKUNKETTE_ID, buff: empressBuff1 }, { enemy: SKUNK_ID, buff: empressBuff1 }, { enemy: FAIRY_ID, buff: empressBuff1 }],
-        [{ enemy: SKUNKETTE_ID, buff: empressBuff2 }, { enemy: SKUNK_ID, buff: empressBuff2 }, { enemy: FAIRY_ID, buff: empressBuff2 }],
-        [{ enemy: SKUNKETTE_ID, buff: goddessBuff1 }, { enemy: SKUNK_ID, buff: goddessBuff1 }, { enemy: FAIRY_ID, buff: goddessBuff1 }],
-        [{ enemy: SKUNKETTE_ID, buff: goddessBuff2 }, { enemy: SKUNK_ID, buff: goddessBuff2 }, { enemy: FAIRY_ID, buff: goddessBuff2 }],
+        [{ enemy: SKUNKETTE_ID, might: 1 }, { enemy: SKUNK_ID, might: 1 }, { enemy: FAIRY_ID, might: 1 }],
+        [{ enemy: SKUNKETTE_ID, might: 2 }, { enemy: SKUNK_ID, might: 2 }, { enemy: FAIRY_ID, might: 2 }],
+        [{ enemy: SKUNKETTE_ID, might: 3 }, { enemy: SKUNK_ID, might: 3 }, { enemy: FAIRY_ID, might: 3 }],
+        [{ enemy: SKUNKETTE_ID, might: 4 }, { enemy: SKUNK_ID, might: 4 }, { enemy: FAIRY_ID, might: 4 }],
     ];
 
 
@@ -49,13 +52,13 @@ const RAINMAKER_RATIOS = [2 / 3, 1 / 3];
 const RAINMAKER_SUMMONS: {
     enemy: EntityId;
     hpRatio?: number;
-    buff?: iBuff;
+    might?: number;
 }[][] = [
         [{ enemy: RAINMAKER_ID, hpRatio: 0.5 }],
         [{ enemy: RAINMAKER_ID }],
-        [{ enemy: RAINMAKER_ID, buff: rainmakerBuff }],
-        [{ enemy: RAINMAKER_ID, buff: empressBuff2 }],
-        [{ enemy: RAINMAKER_ID, buff: goddessBuff2 }],
+        [{ enemy: RAINMAKER_ID, might: 1 }],
+        [{ enemy: RAINMAKER_ID, might: 2 }],
+        [{ enemy: RAINMAKER_ID, might: 4 }],
     ];
 
 export const skunkGun: MoveDef = {
@@ -108,6 +111,7 @@ export const callReinforcements: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
         const wave = move.data?.["wave"] ?? 1;
         const summons = WAVE_SUMMONS[wave - 1] ?? [];
+        const buffName = actor.id === "empress" ? EMPRESS_BUFF : actor.id === "goddess" ? GODDESS_BUFF : "might";
 
         for (const summon of summons) {
             result.effects.push({
@@ -115,7 +119,7 @@ export const callReinforcements: MoveDef = {
                 operation: "spawn",
                 definition: summon.enemy,
                 hpRatio: summon.hpRatio,
-                buff: summon.buff
+                buff: (summon.might !== undefined) ? makeMightBuff(buffName, summon.might) : undefined
             });
         }
         return result;
@@ -132,6 +136,7 @@ export const latexRainmaker: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
         const wave = move.data?.["wave"] ?? 1;
         const summons = RAINMAKER_SUMMONS[wave - 1] ?? [];
+        const buffName = actor.id === "empress" ? EMPRESS_BUFF : actor.id === "goddess" ? GODDESS_BUFF : "extraSprayers";
 
         for (const summon of summons) {
             result.effects.push({
@@ -139,7 +144,7 @@ export const latexRainmaker: MoveDef = {
                 operation: "spawn",
                 definition: summon.enemy,
                 hpRatio: summon.hpRatio,
-                buff: summon.buff
+                buff: (summon.might !== undefined) ? makeMightBuff(buffName, summon.might) : undefined
             });
         }
 

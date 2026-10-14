@@ -132,7 +132,7 @@ export interface MoveListModifier {
 
 export interface Buff {
     id: BuffId;
-    icon?: "shield" | "sword" | "shield-off" | "crown" | "sun" | "ambush";
+    icon?: "shield" | "sword" | "shield-off" | "crown" | "sun" | "ambush" | "sprayer";
     severity?: number;
     duration?: number;
     statuses?: Status[];
