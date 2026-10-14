@@ -141,8 +141,8 @@ export class GameEffects {
         let modifiedAmount = amount;
         if (modifiedAmount > 0) {
             for (const buff of target.buffs) {
-                if (buff.active && buff.modifyBinding) {
-                    const result = buff.modifyBinding(this.state, actor, target, buff, type, modifiedAmount);
+                if (buff.active && buff.callback?.modifyBinding) {
+                    const result = buff.callback.modifyBinding(this.state, actor, target, buff, type, modifiedAmount);
                     modifiedAmount = result.value;
                     this.stack(result.effects);
                 }
@@ -302,8 +302,8 @@ export class GameEffects {
         let modifiedAmount = amount;
         if (modifiedAmount > 0) {
             for (const buff of target.buffs) {
-                if (buff.active && buff.modifyDamage) {
-                    const result = buff.modifyDamage(target, buff, modifiedAmount);
+                if (buff.active && buff.callback?.modifyDamage) {
+                    const result = buff.callback.modifyDamage(target, buff, modifiedAmount);
                     modifiedAmount = result.value;
                     this.stack(result.effects);
                 }

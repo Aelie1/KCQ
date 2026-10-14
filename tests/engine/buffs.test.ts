@@ -438,17 +438,21 @@ describe("buff modifyDamage integration through GameEngine", () => {
     }
 
     it("allows only active buffs to modify damage", () => {
-        const inactive = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
-            value: 0,
-            effects: [],
-        }));
-        const active = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
-            value: amount - 3,
-            effects: [],
-        }));
+        const inactive = {
+            id: "inactive", modifyDamage: vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+                value: 0,
+                effects: [],
+            }))
+        };
+        const active = {
+            id: "active", modifyDamage: vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+                value: amount - 3,
+                effects: [],
+            }))
+        };
         const strike = damageHookMove([
-            { id: "pending", active: false, modifyDamage: inactive },
-            { id: "active", active: true, modifyDamage: active },
+            { id: "pending", active: false, callback: inactive },
+            { id: "active", active: true, callback: active },
         ], 10);
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("hero", [strike]),
@@ -461,25 +465,29 @@ describe("buff modifyDamage integration through GameEngine", () => {
             targets: ["foe1"],
         });
 
-        expect(inactive).not.toHaveBeenCalled();
-        expect(active).toHaveBeenCalledOnce();
-        expect(active.mock.calls[0][2]).toBe(10);
+        expect(inactive.modifyDamage).not.toHaveBeenCalled();
+        expect(active.modifyDamage).toHaveBeenCalledOnce();
+        expect(active.modifyDamage.mock.calls[0][2]).toBe(10);
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "damageBlocked", target: "foe1", amount: 3 });
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "enemyDamaged", target: "foe1", amount: 7 });
     });
 
     it("processes multiple damage modifiers in buff order", () => {
-        const subtract = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
-            value: amount - 2,
-            effects: [],
-        }));
-        const halve = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
-            value: amount / 2,
-            effects: [],
-        }));
+        const subtract = {
+            id: "subtract", modifyDamage: vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+                value: amount - 2,
+                effects: [],
+            }))
+        };
+        const halve = {
+            id: "halve", modifyDamage: vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+                value: amount / 2,
+                effects: [],
+            }))
+        };
         const strike = damageHookMove([
-            { id: "subtract", active: true, modifyDamage: subtract },
-            { id: "halve", active: true, modifyDamage: halve },
+            { id: "subtract", active: true, callback: subtract },
+            { id: "halve", active: true, callback: halve },
         ], 10);
         const engine = makeBehavioralEngine([
             makeBehavioralCharacter("hero", [strike]),
@@ -492,25 +500,27 @@ describe("buff modifyDamage integration through GameEngine", () => {
             targets: ["foe1"],
         });
 
-        expect(subtract.mock.calls[0][2]).toBe(10);
-        expect(halve.mock.calls[0][2]).toBe(8);
+        expect(subtract.modifyDamage.mock.calls[0][2]).toBe(10);
+        expect(halve.modifyDamage.mock.calls[0][2]).toBe(8);
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "damageBlocked", target: "foe1", amount: 6 });
         expect(resolvedEvents(result.frames)).toContainEqual({ type: "enemyDamaged", target: "foe1", amount: 4 });
         expect(enemyState(engine).currHp).toBe(33);
     });
 
     it("invokes modifyDamage only for positive damage", () => {
-        const modifier = vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
-            value: amount,
-            effects: [],
-        }));
+        const modifier = {
+            id: "modifier", modifyDamage: vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
+                value: amount,
+                effects: [],
+            }))
+        };
         const apply = makeBehavioralMove("apply-hook", "none", {
             targetSide: "enemy",
             freeOnHit: true,
             resolve: (_state, _actor, _move, targets) => [{
                 type: "buff",
                 target: targets[0].target,
-                buff: { id: "hook", active: true, modifyDamage: modifier },
+                buff: { id: "hook", active: true, callback: modifier },
                 operation: "add",
             }],
         });
@@ -526,7 +536,7 @@ describe("buff modifyDamage integration through GameEngine", () => {
         execute(engine, { type: "move", actor: "hero", move: zero.id, targets: ["foe1"] });
         execute(engine, { type: "move", actor: "hero", move: strike.id, targets: ["foe1"] });
 
-        expect(modifier).toHaveBeenCalledOnce();
-        expect(modifier.mock.calls[0][2]).toBe(4);
+        expect(modifier.modifyDamage).toHaveBeenCalledOnce();
+        expect(modifier.modifyDamage.mock.calls[0][2]).toBe(4);
     });
 });

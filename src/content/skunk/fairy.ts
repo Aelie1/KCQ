@@ -1,4 +1,4 @@
-import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
+import { CallbackDef, EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget, pickValidTarget } from "../../engine/protected/enemies";
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
@@ -18,24 +18,26 @@ const HEALING_MAGIC_HP_RATIO = 0.25;
 const EMPOWERING_MAGIC_POTENCY = 5;
 const EMPOWERING_MAGIC_DURATION = 1;
 
-function barrierCallback(target: iEntity, buff: iBuff, amount: number): iCallbackReturn {
-    const effects: iEffect[] = [];
-    let newAmount = amount;
-    if (buff.duration && buff.duration > 0) {
-        buff.duration--;
-        if (buff.duration === 0) {
-            effects.push({
-                type: "buff",
-                target: target,
-                buff: buff,
-                operation: "remove"
-            });
+export const barrierCallback: CallbackDef = {
+    id: "barrier",
+    modifyDamage(target: iEntity, buff: iBuff, amount: number): iCallbackReturn {
+        const effects: iEffect[] = [];
+        let newAmount = amount;
+        if (buff.duration && buff.duration > 0) {
+            buff.duration--;
+            if (buff.duration === 0) {
+                effects.push({
+                    type: "buff",
+                    target: target,
+                    buff: buff,
+                    operation: "remove"
+                });
+            }
+            newAmount = 0;
         }
-        newAmount = 0;
+        return { value: newAmount, effects: effects };
     }
-    return { value: newAmount, effects: effects };
 }
-
 export const bindingMagic: MoveDef = {
     id: "bindingMagic",
     targetSide: "player",
@@ -192,7 +194,7 @@ export const barrierMagic: MoveDef = {
             icon: "shield",
             duration: duration,
             active: false,
-            modifyDamage: barrierCallback
+            callback: barrierCallback
         }
 
         const target = targets[0];

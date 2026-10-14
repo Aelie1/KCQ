@@ -6,7 +6,7 @@ import {
     StanceId, TargetInfo,
     Trap, TrapEffect, Turn
 } from "../public/types";
-import { BindingDef, CampaignDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, TrapDef } from "./definitions";
+import { BindingDef, CallbackDef, CampaignDef, CharacterDef, EncounterDef, EnemyDef, MoveDef, PassiveDef, StatusDef, TrapDef } from "./definitions";
 
 export interface ContentCatalog {
     characters: CharacterDef[];
@@ -16,6 +16,7 @@ export interface ContentCatalog {
     bindings: BindingDef[];
     traps: TrapDef[];
     statuses: StatusDef[];
+    callbacks: CallbackDef[];
     encounters: EncounterDef[];
     campaigns: CampaignDef[];
 }
@@ -70,8 +71,7 @@ export interface iBuff extends Omit<Buff, "statuses" | "moveList"> {
     active: boolean;
     statuses?: iStatus[];
     moveList?: iMoveListModifier;
-    modifyDamage?: (target: iEnemy, buff: iBuff, amount: number) => iCallbackReturn;
-    modifyBinding?: (state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number) => iCallbackReturn;
+    callback?: CallbackDef;
 }
 
 export interface iCallbackReturn {

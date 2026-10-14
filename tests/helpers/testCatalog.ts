@@ -1,5 +1,6 @@
 import type {
     BindingDef,
+    CallbackDef,
     CampaignDef,
     CharacterDef,
     EncounterDef,
@@ -20,6 +21,7 @@ export interface TestCatalogContent {
     bindings?: BindingDef[];
     traps?: TrapDef[];
     statuses?: StatusDef[];
+    callbacks?: CallbackDef[];
     encounters?: EncounterDef[];
     campaigns?: CampaignDef[];
 }
@@ -38,6 +40,7 @@ export function createTestCatalog(content: TestCatalogContent = {}): ContentCata
     const enemies = content.enemies ?? [];
     const encounters = content.encounters ?? [];
     const campaigns = content.campaigns ?? [];
+    const callbacks = content.callbacks ?? [];
 
     const moves = [
         ...(content.moves ?? []),
@@ -75,6 +78,7 @@ export function createTestCatalog(content: TestCatalogContent = {}): ContentCata
         bindings: unique(bindings),
         traps: unique(traps),
         statuses: unique(statuses),
+        callbacks: unique(callbacks),
         encounters: unique(encounters),
         campaigns: unique(campaigns),
     };

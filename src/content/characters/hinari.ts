@@ -1,4 +1,4 @@
-import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
+import { BindingDef, CallbackDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicDamageEffect, basicPlayerAccuracy, getEscapePotency, tr } from "../../engine/protected/mechanics";
 import { hobbled } from "../../engine/protected/statuses";
@@ -23,42 +23,45 @@ const POWEROFSPACE_DAMAGE_FACTOR = 10;
 const POWEROFSPACE_DEBUFF_FACTOR = 25;
 const POWEROFSPACE_BUFF = "instability";
 
-function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
-    const effects: iEffect[] = [];
-    let newAmount = amount;
-    if (isEnemy(actor) && buff.duration && buff.duration > 0 && state.encounter) {
-        buff.duration--;
-        if (buff.duration === 0) {
-            effects.push({
-                type: "buff",
-                target: target,
-                buff: buff,
-                operation: "remove"
-            });
-        }
-
-        const spreadAmount = Math.max(0, newAmount + target.data["subspace"] - SUBSPACE_MAX);
-        const subspaceAmount = newAmount - spreadAmount;
-
-        if (subspaceAmount) {
-            effects.push(modifySubspace(target, subspaceAmount));
-            const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
-            const currentBindingId = target.data["subspaceBinding"] ?? 0;
-            if (bindingId >= 0) {
+export const braceCallback: CallbackDef = {
+    id: "brace",
+    modifyBinding(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
+        const effects: iEffect[] = [];
+        let newAmount = amount;
+        if (isEnemy(actor) && buff.duration && buff.duration > 0 && state.encounter) {
+            buff.duration--;
+            if (buff.duration === 0) {
                 effects.push({
-                    type: "data",
+                    type: "buff",
                     target: target,
-                    name: "subspaceBinding",
-                    amount: bindingId - currentBindingId,
-                    visible: false
+                    buff: buff,
+                    operation: "remove"
                 });
             }
+
+            const spreadAmount = Math.max(0, newAmount + target.data["subspace"] - SUBSPACE_MAX);
+            const subspaceAmount = newAmount - spreadAmount;
+
+            if (subspaceAmount) {
+                effects.push(modifySubspace(target, subspaceAmount));
+                const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
+                const currentBindingId = target.data["subspaceBinding"] ?? 0;
+                if (bindingId >= 0) {
+                    effects.push({
+                        type: "data",
+                        target: target,
+                        name: "subspaceBinding",
+                        amount: bindingId - currentBindingId,
+                        visible: false
+                    });
+                }
+            }
+
+            newAmount = spreadAmount;
+
         }
-
-        newAmount = spreadAmount;
-
+        return { value: newAmount, effects: effects };
     }
-    return { value: newAmount, effects: effects };
 }
 
 function createSubspaceDebuff(duration: number): iBuff {
@@ -232,7 +235,7 @@ export const brace: MoveDef = {
             id: move.definition.id,
             active: true,
             duration: 1,
-            modifyBinding: braceCallback
+            callback: braceCallback
         }
 
         result.effects.push({
@@ -380,4 +383,5 @@ export const hinariCatalog: ContentCatalogFragment = {
     characters: [hinari],
     moves: [rockfall, store, brace, release, powerOfSpace, fairyRockfall],
     passives: [subspaceMovement],
+    callbacks: [braceCallback]
 };

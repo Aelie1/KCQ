@@ -1,4 +1,4 @@
-import { BindingDef, CharacterDef, EMPOWERMENT_BUFF, MoveDef, PassiveDef } from "../../engine/protected/definitions";
+import { BindingDef, CallbackDef, CharacterDef, EMPOWERMENT_BUFF, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicDamageEffect, basicPlayerAccuracy, tr } from "../../engine/protected/mechanics";
 import { ContentCatalogFragment, iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
@@ -18,32 +18,35 @@ const STARLIGHT_DURATION = 3;
 
 const DENIAL_BUFF = "exhausted";
 
-function reflectCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
-    const effects: iEffect[] = [];
-    let newAmount = amount;
-    if (isEnemy(actor) && buff.duration && buff.duration > 0) {
-        buff.duration--;
-        if (buff.duration === 0) {
+export const reflectCallback: CallbackDef = {
+    id: "reflect",
+    modifyBinding(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
+        const effects: iEffect[] = [];
+        let newAmount = amount;
+        if (isEnemy(actor) && buff.duration && buff.duration > 0) {
+            buff.duration--;
+            if (buff.duration === 0) {
+                effects.push({
+                    type: "buff",
+                    target: target,
+                    buff: buff,
+                    operation: "remove"
+                });
+            }
             effects.push({
-                type: "buff",
-                target: target,
-                buff: buff,
-                operation: "remove"
-            });
+                type: "damage",
+                source: target,
+                target: actor,
+                amount: amount
+            })
+            if (buff.id === "fairyReflect") {
+                newAmount = 0;
+            } else {
+                newAmount = Math.floor(newAmount / 2);
+            }
         }
-        effects.push({
-            type: "damage",
-            source: target,
-            target: actor,
-            amount: amount
-        })
-        if (buff.id === "fairyReflect") {
-            newAmount = 0;
-        } else {
-            newAmount = Math.floor(newAmount / 2);
-        }
+        return { value: newAmount, effects: effects };
     }
-    return { value: newAmount, effects: effects };
 }
 
 export function removeEmpowerment(actor: iEntity): iEffect[] {
@@ -192,7 +195,7 @@ export const reflect: MoveDef = {
             id: move.definition.id,
             active: true,
             duration: 1,
-            modifyBinding: reflectCallback
+            callback: reflectCallback
         }
 
         result.effects.push({
@@ -363,4 +366,5 @@ export const koCatalog: ContentCatalogFragment = {
         fairyTelekinesis, fairyStarlightBindings, fairyReflect, fairyEmpowerment,
     ],
     passives: [thousandRestraintsBody],
+    callbacks: [reflectCallback]
 };

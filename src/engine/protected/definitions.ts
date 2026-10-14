@@ -1,7 +1,7 @@
 import type { MoveBuffReference, MoveReference } from "../public/library";
 import type { AccuracyProfile, BindingId, BindingLevel, CampaignId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
-import type { iBinding, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
+import type { iBinding, iBuff, iCallbackReturn, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
 
 export const EMPOWERMENT_BUFF = "empowerment";
 
@@ -80,6 +80,12 @@ export interface StatusLevelDef {
     flags?: FlagId[];
     allowedMoveTypes?: MoveType[];
     blockedMoveTypes?: MoveType[];
+}
+
+export interface CallbackDef {
+    id: string;
+    modifyDamage?: (target: iEnemy, buff: iBuff, amount: number) => iCallbackReturn;
+    modifyBinding?: (state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number) => iCallbackReturn;
 }
 
 export interface EncounterDef {

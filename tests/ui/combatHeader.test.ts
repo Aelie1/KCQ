@@ -31,7 +31,7 @@ describe("combat header", () => {
         expect(html).toContain("kcq-combat-header__settings");
         expect(html).toContain("kcq-header-controls");
         expect(html).toContain("kcq-combat-header__library");
-        expect(html.indexOf("kcq-combat-header__library")).toBeLessThan(html.indexOf("kcq-combat-header__settings"));
+        expect(html.indexOf("kcq-combat-header__settings")).toBeLessThan(html.indexOf("kcq-combat-header__library"));
     });
 
     it("renders a mode-first subscreen breadcrumb without overview controls", () => {
