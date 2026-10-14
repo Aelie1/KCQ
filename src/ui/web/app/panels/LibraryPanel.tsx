@@ -406,10 +406,10 @@ function BindingDetail(props: { reference: BindingReference }): JSX.Element {
     const c = context();
     const info = getThresholds();
     return <>
-        <Show when={props.reference.id === "latexCollar"}><Description entry={{ category: "bindings", id: props.reference.id }} /></Show>
-        <Show when={props.reference.id === "latexCollar"}><Show when={c.presentation.referenceText("binding", props.reference.id, "library")}>
+        <Description entry={{ category: "bindings", id: props.reference.id }} />
+        <Show when={c.presentation.referenceText("binding", props.reference.id, "library")}>
             {text => <SurfaceCard title={c.presentation.ui("library.specialRules")}><Notes text={text()} /></SurfaceCard>}
-        </Show></Show>
+        </Show>
         <SurfaceCard title={c.presentation.ui("library.effects")}><div class="kcq-library__levels"><For each={LEVELS}>{level => {
             const min = info.thresholds[level] ?? 0;
             return <section class="kcq-library__level kcq-library__binding-tier" data-binding-level={level}>
