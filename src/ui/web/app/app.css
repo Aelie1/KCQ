@@ -4480,8 +4480,7 @@ button {
 .kcq-library__description .kcq-library__link,
 .kcq-library__owner .kcq-library__link,
 .kcq-library__difficulty-rules .kcq-library__link,
-.kcq-library__rules-table .kcq-library__link,
-.kcq-library__encounter-enemy .kcq-library__link {
+.kcq-library__rules-table .kcq-library__link {
     display: inline;
     padding: 0;
     border: 0;
@@ -4701,8 +4700,7 @@ button {
     font-size: 9px;
 }
 
-.kcq-library__resource,
-.kcq-library__setup {
+.kcq-library__resource {
     display: grid;
     gap: 6px;
     font-size: 12px;
@@ -4782,28 +4780,6 @@ button {
     background: transparent;
     color: var(--kcq-text-primary);
     font-weight: 700;
-}
-
-.kcq-library__encounter-enemy {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 0;
-    font-size: 12px;
-}
-
-.kcq-library__encounter-enemy+.kcq-library__encounter-enemy {
-    border-top: 1px solid var(--kcq-surface-raised);
-}
-
-.kcq-library__encounter-enemy .kcq-library__link {
-    color: var(--kcq-text-primary);
-    font-size: 14px;
-}
-
-.kcq-library__encounter-enemy strong {
-    color: var(--kcq-text-secondary);
 }
 
 .kcq-library__difficulty-rules p {

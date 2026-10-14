@@ -58,7 +58,15 @@ describe("Library reference browser", () => {
         expect(referenceParts("Apply [statuses:bound] and [moves:obey].")).toEqual(["Apply ", { category: "statuses", id: "bound" }, " and ", { category: "moves", id: "obey" }, "."]);
         expect(referenceParts("[unknown:thing] <script>")).toEqual(["[unknown:thing] <script>"]);
     });
-    it("renders every published entry across all nine categories without missing localization", () => {
+    it("excludes encounters from related entries and localized reference links", () => {
+        const related = libraryRelated({ category: "enemies", id: "queen" }, library, presentation);
+        expect(related).toContainEqual({ category: "moves", id: "skunkGun" });
+        expect(related.some(entry => String(entry.category) === "encounters")).toBe(false);
+        expect(referenceParts("See [encounters:tower_1] and [enemies:queen].")).toEqual([
+            "See [encounters:tower_1] and ", { category: "enemies", id: "queen" }, ".",
+        ]);
+    });
+    it("renders every published entry across all eight categories without missing localization", () => {
         const before = JSON.stringify(library);
         for (const category of LIBRARY_CATEGORIES) {
             expect(Object.keys(library[category]).length).toBeGreaterThan(0);
@@ -67,6 +75,8 @@ describe("Library reference browser", () => {
                 expect(html, category + ":" + id).toContain('data-library-id="' + id + '"');
                 expect(html, category + ":" + id).not.toMatch(/\[(?:ui|entity|move|status|binding|trap|passive|difficulty|encounter)\./);
                 expect(html).not.toMatch(/>\.\.\.</);
+                expect(html).not.toContain('data-library-focus="encounters:');
+                expect(html).not.toContain("[encounters:");
             }
         }
         expect(JSON.stringify(library)).toBe(before);

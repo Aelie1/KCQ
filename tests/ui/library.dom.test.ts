@@ -33,6 +33,22 @@ const press = (key: string, target: EventTarget = document) => {
 };
 
 describe("Library navigation", () => {
+    it("offers all eight remaining categories and opens their entries", async () => {
+        const categories = ["difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses"];
+        libraryMount(); await tick();
+        expect([...document.querySelectorAll<HTMLElement>(".kcq-library__category")].map(button => button.dataset.libraryFocus)).toEqual(categories);
+        expect(document.querySelector('[data-library-focus="encounters"]')).toBeNull();
+        for (const category of categories) {
+            element('[data-library-focus="' + category + '"]').click(); await tick();
+            const entry = element<HTMLButtonElement>(".kcq-library__entry");
+            const id = entry.dataset.libraryFocus;
+            entry.click(); await tick();
+            expect(element(".kcq-library__detail").dataset.libraryCategory).toBe(category);
+            expect(element(".kcq-library__detail").dataset.libraryId).toBe(id);
+            expect(element(".kcq-library__detail").textContent).not.toContain("[encounters:");
+            back(); back(); await tick();
+        }
+    });
     it("browses linked details and returns through exact history", async () => {
         const close = libraryMount(); await tick();
         element('[data-library-focus="characters"]').click();
@@ -92,7 +108,7 @@ describe("Library mechanical detail", () => {
         expect(element(".kcq-buff-effect").textContent).toContain("Fairy Empowerment");
         expect(element(".kcq-library__detail").textContent).not.toContain("Consumes empowerment");
     });
-    it("shows resource conditions, shared cooldowns, immunities, and encounter aliases", () => {
+    it("shows resource conditions, shared cooldowns, and immunities", () => {
         libraryMount({ kind: "entry", category: "moves", id: "release" });
         expect(element(".kcq-library__description").textContent).toBe(presentation.referenceText("move", "release", "desc"));
         unmount!(); libraryMount({ kind: "entry", category: "moves", id: "obey" });
@@ -103,9 +119,6 @@ describe("Library mechanical detail", () => {
         unmount!(); libraryMount({ kind: "entry", category: "passives", id: "subspaceMovement" });
         expect(element(".kcq-library__detail").textContent).toContain("Ignores Traps");
         expect(element('[data-library-focus="statuses:hobbled"]').textContent).toBe("Immune to Hobbled");
-        unmount!(); libraryMount({ kind: "entry", category: "encounters", id: "tower_1" });
-        expect(element('.kcq-library__encounter-enemy [data-library-focus="enemies:queen"]').textContent).toBe("Skunk Empress");
-        expect(element(".kcq-library__setup").textContent).toContain("Ambushed");
     });
 });
 describe("Library game integration", () => {
@@ -231,7 +244,7 @@ describe("Library category layouts", () => {
     it.each([
         ["characters", "hinari"], ["moves", "immolation"], ["moves", "obey"], ["moves", "release"],
         ["passives", "thousandRestraintsBody"], ["passives", "subspaceMovement"],
-        ["statuses", "bound"], ["statuses", "vibrating"], ["encounters", "forest_3"], ["encounters", "tower_1"],
+        ["statuses", "bound"], ["statuses", "vibrating"],
     ] as const)("renders %s/%s without generic related sections or missing strings", (category, id) => {
         libraryMount({ kind: "entry", category, id });
         expect(element(".kcq-library__detail").textContent).not.toContain("Related Entries");
@@ -267,26 +280,6 @@ describe("Library trap outcomes", () => {
     });
 });
 
-
-describe("Library encounter context", () => {
-    it("shows injected best-clear progress and links to difficulty without changing the progress", async () => {
-        const library = createStockEngine(12345).getLibrary();
-        const progress = { forest_3: "extreme" as const };
-        mount(() => createComponent(LibraryPanel, { library, presentation, bestClears: progress, onClose: () => {}, initialPage: { kind: "entry", category: "encounters", id: "forest_3" } }));
-        expect(element(".kcq-library__facts").textContent).toContain("Best Clear");
-        element('.kcq-library__facts [data-library-focus="difficulties:extreme"]').click(); await tick();
-        expect(element(".kcq-library__detail").dataset.libraryId).toBe("extreme");
-        back(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("forest_3");
-        expect(progress).toEqual({ forest_3: "extreme" });
-    });
-    it("groups starting effects by their real recipient and keeps binding references navigable", async () => {
-        libraryMount({ kind: "entry", category: "encounters", id: "tower_1" });
-        expect(document.querySelectorAll(".kcq-encounter-details__effect-group")).toHaveLength(2);
-        expect(element(".kcq-library__setup").textContent).toContain("Enemies");
-        element('.kcq-library__setup [data-library-focus="bindings:latexCollar"]').click(); await tick();
-        expect(element(".kcq-library__detail").dataset.libraryId).toBe("latexCollar");
-    });
-});
 
 describe("Library visual review corrections", () => {
     it("orders character sections and makes the contextual passive summary one card link", async () => {
@@ -397,12 +390,6 @@ describe("Library visual review corrections", () => {
         row.click(); await tick(); back(); await tick();
         expect(document.activeElement).toBe(element('[data-library-focus="telekinesis"]'));
         expect(element(".kcq-screen-layout__body").scrollTop).toBe(55);
-    });
-    it("keeps encounter trap cards and removes standalone trap links", () => {
-        libraryMount({ kind: "entry", category: "encounters", id: "forest_3" });
-        expect(element(".kcq-library__setup").textContent).toContain("0 → 100");
-        expect(element('.kcq-library__setup [data-library-focus="traps:trapPuddle"]').querySelector(".kcq-preview-effect")).not.toBeNull();
-        expect(document.querySelector(".kcq-library__setup > .kcq-library__links")).toBeNull();
     });
 });
 
@@ -603,13 +590,6 @@ describe("Library Round 5 systematic presentation", () => {
         element('.kcq-buff-effect__details [data-library-focus="statuses:helpless"]').click(); await tick();
         expect(element(".kcq-library__detail").dataset.libraryId).toBe("helpless");
         expect(element(".kcq-library__restrictions").textContent).toContain(presentation.flag("skipsTurn"));
-    });
-    it("links encounter setup buff statuses inside the same details area", async () => {
-        libraryMount({ kind: "entry", category: "encounters", id: "tower_1" });
-        const link = element<HTMLButtonElement>('.kcq-library__setup .kcq-buff-effect__details [data-library-focus="statuses:helpless"]');
-        expect(link.textContent).toBe("Helpless"); expect(link.querySelector(".kcq-status-chip--danger")).not.toBeNull();
-        expect(link.closest(".kcq-buff-effect")!.textContent).toContain("1 Rounds");
-        link.click(); await tick(); expect(element(".kcq-library__detail").dataset.libraryId).toBe("helpless");
     });
     it("keeps unavailable buff statuses and move chips disabled", () => {
         const library = createStockEngine().getLibrary();

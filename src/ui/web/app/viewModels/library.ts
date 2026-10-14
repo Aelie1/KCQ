@@ -1,11 +1,11 @@
 import { createSignal } from "solid-js";
 import type { ContentLibrary, ModifierReference, MoveReference } from "../../../../engine/public/library";
-import type { BindingId, Effect, ModifierId, ModifierSet, MoveTrait } from "../../../../engine/public/types";
+import type { BindingId, ModifierId, ModifierSet, MoveTrait } from "../../../../engine/public/types";
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import type { CommandTagViewModel } from "./characterDetails";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
-export const LIBRARY_CATEGORIES = ["difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses", "encounters"] as const;
+export const LIBRARY_CATEGORIES = ["difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses"] as const;
 export type LibraryCategory = typeof LIBRARY_CATEGORIES[number];
 export interface LibraryEntry { category: LibraryCategory; id: string }
 export type LibraryPage = { kind: "home" } | { kind: "category"; category: LibraryCategory } | ({ kind: "entry" } & LibraryEntry);
@@ -31,7 +31,7 @@ export function createLibraryNavigation(initial: LibraryPage = { kind: "home" })
     };
 }
 
-const NAMESPACES = { difficulties: "difficulty", characters: "entity", enemies: "entity", moves: "move", passives: "passive", bindings: "binding", traps: "trap", statuses: "status", encounters: "encounter" } as const;
+const NAMESPACES = { difficulties: "difficulty", characters: "entity", enemies: "entity", moves: "move", passives: "passive", bindings: "binding", traps: "trap", statuses: "status" } as const;
 export function libraryName(entry: LibraryEntry, p: Presentation): string {
     switch (entry.category) {
         case "difficulties": return p.difficulty(entry.id as keyof ContentLibrary["difficulties"]);
@@ -42,7 +42,6 @@ export function libraryName(entry: LibraryEntry, p: Presentation): string {
         case "bindings": return p.binding(entry.id);
         case "traps": return p.trap(entry.id);
         case "statuses": return p.referenceText("status", entry.id, "libraryName") ?? p.status(entry.id as keyof ContentLibrary["statuses"]);
-        case "encounters": return p.encounter(entry.id);
     }
 }
 export function libraryText(entry: LibraryEntry, p: Presentation, variant = "desc"): string | undefined {
@@ -97,21 +96,6 @@ export function libraryTags(traits: readonly MoveTrait[] | undefined, p: Present
     return (traits ?? []).map(trait => ({ id: trait, label: p.ui(TRAIT_LABELS[trait]), tone: trait === "damage" ? "danger" as const : trait === "debuff" ? "special" as const : "neutral" as const }));
 }
 
-function effectReferences(effects: readonly Effect[], library: ContentLibrary): LibraryEntry[] {
-    return effects.flatMap((effect): LibraryEntry[] => {
-        switch (effect.type) {
-            case "binding": return [{ category: "bindings", id: effect.binding }];
-            case "trap": return [{ category: "traps", id: effect.trap }];
-            case "move": return [{ category: "moves", id: effect.move }];
-            case "buff": return [
-                ...(effect.buff.statuses ?? []).map(status => ({ category: "statuses" as const, id: status.id })),
-                ...[...(effect.buff.moveList?.addedMoves ?? []), ...(effect.buff.moveList?.blockedMoves ?? [])].map(id => ({ category: "moves" as const, id })),
-            ];
-            case "enemy": return Object.hasOwn(library.enemies, effect.target) ? [{ category: "enemies", id: effect.target }] : [];
-            default: return [];
-        }
-    });
-}
 export function libraryReferences(entry: LibraryEntry, library: ContentLibrary, p: Presentation): LibraryEntry[] {
     const refs: LibraryEntry[] = [];
     const add = (category: LibraryCategory, ids: readonly string[]) => refs.push(...ids.map(id => ({ category, id })));
@@ -136,11 +120,6 @@ export function libraryReferences(entry: LibraryEntry, library: ContentLibrary, 
             add("statuses", Object.values(library.bindings[entry.id]?.status ?? {}).flatMap(list => list.map(status => status.id)));
             if (entry.id === SKUNK_BINDINGS_ID) add("bindings", SKUNK_BINDING_IDS);
             else if (SKUNK_BINDING_IDS.includes(entry.id)) add("bindings", [SKUNK_BINDINGS_ID]);
-            break;
-        }
-        case "encounters": {
-            const ref = library.encounters[entry.id];
-            if (ref) { add("enemies", ref.enemies.map(enemy => enemy.defId)); add("bindings", ref.bindings); add("traps", ref.traps); refs.push(...effectReferences(ref.setup, library)); }
             break;
         }
     }

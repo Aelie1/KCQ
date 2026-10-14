@@ -1,7 +1,7 @@
 import { createContext, createEffect, createMemo, For, Match, onCleanup, onMount, Show, Switch, useContext, type JSX } from "solid-js";
-import type { BindingReference, CharacterReference, ContentLibrary, DifficultyReference, EncounterReference, EnemyReference, ModifierReference, MoveBuffReference, MoveReference, PassiveReference, StatusReference, TrapReference } from "../../../../engine/public/library";
+import type { BindingReference, CharacterReference, ContentLibrary, DifficultyReference, EnemyReference, ModifierReference, MoveBuffReference, MoveReference, PassiveReference, StatusReference, TrapReference } from "../../../../engine/public/library";
 import { getThresholds } from "../../../../engine/public/mechanics";
-import type { BindingId, DifficultyId, EncounterId, HitBand, ModifierId, ModifierSet } from "../../../../engine/public/types";
+import type { BindingId, HitBand, ModifierId, ModifierSet } from "../../../../engine/public/types";
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import { BindingMeter } from "../components/BindingMeter";
 import { CommandTag } from "../components/CommandTag";
@@ -11,16 +11,15 @@ import { ProjectedMeter } from "../components/ProjectedMeter";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { StatusChip } from "../components/StatusChip";
 import { SurfaceCard } from "../components/SurfaceCard";
-import { groupEffectPreviews, groupReferenceRecipients } from "../viewModels/effectGroups";
+import { groupReferenceRecipients } from "../viewModels/effectGroups";
 import { type EffectPreviewViewModel } from "../viewModels/effectPreviews";
-import { encounterStars } from "../viewModels/encounters";
 import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryModifiers, libraryMoveGroups, libraryMoveTags, libraryName, libraryOwners, libraryPassiveRows, libraryPassiveSummary, libraryRestrictions, libraryText, libraryTrapOutcomes, referenceParts, SKUNK_BINDING_IDS, SKUNK_BINDINGS_ID, type LibraryCategory, type LibraryEntry, type LibraryPage } from "../viewModels/library";
 import { libraryAccuracy } from "../viewModels/libraryMechanics";
 import { libraryBuffStatuses, libraryMoveEffectRows, libraryMoveRecipient, type LibraryMoveEffectRow } from "../viewModels/libraryMoveEffects";
 import { formatSignedNumber, isHarmfulModifierChange } from "../viewModels/presentationHelpers";
 
-export interface LibraryPanelProps { library: ContentLibrary; presentation: Presentation; onClose: () => void; initialPage?: LibraryPage; bestClears?: Readonly<Partial<Record<EncounterId, DifficultyId>>> }
-interface LibraryContextValue { library: ContentLibrary; presentation: Presentation; openEntry: (entry: LibraryEntry) => void; bestClears?: LibraryPanelProps["bestClears"] }
+export interface LibraryPanelProps { library: ContentLibrary; presentation: Presentation; onClose: () => void; initialPage?: LibraryPage }
+interface LibraryContextValue { library: ContentLibrary; presentation: Presentation; openEntry: (entry: LibraryEntry) => void }
 const LibraryContext = createContext<LibraryContextValue>();
 const context = () => useContext(LibraryContext)!;
 const label = (p: Presentation, key: string) => p.ui(("library." + key) as UiLabel);
@@ -68,7 +67,6 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     const value: LibraryContextValue = {
         get library() { return props.library; }, get presentation() { return props.presentation; },
         openEntry: entry => open({ kind: "entry", ...entry }),
-        get bestClears() { return props.bestClears; },
     };
     return <LibraryContext.Provider value={value}><div ref={host} class="kcq-library-host">
         <ScreenLayout class="kcq-library" ariaLabel={props.presentation.ui("library.title")}
@@ -184,7 +182,6 @@ function LibraryDetail(props: { entry: LibraryEntry }): JSX.Element {
                 <Match when={props.entry.category === "traps"}><TrapDetail reference={c.library.traps[props.entry.id]!} /></Match>
                 <Match when={props.entry.category === "statuses"}><StatusDetail reference={c.library.statuses[props.entry.id as keyof ContentLibrary["statuses"]]!} /></Match>
                 <Match when={props.entry.category === "difficulties"}><DifficultyDetail reference={c.library.difficulties[props.entry.id as keyof ContentLibrary["difficulties"]]} /></Match>
-                <Match when={props.entry.category === "encounters"}><EncounterDetail reference={c.library.encounters[props.entry.id]!} /></Match>
             </Switch>
         </article>
     </Show>;
@@ -487,49 +484,5 @@ function DifficultyDetail(props: { reference: DifficultyReference }): JSX.Elemen
             <thead><tr><th scope="col">{c.presentation.ui("difficulty.enemyColumn")}</th><th scope="col">{c.presentation.ui("difficulty.changeColumn")}</th></tr></thead>
             <tbody><For each={rules()}>{rule => <tr><th scope="row"><ReferenceLink entry={{ category: "enemies", id: rule.id }} /></th><td><ReferenceText text={rule.text} /></td></tr>}</For></tbody>
         </table></SurfaceCard></Show>
-    </>;
-}
-function EncounterDetail(props: { reference: EncounterReference }): JSX.Element {
-    const c = context();
-    const grouped = () => groupEffectPreviews(props.reference.setup, { presentation: c.presentation, thresholds: getThresholds(), encounterSetup: true }, "library-setup");
-    const preview = (effect: EffectPreviewViewModel): JSX.Element => {
-        const sourceIndex = "id" in effect ? Number(effect.id.split("-")[2]) : -1;
-        const source = props.reference.setup[sourceIndex];
-        const entry: LibraryEntry | undefined = source?.type === "trap" ? { category: "traps", id: source.trap }
-            : source?.type === "binding" ? { category: "bindings", id: source.binding }
-                : source?.type === "move" ? { category: "moves", id: source.move }
-                    : source?.type === "enemy" && source.operation === "spawn" ? { category: "enemies", id: source.target } : undefined;
-        const model = effect.kind === "buff" && source?.type === "buff" ? {
-            ...effect, details: [],
-            statuses: effect.operation === "add" ? libraryBuffStatuses({ statuses: source.buff.statuses?.map(status => ({ id: status.id, level: status.value })) }, c.library, c.presentation) : [],
-        } : effect;
-        return entry ? <ReferenceLink entry={entry} class="kcq-library__effect-link"><EffectPreview effect={model} /></ReferenceLink>
-            : <EffectPreview effect={model} renderStatus={status => (
-                <ReferenceLink entry={{ category: "statuses", id: status.id }} class="kcq-library__inline-link">
-                    <StatusChip size="compact" tone="danger">
-                        {status.label}
-                    </StatusChip>
-                </ReferenceLink>
-            )} />;
-    };
-    const missingTraps = () => props.reference.traps.filter(id => !props.reference.setup.some(effect => effect.type === "trap" && effect.trap === id));
-    return <>
-        <dl class="kcq-library__facts kcq-encounter-card"><Stat label={c.presentation.ui("library.challenge")}>
-            <span class="kcq-encounter-details__stars" aria-label={c.presentation.ui("encounter.challengeAccessible", { stars: props.reference.stars })}>{encounterStars(props.reference.stars)}</span>
-        </Stat><Show when={c.bestClears !== undefined}><Stat label={c.presentation.ui("encounter.bestClear")}><Show when={c.bestClears?.[props.reference.id]} fallback={c.presentation.ui("encounter.uncleared")}>
-            {difficulty => <ReferenceLink entry={{ category: "difficulties", id: difficulty() }}>👑 {c.presentation.difficulty(difficulty())}</ReferenceLink>}
-        </Show></Stat></Show></dl>
-        <Description entry={{ category: "encounters", id: props.reference.id }} />
-        <SurfaceCard title={c.presentation.ui("library.enemies")}><div class="kcq-library__enemy-composition"><For each={props.reference.enemies}>{enemy => <div class="kcq-library__encounter-enemy">
-            <ReferenceLink entry={{ category: "enemies", id: enemy.defId }}>{enemy.id ? c.presentation.entity(enemy.id) : c.presentation.enemyDefinition(enemy.defId)}</ReferenceLink>
-            <Show when={c.library.enemies[enemy.defId]}>{ref => <><StatusChip size="compact" tone={ref().rank === "boss" ? "danger" : ref().rank === "enemy" ? "warning" : "neutral"}>{c.presentation.enemyRank(ref().rank)}</StatusChip>
-                <strong>{c.presentation.ui("encounter.hp", { hp: ref().hp })}</strong></>}</Show>
-        </div>}</For></div></SurfaceCard>
-        <Show when={props.reference.setup.length || missingTraps().length}><SurfaceCard title={c.presentation.ui("library.specialRules")}><div class="kcq-library__setup">
-            <For each={grouped().ungrouped}>{preview}</For>
-            <For each={grouped().groups}>{group => <div class="kcq-encounter-details__effect-group"><h3>{group.name}</h3><For each={group.effects}>{preview}</For></div>}</For>
-            <For each={missingTraps()}>{id => <ReferenceLink entry={{ category: "traps", id }} class="kcq-library__effect-link"><EffectPreview effect={{ kind: "compact", type: "trap", id: "library-trap-" + id, tone: "warning", label: c.presentation.ui("targeting.effectTrap"), payload: c.presentation.trap(id), details: [] }} /></ReferenceLink>}</For>
-        </div></SurfaceCard></Show>
-        <Show when={props.reference.bindings.length}><SurfaceCard title={c.presentation.ui("library.bindings")}><Links category="bindings" ids={props.reference.bindings} /></SurfaceCard></Show>
     </>;
 }
