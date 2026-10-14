@@ -19,12 +19,22 @@ export function BuffIcon(props: { icon: NonNullable<Buff["icon"]> }): JSX.Elemen
                     <path d="m9 4 3-1 9 4v5c0 2-.8 3.8-2.1 5.3M5 5.9 3 7v5c0 5 5 8 9 10 1.6-.8 3.4-1.9 4.9-3.2M2 2l20 20" />
                 </Match>
                 <Match when={props.icon === "crown"}>
-                    <path d="m2 8 6 4 4-8 4 8 6-4-2 12H4L2 8Z" />
-                    <path d="M4 22h16" />
+                    <path d="M3 7 7.5 11 12 4 16.5 11 21 7 18 15H6L3 7Z" />
+                    <path d="M5 20h14" />
                 </Match>
                 <Match when={props.icon === "sun"}>
                     <circle cx="12" cy="12" r="4" />
                     <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M6.35 17.65l-1.42 1.42M19.07 4.93l-1.42 1.42" />
+                </Match>
+                <Match when={props.icon === "ambush"}>
+                    <g transform="rotate(-18 6.5 12)">
+                        <path d="M3.5 7a3 3 0 0 1 6 0c0 2-3 2.5-3 5" />
+                        <path d="M6.5 17v.3" />
+                    </g>
+                    <g transform="rotate(18 17.5 12)">
+                        <path d="M14.5 7a3 3 0 0 1 6 0c0 2-3 2.5-3 5" />
+                        <path d="M17.5 17v.3" />
+                    </g>
                 </Match>
             </Switch>
         </svg>

@@ -26,6 +26,7 @@ function ambushBuff(character: iEntity): iEffect {
         target: character,
         buff: {
             id: "ambushed",
+            icon: "ambush",
             active: true,
             duration: 1,
             statuses: [s(helpless, 1)]

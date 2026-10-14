@@ -692,6 +692,8 @@ button {
     color: #a6d9f2;
 }
 
+
+
 .kcq-enemy-card__permanent-effect>span {
     font-weight: 700;
 }
@@ -730,6 +732,17 @@ button {
 
 .kcq-duration-pips__icon path {
     vector-effect: non-scaling-stroke;
+}
+
+.kcq-duration-pips__icon[data-icon="ambush"] {
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
+    min-width: 14px;
+}
+
+.kcq-duration-pips__icon[data-icon="crown"] {
+    height: 12px;
 }
 
 .kcq-enemy-card__debuff .kcq-status-chip__segment {
