@@ -8,3 +8,4 @@ export const QUEEN_ID = "queen";
 export const EMPRESS_BUFF = "empressMight";
 export const GODDESS_BUFF = "goddessMight";
 export const MIGHT_BUFF = "might";
+export const SPRAYER_BUFF = "extraSprayers";

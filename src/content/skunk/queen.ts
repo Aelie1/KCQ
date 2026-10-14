@@ -5,7 +5,7 @@ import { basicBindingEffect } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { EntityId } from "../../engine/public/types";
-import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID } from "./constants";
+import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, MIGHT_BUFF, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID, SPRAYER_BUFF } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 
 const QUEEN_HP = 750;
@@ -23,7 +23,7 @@ const ESCAPE_BUFF = "escapePerfume";
 function makeMightBuff(name: string, severity: number): iBuff {
     return {
         id: name,
-        icon: name === EMPRESS_BUFF ? "crown" : name === GODDESS_BUFF ? "sun" : "sprayer",
+        icon: name === EMPRESS_BUFF ? "crown" : name === GODDESS_BUFF ? "sun" : name === SPRAYER_BUFF ? "sprayer" : undefined,
         modifiers: { hit: severity * 2 },
         active: true
     }
@@ -111,7 +111,7 @@ export const callReinforcements: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
         const wave = move.data?.["wave"] ?? 1;
         const summons = WAVE_SUMMONS[wave - 1] ?? [];
-        const buffName = actor.id === "empress" ? EMPRESS_BUFF : actor.id === "goddess" ? GODDESS_BUFF : "might";
+        const buffName = actor.id === "empress" ? EMPRESS_BUFF : actor.id === "goddess" ? GODDESS_BUFF : MIGHT_BUFF;
 
         for (const summon of summons) {
             result.effects.push({
@@ -136,7 +136,6 @@ export const latexRainmaker: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
         const wave = move.data?.["wave"] ?? 1;
         const summons = RAINMAKER_SUMMONS[wave - 1] ?? [];
-        const buffName = actor.id === "empress" ? EMPRESS_BUFF : actor.id === "goddess" ? GODDESS_BUFF : "extraSprayers";
 
         for (const summon of summons) {
             result.effects.push({
@@ -144,7 +143,7 @@ export const latexRainmaker: MoveDef = {
                 operation: "spawn",
                 definition: summon.enemy,
                 hpRatio: summon.hpRatio,
-                buff: (summon.might !== undefined) ? makeMightBuff(buffName, summon.might) : undefined
+                buff: (summon.might !== undefined) ? makeMightBuff(SPRAYER_BUFF, summon.might) : undefined
             });
         }
 
