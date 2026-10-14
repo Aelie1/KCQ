@@ -225,11 +225,11 @@ export const skunkEnglishStrings: StringTable = {
     A few minutes later, all three were freed and ready for another shot at the mission.`,
 
     "encounter.plains_2.name": "Ko-chan's Trap",
-    "encounter.plains_2.desc": `The party chases the skunkettes to the edge of the forest where they find them resting on the ground. Nearby, a pair of normal sized skunks are spraying them with latex, which patches up the gaps that had been created by the previous battle and restores them to full strength.
-    When they notice the party approaching, one of the three skunkettes runs off away from the group while the other two get back to their "feet" and prepare to fight once more. The two smaller skunks waste no time to start spreading liquid latex all over the area, causing the battlefield to become perilous quickly.
+    "encounter.plains_2.desc": `The party chased the skunkettes to the edge of the forest where they found them resting on the ground. Nearby, a pair of normal sized skunks were spraying them with latex, which patched up the gaps that had been created by the previous battle and restored them to full strength.
+    When they noticed the party approaching, one of the three skunkettes ran off from the group while the other two got back to their "feet" and prepared to fight once more. The two smaller skunks wasted no time starting to spread liquid latex all over the area, causing the battlefield to become perilous quickly.
     "Ugh. Do they have to make it into a slip and slide out here?"
     "Careful, they're coming!"
-    The party readies themselves for another battle with the skunk creatures.`,
+    The party readied themselves for another battle with the skunk creatures.`,
 
     "encounter.plains_2.victory": `"Gross. It's getting everywhere."
     The last skunk exploded into liquid latex and at last, the scene was quiet. The girls trapped in the suits were freed, but unconscious, so they propped them up under a tree and looked around to see if they could find anything that would explain what was going on. Finally they found a trail of liquid latex leading to the north that was left by the skunkette that escaped.
@@ -248,7 +248,7 @@ export const skunkEnglishStrings: StringTable = {
     "encounter.plains_3.desc": `"Argh!  Where is it?!" The girl was hunched over a box, throwing things over her shoulder every few seconds. She noticed the party approaching and stood up, turning to face them.
     She was wearing an outfit made out of shiny latex, complete with a bunnysuit, tall boots, and long gloves. On her head was even a crown coated in black latex and reflecting the sun with its glossy sheen. "Oooh. Volunteers. My second favorite thing after skunks!"
     "Just who volunteered for anything? You must be related to the skunk creatures that have been running around everywhere lately, then?"
-    "THEY! ARE! NOT CREATURES!  I have worked very hard to give birth to them, and I won't stand for you insulting them!" The girl pulled out the gun hanging from her belt and shots it at the party. They were able to dodge, but the glob of latex coated a nearby tree with a wide band of latex that quickly grew in both directions.
+    "THEY! ARE! NOT CREATURES!  I have worked very hard to give birth to them, and I won't stand for you insulting them!" The girl pulled out the gun hanging from her belt and shot it at the party. They were able to dodge, but the glob of latex coated a nearby tree with a wide band of latex that quickly grew in both directions.
     "I'll turn you all into skunks and make you respect the name of the Skunk Queen! You'll realize the sheer genius of my inventions!" The Skunk Queen reloads her gun and aims it at the party again.
     "I guess diplomacy was never an option, then?  Let's get this over with."`,
 
@@ -258,7 +258,7 @@ export const skunkEnglishStrings: StringTable = {
     "Right where the reports said you would come. Good job chasing her here." One of the two people spoke up. When they got a good view, the party noticed that it was the two of them that had split off to ask around town.
     "So... you teamed up to corner me, huh?  But don't think you've won just yet! TAKE THIS!" She threw some device on the ground in front of her, and it exploded into a giant wave of latex! The party was thoroughly covered in the latex, which spread to cover their entire bodies! The latex formed mitten paws on their hands, and they were forced onto their toes as the latex formed paws on their feet too.
     "...What th-----hghmmmph" The party's cries were forcibly muffled by the latex filling their mouths and forming new skunk snouts, while tails sprouted from their behinds that were linked to pairs of vibrators.
-    The Skunk Queen laughed maniacally as she watched the results of her handiwork. She turned around and noticed the party's state before frowning. "Damn, you didn't get fully skunked like these two... I'll get you next time! You'll never take me alive, heathens!!" She turned and bolted for the forest, and with their newly mittened hands and high heeled feet, the party was in no shape to give chase.
+    The Skunk Queen laughed maniacally as she watched the results of her handiwork. She turned around and noticed the party's state before frowning. "Damn, you didn't get fully skunked... Was the device defective, or were there just too many of you?  Either way, I'll get you next time! You'll never take me alive, heathens!!" She turned and bolted for the forest, and with their newly mittened hands and high heeled feet, the party was in no shape to give chase.
     They reconvened with the other two girls, but they were all in the same shiny condition. Despite their struggles, they were unable to make any headway on their bondage and were stuck quite securely.
     With no way to escape on their own, all they could do was return to town to report their failure and to try and find someone to help them out of their bondage...`,
 
@@ -269,7 +269,7 @@ export const skunkEnglishStrings: StringTable = {
     Lacking any better options and not wanting to linger near this insane girl any longer, the party made their way towards the town to look for help.
     Like before, when they got far enough from the forest the latex started to lose its shape and became easier to escape from. It didn't take long for them to free themselves from their bondage. Or at least, two of them did. 
     "MMMmmm---!" The girl that was unfortunate enough to still be wearing the Skunk Queen's collar was still completely stuck, and her skunk suit showed no signs of losing its structure or integrity.
-    "So.. the collar keeps the suit from falling apart? That's good to know."
+    "So... the collar keeps the suit from falling apart? That's good to know."
     "Good thing she only had one of those things, or else we'd really be in trouble."
     "Mmmm!  Nnnmmm!" The last girl got annoyed that no one was helping her and started to struggle more vigorously.
     "Chill out~  We'll free you in a minute~ Right after I admire the view a little more..." After a bit more teasing they freed their friend and started to strategize about how they would avoid getting captured next time they confronted the Skunk Queen.`,
@@ -305,7 +305,7 @@ export const skunkEnglishStrings: StringTable = {
     The party quickly moved on from the campsite deeper into the forest.`,
 
     "encounter.forest_1.defeat": `Yet again, the girls found themselves completely skunked and trapped on their elbows and knees, but this time, their enemies had a new trick to play on them. While struggling to escape from the various skunk creatures, one of the tiny fairies cast a spell on the party's bindings. The magic spell spread across their suits when it landed, leaving behind green runic lines and formations.
-    After seeing the magic land successfully, the skunks did not chase them further, leaving the party to worry about the effects of the spell. None of them were collared, so they expected that all they had to do was crawl far enough away from the forest to be able to escape. Even when they had almost made it back to town, though, their skunk suits were still strong and unyielding.
+    After seeing the magic land successfully, the skunks did not chase them further, leaving the party to worry about the effects of the spell. None of them were wearing the Queen's skunk collars this time, so they expected that all they had to do was crawl far enough away from the forest to be able to escape. Even when they had almost made it back to town, though, their skunk suits were still strong and unyielding.
     "MMmnnmm..." One of the girls shook her head, trying to somehow spit out the huge chunk of rubber filling her mouth, but it was as useless as the last time she tried it.
     Despite their situation, they still weren't desperate enough to ask for help from the townsfolk considering their previous experience, so they hid out in an alley trying to use various exposed nails and rough wooden edges to cut through their bondage and escape.
     It was a slow and grinding process, but eventually they were able to wear down the magic and tear themselves free of the suits.
@@ -315,7 +315,7 @@ export const skunkEnglishStrings: StringTable = {
     "encounter.forest_2.name": "Ko-chan's Quagmire",
     "encounter.forest_2.desc": `The further they went into the forest, the more latex they started to see. Tree trunks were covered, bushes were dripping, and puddles covered the ground. It started to get rather dangerous to move around without stepping in the latex.
     "Just who would do something like this..."
-    They reached another clearing, but its contents were nothing like what they were expecting. Before them stretched a vast swamp of latex. When they entered the clearing they were immediately noticed by some skunks that were busy 'repairing' the damage on a pair of skunkettes. Another one of those fairy creatures was nearby as well.`,
+    They reached another clearing, but its contents were nothing like what they were expecting. Before them stretched a vast swamp of latex. When they entered the clearing they were immediately noticed by some skunks that were busy 'repairing' the damage on a pair of skunkettes. Two of those fairy creatures were nearby as well.`,
 
     "encounter.forest_2.victory": `Finally, they defeated the largest group of the skunk creatures yet. After moving the rescued girls to a dry patch of ground, they looked around to try and find the path forward again.
     "Just how many of these things are there?"
@@ -323,13 +323,13 @@ export const skunkEnglishStrings: StringTable = {
     "Let's hurry up and find her so we can get out of here."
     After a while, they found something of a trail leading deeper into the woods and started to follow it.`,
 
-    "encounter.forest_2.defeat": `Before they managed to escape from their pursuers, the two fairies teamed up to enchant the party's skunk suits, leaving them covered in dense magical runes. They had a feeling that escape would be a serious problem this time. They made their way slowly back to town while trying to ignore the vibrators, but this time they found that not even exposed nails could any damage to the magically enhanced suits.
+    "encounter.forest_2.defeat": `Before they managed to escape from their pursuers, the two fairies teamed up to enchant the party's skunk suits, leaving them covered in dense magical runes. They had a feeling that escape would be a serious problem this time. They made their way slowly back to town while trying to ignore the vibrators, but this time they found that not even exposed nails could do any damage to the magically enhanced suits.
     They didn't know what the 'reeducation' the mage threatened was, but none of them wanted to find out, so they would exhaust all possibilities before going back to the mage's tower. After admitting defeat with the nails and rubble, they decided to try and see if they could get some of the townspeople to help. They went out onto the street and looked for anyone who seemed handy with tools.
     "More skunk girls?  We've been seeing more and more lately..."
     "I don't know what you want me to do, girls. Do I look like a mage or something?"
     After most of a day of fruitless searching, they found success at last. The local blacksmith was able to use her artifact disenchanting tools to break them out of their suits.
     "Thank you very much, miss. We had no way to free ourselves from those suits."
-    "It's no problem. Come back if you need more help, and I hope you are able to get to the bottom of this menace."
+    "It's no problem. Even if the guild says not to help you, I couldn't bear to watch you three crawl around the town forever.  Come back if you need more help, and I hope you are able to get to the bottom of this menace."
     The girls gave a bow before leaving to rethink their battle strategies once more.`,
 
     "encounter.forest_3.name": "Skunk Queen's Empire",
@@ -354,7 +354,7 @@ export const skunkEnglishStrings: StringTable = {
     "Mmmmm!~~"  One of the girls tried to squirm away, only to be pressed down by a latex heel.
     "Don't go anywhere until I'm done, hear me?  So I made a mistake, you see. I know my collars are effective at preventing escape, but I only had enough to collar one of you three last time, which is why you managed to escape and come back to find me again. This time, I won't make the same mistake. I've got one for each of you, and I've even upgraded their locking mechanisms just for you girls. I think you'll find it much more difficult to get rid of this time."
     She finally finished her speech and proceeded to lock tall posture collars around each of the party's necks. The collars thickened and spread the latex even more vigorously than previous versions, which gave them a sinking feeling. "Now, go and spread my name across the lands of my future Skunk Empire!  I hope you won't betray me again, because that would make me very sad."
-    This trip back to the town was even more stimulating than the ones before it, with more vibrators inside the suits on their chest in addition to the usual ones. What's worse, was when they got to the blacksmith's shop they found a sign on the door that said 'Shop closed -- Off finding new materials'. With all of their other options closed off, they had no choice but to go back and see the mage.
+    This trip back to the town was even more stimulating than the ones before it, with more vibrators inside the suits on their chest in addition to the usual ones. Worse, when they got to the blacksmith's shop they found a sign on the door that said 'Shop closed -- Off finding new materials'. With all of their other options closed off, they had no choice but to go back and see the mage.
     "Oh, look at this... My pets got all dressed up for me!  How did you know my favorite outfit?"
     "NNnnnnmmmm....."  One of the party tried to disagree, but the mage ignored her.
     "I promised you girls some reeducation, so I hope you're ready for a long night~~"
@@ -419,8 +419,8 @@ export const skunkEnglishStrings: StringTable = {
     "encounter.tower_2.defeat": `Yet again, the party found themselves helplessly skunked at the Empress's feet.  Time paused again for Ko-chan, and the Goddess appeared before her like before.
     "You have the most talent at getting hopelessly bound that I have ever seen.  Not that I'm complaining, you make quite a cute skunk!"
     "Don't worry, though.  I've got another chance to give you!  And I'll make your fight even easier than last time~  What a deal!"
-    'Time itself rewound again to before the fight started, and the party readied itself for another attempt.
-    'Time restarted, and they heard the now familiar reply of the Skunk Empress.
+    Time itself rewound again to before the fight started, and the party readied itself for another attempt.
+    Time restarted, and they heard the now familiar reply of the Skunk Empress.
     "What do you mean by that?"`,
 
     "encounter.tower_3.name": "Goddess's Resurgence",
