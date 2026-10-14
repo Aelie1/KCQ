@@ -100,6 +100,7 @@ const setupOutside: TowerSetup = {
 function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
     const effects: iEffect[] = [];
     const buffName = setup.queenName === "empress" ? EMPRESS_BUFF : GODDESS_BUFF;
+    const iconName = setup.queenName === "empress" ? "crown" : "sun";
 
     const queen = state.enemies.find(x => x.defId === QUEEN_ID);
     if (queen) {
@@ -153,6 +154,7 @@ function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
                 target: enemy,
                 buff: {
                     id: buffName,
+                    icon: iconName,
                     active: true,
                     modifiers: { hit: setup.enemyMod }
                 }
