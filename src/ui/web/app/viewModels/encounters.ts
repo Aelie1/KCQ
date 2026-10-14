@@ -1,6 +1,7 @@
 import type { CampaignReference, ContentLibrary, EncounterReference } from "../../../../engine/public/library";
 import { getThresholds } from "../../../../engine/public/mechanics";
-import type { DifficultyId, EncounterId, EnemyRank } from "../../../../engine/public/types";
+import type { CampaignId, DifficultyId, EncounterId, EnemyRank } from "../../../../engine/public/types";
+import { getNextEncounter } from "../nextEncounter";
 import type { Presentation } from "../../../presentation/presentation";
 import { groupEffectPreviews, type EffectGroupViewModel } from "./effectGroups";
 import type { EffectPreviewViewModel } from "./effectPreviews";
@@ -32,6 +33,7 @@ export interface EncounterEnemyViewModel {
 }
 export interface EncounterDetailsViewModel extends EncounterSummaryViewModel {
     description: string;
+    nextEncounter?: EncounterId;
     victory?: string;
     defeat?: string;
     enemies: readonly EncounterEnemyViewModel[];
@@ -40,7 +42,7 @@ export interface EncounterDetailsViewModel extends EncounterSummaryViewModel {
     labels: {
         settings: string; challenge: string; bestClear: string; description: string;
         victory: string; defeat: string; narrativeUnavailable: string;
-        enemies: string; specialRules: string; chooseDifficulty: string; back: string;
+        enemies: string; specialRules: string; chooseDifficulty: string; back: string; nextLevel: string;
     };
 }
 
@@ -81,7 +83,7 @@ export function createEncounterPickerViewModel(
 }
 
 export function createEncounterDetailsViewModel(
-    library: ContentLibrary, encounterId: EncounterId, presentation: Presentation, bestClear?: DifficultyId,
+    library: ContentLibrary, encounterId: EncounterId, presentation: Presentation, bestClear?: DifficultyId, campaign?: CampaignId,
 ): EncounterDetailsViewModel {
     const encounter = library.encounters[encounterId];
     if (!encounter) throw new Error(`Missing encounter reference: ${encounterId}`);
@@ -91,6 +93,7 @@ export function createEncounterDetailsViewModel(
     return {
         ...encounterSummary(encounter, presentation, bestClear),
         description: presentation.encounter(encounter.id, "desc"),
+        nextEncounter: encounter.stars === 0 ? getNextEncounter(library, campaign, encounterId, "victory") : undefined,
         victory: bestClear ? presentation.referenceText("encounter", encounter.id, "victory") : undefined,
         defeat: bestClear ? presentation.referenceText("encounter", encounter.id, "defeat") : undefined,
         enemies: encounter.enemies.map((setup) => {
@@ -118,6 +121,7 @@ export function createEncounterDetailsViewModel(
             enemies: presentation.ui("encounter.enemies"),
             specialRules: presentation.ui("encounter.specialRules"),
             chooseDifficulty: presentation.ui("encounter.chooseDifficulty"),
+            nextLevel: presentation.ui("encounter.nextLevel"),
             back: presentation.ui("targeting.back"),
         },
     };

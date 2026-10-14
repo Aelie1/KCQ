@@ -131,9 +131,10 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
                 <Match when={details()} keyed>
                     {(current) => <EncounterDetailsPanel
-                        model={createEncounterDetailsViewModel(library()!, current.encounter, presentation(), controller.bestClears()[current.encounter])}
+                        model={createEncounterDetailsViewModel(library()!, current.encounter, presentation(), controller.bestClears()[current.encounter], current.campaign)}
                         onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")}
                         onBack={() => navigate(controller.backToPicker)}
+                        onNextLevel={() => navigate(controller.nextLevel)}
                         onChooseDifficulty={() => navigate(controller.chooseDifficulty)} />}
                 </Match>
                 <Match when={difficulty()} keyed>
@@ -146,6 +147,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
+                        campaign={current.campaign} onNextLevel={controller.nextLevel}
                         language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} keyboard={keyboard} release={props.release}
                         observer={current.session.observer} onOutcome={controller.recordOutcome} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}

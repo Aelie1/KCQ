@@ -3510,12 +3510,15 @@ button {
     cursor: pointer;
 }
 
-.kcq-battle-result__retry {
+.kcq-battle-result__next,
+.kcq-battle-settings .kcq-battle-result__retry,
+.kcq-victory-story .kcq-battle-result__retry {
     background: var(--kcq-accent-primary);
     color: var(--kcq-surface-inset);
 }
 
 .kcq-battle-result__log,
+.kcq-battle-result__retry,
 .kcq-battle-result__back {
     background: var(--kcq-surface-raised);
     color: var(--kcq-text-secondary);
@@ -3556,6 +3559,10 @@ button {
     }
 
     .kcq-battle-result__log {
+        grid-column: 1 / -1;
+    }
+
+    .kcq-battle-result__actions:has(> .kcq-battle-result__next) > .kcq-battle-result__back {
         grid-column: 1 / -1;
     }
 

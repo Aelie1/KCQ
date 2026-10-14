@@ -95,7 +95,7 @@ describe("campaign unlock UI integration", () => {
         select("prologue");
         expect(prepareBattle).not.toHaveBeenCalled();
         expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter("prologue"));
-        expect(document.querySelector('[data-kcq-shortcut="enter"]')).toBeNull();
+        expect(document.querySelector('[data-kcq-shortcut="enter"]')?.textContent).toContain(presentation.ui("encounter.nextLevel"));
         expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["plains_1"] });
         expect(document.querySelector(".kcq-encounter-picker__show-all")).toBeNull();
         expect(window.localStorage.getItem("kcq.clears")).toBeNull();

@@ -55,6 +55,69 @@ function setup(storage = storageWith(), campaigns: Record<string, CampaignRefere
 
 describe("campaign encounter unlocks", () => {
     it.each([
+        ["plains_1", "victory", "plains_2"], ["plains_3", "victory", "interlude_1"],
+        ["forest_3", "victory", "interlude_2"], ["tower_1", "victory", campaign.victory.tower_1[0]],
+        ["tower_2", "victory", campaign.victory.tower_2[0]], ["tower_3", "victory", "interlude_3"],
+        ["tower_1", "defeat", "tower_2"], ["tower_2", "defeat", "tower_3"],
+    ] as const)("advances from %s %s to %s details and disposes only the completed session", (encounter, outcome, next) => {
+        const app = setup(); app.start(encounter); app.finish(outcome);
+        const first = app.prepare.mock.results[0]!.value;
+        const clears = app.controller.bestClears();
+        expect(app.controller.nextEncounter()).toBe(next);
+        app.controller.nextLevel();
+        expect(app.controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: next });
+        expect(app.prepare).toHaveBeenCalledTimes(1);
+        expect(first.dispose).toHaveBeenCalledOnce();
+        expect(first.observer.onQuit).not.toHaveBeenCalled();
+        expect(app.controller.bestClears()).toEqual(clears);
+        if (library.encounters[next].stars === 0) {
+            for (const unlocked of campaign.victory[next]) expect(app.controller.unlocks().skunk).toContain(unlocked);
+            expect(app.controller.bestClears()[next]).toBeUndefined();
+        }
+        app.controller.dispose(); expect(first.dispose).toHaveBeenCalledOnce();
+    });
+
+    it.each(["prologue", "interlude_1", "interlude_2", "interlude_3", "epilogue"])("advances the story %s without starting combat or selecting difficulty", story => {
+        const app = setup(); app.controller.selectCampaign("skunk"); app.controller.selectEncounter(story);
+        const next = campaign.victory[story][0];
+        expect(app.controller.nextEncounter()).toBe(next);
+        app.controller.nextLevel();
+        expect(app.controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: next });
+        expect(app.prepare).not.toHaveBeenCalled();
+        expect(app.controller.bestClears()).toEqual({});
+        if (next === "epilogue") expect(app.controller.unlocks().skunk).toContain("outside");
+    });
+
+    it.each(["ongoing", "defeat", "victory"] as const)("does not advance Outside on %s without an applicable next encounter", outcome => {
+        const app = setup(); app.start("outside"); app.finish(outcome);
+        const current = app.controller.screen();
+        expect(app.controller.nextEncounter()).toBeUndefined();
+        app.controller.nextLevel();
+        expect(app.controller.screen()).toBe(current);
+        expect(app.prepare.mock.results[0]!.value.dispose).not.toHaveBeenCalled();
+    });
+
+    it("requires a valid first unlock instead of skipping to a later valid ID", () => {
+        const app = setup(storageWith(), { skunk: { ...campaign, victory: { prologue: ["missing", "plains_1"], plains_1: ["missing", "plains_2"] } } });
+        app.controller.selectCampaign("skunk"); app.controller.selectEncounter("prologue");
+        expect(app.controller.nextEncounter()).toBeUndefined();
+        app.controller.nextLevel();
+        expect(app.controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "prologue" });
+        app.controller.backToPicker(); app.start("plains_1"); app.finish("victory");
+        expect(app.controller.nextEncounter()).toBeUndefined();
+    });
+
+    it("preserves the selected campaign and Show All when advancing", () => {
+        const alternate = "alternate" as KCQCampaign;
+        const app = setup(storageWith(), { ...library.campaigns, alternate: { id: alternate, initial: ["prologue"], victory: { prologue: ["outside"] }, defeat: {} } });
+        app.controller.selectCampaign(alternate); app.controller.setShowAll(true); app.controller.selectEncounter("prologue");
+        app.controller.nextLevel();
+        expect(app.controller.screen()).toEqual({ screen: "details", campaign: alternate, encounter: "outside" });
+        expect(app.controller.showAll()).toBe(true);
+        expect(app.controller.unlocks()).toEqual({ alternate: ["outside"] });
+    });
+
+    it.each([
         ["prologue", "plains_1"], ["interlude_1", "forest_1"], ["interlude_2", "tower_1"],
         ["interlude_3", "epilogue"], ["epilogue", "outside"],
     ])("opening %s immediately unlocks %s without combat or repeated writes", (story, next) => {

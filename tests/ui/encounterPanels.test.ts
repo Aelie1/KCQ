@@ -3,6 +3,7 @@ import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
 import { stockStrings } from "../helpers/stockStrings";
 import { createStockEngine } from "../../src/stock";
+import type { ContentLibrary } from "../../src/engine/public/library";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { EncounterPickerPanel } from "../../src/ui/web/app/components/EncounterPickerPanel";
 import { EncounterDetailsPanel } from "../../src/ui/web/app/components/EncounterDetailsPanel";
@@ -12,6 +13,24 @@ const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
 
 describe("encounter panels", () => {
+    it.each([undefined, [], ["missing"], ["missing", "plains_1"], ["__proto__"]])("omits story Next Level without a valid first unlock: %s", unlocks => {
+        const changed: ContentLibrary = { ...library, campaigns: { skunk: { ...library.campaigns.skunk,
+            victory: unlocks ? { prologue: unlocks } : {} } } };
+        const model = createEncounterDetailsViewModel(changed, "prologue", presentation, undefined, "skunk");
+        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => {}, onNextLevel: () => {}, onBack: () => {} }));
+        expect(model.nextEncounter).toBeUndefined();
+        expect(html).toContain("Go Back");
+        expect(html).not.toContain("Next Level");
+        expect(html).not.toContain("Choose Difficulty");
+    });
+
+    it("keeps Choose Difficulty instead of Next Level for a combat encounter", () => {
+        const model = createEncounterDetailsViewModel(library, "plains_1", presentation, undefined, "skunk");
+        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => {}, onNextLevel: () => {}, onBack: () => {} }));
+        expect(html).toContain("Choose Difficulty");
+        expect(html).not.toContain("Next Level");
+    });
+
     it("renders a selectable row for every catalog entry with accessible challenge values", () => {
         const model = createEncounterPickerViewModel(library, presentation, library.campaigns.skunk, {}, [], true);
         const html = renderToString(() => createComponent(EncounterPickerPanel, { model, onSelect: () => {} }));
@@ -29,7 +48,7 @@ describe("encounter panels", () => {
     });
 
     it.each(["prologue", "interlude_1", "interlude_2", "interlude_3", "epilogue"])("renders %s as story-only details", id => {
-        const model = createEncounterDetailsViewModel(library, id, presentation);
+        const model = createEncounterDetailsViewModel(library, id, presentation, undefined, "skunk");
         const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => {}, onBack: () => {} }));
         expect(model.stars).toBe(0);
         expect(model.enemies).toEqual([]);

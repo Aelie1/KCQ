@@ -6,6 +6,7 @@ import type { BattleResultViewModel } from "../viewModels/battleResult";
 export function BattleResultPanel(props: {
     model: BattleResultViewModel;
     onRetry?: () => void;
+    onNextLevel?: () => void;
     onGameLog?: () => void;
     focusGameLog?: boolean;
     onBackToLevelSelect?: () => void;
@@ -58,6 +59,9 @@ export function BattleResultPanel(props: {
                 </dl>
                 <footer class="kcq-battle-result__actions">
                     <Show when={props.onGameLog}><button ref={gameLog} type="button" class="kcq-battle-result__log" onClick={props.onGameLog}>{props.model.gameLogLabel}</button></Show>
+                    <Show when={props.model.nextEncounter && props.onNextLevel}>
+                        <button type="button" class="kcq-battle-result__next" onClick={props.onNextLevel}>{props.model.nextLevelLabel}</button>
+                    </Show>
                     <button ref={retry} type="button" class="kcq-battle-result__retry" onClick={props.onRetry}>{props.model.retryLabel}</button>
                     <button ref={back} type="button" class="kcq-battle-result__back" onClick={props.onBackToLevelSelect}>{props.model.backLabel}</button>
                 </footer>

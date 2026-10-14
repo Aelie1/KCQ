@@ -117,6 +117,7 @@ export type UiLabel =
     | "encounter.start"
     | "encounter.uncleared"
     | "encounter.showAll"
+    | "encounter.nextLevel"
     | "enemyRank.boss"
     | "enemyRank.enemy"
     | "enemyRank.minion"

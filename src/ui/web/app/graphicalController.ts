@@ -6,6 +6,7 @@ import type { BattleTelemetryObserver } from "../telemetry";
 import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES } from "../app";
 import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "./encounterClears";
 import { loadCampaignUnlocks, saveCampaignUnlocks, type CampaignUnlocks } from "./campaignUnlocks";
+import { getNextEncounter } from "./nextEncounter";
 
 export interface GraphicalBattleSession {
     engine: Engine;
@@ -54,12 +55,42 @@ export function createGraphicalController(
         session = undefined;
     };
 
+    const openDetails = (campaignId: KCQCampaign, encounter: EncounterId, library: ContentLibrary | undefined): void => {
+        setScreen({ screen: "details", campaign: campaignId, encounter });
+        const campaign = library?.campaigns[campaignId];
+        if (library?.encounters[encounter]?.stars === 0 && campaign) unlockEncounter(campaign, encounter, "victory");
+    };
+
+    const nextEncounter = (): EncounterId | undefined => {
+        const current = screen();
+        if (current.screen === "battle" && session) {
+            const outcome = session.engine.getGameState().turn.outcome;
+            return outcome === "ongoing" ? undefined : getNextEncounter(session.engine.getLibrary(), current.campaign, current.encounter, outcome);
+        }
+        if (current.screen === "details") {
+            const library = getLibrary?.();
+            if (library?.encounters[current.encounter]?.stars === 0) {
+                return getNextEncounter(library, current.campaign, current.encounter, "victory");
+            }
+        }
+        return undefined;
+    };
+
     return {
         screen,
         bestClears,
         unlocks,
         showAll,
         setShowAll,
+        nextEncounter,
+        nextLevel(): void {
+            const current = screen();
+            const next = nextEncounter();
+            if (!next || (current.screen !== "battle" && current.screen !== "details")) return;
+            const library = current.screen === "battle" ? current.session.engine.getLibrary() : getLibrary?.();
+            closeSession();
+            openDetails(current.campaign, next, library);
+        },
         recordOutcome(): void {
             const current = screen();
             if (current.screen !== "battle" || !session || outcomeRecorded) return;
@@ -89,10 +120,7 @@ export function createGraphicalController(
         selectEncounter(encounter: EncounterId): void {
             const current = screen();
             if (current.screen !== "picker") return;
-            const library = getLibrary?.();
-            const campaign = library?.campaigns[current.campaign];
-            setScreen({ screen: "details", campaign: current.campaign, encounter });
-            if (library?.encounters[encounter]?.stars === 0 && campaign) unlockEncounter(campaign, encounter, "victory");
+            openDetails(current.campaign, encounter, getLibrary?.());
         },
         backToPicker(): void {
             const current = screen();

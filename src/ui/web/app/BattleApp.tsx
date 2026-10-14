@@ -6,6 +6,7 @@ import type {
     ActionView,
     BindingId,
     BattleState,
+    CampaignId,
     Engine,
     EntityId,
     GameState,
@@ -38,9 +39,11 @@ import { createBattleResultTracker, createBattleResultViewModel } from "./viewMo
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
 import { createGameLogHistory } from "./viewModels/gameLogHistory";
 import { createVictoryStoryViewModel } from "./viewModels/victoryStory";
+import { getNextEncounter } from "./nextEncounter";
 
 export interface BattleAppProps {
     engine: Engine;
+    campaign?: CampaignId;
     presentation: Presentation;
     release?: string;
     language?: LanguageSelection;
@@ -51,6 +54,7 @@ export interface BattleAppProps {
     onVictory?: () => void;
     onOutcome?: (outcome: Exclude<BattleState, "ongoing">) => void;
     onRetry?: () => void;
+    onNextLevel?: () => void;
     onBackToLevelSelect?: () => void;
     onBackToTitle?: () => void;
     observer?: Pick<BattleTelemetryObserver, "onAction" | "onOutcome">;
@@ -145,8 +149,12 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             }
         }),
     });
-    const resultModel = createMemo(() => playback.active() ? undefined
-        : createBattleResultViewModel(state(), resultStats(), props.presentation));
+    const resultModel = createMemo(() => {
+        const current = state();
+        if (playback.active() || current.turn.outcome === "ongoing") return undefined;
+        const next = current.encounter ? getNextEncounter(library, props.campaign, current.encounter.id, current.turn.outcome) : undefined;
+        return createBattleResultViewModel(current, resultStats(), props.presentation, next);
+    });
     const storyModel = createMemo(() => resultModel() && !storyDismissed()
         ? createVictoryStoryViewModel(state(), props.presentation) : undefined);
     createEffect(() => { if (resultModel()) setLogOpen(false); });
@@ -452,6 +460,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 </Show>
                 <Show when={!logOpen() && !storyModel() && resultModel()} keyed>
                     {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
+                        onNextLevel={props.onNextLevel}
                         onBackToLevelSelect={props.onBackToLevelSelect} onGameLog={openResultLog}
                         focusGameLog={resultLogVisited()} />}
                 </Show>

@@ -14,6 +14,7 @@ export function EncounterDetailsPanel(props: {
     onSettings?: () => void;
     onLibrary?: () => void;
     libraryLabel?: string;
+    onNextLevel?: () => void;
     model: EncounterDetailsViewModel; onBack: () => void; onChooseDifficulty: () => void;
 }): JSX.Element {
     const [selectedTab, setSelectedTab] = createSignal<NarrativeTab>("description");
@@ -118,6 +119,12 @@ export function EncounterDetailsPanel(props: {
                     <button class="kcq-battle-overview__primary-action kcq-shortcut-host" data-kcq-shortcut="enter" type="button" onClick={props.onChooseDifficulty}>
                         <Shortcut shortcut="Enter" />
                         {props.model.labels.chooseDifficulty}
+                    </button>
+                </Show>
+                <Show when={props.model.stars === 0 && props.model.nextEncounter && props.onNextLevel}>
+                    <button class="kcq-battle-overview__primary-action kcq-shortcut-host" data-kcq-shortcut="enter" type="button" onClick={props.onNextLevel}>
+                        <Shortcut shortcut="Enter" />
+                        {props.model.labels.nextLevel}
                     </button>
                 </Show>
             </footer>

@@ -1,4 +1,4 @@
-import type { ActionResult, BondageEvent, Character, GameEvent, GameState, LeafEvent, PlayerAction } from "../../../../engine/public/types";
+import type { ActionResult, BondageEvent, Character, EncounterId, GameEvent, GameState, LeafEvent, PlayerAction } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 
 export interface ActionSummary {
@@ -34,6 +34,8 @@ export interface BattleResultViewModel {
     retryLabel: string;
     backLabel: string;
     gameLogLabel: string;
+    nextLevelLabel: string;
+    nextEncounter?: EncounterId;
 }
 
 const emptySummary = (): ActionSummary => ({ count: 0, total: 0, max: 0 });
@@ -257,7 +259,7 @@ function addSummary(summary: ActionSummary, amount: number, move?: string): void
 }
 
 export function createBattleResultViewModel(
-    state: GameState, stats: BattleResultStats, presentation: Presentation,
+    state: GameState, stats: BattleResultStats, presentation: Presentation, nextEncounter?: EncounterId,
 ): BattleResultViewModel | undefined {
     const outcome = state.turn.outcome;
     if (outcome === "ongoing") return undefined;
@@ -286,6 +288,8 @@ export function createBattleResultViewModel(
             { percent: Math.round((stats.progress.boss ?? stats.progress.enemies ?? 0) * 100) },
         ) : undefined,
         gameLogLabel: presentation.ui("battleResult.gameLog"),
+        nextLevelLabel: presentation.ui("encounter.nextLevel"),
+        nextEncounter,
         rows, retryLabel: presentation.ui("battleResult.retry"), backLabel: presentation.ui("battleResult.back"),
     };
 }

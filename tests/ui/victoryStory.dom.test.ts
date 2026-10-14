@@ -94,7 +94,7 @@ describe("victory story screen flow", () => {
         const result = element(".kcq-battle-result--victory");
         expect(result.querySelector(".kcq-battle-result__summary")?.textContent).toBe("1 Rounds · 1 Actions");
         expect(result.querySelector("dl")?.textContent).toContain("Peak Binding");
-        expect(result.querySelectorAll("button")).toHaveLength(3);
+        expect(result.querySelectorAll("button")).toHaveLength(4);
         expect(document.activeElement).toBe(button("Retry"));
     });
 
