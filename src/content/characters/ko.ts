@@ -1,6 +1,6 @@
 import { BindingDef, CharacterDef, EMPOWERMENT_BUFF, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
-import { basicDamageEffect, basicPlayerAccuracy } from "../../engine/protected/mechanics";
+import { basicDamageEffect, basicPlayerAccuracy, tr } from "../../engine/protected/mechanics";
 import { ContentCatalogFragment, iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 
 const TELEKINESIS_DAMAGE = 30;
@@ -150,16 +150,14 @@ export const starlightBindings: MoveDef = {
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: [{
+                result.targets.push(tr(target, [
+                    {
                         type: "buff",
                         target: target.target,
                         buff: buff,
                         operation: "add"
                     }]
-                });
+                ));
             }
         }
         return result;
@@ -270,11 +268,7 @@ export const fairyEmpowerment: MoveDef = {
                 const allyEffects: iEffect[] = [];
                 allyEffects.push(createTransformBuff(target.target, TRANSFORMATION_DURATION_ALLY, TRANSFORMATION_MODIFIER_ALLY));
                 allyEffects.push(createEmpowermentBuff(target.target));
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: allyEffects
-                });
+                result.targets.push(tr(target, allyEffects));
             }
         }
 
@@ -303,29 +297,25 @@ export const powerOfDenial: MoveDef = {
                     }
                 }
                 if (highestBinding) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
+                    result.targets.push(tr(target, [
+                        {
                             type: "binding",
                             source: actor,
                             target: target.target,
                             binding: highestBinding,
                             amount: -highest
                         }]
-                    });
+                    ));
                 }
             }
             if (isEnemy(target.target)) {
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: [{
+                result.targets.push(tr(target, [
+                    {
                         type: "enemy",
                         operation: "defeat",
                         target: target.target,
                     }]
-                });
+                ));
             }
         }
 

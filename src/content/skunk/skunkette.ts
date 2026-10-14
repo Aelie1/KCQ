@@ -1,7 +1,7 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { findBuff, findCharacter, findEnemy, isCharacter } from "../../engine/protected/helpers";
-import { basicBindingEffect } from "../../engine/protected/mechanics";
+import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
@@ -123,7 +123,6 @@ export const pounce: MoveDef = {
         }
         const target = targets[0].target;
         const effectiveness = targets[0].effectiveness;
-        const band = targets[0].band;
         if (!isCharacter(target)) {
             return result;
         }
@@ -157,11 +156,8 @@ export const pounce: MoveDef = {
                 targets: [target]
             });
         }
-        result.targets.push({
-            target: target,
-            result: band,
-            effects: effects
-        })
+        result.targets.push(tr(targets[0], effects));
+
 
         return result;
     }
@@ -232,11 +228,8 @@ export const latexMist: MoveDef = {
                     });
                 }
             }
-            result.targets.push({
-                target: target.target,
-                result: target.band,
-                effects: effects
-            })
+            result.targets.push(tr(target, effects));
+
         }
 
         return result;

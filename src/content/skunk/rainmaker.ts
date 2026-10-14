@@ -1,5 +1,6 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { findTrap, isCharacter } from "../../engine/protected/helpers";
+import { tr } from "../../engine/protected/mechanics";
 import { effectivenessInt, Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { HitBand } from "../../engine/public/types";
@@ -55,11 +56,7 @@ export const latexRain: MoveDef = {
                         amount: (move.definition.baseDamage ?? 1)
                     });
                 }
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: effects
-                });
+                result.targets.push(tr(target, effects));
             }
         }
         return result;

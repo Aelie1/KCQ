@@ -1,6 +1,6 @@
 import { CharacterDef, MoveDef } from "../../engine/protected/definitions";
 import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
-import { basicDamageEffect, basicPlayerAccuracy } from "../../engine/protected/mechanics";
+import { basicDamageEffect, basicPlayerAccuracy, tr } from "../../engine/protected/mechanics";
 import { s } from "../../engine/protected/status";
 import { servitude } from "../../engine/protected/statuses";
 import { ContentCatalogFragment, iBuff, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
@@ -183,10 +183,8 @@ export const obey: MoveDef = {
 
         for (const target of targets) {
             if (isCharacter(target.target)) {
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: [{
+                result.targets.push(tr(target, [
+                    {
                         type: "buff",
                         target: target.target,
                         buff: servitudeBuff,
@@ -196,7 +194,7 @@ export const obey: MoveDef = {
                         type: "refresh",
                         target: target.target,
                     }]
-                });
+                ));
             }
         }
 
@@ -227,16 +225,14 @@ export const stop: MoveDef = {
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: [{
+                result.targets.push(tr(target, [
+                    {
                         type: "intention",
                         operation: "cancel",
                         target: target.target,
                         amount: STOP_BOSS_WEAKEN
                     }]
-                });
+                ));
             }
         }
 
@@ -283,16 +279,14 @@ export const attackMe: MoveDef = {
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: [{
+                result.targets.push(tr(target, [
+                    {
                         type: "intention",
                         operation: "target",
                         target: target.target,
                         destination: actor,
                     }]
-                });
+                ));
             }
         }
 

@@ -1,6 +1,6 @@
 import { BindingDef, CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
-import { basicDamageEffect, basicPlayerAccuracy, getEscapePotency } from "../../engine/protected/mechanics";
+import { basicDamageEffect, basicPlayerAccuracy, getEscapePotency, tr } from "../../engine/protected/mechanics";
 import { hobbled } from "../../engine/protected/statuses";
 import { ContentCatalogFragment, iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
@@ -192,11 +192,7 @@ export const store: MoveDef = {
                             amount: overflowAmount
                         });
                     }
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: effects
-                    });
+                    result.targets.push(tr(target, effects));
 
                 }
             }
@@ -271,37 +267,31 @@ export const release: MoveDef = {
         }
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: [{
+                result.targets.push(tr(target, [
+                    {
                         type: "buff",
                         target: target.target,
                         buff: createSubspaceDebuff(RELEASE_DURATION),
                         operation: "add"
                     },
                     modifySubspace(actor, -RELEASE_ENEMY_AMOUNT)]
-                });
+                ));
             }
             else {
                 const binding = state.encounter.bindings[actor.data["subspaceBinding"]];
                 const subspaceAmount = Math.min(actor.data["subspace"] ?? 0, RELEASE_PLAYER_AMOUNT);
                 const bindingAmount = Math.ceil(subspaceAmount / 2);
                 if (binding) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [
-                            {
-                                type: "binding",
-                                source: actor,
-                                target: target.target,
-                                binding: binding,
-                                amount: bindingAmount
-                            },
-                            modifySubspace(actor, -subspaceAmount)
-                        ]
-                    });
+                    result.targets.push(tr(target, [
+                        {
+                            type: "binding",
+                            source: actor,
+                            target: target.target,
+                            binding: binding,
+                            amount: bindingAmount
+                        },
+                        modifySubspace(actor, -subspaceAmount)
+                    ]));
                 }
             }
         }

@@ -89,11 +89,13 @@ export interface iMove {
 
 export interface iMoveResult {
     effects: iEffect[];
-    targets: {
-        target: iEntity;
-        result: HitBand;
-        effects: iEffect[];
-    }[];
+    targets: iTargetResult[];
+}
+
+export interface iTargetResult {
+    target: iEntity;
+    result: HitBand;
+    effects: iEffect[];
 }
 
 export interface iTargetInfo extends Omit<TargetInfo, "target" | "effects"> {

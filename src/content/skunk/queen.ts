@@ -1,7 +1,7 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { isCharacter } from "../../engine/protected/helpers";
-import { basicBindingEffect } from "../../engine/protected/mechanics";
+import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { EntityId } from "../../engine/public/types";
@@ -176,16 +176,14 @@ export const skunkPerfume: MoveDef = {
                     duration: PERFUME_DURATION,
                 }
                 for (const target of targets) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
+                    result.targets.push(tr(target, [
+                        {
                             type: "buff",
                             operation: "add",
                             buff: defBuff,
                             target: target.target
                         }]
-                    });
+                    ));
                 }
                 break;
             case 1:  //Escape perfume
@@ -196,16 +194,14 @@ export const skunkPerfume: MoveDef = {
                     duration: PERFUME_DURATION,
                 }
                 for (const target of targets) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
+                    result.targets.push(tr(target, [
+                        {
                             type: "buff",
                             operation: "add",
                             buff: escBuff,
                             target: target.target
                         }]
-                    });
+                    ));
                 }
                 break;
 

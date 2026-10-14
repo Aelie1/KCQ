@@ -1,7 +1,7 @@
 import type { AccuracyProfile, BindingLevel, MoveId } from "../public/types";
 import type { BindingDef, MoveDef } from "./definitions";
 import { isCharacter, isEnemy } from "./helpers";
-import type { iBinding, iCharacter, iEffect, iEntity, iMove, iMoveResult, iTargetInfo, iTrap } from "./types";
+import type { iBinding, iCharacter, iEffect, iEntity, iMove, iMoveResult, iTargetInfo, iTargetResult, iTrap } from "./types";
 
 export const BINDING_MODIFIER = 0.1;
 export const BASE_ESCAPE_POTENCY = 20;
@@ -94,16 +94,14 @@ export function basicDamageEffect(actor: iEntity, move: iMove, targets: iTargetI
     const result: iMoveResult = { effects: [], targets: [] };
     for (const target of targets) {
         if (isEnemy(target.target) && target.effectiveness > 0) {
-            result.targets.push({
-                target: target.target,
-                result: target.band,
-                effects: [{
+            result.targets.push(tr(target, [
+                {
                     type: "damage",
                     source: actor,
                     target: target.target,
                     amount: ((move.definition.baseDamage ?? 1) * target.effectiveness)
                 }]
-            });
+            ));
         }
     }
     return result;
@@ -116,17 +114,15 @@ export function basicBindingEffect(actor: iEntity, move: iMove, targets: iTarget
     }
     for (const target of targets) {
         if (isCharacter(target.target) && target.effectiveness > 0) {
-            result.targets.push({
-                target: target.target,
-                result: target.band,
-                effects: [{
+            result.targets.push(tr(target, [
+                {
                     type: "binding",
                     source: actor,
                     target: target.target,
                     binding: move.binding,
                     amount: (move.definition.baseDamage ?? 1) * target.effectiveness
                 }]
-            });
+            ));
         }
     }
     return result;
@@ -146,4 +142,12 @@ export function basicTrapEffect(target: iCharacter, trap: iTrap, binding: Bindin
         });
     }
     return effects;
+}
+
+export function tr(target: iTargetInfo, effects: iEffect[]): iTargetResult {
+    return {
+        target: target.target,
+        result: target.band,
+        effects: effects
+    }
 }

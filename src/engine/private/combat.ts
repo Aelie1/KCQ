@@ -1,6 +1,6 @@
 import { MoveDef } from "../protected/definitions";
 import { isCharacter, isEnemy, isValidEntity } from "../protected/helpers";
-import { getEscapePotency } from "../protected/mechanics";
+import { getEscapePotency, tr } from "../protected/mechanics";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEntity, iGameState, iIntention, iMove, iMoveResult, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
@@ -378,11 +378,7 @@ export function resolveMove(state: iGameState, move: iMove, actor: iEntity, targ
     }
     const unsuccessfulTargets = targets.filter(target => target.band === "miss");
     for (const target of unsuccessfulTargets) {
-        result.targets.push({
-            target: target.target,
-            result: target.band,
-            effects: []
-        });
+        result.targets.push(tr(target, []));
     }
     result.targets.sort((a, b) =>
         targets.findIndex(x => x.target === a.target) -

@@ -1,7 +1,7 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget, pickValidTarget } from "../../engine/protected/enemies";
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
-import { basicBindingEffect } from "../../engine/protected/mechanics";
+import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iCallbackReturn, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { HitBand } from "../../engine/public/types";
@@ -76,16 +76,14 @@ export const healingMagic: MoveDef = {
         if (target.band === "hit" || target.band === "crit") {
 
             if (isEnemy(target.target)) {
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: [{
+                result.targets.push(tr(target, [
+                    {
                         type: "damage",
                         source: actor,
                         target: target.target,
                         amount: -HEALING_MAGIC_HP_RATIO * target.target.maxHp
                     }]
-                });
+                ));
             }
         }
         if (target.band === "crit") {
@@ -134,16 +132,14 @@ export const empoweringMagic: MoveDef = {
         if (target.band === "hit" || target.band === "crit") {
 
             if (isEnemy(target.target)) {
-                result.targets.push({
-                    target: target.target,
-                    result: target.band,
-                    effects: [{
+                result.targets.push(tr(target, [
+                    {
                         type: "buff",
                         target: target.target,
                         buff: buff,
                         operation: "add"
                     }]
-                });
+                ));
             }
         }
         if (target.band === "crit") {
@@ -202,16 +198,14 @@ export const barrierMagic: MoveDef = {
         const target = targets[0];
 
         if (isEnemy(target.target)) {
-            result.targets.push({
-                target: target.target,
-                result: target.band,
-                effects: [{
+            result.targets.push(tr(target, [
+                {
                     type: "buff",
                     target: target.target,
                     buff: buff,
                     operation: "add"
                 }]
-            });
+            ));
         }
         return result;
     }

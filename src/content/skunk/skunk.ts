@@ -1,7 +1,7 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
 import { findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protected/helpers";
-import { basicBindingEffect } from "../../engine/protected/mechanics";
+import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { SKUNK_ID } from "./constants";
@@ -142,10 +142,8 @@ export const latexRegeneration: MoveDef = {
         switch (target.band) {
             case "graze":
                 if (isCharacter(target.target) && move.binding) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
+                    result.targets.push(tr(target, [
+                        {
                             type: "binding",
                             source: actor,
                             target: target.target,
@@ -153,37 +151,33 @@ export const latexRegeneration: MoveDef = {
                             amount: (move.definition.baseDamage ?? 1) * target.effectiveness,
                             onResolve: regenerateCallback
                         }]
-                    });
+                    ));
                 }
                 break;
             case "hit":
                 if (isCharacter(target.target) && move.binding) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
+                    result.targets.push(tr(target, [
+                        {
                             type: "binding",
                             source: actor,
                             target: target.target,
                             binding: move.binding,
                             onResolve: regenerateCallback
                         }]
-                    });
+                    ));
                 }
                 break;
             case "crit":
                 if (isCharacter(target.target)) {
-                    result.targets.push({
-                        target: target.target,
-                        result: target.band,
-                        effects: [{
+                    result.targets.push(tr(target, [
+                        {
                             type: "binding",
                             source: actor,
                             target: target.target,
                             binding: latexBindings,
                             onResolve: regenerateCallback
                         }]
-                    });
+                    ));
                 }
                 break;
         }
@@ -242,11 +236,7 @@ export const latexExplosion: MoveDef = {
                     amount: (move.definition.baseDamage ?? 1) * target.effectiveness
                 });
             }
-            result.targets.push({
-                target: target.target,
-                result: target.band,
-                effects: effects
-            });
+            result.targets.push(tr(target, effects));
             if (target.band === "crit") {
                 if (isEnemy(actor)) {
                     result.effects.push({
