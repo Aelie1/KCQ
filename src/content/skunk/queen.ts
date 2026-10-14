@@ -23,7 +23,7 @@ const ESCAPE_BUFF = "escapePerfume";
 function makeMightBuff(name: string, severity: number): iBuff {
     return {
         id: name,
-        icon: name === EMPRESS_BUFF ? "crown" : name === GODDESS_BUFF ? "sun" : name === SPRAYER_BUFF ? "sprayer" : undefined,
+        icon: name === EMPRESS_BUFF ? "crown" : name === GODDESS_BUFF ? "sun" : name === SPRAYER_BUFF ? "sprayer" : "sword",
         modifiers: { hit: severity * 2 },
         active: true
     }
