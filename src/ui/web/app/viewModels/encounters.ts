@@ -30,11 +30,14 @@ export interface EncounterEnemyViewModel {
 }
 export interface EncounterDetailsViewModel extends EncounterSummaryViewModel {
     description: string;
+    victory?: string;
+    defeat?: string;
     enemies: readonly EncounterEnemyViewModel[];
     effects: readonly EffectPreviewViewModel[];
     effectGroups: readonly EffectGroupViewModel[];
     labels: {
         settings: string; challenge: string; bestClear: string; description: string;
+        victory: string; defeat: string; narrativeUnavailable: string;
         enemies: string; specialRules: string; chooseDifficulty: string; back: string;
     };
 }
@@ -82,6 +85,8 @@ export function createEncounterDetailsViewModel(
     return {
         ...encounterSummary(encounter, presentation, bestClear),
         description: presentation.encounter(encounter.id, "desc"),
+        victory: bestClear ? presentation.referenceText("encounter", encounter.id, "victory") : undefined,
+        defeat: bestClear ? presentation.referenceText("encounter", encounter.id, "defeat") : undefined,
         enemies: encounter.enemies.map((setup) => {
             const enemy = library.enemies[setup.defId];
             if (!enemy) throw new Error(`Missing enemy reference: ${setup.defId}`);
@@ -101,6 +106,9 @@ export function createEncounterDetailsViewModel(
             challenge: presentation.ui("encounter.challenge"),
             bestClear: presentation.ui("encounter.bestClear"),
             description: presentation.ui("encounter.description"),
+            victory: presentation.battleState("victory"),
+            defeat: presentation.battleState("defeat"),
+            narrativeUnavailable: presentation.ui("action.unavailable"),
             enemies: presentation.ui("encounter.enemies"),
             specialRules: presentation.ui("encounter.specialRules"),
             chooseDifficulty: presentation.ui("encounter.chooseDifficulty"),

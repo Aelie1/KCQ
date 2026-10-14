@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createStockEngine } from "../../src/stock";
 import type { Effect } from "../../src/engine/public/types";
 import { stockStrings } from "../helpers/stockStrings";
@@ -14,6 +14,39 @@ const presentation = new Presentation(stockStrings);
 const library = createStockEngine().getLibrary();
 
 describe("encounter catalog view models", () => {
+    it("does not load locked outcome narratives", () => {
+        const localized = new Presentation(stockStrings);
+        const referenceText = vi.spyOn(localized, "referenceText");
+        const detail = createEncounterDetailsViewModel(library, "plains_1", localized);
+        expect(detail.description).toBe(localized.encounter("plains_1", "desc"));
+        expect(detail.victory).toBeUndefined();
+        expect(detail.defeat).toBeUndefined();
+        expect(referenceText).not.toHaveBeenCalled();
+    });
+
+    it.each(["casual", "standard", "veteran", "extreme", "mythic"] as const)(
+        "unlocks both localized narratives with a single %s clear", difficulty => {
+            const detail = createEncounterDetailsViewModel(library, "plains_1", presentation, difficulty);
+            expect(detail.victory).toBe(presentation.referenceText("encounter", "plains_1", "victory"));
+            expect(detail.defeat).toBe(presentation.referenceText("encounter", "plains_1", "defeat"));
+            expect(detail.victory).toBeTruthy();
+            expect(detail.defeat).toBeTruthy();
+        },
+    );
+
+    it.each([undefined, "", "  ", "..."])("omits missing or placeholder narratives (%s)", narrative => {
+        const strings = { ...stockStrings };
+        delete strings["encounter.plains_1.victory"];
+        delete strings["encounter.plains_1.defeat"];
+        if (narrative !== undefined) {
+            strings["encounter.plains_1.victory"] = narrative;
+            strings["encounter.plains_1.defeat"] = narrative;
+        }
+        const detail = createEncounterDetailsViewModel(library, "plains_1", new Presentation(strings), "casual");
+        expect(detail.victory).toBeUndefined();
+        expect(detail.defeat).toBeUndefined();
+    });
+
     it("uses the public catalog in its authored order", () => {
         const model = createEncounterPickerViewModel(library, presentation);
         expect(model.encounters.map(({ id }) => id)).toEqual([

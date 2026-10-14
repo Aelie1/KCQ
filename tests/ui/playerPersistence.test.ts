@@ -6,6 +6,7 @@ import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { loadLanguage, saveLanguage } from "../../src/ui/web/app/language";
 import { createGraphicalController } from "../../src/ui/web/app/graphicalController";
+import { createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { stockStrings } from "../helpers/stockStrings";
 
 function mockStorage(saved: Record<string, string> = {}) {
@@ -96,7 +97,17 @@ describe("encounter clear storage", () => {
         finish("victory");
         expect(controller.bestClears()).toEqual({ plains_1: "standard" });
         expect(JSON.parse(storage.getItem("kcq.clears")!)).toEqual({ plains_1: "standard" });
-        expect(setup(storage).controller.bestClears()).toEqual(controller.bestClears());
+        const reloaded = setup(storage).controller;
+        expect(reloaded.bestClears()).toEqual(controller.bestClears());
+        const library = createStockEngine().getLibrary();
+        for (const clears of [controller.bestClears(), reloaded.bestClears()]) {
+            const details = createEncounterDetailsViewModel(library, "plains_1", presentation, clears.plains_1);
+            expect(details.victory).toBe(presentation.referenceText("encounter", "plains_1", "victory"));
+            expect(details.defeat).toBe(presentation.referenceText("encounter", "plains_1", "defeat"));
+            expect(details.victory).toBeTruthy();
+            expect(details.defeat).toBeTruthy();
+            expect(createEncounterDetailsViewModel(library, "plains_2", presentation, clears.plains_2).defeat).toBeUndefined();
+        }
     });
 
     it.each([

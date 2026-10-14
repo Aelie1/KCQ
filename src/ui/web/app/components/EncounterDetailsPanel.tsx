@@ -1,4 +1,4 @@
-import { For, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, createUniqueId, For, on, Show, type JSX } from "solid-js";
 import { COMBAT_SHORTCUTS } from "../keyboard";
 import type { EncounterDetailsViewModel } from "../viewModels/encounters";
 import { EffectPreview } from "./EffectPreview";
@@ -7,12 +7,44 @@ import { ScreenLayout } from "./ScreenLayout";
 import { Shortcut } from "./Shortcut";
 import { StatusChip } from "./StatusChip";
 
+const narrativeTabs = ["description", "victory", "defeat"] as const;
+type NarrativeTab = typeof narrativeTabs[number];
+
 export function EncounterDetailsPanel(props: {
     onSettings?: () => void;
     onLibrary?: () => void;
     libraryLabel?: string;
     model: EncounterDetailsViewModel; onBack: () => void; onChooseDifficulty: () => void;
 }): JSX.Element {
+    const [selectedTab, setSelectedTab] = createSignal<NarrativeTab>("description");
+    createEffect(on(() => props.model.id, () => setSelectedTab("description")));
+    const activeTab = () => props.model.bestClear ? selectedTab() : "description";
+    const tabId = createUniqueId();
+    const tabButtons: Partial<Record<NarrativeTab, HTMLButtonElement>> = {};
+    const tabKeydown = (event: KeyboardEvent, tab: NarrativeTab): void => {
+        if (event.ctrlKey || event.altKey || event.metaKey || event.isComposing) return;
+        // Consume Space locally so the screen's Choose Difficulty shortcut cannot run.
+        if (event.key === " " || event.key === "Enter") {
+            event.preventDefault();
+            if (!event.repeat) setSelectedTab(tab);
+            return;
+        }
+        const enabledTabs = narrativeTabs.filter(tab => tab === "description" || props.model.bestClear);
+        const index = enabledTabs.indexOf(tab);
+        let next: NarrativeTab | undefined;
+        switch (event.key) {
+            case "ArrowRight": next = enabledTabs[(index + 1) % enabledTabs.length]; break;
+            case "ArrowLeft": next = enabledTabs[(index + enabledTabs.length - 1) % enabledTabs.length]; break;
+            case "Home": next = enabledTabs[0]; break;
+            case "End": next = enabledTabs[enabledTabs.length - 1]; break;
+        }
+        if (next) {
+            event.preventDefault();
+            setSelectedTab(next);
+            tabButtons[next]?.focus();
+        }
+    };
+
     return <ScreenLayout class="kcq-encounter-screen kcq-encounter-details"
         header={
             <EncounterHeader title={props.model.name} settingsLabel={props.model.labels.settings} onSettings={props.onSettings}
@@ -33,8 +65,22 @@ export function EncounterDetailsPanel(props: {
                     </section>
                 </Show>
                 <section class="kcq-encounter-card kcq-encounter-details__description">
-                    <h2 class="kcq-encounter-details__heading">{props.model.labels.description}</h2>
-                    <p>{props.model.description}</p>
+                    <div class="kcq-encounter-details__tabs" role="tablist" aria-label={props.model.labels.description}>
+                        <Show when={props.model.stars > 0}>
+                            <For each={narrativeTabs}>{tab => <button
+                                ref={element => { tabButtons[tab] = element; }}
+                                id={`${tabId}-${tab}`} type="button" role="tab"
+                                class="kcq-encounter-details__tab"
+                                aria-selected={activeTab() === tab} aria-controls={`${tabId}-panel`}
+                                tabIndex={activeTab() === tab ? 0 : -1}
+                                disabled={tab !== "description" && !props.model.bestClear}
+                                onClick={() => setSelectedTab(tab)} onKeyDown={event => tabKeydown(event, tab)}
+                            >{props.model.labels[tab]}</button>}</For>
+                        </Show>
+                    </div>
+                    <div id={`${tabId}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${activeTab()}`} tabIndex={0}>
+                        <p>{props.model[activeTab()] ?? props.model.labels.narrativeUnavailable}</p>
+                    </div>
                 </section>
                 <Show when={props.model.enemies.length > 0}>
                     <section class="kcq-encounter-card kcq-encounter-details__enemies">
