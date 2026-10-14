@@ -28,10 +28,11 @@ export function EncounterPickerPanel(props: {
             <For each={props.model.encounters}>
                 {(encounter, index) => <button class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host" type="button"
                     data-kcq-shortcut={combatShortcut(index())}
+                    disabled={encounter.locked}
                     onClick={() => props.onSelect(encounter.id)}>
                     <Shortcut shortcut={combatShortcut(index())} />
                     <strong class="kcq-encounter-picker__name">{encounter.name}</strong>
-                    <Show when={encounter.stars > 0}>
+                    <Show when={!encounter.locked && encounter.stars > 0}>
                         <span class="kcq-encounter-picker__stars" aria-label={encounter.challengeLabel}>{encounter.starsText}</span>
                         <span class="kcq-encounter-picker__best-clear">{encounter.bestClearLabel}</span>
                     </Show>

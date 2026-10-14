@@ -48,7 +48,7 @@ function setup(storage = storageWith(), campaigns: Record<string, CampaignRefere
         controller.startEncounter();
     };
     const visible = () => createEncounterPickerViewModel(library, presentation, campaign,
-        controller.bestClears(), controller.unlocks().skunk ?? [], controller.showAll()).encounters.map(({ id }) => id);
+        controller.bestClears(), controller.unlocks().skunk ?? [], controller.showAll()).encounters.filter(encounter => !encounter.locked).map(({ id }) => id);
     return { controller, prepare, storage, start, visible,
         finish(value: BattleState) { outcome = value; controller.recordOutcome(); } };
 }
@@ -237,11 +237,11 @@ describe("campaign encounter unlocks", () => {
         const restored = setup(app.storage, campaigns);
         expect(restored.controller.unlocks()).toEqual(app.controller.unlocks());
         expect(createEncounterPickerViewModel(library, presentation, campaigns.alternate, {},
-            restored.controller.unlocks()[alternate]).encounters.map(({ id }) => id)).toEqual(["forest_1", "outside"]);
+            restored.controller.unlocks()[alternate]).encounters.filter(encounter => !encounter.locked).map(({ id }) => id)).toEqual(["forest_1", "outside"]);
         expect(restored.visible()).toEqual(["prologue", "plains_2"]);
     });
 
-    it("Show All permits locked selection and restores filtering without saving progress", () => {
+    it("Show All permits locked selection and restores locks without saving progress", () => {
         const app = setup();
         app.controller.selectCampaign("skunk"); app.controller.setShowAll(true);
         expect(app.visible()).toEqual(Object.keys(library.encounters));

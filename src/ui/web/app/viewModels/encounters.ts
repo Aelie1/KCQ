@@ -21,7 +21,7 @@ export interface EncounterPickerViewModel {
     backLabel: string;
     showAllLabel: string;
     showAll: boolean;
-    encounters: readonly EncounterSummaryViewModel[];
+    encounters: readonly (EncounterSummaryViewModel & { locked: boolean })[];
 }
 export interface EncounterEnemyViewModel {
     name: string;
@@ -71,14 +71,30 @@ export function createEncounterPickerViewModel(
     unlocked: readonly EncounterId[] = [], showAll = false,
 ): EncounterPickerViewModel {
     const available = new Set([...campaign.initial, ...unlocked]);
+    const progression = [...Object.entries(campaign.victory), ...Object.entries(campaign.defeat)];
+    const campaignIds = new Set([...campaign.initial, ...progression.flatMap(([id, next]) => [id, ...next])]);
+    const remaining = Object.values(library.encounters).filter(encounter => campaignIds.has(encounter.id));
+    const encounters: EncounterReference[] = [];
+    // Keep predecessors before their unlocks, using catalog order for parallel branches.
+    // Fall back to catalog order if a future campaign contains a progression cycle.
+    while (remaining.length > 0) {
+        const pending = new Set(remaining.map(encounter => encounter.id));
+        const index = remaining.findIndex(encounter => !progression.some(([id, next]) =>
+            pending.has(id) && next.includes(encounter.id)));
+        encounters.push(...remaining.splice(index < 0 ? 0 : index, 1));
+    }
+    if (showAll) encounters.push(...Object.values(library.encounters).filter(encounter => !campaignIds.has(encounter.id)));
     return {
         title: presentation.campaign(campaign.id),
         settingsLabel: presentation.ui("battleOverview.settings"),
         backLabel: presentation.ui("title.back"),
         showAllLabel: presentation.ui("encounter.showAll"),
         showAll,
-        encounters: Object.values(library.encounters).filter(encounter => showAll || available.has(encounter.id)).map((encounter) =>
-            encounterSummary(encounter, presentation, bestClears[encounter.id])),
+        encounters: encounters.map(encounter => {
+            const locked = !showAll && !available.has(encounter.id);
+            const summary = encounterSummary(encounter, presentation, locked ? undefined : bestClears[encounter.id]);
+            return { ...summary, locked, name: locked ? summary.name.replace(/\S/gu, "?") : summary.name };
+        }),
     };
 }
 

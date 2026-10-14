@@ -123,10 +123,6 @@ Added keyboard support throughout the graphical interface.
   * Consumes all stored Subspace.
   * Applies Instability to Hinari, preventing Power of Space from being used again during the encounter.
 
-**Ko-chan**
-
-* Adjusted **Thousand Restraints Body**. Only Mouth-type abilities now bypass ordinary binding-based move restrictions; Arms and Legs abilities no longer receive this exception.
-
 ### Difficulty and Encounter Balance
 
 **Global Difficulty**

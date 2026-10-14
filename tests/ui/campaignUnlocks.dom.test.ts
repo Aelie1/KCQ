@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,6 +7,7 @@ import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
+import { combatShortcut } from "../../src/ui/web/app/keyboard";
 import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
@@ -41,7 +43,7 @@ function mount() {
     return { sessions, prepareBattle };
 }
 const toggle = () => element<HTMLInputElement>(".kcq-encounter-picker__show-all input");
-const names = () => [...document.querySelectorAll(".kcq-encounter-picker__name")].map(row => row.textContent);
+const names = () => [...document.querySelectorAll(".kcq-encounter-picker__row:not(:disabled) .kcq-encounter-picker__name")].map(row => row.textContent);
 const encounterNames = (ids: string[]) => ids.map(id => presentation.encounter(id));
 function select(id: string) {
     const row = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
@@ -87,7 +89,7 @@ describe("campaign unlock UI integration", () => {
             .filter(id => id === "prologue" || id === next)));
     });
 
-    it("defaults to initial encounters and exposes a localized, labeled Show All checkbox", () => {
+    it("defaults to initial encounters being selectable and exposes a localized, labeled Show All checkbox", () => {
         const { prepareBattle } = mount();
         expect(toggle().checked).toBe(false);
         expect(toggle().closest("label")?.textContent).toBe(presentation.ui("encounter.showAll"));
@@ -105,7 +107,7 @@ describe("campaign unlock UI integration", () => {
         expect(names()).toEqual(encounterNames(["prologue", "plains_1"]));
     });
 
-    it("plays a locked encounter through Show All and restores the filtered list without saving it", () => {
+    it("plays a locked encounter through Show All and restores locks without saving it", () => {
         const { prepareBattle } = mount();
         toggle().click();
         expect(names()).toEqual(encounterNames(Object.keys(createStockEngine().getLibrary().encounters)));
@@ -137,7 +139,7 @@ describe("campaign unlock UI integration", () => {
         toggle().click(); start("tower_1"); finish(sessions[0]!.engine, "defeat"); returnFromResult();
         toggle().click();
         expect(names()).toEqual(encounterNames(["prologue", "tower_2"]));
-        press("2");
+        press(combatShortcut(Object.keys(createStockEngine().getLibrary().encounters).indexOf("tower_2"))!);
         expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter("tower_2"));
         press("Enter"); press("Enter");
         expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "tower_2", "standard");
@@ -146,7 +148,7 @@ describe("campaign unlock UI integration", () => {
         expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["tower_2", "tower_3"] });
         expect(window.localStorage.getItem("kcq.clears")).toBeNull();
         toggle().click(); toggle().click();
-        press("3");
+        press(combatShortcut(Object.keys(createStockEngine().getLibrary().encounters).indexOf("tower_3"))!);
         expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter("tower_3"));
     });
 
@@ -160,5 +162,49 @@ describe("campaign unlock UI integration", () => {
         expect(prepareBattle).toHaveBeenCalledTimes(2);
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
         expect(window.localStorage.getItem("kcq.unlocks")).toBeNull();
+    });
+});
+
+describe("locked campaign encounter rows", () => {
+    it("preserves masked rows and badges, blocks selection, and reveals names and clears only through Show All", () => {
+        window.localStorage.setItem("kcq.clears", JSON.stringify({ plains_1: "mythic" }));
+        const style = document.createElement("style");
+        style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
+        document.body.append(style);
+        const { prepareBattle } = mount();
+        const encounters = Object.values(createStockEngine().getLibrary().encounters);
+        const rows = () => [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")];
+        expect(rows()).toHaveLength(encounters.length);
+        for (const [index, encounter] of encounters.entries()) {
+            const row = rows()[index]!;
+            const locked = encounter.id !== "prologue";
+            expect(row.disabled).toBe(locked);
+            expect(row.dataset.kcqShortcut).toBe(combatShortcut(index));
+            expect(row.querySelector(".kcq-shortcut")?.textContent).toBe(combatShortcut(index)?.toUpperCase());
+            if (!locked) continue;
+            const title = presentation.encounter(encounter.id);
+            expect(row.querySelector(".kcq-encounter-picker__name")?.textContent).toBe(title.replace(/\S/gu, "?"));
+            expect(row.outerHTML).not.toContain(title);
+            expect(row.querySelector("[title], [aria-label], [aria-labelledby], .kcq-encounter-picker__stars, .kcq-encounter-picker__best-clear")).toBeNull();
+            expect(getComputedStyle(row).opacity).toBe("0.6");
+            expect(getComputedStyle(row).cursor).toBe("default");
+            row.focus();
+            expect(document.activeElement).not.toBe(row);
+            row.click();
+            press(combatShortcut(index)!);
+            expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
+        }
+        expect(prepareBattle).not.toHaveBeenCalled();
+        expect(window.localStorage.getItem("kcq.unlocks")).toBeNull();
+
+        toggle().click();
+        expect(rows().every(row => !row.disabled)).toBe(true);
+        expect(names()).toEqual(encounterNames(encounters.map(({ id }) => id)));
+        expect(rows()[1]!.querySelector(".kcq-encounter-picker__best-clear")?.textContent).toContain(presentation.difficulty("mythic"));
+        toggle().click();
+        expect(rows().map(row => row.disabled)).toEqual(encounters.map(encounter => encounter.id !== "prologue"));
+        expect(rows()[1]!.querySelector(".kcq-encounter-picker__best-clear")).toBeNull();
+        expect(window.localStorage.getItem("kcq.unlocks")).toBeNull();
+        expect(JSON.parse(window.localStorage.getItem("kcq.clears")!)).toEqual({ plains_1: "mythic" });
     });
 });

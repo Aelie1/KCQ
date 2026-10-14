@@ -3017,8 +3017,13 @@ button {
     cursor: pointer;
 }
 
-.kcq-encounter-picker__row:hover {
+.kcq-encounter-picker__row:hover:not(:disabled) {
     border-color: var(--kcq-structure-border-strong);
+}
+
+.kcq-encounter-picker__row:disabled {
+    cursor: default;
+    opacity: 0.6;
 }
 
 .kcq-encounter-picker__row:focus-visible,
