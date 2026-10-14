@@ -143,6 +143,7 @@ function libraryDifficulty(difficulty: Difficulty): DifficultyReference {
 
 function libraryCampaign(campaign: CampaignDef): CampaignReference {
     return {
+        id: campaign.id,
         initial: [...campaign.initial],
         victory: Object.fromEntries(Object.entries(campaign.victory).map(([id, unlocks]) => [id, [...unlocks]])),
         defeat: Object.fromEntries(Object.entries(campaign.defeat).map(([id, unlocks]) => [id, [...unlocks]])),
