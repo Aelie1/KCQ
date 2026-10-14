@@ -157,9 +157,13 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             row("targeting.effectResource", "resource", actor);
             break;
         case "release":
-            buff({ id: "subspaceClutter", recipient: "selected", duration: 2, modifiers: { defense: -2, hit: -2 } }, "add", true);
-            rows[rows.length - 1]!.recipient = "enemies";
+            buff({ id: "subspaceClutter", recipient: "enemies", duration: 2, modifiers: { defense: -2, hit: -2 } }, "add", true);
             row("targeting.effectBinding", "binding", "allies", "warning");
+            row("targeting.effectResource", "resource", actor);
+            break;
+        case "powerOfSpace":
+            buff({ id: "subspaceClutter", recipient: "enemies", modifiers: { defense: -2, hit: -2 } }, "add", true);
+            buff({ id: "instability", recipient: "hinari", moveList: { blockedMoves: [move.id] } }, "add", true);
             row("targeting.effectResource", "resource", actor);
             break;
         case "throwOff":

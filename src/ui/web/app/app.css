@@ -1489,7 +1489,6 @@ button {
 .kcq-game-log__value--total {
     color: var(--kcq-text-primary);
     font-weight: 700;
-    margin-left: 4px;
 }
 
 .kcq-game-log__value+.kcq-game-log__value--total::before {

@@ -4,7 +4,7 @@
         {
             "label": "vite",
             "type": "shell",
-            "command": "npm run web",
+            "command": "npm run web -- --host",
             "isBackground": true,
             "problemMatcher": {
                 "owner": "vite",

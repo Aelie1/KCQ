@@ -14,9 +14,14 @@ const STORE_REMOVE_MODIFIER = 2;
 const RELEASE_PLAYER_AMOUNT = 50;
 const RELEASE_ENEMY_AMOUNT = 25;
 const RELEASE_BUFF = "subspaceClutter";
+const RELEASE_DURATION = 2;
 const RELEASE_MODIFIER = -2;
 
 const ROCKFALL_DAMAGE = 10;
+
+const POWEROFSPACE_DAMAGE_FACTOR = 10;
+const POWEROFSPACE_DEBUFF_FACTOR = 25;
+const POWEROFSPACE_BUFF = "instability";
 
 function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number): iCallbackReturn {
     const effects: iEffect[] = [];
@@ -36,13 +41,7 @@ function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, bu
         const subspaceAmount = newAmount - spreadAmount;
 
         if (subspaceAmount) {
-            effects.push({
-                type: "data",
-                target: target,
-                name: "subspace",
-                amount: subspaceAmount,
-                visible: true
-            });
+            effects.push(modifySubspace(target, subspaceAmount));
             const bindingId = state.encounter.bindings.findIndex(x => x.id === binding.id);
             const currentBindingId = target.data["subspaceBinding"] ?? 0;
             if (bindingId >= 0) {
@@ -60,6 +59,29 @@ function braceCallback(state: iGameState, actor: iEntity, target: iCharacter, bu
 
     }
     return { value: newAmount, effects: effects };
+}
+
+function createSubspaceDebuff(duration: number): iBuff {
+    return {
+        id: RELEASE_BUFF,
+        icon: "shield-off",
+        duration: duration,
+        active: true,
+        modifiers: {
+            defense: RELEASE_MODIFIER,
+            hit: RELEASE_MODIFIER,
+        }
+    }
+}
+
+function modifySubspace(actor: iEntity, amount: number): iEffect {
+    return {
+        type: "data",
+        target: actor,
+        name: "subspace",
+        amount: amount,
+        visible: true
+    };
 }
 
 export const subspaceMovement: PassiveDef = {
@@ -150,13 +172,7 @@ export const store: MoveDef = {
                     });
 
                     if (subspaceAmount) {
-                        effects.push({
-                            type: "data",
-                            target: actor,
-                            name: "subspace",
-                            amount: subspaceAmount,
-                            visible: true
-                        });
+                        effects.push(modifySubspace(actor, subspaceAmount));
                         if (bindingId >= 0) {
                             effects.push({
                                 type: "data",
@@ -255,33 +271,16 @@ export const release: MoveDef = {
         }
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                const buff: iBuff = {
-                    id: RELEASE_BUFF,
-                    icon: "shield-off",
-                    duration: 2,
-                    active: true,
-                    modifiers: {
-                        defense: RELEASE_MODIFIER,
-                        hit: RELEASE_MODIFIER,
-                    }
-                }
-
                 result.targets.push({
                     target: target.target,
                     result: target.band,
                     effects: [{
                         type: "buff",
                         target: target.target,
-                        buff: buff,
+                        buff: createSubspaceDebuff(RELEASE_DURATION),
                         operation: "add"
                     },
-                    {
-                        type: "data",
-                        target: actor,
-                        name: "subspace",
-                        amount: -RELEASE_ENEMY_AMOUNT,
-                        visible: true
-                    }]
+                    modifySubspace(actor, -RELEASE_ENEMY_AMOUNT)]
                 });
             }
             else {
@@ -292,20 +291,16 @@ export const release: MoveDef = {
                     result.targets.push({
                         target: target.target,
                         result: target.band,
-                        effects: [{
-                            type: "binding",
-                            source: actor,
-                            target: target.target,
-                            binding: binding,
-                            amount: bindingAmount
-                        },
-                        {
-                            type: "data",
-                            target: actor,
-                            name: "subspace",
-                            amount: -subspaceAmount,
-                            visible: true
-                        }]
+                        effects: [
+                            {
+                                type: "binding",
+                                source: actor,
+                                target: target.target,
+                                binding: binding,
+                                amount: bindingAmount
+                            },
+                            modifySubspace(actor, -subspaceAmount)
+                        ]
                     });
                 }
             }
@@ -322,10 +317,70 @@ export const release: MoveDef = {
     }
 }
 
+export const powerOfSpace: MoveDef = {
+    id: "powerOfSpace",
+    index: 5,
+    targetSide: "enemy",
+    targets: 1,
+    baseDamage: ROCKFALL_DAMAGE,
+    type: "none",
+    accuracy: basicPlayerAccuracy,
+    traits: ["debuff", "damage"],
+    getHits: function (actor: iEntity, move: MoveDef): number {
+        if (actor.data["subspace"] === undefined) {
+            return move.baseHits ?? 1;
+        }
+        return Math.max(1, Math.floor(actor.data["subspace"] / (POWEROFSPACE_DAMAGE_FACTOR)));
+    },
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = basicDamageEffect(actor, move, targets);
+        if (actor.data["subspace"] === undefined) {
+            return result;
+        }
+        for (const target of targets) {
+            if (isEnemy(target.target) && actor.data["subspace"] >= POWEROFSPACE_DEBUFF_FACTOR) {
+                result.targets.push({
+                    target: target.target,
+                    result: "none",
+                    effects: [{
+                        type: "buff",
+                        target: target.target,
+                        buff: createSubspaceDebuff(Math.floor(actor.data["subspace"] / (POWEROFSPACE_DEBUFF_FACTOR))),
+                        operation: "add"
+                    }]
+                });
+                break;
+            }
+        }
+        result.effects.push(modifySubspace(actor, -SUBSPACE_MAX));
+        const spaceBuff: iBuff = {
+            id: POWEROFSPACE_BUFF,
+            active: true,
+            moveList: { blockedMoves: [powerOfSpace] }
+        }
+
+        result.effects.push({
+            type: "buff",
+            target: actor,
+            buff: spaceBuff,
+            operation: "add"
+        });
+
+        return result;
+    },
+    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+        if (actor.data["subspace"] === undefined) {
+            return "invalidActor";
+        }
+        if (actor.data["subspace"] < POWEROFSPACE_DAMAGE_FACTOR) {
+            return "insufficientResource";
+        }
+    }
+}
 
 export const hinari: CharacterDef = {
     id: "hinari",
-    moves: [rockfall, store, brace, release],
+    moves: [rockfall, store, brace, release, powerOfSpace],
     empoweredMoves: [fairyRockfall],
     passives: [subspaceMovement],
     data: { "subspace": 0, "subspaceMax": SUBSPACE_MAX }
@@ -333,6 +388,6 @@ export const hinari: CharacterDef = {
 
 export const hinariCatalog: ContentCatalogFragment = {
     characters: [hinari],
-    moves: [rockfall, store, brace, release, fairyRockfall],
+    moves: [rockfall, store, brace, release, powerOfSpace, fairyRockfall],
     passives: [subspaceMovement],
 };

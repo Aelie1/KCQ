@@ -298,7 +298,9 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
     const rows = () => libraryMoveEffectRows(props.reference, c.library, c.presentation);
     const grouped = () => groupReferenceRecipients(rows(), props.reference.id === "obey");
     const durations = () => [...new Set(rows().flatMap(row => row.duration === undefined ? [] : [row.duration]))];
+    const durationText = () => c.presentation.referenceText("move", props.reference.id, "duration") ?? (durations().length === 1 ? c.presentation.ui("characterDetails.rounds", { count: durations()[0]! }) : undefined);
     const hits = () => props.reference.hits ?? props.reference.baseHits ?? 1;
+    const hitsText = () => c.presentation.referenceText("move", props.reference.id, "hits") ?? (hits() > 1 ? c.presentation.ui("library.hitCount", { count: hits() }) : undefined);
     const cooldown = () => props.reference.cooldown?.[props.reference.id];
     const sharedCooldowns = () => Object.entries(props.reference.cooldown ?? {}).filter(([id]) => id !== props.reference.id);
     const accuracy = () => Object.entries(libraryAccuracy(props.reference, libraryOwners(c.library, "moves", props.reference.id)[0]?.category === "characters") ?? {}).filter(([band]) => band !== "none") as [Exclude<HitBand, "none">, number][];
@@ -312,15 +314,15 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
                 <Show when={typeof props.reference.targets === "number" && props.reference.targets > 1}>{props.reference.targets}</Show>
             </Stat>
             <Show when={props.reference.type != "none"} > <Stat label={c.presentation.ui("library.type")}><CommandTag tag={{ id: "type", label: c.presentation.moveType(props.reference.type), tone: "warning" }} /></Stat></Show>
-            <Show when={hits() > 1}><Stat label={c.presentation.ui("library.hits")}><CommandTag tag={{ id: "hits", label: c.presentation.ui("library.hitCount", { count: hits() }), tone: "neutral" }} /></Stat></Show>
-            <Show when={durations().length === 1}>
-                <Stat label={c.presentation.ui("library.duration")}>
-                    <CommandTag tag={{
-                        id: "duration",
-                        label: c.presentation.ui("characterDetails.rounds", { count: durations()[0]! }),
-                        tone: "special"
-                    }} />
-                </Stat>
+            <Show when={hitsText()}>
+                {value => <Stat label={c.presentation.ui("library.hits")}>
+                    <CommandTag tag={{ id: "hits", label: value(), tone: "neutral" }} />
+                </Stat>}
+            </Show>
+            <Show when={durationText()}>
+                {value => <Stat label={c.presentation.ui("library.duration")}>
+                    <CommandTag tag={{ id: "duration", label: value(), tone: "special" }} />
+                </Stat>}
             </Show>
             <Show when={cooldown() !== undefined || sharedCooldowns().length}>
                 <div class="kcq-library__cooldown-stack">
