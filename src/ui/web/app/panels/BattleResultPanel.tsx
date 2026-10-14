@@ -17,10 +17,11 @@ export function BattleResultPanel(props: {
     let retry!: HTMLButtonElement;
     let gameLog: HTMLButtonElement | undefined;
     let back!: HTMLButtonElement;
+    let next: HTMLButtonElement | undefined;
     onMount(() => {
         onCleanup(setupResponsiveScale(overlay));
         const previousFocus = document.activeElement;
-        (props.focusGameLog && gameLog ? gameLog : retry).focus();
+        (props.focusGameLog && gameLog ? gameLog : next ?? retry).focus();
         onCleanup(() => {
             if (previousFocus instanceof HTMLElement && previousFocus.isConnected) previousFocus.focus();
         });
@@ -60,7 +61,7 @@ export function BattleResultPanel(props: {
                 <footer class="kcq-battle-result__actions">
                     <Show when={props.onGameLog}><button ref={gameLog} type="button" class="kcq-battle-result__log" onClick={props.onGameLog}>{props.model.gameLogLabel}</button></Show>
                     <Show when={props.model.nextEncounter && props.onNextLevel}>
-                        <button type="button" class="kcq-battle-result__next" onClick={props.onNextLevel}>{props.model.nextLevelLabel}</button>
+                        <button ref={next} type="button" class="kcq-battle-result__next" onClick={props.onNextLevel}>{props.model.nextLevelLabel}</button>
                     </Show>
                     <button ref={retry} type="button" class="kcq-battle-result__retry" onClick={props.onRetry}>{props.model.retryLabel}</button>
                     <button ref={back} type="button" class="kcq-battle-result__back" onClick={props.onBackToLevelSelect}>{props.model.backLabel}</button>

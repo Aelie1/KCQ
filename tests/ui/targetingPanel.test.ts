@@ -193,7 +193,7 @@ describe("targeting workflow composition", () => {
         const headingRule = css.match(/\.kcq-selected-command h2\s*\{([^}]*)\}/)?.[1] ?? "";
         const tagsRule = css.match(/\.kcq-selected-command__tags\s*\{([^}]*)\}/)?.[1] ?? "";
 
-        expect(html).toContain("[Compulsion: Obey]");
+        expect(html).toContain("[Power of Compulsion: Obey]");
         expect(headingRule).toContain("white-space: normal");
         expect(headingRule).toContain("-webkit-line-clamp: 2");
         expect(headingRule).not.toContain("text-overflow: ellipsis");

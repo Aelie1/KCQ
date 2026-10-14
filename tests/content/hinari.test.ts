@@ -120,7 +120,7 @@ describe("Hinari's dynamic move set and Rockfall", () => {
             setup: (state) => hinariData(state, subspace),
         });
 
-        expect(moveIds(engine)).toEqual(["rockfall", "store", "brace", "release"]);
+        expect(moveIds(engine)).toEqual(["rockfall", "store", "brace", "release", "powerOfSpace"]);
         expect(characterState(engine, hinari.id).data.subspace).toBe(subspace);
         expect(action(engine, "rockfall")).toMatchObject({
             available: hits > 0,

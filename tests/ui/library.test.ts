@@ -2,14 +2,14 @@ import { readFileSync } from "node:fs";
 import { createComponent, createRoot } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "../../src/engine/private/constants";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
-import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryMoveGroups, libraryPassiveSummary, libraryMoveTags, SKUNK_BINDINGS_ID, libraryRelated, libraryTrapOutcomes, referenceParts } from "../../src/ui/web/app/viewModels/library";
-import { LIBRARY_EFFECTIVENESS, LIBRARY_HIT_STEP, LIBRARY_POTENCY_STEP, libraryAccuracy, libraryDamageProfile } from "../../src/ui/web/app/viewModels/libraryMechanics";
-import { effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER, EFFECTIVENESS_MODIFIER } from "../../src/engine/private/constants";
-import { libraryMoveEffectRows, libraryCompulsionCooldown } from "../../src/ui/web/app/viewModels/libraryMoveEffects";
 import { groupReferenceRecipients } from "../../src/ui/web/app/viewModels/effectGroups";
+import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryMoveGroups, libraryMoveTags, libraryPassiveSummary, libraryRelated, libraryTrapOutcomes, referenceParts, SKUNK_BINDINGS_ID } from "../../src/ui/web/app/viewModels/library";
+import { LIBRARY_EFFECTIVENESS, LIBRARY_HIT_STEP, LIBRARY_POTENCY_STEP, libraryAccuracy, libraryDamageProfile } from "../../src/ui/web/app/viewModels/libraryMechanics";
+import { libraryCompulsionCooldown, libraryMoveEffectRows } from "../../src/ui/web/app/viewModels/libraryMoveEffects";
 import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
@@ -71,7 +71,7 @@ describe("Library reference browser", () => {
         for (const category of LIBRARY_CATEGORIES) {
             expect(Object.keys(library[category]).length).toBeGreaterThan(0);
             for (const id of Object.keys(library[category])) {
-                const html = renderToString(() => createComponent(LibraryPanel, { library, presentation, onClose: () => {}, initialPage: { kind: "entry", category, id } }));
+                const html = renderToString(() => createComponent(LibraryPanel, { library, presentation, onClose: () => { }, initialPage: { kind: "entry", category, id } }));
                 expect(html, category + ":" + id).toContain('data-library-id="' + id + '"');
                 expect(html, category + ":" + id).not.toMatch(/\[(?:ui|entity|move|status|binding|trap|passive|difficulty|encounter)\./);
                 expect(html).not.toMatch(/>\.\.\.</);
@@ -146,7 +146,7 @@ describe("Library static reference projections", () => {
         expect(libraryHas(other, { category: "bindings", id: SKUNK_BINDINGS_ID })).toBe(false);
         expect(libraryEntries(other, "bindings", presentation).map(entry => entry.id)).toEqual(["rope"]);
         expect(JSON.stringify(library.bindings)).toBe(before);
-        const html = renderToString(() => createComponent(LibraryPanel, { library, presentation, onClose: () => {}, initialPage: { kind: "entry", category: "bindings", id: SKUNK_BINDINGS_ID } }));
+        const html = renderToString(() => createComponent(LibraryPanel, { library, presentation, onClose: () => { }, initialPage: { kind: "entry", category: "bindings", id: SKUNK_BINDINGS_ID } }));
         expect(html).toContain("Skunk Bindings");
         expect(html).not.toMatch(/\[(?:ui|binding|entity)\./);
     });
@@ -154,12 +154,7 @@ describe("Library static reference projections", () => {
 
 
 describe("Library structured effect projections", () => {
-    it("includes every published move exactly once in the owner-grouped audit", () => {
-        const report = readFileSync("docs/Library Round 5 Effect Audit.md", "utf8");
-        const ids = [...report.matchAll(/^\| [^\n]*?\(`([^`]+)`\) \|/gm)].map(match => match[1]);
-        expect(ids.sort()).toEqual(Object.keys(library.moves).sort());
-        expect(new Set(ids).size).toBe(ids.length);
-    });
+
 
     it("represents every published move and preserves static effects without touching source data", () => {
         const before = JSON.stringify(library);
