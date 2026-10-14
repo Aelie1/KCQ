@@ -1,12 +1,12 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { stockStrings } from "../helpers/stockStrings";
-import { createStockEngine } from "../../src/stock";
 import type { DifficultyId } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { DifficultySelectPanel } from "../../src/ui/web/app/components/DifficultySelectPanel";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
+import { stockStrings } from "../helpers/stockStrings";
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
@@ -35,9 +35,9 @@ describe("difficulty select panel", () => {
     });
 
     it.each([
-        ["casual", true, false], ["standard", false, false], ["veteran", true, false],
-        ["extreme", true, true], ["mythic", true, true],
-    ] as const)("renders the required optional cards for %s", (difficulty, global, special) => {
+        ["casual", true, false, 2], ["standard", false, false, 0], ["veteran", true, false, 1],
+        ["extreme", true, true, 1], ["mythic", true, true, 2],
+    ] as const)("renders the required optional cards for %s", (difficulty, global, special, value) => {
         const html = render(difficulty);
         expect(html.includes("kcq-difficulty-select__global-effects")).toBe(global);
         expect(html.includes("kcq-difficulty-select__special-rules")).toBe(special);
@@ -46,7 +46,7 @@ describe("difficulty select panel", () => {
             expect(html).toContain("kcq-preview-effect--success");
             expect(html).toContain("Difficulty Modifier");
             expect(html).toContain("kcq-pip-meter");
-            expect(html).toContain("+2");
+            expect(html).toContain(`+${value}`);
             expect(html).not.toContain("kcq-effect-recipient");
         }
         if (special) {

@@ -61,7 +61,7 @@ describe("web battle application", () => {
         expect(battle.engine.getGameState().difficulty).toEqual({
             id: "extreme",
             playerModifiers: {},
-            enemyModifiers: { potency: 2 },
+            enemyModifiers: { potency: 1 },
         });
     });
 

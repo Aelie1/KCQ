@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createStockEngine } from "../../src/stock";
 import { difficulties } from "../../src/engine/private/constants";
+import { createStockEngine } from "../../src/stock";
 
 describe("public difficulty references", () => {
     it("exposes all five authoritative definitions as structured-cloneable metadata", () => {
@@ -14,7 +14,10 @@ describe("public difficulty references", () => {
         expect(references.standard).toEqual({
             id: "standard", playerModifiers: {}, enemyModifiers: {},
         });
-        for (const id of ["veteran", "extreme", "mythic"] as const) {
+        for (const id of ["veteran", "extreme"] as const) {
+            expect(references[id]).toEqual({ id, playerModifiers: {}, enemyModifiers: { potency: 1 } });
+        }
+        for (const id of ["mythic"] as const) {
             expect(references[id]).toEqual({ id, playerModifiers: {}, enemyModifiers: { potency: 2 } });
         }
     });

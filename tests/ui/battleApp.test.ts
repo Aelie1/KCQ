@@ -1,12 +1,12 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { stockStrings } from "../helpers/stockStrings";
 import { createStockEngine } from "../../src/stock";
+import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { DevApp } from "../../src/ui/web/app/dev/DevApp";
-import { Presentation } from "../../src/ui/presentation/presentation";
+import { stockStrings } from "../helpers/stockStrings";
 
 // Portals emit no in-stage markup; retain their separately rendered body content.
 const bodyPortals = vi.hoisted(() => [] as string[]);
@@ -50,7 +50,7 @@ describe("playable Solid battle application", () => {
         state.turn.outcome = outcome;
         vi.spyOn(engine, "getGameState").mockReturnValue(state);
         const html = renderToString(() => createComponent(BattleApp, {
-            engine, presentation: new Presentation({ ...stockStrings, "encounter.plains_1.victory": "" }),
+            engine, presentation: new Presentation({ ...stockStrings, "encounter.plains_1.victory": "", "encounter.plains_1.defeat": "" }),
         }));
         expect(html).not.toContain("kcq-battle-result__overlay");
         expect(bodyPortals).toHaveLength(1);
