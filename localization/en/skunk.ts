@@ -249,7 +249,7 @@ export const skunkEnglishStrings: StringTable = {
     She was wearing an outfit made out of shiny latex, complete with a bunnysuit, tall boots, and long gloves. On her head was even a crown coated in black latex and reflecting the sun with its glossy sheen. "Oooh. Volunteers. My second favorite thing after skunks!"
     "Just who volunteered for anything? You must be related to the skunk creatures that have been running around everywhere lately, then?"
     "THEY! ARE! NOT CREATURES!  I have worked very hard to give birth to them, and I won't stand for you insulting them!" The girl pulled out the gun hanging from her belt and shot it at the party. They were able to dodge, but the glob of latex coated a nearby tree with a wide band of latex that quickly grew in both directions.
-    "I'll turn you all into skunks and make you respect the name of the Skunk Queen! You'll realize the sheer genius of my inventions!" The Skunk Queen reloads her gun and aims it at the party again.
+    "I'll turn you all into skunks and make you respect the name of the Skunk Queen! You'll realize the sheer genius of my inventions!" The Skunk Queen reloaded her gun and aimed it at the party again.
     "I guess diplomacy was never an option, then?  Let's get this over with."`,
 
     "encounter.plains_3.victory": `The Skunk Queen staggered away and fell to the ground, the broken bits of her inventions all around her, and the destroyed remains of her skunk creations strewn around the area.
