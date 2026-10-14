@@ -3768,6 +3768,26 @@ button {
     grid-template-columns: 1fr;
 }
 
+.kcq-encounter-picker__show-all {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    align-self: flex-start;
+    padding: 8px 0;
+    color: var(--kcq-text-primary);
+    cursor: pointer;
+}
+
+.kcq-encounter-picker__show-all input {
+    accent-color: var(--kcq-accent-primary);
+    cursor: pointer;
+}
+
+.kcq-encounter-picker__show-all input:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: 3px;
+}
+
 .kcq-shortcut-host {
     position: relative;
 }

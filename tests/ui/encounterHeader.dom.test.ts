@@ -43,7 +43,7 @@ function mount(view: Parameters<typeof render>[0]): HTMLElement {
 const screens = [
     { name: "picker", height: "58px", render: (controls: LibrarySettingsControlsProps, confirm: () => void) =>
         createComponent(EncounterPickerPanel, {
-            ...controls, model: createEncounterPickerViewModel(library, presentation), onSelect: confirm,
+            ...controls, model: createEncounterPickerViewModel(library, presentation, library.campaigns.skunk, {}, [], true), onSelect: confirm,
         }) },
     { name: "details", height: "58px", render: (controls: LibrarySettingsControlsProps, confirm: () => void) =>
         createComponent(EncounterDetailsPanel, {

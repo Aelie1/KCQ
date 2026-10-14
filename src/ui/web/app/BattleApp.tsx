@@ -5,6 +5,7 @@ import type {
     ActionResult,
     ActionView,
     BindingId,
+    BattleState,
     Engine,
     EntityId,
     GameState,
@@ -48,6 +49,7 @@ export interface BattleAppProps {
     playbackSpeed?: PlaybackSpeedPreference;
     keyboard?: SharedKeyboard;
     onVictory?: () => void;
+    onOutcome?: (outcome: Exclude<BattleState, "ongoing">) => void;
     onRetry?: () => void;
     onBackToLevelSelect?: () => void;
     onBackToTitle?: () => void;
@@ -116,6 +118,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     let finalActions = actions();
     const reactions = createCombatReactions();
     const defeats = createEnemyDefeats(reactions);
+    let outcomeReported = false;
     const playback = createCombatPlayback({
         settle: defeats.remaining,
         interval: () => PLAYBACK_INTERVALS[playbackSpeed.value],
@@ -134,7 +137,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             setActions(finalActions);
             if (final.turn.outcome !== "ongoing") {
                 setScreen({ kind: "overview" });
-                if (final.turn.outcome === "victory") props.onVictory?.();
+                if (!outcomeReported) {
+                    outcomeReported = true;
+                    props.onOutcome?.(final.turn.outcome);
+                    if (final.turn.outcome === "victory") props.onVictory?.();
+                }
             }
         }),
     });

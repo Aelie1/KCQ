@@ -116,6 +116,7 @@ export type UiLabel =
     | "encounter.specialRules"
     | "encounter.start"
     | "encounter.uncleared"
+    | "encounter.showAll"
     | "enemyRank.boss"
     | "enemyRank.enemy"
     | "enemyRank.minion"

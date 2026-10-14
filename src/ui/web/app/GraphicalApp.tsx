@@ -123,7 +123,9 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                         onSelect={campaign => navigate(() => controller.selectCampaign(campaign))} />
                 </Match>
                 <Match when={controller.screen().screen === "picker"}>
-                    <EncounterPickerPanel model={createEncounterPickerViewModel(library()!, presentation(), controller.bestClears())}
+                    <EncounterPickerPanel model={createEncounterPickerViewModel(library()!, presentation(), library()!.campaigns[selectedCampaign()!],
+                        controller.bestClears(), controller.unlocks()[selectedCampaign()!] ?? [], controller.showAll())}
+                        onShowAllChange={showAll => navigate(() => controller.setShowAll(showAll))}
                         onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")} onBack={() => navigate(controller.returnToTitle)}
                         onSelect={encounter => navigate(() => controller.selectEncounter(encounter))} />
                 </Match>
@@ -145,7 +147,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
                         language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} keyboard={keyboard} release={props.release}
-                        observer={current.session.observer} onVictory={controller.recordVictory} onRetry={controller.retryEncounter}
+                        observer={current.session.observer} onOutcome={controller.recordOutcome} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
             </Switch>

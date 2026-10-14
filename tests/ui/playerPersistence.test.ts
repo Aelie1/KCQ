@@ -80,7 +80,7 @@ function setup(storage = mockStorage()) {
         controller.selectDifficulty(difficulty);
         controller.startEncounter();
     };
-    return { controller, storage, start, finish(value: BattleState) { outcome = value; controller.recordVictory(); } };
+    return { controller, storage, start, finish(value: BattleState) { outcome = value; controller.recordOutcome(); } };
 }
 
 describe("encounter clear storage", () => {
@@ -125,7 +125,7 @@ describe("encounter clear storage", () => {
         start("plains_1", difficulty);
         finish("victory");
         expect(controller.bestClears()).toEqual({ plains_1: "mythic" });
-        expect(storage.setItem).not.toHaveBeenCalled();
+        expect(storage.setItem.mock.calls.filter(([key]) => key === "kcq.clears")).toEqual([]);
     });
 
     it("keeps victories for different encounters independent", () => {
@@ -141,7 +141,7 @@ describe("encounter clear storage", () => {
         controller.retryEncounter();
         controller.returnToLevelSelect();
         start(); controller.returnToTitle();
-        controller.recordVictory();
+        controller.recordOutcome();
         expect(controller.bestClears()).toEqual({});
         expect(storage.setItem).not.toHaveBeenCalled();
     });

@@ -1,4 +1,4 @@
-import type { ContentLibrary, EncounterReference } from "../../../../engine/public/library";
+import type { CampaignReference, ContentLibrary, EncounterReference } from "../../../../engine/public/library";
 import { getThresholds } from "../../../../engine/public/mechanics";
 import type { DifficultyId, EncounterId, EnemyRank } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
@@ -18,6 +18,8 @@ export interface EncounterPickerViewModel {
     title: string;
     settingsLabel: string;
     backLabel: string;
+    showAllLabel: string;
+    showAll: boolean;
     encounters: readonly EncounterSummaryViewModel[];
 }
 export interface EncounterEnemyViewModel {
@@ -62,14 +64,18 @@ function encounterSummary(
 }
 
 export function createEncounterPickerViewModel(
-    library: ContentLibrary, presentation: Presentation,
+    library: ContentLibrary, presentation: Presentation, campaign: CampaignReference,
     bestClears: Readonly<Partial<Record<EncounterId, DifficultyId>>> = {},
+    unlocked: readonly EncounterId[] = [], showAll = false,
 ): EncounterPickerViewModel {
+    const available = new Set([...campaign.initial, ...unlocked]);
     return {
         title: presentation.ui("title.name"),
         settingsLabel: presentation.ui("battleOverview.settings"),
         backLabel: presentation.ui("title.back"),
-        encounters: Object.values(library.encounters).map((encounter) =>
+        showAllLabel: presentation.ui("encounter.showAll"),
+        showAll,
+        encounters: Object.values(library.encounters).filter(encounter => showAll || available.has(encounter.id)).map((encounter) =>
             encounterSummary(encounter, presentation, bestClears[encounter.id])),
     };
 }

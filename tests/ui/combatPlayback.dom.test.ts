@@ -162,7 +162,7 @@ function mountBattle(speed?: PlaybackSpeed, outcome?: GameState["turn"]["outcome
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++id, callback); return id; });
     vi.stubGlobal("cancelAnimationFrame", (id: number) => pending.delete(id));
     const paint = () => { for (const [id, callback] of [...pending]) { pending.delete(id); callback(0); } };
-    const onVictory = vi.fn(); const onOutcome = vi.fn();
+    const onVictory = vi.fn(); const onOutcome = vi.fn(); const onCompletedOutcome = vi.fn();
     const host = document.createElement("div"); document.body.append(host);
     unmount = render(() => {
         let handler: ((key: string) => boolean) | undefined;
@@ -171,12 +171,12 @@ function mountBattle(speed?: PlaybackSpeed, outcome?: GameState["turn"]["outcome
             registerGlobalAction(callback) { handler = callback; return () => { handler = undefined; }; },
         } : undefined;
         return createComponent(BattleApp, { engine, presentation: fixture.presentation, keyboard,
-            overviewGameLog: { value: 8, onChange: vi.fn() }, onVictory, observer: { onOutcome } });
+            overviewGameLog: { value: 8, onChange: vi.fn() }, onVictory, onOutcome: onCompletedOutcome, observer: { onOutcome } });
     }, host);
     const scroll = vi.spyOn(HTMLElement.prototype, "scrollTo").mockImplementation(function (this: HTMLElement, arg: number | ScrollToOptions) {
         this.scrollTop = typeof arg === "number" ? arg : arg.top ?? 0;
     });
-    return { ...data, engine, execute, paint, pending, scroll, onVictory, onOutcome, finalActions };
+    return { ...data, engine, execute, paint, pending, scroll, onVictory, onOutcome, onCompletedOutcome, finalActions };
 }
 function element<T extends HTMLElement = HTMLElement>(selector: string): T {
     const found = document.querySelector<T>(selector); if (!found) throw new Error("Missing " + selector); return found;
@@ -335,6 +335,7 @@ describe("BattleApp playback integration", () => {
         b.frames[1]!.state.turn.outcome = outcome;
         endTurn(); expect(document.querySelector("[role=dialog]")).toBeNull();
         expect(b.onOutcome).toHaveBeenCalledWith(outcome); expect(b.onVictory).not.toHaveBeenCalled();
+        expect(b.onCompletedOutcome).not.toHaveBeenCalled();
         b.paint(); b.paint(); expect(binding()).toBe(15); expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(999); expect(document.querySelector("[role=dialog]")).toBeNull();
         vi.advanceTimersByTime(1); expect(binding()).toBe(36); expect(actors()).toHaveLength(3);
@@ -344,10 +345,12 @@ describe("BattleApp playback integration", () => {
         expect(document.querySelector(".kcq-binding-reaction")).toBeNull();
         expect(vi.getTimerCount()).toBe(0);
         expect(b.onVictory).toHaveBeenCalledTimes(outcome === "victory" ? 1 : 0);
+        expect(b.onCompletedOutcome).toHaveBeenCalledExactlyOnceWith(outcome);
         expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(true);
         element(".kcq-battle-result__log").click();
         expect(document.querySelectorAll(".kcq-game-log__scroll [data-kind=move]")).toHaveLength(3);
         key(" "); expect(b.execute).toHaveBeenCalledOnce();
+        expect(b.onCompletedOutcome).toHaveBeenCalledExactlyOnceWith(outcome);
     });
     it("presents a single lethal player move before opening victory", () => {
         const b = mountBattle(undefined, "victory", false, true);
@@ -376,6 +379,7 @@ describe("BattleApp playback integration", () => {
         unmount!(); unmount = undefined; expect(b.pending.size).toBe(0);
         b.paint(); vi.advanceTimersByTime(10000); expect(b.scroll).toHaveBeenCalledTimes(calls);
         expect(b.execute).toHaveBeenCalledOnce(); expect(b.onVictory).not.toHaveBeenCalled();
+        expect(b.onCompletedOutcome).not.toHaveBeenCalled();
         expect(document.querySelector(".kcq-battle-stage")).toBeNull();
     });
 });

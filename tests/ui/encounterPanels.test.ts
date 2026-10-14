@@ -13,7 +13,7 @@ const presentation = new Presentation(stockStrings);
 
 describe("encounter panels", () => {
     it("renders a selectable row for every catalog entry with accessible challenge values", () => {
-        const model = createEncounterPickerViewModel(library, presentation);
+        const model = createEncounterPickerViewModel(library, presentation, library.campaigns.skunk, {}, [], true);
         const html = renderToString(() => createComponent(EncounterPickerPanel, { model, onSelect: () => {} }));
         expect(html.match(/class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host"/g)).toHaveLength(model.encounters.length);
         for (const encounter of model.encounters) {

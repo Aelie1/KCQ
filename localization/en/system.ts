@@ -150,6 +150,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.encounter.challengeAccessible": "{stars} stars",
     "ui.encounter.bestClear": "Best Clear",
     "ui.encounter.uncleared": "---",
+    "ui.encounter.showAll": "Show All",
     "ui.encounter.description": "Description",
     "ui.encounter.enemies": "Enemies",
     "ui.encounter.specialRules": "Special Rules",

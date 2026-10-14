@@ -77,6 +77,7 @@ function assertBadges(visible: boolean, mobile = false): void {
 describe("encounter keyboard navigation", () => {
     it("selects every encounter in visible catalog order without an extra confirmation step", () => {
         const { catalog, prepareBattle } = mountApp();
+        document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
         const encounters = Object.values(catalog.encounters);
         const rows = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")];
         expect(rows).toHaveLength(encounters.length);
@@ -92,7 +93,7 @@ describe("encounter keyboard navigation", () => {
     });
 
     it("supports QWERTY carryover and skips disabled encounters without renumbering", () => {
-        const base = createEncounterPickerViewModel(createStockEngine().getLibrary(), presentation);
+        const base = createEncounterPickerViewModel(createStockEngine().getLibrary(), presentation, createStockEngine().getLibrary().campaigns.skunk);
         const model = { ...base, encounters: Array.from({ length: 12 }, (_, index) => ({ ...base.encounters[0]!, id: "test" + index, name: "Encounter " + index })) };
         const onSelect = vi.fn();
         const host = document.createElement("div");
@@ -223,7 +224,7 @@ describe("encounter keyboard navigation", () => {
         keydown("Shift");
         assertBadges(true);
         release("Shift");
-        press("1");
+        press("2");
         assertBadges(true);
         vi.advanceTimersByTime(3000);
         assertBadges(mode === "always");

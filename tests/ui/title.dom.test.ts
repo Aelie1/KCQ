@@ -106,7 +106,7 @@ describe("title navigation", () => {
         const library = compositions[0]!.getLibrary();
         const presentation = new Presentation(getStringTable("en", stockCharacters, "skunk"));
         expect([...document.querySelectorAll(".kcq-encounter-picker__name")].map(row => row.textContent))
-            .toEqual(Object.values(library.encounters).map(encounter => presentation.encounter(encounter.id)));
+            .toEqual(library.campaigns.skunk.initial.map(id => presentation.encounter(id)));
         expect(library.encounters).toHaveProperty("forest_3");
         expect(compositions[0]!.getGameState().characters).toEqual([]);
         expect(prepareBattle).not.toHaveBeenCalled();

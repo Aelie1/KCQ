@@ -11,6 +11,7 @@ export function EncounterPickerPanel(props: {
     onLibrary?: () => void;
     libraryLabel?: string;
     onSettings?: () => void;
+    onShowAllChange?: (showAll: boolean) => void;
     model: EncounterPickerViewModel; onSelect: (encounter: EncounterId) => void;
 }): JSX.Element {
     return <ScreenLayout class="kcq-encounter-screen kcq-encounter-picker"
@@ -19,6 +20,11 @@ export function EncounterPickerPanel(props: {
                 libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} picker />
         }
         body={<>
+            <label class="kcq-encounter-picker__show-all">
+                <input type="checkbox" checked={props.model.showAll}
+                    onChange={event => props.onShowAllChange?.(event.currentTarget.checked)} />
+                <span>{props.model.showAllLabel}</span>
+            </label>
             <For each={props.model.encounters}>
                 {(encounter, index) => <button class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host" type="button"
                     data-kcq-shortcut={combatShortcut(index())}

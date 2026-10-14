@@ -4,6 +4,7 @@ import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/t
 import type { BattleTelemetryObserver } from "../telemetry";
 import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES } from "../app";
 import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "./encounterClears";
+import { loadCampaignUnlocks, saveCampaignUnlocks, type CampaignUnlocks } from "./campaignUnlocks";
 
 export interface GraphicalBattleSession {
     engine: Engine;
@@ -22,7 +23,10 @@ export function createGraphicalController(
     storage?: Pick<Storage, "getItem" | "setItem">,
 ) {
     let session: GraphicalBattleSession | undefined;
+    let outcomeRecorded = false;
     const [bestClears, setBestClears] = createSignal<EncounterClears>(loadEncounterClears(storage));
+    const [unlocks, setUnlocks] = createSignal<CampaignUnlocks>(loadCampaignUnlocks(storage));
+    const [showAll, setShowAll] = createSignal(false);
     const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "title" });
 
     const closeSession = (): void => {
@@ -41,9 +45,27 @@ export function createGraphicalController(
     return {
         screen,
         bestClears,
-        recordVictory(): void {
+        unlocks,
+        showAll,
+        setShowAll,
+        recordOutcome(): void {
             const current = screen();
-            if (current.screen !== "battle" || session?.engine.getGameState().turn.outcome !== "victory") return;
+            if (current.screen !== "battle" || !session || outcomeRecorded) return;
+            const outcome = session.engine.getGameState().turn.outcome;
+            if (outcome === "ongoing") return;
+            outcomeRecorded = true;
+            const campaign = session.engine.getLibrary().campaigns[current.campaign];
+            if (campaign) {
+                const saved = unlocks()[current.campaign] ?? [];
+                const available = new Set([...campaign.initial, ...saved]);
+                const added = (campaign[outcome][current.encounter] ?? []).filter(id => !available.has(id));
+                if (added.length > 0) {
+                    const updated = { ...unlocks(), [current.campaign]: [...new Set([...saved, ...added])] };
+                    setUnlocks(updated);
+                    saveCampaignUnlocks(updated, storage);
+                }
+            }
+            if (outcome !== "victory") return;
             const rank = (difficulty: DifficultyId | undefined) => ENCOUNTER_DIFFICULTIES.findIndex(({ id }) => id === difficulty);
             if (rank(current.difficulty) <= rank(bestClears()[current.encounter])) return;
             const updated = { ...bestClears(), [current.encounter]: current.difficulty };
@@ -51,7 +73,10 @@ export function createGraphicalController(
             saveEncounterClears(updated, storage);
         },
         selectCampaign(campaign: KCQCampaign): void {
-            if (screen().screen === "title") setScreen({ screen: "picker", campaign });
+            if (screen().screen === "title") {
+                setShowAll(false);
+                setScreen({ screen: "picker", campaign });
+            }
         },
         returnToTitle(): void {
             if (screen().screen === "title") return;
@@ -84,6 +109,7 @@ export function createGraphicalController(
             const current = screen();
             if (current.screen !== "difficulty") return;
             session = prepareBattle(current.campaign, current.encounter, current.difficulty);
+            outcomeRecorded = false;
             setScreen({ screen: "battle", campaign: current.campaign, encounter: current.encounter, difficulty: current.difficulty, session });
         },
         retryEncounter(): void {
@@ -91,6 +117,7 @@ export function createGraphicalController(
             if (current.screen !== "battle") return;
             closeSession();
             session = prepareBattle(current.campaign, current.encounter, current.difficulty);
+            outcomeRecorded = false;
             setScreen({ ...current, session });
         },
         returnToLevelSelect(): void {

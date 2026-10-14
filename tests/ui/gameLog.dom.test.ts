@@ -248,6 +248,7 @@ describe("live graphical Game Log history", () => {
         click(".kcq-combat-header__settings");
         button("Back to Level Select").click();
         expect(sessions[1]!.dispose).toHaveBeenCalledOnce();
+        document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
         chooseEncounter("plains_2");
         button("Game Log").click();
         expect(logEntries()).toHaveLength(0);

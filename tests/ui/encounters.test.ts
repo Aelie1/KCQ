@@ -48,7 +48,7 @@ describe("encounter catalog view models", () => {
     });
 
     it("uses the public catalog in its authored order", () => {
-        const model = createEncounterPickerViewModel(library, presentation);
+        const model = createEncounterPickerViewModel(library, presentation, library.campaigns.skunk, {}, [], true);
         expect(model.encounters.map(({ id }) => id)).toEqual([
             "prologue", "plains_1", "plains_2", "plains_3", "interlude_1",
             "forest_1", "forest_2", "forest_3", "interlude_2",
@@ -58,7 +58,7 @@ describe("encounter catalog view models", () => {
             Object.values(library.encounters).map(({ id }) => presentation.encounter(id)),
         );
         const reordered = { ...library, encounters: { outside: library.encounters.outside, plains_1: library.encounters.plains_1 } };
-        expect(createEncounterPickerViewModel(reordered, presentation).encounters.map(({ id }) => id)).toEqual(["outside", "plains_1"]);
+        expect(createEncounterPickerViewModel(reordered, presentation, library.campaigns.skunk, {}, [], true).encounters.map(({ id }) => id)).toEqual(["outside", "plains_1"]);
     });
 
     it.each([
@@ -69,12 +69,12 @@ describe("encounter catalog view models", () => {
     });
 
     it("leaves encounters uncleared and accepts optional localized best clears", () => {
-        expect(createEncounterPickerViewModel(library, presentation).encounters.every(({ bestClearLabel }) => bestClearLabel === "👑 ---")).toBe(true);
+        expect(createEncounterPickerViewModel(library, presentation, library.campaigns.skunk, {}, [], true).encounters.every(({ bestClearLabel }) => bestClearLabel === "👑 ---")).toBe(true);
         const detail = createEncounterDetailsViewModel(library, "outside", presentation);
         expect(detail.bestClear).toBeUndefined();
         expect(detail.bestClearLabel).toBe("👑 ---");
         expect(createEncounterDetailsViewModel(library, "outside", presentation, "veteran").bestClearLabel).toBe("👑 Veteran");
-        expect(createEncounterPickerViewModel(library, presentation, { outside: "standard" }).encounters.find(({ id }) => id === "outside")?.bestClearLabel).toBe("👑 Standard");
+        expect(createEncounterPickerViewModel(library, presentation, library.campaigns.skunk, { outside: "standard" }, [], true).encounters.find(({ id }) => id === "outside")?.bestClearLabel).toBe("👑 Standard");
     });
 
     it("derives generic enemy identities, ranks and HP from public references", () => {

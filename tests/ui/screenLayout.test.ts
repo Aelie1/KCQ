@@ -27,7 +27,7 @@ const presentation = new Presentation(stockStrings);
 const noop = () => {};
 const screens = [
     { name: "Encounter Picker", render: () => createComponent(EncounterPickerPanel, {
-        model: createEncounterPickerViewModel(library, presentation), onSelect: noop,
+        model: createEncounterPickerViewModel(library, presentation, library.campaigns.skunk, {}, [], true), onSelect: noop,
     }), content: "kcq-encounter-picker__row", footer: undefined, roster: false },
     { name: "Encounter Details", render: () => createComponent(EncounterDetailsPanel, {
         model: createEncounterDetailsViewModel(library, "forest_3", presentation), onBack: noop, onChooseDifficulty: noop,

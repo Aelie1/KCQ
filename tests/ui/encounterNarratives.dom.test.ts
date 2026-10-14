@@ -159,6 +159,7 @@ describe("Encounter Details narrative tabs", () => {
                 .find(row => row.querySelector(".kcq-encounter-picker__name")?.textContent === presentation.encounter(id));
             expect(row).toBeDefined(); row!.click();
         };
+        element<HTMLInputElement>(".kcq-encounter-picker__show-all input").click();
         select("outside");
         const unchanged = ["info", "enemies", "rules", "footer"].map(section =>
             element(".kcq-encounter-details__" + section).textContent);
