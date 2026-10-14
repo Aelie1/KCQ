@@ -17,14 +17,14 @@ export function EncounterPickerPanel(props: {
     return <ScreenLayout class="kcq-encounter-screen kcq-encounter-picker"
         header={
             <EncounterHeader title={props.model.title} settingsLabel={props.model.settingsLabel} onSettings={props.onSettings}
-                libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} picker />
+                libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} picker
+                pickerControls={<label class="kcq-encounter-picker__show-all">
+                    <input type="checkbox" checked={props.model.showAll}
+                        onChange={event => props.onShowAllChange?.(event.currentTarget.checked)} />
+                    <span>{props.model.showAllLabel}</span>
+                </label>} />
         }
         body={<>
-            <label class="kcq-encounter-picker__show-all">
-                <input type="checkbox" checked={props.model.showAll}
-                    onChange={event => props.onShowAllChange?.(event.currentTarget.checked)} />
-                <span>{props.model.showAllLabel}</span>
-            </label>
             <For each={props.model.encounters}>
                 {(encounter, index) => <button class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host" type="button"
                     data-kcq-shortcut={combatShortcut(index())}

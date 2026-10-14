@@ -410,17 +410,22 @@ export const outside: EncounterDef = {
 
 export const skunkCampaign: CampaignDef = {
     id: "skunk",
-    initial: ["prologue", "plains_1"],
+    initial: ["prologue"],
     victory: {
+        prologue: ["plains_1"],
         plains_1: ["plains_2"],
         plains_2: ["plains_3"],
-        plains_3: ["interlude_1", "forest_1"],
+        plains_3: ["interlude_1"],
+        interlude_1: ["forest_1"],
         forest_1: ["forest_2"],
         forest_2: ["forest_3"],
-        forest_3: ["interlude_2", "tower_1"],
-        tower_1: ["tower_2", "tower_3", "interlude_3", "epilogue", "outside"],
-        tower_2: ["tower_3", "interlude_3", "epilogue", "outside"],
-        tower_3: ["interlude_3", "epilogue", "outside"],
+        forest_3: ["interlude_2"],
+        interlude_2: ["tower_1"],
+        tower_1: ["tower_2", "tower_3", "interlude_3"],
+        tower_2: ["tower_3", "interlude_3"],
+        tower_3: ["interlude_3"],
+        interlude_3: ["epilogue"],
+        epilogue: ["outside"],
     },
     defeat: {
         tower_1: ["tower_2"],

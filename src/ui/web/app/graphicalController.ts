@@ -1,5 +1,6 @@
 import type { KCQCampaign } from "../../../content";
 import { createSignal } from "solid-js";
+import type { CampaignReference, ContentLibrary } from "../../../engine/public/library";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { BattleTelemetryObserver } from "../telemetry";
 import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES } from "../app";
@@ -21,6 +22,7 @@ export type GraphicalScreen = { screen: "title" } | ({ campaign: KCQCampaign } &
 export function createGraphicalController(
     prepareBattle: (campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId) => GraphicalBattleSession,
     storage?: Pick<Storage, "getItem" | "setItem">,
+    getLibrary?: () => ContentLibrary | undefined,
 ) {
     let session: GraphicalBattleSession | undefined;
     let outcomeRecorded = false;
@@ -28,6 +30,16 @@ export function createGraphicalController(
     const [unlocks, setUnlocks] = createSignal<CampaignUnlocks>(loadCampaignUnlocks(storage));
     const [showAll, setShowAll] = createSignal(false);
     const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "title" });
+
+    const unlockEncounter = (campaign: CampaignReference, encounter: EncounterId, outcome: "victory" | "defeat"): void => {
+        const saved = unlocks()[campaign.id] ?? [];
+        const available = new Set([...campaign.initial, ...saved]);
+        const added = (campaign[outcome][encounter] ?? []).filter(id => !available.has(id));
+        if (added.length === 0) return;
+        const updated = { ...unlocks(), [campaign.id]: [...new Set([...saved, ...added])] };
+        setUnlocks(updated);
+        saveCampaignUnlocks(updated, storage);
+    };
 
     const closeSession = (): void => {
         if (session?.engine.getGameState().turn.outcome === "ongoing") {
@@ -55,16 +67,7 @@ export function createGraphicalController(
             if (outcome === "ongoing") return;
             outcomeRecorded = true;
             const campaign = session.engine.getLibrary().campaigns[current.campaign];
-            if (campaign) {
-                const saved = unlocks()[current.campaign] ?? [];
-                const available = new Set([...campaign.initial, ...saved]);
-                const added = (campaign[outcome][current.encounter] ?? []).filter(id => !available.has(id));
-                if (added.length > 0) {
-                    const updated = { ...unlocks(), [current.campaign]: [...new Set([...saved, ...added])] };
-                    setUnlocks(updated);
-                    saveCampaignUnlocks(updated, storage);
-                }
-            }
+            if (campaign) unlockEncounter(campaign, current.encounter, outcome);
             if (outcome !== "victory") return;
             const rank = (difficulty: DifficultyId | undefined) => ENCOUNTER_DIFFICULTIES.findIndex(({ id }) => id === difficulty);
             if (rank(current.difficulty) <= rank(bestClears()[current.encounter])) return;
@@ -85,7 +88,11 @@ export function createGraphicalController(
         },
         selectEncounter(encounter: EncounterId): void {
             const current = screen();
-            if (current.screen === "picker") setScreen({ screen: "details", campaign: current.campaign, encounter });
+            if (current.screen !== "picker") return;
+            const library = getLibrary?.();
+            const campaign = library?.campaigns[current.campaign];
+            setScreen({ screen: "details", campaign: current.campaign, encounter });
+            if (library?.encounters[encounter]?.stars === 0 && campaign) unlockEncounter(campaign, encounter, "victory");
         },
         backToPicker(): void {
             const current = screen();

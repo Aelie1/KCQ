@@ -70,15 +70,39 @@ function press(key: string) {
 }
 
 describe("campaign unlock UI integration", () => {
+    it.each([
+        ["interlude_1", "forest_1"], ["interlude_2", "tower_1"],
+        ["interlude_3", "epilogue"], ["epilogue", "outside"],
+    ])("opening %s unlocks %s even through Show All, without combat or clears", (story, next) => {
+        window.localStorage.setItem("kcq.clears", JSON.stringify({ plains_1: "mythic" }));
+        const { prepareBattle } = mount();
+        toggle().click();
+        expect(window.localStorage.getItem("kcq.unlocks")).toBeNull();
+        select(story);
+        expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: [next] });
+        expect(JSON.parse(window.localStorage.getItem("kcq.clears")!)).toEqual({ plains_1: "mythic" });
+        expect(prepareBattle).not.toHaveBeenCalled();
+        press("Escape"); toggle().click();
+        expect(names()).toEqual(encounterNames(Object.keys(createStockEngine().getLibrary().encounters)
+            .filter(id => id === "prologue" || id === next)));
+    });
+
     it("defaults to initial encounters and exposes a localized, labeled Show All checkbox", () => {
-        mount();
+        const { prepareBattle } = mount();
         expect(toggle().checked).toBe(false);
         expect(toggle().closest("label")?.textContent).toBe(presentation.ui("encounter.showAll"));
-        expect(names()).toEqual(encounterNames(["prologue", "plains_1"]));
+        expect(names()).toEqual(encounterNames(["prologue"]));
         select("prologue");
+        expect(prepareBattle).not.toHaveBeenCalled();
         expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter("prologue"));
         expect(document.querySelector('[data-kcq-shortcut="enter"]')).toBeNull();
-        expect(window.localStorage.getItem("kcq.unlocks")).toBeNull();
+        expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["plains_1"] });
+        expect(document.querySelector(".kcq-encounter-picker__show-all")).toBeNull();
+        expect(window.localStorage.getItem("kcq.clears")).toBeNull();
+        press("Escape");
+        expect(names()).toEqual(encounterNames(["prologue", "plains_1"]));
+        select("prologue"); press("Escape");
+        expect(names()).toEqual(encounterNames(["prologue", "plains_1"]));
     });
 
     it("plays a locked encounter through Show All and restores the filtered list without saving it", () => {
@@ -93,15 +117,16 @@ describe("campaign unlock UI integration", () => {
         back.click();
         expect(toggle().checked).toBe(true);
         toggle().click();
-        expect(names()).toEqual(encounterNames(["prologue", "plains_1"]));
+        expect(names()).toEqual(encounterNames(["prologue"]));
         expect(window.localStorage.getItem("kcq.unlocks")).toBeNull();
         expect(window.localStorage.getItem("kcq.clears")).toBeNull();
     });
 
     it("records victory before returning to the picker and immediately includes the new encounter", () => {
         const { sessions } = mount();
+        select("prologue"); press("Escape");
         start("plains_1"); finish(sessions[0]!.engine, "victory");
-        expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["plains_2"] });
+        expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["plains_1", "plains_2"] });
         expect(JSON.parse(window.localStorage.getItem("kcq.clears")!)).toEqual({ plains_1: "standard" });
         returnFromResult();
         expect(names()).toEqual(encounterNames(["prologue", "plains_1", "plains_2"]));
@@ -111,17 +136,17 @@ describe("campaign unlock UI integration", () => {
         const { sessions, prepareBattle } = mount();
         toggle().click(); start("tower_1"); finish(sessions[0]!.engine, "defeat"); returnFromResult();
         toggle().click();
-        expect(names()).toEqual(encounterNames(["prologue", "plains_1", "tower_2"]));
-        press("3");
+        expect(names()).toEqual(encounterNames(["prologue", "tower_2"]));
+        press("2");
         expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter("tower_2"));
         press("Enter"); press("Enter");
         expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "tower_2", "standard");
         finish(sessions[1]!.engine, "defeat"); returnFromResult();
-        expect(names()).toEqual(encounterNames(["prologue", "plains_1", "tower_2", "tower_3"]));
+        expect(names()).toEqual(encounterNames(["prologue", "tower_2", "tower_3"]));
         expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["tower_2", "tower_3"] });
         expect(window.localStorage.getItem("kcq.clears")).toBeNull();
         toggle().click(); toggle().click();
-        press("4");
+        press("3");
         expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter("tower_3"));
     });
 

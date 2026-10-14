@@ -61,6 +61,8 @@ function selectLanguage(id: string) {
 }
 function start(difficulty = "Standard") {
     if (document.querySelector(".kcq-title-screen")) click(".kcq-title-screen__campaign");
+    const showAll = document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!;
+    if (!showAll.checked) showAll.click();
     click('.kcq-encounter-picker__row[data-kcq-shortcut="2"]'); button("Choose Difficulty"); button(difficulty); button("Start Encounter");
 }
 function finish(engine: ReturnType<typeof createStockEngine>, outcome: BattleState) {
@@ -106,7 +108,9 @@ describe("player persistence in the graphical application", () => {
         let { sessions } = mount(); start("Veteran"); finish(sessions[0]!, "victory");
         expect(JSON.parse(window.localStorage.getItem("kcq.clears")!)).toEqual({ plains_1: "veteran" });
         button("Back to Level Select"); expect(clearLabel()).toBe("👑 Veteran");
-        ({ sessions } = mount()); click(".kcq-title-screen__campaign"); expect(clearLabel()).toBe("👑 Veteran");
+        ({ sessions } = mount()); click(".kcq-title-screen__campaign");
+        document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
+        expect(clearLabel()).toBe("👑 Veteran");
         start("Casual"); finish(sessions[0]!, "victory"); button("Back to Level Select");
         expect(clearLabel()).toBe("👑 Veteran");
         expect(JSON.parse(window.localStorage.getItem("kcq.clears")!)).toEqual({ plains_1: "veteran" });
@@ -139,6 +143,8 @@ describe("player persistence in the graphical application", () => {
         window.localStorage.setItem("kcq.clears", '{"plains_1":"mythic"}');
         window.localStorage.removeItem("kcq.language"); window.localStorage.removeItem("kcq.clears");
         mount(); expect(document.querySelector<HTMLSelectElement>(".kcq-title-screen select")?.value).toBe("en");
-        click(".kcq-title-screen__campaign"); expect(clearLabel()).toBe("👑 ---");
+        click(".kcq-title-screen__campaign");
+        document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
+        expect(clearLabel()).toBe("👑 ---");
     });
 });

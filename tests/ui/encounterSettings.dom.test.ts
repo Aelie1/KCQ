@@ -72,6 +72,8 @@ function mountSelection(screen: SelectionScreen, release = "v0.8-settings-test")
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release, composeCampaign: () => ({ engine, presentation, languages }), presentation, languages, prepareBattle }), root);
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+    document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="1"]')!.click();
+    document.querySelector<HTMLButtonElement>(".kcq-encounter-details__footer button")!.click();
     if (screen !== "picker") selectEncounter();
     if (screen === "difficulty") {
         button("Choose Difficulty").click();

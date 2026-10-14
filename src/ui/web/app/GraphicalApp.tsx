@@ -67,7 +67,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     const navigate = (callback: () => void): void => {
         if (!settingsOpen() && !libraryOpen()) callback();
     };
-    const controller = createGraphicalController(props.prepareBattle);
+    const controller = createGraphicalController(props.prepareBattle, undefined, () => library());
     const backToTitle = (): void => {
         setSettingsOpen(false);
         setLibraryOpen(false);

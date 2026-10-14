@@ -2958,6 +2958,10 @@ button {
     line-height: 24px;
 }
 
+.kcq-encounter-header--picker {
+    grid-template-columns: minmax(0, 1fr) auto 42px;
+}
+
 .kcq-encounter-header__title--picker {
     font-size: 24px;
     line-height: 29px;
@@ -3771,16 +3775,25 @@ button {
 .kcq-encounter-picker__show-all {
     display: flex;
     align-items: center;
-    gap: 10px;
-    align-self: flex-start;
+    gap: 6px;
     padding: 8px 0;
+    font-size: 14px;
+    white-space: nowrap;
     color: var(--kcq-text-primary);
     cursor: pointer;
 }
 
 .kcq-encounter-picker__show-all input {
+    margin: 0;
     accent-color: var(--kcq-accent-primary);
     cursor: pointer;
+}
+
+@media (max-width: 480px) {
+    .kcq-encounter-header__title--picker {
+        font-size: 20px;
+        line-height: 24px;
+    }
 }
 
 .kcq-encounter-picker__show-all input:focus-visible {

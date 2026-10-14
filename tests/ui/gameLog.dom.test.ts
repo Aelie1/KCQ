@@ -70,6 +70,8 @@ function mountBattle() {
         languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }],
     }), host);
     click(".kcq-title-screen__campaign");
+    click('.kcq-encounter-picker__row[data-kcq-shortcut="1"]');
+    click(".kcq-encounter-details__footer button");
     chooseEncounter("plains_1");
     return { sessions, prepareBattle, engine: sessions[0]!.engine };
 }

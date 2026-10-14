@@ -168,7 +168,10 @@ describe("Library campaign selection and localization", () => {
         const engine = createStockEngine(12345);
         const prepareBattle = vi.fn(() => ({ engine, dispose: vi.fn() }));
         mount(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ engine, presentation }), prepareBattle }));
-        element(".kcq-title-screen__campaign").click(); element('.kcq-encounter-picker__row[data-kcq-shortcut="2"]').click();
+        element(".kcq-title-screen__campaign").click();
+        element('.kcq-encounter-picker__row[data-kcq-shortcut="1"]').click();
+        element(".kcq-encounter-details__footer button").click();
+        element('.kcq-encounter-picker__row[data-kcq-shortcut="2"]').click();
         if (screen === "difficulty") {
             element(".kcq-encounter-details__footer button:last-child").click();
             const mythic = [...document.querySelectorAll<HTMLButtonElement>("button")].find(button => button.textContent === "Mythic")!;

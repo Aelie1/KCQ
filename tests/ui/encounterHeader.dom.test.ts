@@ -41,16 +41,16 @@ function mount(view: Parameters<typeof render>[0]): HTMLElement {
 }
 
 const screens = [
-    { name: "picker", height: "58px", render: (controls: LibrarySettingsControlsProps, confirm: () => void) =>
+    { name: "picker", height: "56px", render: (controls: LibrarySettingsControlsProps, confirm: () => void) =>
         createComponent(EncounterPickerPanel, {
             ...controls, model: createEncounterPickerViewModel(library, presentation, library.campaigns.skunk, {}, [], true), onSelect: confirm,
         }) },
-    { name: "details", height: "58px", render: (controls: LibrarySettingsControlsProps, confirm: () => void) =>
+    { name: "details", height: "56px", render: (controls: LibrarySettingsControlsProps, confirm: () => void) =>
         createComponent(EncounterDetailsPanel, {
             ...controls, model: createEncounterDetailsViewModel(library, "plains_1", presentation),
             onBack: () => {}, onChooseDifficulty: confirm,
         }) },
-    { name: "difficulty", height: "58px", render: (controls: LibrarySettingsControlsProps, confirm: () => void) =>
+    { name: "difficulty", height: "56px", render: (controls: LibrarySettingsControlsProps, confirm: () => void) =>
         createComponent(DifficultySelectPanel, {
             ...controls, model: createDifficultySelectViewModel(library, "plains_1", "standard", presentation),
             onBack: () => {}, onStart: confirm, onSelectDifficulty: () => {},
@@ -62,6 +62,42 @@ const screens = [
 ];
 
 describe("shared Library and Settings header controls", () => {
+    it.each([320, 390, 1024])("places the accessible Show All control between the title and stacked buttons at width %s", width => {
+        viewport.setViewport({ width });
+        const onShowAllChange = vi.fn(); const globalAction = vi.fn(() => false);
+        const host = mount(() => {
+            useCombatKeyboard(() => host, () => true, globalAction, () => "always");
+            return createComponent(EncounterPickerPanel, {
+                model: createEncounterPickerViewModel(library, presentation, library.campaigns.skunk),
+                onSelect: vi.fn(), onShowAllChange, onLibrary: vi.fn(), onSettings: vi.fn(),
+            });
+        });
+        const header = host.querySelector<HTMLElement>(".kcq-encounter-header")!;
+        const label = header.querySelector<HTMLLabelElement>(".kcq-encounter-picker__show-all")!;
+        const checkbox = label.querySelector<HTMLInputElement>("input")!;
+        const controls = header.querySelector<HTMLElement>(".kcq-header-controls")!;
+        expect(label.previousElementSibling).toBe(header.querySelector("h1"));
+        expect(label.nextElementSibling).toBe(controls);
+        expect(getComputedStyle(header).gridTemplateColumns).toBe("minmax(0, 1fr) auto 42px");
+        expect(parseFloat(getComputedStyle(header.querySelector("h1")!).minWidth)).toBe(0);
+        expect(getComputedStyle(label).whiteSpace).toBe("nowrap");
+        expect(getComputedStyle(controls).gridTemplateRows).toBe("repeat(2, minmax(0, 1fr))");
+        expect(host.querySelector(".kcq-screen-layout__body .kcq-encounter-picker__show-all")).toBeNull();
+        expect(checkbox.type).toBe("checkbox");
+        expect(checkbox.tabIndex).toBe(0);
+        expect(label.textContent).toBe(presentation.ui("encounter.showAll"));
+        checkbox.focus(); expect(document.activeElement).toBe(checkbox);
+        for (const key of [" ", "Enter"]) {
+            const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+            checkbox.dispatchEvent(event);
+            expect(event.defaultPrevented).toBe(false);
+            checkbox.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
+        }
+        label.click();
+        expect(onShowAllChange).toHaveBeenCalledExactlyOnceWith(true);
+        expect(globalAction).not.toHaveBeenCalled();
+    });
+
     it.each(screens.flatMap(screen => [320, 390, 1024].map(width => ({ ...screen, width }))))(
         "keeps labeled $name actions in the existing header area at width $width", screen => {
             viewport.setViewport({ width: screen.width });
@@ -76,6 +112,7 @@ describe("shared Library and Settings header controls", () => {
                     settingsLabel: presentation.ui("battleOverview.settings"), onLibrary, onSettings,
                 }, onConfirm);
             });
+            expect(!!host.querySelector(".kcq-encounter-picker__show-all")).toBe(screen.name === "picker");
             const controls = host.querySelector<HTMLElement>(".kcq-header-controls")!;
             const buttons = [...controls.querySelectorAll<HTMLButtonElement>("button")];
             expect(buttons.map(button => button.getAttribute("aria-label"))).toEqual(["Bibliotheque", "Options"]);

@@ -66,6 +66,8 @@ function mountBattle(languages?: readonly LanguageOption[], release = "v0.8-sett
         presentation, prepareBattle, languages,
     }), root);
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+    document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="1"]')!.click();
+    document.querySelector<HTMLButtonElement>(".kcq-encounter-details__footer button")!.click();
     const encounter = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
         .find(row => row.querySelector("strong")?.textContent === presentation.encounter("plains_1"));
     if (!encounter) throw new Error("Missing plains_1 encounter");

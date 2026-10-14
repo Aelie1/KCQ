@@ -38,7 +38,7 @@ function setup(storage = storageWith(), campaigns: Record<string, CampaignRefere
     });
     const controller = createRoot(dispose => {
         disposers.push(() => { controller.dispose(); dispose(); });
-        return createGraphicalController(prepare, storage);
+        return createGraphicalController(prepare, storage, () => ({ ...library, campaigns }));
     });
     const start = (encounter: EncounterId, difficulty: DifficultyId = "standard", id: KCQCampaign = "skunk") => {
         controller.selectCampaign(id);
@@ -54,10 +54,76 @@ function setup(storage = storageWith(), campaigns: Record<string, CampaignRefere
 }
 
 describe("campaign encounter unlocks", () => {
+    it.each([
+        ["prologue", "plains_1"], ["interlude_1", "forest_1"], ["interlude_2", "tower_1"],
+        ["interlude_3", "epilogue"], ["epilogue", "outside"],
+    ])("opening %s immediately unlocks %s without combat or repeated writes", (story, next) => {
+        const savedClears = { plains_1: "mythic" };
+        const app = setup(storageWith({ "kcq.clears": JSON.stringify(savedClears) }));
+        app.controller.selectCampaign("skunk");
+        app.controller.selectEncounter(story);
+        expect(app.controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: story });
+        expect(app.controller.unlocks()).toEqual({ skunk: [next] });
+        expect(app.controller.bestClears()).toEqual(savedClears);
+        expect(app.prepare).not.toHaveBeenCalled();
+        expect(app.storage.setItem).toHaveBeenCalledExactlyOnceWith("kcq.unlocks", JSON.stringify({ skunk: [next] }, null, 2));
+        app.controller.backToPicker(); app.controller.selectEncounter(story);
+        expect(app.controller.unlocks()).toEqual({ skunk: [next] });
+        expect(app.storage.setItem).toHaveBeenCalledTimes(1);
+        expect(setup(app.storage).controller.unlocks()).toEqual({ skunk: [next] });
+    });
+
+    it("preserves old unlocks across the revised graph and adds story unlocks cumulatively", () => {
+        const saved = { skunk: ["plains_1", "interlude_1", "forest_1", "tower_3", "outside"], alternate: ["old"] };
+        const app = setup(storageWith({ "kcq.unlocks": JSON.stringify(saved) }));
+        expect(app.controller.unlocks()).toEqual(saved);
+        expect(app.storage.setItem).not.toHaveBeenCalled();
+        app.controller.selectCampaign("skunk"); app.controller.selectEncounter("interlude_1");
+        expect(app.storage.setItem).not.toHaveBeenCalled();
+        app.controller.backToPicker(); app.controller.selectEncounter("interlude_2");
+        expect(app.controller.unlocks()).toEqual({ ...saved, skunk: [...saved.skunk, "tower_1"] });
+        expect(setup(app.storage).controller.unlocks()).toEqual(app.controller.unlocks());
+    });
+
+    it("uses stars and the selected campaign's public story rules instead of known story IDs", () => {
+        const alternate = "alternate" as KCQCampaign;
+        const changed = { ...library, encounters: { ...library.encounters, forest_1: { ...library.encounters.forest_1, stars: 0 } },
+            campaigns: { ...library.campaigns, alternate: { id: alternate, initial: ["forest_1"], victory: { forest_1: ["plains_3"] }, defeat: {} } } };
+        const storage = storageWith(); const prepare = vi.fn();
+        const controller = createRoot(dispose => {
+            disposers.push(dispose);
+            return createGraphicalController(prepare, storage, () => changed);
+        });
+        controller.selectCampaign(alternate); controller.selectEncounter("forest_1");
+        expect(controller.unlocks()).toEqual({ alternate: ["plains_3"] });
+        expect(controller.bestClears()).toEqual({});
+        expect(prepare).not.toHaveBeenCalled();
+    });
+
+    it("keeps combat victories behind the Interlude and Epilogue gates", () => {
+        const app = setup();
+        app.start("plains_3"); app.finish("victory"); app.controller.returnToLevelSelect();
+        expect(app.visible()).toEqual(["prologue", "interlude_1"]);
+        app.controller.selectEncounter("interlude_1"); app.controller.backToPicker();
+        expect(app.visible()).toEqual(["prologue", "interlude_1", "forest_1"]);
+        app.start("forest_3"); app.finish("victory"); app.controller.returnToLevelSelect();
+        expect(app.controller.unlocks().skunk).not.toContain("tower_1");
+        app.controller.selectEncounter("interlude_2"); app.controller.backToPicker();
+        expect(app.controller.unlocks().skunk).toContain("tower_1");
+        app.start("tower_3"); app.finish("victory"); app.controller.returnToLevelSelect();
+        expect(app.controller.unlocks().skunk).not.toContain("epilogue");
+        expect(app.controller.unlocks().skunk).not.toContain("outside");
+        app.controller.selectEncounter("interlude_3"); app.controller.backToPicker();
+        expect(app.controller.unlocks().skunk).toContain("epilogue");
+        expect(app.controller.unlocks().skunk).not.toContain("outside");
+        app.controller.selectEncounter("epilogue");
+        expect(app.controller.unlocks().skunk).toContain("outside");
+    });
+
     it("includes initial encounters on a fresh save without writing storage, including story-only entries", () => {
         const app = setup();
-        expect(app.visible()).toEqual(campaign.initial);
-        expect(app.visible()).toContain("prologue");
+        expect(campaign.initial).toEqual(["prologue"]);
+        expect(app.visible()).toEqual(["prologue"]);
         expect(app.controller.showAll()).toBe(false);
         expect(app.storage.setItem).not.toHaveBeenCalled();
     });
@@ -66,7 +132,7 @@ describe("campaign encounter unlocks", () => {
         const app = setup(storageWith({ "kcq.clears": '{"plains_1":"mythic"}' }));
         app.start("plains_1", difficulty); app.finish("victory");
         expect(app.controller.unlocks()).toEqual({ skunk: campaign.victory.plains_1 });
-        expect(app.visible()).toEqual(["prologue", "plains_1", "plains_2"]);
+        expect(app.visible()).toEqual(["prologue", "plains_2"]);
         expect(app.controller.bestClears()).toEqual({ plains_1: "mythic" });
         expect(app.storage.setItem).toHaveBeenCalledExactlyOnceWith("kcq.unlocks", JSON.stringify({ skunk: ["plains_2"] }, null, 2));
     });
@@ -81,18 +147,18 @@ describe("campaign encounter unlocks", () => {
         expect(app.controller.bestClears()).toEqual({});
         expect(app.storage.getItem("kcq.clears")).toBeNull();
         const restored = setup(app.storage);
-        expect(restored.visible()).toEqual(["prologue", "plains_1", "tower_2", "tower_3"]);
+        expect(restored.visible()).toEqual(["prologue", "tower_2", "tower_3"]);
     });
 
     it("handles duplicate callbacks and repeated battles without duplicate IDs or storage writes", () => {
         const app = setup();
         app.start("plains_3"); app.finish("victory");
         app.finish("victory"); app.finish("defeat");
-        expect(app.controller.unlocks()).toEqual({ skunk: ["interlude_1", "forest_1"] });
+        expect(app.controller.unlocks()).toEqual({ skunk: ["interlude_1"] });
         expect(app.storage.setItem.mock.calls).toHaveLength(2);
         app.controller.retryEncounter(); app.finish("victory");
         expect(app.storage.setItem.mock.calls).toHaveLength(2);
-        expect(app.visible()).toEqual(["prologue", "plains_1", "interlude_1", "forest_1"]);
+        expect(app.visible()).toEqual(["prologue", "interlude_1"]);
     });
 
     it("reads the selected campaign's rules and keeps multiple campaigns independent", () => {
@@ -109,7 +175,7 @@ describe("campaign encounter unlocks", () => {
         expect(restored.controller.unlocks()).toEqual(app.controller.unlocks());
         expect(createEncounterPickerViewModel(library, presentation, campaigns.alternate, {},
             restored.controller.unlocks()[alternate]).encounters.map(({ id }) => id)).toEqual(["forest_1", "outside"]);
-        expect(restored.visible()).toEqual(["prologue", "plains_1", "plains_2"]);
+        expect(restored.visible()).toEqual(["prologue", "plains_2"]);
     });
 
     it("Show All permits locked selection and restores filtering without saving progress", () => {
@@ -153,6 +219,22 @@ describe("campaign encounter unlocks", () => {
         expect(loadCampaignUnlocks(storageWith({ "kcq.unlocks": JSON.stringify(saved) }))).toEqual({ skunk: ["tower_2"], alternate: ["outside"] });
     });
 
+    it("retains story unlocks in session and supports navigation when storage is unavailable", () => {
+        const storage = storageWith();
+        storage.getItem.mockImplementation(() => { throw new Error("blocked"); });
+        storage.setItem.mockImplementation(() => { throw new Error("quota"); });
+        const app = setup(storage);
+        app.controller.selectCampaign("skunk");
+        expect(() => app.controller.selectEncounter("prologue")).not.toThrow();
+        expect(app.controller.unlocks()).toEqual({ skunk: ["plains_1"] });
+        expect(app.controller.bestClears()).toEqual({});
+        app.controller.backToPicker();
+        expect(app.visible()).toEqual(["prologue", "plains_1"]);
+        app.controller.selectEncounter("prologue");
+        expect(storage.setItem).toHaveBeenCalledTimes(1);
+        expect(app.prepare).not.toHaveBeenCalled();
+    });
+
     it("preserves reactive progress and navigation when storage reads and writes throw", () => {
         const storage = storageWith();
         storage.getItem.mockImplementation(() => { throw new Error("blocked"); });
@@ -160,7 +242,7 @@ describe("campaign encounter unlocks", () => {
         const app = setup(storage);
         app.start("plains_1");
         expect(() => app.finish("victory")).not.toThrow();
-        expect(app.visible()).toEqual(["prologue", "plains_1", "plains_2"]);
+        expect(app.visible()).toEqual(["prologue", "plains_2"]);
         expect(app.controller.bestClears()).toEqual({ plains_1: "standard" });
         expect(() => app.controller.returnToLevelSelect()).not.toThrow();
         expect(app.controller.screen().screen).toBe("picker");

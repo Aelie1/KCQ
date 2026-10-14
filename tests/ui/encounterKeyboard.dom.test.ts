@@ -55,6 +55,7 @@ function mountApp() {
         composeCampaign: () => ({ engine: createStockEngine(), presentation }),
     }), host);
     button(".kcq-title-screen__campaign").click();
+    press("1"); press("Escape");
     return { prepareBattle, catalog };
 }
 function assertBadges(visible: boolean, mobile = false): void {
