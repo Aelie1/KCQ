@@ -305,6 +305,7 @@ button {
 }
 
 .kcq-combat-header__settings,
+.kcq-encounter-header__library,
 .kcq-combat-header__back {
     display: flex;
     align-items: center;
@@ -329,7 +330,8 @@ button {
     font-weight: 500;
 }
 
-.kcq-combat-header__settings img {
+.kcq-combat-header__settings img,
+.kcq-encounter-header__library img {
     display: block;
     flex: 0 0 22px;
 }
@@ -2968,6 +2970,35 @@ button {
 
 .kcq-encounter-header .kcq-combat-header__settings {
     height: 58px;
+    cursor: default;
+}
+
+.kcq-encounter-header__controls {
+    display: grid;
+    grid-template-rows: repeat(2, minmax(0, 1fr));
+    gap: 2px;
+    width: 42px;
+    height: 58px;
+}
+
+.kcq-encounter-header .kcq-encounter-header__controls > button {
+    height: 100%;
+    min-height: 0;
+    cursor: pointer;
+}
+
+.kcq-encounter-header__controls > button:hover:not(:disabled) {
+    border-color: var(--kcq-accent-primary);
+    background: var(--kcq-accent-primary-deep);
+}
+
+.kcq-encounter-header__controls > button:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: 2px;
+}
+
+.kcq-encounter-header .kcq-encounter-header__controls > button:disabled {
+    opacity: 0.5;
     cursor: default;
 }
 

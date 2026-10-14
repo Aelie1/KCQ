@@ -128,11 +128,15 @@ describe("Library game integration", () => {
         const before = JSON.stringify(engine.getGameState());
         mount(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ engine, presentation }), prepareBattle }));
         element(".kcq-title-screen__campaign").click(); const picker = element(".kcq-encounter-picker");
-        element(".kcq-library-access").click(); await tick();
+        const libraryButton = element<HTMLButtonElement>(".kcq-encounter-header__controls > .kcq-encounter-header__library");
+        expect(libraryButton.getAttribute("aria-label")).toBe(presentation.ui("library.title"));
+        expect(picker.querySelector(".kcq-screen-layout__body .kcq-library-access")).toBeNull();
+        libraryButton.focus(); libraryButton.click(); await tick();
         expect(document.querySelector(".kcq-library")).not.toBeNull();
         expect(element(".kcq-graphical-app__background").hidden).toBe(true);
         press("Escape");
         expect(element(".kcq-encounter-picker")).toBe(picker);
+        expect(document.activeElement).toBe(libraryButton);
         expect(prepareBattle).not.toHaveBeenCalled(); expect(execute).not.toHaveBeenCalled(); expect(load).not.toHaveBeenCalled();
         expect(JSON.stringify(engine.getGameState())).toBe(before);
     });

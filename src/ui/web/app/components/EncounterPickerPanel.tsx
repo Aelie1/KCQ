@@ -15,10 +15,10 @@ export function EncounterPickerPanel(props: {
 }): JSX.Element {
     return <ScreenLayout class="kcq-encounter-screen kcq-encounter-picker"
         header={
-            <EncounterHeader title={props.model.title} settingsLabel={props.model.settingsLabel} onSettings={props.onSettings} picker />
+            <EncounterHeader title={props.model.title} settingsLabel={props.model.settingsLabel} onSettings={props.onSettings}
+                libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} picker />
         }
         body={<>
-            {props.onLibrary && <button type="button" class="kcq-library-access kcq-encounter-card" onClick={props.onLibrary}>{props.libraryLabel}</button>}
             <For each={props.model.encounters}>
                 {(encounter, index) => <button class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host" type="button"
                     data-kcq-shortcut={combatShortcut(index())}
