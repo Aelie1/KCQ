@@ -1,5 +1,9 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.16.0 — 2026-10-14
+
+* Added auto save and resume system
+
 ## 0.15.0 — 2026-10-14
 
 ### Story and Campaign Progression
