@@ -1,4 +1,4 @@
-import type { ActionResult, BondageEvent, Character, EncounterId, GameEvent, GameState, LeafEvent, PlayerAction } from "../../../../engine/public/types";
+import type { ActionResult, BondageEvent, Character, EncounterId, EnemyRank, GameEvent, GameState, LeafEvent, PlayerAction } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 
 export interface ActionSummary {
@@ -21,6 +21,15 @@ export interface BattleResultStats {
         boss?: number;
         enemies?: number;
     };
+}
+
+export interface BattleStatsSaveState {
+    stats: BattleResultStats;
+    playerIds: string[];
+    tracks: { id: string; bindings: { id: string; value: number }[] }[];
+    enemyHp: { id: string; rank: EnemyRank; maxHp: number; currHp: number }[];
+    previous: { id: string; incapacitated: boolean; skunkLink?: string }[];
+    terminal: boolean;
 }
 
 export interface BattleResultViewModel {
@@ -51,8 +60,9 @@ const skunkLink = (character: Character): string | undefined =>
     character.buffs.find(buff => buff.id === "skunked")?.linkedEntity;
 
 /** Incremental UI statistics from public action frames; no replay or engine internals required. */
-export function createBattleResultTracker(initial: GameState) {
-    const stats: BattleResultStats = {
+export function createBattleResultTracker(initial: GameState, saved?: BattleStatsSaveState) {
+    const restored = saved && structuredClone(saved);
+    const stats: BattleResultStats = restored?.stats ?? {
         rounds: initial.turn.round,
         actions: 0,
         escapes: emptySummary(),
@@ -64,19 +74,20 @@ export function createBattleResultTracker(initial: GameState) {
         progress: {},
     };
 
-    const playerIds = new Set(initial.characters.map(character => character.id));
-    const tracks = new Map<string, Map<string, number>>();
+    const playerIds = new Set(restored?.playerIds ?? initial.characters.map(character => character.id));
+    const tracks = new Map<string, Map<string, number>>(restored?.tracks.map(({ id, bindings }) =>
+        [id, new Map(bindings.map(binding => [binding.id, binding.value]))]));
 
     // Track enemies that have actually appeared.
     // Defeated enemies remain in this map at 0 HP.
-    const enemyHp = new Map(initial.enemies.map(enemy => [enemy.id, {
+    const enemyHp = new Map((restored?.enemyHp ?? initial.enemies).map(enemy => [enemy.id, {
         rank: enemy.rank,
         maxHp: enemy.maxHp,
         currHp: enemy.currHp,
     }]));
 
-    let previous: GameState | undefined;
-    let terminal = initial.turn.outcome !== "ongoing";
+    let previous: BattleStatsSaveState["previous"] = restored?.previous ?? [];
+    let terminal = restored?.terminal ?? initial.turn.outcome !== "ongoing";
 
     const peak = (): void => {
         const burden = [...tracks.values()].reduce((sum, zones) =>
@@ -125,14 +136,14 @@ export function createBattleResultTracker(initial: GameState) {
             leaf.type === "enemyDefeated" ? [leaf.target] : []) : []);
 
         for (const character of state.characters) {
-            const before = previous?.characters.find(candidate => candidate.id === character.id);
+            const before = previous.find(candidate => candidate.id === character.id);
 
-            if (incapacitated(character) && (!before || !incapacitated(before))) {
+            if (incapacitated(character) && !before?.incapacitated) {
                 stats.incapacitations += 1;
             }
 
             // Match the existing combat metric: release from a skunk capture by defeating its linked enemy.
-            const link = before && skunkLink(before);
+            const link = before?.skunkLink;
             if (link && !skunkLink(character) && defeated.has(link)) {
                 stats.rescues += 1;
             }
@@ -145,10 +156,12 @@ export function createBattleResultTracker(initial: GameState) {
 
         peak();
         updateProgress(state);
-        previous = state;
+        previous = state.characters.map(character => ({
+            id: character.id, incapacitated: incapacitated(character), skunkLink: skunkLink(character),
+        }));
     };
 
-    observe(initial);
+    if (!restored) observe(initial);
 
     return {
         record(action: PlayerAction, result: ActionResult, finalState: GameState): void {
@@ -234,6 +247,19 @@ export function createBattleResultTracker(initial: GameState) {
             if (result.frames.at(-1)?.state !== finalState) {
                 observe(finalState);
             }
+        },
+
+        getSaveState(): BattleStatsSaveState {
+            return structuredClone({
+                stats,
+                playerIds: [...playerIds],
+                tracks: [...tracks].map(([id, zones]) => ({
+                    id, bindings: [...zones].map(([id, value]) => ({ id, value })),
+                })),
+                enemyHp: [...enemyHp].map(([id, enemy]) => ({ id, ...enemy })),
+                previous,
+                terminal,
+            });
         },
 
         getStats(): BattleResultStats {

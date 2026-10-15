@@ -1,15 +1,116 @@
-import type { EventFrame, GameState } from "../../../../engine/public/types";
-import { createGameLogEntries } from "../../../presentation/gameLog";
+import type { Buff, EventFrame, GameEvent, GameState } from "../../../../engine/public/types";
+import {
+    aggregateGameLogOutcomes, gameLogContext, gameLogEntry,
+    type GameLogContext, type GameLogPresentationEntry,
+} from "../../../presentation/gameLog";
 
-/** One history per battle session. Retaining frame boundaries lets Pass 1 merge stance runs
- * across actions without merging other top-level events or using the current state as history. */
-export function createGameLogHistory(initialState: GameState) {
-    const initial = structuredClone(initialState);
-    const frames: EventFrame[] = [];
+interface BuffReference { target: string; buff: string }
+interface PendingBuffEntry {
+    index: number;
+    event: GameEvent;
+    before: GameLogContext;
+    after: GameLogContext;
+    waiting: BuffReference[];
+    recorded: { target: string; buff: Buff }[];
+}
+
+export interface GameLogSaveState {
+    entries: GameLogPresentationEntry[];
+    previous: GameLogContext;
+    /** The last entry retains even cancelled changes until this stance run ends. */
+    mergingStance: boolean;
+    /** Only unresolved buff mutations need a recipe for later payload evidence.
+     * Endpoints here are restricted to the event's effects, not historical game snapshots. */
+    pendingBuffs: PendingBuffEntry[];
+}
+
+const effects = (event: GameEvent) => [
+    ...(event.type === "useMove" ? event.targets.flatMap(target => target.effects) : []), ...event.effects,
+];
+const mutations = (event: GameEvent): BuffReference[] => effects(event).flatMap(effect =>
+    effect.type === "buffAdded" || effect.type === "buffUpdated" || effect.type === "buffRemoved"
+        ? [{ target: effect.target, buff: effect.buff }] : []);
+const sameBuff = (a: BuffReference, b: BuffReference) => a.target === b.target && a.buff === b.buff;
+
+/** Incremental semantic history. No accumulated EventFrame[] or localized text. */
+export function createGameLogHistory(initialState: GameState, saved?: GameLogSaveState) {
+    const history: GameLogSaveState = saved ? structuredClone(saved) : {
+        entries: [], previous: gameLogContext(initialState), mergingStance: false, pendingBuffs: [],
+    };
+
+    const finishStance = () => {
+        const last = history.entries.at(-1);
+        if (history.mergingStance && last?.kind === "stance") {
+            last.changes = last.changes.filter(change => change.initial !== change.final);
+            if (!last.changes.length) history.entries.pop();
+        }
+        history.mergingStance = false;
+    };
+
     return {
-        record(nextFrames: readonly EventFrame[]) {
-            frames.push(...nextFrames);
-            return createGameLogEntries(frames, initial);
+        record(nextFrames: readonly EventFrame[]): GameLogPresentationEntry[] {
+            for (const { event, state } of nextFrames) {
+                const changed = mutations(event);
+                const entities = [...state.characters, ...state.enemies];
+                for (const pending of history.pendingBuffs) {
+                    const knownPayloads = pending.recorded.length;
+                    pending.waiting = pending.waiting.filter(ref => {
+                        const entity = entities.find(entity => entity.id === ref.target);
+                        // Another mutation or despawn breaks the future-evidence chain.
+                        if (!entity || changed.some(change => sameBuff(change, ref))) return false;
+                        const buff = entity.buffs.find(buff => buff.id === ref.buff);
+                        if (!buff) return true;
+                        pending.recorded.push({ target: ref.target, buff: structuredClone(buff) });
+                        return false;
+                    });
+                    if (pending.recorded.length === knownPayloads) continue;
+                    const recorded = new Map<string, Map<string, Buff>>();
+                    for (const { target, buff } of pending.recorded) {
+                        if (!recorded.has(target)) recorded.set(target, new Map());
+                        recorded.get(target)!.set(buff.id, buff);
+                    }
+                    history.entries[pending.index] = gameLogEntry(pending.event,
+                        aggregateGameLogOutcomes(pending.event, pending.before, pending.after, recorded), pending.after.turn.round)!;
+                }
+                history.pendingBuffs = history.pendingBuffs.filter(pending => pending.waiting.length > 0);
+
+                const after = gameLogContext(state);
+                const outcomes = aggregateGameLogOutcomes(event, history.previous, after);
+                if (event.type === "changeStance" && outcomes.every(outcome => outcome.kind === "stance")) {
+                    if (!history.mergingStance) history.entries.push({ kind: "stance", changes: [], outcomes: [] });
+                    history.mergingStance = true;
+                    const entry = history.entries.at(-1)!;
+                    if (entry.kind === "stance") for (const outcome of outcomes) {
+                        if (outcome.kind !== "stance") continue;
+                        const previous = entry.changes.find(change => change.actor === outcome.actor);
+                        if (previous) previous.final = outcome.final;
+                        else entry.changes.push(outcome);
+                    }
+                } else {
+                    finishStance();
+                    const entry = gameLogEntry(event, outcomes, after.turn.round);
+                    if (entry) {
+                        const index = history.entries.push(entry) - 1;
+                        const waiting = changed.filter((ref, index) => !changed.slice(0, index).some(other => sameBuff(ref, other))
+                            && effects(event).some(effect => (effect.type === "buffAdded" || effect.type === "buffUpdated")
+                                && effect.target === ref.target && effect.buff === ref.buff)
+                            && entities.some(entity => entity.id === ref.target && !entity.buffs.some(buff => buff.id === ref.buff)));
+                        if (waiting.length) history.pendingBuffs.push({
+                            index, event: structuredClone(event), before: gameLogContext(history.previous, event),
+                            after: gameLogContext(after, event), waiting, recorded: [],
+                        });
+                    }
+                }
+                history.previous = after;
+            }
+            const visible = structuredClone(history.entries);
+            for (const entry of visible) if (entry.kind === "stance") {
+                entry.changes = entry.changes.filter(change => change.initial !== change.final);
+            }
+            return visible.filter(entry => entry.kind !== "stance" || entry.changes.length || entry.outcomes.length);
+        },
+        getSaveState(): GameLogSaveState {
+            return structuredClone(history);
         },
     };
 }

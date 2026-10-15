@@ -1,5 +1,5 @@
 import type {
-    BindingId, BindingLevel, Buff, BuffId, EntityId, EventFrame, FailureReason,
+    BindingId, BindingLevel, Buff, BuffId, Character, EntityId, EventFrame, FailureReason,
     GameEvent, GameState, HitBand, LeafEvent, MoveId, Phase, StanceId, TrapId,
 } from "../../engine/public/types";
 
@@ -72,30 +72,60 @@ export type GameLogPresentationEntry =
     | { kind: "stance"; changes: StanceOutcome[]; outcomes: LogOutcome[] }
     | { kind: "encounter" | "character"; id: string; success: boolean; outcomes: LogOutcome[] };
 
-const entity = (state: GameState | undefined, id: EntityId) =>
+/** Only the semantic endpoints used by aggregation, never a full public snapshot. */
+export interface GameLogContext {
+    characters: (Pick<Character, "id" | "standing" | "data" | "buffs"> & {
+        bindings: { id: BindingId; value: number; level?: BindingLevel }[];
+    })[];
+    enemies: { id: EntityId; buffs: Buff[] }[];
+    traps: { id: TrapId; amount: number }[];
+    turn: { round: number };
+}
+
+export function gameLogContext(state: GameLogContext, event?: GameEvent): GameLogContext {
+    const effects = event ? [...(event.type === "useMove" ? event.targets.flatMap(target => target.effects) : []), ...event.effects] : [];
+    const ids = new Set(effects.flatMap(effect => "target" in effect ? [effect.target] : "actor" in effect ? [effect.actor] : []));
+    const buffs = new Set(effects.flatMap(effect => "buff" in effect ? [effect.buff] : []));
+    const relevant = (entity: { id: string; buffs: Buff[] }) => !event || ids.has(entity.id) || entity.buffs.some(buff => buffs.has(buff.id));
+    return structuredClone({
+        characters: state.characters.filter(relevant).map(({ id, standing, data, buffs: payloads, bindings }) => ({
+            id, standing,
+            data: !event ? data : Object.fromEntries(Object.entries(data).filter(([name]) => effects.some(effect =>
+                effect.type === "dataChanged" && effect.target === id && (effect.name === name || effect.name === "subspace" && name === "subspaceMax")))),
+            buffs: payloads.filter(buff => !event || buffs.has(buff.id)),
+            bindings: bindings.filter(binding => !event || effects.some(effect => "binding" in effect && effect.binding === binding.id))
+                .map(({ id, value, level }) => ({ id, value, level })),
+        })),
+        enemies: state.enemies.filter(relevant).map(({ id, buffs: payloads }) => ({ id, buffs: payloads.filter(buff => !event || buffs.has(buff.id)) })),
+        traps: state.traps.filter(trap => !event || effects.some(effect => "trap" in effect && effect.trap === trap.id)).map(({ id, amount }) => ({ id, amount })),
+        turn: { round: state.turn.round },
+    });
+}
+
+const entity = (state: GameLogContext | undefined, id: EntityId) =>
     state?.characters.find((character) => character.id === id)
     ?? state?.enemies.find((enemy) => enemy.id === id);
-const stance = (state: GameState | undefined, id: EntityId): StanceId | undefined => {
+const stance = (state: GameLogContext | undefined, id: EntityId): StanceId | undefined => {
     const character = state?.characters.find((candidate) => candidate.id === id);
     return character ? character.standing ? "standing" : "moving" : undefined;
 };
-function bindingEndpoint(state: GameState | undefined, target: EntityId, id: BindingId): BindingEndpoint | undefined {
+function bindingEndpoint(state: GameLogContext | undefined, target: EntityId, id: BindingId): BindingEndpoint | undefined {
     const character = state?.characters.find((candidate) => candidate.id === target);
     if (!character) return undefined;
     const binding = character.bindings.find((candidate) => candidate.id === id);
     return binding ? { value: binding.value, level: binding.level } : { value: 0, level: "none" };
 }
 type RecordedBuffs = Map<EntityId, Map<BuffId, Buff>>;
-const recordedBuff = (state: GameState | undefined, recorded: RecordedBuffs, target: EntityId, id: BuffId) =>
+const recordedBuff = (state: GameLogContext | undefined, recorded: RecordedBuffs, target: EntityId, id: BuffId) =>
     entity(state, target)?.buffs.find((buff) => buff.id === id) ?? recorded.get(target)?.get(id);
 
-function buffEndpoint(state: GameState | undefined, target: EntityId, id: BuffId, present: boolean, recorded: RecordedBuffs): BuffEndpoint {
+function buffEndpoint(state: GameLogContext | undefined, target: EntityId, id: BuffId, present: boolean, recorded: RecordedBuffs): BuffEndpoint {
     if (!state) return { present };
     const buff = recordedBuff(state, recorded, target, id);
     // Public snapshots omit inactive buffs. Leaves still establish their presence.
     return buff ? { present: true, details: structuredClone(buff) } : { present };
 }
-function linkedTarget(before: GameState | undefined, after: GameState | undefined, target: EntityId, id: BuffId, recorded: RecordedBuffs) {
+function linkedTarget(before: GameLogContext | undefined, after: GameLogContext | undefined, target: EntityId, id: BuffId, recorded: RecordedBuffs) {
     for (const state of [after, before]) {
         const linked = recordedBuff(state, recorded, target, id)?.linkedEntity;
         if (linked && recordedBuff(state, recorded, linked, id)?.linkedEntity === target) return linked;
@@ -107,7 +137,7 @@ function linkedTarget(before: GameState | undefined, after: GameState | undefine
  * contiguous, recorded immobilizing linked-buff cleanup plus its Moving stance
  * is also summarized. Unknown payloads and intervening gameplay effects stay visible.
  * Status payloads describe the cleanup buff; they never detect a transition here. */
-function transitionConsequences(event: GameEvent, before: GameState | undefined, after: GameState | undefined, recorded: RecordedBuffs): Set<LeafEvent> {
+function transitionConsequences(event: GameEvent, before: GameLogContext | undefined, after: GameLogContext | undefined, recorded: RecordedBuffs): Set<LeafEvent> {
     const summarized = new Set<LeafEvent>();
     const sequences = [...(event.type === "useMove" ? event.targets.map(target => target.effects) : []), event.effects];
     for (const leaves of sequences) {
@@ -166,7 +196,7 @@ function transitionConsequences(event: GameEvent, before: GameState | undefined,
     return summarized;
 }
 
-function aggregateOutcomes(event: GameEvent, before?: GameState, after?: GameState, recorded: RecordedBuffs = new Map()): LogOutcome[] {
+export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogContext, after?: GameLogContext, recorded: RecordedBuffs = new Map()): LogOutcome[] {
     const result: LogOutcome[] = [];
     let outcomes = result;
     let segmentStart = 0;
@@ -516,6 +546,21 @@ function delayedBuffPayloads(input: readonly (GameEvent | EventFrame)[]): Record
     return result;
 }
 
+/** Preserve top-level event boundaries after semantic outcome aggregation. */
+export function gameLogEntry(event: GameEvent, outcomes: LogOutcome[], round?: number): GameLogPresentationEntry | undefined {
+    switch (event.type) {
+        case "useMove": return { kind: "move", actor: event.actor, move: event.move, outcomes };
+        case "useEscape": return { kind: "escape", actor: event.actor, target: event.target, outcomes };
+        case "changePhase": return { kind: "phase", phase: event.phase, round, outcomes };
+        case "changeStance": return { kind: "stance", changes: outcomes.filter((outcome): outcome is StanceOutcome => outcome.kind === "stance"),
+            outcomes: outcomes.filter((outcome) => outcome.kind !== "stance") };
+        case "loadEncounter":
+        case "loadCharacter":
+            if (!event.success || outcomes.length) return { kind: event.type === "loadEncounter" ? "encounter" : "character",
+                id: event.id, success: event.success, outcomes };
+    }
+}
+
 /**
  * Frames hold post-event snapshots; initialState is the snapshot before the first event.
  * Bare events are supported with unknown endpoints, never fabricated buff levels or links.
@@ -538,7 +583,7 @@ export function createGameLogEntries(
     for (const [index, item] of input.entries()) {
         const event = "event" in item ? item.event : item;
         const after = "event" in item ? item.state : undefined;
-        const outcomes = aggregateOutcomes(event, before, after, recorded[index]);
+        const outcomes = aggregateGameLogOutcomes(event, before, after, recorded[index]);
         // Only stance-only neighbors can merge. Other gameplay outcomes keep their event boundary.
         if (event.type === "changeStance" && outcomes.every((outcome) => outcome.kind === "stance")) {
             pendingStance ??= { kind: "stance", changes: [], outcomes: [] };
@@ -550,18 +595,8 @@ export function createGameLogEntries(
             }
         } else {
             flushStance();
-            switch (event.type) {
-                case "useMove": entries.push({ kind: "move", actor: event.actor, move: event.move, outcomes }); break;
-                case "useEscape": entries.push({ kind: "escape", actor: event.actor, target: event.target, outcomes }); break;
-                case "changePhase": entries.push({ kind: "phase", phase: event.phase, round: after?.turn.round, outcomes }); break;
-                case "changeStance": entries.push({ kind: "stance", changes: outcomes.filter((outcome): outcome is StanceOutcome => outcome.kind === "stance"),
-                    outcomes: outcomes.filter((outcome) => outcome.kind !== "stance") }); break;
-                case "loadEncounter":
-                case "loadCharacter":
-                    if (!event.success || outcomes.length) entries.push({ kind: event.type === "loadEncounter" ? "encounter" : "character",
-                        id: event.id, success: event.success, outcomes });
-                    break;
-            }
+            const entry = gameLogEntry(event, outcomes, after?.turn.round);
+            if (entry) entries.push(entry);
         }
         before = after;
     }
