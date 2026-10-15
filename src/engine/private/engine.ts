@@ -5,7 +5,7 @@ import { GameStatus, StatusMap } from "../protected/status";
 import { ContentCatalog, iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import { ContentLibrary } from "../public/library";
 import { SaveState } from "../public/save";
-import type { AccuracyResult, ActionResult, ActionView, DifficultyId, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, TrapEvent } from "../public/types";
+import type { AccuracyResult, ActionResult, ActionView, CampaignId, DifficultyId, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, TrapEvent } from "../public/types";
 import {
     applyCooldowns,
     evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape,
@@ -28,9 +28,9 @@ export class GameEngine implements Engine {
     private aiRng: Random;
     private accRng: Random;
     private catalog: ContentCatalog;
-    private campaign: string;
+    private campaign: CampaignId;
 
-    constructor(campaign: string, catalog: ContentCatalog, seed?: number) {
+    constructor(campaign: CampaignId, catalog: ContentCatalog, seed?: number) {
         this.state = {
             turn: { round: 1, step: 1, phase: "player" },
             nextId: {},
