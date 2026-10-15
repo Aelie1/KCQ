@@ -153,6 +153,99 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(b.reactions.cues()).toEqual([]);
         expect(vi.getTimerCount()).toBe(0);
     });
+    it.each(["graze", "hit", "crit"] as const)("matches HP %s numbers at each binding bar's top center", band => {
+        const css = readFileSync("src/ui/web/app/app.css", "utf8");
+        const style = document.createElement("style"); style.textContent = css; document.body.append(style);
+        const b = mount();
+        const enemyId = b.initial.enemies[0]!.id;
+        b.present({ type: "useMove", actor: "skunkette1", move: "pounce", effects: [], targets: [
+            { target: "ko", result: band, effects: [{ type: "bondageChanged", target: "ko", binding: "latexHead", amount: 15 }] },
+            { target: enemyId, result: band, effects: [{ type: "enemyDamaged", target: enemyId, amount: 15 }] },
+        ] });
+        const number = element(".kcq-binding-float");
+        const hpNumber = element(".kcq-hp-reaction");
+        expect(number.dataset.hitStrength).toBe(band);
+        expect(number.textContent).toBe(band === "crit" ? "+15!" : "+15");
+        expect(hpNumber.textContent).toBe(band === "crit" ? "-15!" : "-15");
+        for (const property of ["color", "font-size", "font-weight", "text-shadow", "animation-name", "animation-duration", "animation-timing-function"]) {
+            expect(getComputedStyle(number).getPropertyValue(property), property)
+                .toBe(getComputedStyle(hpNumber).getPropertyValue(property));
+        }
+        expect(getComputedStyle(number).fontSize).toBe(band === "graze" ? "12px" : "16px");
+        expect(number.style.animation).toBe("kcq-react-hp-float 2000ms ease-out 0ms forwards");
+        if (band === "crit") expect(getComputedStyle(number).animationName).toBe("kcq-react-hp-crit");
+        expect(number.style.getPropertyValue("--float-x")).toBe(hpNumber.style.getPropertyValue("--float-x"));
+        expect(number.style.getPropertyValue("--float-y")).toBe(hpNumber.style.getPropertyValue("--float-y"));
+        expect(number.style.getPropertyValue("--float-x")).toBe("-8px");
+        expect(number.style.getPropertyValue("--float-y")).toBe("-25px");
+        expect(getComputedStyle(number).left).toBe("50%");
+        expect(getComputedStyle(number).top).toBe("0px");
+        expect(number.parentElement).toBe(element(".kcq-party-card .kcq-binding-meter"));
+        expect(element(".kcq-binding-reaction").style.animation).toBe("kcq-react-binding-fade 2500ms linear 0ms forwards");
+        const lifetime = band === "crit" ? 3000 : 2500;
+        vi.advanceTimersByTime(lifetime - 1);
+        expect(number.isConnected).toBe(true);
+        vi.advanceTimersByTime(1);
+        expect(number.isConnected).toBe(false);
+        // Apply the reduced-motion declarations to verify their cascade even for crits.
+        b.present(move(15));
+        const reducedStyle = document.createElement("style");
+        const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"), css.indexOf("/* Campaign reference browser"));
+        reducedStyle.textContent = reduced.replace("@media (prefers-reduced-motion: reduce) {", "").replace(/\}\s*$/, "");
+        document.body.append(reducedStyle);
+        expect(getComputedStyle(hpNumber).animation).toContain("kcq-react-binding-fade");
+        if (band === "crit") expect(getComputedStyle(hpNumber).animationName).toBe("kcq-react-binding-fade");
+        // Mount another number of the same strength under the active declarations.
+        const event: GameEvent = { type: "useMove", actor: "skunkette1", move: "pounce", effects: [], targets: [
+            { target: "ko", result: band, effects: [{ type: "bondageChanged", target: "ko", binding: "latexArms", amount: 3 }] },
+        ] };
+        b.present(event);
+        const reducedNumber = document.querySelectorAll<HTMLElement>(".kcq-binding-float")[1]!;
+        expect(reducedNumber.dataset.hitStrength).toBe(band);
+        expect(getComputedStyle(reducedNumber).animation).toContain("kcq-react-binding-fade 2000ms");
+        if (band === "crit") {
+            expect(getComputedStyle(reducedNumber).animationName).toBe("kcq-react-binding-fade");
+            expect(getComputedStyle(reducedNumber).animationDuration).toBe("2000ms");
+        }
+    });
+    it("lets staggered critical numbers finish independently without extending their segment glows", () => {
+        const b = mount();
+        b.present({ type: "useMove", actor: "skunkette1", move: "pounce", effects: [], targets: [
+            { target: "ko", result: "crit", effects: Array.from({ length: 6 }, () => ({
+                type: "bondageChanged" as const, target: "ko", binding: "latexHead", amount: 1,
+            })) },
+        ] });
+        const numbers = [...document.querySelectorAll<HTMLElement>(".kcq-binding-float")];
+        const animations = numbers.map(number => number.style.animation);
+        expect(numbers).toHaveLength(6);
+        expect(animations).toEqual([0, 180, 360, 540, 720, 900].map(delay =>
+            "kcq-react-hp-float 2000ms ease-out " + delay + "ms forwards"));
+        expect(b.reactions.matching("binding", "ko", "latexHead").map(cue => cue.duration))
+            .toEqual([3000, 3180, 3360, 3540, 3720, 3900]);
+        const glows = [...document.querySelectorAll<HTMLElement>(".kcq-binding-reaction")];
+        expect(glows.every(glow => glow.style.animation === "kcq-react-binding-fade 2500ms linear 0ms forwards")).toBe(true);
+        vi.advanceTimersByTime(3000);
+        expect(numbers[0]!.isConnected).toBe(false);
+        expect(numbers.slice(1).every(number => number.isConnected)).toBe(true);
+        expect(numbers[1]!.style.animation).toBe(animations[1]);
+        vi.advanceTimersByTime(180);
+        expect(numbers[1]!.isConnected).toBe(false);
+        expect(numbers[2]!.isConnected).toBe(true);
+        vi.advanceTimersByTime(720);
+        expect(numbers.every(number => !number.isConnected)).toBe(true);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+    it("keeps recovery green and unaccented even within a critical attack", () => {
+        const b = mount();
+        b.present({ type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [
+            { target: "ko", result: "crit", effects: [{ type: "bondageChanged", target: "ko", binding: "latexHead", amount: -12 }] },
+        ] });
+        const number = element(".kcq-binding-float");
+        expect(number.textContent).toBe("\u221212");
+        expect(number.dataset.combatReaction).toBe("recovery");
+        expect(number.dataset.hitStrength).toBeUndefined();
+        expect(b.reactions.matching("binding", "ko", "latexHead")[0]!.duration).toBe(2500);
+    });
     it("places signed cue deltas above only the corresponding party binding bars", () => {
         const b = mount();
         const cards = document.querySelectorAll<HTMLElement>(".kcq-party-card");
@@ -250,10 +343,10 @@ describe("combat reaction rendering and lifecycle", () => {
         const clip = meter.querySelector<HTMLElement>(".kcq-binding-meter__fill-clip")!;
         expect(getComputedStyle(clip).overflow).toBe("hidden");
         expect(clip.contains(number)).toBe(false);
-        expect(css).toMatch(/\.kcq-binding-float\[data-combat-reaction="increase"\]\s*\{[^}]*color: var\(--kcq-glow-negative\)/);
+        expect(css).toMatch(/\.kcq-binding-float\[data-combat-reaction="increase"\],\s*\.kcq-hp-reaction\[data-combat-reaction="damage"\]\s*\{[^}]*color: var\(--kcq-glow-hit\)/);
         expect(css).toMatch(/\.kcq-binding-float\[data-combat-reaction="recovery"\]\s*\{[^}]*color: var\(--kcq-glow-positive\)/);
         const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
-        expect(reduced).toMatch(/\.kcq-binding-float\s*\{\s*animation: kcq-react-binding-fade 2000ms ease-out var\(--kcq-binding-float-delay, 0ms\) both !important;/);
+        expect(reduced).toMatch(/\.kcq-binding-float\s*\{\s*animation: kcq-react-binding-fade 2000ms ease-out var\(--kcq-hp-reaction-delay, 0ms\) both !important;/);
         const fade = css.match(/@keyframes kcq-react-binding-fade\s*\{[\s\S]*?\n\}/)![0];
         expect(fade).toContain("opacity: 0");
         expect(fade).not.toContain("transform");
@@ -279,7 +372,7 @@ describe("combat reaction rendering and lifecycle", () => {
         const number = element(".kcq-binding-float");
         const animation = number.style.animation;
         expect(animation).toBe("kcq-react-hp-float 2000ms ease-out -750ms forwards");
-        expect(number.style.getPropertyValue("--kcq-binding-float-delay")).toBe("-750ms");
+        expect(number.style.getPropertyValue("--kcq-hp-reaction-delay")).toBe("-750ms");
         vi.advanceTimersByTime(250);
         setMaximum(200);
         expect(element(".kcq-binding-float")).toBe(number);

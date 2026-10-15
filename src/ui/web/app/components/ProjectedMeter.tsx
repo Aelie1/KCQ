@@ -1,6 +1,6 @@
 import { For, Show, type JSX } from "solid-js";
 
-import type { ActiveReaction } from "../combatReactions";
+import { BINDING_GLOW_DURATION, type ActiveReaction } from "../combatReactions";
 
 export interface ProjectedMeterProps {
     reactions?: readonly ActiveReaction[];
@@ -88,7 +88,7 @@ export function ProjectedMeter(props: ProjectedMeterProps): JSX.Element {
             <For each={props.reactions}>{cue => {
                 // Capture elapsed time once per cue so reactive geometry updates
                 // cannot seek or restart an earlier segment's fade.
-                const animation = `kcq-react-binding-fade ${cue.duration}ms linear ${-Math.max(0, Date.now() - cue.started)}ms forwards`;
+                const animation = `kcq-react-binding-fade ${Math.min(cue.duration, BINDING_GLOW_DURATION)}ms linear ${-Math.max(0, Date.now() - cue.started)}ms forwards`;
                 return <span class="kcq-binding-reaction" data-combat-reaction={cue.treatment}
                     style={{
                         left: `${percent(clamp(Math.min(cue.from!, cue.to!), 0, maximum()))}%`,

@@ -4374,24 +4374,23 @@ button {
     top: 0;
 }
 
-.kcq-binding-float[data-combat-reaction="increase"] {
-    color: var(--kcq-glow-negative);
-}
-
 .kcq-binding-float[data-combat-reaction="recovery"] {
     color: var(--kcq-glow-positive);
 }
 
+.kcq-binding-float[data-combat-reaction="increase"],
 .kcq-hp-reaction[data-combat-reaction="damage"] {
     color: var(--kcq-glow-hit);
     font-size: 16px;
 }
 
+.kcq-binding-float[data-hit-strength="graze"],
 .kcq-hp-reaction[data-hit-strength="graze"] {
     color: var(--kcq-glow-graze);
     font-size: 12px;
 }
 
+.kcq-binding-float[data-hit-strength="crit"],
 .kcq-hp-reaction[data-hit-strength="crit"] {
     color: var(--kcq-glow-crit);
     animation-name: kcq-react-hp-crit !important;
@@ -4516,7 +4515,13 @@ button {
     }
 
     .kcq-binding-float {
-        animation: kcq-react-binding-fade 2000ms ease-out var(--kcq-binding-float-delay, 0ms) both !important;
+        animation: kcq-react-binding-fade 2000ms ease-out var(--kcq-hp-reaction-delay, 0ms) both !important;
+    }
+
+    .kcq-hp-reaction[data-hit-strength="crit"],
+    .kcq-binding-float[data-hit-strength="crit"] {
+        animation-name: kcq-react-binding-fade !important;
+        animation-duration: 2000ms !important;
     }
 }
 

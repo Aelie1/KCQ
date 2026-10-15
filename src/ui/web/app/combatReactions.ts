@@ -56,6 +56,7 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
         const endpoints = new Map<string, number>();
         const explicitBuffs = new Set<string>();
         const hpHitCounts = new Map<string, number>();
+        const bindingHitCounts = new Map<string, number>();
         const lastDamage = new Map<string, CombatReaction>();
         for (const { effect, band } of leaves) {
             switch (effect.type) {
@@ -94,9 +95,13 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
                     const from = endpoints.get(key) ?? final - bindingTotals.get(key)!;
                     const to = from + effect.amount;
                     endpoints.set(key, to);
+                    const index = bindingHitCounts.get(key) ?? 0;
+                    bindingHitCounts.set(key, index + 1);
                     cues.push({
                         kind: "binding", entity: effect.target, detail: effect.binding,
-                        treatment: effect.amount > 0 ? "increase" : "recovery", from, to
+                        treatment: effect.amount > 0 ? "increase" : "recovery", from, to,
+                        ...(effect.amount > 0 ? { strength: strength(band) ?? "hit" } : {}),
+                        floatDelay: index * 180,
                     });
                     break;
                 }
@@ -116,12 +121,30 @@ export function collectCombatReactions(frames: readonly EventFrame[], initial: G
 
 // Visible number animation lengths (cue lifetimes are intentionally longer).
 export const HP_FLOAT_DURATION = 2000;
+export const HP_CRIT_FLOAT_DURATION = 3000;
+export const BINDING_GLOW_DURATION = 2500;
 export const ENEMY_DEFEAT_GLOW_DURATION = 500;
 export const ENEMY_DEFEAT_FADE_DURATION = 500;
 const durations: Record<ReactionKind, number> = {
-    actor: 500, hp: 4000, binding: 2500, buff: 2500,
+    actor: 500, hp: 4000, binding: BINDING_GLOW_DURATION, buff: 2500,
     defeat: ENEMY_DEFEAT_GLOW_DURATION + ENEMY_DEFEAT_FADE_DURATION,
 };
+
+/** Shared trajectories and elapsed timing for HP and binding numbers. */
+export function floatingNumberStyle(cue: ActiveReaction) {
+    const trajectories = [
+        [-8, -25], [8, -30], [-16, -28], [16, -25], [-24, -32], [24, -28],
+    ] as const;
+    const index = Math.round((cue.floatDelay ?? 0) / 180);
+    const [x, y] = trajectories[index % trajectories.length]!;
+    const delay = `${(cue.floatDelay ?? 0) - Math.max(0, Date.now() - cue.started)}ms`;
+    return {
+        animation: `kcq-react-hp-float ${HP_FLOAT_DURATION}ms ease-out ${delay} forwards`,
+        "--kcq-hp-reaction-delay": delay,
+        "--float-x": `${x}px`,
+        "--float-y": `${y}px`,
+    };
+}
 export function createCombatReactions() {
     const [cues, setCues] = createSignal<readonly ActiveReaction[]>([]);
     let serial = 0;
@@ -168,6 +191,8 @@ export function createCombatReactions() {
                 ...cue,
                 serial: ++serial, started,
                 duration: cue.kind === "defeat" ? durations.defeat + (cue.delay ?? 0)
+                    : cue.kind === "binding" ? Math.max(durations.binding,
+                        (cue.strength === "crit" ? HP_CRIT_FLOAT_DURATION : HP_FLOAT_DURATION) + (cue.floatDelay ?? 0))
                     : cue.kind === "hp" && cue.strength === "crit" ? durations.hp * 1.5 : durations[cue.kind]
             }));
             setCues(current => [...current, ...added]);

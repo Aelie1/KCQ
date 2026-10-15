@@ -1,7 +1,7 @@
 import { createMemo, For, Show, useContext, type JSX } from "solid-js";
 import {
     CombatReactionsContext, ENEMY_DEFEAT_FADE_DURATION, ENEMY_DEFEAT_GLOW_DURATION,
-    HP_FLOAT_DURATION, reactionRef, type ActiveReaction,
+    floatingNumberStyle, reactionRef, type ActiveReaction,
 } from "../combatReactions";
 import type { EnemyCardData } from "./componentTypes";
 import { BuffIcon } from "./BuffIcon";
@@ -101,28 +101,12 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                         {props.enemy.currentHp} / {props.enemy.maxHp}
                     </p>
                     <For each={reactions?.matching("hp", props.enemy.id).filter(cue => (cue.amount ?? 0) > 0)}>{cue => {
-                        const trajectories = [
-                            [-8, -25],
-                            [8, -30],
-                            [-16, -28],
-                            [16, -25],
-                            [-24, -32],
-                            [24, -28],
-                        ] as const;
-
-                        const index = Math.round((cue.floatDelay ?? 0) / 180);
-                        const [x, y] = trajectories[index % trajectories.length]!;
-                        const delay = `${(cue.floatDelay ?? 0) - Math.max(0, Date.now() - cue.started)}ms`;
+                        const style = floatingNumberStyle(cue);
                         return <span
                             class="kcq-hp-reaction"
                             data-combat-reaction={cue.treatment}
                             data-hit-strength={cue.strength}
-                            style={{
-                                animation: `kcq-react-hp-float ${HP_FLOAT_DURATION}ms ease-out ${delay} forwards`,
-                                "--kcq-hp-reaction-delay": delay,
-                                "--float-x": `${x}px`,
-                                "--float-y": `${y}px`,
-                            }} aria-hidden="true">
+                            style={style} aria-hidden="true">
                             {cue.treatment === "healing" ? "+" : "-"}{cue.amount}
                             {cue.treatment === "damage" && cue.strength === "crit" ? "!" : ""}
                         </span>;

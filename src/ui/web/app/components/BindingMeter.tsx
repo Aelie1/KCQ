@@ -1,6 +1,6 @@
 import { createMemo, For, useContext, type JSX } from "solid-js";
 import type { BindingLevel } from "../../../../engine/public/types";
-import { CombatReactionsContext, HP_FLOAT_DURATION } from "../combatReactions";
+import { CombatReactionsContext, floatingNumberStyle } from "../combatReactions";
 import { ProjectedMeter } from "./ProjectedMeter";
 
 export interface BindingMeterProps {
@@ -37,14 +37,12 @@ export function BindingMeter(props: BindingMeterProps): JSX.Element {
             cue.from !== undefined && cue.to !== undefined && cue.to !== cue.from) : undefined}>{cue => {
             const change = cue.to! - cue.from!;
             // Capture timing once per cue, just like the independent glow segments.
-            const delay = `${-Math.max(0, Date.now() - cue.started)}ms`;
+            const style = floatingNumberStyle(cue);
             return <span class="kcq-binding-float" data-combat-reaction={cue.treatment}
-                style={{
-                    animation: `kcq-react-hp-float ${HP_FLOAT_DURATION}ms ease-out ${delay} forwards`,
-                    "--kcq-binding-float-delay": delay,
-                    "--float-x": `${cue.serial % 3 * 8 - 8}px`,
-                }} aria-hidden="true">
+                data-hit-strength={change > 0 ? cue.strength : undefined}
+                style={style} aria-hidden="true">
                 {change > 0 ? "+" : "−"}{Math.abs(change)}
+                {change > 0 && cue.strength === "crit" ? "!" : ""}
             </span>;
         }}</For>
     </ProjectedMeter>;

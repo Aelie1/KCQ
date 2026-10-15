@@ -41,7 +41,7 @@ describe("semantic combat reactions", () => {
         ]));
         f.state.characters[0]!.bindings = [];
         expect(collectCombatReactions([f], initial()).filter(cue => cue.kind === "binding"))
-            .toEqual([{ kind: "binding", entity: "ko", detail: "latexHead", treatment: "recovery", from: 20, to: 0 }]);
+            .toEqual([{ kind: "binding", entity: "ko", detail: "latexHead", treatment: "recovery", from: 20, to: 0, floatDelay: 0 }]);
     });
     it.each(["graze", "hit", "crit"] as const)("uses %s for HP damage and distinguishes healing", band => {
         const f = frame({
@@ -53,6 +53,18 @@ describe("semantic combat reactions", () => {
         expect(collectCombatReactions([f], initial()).filter(cue => cue.kind === "hp")).toEqual([
             { kind: "hp", entity: "queen", "floatDelay": 0, amount: 10, treatment: "damage", strength: band },
             { kind: "hp", entity: "queen", "floatDelay": 180, amount: 5, treatment: "healing", strength: "hit" },
+        ]);
+    });
+    it.each(["graze", "hit", "crit"] as const)("carries %s strength and per-bar stagger on binding cues", band => {
+        const f = frame(move(band, [
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 5 },
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 3 },
+            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 7 },
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: -2 },
+        ]));
+        const cues = collectCombatReactions([f], initial()).filter(cue => cue.kind === "binding");
+        expect(cues.map(cue => [cue.detail, cue.strength, cue.floatDelay])).toEqual([
+            ["latexHead", band, 0], ["latexHead", band, 180], ["latexArms", band, 0], ["latexHead", undefined, 360],
         ]);
     });
     it("retains each HP event amount and ignores zero damage and healing", () => {
