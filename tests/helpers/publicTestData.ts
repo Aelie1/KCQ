@@ -42,7 +42,7 @@ export function makePublicEnemy(
         rank: "enemy",
         maxHp: 100,
         currHp: 100,
-        currDef: 0,
+        defense: 0,
 
         modifiers: {},
         intentions: [],

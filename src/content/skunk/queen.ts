@@ -207,13 +207,13 @@ export const skunkPerfume: MoveDef = {
 
             case 2:  //Heal perfume
                 const filter = ["skunkette", "skunk", "fairy"];
-                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
+                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.definition.hp));
                 for (const enemy of damagedEnemies) {
                     result.effects.push({
                         type: "damage",
                         source: actor,
                         target: enemy,
-                        amount: -PERFUME_HEAL_RATIO * enemy.maxHp
+                        amount: -PERFUME_HEAL_RATIO * enemy.definition.hp
                     });
                 }
                 break;
@@ -235,7 +235,7 @@ export const queen: EnemyDef = {
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
         const validTargets = getValidTargets(state, state.characters);
 
-        const currHpRatio = actor.currHp / actor.maxHp;
+        const currHpRatio = actor.currHp / actor.definition.hp;
 
         if (state.difficulty.id === "mythic" || (currHpRatio < 0.5 && state.difficulty.id === "extreme")) {
             const target = pickTarget(validTargets, rng);
@@ -285,7 +285,7 @@ export const queen: EnemyDef = {
             if ((actor.cooldowns['skunkPerfume'] ?? 0) === 0) {
                 const roll = rng.random();
                 const filter = ["skunkette", "skunk", "fairy"];
-                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
+                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.definition.hp));
                 const type = damagedEnemies.length > 0 ? Math.floor(roll * 3) : Math.floor(roll * 2);
 
                 effects.push({
@@ -331,8 +331,8 @@ export const queen: EnemyDef = {
         if (isCharacter(actor)) {
             target.data[actor.id] = (target.data[actor.id] ?? 0) + damage;
         }
-        const minHpRatio = (target.data["minHp"] ?? target.maxHp) / target.maxHp;
-        const currHpRatio = target.currHp / target.maxHp;
+        const minHpRatio = (target.data["minHp"] ?? target.definition.hp) / target.definition.hp;
+        const currHpRatio = target.currHp / target.definition.hp;
         for (const ratio of WAVE_RATIOS) {
             if (currHpRatio <= ratio && minHpRatio > ratio) {
                 target.data["wave"] = (target.data["wave"] ?? 0) + 1;
@@ -355,7 +355,7 @@ export const queen: EnemyDef = {
                 });
             }
         }
-        target.data["minHp"] = Math.min((target.data["minHp"] ?? target.maxHp), target.currHp);
+        target.data["minHp"] = Math.min((target.data["minHp"] ?? target.definition.hp), target.currHp);
         return effects;
     }
 }

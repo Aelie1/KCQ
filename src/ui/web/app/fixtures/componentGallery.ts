@@ -53,7 +53,7 @@ function enemy(id: string, currHp: number, maxHp: number, intentions: Intention[
         rank: id.startsWith("queen") ? "boss" : "enemy",
         currHp,
         maxHp,
-        currDef: 0,
+        defense: 0,
 
         modifiers: {},
         intentions,

@@ -43,7 +43,7 @@ export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modi
     bindings: iBinding[];
 }
 
-export interface iEnemy extends Omit<Enemy, "buffs" | "intentions" | "modifiers"> {
+export interface iEnemy extends Omit<Enemy, "buffs" | "intentions" | "modifiers" | "rank" | "defense" | "maxHp"> {
     definition: EnemyDef;
     intentions: iIntention[];
     buffs: iBuff[];
@@ -61,6 +61,7 @@ export interface iIntentionRoll {
     target: iEntity | null;
     roll: number;
 }
+
 
 export interface iMoveListModifier {
     addedMoves?: MoveDef[];

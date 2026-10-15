@@ -274,7 +274,7 @@ export const skunk: EnemyDef = {
 
         //1) Explode if low HP
         {
-            if (actor.currHp / actor.maxHp < EXPLOSION_HP_RATIO) {
+            if (actor.currHp / actor.definition.hp < EXPLOSION_HP_RATIO) {
                 let total = 0;
                 let target = undefined;
                 for (const character of validTargets) {
@@ -381,8 +381,8 @@ export const skunk: EnemyDef = {
     },
     onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
         const effects: iEffect[] = [];
-        const oldRatio = (target.currHp + damage) / target.maxHp;
-        const newRatio = target.currHp / target.maxHp;
+        const oldRatio = (target.currHp + damage) / target.definition.hp;
+        const newRatio = target.currHp / target.definition.hp;
         if (target.currHp > 0 && oldRatio >= EXPLOSION_HP_RATIO && newRatio < EXPLOSION_HP_RATIO) {
             effects.push({
                 type: "intention",

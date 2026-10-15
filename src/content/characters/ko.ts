@@ -341,7 +341,7 @@ export const powerOfDenial: MoveDef = {
         if (!target) {
             return undefined;
         }
-        if (isEnemy(target) && target.rank === "boss") {
+        if (isEnemy(target) && target.definition.rank === "boss") {
             return "invalidTarget";
         }
         if (isCharacter(target) && target.bindings.length === 0) {

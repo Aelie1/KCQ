@@ -379,7 +379,7 @@ export const skunkette: EnemyDef = {
     },
     onDamage(state: iGameState, actor: iEntity, target: iEnemy, damage: number): iEffect[] {
         const effects: iEffect[] = [];
-        if (target.currHp / target.maxHp < RESISTANCE_HP_THRESHOLD) {
+        if (target.currHp / target.definition.hp < RESISTANCE_HP_THRESHOLD) {
             const resistBuff = findBuff(target, RESISTANCE_BUFF);
             if (!resistBuff) {
                 const tBuff = {

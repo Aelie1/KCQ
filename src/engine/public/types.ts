@@ -72,6 +72,8 @@ export type PassiveId = string;
 
 export type CampaignId = string;
 
+export type CallbackId = string;
+
 
 /*******************************************************
  * Characters
@@ -100,7 +102,7 @@ export interface Enemy {
     rank: EnemyRank;
     maxHp: number;
     currHp: number;
-    currDef: number;
+    defense: number;
     intentions: Intention[];
     buffs: Buff[];
     cooldowns: Record<MoveId, number>;

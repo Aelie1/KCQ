@@ -51,7 +51,7 @@ function enemy(
         rank: id === "queen" ? "boss" : "enemy",
         currHp,
         maxHp,
-        currDef: 0,
+        defense: 0,
 
         modifiers: {},
         intentions,

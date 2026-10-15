@@ -337,7 +337,7 @@ function formatEnemies(enemies: Enemy[], width: number): string[] {
     if (enemies.length === 0) return ["No enemies remain."];
 
     return enemies.flatMap((enemy, index) => {
-        const defense = enemy.currDef !== 0 ? ` [Def ${formatNumber(enemy.currDef)}]` : "";
+        const defense = enemy.defense !== 0 ? ` [Def ${formatNumber(enemy.defense)}]` : "";
         const lines = [`${enemy.id} [HP: ${enemy.currHp}/${enemy.maxHp}]${defense}`];
         const cooldowns = Object.entries(enemy.cooldowns)
             .filter(([, value]) => value > 0)

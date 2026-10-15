@@ -317,7 +317,7 @@ export class GameEffects {
             }
         }
         target.currHp -= modifiedAmount;
-        target.currHp = Math.min(Math.max(0, target.currHp), target.maxHp);
+        target.currHp = Math.min(Math.max(0, target.currHp), target.definition.hp);
 
         const newAmount = origHp - target.currHp;
 
@@ -550,7 +550,7 @@ export class GameEffects {
     }
 
     private cancelIntentions(target: iEnemy, amount: number) {
-        if (target.rank !== "boss") {
+        if (target.definition.rank !== "boss") {
             for (const intention of target.intentions) {
                 this.addEvent({
                     type: "intentionCancelled",

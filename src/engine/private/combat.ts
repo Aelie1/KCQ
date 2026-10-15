@@ -102,7 +102,7 @@ function calculateAccuracy(actor: iEntity, actorStatus: GameStatus, target: iEnt
 
         //Ignore defense when you have no target
         if (target != null && targetStatus != null) {
-            defenseModifier = (isEnemy(target) ? target.currDef : 0);
+            defenseModifier = (isEnemy(target) ? target.definition.defense : 0);
             defenseModifier += targetStatus.getModifier("defense") * DEFENSE_MODIFIER;
         }
     }

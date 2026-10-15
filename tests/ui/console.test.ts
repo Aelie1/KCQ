@@ -1,15 +1,15 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it } from "vitest";
 import { baseCatalog } from "../../src/content/base";
+import { ko } from "../../src/content/characters/ko";
 import { skunkCatalog } from "../../src/content/skunk/content";
 import { plains_1 } from "../../src/content/skunk/encounters";
-import { ko } from "../../src/content/characters/ko";
 import { latexArms } from "../../src/content/skunk/latex";
-import { createStockEngine } from "../../src/stock";
 import { thresholds } from "../../src/engine/protected/mechanics";
 import { helpless, stunned } from "../../src/engine/protected/statuses";
 import { getThresholds } from "../../src/engine/public/mechanics";
 import type { Engine, GameEvent, GameState, Intention } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { runConsoleClient } from "../../src/ui/console/client";
 import { formatBuff, formatEffect, formatEffects, formatEvents, formatIntention, formatPreviewEffects } from "../../src/ui/console/format";
 import { formatAccuracyRow, renderScreen } from "../../src/ui/console/render";
@@ -436,7 +436,7 @@ describe("console formatting", () => {
 
         const withDefense = renderState({
             ...state,
-            enemies: [{ ...state.enemies[0], currDef: 1 }],
+            enemies: [{ ...state.enemies[0], defense: 1 }],
         }, [{ id: "ko", available: true }]);
         expect(withDefense).toContain("skunkette1 [HP: 12/20] [Def 1]");
     });

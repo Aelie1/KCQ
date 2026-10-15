@@ -1,5 +1,5 @@
 import type { MoveBuffReference, MoveReference } from "../public/library";
-import type { AccuracyProfile, BindingId, BindingLevel, CampaignId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingId, BindingLevel, CallbackId, CampaignId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iBuff, iCallbackReturn, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
 
@@ -83,7 +83,7 @@ export interface StatusLevelDef {
 }
 
 export interface CallbackDef {
-    id: string;
+    id: CallbackId;
     modifyDamage?: (target: iEnemy, buff: iBuff, amount: number) => iCallbackReturn;
     modifyBinding?: (state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number) => iCallbackReturn;
 }

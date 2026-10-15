@@ -1,15 +1,15 @@
 import { describe, expect, it } from "vitest";
+import { skunkette } from "../../src/content/skunk/skunkette";
+import { isEnemy } from "../../src/engine/protected/helpers";
 import type { Binding, Buff, Character, DataEvent, Enemy, EventFrame, GameEvent, GameState, LeafEvent, MoveEvent, StanceId } from "../../src/engine/public/types";
 import { createGameLogEntries, type BuffOutcome, type DamageOutcome } from "../../src/ui/presentation/gameLog";
-import { isEnemy } from "../../src/engine/protected/helpers";
-import { skunkette } from "../../src/content/skunk/skunkette";
 import { execute, makeBehavioralCharacter, makeBehavioralEngine, makeBehavioralMove } from "../helpers/behavioralHelpers";
 
 const character = (id: string, standing = false, buffs: Buff[] = [], bindings: Binding[] = []): Character => ({
     id, standing, buffs, bindings, acted: false, bonusEscapes: 0, cooldowns: {}, modifiers: {}, blockedMoveTypes: [], data: {},
 });
 const enemy = (id: string, buffs: Buff[] = []): Enemy => ({
-    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, currDef: 0, modifiers: {}, intentions: [], buffs, cooldowns: {},
+    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, defense: 0, modifiers: {}, intentions: [], buffs, cooldowns: {},
 });
 const state = (characters: Character[] = [character("ko")], enemies: Enemy[] = [enemy("skunkette1")]): GameState => ({
     characters, enemies, turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },
@@ -30,8 +30,10 @@ const stanceEvent = (actor: string, final: StanceId): GameEvent => ({
 });
 
 // Public Pounce payloads at severity 4 and 1, including each linked participant's effects.
-const pounceInitialVictim: Buff = { id: "pounce", severity: 4, linkedEntity: "skunkette1",
-    statuses: [{ id: "immobilized", value: 1 }, { id: "helpless", value: 1 }], modifiers: {}, moveList: { addedMoves: ["throwOff"] } };
+const pounceInitialVictim: Buff = {
+    id: "pounce", severity: 4, linkedEntity: "skunkette1",
+    statuses: [{ id: "immobilized", value: 1 }, { id: "helpless", value: 1 }], modifiers: {}, moveList: { addedMoves: ["throwOff"] }
+};
 const pounceFinalVictim: Buff = { ...pounceInitialVictim, severity: 1, statuses: [{ id: "immobilized", value: 1 }] };
 const pounceInitialEnemy: Buff = { id: "pounce", severity: 4, linkedEntity: "ko", modifiers: { defense: -2, hit: 8 } };
 const pounceFinalEnemy: Buff = { ...pounceInitialEnemy, severity: 1, modifiers: { defense: -2, hit: 2 } };
@@ -42,42 +44,52 @@ const pounceUpdates: LeafEvent[] = [
     { type: "buffUpdated", target: "skunkette1", buff: "pounce" },
 ];
 
-const multiHitPounceExample = { ...move([
-    { target: "skunkette1", result: "miss", effects: [] },
-    { target: "skunkette1", result: "graze", effects: [damage("skunkette1", 3), ...pounceUpdates] },
-    { target: "skunkette1", result: "hit", effects: [damage("skunkette1", 8), ...pounceUpdates] },
-    { target: "skunkette1", result: "crit", effects: [damage("skunkette1", 16), ...pounceUpdates] },
-], [], "rockfall"), actor: "hinari" };
+const multiHitPounceExample = {
+    ...move([
+        { target: "skunkette1", result: "miss", effects: [] },
+        { target: "skunkette1", result: "graze", effects: [damage("skunkette1", 3), ...pounceUpdates] },
+        { target: "skunkette1", result: "hit", effects: [damage("skunkette1", 8), ...pounceUpdates] },
+        { target: "skunkette1", result: "crit", effects: [damage("skunkette1", 16), ...pounceUpdates] },
+    ], [], "rockfall"), actor: "hinari"
+};
 
 describe("Game Log presentation aggregation", () => {
     it("summarizes a single hit", () => {
         expect(createGameLogEntries([move([{ target: "skunkette1", result: "hit", effects: [damage("skunkette1", 18)] }])])).toEqual([
-            { kind: "move", actor: "ko", move: "telekinesis", outcomes: [
-                { kind: "damage", target: "skunkette1", hits: [{ result: "hit", damage: 18, healing: 0, blocked: 0 }], damage: 18, healing: 0, blocked: 0 },
-            ] },
+            {
+                kind: "move", actor: "ko", move: "telekinesis", outcomes: [
+                    { kind: "damage", target: "skunkette1", hits: [{ result: "hit", damage: 18, healing: 0, blocked: 0 }], damage: 18, healing: 0, blocked: 0 },
+                ]
+            },
         ]);
     });
 
     it("preserves hit order and combines linked Pounce severity 4 to 1 into one outcome", () => {
         const result = outcomes([{ event: multiHitPounceExample, state: pounceAfter }], pounceBefore);
         expect(result).toHaveLength(2);
-        expect(result[0]).toEqual({ kind: "damage", target: "skunkette1", damage: 27, healing: 0, blocked: 0, hits: [
-            { result: "miss", damage: 0, healing: 0, blocked: 0 },
-            { result: "graze", damage: 3, healing: 0, blocked: 0 },
-            { result: "hit", damage: 8, healing: 0, blocked: 0 },
-            { result: "crit", damage: 16, healing: 0, blocked: 0 },
-        ] });
-        expect(result[1]).toEqual({ kind: "buff", buff: "pounce", participants: [
-            { target: "ko", initial: { present: true, details: pounceInitialVictim }, final: { present: true, details: pounceFinalVictim } },
-            { target: "skunkette1", initial: { present: true, details: pounceInitialEnemy }, final: { present: true, details: pounceFinalEnemy } },
-        ] });
+        expect(result[0]).toEqual({
+            kind: "damage", target: "skunkette1", damage: 27, healing: 0, blocked: 0, hits: [
+                { result: "miss", damage: 0, healing: 0, blocked: 0 },
+                { result: "graze", damage: 3, healing: 0, blocked: 0 },
+                { result: "hit", damage: 8, healing: 0, blocked: 0 },
+                { result: "crit", damage: 16, healing: 0, blocked: 0 },
+            ]
+        });
+        expect(result[1]).toEqual({
+            kind: "buff", buff: "pounce", participants: [
+                { target: "ko", initial: { present: true, details: pounceInitialVictim }, final: { present: true, details: pounceFinalVictim } },
+                { target: "skunkette1", initial: { present: true, details: pounceInitialEnemy }, final: { present: true, details: pounceFinalEnemy } },
+            ]
+        });
     });
 
     it("keeps AoE outcomes attributed to each target", () => {
-        const result = outcomes([{ ...move([
-            { target: "skunkette1", result: "graze", effects: [damage("skunkette1", 6)] },
-            { target: "skunkette2", result: "crit", effects: [damage("skunkette2", 24)] },
-        ], [], "immolation"), actor: "matsuko" }]) as DamageOutcome[];
+        const result = outcomes([{
+            ...move([
+                { target: "skunkette1", result: "graze", effects: [damage("skunkette1", 6)] },
+                { target: "skunkette2", result: "crit", effects: [damage("skunkette2", 24)] },
+            ], [], "immolation"), actor: "matsuko"
+        }]) as DamageOutcome[];
         expect(result.map(({ target, damage, hits }) => ({ target, damage, hits: hits.map(({ result, damage }) => [result, damage]) }))).toEqual([
             { target: "skunkette1", damage: 6, hits: [["graze", 6]] },
             { target: "skunkette2", damage: 24, hits: [["crit", 24]] },
@@ -96,14 +108,18 @@ describe("Game Log presentation aggregation", () => {
         const binding = (value: number, level: Binding["level"]): Binding => ({ id: "latexArms", value, level, data: {}, status: [], tickEffects: [] });
         const before = state([character("ko", false, [], [binding(10, "light")])]);
         const after = state([character("ko", false, [], [binding(28, "moderate")])]);
-        const event: GameEvent = { type: "useEscape", actor: "ko", target: "ko", effects: [
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 23 },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -5 },
-            { type: "bondageBlocked", target: "ko", binding: "latexArms", amount: 4 },
-        ] };
+        const event: GameEvent = {
+            type: "useEscape", actor: "ko", target: "ko", effects: [
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 23 },
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -5 },
+                { type: "bondageBlocked", target: "ko", binding: "latexArms", amount: 4 },
+            ]
+        };
         expect(outcomes([{ event, state: after }], before)).toEqual([
-            { kind: "binding", target: "ko", binding: "latexArms", change: 18, blocked: 4,
-                initial: { value: 10, level: "light" }, final: { value: 28, level: "moderate" } },
+            {
+                kind: "binding", target: "ko", binding: "latexArms", change: 18, blocked: 4,
+                initial: { value: 10, level: "light" }, final: { value: 28, level: "moderate" }
+            },
         ]);
         expect(outcomes([{ event, state: after }])[0]).toMatchObject({
             initial: { value: 10 }, final: { value: 28, level: "moderate" }, change: 18,
@@ -124,10 +140,14 @@ describe("Game Log presentation aggregation", () => {
     it("combines repeated buff severity changes into their recorded endpoint payloads", () => {
         const event = move([], [...pounceUpdates, ...pounceUpdates, ...pounceUpdates]);
         const [buff] = outcomes([{ event, state: pounceAfter }], pounceBefore) as BuffOutcome[];
-        expect(buff.participants[0]).toEqual({ target: "ko",
-            initial: { present: true, details: pounceInitialVictim }, final: { present: true, details: pounceFinalVictim } });
-        expect(buff.participants[1]).toEqual({ target: "skunkette1",
-            initial: { present: true, details: pounceInitialEnemy }, final: { present: true, details: pounceFinalEnemy } });
+        expect(buff.participants[0]).toEqual({
+            target: "ko",
+            initial: { present: true, details: pounceInitialVictim }, final: { present: true, details: pounceFinalVictim }
+        });
+        expect(buff.participants[1]).toEqual({
+            target: "skunkette1",
+            initial: { present: true, details: pounceInitialEnemy }, final: { present: true, details: pounceFinalEnemy }
+        });
     });
 
     it("preserves non-Pounce severity-only changes without modifiers or statuses", () => {
@@ -137,8 +157,12 @@ describe("Game Log presentation aggregation", () => {
         const after = state([character("ko", false, [finalBuff])]);
         const update: LeafEvent = { type: "buffUpdated", target: "ko", buff: "test-severity" };
         expect(outcomes([{ event: move([], [update, update]), state: after }], before)).toEqual([
-            { kind: "buff", buff: "test-severity", participants: [{ target: "ko",
-                initial: { present: true, details: initialBuff }, final: { present: true, details: finalBuff } }] },
+            {
+                kind: "buff", buff: "test-severity", participants: [{
+                    target: "ko",
+                    initial: { present: true, details: initialBuff }, final: { present: true, details: finalBuff }
+                }]
+            },
         ]);
     });
 
@@ -224,8 +248,10 @@ describe("Game Log presentation aggregation", () => {
     it("does not merge stance events that carry other gameplay outcomes", () => {
         expect(createGameLogEntries([
             stanceEvent("ko", "standing"),
-            { type: "changeStance", actor: "hinari", effects: [{ type: "stanceSet", actor: "hinari", stance: "standing" },
-                { type: "trapTriggered", actor: "hinari", trap: "trapPuddle", amount: 10 }] },
+            {
+                type: "changeStance", actor: "hinari", effects: [{ type: "stanceSet", actor: "hinari", stance: "standing" },
+                { type: "trapTriggered", actor: "hinari", trap: "trapPuddle", amount: 10 }]
+            },
         ])).toHaveLength(2);
     });
 
@@ -247,9 +273,11 @@ describe("Game Log presentation aggregation", () => {
     });
 
     it("preserves blocking, healing, interruption, refresh, retargeting and intention outcomes", () => {
-        expect(outcomes([move([{ target: "skunkette1", result: "hit", effects: [
-            { type: "damageBlocked", target: "skunkette1", amount: 5 }, damage("skunkette1", 7),
-        ] }], [
+        expect(outcomes([move([{
+            target: "skunkette1", result: "hit", effects: [
+                { type: "damageBlocked", target: "skunkette1", amount: 5 }, damage("skunkette1", 7),
+            ]
+        }], [
             { type: "enemyHealed", target: "skunkette1", amount: 4 },
             { type: "actionInterrupted", actor: "ko", reason: "bindingRestriction" },
             { type: "actionRefreshed", target: "hinari" },
@@ -259,9 +287,11 @@ describe("Game Log presentation aggregation", () => {
             { type: "intentionWeakened", target: "empress", move: "latexMist" },
             { type: "cooldownChanged", target: "skunkette1", move: "pounce", value: 2 },
         ])])).toEqual([
-            { kind: "damage", target: "skunkette1", damage: 7, healing: 4, blocked: 5, hits: [
-                { result: "hit", damage: 7, healing: 0, blocked: 5 }, { result: "none", damage: 0, healing: 4, blocked: 0 },
-            ] },
+            {
+                kind: "damage", target: "skunkette1", damage: 7, healing: 4, blocked: 5, hits: [
+                    { result: "hit", damage: 7, healing: 0, blocked: 5 }, { result: "none", damage: 0, healing: 4, blocked: 0 },
+                ]
+            },
             { kind: "interrupt", actor: "ko", reason: "bindingRestriction" },
             { kind: "refresh", target: "hinari" },
             { kind: "retarget", target: "skunkette1", destination: "hinari" },
@@ -285,8 +315,10 @@ describe("Game Log presentation aggregation", () => {
 
     it("reports a single public data change with unknown endpoints for bare events", () => {
         expect(outcomes([move([], [dataChange("hinari", "subspace", -25)], "release")])).toEqual([
-            { kind: "resource", target: "hinari", resource: "subspace", change: -25,
-                initial: undefined, final: undefined, max: undefined },
+            {
+                kind: "resource", target: "hinari", resource: "subspace", change: -25,
+                initial: undefined, final: undefined, max: undefined
+            },
         ]);
     });
 
@@ -320,9 +352,11 @@ describe("Game Log presentation aggregation", () => {
         const after = structuredClone(initial); after.characters[0].data.subspace = 25;
         const event = move([], [dataChange("hinari", "subspace", -25)], "release");
         expect(outcomes(hasAfter ? [{ event, state: after }] : [event], hasBefore ? initial : undefined)).toEqual([
-            { kind: "resource", target: "hinari", resource: "subspace", change: -25,
+            {
+                kind: "resource", target: "hinari", resource: "subspace", change: -25,
                 initial: hasBefore ? 50 : undefined, final: hasAfter ? 25 : undefined,
-                max: hasBefore || hasAfter ? 100 : undefined },
+                max: hasBefore || hasAfter ? 100 : undefined
+            },
         ]);
     });
 
@@ -419,10 +453,13 @@ describe("Game Log presentation aggregation", () => {
     });
 
     it("aggregates real engine multi-hit damage and repeated Pounce callbacks", () => {
-        const flurry = makeBehavioralMove("flurry", "arms", { baseHits: 3,
-            resolve: (_state, actor, _move, targets) => ({ effects: [], targets: targets.map(({ target, band }) => ({
-                target, result: band, effects: isEnemy(target) ? [{ type: "damage", source: actor, target, amount: 1 }] : [],
-            })) }),
+        const flurry = makeBehavioralMove("flurry", "arms", {
+            baseHits: 3,
+            resolve: (_state, actor, _move, targets) => ({
+                effects: [], targets: targets.map(({ target, band }) => ({
+                    target, result: band, effects: isEnemy(target) ? [{ type: "damage", source: actor, target, amount: 1 }] : [],
+                }))
+            }),
         });
         const engine = makeBehavioralEngine([makeBehavioralCharacter("victim"), makeBehavioralCharacter("attacker", [flurry])], [skunkette], 3);
         execute(engine, { type: "endTurn" });
@@ -430,9 +467,11 @@ describe("Game Log presentation aggregation", () => {
         const result = execute(engine, { type: "move", actor: "attacker", move: "flurry", targets: ["skunkette1"] });
         const log = createGameLogEntries(result.frames, initial);
         expect(log).toHaveLength(1);
-        expect(log[0].outcomes[0]).toMatchObject({ kind: "damage", damage: 3, hits: [
-            { result: "hit", damage: 1 }, { result: "hit", damage: 1 }, { result: "hit", damage: 1 },
-        ] });
+        expect(log[0].outcomes[0]).toMatchObject({
+            kind: "damage", damage: 3, hits: [
+                { result: "hit", damage: 1 }, { result: "hit", damage: 1 }, { result: "hit", damage: 1 },
+            ]
+        });
         const buffs = log[0].outcomes.filter((outcome): outcome is BuffOutcome => outcome.kind === "buff" && outcome.buff === "pounce");
         expect(buffs).toHaveLength(1);
         expect(buffs[0].participants).toHaveLength(2);
@@ -484,8 +523,10 @@ describe("recorded inactive buff endpoints", () => {
             { type: "intentionWeakened", target: "skunkette1", move: "pounce" },
             { type: "intentionWeakened", target: "skunkette1", move: "latexMist" },
         ];
-        expect(outcomes([move([], leaves)])).toEqual(leaves.map(leaf => ({ kind: "intention", target: "skunkette1",
-            move: "move" in leaf ? leaf.move : undefined, operation: leaf.type === "intentionCancelled" ? "cancelled" : "weakened" })));
+        expect(outcomes([move([], leaves)])).toEqual(leaves.map(leaf => ({
+            kind: "intention", target: "skunkette1",
+            move: "move" in leaf ? leaf.move : undefined, operation: leaf.type === "intentionCancelled" ? "cancelled" : "weakened"
+        })));
     });
 });
 
@@ -496,12 +537,16 @@ describe("outcome prioritization aggregation", () => {
         ["miss", "hit", "miss"],
         ["hit", "hit", "graze", "hit", "crit", "miss", "none"],
     ] as const)("cuts off every empty accuracy result after defeat: %j", (...bands) => {
-        const targets = bands.map((result, index) => ({ target: "skunkette1", result, effects: index === 1
-            ? [damage("skunkette1", 9), { type: "enemyDefeated" as const, target: "skunkette1" }]
-            : index === 0 && result !== "miss" ? [damage("skunkette1", 4)] : [] }));
+        const targets = bands.map((result, index) => ({
+            target: "skunkette1", result, effects: index === 1
+                ? [damage("skunkette1", 9), { type: "enemyDefeated" as const, target: "skunkette1" }]
+                : index === 0 && result !== "miss" ? [damage("skunkette1", 4)] : []
+        }));
         const result = outcomes([move(targets)]);
-        expect(result[0]).toMatchObject({ damage: bands[0] === "miss" ? 9 : 13,
-            hits: [{ result: bands[0] }, { result: bands[1], damage: 9 }] });
+        expect(result[0]).toMatchObject({
+            damage: bands[0] === "miss" ? 9 : 13,
+            hits: [{ result: bands[0] }, { result: bands[1], damage: 9 }]
+        });
         expect((result[0] as DamageOutcome).hits).toHaveLength(2);
         expect(result[1]).toEqual({ kind: "enemy", target: "skunkette1", operation: "defeated" });
     });
@@ -534,8 +579,8 @@ describe("outcome prioritization aggregation", () => {
 
     it("preserves both explicit transitions in their originating event without repeating them", () => {
         const events = [move([], [{ type: "characterIncapacitated", target: "ko" }]),
-            move([], [{ type: "buffUpdated", target: "ko", buff: "unknown" }]),
-            move([], [{ type: "characterRescued", target: "ko" }])];
+        move([], [{ type: "buffUpdated", target: "ko", buff: "unknown" }]),
+        move([], [{ type: "characterRescued", target: "ko" }])];
         expect(createGameLogEntries(events).map(entry => entry.outcomes.filter(outcome => outcome.kind === "character")))
             .toEqual([[{ kind: "character", target: "ko", operation: "incapacitated" }], [], [{ kind: "character", target: "ko", operation: "rescued" }]]);
         const incapacitated = state([character("ko", false, [{ id: "test", statuses: [{ id: "incapacitated", value: 1 }] }])]);
@@ -587,15 +632,17 @@ describe("outcome prioritization aggregation", () => {
     it("summarizes rescue's causal linked buff removal and adjacent stance, retaining other recovery effects", () => {
         const before = state([character("ko", true, [{ id: "captured", linkedEntity: "skunkette1" }])],
             [enemy("skunkette1", [{ id: "captured", linkedEntity: "ko" }])]);
-        const result = outcomes([{ event: move([], [
-            { type: "buffRemoved", target: "ko", buff: "captured" },
-            { type: "characterRescued", target: "ko" },
-            { type: "stanceSet", actor: "ko", stance: "moving" },
-            { type: "buffRemoved", target: "skunkette1", buff: "captured" },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -20 },
-            { type: "enemyDefeated", target: "skunkette1" },
-            { type: "actionRefreshed", target: "ko" },
-        ]), state: state() }], before);
+        const result = outcomes([{
+            event: move([], [
+                { type: "buffRemoved", target: "ko", buff: "captured" },
+                { type: "characterRescued", target: "ko" },
+                { type: "stanceSet", actor: "ko", stance: "moving" },
+                { type: "buffRemoved", target: "skunkette1", buff: "captured" },
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -20 },
+                { type: "enemyDefeated", target: "skunkette1" },
+                { type: "actionRefreshed", target: "ko" },
+            ]), state: state()
+        }], before);
         expect(result.filter(outcome => "summarized" in outcome && outcome.summarized).map(outcome => outcome.kind)).toEqual(["buff", "stance"]);
         expect(result).toContainEqual({ kind: "character", target: "ko", operation: "rescued" });
         expect(result).toContainEqual(expect.objectContaining({ kind: "binding", change: -20 }));

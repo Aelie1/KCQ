@@ -390,7 +390,7 @@ describe("combat presentation", () => {
             rank: "enemy" as const,
             maxHp: 200,
             currHp: 200,
-            currDef: 0,
+            defense: 0,
             modifiers: {},
             intentions: [{ resolved: false, move: "latexSpray", targets: [], effects: [] }],
             buffs: withBuff ? [{ id: "pounce" }] : [],

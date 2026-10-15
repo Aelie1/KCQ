@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { createStockEngine } from "../../src/stock";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import type {
     Buff,
@@ -15,6 +14,7 @@ import {
     createDetailedCombatCollector,
     type MetricActionObservation,
 } from "../../src/harness/metrics";
+import { createStockEngine } from "../../src/stock";
 import { makePublicBinding, makePublicCharacter, makePublicEnemy, makePublicGameState } from "../helpers/publicTestData";
 import { STANDARD_DIFFICULTY } from "../helpers/state";
 
@@ -24,7 +24,7 @@ function metricCharacter(id: string, values: Partial<Character> = {}): Character
 
 function enemy(id: string, buffs: Buff[] = [], currDef = 0): Enemy {
     const defId = /^(fairy|queen|rainmaker|skunk|skunkette)\d+$/.exec(id)?.[1] ?? id;
-    return makePublicEnemy(id, { defId, currDef, buffs });
+    return makePublicEnemy(id, { defId, defense: currDef, buffs });
 }
 
 function view(values: Partial<GameState> = {}): GameState {

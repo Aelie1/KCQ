@@ -43,10 +43,10 @@ function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): 
     return {
         id: enemy.id,
         defId: enemy.defId,
-        rank: enemy.rank,
-        maxHp: enemy.maxHp,
+        rank: enemy.definition.rank,
+        maxHp: enemy.definition.hp,
         currHp: enemy.currHp,
-        currDef: enemy.currDef,
+        defense: enemy.definition.defense,
         intentions: enemy.intentions.map(x => (serializeIntention(state, statuses, x))),
         buffs: enemy.buffs.map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
@@ -81,7 +81,7 @@ export function serializeEffects(effects: iEffect[]): Effect[] {
     return effects.map(serializeEffect).filter(x => x !== undefined);
 }
 
-function serializeEffect(effect: iEffect): Effect | undefined {
+export function serializeEffect(effect: iEffect): Effect | undefined {
     switch (effect.type) {
         case "binding":
             return {
@@ -167,7 +167,7 @@ function serializeBuff(buff: iBuff): Buff {
     };
 }
 
-function serializeMoveList(list: iMoveListModifier | undefined): MoveListModifier | undefined {
+export function serializeMoveList(list: iMoveListModifier | undefined): MoveListModifier | undefined {
     if (!list) {
         return undefined;
     }
@@ -177,7 +177,7 @@ function serializeMoveList(list: iMoveListModifier | undefined): MoveListModifie
     }
 }
 
-function serializeBinding(target: iCharacter, binding: iBinding): Binding {
+export function serializeBinding(target: iCharacter, binding: iBinding): Binding {
     const level = getBindingLevel(binding);
     const status = binding.definition.status;
     return {
@@ -190,14 +190,14 @@ function serializeBinding(target: iCharacter, binding: iBinding): Binding {
     };
 }
 
-function serializeTraps(trap: iTrap): Trap {
+export function serializeTraps(trap: iTrap): Trap {
     return {
         id: trap.id,
         amount: trap.amount
     }
 }
 
-function serializeStatus(status: iStatus): Status {
+export function serializeStatus(status: iStatus): Status {
     return {
         id: status.definition.id,
         value: status.value

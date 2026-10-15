@@ -1,5 +1,4 @@
 import { getStringTable } from "../../../../../localization";
-import { stockCampaign, stockCharacters } from "../../../../stock";
 import type {
     ActionInfo,
     ActionView,
@@ -13,6 +12,7 @@ import type {
     TargetCount,
     ThresholdInfo,
 } from "../../../../engine/public/types";
+import { stockCampaign, stockCharacters } from "../../../../stock";
 import { Presentation } from "../../../presentation/presentation";
 import { makeFixtureCharacter } from "./publicFixture";
 
@@ -219,7 +219,7 @@ const state = {
         rank: "enemy",
         maxHp: 200,
         currHp: 200,
-        currDef: 0,
+        defense: 0,
 
         modifiers: {},
         intentions: [],

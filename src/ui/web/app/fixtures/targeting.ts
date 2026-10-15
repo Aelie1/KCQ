@@ -1,5 +1,4 @@
 import { getStringTable } from "../../../../../localization";
-import { stockCampaign, stockCharacters } from "../../../../stock";
 import type {
     ActionInfo,
     ActionView,
@@ -9,6 +8,7 @@ import type {
     PreviewInfo,
     ThresholdInfo,
 } from "../../../../engine/public/types";
+import { stockCampaign, stockCharacters } from "../../../../stock";
 import { Presentation } from "../../../presentation/presentation";
 import { characterDetailsFixture } from "./characterDetails";
 
@@ -31,7 +31,7 @@ function enemy(id: string): Enemy {
         rank: "enemy",
         maxHp: 200,
         currHp: 152,
-        currDef: 0,
+        defense: 0,
 
         modifiers: {},
         intentions: [],

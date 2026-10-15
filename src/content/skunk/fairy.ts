@@ -83,21 +83,21 @@ export const healingMagic: MoveDef = {
                         type: "damage",
                         source: actor,
                         target: target.target,
-                        amount: -HEALING_MAGIC_HP_RATIO * target.target.maxHp
+                        amount: -HEALING_MAGIC_HP_RATIO * target.target.definition.hp
                     }]
                 ));
             }
         }
         if (target.band === "crit") {
             const filter = ["skunkette", "skunk", "fairy"];
-            const enemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.maxHp));
+            const enemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.definition.hp));
             for (const enemy of enemies) {
                 if (enemy !== target.target) {
                     result.effects.push({
                         type: "damage",
                         source: actor,
                         target: enemy,
-                        amount: -HEALING_MAGIC_HP_RATIO * enemy.maxHp
+                        amount: -HEALING_MAGIC_HP_RATIO * enemy.definition.hp
                     });
                 }
             }
@@ -243,7 +243,7 @@ export const fairy: EnemyDef = {
 
         //0) Determine which moves are valid
         const healFilter = ["skunkette", "skunk"];
-        const healTargets = validTargets.filter(x => (isEnemy(x) && healFilter.includes(x.definition.id) && x.currHp < x.maxHp));
+        const healTargets = validTargets.filter(x => (isEnemy(x) && healFilter.includes(x.definition.id) && x.currHp < x.definition.hp));
 
         const barrierFilter = ["skunkette", "skunk", "queen"];
         const barrierTargets = validTargets.filter(x => (barrierFilter.includes(x.definition.id)) && !x.buffs.some(y => y.id === "barrierMagic"));
