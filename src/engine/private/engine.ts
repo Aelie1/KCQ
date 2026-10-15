@@ -4,6 +4,7 @@ import { mixSeed, Random } from "../protected/random";
 import { GameStatus, StatusMap } from "../protected/status";
 import { ContentCatalog, iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
 import { ContentLibrary } from "../public/library";
+import { SaveState } from "../public/save";
 import type { AccuracyResult, ActionResult, ActionView, DifficultyId, EncounterEvent, EncounterId, Engine, EntityId, EventFrame, FailureReason, GameEvent, GameState, MoveEvent, PlayerAction, TrapEvent } from "../public/types";
 import {
     applyCooldowns,
@@ -13,6 +14,7 @@ import {
 import { difficulties, TRAP_MODIFIER } from "./constants";
 import { GameEffects } from "./effects";
 import { serializeLibrary } from "./library";
+import { saveGameState } from "./save";
 import { serializeGameState } from "./serialize";
 import { iValidityInfo } from "./types";
 import { getActionView, getStatusMap } from "./view";
@@ -61,6 +63,10 @@ export class GameEngine implements Engine {
 
     getGameState(): GameState {
         return this.viewState;
+    }
+
+    getSaveState(): SaveState {
+        return saveGameState(this.catalog.campaigns[0].id, this.state, this.seed, this.aiRng.getState(), this.accRng.getState());
     }
 
     private refreshView() {

@@ -1,4 +1,5 @@
 import { ContentLibrary } from "./library";
+import { SaveState } from "./save";
 
 /*******************************************************
  * Engine
@@ -8,6 +9,7 @@ export interface Engine {
     getLibrary(): ContentLibrary;
     getActionView(): ActionView[];
     getGameState(): GameState;
+    getSaveState(): SaveState;
     setDifficulty(difficulty: DifficultyId): void;
     listCharacters(): EntityId[];
     loadCharacter(id: EntityId): GameEvent;

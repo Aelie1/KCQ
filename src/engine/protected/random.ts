@@ -15,6 +15,10 @@ export class Random {
         return this.state;
     }
 
+    getState(): number {
+        return this.state;
+    }
+
     random(): number {
         return this.nextU32() / 0x100000000;
     }

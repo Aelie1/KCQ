@@ -81,7 +81,7 @@ export function serializeEffects(effects: iEffect[]): Effect[] {
     return effects.map(serializeEffect).filter(x => x !== undefined);
 }
 
-export function serializeEffect(effect: iEffect): Effect | undefined {
+function serializeEffect(effect: iEffect): Effect | undefined {
     switch (effect.type) {
         case "binding":
             return {
@@ -177,7 +177,7 @@ export function serializeMoveList(list: iMoveListModifier | undefined): MoveList
     }
 }
 
-export function serializeBinding(target: iCharacter, binding: iBinding): Binding {
+function serializeBinding(target: iCharacter, binding: iBinding): Binding {
     const level = getBindingLevel(binding);
     const status = binding.definition.status;
     return {
