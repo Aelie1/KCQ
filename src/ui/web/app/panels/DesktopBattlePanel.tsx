@@ -72,16 +72,19 @@ export function DesktopBattleActions(props: {
     onSelectCommand: (actor: EntityId, command: string) => void;
     onEndTurn: () => void;
 }): JSX.Element {
+    const endTurn = () => <button class="kcq-battle-overview__primary-action kcq-shortcut-host" type="button"
+        classList={{ "is-dimmed": props.overview.controls.endTurnDimmed }} disabled={props.blocked}
+        onClick={props.onEndTurn}>
+        <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {props.overview.controls.endTurnLabel}
+    </button>;
     return <section class="kcq-desktop-battle__actions">
         <div class="kcq-desktop-battle__commands">
-            <Show when={props.model}>{model => <CharacterCommands model={model()} presentation={props.presentation}
-                headingId="desktop-character-commands-heading" shortcuts={props.shortcuts}
-                onSelectCommand={command => props.onSelectCommand(model().focused.id, command)} />}</Show>
+            <Show when={props.model} fallback={<div class="kcq-character-commands__grid">{endTurn()}</div>}>
+                {model => <CharacterCommands model={model()} presentation={props.presentation}
+                    headingId="desktop-character-commands-heading" shortcuts={props.shortcuts}
+                    gridAction={endTurn()}
+                    onSelectCommand={command => props.onSelectCommand(model().focused.id, command)} />}
+            </Show>
         </div>
-        <button class="kcq-battle-overview__primary-action kcq-shortcut-host" type="button"
-            classList={{ "is-dimmed": props.overview.controls.endTurnDimmed }} disabled={props.blocked}
-            onClick={props.onEndTurn}>
-            <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {props.overview.controls.endTurnLabel}
-        </button>
     </section>;
 }

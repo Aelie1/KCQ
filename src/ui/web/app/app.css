@@ -5664,14 +5664,14 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-battle__actions {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 110px;
-    gap: 12px;
+    grid-template-columns: minmax(0, 1fr);
     min-height: 0;
     min-width: 0;
 }
 
 .kcq-desktop-battle__commands {
     min-height: 0;
+    min-width: 0;
     overflow-y: auto;
     padding: 4px;
     scrollbar-width: thin;
@@ -5685,11 +5685,18 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 }
 
 .kcq-desktop-battle__commands .kcq-character-commands__grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    padding-top: 3px;
 }
 
-.kcq-desktop-battle__actions>.kcq-battle-overview__primary-action {
+.kcq-desktop-battle__commands .kcq-command-card {
+    padding-block: 4px;
+}
+
+.kcq-desktop-battle__commands .kcq-character-commands__grid>.kcq-battle-overview__primary-action {
+    grid-column: 6;
+    grid-row: 2;
     align-self: end;
     height: 44px;
 }

@@ -8,6 +8,7 @@ export function CharacterCommands(props: {
     presentation: Presentation;
     headingId?: string;
     shortcuts?: boolean;
+    gridAction?: JSX.Element;
     onSelectCommand?: (commandId: string) => void;
 }): JSX.Element {
     return (
@@ -44,6 +45,7 @@ export function CharacterCommands(props: {
                         />
                     )}
                 </For>
+                {props.gridAction}
             </div>
         </section>
     );

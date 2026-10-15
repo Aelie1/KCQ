@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
-import { createComponent } from "solid-js";
+import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getThresholds } from "../../src/engine/public/mechanics";
@@ -11,6 +11,8 @@ import { createBattle } from "../../src/ui/web/app";
 import { App } from "../../src/ui/web/app/App";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
+import { DesktopBattleActions } from "../../src/ui/web/app/panels/DesktopBattlePanel";
+import { createBattleOverviewViewModel } from "../../src/ui/web/app/viewModels/battleOverview";
 import { readSave } from "../../src/ui/web/app/savePersistence";
 import { createCharacterDetailsViewModel } from "../../src/ui/web/app/viewModels/characterDetails";
 import { incomingBindingBattle } from "../helpers/incomingBindingBattle";
@@ -31,7 +33,7 @@ function element<T extends HTMLElement = HTMLElement>(selector: string): T {
 const click = (selector: string) => element(selector).click();
 const rows = () => [...document.querySelectorAll<HTMLElement>(".kcq-desktop-character")];
 const select = (id: string) => click(`[data-actor-id="${id}"] .kcq-desktop-character__identity`);
-const endTurn = () => click(".kcq-desktop-battle__actions>.kcq-battle-overview__primary-action");
+const endTurn = () => click(".kcq-desktop-battle__actions .kcq-battle-overview__primary-action");
 function command(name: string): HTMLButtonElement {
     const found = [...document.querySelectorAll<HTMLButtonElement>(".kcq-desktop-battle__commands .kcq-command-card")]
         .find(button => button.querySelector(".kcq-command-card__name")?.textContent === name);
@@ -72,6 +74,38 @@ afterEach(() => {
     resize(initialViewport.width, initialViewport.height);
 });
 describe("desktop battle", () => {
+    it.each([0, 11, 14])("keeps End Turn in the shared grid and preserves all %i commands", count => {
+        const engine = createStockEngine(12345); createBattle(engine, "plains_1", "standard");
+        const state = engine.getGameState(), actions = engine.getActionView(), thresholds = getThresholds();
+        const model = createCharacterDetailsViewModel(state, actions, "ko", thresholds, presentation);
+        const commands = Array.from({ length: count }, (_, index) => ({ ...model.focused.commands[0]!,
+            id: `command-${index}`, name: `Command ${index}`, available: index !== 1 }));
+        const [blocked, setBlocked] = createSignal(false);
+        const onSelectCommand = vi.fn(), onEndTurn = vi.fn();
+        unmount = render(() => createComponent(DesktopBattleActions, {
+            model: count ? { ...model, focused: { ...model.focused, commands } } : undefined,
+            overview: createBattleOverviewViewModel(state, actions, thresholds, presentation), presentation,
+            shortcuts: true, get blocked() { return blocked(); }, onSelectCommand, onEndTurn,
+        }), host());
+        const grid = element(".kcq-character-commands__grid");
+        expect(getComputedStyle(grid).gridTemplateColumns).toBe("repeat(6, minmax(0, 1fr))");
+        const cards = [...grid.querySelectorAll<HTMLButtonElement>(".kcq-command-card")];
+        expect(cards.map(card => card.querySelector(".kcq-command-card__name")?.textContent))
+            .toEqual(commands.map(command => command.name));
+        if (count) {
+            cards[count - 1]!.click();
+            expect(onSelectCommand).toHaveBeenCalledExactlyOnceWith("ko", `command-${count - 1}`);
+            expect(cards[1]!.disabled).toBe(true);
+        }
+        const end = element<HTMLButtonElement>(".kcq-battle-overview__primary-action");
+        expect(end.parentElement).toBe(grid);
+        expect(getComputedStyle(end).gridColumn).toBe("6");
+        expect(getComputedStyle(end).gridRow).toBe("2");
+        expect(getComputedStyle(element(".kcq-desktop-battle__commands")).overflowY).toBe("auto");
+        end.click(); expect(onEndTurn).toHaveBeenCalledOnce();
+        setBlocked(true); expect(end.disabled).toBe(true);
+        end.click(); expect(onEndTurn).toHaveBeenCalledOnce();
+    });
     it("keeps three real party rows, all capabilities and empty zones at native CSS scale", () => {
         const { engine } = mount(); expect(rows()).toHaveLength(3);
         for (const [index, row] of rows().entries()) {
