@@ -5469,3 +5469,330 @@ button {
 .kcq-victory-story__continue {
     grid-column: 1 / -1;
 }
+
+/* Desktop combat uses the same battle session at native CSS scale. The title,
+   encounter picker, and smaller battle view retain their existing zoom. */
+.kcq-app:has(.kcq-battle-stage--desktop)>* {
+    zoom: 1;
+}
+
+.kcq-graphical-app__background:has(.kcq-battle-stage--desktop) {
+    width: 100%;
+}
+
+.kcq-battle-stage.kcq-battle-stage--desktop {
+    width: 100%;
+    height: var(--kcq-battle-height, calc(100dvh - 24px));
+}
+
+body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
+    zoom: 1;
+    height: var(--kcq-battle-height);
+}
+
+.kcq-battle-stage--desktop>.kcq-library-host {
+    width: 366px;
+    margin: 0 auto;
+}
+
+.kcq-battle-stage--desktop .kcq-library {
+    height: var(--kcq-battle-height);
+}
+
+.kcq-battle-stage--desktop>.kcq-battle-stage__background {
+    display: grid;
+    grid-template-columns: minmax(780px, 1fr) 300px minmax(320px, 374px);
+    grid-template-rows: 72px minmax(0, 1fr);
+    gap: 12px;
+}
+
+.kcq-battle-stage--desktop [hidden] {
+    display: none !important;
+}
+
+.kcq-desktop-battle__top {
+    grid-column: 1 / -1;
+}
+
+.kcq-desktop-battle__header .kcq-combat-header {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) 170px 90px;
+}
+
+.kcq-desktop-battle__left {
+    grid-column: 1;
+    grid-row: 2;
+    display: grid;
+    grid-template-rows: 717px minmax(0, 1fr);
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+}
+
+.kcq-desktop-battle__party {
+    display: grid;
+    grid-template-rows: repeat(3, 231px);
+    gap: 12px;
+}
+
+.kcq-desktop-character {
+    display: grid;
+    grid-template-columns: minmax(210px, 1fr) 183px minmax(330px, 1.5fr);
+    gap: 12px;
+    height: 231px;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 12px;
+    background: var(--kcq-surface-panel);
+}
+
+.kcq-desktop-character.is-selected {
+    border-color: var(--kcq-accent-primary);
+}
+
+.kcq-desktop-character__overview {
+    display: grid;
+    grid-template-rows: 48px minmax(0, 1fr);
+    gap: 12px;
+    min-width: 0;
+    min-height: 0;
+}
+
+.kcq-desktop-character__identity {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 12px;
+    background: var(--kcq-surface-card);
+    color: var(--kcq-text-primary);
+    cursor: pointer;
+}
+
+.kcq-desktop-character__identity strong {
+    margin-right: auto;
+    font-size: 15px;
+}
+
+.kcq-desktop-character .kcq-character-section {
+    min-width: 0;
+    min-height: 0;
+}
+
+.kcq-desktop-character h2 {
+    margin: 0;
+    color: var(--kcq-text-secondary);
+    font-size: 10px;
+    line-height: 18px;
+    text-transform: uppercase;
+}
+
+.kcq-desktop-character .kcq-character-effects,
+.kcq-desktop-character .kcq-character-bindings {
+    overflow: auto;
+    scrollbar-width: thin;
+}
+
+.kcq-desktop-character .kcq-character-effect {
+    grid-template-columns: 1fr;
+    gap: 2px;
+    font-size: 10px;
+}
+
+.kcq-desktop-character .kcq-character-capabilities__list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding-top: 0;
+}
+
+.kcq-desktop-character .kcq-character-capabilities {
+    padding: 0 12px;
+}
+
+.kcq-desktop-character .kcq-modifier-meter {
+    grid-template-columns: minmax(0, 1fr) 54px 20px;
+    height: 18px;
+    gap: 2px;
+    font-size: 10px;
+}
+
+.kcq-desktop-character .kcq-modifier-meter__label {
+    font-size: 10px;
+}
+
+.kcq-desktop-character .kcq-pip-meter {
+    gap: 2px;
+    width: 54px;
+}
+
+.kcq-desktop-character .kcq-pip-meter__pip {
+    width: 5px;
+    height: 10px;
+}
+
+.kcq-desktop-character .kcq-pip-meter--blocked {
+    width: 54px;
+}
+
+.kcq-desktop-character .kcq-character-bindings__list {
+    gap: 6px;
+    padding-top: 6px;
+}
+
+.kcq-desktop-character .kcq-character-binding {
+    min-height: 27px;
+}
+
+.kcq-desktop-character .kcq-character-binding__summary {
+    grid-template-columns: minmax(72px, 1fr) minmax(0, 1.5fr) auto auto;
+    gap: 4px;
+}
+
+.kcq-desktop-character .kcq-character-binding__name,
+.kcq-desktop-character .kcq-character-binding__value {
+    font-size: 10px;
+}
+
+.kcq-desktop-character .kcq-character-binding__level {
+    font-size: 9px;
+}
+
+.kcq-desktop-battle__actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 110px;
+    gap: 12px;
+    min-height: 0;
+    min-width: 0;
+}
+
+.kcq-desktop-battle__commands {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px;
+    scrollbar-width: thin;
+}
+
+.kcq-desktop-battle__commands .kcq-character-commands {
+    border: 0;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+}
+
+.kcq-desktop-battle__commands .kcq-character-commands__grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.kcq-desktop-battle__actions>.kcq-battle-overview__primary-action {
+    align-self: end;
+    height: 44px;
+}
+
+.kcq-battle-stage--desktop .kcq-battle-middle {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+}
+
+.kcq-desktop-battle__enemies .kcq-battle-overview__enemies {
+    grid-template-columns: 1fr;
+    margin-top: 12px;
+}
+
+.kcq-battle-stage--desktop .kcq-battle-active-screen>
+.kcq-screen-layout {
+    width: 100%;
+    height: auto;
+}
+
+.kcq-battle-stage--desktop .kcq-battle-active-screen .kcq-screen-layout__body {
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+}
+
+.kcq-battle-stage--desktop .kcq-battle-active-screen .kcq-character-details>.kcq-screen-layout__header,
+.kcq-battle-stage--desktop .kcq-battle-active-screen .kcq-character-capabilities,
+.kcq-battle-stage--desktop .kcq-battle-active-screen .kcq-character-bindings,
+.kcq-battle-stage--desktop .kcq-battle-active-screen .kcq-character-effects {
+    display: none;
+}
+
+.kcq-battle-stage--desktop .kcq-enemy-details {
+    margin-top: 12px;
+    width: 100%;
+    height: auto;
+}
+
+.kcq-battle-stage--desktop .kcq-enemy-details>.kcq-screen-layout__header {
+    display: none;
+}
+
+.kcq-battle-stage--desktop .kcq-enemy-details>.kcq-screen-layout__body {
+    overflow: visible;
+    margin: 0;
+    padding: 0;
+}
+
+.kcq-battle-stage--desktop .kcq-enemy-details .kcq-character-effects {
+    display: block;
+}
+
+.kcq-battle-stage--desktop .kcq-battle-log-pane {
+    grid-column: 3;
+    grid-row: 2;
+    min-width: 0;
+    min-height: 0;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--kcq-surface-card);
+}
+
+.kcq-battle-stage--desktop .kcq-game-log {
+    width: 100%;
+    height: 100%;
+    gap: 0;
+    background: var(--kcq-surface-card);
+}
+
+.kcq-battle-stage--desktop .kcq-game-log>.kcq-screen-layout__header {
+    padding: 0;
+}
+
+.kcq-desktop-battle__log-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 12px 16px;
+    background: var(--kcq-surface-card);
+}
+
+.kcq-desktop-battle__log-heading h2 {
+    margin: 0;
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.kcq-battle-stage--desktop .kcq-game-log>.kcq-screen-layout__body {
+    margin: 0;
+    padding: 0;
+    scrollbar-width: thin;
+}
+
+.kcq-desktop-character__identity:focus-visible,
+.kcq-battle-stage--desktop button:focus-visible,
+.kcq-battle-stage--desktop .kcq-game-log .kcq-screen-layout__body:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: -2px;
+}

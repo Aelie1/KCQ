@@ -1,4 +1,4 @@
-import { createMemo, For, Show, type JSX } from "solid-js";
+import { createMemo, type JSX } from "solid-js";
 import type {
     ActionView,
     EntityId,
@@ -9,7 +9,7 @@ import type { Presentation } from "../../../presentation/presentation";
 import { COMBAT_SHORTCUTS } from "../keyboard";
 import { Shortcut } from "../components/Shortcut";
 import { CharacterDetailsLayout } from "../components/CharacterDetailsLayout";
-import { CommandCard } from "../components/CommandCard";
+import { CharacterCommands } from "../components/CharacterCommands";
 import { createCharacterDetailsViewModel } from "../viewModels/characterDetails";
 
 export interface CharacterDetailsPanelProps {
@@ -40,41 +40,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
             onSelectCharacter={props.onSelectCharacter}
             actionRegion={
                 <>
-                    <section class="kcq-character-section kcq-character-commands" aria-labelledby="character-commands-heading">
-                        <div class="kcq-character-commands__header">
-                            <h2 id="character-commands-heading">
-                                {model().labels.commandsHeading}
-                            </h2>
-
-                            <Show when={model().focused.resource} keyed>
-                                {(resource) => (
-                                    <div class="kcq-character-commands__resource">
-                                        <span>{props.presentation.data("subspace")}</span>
-                                        <span class="kcq-subspace-meter">
-                                            <span
-                                                style={{
-                                                    width: `${resource.current / resource.max * 100}%`,
-                                                }}
-                                            />
-                                        </span>
-                                        <span>{resource.current}/{resource.max}</span>
-                                    </div>
-                                )}
-                            </Show>
-                        </div>
-                        <div class="kcq-character-commands__grid">
-                            <For each={model().focused.commands}>
-                                {(command) => (
-                                    <CommandCard
-                                        command={command}
-                                        onSelect={props.onSelectCommand
-                                            ? () => props.onSelectCommand?.(command.id)
-                                            : undefined}
-                                    />
-                                )}
-                            </For>
-                        </div>
-                    </section>
+                    <CharacterCommands model={model()} presentation={props.presentation} onSelectCommand={props.onSelectCommand} />
                 </>
             }
             footer={

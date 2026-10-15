@@ -113,6 +113,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.combatHeader.targeting": "Targeting",
     "ui.characterDetails.back": "Go Back",
     "ui.characterDetails.bindingValue": "{value}",
+    "ui.desktopBattle.bindingValue": "{value}/{peak}",
     "ui.characterDetails.bindingsHeading": "Bindings / {count} Zones",
     "ui.characterDetails.blocked": "Blk",
     "ui.characterDetails.changeStance": "Change Stance",

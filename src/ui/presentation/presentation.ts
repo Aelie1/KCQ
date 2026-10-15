@@ -56,6 +56,7 @@ export type UiLabel =
     | "battleSettings.retry"
     | "characterDetails.back"
     | "characterDetails.bindingValue"
+    | "desktopBattle.bindingValue"
     | "characterDetails.bindingsHeading"
     | "characterDetails.blocked"
     | "characterDetails.buffsHeading"

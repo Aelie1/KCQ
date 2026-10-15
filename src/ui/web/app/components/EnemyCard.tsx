@@ -18,6 +18,7 @@ export interface EnemyCardProps {
     onSelect?: () => void;
     defeat?: ActiveReaction;
     shortcut?: string;
+    expanded?: boolean;
 }
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
@@ -43,6 +44,7 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                 "--kcq-death-fade-duration": `${ENEMY_DEFEAT_FADE_DURATION}ms`,
             }}
             aria-label={props.enemy.name}
+            aria-expanded={props.expanded}
             role={selectable() ? "button" : undefined}
             tabIndex={selectable() ? 0 : undefined}
             data-kcq-shortcut={selectable() ? props.shortcut : undefined}

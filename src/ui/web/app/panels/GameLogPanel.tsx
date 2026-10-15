@@ -15,6 +15,7 @@ export interface GameLogPanelProps {
     state: GameState;
     onBack?: () => void;
     focusBackOnMount?: boolean;
+    embedded?: boolean;
 }
 
 export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
@@ -41,6 +42,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     onMount(() => {
         // ScreenLayout's middle row owns scrolling; the log div is its content.
         viewport = content.closest<HTMLElement>(".kcq-screen-layout__body")!;
+        viewport.tabIndex = 0;
         if (props.focusBackOnMount) content.closest(".kcq-screen-layout")?.querySelector<HTMLButtonElement>(".kcq-combat-header__back")?.focus();
         viewport.addEventListener("scroll", trackScroll, { passive: true });
         const observer = new ResizeObserver(scheduleFollow);
@@ -63,11 +65,24 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
         previousRound = round;
         scheduleFollow();
     });
+    createEffect(() => {
+        // The desktop log is already mounted when a result dialog opens it.
+        if (props.embedded && props.focusBackOnMount && props.onBack) queueMicrotask(() => {
+            if (content.isConnected) content.closest(".kcq-screen-layout")
+                ?.querySelector<HTMLButtonElement>(".kcq-desktop-battle__log-heading button")?.focus();
+        });
+    });
 
     return (
         <ScreenLayout class="kcq-game-log" ariaLabel={props.presentation.ui("combatHeader.gameLog")}
             header={
-                <CombatHeader
+                <Show when={!props.embedded} fallback={
+                    <header class="kcq-desktop-battle__log-heading">
+                        <h2>{props.presentation.ui("combatHeader.gameLog")}</h2>
+                        <Show when={props.onBack}><button type="button" onClick={props.onBack}
+                            data-kcq-shortcut={COMBAT_SHORTCUTS.back}>{props.presentation.ui("characterDetails.back")}</button></Show>
+                    </header>
+                }><CombatHeader
                     variant="subscreen"
                     encounterLabel={header().encounterLabel}
                     contextLabel={props.presentation.ui("combatHeader.gameLog")}
@@ -76,7 +91,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                     backLabel={props.presentation.ui("characterDetails.back")}
                     backShortcut={COMBAT_SHORTCUTS.back}
                     onBack={props.onBack}
-                />
+                /></Show>
             }
             body={
                 <div ref={content} class="kcq-game-log__scroll" role="log" aria-label={props.presentation.ui("gameLog.chronological")}>

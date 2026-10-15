@@ -14,6 +14,7 @@ export function setupResponsiveScale(shell: HTMLElement): () => void {
 
         shell.style.setProperty("--kcq-ui-zoom", String(zoom));
         shell.style.setProperty("--kcq-ui-height", `${Math.max(0, viewportHeight - verticalPadding) / zoom}px`);
+        shell.style.setProperty("--kcq-battle-height", `${Math.max(0, viewportHeight - verticalPadding)}px`);
     };
 
     const observer = new ResizeObserver(resizeGame);

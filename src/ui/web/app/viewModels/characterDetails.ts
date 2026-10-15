@@ -154,6 +154,7 @@ export function createCharacterDetailsViewModel(
     focusedId: EntityId,
     thresholds: ThresholdInfo,
     presentation: Presentation,
+    includeEmpty = false,
 ): CharacterDetailsViewModel {
     const actionsById = new Map(actions.map((action) => [action.id, action]));
     const focusedAction = actionsById.get(focusedId);
@@ -166,6 +167,7 @@ export function createCharacterDetailsViewModel(
         focusedAction,
         thresholds,
         presentation,
+        includeEmpty,
     );
     const {
         encounterLabel,
@@ -226,6 +228,7 @@ export function createFocusedCharacterViewModel(
     action: ActionView,
     thresholds: ThresholdInfo,
     presentation: Presentation,
+    includeEmpty = false,
 ): FocusedCharacterViewModel {
     const character = state.characters.find(({ id }) => id === action.id);
     if (!character) {
@@ -259,17 +262,18 @@ export function createFocusedCharacterViewModel(
             character,
             action,
             presentation,
-        )).filter((metric) => metric.blocked || metric.value !== 0),
+        )).filter((metric) => includeEmpty || metric.blocked || metric.value !== 0),
         bindings: projectBindingZones(state.encounter?.bindings, character.bindings)
-            .filter((binding) => binding.value !== 0)
+            .filter((binding) => includeEmpty || binding.value !== 0)
             .map((binding) => ({
                 id: binding.id,
                 max: thresholds.max,
                 name: presentation.binding(binding.id),
                 peak: binding.peak,
                 value: binding.value,
-                valueLabel: presentation.ui("characterDetails.bindingValue", {
+                valueLabel: presentation.ui(includeEmpty ? "desktopBattle.bindingValue" : "characterDetails.bindingValue", {
                     value: binding.value,
+                    peak: binding.peak ?? binding.value,
                 }),
                 level: binding.level,
                 levelLabel: presentation.bindingLevel(binding.level),
