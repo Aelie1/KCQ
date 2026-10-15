@@ -1,7 +1,7 @@
 import { createSignal, onCleanup, onMount } from "solid-js";
 
 // The header sits above the log, so party/actions use the full viewport height:
-// 24px app padding + 717px party + 12px gap + 123px scrollable command region.
+// 24px app padding + 678px party + 8px gap + 166px scrollable command region.
 export const DESKTOP_BATTLE_MIN_WIDTH = 1520;
 export const DESKTOP_BATTLE_MIN_HEIGHT = 876;
 

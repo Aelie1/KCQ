@@ -5501,8 +5501,8 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-battle-stage--desktop>.kcq-battle-stage__background {
     display: grid;
-    grid-template-columns: minmax(780px, 1fr) 300px minmax(320px, 374px);
-    grid-template-rows: 72px minmax(0, 1fr);
+    grid-template-columns: minmax(780px, 1fr) 300px minmax(360px, 400px);
+    grid-template-rows: minmax(72px, auto) minmax(0, 1fr);
     gap: 12px;
 }
 
@@ -5517,32 +5517,41 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-battle__header .kcq-combat-header {
     width: 100%;
-    grid-template-columns: minmax(0, 1fr) 82px 42px;
+    grid-template-columns: minmax(0, 1fr) max-content 42px;
+    height: auto;
+    min-height: 72px;
+}
+
+.kcq-desktop-battle__header .kcq-combat-header__encounter {
+    justify-content: center;
+    gap: 4px;
+    height: auto;
+    min-height: 56px;
 }
 
 .kcq-desktop-battle__left {
     grid-column: 1;
     grid-row: 1 / -1;
     display: grid;
-    grid-template-rows: 717px minmax(0, 1fr);
-    gap: 12px;
+    grid-template-rows: 678px minmax(0, 1fr);
+    gap: 8px;
     min-width: 0;
     min-height: 0;
 }
 
 .kcq-desktop-battle__party {
     display: grid;
-    grid-template-rows: repeat(3, 231px);
+    grid-template-rows: repeat(3, 218px);
     gap: 12px;
 }
 
 .kcq-desktop-character {
     display: grid;
-    grid-template-columns: minmax(210px, 1fr) 183px minmax(330px, 1.5fr);
-    gap: 12px;
-    height: 231px;
+    grid-template-columns: minmax(210px, 1fr) 220px minmax(310px, 1.5fr);
+    gap: 8px;
+    height: 218px;
     min-width: 0;
-    padding: 12px;
+    padding: 8px;
     border: 1px solid var(--kcq-structure-border);
     border-radius: 12px;
     background: var(--kcq-surface-panel);
@@ -5563,9 +5572,9 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 .kcq-desktop-character__identity {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     min-width: 0;
-    padding: 8px 12px;
+    padding: 6px 8px;
     border: 1px solid var(--kcq-structure-border);
     border-radius: 12px;
     background: var(--kcq-surface-card);
@@ -5575,7 +5584,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-character__identity strong {
     margin-right: auto;
-    font-size: 15px;
+    font-size: 19px;
 }
 
 .kcq-desktop-character .kcq-character-section {
@@ -5586,7 +5595,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 .kcq-desktop-character h2 {
     margin: 0;
     color: var(--kcq-text-secondary);
-    font-size: 10px;
+    font-size: 13px;
     line-height: 18px;
     text-transform: uppercase;
 }
@@ -5600,7 +5609,8 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 .kcq-desktop-character .kcq-character-effect {
     grid-template-columns: 1fr;
     gap: 2px;
-    font-size: 10px;
+    font-size: 13px;
+    line-height: 17px;
 }
 
 .kcq-desktop-character .kcq-character-capabilities__list {
@@ -5611,18 +5621,25 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 }
 
 .kcq-desktop-character .kcq-character-capabilities {
-    padding: 0 12px;
+    padding: 0 8px;
 }
 
 .kcq-desktop-character .kcq-modifier-meter {
-    grid-template-columns: minmax(0, 1fr) 54px 20px;
+    grid-template-columns: minmax(0, 1fr) 54px 28px;
     height: 18px;
     gap: 2px;
-    font-size: 10px;
+    font-size: 13px;
+    line-height: 16px;
 }
 
 .kcq-desktop-character .kcq-modifier-meter__label {
-    font-size: 10px;
+    font-size: 13px;
+    white-space: normal;
+    overflow: visible;
+}
+
+.kcq-desktop-character .kcq-modifier-meter__value {
+    width: 28px;
 }
 
 .kcq-desktop-character .kcq-pip-meter {
@@ -5640,7 +5657,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 }
 
 .kcq-desktop-character .kcq-character-bindings__list {
-    gap: 6px;
+    gap: 5px;
     padding-top: 6px;
 }
 
@@ -5649,17 +5666,35 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 }
 
 .kcq-desktop-character .kcq-character-binding__summary {
-    grid-template-columns: minmax(72px, 1fr) minmax(0, 1.5fr) auto auto;
+    grid-template-columns: minmax(64px, 1fr) minmax(0, 1.5fr) auto auto;
     gap: 4px;
+    height: auto;
+    min-height: 20px;
+    font-size: 13px;
+    line-height: 16px;
 }
 
 .kcq-desktop-character .kcq-character-binding__name,
 .kcq-desktop-character .kcq-character-binding__value {
-    font-size: 10px;
+    font-size: 13px;
 }
 
 .kcq-desktop-character .kcq-character-binding__level {
-    font-size: 9px;
+    font-size: 12px;
+}
+
+.kcq-desktop-character .kcq-character-bindings {
+    padding: 0 8px;
+}
+
+.kcq-desktop-character .kcq-character-binding__statuses {
+    flex-wrap: wrap;
+    overflow: visible;
+}
+
+.kcq-desktop-character :is(.kcq-character-binding__name, .kcq-character-effect__name) {
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .kcq-desktop-battle__actions {
@@ -5691,7 +5726,8 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 }
 
 .kcq-desktop-battle__commands .kcq-command-card {
-    padding-block: 4px;
+    gap: 3px;
+    padding: 4px 6px;
 }
 
 .kcq-desktop-battle__commands .kcq-character-commands__grid>.kcq-battle-overview__primary-action {
@@ -5788,7 +5824,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-battle__log-heading h2 {
     margin: 0;
-    font-size: 14px;
+    font-size: 18px;
     text-transform: uppercase;
 }
 
@@ -5796,6 +5832,271 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
     margin: 0;
     padding: 0;
     scrollbar-width: thin;
+}
+
+/* Native desktop type scale. Keep shared/mobile cards at their original sizes. */
+.kcq-battle-stage--desktop .kcq-status-chip {
+    min-height: 22px;
+    padding: 2px 4px;
+    font-size: 13px;
+    line-height: 16px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-character-binding__statuses, .kcq-character-effect__details) .kcq-status-chip {
+    min-height: 20px;
+    padding: 1px 3px;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.kcq-battle-stage--desktop .kcq-linked-entity-chip {
+    min-height: 21px;
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.kcq-battle-stage--desktop .kcq-shortcut {
+    min-width: 17px;
+    height: 17px;
+    font-size: 10px;
+}
+
+.kcq-battle-stage--desktop .kcq-combat-header__title {
+    font-size: 19px;
+    line-height: 23px;
+    white-space: normal;
+    overflow: visible;
+}
+
+.kcq-battle-stage--desktop .kcq-combat-header__difficulty {
+    font-size: 12px;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-combat-header__round, .kcq-combat-header__phase) {
+    font-size: 13px;
+}
+
+.kcq-battle-stage--desktop .kcq-combat-header__metadata {
+    gap: 1px;
+}
+
+.kcq-battle-stage--desktop .kcq-combat-header__trap-summary {
+    height: auto;
+    min-height: 19px;
+    font-size: 15px;
+    line-height: 19px;
+    white-space: normal;
+    overflow: visible;
+}
+
+.kcq-battle-stage--desktop .kcq-combat-header__trap-name {
+    overflow: visible;
+}
+
+.kcq-desktop-battle__commands .kcq-character-commands__header {
+    height: auto;
+    min-height: 20px;
+}
+
+.kcq-desktop-battle__commands :is(.kcq-character-commands__header h2, .kcq-character-commands__resource) {
+    font-size: 13px;
+    line-height: 20px;
+}
+
+.kcq-desktop-battle__commands .kcq-command-card__name {
+    font-size: 15px;
+    line-height: 18px;
+}
+
+.kcq-desktop-battle__commands .kcq-command-card__reason {
+    font-size: 13px;
+    line-height: 16px;
+}
+
+.kcq-desktop-battle__commands :is(.kcq-command-card__name, .kcq-command-card__reason) {
+    display: block;
+    max-height: none;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    overflow-wrap: anywhere;
+}
+
+.kcq-desktop-battle__commands .kcq-command-card__tags {
+    gap: 3px;
+    max-height: none;
+    overflow: visible;
+}
+
+.kcq-battle-stage--desktop .kcq-command-tag {
+    min-height: 18px;
+    font-size: 12px;
+    line-height: 14px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.kcq-battle-stage--desktop .kcq-command-tag__leading-symbol {
+    font-size: 14px;
+    line-height: 16px;
+}
+
+.kcq-desktop-battle__commands .kcq-battle-overview__primary-action {
+    font-size: 15px;
+    line-height: 20px;
+}
+
+.kcq-battle-stage--desktop .kcq-enemy-card {
+    width: 100%;
+    padding: 10px;
+}
+
+.kcq-battle-stage--desktop .kcq-enemy-card__name {
+    display: block;
+    max-height: none;
+    overflow: visible;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    font-size: 18px;
+    line-height: 22px;
+}
+
+.kcq-battle-stage--desktop .kcq-enemy-card__hp {
+    font-size: 14px;
+}
+
+.kcq-battle-stage--desktop .kcq-enemy-card__permanent-effect {
+    font-size: 13px;
+}
+
+.kcq-battle-stage--desktop .kcq-battle-section__heading {
+    height: auto;
+    min-height: 20px;
+    font-size: 13px;
+    line-height: 18px;
+}
+
+.kcq-battle-stage--desktop .kcq-battle-section__heading h2 {
+    flex-basis: 80px;
+}
+
+.kcq-battle-stage--desktop .kcq-intent-row {
+    font-size: 14px;
+    line-height: 22px;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-intent-row__move, .kcq-intent-row__targets) {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-intent-row__target-group, .kcq-target-header, .kcq-escape-group__header) {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 20px;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-selected-command h2, .kcq-target-header__name, .kcq-escape-group__header h2) {
+    display: block;
+    font-size: 18px;
+    line-height: 22px;
+    overflow: visible;
+    white-space: normal;
+    -webkit-line-clamp: unset;
+    line-clamp: unset;
+    overflow-wrap: anywhere;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-targeting__panel>h1, .kcq-targeting__action-effects>h2,
+    .kcq-preview-effect__payload, .kcq-buff-effect__duration, .kcq-damage-profile__band,
+    .kcq-targeting__back, .kcq-escape__panel>h1, .kcq-escape__back) {
+    font-size: 13px;
+    line-height: 17px;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-targeting__reason, .kcq-target-card__reason,
+    .kcq-preview-effect__tag, .kcq-effect-modifier) {
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-target-header__value, .kcq-target-header__character-state,
+    .kcq-binding-effect__header, .kcq-meter-effect__header, .kcq-damage-profile__band strong,
+    .kcq-escape-group__header p, .kcq-escape-choice, .kcq-enemy-details__empty) {
+    font-size: 14px;
+    line-height: 18px;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-targeting__execute, .kcq-escape__execute) {
+    font-size: 15px;
+}
+
+.kcq-battle-stage--desktop :is(.kcq-preview-effect__payload, .kcq-escape-choice__name,
+    .kcq-escape-choice__value, .kcq-escape-choice__reason) {
+    overflow: visible;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.kcq-battle-stage--desktop .kcq-escape-choice__reason {
+    font-size: 11px;
+}
+
+.kcq-battle-stage--desktop .kcq-buff-effect__modifiers {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.kcq-battle-stage--desktop .kcq-selected-command {
+    flex-direction: column;
+}
+
+.kcq-battle-stage--desktop .kcq-selected-command__tags {
+    flex-basis: auto;
+    justify-content: flex-start;
+}
+
+/* Damage probabilities need the card's full width at the desktop type size. */
+.kcq-battle-stage--desktop .kcq-preview-effect:has(> .kcq-damage-profile) {
+    grid-template-columns: 3px minmax(0, 1fr);
+}
+
+.kcq-battle-stage--desktop .kcq-preview-effect:has(> .kcq-damage-profile)>.kcq-preview-effect__accent {
+    grid-row: 1 / 3;
+}
+
+.kcq-battle-stage--desktop .kcq-preview-effect:has(> .kcq-damage-profile)>.kcq-preview-effect__tag {
+    grid-column: 2;
+    justify-self: start;
+}
+
+.kcq-battle-stage--desktop .kcq-damage-profile {
+    grid-column: 2 / -1;
+    gap: 4px;
+    align-items: stretch;
+    overflow: visible;
+}
+
+.kcq-battle-stage--desktop .kcq-damage-profile__band {
+    justify-content: space-between;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.kcq-battle-stage--desktop .kcq-preview-effect__details {
+    flex-wrap: wrap;
+    overflow: visible;
+}
+
+.kcq-battle-stage--desktop .kcq-game-log__scroll {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.kcq-battle-stage--desktop .kcq-game-log__entry--phase .kcq-game-log__heading {
+    font-size: 15px;
 }
 
 .kcq-desktop-character__identity:focus-visible,

@@ -343,7 +343,8 @@ describe("enemy card names and duration clusters", () => {
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
         const name = css.match(/\.kcq-enemy-card__name\s*\{([^}]*)\}/)![1];
         const header = css.match(/\.kcq-enemy-card__header\s*\{([^}]*)\}/)![1];
-        const hp = [...css.matchAll(/\.kcq-enemy-card__hp\s*\{([^}]*)\}/g)].at(-1)![1];
+        // Read the shared rule; desktop overrides only the inherited font size.
+        const hp = [...css.matchAll(/^\.kcq-enemy-card__hp\s*\{([^}]*)\}/gm)].at(-1)![1];
         expect(name).toContain("white-space: normal");
         expect(name).toContain("-webkit-line-clamp: 2");
         expect(name).toContain("overflow: hidden");

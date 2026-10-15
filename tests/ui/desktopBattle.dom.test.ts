@@ -113,7 +113,7 @@ describe("desktop battle", () => {
             expect(row.querySelectorAll(".kcq-modifier-meter")).toHaveLength(10);
             expect(row.querySelectorAll(".kcq-pip-meter__pip")).toHaveLength(80);
             expect(row.querySelectorAll(".kcq-character-binding")).toHaveLength(engine.getGameState().encounter!.bindings.length);
-            expect(getComputedStyle(row).height).toBe("231px");
+            expect(getComputedStyle(row).height).toBe("218px");
         }
         expect(getComputedStyle(element(".kcq-app>div")).zoom).toBe("1");
         expect(document.querySelectorAll('[role="log"]')).toHaveLength(1);
@@ -246,7 +246,7 @@ describe("desktop battle", () => {
         expect(getComputedStyle(element(".kcq-battle-log-pane")).gridColumn).toBe("3");
         expect(getComputedStyle(element(".kcq-battle-log-pane")).gridRow).toBe("2");
         expect(getComputedStyle(element(".kcq-desktop-battle__header .kcq-combat-header")).gridTemplateColumns)
-            .toBe("minmax(0, 1fr) 82px 42px");
+            .toBe("minmax(0, 1fr) max-content 42px");
         resize(390, 844); expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
     it("routes character, command and target keyboard choices to one visible control", () => {
