@@ -21,7 +21,9 @@ if (!root) {
 }
 
 const campaigns = Object.keys(campaignCatalogs) as KCQCampaign[];
-const presentation = new Presentation(getStringTable("en"));
+// Include encounter names for the saved-battle summary without composing an engine.
+const presentation = new Presentation(Object.assign({}, getStringTable("en"),
+    ...campaigns.map(campaign => getStringTable("en", undefined, campaign))));
 
 render(() => <GraphicalApp campaigns={campaigns} presentation={presentation} release={__KCQ_RELEASE_TAG__}
     composeCampaign={campaign => ({

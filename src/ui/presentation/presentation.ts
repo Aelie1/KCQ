@@ -216,6 +216,8 @@ export type UiLabel =
     | "title.back"
     | "title.campaigns"
     | "title.continue"
+    | "title.resumeBattle"
+    | `title.save.${"delete" | "deletePrompt" | "deleteConfirm" | "deleteCancel" | "deleteError" | "summary" | "unknownDifficulty"}`
     | `title.save.${"incompatible" | "corrupted" | "inaccessible"}`
     | "title.copyright"
     | "title.credit"

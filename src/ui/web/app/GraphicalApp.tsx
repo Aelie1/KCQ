@@ -19,7 +19,7 @@ import { EncounterPickerPanel } from "./components/EncounterPickerPanel";
 import { createGraphicalController, type GraphicalBattleSession } from "./graphicalController";
 import { createDifficultySelectViewModel } from "./viewModels/difficulty";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel } from "./viewModels/encounters";
-import { readSave, type SaveReadResult } from "./savePersistence";
+import { clearSave, readSave, type SaveReadResult } from "./savePersistence";
 
 export interface GraphicalCampaignComposition {
     engine: Engine;
@@ -82,6 +82,15 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
             setAutosave({ status: "corrupted" });
         }
     };
+    const deleteSave = (): boolean => {
+        if (clearSave().status !== "cleared") return false;
+        setAutosave({ status: "missing" });
+        return true;
+    };
+    const savedBattle = () => {
+        const result = autosave();
+        return result.status === "loaded" ? result.save : undefined;
+    };
     const backToTitle = (): void => {
         setSettingsOpen(false);
         setLibraryOpen(false);
@@ -132,9 +141,10 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} hidden={libraryOpen()} inert={settingsOpen() || libraryOpen()} aria-hidden={settingsOpen() || libraryOpen() ? true : undefined}>
             <Switch>
                 <Match when={controller.screen().screen === "title"}>
-                    <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release)}
+                    <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release, savedBattle())}
                         language={languageSelection}
                         saveStatus={autosave().status} onContinue={() => navigate(continueBattle)}
+                        onDelete={deleteSave}
                         onSelect={campaign => navigate(() => controller.selectCampaign(campaign))} />
                 </Match>
                 <Match when={controller.screen().screen === "picker"}>

@@ -42,7 +42,7 @@ function button(label: string): void {
     if (!element) throw new Error("Missing " + label);
     element.click();
 }
-function mount(configure?: (engine: Engine) => void) {
+function mount(configure?: (engine: Engine) => void, titlePresentation = presentation) {
     unmount?.(); document.body.replaceChildren();
     const sessions: { engine: Engine; dispose: ReturnType<typeof vi.fn> }[] = [];
     const compositions: Engine[] = [];
@@ -62,7 +62,7 @@ function mount(configure?: (engine: Engine) => void) {
     });
     const host = document.createElement("div"); document.body.append(host);
     unmount = render(() => createComponent(GraphicalApp, {
-        campaigns: ["skunk"], release: "test", presentation, prepareBattle, composeCampaign,
+        campaigns: ["skunk"], release: "test", presentation: titlePresentation, prepareBattle, composeCampaign,
     }), host);
     return { sessions, compositions, prepareBattle, composeCampaign };
 }
@@ -100,6 +100,112 @@ const endTurn = () => click(".kcq-battle-overview__primary-action");
 const encoded = () => window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);
 const titleError = () => document.querySelector(".kcq-title-screen__save-message")?.textContent;
 
+describe("title saved-battle card", () => {
+    it("presents localized campaign, encounter, difficulty, round and actions without composing an engine", () => {
+        const source = seedSave("plains_3");
+        source.save.saveState.turn.round = 7;
+        writeSave(source.save);
+        const localized = new Presentation({ ...stockStrings,
+            "campaign.skunk.name": "Localized campaign", "encounter.plains_3.name": "Localized encounter",
+            "difficulty.veteran.name": "Localized difficulty", "ui.battleOverview.round": "Turn {round}",
+            "ui.title.resumeBattle": "Localized resume", "ui.title.continue": "Localized continue",
+            "ui.title.save.delete": "Localized delete",
+        });
+        const app = mount(undefined, localized);
+        const card = document.querySelector(".kcq-title-screen__resume")!;
+        expect(card.querySelector("h2")?.textContent).toBe("Localized resume");
+        expect(card.querySelector("strong")?.textContent).toBe("Localized campaign");
+        expect(card.querySelector(".kcq-title-screen__resume-details p")?.textContent)
+            .toBe("Localized encounter · Localized difficulty · Turn 7");
+        expect(card.querySelector(".kcq-title-screen__continue")?.textContent).toBe("Localized continue");
+        expect(card.querySelector(".kcq-title-screen__save-action")?.textContent).toBe("Localized delete");
+        expect(card.textContent).not.toContain("plains_3");
+        expect(app.composeCampaign).not.toHaveBeenCalled();
+        expect(app.prepareBattle).not.toHaveBeenCalled();
+        for (const action of card.querySelectorAll<HTMLButtonElement>("button")) {
+            expect(action.tabIndex).toBe(0);
+            action.focus(); expect(document.activeElement).toBe(action);
+        }
+    });
+
+    it.each(["Cancel", "Escape"])("confirms deletion inline and cancels via %s without changing storage or campaigns", method => {
+        seedSave(); mount(); const before = encoded();
+        const campaign = document.querySelector(".kcq-title-screen__campaign");
+        const remove = vi.spyOn(window.localStorage, "removeItem");
+        button("Delete");
+        const confirmation = document.querySelector(".kcq-title-screen__delete-confirmation")!;
+        expect(confirmation.getAttribute("aria-label")).toBe(presentation.ui("title.save.deletePrompt"));
+        expect(document.activeElement?.textContent).toBe("Cancel");
+        expect(encoded()).toBe(before); expect(remove).not.toHaveBeenCalled();
+        if (method === "Cancel") button("Cancel");
+        else document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        expect(document.querySelector(".kcq-title-screen__delete-confirmation")).toBeNull();
+        expect(document.activeElement?.textContent).toBe("Delete");
+        expect(encoded()).toBe(before); expect(remove).not.toHaveBeenCalled();
+        expect(document.querySelector(".kcq-title-screen__campaign")?.textContent).toBe(campaign?.textContent);
+        click(".kcq-title-screen__continue");
+        expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
+    });
+
+    it("immediately removes the saved-battle card after confirmation and keeps campaign selection intact", () => {
+        seedSave(); const app = mount();
+        const campaign = document.querySelector(".kcq-title-screen__campaign");
+        const remove = vi.spyOn(window.localStorage, "removeItem");
+        button("Delete"); button("Delete Battle");
+        expect(remove).toHaveBeenCalledExactlyOnceWith(AUTOSAVE_STORAGE_KEY);
+        expect(readSave().status).toBe("missing");
+        expect(document.querySelector(".kcq-title-screen__resume")).toBeNull();
+        expect(document.querySelector(".kcq-title-screen__campaign")?.textContent).toBe(campaign?.textContent);
+        expect(document.activeElement?.textContent).toBe(presentation.ui("title.campaigns"));
+        expect(app.composeCampaign).not.toHaveBeenCalled();
+        click(".kcq-title-screen__campaign");
+        expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
+    });
+
+    it("reports failed deletion and preserves the save for Continue", () => {
+        const source = seedSave(); const app = mount(); const before = encoded();
+        const remove = vi.spyOn(window.localStorage, "removeItem").mockImplementation(() => { throw new Error("private details"); });
+        button("Delete"); button("Delete Battle");
+        expect(document.querySelector('[role="alert"]')?.textContent).toBe(presentation.ui("title.save.deleteError"));
+        expect(document.body.textContent).not.toContain("private details");
+        expect(encoded()).toBe(before);
+        expect(document.querySelector(".kcq-title-screen__resume")).not.toBeNull();
+        button("Cancel");
+        expect(document.querySelector('[role="alert"]')).toBeNull();
+        remove.mockRestore();
+        click(".kcq-title-screen__continue");
+        expect(app.compositions[0]!.getSaveState()).toEqual(source.save.saveState);
+    });
+
+    it.each(["corrupted", "incompatible"] as const)("can delete a %s save without starting a battle", status => {
+        const value = status === "corrupted" ? "broken save" : compressToBase64(JSON.stringify({ version: "old-version" }));
+        window.localStorage.setItem(AUTOSAVE_STORAGE_KEY, value);
+        const app = mount();
+        expect(titleError()).toBe(presentation.ui(`title.save.${status}`));
+        button("Delete"); button("Delete Battle");
+        expect(encoded()).toBeNull(); expect(titleError()).toBeUndefined();
+        expect(document.querySelector(".kcq-title-screen__resume")).toBeNull();
+        expect(app.composeCampaign).not.toHaveBeenCalled(); expect(app.prepareBattle).not.toHaveBeenCalled();
+    });
+
+    it("can clear a stored save even when reading it is inaccessible", () => {
+        seedSave();
+        const storage = window.localStorage;
+        const get = storage.getItem.bind(storage);
+        vi.spyOn(window, "localStorage", "get").mockReturnValue({
+            ...storage, removeItem: storage.removeItem.bind(storage), clear: storage.clear.bind(storage),
+            getItem: (key: string) => {
+                if (key === AUTOSAVE_STORAGE_KEY) throw new Error("read blocked");
+                return get(key);
+            },
+        });
+        mount(); expect(titleError()).toBe(presentation.ui("title.save.inaccessible"));
+        button("Delete"); button("Delete Battle");
+        expect(get(AUTOSAVE_STORAGE_KEY)).toBeNull();
+        expect(document.querySelector(".kcq-title-screen__resume")).toBeNull();
+        expect(titleError()).toBeUndefined();
+    });
+});
 describe("graphical autosave and Continue", () => {
     it("replaces the slot at initialization and can refresh before the first action", () => {
         const previous = seedSave().save;
@@ -238,6 +344,7 @@ describe("autosave lifecycle and failures", () => {
     });
 
     it("shows no Continue or error for a missing save", () => {
+        expect(document.querySelector(".kcq-title-screen__resume")).toBeNull();
         mount(); expect(document.querySelector(".kcq-title-screen__continue")).toBeNull(); expect(titleError()).toBeUndefined();
     });
 

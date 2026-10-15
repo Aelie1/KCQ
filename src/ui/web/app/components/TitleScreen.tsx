@@ -1,4 +1,4 @@
-import { For, Show, type JSX } from "solid-js";
+import { createSignal, For, Show, type JSX } from "solid-js";
 import type { KCQCampaign } from "../../../../content";
 import type { LanguageSelection } from "../language";
 import type { TitleViewModel } from "../viewModels/title";
@@ -11,7 +11,25 @@ export function TitleScreen(props: {
     onSelect: (campaign: KCQCampaign) => void;
     saveStatus?: SaveReadResult["status"];
     onContinue?: () => void;
+    onDelete?: () => boolean;
 }): JSX.Element {
+    const [confirming, setConfirming] = createSignal(false);
+    const [deleteFailed, setDeleteFailed] = createSignal(false);
+    let deleteButton: HTMLButtonElement | undefined;
+    let cancelButton: HTMLButtonElement | undefined;
+    let campaignsHeading: HTMLHeadingElement | undefined;
+    const cancelDelete = () => {
+        setConfirming(false);
+        setDeleteFailed(false);
+        deleteButton?.focus();
+    };
+    const confirmDelete = () => {
+        if (props.onDelete?.()) {
+            setConfirming(false);
+            setDeleteFailed(false);
+            campaignsHeading?.focus();
+        } else setDeleteFailed(true);
+    };
     const saveMessage = () => {
         const status = props.saveStatus;
         return status === "incompatible" || status === "corrupted" || status === "inaccessible"
@@ -20,12 +38,43 @@ export function TitleScreen(props: {
     return <ScreenLayout class="kcq-title-screen"
         header={<h1 class="kcq-title-screen__title">{props.model.title}</h1>}
         body={<div class="kcq-title-screen__campaigns">
-            <Show when={props.saveStatus === "loaded"}>
-                <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
-                    onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
+            <Show when={props.saveStatus && props.saveStatus !== "missing"}>
+                <section class="kcq-encounter-card kcq-title-screen__resume" aria-label={props.model.resumeHeading}>
+                    <div class="kcq-title-screen__resume-header">
+                        <h2>{props.model.resumeHeading}</h2>
+                        <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
+                            aria-expanded={confirming()} onClick={() => {
+                                if (confirming()) cancelDelete();
+                                else { setConfirming(true); cancelButton?.focus(); }
+                            }}>{props.model.deleteLabel}</button>
+                    </div>
+                    <Show when={props.saveStatus === "loaded" && props.model.resume}>
+                        {resume => <div class="kcq-title-screen__resume-content">
+                            <div class="kcq-title-screen__resume-details">
+                                <strong>{resume().campaign}</strong>
+                                <p>{resume().summary}</p>
+                            </div>
+                            <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
+                                onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
+                        </div>}
+                    </Show>
+                    <Show when={saveMessage()}>{message => <p class="kcq-title-screen__save-message" role="status">{message()}</p>}</Show>
+                    <Show when={confirming()}>
+                        <div class="kcq-title-screen__delete-confirmation" role="group" aria-label={props.model.deletePrompt}
+                            onKeyDown={event => {
+                                if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); cancelDelete(); }
+                            }}>
+                            <p>{props.model.deletePrompt}</p>
+                            <button ref={cancelButton} class="kcq-title-screen__save-action" type="button"
+                                onClick={cancelDelete}>{props.model.deleteCancelLabel}</button>
+                            <button class="kcq-title-screen__save-action" type="button"
+                                onClick={confirmDelete}>{props.model.deleteConfirmLabel}</button>
+                            <Show when={deleteFailed()}><p role="alert">{props.model.deleteError}</p></Show>
+                        </div>
+                    </Show>
+                </section>
             </Show>
-            <Show when={saveMessage()}>{message => <p class="kcq-title-screen__save-message" role="status">{message()}</p>}</Show>
-            <h2>{props.model.campaignsHeading}</h2>
+            <h2 ref={campaignsHeading} tabIndex={-1}>{props.model.campaignsHeading}</h2>
             <For each={props.model.campaigns}>
                 {campaign => <button class="kcq-encounter-card kcq-title-screen__campaign" type="button"
                     onClick={() => props.onSelect(campaign.id)}>
