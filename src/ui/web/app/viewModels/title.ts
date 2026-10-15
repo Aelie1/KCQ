@@ -13,7 +13,11 @@ export interface TitleViewModel {
     deleteConfirmLabel: string;
     deleteCancelLabel: string;
     deleteError: string;
-    resume?: { campaign: string; summary: string };
+    resume?: {
+        campaign: string;
+        summary: string;
+        progress?: string;
+    };
     saveMessages: Record<"incompatible" | "corrupted" | "inaccessible", string>;
     version: string;
     credit: string;
@@ -25,6 +29,15 @@ export interface TitleViewModel {
 export function createTitleViewModel(
     campaigns: readonly KCQCampaign[], presentation: Presentation, release: string, save?: SavePackage,
 ): TitleViewModel {
+    const progress = save?.stats.stats.progress;
+    const hp = progress?.boss ?? progress?.enemies;
+
+    const progressLabel = hp === undefined ? undefined : presentation.ui(
+        progress?.boss !== undefined
+            ? "battleResult.bossHp.short"
+            : "battleResult.enemyHp.short",
+        { percent: Math.round(hp * 100) },
+    );
     return {
         title: presentation.ui("title.name"),
         campaignsHeading: presentation.ui("title.campaigns"),
@@ -46,6 +59,7 @@ export function createTitleViewModel(
                     ?? presentation.ui("title.save.unknownDifficulty"),
                 round: presentation.ui("battleOverview.round", { round: save.saveState.turn.round }),
             }),
+            progress: progressLabel
         } : undefined,
         saveMessages: {
             incompatible: presentation.ui("title.save.incompatible"),

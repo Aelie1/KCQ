@@ -1,9 +1,9 @@
 import { createSignal, For, Show, type JSX } from "solid-js";
 import type { KCQCampaign } from "../../../../content";
 import type { LanguageSelection } from "../language";
+import type { SaveReadResult } from "../savePersistence";
 import type { TitleViewModel } from "../viewModels/title";
 import { ScreenLayout } from "./ScreenLayout";
-import type { SaveReadResult } from "../savePersistence";
 
 export function TitleScreen(props: {
     model: TitleViewModel;
@@ -52,7 +52,10 @@ export function TitleScreen(props: {
                         {resume => <div class="kcq-title-screen__resume-content">
                             <div class="kcq-title-screen__resume-details">
                                 <strong>{resume().campaign}</strong>
-                                <p>{resume().summary}</p>
+                                <p>
+                                    {resume().summary}
+                                    {resume().progress && ` · ${resume().progress}`}
+                                </p>
                             </div>
                             <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
                                 onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
