@@ -5547,7 +5547,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-character {
     display: grid;
-    grid-template-columns: minmax(210px, 1fr) 220px minmax(310px, 1.5fr);
+    grid-template-columns: minmax(210px, 1fr) 436px minmax(0, 1fr);
     gap: 8px;
     height: 218px;
     min-width: 0;
@@ -5615,8 +5615,11 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-character .kcq-character-capabilities__list {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    /* Keep the existing modifier order, filling the left column first. */
+    grid-template-rows: repeat(5, 18px);
+    grid-auto-flow: column;
+    gap: 0 16px;
     padding-top: 0;
 }
 
