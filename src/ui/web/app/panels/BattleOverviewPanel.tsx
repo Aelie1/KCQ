@@ -111,6 +111,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                             {(id, index) => (
                                 <PartyCard
                                     character={model().party.find(character => character.id === id)!}
+                                    thresholds={props.thresholds}
                                     shortcut={index() < 3 ? String(index() + 1) : undefined}
                                     onSelect={props.onSelectCharacter
                                         ? () => props.onSelectCharacter?.(id)

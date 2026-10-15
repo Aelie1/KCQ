@@ -2,7 +2,7 @@ import { batch, createComponent, createSignal } from "solid-js";
 import { readFileSync } from "node:fs";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { EventFrame, GameEvent } from "../../src/engine/public/types";
+import type { EventFrame, GameEvent, ThresholdInfo } from "../../src/engine/public/types";
 import { CombatReactionsContext, createCombatReactions } from "../../src/ui/web/app/combatReactions";
 import { createCombatPlayback } from "../../src/ui/web/app/combatPlayback";
 import { ProjectedMeter } from "../../src/ui/web/app/components/ProjectedMeter";
@@ -17,7 +17,7 @@ afterEach(() => {
     document.body.replaceChildren();
     vi.useRealTimers(); vi.restoreAllMocks();
 });
-function mount(includeOtherMeters = false) {
+function mount(includeOtherMeters = false, thresholds: ThresholdInfo = fixture.thresholds) {
     const initial = structuredClone(fixture.state);
     initial.enemies[0]!.intentions = [{ resolved: false, move: "pounce", effects: [], targets: [{ target: "ko", band: "hit", effects: [{ type: "binding", target: "ko", binding: "latexHead", amount: 15 }] }] }];
     initial.characters[0]!.buffs = [{ id: "guarded", duration: 3, severity: 1 }];
@@ -32,7 +32,7 @@ function mount(includeOtherMeters = false) {
             value: reactions,
             get children() { return [createComponent(BattleOverviewPanel, {
                 get state() { return state(); },
-                gameLogLines: 0, actions: fixture.actions, thresholds: fixture.thresholds, presentation: fixture.presentation,
+                gameLogLines: 0, actions: fixture.actions, thresholds, presentation: fixture.presentation,
             }), ...(includeOtherMeters ? (["standard", "compact"] as const).map(size => createComponent(BindingMeter, {
                 entityId: "ko", bindingId: "latexHead", size, ariaLabel: "Other " + size + " meter",
                 get value() { return state().characters[0]!.bindings[0]!.value; }, max: 100, level: "severe",
@@ -155,7 +155,7 @@ describe("combat reaction rendering and lifecycle", () => {
     });
     it.each(["graze", "hit", "crit"] as const)("matches HP %s numbers at each binding bar's top center", band => {
         const css = readFileSync("src/ui/web/app/app.css", "utf8");
-        const style = document.createElement("style"); style.textContent = css; document.body.append(style);
+        const style = document.createElement("style"); style.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + css; document.body.append(style);
         const b = mount();
         const enemyId = b.initial.enemies[0]!.id;
         b.present({ type: "useMove", actor: "skunkette1", move: "pounce", effects: [], targets: [
@@ -165,9 +165,13 @@ describe("combat reaction rendering and lifecycle", () => {
         const number = element(".kcq-binding-float");
         const hpNumber = element(".kcq-hp-reaction");
         expect(number.dataset.hitStrength).toBe(band);
+        const reference = document.createElement("span");
+        reference.className = "kcq-character-binding__level--severe"; document.body.append(reference);
+        expect(getComputedStyle(number).color).toBe(getComputedStyle(reference).color);
+        expect(getComputedStyle(number).color).not.toBe(getComputedStyle(hpNumber).color);
         expect(number.textContent).toBe(band === "crit" ? "+15!" : "+15");
         expect(hpNumber.textContent).toBe(band === "crit" ? "-15!" : "-15");
-        for (const property of ["color", "font-size", "font-weight", "text-shadow", "animation-name", "animation-duration", "animation-timing-function"]) {
+        for (const property of ["font-size", "font-weight", "text-shadow", "animation-name", "animation-duration", "animation-timing-function"]) {
             expect(getComputedStyle(number).getPropertyValue(property), property)
                 .toBe(getComputedStyle(hpNumber).getPropertyValue(property));
         }
@@ -235,7 +239,7 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(numbers.every(number => !number.isConnected)).toBe(true);
         expect(vi.getTimerCount()).toBe(0);
     });
-    it("keeps recovery green and unaccented even within a critical attack", () => {
+    it("keeps recovery unaccented and colored by its after level even within a critical attack", () => {
         const b = mount();
         b.present({ type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [
             { target: "ko", result: "crit", effects: [{ type: "bondageChanged", target: "ko", binding: "latexHead", amount: -12 }] },
@@ -243,8 +247,52 @@ describe("combat reaction rendering and lifecycle", () => {
         const number = element(".kcq-binding-float");
         expect(number.textContent).toBe("\u221212");
         expect(number.dataset.combatReaction).toBe("recovery");
+        expect(number.dataset.bindingLevel).toBe("severe");
         expect(number.dataset.hitStrength).toBeUndefined();
         expect(b.reactions.matching("binding", "ko", "latexHead")[0]!.duration).toBe(2500);
+    });
+    it.each([
+        [0, "none"], [10, "light"], [25, "moderate"], [40, "heavy"],
+        [55, "severe"], [75, "overwhelming"], [100, "max"],
+    ] as const)("uses the %s after-value color (%s) for signed changes", (after, level) => {
+        const style = document.createElement("style");
+        style.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + readFileSync("src/ui/web/app/app.css", "utf8");
+        document.body.append(style);
+        const b = mount();
+        const reference = document.createElement("span");
+        reference.className = "kcq-character-binding__level--" + level;
+        document.body.append(reference);
+        for (const amount of after === 0 ? [-5] : [5, -5]) {
+            b.present({ type: "useMove", actor: "skunkette1", move: "pounce", effects: [], targets: [
+                { target: "ko", result: "crit", effects: [{ type: "bondageChanged", target: "ko", binding: "latexHead", amount }] },
+            ] }, state => { state.characters[0]!.bindings[0]!.value = after; });
+            const number = [...document.querySelectorAll<HTMLElement>(".kcq-binding-float")].at(-1)!;
+            expect(number.dataset.bindingLevel).toBe(level);
+            expect(number.textContent).toBe(amount > 0 ? "+5!" : "\u22125");
+            expect(getComputedStyle(number).color).not.toBe("");
+            expect(getComputedStyle(number).color).toBe(getComputedStyle(reference).color);
+        }
+    });
+    it("preserves each cue's after-level color across consecutive threshold crossings", () => {
+        const b = mount();
+        b.present(move(5), state => { state.characters[0]!.bindings[0]!.value += 5; });
+        const first = element(".kcq-binding-float");
+        const animation = first.style.animation;
+        expect(first.dataset.bindingLevel).toBe("overwhelming");
+        vi.advanceTimersByTime(500);
+        b.present(move(-40), state => { state.characters[0]!.bindings[0]!.value -= 40; });
+        const second = document.querySelectorAll<HTMLElement>(".kcq-binding-float")[1]!;
+        expect(first.dataset.bindingLevel).toBe("overwhelming");
+        expect(first.textContent).toBe("+5");
+        expect(first.style.animation).toBe(animation);
+        expect(second.dataset.bindingLevel).toBe("moderate");
+        expect(second.textContent).toBe("\u221240");
+    });
+    it("uses the overview's configured thresholds for after-value colors", () => {
+        const b = mount(false, { ...fixture.thresholds, thresholds: { ...fixture.thresholds.thresholds, heavy: 30 } });
+        b.present(move(5), state => { state.characters[0]!.bindings[0]!.value = 30; });
+        expect(element(".kcq-binding-float").textContent).toBe("+5");
+        expect(element(".kcq-binding-float").dataset.bindingLevel).toBe("heavy");
     });
     it("places signed cue deltas above only the corresponding party binding bars", () => {
         const b = mount();
@@ -280,6 +328,7 @@ describe("combat reaction rendering and lifecycle", () => {
         ] });
         const numbers = [...meter.querySelectorAll<HTMLElement>(".kcq-binding-float")];
         expect(numbers.map(number => number.textContent)).toEqual(["+15", "−15"]);
+        expect(numbers.map(number => number.dataset.bindingLevel)).toEqual(["overwhelming", "severe"]);
         expect(numbers[0]).not.toBe(numbers[1]);
         expect(numbers[0]!.style.getPropertyValue("--float-x")).not.toBe(numbers[1]!.style.getPropertyValue("--float-x"));
         expect(meter.querySelectorAll(".kcq-binding-reaction")).toHaveLength(2);
@@ -343,8 +392,6 @@ describe("combat reaction rendering and lifecycle", () => {
         const clip = meter.querySelector<HTMLElement>(".kcq-binding-meter__fill-clip")!;
         expect(getComputedStyle(clip).overflow).toBe("hidden");
         expect(clip.contains(number)).toBe(false);
-        expect(css).toMatch(/\.kcq-binding-float\[data-combat-reaction="increase"\],\s*\.kcq-hp-reaction\[data-combat-reaction="damage"\]\s*\{[^}]*color: var\(--kcq-glow-hit\)/);
-        expect(css).toMatch(/\.kcq-binding-float\[data-combat-reaction="recovery"\]\s*\{[^}]*color: var\(--kcq-glow-positive\)/);
         const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
         expect(reduced).toMatch(/\.kcq-binding-float\s*\{\s*animation: kcq-react-binding-fade 2000ms ease-out var\(--kcq-hp-reaction-delay, 0ms\) both !important;/);
         const fade = css.match(/@keyframes kcq-react-binding-fade\s*\{[\s\S]*?\n\}/)![0];

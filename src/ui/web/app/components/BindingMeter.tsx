@@ -1,6 +1,8 @@
 import { createMemo, For, useContext, type JSX } from "solid-js";
-import type { BindingLevel } from "../../../../engine/public/types";
+import { getThresholds } from "../../../../engine/public/mechanics";
+import type { BindingLevel, ThresholdInfo } from "../../../../engine/public/types";
 import { CombatReactionsContext, floatingNumberStyle } from "../combatReactions";
+import { bindingLevelAtValue } from "../viewModels/presentationHelpers";
 import { ProjectedMeter } from "./ProjectedMeter";
 
 export interface BindingMeterProps {
@@ -15,6 +17,7 @@ export interface BindingMeterProps {
     size?: "compact" | "standard";
     ariaLabel?: string;
     floatingNumbers?: boolean;
+    thresholds?: ThresholdInfo;
 }
 
 
@@ -36,9 +39,11 @@ export function BindingMeter(props: BindingMeterProps): JSX.Element {
         <For each={props.floatingNumbers ? cues()?.filter(cue =>
             cue.from !== undefined && cue.to !== undefined && cue.to !== cue.from) : undefined}>{cue => {
             const change = cue.to! - cue.from!;
+            const level = bindingLevelAtValue(cue.to!, props.thresholds ?? getThresholds());
             // Capture timing once per cue, just like the independent glow segments.
             const style = floatingNumberStyle(cue);
             return <span class="kcq-binding-float" data-combat-reaction={cue.treatment}
+                data-binding-level={level}
                 data-hit-strength={change > 0 ? cue.strength : undefined}
                 style={style} aria-hidden="true">
                 {change > 0 ? "+" : "−"}{Math.abs(change)}

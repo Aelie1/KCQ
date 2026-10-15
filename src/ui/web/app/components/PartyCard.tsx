@@ -1,4 +1,5 @@
 import { For, Show, type JSX } from "solid-js";
+import type { ThresholdInfo } from "../../../../engine/public/types";
 import { reactionRef } from "../combatReactions";
 import { BindingMeter } from "./BindingMeter";
 import type { PartyCardData } from "./componentTypes";
@@ -11,6 +12,7 @@ export interface PartyCardProps {
     character: PartyCardData;
     onSelect?: () => void;
     shortcut?: string;
+    thresholds?: ThresholdInfo;
 }
 
 export function PartyCard(props: PartyCardProps): JSX.Element {
@@ -68,6 +70,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                         return <BindingMeter
                             entityId={props.character.id} bindingId={id}
                             floatingNumbers
+                            thresholds={props.thresholds}
                             value={binding().current}
                             change={binding().change}
                             peak={binding().peak}
