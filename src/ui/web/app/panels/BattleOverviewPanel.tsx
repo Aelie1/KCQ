@@ -1,4 +1,4 @@
-import { createEffect, createMemo, For, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, createUniqueId, For, Show, type JSX } from "solid-js";
 import type { ContentLibrary } from "../../../../engine/public/library";
 import type {
     ActionView,
@@ -17,9 +17,21 @@ import { DEFAULT_OVERVIEW_GAME_LOG_LINES } from "../overviewGameLogLines";
 import type { createEnemyDefeats, EnemyPresentationSlot } from "../enemyDefeats";
 import { EnemyCard } from "../components/EnemyCard";
 import { PartyCard } from "../components/PartyCard";
-import { createBattleOverviewViewModel } from "../viewModels/battleOverview";
+import { createBattleOverviewViewModel, type BattleOverviewViewModel } from "../viewModels/battleOverview";
+
+export interface BattleOverviewSections {
+    header?: boolean;
+    log?: boolean;
+    enemies?: boolean;
+    party?: boolean;
+    footer?: boolean;
+}
 
 export interface BattleOverviewPanelProps {
+    sections?: BattleOverviewSections;
+    model?: BattleOverviewViewModel;
+    endTurnInHeader?: boolean;
+    gameLogHeadingAction?: boolean;
     actions: readonly ActionView[];
     presentation: Presentation;
     state: GameState;
@@ -38,7 +50,7 @@ export interface BattleOverviewPanelProps {
 }
 
 export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Element {
-    const model = createMemo(() => createBattleOverviewViewModel(
+    const model = createMemo(() => props.model ?? createBattleOverviewViewModel(
         props.state,
         props.actions,
         props.thresholds,
@@ -47,12 +59,27 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
         props.library,
     ));
 
-    const enemySlots = createMemo<readonly EnemyPresentationSlot[]>(() => props.enemyDefeats?.slots(model().enemies)
+    const visible = (section: keyof BattleOverviewSections) => props.sections?.[section] !== false;
+    const enemiesHeadingId = createUniqueId();
+    const partyHeadingId = createUniqueId();
+    const enemySlots = createMemo<readonly EnemyPresentationSlot[]>(() => !visible("enemies") ? [] : props.enemyDefeats?.slots(model().enemies)
         ?? model().enemies.map(enemy => ({ enemy })));
+
+    const endTurnButton = () => (
+        <button
+            class="kcq-battle-overview__primary-action kcq-shortcut-host"
+            classList={{ "is-dimmed": model().controls.endTurnDimmed }}
+            type="button"
+            disabled={props.inputBlocked}
+            onClick={() => props.onEndTurn?.()}
+        >
+            <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {model().controls.endTurnLabel}
+        </button>
+    );
 
     return (
         <ScreenLayout class="kcq-battle-overview" ariaLabel={model().header.encounterLabel}
-            header={
+            header={visible("header") && (
                 <CombatHeader
                     variant="overview"
                     encounterLabel={model().header.encounterLabel}
@@ -64,65 +91,75 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     onSettings={props.onSettings}
                     libraryLabel={props.presentation.ui("library.title")}
                     onLibrary={props.onLibrary}
+                    action={props.endTurnInHeader ? endTurnButton() : undefined}
                 />
-            }
+            )}
             body={<>
-                <CompactGameLog entries={props.history ?? []} presentation={props.presentation}
-                    party={props.state.characters.map(character => character.id)}
-                    lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog} />
-                <section class="kcq-battle-section kcq-battle-section--enemies" aria-labelledby="battle-enemies-heading">
-                    <header class="kcq-battle-section__heading">
-                        <h2 id="battle-enemies-heading">{model().enemiesHeading}</h2>
-                        <span>{model().enemiesCountLabel}</span>
-                    </header>
-                    <div class="kcq-battle-overview__enemies">
-                        <For each={enemySlots().map(slot => slot.enemy.id)}>
-                            {(id, index) => {
-                                const slot = () => enemySlots().find(slot => slot.enemy.id === id)!;
-                                let element!: HTMLDivElement;
-                                createEffect(() => {
-                                    if (!slot().defeat) return;
-                                    // Keep the measured grid cell after its card is removed,
-                                    // so another death cannot move while it is fading.
-                                    const height = element.offsetHeight;
-                                    if (height) element.style.height = `${height}px`;
-                                });
-                                return <div ref={element} class="kcq-enemy-presentation-slot" data-defeated={slot().defeat ? "true" : undefined}>
-                                    <Show when={!slot().finished}>
-                                        <EnemyCard enemy={slot().enemy} defeat={slot().defeat}
-                                            shortcut={combatShortcut(index() + 3)}
-                                            onSelect={!slot().defeat && props.onSelectEnemy ? () => props.onSelectEnemy?.(id) : undefined} />
-                                    </Show>
-                                </div>;
-                            }}
-                        </For>
-                    </div>
-                </section>
+                <Show when={visible("log")}>
+                    <CompactGameLog entries={props.history ?? []} presentation={props.presentation}
+                        party={props.state.characters.map(character => character.id)}
+                        headingAction={props.gameLogHeadingAction}
+                        lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog} />
+                </Show>
+                <Show when={visible("enemies")}>
+                    <section class="kcq-battle-section kcq-battle-section--enemies" aria-labelledby={enemiesHeadingId}>
+                        <header class="kcq-battle-section__heading">
+                            <h2 id={enemiesHeadingId}>{model().enemiesHeading}</h2>
+                            <span>{model().enemiesCountLabel}</span>
+                        </header>
+                        <div class="kcq-battle-overview__enemies">
+                            <For each={enemySlots().map(slot => slot.enemy.id)}>
+                                {(id, index) => {
+                                    const slot = () => enemySlots().find(slot => slot.enemy.id === id)!;
+                                    let element!: HTMLDivElement;
+                                    createEffect(() => {
+                                        if (!slot().defeat) return;
+                                        // Keep the measured grid cell after its card is removed,
+                                        // so another death cannot move while it is fading.
+                                        const height = element.offsetHeight;
+                                        if (height) element.style.height = `${height}px`;
+                                    });
+                                    return <div ref={element} class="kcq-enemy-presentation-slot" data-defeated={slot().defeat ? "true" : undefined}>
+                                        <Show when={!slot().finished}>
+                                            <EnemyCard enemy={slot().enemy} defeat={slot().defeat}
+                                                shortcut={combatShortcut(index() + 3)}
+                                                onSelect={!slot().defeat && props.onSelectEnemy ? () => props.onSelectEnemy?.(id) : undefined} />
+                                        </Show>
+                                    </div>;
+                                }}
+                            </For>
+                        </div>
+                    </section>
+                </Show>
 
-                <div class="kcq-battle-overview__divider" aria-hidden="true" />
+                <Show when={visible("enemies") && visible("party")}>
+                    <div class="kcq-battle-overview__divider" aria-hidden="true" />
+                </Show>
 
-                <section class="kcq-battle-section kcq-battle-section--party" aria-labelledby="battle-party-heading">
-                    <header class="kcq-battle-section__heading">
-                        <h2 id="battle-party-heading">{model().partyHeading}</h2>
-                        <span>{model().partyCountLabel}</span>
-                    </header>
-                    <div class="kcq-battle-overview__party">
-                        <For each={model().party.map(character => character.id)}>
-                            {(id, index) => (
-                                <PartyCard
-                                    character={model().party.find(character => character.id === id)!}
-                                    thresholds={props.thresholds}
-                                    shortcut={index() < 3 ? String(index() + 1) : undefined}
-                                    onSelect={props.onSelectCharacter
-                                        ? () => props.onSelectCharacter?.(id)
-                                        : undefined}
-                                />
-                            )}
-                        </For>
-                    </div>
-                </section>
+                <Show when={visible("party")}>
+                    <section class="kcq-battle-section kcq-battle-section--party" aria-labelledby={partyHeadingId}>
+                        <header class="kcq-battle-section__heading">
+                            <h2 id={partyHeadingId}>{model().partyHeading}</h2>
+                            <span>{model().partyCountLabel}</span>
+                        </header>
+                        <div class="kcq-battle-overview__party">
+                            <For each={model().party.map(character => character.id)}>
+                                {(id, index) => (
+                                    <PartyCard
+                                        character={model().party.find(character => character.id === id)!}
+                                        thresholds={props.thresholds}
+                                        shortcut={index() < 3 ? String(index() + 1) : undefined}
+                                        onSelect={props.onSelectCharacter
+                                            ? () => props.onSelectCharacter?.(id)
+                                            : undefined}
+                                    />
+                                )}
+                            </For>
+                        </div>
+                    </section>
+                </Show>
             </>}
-            footer={
+            footer={visible("footer") && (
                 <footer class="kcq-screen-actions kcq-battle-overview__footer">
                     <button
                         class="kcq-battle-overview__secondary-action kcq-shortcut-host"
@@ -132,17 +169,9 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     >
                         <Shortcut shortcut={COMBAT_SHORTCUTS.gameLog} /> {model().controls.gameLogLabel}
                     </button>
-                    <button
-                        class="kcq-battle-overview__primary-action kcq-shortcut-host"
-                        classList={{ "is-dimmed": model().controls.endTurnDimmed }}
-                        type="button"
-                        disabled={props.inputBlocked}
-                        onClick={() => props.onEndTurn?.()}
-                    >
-                        <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {model().controls.endTurnLabel}
-                    </button>
+                    <Show when={!props.endTurnInHeader}>{endTurnButton()}</Show>
                 </footer>
-            }
+            )}
         />
     );
 }

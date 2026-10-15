@@ -4,6 +4,8 @@ import type { Presentation } from "../../../presentation/presentation";
 import { createGameLogViewModel } from "../viewModels/gameLog";
 import { latestGameLogActionIndex, mergeLogLines, recentGameLogEntries, recentLogOffset } from "../viewModels/compactGameLog";
 import { GameLogEntry } from "./GameLogEntry";
+import { COMBAT_SHORTCUTS } from "../keyboard";
+import { Shortcut } from "./Shortcut";
 
 export interface CompactGameLogProps {
     entries: readonly GameLogPresentationEntry[];
@@ -11,12 +13,12 @@ export interface CompactGameLogProps {
     party: readonly string[];
     lines: number;
     onOpen?: () => void;
+    headingAction?: boolean;
 }
 
 function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
     const entries = createMemo(() => recentGameLogEntries(
         createGameLogViewModel(props.entries, props.presentation, props.party), props.lines));
-    const headingId = createUniqueId();
     const [offset, setOffset] = createSignal(0);
     const [hiddenCount, setHiddenCount] = createSignal(0);
     let content!: HTMLDivElement;
@@ -72,11 +74,7 @@ function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
         });
     });
 
-    return <section class="kcq-battle-section kcq-battle-section--game-log" aria-labelledby={headingId}>
-        <header class="kcq-battle-section__heading">
-            <h2 id={headingId}>{props.presentation.ui("combatHeader.gameLog")}</h2>
-        </header>
-        <button type="button" class="kcq-compact-game-log" aria-label={props.presentation.ui("gameLog.openFull")}
+    return <button type="button" class="kcq-compact-game-log" aria-label={props.presentation.ui("gameLog.openFull")}
             onClick={() => props.onOpen?.()}>
             <div class="kcq-compact-game-log__viewport">
                 <div ref={content} class="kcq-compact-game-log__content" style={{ "margin-top": -offset() + "px" }}>
@@ -85,10 +83,25 @@ function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
                     </Show>
                 </div>
             </div>
-        </button>
-    </section>;
+        </button>;
 }
 
 export function CompactGameLog(props: CompactGameLogProps): JSX.Element {
-    return <Show when={props.lines > 0}><MeasuredGameLog {...props} /></Show>;
+    const headingId = createUniqueId();
+    return <Show when={props.lines > 0 || props.headingAction}>
+        <section class="kcq-battle-section kcq-battle-section--game-log" aria-labelledby={headingId}>
+            <header class="kcq-battle-section__heading">
+                <h2 id={headingId}>
+                    <Show when={props.headingAction} fallback={props.presentation.ui("combatHeader.gameLog")}>
+                        <button type="button" class="kcq-game-log-heading-action kcq-shortcut-host"
+                            data-kcq-shortcut={props.onOpen ? COMBAT_SHORTCUTS.gameLog : undefined}
+                            aria-label={props.presentation.ui("gameLog.openFull")} onClick={() => props.onOpen?.()}>
+                            <Shortcut shortcut={COMBAT_SHORTCUTS.gameLog} /> {props.presentation.ui("combatHeader.gameLog")}
+                        </button>
+                    </Show>
+                </h2>
+            </header>
+            <Show when={props.lines > 0}><MeasuredGameLog {...props} /></Show>
+        </section>
+    </Show>;
 }

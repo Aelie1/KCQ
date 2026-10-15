@@ -23,7 +23,7 @@ import { createEnemyDefeats } from "./enemyDefeats";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import type { LanguageSelection } from "./language";
 import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
-import { BattleOverviewPanel } from "./panels/BattleOverviewPanel";
+import { BattleOverviewPanel, type BattleOverviewPanelProps } from "./panels/BattleOverviewPanel";
 import { BattleResultPanel } from "./panels/BattleResultPanel";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { CharacterDetailsPanel } from "./panels/CharacterDetailsPanel";
@@ -36,6 +36,7 @@ import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
+import { createBattleOverviewViewModel } from "./viewModels/battleOverview";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
 import { createGameLogHistory } from "./viewModels/gameLogHistory";
 import { createVictoryStoryViewModel } from "./viewModels/victoryStory";
@@ -383,6 +384,48 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const hintsVisible = props.keyboard?.hintsVisible
         ?? useCombatKeyboard(() => stage, () => !dialogOpen() && !playback.active(), globalKeyboardAction, () => shortcutHints.value);
 
+    const Overview = (): JSX.Element => {
+        const [desktop, setDesktop] = createSignal(false);
+        onMount(() => {
+            // Two 366px canvases + a 24px gutter at the existing maximum 1.5x
+            // UI scale, plus outer padding, need 1158px. Leave a little room.
+            const media = window.matchMedia("(min-width: 1200px)");
+            const update = () => setDesktop(media.matches);
+            update();
+            media.addEventListener("change", update);
+            onCleanup(() => media.removeEventListener("change", update));
+        });
+        const model = createMemo(() => createBattleOverviewViewModel(
+            state(), actions(), thresholds(), props.presentation, logEntries(), library,
+        ));
+        const overview: BattleOverviewPanelProps = {
+            get actions() { return actions(); },
+            get gameLogLines() { return logOpen() ? 0 : overviewGameLog.value; },
+            get history() { return logEntries(); },
+            library,
+            get presentation() { return props.presentation; },
+            get state() { return state(); },
+            get thresholds() { return thresholds(); },
+            get model() { return model(); },
+            onSelectCharacter: selectCharacter,
+            onSelectEnemy: selectEnemy,
+            enemyDefeats: defeats,
+            get inputBlocked() { return playback.active() || !!resultModel(); },
+            get onSettings() { return resultModel() ? undefined : openSettings; },
+            get onLibrary() { return resultModel() ? undefined : openLibrary; },
+            get onGameLog() { return resultModel() ? openResultLog : toggleLog; },
+            onEndTurn: endTurn,
+        };
+        return <Show when={desktop()} fallback={<BattleOverviewPanel {...overview} />}>
+            <div class="kcq-battle-overview-columns">
+                <BattleOverviewPanel {...overview} endTurnInHeader
+                    sections={{ log: false, enemies: false, footer: false }} />
+                <BattleOverviewPanel {...overview} gameLogHeadingAction
+                    sections={{ header: false, party: false, footer: false }} />
+            </div>
+        </Show>;
+    };
+
     return (
         <CombatReactionsContext.Provider value={reactions}>
             <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
@@ -391,25 +434,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
                     </Show>
                     <div hidden={logOpen()} inert={logOpen()} aria-hidden={logOpen() ? true : undefined}>
-                        <Switch fallback={
-                            <BattleOverviewPanel
-                                actions={actions()}
-                                gameLogLines={logOpen() ? 0 : overviewGameLog.value}
-                                history={logEntries()}
-                                library={library}
-                                presentation={props.presentation}
-                                state={state()}
-                                thresholds={thresholds()}
-                                onSelectCharacter={selectCharacter}
-                                onSelectEnemy={selectEnemy}
-                                enemyDefeats={defeats}
-                                inputBlocked={playback.active() || !!resultModel()}
-                                onSettings={resultModel() ? undefined : openSettings}
-                                onLibrary={resultModel() ? undefined : openLibrary}
-                                onGameLog={resultModel() ? openResultLog : toggleLog}
-                                onEndTurn={endTurn}
-                            />
-                        }>
+                        <Switch fallback={<Overview />}>
                             <Match when={enemyScreen()}>
                                 {(current) => <EnemyDetailsPanel
                                     actions={actions()} enemyId={current().enemyId}

@@ -17,6 +17,7 @@ interface CombatHeaderBaseProps {
 }
 
 interface CombatHeaderOverviewProps extends CombatHeaderBaseProps {
+    action?: JSX.Element;
     difficultyLabel: string;
     onSettings?: () => void;
     settingsLabel: string;
@@ -44,6 +45,7 @@ export function CombatHeader(props: CombatHeaderProps): JSX.Element {
             classList={{
                 "kcq-combat-header--overview": props.variant === "overview",
                 "kcq-combat-header--subscreen": props.variant === "subscreen",
+                "kcq-combat-header--with-action": props.variant === "overview" && !!props.action,
             }}
         >
             {props.variant === "subscreen" && (
@@ -107,6 +109,7 @@ export function CombatHeader(props: CombatHeaderProps): JSX.Element {
                 <LibrarySettingsControls libraryLabel={props.libraryLabel} settingsLabel={props.settingsLabel}
                     onLibrary={props.onLibrary} onSettings={props.onSettings} />
             )}
+            {props.variant === "overview" && props.action}
         </header>
     );
 }

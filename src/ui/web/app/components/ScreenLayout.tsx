@@ -1,7 +1,7 @@
 import { Show, type JSX } from "solid-js";
 
 export interface ScreenLayoutProps {
-    header: JSX.Element;
+    header?: JSX.Element;
     body: JSX.Element;
     footer?: JSX.Element;
     class?: string;
@@ -12,7 +12,9 @@ export interface ScreenLayoutProps {
 export function ScreenLayout(props: ScreenLayoutProps): JSX.Element {
     return (
         <section class={`kcq-screen-layout${props.class ? ` ${props.class}` : ""}`} aria-label={props.ariaLabel}>
-            <div class="kcq-screen-layout__header">{props.header}</div>
+            <Show when={props.header}>
+                <div class="kcq-screen-layout__header">{props.header}</div>
+            </Show>
             <div class="kcq-screen-layout__body">
                 <div class="kcq-screen-layout__content">{props.body}</div>
             </div>

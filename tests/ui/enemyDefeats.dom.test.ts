@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type { Window as HappyWindow } from "happy-dom";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,11 +10,13 @@ import { battleOverviewFixture as fixture } from "../../src/ui/web/app/fixtures/
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
 import { createPlaybackSpeedPreference, type PlaybackSpeed } from "../../src/ui/web/app/playbackSpeed";
 
+const viewport = (window as unknown as HappyWindow).happyDOM;
+const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let unmount: (() => void) | undefined;
 beforeEach(() => { vi.useFakeTimers(); window.localStorage.clear(); });
 afterEach(() => {
     unmount?.(); unmount = undefined;
-    document.body.replaceChildren();
+    document.body.replaceChildren(); viewport.setViewport(initialViewport);
     vi.useRealTimers(); vi.restoreAllMocks(); window.localStorage.clear();
 });
 
@@ -72,7 +75,8 @@ const numbers = (card: HTMLElement) => [...card.querySelectorAll<HTMLElement>(".
 const busy = () => element(".kcq-battle-stage").getAttribute("aria-busy");
 
 describe("enemy defeat presentation", () => {
-    it("retains the same card and geometry through staggered damage, 500ms glow and 500ms fade", () => {
+    it.each([390, 1920])("retains the same card and geometry through staggered damage, glow and fade at %ipx", width => {
+        viewport.setViewport({ width });
         const b = mount({ bands: [["hit", "hit", "hit"]] });
         const original = cards(); const dead = original[0]!;
         const slot = dead.parentElement!;
@@ -111,6 +115,27 @@ describe("enemy defeat presentation", () => {
         original[1]!.click(); expect(document.querySelector(".kcq-enemy-details")).not.toBeNull();
     });
 
+    it("preserves defeat timing and input blocking while resizing across the overview breakpoint", () => {
+        viewport.setViewport({ width: 1920 });
+        const b = mount();
+        // Happy DOM initializes media-listener state to false; prime its desktop match.
+        viewport.setViewport({ width: 1921 });
+        b.kill();
+        expect(element(".kcq-battle-overview__primary-action").hasAttribute("disabled")).toBe(true);
+        vi.advanceTimersByTime(250);
+        viewport.setViewport({ width: 390 });
+        const dead = cards()[0]!;
+        expect(dead.dataset.enemyDefeat).toBe("true");
+        expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("-250ms");
+        expect(dead.style.getPropertyValue("--kcq-death-fade-delay")).toBe("250ms");
+        element(".kcq-battle-overview__primary-action").click();
+        expect(b.execute).toHaveBeenCalledOnce();
+        vi.advanceTimersByTime(749); expect(dead.isConnected).toBe(true); expect(busy()).toBe("true");
+        vi.advanceTimersByTime(1); expect(dead.isConnected).toBe(false); expect(busy()).toBe("false");
+        viewport.setViewport({ width: 1920 });
+        expect(cards()).toHaveLength(b.final.enemies.length);
+        expect(element(".kcq-battle-overview__primary-action").hasAttribute("disabled")).toBe(false);
+    });
     it("starts with the killing number despite an earlier critical number and retains the latest presentation", () => {
         const b = mount({ victory: true });
         const previous = structuredClone(b.initial);
