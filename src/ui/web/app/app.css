@@ -5605,8 +5605,9 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 }
 
 .kcq-desktop-character .kcq-character-effect {
-    grid-template-columns: 1fr;
-    gap: 2px;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 6px;
+    align-items: start;
     font-size: 13px;
     line-height: 17px;
 }
@@ -5765,8 +5766,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
     margin-top: 12px;
 }
 
-.kcq-battle-stage--desktop .kcq-battle-active-screen>
-.kcq-screen-layout {
+.kcq-battle-stage--desktop .kcq-battle-active-screen>.kcq-screen-layout {
     width: 100%;
     height: auto;
 }
@@ -6117,4 +6117,37 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 .kcq-battle-stage--desktop .kcq-game-log .kcq-screen-layout__body:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: -2px;
+}
+
+/* Desktop capability matrix enlargement */
+.kcq-desktop-character .kcq-character-capabilities__list {
+    grid-template-rows: repeat(5, 22px);
+    gap: 0 8px;
+}
+
+.kcq-desktop-character .kcq-modifier-meter {
+    grid-template-columns: minmax(0, 1fr) 62px 28px;
+    height: 22px;
+    font-size: 15px;
+    line-height: 20px;
+}
+
+.kcq-desktop-character .kcq-modifier-meter__label {
+    font-size: 15px;
+}
+
+.kcq-desktop-character .kcq-pip-meter {
+    width: 62px;
+    height: 14px;
+    gap: 2px;
+}
+
+.kcq-desktop-character .kcq-pip-meter__pip {
+    width: 6px;
+    height: 14px;
+}
+
+.kcq-desktop-character .kcq-pip-meter--blocked {
+    width: 62px;
+    height: 14px;
 }
