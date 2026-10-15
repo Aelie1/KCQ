@@ -104,7 +104,6 @@ describe("normal Latex Skunk", () => {
             id: "skunk1",
             maxHp: 300,
             currHp: 300,
-            currDef: 0,
             intentions: [{ move: "latexShower" }],
         });
         expect(enemy.intentions[0]?.targets).toHaveLength(1);

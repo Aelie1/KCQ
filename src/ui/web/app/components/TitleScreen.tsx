@@ -39,15 +39,8 @@ export function TitleScreen(props: {
         header={<h1 class="kcq-title-screen__title">{props.model.title}</h1>}
         body={<div class="kcq-title-screen__campaigns">
             <Show when={props.saveStatus && props.saveStatus !== "missing"}>
+                <h2>{props.model.resumeHeading}</h2>
                 <section class="kcq-encounter-card kcq-title-screen__resume" aria-label={props.model.resumeHeading}>
-                    <div class="kcq-title-screen__resume-header">
-                        <h2>{props.model.resumeHeading}</h2>
-                        <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
-                            aria-expanded={confirming()} onClick={() => {
-                                if (confirming()) cancelDelete();
-                                else { setConfirming(true); cancelButton?.focus(); }
-                            }}>{props.model.deleteLabel}</button>
-                    </div>
                     <Show when={props.saveStatus === "loaded" && props.model.resume}>
                         {resume => <div class="kcq-title-screen__resume-content">
                             <div class="kcq-title-screen__resume-details">
@@ -57,8 +50,16 @@ export function TitleScreen(props: {
                                     {resume().progress && ` · ${resume().progress}`}
                                 </p>
                             </div>
-                            <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
-                                onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
+                            <div class="kcq-title-screen__resume-buttons" >
+                                <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
+                                    aria-expanded={confirming()} onClick={() => {
+                                        if (confirming()) cancelDelete();
+                                        else { setConfirming(true); cancelButton?.focus(); }
+                                    }}>{props.model.deleteLabel}</button>
+
+                                <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
+                                    onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
+                            </div>
                         </div>}
                     </Show>
                     <Show when={saveMessage()}>{message => <p class="kcq-title-screen__save-message" role="status">{message()}</p>}</Show>

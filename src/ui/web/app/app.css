@@ -3651,7 +3651,7 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    height: 300px;
+    height: 250px;
     margin: 0;
     color: var(--kcq-text-primary);
     font-size: 64px;
@@ -3664,15 +3664,14 @@ button {
 .kcq-title-screen__campaigns {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
 }
 
 .kcq-title-screen__campaigns h2 {
-    margin: 0;
+    margin: 0 0 -12px;
     color: var(--kcq-text-primary);
-    font-size: 20px;
+    font-size: 14px;
     font-weight: 700;
-    line-height: 24px;
     text-transform: uppercase;
     opacity: 0.62;
 }
@@ -3694,18 +3693,19 @@ button {
     gap: 0px;
 }
 
-.kcq-title-screen__resume-header,
+.kcq-title-screen__resume-buttons {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+}
+
 .kcq-title-screen__resume-content {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-}
-
-.kcq-title-screen__resume-header h2 {
-    font-size: 12px;
-    line-height: 18px;
 }
 
 .kcq-title-screen__resume-details {
@@ -3739,7 +3739,7 @@ button {
     cursor: pointer;
 }
 
-.kcq-title-screen__resume-header .kcq-title-screen__save-action {
+.kcq-title-screen__resume-buttons .kcq-title-screen__save-action {
     padding: 3px 7px;
     font-size: 11px;
     line-height: 16px;
@@ -3748,7 +3748,7 @@ button {
     background: #2b1d28;
 }
 
-.kcq-title-screen__resume-header .kcq-title-screen__save-action:hover {
+.kcq-title-screen__resume-buttons .kcq-title-screen__save-action:hover {
     color: #ffe0e0;
     border-color: #d06070;
     background: #592936;

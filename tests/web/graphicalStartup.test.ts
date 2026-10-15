@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
 import { render } from "solid-js/web";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 
 vi.mock("solid-js/web", async (importOriginal) => ({
@@ -29,7 +29,12 @@ describe("graphical browser startup", () => {
         const strings = vi.spyOn(localization, "getStringTable");
         await import("../../src/ui/web/app/main");
         expect(create).not.toHaveBeenCalled();
-        expect(strings).toHaveBeenCalledExactlyOnceWith("en");
+        expect(strings).toHaveBeenCalledTimes(1 + Object.keys(content.campaignCatalogs).length);
+        expect(strings).toHaveBeenNthCalledWith(1, "en");
+
+        Object.keys(content.campaignCatalogs).forEach((campaign, index) => {
+            expect(strings).toHaveBeenNthCalledWith(index + 2, "en", undefined, campaign);
+        });
         vi.mocked(render).mock.calls[0][0]();
         const props = vi.mocked(GraphicalApp).mock.calls[0][0];
         expect(props.release).toBe("test");
