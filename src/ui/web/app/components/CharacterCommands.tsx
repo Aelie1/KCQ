@@ -8,7 +8,7 @@ export function CharacterCommands(props: {
     presentation: Presentation;
     headingId?: string;
     shortcuts?: boolean;
-    gridAction?: JSX.Element;
+    headerAction?: JSX.Element;
     onSelectCommand?: (commandId: string) => void;
 }): JSX.Element {
     return (
@@ -33,6 +33,7 @@ export function CharacterCommands(props: {
                         </div>
                     )}
                 </Show>
+                {props.headerAction}
             </div>
             <div class="kcq-character-commands__grid">
                 <For each={props.model.focused.commands}>
@@ -45,7 +46,6 @@ export function CharacterCommands(props: {
                         />
                     )}
                 </For>
-                {props.gridAction}
             </div>
         </section>
     );

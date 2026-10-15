@@ -77,14 +77,15 @@ export function DesktopBattleActions(props: {
         onClick={props.onEndTurn}>
         <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {props.overview.controls.endTurnLabel}
     </button>;
-    return <section class="kcq-desktop-battle__actions">
-        <div class="kcq-desktop-battle__commands">
-            <Show when={props.model} fallback={<div class="kcq-character-commands__grid">{endTurn()}</div>}>
-                {model => <CharacterCommands model={model()} presentation={props.presentation}
-                    headingId="desktop-character-commands-heading" shortcuts={props.shortcuts}
-                    gridAction={endTurn()}
-                    onSelectCommand={command => props.onSelectCommand(model().focused.id, command)} />}
-            </Show>
-        </div>
-    </section>;
+    return <div class="kcq-desktop-battle__commands">
+        <Show when={props.model} fallback={<div class="kcq-character-commands">
+            <div class="kcq-character-commands__header">{endTurn()}</div>
+            <div class="kcq-character-commands__grid" />
+        </div>}>
+            {model => <CharacterCommands model={model()} presentation={props.presentation}
+                headingId="desktop-character-commands-heading" shortcuts={props.shortcuts}
+                headerAction={endTurn()}
+                onSelectCommand={command => props.onSelectCommand(model().focused.id, command)} />}
+        </Show>
+    </div>;
 }

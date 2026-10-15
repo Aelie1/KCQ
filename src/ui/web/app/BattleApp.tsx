@@ -422,6 +422,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                             <DesktopBattleParty state={state()} actions={actions()} thresholds={thresholds()}
                                 presentation={props.presentation} selectedActorId={selectedActorId()}
                                 shortcuts={screen().kind === "overview" || screen().kind === "enemy"} onSelectCharacter={selectCharacter} />
+                        </div>
+                        <div class="kcq-desktop-battle__actions" inert={playback.active()}>
                             <DesktopBattleActions model={selectedCharacter()} overview={overview()} presentation={props.presentation}
                                 shortcuts={screen().kind === "character"} blocked={playback.active() || !!resultModel()}
                                 onSelectCommand={selectCommand} onEndTurn={endTurn} />

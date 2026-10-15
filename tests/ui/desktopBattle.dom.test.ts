@@ -74,7 +74,7 @@ afterEach(() => {
     resize(initialViewport.width, initialViewport.height);
 });
 describe("desktop battle", () => {
-    it.each([0, 11, 14])("keeps End Turn in the shared grid and preserves all %i commands", count => {
+    it.each([0, 11, 12, 14])("keeps End Turn in the header and preserves all %i commands", count => {
         const engine = createStockEngine(12345); createBattle(engine, "plains_1", "standard");
         const state = engine.getGameState(), actions = engine.getActionView(), thresholds = getThresholds();
         const model = createCharacterDetailsViewModel(state, actions, "ko", thresholds, presentation);
@@ -98,10 +98,11 @@ describe("desktop battle", () => {
             expect(cards[1]!.disabled).toBe(true);
         }
         const end = element<HTMLButtonElement>(".kcq-battle-overview__primary-action");
-        expect(end.parentElement).toBe(grid);
-        expect(getComputedStyle(end).gridColumn).toBe("6");
-        expect(getComputedStyle(end).gridRow).toBe("2");
-        expect(getComputedStyle(element(".kcq-desktop-battle__commands")).overflowY).toBe("auto");
+        expect(end.parentElement).toBe(element(".kcq-character-commands__header"));
+        expect(grid.contains(end)).toBe(false);
+        expect(grid.children).toHaveLength(count);
+        expect(getComputedStyle(grid).overflowY).toBe("auto");
+        expect(getComputedStyle(end).marginLeft).toBe("auto");
         end.click(); expect(onEndTurn).toHaveBeenCalledOnce();
         setBlocked(true); expect(end.disabled).toBe(true);
         end.click(); expect(onEndTurn).toHaveBeenCalledOnce();
@@ -175,6 +176,8 @@ describe("desktop battle", () => {
         const { execute, onAction } = mount(engine, "normal"); endTurn();
         const log = element('[role="log"]'), count = log.querySelectorAll("[data-kind=move]").length;
         expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("true");
+        expect(element(".kcq-desktop-battle__actions").hasAttribute("inert")).toBe(true);
+        expect(element<HTMLButtonElement>(".kcq-desktop-battle__actions .kcq-battle-overview__primary-action").disabled).toBe(true);
         expect(count).toBeGreaterThan(0); expect(log.closest("[inert]")).toBeNull();
         resize(390, 844); resize(); vi.advanceTimersByTime(20000);
         expect(execute).toHaveBeenCalledOnce(); expect(onAction).toHaveBeenCalledOnce();
@@ -241,10 +244,14 @@ describe("desktop battle", () => {
         resize(1520, 876); expect(rows()).toHaveLength(3);
         const header = getComputedStyle(element(".kcq-desktop-battle__top"));
         expect(header.gridColumn).toBe("3"); expect(header.gridRow).toBe("1");
-        expect(getComputedStyle(element(".kcq-desktop-battle__left")).gridRow).toBe("1 / -1");
-        expect(getComputedStyle(element(".kcq-battle-middle")).gridRow).toBe("1 / -1");
+        expect(getComputedStyle(element(".kcq-desktop-battle__left")).gridRow).toBe("1 / 3");
+        expect(getComputedStyle(element(".kcq-battle-middle")).gridRow).toBe("1 / 3");
+        const actions = element(".kcq-desktop-battle__actions");
+        expect(actions.parentElement).toBe(element(".kcq-battle-stage__background"));
+        expect(getComputedStyle(actions).gridColumn).toBe("1 / 3");
+        expect(getComputedStyle(actions).gridRow).toBe("3");
         expect(getComputedStyle(element(".kcq-battle-log-pane")).gridColumn).toBe("3");
-        expect(getComputedStyle(element(".kcq-battle-log-pane")).gridRow).toBe("2");
+        expect(getComputedStyle(element(".kcq-battle-log-pane")).gridRow).toBe("2 / 4");
         expect(getComputedStyle(element(".kcq-desktop-battle__header .kcq-combat-header")).gridTemplateColumns)
             .toBe("minmax(0, 1fr) max-content 42px");
         resize(390, 844); expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();

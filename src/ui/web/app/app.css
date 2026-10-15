@@ -5502,7 +5502,8 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 .kcq-battle-stage--desktop>.kcq-battle-stage__background {
     display: grid;
     grid-template-columns: minmax(780px, 1fr) 300px minmax(360px, 400px);
-    grid-template-rows: minmax(72px, auto) minmax(0, 1fr);
+    /* Party/enemies retain their 678px region; commands use the space below. */
+    grid-template-rows: minmax(72px, auto) minmax(0, 1fr) minmax(0, calc(100% - 690px));
     gap: 12px;
 }
 
@@ -5531,10 +5532,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-battle__left {
     grid-column: 1;
-    grid-row: 1 / -1;
-    display: grid;
-    grid-template-rows: 678px minmax(0, 1fr);
-    gap: 8px;
+    grid-row: 1 / 3;
     min-width: 0;
     min-height: 0;
 }
@@ -5701,6 +5699,8 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 }
 
 .kcq-desktop-battle__actions {
+    grid-column: 1 / 3;
+    grid-row: 3;
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     min-height: 0;
@@ -5710,12 +5710,15 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 .kcq-desktop-battle__commands {
     min-height: 0;
     min-width: 0;
-    overflow-y: auto;
+    overflow: hidden;
     padding: 4px;
-    scrollbar-width: thin;
 }
 
 .kcq-desktop-battle__commands .kcq-character-commands {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
     border: 0;
     padding: 0;
     overflow: visible;
@@ -5725,7 +5728,12 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 .kcq-desktop-battle__commands .kcq-character-commands__grid {
     grid-template-columns: repeat(6, minmax(0, 1fr));
     gap: 6px;
-    padding-top: 3px;
+    /* Leave room for shortcut badges inside the scrollable command list. */
+    padding: 5px 4px 4px;
+    min-height: 0;
+    align-content: start;
+    overflow-y: auto;
+    scrollbar-width: thin;
 }
 
 .kcq-desktop-battle__commands .kcq-command-card {
@@ -5733,16 +5741,18 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
     padding: 4px 6px;
 }
 
-.kcq-desktop-battle__commands .kcq-character-commands__grid>.kcq-battle-overview__primary-action {
-    grid-column: 6;
-    grid-row: 2;
-    align-self: end;
-    height: 44px;
+.kcq-desktop-battle__commands .kcq-character-commands__header>.kcq-battle-overview__primary-action {
+    flex-shrink: 0;
+    margin-left: auto;
+    min-height: 32px;
+    padding: 4px 12px;
+    border-radius: 7px;
+    cursor: pointer;
 }
 
 .kcq-battle-stage--desktop .kcq-battle-middle {
     grid-column: 2;
-    grid-row: 1 / -1;
+    grid-row: 1 / 3;
     min-width: 0;
     min-height: 0;
     overflow-y: auto;
@@ -5796,7 +5806,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-battle-stage--desktop .kcq-battle-log-pane {
     grid-column: 3;
-    grid-row: 2;
+    grid-row: 2 / 4;
     min-width: 0;
     min-height: 0;
     border: 1px solid var(--kcq-structure-border);
