@@ -10,6 +10,7 @@ export interface Engine {
     getActionView(): ActionView[];
     getGameState(): GameState;
     getSaveState(): SaveState;
+    loadSaveState(save: SaveState): void;
     setDifficulty(difficulty: DifficultyId): void;
     listCharacters(): EntityId[];
     loadCharacter(id: EntityId): GameEvent;

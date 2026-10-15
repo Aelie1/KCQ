@@ -14,7 +14,7 @@ import {
 import { difficulties, TRAP_MODIFIER } from "./constants";
 import { GameEffects } from "./effects";
 import { serializeLibrary } from "./library";
-import { saveGameState } from "./save";
+import { loadGameState, saveGameState } from "./save";
 import { serializeGameState } from "./serialize";
 import { iValidityInfo } from "./types";
 import { getActionView, getStatusMap } from "./view";
@@ -69,6 +69,28 @@ export class GameEngine implements Engine {
 
     getSaveState(): SaveState {
         return saveGameState(this.campaign, this.state, this.seed, this.aiRng.getState(), this.accRng.getState());
+    }
+
+    loadSaveState(save: SaveState): void {
+        if (save.campaign !== this.campaign) {
+            throw new Error(`Save campaign mismatch: expected ${this.campaign}, received ${save.campaign}`);
+        }
+
+        const state = loadGameState(save, this.catalog);
+        const aiRng = new Random(save.aiRng);
+        const accRng = new Random(save.accRng);
+        const statuses = getStatusMap(state);
+        const viewState = serializeGameState(state, statuses);
+        const viewActions = getActionView(state, statuses);
+
+        // Commit only after restoration and all derived views have succeeded.
+        this.state = state;
+        this.seed = save.seed;
+        this.aiRng = aiRng;
+        this.accRng = accRng;
+        this.statuses = statuses;
+        this.viewState = viewState;
+        this.viewActions = viewActions;
     }
 
     private refreshView() {
