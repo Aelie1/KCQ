@@ -1,6 +1,7 @@
-import { BindingId, BuffId, CallbackId, DefinitionId, DifficultyId, EncounterId, EntityId, HitBand, ModifierSet, MoveId, MoveListModifier, Phase, Status, Trap } from "./types";
+import { BindingId, BuffId, CallbackId, CampaignId, DefinitionId, DifficultyId, EncounterId, EntityId, HitBand, ModifierSet, MoveId, MoveListModifier, Phase, Status, Trap } from "./types";
 
 export interface SaveState {
+    campaign: CampaignId;
     seed: number;
     aiRng: number;
     accRng: number;
@@ -37,6 +38,7 @@ export interface SaveEnemy {
     intentions: SaveIntention[];
     buffs: SaveBuff[];
     cooldowns: Record<MoveId, number>;
+    data: Record<string, number>;
 }
 
 export interface SaveIntention {
