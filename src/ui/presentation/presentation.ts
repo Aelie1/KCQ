@@ -215,6 +215,8 @@ export type UiLabel =
     | "targeting.value"
     | "title.back"
     | "title.campaigns"
+    | "title.continue"
+    | `title.save.${"incompatible" | "corrupted" | "inaccessible"}`
     | "title.copyright"
     | "title.credit"
     | "title.name"

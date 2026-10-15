@@ -1,4 +1,4 @@
-import { createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } from "solid-js";
 import type { KCQCampaign } from "../../../content";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { Presentation } from "../../presentation/presentation";
@@ -19,6 +19,7 @@ import { EncounterPickerPanel } from "./components/EncounterPickerPanel";
 import { createGraphicalController, type GraphicalBattleSession } from "./graphicalController";
 import { createDifficultySelectViewModel } from "./viewModels/difficulty";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel } from "./viewModels/encounters";
+import { readSave, type SaveReadResult } from "./savePersistence";
 
 export interface GraphicalCampaignComposition {
     engine: Engine;
@@ -68,6 +69,19 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         if (!settingsOpen() && !libraryOpen()) callback();
     };
     const controller = createGraphicalController(props.prepareBattle, undefined, () => library());
+    const [autosave, setAutosave] = createSignal<SaveReadResult>({ status: "missing" });
+    createEffect(() => {
+        if (controller.screen().screen === "title") setAutosave(readSave());
+    });
+    const continueBattle = (): void => {
+        const result = readSave();
+        setAutosave(result);
+        if (result.status !== "loaded") return;
+        const campaign = props.campaigns.find(id => id === result.save.saveState.campaign);
+        if (!campaign || !controller.continueBattle(campaign, result.save, () => props.composeCampaign(campaign).engine)) {
+            setAutosave({ status: "corrupted" });
+        }
+    };
     const backToTitle = (): void => {
         setSettingsOpen(false);
         setLibraryOpen(false);
@@ -120,6 +134,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 <Match when={controller.screen().screen === "title"}>
                     <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release)}
                         language={languageSelection}
+                        saveStatus={autosave().status} onContinue={() => navigate(continueBattle)}
                         onSelect={campaign => navigate(() => controller.selectCampaign(campaign))} />
                 </Match>
                 <Match when={controller.screen().screen === "picker"}>
@@ -147,6 +162,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
+                        saved={current.session.saved}
                         campaign={current.campaign} onNextLevel={controller.nextLevel}
                         language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} keyboard={keyboard} release={props.release}
                         observer={current.session.observer} onOutcome={controller.recordOutcome} onRetry={controller.retryEncounter}

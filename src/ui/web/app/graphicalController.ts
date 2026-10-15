@@ -7,9 +7,11 @@ import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES } from "../app";
 import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "./encounterClears";
 import { loadCampaignUnlocks, saveCampaignUnlocks, type CampaignUnlocks } from "./campaignUnlocks";
 import { getNextEncounter } from "./nextEncounter";
+import type { SavePackage } from "./savePackage";
 
 export interface GraphicalBattleSession {
     engine: Engine;
+    saved?: Pick<SavePackage, "gameLog" | "stats">;
     observer?: Pick<BattleTelemetryObserver, "onAction" | "onOutcome"> & Partial<Pick<BattleTelemetryObserver, "onQuit">>;
     dispose: () => void;
 }
@@ -83,6 +85,27 @@ export function createGraphicalController(
         showAll,
         setShowAll,
         nextEncounter,
+        continueBattle(campaign: KCQCampaign, save: SavePackage, createEngine: () => Engine): boolean {
+            if (screen().screen !== "title") return false;
+            let restored: GraphicalBattleSession;
+            const { encounter, difficulty } = save.saveState;
+            try {
+                if (save.saveState.campaign !== campaign || !encounter || save.stats.terminal) return false;
+                const engine = createEngine();
+                // Do not run encounter/character setup or attach fresh-run telemetry.
+                engine.loadSaveState(save.saveState);
+                const state = engine.getGameState();
+                if (state.turn.outcome !== "ongoing" || state.encounter?.id !== encounter) return false;
+                restored = { engine, saved: save, dispose: () => {} };
+            } catch {
+                // Commit the session and screen only after restoration succeeds.
+                return false;
+            }
+            session = restored;
+            outcomeRecorded = false;
+            setScreen({ screen: "battle", campaign, encounter, difficulty, session });
+            return true;
+        },
         nextLevel(): void {
             const current = screen();
             const next = nextEncounter();

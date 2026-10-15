@@ -1,4 +1,4 @@
-import { batch, createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } from "solid-js";
+import { batch, createEffect, createMemo, createSignal, Match, onCleanup, onMount, Show, Switch, type JSX } from "solid-js";
 import { getThresholds } from "../../../engine/public/mechanics";
 import type {
     ActionInfo,
@@ -40,9 +40,12 @@ import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
 import { createGameLogHistory } from "./viewModels/gameLogHistory";
 import { createVictoryStoryViewModel } from "./viewModels/victoryStory";
 import { getNextEncounter } from "./nextEncounter";
+import { createSavePackage, type SavePackage } from "./savePackage";
+import { clearSave, writeSave } from "./savePersistence";
 
 export interface BattleAppProps {
     engine: Engine;
+    saved?: Pick<SavePackage, "gameLog" | "stats">;
     campaign?: CampaignId;
     presentation: Presentation;
     release?: string;
@@ -115,10 +118,18 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         setResultLogVisited(true);
         setLogOpen(true);
     };
-    const tracker = createBattleResultTracker(state());
+    const tracker = createBattleResultTracker(state(), props.saved?.stats);
     const [resultStats, setResultStats] = createSignal(tracker.getStats());
-    const logHistory = createGameLogHistory(state());
-    const [logEntries, setLogEntries] = createSignal<readonly GameLogPresentationEntry[]>([]);
+    const logHistory = createGameLogHistory(state(), props.saved?.gameLog);
+    const [logEntries, setLogEntries] = createSignal<readonly GameLogPresentationEntry[]>(logHistory.record([]));
+    const autosave = (): void => {
+        try {
+            writeSave(createSavePackage(props.engine.getSaveState(), logHistory.getSaveState(), tracker.getSaveState()));
+        } catch {
+            // Saving, including snapshot creation, must never interrupt gameplay.
+        }
+    };
+    onMount(() => { if (!props.saved && engineState.turn.outcome === "ongoing") autosave(); });
     let finalActions = actions();
     const reactions = createCombatReactions();
     const defeats = createEnemyDefeats(reactions);
@@ -145,7 +156,12 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     outcomeReported = true;
                     props.onOutcome?.(final.turn.outcome);
                     if (final.turn.outcome === "victory") props.onVictory?.();
+                    clearSave();
                 }
+            } else {
+                // The engine and tracker advance before playback; history is only
+                // complete here, after every frame (also for instant playback).
+                autosave();
             }
         }),
     });

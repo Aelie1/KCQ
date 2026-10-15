@@ -1,17 +1,30 @@
-import { For, type JSX } from "solid-js";
+import { For, Show, type JSX } from "solid-js";
 import type { KCQCampaign } from "../../../../content";
 import type { LanguageSelection } from "../language";
 import type { TitleViewModel } from "../viewModels/title";
 import { ScreenLayout } from "./ScreenLayout";
+import type { SaveReadResult } from "../savePersistence";
 
 export function TitleScreen(props: {
     model: TitleViewModel;
     language: LanguageSelection;
     onSelect: (campaign: KCQCampaign) => void;
+    saveStatus?: SaveReadResult["status"];
+    onContinue?: () => void;
 }): JSX.Element {
+    const saveMessage = () => {
+        const status = props.saveStatus;
+        return status === "incompatible" || status === "corrupted" || status === "inaccessible"
+            ? props.model.saveMessages[status] : undefined;
+    };
     return <ScreenLayout class="kcq-title-screen"
         header={<h1 class="kcq-title-screen__title">{props.model.title}</h1>}
         body={<div class="kcq-title-screen__campaigns">
+            <Show when={props.saveStatus === "loaded"}>
+                <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
+                    onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
+            </Show>
+            <Show when={saveMessage()}>{message => <p class="kcq-title-screen__save-message" role="status">{message()}</p>}</Show>
             <h2>{props.model.campaignsHeading}</h2>
             <For each={props.model.campaigns}>
                 {campaign => <button class="kcq-encounter-card kcq-title-screen__campaign" type="button"
