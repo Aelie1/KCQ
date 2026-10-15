@@ -5717,7 +5717,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-battle__commands .kcq-character-commands {
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
     height: 100%;
     min-height: 0;
     border: 0;
@@ -5742,7 +5742,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
     padding: 4px 6px;
 }
 
-.kcq-desktop-battle__commands .kcq-character-commands__header>.kcq-battle-overview__primary-action {
+.kcq-desktop-battle__controls .kcq-character-commands__header>.kcq-battle-overview__primary-action {
     flex-shrink: 0;
     margin-left: auto;
     min-height: 32px;
@@ -5756,9 +5756,31 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
     grid-row: 1 / 3;
     min-width: 0;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.kcq-battle-stage--desktop .kcq-battle-middle__content {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
+}
+
+.kcq-desktop-battle__controls {
+    flex-shrink: 0;
+    padding: 8px 4px 0;
+}
+
+.kcq-desktop-battle__controls .kcq-character-commands__header {
+    flex-wrap: wrap;
+}
+
+.kcq-desktop-battle__controls .kcq-character-commands__resource {
+    order: 1;
+    flex-basis: 100%;
 }
 
 .kcq-desktop-battle__enemies .kcq-battle-overview__enemies {
@@ -5908,12 +5930,12 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
     overflow: visible;
 }
 
-.kcq-desktop-battle__commands .kcq-character-commands__header {
+.kcq-desktop-battle__controls .kcq-character-commands__header {
     height: auto;
     min-height: 20px;
 }
 
-.kcq-desktop-battle__commands :is(.kcq-character-commands__header h2, .kcq-character-commands__resource) {
+.kcq-desktop-battle__controls :is(.kcq-character-commands__header h2, .kcq-character-commands__resource) {
     font-size: 13px;
     line-height: 20px;
 }
@@ -5956,7 +5978,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
     line-height: 16px;
 }
 
-.kcq-desktop-battle__commands .kcq-battle-overview__primary-action {
+.kcq-desktop-battle__controls .kcq-battle-overview__primary-action {
     font-size: 15px;
     line-height: 20px;
 }

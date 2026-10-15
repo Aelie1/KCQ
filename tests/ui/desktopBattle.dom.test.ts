@@ -11,7 +11,7 @@ import { createBattle } from "../../src/ui/web/app";
 import { App } from "../../src/ui/web/app/App";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
-import { DesktopBattleActions } from "../../src/ui/web/app/panels/DesktopBattlePanel";
+import { DesktopBattleActions, DesktopBattleControls } from "../../src/ui/web/app/panels/DesktopBattlePanel";
 import { createBattleOverviewViewModel } from "../../src/ui/web/app/viewModels/battleOverview";
 import { readSave } from "../../src/ui/web/app/savePersistence";
 import { createCharacterDetailsViewModel } from "../../src/ui/web/app/viewModels/characterDetails";
@@ -33,7 +33,7 @@ function element<T extends HTMLElement = HTMLElement>(selector: string): T {
 const click = (selector: string) => element(selector).click();
 const rows = () => [...document.querySelectorAll<HTMLElement>(".kcq-desktop-character")];
 const select = (id: string) => click(`[data-actor-id="${id}"] .kcq-desktop-character__identity`);
-const endTurn = () => click(".kcq-desktop-battle__actions .kcq-battle-overview__primary-action");
+const endTurn = () => click(".kcq-desktop-battle__controls .kcq-battle-overview__primary-action");
 function command(name: string): HTMLButtonElement {
     const found = [...document.querySelectorAll<HTMLButtonElement>(".kcq-desktop-battle__commands .kcq-command-card")]
         .find(button => button.querySelector(".kcq-command-card__name")?.textContent === name);
@@ -74,7 +74,7 @@ afterEach(() => {
     resize(initialViewport.width, initialViewport.height);
 });
 describe("desktop battle", () => {
-    it.each([0, 11, 12, 14])("keeps End Turn in the header and preserves all %i commands", count => {
+    it.each([0, 11, 12, 14])("keeps End Turn outside the grid and preserves all %i commands", count => {
         const engine = createStockEngine(12345); createBattle(engine, "plains_1", "standard");
         const state = engine.getGameState(), actions = engine.getActionView(), thresholds = getThresholds();
         const model = createCharacterDetailsViewModel(state, actions, "ko", thresholds, presentation);
@@ -82,11 +82,16 @@ describe("desktop battle", () => {
             id: `command-${index}`, name: `Command ${index}`, available: index !== 1 }));
         const [blocked, setBlocked] = createSignal(false);
         const onSelectCommand = vi.fn(), onEndTurn = vi.fn();
-        unmount = render(() => createComponent(DesktopBattleActions, {
-            model: count ? { ...model, focused: { ...model.focused, commands } } : undefined,
-            overview: createBattleOverviewViewModel(state, actions, thresholds, presentation), presentation,
-            shortcuts: true, get blocked() { return blocked(); }, onSelectCommand, onEndTurn,
-        }), host());
+        const selectedModel = count ? { ...model, focused: { ...model.focused, commands } } : undefined;
+        unmount = render(() => [
+            createComponent(DesktopBattleControls, {
+                model: selectedModel, overview: createBattleOverviewViewModel(state, actions, thresholds, presentation),
+                presentation, get blocked() { return blocked(); }, onEndTurn,
+            }),
+            createComponent(DesktopBattleActions, {
+                model: selectedModel, presentation, shortcuts: true, onSelectCommand,
+            }),
+        ], host());
         const grid = element(".kcq-character-commands__grid");
         expect(getComputedStyle(grid).gridTemplateColumns).toBe("repeat(6, minmax(0, 1fr))");
         const cards = [...grid.querySelectorAll<HTMLButtonElement>(".kcq-command-card")];
@@ -100,12 +105,51 @@ describe("desktop battle", () => {
         const end = element<HTMLButtonElement>(".kcq-battle-overview__primary-action");
         expect(end.parentElement).toBe(element(".kcq-character-commands__header"));
         expect(grid.contains(end)).toBe(false);
+        expect(element(".kcq-desktop-battle__commands").querySelector(".kcq-character-commands__header")).toBeNull();
         expect(grid.children).toHaveLength(count);
         expect(getComputedStyle(grid).overflowY).toBe("auto");
         expect(getComputedStyle(end).marginLeft).toBe("auto");
         end.click(); expect(onEndTurn).toHaveBeenCalledOnce();
         setBlocked(true); expect(end.disabled).toBe(true);
         end.click(); expect(onEndTurn).toHaveBeenCalledOnce();
+    });
+    it("anchors controls outside the enemy scroller through inspection and targeting at 1920x920", () => {
+        resize(1920, 920); mount(); select("matsuko");
+        const controls = element(".kcq-desktop-battle__controls");
+        const middle = element(".kcq-battle-middle");
+        const content = element(".kcq-battle-middle__content");
+        const end = element<HTMLButtonElement>(".kcq-desktop-battle__controls button");
+        const checkControls = () => {
+            expect(element(".kcq-desktop-battle__controls")).toBe(controls);
+            expect(controls.parentElement).toBe(middle);
+            expect(content.contains(controls)).toBe(false);
+            expect(controls.closest("[hidden]")).toBeNull();
+            expect(end.disabled).toBe(false);
+            expect(element("#desktop-character-commands-heading").textContent).toContain(presentation.entity("matsuko"));
+            expect(element(".kcq-character-commands").getAttribute("aria-labelledby")).toBe("desktop-character-commands-heading");
+        };
+        expect(getComputedStyle(middle).overflow).toBe("hidden");
+        expect(getComputedStyle(content).overflowY).toBe("auto");
+        expect(getComputedStyle(controls).flexShrink).toBe("0");
+        expect(document.querySelectorAll(".kcq-desktop-battle__commands .kcq-command-card")).toHaveLength(8);
+        checkControls();
+        click(".kcq-desktop-battle__enemies .kcq-enemy-card"); checkControls();
+        click(".kcq-desktop-battle__commands .kcq-command-card");
+        expect(document.querySelector(".kcq-targeting")).not.toBeNull(); checkControls();
+        click(".kcq-targeting__back"); checkControls();
+    });
+    it("keeps the selected actor's resource indicator in the controls and restores the mobile header", () => {
+        mount(); select("hinari");
+        const resource = element(".kcq-desktop-battle__controls .kcq-character-commands__resource");
+        expect(resource.textContent).toContain(presentation.data("subspace"));
+        expect(resource.querySelector(".kcq-subspace-meter>span")?.getAttribute("style")).toContain("width:");
+        expect(document.querySelector(".kcq-desktop-battle__commands .kcq-character-commands__resource")).toBeNull();
+        resize(390, 844);
+        expect(document.querySelector(".kcq-desktop-battle__controls")).toBeNull();
+        const mobile = element(".kcq-character-commands");
+        expect(mobile.querySelector(".kcq-character-commands__header h2")?.textContent).toContain(presentation.entity("hinari"));
+        expect(mobile.querySelector(".kcq-character-commands__resource")?.textContent).toBe(resource.textContent);
+        expect(getComputedStyle(element(".kcq-character-commands__grid")).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
     });
     it("keeps three real party rows, all capabilities and empty zones at native CSS scale", () => {
         const { engine } = mount(); expect(rows()).toHaveLength(3);
@@ -159,6 +203,8 @@ describe("desktop battle", () => {
     it("executes escape and stance and preserves escape selection on resize", () => {
         const { engine } = incomingBindingBattle(), battle = mount(engine);
         select("ko"); command(presentation.ui("characterDetails.escape")).click();
+        expect(element(".kcq-desktop-battle__controls").closest("[hidden]")).toBeNull();
+        expect(element(".kcq-battle-middle__content").contains(element(".kcq-desktop-battle__controls"))).toBe(false);
         click(".kcq-escape-choice:not(:disabled)");
         const panel = element(".kcq-escape"), choice = element(".kcq-escape-choice[aria-pressed=true]");
         resize(390, 844); resize(); expect(element(".kcq-escape")).toBe(panel);
@@ -177,7 +223,8 @@ describe("desktop battle", () => {
         const log = element('[role="log"]'), count = log.querySelectorAll("[data-kind=move]").length;
         expect(element(".kcq-battle-stage").getAttribute("aria-busy")).toBe("true");
         expect(element(".kcq-desktop-battle__actions").hasAttribute("inert")).toBe(true);
-        expect(element<HTMLButtonElement>(".kcq-desktop-battle__actions .kcq-battle-overview__primary-action").disabled).toBe(true);
+        expect(element<HTMLButtonElement>(".kcq-desktop-battle__controls .kcq-battle-overview__primary-action").disabled).toBe(true);
+        expect(element(".kcq-desktop-battle__controls").closest("[inert]")).not.toBeNull();
         expect(count).toBeGreaterThan(0); expect(log.closest("[inert]")).toBeNull();
         resize(390, 844); resize(); vi.advanceTimersByTime(20000);
         expect(execute).toHaveBeenCalledOnce(); expect(onAction).toHaveBeenCalledOnce();

@@ -3,7 +3,7 @@ import type { ActionView, EntityId, GameState, ThresholdInfo } from "../../../..
 import type { Presentation } from "../../../presentation/presentation";
 import { reactionRef } from "../combatReactions";
 import { CharacterBindings, CharacterCapabilities } from "../components/CharacterStatus";
-import { CharacterCommands } from "../components/CharacterCommands";
+import { CharacterCommands, CharacterCommandsHeader } from "../components/CharacterCommands";
 import { CombatHeader } from "../components/CombatHeader";
 import { EffectDetails } from "../components/EffectDetails";
 import { Shortcut } from "../components/Shortcut";
@@ -63,13 +63,11 @@ export function DesktopBattleParty(props: {
     </section>;
 }
 
-export function DesktopBattleActions(props: {
+export function DesktopBattleControls(props: {
     model?: CharacterDetailsViewModel;
     overview: BattleOverviewViewModel;
     presentation: Presentation;
-    shortcuts: boolean;
     blocked: boolean;
-    onSelectCommand: (actor: EntityId, command: string) => void;
     onEndTurn: () => void;
 }): JSX.Element {
     const endTurn = () => <button class="kcq-battle-overview__primary-action kcq-shortcut-host" type="button"
@@ -77,14 +75,25 @@ export function DesktopBattleActions(props: {
         onClick={props.onEndTurn}>
         <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {props.overview.controls.endTurnLabel}
     </button>;
+    return <div class="kcq-desktop-battle__controls">
+        <Show when={props.model} fallback={<div class="kcq-character-commands__header">{endTurn()}</div>}>
+            {model => <CharacterCommandsHeader model={model()} presentation={props.presentation}
+                headingId="desktop-character-commands-heading" headerAction={endTurn()} />}
+        </Show>
+    </div>;
+}
+
+export function DesktopBattleActions(props: {
+    model?: CharacterDetailsViewModel;
+    presentation: Presentation;
+    shortcuts: boolean;
+    onSelectCommand: (actor: EntityId, command: string) => void;
+}): JSX.Element {
     return <div class="kcq-desktop-battle__commands">
-        <Show when={props.model} fallback={<div class="kcq-character-commands">
-            <div class="kcq-character-commands__header">{endTurn()}</div>
-            <div class="kcq-character-commands__grid" />
-        </div>}>
+        <Show when={props.model} fallback={<div class="kcq-character-commands"><div class="kcq-character-commands__grid" /></div>}>
             {model => <CharacterCommands model={model()} presentation={props.presentation}
                 headingId="desktop-character-commands-heading" shortcuts={props.shortcuts}
-                headerAction={endTurn()}
+                showHeader={false}
                 onSelectCommand={command => props.onSelectCommand(model().focused.id, command)} />}
         </Show>
     </div>;
