@@ -5660,7 +5660,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 
 .kcq-desktop-character .kcq-character-bindings__list {
     gap: 5px;
-    padding-top: 6px;
+    padding-top: 0px;
 }
 
 .kcq-desktop-character .kcq-character-binding {
@@ -5682,7 +5682,7 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 }
 
 .kcq-desktop-character .kcq-character-binding__level {
-    font-size: 12px;
+    font-size: 13px;
 }
 
 .kcq-desktop-character .kcq-character-bindings {
@@ -6172,4 +6172,16 @@ body:has(.kcq-battle-stage--desktop) .kcq-battle-result__viewport {
 .kcq-desktop-character .kcq-pip-meter--blocked {
     width: 62px;
     height: 14px;
+}
+
+.kcq-desktop-character {
+    grid-template-columns: minmax(0, 1fr) 390px 420px;
+}
+
+.kcq-desktop-character .kcq-modifier-meter {
+    grid-template-columns: minmax(0, 1fr) 62px 28px;
+}
+
+.kcq-desktop-character .kcq-character-capabilities__list {
+    grid-template-columns: minmax(0, 45fr) minmax(0, 52fr);
 }

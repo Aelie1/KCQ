@@ -417,7 +417,7 @@ export const systemEnglishStrings: StringTable = {
     "modifier.vulnerability.compact": "VULN",
     "modifier.potency.name": "Potency",
     "modifier.potency.compact": "POT",
-    "modifier.traps.name": "Trap Avoidance",
+    "modifier.traps.name": "Avoid Traps",
     "modifier.traps.compact": "TRAP",
     "modifier.willpower.name": "Willpower",
     "modifier.willpower.compact": "WILL",
