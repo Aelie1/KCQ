@@ -6,6 +6,7 @@ import type { EventFrame, GameEvent } from "../../src/engine/public/types";
 import { CombatReactionsContext, createCombatReactions } from "../../src/ui/web/app/combatReactions";
 import { createCombatPlayback } from "../../src/ui/web/app/combatPlayback";
 import { ProjectedMeter } from "../../src/ui/web/app/components/ProjectedMeter";
+import { BindingMeter } from "../../src/ui/web/app/components/BindingMeter";
 import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
 import { battleOverviewFixture as fixture } from "../../src/ui/web/app/fixtures/battleOverview";
 
@@ -16,7 +17,7 @@ afterEach(() => {
     document.body.replaceChildren();
     vi.useRealTimers(); vi.restoreAllMocks();
 });
-function mount() {
+function mount(includeOtherMeters = false) {
     const initial = structuredClone(fixture.state);
     initial.enemies[0]!.intentions = [{ resolved: false, move: "pounce", effects: [], targets: [{ target: "ko", band: "hit", effects: [{ type: "binding", target: "ko", binding: "latexHead", amount: 15 }] }] }];
     initial.characters[0]!.buffs = [{ id: "guarded", duration: 3, severity: 1 }];
@@ -29,10 +30,13 @@ function mount() {
         reactions = createCombatReactions();
         return createComponent(CombatReactionsContext.Provider, {
             value: reactions,
-            get children() { return createComponent(BattleOverviewPanel, {
+            get children() { return [createComponent(BattleOverviewPanel, {
                 get state() { return state(); },
                 gameLogLines: 0, actions: fixture.actions, thresholds: fixture.thresholds, presentation: fixture.presentation,
-            }); },
+            }), ...(includeOtherMeters ? (["standard", "compact"] as const).map(size => createComponent(BindingMeter, {
+                entityId: "ko", bindingId: "latexHead", size, ariaLabel: "Other " + size + " meter",
+                get value() { return state().characters[0]!.bindings[0]!.value; }, max: 100, level: "severe",
+            })) : [])]; },
         });
     }, host);
     const present = (event: GameEvent, mutate?: (state: typeof initial) => void, instant = false) => {
@@ -85,6 +89,10 @@ describe("combat reaction rendering and lifecycle", () => {
         b.present(move(5), state => { state.characters[0]!.bindings[0]!.value += 5; });
         const first = element(".kcq-binding-reaction");
         const firstAnimation = first.style.animation;
+        const firstNumber = element(".kcq-binding-float");
+        const numberAnimation = firstNumber.style.animation;
+        expect(firstNumber.textContent).toBe("+5");
+        expect(numberAnimation).toBe("kcq-react-hp-float 2000ms ease-out 0ms forwards");
         const maximum = Number(meter.getAttribute("aria-valuemax"));
         expect(first.style.left).toBe(`${initialValue / maximum * 100}%`);
         expect(first.style.width).toBe(`${5 / maximum * 100}%`);
@@ -96,6 +104,11 @@ describe("combat reaction rendering and lifecycle", () => {
         vi.advanceTimersByTime(500);
         b.present(move(3), state => { state.characters[0]!.bindings[0]!.value += 3; });
         const second = document.querySelectorAll<HTMLElement>(".kcq-party-card .kcq-binding-reaction")[1]!;
+        const secondNumber = document.querySelectorAll<HTMLElement>(".kcq-binding-float")[1]!;
+        expect(secondNumber.textContent).toBe("+3");
+        expect(element(".kcq-binding-float")).toBe(firstNumber);
+        expect(firstNumber.style.animation).toBe(numberAnimation);
+        expect(secondNumber.style.animation).toBe(numberAnimation);
         expect(document.querySelectorAll(".kcq-party-card .kcq-binding-reaction")).toHaveLength(2);
         expect(second.style.left).toBe(`${(initialValue + 5) / maximum * 100}%`);
         expect(second.style.width).toBe(`${3 / maximum * 100}%`);
@@ -107,13 +120,20 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(document.querySelector(".kcq-binding-meter__change")).not.toBeNull();
         vi.advanceTimersByTime(1999);
         expect(first.isConnected).toBe(true);
+        expect(firstNumber.isConnected).toBe(true);
         expect(first.style.animation).toBe(firstAnimation);
         vi.advanceTimersByTime(1);
         expect(first.isConnected).toBe(false);
+        expect(firstNumber.isConnected).toBe(false);
+        expect(element(".kcq-binding-float")).toBe(secondNumber);
+        expect(secondNumber.style.animation).toBe(numberAnimation);
         expect(element(".kcq-binding-reaction")).toBe(second);
         expect(second.style.animation).toBe(firstAnimation);
         b.present(move(-8), state => { state.characters[0]!.bindings[0]!.value -= 8; });
         const recovery = document.querySelectorAll<HTMLElement>(".kcq-party-card .kcq-binding-reaction")[1]!;
+        const recoveryNumber = document.querySelectorAll<HTMLElement>(".kcq-binding-float")[1]!;
+        expect(recoveryNumber.textContent).toBe("−8");
+        expect(recoveryNumber.dataset.combatReaction).toBe("recovery");
         expect(recovery.dataset.combatReaction).toBe("recovery");
         expect(recovery.style.animation).toBe(firstAnimation);
         expect(b.reactions.matching("binding", "ko", "latexHead").at(-1)).toMatchObject({
@@ -122,12 +142,150 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(Number(meter.getAttribute("aria-valuenow"))).toBe(initialValue);
         vi.advanceTimersByTime(500);
         expect(second.isConnected).toBe(false);
+        expect(secondNumber.isConnected).toBe(false);
+        expect(element(".kcq-binding-float")).toBe(recoveryNumber);
         expect(element(".kcq-binding-reaction")).toBe(recovery);
         vi.advanceTimersByTime(1999);
         expect(recovery.isConnected).toBe(true);
         vi.advanceTimersByTime(1);
         expect(recovery.isConnected).toBe(false);
+        expect(recoveryNumber.isConnected).toBe(false);
         expect(b.reactions.cues()).toEqual([]);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+    it("places signed cue deltas above only the corresponding party binding bars", () => {
+        const b = mount();
+        const cards = document.querySelectorAll<HTMLElement>(".kcq-party-card");
+        const koMeters = cards[0]!.querySelectorAll<HTMLElement>(".kcq-binding-meter");
+        const matsukoMeters = cards[1]!.querySelectorAll<HTMLElement>(".kcq-binding-meter");
+        b.present({ type: "changePhase", phase: "enemy", effects: [
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 15 },
+            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: -12 },
+            { type: "bondageAdded", target: "matsuko", binding: "latexHead", amount: 7 },
+            { type: "bondageChanged", target: "ko", binding: "latexLegs", amount: 0 },
+        ] }, state => {
+            state.characters[0]!.bindings[0]!.value += 15;
+            state.characters[0]!.bindings[1]!.value -= 12;
+            state.characters[1]!.bindings[0]!.value += 7;
+        });
+        const numbers = [...document.querySelectorAll<HTMLElement>(".kcq-binding-float")];
+        expect(numbers.map(number => number.textContent)).toEqual(["+15", "−12", "+7"]);
+        expect(numbers.map(number => number.parentElement)).toEqual([koMeters[0], koMeters[1], matsukoMeters[0]]);
+        expect(numbers.map(number => number.dataset.combatReaction)).toEqual(["increase", "recovery", "increase"]);
+        expect(numbers.every(number => number.getAttribute("aria-hidden") === "true")).toBe(true);
+        expect(koMeters[3]!.querySelector(".kcq-binding-float")).toBeNull();
+        expect(cards[2]!.querySelector(".kcq-binding-float")).toBeNull();
+        expect(document.querySelector(".kcq-enemy-card .kcq-binding-float")).toBeNull();
+    });
+    it("renders simultaneous deltas independently even when their net change is zero", () => {
+        const b = mount();
+        const meter = element(".kcq-party-card .kcq-binding-meter");
+        const value = meter.getAttribute("aria-valuenow");
+        b.present({ type: "changePhase", phase: "enemy", effects: [
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 15 },
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: -15 },
+        ] });
+        const numbers = [...meter.querySelectorAll<HTMLElement>(".kcq-binding-float")];
+        expect(numbers.map(number => number.textContent)).toEqual(["+15", "−15"]);
+        expect(numbers[0]).not.toBe(numbers[1]);
+        expect(numbers[0]!.style.getPropertyValue("--float-x")).not.toBe(numbers[1]!.style.getPropertyValue("--float-x"));
+        expect(meter.querySelectorAll(".kcq-binding-reaction")).toHaveLength(2);
+        expect(meter.getAttribute("aria-valuenow")).toBe(value);
+        // Numbers share cue cleanup with the glows, without adding timers.
+        expect(vi.getTimerCount()).toBe(2);
+        vi.advanceTimersByTime(2500);
+        expect(numbers.every(number => !number.isConnected)).toBe(true);
+        expect(meter.querySelector(".kcq-binding-reaction")).toBeNull();
+        expect(vi.getTimerCount()).toBe(0);
+    });
+    it("retains the number on the persistent overview meter when a binding is removed at zero", () => {
+        const b = mount();
+        const meter = element(".kcq-party-card .kcq-binding-meter");
+        const value = b.initial.characters[0]!.bindings[0]!.value;
+        b.present({ type: "changePhase", phase: "player", effects: [
+            { type: "bondageRemoved", target: "ko", binding: "latexHead", amount: -value },
+        ] }, state => { state.characters[0]!.bindings = state.characters[0]!.bindings.filter(binding => binding.id !== "latexHead"); });
+        const number = element(".kcq-binding-float");
+        expect(number.textContent).toBe("−" + value);
+        expect(number.parentElement).toBe(meter);
+        expect(element(".kcq-party-card .kcq-binding-meter")).toBe(meter);
+        expect(meter.getAttribute("aria-valuenow")).toBe("0");
+        expect(meter.querySelector<HTMLElement>(".kcq-binding-meter__value")!.style.width).toBe("0%");
+        expect(meter.querySelector(".kcq-binding-reaction")).not.toBeNull();
+        vi.advanceTimersByTime(2500);
+        expect(number.isConnected).toBe(false);
+        expect(meter.isConnected).toBe(true);
+    });
+    it("does not float state-only or zero changes, or opt other meter consumers in", () => {
+        const b = mount(true);
+        b.present({ type: "changePhase", phase: "player", effects: [
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 0 },
+        ] }, state => { state.characters[0]!.bindings[0]!.value += 1; });
+        expect(document.querySelector(".kcq-binding-float")).toBeNull();
+        expect(vi.getTimerCount()).toBe(0);
+        b.present(move(15), state => { state.characters[0]!.bindings[0]!.value += 15; });
+        expect(element(".kcq-binding-float").textContent).toBe("+15");
+        expect(document.querySelectorAll(".kcq-binding-float")).toHaveLength(1);
+        for (const size of ["standard", "compact"]) {
+            const meter = element('[aria-label="Other ' + size + ' meter"]');
+            expect(meter.querySelector(".kcq-binding-reaction")).not.toBeNull();
+            expect(meter.querySelector(".kcq-binding-float")).toBeNull();
+        }
+    });
+    it("keeps floating binding numbers outside clipping and uses a stationary fade for reduced motion", () => {
+        const css = readFileSync("src/ui/web/app/app.css", "utf8");
+        const style = document.createElement("style"); style.textContent = css; document.body.append(style);
+        const b = mount();
+        b.present(move());
+        const number = element(".kcq-binding-float");
+        const meter = number.parentElement!;
+        expect(getComputedStyle(number).position).toBe("absolute");
+        expect(getComputedStyle(number).pointerEvents).toBe("none");
+        expect(getComputedStyle(number).left).toBe("50%");
+        expect(getComputedStyle(number).top).toBe("0px");
+        expect(getComputedStyle(meter).position).toBe("relative");
+        expect(getComputedStyle(meter).overflow).toBe("visible");
+        expect(getComputedStyle(element(".kcq-party-card__bindings")).overflow).toBe("visible");
+        expect(getComputedStyle(element(".kcq-party-card")).overflow).toBe("visible");
+        const clip = meter.querySelector<HTMLElement>(".kcq-binding-meter__fill-clip")!;
+        expect(getComputedStyle(clip).overflow).toBe("hidden");
+        expect(clip.contains(number)).toBe(false);
+        expect(css).toMatch(/\.kcq-binding-float\[data-combat-reaction="increase"\]\s*\{[^}]*color: var\(--kcq-glow-negative\)/);
+        expect(css).toMatch(/\.kcq-binding-float\[data-combat-reaction="recovery"\]\s*\{[^}]*color: var\(--kcq-glow-positive\)/);
+        const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
+        expect(reduced).toMatch(/\.kcq-binding-float\s*\{\s*animation: kcq-react-binding-fade 2000ms ease-out var\(--kcq-binding-float-delay, 0ms\) both !important;/);
+        const fade = css.match(/@keyframes kcq-react-binding-fade\s*\{[\s\S]*?\n\}/)![0];
+        expect(fade).toContain("opacity: 0");
+        expect(fade).not.toContain("transform");
+    });
+    it("mounts active binding numbers at their remaining animation time without seeking on geometry updates", () => {
+        const [visible, setVisible] = createSignal(false);
+        const [maximum, setMaximum] = createSignal(100);
+        const host = document.createElement("div"); document.body.append(host);
+        let reactions!: ReturnType<typeof createCombatReactions>;
+        dispose = render(() => {
+            reactions = createCombatReactions();
+            return createComponent(CombatReactionsContext.Provider, {
+                value: reactions,
+                get children() { return visible() ? createComponent(BindingMeter, {
+                    entityId: "ko", bindingId: "latexHead", floatingNumbers: true,
+                    value: 30, level: "moderate", get max() { return maximum(); },
+                }) : null; },
+            });
+        }, host);
+        reactions.present([{ event: move(), state: fixture.state }], fixture.state);
+        vi.advanceTimersByTime(750);
+        setVisible(true);
+        const number = element(".kcq-binding-float");
+        const animation = number.style.animation;
+        expect(animation).toBe("kcq-react-hp-float 2000ms ease-out -750ms forwards");
+        expect(number.style.getPropertyValue("--kcq-binding-float-delay")).toBe("-750ms");
+        vi.advanceTimersByTime(250);
+        setMaximum(200);
+        expect(element(".kcq-binding-float")).toBe(number);
+        expect(number.style.animation).toBe(animation);
+        vi.advanceTimersByTime(1500);
+        expect(number.isConnected).toBe(false);
         expect(vi.getTimerCount()).toBe(0);
     });
     it("preserves a glow's animation timing when reactive meter geometry changes", () => {
@@ -321,17 +479,22 @@ describe("combat reaction rendering and lifecycle", () => {
         const b = mount();
         const event: GameEvent = { type: "changePhase", phase: "enemy", effects: [
             { type: "enemyDamaged", target: b.initial.enemies[0]!.id, amount: 14 },
+            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 15 },
         ] };
         b.present(event);
         expect(element(".kcq-hp-reaction").textContent).toBe("-14");
+        expect(element(".kcq-binding-float").textContent).toBe("+15");
         expect(vi.getTimerCount()).toBeGreaterThan(0);
         b.present(event, undefined, true);
         expect(b.reactions.cues()).toEqual([]);
         expect(document.querySelector(".kcq-hp-reaction")).toBeNull();
+        expect(document.querySelector(".kcq-binding-float")).toBeNull();
         expect(document.querySelector("[data-combat-reaction]")).toBeNull();
         expect(vi.getTimerCount()).toBe(0);
         b.present(event);
+        const number = element(".kcq-binding-float");
         dispose!(); dispose = undefined;
+        expect(number.isConnected).toBe(false);
         expect(vi.getTimerCount()).toBe(0);
         vi.advanceTimersByTime(5000);
         b.reactions.present([{ event: event, state: b.initial }], b.initial);

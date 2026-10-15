@@ -4355,6 +4355,7 @@ button {
     }
 }
 
+.kcq-binding-float,
 .kcq-hp-reaction {
     position: absolute;
     left: 50%;
@@ -4367,6 +4368,18 @@ button {
     line-height: 1;
     text-shadow: 0 0 5px currentColor;
     animation-fill-mode: both;
+}
+
+.kcq-binding-float {
+    top: 0;
+}
+
+.kcq-binding-float[data-combat-reaction="increase"] {
+    color: var(--kcq-glow-negative);
+}
+
+.kcq-binding-float[data-combat-reaction="recovery"] {
+    color: var(--kcq-glow-positive);
 }
 
 .kcq-hp-reaction[data-combat-reaction="damage"] {
@@ -4500,6 +4513,10 @@ button {
 
     .kcq-hp-reaction {
         animation: kcq-react-binding-fade 2000ms ease-out var(--kcq-hp-reaction-delay, 0ms) both !important;
+    }
+
+    .kcq-binding-float {
+        animation: kcq-react-binding-fade 2000ms ease-out var(--kcq-binding-float-delay, 0ms) both !important;
     }
 }
 

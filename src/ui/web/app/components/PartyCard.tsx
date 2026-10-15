@@ -67,6 +67,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                         const binding = () => props.character.bindings.find(binding => binding.id === id)!;
                         return <BindingMeter
                             entityId={props.character.id} bindingId={id}
+                            floatingNumbers
                             value={binding().current}
                             change={binding().change}
                             peak={binding().peak}

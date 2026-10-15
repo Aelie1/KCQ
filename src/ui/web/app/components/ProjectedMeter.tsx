@@ -14,6 +14,8 @@ export interface ProjectedMeterProps {
     classPrefix?: string;
     size?: "compact" | "standard";
     ariaLabel?: string;
+    /** Overlays outside the clipped fill, without changing meter geometry. */
+    children?: JSX.Element;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -94,6 +96,7 @@ export function ProjectedMeter(props: ProjectedMeterProps): JSX.Element {
                         animation,
                     }} aria-hidden="true" />;
             }}</For>
+            {props.children}
         </span>
     );
 }
