@@ -90,6 +90,7 @@ export function createTestEngine(
     characters: CharacterDef[] = [],
     seed?: number,
     content: Omit<TestCatalogContent, "encounters" | "characters"> = {},
+    campaign: string = "test",
 ) {
-    return createGameEngine(createTestCatalog({ ...content, encounters, characters }), seed);
+    return createGameEngine(campaign, createTestCatalog({ ...content, encounters, characters }), seed);
 }

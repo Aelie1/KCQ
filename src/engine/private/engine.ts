@@ -28,8 +28,9 @@ export class GameEngine implements Engine {
     private aiRng: Random;
     private accRng: Random;
     private catalog: ContentCatalog;
+    private campaign: string;
 
-    constructor(catalog: ContentCatalog, seed?: number) {
+    constructor(campaign: string, catalog: ContentCatalog, seed?: number) {
         this.state = {
             turn: { round: 1, step: 1, phase: "player" },
             nextId: {},
@@ -39,6 +40,7 @@ export class GameEngine implements Engine {
             encounter: null,
             difficulty: difficulties.standard
         };
+        this.campaign = campaign;
         this.statuses = getStatusMap(this.state);
         this.viewState = serializeGameState(this.state, this.statuses);
         this.viewActions = getActionView(this.state, this.statuses);
@@ -66,7 +68,7 @@ export class GameEngine implements Engine {
     }
 
     getSaveState(): SaveState {
-        return saveGameState(this.catalog.campaigns[0].id, this.state, this.seed, this.aiRng.getState(), this.accRng.getState());
+        return saveGameState(this.campaign, this.state, this.seed, this.aiRng.getState(), this.accRng.getState());
     }
 
     private refreshView() {

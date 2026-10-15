@@ -42,5 +42,5 @@ export function createEngine(characters: readonly KCQCharacter[], campaign: KCQC
         catalogs.push(characterCatalogs[character]);
     }
     catalogs.push(campaignCatalogs[campaign]);
-    return createGameEngine(mergeCatalogs(...catalogs), seed);
+    return createGameEngine(campaign, mergeCatalogs(...catalogs), seed);
 }
