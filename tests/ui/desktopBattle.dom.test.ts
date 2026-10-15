@@ -203,8 +203,16 @@ describe("desktop battle", () => {
     });
     it("uses the conservative desktop threshold without affecting title or smaller battles", () => {
         mount(); resize(1519, 1100); expect(rows()).toHaveLength(0);
-        resize(1600, 959); expect(rows()).toHaveLength(0);
-        resize(1520, 960); expect(rows()).toHaveLength(3);
+        resize(1600, 875); expect(rows()).toHaveLength(0);
+        resize(1520, 876); expect(rows()).toHaveLength(3);
+        const header = getComputedStyle(element(".kcq-desktop-battle__top"));
+        expect(header.gridColumn).toBe("3"); expect(header.gridRow).toBe("1");
+        expect(getComputedStyle(element(".kcq-desktop-battle__left")).gridRow).toBe("1 / -1");
+        expect(getComputedStyle(element(".kcq-battle-middle")).gridRow).toBe("1 / -1");
+        expect(getComputedStyle(element(".kcq-battle-log-pane")).gridColumn).toBe("3");
+        expect(getComputedStyle(element(".kcq-battle-log-pane")).gridRow).toBe("2");
+        expect(getComputedStyle(element(".kcq-desktop-battle__header .kcq-combat-header")).gridTemplateColumns)
+            .toBe("minmax(0, 1fr) 82px 42px");
         resize(390, 844); expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
     it("routes character, command and target keyboard choices to one visible control", () => {
