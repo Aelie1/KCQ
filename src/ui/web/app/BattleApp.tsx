@@ -9,6 +9,7 @@ import type {
     CampaignId,
     Engine,
     EntityId,
+    EscapeInfo,
     GameState,
     MoveId,
     PlayerAction,
@@ -17,6 +18,10 @@ import type {
 import type { GameLogPresentationEntry } from "../../presentation/gameLog";
 import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
+import { CharacterDetailsLayout } from "./components/CharacterDetailsLayout";
+import { CombatHeader } from "./components/CombatHeader";
+import { CompactGameLog } from "./components/CompactGameLog";
+import { Shortcut } from "./components/Shortcut";
 import { createCombatPlayback } from "./combatPlayback";
 import { CombatReactionsContext, createCombatReactions } from "./combatReactions";
 import { createEnemyDefeats } from "./enemyDefeats";
@@ -94,6 +99,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [actions, setActions] = createSignal<readonly ActionView[]>(props.engine.getActionView());
     const [thresholds] = createSignal<ThresholdInfo>(getThresholds());
     const [screen, setScreen] = createSignal<BattleScreen>({ kind: "overview" });
+    // Keep pending choices when resizing remounts a panel. Entering a command resets them.
+    let selectedTargetIds: readonly EntityId[] = [];
+    let selectedEscape: Pick<EscapeInfo, "binding" | "target"> | undefined;
     const [logOpen, setLogOpen] = createSignal(false);
     const toggleLog = (): void => { if (!dialogOpen() && !playback.active()) setLogOpen(open => !open); };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
@@ -276,11 +284,13 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         for (const id of animationFrames) cancelAnimationFrame(id);
         animationFrames.clear();
     });
-    const scrollToBottom = (): void => {
+    const scrollToActionRegion = (): void => {
         nextPaint(() => {
             if (state().turn.outcome !== "ongoing" || playback.active()) return;
-            const body = stage?.querySelector<HTMLElement>(".kcq-screen-layout__body");
-            body?.scrollTo({ top: body.scrollHeight, behavior: "instant" });
+            const wideCharacter = wide() && characterActorId();
+            const body = stage?.querySelector<HTMLElement>(wideCharacter
+                ? ".kcq-character-workspace .kcq-screen-layout__body" : ".kcq-screen-layout__body");
+            body?.scrollTo({ top: wideCharacter ? 0 : body.scrollHeight, behavior: "instant" });
         });
     };
 
@@ -292,6 +302,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         }
 
         if (commandId === "escape") {
+            selectedEscape = undefined;
             setScreen({ kind: "escape", actorId });
             return;
         }
@@ -301,8 +312,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             ?.moves.find(({ move: candidate }) => candidate.id === commandId);
 
         if (move) {
+            selectedTargetIds = [];
             setScreen({ kind: "targeting", actorId, moveId: move.move.id });
-            scrollToBottom();
+            scrollToActionRegion();
         }
     };
 
@@ -322,7 +334,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     kind: "character",
                     actorId: current.screen.actorId,
                 });
-                scrollToBottom();
+                scrollToActionRegion();
             } else {
                 setScreen({ kind: "overview" });
             }
@@ -340,10 +352,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             binding,
         });
         if (!result?.success || engineState.turn.outcome !== "ongoing") return;
+        selectedEscape = undefined;
         const actor = engineState.characters.find(({ id }) => id === current.actorId);
         if (actor && actor.bonusEscapes > 0) {
             setScreen({ kind: "escape", actorId: current.actorId });
-            scrollToBottom();
+            scrollToActionRegion();
         } else {
             setScreen({ kind: "overview" });
         }
@@ -357,7 +370,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         setScreen(current.kind === "targeting" || current.kind === "escape"
             ? { kind: "character", actorId: current.actorId }
             : { kind: "overview" });
-        if (current.kind === "targeting") scrollToBottom();
+        if (current.kind === "targeting") scrollToActionRegion();
         return true;
     };
     const endTurn = (): void => { execute({ type: "endTurn" }); };
@@ -368,7 +381,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
-            if (logOpen() || screen().kind !== "overview") return false;
+            if (logOpen() || (screen().kind !== "overview" && !(wide() && characterActorId()))) return false;
 
             endTurn();
             return true;
@@ -388,9 +401,19 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const hintsVisible = props.keyboard?.hintsVisible
         ?? useCombatKeyboard(() => stage, () => !dialogOpen() && !playback.active(), globalKeyboardAction, () => shortcutHints.value);
 
+    const [wide, setWide] = createSignal(false);
+    onMount(() => {
+        if (typeof window.matchMedia !== "function") return;
+        const media = window.matchMedia(`(min-width: ${WIDE_BATTLE_OVERVIEW_BREAKPOINT}px)`);
+        const update = () => setWide(media.matches);
+        update();
+        media.addEventListener("change", update);
+        onCleanup(() => media.removeEventListener("change", update));
+    });
+    const characterActorId = createMemo(() => characterScreen()?.actorId ?? targeting()?.screen.actorId ?? escapeScreen()?.actorId);
+
     const Overview = (): JSX.Element => {
         const [desktop, setDesktop] = createSignal(false);
-        const [wide, setWide] = createSignal(false);
         onMount(() => {
             // Two 366px canvases + a 24px gutter at the existing maximum 1.5x
             // UI scale, plus outer padding, need 1158px. Leave a little room.
@@ -399,11 +422,6 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             update();
             media.addEventListener("change", update);
             onCleanup(() => media.removeEventListener("change", update));
-            const wideMedia = window.matchMedia(`(min-width: ${WIDE_BATTLE_OVERVIEW_BREAKPOINT}px)`);
-            const updateWide = () => setWide(wideMedia.matches);
-            updateWide();
-            wideMedia.addEventListener("change", updateWide);
-            onCleanup(() => wideMedia.removeEventListener("change", updateWide));
         });
         const model = createMemo(() => createBattleOverviewViewModel(
             state(), actions(), thresholds(), props.presentation, logEntries(), library,
@@ -450,6 +468,99 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         </Switch>;
     };
 
+    const ScreenPanels = (panelProps: { workspaceOnly?: boolean }): JSX.Element => (
+        <Switch fallback={<Overview />}>
+            <Match when={enemyScreen()}>
+                {(current) => <EnemyDetailsPanel
+                    actions={actions()} enemyId={current().enemyId}
+                    presentation={props.presentation} state={state()} thresholds={thresholds()}
+                    onBack={back} />}
+            </Match>
+            <Match when={characterScreen()}>
+                {(current) => (
+                    <CharacterDetailsPanel
+                        workspaceOnly={panelProps.workspaceOnly}
+                        actions={actions()}
+                        focusedCharacterId={current().actorId}
+                        presentation={props.presentation}
+                        state={state()}
+                        thresholds={thresholds()}
+                        onBack={back}
+                        onSelectCharacter={selectCharacter}
+                        onSelectCommand={(commandId) => selectCommand(current().actorId, commandId)}
+                    />
+                )}
+            </Match>
+            <Match when={targeting()} keyed>
+                {(current) => (
+                    <TargetingPanel
+                        workspaceOnly={panelProps.workspaceOnly}
+                        initialSelectedTargetIds={selectedTargetIds}
+                        onSelectionChange={targets => { selectedTargetIds = targets; }}
+                        action={current.action}
+                        actions={actions()}
+                        actorId={current.screen.actorId}
+                        presentation={props.presentation}
+                        state={state()}
+                        thresholds={thresholds()}
+                        onBack={back}
+                        onHeaderBack={() => { if (!playback.active()) setScreen({ kind: "overview" }); }}
+                        onSelectCharacter={selectCharacter}
+                        onExecute={executeMove}
+                    />
+                )}
+            </Match>
+            <Match when={escapeScreen()} keyed>
+                {(current) => (
+                    <EscapePanel
+                        workspaceOnly={panelProps.workspaceOnly}
+                        initialSelectedEscape={selectedEscape}
+                        onSelectionChange={escape => { selectedEscape = escape; }}
+                        actions={actions()}
+                        actorId={current.actorId}
+                        presentation={props.presentation}
+                        state={state()}
+                        thresholds={thresholds()}
+                        onBack={back}
+                        onHeaderBack={() => { if (!playback.active()) setScreen({ kind: "overview" }); }}
+                        onSelectCharacter={selectCharacter}
+                        onExecute={executeEscape}
+                    />
+                )}
+            </Match>
+        </Switch>
+    );
+    const WideCharacter = (): JSX.Element => {
+        const character = createMemo(() => createCharacterDetailsViewModel(
+            state(), actions(), characterActorId()!, thresholds(), props.presentation,
+        ));
+        const overview = createMemo(() => createBattleOverviewViewModel(
+            state(), actions(), thresholds(), props.presentation, logEntries(), library,
+        ));
+        return <CharacterDetailsLayout model={character()}
+            contextLabel={props.presentation.ui("combatHeader.character")}
+            onSelectCharacter={selectCharacter}
+            actionRegion={<ScreenPanels workspaceOnly />}
+            wide={{
+                header: <CombatHeader variant="overview"
+                    encounterLabel={`${props.presentation.ui("combatHeader.character")} / ${character().focused.name}`}
+                    difficultyLabel={overview().header.difficultyLabel}
+                    roundLabel={overview().header.roundLabel} phaseLabel={overview().header.phaseLabel}
+                    trap={overview().header.trap}
+                    navigation={{ backLabel: character().controls.backLabel, backShortcut: COMBAT_SHORTCUTS.back, onBack: back }}
+                    settingsLabel={overview().controls.settingsLabel} onSettings={openSettings}
+                    libraryLabel={props.presentation.ui("library.title")} onLibrary={openLibrary}
+                    action={<button type="button" class="kcq-battle-overview__primary-action kcq-shortcut-host"
+                        classList={{ "is-dimmed": overview().controls.endTurnDimmed }}
+                        disabled={playback.active() || !!resultModel()} onClick={endTurn}>
+                        <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {overview().controls.endTurnLabel}
+                    </button>} />,
+                gameLog: <CompactGameLog entries={logEntries()} presentation={props.presentation}
+                    party={state().characters.map(character => character.id)} lines={overviewGameLog.value}
+                    headingAction scrollable onOpen={toggleLog} />,
+            }} />;
+    };
+
     return (
         <CombatReactionsContext.Provider value={reactions}>
             <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
@@ -458,59 +569,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
                     </Show>
                     <div hidden={logOpen()} inert={logOpen()} aria-hidden={logOpen() ? true : undefined}>
-                        <Switch fallback={<Overview />}>
-                            <Match when={enemyScreen()}>
-                                {(current) => <EnemyDetailsPanel
-                                    actions={actions()} enemyId={current().enemyId}
-                                    presentation={props.presentation} state={state()} thresholds={thresholds()}
-                                    onBack={back} />}
-                            </Match>
-                            <Match when={characterScreen()}>
-                                {(current) => (
-                                    <CharacterDetailsPanel
-                                        actions={actions()}
-                                        focusedCharacterId={current().actorId}
-                                        presentation={props.presentation}
-                                        state={state()}
-                                        thresholds={thresholds()}
-                                        onBack={back}
-                                        onSelectCharacter={selectCharacter}
-                                        onSelectCommand={(commandId) => selectCommand(current().actorId, commandId)}
-                                    />
-                                )}
-                            </Match>
-                            <Match when={targeting()} keyed>
-                                {(current) => (
-                                    <TargetingPanel
-                                        action={current.action}
-                                        actions={actions()}
-                                        actorId={current.screen.actorId}
-                                        presentation={props.presentation}
-                                        state={state()}
-                                        thresholds={thresholds()}
-                                        onBack={back}
-                                        onHeaderBack={() => { if (!playback.active()) setScreen({ kind: "overview" }); }}
-                                        onSelectCharacter={selectCharacter}
-                                        onExecute={executeMove}
-                                    />
-                                )}
-                            </Match>
-                            <Match when={escapeScreen()} keyed>
-                                {(current) => (
-                                    <EscapePanel
-                                        actions={actions()}
-                                        actorId={current.actorId}
-                                        presentation={props.presentation}
-                                        state={state()}
-                                        thresholds={thresholds()}
-                                        onBack={back}
-                                        onHeaderBack={() => { if (!playback.active()) setScreen({ kind: "overview" }); }}
-                                        onSelectCharacter={selectCharacter}
-                                        onExecute={executeEscape}
-                                    />
-                                )}
-                            </Match>
-                        </Switch>
+                        <Show when={wide() && !!characterActorId()} fallback={<ScreenPanels />}>
+                            <WideCharacter />
+                        </Show>
                     </div>
                 </div>
                 <Show when={libraryOpen()}><LibraryPanel library={library} presentation={props.presentation} onClose={closeLibrary} /></Show>

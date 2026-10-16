@@ -17,6 +17,11 @@ interface CombatHeaderBaseProps {
 }
 
 interface CombatHeaderOverviewProps extends CombatHeaderBaseProps {
+    navigation?: {
+        backLabel: string;
+        backShortcut?: string;
+        onBack?: () => void;
+    };
     action?: JSX.Element;
     difficultyLabel: string;
     onSettings?: () => void;
@@ -39,6 +44,7 @@ interface CombatHeaderSubscreenProps extends CombatHeaderBaseProps {
 export type CombatHeaderProps = CombatHeaderOverviewProps | CombatHeaderSubscreenProps;
 
 export function CombatHeader(props: CombatHeaderProps): JSX.Element {
+    const navigation = () => props.variant === "subscreen" ? props : props.navigation;
     return (
         <header
             class="kcq-combat-header"
@@ -48,19 +54,19 @@ export function CombatHeader(props: CombatHeaderProps): JSX.Element {
                 "kcq-combat-header--with-action": props.variant === "overview" && !!props.action,
             }}
         >
-            {props.variant === "subscreen" && (
+            <Show when={navigation()}>{nav => (
                 <button
                     class="kcq-combat-header__back"
-                    classList={{ "kcq-shortcut-host": !!props.backShortcut }}
-                    data-kcq-shortcut={props.onBack ? props.backShortcut : undefined}
+                    classList={{ "kcq-shortcut-host": !!nav().backShortcut }}
+                    data-kcq-shortcut={nav().onBack ? nav().backShortcut : undefined}
                     type="button"
-                    aria-label={props.backLabel}
-                    onClick={() => props.onBack?.()}
+                    aria-label={nav().backLabel}
+                    onClick={() => nav().onBack?.()}
                 >
-                    <Shortcut shortcut={props.backShortcut} />
+                    <Shortcut shortcut={nav().backShortcut} />
                     <span aria-hidden="true">{"\u2190"}</span>
                 </button>
-            )}
+            )}</Show>
 
             <div class="kcq-combat-header__encounter">
                 <h1 class="kcq-combat-header__title">{props.encounterLabel}</h1>

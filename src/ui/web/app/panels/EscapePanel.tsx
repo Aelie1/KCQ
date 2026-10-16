@@ -21,6 +21,7 @@ import {
 } from "../viewModels/escape";
 
 export interface EscapePanelProps {
+    workspaceOnly?: boolean;
     actions: readonly ActionView[];
     actorId: EntityId;
     initialSelectedEscape?: Pick<EscapeInfo, "binding" | "target">;
@@ -31,6 +32,7 @@ export interface EscapePanelProps {
     onExecute?: (target: EntityId, binding: BindingId) => void;
     onHeaderBack?: () => void;
     onSelectCharacter?: (id: EntityId) => void;
+    onSelectionChange?: (escape: Pick<EscapeInfo, "binding" | "target"> | undefined) => void;
 }
 
 export interface EscapeExecutionTransition {
@@ -90,6 +92,11 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
         choice => choice.available && !choice.displayOnly,
     ));
 
+    createEffect(() => {
+        const selected = actorAction().escapes.find((escape, index) => escapeChoiceId(escape, index) === selectedEscapeId());
+        props.onSelectionChange?.(selected && { target: selected.target, binding: selected.binding });
+    });
+
     const execute = (): void => {
         const transition = beginEscapeExecution(selectedEscapeId(), actorAction().escapes);
         if (!transition.escape) return;
@@ -99,6 +106,7 @@ export function EscapePanel(props: EscapePanelProps): JSX.Element {
 
     return (
         <CharacterDetailsLayout
+            workspaceOnly={props.workspaceOnly}
             model={characterModel()}
             contextLabel={props.presentation.ui("combatHeader.escape")}
             onHeaderBack={props.onHeaderBack}

@@ -13,6 +13,7 @@ import { CommandCard } from "../components/CommandCard";
 import { createCharacterDetailsViewModel } from "../viewModels/characterDetails";
 
 export interface CharacterDetailsPanelProps {
+    workspaceOnly?: boolean;
     actions: readonly ActionView[];
     focusedCharacterId: EntityId;
     presentation: Presentation;
@@ -34,6 +35,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
 
     return (
         <CharacterDetailsLayout
+            workspaceOnly={props.workspaceOnly}
             model={model()}
             contextLabel={props.presentation.ui("combatHeader.character")}
             onHeaderBack={props.onBack}

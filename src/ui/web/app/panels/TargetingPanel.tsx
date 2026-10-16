@@ -24,6 +24,7 @@ import {
 } from "../viewModels/targeting";
 
 export interface TargetingPanelProps {
+    workspaceOnly?: boolean;
     action: ActionInfo;
     actions: readonly ActionView[];
     actorId: EntityId;
@@ -35,6 +36,7 @@ export interface TargetingPanelProps {
     onExecute?: (targets: readonly EntityId[]) => boolean | void;
     onHeaderBack?: () => void;
     onSelectCharacter?: (id: EntityId) => void;
+    onSelectionChange?: (targets: readonly EntityId[]) => void;
 }
 
 export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
@@ -72,6 +74,8 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
         props.thresholds,
         selectedTargets(),
     ));
+
+    createEffect(() => props.onSelectionChange?.(selectedTargets()));
 
     createEffect(() => {
         const nextActionIdentity = actionIdentity();
@@ -113,6 +117,7 @@ export function TargetingPanel(props: TargetingPanelProps): JSX.Element {
 
     return (
         <CharacterDetailsLayout
+            workspaceOnly={props.workspaceOnly}
             model={characterModel()}
             contextLabel={props.presentation.ui("combatHeader.targeting")}
             onHeaderBack={props.onHeaderBack}
