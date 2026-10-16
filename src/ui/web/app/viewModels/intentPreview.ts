@@ -73,10 +73,7 @@ function summarizeEffect(
     }).map(preview => {
         if (preview.kind === "buff") {
             return [
-                preview.label, preview.name, preview.recipient, preview.durationLabel,
-                ...preview.modifiers.map(modifier => `${modifier.label} ${modifier.signedValue}`),
-                ...preview.moveList.map(move => move.label),
-                ...preview.details,
+                preview.label, preview.name
             ].filter(Boolean).join(" · ");
         }
         if (preview.kind === "compact") {
