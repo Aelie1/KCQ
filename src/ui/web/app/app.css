@@ -467,21 +467,23 @@ button {
 
 .kcq-battle-overview-wide {
     display: grid;
-    grid-template-columns: 366px minmax(366px, 1fr) 288px;
+    grid-template-columns: 366px 366px 288px;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 12px 24px;
-    width: 100%;
+    width: max-content;
+    margin-inline: auto;
+    max-width: 100%;
     height: var(--kcq-ui-height);
     min-width: 0;
     min-height: 0;
 }
 
-.kcq-battle-overview-wide > .kcq-battle-overview {
+.kcq-battle-overview-wide>.kcq-battle-overview {
     width: 100%;
     height: 100%;
 }
 
-.kcq-battle-overview-wide > .kcq-battle-overview:has(> .kcq-screen-layout__header) {
+.kcq-battle-overview-wide>.kcq-battle-overview:has(> .kcq-screen-layout__header) {
     grid-column: 1 / -1;
     height: auto;
 }
@@ -491,7 +493,7 @@ button {
     grid-template-columns: minmax(0, 1fr) 82px 42px 144px;
 }
 
-.kcq-battle-overview-wide .kcq-combat-header > .kcq-battle-overview__primary-action {
+.kcq-battle-overview-wide .kcq-combat-header>.kcq-battle-overview__primary-action {
     grid-column: auto;
 }
 
@@ -519,7 +521,7 @@ button {
     background: var(--kcq-surface-card);
 }
 
-.kcq-overview-game-log-history > * {
+.kcq-overview-game-log-history>* {
     flex-shrink: 0;
 }
 
@@ -3498,7 +3500,8 @@ button {
     isolation: isolate;
 }
 
-.kcq-battle-stage:has(.kcq-battle-overview-columns) {
+.kcq-battle-stage:has(.kcq-battle-overview-columns,
+    .kcq-battle-overview-wide) {
     width: 100%;
     max-width: none;
 }
