@@ -1,4 +1,4 @@
-import { For, Show, type JSX } from "solid-js";
+import { createUniqueId, For, Show, type JSX } from "solid-js";
 import type { EntityId } from "../../../../engine/public/types";
 import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
 import { reactionRef } from "../combatReactions";
@@ -11,7 +11,7 @@ import { StatusChip } from "./StatusChip";
 
 export interface CharacterDetailsLayoutProps {
     workspaceOnly?: boolean;
-    wide?: { header: JSX.Element; gameLog: JSX.Element };
+    wide?: { header: JSX.Element; gameLog: JSX.Element; workspaceHeading: string };
     actionRegion: JSX.Element;
     footer?: JSX.Element;
     contextLabel: string;
@@ -25,6 +25,8 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
     if (props.workspaceOnly) return (
         <ScreenLayout class="kcq-character-workspace" body={props.actionRegion} footer={props.footer} />
     );
+    const characterHeadingId = createUniqueId();
+    const workspaceHeadingId = createUniqueId();
     const Roster = () => (
         <nav class="kcq-character-roster" aria-label={props.model.labels.rosterLabel}>
             <For each={props.model.roster.map(character => character.id)}>
@@ -132,8 +134,20 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
     if (props.wide) return (
         <section class="kcq-character-details kcq-character-details-wide" aria-label={props.model.focused.name}>
             <div class="kcq-character-details-wide__header">{props.wide.header}</div>
-            <ScreenLayout class="kcq-character-information" header={<Roster />} body={<Information />} />
-            {props.actionRegion}
+            <section class="kcq-battle-section kcq-character-details-wide__column kcq-character-details-wide__information"
+                aria-labelledby={characterHeadingId}>
+                <header class="kcq-battle-section__heading">
+                    <h2 id={characterHeadingId}>{props.contextLabel} / {props.model.focused.name}</h2>
+                </header>
+                <ScreenLayout class="kcq-character-information" header={<Roster />} body={<Information />} />
+            </section>
+            <section class="kcq-battle-section kcq-character-details-wide__column kcq-character-details-wide__workspace"
+                aria-labelledby={workspaceHeadingId}>
+                <header class="kcq-battle-section__heading">
+                    <h2 id={workspaceHeadingId}>{props.wide.workspaceHeading}</h2>
+                </header>
+                {props.actionRegion}
+            </section>
             <div class="kcq-character-details-wide__log">{props.wide.gameLog}</div>
         </section>
     );

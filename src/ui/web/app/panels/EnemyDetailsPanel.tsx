@@ -30,7 +30,11 @@ export function EnemyDetailsPanel(props: EnemyDetailsPanelProps): JSX.Element {
 
     return (
         <ScreenLayout class="kcq-enemy-details kcq-character-details" ariaLabel={model().identity.name}
-            header={!props.embedded && (
+            header={props.embedded ? (
+                <header class="kcq-battle-section__heading">
+                    <h2>{props.presentation.ui("characterDetails.tagEnemy")} / {model().identity.name}</h2>
+                </header>
+            ) : (
                 <CombatHeader variant="subscreen"
                     encounterLabel={model().header.encounterLabel}
                     contextLabel={model().labels.context}

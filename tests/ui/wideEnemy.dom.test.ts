@@ -74,7 +74,17 @@ describe("wide enemy details", () => {
         expect(log.scrollTop).toBe(43);
         expect(getComputedStyle(details).width).toBe("100%");
         expect(getComputedStyle(details).height).toBe("100%");
-        expect(getComputedStyle(details).gridTemplateRows).toBe("minmax(0, 1fr)");
+        expect(getComputedStyle(details).gridTemplateRows).toBe("auto minmax(0, 1fr)");
+        const heading = element(".kcq-enemy-details > .kcq-screen-layout__header .kcq-battle-section__heading");
+        expect(heading.textContent).toBe("Enemy / Skunkette 1");
+        expect(heading.querySelector("button, a")).toBeNull();
+        expect(getComputedStyle(heading).height).toBe(getComputedStyle(element(".kcq-battle-section--party .kcq-battle-section__heading")).height);
+        expect(getComputedStyle(heading.querySelector("h2")!).textTransform).toBe("uppercase");
+        const logHeading = element(".kcq-battle-section--game-log .kcq-battle-section__heading");
+        expect(logHeading.textContent).toBe("Game Log");
+        expect(logHeading.querySelector("button, a, [data-kcq-shortcut]")).toBeNull();
+        logHeading.click();
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-enemy-details__identity").textContent).toContain("Skunkette 1");
         expect(element(".kcq-enemy-details__identity").textContent).toContain("152 / 200");
         expect(element("#enemy-status-heading").textContent).toBe("Status & Modifiers");
@@ -112,6 +122,8 @@ describe("wide enemy details", () => {
             expect(!!details.querySelector(".kcq-enemy-details__back")).toBe(wide);
             expect(!!details.querySelector(".kcq-focused-character__avatar")).toBe(!wide);
             expect(!!details.querySelector(".kcq-combat-header__back")).toBe(!wide);
+            expect(!!details.querySelector(".kcq-battle-section__heading")).toBe(wide);
+            if (wide) expect(details.querySelector(".kcq-battle-section__heading h2")?.textContent).toBe("Enemy / Skunkette 2");
             expect(document.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
             element(wide ? ".kcq-enemy-details__back" : ".kcq-combat-header__back").click();
             expect(document.querySelector(".kcq-enemy-details")).toBeNull();

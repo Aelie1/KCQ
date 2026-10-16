@@ -1,6 +1,6 @@
 import { Show, type JSX } from "solid-js";
-import { Shortcut } from "./Shortcut";
 import { LibrarySettingsControls } from "./LibrarySettingsControls";
+import { Shortcut } from "./Shortcut";
 
 export interface CombatHeaderTrap {
     amount: number;

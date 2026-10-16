@@ -76,13 +76,25 @@ describe("wide character workspace", () => {
             expect(!!host.querySelector(".kcq-combat-header__settings")).toBe(wide);
             expect(getComputedStyle(element(".kcq-character-commands__grid")).gridTemplateColumns)
                 .toBe("repeat(2, minmax(0, 1fr))");
+            expect(!!host.querySelector("#character-commands-heading")).toBe(!wide);
             if (wide) {
                 expect(getComputedStyle(element(".kcq-character-details-wide")).gridTemplateColumns).toBe("366px 366px 288px");
                 expect(element(".kcq-character-information").contains(element(".kcq-character-bindings"))).toBe(true);
                 expect(element(".kcq-character-information").contains(element(".kcq-character-effects"))).toBe(true);
                 expect(element(".kcq-character-workspace").contains(command())).toBe(true);
                 expect(getComputedStyle(host).width).toBe("100%");
-                expect(getComputedStyle(element(".kcq-combat-header__title")).textTransform).toBe("uppercase");
+                expect(element(".kcq-combat-header__title").textContent).toBe(fixture.presentation.encounter(fixture.state.encounter!.id));
+                const headings = [...host.querySelectorAll(".kcq-battle-section__heading h2")];
+                expect(headings.map(heading => heading.textContent)).toEqual(["Character / Ko-chan", "Commands / Ko-chan", "Game Log"]);
+                for (const heading of headings) {
+                    expect(getComputedStyle(heading).textTransform).toBe("uppercase");
+                    expect(getComputedStyle(heading.parentElement!).height).toBe("16px");
+                }
+                expect(host.querySelector(".kcq-character-commands h2")).toBeNull();
+                const logHeading = element(".kcq-battle-section--game-log .kcq-battle-section__heading");
+                expect(logHeading.querySelector("button, a, [data-kcq-shortcut]")).toBeNull();
+                logHeading.click();
+                expect(host.querySelector(".kcq-game-log")).toBeNull();
                 expect(element(".kcq-combat-header__trap-meter").getAttribute("role")).toBe("meter");
             }
             command().click();
@@ -101,12 +113,15 @@ describe("wide character workspace", () => {
         expect(element(".kcq-character-workspace").contains(element(".kcq-targeting"))).toBe(true);
         expect(element(".kcq-selected-command").textContent).toContain("Telekinesis");
         expect(element(".kcq-combat-header")).toBe(header);
-        expect(element(".kcq-combat-header__title").textContent).toBe("Character / Ko-chan");
+        expect(element(".kcq-combat-header__title").textContent).toBe(fixture.presentation.encounter(fixture.state.encounter!.id));
+        expect(element(".kcq-character-details-wide__information h2").textContent).toBe("Character / Ko-chan");
+        expect(element(".kcq-character-details-wide__workspace h2").textContent).toBe("Targeting / Ko-chan");
         expect(element(".kcq-character-information")).toBe(info);
         expect(element(".kcq-character-roster")).toBe(roster);
         expect(element('[role="log"]')).toBe(log); expect(log.scrollTop).toBe(43);
         button(".kcq-combat-header__back").click();
         expect(document.querySelector(".kcq-targeting")).toBeNull(); expect(command()).toBeDefined();
+        expect(element(".kcq-character-details-wide__workspace h2").textContent).toBe("Commands / Ko-chan");
         expect(element('[role="log"]')).toBe(log);
         press(COMBAT_SHORTCUTS.back);
         expect(element(".kcq-battle-overview-wide")).toBeDefined();
@@ -117,7 +132,9 @@ describe("wide character workspace", () => {
         const roster = [...document.querySelectorAll<HTMLButtonElement>(".kcq-character-roster__card")];
         roster[1]!.click();
         expect(document.querySelector(".kcq-targeting")).toBeNull();
-        expect(element(".kcq-combat-header__title").textContent).toBe("Character / Matsuko");
+        expect(element(".kcq-combat-header__title").textContent).toBe(fixture.presentation.encounter(fixture.state.encounter!.id));
+        expect(element(".kcq-character-details-wide__information h2").textContent).toBe("Character / Matsuko");
+        expect(element(".kcq-character-details-wide__workspace h2").textContent).toBe("Commands / Matsuko");
         expect(roster[1]!.getAttribute("aria-pressed")).toBe("true"); expect(roster[1]!.disabled).toBe(false);
         expect(element('[role="log"]')).toBe(log);
         roster[0]!.click(); expect(command().disabled).toBe(false);
@@ -149,6 +166,7 @@ describe("wide character workspace", () => {
         expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "stance", actor: "ko" });
         const log = element('[role="log"]'); press(COMBAT_SHORTCUTS.escape);
         expect(element(".kcq-character-workspace").contains(element(".kcq-escape"))).toBe(true);
+        expect(element(".kcq-character-details-wide__workspace h2").textContent).toBe("Escape / Ko-chan");
         expect(element('[role="log"]')).toBe(log);
         button('.kcq-escape-choice[data-kcq-shortcut="1"]').click();
         const selected = element('.kcq-escape-choice[aria-pressed="true"]').textContent;
@@ -199,7 +217,7 @@ describe("wide character workspace", () => {
         expect(element(".kcq-library")).toBeDefined();
         button(".kcq-library__header-back").click();
         expect(element(".kcq-targeting")).toBe(workspace);
-        button(".kcq-game-log-heading-action").click();
+        press(COMBAT_SHORTCUTS.gameLog);
         expect(element(".kcq-game-log")).toBeDefined();
         press(COMBAT_SHORTCUTS.back);
         expect(document.querySelector(".kcq-game-log")).toBeNull();

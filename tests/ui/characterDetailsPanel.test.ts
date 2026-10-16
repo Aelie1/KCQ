@@ -186,6 +186,27 @@ describe("character details panel", () => {
         }
     });
 
+    it("keeps Subspace and command cards when the wide workspace supplies its heading", () => {
+        const fixture = characterDetailsFixture;
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map(character => character.id === "hinari"
+                ? { ...character, data: { subspace: 27, subspaceMax: 100 } }
+                : character),
+        };
+        const renderPanel = (workspaceOnly: boolean) => renderToString(() => createComponent(CharacterDetailsPanel, {
+            ...fixture, state, focusedCharacterId: "hinari", workspaceOnly,
+        }));
+        const html = renderPanel(true);
+        expect(html).not.toContain('id="character-commands-heading"');
+        expect(html).not.toContain('aria-labelledby="character-commands-heading"');
+        expect(html).toContain('aria-label="Commands / Hinari"');
+        expect(html).toContain("kcq-character-commands__resource");
+        expect(html).toContain('style="width:27%"');
+        expect(renderedText(html)).toContain("27/100");
+        expect(html).toContain("kcq-command-card__name");
+    });
+
     it("renders compact top-card conditions with independent established tones", () => {
         const html = renderToString(() => createComponent(
             CharacterDetailsPanel,

@@ -42,28 +42,34 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
             onSelectCharacter={props.onSelectCharacter}
             actionRegion={
                 <>
-                    <section class="kcq-character-section kcq-character-commands" aria-labelledby="character-commands-heading">
-                        <div class="kcq-character-commands__header">
-                            <h2 id="character-commands-heading">
-                                {model().labels.commandsHeading}
-                            </h2>
+                    <section class="kcq-character-section kcq-character-commands"
+                        aria-label={props.workspaceOnly ? model().labels.commandsHeading : undefined}
+                        aria-labelledby={props.workspaceOnly ? undefined : "character-commands-heading"}>
+                        <Show when={!props.workspaceOnly || model().focused.resource}>
+                            <div class="kcq-character-commands__header">
+                                <Show when={!props.workspaceOnly}>
+                                    <h2 id="character-commands-heading">
+                                        {model().labels.commandsHeading}
+                                    </h2>
+                                </Show>
 
-                            <Show when={model().focused.resource} keyed>
-                                {(resource) => (
-                                    <div class="kcq-character-commands__resource">
-                                        <span>{props.presentation.data("subspace")}</span>
-                                        <span class="kcq-subspace-meter">
-                                            <span
-                                                style={{
-                                                    width: `${resource.current / resource.max * 100}%`,
-                                                }}
-                                            />
-                                        </span>
-                                        <span>{resource.current}/{resource.max}</span>
-                                    </div>
-                                )}
-                            </Show>
-                        </div>
+                                <Show when={model().focused.resource} keyed>
+                                    {(resource) => (
+                                        <div class="kcq-character-commands__resource">
+                                            <span>{props.presentation.data("subspace")}</span>
+                                            <span class="kcq-subspace-meter">
+                                                <span
+                                                    style={{
+                                                        width: `${resource.current / resource.max * 100}%`,
+                                                    }}
+                                                />
+                                            </span>
+                                            <span>{resource.current}/{resource.max}</span>
+                                        </div>
+                                    )}
+                                </Show>
+                            </div>
+                        </Show>
                         <div class="kcq-character-commands__grid">
                             <For each={model().focused.commands}>
                                 {(command) => (

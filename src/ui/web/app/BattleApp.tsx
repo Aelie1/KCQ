@@ -460,7 +460,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                             presentation={props.presentation} state={state()} thresholds={thresholds()}
                             onBack={back} />}
                     </Show>
-                    <BattleOverviewPanel {...overview} gameLogHeadingAction gameLogScrollable={!logOpen()}
+                    <BattleOverviewPanel {...overview} gameLogScrollable={!logOpen()}
                         sections={{ header: false, enemies: false, party: false, footer: false }} />
                 </div>
             </Match>
@@ -549,8 +549,13 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             onSelectCharacter={selectCharacter}
             actionRegion={<ScreenPanels workspaceOnly />}
             wide={{
+                get workspaceHeading() {
+                    if (targeting()) return `${props.presentation.ui("combatHeader.targeting")} / ${character().focused.name}`;
+                    if (escapeScreen()) return `${props.presentation.ui("combatHeader.escape")} / ${character().focused.name}`;
+                    return character().labels.commandsHeading;
+                },
                 header: <CombatHeader variant="overview"
-                    encounterLabel={`${props.presentation.ui("combatHeader.character")} / ${character().focused.name}`}
+                    encounterLabel={overview().header.encounterLabel}
                     difficultyLabel={overview().header.difficultyLabel}
                     roundLabel={overview().header.roundLabel} phaseLabel={overview().header.phaseLabel}
                     trap={overview().header.trap}
@@ -564,7 +569,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     </button>} />,
                 gameLog: <CompactGameLog entries={logEntries()} presentation={props.presentation}
                     party={state().characters.map(character => character.id)} lines={overviewGameLog.value}
-                    headingAction scrollable onOpen={toggleLog} />,
+                    scrollable />,
             }} />;
     };
 

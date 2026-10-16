@@ -45,11 +45,9 @@ export interface BattleOverviewViewModel {
         settingsLabel: string;
     };
     enemies: readonly EnemyCardData[];
-    enemiesCountLabel: string;
     enemiesHeading: string;
     header: BattleOverviewHeaderViewModel;
     party: readonly PartyCardData[];
-    partyCountLabel: string;
     partyHeading: string;
 }
 
@@ -94,8 +92,6 @@ export function createBattleOverviewViewModel(
             incomingBindings,
         );
     });
-    const activePartyCount = party.filter(({ actionState }) =>
-        actionState.kind !== "incapacitated").length;
 
     return {
         header: {
@@ -108,15 +104,8 @@ export function createBattleOverviewViewModel(
         enemies: state.enemies.map((enemy) =>
             createEnemyCardViewModel(enemy, presentation, state.characters, history, state.enemies, { state, thresholds })),
         enemiesHeading: presentation.ui("battleOverview.enemies"),
-        enemiesCountLabel: presentation.ui("battleOverview.enemiesRemaining", {
-            count: state.enemies.length,
-        }),
         party,
         partyHeading: presentation.ui("battleOverview.party"),
-        partyCountLabel: presentation.ui("battleOverview.partyCount", {
-            active: activePartyCount,
-            total: party.length,
-        }),
         controls: {
             settingsLabel: presentation.ui("battleOverview.settings"),
             gameLogLabel: presentation.ui("battleOverview.gameLog"),

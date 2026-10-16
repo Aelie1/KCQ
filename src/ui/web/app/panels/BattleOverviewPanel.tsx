@@ -8,15 +8,15 @@ import type {
 } from "../../../../engine/public/types";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
-import { combatShortcut, COMBAT_SHORTCUTS } from "../keyboard";
-import { Shortcut } from "../components/Shortcut";
-import { ScreenLayout } from "../components/ScreenLayout";
 import { CombatHeader } from "../components/CombatHeader";
 import { CompactGameLog } from "../components/CompactGameLog";
-import { DEFAULT_OVERVIEW_GAME_LOG_LINES } from "../overviewGameLogLines";
-import type { createEnemyDefeats, EnemyPresentationSlot } from "../enemyDefeats";
 import { EnemyCard } from "../components/EnemyCard";
 import { PartyCard } from "../components/PartyCard";
+import { ScreenLayout } from "../components/ScreenLayout";
+import { Shortcut } from "../components/Shortcut";
+import type { createEnemyDefeats, EnemyPresentationSlot } from "../enemyDefeats";
+import { COMBAT_SHORTCUTS, combatShortcut } from "../keyboard";
+import { DEFAULT_OVERVIEW_GAME_LOG_LINES } from "../overviewGameLogLines";
 import { createBattleOverviewViewModel, type BattleOverviewViewModel } from "../viewModels/battleOverview";
 
 export interface BattleOverviewSections {
@@ -108,7 +108,6 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     <section class="kcq-battle-section kcq-battle-section--enemies" aria-labelledby={enemiesHeadingId}>
                         <header class="kcq-battle-section__heading">
                             <h2 id={enemiesHeadingId}>{model().enemiesHeading}</h2>
-                            <span>{model().enemiesCountLabel}</span>
                         </header>
                         <div class="kcq-battle-overview__enemies">
                             <For each={enemySlots().map(slot => slot.enemy.id)}>
@@ -144,7 +143,6 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     <section class="kcq-battle-section kcq-battle-section--party" aria-labelledby={partyHeadingId}>
                         <header class="kcq-battle-section__heading">
                             <h2 id={partyHeadingId}>{model().partyHeading}</h2>
-                            <span>{model().partyCountLabel}</span>
                         </header>
                         <div class="kcq-battle-overview__party">
                             <For each={model().party.map(character => character.id)}>

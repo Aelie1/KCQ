@@ -263,12 +263,10 @@ describe("battle overview view model", () => {
                 valueLabel: "57/100",
             },
         });
-        expect(model.enemiesCountLabel).toBe("6 remaining");
         expect(model.enemies).toHaveLength(6);
         expect(model.enemies[3].intentions).toHaveLength(3);
         expect(model.enemies[3].visibleIntentions).toHaveLength(2);
         expect(model.enemies[3].overflowCount).toBe(1);
-        expect(model.partyCountLabel).toBe("3 / 3");
         expect(model.party[0].actionState.kind).toBe("ready");
         expect(model.party[0].stanceState.kind).toBe("immobilized");
         expect(model.party[1].stanceState.kind).toBe("moving");
