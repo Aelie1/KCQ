@@ -25,6 +25,23 @@ function click(selector: string) {
 }
 
 describe("enemy card live durations", () => {
+    it("updates the wide HP bar with HP changes and clamps empty or invalid ranges", () => {
+        const fixture = battleOverviewFixture;
+        const [state, setState] = createSignal<GameState>(structuredClone(fixture.state));
+        mount(() => createComponent(BattleOverviewPanel, { ...fixture, completeEnemyIntentions: true,
+            get state() { return state(); },
+        }));
+        const fill = document.querySelector<HTMLElement>(".kcq-enemy-card__hp-meter>span")!;
+        const hp = document.querySelector(".kcq-enemy-card__hp")!;
+        const update = (current: number, max: number) => setState({ ...state(), enemies: [
+            { ...state().enemies[0]!, currHp: current, maxHp: max },
+        ] });
+        expect(fill.style.width).toBe("100%");
+        update(50, 200); expect(fill.style.width).toBe("25%"); expect(hp.textContent).toBe("50 / 200");
+        update(0, 200); expect(fill.style.width).toBe("0%");
+        update(200, 200); expect(fill.style.width).toBe("100%");
+        update(200, 0); expect(fill.style.width).toBe("0%");
+    });
     it("wires real BattleApp application history into overview cards and updates after End Turn", () => {
         const engine = createStockEngine(1);
         engine.loadCharacter("ko"); engine.loadEncounter("plains_2");

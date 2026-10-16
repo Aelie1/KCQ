@@ -99,6 +99,25 @@ describe("overview section configuration", () => {
 });
 
 describe("responsive battle overview", () => {
+    it.each([390, 1799, 1920])("adds the HP meter and moves linked icons left only in wide mode at %ipx", width => {
+        const state: GameState = structuredClone(fixture.state);
+        const enemy = state.enemies[0]!;
+        enemy.currHp = 50; enemy.maxHp = 200;
+        enemy.buffs = [{ id: "pounce", linkedEntity: "ko" }, { id: "pounce", linkedEntity: "matsuko" }];
+        const { host } = mountBattle(width, 3, state);
+        const header = host.querySelector(".kcq-enemy-card__header")!;
+        const links = [...header.querySelectorAll(".kcq-linked-entity-chip")];
+        const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
+        expect(links).toHaveLength(2);
+        for (const link of links) expect(getComputedStyle(link).order === "-1").toBe(wide);
+        const meter = header.querySelector<HTMLElement>(".kcq-enemy-card__hp-meter");
+        expect(!!meter).toBe(wide);
+        if (meter) {
+            expect(meter.querySelector<HTMLElement>("span")!.style.width).toBe("25%");
+            expect(meter.nextElementSibling?.querySelector(".kcq-enemy-card__hp")?.textContent).toBe("50 / 200");
+            expect(getComputedStyle(meter).maxWidth).toBe("90px");
+        }
+    });
     it.each([390, 1199, 1200, 1799, 1800, 1920, 2560])("mounts only the active arrangement at %ipx", width => {
         const { host } = mountBattle(width); const desktop = width >= 1200;
         const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;

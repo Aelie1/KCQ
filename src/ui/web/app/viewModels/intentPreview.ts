@@ -50,6 +50,7 @@ function summarizeEffect(
     if (effect.type === "damage" && effect.amount < 0) {
         return [presentation.ui("targeting.effectHealing") + " " + formatSignedNumber(-effect.amount)];
     }
+    const bindingName = effect.type === "binding" ? presentation.binding(effect.binding, "short") : undefined;
     return createEffectPreviews(effect, "intent", {
         ...context, presentation, scopeTarget: target, completeModifiers: true,
     }).map(preview => {
@@ -62,12 +63,13 @@ function summarizeEffect(
         }
         if (preview.kind === "compact") {
             const needsLabel = preview.type !== "binding" && preview.type !== "damage" && preview.type !== "data";
-            return [needsLabel ? preview.label : undefined, preview.payload, ...preview.details].filter(Boolean).join(" ");
+            return [needsLabel ? preview.label : undefined, bindingName ?? preview.payload, ...preview.details].filter(Boolean).join(" ");
         }
         if (preview.kind === "binding") {
+            const name = bindingName ?? preview.bindingName;
             return preview.mode === "amount"
-                ? preview.bindingName + " " + preview.amountLabel
-                : preview.bindingName + " " + formatSignedNumber(preview.change);
+                ? name + " " + preview.amountLabel
+                : name + " " + formatSignedNumber(preview.change);
         }
         if (preview.kind === "resource") return preview.resourceName + " " + formatSignedNumber(preview.change);
         if (preview.kind === "trap") return preview.trapName + " " + formatSignedNumber(preview.change);

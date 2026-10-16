@@ -33,6 +33,9 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
     });
     const actorReaction = reactionRef("actor", () => props.enemy.id);
     const cardReaction = (element: HTMLElement) => { actorReaction(element); };
+    const hpFillPercent = () => props.enemy.maxHp > 0
+        ? Math.min(100, Math.max(0, props.enemy.currentHp / props.enemy.maxHp * 100))
+        : 0;
     return (
         <article ref={cardReaction} class="kcq-enemy-card" classList={{ "kcq-shortcut-host": selectable() }}
             data-enemy-defeat={props.defeat ? "true" : undefined}
@@ -97,6 +100,12 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                 <For each={props.enemy.linkedEntities}>
                     {(link) => <LinkedEntityChip link={link} iconOnly />}
                 </For>
+                <Show when={props.completeIntentions}>
+                    <span ref={reactionRef("hp", () => props.enemy.id)}
+                        class="kcq-enemy-card__hp-meter kcq-target-header__meter" aria-hidden="true">
+                        <span style={{ width: `${hpFillPercent()}%` }} />
+                    </span>
+                </Show>
                 <div class="kcq-enemy-card__hp-anchor">
                     <p ref={reactionRef("hp", () => props.enemy.id)} class="kcq-enemy-card__hp">
                         {props.enemy.currentHp} / {props.enemy.maxHp}

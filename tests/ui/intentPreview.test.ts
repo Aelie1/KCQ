@@ -51,7 +51,7 @@ describe("wide enemy intention previews", () => {
             { type: "enemy", target: "skunkette1", operation: "defeat" },
         ] });
         expect(rows.map(row => row.targets?.[0]?.id)).toEqual(["ko", "matsuko", "skunkette1"]);
-        expect(rows[0]).toMatchObject({ outcome: "hit", resolved: true, consequences: ["Skunk Arms"] });
+        expect(rows[0]).toMatchObject({ outcome: "hit", resolved: true, consequences: ["Arms"] });
         expect(rows[1]!.outcome).toBeUndefined();
         expect(rows[1]!.consequences?.[0]).toMatch(/Remove.*Latex Mist IV/);
         expect(rows[2]!.consequences).toEqual(["Retarget Hinari", "Defeat"]);
@@ -73,4 +73,21 @@ describe("wide enemy intention previews", () => {
         expect(project({ move: "callReinforcements", resolved: false, targets: [], effects: [] }))
             .toEqual([{ moveLabel: "Call Reinforcements", resolved: false, consequences: [] }]);
     });
+    it("uses localized short binding locations with and without runtime projections", () => {
+        const presentation = new Presentation({ ...stockStrings,
+            "binding.latexHead.short": "Tete", "binding.latexTorso.short": "Buste",
+        });
+        const intention: Intention = { move: "latexSpray", resolved: false, targets: [{
+            target: "ko", band: "hit", effects: [
+                { type: "binding", target: "ko", binding: "latexHead", amount: 37 },
+                { type: "binding", target: "ko", binding: "latexTorso", amount: 29 },
+            ],
+        }], effects: [] };
+        expect(project(intention, presentation)[0]!.consequences).toEqual(["Tete +37 Binding", "Buste +29 Binding"]);
+        const state = structuredClone(fixture.state);
+        state.characters[0]!.bindings.forEach(binding => { binding.value = 0; binding.level = "none"; });
+        expect(createIntentPreviewRows(intention, presentation, "skunkette1", { state, thresholds: fixture.thresholds })[0]!.consequences)
+            .toEqual(["Tete +37", "Buste +29"]);
+    });
+
 });
