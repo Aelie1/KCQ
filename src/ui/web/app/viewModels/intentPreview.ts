@@ -72,7 +72,12 @@ function summarizeEffect(
         ...context, presentation, scopeTarget: target, completeModifiers: true,
     }).map(preview => {
         if (preview.kind === "buff") {
-            return [preview.label, preview.name, preview.recipient,].filter(Boolean).join(" · ");
+            return [
+                preview.label, preview.name, preview.recipient, preview.durationLabel,
+                ...preview.modifiers.map(modifier => `${modifier.label} ${modifier.signedValue}`),
+                ...preview.moveList.map(move => move.label),
+                ...preview.details,
+            ].filter(Boolean).join(" · ");
         }
         if (preview.kind === "compact") {
             const needsLabel = preview.type !== "binding" && preview.type !== "damage" && preview.type !== "data";

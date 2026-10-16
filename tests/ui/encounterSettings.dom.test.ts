@@ -108,9 +108,9 @@ describe("encounter screen settings", () => {
         const { panel, prepareBattle } = mountSelection(screen);
         const { dialog } = openSettings();
         expect([...dialog.querySelectorAll("button, label, hr")].map(element => element.tagName))
-            .toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "LABEL", "HR", "BUTTON"]);
+            .toEqual(["BUTTON", ...Array(8).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent))
-            .toEqual(["Resume", "Back to Title Screen"]);
+            .toEqual(["Resume", "Reset to Defaults", "Back to Title Screen"]);
         expect(document.querySelector(".kcq-combat-header__library")?.getAttribute("aria-label"))
             .toBe(presentation.ui("library.title"));
         expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("v0.8-settings-test · abc1234");
@@ -227,12 +227,31 @@ describe("encounter screen settings", () => {
         const { dialog } = openSettings();
         expect(dialog.querySelector("select")?.value).toBe("test");
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent))
-            .toEqual(["Continue test", "Retry Battle", "Back to Level Select", "Test title screen"]);
+            .toEqual(["Continue test", "Reset to Defaults", "Retry Battle", "Back to Level Select", "Test title screen"]);
         button("Back to Level Select").click();
         expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test campaign");
         openSettings();
         expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings select")?.value).toBe("test");
         expect([...document.querySelectorAll('[role="dialog"] button')].map(control => control.textContent))
-            .toEqual(["Continue test", "Test title screen"]);
+            .toEqual(["Continue test", "Reset to Defaults", "Test title screen"]);
     });
+});
+it("applies and resets shared view preferences from encounter Settings without changing the selection", () => {
+    const style = document.createElement("style"); style.textContent = ".kcq-app { padding: 12px; }"; document.body.append(style);
+    const { panel, prepareBattle } = mountSelection("picker");
+    const { dialog } = openSettings();
+    const columns = dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__columns select")!;
+    columns.value = "3"; columns.dispatchEvent(new Event("change", { bubbles: true }));
+    dialog.querySelector<HTMLInputElement>(".kcq-battle-settings__auto-zoom input")!.click();
+    const zoom = dialog.querySelector<HTMLInputElement>(".kcq-battle-settings__zoom input")!;
+    zoom.value = "175"; zoom.dispatchEvent(new Event("input", { bubbles: true }));
+    const shell = document.querySelector<HTMLElement>(".kcq-app")!;
+    expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1.75");
+    button("Reset to Defaults").click();
+    expect(document.querySelector('[role="dialog"]')).toBe(dialog);
+    expect(columns.value).toBe("auto"); expect(zoom.disabled).toBe(true); expect(zoom.value).toBe("100");
+    expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
+    button("Resume").click();
+    expect(document.querySelector(".kcq-encounter-picker")).toBe(panel);
+    expect(prepareBattle).not.toHaveBeenCalled();
 });

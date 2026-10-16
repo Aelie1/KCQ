@@ -7,6 +7,8 @@ import { PLAYBACK_INTERVALS, type PlaybackSpeedPreference, type PlaybackSpeed } 
 import type { OverviewGameLogPreference } from "../overviewGameLogLines";
 import { setupResponsiveScale } from "../responsiveScale";
 import { displayVersion } from "../version";
+import type { BattleColumns, EnemyCards, ViewPreferences } from "../viewPreferences";
+import { resetPreferences } from "../resetPreferences";
 
 export function BattleSettingsPanel(props: {
     presentation: Presentation;
@@ -15,6 +17,7 @@ export function BattleSettingsPanel(props: {
     overviewGameLog?: OverviewGameLogPreference;
     shortcutHints?: ShortcutHintPreference;
     playbackSpeed?: PlaybackSpeedPreference;
+    viewPreferences?: ViewPreferences;
     returnFocus?: Element | null;
     onResume: () => void;
     showBattleActions?: boolean;
@@ -34,7 +37,7 @@ export function BattleSettingsPanel(props: {
             event.stopPropagation();
             props.onResume();
         } else if (event.key === "Tab") {
-            const controls = dialog.querySelectorAll<HTMLElement>("button, select, input");
+            const controls = dialog.querySelectorAll<HTMLElement>("button:not(:disabled), select:not(:disabled), input:not(:disabled)");
             const first = controls[0];
             const last = controls[controls.length - 1];
             if (event.shiftKey && document.activeElement === first) {
@@ -84,6 +87,38 @@ export function BattleSettingsPanel(props: {
                         </For>
                     </select>
                 </label>
+                <Show when={props.viewPreferences}>
+                    <label class="kcq-battle-settings__language kcq-battle-settings__columns">
+                        <span>{props.presentation.ui("battleSettings.columns")}</span>
+                        <select value={props.viewPreferences?.columns}
+                            onChange={event => props.viewPreferences?.setColumns(event.currentTarget.value as BattleColumns)}>
+                            <option value="auto">{props.presentation.ui("battleSettings.auto")}</option>
+                            <For each={["1", "2", "3"]}>{value => <option value={value}>{value}</option>}</For>
+                        </select>
+                    </label>
+                    <label class="kcq-battle-settings__language kcq-battle-settings__auto-zoom">
+                        <span>{props.presentation.ui("battleSettings.zoomAuto")}</span>
+                        <input type="checkbox" checked={props.viewPreferences?.autoZoom}
+                            onChange={event => props.viewPreferences?.setAutoZoom(event.currentTarget.checked)} />
+                    </label>
+                    <label class="kcq-battle-settings__language kcq-battle-settings__zoom">
+                        <span>{props.presentation.ui("battleSettings.zoom")}</span>
+                        <input type="range" min="75" max="200" step="5" value={props.viewPreferences?.manualZoom}
+                            disabled={props.viewPreferences?.autoZoom}
+                            aria-valuetext={`${props.viewPreferences?.manualZoom}%`}
+                            onInput={event => props.viewPreferences?.setManualZoom(Number(event.currentTarget.value))} />
+                        <output>{props.viewPreferences?.manualZoom}%</output>
+                    </label>
+                    <label class="kcq-battle-settings__language kcq-battle-settings__enemy-cards">
+                        <span>{props.presentation.ui("battleSettings.enemyCards")}</span>
+                        <select value={props.viewPreferences?.enemyCards}
+                            onChange={event => props.viewPreferences?.setEnemyCards(event.currentTarget.value as EnemyCards)}>
+                            <For each={["auto", "compact", "expanded"] as const}>
+                                {value => <option value={value}>{props.presentation.ui(`battleSettings.${value}`)}</option>}
+                            </For>
+                        </select>
+                    </label>
+                </Show>
                 <Show when={props.shortcutHints}>
                     <label class="kcq-battle-settings__language kcq-battle-settings__shortcut-hints">
                         <span>{props.presentation.ui("battleSettings.shortcutHints")}</span>
@@ -114,6 +149,10 @@ export function BattleSettingsPanel(props: {
                         </select>
                     </label>
                 </Show>
+                <div class="kcq-battle-result__actions kcq-battle-settings__reset">
+                    <button type="button" class="kcq-battle-result__back"
+                        onClick={() => resetPreferences(props)}>{props.presentation.ui("battleSettings.resetDefaults")}</button>
+                </div>
                 <hr class="kcq-battle-settings__divider" />
                 <div class="kcq-battle-result__actions">
                     <Show when={props.showBattleActions !== false}>

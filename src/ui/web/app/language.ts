@@ -13,11 +13,12 @@ export interface LanguageSelection {
 }
 
 const STORAGE_KEY = "kcq.language";
+export const DEFAULT_LANGUAGE_ID = "en";
 
 export function loadLanguage(options: readonly LanguageOption[], storage?: Pick<Storage, "getItem">): LanguageOption {
     let saved: string | null = null;
     try { saved = (storage ?? window.localStorage).getItem(STORAGE_KEY); } catch { /* Storage may be unavailable. */ }
-    return options.find(option => option.id === saved) ?? options.find(option => option.id === "en")!;
+    return options.find(option => option.id === saved) ?? options.find(option => option.id === DEFAULT_LANGUAGE_ID)!;
 }
 
 export function saveLanguage(id: string, storage?: Pick<Storage, "setItem">): void {

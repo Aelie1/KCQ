@@ -111,7 +111,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         <header class="kcq-battle-section__heading">
                             <h2 id={enemiesHeadingId}>{model().enemiesHeading}</h2>
                         </header>
-                        <div class="kcq-battle-overview__enemies">
+                        <div class="kcq-battle-overview__enemies" classList={{ "kcq-battle-overview__enemies--expanded": props.completeEnemyIntentions }}>
                             <For each={enemySlots().map(slot => slot.enemy.id)}>
                                 {(id, index) => {
                                     const slot = () => enemySlots().find(slot => slot.enemy.id === id)!;

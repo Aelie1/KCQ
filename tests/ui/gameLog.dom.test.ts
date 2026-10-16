@@ -158,7 +158,7 @@ describe("live graphical Game Log history", () => {
         const { prepareBattle } = mountBattle();
         useTelekinesis();
         click(".kcq-combat-header__settings");
-        const slider = document.querySelector<HTMLInputElement>('input[type="range"]')!;
+        const slider = document.querySelector<HTMLInputElement>('.kcq-battle-settings__log-lines input')!;
         slider.value = "0"; slider.dispatchEvent(new Event("input", { bubbles: true }));
         expect(document.querySelector(".kcq-compact-game-log")).toBeNull();
         button("Resume").click();
@@ -166,7 +166,7 @@ describe("live graphical Game Log history", () => {
         expect(document.querySelector(".kcq-game-log__scroll")!.textContent).toContain("Telekinesis");
         click(".kcq-combat-header__back");
         click(".kcq-combat-header__settings");
-        const nextSlider = document.querySelector<HTMLInputElement>('input[type="range"]')!;
+        const nextSlider = document.querySelector<HTMLInputElement>('.kcq-battle-settings__log-lines input')!;
         expect(nextSlider.value).toBe("0");
         nextSlider.value = "8"; nextSlider.dispatchEvent(new Event("input", { bubbles: true }));
         expect(document.querySelector(".kcq-compact-game-log")!.textContent).toContain("Telekinesis");

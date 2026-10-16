@@ -1,4 +1,4 @@
-import { batch, createEffect, createMemo, createSignal, Match, onCleanup, onMount, Show, Switch, type JSX } from "solid-js";
+import { batch, createEffect, createMemo, createSignal, Match, onCleanup, onMount, Show, Switch, useContext, type JSX } from "solid-js";
 import { getThresholds } from "../../../engine/public/mechanics";
 import type {
     ActionInfo,
@@ -43,6 +43,7 @@ import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPr
 import { createSavePackage, type SavePackage } from "./savePackage";
 import { clearSave, writeSave } from "./savePersistence";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
+import { createViewPreferences, ViewPreferencesContext, type ViewPreferences } from "./viewPreferences";
 import { createBattleOverviewViewModel } from "./viewModels/battleOverview";
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
@@ -59,6 +60,7 @@ export interface BattleAppProps {
     overviewGameLog?: OverviewGameLogPreference;
     shortcutHints?: ShortcutHintPreference;
     playbackSpeed?: PlaybackSpeedPreference;
+    viewPreferences?: ViewPreferences;
     keyboard?: SharedKeyboard;
     onVictory?: () => void;
     onOutcome?: (outcome: Exclude<BattleState, "ongoing">) => void;
@@ -93,6 +95,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const overviewGameLog = props.overviewGameLog ?? createOverviewGameLogPreference();
     const shortcutHints = props.shortcutHints ?? createShortcutHintPreference();
     const playbackSpeed = props.playbackSpeed ?? createPlaybackSpeedPreference();
+    const viewPreferences = props.viewPreferences ?? useContext(ViewPreferencesContext) ?? createViewPreferences();
     const library = props.engine.getLibrary();
     let engineState = props.engine.getGameState();
     const [state, setState] = createSignal<GameState>(engineState);
@@ -401,16 +404,19 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const hintsVisible = props.keyboard?.hintsVisible
         ?? useCombatKeyboard(() => stage, () => !dialogOpen() && !playback.active(), globalKeyboardAction, () => shortcutHints.value);
 
-    const [wide, setWide] = createSignal(false);
-    const [desktop, setDesktop] = createSignal(false);
+    const [autoWide, setAutoWide] = createSignal(false);
+    const [autoDesktop, setAutoDesktop] = createSignal(false);
+    const wide = () => viewPreferences.columns === "auto" ? autoWide() : viewPreferences.columns === "3";
+    const desktop = () => viewPreferences.columns === "auto" ? autoDesktop() : viewPreferences.columns !== "1";
+    const expandedEnemies = () => viewPreferences.enemyCards === "auto" ? desktop() : viewPreferences.enemyCards === "expanded";
     onMount(() => {
         if (typeof window.matchMedia !== "function") return;
         const media = window.matchMedia(`(min-width: ${WIDE_BATTLE_OVERVIEW_BREAKPOINT}px)`);
         // Two 366px canvases + a 24px gutter at the maximum 1.5x UI scale,
         // plus outer padding, need 1158px. Keep the existing medium breakpoint.
         const desktopMedia = window.matchMedia("(min-width: 1200px)");
-        const update = () => setWide(media.matches);
-        const updateDesktop = () => setDesktop(desktopMedia.matches);
+        const update = () => setAutoWide(media.matches);
+        const updateDesktop = () => setAutoDesktop(desktopMedia.matches);
         updateDesktop();
         update();
         media.addEventListener("change", update);
@@ -439,6 +445,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             get state() { return state(); },
             get thresholds() { return thresholds(); },
             get model() { return model(); },
+            get completeEnemyIntentions() { return expandedEnemies(); },
             onSelectCharacter: selectCharacter,
             onSelectEnemy: selectEnemy,
             enemyDefeats: defeats,
@@ -456,7 +463,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     <BattleOverviewPanel {...overview}
                         sections={{ header: false, log: false, enemies: false, footer: false }} />
                     <Show when={enemyScreen()} fallback={
-                        <BattleOverviewPanel {...overview} completeEnemyIntentions
+                        <BattleOverviewPanel {...overview}
                             sections={{ header: false, log: false, party: false, footer: false }} />
                     }>
                         <EnemyDetails />
@@ -469,7 +476,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 <div class="kcq-battle-overview-columns">
                     <BattleOverviewPanel {...overview} endTurnInHeader
                         sections={{ log: false, enemies: false, footer: false }} />
-                    <BattleOverviewPanel {...overview} gameLogHeadingAction completeEnemyIntentions
+                    <BattleOverviewPanel {...overview} gameLogHeadingAction
                         enemyDetails={enemyScreen() ? <EnemyDetails /> : undefined}
                         sections={{ header: false, party: false, footer: false }} />
                 </div>
@@ -577,8 +584,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     };
 
     return (
-        <CombatReactionsContext.Provider value={reactions}>
-            <div class="kcq-battle-stage" ref={stage} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
+        <ViewPreferencesContext.Provider value={viewPreferences}><CombatReactionsContext.Provider value={reactions}>
+            <div class="kcq-battle-stage" ref={stage} data-kcq-columns={viewPreferences.columns} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
                 <div class="kcq-battle-stage__background" hidden={libraryOpen()} inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
                     <Show when={logOpen()}>
                         <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
@@ -592,7 +599,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 <Show when={libraryOpen()}><LibraryPanel library={library} presentation={props.presentation} onClose={closeLibrary} /></Show>
                 <Show when={settingsOpen() && !libraryOpen()}>
                     <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
-                        language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} returnFocus={settingsTrigger}
+                        language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} returnFocus={settingsTrigger}
                         onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                         onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
                 </Show>
@@ -606,7 +613,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         focusGameLog={resultLogVisited()} />}
                 </Show>
             </div>
-        </CombatReactionsContext.Provider>
+        </CombatReactionsContext.Provider></ViewPreferencesContext.Provider>
     );
 }
 

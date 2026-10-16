@@ -8,6 +8,7 @@ import { loadLanguage, saveLanguage, type LanguageOption } from "./language";
 import { createOverviewGameLogPreference } from "./overviewGameLogLines";
 import { createPlaybackSpeedPreference } from "./playbackSpeed";
 import { createShortcutHintPreference } from "./shortcutHints";
+import { createViewPreferences, ViewPreferencesContext } from "./viewPreferences";
 import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import { App } from "./App";
 import { TitleScreen } from "./components/TitleScreen";
@@ -40,6 +41,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     const overviewGameLog = createOverviewGameLogPreference();
     const shortcutHints = createShortcutHintPreference();
     const playbackSpeed = createPlaybackSpeedPreference();
+    const viewPreferences = createViewPreferences();
     // English is the only bundled language; keep selection separate from battle sessions.
     const english = { id: "en", label: props.presentation.ui("language.en"), presentation: props.presentation };
     const options = props.languages?.some(option => option.id === "en") ? props.languages : [english, ...(props.languages ?? [])];
@@ -137,7 +139,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         },
     };
 
-    return <App>
+    return <ViewPreferencesContext.Provider value={viewPreferences}><App>
         <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} hidden={libraryOpen()} inert={settingsOpen() || libraryOpen()} aria-hidden={settingsOpen() || libraryOpen() ? true : undefined}>
             <Switch>
                 <Match when={controller.screen().screen === "title"}>
@@ -174,7 +176,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
                         saved={current.session.saved}
                         campaign={current.campaign} onNextLevel={controller.nextLevel}
-                        language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} keyboard={keyboard} release={props.release}
+                        language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} keyboard={keyboard} release={props.release}
                         observer={current.session.observer} onOutcome={controller.recordOutcome} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
@@ -182,9 +184,9 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         </div>
         <Show when={libraryOpen() && library()}>{current => <LibraryPanel library={current()} presentation={presentation()} onClose={closeLibrary} />}</Show>
         <Show when={settingsOpen() && !libraryOpen()}>
-            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed}
+            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences}
                 returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}
                 onBackToTitle={backToTitle} />
         </Show>
-    </App>;
+    </App></ViewPreferencesContext.Provider>;
 }

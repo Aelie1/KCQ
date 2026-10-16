@@ -99,7 +99,7 @@ describe("overview section configuration", () => {
 });
 
 describe("responsive battle overview", () => {
-    it.each([390, 1799, 1920])("keeps temporary and permanent status indicators inline only at wide width (%ipx)", width => {
+    it.each([390, 1799, 1920])("keeps temporary and permanent status indicators inline in expanded cards (%ipx)", width => {
         const state: GameState = structuredClone(fixture.state);
         state.enemies = [{ ...state.enemies[0]!, id: "queen", buffs: [
             { id: "starlightBindings", duration: 3, icon: "shield-off", modifiers: { defense: -2 } },
@@ -113,10 +113,10 @@ describe("responsive battle overview", () => {
         const statuses = header.querySelector(".kcq-enemy-card__debuffs")!;
         const temporary = statuses.querySelector(".kcq-enemy-card__temporary-effects")!;
         const permanent = statuses.querySelector(".kcq-enemy-card__permanent-effects")!;
-        const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
+        const expanded = width >= 1200;
         expect(card.querySelectorAll(".kcq-enemy-card__debuffs")).toHaveLength(1);
         expect(name.nextElementSibling).toBe(statuses);
-        expect([...statuses.children]).toEqual([temporary, permanent]);
+        expect([...statuses.children]).toEqual([permanent, temporary]);
         expect(temporary.querySelectorAll('[data-icon="shield-off"]')).toHaveLength(3);
         expect(temporary.querySelectorAll('[data-icon="sword"]')).toHaveLength(2);
         expect(permanent.querySelector('[data-icon="crown"]')).not.toBeNull();
@@ -125,11 +125,11 @@ describe("responsive battle overview", () => {
             expect(indicator.getAttribute("aria-label")).toBeTruthy();
             expect(indicator.getAttribute("title")).toBe(indicator.getAttribute("aria-label"));
         }
-        expect(getComputedStyle(statuses).position).toBe(wide ? "static" : "absolute");
-        expect(getComputedStyle(statuses).flexWrap).toBe(wide ? "nowrap" : "wrap");
-        expect(getComputedStyle(permanent).flexWrap).toBe(wide ? "nowrap" : "wrap");
+        expect(getComputedStyle(statuses).position).toBe(expanded ? "static" : "absolute");
+        expect(getComputedStyle(statuses).flexWrap).toBe(expanded ? "nowrap" : "wrap");
+        expect(getComputedStyle(permanent).flexWrap).toBe(expanded ? "nowrap" : "wrap");
         expect(getComputedStyle(header.querySelector(".kcq-enemy-card__hp")!).whiteSpace).toBe("nowrap");
-        if (wide) {
+        if (expanded) {
             const meter = header.querySelector(".kcq-enemy-card__hp-meter")!;
             expect(statuses.nextElementSibling).toBe(meter);
             expect(getComputedStyle(name).whiteSpace).toBe("nowrap");
@@ -145,7 +145,7 @@ describe("responsive battle overview", () => {
             expect(header.querySelector(".kcq-enemy-card__hp-meter")).toBeNull();
         }
     });
-    it.each([390, 1799, 1920])("adds the HP meter and moves linked icons left only in wide mode at %ipx", width => {
+    it.each([390, 1799, 1920])("adds the HP meter and moves linked icons left in expanded mode at %ipx", width => {
         const state: GameState = structuredClone(fixture.state);
         const enemy = state.enemies[0]!;
         enemy.currHp = 50; enemy.maxHp = 200;
@@ -153,11 +153,11 @@ describe("responsive battle overview", () => {
         const { host } = mountBattle(width, 3, state);
         const header = host.querySelector(".kcq-enemy-card__header")!;
         const links = [...header.querySelectorAll(".kcq-linked-entity-chip")];
-        const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
+        const expanded = width >= 1200;
         expect(links).toHaveLength(2);
-        for (const link of links) expect(getComputedStyle(link).order === "-1").toBe(wide);
+        for (const link of links) expect(link.compareDocumentPosition(header.querySelector(".kcq-enemy-card__name")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         const meter = header.querySelector<HTMLElement>(".kcq-enemy-card__hp-meter");
-        expect(!!meter).toBe(wide);
+        expect(!!meter).toBe(expanded);
         if (meter) {
             expect(meter.querySelector<HTMLElement>("span")!.style.width).toBe("25%");
             expect(meter.nextElementSibling?.querySelector(".kcq-enemy-card__hp")?.textContent).toBe("50 / 200");
@@ -216,16 +216,16 @@ describe("responsive battle overview", () => {
         const summaryCount = fixture.state.enemies.reduce((count, enemy) => count + Math.min(2, enemy.intentions.length), 0);
         for (const width of [1920, 1799, 390, 1800]) {
             viewport.setViewport({ width });
-            const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
-            expect(host.querySelectorAll(".kcq-enemy-card__intent-slot"), String(width)).toHaveLength(wide ? fullCount : summaryCount);
-            expect(host.querySelectorAll(".kcq-enemy-card__overflow")).toHaveLength(wide ? 0 : 1);
-            expect(host.querySelectorAll(".kcq-intent-row--expanded").length > 0).toBe(wide);
+            const expanded = width >= 1200;
+            expect(host.querySelectorAll(".kcq-enemy-card__intent-slot"), String(width)).toHaveLength(expanded ? fullCount : summaryCount);
+            expect(host.querySelectorAll(".kcq-enemy-card__overflow")).toHaveLength(expanded ? 0 : 1);
+            expect(host.querySelectorAll(".kcq-intent-row--expanded").length > 0).toBe(expanded);
             const cardStyle = getComputedStyle(element(".kcq-enemy-card"));
-            expect(cardStyle.width).toBe(wide ? "100%" : "180px");
+            expect(cardStyle.width).toBe(expanded ? "100%" : "180px");
             expect(cardStyle.height).toBe("auto");
             expect(getComputedStyle(element(".kcq-battle-overview__enemies")).gridTemplateColumns)
-                .toBe(wide ? "minmax(0, 1fr)" : "repeat(2, 180px)");
-            if (wide) {
+                .toBe(expanded ? "minmax(0, 1fr)" : "repeat(2, 180px)");
+            if (expanded) {
                 expect(getComputedStyle(element(".kcq-enemy-card__intent-slot")).flexDirection).toBe("column");
                 expect(getComputedStyle(element(".kcq-intent-row__move")).whiteSpace).toBe("normal");
                 expect(getComputedStyle(element(".kcq-intent-row__targets")).overflow).toBe("visible");

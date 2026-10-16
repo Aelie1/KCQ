@@ -58,7 +58,7 @@ describe("permanent buff indicators", () => {
         expect(html.match(/data-icon="shield"/g)).toHaveLength(3);
         expect(html.match(/data-icon="crown"/g)).toHaveLength(1);
         expect(html.match(/data-icon="sun"/g)).toHaveLength(1);
-        expect(html.indexOf("kcq-enemy-card__temporary-effects")).toBeLessThan(html.indexOf("kcq-enemy-card__permanent-effects"));
+        expect(html.indexOf("kcq-enemy-card__permanent-effects")).toBeLessThan(html.indexOf("kcq-enemy-card__temporary-effects"));
     });
 
     it("shows icon-only permanent effects without inventing a hit modifier", () => {

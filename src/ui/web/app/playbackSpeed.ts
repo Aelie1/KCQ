@@ -2,6 +2,7 @@ import { createSignal } from "solid-js";
 
 export const PLAYBACK_INTERVALS = { instant: 0, fast: 250, normal: 500, slow: 1000 } as const;
 export type PlaybackSpeed = keyof typeof PLAYBACK_INTERVALS;
+export const DEFAULT_PLAYBACK_SPEED: PlaybackSpeed = "normal";
 export interface PlaybackSpeedPreference {
     readonly value: PlaybackSpeed;
     onChange: (speed: PlaybackSpeed) => void;
@@ -13,7 +14,7 @@ const validSpeed = (value: string | null): value is PlaybackSpeed =>
 export function createPlaybackSpeedPreference(): PlaybackSpeedPreference {
     let saved: string | null = null;
     try { saved = window.localStorage.getItem(STORAGE_KEY); } catch { /* Storage may be unavailable. */ }
-    const [speed, setSpeed] = createSignal<PlaybackSpeed>(validSpeed(saved) ? saved : "normal");
+    const [speed, setSpeed] = createSignal<PlaybackSpeed>(validSpeed(saved) ? saved : DEFAULT_PLAYBACK_SPEED);
     return {
         get value() { return speed(); },
         onChange(value) {

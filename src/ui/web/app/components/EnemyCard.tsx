@@ -37,7 +37,7 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
         ? Math.min(100, Math.max(0, props.enemy.currentHp / props.enemy.maxHp * 100))
         : 0;
     return (
-        <article ref={cardReaction} class="kcq-enemy-card" classList={{ "kcq-shortcut-host": selectable() }}
+        <article ref={cardReaction} class="kcq-enemy-card" classList={{ "kcq-shortcut-host": selectable(), "kcq-enemy-card--expanded": props.completeIntentions }}
             data-enemy-defeat={props.defeat ? "true" : undefined}
             inert={!!props.defeat}
             style={{
