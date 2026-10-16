@@ -9,6 +9,7 @@ import { createBattle } from "../../src/ui/web/app";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
+import { ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import type { LibraryPage } from "../../src/ui/web/app/viewModels/library";
 import { createEmptyContentLibrary } from "../helpers/library";
 import { libraryDamageProfile } from "../../src/ui/web/app/viewModels/libraryMechanics";
@@ -133,7 +134,9 @@ describe("Library game integration", () => {
         expect(picker.querySelector(".kcq-screen-layout__body .kcq-library-access")).toBeNull();
         libraryButton.focus(); libraryButton.click(); await tick();
         expect(document.querySelector(".kcq-library")).not.toBeNull();
-        expect(element(".kcq-graphical-app__background").hidden).toBe(true);
+        expect(element(".kcq-graphical-app__background").hidden).toBe(false);
+        expect(element(".kcq-graphical-app__background").hasAttribute("inert")).toBe(true);
+        expect(element(".kcq-graphical-app__background").getAttribute("aria-hidden")).toBe("true");
         press("Escape");
         expect(element(".kcq-encounter-picker")).toBe(picker);
         expect(document.activeElement).toBe(libraryButton);
@@ -147,7 +150,8 @@ describe("Library game integration", () => {
         const overview = element(".kcq-battle-overview");
         const libraryButton = element<HTMLButtonElement>(".kcq-combat-header__library");
         libraryButton.focus(); libraryButton.click(); await tick();
-        expect(element(".kcq-battle-stage__background").hidden).toBe(true);
+        expect(element(".kcq-battle-stage__background").hidden).toBe(false);
+        expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(true);
         press("="); press("1"); press("0"); press("-");
         expect(execute).not.toHaveBeenCalled(); expect(document.querySelector(".kcq-library")).not.toBeNull();
         press("Escape");
@@ -725,5 +729,182 @@ describe("Library Round 5 systematic presentation", () => {
         expect([...document.querySelectorAll(".kcq-library__detail .kcq-card-title")].map(node => node.textContent)).toEqual(["Description", "Special Rules", "Effects"]);
         expect(element(".kcq-library__notes").textContent).toContain("1/5");
         expect(document.querySelectorAll(".kcq-library__notes [data-library-focus^='bindings:']")).toHaveLength(4);
+    });
+});
+
+function responsiveLibraryMount(columns: ResponsiveLayout["columns"] = 3, initialPage?: LibraryPage) {
+    const [layout, setLayout] = createSignal<ResponsiveLayout>({ columns, zoom: 1 });
+    const close = vi.fn();
+    mount(() => createComponent(ResponsiveLayoutContext.Provider, {
+        value: layout,
+        get children() { return createComponent(LibraryPanel, { library: createStockEngine().getLibrary(), presentation, onClose: close, initialPage }); },
+    }));
+    return { close, setColumns: (columns: ResponsiveLayout["columns"]) => setLayout({ columns, zoom: 1 }) };
+}
+const toggleCategory = (category: string) => element<HTMLButtonElement>('[data-library-category-toggle="' + category + '"]').click();
+const treeEntry = (category: string, id: string) => element<HTMLButtonElement>('[data-library-tree-entry="' + category + ':' + id + '"]');
+const selectedTreeEntry = () => element<HTMLElement>('.kcq-library__tree [aria-current="page"]').dataset.libraryTreeEntry;
+const historyBack = () => element<HTMLButtonElement>(".kcq-library__history-back").click();
+const historyForward = () => element<HTMLButtonElement>(".kcq-library__history-forward").click();
+
+describe("Library modal and desktop navigation", () => {
+    it.each([1, 2, 3] as const)("uses a modal with interior isolation and Escape/backdrop dismissal in %s-column mode", async columns => {
+        const { close } = responsiveLibraryMount(columns); await tick();
+        const dialog = element('[role="dialog"]');
+        expect(dialog.getAttribute("aria-modal")).toBe("true");
+        expect(dialog.getAttribute("aria-labelledby")).toBe(element(".kcq-library__header h1").id);
+        expect(document.activeElement).toBe(element(".kcq-library__header h1"));
+        const outsideClick = vi.fn(); document.addEventListener("click", outsideClick);
+        try {
+            dialog.click(); element(".kcq-library__intro").click();
+            expect(close).not.toHaveBeenCalled(); outsideClick.mockClear();
+            element(".kcq-library-overlay").click();
+            expect(close).toHaveBeenCalledOnce(); expect(outsideClick).not.toHaveBeenCalled();
+        } finally { document.removeEventListener("click", outsideClick); }
+        close.mockClear();
+        expect(press("Escape").defaultPrevented).toBe(true);
+        expect(close).toHaveBeenCalledOnce();
+    });
+    it.each([1, 3] as const)("traps Tab and Shift+Tab inside the %s-column modal", async columns => {
+        responsiveLibraryMount(columns); await tick();
+        const controls = [...element('[role="dialog"]').querySelectorAll<HTMLButtonElement>('button:not(:disabled)')];
+        const first = controls[0]!, last = controls[controls.length - 1]!;
+        last.focus(); expect(press("Tab", last).defaultPrevented).toBe(true); expect(document.activeElement).toBe(first);
+        const shiftTab = new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true });
+        first.dispatchEvent(shiftTab); expect(shiftTab.defaultPrevented).toBe(true); expect(document.activeElement).toBe(last);
+        element(".kcq-library__header h1").focus();
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true, cancelable: true }));
+        expect(document.activeElement).toBe(last);
+    });
+    it.each([2, 3] as const)("uses independently collapsible categories and persistent article selection in %s-column mode", async columns => {
+        responsiveLibraryMount(columns); await tick();
+        expect(document.querySelectorAll(".kcq-library__tree-category")).toHaveLength(8);
+        expect(document.querySelector(".kcq-library__category")).toBeNull();
+        expect(document.querySelector(".kcq-library-host--desktop")).not.toBeNull();
+        toggleCategory("characters"); toggleCategory("enemies");
+        treeEntry("characters", "ko").click(); await tick();
+        const article = element(".kcq-library__detail");
+        expect(article.dataset.libraryId).toBe("ko"); expect(selectedTreeEntry()).toBe("characters:ko");
+        toggleCategory("characters");
+        expect(element('[data-library-category-toggle="characters"]').getAttribute("aria-expanded")).toBe("false");
+        expect(element(".kcq-library__detail")).toBe(article);
+        toggleCategory("characters");
+        expect(selectedTreeEntry()).toBe("characters:ko");
+        expect(element('[data-library-category-toggle="enemies"]').getAttribute("aria-expanded")).toBe("true");
+        expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(2);
+    });
+    it("reveals linked and historical selections while preserving unrelated expansion and scrolling only when needed", async () => {
+        const scroll = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
+        const bounds = vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+            return { top: this.dataset.libraryTreeEntry ? 200 : 0, bottom: this.dataset.libraryTreeEntry ? 230 : 100 } as DOMRect;
+        });
+        responsiveLibraryMount(3, { kind: "entry", category: "characters", id: "ko" }); await tick();
+        toggleCategory("enemies"); toggleCategory("characters");
+        element('[data-library-focus="moves:starlightBindings"]').click(); await tick();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("starlightBindings");
+        expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        expect(element('[data-library-category-toggle="characters"]').getAttribute("aria-expanded")).toBe("false");
+        expect(element('[data-library-category-toggle="enemies"]').getAttribute("aria-expanded")).toBe("true");
+        expect(scroll).toHaveBeenLastCalledWith({ block: "nearest" });
+        expect(scroll.mock.contexts.at(-1)).toBe(treeEntry("moves", "starlightBindings"));
+        historyBack(); await tick();
+        expect(selectedTreeEntry()).toBe("characters:ko");
+        expect(element('[data-library-category-toggle="moves"]').getAttribute("aria-expanded")).toBe("true");
+        expect(scroll.mock.contexts.at(-1)).toBe(treeEntry("characters", "ko"));
+        bounds.mockImplementation(() => ({ top: 0, bottom: 100 }) as DOMRect); scroll.mockClear();
+        historyForward(); await tick(); expect(scroll).not.toHaveBeenCalled();
+    });
+    it("reveals a self-reference without duplicating history or collapsing other categories", async () => {
+        responsiveLibraryMount(3, { kind: "entry", category: "moves", id: "powerOfDenial" }); await tick();
+        toggleCategory("enemies"); toggleCategory("moves");
+        element('.kcq-library__availability-link[data-library-focus="moves:powerOfDenial"]').click(); await tick();
+        expect(selectedTreeEntry()).toBe("moves:powerOfDenial");
+        expect(element('[data-library-category-toggle="enemies"]').getAttribute("aria-expanded")).toBe("true");
+        expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(1);
+    });
+    it("navigates Back/Forward and direct history positions, restores scroll, and discards the forward branch", async () => {
+        responsiveLibraryMount(3, { kind: "entry", category: "characters", id: "ko" }); await tick();
+        expect(element<HTMLButtonElement>(".kcq-library__history-back").disabled).toBe(true);
+        element(".kcq-screen-layout__body").scrollTop = 43;
+        element('[data-library-focus="moves:starlightBindings"]').click(); await tick();
+        element(".kcq-screen-layout__body").scrollTop = 92;
+        toggleCategory("statuses"); treeEntry("statuses", "bound").click(); await tick();
+        expect(element<HTMLButtonElement>(".kcq-library__history-forward").disabled).toBe(true);
+        historyBack(); await tick();
+        expect(selectedTreeEntry()).toBe("moves:starlightBindings"); expect(element(".kcq-screen-layout__body").scrollTop).toBe(92);
+        expect(element('[data-library-history-index="1"]').getAttribute("aria-current")).toBe("page");
+        expect(element('[data-library-history-index="0"]').dataset.historyDirection).toBe("previous");
+        expect(element('[data-library-history-index="2"]').dataset.historyDirection).toBe("forward");
+        historyForward(); await tick(); expect(selectedTreeEntry()).toBe("statuses:bound");
+        element('[data-library-history-index="0"]').click(); await tick();
+        expect(selectedTreeEntry()).toBe("characters:ko"); expect(element(".kcq-screen-layout__body").scrollTop).toBe(43);
+        expect(element<HTMLButtonElement>(".kcq-library__history-back").disabled).toBe(true);
+        treeEntry("moves", "telekinesis").click(); await tick();
+        expect(selectedTreeEntry()).toBe("moves:telekinesis");
+        expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(2);
+        expect(element<HTMLButtonElement>(".kcq-library__history-forward").disabled).toBe(true);
+        expect(element(".kcq-library__history-list").textContent).not.toContain(presentation.status("bound"));
+    });
+    it("scrolls the history panel to keep its current position visible", async () => {
+        const scroll = vi.spyOn(HTMLElement.prototype, "scrollIntoView").mockImplementation(() => {});
+        vi.spyOn(HTMLElement.prototype, "getBoundingClientRect").mockImplementation(function (this: HTMLElement) {
+            return { top: this.dataset.libraryHistoryIndex ? 200 : 0, bottom: this.dataset.libraryHistoryIndex ? 230 : 100 } as DOMRect;
+        });
+        responsiveLibraryMount(3, { kind: "entry", category: "characters", id: "ko" }); await tick();
+        element('[data-library-focus="moves:starlightBindings"]').click(); await tick();
+        expect(scroll.mock.contexts.at(-1)).toBe(element('.kcq-library__history-list [aria-current="page"]'));
+        expect(scroll).toHaveBeenLastCalledWith({ block: "nearest" });
+    });
+    it("bounds the visible history without limiting Back/Forward navigation", async () => {
+        responsiveLibraryMount(); await tick(); toggleCategory("moves");
+        const entries = [...document.querySelectorAll<HTMLButtonElement>(".kcq-library__tree-entry")].slice(0, 18);
+        for (const entry of entries) { entry.click(); await tick(); }
+        expect(document.querySelectorAll("[data-library-history-index]")).toHaveLength(12);
+        expect(document.querySelector('[data-library-history-index="0"]')).toBeNull();
+        for (let index = 0; index < 18; index++) { historyBack(); await tick(); }
+        expect(element<HTMLButtonElement>(".kcq-library__history-back").disabled).toBe(true);
+        expect(element('[data-library-history-index="0"]').getAttribute("aria-current")).toBe("page");
+        for (let index = 0; index < 18; index++) { historyForward(); await tick(); }
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe(entries.at(-1)!.dataset.libraryTreeEntry!.split(":")[1]);
+        expect(element<HTMLButtonElement>(".kcq-library__history-forward").disabled).toBe(true);
+    });
+    it("preserves the shared article, full history, and expansions across column-mode changes", async () => {
+        const { setColumns } = responsiveLibraryMount(1); await tick();
+        expect(document.querySelector(".kcq-library__sidebar")).toBeNull();
+        expect(document.querySelectorAll(".kcq-library__category")).toHaveLength(8);
+        element('[data-library-focus="characters"]').click();
+        expect(document.querySelector(".kcq-library__entry")).not.toBeNull();
+        element('[data-library-focus="ko"]').click(); await tick();
+        element('[data-library-focus="moves:starlightBindings"]').click(); await tick();
+        const article = element(".kcq-library__detail");
+        setColumns(3); await tick();
+        expect(element(".kcq-library__detail")).toBe(article); expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        toggleCategory("enemies"); historyBack(); await tick(); expect(selectedTreeEntry()).toBe("characters:ko");
+        setColumns(1); await tick();
+        expect(document.querySelector(".kcq-library__sidebar")).toBeNull();
+        expect(element(".kcq-library__detail").dataset.libraryId).toBe("ko");
+        setColumns(2); await tick();
+        expect(element('[data-library-category-toggle="enemies"]').getAttribute("aria-expanded")).toBe("true");
+        expect(element<HTMLButtonElement>(".kcq-library__history-forward").disabled).toBe(false);
+        historyForward(); await tick(); expect(selectedTreeEntry()).toBe("moves:starlightBindings");
+        setColumns(1); await tick(); back(); await tick(); back(); await tick();
+        expect(document.querySelector(".kcq-library__entry")).not.toBeNull();
+        expect(element(".kcq-library__breadcrumbs").textContent).toContain(presentation.ui("library.characters"));
+    });
+    it.each([1, 3] as const)("restores focus after backdrop dismissal and leaves the game intact in %s-column mode", async columns => {
+        localStorage.setItem("kcq.battleColumns", String(columns));
+        const engine = createStockEngine(12345); createBattle(engine, "plains_1", "standard");
+        const before = JSON.stringify(engine.getGameState()); const execute = vi.spyOn(engine, "executeAction");
+        mount(() => createComponent(BattleApp, { engine, presentation }));
+        const trigger = element<HTMLButtonElement>(".kcq-combat-header__library");
+        const overview = element(".kcq-battle-overview"); trigger.focus(); trigger.click(); await tick();
+        expect(!!document.querySelector(".kcq-library__sidebar")).toBe(columns > 1);
+        expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(true);
+        press(" "); press("1");
+        element(".kcq-library-overlay").click(); await tick();
+        expect(document.querySelector(".kcq-library")).toBeNull(); expect(document.activeElement).toBe(trigger);
+        expect(element(".kcq-battle-overview")).toBe(overview);
+        expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(false);
+        expect(execute).not.toHaveBeenCalled(); expect(JSON.stringify(engine.getGameState())).toBe(before);
     });
 });

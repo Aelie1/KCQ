@@ -140,7 +140,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     };
 
     return <ViewPreferencesContext.Provider value={viewPreferences}><App>
-        <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} hidden={libraryOpen()} inert={settingsOpen() || libraryOpen()} aria-hidden={settingsOpen() || libraryOpen() ? true : undefined}>
+        <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} inert={settingsOpen() || libraryOpen()} aria-hidden={settingsOpen() || libraryOpen() ? true : undefined}>
             <Switch>
                 <Match when={controller.screen().screen === "title"}>
                     <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release, savedBattle())}

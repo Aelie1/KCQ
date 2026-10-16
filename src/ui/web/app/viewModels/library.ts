@@ -13,21 +13,28 @@ export interface LibraryVisit { page: LibraryPage; search: string; scroll: numbe
 
 /** History belongs to the reference browser and never calls the game engine. */
 export function createLibraryNavigation(initial: LibraryPage = { kind: "home" }) {
-    const [visits, setVisits] = createSignal<LibraryVisit[]>([{ page: initial, search: "", scroll: 0 }]);
+    const [history, setHistory] = createSignal({ visits: [{ page: initial, search: "", scroll: 0 }] as LibraryVisit[], index: 0 });
     return {
-        current: () => visits()[visits().length - 1]!,
-        canBack: () => visits().length > 1,
+        visits: () => history().visits as readonly LibraryVisit[],
+        position: () => history().index,
+        current: () => history().visits[history().index]!,
+        canBack: () => history().index > 0,
+        canForward: () => history().index < history().visits.length - 1,
         remember(search: string, scroll: number, focus?: string): void {
-            setVisits(list => [...list.slice(0, -1), { ...list[list.length - 1]!, search, scroll, focus }]);
+            setHistory(state => ({ ...state, visits: state.visits.map((visit, index) => index === state.index ? { ...visit, search, scroll, focus } : visit) }));
         },
         open(page: LibraryPage): void {
-            const current = visits()[visits().length - 1]!.page;
+            const current = history().visits[history().index]!.page;
             if (current.kind === page.kind && (current.kind === "home"
                 || (page.kind !== "home" && current.category === page.category
                     && (current.kind === "category" || (page.kind === "entry" && current.id === page.id))))) return;
-            setVisits(list => [...list, { page, search: "", scroll: 0 }]);
+            setHistory(state => ({ visits: [...state.visits.slice(0, state.index + 1), { page, search: "", scroll: 0 }], index: state.index + 1 }));
         },
-        back(): void { setVisits(list => list.length > 1 ? list.slice(0, -1) : list); },
+        back(): void { setHistory(state => state.index > 0 ? { ...state, index: state.index - 1 } : state); },
+        forward(): void { setHistory(state => state.index < state.visits.length - 1 ? { ...state, index: state.index + 1 } : state); },
+        go(index: number): void {
+            setHistory(state => Number.isInteger(index) && index >= 0 && index < state.visits.length ? { ...state, index } : state);
+        },
     };
 }
 

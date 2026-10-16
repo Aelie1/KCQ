@@ -44,6 +44,32 @@ describe("Library reference browser", () => {
         expect(nav.current().page).toEqual({ kind: "home" });
         dispose();
     }));
+    it("keeps browser history, restores visits in both directions, and truncates only on new navigation", () => createRoot(dispose => {
+        const nav = createLibraryNavigation();
+        nav.open({ kind: "entry", category: "characters", id: "ko" });
+        nav.remember("", 27, "moves:starlightBindings");
+        nav.open({ kind: "entry", category: "moves", id: "starlightBindings" });
+        nav.remember("", 81, "characters:ko");
+        nav.back();
+        expect(nav.position()).toBe(1);
+        expect(nav.canForward()).toBe(true);
+        expect(nav.current().scroll).toBe(27);
+        nav.forward();
+        expect(nav.current()).toMatchObject({ scroll: 81, focus: "characters:ko" });
+        nav.forward(); expect(nav.position()).toBe(2);
+        nav.go(0); expect(nav.canBack()).toBe(false);
+        nav.go(-1); nav.go(99); nav.go(0.5); expect(nav.position()).toBe(0);
+        nav.back(); expect(nav.position()).toBe(0);
+        nav.go(1);
+        nav.open({ kind: "entry", category: "characters", id: "ko" });
+        expect(nav.visits()).toHaveLength(3);
+        nav.open({ kind: "entry", category: "statuses", id: "bound" });
+        expect(nav.visits().map(visit => visit.page)).toEqual([
+            { kind: "home" }, { kind: "entry", category: "characters", id: "ko" }, { kind: "entry", category: "statuses", id: "bound" },
+        ]);
+        expect(nav.canForward()).toBe(false);
+        dispose();
+    }));
     it("filters only the supplied library by localized names", () => {
         const scoped = { ...library, moves: { telekinesis: library.moves.telekinesis! } };
         expect(libraryEntries(scoped, "moves", presentation).map(entry => entry.id)).toEqual(["telekinesis"]);

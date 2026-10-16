@@ -1,4 +1,5 @@
-import { createContext, createEffect, createMemo, For, Match, onCleanup, onMount, Show, Switch, useContext, type JSX } from "solid-js";
+import { batch, createContext, createEffect, createMemo, createSignal, createUniqueId, For, Match, onCleanup, onMount, Show, Switch, useContext, type JSX } from "solid-js";
+import { isServer, Portal } from "solid-js/web";
 import type { BindingReference, CharacterReference, ContentLibrary, DifficultyReference, EnemyReference, ModifierReference, MoveBuffReference, MoveReference, PassiveReference, StatusReference, TrapReference } from "../../../../engine/public/library";
 import { getThresholds } from "../../../../engine/public/mechanics";
 import type { BindingId, HitBand, ModifierId, ModifierSet } from "../../../../engine/public/types";
@@ -11,6 +12,7 @@ import { ProjectedMeter } from "../components/ProjectedMeter";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { StatusChip } from "../components/StatusChip";
 import { SurfaceCard } from "../components/SurfaceCard";
+import { ResponsiveLayoutContext, setupResponsiveScale } from "../responsiveScale";
 import { groupReferenceRecipients } from "../viewModels/effectGroups";
 import { type EffectPreviewViewModel } from "../viewModels/effectPreviews";
 import { createLibraryNavigation, LIBRARY_CATEGORIES, libraryEntries, libraryHas, libraryModifiers, libraryMoveGroups, libraryMoveTags, libraryName, libraryOwners, libraryPassiveRows, libraryPassiveSummary, libraryRestrictions, libraryText, libraryTrapOutcomes, referenceParts, SKUNK_BINDING_IDS, SKUNK_BINDINGS_ID, type LibraryCategory, type LibraryEntry, type LibraryPage } from "../viewModels/library";
@@ -24,25 +26,56 @@ const LibraryContext = createContext<LibraryContextValue>();
 const context = () => useContext(LibraryContext)!;
 const label = (p: Presentation, key: string) => p.ui(("library." + key) as UiLabel);
 
-/** Independent read-only screen. Its caller preserves the underlying game screen. */
+/** Read-only modal. Its caller keeps the underlying game screen inert. */
 export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     const navigation = createLibraryNavigation(props.initialPage);
     const page = createMemo(() => navigation.current().page);
+    const layout = useContext(ResponsiveLayoutContext);
+    const desktop = () => (layout?.().columns ?? 1) > 1;
+    const headingId = createUniqueId();
+    const treeId = createUniqueId();
+    const [expanded, setExpanded] = createSignal<Partial<Record<LibraryCategory, boolean>>>({});
+    const historyEntries = createMemo(() => {
+        const visits = navigation.visits();
+        const start = Math.max(0, Math.min(navigation.position() - 5, visits.length - 12));
+        return visits.slice(start, start + 12).map((visit, offset) => ({ ...visit, index: start + offset }));
+    });
+    let overlay!: HTMLDivElement;
     let host!: HTMLDivElement;
+    let tree: HTMLElement | undefined;
     let heading!: HTMLHeadingElement;
     let alive = true;
     const body = () => host.querySelector<HTMLElement>(".kcq-screen-layout__body");
     const remember = (): void => navigation.remember(navigation.current().search, body()?.scrollTop ?? 0,
         document.activeElement instanceof HTMLElement ? document.activeElement.dataset.libraryFocus : undefined);
-    const open = (next: LibraryPage): void => { remember(); navigation.open(next); };
-    const back = (): void => { if (navigation.canBack()) navigation.back(); else props.onClose(); };
-    const title = () => {
-        const current = page();
+    const open = (next: LibraryPage): void => batch(() => { remember(); navigation.open(next); });
+    const back = (): void => { if (navigation.canBack()) batch(() => { remember(); navigation.back(); }); else props.onClose(); };
+    const go = (index: number): void => batch(() => { remember(); navigation.go(index); });
+    const forward = (): void => batch(() => { remember(); navigation.forward(); });
+    const title = (current: LibraryPage = page()) => {
         return current.kind === "home" ? props.presentation.ui("library.title")
             : current.kind === "category" ? label(props.presentation, current.category) : libraryHas(props.library, current) ? libraryName(current, props.presentation) : props.presentation.ui("library.unavailable");
     };
     createEffect(() => {
+        const current = navigation.current().page;
+        if (!desktop()) return;
+        if (current.kind === "entry") setExpanded(previous => ({ ...previous, [current.category]: true }));
+        queueMicrotask(() => {
+            if (!alive || !desktop()) return;
+            const revealSelection = (scroller: HTMLElement | null | undefined): void => {
+                const selected = scroller?.querySelector<HTMLElement>('[aria-current="page"]');
+                if (!scroller?.isConnected || !selected) return;
+                const bounds = scroller.getBoundingClientRect();
+                const item = selected.getBoundingClientRect();
+                if (item.top < bounds.top || item.bottom > bounds.bottom) selected.scrollIntoView({ block: "nearest" });
+            };
+            revealSelection(tree);
+            revealSelection(host.querySelector<HTMLElement>(".kcq-library__history-list"));
+        });
+    });
+    createEffect(() => {
         page();
+        desktop();
         queueMicrotask(() => {
             if (!alive) return;
             const visit = navigation.current();
@@ -53,7 +86,19 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
         });
     });
     onMount(() => {
+        onCleanup(setupResponsiveScale(overlay));
         const keyDown = (event: KeyboardEvent): void => {
+            if (event.key === "Tab") {
+                const controls = [...host.querySelectorAll<HTMLElement>('button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex="0"]')];
+                const first = controls[0];
+                const last = controls[controls.length - 1];
+                if (event.shiftKey && (document.activeElement === first || !controls.includes(document.activeElement as HTMLElement))) {
+                    event.preventDefault(); last?.focus();
+                } else if (!event.shiftKey && (document.activeElement === last || !host.contains(document.activeElement))) {
+                    event.preventDefault(); first?.focus();
+                }
+                return;
+            }
             if (event.defaultPrevented || event.isComposing || event.ctrlKey || event.altKey || event.metaKey || event.repeat) return;
             if (event.key === "Escape") { event.preventDefault(); event.stopImmediatePropagation(); props.onClose(); }
             else if (event.key === "Backspace" && !(event.target instanceof HTMLElement && event.target.closest("input, textarea, select, [contenteditable=true]"))) {
@@ -68,12 +113,48 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
         get library() { return props.library; }, get presentation() { return props.presentation; },
         openEntry: entry => open({ kind: "entry", ...entry }),
     };
-    return <LibraryContext.Provider value={value}><div ref={host} class="kcq-library-host">
+    const modal = (): JSX.Element => <div ref={overlay} class="kcq-library-overlay"
+        on:click={event => { if (event.target === event.currentTarget) { event.stopPropagation(); props.onClose(); } }}
+        onClick={event => event.stopPropagation()}>
+        <div ref={host} class="kcq-library-host" classList={{ "kcq-library-host--desktop": desktop() }}
+            role="dialog" aria-modal="true" aria-labelledby={headingId}>
+        <Show when={desktop()}><aside class="kcq-library__sidebar">
+            <nav ref={tree} class="kcq-library__tree" aria-label={props.presentation.ui("library.navigation")}>
+                <ul><For each={LIBRARY_CATEGORIES}>{category => <li>
+                    <button type="button" class="kcq-library__tree-category" aria-expanded={!!expanded()[category]}
+                        aria-controls={treeId + "-" + category} data-library-category-toggle={category}
+                        onClick={() => setExpanded(previous => ({ ...previous, [category]: !previous[category] }))}>
+                        <span aria-hidden="true">{expanded()[category] ? "▾" : "▸"}</span>{label(props.presentation, category)}
+                    </button>
+                    <Show when={expanded()[category]}><ul id={treeId + "-" + category}>
+                        <For each={libraryEntries(props.library, category, props.presentation)}>{entry => <li>
+                            <button type="button" class="kcq-library__tree-entry" data-library-tree-entry={category + ":" + entry.id}
+                                aria-current={page().kind === "entry" && (page() as LibraryEntry).category === category && (page() as LibraryEntry).id === entry.id ? "page" : undefined}
+                                onClick={() => value.openEntry(entry)}>{libraryName(entry, props.presentation)}</button>
+                        </li>}</For>
+                    </ul></Show>
+                </li>}</For></ul>
+            </nav>
+            <section class="kcq-library__history" aria-label={props.presentation.ui("library.history")}>
+                <div class="kcq-library__history-header"><h2>{props.presentation.ui("library.history")}</h2>
+                    <button type="button" class="kcq-library__history-back" disabled={!navigation.canBack()}
+                        aria-label={props.presentation.ui("library.back")} onClick={back}>←</button>
+                    <button type="button" class="kcq-library__history-forward" disabled={!navigation.canForward()}
+                        aria-label={props.presentation.ui("library.forward")} onClick={forward}>→</button>
+                </div>
+                <ol class="kcq-library__history-list"><For each={historyEntries()}>{visit => <li>
+                    <button type="button" data-library-history-index={visit.index}
+                        data-history-direction={visit.index < navigation.position() ? "previous" : visit.index > navigation.position() ? "forward" : "current"}
+                        aria-current={visit.index === navigation.position() ? "page" : undefined}
+                        onClick={() => go(visit.index)}>{title(visit.page)}</button>
+                </li>}</For></ol>
+            </section>
+        </aside></Show>
         <ScreenLayout class="kcq-library" ariaLabel={props.presentation.ui("library.title")}
             header={<div class="kcq-library__header">
                 <button type="button" class="kcq-library__header-back" onClick={back} aria-label={props.presentation.ui("library.back")}>←</button>
                 <div class="kcq-library__identity">
-                    <h1 ref={heading} tabindex="-1">{title()}</h1>
+                    <h1 ref={heading} id={headingId} tabindex="-1">{title()}</h1>
                     <nav class="kcq-library__breadcrumbs" aria-label={props.presentation.ui("library.title")}>
                         <button type="button" onClick={() => open({ kind: "home" })}>{props.presentation.ui("library.title")}</button>
                         <Show when={page().kind !== "home"}>
@@ -88,18 +169,18 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                 <Show when={page().kind === "entry" && ["moves", "passives"].includes((page() as LibraryEntry).category)}><Owner category={(page() as LibraryEntry).category as "moves" | "passives"} id={(page() as LibraryEntry).id} /></Show>
             </div>}
             body={<Switch>
-                <Match when={page().kind === "home"}>
+                <Match when={page().kind === "home" || (desktop() && page().kind === "category")}>
                     <p class="kcq-library__intro">{props.presentation.ui("library.intro")}</p>
-                    <div class="kcq-library__categories"><For each={LIBRARY_CATEGORIES}>{category =>
+                    <Show when={!desktop()}><div class="kcq-library__categories"><For each={LIBRARY_CATEGORIES}>{category =>
                         <button type="button" class="kcq-library__category kcq-encounter-card" data-library-focus={category}
                             onClick={() => open({ kind: "category", category })}>
                             <strong>{label(props.presentation, category)}</strong>
                             <span>{props.presentation.ui("library.count", { count: libraryEntries(props.library, category, props.presentation).length })}</span>
                             <span aria-hidden="true">›</span>
                         </button>}
-                    </For></div>
+                    </For></div></Show>
                 </Match>
-                <Match when={page().kind === "category" && page()} keyed>{current => {
+                <Match when={!desktop() && page().kind === "category" && page()} keyed>{current => {
                     const category = (current as Extract<LibraryPage, { kind: "category" }>).category;
                     const entries = () => libraryEntries(props.library, category, props.presentation);
                     const entryButton = (entry: LibraryEntry): JSX.Element => <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}
@@ -117,7 +198,8 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                 }}</Match>
                 <Match when={page().kind === "entry" && page()} keyed>{current => <LibraryDetail entry={current as LibraryEntry} />}</Match>
             </Switch>} />
-    </div></LibraryContext.Provider>;
+    </div></div>;
+    return <LibraryContext.Provider value={value}>{isServer ? modal() : <Portal>{modal()}</Portal>}</LibraryContext.Provider>;
 }
 function ReferenceLink(props: { entry: LibraryEntry; children?: JSX.Element; class?: string; selected?: boolean }): JSX.Element {
     const c = context();

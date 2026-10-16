@@ -580,7 +580,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     return (
         <ViewPreferencesContext.Provider value={viewPreferences}><CombatReactionsContext.Provider value={reactions}>
             <div class="kcq-battle-stage" ref={stage} data-kcq-columns={viewPreferences.columns} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
-                <div class="kcq-battle-stage__background" hidden={libraryOpen()} inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
+                <div class="kcq-battle-stage__background" inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
                     <Show when={logOpen()}>
                         <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
                     </Show>
@@ -590,7 +590,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         </Show>
                     </div>
                 </div>
-                <Show when={libraryOpen()}><LibraryPanel library={library} presentation={props.presentation} onClose={closeLibrary} /></Show>
+                <Show when={libraryOpen()}><ResponsiveLayoutContext.Provider value={layout}>
+                    <LibraryPanel library={library} presentation={props.presentation} onClose={closeLibrary} />
+                </ResponsiveLayoutContext.Provider></Show>
                 <Show when={settingsOpen() && !libraryOpen()}>
                     <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
                         language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} returnFocus={settingsTrigger}

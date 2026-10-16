@@ -4965,11 +4965,158 @@ button {
     }
 }
 
-/* Campaign reference browser: shared combat tokens and a single scrolling body. */
+/* The portal shares the game's column mode and zoom, with a fixed article canvas. */
+.kcq-library-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 4;
+    display: grid;
+    place-items: safe center;
+    padding: 12px;
+    overflow: auto;
+    overscroll-behavior: contain;
+    background: rgb(2 6 23 / 65%);
+}
+
 .kcq-library-host {
+    display: grid;
+    grid-template-columns: minmax(0, 366px);
     width: 366px;
     max-width: 100%;
     min-width: 0;
+    height: min(720px, var(--kcq-ui-height, calc(100dvh - 24px)));
+    min-height: 0;
+    background: var(--kcq-surface-background);
+    box-shadow: 0 12px 32px var(--kcq-shadow-raised);
+    zoom: var(--kcq-ui-zoom, 1);
+}
+
+.kcq-library-host--desktop {
+    grid-template-columns: 200px 366px;
+    gap: 12px;
+    width: max-content;
+    max-width: none;
+    padding: 12px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 10px;
+}
+
+.kcq-library-host > .kcq-library {
+    height: 100%;
+}
+
+.kcq-library__sidebar {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-right: 1px solid var(--kcq-structure-border);
+    padding-right: 12px;
+}
+
+.kcq-library__tree {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.kcq-library__sidebar ul,
+.kcq-library__history-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.kcq-library__sidebar button {
+    border: 0;
+    border-radius: 4px;
+    padding: 5px 6px;
+    background: transparent;
+    color: var(--kcq-text-secondary);
+    font-size: 12px;
+    line-height: 1.4;
+    text-align: left;
+    cursor: pointer;
+}
+
+.kcq-library__tree button,
+.kcq-library__history-list button {
+    width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.kcq-library__tree-category {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-weight: 600;
+}
+
+.kcq-library__tree .kcq-library__tree-entry {
+    padding-left: 20px;
+}
+
+.kcq-library__sidebar button:hover {
+    background: var(--kcq-surface-raised);
+}
+
+.kcq-library__sidebar button[aria-current="page"] {
+    background: var(--kcq-surface-raised);
+    color: var(--kcq-accent-primary);
+    box-shadow: inset 2px 0 var(--kcq-accent-primary);
+}
+
+.kcq-library__history {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    max-height: min(220px, 35%);
+    min-height: 0;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-library__history-header {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 4px;
+}
+
+.kcq-library__history-header h2 {
+    flex: 1;
+    margin: 0;
+    color: var(--kcq-text-secondary);
+    font-size: 12px;
+}
+
+.kcq-library__history-header button {
+    border: 1px solid var(--kcq-structure-border);
+    padding: 2px 8px;
+}
+
+.kcq-library__history-header button:disabled {
+    opacity: 0.35;
+    cursor: default;
+}
+
+.kcq-library__history-list {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.kcq-library__history-list [data-history-direction="forward"] {
+    color: var(--kcq-text-muted);
+    font-style: italic;
+}
+
+.kcq-library__sidebar button:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: -2px;
 }
 
 .kcq-graphical-app__background[hidden],
