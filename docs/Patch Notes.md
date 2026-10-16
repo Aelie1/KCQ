@@ -1,8 +1,82 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.17.0 — 2026-10-16
+
+### Desktop and Responsive Interface
+
+* Added dedicated **two-column and three-column battle layouts**, allowing the graphical interface to take advantage of larger screens.
+* The interface now supports three presentation modes:
+  * **Single Column** — The original compact/mobile interface.
+  * **Two Columns** — Displays party information alongside enemies or the active command workspace.
+  * **Three Columns** — Displays the party, enemies, and a persistent Game Log simultaneously.
+* Character and enemy details now replace their respective columns instead of requiring full-screen navigation in multi-column layouts.
+* Selecting a character keeps their information visible while commands, targeting, and Escape actions appear in the adjacent workspace.
+* Selecting an enemy displays its detailed information in the enemy column, with a button to return to the enemy list.
+* The main battle header remains consistent when navigating between overview, character details, and enemy details.
+* Added contextual column headings for characters, enemies, commands, targeting, and Escape actions.
+* Improved the layout of the combat header, including encounter information, difficulty, round, phase, trap meter, and battle controls.
+* The three-column layout includes a full-height, independently scrollable Game Log.
+* Preserved the existing mobile interface and navigation.
+
+### Automatic Layout and Display Settings
+
+* Reworked automatic scaling to prioritize displaying more columns before enlarging the interface.
+* Auto mode now chooses the maximum number of columns that fit at 100% zoom, then scales the selected layout up to a maximum of 150%.
+* Added a **Columns** setting:
+  * **Auto** — Automatically choose the layout based on available screen width.
+  * **1 Column** — Force the compact layout.
+  * **2 Columns** — Force the two-column layout.
+  * **3 Columns** — Force the three-column layout.
+* Manually selected column counts remain fixed when resizing the window. Layouts that cannot fit at 100% remain accessible through horizontal scrolling.
+* Added an **Enemy Cards** setting:
+  * **Auto** — Choose the card presentation appropriate for the layout.
+  * **Compact** — Use the original compact enemy cards.
+  * **Expanded** — Show complete enemy intention previews.
+* Column and enemy-card preferences can be configured independently and are saved between browser sessions.
+* Added **Reset to Defaults** to restore display and other persistent presentation settings.
+
+### Enemy Cards and Intentions
+
+* Redesigned expanded enemy cards to use a single full-width card per enemy.
+* Expanded cards display all upcoming intentions and their projected consequences, rather than limiting the overview to two intentions.
+* Multi-target attacks display separate outcomes for each affected character.
+* Added HP meters to expanded enemy cards, alongside current and maximum HP.
+* Improved the placement of permanent buffs, temporary effects, duration indicators, and linked-entity icons.
+* Linked-entity icons now appear before enemy names.
+* Simplified the presentation of linked Pounce effects to avoid displaying redundant self-buff intention rows.
+* Improved intention wrapping and spacing for narrower layouts.
+
+### Character Details and Commands
+
+* Redesigned character details for multi-column layouts.
+* Added a compact character selector that remains visible while inspecting character information and choosing actions.
+* Character status, capabilities, bindings, and active effects are displayed alongside the command workspace.
+* Commands, targeting, and Escape actions share a consistent workspace without hiding the selected character's information.
+* Improved desktop command layouts and navigation between action screens.
+* Preserved targeting and Escape selections when changing between responsive layouts.
+
+### Desktop Library
+
+* Added a desktop-oriented Library layout for multi-column displays.
+* The Library now provides a persistent navigation area alongside the selected reference entry.
+* Improved navigation between reference categories and individual entries without repeatedly returning to the category list.
+* Preserved the existing compact Library presentation for smaller screens.
+
+### Fixes and Improvements
+
+* Improved responsive navigation and layout transitions across screen sizes.
+* Improved handling of scrolling and content overflow in multi-column layouts.
+
 ## 0.16.0 — 2026-10-14
 
-* Added auto save and resume system
+### Save and Resume
+
+* Added automatic battle saving and resuming.
+* Active battles can be restored after leaving or reloading the game.
+* The title screen now provides an option to continue a saved battle.
+* Added controls for deleting saved battle data, including confirmation before deletion.
+* Added handling for incompatible or corrupted save data.
+* Save and resume preserve the battle state and associated session information.
 
 ## 0.15.0 — 2026-10-14
 
