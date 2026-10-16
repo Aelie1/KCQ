@@ -18,6 +18,7 @@ export interface EnemyCardProps {
     onSelect?: () => void;
     defeat?: ActiveReaction;
     shortcut?: string;
+    completeIntentions?: boolean;
 }
 
 export function EnemyCard(props: EnemyCardProps): JSX.Element {
@@ -114,11 +115,15 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
                 </div>
             </header>
             <div class="kcq-enemy-card__intentions">
-                <For each={props.enemy.visibleIntentions}>
+                <For each={props.completeIntentions ? props.enemy.intentions : props.enemy.visibleIntentions}>
                     {(intent, index) => (
                         <div class="kcq-enemy-card__intent-slot">
-                            <IntentRow intent={intent} />
-                            <Show when={index() === props.enemy.visibleIntentions.length - 1 && props.enemy.overflowCount > 0}>
+                            <Show when={props.completeIntentions} fallback={<IntentRow intent={intent} />}>
+                                <For each={intent.previewRows ?? [intent]}>
+                                    {row => <IntentRow intent={row} expanded />}
+                                </For>
+                            </Show>
+                            <Show when={!props.completeIntentions && index() === props.enemy.visibleIntentions.length - 1 && props.enemy.overflowCount > 0}>
                                 <span
                                     class="kcq-enemy-card__overflow"
                                     aria-label={props.enemy.overflowAriaLabel}

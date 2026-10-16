@@ -26,10 +26,10 @@ function mount(view: Parameters<typeof render>[0]): HTMLElement {
     const host = document.createElement("div"); host.className = "kcq-graphical-app__background";
     document.body.append(style, host); unmount = render(view, host); return host;
 }
-function mountBattle(width = 1920, lines = 3) {
+function mountBattle(width = 1920, lines = 3, initialState: GameState = fixture.state) {
     viewport.setViewport({ width, height: 1080 });
     const engine = createStockEngine(12345);
-    const state: GameState = structuredClone(fixture.state); state.turn.phase = "player";
+    const state: GameState = structuredClone(initialState); state.turn.phase = "player";
     vi.spyOn(engine, "getGameState").mockReturnValue(state);
     vi.spyOn(engine, "getActionView").mockReturnValue([...fixture.actions]);
     const execute = vi.spyOn(engine, "executeAction").mockReturnValue({ success: false, reason: "actorAlreadyActed" });
@@ -120,8 +120,8 @@ describe("responsive battle overview", () => {
                 .toEqual(["party", "enemies", "game-log"].map(name => "kcq-battle-section kcq-battle-section--" + name));
             for (const panel of panels.slice(1)) expect(panel.querySelectorAll(".kcq-battle-section")).toHaveLength(1);
             expect(getComputedStyle(element(".kcq-party-card")).width).toBe("366px");
-            expect(getComputedStyle(element(".kcq-enemy-card")).width).toBe("180px");
-            expect(getComputedStyle(element(".kcq-battle-overview__enemies")).gridTemplateColumns).toBe("repeat(auto-fill, 180px)");
+            expect(getComputedStyle(element(".kcq-enemy-card")).width).toBe("100%");
+            expect(getComputedStyle(element(".kcq-battle-overview__enemies")).gridTemplateColumns).toBe("minmax(0, 1fr)");
             const log = element(".kcq-overview-game-log-history");
             expect(getComputedStyle(log).overflowY).toBe("auto");
             expect(log.getAttribute("role")).toBe("log"); expect(log.tabIndex).toBe(0);
@@ -139,6 +139,84 @@ describe("responsive battle overview", () => {
             expect([...host.querySelectorAll(".kcq-battle-section")].map(section => section.className))
                 .toEqual(["game-log", "enemies", "party"].map(name => "kcq-battle-section kcq-battle-section--" + name));
         }
+    });
+    it("shows every intention only in wide mode and restores existing summaries after resizing", () => {
+        const { host } = mountBattle(1199);
+        const fullCount = fixture.state.enemies.reduce((count, enemy) => count + enemy.intentions.length, 0);
+        const summaryCount = fixture.state.enemies.reduce((count, enemy) => count + Math.min(2, enemy.intentions.length), 0);
+        for (const width of [1920, 1799, 390, 1800]) {
+            viewport.setViewport({ width });
+            const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
+            expect(host.querySelectorAll(".kcq-enemy-card__intent-slot"), String(width)).toHaveLength(wide ? fullCount : summaryCount);
+            expect(host.querySelectorAll(".kcq-enemy-card__overflow")).toHaveLength(wide ? 0 : 1);
+            expect(host.querySelectorAll(".kcq-intent-row--expanded").length > 0).toBe(wide);
+            const cardStyle = getComputedStyle(element(".kcq-enemy-card"));
+            expect(cardStyle.width).toBe(wide ? "100%" : "180px");
+            expect(cardStyle.height).toBe("auto");
+            expect(getComputedStyle(element(".kcq-battle-overview__enemies")).gridTemplateColumns)
+                .toBe(wide ? "minmax(0, 1fr)" : "repeat(2, 180px)");
+            if (wide) {
+                expect(getComputedStyle(element(".kcq-enemy-card__intent-slot")).flexDirection).toBe("column");
+                expect(getComputedStyle(element(".kcq-intent-row__move")).whiteSpace).toBe("normal");
+                expect(getComputedStyle(element(".kcq-intent-row__targets")).overflow).toBe("visible");
+                expect(getComputedStyle(element(".kcq-intent-row--expanded")).overflowWrap).toBe("anywhere");
+            }
+        }
+    });
+    it("keeps per-attack targets, outcomes and multiple consequences visible in wide cards", () => {
+        const state: GameState = structuredClone(fixture.state);
+        const arms = state.characters[0]!.bindings.find(binding => binding.id === "latexArms")!;
+        arms.value = 95; arms.level = "overwhelming";
+        state.enemies[0]!.intentions = [{
+            move: "latexSpray", resolved: false, effects: [], targets: [
+                { target: "ko", band: "hit", effects: [
+                    { type: "binding", target: "ko", binding: "latexArms", amount: 34 },
+                    { type: "damage", target: "ko", amount: 12 },
+                ] },
+                { target: "ko", band: "crit", effects: [{ type: "binding", target: "ko", binding: "latexLegs", amount: 17 }] },
+                { target: "matsuko", band: "graze", effects: [{ type: "binding", target: "matsuko", binding: "latexArms", amount: 4 }] },
+                { target: "hinari", band: "miss", effects: [] },
+            ],
+        }];
+        const { host } = mountBattle(1920, 3, state);
+        const card = host.querySelector(".kcq-enemy-card")!;
+        const rows = [...card.querySelectorAll(".kcq-intent-row")];
+        expect(rows).toHaveLength(4);
+        expect(rows.map(row => row.querySelector(".kcq-intent-row__target")?.textContent))
+            .toEqual(["Ko-chan", "Ko-chan", "Matsuko", "Hinari"]);
+        for (const [index, band] of ["hit", "crit", "graze", "miss"].entries()) {
+            expect(rows[index]!.querySelector(".kcq-status-chip--outcome-" + band)).not.toBeNull();
+        }
+        expect(rows[0]!.querySelector(".kcq-intent-row__consequences")?.textContent).toContain("Arms +4 \u00b7 12 damage");
+        expect(rows[1]!.textContent).toContain("Legs +17");
+        expect(rows[2]!.textContent).toContain("Arms +4");
+        expect(rows[3]!.querySelector(".kcq-intent-row__consequences")).toBeNull();
+        expect(card.querySelector(".kcq-enemy-card__overflow")).toBeNull();
+        card.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+        expect(host.querySelector(".kcq-enemy-details")).not.toBeNull();
+    });
+    it("shows self buffs, healing and summons without accuracy chips when none are provided", () => {
+        const state: GameState = structuredClone(fixture.state);
+        const enemy = state.enemies[0]!;
+        enemy.intentions = [
+            { move: "skunkPerfume", resolved: false, targets: [{ target: enemy.id, band: "none", effects: [
+                { type: "buff", target: enemy.id, operation: "add", buff: { id: "latexMist", severity: 4, modifiers: { hit: 2 } } },
+            ] }], effects: [] },
+            { move: "healingMagic", resolved: false, targets: [{ target: enemy.id, band: "none", effects: [
+                { type: "damage", target: enemy.id, amount: -50 },
+            ] }], effects: [] },
+            { move: "callReinforcements", resolved: false, targets: [], effects: [{ type: "enemy", target: "fairy", operation: "spawn" }] },
+        ];
+        const { host } = mountBattle(1920, 3, state);
+        const card = host.querySelector(".kcq-enemy-card")!;
+        expect(card.querySelectorAll(".kcq-enemy-card__intent-slot")).toHaveLength(3);
+        expect(card.querySelectorAll(".kcq-enemy-card__overflow, .kcq-status-chip")).toHaveLength(0);
+        const consequences = [...card.querySelectorAll(".kcq-intent-row__consequences")].map(row => row.textContent);
+        expect(consequences[0]).toContain("Latex Mist IV");
+        expect(consequences[0]).toContain("Accuracy +2");
+        expect(consequences[1]).toContain("Healing +50");
+        expect(consequences[2]).toContain("Spawn Fairy");
+        expect(card.querySelector(".kcq-intent-row__target")?.textContent).toBe("Skunkette 1");
     });
     it("switches repeatedly without duplicate shortcuts, controls, or engine actions", () => {
         const { host, execute } = mountBattle(1199);

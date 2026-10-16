@@ -71,6 +71,8 @@ export type EffectPreviewViewModel =
 
 /** Runtime context is optional: public library effects need no fabricated battle state. */
 export interface EffectContext {
+    /** Full intention summaries retain every modifier and its localized name. */
+    completeModifiers?: boolean;
     actions?: readonly ActionView[];
     presentation: Presentation;
     scopeTarget?: EntityId;
@@ -190,8 +192,8 @@ function createBuffEffect(effect: BuffEffect, id: string, context: EffectContext
         ...(applying && effect.buff.duration !== undefined
             ? { durationLabel: presentation.ui("characterDetails.rounds", { count: effect.buff.duration }) }
             : {}),
-        modifiers: applying ? modifierEntries.slice(0, 2).map(([modifier, value]) => ({
-            label: presentation.modifier(modifier, "compact"), value, signedValue: formatSignedNumber(value),
+        modifiers: applying ? modifierEntries.slice(0, context.completeModifiers ? undefined : 2).map(([modifier, value]) => ({
+            label: presentation.modifier(modifier, context.completeModifiers ? "name" : "compact"), value, signedValue: formatSignedNumber(value),
             harmful: isHarmfulModifierChange(modifier, value) === true,
             direction: value >= 0 ? "left" : "right",
         })) : [],

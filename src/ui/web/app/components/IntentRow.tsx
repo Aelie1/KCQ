@@ -6,6 +6,7 @@ export type { IntentOutcome, IntentRowData } from "./componentTypes";
 
 export interface IntentRowProps {
     intent: IntentRowData;
+    expanded?: boolean;
 }
 
 export function IntentRow(props: IntentRowProps): JSX.Element {
@@ -13,6 +14,7 @@ export function IntentRow(props: IntentRowProps): JSX.Element {
         <div
             class="kcq-intent-row"
             classList={{
+                "kcq-intent-row--expanded": props.expanded,
                 "kcq-intent-row--move-only": !props.intent.targetLabel && !props.intent.outcome,
                 "kcq-intent-row--resolved": props.intent.resolved,
             }}
@@ -52,6 +54,12 @@ export function IntentRow(props: IntentRowProps): JSX.Element {
                         {props.intent.outcomeLabel}
                     </StatusChip>
                 )}
+            </Show>
+            <Show when={props.expanded && props.intent.consequences?.length}>
+                <span class="kcq-intent-row__consequences">
+                    <span class="kcq-intent-row__arrow" aria-hidden="true">{"\u2192"}</span>{" "}
+                    {props.intent.consequences?.join(" · ")}
+                </span>
             </Show>
         </div>
     );

@@ -152,7 +152,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         interval: () => PLAYBACK_INTERVALS[playbackSpeed.value],
         present: (frames, displayed) => batch(() => {
             reactions.present(frames, state(), playbackSpeed.value === "instant");
-            defeats.present(frames, state(), props.presentation, logEntries());
+            defeats.present(frames, state(), props.presentation, logEntries(), thresholds());
             setState(displayed);
             if (displayed.turn.outcome !== "ongoing" || defeats.active()) setScreen({ kind: "overview" });
             setLogEntries(logHistory.record(frames));
@@ -451,7 +451,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         sections={{ log: false, enemies: false, party: false, footer: false }} />
                     <BattleOverviewPanel {...overview}
                         sections={{ header: false, log: false, enemies: false, footer: false }} />
-                    <BattleOverviewPanel {...overview}
+                    <BattleOverviewPanel {...overview} completeEnemyIntentions
                         sections={{ header: false, log: false, party: false, footer: false }} />
                     <BattleOverviewPanel {...overview} gameLogHeadingAction gameLogScrollable={!logOpen()}
                         sections={{ header: false, enemies: false, party: false, footer: false }} />

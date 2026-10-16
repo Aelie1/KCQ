@@ -1,5 +1,5 @@
 import { createEffect, createSignal } from "solid-js";
-import type { EventFrame, GameState } from "../../../engine/public/types";
+import type { EventFrame, GameState, ThresholdInfo } from "../../../engine/public/types";
 import type { GameLogPresentationEntry } from "../../presentation/gameLog";
 import type { Presentation } from "../../presentation/presentation";
 import type { ActiveReaction, createCombatReactions } from "./combatReactions";
@@ -25,7 +25,7 @@ export function createEnemyDefeats(reactions: ReturnType<typeof createCombatReac
         remaining: () => Math.max(0, ...retained().filter(active)
             .map(slot => slot.defeat!.started + slot.defeat!.duration - Date.now())),
         present(frames: readonly EventFrame[], before: GameState, presentation: Presentation,
-            history: readonly GameLogPresentationEntry[]) {
+            history: readonly GameLogPresentationEntry[], thresholds?: ThresholdInfo) {
             const deaths = reactions.cues().filter(cue => cue.kind === "defeat"
                 && !retained().some(slot => slot.defeat?.serial === cue.serial));
             if (!deaths.length) return;
@@ -33,7 +33,7 @@ export function createEnemyDefeats(reactions: ReturnType<typeof createCombatReac
             const slots = [...retained()];
             for (const enemy of before.enemies) {
                 if (!slots.some(slot => slot.enemy.id === enemy.id)) slots.push({
-                    enemy: createEnemyCardViewModel(enemy, presentation, before.characters, history, before.enemies),
+                    enemy: createEnemyCardViewModel(enemy, presentation, before.characters, history, before.enemies, { state: before, thresholds }),
                 });
             }
             for (const cue of deaths) {
@@ -42,7 +42,7 @@ export function createEnemyDefeats(reactions: ReturnType<typeof createCombatReac
                     state.enemies.some(enemy => enemy.id === cue.entity));
                 const enemy = last?.enemies.find(enemy => enemy.id === cue.entity);
                 if (!last || !enemy) continue;
-                const slot = { enemy: createEnemyCardViewModel(enemy, presentation, last.characters, history, last.enemies), defeat: cue };
+                const slot = { enemy: createEnemyCardViewModel(enemy, presentation, last.characters, history, last.enemies, { state: last, thresholds }), defeat: cue };
                 const index = slots.findIndex(slot => slot.enemy.id === cue.entity);
                 if (index < 0) slots.push(slot);
                 else slots[index] = slot;

@@ -33,6 +33,7 @@ export interface BattleOverviewPanelProps {
     endTurnInHeader?: boolean;
     gameLogHeadingAction?: boolean;
     gameLogScrollable?: boolean;
+    completeEnemyIntentions?: boolean;
     actions: readonly ActionView[];
     presentation: Presentation;
     state: GameState;
@@ -124,6 +125,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                                     return <div ref={element} class="kcq-enemy-presentation-slot" data-defeated={slot().defeat ? "true" : undefined}>
                                         <Show when={!slot().finished}>
                                             <EnemyCard enemy={slot().enemy} defeat={slot().defeat}
+                                                completeIntentions={props.completeEnemyIntentions}
                                                 shortcut={combatShortcut(index() + 3)}
                                                 onSelect={!slot().defeat && props.onSelectEnemy ? () => props.onSelectEnemy?.(id) : undefined} />
                                         </Show>

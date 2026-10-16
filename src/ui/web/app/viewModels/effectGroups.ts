@@ -17,8 +17,7 @@ export function groupEffectPreviews(
         const id = `${idPrefix}-${index}`;
         // A projected spawn names a definition, not an existing recipient.
         // Follow-up moves belong to the actor, even when nested in target effects.
-        const target = "target" in effect && !(effect.type === "enemy" && effect.operation === "spawn")
-            ? effect.target : effect.type === "move" ? context.actor : undefined;
+        const target = effectRecipient(effect, context.actor);
         if (target === undefined || !shouldGroup(target)) {
             ungrouped.push(...createEffectPreviews(effect, id, context));
             return;
@@ -32,6 +31,11 @@ export function groupEffectPreviews(
         group.push(...createEffectPreviews(effect, id, { ...context, scopeTarget: target }));
     });
     return { groups, ungrouped };
+}
+
+export function effectRecipient(effect: Effect, actor?: EntityId): EntityId | undefined {
+    return "target" in effect && !(effect.type === "enemy" && effect.operation === "spawn")
+        ? effect.target : effect.type === "move" ? actor : undefined;
 }
 
 /** Static reference rows use the same first-recipient ordering as encounter setup. */

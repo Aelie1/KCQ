@@ -3,6 +3,8 @@ import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import type { EnemyCardData } from "../components/componentTypes";
 import { createIntentViewModel } from "./intentRow";
+import type { EffectContext } from "./effectPreviews";
+import { createIntentPreviewRows } from "./intentPreview";
 import { playerTone, projectLinkedPlayers } from "./linkedEntities";
 import { formatSignedNumber } from "./presentationHelpers";
 
@@ -26,6 +28,7 @@ export function createEnemyCardViewModel(
     characters: readonly Character[] = [],
     history: readonly GameLogPresentationEntry[] = [],
     enemies: readonly Enemy[] = [enemy],
+    previewContext: Pick<EffectContext, "state" | "thresholds"> = {},
 ): EnemyCardData {
     const partyIds = new Set(characters.map(({ id }) => id));
     const enemyIds = new Set(enemies.map(({ id }) => id));
@@ -36,14 +39,18 @@ export function createEnemyCardViewModel(
             && targetIds.size === partyIds.size
             && [...partyIds].every((id) => targetIds.has(id));
 
-        return targetsFullParty
-            ? {
-                ...model,
+        return {
+            ...model,
+            ...(targetsFullParty ? {
                 allTargetsLabel: presentation.ui("intentions.all"),
                 targetLabel: presentation.ui("intentions.all"),
                 targets: undefined,
-            }
-            : model;
+            } : {}),
+            // Only the wide card reads detailed previews; other layouts keep their summary cost.
+            get previewRows() {
+                return createIntentPreviewRows(intention, presentation, enemy.id, previewContext);
+            },
+        };
     });
     const summary = summarizeIntentions(intentions);
 

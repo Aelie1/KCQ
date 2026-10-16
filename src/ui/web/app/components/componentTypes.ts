@@ -29,6 +29,7 @@ export interface IntentTargetViewModel {
 
 export interface IntentRowData {
     allTargetsLabel?: string;
+    consequences?: readonly string[];
     moveLabel: string;
     outcome?: IntentOutcome;
     outcomeLabel?: string;
@@ -39,6 +40,7 @@ export interface IntentRowData {
 
 export interface IntentViewModel extends IntentRowData {
     intention: Intention;
+    previewRows?: readonly IntentRowData[];
 }
 
 export interface EnemyCardData {
