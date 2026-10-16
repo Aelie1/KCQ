@@ -33,7 +33,24 @@ export function createIntentPreviewRows(
         return [...groups].map(([recipient, effects]) => row(recipient, effects, recipient === target ? band : undefined));
     };
     // Keep separate TargetInfo entries, including repeated attacks on the same entity.
-    const rows = intention.targets.flatMap(target => rowsForEffects(target.effects, target.target, target.band));
+    const rows = intention.targets.flatMap(target => {
+        const targetBuffIds = new Set(
+            target.effects
+                .filter(effect => effect.type === "buff")
+                .filter(effect => effect.operation === "add" && effect.target === target.target)
+                .map(effect => effect.buff.id)
+        );
+
+        const effects = target.effects.filter(effect =>
+            !(effect.type === "buff" &&
+                effect.operation === "add" &&
+                effect.target === actor &&
+                target.target !== actor &&
+                targetBuffIds.has(effect.buff.id))
+        );
+
+        return rowsForEffects(effects, target.target, target.band);
+    });
     rows.push(...rowsForEffects(intention.effects));
     if (rows.length === 0) rows.push(row(undefined, []));
     if (intention.targets.length === 0 && intention.band) {
@@ -55,11 +72,7 @@ function summarizeEffect(
         ...context, presentation, scopeTarget: target, completeModifiers: true,
     }).map(preview => {
         if (preview.kind === "buff") {
-            return [preview.label, preview.name, preview.recipient,
-                ...preview.modifiers.map(modifier => `${modifier.label} ${modifier.signedValue}`),
-                preview.durationLabel, ...preview.details, ...preview.moveList.map(move => move.label),
-                preview.linkedEntity,
-            ].filter(Boolean).join(" · ");
+            return [preview.label, preview.name, preview.recipient,].filter(Boolean).join(" · ");
         }
         if (preview.kind === "compact") {
             const needsLabel = preview.type !== "binding" && preview.type !== "damage" && preview.type !== "data";

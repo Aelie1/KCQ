@@ -3,8 +3,8 @@ import {
     CombatReactionsContext, ENEMY_DEFEAT_FADE_DURATION, ENEMY_DEFEAT_GLOW_DURATION,
     floatingNumberStyle, reactionRef, type ActiveReaction,
 } from "../combatReactions";
-import type { EnemyCardData } from "./componentTypes";
 import { BuffIcon } from "./BuffIcon";
+import type { EnemyCardData } from "./componentTypes";
 import { DurationPips } from "./DurationPips";
 import { IntentRow } from "./IntentRow";
 import { LinkedEntityChip } from "./LinkedEntityChip";
@@ -59,44 +59,45 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
             }}
         >
             <Show when={selectable()}><Shortcut shortcut={props.shortcut} /></Show>
-            <Show when={props.enemy.effectDurations.length > 0 || props.enemy.permanentEffects.length > 0}>
-                <div class="kcq-enemy-card__debuffs">
-                    <Show when={props.enemy.effectDurations.length > 0}>
-                        <div class="kcq-enemy-card__temporary-effects">
-                            <For each={props.enemy.effectDurations.map((effect, index) => effect.id ?? String(index))}>
-                                {id => {
-                                    const effect = () => props.enemy.effectDurations.find((effect, index) => (effect.id ?? String(index)) === id)!;
-                                    return (
-                                        <span ref={reactionRef("buff", () => props.enemy.id, () => effect().id)} class={"kcq-enemy-card__debuff kcq-player-identity--" + effect().tone}
-                                            role="img" aria-label={effect().accessibleLabel} title={effect().accessibleLabel}>
-                                            <DurationPips duration={effect().duration} icon={effect().icon} />
-                                        </span>
-                                    );
-                                }}
-                            </For>
-                        </div>
-                    </Show>
-                    <Show when={props.enemy.permanentEffects.length > 0}>
-                        <div class="kcq-enemy-card__permanent-effects">
-                            <For each={props.enemy.permanentEffects.map(effect => effect.id)}>
-                                {id => {
-                                    const effect = () => props.enemy.permanentEffects.find(effect => effect.id === id)!;
-                                    return (
-                                        <span ref={reactionRef("buff", () => props.enemy.id, () => id)}
-                                            class="kcq-enemy-card__permanent-effect" role="img"
-                                            aria-label={effect().accessibleLabel} title={effect().accessibleLabel}>
-                                            <BuffIcon icon={effect().icon} />
-                                            <span aria-hidden="true">{effect().valueLabel}</span>
-                                        </span>
-                                    );
-                                }}
-                            </For>
-                        </div>
-                    </Show>
-                </div>
-            </Show>
             <header class="kcq-enemy-card__header">
                 <h3 class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
+                <Show when={props.enemy.effectDurations.length > 0 || props.enemy.permanentEffects.length > 0}>
+                    <div class="kcq-enemy-card__debuffs">
+                        <Show when={props.enemy.permanentEffects.length > 0}>
+                            <div class="kcq-enemy-card__permanent-effects">
+                                <For each={props.enemy.permanentEffects.map(effect => effect.id)}>
+                                    {id => {
+                                        const effect = () => props.enemy.permanentEffects.find(effect => effect.id === id)!;
+                                        return (
+                                            <span ref={reactionRef("buff", () => props.enemy.id, () => id)}
+                                                class="kcq-enemy-card__permanent-effect" role="img"
+                                                aria-label={effect().accessibleLabel} title={effect().accessibleLabel}>
+                                                <BuffIcon icon={effect().icon} />
+                                                <span aria-hidden="true">{effect().valueLabel}</span>
+                                            </span>
+                                        );
+                                    }}
+                                </For>
+                            </div>
+                        </Show>
+                        <Show when={props.enemy.effectDurations.length > 0}>
+                            <div class="kcq-enemy-card__temporary-effects">
+                                <For each={props.enemy.effectDurations.map((effect, index) => effect.id ?? String(index))}>
+                                    {id => {
+                                        const effect = () => props.enemy.effectDurations.find((effect, index) => (effect.id ?? String(index)) === id)!;
+                                        return (
+                                            <span ref={reactionRef("buff", () => props.enemy.id, () => effect().id)} class={"kcq-enemy-card__debuff kcq-player-identity--" + effect().tone}
+                                                role="img" aria-label={effect().accessibleLabel} title={effect().accessibleLabel}>
+                                                <DurationPips duration={effect().duration} icon={effect().icon} />
+                                            </span>
+                                        );
+                                    }}
+                                </For>
+                            </div>
+                        </Show>
+
+                    </div>
+                </Show>
                 <For each={props.enemy.linkedEntities}>
                     {(link) => <LinkedEntityChip link={link} iconOnly />}
                 </For>

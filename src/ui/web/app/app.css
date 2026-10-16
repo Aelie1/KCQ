@@ -1029,6 +1029,21 @@ button {
     text-overflow: ellipsis;
 }
 
+.kcq-battle-overview-wide .kcq-enemy-card__name {
+    display: block;
+    flex: 0 1 auto;
+    white-space: nowrap;
+    overflow-wrap: normal;
+}
+
+.kcq-battle-overview-wide .kcq-enemy-card__hp-meter {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 90px;
+    margin-left: auto;
+}
+
+
 .kcq-enemy-card__hp-anchor {
     position: relative;
     display: flex;
@@ -1079,9 +1094,29 @@ button {
     order: -1;
 }
 
-.kcq-battle-overview-wide .kcq-enemy-card__hp-meter {
-    flex: 1 1 80px;
-    max-width: 90px;
+.kcq-battle-overview-wide .kcq-enemy-card__debuffs {
+    position: static;
+    flex: 0 1 auto;
+    min-width: 0;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 5px;
+}
+
+.kcq-battle-overview-wide .kcq-enemy-card__temporary-effects {
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 4px;
+}
+
+.kcq-battle-overview-wide .kcq-enemy-card__permanent-effects {
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    margin-left: 0;
+}
+
+.kcq-battle-overview-wide :is(.kcq-enemy-card__debuff, .kcq-enemy-card__permanent-effect) {
+    height: auto;
 }
 
 .kcq-battle-overview-wide .kcq-enemy-card__intent-slot {
@@ -3296,6 +3331,11 @@ button {
 .kcq-header-controls>button:disabled {
     opacity: 0.5;
     cursor: default;
+}
+
+.kcq-battle-overview-wide .kcq-header-controls,
+.kcq-character-details-wide .kcq-header-controls {
+    flex-direction: row-reverse;
 }
 
 .kcq-encounter-card {

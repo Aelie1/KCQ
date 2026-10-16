@@ -99,6 +99,52 @@ describe("overview section configuration", () => {
 });
 
 describe("responsive battle overview", () => {
+    it.each([390, 1799, 1920])("keeps temporary and permanent status indicators inline only at wide width (%ipx)", width => {
+        const state: GameState = structuredClone(fixture.state);
+        state.enemies = [{ ...state.enemies[0]!, id: "queen", buffs: [
+            { id: "starlightBindings", duration: 3, icon: "shield-off", modifiers: { defense: -2 } },
+            { id: "subspaceClutter", duration: 2, icon: "sword", modifiers: { hit: -2 } },
+            { id: "difficulty", icon: "crown", modifiers: { hit: 2 } },
+        ] }];
+        const { host } = mountBattle(width, 3, state);
+        const card = host.querySelector(".kcq-enemy-card")!;
+        const header = card.querySelector(".kcq-enemy-card__header")!;
+        const name = header.querySelector(".kcq-enemy-card__name")!;
+        const statuses = header.querySelector(".kcq-enemy-card__debuffs")!;
+        const temporary = statuses.querySelector(".kcq-enemy-card__temporary-effects")!;
+        const permanent = statuses.querySelector(".kcq-enemy-card__permanent-effects")!;
+        const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
+        expect(card.querySelectorAll(".kcq-enemy-card__debuffs")).toHaveLength(1);
+        expect(name.nextElementSibling).toBe(statuses);
+        expect([...statuses.children]).toEqual([temporary, permanent]);
+        expect(temporary.querySelectorAll('[data-icon="shield-off"]')).toHaveLength(3);
+        expect(temporary.querySelectorAll('[data-icon="sword"]')).toHaveLength(2);
+        expect(permanent.querySelector('[data-icon="crown"]')).not.toBeNull();
+        expect(permanent.textContent).toBe("+2");
+        for (const indicator of statuses.querySelectorAll('[role="img"]')) {
+            expect(indicator.getAttribute("aria-label")).toBeTruthy();
+            expect(indicator.getAttribute("title")).toBe(indicator.getAttribute("aria-label"));
+        }
+        expect(getComputedStyle(statuses).position).toBe(wide ? "static" : "absolute");
+        expect(getComputedStyle(statuses).flexWrap).toBe(wide ? "nowrap" : "wrap");
+        expect(getComputedStyle(permanent).flexWrap).toBe(wide ? "nowrap" : "wrap");
+        expect(getComputedStyle(header.querySelector(".kcq-enemy-card__hp")!).whiteSpace).toBe("nowrap");
+        if (wide) {
+            const meter = header.querySelector(".kcq-enemy-card__hp-meter")!;
+            expect(statuses.nextElementSibling).toBe(meter);
+            expect(getComputedStyle(name).whiteSpace).toBe("nowrap");
+            expect(getComputedStyle(name).flexBasis).toBe("auto");
+            expect(getComputedStyle(meter).flexBasis).toMatch(/^0(px)?$/);
+            expect(getComputedStyle(meter).minWidth).toMatch(/^0(px)?$/);
+            expect(getComputedStyle(meter).maxWidth).toBe("90px");
+            expect(getComputedStyle(temporary).alignItems).toBe("center");
+        } else {
+            expect(getComputedStyle(statuses).top).toBe("-1px");
+            expect(getComputedStyle(statuses).left).toBe("16px");
+            expect(getComputedStyle(name).whiteSpace).toBe("normal");
+            expect(header.querySelector(".kcq-enemy-card__hp-meter")).toBeNull();
+        }
+    });
     it.each([390, 1799, 1920])("adds the HP meter and moves linked icons left only in wide mode at %ipx", width => {
         const state: GameState = structuredClone(fixture.state);
         const enemy = state.enemies[0]!;

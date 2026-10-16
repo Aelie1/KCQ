@@ -93,7 +93,8 @@ describe("enemy card live durations", () => {
             expect(card.querySelectorAll("svg")).toHaveLength(15);
             expect(card.querySelectorAll(".kcq-status-chip__segment")).toHaveLength(0);
             expect(card.querySelector(".kcq-shortcut")).not.toBeNull();
-            expect(card.querySelector(".kcq-enemy-card__header .kcq-enemy-card__debuffs")).toBeNull();
+            expect(card.querySelector(".kcq-enemy-card__debuffs")?.parentElement)
+                .toBe(card.querySelector(".kcq-enemy-card__header"));
             setState({ ...state(), enemies: [{ ...enemy, buffs: [{ ...buffs[0]!, duration: 1, icon: undefined }] }] });
             expect(document.querySelectorAll(".kcq-enemy-card__debuff")).toHaveLength(1);
             expect(document.querySelectorAll(".kcq-enemy-card__debuff .kcq-status-chip__segment")).toHaveLength(1);
