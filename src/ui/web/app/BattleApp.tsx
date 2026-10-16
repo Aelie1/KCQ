@@ -287,10 +287,10 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const scrollToActionRegion = (): void => {
         nextPaint(() => {
             if (state().turn.outcome !== "ongoing" || playback.active()) return;
-            const wideCharacter = wide() && characterActorId();
-            const body = stage?.querySelector<HTMLElement>(wideCharacter
+            const desktopCharacter = desktop() && characterActorId();
+            const body = stage?.querySelector<HTMLElement>(desktopCharacter
                 ? ".kcq-character-workspace .kcq-screen-layout__body" : ".kcq-screen-layout__body");
-            body?.scrollTo({ top: wideCharacter ? 0 : body.scrollHeight, behavior: "instant" });
+            body?.scrollTo({ top: desktopCharacter ? 0 : body.scrollHeight, behavior: "instant" });
         });
     };
 
@@ -381,7 +381,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
-            if (logOpen() || (screen().kind !== "overview" && !(wide() && (characterActorId() || enemyScreen())))) return false;
+            if (logOpen() || (screen().kind !== "overview" && !(desktop() && (characterActorId() || enemyScreen())))) return false;
 
             endTurn();
             return true;
@@ -402,27 +402,31 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         ?? useCombatKeyboard(() => stage, () => !dialogOpen() && !playback.active(), globalKeyboardAction, () => shortcutHints.value);
 
     const [wide, setWide] = createSignal(false);
+    const [desktop, setDesktop] = createSignal(false);
     onMount(() => {
         if (typeof window.matchMedia !== "function") return;
         const media = window.matchMedia(`(min-width: ${WIDE_BATTLE_OVERVIEW_BREAKPOINT}px)`);
+        // Two 366px canvases + a 24px gutter at the maximum 1.5x UI scale,
+        // plus outer padding, need 1158px. Keep the existing medium breakpoint.
+        const desktopMedia = window.matchMedia("(min-width: 1200px)");
         const update = () => setWide(media.matches);
+        const updateDesktop = () => setDesktop(desktopMedia.matches);
+        updateDesktop();
         update();
         media.addEventListener("change", update);
+        desktopMedia.addEventListener("change", updateDesktop);
         onCleanup(() => media.removeEventListener("change", update));
+        onCleanup(() => desktopMedia.removeEventListener("change", updateDesktop));
     });
     const characterActorId = createMemo(() => characterScreen()?.actorId ?? targeting()?.screen.actorId ?? escapeScreen()?.actorId);
+    const EnemyDetails = (): JSX.Element => <Show when={enemyScreen()}>
+        {current => <EnemyDetailsPanel embedded
+            actions={actions()} enemyId={current().enemyId}
+            presentation={props.presentation} state={state()} thresholds={thresholds()}
+            onBack={back} />}
+    </Show>;
 
     const Overview = (): JSX.Element => {
-        const [desktop, setDesktop] = createSignal(false);
-        onMount(() => {
-            // Two 366px canvases + a 24px gutter at the existing maximum 1.5x
-            // UI scale, plus outer padding, need 1158px. Leave a little room.
-            const media = window.matchMedia("(min-width: 1200px)");
-            const update = () => setDesktop(media.matches);
-            update();
-            media.addEventListener("change", update);
-            onCleanup(() => media.removeEventListener("change", update));
-        });
         const model = createMemo(() => createBattleOverviewViewModel(
             state(), actions(), thresholds(), props.presentation, logEntries(), library,
         ));
@@ -455,10 +459,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         <BattleOverviewPanel {...overview} completeEnemyIntentions
                             sections={{ header: false, log: false, party: false, footer: false }} />
                     }>
-                        {current => <EnemyDetailsPanel embedded
-                            actions={actions()} enemyId={current().enemyId}
-                            presentation={props.presentation} state={state()} thresholds={thresholds()}
-                            onBack={back} />}
+                        <EnemyDetails />
                     </Show>
                     <BattleOverviewPanel {...overview} gameLogScrollable={!logOpen()}
                         sections={{ header: false, enemies: false, party: false, footer: false }} />
@@ -469,6 +470,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     <BattleOverviewPanel {...overview} endTurnInHeader
                         sections={{ log: false, enemies: false, footer: false }} />
                     <BattleOverviewPanel {...overview} gameLogHeadingAction
+                        enemyDetails={enemyScreen() ? <EnemyDetails /> : undefined}
                         sections={{ header: false, party: false, footer: false }} />
                 </div>
             </Match>
@@ -477,7 +479,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     const ScreenPanels = (panelProps: { workspaceOnly?: boolean }): JSX.Element => (
         <Switch fallback={<Overview />}>
-            <Match when={!wide() && enemyScreen()}>
+            <Match when={!desktop() && enemyScreen()}>
                 {(current) => <EnemyDetailsPanel
                     actions={actions()} enemyId={current().enemyId}
                     presentation={props.presentation} state={state()} thresholds={thresholds()}
@@ -537,7 +539,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             </Match>
         </Switch>
     );
-    const WideCharacter = (): JSX.Element => {
+    const DesktopCharacter = (): JSX.Element => {
         const character = createMemo(() => createCharacterDetailsViewModel(
             state(), actions(), characterActorId()!, thresholds(), props.presentation,
         ));
@@ -548,7 +550,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             contextLabel={props.presentation.ui("combatHeader.character")}
             onSelectCharacter={selectCharacter}
             actionRegion={<ScreenPanels workspaceOnly />}
-            wide={{
+            desktop={{
+                get wide() { return wide(); },
                 get workspaceHeading() {
                     if (targeting()) return `${props.presentation.ui("combatHeader.targeting")} / ${character().focused.name}`;
                     if (escapeScreen()) return `${props.presentation.ui("combatHeader.escape")} / ${character().focused.name}`;
@@ -559,7 +562,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     difficultyLabel={overview().header.difficultyLabel}
                     roundLabel={overview().header.roundLabel} phaseLabel={overview().header.phaseLabel}
                     trap={overview().header.trap}
-                    navigation={{ backLabel: character().controls.backLabel, backShortcut: COMBAT_SHORTCUTS.back, onBack: back }}
+                    navigation={wide() ? { backLabel: character().controls.backLabel, backShortcut: COMBAT_SHORTCUTS.back, onBack: back } : undefined}
                     settingsLabel={overview().controls.settingsLabel} onSettings={openSettings}
                     libraryLabel={props.presentation.ui("library.title")} onLibrary={openLibrary}
                     action={<button type="button" class="kcq-battle-overview__primary-action kcq-shortcut-host"
@@ -567,9 +570,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         disabled={playback.active() || !!resultModel()} onClick={endTurn}>
                         <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {overview().controls.endTurnLabel}
                     </button>} />,
-                gameLog: <CompactGameLog entries={logEntries()} presentation={props.presentation}
+                gameLog: () => <CompactGameLog entries={logEntries()} presentation={props.presentation}
                     party={state().characters.map(character => character.id)} lines={overviewGameLog.value}
-                    scrollable />,
+                    scrollable={wide()} headingAction={!wide()} onOpen={toggleLog} />,
             }} />;
     };
 
@@ -581,8 +584,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
                     </Show>
                     <div hidden={logOpen()} inert={logOpen()} aria-hidden={logOpen() ? true : undefined}>
-                        <Show when={wide() && !!characterActorId()} fallback={<ScreenPanels />}>
-                            <WideCharacter />
+                        <Show when={desktop() && !!characterActorId()} fallback={<ScreenPanels />}>
+                            <DesktopCharacter />
                         </Show>
                     </div>
                 </div>

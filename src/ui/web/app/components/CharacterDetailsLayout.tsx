@@ -11,7 +11,7 @@ import { StatusChip } from "./StatusChip";
 
 export interface CharacterDetailsLayoutProps {
     workspaceOnly?: boolean;
-    wide?: { header: JSX.Element; gameLog: JSX.Element; workspaceHeading: string };
+    desktop?: { wide: boolean; header: JSX.Element; gameLog: () => JSX.Element; workspaceHeading: string };
     actionRegion: JSX.Element;
     footer?: JSX.Element;
     contextLabel: string;
@@ -131,24 +131,29 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
             </section>
         </Show>
     </>;
-    if (props.wide) return (
-        <section class="kcq-character-details kcq-character-details-wide" aria-label={props.model.focused.name}>
-            <div class="kcq-character-details-wide__header">{props.wide.header}</div>
-            <section class="kcq-battle-section kcq-character-details-wide__column kcq-character-details-wide__information"
+    if (props.desktop) return (
+        <section class="kcq-character-details kcq-character-details-desktop"
+            classList={{ "kcq-character-details-wide": props.desktop.wide, "kcq-battle-overview-columns": !props.desktop.wide }}
+            aria-label={props.model.focused.name}>
+            <div class="kcq-character-details-desktop__header">{props.desktop.header}</div>
+            <section class="kcq-battle-section kcq-character-details-desktop__column kcq-character-details-desktop__information"
                 aria-labelledby={characterHeadingId}>
                 <header class="kcq-battle-section__heading">
                     <h2 id={characterHeadingId}>{props.contextLabel} / {props.model.focused.name}</h2>
                 </header>
                 <ScreenLayout class="kcq-character-information" header={<Roster />} body={<Information />} />
             </section>
-            <section class="kcq-battle-section kcq-character-details-wide__column kcq-character-details-wide__workspace"
+            <section class="kcq-battle-section kcq-character-details-desktop__column kcq-character-details-desktop__workspace"
                 aria-labelledby={workspaceHeadingId}>
+                <Show when={!props.desktop.wide}>{props.desktop.gameLog()}</Show>
                 <header class="kcq-battle-section__heading">
-                    <h2 id={workspaceHeadingId}>{props.wide.workspaceHeading}</h2>
+                    <h2 id={workspaceHeadingId}>{props.desktop.workspaceHeading}</h2>
                 </header>
                 {props.actionRegion}
             </section>
-            <div class="kcq-character-details-wide__log">{props.wide.gameLog}</div>
+            <Show when={props.desktop.wide}>
+                <div class="kcq-character-details-desktop__log">{props.desktop.gameLog()}</div>
+            </Show>
         </section>
     );
     return (

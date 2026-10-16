@@ -504,53 +504,68 @@ button {
     min-height: 0;
 }
 
-.kcq-character-details-wide__header {
+.kcq-character-details-desktop__header {
     grid-column: 1 / -1;
     padding-bottom: 6px;
 }
 
-.kcq-character-details-wide__column {
+.kcq-character-details-desktop__column {
     min-height: 0;
     gap: 6px;
 }
 
-.kcq-character-details-wide__information {
+.kcq-character-details-desktop__information {
     gap: 8px;
 }
 
-.kcq-character-details-wide__column>.kcq-screen-layout {
+.kcq-character-details-desktop__column>.kcq-screen-layout {
     flex: 1 1 0;
     width: 100%;
     height: auto;
 }
 
-.kcq-character-details-wide__column>.kcq-battle-section__heading {
+.kcq-character-details-desktop__column>.kcq-battle-section__heading {
     flex-shrink: 0;
 }
 
-.kcq-character-details-wide__column .kcq-battle-section__heading h2,
+.kcq-character-details-desktop__column .kcq-battle-section__heading h2,
 .kcq-enemy-details>.kcq-screen-layout__header>.kcq-battle-section__heading h2 {
     flex-basis: auto;
 }
 
-.kcq-character-details-wide .kcq-combat-header__back {
+.kcq-character-details-desktop .kcq-combat-header__back {
     display: none;
 }
 
-.kcq-character-details-wide .kcq-character-commands__header {
+.kcq-character-details-desktop .kcq-character-commands__header {
     justify-content: flex-end;
 }
 
-.kcq-character-details-wide__log,
-.kcq-character-details-wide__log>.kcq-battle-section--game-log {
+.kcq-character-details-wide > .kcq-character-details-desktop__log,
+.kcq-character-details-wide > .kcq-character-details-desktop__log>.kcq-battle-section--game-log {
     height: 100%;
     min-width: 0;
     min-height: 0;
 }
 
-.kcq-character-details-wide .kcq-targeting,
-.kcq-character-details-wide .kcq-escape {
+.kcq-character-details-desktop .kcq-targeting,
+.kcq-character-details-desktop .kcq-escape {
     width: 100%;
+}
+
+/* Embedded medium details scroll with the existing log/enemy column. */
+.kcq-battle-overview-columns .kcq-battle-overview .kcq-enemy-details {
+    width: 100%;
+    height: auto;
+    gap: 6px;
+}
+
+.kcq-battle-overview-columns .kcq-battle-overview .kcq-enemy-details > .kcq-screen-layout__body {
+    overflow: visible;
+}
+
+.kcq-battle-overview-columns .kcq-character-details-desktop__workspace > .kcq-battle-section--game-log {
+    flex-shrink: 0;
 }
 
 .kcq-battle-overview-wide>.kcq-screen-layout {

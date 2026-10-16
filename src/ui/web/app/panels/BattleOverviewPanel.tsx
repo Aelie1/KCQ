@@ -34,6 +34,7 @@ export interface BattleOverviewPanelProps {
     gameLogHeadingAction?: boolean;
     gameLogScrollable?: boolean;
     completeEnemyIntentions?: boolean;
+    enemyDetails?: JSX.Element;
     actions: readonly ActionView[];
     presentation: Presentation;
     state: GameState;
@@ -64,7 +65,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
     const visible = (section: keyof BattleOverviewSections) => props.sections?.[section] !== false;
     const enemiesHeadingId = createUniqueId();
     const partyHeadingId = createUniqueId();
-    const enemySlots = createMemo<readonly EnemyPresentationSlot[]>(() => !visible("enemies") ? [] : props.enemyDefeats?.slots(model().enemies)
+    const enemySlots = createMemo<readonly EnemyPresentationSlot[]>(() => !visible("enemies") || props.enemyDetails ? [] : props.enemyDefeats?.slots(model().enemies)
         ?? model().enemies.map(enemy => ({ enemy })));
 
     const endTurnButton = () => (
@@ -104,7 +105,8 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         scrollable={props.gameLogScrollable}
                         lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog} />
                 </Show>
-                <Show when={visible("enemies")}>
+                <Show when={visible("enemies") && props.enemyDetails}>{details => details()}</Show>
+                <Show when={visible("enemies") && !props.enemyDetails}>
                     <section class="kcq-battle-section kcq-battle-section--enemies" aria-labelledby={enemiesHeadingId}>
                         <header class="kcq-battle-section__heading">
                             <h2 id={enemiesHeadingId}>{model().enemiesHeading}</h2>
