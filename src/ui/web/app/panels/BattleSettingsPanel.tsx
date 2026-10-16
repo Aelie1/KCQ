@@ -2,13 +2,13 @@ import { createUniqueId, For, onCleanup, onMount, Show, type JSX } from "solid-j
 import { Portal } from "solid-js/web";
 import type { Presentation } from "../../../presentation/presentation";
 import type { LanguageSelection } from "../language";
-import type { ShortcutHintPreference, ShortcutHintMode } from "../shortcutHints";
-import { PLAYBACK_INTERVALS, type PlaybackSpeedPreference, type PlaybackSpeed } from "../playbackSpeed";
 import type { OverviewGameLogPreference } from "../overviewGameLogLines";
+import { PLAYBACK_INTERVALS, type PlaybackSpeed, type PlaybackSpeedPreference } from "../playbackSpeed";
+import { resetPreferences } from "../resetPreferences";
 import { setupResponsiveScale } from "../responsiveScale";
+import type { ShortcutHintMode, ShortcutHintPreference } from "../shortcutHints";
 import { displayVersion } from "../version";
 import type { BattleColumns, EnemyCards, ViewPreferences } from "../viewPreferences";
-import { resetPreferences } from "../resetPreferences";
 
 export function BattleSettingsPanel(props: {
     presentation: Presentation;
@@ -96,19 +96,21 @@ export function BattleSettingsPanel(props: {
                             <For each={["1", "2", "3"]}>{value => <option value={value}>{value}</option>}</For>
                         </select>
                     </label>
-                    <label class="kcq-battle-settings__language kcq-battle-settings__auto-zoom">
-                        <span>{props.presentation.ui("battleSettings.zoomAuto")}</span>
-                        <input type="checkbox" checked={props.viewPreferences?.autoZoom}
-                            onChange={event => props.viewPreferences?.setAutoZoom(event.currentTarget.checked)} />
-                    </label>
-                    <label class="kcq-battle-settings__language kcq-battle-settings__zoom">
+                    <div class="kcq-battle-settings__language kcq-battle-settings__zoom-row">
                         <span>{props.presentation.ui("battleSettings.zoom")}</span>
-                        <input type="range" min="75" max="200" step="5" value={props.viewPreferences?.manualZoom}
+                        <label class="kcq-battle-settings__zoom-auto">
+                            Auto
+                            <input type="checkbox"
+                                checked={props.viewPreferences?.autoZoom}
+                                onChange={event => props.viewPreferences?.setAutoZoom(event.currentTarget.checked)} />
+                        </label>
+                        <input type="range" min="75" max="200" step="5"
+                            value={props.viewPreferences?.manualZoom}
                             disabled={props.viewPreferences?.autoZoom}
-                            aria-valuetext={`${props.viewPreferences?.manualZoom}%`}
-                            onInput={event => props.viewPreferences?.setManualZoom(Number(event.currentTarget.value))} />
+                            aria-label={props.presentation.ui("battleSettings.zoom")}
+                            onChange={event => props.viewPreferences?.setManualZoom(Number(event.currentTarget.value))} />
                         <output>{props.viewPreferences?.manualZoom}%</output>
-                    </label>
+                    </div>
                     <label class="kcq-battle-settings__language kcq-battle-settings__enemy-cards">
                         <span>{props.presentation.ui("battleSettings.enemyCards")}</span>
                         <select value={props.viewPreferences?.enemyCards}

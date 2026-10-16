@@ -3986,7 +3986,7 @@ button {
     overflow-y: auto;
 }
 
-.kcq-battle-settings > * {
+.kcq-battle-settings>* {
     flex-shrink: 0;
 }
 
@@ -5906,4 +5906,121 @@ button {
 
 .kcq-victory-story__continue {
     grid-column: 1 / -1;
+}
+
+/* Compact desktop settings */
+@media (min-width: 1200px) {
+
+    /* Dialog sizing */
+    .kcq-battle-settings__overlay .kcq-battle-result__viewport {
+        width: 400px;
+        max-width: 100%;
+    }
+
+    .kcq-battle-settings {
+        max-width: 380px;
+        gap: 6px;
+        padding: 16px;
+    }
+
+    .kcq-battle-settings__shortcut-hints span {
+        max-width: 150px;
+        line-height: 1.3;
+    }
+
+    /* Setting rows */
+    .kcq-battle-settings__language {
+        min-height: 36px;
+        padding: 2px 0;
+        gap: 12px;
+        font-size: 12px;
+    }
+
+    .kcq-battle-settings__language span {
+        width: auto;
+        flex: 1 1 auto;
+    }
+
+    /* Dropdowns */
+    .kcq-battle-settings__language select {
+        flex: 0 0 auto;
+        width: 175px;
+        max-width: 48%;
+        min-height: 32px;
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+
+    /* Sliders */
+    :is(.kcq-battle-settings__zoom,
+        .kcq-battle-settings__log-lines) input {
+        flex: 0 0 170px;
+        min-height: 32px;
+    }
+
+    /* Checkbox */
+    .kcq-battle-settings__auto-zoom input {
+        min-width: 18px;
+        min-height: 18px;
+        width: 18px;
+        height: 18px;
+    }
+
+    /* Compact buttons */
+    .kcq-battle-settings .kcq-battle-result__actions button {
+        min-height: 36px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    /* Reset button */
+    .kcq-battle-settings__reset {
+        margin-top: 8px;
+    }
+
+    .kcq-battle-settings__reset button {
+        width: 100%;
+    }
+
+    /* Battle navigation buttons */
+    .kcq-battle-settings>.kcq-battle-result__actions:last-child {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 6px;
+    }
+
+    .kcq-battle-settings__zoom-row {
+        gap: 8px;
+    }
+
+    .kcq-battle-settings__zoom-row>span {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    .kcq-battle-settings__zoom-auto {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        flex: 0 0 auto;
+        font-size: 12px;
+    }
+
+    .kcq-battle-settings__zoom-auto input {
+        width: 18px;
+        height: 18px;
+        margin: 0;
+        accent-color: var(--kcq-accent-primary);
+    }
+
+    .kcq-battle-settings__zoom-row>input[type="range"] {
+        flex: 0 1 130px;
+        min-width: 0;
+        accent-color: var(--kcq-accent-primary);
+    }
+
+    .kcq-battle-settings__zoom-row>output {
+        min-width: 40px;
+        text-align: right;
+    }
+
 }
