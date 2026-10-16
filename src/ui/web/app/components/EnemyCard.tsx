@@ -60,6 +60,9 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
         >
             <Show when={selectable()}><Shortcut shortcut={props.shortcut} /></Show>
             <header class="kcq-enemy-card__header">
+                <For each={props.enemy.linkedEntities}>
+                    {(link) => <LinkedEntityChip link={link} iconOnly />}
+                </For>
                 <h3 class="kcq-enemy-card__name" title={props.enemy.name}>{props.enemy.name}</h3>
                 <Show when={props.enemy.effectDurations.length > 0 || props.enemy.permanentEffects.length > 0}>
                     <div class="kcq-enemy-card__debuffs">
@@ -98,9 +101,6 @@ export function EnemyCard(props: EnemyCardProps): JSX.Element {
 
                     </div>
                 </Show>
-                <For each={props.enemy.linkedEntities}>
-                    {(link) => <LinkedEntityChip link={link} iconOnly />}
-                </For>
                 <Show when={props.completeIntentions}>
                     <span ref={reactionRef("hp", () => props.enemy.id)}
                         class="kcq-enemy-card__hp-meter kcq-target-header__meter" aria-hidden="true">

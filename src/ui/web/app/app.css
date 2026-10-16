@@ -541,8 +541,8 @@ button {
     justify-content: flex-end;
 }
 
-.kcq-character-details-wide > .kcq-character-details-desktop__log,
-.kcq-character-details-wide > .kcq-character-details-desktop__log>.kcq-battle-section--game-log {
+.kcq-character-details-wide>.kcq-character-details-desktop__log,
+.kcq-character-details-wide>.kcq-character-details-desktop__log>.kcq-battle-section--game-log {
     height: 100%;
     min-width: 0;
     min-height: 0;
@@ -560,11 +560,11 @@ button {
     gap: 6px;
 }
 
-.kcq-battle-overview-columns .kcq-battle-overview .kcq-enemy-details > .kcq-screen-layout__body {
+.kcq-battle-overview-columns .kcq-battle-overview .kcq-enemy-details>.kcq-screen-layout__body {
     overflow: visible;
 }
 
-.kcq-battle-overview-columns .kcq-character-details-desktop__workspace > .kcq-battle-section--game-log {
+.kcq-battle-overview-columns .kcq-character-details-desktop__workspace>.kcq-battle-section--game-log {
     flex-shrink: 0;
 }
 
@@ -658,7 +658,7 @@ button {
     content: none;
 }
 
-.kcq-battle-overview-wide .kcq-battle-overview__enemies {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-battle-overview__enemies {
     width: 100%;
     grid-template-columns: minmax(0, 1fr);
     align-items: start;
@@ -1066,14 +1066,14 @@ button {
     text-overflow: ellipsis;
 }
 
-.kcq-battle-overview-wide .kcq-enemy-card__name {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-enemy-card__name {
     display: block;
     flex: 0 1 auto;
     white-space: nowrap;
     overflow-wrap: normal;
 }
 
-.kcq-battle-overview-wide .kcq-enemy-card__hp-meter {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-enemy-card__hp-meter {
     flex: 1 1 0;
     min-width: 0;
     max-width: 90px;
@@ -1122,16 +1122,12 @@ button {
     margin-top: 1px;
 }
 
-.kcq-battle-overview-wide .kcq-enemy-card {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-enemy-card {
     width: 100%;
     min-width: 0;
 }
 
-.kcq-battle-overview-wide .kcq-enemy-card__header>.kcq-linked-entity-chip {
-    order: -1;
-}
-
-.kcq-battle-overview-wide .kcq-enemy-card__debuffs {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-enemy-card__debuffs {
     position: static;
     flex: 0 1 auto;
     min-width: 0;
@@ -1140,28 +1136,28 @@ button {
     gap: 5px;
 }
 
-.kcq-battle-overview-wide .kcq-enemy-card__temporary-effects {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-enemy-card__temporary-effects {
     flex: 0 1 auto;
     align-items: center;
     gap: 4px;
 }
 
-.kcq-battle-overview-wide .kcq-enemy-card__permanent-effects {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-enemy-card__permanent-effects {
     flex: 0 0 auto;
     flex-wrap: nowrap;
     margin-left: 0;
 }
 
-.kcq-battle-overview-wide :is(.kcq-enemy-card__debuff, .kcq-enemy-card__permanent-effect) {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) :is(.kcq-enemy-card__debuff, .kcq-enemy-card__permanent-effect) {
     height: auto;
 }
 
-.kcq-battle-overview-wide .kcq-enemy-card__intent-slot {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-enemy-card__intent-slot {
     flex-direction: column;
     align-items: stretch;
 }
 
-.kcq-battle-overview-wide .kcq-intent-row--expanded {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-intent-row--expanded {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
@@ -1169,23 +1165,23 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-battle-overview-wide .kcq-intent-row--expanded .kcq-intent-row__content {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-intent-row--expanded .kcq-intent-row__content {
     display: contents;
 }
 
-.kcq-battle-overview-wide .kcq-intent-row--expanded .kcq-intent-row__target-group {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-intent-row--expanded .kcq-intent-row__target-group {
     flex: 0 1 auto;
     white-space: normal;
 }
 
-.kcq-battle-overview-wide .kcq-intent-row--expanded :is(.kcq-intent-row__move, .kcq-intent-row__targets) {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-intent-row--expanded :is(.kcq-intent-row__move, .kcq-intent-row__targets) {
     flex: 0 1 auto;
     overflow: visible;
     white-space: normal;
     text-overflow: clip;
 }
 
-.kcq-battle-overview-wide .kcq-intent-row__consequences {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-intent-row__consequences {
     min-width: 0;
     color: var(--kcq-text-secondary);
 }
@@ -2665,6 +2661,7 @@ button {
     flex: 0 1 auto;
     gap: 3px;
     align-items: center;
+    align-self: flex-start;
     min-width: 0;
     max-width: 100%;
     padding: 1px 4px;

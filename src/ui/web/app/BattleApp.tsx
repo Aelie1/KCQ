@@ -4,8 +4,8 @@ import type {
     ActionInfo,
     ActionResult,
     ActionView,
-    BindingId,
     BattleState,
+    BindingId,
     CampaignId,
     Engine,
     EntityId,
@@ -18,15 +18,16 @@ import type {
 import type { GameLogPresentationEntry } from "../../presentation/gameLog";
 import type { Presentation } from "../../presentation/presentation";
 import type { BattleTelemetryObserver } from "../telemetry";
+import { createCombatPlayback } from "./combatPlayback";
+import { CombatReactionsContext, createCombatReactions } from "./combatReactions";
 import { CharacterDetailsLayout } from "./components/CharacterDetailsLayout";
 import { CombatHeader } from "./components/CombatHeader";
 import { CompactGameLog } from "./components/CompactGameLog";
 import { Shortcut } from "./components/Shortcut";
-import { createCombatPlayback } from "./combatPlayback";
-import { CombatReactionsContext, createCombatReactions } from "./combatReactions";
 import { createEnemyDefeats } from "./enemyDefeats";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import type { LanguageSelection } from "./language";
+import { getNextEncounter } from "./nextEncounter";
 import { createOverviewGameLogPreference, type OverviewGameLogPreference } from "./overviewGameLogLines";
 import { BattleOverviewPanel, type BattleOverviewPanelProps } from "./panels/BattleOverviewPanel";
 import { BattleResultPanel } from "./panels/BattleResultPanel";
@@ -39,15 +40,14 @@ import { LibraryPanel } from "./panels/LibraryPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
 import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
+import { createSavePackage, type SavePackage } from "./savePackage";
+import { clearSave, writeSave } from "./savePersistence";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
-import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { createBattleOverviewViewModel } from "./viewModels/battleOverview";
+import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
 import { createGameLogHistory } from "./viewModels/gameLogHistory";
 import { createVictoryStoryViewModel } from "./viewModels/victoryStory";
-import { getNextEncounter } from "./nextEncounter";
-import { createSavePackage, type SavePackage } from "./savePackage";
-import { clearSave, writeSave } from "./savePersistence";
 
 export interface BattleAppProps {
     engine: Engine;
@@ -469,7 +469,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 <div class="kcq-battle-overview-columns">
                     <BattleOverviewPanel {...overview} endTurnInHeader
                         sections={{ log: false, enemies: false, footer: false }} />
-                    <BattleOverviewPanel {...overview} gameLogHeadingAction
+                    <BattleOverviewPanel {...overview} gameLogHeadingAction completeEnemyIntentions
                         enemyDetails={enemyScreen() ? <EnemyDetails /> : undefined}
                         sections={{ header: false, party: false, footer: false }} />
                 </div>
