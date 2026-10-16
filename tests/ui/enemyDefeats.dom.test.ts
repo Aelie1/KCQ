@@ -75,7 +75,7 @@ const numbers = (card: HTMLElement) => [...card.querySelectorAll<HTMLElement>(".
 const busy = () => element(".kcq-battle-stage").getAttribute("aria-busy");
 
 describe("enemy defeat presentation", () => {
-    it.each([390, 1920])("retains the same card and geometry through staggered damage, glow and fade at %ipx", width => {
+    it.each([390, 1440, 1920])("retains the same card and geometry through staggered damage, glow and fade at %ipx", width => {
         viewport.setViewport({ width });
         const b = mount({ bands: [["hit", "hit", "hit"]] });
         const original = cards(); const dead = original[0]!;
@@ -128,10 +128,14 @@ describe("enemy defeat presentation", () => {
         expect(dead.dataset.enemyDefeat).toBe("true");
         expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("-250ms");
         expect(dead.style.getPropertyValue("--kcq-death-fade-delay")).toBe("250ms");
+        viewport.setViewport({ width: 1440 });
+        expect(document.querySelector(".kcq-battle-overview-columns")).not.toBeNull();
+        expect(cards()[0]!.style.getPropertyValue("--kcq-death-glow-delay")).toBe("-250ms");
+        const resizedDead = cards()[0]!;
         element(".kcq-battle-overview__primary-action").click();
         expect(b.execute).toHaveBeenCalledOnce();
-        vi.advanceTimersByTime(749); expect(dead.isConnected).toBe(true); expect(busy()).toBe("true");
-        vi.advanceTimersByTime(1); expect(dead.isConnected).toBe(false); expect(busy()).toBe("false");
+        vi.advanceTimersByTime(749); expect(resizedDead.isConnected).toBe(true); expect(busy()).toBe("true");
+        vi.advanceTimersByTime(1); expect(resizedDead.isConnected).toBe(false); expect(busy()).toBe("false");
         viewport.setViewport({ width: 1920 });
         expect(cards()).toHaveLength(b.final.enemies.length);
         expect(element(".kcq-battle-overview__primary-action").hasAttribute("disabled")).toBe(false);

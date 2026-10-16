@@ -128,6 +128,10 @@ button {
     grid-template-rows: minmax(0, 1fr);
 }
 
+.kcq-screen-layout:not(:has(> .kcq-screen-layout__body)) {
+    grid-template-rows: auto;
+}
+
 .kcq-screen-actions {
     display: grid;
     grid-template-columns: 2fr 3fr;
@@ -455,6 +459,68 @@ button {
 .kcq-battle-overview-columns .kcq-compact-game-log {
     max-height: 180px;
     overflow-y: auto;
+}
+
+.kcq-graphical-app__background:has(.kcq-battle-overview-wide):not(:has(.kcq-game-log)) {
+    width: 100%;
+}
+
+.kcq-battle-overview-wide {
+    display: grid;
+    grid-template-columns: 366px minmax(366px, 1fr) 288px;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 12px 24px;
+    width: 100%;
+    height: var(--kcq-ui-height);
+    min-width: 0;
+    min-height: 0;
+}
+
+.kcq-battle-overview-wide > .kcq-battle-overview {
+    width: 100%;
+    height: 100%;
+}
+
+.kcq-battle-overview-wide > .kcq-battle-overview:has(> .kcq-screen-layout__header) {
+    grid-column: 1 / -1;
+    height: auto;
+}
+
+.kcq-battle-overview-wide .kcq-combat-header {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) 82px 42px 144px;
+}
+
+.kcq-battle-overview-wide .kcq-combat-header > .kcq-battle-overview__primary-action {
+    grid-column: auto;
+}
+
+.kcq-battle-overview-wide .kcq-battle-overview__enemies {
+    width: 100%;
+    grid-template-columns: repeat(auto-fill, 180px);
+}
+
+.kcq-battle-overview-wide .kcq-screen-layout__body:has(.kcq-battle-section--game-log) {
+    overflow: visible;
+}
+
+.kcq-battle-overview-wide .kcq-screen-layout__content:has(.kcq-battle-section--game-log),
+.kcq-battle-overview-wide .kcq-battle-section--game-log {
+    height: 100%;
+    min-height: 0;
+}
+
+.kcq-overview-game-log-history {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-anchor: none;
+    border-radius: 8px;
+    background: var(--kcq-surface-card);
+}
+
+.kcq-overview-game-log-history > * {
+    flex-shrink: 0;
 }
 
 .kcq-battle-section__heading:has(.kcq-game-log-heading-action) {

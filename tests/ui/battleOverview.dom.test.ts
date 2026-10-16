@@ -5,7 +5,7 @@ import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
-import { BattleApp } from "../../src/ui/web/app/BattleApp";
+import { BattleApp, WIDE_BATTLE_OVERVIEW_BREAKPOINT } from "../../src/ui/web/app/BattleApp";
 import { ScreenLayout } from "../../src/ui/web/app/components/ScreenLayout";
 import { battleOverviewFixture as fixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { COMBAT_SHORTCUTS } from "../../src/ui/web/app/keyboard";
@@ -66,6 +66,7 @@ describe("overview section configuration", () => {
         }));
         expect(host.querySelectorAll("button, h1, h2, article")).toHaveLength(0);
         expect(slots).not.toHaveBeenCalled(); expect(observer).not.toHaveBeenCalled();
+        expect(host.querySelector(".kcq-screen-layout__body")).toBeNull();
         expect(getComputedStyle(element(".kcq-screen-layout")).gridTemplateRows).toBe("minmax(0, 1fr)");
     });
     it("uses distinct heading IDs even with multiple instances", () => {
@@ -98,16 +99,35 @@ describe("overview section configuration", () => {
 });
 
 describe("responsive battle overview", () => {
-    it.each([390, 1199, 1200, 1920])("mounts only the active arrangement at %ipx", width => {
+    it.each([390, 1199, 1200, 1799, 1800, 1920, 2560])("mounts only the active arrangement at %ipx", width => {
         const { host } = mountBattle(width); const desktop = width >= 1200;
+        const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
         const panels = [...host.querySelectorAll(".kcq-battle-overview")];
-        expect(panels).toHaveLength(desktop ? 2 : 1);
+        expect(panels).toHaveLength(wide ? 4 : desktop ? 2 : 1);
         expect(host.querySelectorAll(".kcq-party-card")).toHaveLength(fixture.state.characters.length);
         expect(host.querySelectorAll(".kcq-enemy-card")).toHaveLength(fixture.state.enemies.length);
         expect(host.querySelectorAll(".kcq-battle-overview__primary-action")).toHaveLength(1);
         expect(host.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
         expect(host.querySelectorAll(".kcq-battle-overview__footer")).toHaveLength(desktop ? 0 : 1);
-        if (desktop) {
+        if (wide) {
+            expect(panels[0]!.querySelector(".kcq-combat-header")).not.toBeNull();
+            expect(panels[0]!.querySelector(".kcq-screen-layout__body")).toBeNull();
+            expect(getComputedStyle(panels[0]!).gridColumn).toBe("1 / -1");
+            expect(getComputedStyle(host).width).toBe("100%");
+            expect(getComputedStyle(element(".kcq-battle-overview-wide")).gridTemplateColumns)
+                .toBe("366px minmax(366px, 1fr) 288px");
+            expect([...host.querySelectorAll(".kcq-battle-section")].map(section => section.className))
+                .toEqual(["party", "enemies", "game-log"].map(name => "kcq-battle-section kcq-battle-section--" + name));
+            for (const panel of panels.slice(1)) expect(panel.querySelectorAll(".kcq-battle-section")).toHaveLength(1);
+            expect(getComputedStyle(element(".kcq-party-card")).width).toBe("366px");
+            expect(getComputedStyle(element(".kcq-enemy-card")).width).toBe("180px");
+            expect(getComputedStyle(element(".kcq-battle-overview__enemies")).gridTemplateColumns).toBe("repeat(auto-fill, 180px)");
+            const log = element(".kcq-overview-game-log-history");
+            expect(getComputedStyle(log).overflowY).toBe("auto");
+            expect(log.getAttribute("role")).toBe("log"); expect(log.tabIndex).toBe(0);
+            expect(host.querySelector(".kcq-compact-game-log")).toBeNull();
+            expect(getComputedStyle(panels[2]!.querySelector(".kcq-screen-layout__body")!).overflowY).toBe("auto");
+        } else if (desktop) {
             expect(panels[0]!.querySelectorAll(".kcq-party-card")).toHaveLength(3);
             expect(panels[0]!.querySelector(".kcq-enemy-card, .kcq-compact-game-log")).toBeNull();
             expect(panels[1]!.querySelector(".kcq-party-card, .kcq-screen-layout__header, .kcq-screen-layout__footer")).toBeNull();
@@ -122,9 +142,11 @@ describe("responsive battle overview", () => {
     });
     it("switches repeatedly without duplicate shortcuts, controls, or engine actions", () => {
         const { host, execute } = mountBattle(1199);
-        for (const width of [1200, 1199, 1920, 390, 1200]) {
+        for (const width of [1200, 1199, 1799, 1800, 1920, 1799, 390, 1200]) {
             viewport.setViewport({ width });
-            expect(host.querySelectorAll(".kcq-battle-overview")).toHaveLength(width >= 1200 ? 2 : 1);
+            expect(host.querySelectorAll(".kcq-battle-overview")).toHaveLength(width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT ? 4 : width >= 1200 ? 2 : 1);
+            const ids = [...host.querySelectorAll("[id]")].map(node => node.id);
+            expect(new Set(ids).size).toBe(ids.length);
             const shortcuts = [...host.querySelectorAll<HTMLElement>("[data-kcq-shortcut]")].map(node => node.dataset.kcqShortcut);
             expect(new Set(shortcuts).size).toBe(shortcuts.length);
             const count = execute.mock.calls.length; press(COMBAT_SHORTCUTS.endTurn);

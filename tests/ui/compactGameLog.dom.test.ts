@@ -17,7 +17,7 @@ afterEach(() => {
     vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 const action = (actor = "ko"): GameLogPresentationEntry => ({ kind: "move", actor, move: "telekinesis", outcomes: [] });
-function mountPreview(initial = [action()]) {
+function mountPreview(initial = [action()], scrollable = false) {
     const host = document.createElement("div"); document.body.append(host);
     const [entries, setEntries] = createSignal<readonly GameLogPresentationEntry[]>(initial);
     const [lines, setLines] = createSignal(3);
@@ -25,7 +25,7 @@ function mountPreview(initial = [action()]) {
     const onOpen = vi.fn();
     unmount = render(() => createComponent(CompactGameLog, {
         get entries() { return entries(); }, get lines() { return lines(); }, get presentation() { return language(); },
-        party: ["ko", "matsuko", "hinari"], onOpen,
+        party: ["ko", "matsuko", "hinari"], onOpen, scrollable,
     }), host);
     return { host, setEntries, setLines, setLanguage, onOpen };
 }
@@ -82,6 +82,30 @@ describe("compact Game Log preview", () => {
         expect(preview.getAttribute("aria-label")).toBe("Translated access");
         log.setLines(0); expect(log.host.childElementCount).toBe(0); expect(log.host.textContent).toBe("");
         log.setLines(8); expect(log.host.querySelector(".kcq-compact-game-log")).not.toBeNull();
+    });
+    it("shows independently scrollable wide history and follows new entries only from the bottom", () => {
+        const pending = new Map<number, FrameRequestCallback>(); let id = 0;
+        vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++id, callback); return id; });
+        vi.stubGlobal("cancelAnimationFrame", (frame: number) => pending.delete(frame));
+        const flush = () => { for (const [frame, callback] of [...pending]) { pending.delete(frame); callback(0); } };
+        const history = Array.from({ length: 12 }, () => action());
+        const log = mountPreview(history, true);
+        const viewport = log.host.querySelector<HTMLElement>('[role="log"]')!;
+        Object.defineProperties(viewport, {
+            scrollHeight: { get: () => viewport.children.length * 50 }, clientHeight: { value: 100 },
+        });
+        expect(viewport.querySelectorAll("article")).toHaveLength(12);
+        expect(viewport.tabIndex).toBe(0);
+        expect(log.host.querySelector("button.kcq-compact-game-log")).toBeNull();
+        log.setLines(0); expect(viewport.querySelectorAll("article")).toHaveLength(12);
+        flush(); expect(viewport.scrollTop).toBe(500);
+        viewport.scrollTop = 150; viewport.dispatchEvent(new Event("scroll"));
+        log.setEntries([...history, action()]); flush(); expect(viewport.scrollTop).toBe(150);
+        viewport.scrollTop = 550; viewport.dispatchEvent(new Event("scroll"));
+        log.setEntries([...history, action(), action()]); flush(); expect(viewport.scrollTop).toBe(600);
+        log.setEntries([...history, action()]);
+        expect(pending.size).toBe(1);
+        unmount?.(); unmount = undefined; expect(pending.size).toBe(0);
     });
     it("shares grouped accuracy, character colors and outcome tones with the full renderer", () => {
         const log = mountPreview([{ kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [

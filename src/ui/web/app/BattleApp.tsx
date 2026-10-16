@@ -75,6 +75,10 @@ type CharacterScreen = Extract<BattleScreen, { kind: "character" }>;
 type EscapeScreen = Extract<BattleScreen, { kind: "escape" }>;
 type TargetingScreen = Extract<BattleScreen, { kind: "targeting" }>;
 
+// Three stable columns and gutters at the existing desktop UI scale need
+// at least 1626 viewport pixels. Leave room before enabling the wide layout.
+export const WIDE_BATTLE_OVERVIEW_BREAKPOINT = 1800;
+
 interface CurrentTargeting {
     action: ActionInfo;
     screen: TargetingScreen;
@@ -386,6 +390,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     const Overview = (): JSX.Element => {
         const [desktop, setDesktop] = createSignal(false);
+        const [wide, setWide] = createSignal(false);
         onMount(() => {
             // Two 366px canvases + a 24px gutter at the existing maximum 1.5x
             // UI scale, plus outer padding, need 1158px. Leave a little room.
@@ -394,6 +399,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             update();
             media.addEventListener("change", update);
             onCleanup(() => media.removeEventListener("change", update));
+            const wideMedia = window.matchMedia(`(min-width: ${WIDE_BATTLE_OVERVIEW_BREAKPOINT}px)`);
+            const updateWide = () => setWide(wideMedia.matches);
+            updateWide();
+            wideMedia.addEventListener("change", updateWide);
+            onCleanup(() => wideMedia.removeEventListener("change", updateWide));
         });
         const model = createMemo(() => createBattleOverviewViewModel(
             state(), actions(), thresholds(), props.presentation, logEntries(), library,
@@ -416,14 +426,28 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             get onGameLog() { return resultModel() ? openResultLog : toggleLog; },
             onEndTurn: endTurn,
         };
-        return <Show when={desktop()} fallback={<BattleOverviewPanel {...overview} />}>
-            <div class="kcq-battle-overview-columns">
-                <BattleOverviewPanel {...overview} endTurnInHeader
-                    sections={{ log: false, enemies: false, footer: false }} />
-                <BattleOverviewPanel {...overview} gameLogHeadingAction
-                    sections={{ header: false, party: false, footer: false }} />
-            </div>
-        </Show>;
+        return <Switch fallback={<BattleOverviewPanel {...overview} />}>
+            <Match when={wide()}>
+                <div class="kcq-battle-overview-wide">
+                    <BattleOverviewPanel {...overview} endTurnInHeader
+                        sections={{ log: false, enemies: false, party: false, footer: false }} />
+                    <BattleOverviewPanel {...overview}
+                        sections={{ header: false, log: false, enemies: false, footer: false }} />
+                    <BattleOverviewPanel {...overview}
+                        sections={{ header: false, log: false, party: false, footer: false }} />
+                    <BattleOverviewPanel {...overview} gameLogHeadingAction gameLogScrollable={!logOpen()}
+                        sections={{ header: false, enemies: false, party: false, footer: false }} />
+                </div>
+            </Match>
+            <Match when={desktop()}>
+                <div class="kcq-battle-overview-columns">
+                    <BattleOverviewPanel {...overview} endTurnInHeader
+                        sections={{ log: false, enemies: false, footer: false }} />
+                    <BattleOverviewPanel {...overview} gameLogHeadingAction
+                        sections={{ header: false, party: false, footer: false }} />
+                </div>
+            </Match>
+        </Switch>;
     };
 
     return (

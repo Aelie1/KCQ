@@ -14,6 +14,31 @@ export interface CompactGameLogProps {
     lines: number;
     onOpen?: () => void;
     headingAction?: boolean;
+    scrollable?: boolean;
+}
+
+/** The wide overview has room for history rather than a cropped preview. */
+function ScrollableGameLog(props: CompactGameLogProps): JSX.Element {
+    const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation, props.party));
+    let viewport!: HTMLDivElement;
+    let following = true;
+    let frame: number | undefined;
+    createEffect(() => {
+        entries();
+        if (frame !== undefined) cancelAnimationFrame(frame);
+        frame = requestAnimationFrame(() => {
+            frame = undefined;
+            if (following) viewport.scrollTop = Math.max(0, viewport.scrollHeight - viewport.clientHeight);
+        });
+    });
+    onCleanup(() => { if (frame !== undefined) cancelAnimationFrame(frame); });
+    return <div ref={viewport} class="kcq-game-log__scroll kcq-overview-game-log-history" role="log" tabIndex={0}
+        aria-label={props.presentation.ui("gameLog.chronological")}
+        onScroll={() => { following = viewport.scrollHeight - viewport.clientHeight - viewport.scrollTop <= 32; }}>
+        <Show when={entries().length} fallback={<p class="kcq-game-log__empty">{props.presentation.ui("gameLog.empty")}</p>}>
+            <For each={entries()}>{entry => <GameLogEntry entry={entry} />}</For>
+        </Show>
+    </div>;
 }
 
 function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
@@ -88,7 +113,7 @@ function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
 
 export function CompactGameLog(props: CompactGameLogProps): JSX.Element {
     const headingId = createUniqueId();
-    return <Show when={props.lines > 0 || props.headingAction}>
+    return <Show when={props.lines > 0 || props.headingAction || props.scrollable}>
         <section class="kcq-battle-section kcq-battle-section--game-log" aria-labelledby={headingId}>
             <header class="kcq-battle-section__heading">
                 <h2 id={headingId}>
@@ -101,7 +126,9 @@ export function CompactGameLog(props: CompactGameLogProps): JSX.Element {
                     </Show>
                 </h2>
             </header>
-            <Show when={props.lines > 0}><MeasuredGameLog {...props} /></Show>
+            <Show when={props.scrollable} fallback={<Show when={props.lines > 0}><MeasuredGameLog {...props} /></Show>}>
+                <ScrollableGameLog {...props} />
+            </Show>
         </section>
     </Show>;
 }

@@ -32,6 +32,7 @@ export interface BattleOverviewPanelProps {
     model?: BattleOverviewViewModel;
     endTurnInHeader?: boolean;
     gameLogHeadingAction?: boolean;
+    gameLogScrollable?: boolean;
     actions: readonly ActionView[];
     presentation: Presentation;
     state: GameState;
@@ -94,11 +95,12 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     action={props.endTurnInHeader ? endTurnButton() : undefined}
                 />
             )}
-            body={<>
+            body={(visible("log") || visible("enemies") || visible("party")) && <>
                 <Show when={visible("log")}>
                     <CompactGameLog entries={props.history ?? []} presentation={props.presentation}
                         party={props.state.characters.map(character => character.id)}
                         headingAction={props.gameLogHeadingAction}
+                        scrollable={props.gameLogScrollable}
                         lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog} />
                 </Show>
                 <Show when={visible("enemies")}>
