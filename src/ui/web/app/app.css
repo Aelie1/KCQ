@@ -440,10 +440,29 @@ button {
 .kcq-battle-overview-columns {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 24px;
+    row-gap: 12px;
     width: 756px;
     max-width: 100%;
+    height: var(--kcq-ui-height);
     min-width: 0;
+    min-height: 0;
+}
+
+/* Share the medium canvas with the header while keeping both body columns. */
+.kcq-battle-overview-columns>.kcq-battle-overview:has(> .kcq-screen-layout__header) {
+    display: contents;
+}
+
+.kcq-battle-overview-columns .kcq-screen-layout__header {
+    grid-column: 1 / -1;
+}
+
+.kcq-battle-overview-columns>.kcq-battle-overview:not(:has(> .kcq-screen-layout__header)) {
+    grid-column: 2;
+    grid-row: 2;
+    height: 100%;
 }
 
 .kcq-combat-header--with-action {
@@ -454,6 +473,11 @@ button {
 .kcq-combat-header--with-action>.kcq-battle-overview__primary-action {
     grid-column: 1 / -1;
     height: 32px;
+}
+
+.kcq-battle-overview-wide .kcq-combat-header--with-action>.kcq-battle-overview__primary-action {
+    grid-column: 1 / -1;
+    height: 28px;
 }
 
 .kcq-battle-overview-columns .kcq-compact-game-log {
@@ -469,7 +493,7 @@ button {
     display: grid;
     grid-template-columns: 366px 366px 288px;
     grid-template-rows: auto minmax(0, 1fr);
-    gap: 12px 24px;
+    gap: 4px 24px;
     width: max-content;
     margin-inline: auto;
     max-width: 100%;
@@ -488,51 +512,80 @@ button {
     height: auto;
 }
 
-.kcq-battle-overview-wide .kcq-combat-header {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header {
     display: flex;
     gap: 12px;
     width: 100%;
-    min-height: 48px;
+    padding: 4px 10px;
 }
 
-/* Flatten only the wide header's wrappers so the meter owns the spare space. */
-.kcq-battle-overview-wide .kcq-combat-header__encounter,
-.kcq-battle-overview-wide .kcq-combat-header__trap {
+/* Flatten desktop header wrappers so the meter owns the spare space. */
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header__encounter,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header__trap {
     display: contents;
 }
 
-.kcq-battle-overview-wide .kcq-combat-header__title,
-.kcq-battle-overview-wide .kcq-combat-header__trap-summary,
-.kcq-battle-overview-wide .kcq-combat-header__metadata,
-.kcq-battle-overview-wide .kcq-header-controls,
-.kcq-battle-overview-wide .kcq-combat-header>.kcq-battle-overview__primary-action {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header__title,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header__trap-summary,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header__metadata,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-header-controls,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header>.kcq-battle-overview__primary-action {
     flex: 0 0 auto;
 }
 
-.kcq-battle-overview-wide .kcq-combat-header__trap-meter {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header__trap-meter {
     flex: 1 1 96px;
     min-width: 96px;
     width: auto;
 }
 
-.kcq-battle-overview-wide .kcq-combat-header__metadata {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header__metadata {
     display: flex;
     align-items: center;
     gap: 0;
     margin-left: auto;
 }
 
-.kcq-battle-overview-wide .kcq-combat-header__metadata p+p::before {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-combat-header__metadata p+p::before {
     content: "\00b7";
     margin-inline: 6px;
     color: var(--kcq-text-dim);
 }
 
+
 .kcq-battle-overview-wide .kcq-header-controls {
     display: flex;
     gap: 6px;
     width: auto;
+    height: 28px;
+}
+
+.kcq-battle-overview-columns .kcq-header-controls {
+    display: flex;
+    gap: 6px;
+    width: auto;
     height: 32px;
+}
+
+.kcq-battle-overview-columns .kcq-combat-header__trap-meter {
+    flex-basis: 32px;
+    min-width: 32px;
+}
+
+.kcq-battle-overview-columns .kcq-combat-header__metadata {
+    display: grid;
+    grid-template-columns: auto auto;
+    gap: 3px 0;
+
+}
+
+.kcq-battle-overview-columns .kcq-combat-header__phase {
+    grid-column: 1 / -1;
+    margin-inline: auto;
+}
+
+.kcq-battle-overview-columns .kcq-combat-header__metadata .kcq-combat-header__phase::before {
+    content: none;
 }
 
 .kcq-battle-overview-wide .kcq-battle-overview__enemies {
