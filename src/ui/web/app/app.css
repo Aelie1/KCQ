@@ -489,12 +489,50 @@ button {
 }
 
 .kcq-battle-overview-wide .kcq-combat-header {
+    display: flex;
+    gap: 12px;
     width: 100%;
-    grid-template-columns: minmax(0, 1fr) 82px 42px 144px;
+    min-height: 48px;
 }
 
+/* Flatten only the wide header's wrappers so the meter owns the spare space. */
+.kcq-battle-overview-wide .kcq-combat-header__encounter,
+.kcq-battle-overview-wide .kcq-combat-header__trap {
+    display: contents;
+}
+
+.kcq-battle-overview-wide .kcq-combat-header__title,
+.kcq-battle-overview-wide .kcq-combat-header__trap-summary,
+.kcq-battle-overview-wide .kcq-combat-header__metadata,
+.kcq-battle-overview-wide .kcq-header-controls,
 .kcq-battle-overview-wide .kcq-combat-header>.kcq-battle-overview__primary-action {
-    grid-column: auto;
+    flex: 0 0 auto;
+}
+
+.kcq-battle-overview-wide .kcq-combat-header__trap-meter {
+    flex: 1 1 96px;
+    min-width: 96px;
+    width: auto;
+}
+
+.kcq-battle-overview-wide .kcq-combat-header__metadata {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-left: auto;
+}
+
+.kcq-battle-overview-wide .kcq-combat-header__metadata p+p::before {
+    content: "\00b7";
+    margin-inline: 6px;
+    color: var(--kcq-text-dim);
+}
+
+.kcq-battle-overview-wide .kcq-header-controls {
+    display: flex;
+    gap: 6px;
+    width: auto;
+    height: 32px;
 }
 
 .kcq-battle-overview-wide .kcq-battle-overview__enemies {
