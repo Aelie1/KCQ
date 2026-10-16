@@ -70,7 +70,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.throwOff.source": "[enemies:skunkette]",
 
     "buff.pounce.name": "Pounce",
-    "buff.pounce.allow": "Adds Throw Off",
+    "buff.pounce.allow": "",
     "buff.latexMist.name": "Latex Mist",
     "buff.resistance.name": "Victim Resistance",
     "buff.skunked.name": "Fully Skunked",

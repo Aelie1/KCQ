@@ -11,6 +11,7 @@ export function projectBuffMoveList(
     const category = (moves: readonly MoveId[], variant: "allow" | "block") => {
         if (moves.length === 0) return [];
         const summary = presentation.buffMoveList(buff.id, variant);
+        if (summary === "" && !references) return [];
         return summary !== undefined && !references ? [{ label: summary }] : moves.map(move => ({
             label: presentation.ui(variant === "allow" ? "targeting.addMove" : "targeting.blockMove", { move: presentation.move(move) }),
             ...(references ? {

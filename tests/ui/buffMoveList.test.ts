@@ -4,18 +4,20 @@ import { describe, expect, it } from "vitest";
 import type { Buff } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { EffectPreview } from "../../src/ui/web/app/components/EffectPreview";
-import { CharacterDetailsPanel } from "../../src/ui/web/app/panels/CharacterDetailsPanel";
-import { EnemyDetailsPanel } from "../../src/ui/web/app/panels/EnemyDetailsPanel";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
 import { enemyDetailsFixture } from "../../src/ui/web/app/fixtures/enemyDetails";
+import { CharacterDetailsPanel } from "../../src/ui/web/app/panels/CharacterDetailsPanel";
+import { EnemyDetailsPanel } from "../../src/ui/web/app/panels/EnemyDetailsPanel";
+import { projectBuffMoveList } from "../../src/ui/web/app/viewModels/buffMoveList";
 import { createEffectDetail } from "../../src/ui/web/app/viewModels/characterDetails";
 import { createEffectPreviewViewModels } from "../../src/ui/web/app/viewModels/effectPreviews";
-import { projectBuffMoveList } from "../../src/ui/web/app/viewModels/buffMoveList";
 import { stockStrings } from "../helpers/stockStrings";
 
-const burnout: Buff = { id: "burnout", moveList: {
-    addedMoves: ["punch", "kick"], blockedMoves: ["whiteFlame", "immolation"],
-} };
+const burnout: Buff = {
+    id: "burnout", moveList: {
+        addedMoves: ["punch", "kick"], blockedMoves: ["whiteFlame", "immolation"],
+    }
+};
 const p = new Presentation(stockStrings);
 const positive = (label: string) => ({ label, tone: "success" });
 const negative = (label: string) => ({ label, tone: "danger" });
@@ -54,8 +56,6 @@ describe("buff move-list descriptions", () => {
         expect(createEffectPreviewViewModels([
             { type: "buff", target: "matsuko", operation: "remove", buff: burnout },
         ], { presentation: p })[0]).toMatchObject({ moveList: [] });
-        expect(projectBuffMoveList({ id: "pounce", moveList: { addedMoves: ["throwOff"] } }, p))
-            .toEqual([positive("Adds Throw Off")]);
     });
 
     it("retains per-move filtering when an optional key is missing", () => {
@@ -79,15 +79,18 @@ describe("buff move-list descriptions", () => {
     });
 
     it("preserves localized word order and repeated move placeholders in reference labels", () => {
-        const translated = new Presentation({ ...stockStrings,
+        const translated = new Presentation({
+            ...stockStrings,
             "ui.targeting.addMove": "{move} : ajouter {move}", "ui.targeting.blockMove": "{move} bloqué",
             "move.punch.name": "Ajouter", "move.whiteFlame.name": "Flamme blanche",
         });
         const details = projectBuffMoveList(burnout, translated, undefined, true);
-        expect(details[0]).toMatchObject({ label: "Ajouter : ajouter Ajouter", move: "punch",
+        expect(details[0]).toMatchObject({
+            label: "Ajouter : ajouter Ajouter", move: "punch",
             parts: ["", { moveName: "Ajouter" }, " : ajouter ", { moveName: "Ajouter" }, ""],
         });
-        expect(details[2]).toMatchObject({ label: "Flamme blanche bloqué", move: "whiteFlame",
+        expect(details[2]).toMatchObject({
+            label: "Flamme blanche bloqué", move: "whiteFlame",
             parts: ["", { moveName: "Flamme blanche" }, " bloqué"],
         });
         expect(projectBuffMoveList(burnout, translated)[0]).toEqual(positive("Adds Basic Moves"));
@@ -97,14 +100,18 @@ describe("buff move-list descriptions", () => {
         const character = characterDetailsFixture;
         const enemy = enemyDetailsFixture;
         const html = [
-            renderToString(() => createComponent(CharacterDetailsPanel, { ...character, state: {
-                ...character.state, characters: character.state.characters.map(c =>
-                    c.id === character.focusedCharacterId ? { ...c, buffs: [burnout] } : c),
-            } })),
-            renderToString(() => createComponent(EnemyDetailsPanel, { ...enemy, state: {
-                ...enemy.state, enemies: enemy.state.enemies.map(e =>
-                    e.id === enemy.enemyId ? { ...e, buffs: [burnout] } : e),
-            } })),
+            renderToString(() => createComponent(CharacterDetailsPanel, {
+                ...character, state: {
+                    ...character.state, characters: character.state.characters.map(c =>
+                        c.id === character.focusedCharacterId ? { ...c, buffs: [burnout] } : c),
+                }
+            })),
+            renderToString(() => createComponent(EnemyDetailsPanel, {
+                ...enemy, state: {
+                    ...enemy.state, enemies: enemy.state.enemies.map(e =>
+                        e.id === enemy.enemyId ? { ...e, buffs: [burnout] } : e),
+                }
+            })),
         ];
         for (const raw of html) {
             const markup = raw.replace(/<!--.*?-->/g, "");
