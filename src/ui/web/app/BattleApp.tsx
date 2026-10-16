@@ -381,7 +381,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
-            if (logOpen() || (screen().kind !== "overview" && !(wide() && characterActorId()))) return false;
+            if (logOpen() || (screen().kind !== "overview" && !(wide() && (characterActorId() || enemyScreen())))) return false;
 
             endTurn();
             return true;
@@ -451,8 +451,15 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         sections={{ log: false, enemies: false, party: false, footer: false }} />
                     <BattleOverviewPanel {...overview}
                         sections={{ header: false, log: false, enemies: false, footer: false }} />
-                    <BattleOverviewPanel {...overview} completeEnemyIntentions
-                        sections={{ header: false, log: false, party: false, footer: false }} />
+                    <Show when={enemyScreen()} fallback={
+                        <BattleOverviewPanel {...overview} completeEnemyIntentions
+                            sections={{ header: false, log: false, party: false, footer: false }} />
+                    }>
+                        {current => <EnemyDetailsPanel embedded
+                            actions={actions()} enemyId={current().enemyId}
+                            presentation={props.presentation} state={state()} thresholds={thresholds()}
+                            onBack={back} />}
+                    </Show>
                     <BattleOverviewPanel {...overview} gameLogHeadingAction gameLogScrollable={!logOpen()}
                         sections={{ header: false, enemies: false, party: false, footer: false }} />
                 </div>
@@ -470,7 +477,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     const ScreenPanels = (panelProps: { workspaceOnly?: boolean }): JSX.Element => (
         <Switch fallback={<Overview />}>
-            <Match when={enemyScreen()}>
+            <Match when={!wide() && enemyScreen()}>
                 {(current) => <EnemyDetailsPanel
                     actions={actions()} enemyId={current().enemyId}
                     presentation={props.presentation} state={state()} thresholds={thresholds()}

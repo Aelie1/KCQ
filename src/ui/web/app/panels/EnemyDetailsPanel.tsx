@@ -6,6 +6,7 @@ import { EffectDetails } from "../components/EffectDetails";
 import { EffectPreview } from "../components/EffectPreview";
 import { ModifierMeter } from "../components/ModifierMeter";
 import { ScreenLayout } from "../components/ScreenLayout";
+import { Shortcut } from "../components/Shortcut";
 import { SelectedCommandSummary } from "../components/SelectedCommandSummary";
 import { TargetCard } from "../components/TargetCard";
 import { TargetHeader } from "../components/TargetHeader";
@@ -13,6 +14,7 @@ import { COMBAT_SHORTCUTS } from "../keyboard";
 import { createEnemyDetailsViewModel } from "../viewModels/enemyDetails";
 
 export interface EnemyDetailsPanelProps {
+    embedded?: boolean;
     actions: readonly ActionView[];
     enemyId: EntityId;
     presentation: Presentation;
@@ -28,7 +30,7 @@ export function EnemyDetailsPanel(props: EnemyDetailsPanelProps): JSX.Element {
 
     return (
         <ScreenLayout class="kcq-enemy-details kcq-character-details" ariaLabel={model().identity.name}
-            header={
+            header={!props.embedded && (
                 <CombatHeader variant="subscreen"
                     encounterLabel={model().header.encounterLabel}
                     contextLabel={model().labels.context}
@@ -39,10 +41,20 @@ export function EnemyDetailsPanel(props: EnemyDetailsPanelProps): JSX.Element {
                     backShortcut={COMBAT_SHORTCUTS.back}
                     onBack={props.onBack}
                 />
-            }
+            )}
             body={<>
                 <section class="kcq-focused-character kcq-enemy-details__identity" aria-label={model().identity.name}>
-                    <span class="kcq-focused-character__avatar" aria-hidden="true">{model().initial}</span>
+                    <Show when={props.embedded} fallback={
+                        <span class="kcq-focused-character__avatar" aria-hidden="true">{model().initial}</span>
+                    }>
+                        <button class="kcq-enemy-details__back kcq-shortcut-host" type="button"
+                            aria-label={model().labels.back}
+                            data-kcq-shortcut={props.onBack ? COMBAT_SHORTCUTS.back : undefined}
+                            onClick={() => props.onBack?.()}>
+                            <Shortcut shortcut={COMBAT_SHORTCUTS.back} />
+                            <span aria-hidden="true">{"\u2190"}</span>
+                        </button>
+                    </Show>
                     <TargetHeader target={model().identity} />
                 </section>
                 <Show when={model().modifiers.length > 0}>

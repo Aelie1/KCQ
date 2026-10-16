@@ -318,7 +318,8 @@ button {
 
 .kcq-combat-header__settings,
 .kcq-combat-header__library,
-.kcq-combat-header__back {
+.kcq-combat-header__back,
+.kcq-enemy-details__back {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -535,7 +536,7 @@ button {
     width: 100%;
 }
 
-.kcq-battle-overview-wide>.kcq-battle-overview {
+.kcq-battle-overview-wide>.kcq-screen-layout {
     width: 100%;
     height: 100%;
 }
@@ -3994,6 +3995,20 @@ button {
 }
 
 /* Title screen: Figma 224:832, inside the existing 366px canvas and 12px shell. */
+.kcq-title-screen {
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-width: none;
+
+}
+
+.kcq-title-screen>.kcq-screen-layout__body {
+    flex: 0 0 auto;
+    overflow: visible;
+}
+
 .kcq-title-screen__title {
     display: flex;
     align-items: center;
@@ -4317,6 +4332,15 @@ button {
     .kcq-shortcut {
         display: none;
     }
+}
+
+.kcq-enemy-details__back {
+    flex: 0 0 30px;
+    width: 30px;
+    height: 30px;
+    margin-right: 2px;
+    border-radius: 6px;
+    font-size: 20px;
 }
 
 .kcq-enemy-details__identity {

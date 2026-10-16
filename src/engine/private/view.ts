@@ -117,10 +117,10 @@ function getTargets(state: iGameState, actor: iCharacter, statuses: StatusMap, m
                 }
                 break;
             case "either":
-                for (const target of state.characters) {
+                for (const target of state.enemies) {
                     result.push(isValidTarget(state, actor, actorStatus, target, getStatus(statuses, target), move));
                 }
-                for (const target of state.enemies) {
+                for (const target of state.characters) {
                     result.push(isValidTarget(state, actor, actorStatus, target, getStatus(statuses, target), move));
                 }
                 break;
