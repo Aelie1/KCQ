@@ -143,7 +143,10 @@ describe("Enemy Details navigation and live state", () => {
 });
 
 describe("compact intention target rows", () => {
-    it("hides only participant chips across intention recipients and preserves persistent links", () => {
+    it.each([
+        ["", ["Immobilized", "Stunned"]],
+        ["Adds Throw Off", ["Adds Throw Off", "Immobilized", "Stunned"]],
+    ] as const)("hides only participant chips and preserves persistent links with move label %j", (moveLabel, chips) => {
         const fixture = enemyDetailsFixture;
         const state: GameState = {
             ...fixture.state,
@@ -168,7 +171,9 @@ describe("compact intention target rows", () => {
             })),
         };
         const before = JSON.stringify(state);
-        mount(() => createComponent(EnemyDetailsPanel, { ...fixture, state }));
+        // Pounce intentionally hides its stock move-list label; also exercise a visible localized label.
+        const presentation = new Presentation({ ...stockStrings, "buff.pounce.allow": moveLabel });
+        mount(() => createComponent(EnemyDetailsPanel, { ...fixture, state, presentation }));
         const intentions = [...document.querySelectorAll(".kcq-enemy-details__intention")];
         expect(intentions).toHaveLength(2);
         intentions.forEach((intention, index) => {
@@ -182,7 +187,7 @@ describe("compact intention target rows", () => {
             expect(debuff.querySelector(".kcq-buff-effect__tag")?.textContent).toBe("Add Debuff");
             expect(buff.querySelector(".kcq-buff-effect__tag")?.textContent).toBe("Add Buff");
             expect([...intention.querySelectorAll(".kcq-preview-effect .kcq-status-chip")]
-                .map(chip => chip.textContent)).toEqual(["Adds Throw Off", "Immobilized", "Stunned"]);
+                .map(chip => chip.textContent)).toEqual(chips);
             expect([...intention.querySelectorAll(".kcq-buff-effect .kcq-preview-effect__payload")]
                 .map(name => name.textContent)).toEqual(["Pounce III", "Pounce III"]);
             expect([...buff.querySelectorAll(".kcq-effect-modifier strong")]

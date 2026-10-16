@@ -23,6 +23,10 @@ export function TitleScreen(props: {
         setDeleteFailed(false);
         deleteButton?.focus();
     };
+    const toggleDelete = () => {
+        if (confirming()) cancelDelete();
+        else { setConfirming(true); cancelButton?.focus(); }
+    };
     const confirmDelete = () => {
         if (props.onDelete?.()) {
             setConfirming(false);
@@ -52,10 +56,7 @@ export function TitleScreen(props: {
                             </div>
                             <div class="kcq-title-screen__resume-buttons" >
                                 <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
-                                    aria-expanded={confirming()} onClick={() => {
-                                        if (confirming()) cancelDelete();
-                                        else { setConfirming(true); cancelButton?.focus(); }
-                                    }}>{props.model.deleteLabel}</button>
+                                    aria-expanded={confirming()} onClick={toggleDelete}>{props.model.deleteLabel}</button>
 
                                 <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
                                     onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
@@ -63,6 +64,10 @@ export function TitleScreen(props: {
                         </div>}
                     </Show>
                     <Show when={saveMessage()}>{message => <p class="kcq-title-screen__save-message" role="status">{message()}</p>}</Show>
+                    <Show when={saveMessage()}>
+                        <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
+                            aria-expanded={confirming()} onClick={toggleDelete}>{props.model.deleteLabel}</button>
+                    </Show>
                     <Show when={confirming()}>
                         <div class="kcq-title-screen__delete-confirmation" role="group" aria-label={props.model.deletePrompt}
                             onKeyDown={event => {

@@ -255,7 +255,7 @@ describe("Library category layouts", () => {
     });
     it("uses global effects and an enemy rules table for difficulty, omitting empty effects", () => {
         libraryMount({ kind: "entry", category: "difficulties", id: "extreme" });
-        expect(element(".kcq-library__global-effects").textContent).toContain("+2");
+        expect(element(".kcq-library__global-effects").textContent).toContain("POT+1");
         expect(document.querySelectorAll(".kcq-library__rules-table tbody tr")).toHaveLength(5);
         expect(document.querySelectorAll(".kcq-library__rules-table [data-library-focus^='enemies:']")).toHaveLength(5);
         unmount!(); libraryMount({ kind: "entry", category: "difficulties", id: "standard" });
@@ -334,7 +334,8 @@ describe("Library visual review corrections", () => {
         expect(element(".kcq-library__notes").textContent).toContain("The emptier Subspace is, the more hits Rockfall deals");
         expect(document.querySelectorAll(".kcq-library__notes li")).toHaveLength(3);
         expect(document.querySelector(".kcq-library__resource")).toBeNull();
-        expect(document.querySelectorAll(".kcq-library__move-card")).toHaveLength(5);
+        expect([...document.querySelectorAll(".kcq-library__move-card")].map(card => card.getAttribute("data-library-focus")))
+            .toEqual(["moves:rockfall", "moves:store", "moves:brace", "moves:release", "moves:powerOfSpace", "moves:fairyRockfall"]);
     });
     it("puts owner and cooldown in the header and summary while preserving shared cooldowns", () => {
         libraryMount({ kind: "entry", category: "moves", id: "obey" });
@@ -491,7 +492,7 @@ describe("Library Round 4 corrections", () => {
     it("represents reflect as a one-charge buff and renders linked Burnout move rules", () => {
         libraryMount({ kind: "entry", category: "moves", id: "reflect" });
         expect(element(".kcq-buff-effect").textContent).toContain("Add BuffReflect");
-        expect(element(".kcq-library__facts").textContent).toContain("DurationTHIS ROUND");
+        expect(element(".kcq-library__facts").textContent).toContain("Duration1 Rounds");
         expect(element(".kcq-library__description").textContent).toBe(presentation.referenceText("move", "reflect", "desc"));
         expect(document.querySelector(".kcq-library__notes")).toBeNull();
         unmount!(); libraryMount({ kind: "entry", category: "moves", id: "immolation" });
@@ -684,7 +685,7 @@ describe("Library Round 5 systematic presentation", () => {
     });
     it("places Brace duration in the summary and keeps its callback and capacity condition", () => {
         libraryMount({ kind: "entry", category: "moves", id: "brace" });
-        expect(element(".kcq-library__facts").textContent).toContain("DurationTHIS ROUND");
+        expect(element(".kcq-library__facts").textContent).toContain("Duration1 Rounds");
         expect(element(".kcq-buff-effect").textContent).toBe("Add BuffBrace");
         expect(element(".kcq-library__detail").textContent).not.toContain("charge");
         expect(element(".kcq-library__description").textContent).toContain("Subspace is full");
@@ -693,7 +694,7 @@ describe("Library Round 5 systematic presentation", () => {
     it.each(["reflect", "fairyReflect"])("shows %s duration without an undefined round count", id => {
         libraryMount({ kind: "entry", category: "moves", id });
         const facts = element(".kcq-library__facts");
-        expect(facts.textContent).toContain("DurationTHIS ROUND");
+        expect(facts.textContent).toContain("Duration1 Rounds");
         expect(facts.textContent).not.toMatch(/undefined|NaN/);
         expect(element(".kcq-buff-effect").textContent).toContain(presentation.move(id));
     });

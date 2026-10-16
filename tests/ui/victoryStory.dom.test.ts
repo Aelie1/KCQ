@@ -95,7 +95,7 @@ describe("victory story screen flow", () => {
         expect(result.querySelector(".kcq-battle-result__summary")?.textContent).toBe("1 Rounds · 1 Actions");
         expect(result.querySelector("dl")?.textContent).toContain("Peak Binding");
         expect(result.querySelectorAll("button")).toHaveLength(4);
-        expect(document.activeElement).toBe(button("Retry"));
+        expect(document.activeElement).toBe(button("Next Level"));
     });
 
     it("waits for combat playback to finish before showing the story and recording the clear", () => {
@@ -122,7 +122,7 @@ describe("victory story screen flow", () => {
         finish(sessions[0]!.engine);
         expect(document.querySelector(".kcq-victory-story")).toBeNull();
         expect(element(".kcq-battle-result--victory").querySelector("dl")).not.toBeNull();
-        expect(document.activeElement).toBe(button("Retry"));
+        expect(document.activeElement).toBe(button("Next Level"));
     });
 
     it("preserves defeat results and navigation even when victory text exists", () => {

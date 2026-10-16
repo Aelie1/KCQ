@@ -110,13 +110,16 @@ describe("title saved-battle card", () => {
             "difficulty.veteran.name": "Localized difficulty", "ui.battleOverview.round": "Turn {round}",
             "ui.title.resumeBattle": "Localized resume", "ui.title.continue": "Localized continue",
             "ui.title.save.delete": "Localized delete",
+            "ui.battleResult.bossHp.short": "Localized boss {percent}%",
         });
         const app = mount(undefined, localized);
         const card = document.querySelector(".kcq-title-screen__resume")!;
-        expect(card.querySelector("h2")?.textContent).toBe("Localized resume");
+        expect(card.previousElementSibling?.tagName).toBe("H2");
+        expect(card.previousElementSibling?.textContent).toBe("Localized resume");
+        expect(card.getAttribute("aria-label")).toBe("Localized resume");
         expect(card.querySelector("strong")?.textContent).toBe("Localized campaign");
         expect(card.querySelector(".kcq-title-screen__resume-details p")?.textContent)
-            .toBe("Localized encounter · Localized difficulty · Turn 7");
+            .toBe("Localized encounter\nLocalized difficulty · Turn 7 · Localized boss 100%");
         expect(card.querySelector(".kcq-title-screen__continue")?.textContent).toBe("Localized continue");
         expect(card.querySelector(".kcq-title-screen__save-action")?.textContent).toBe("Localized delete");
         expect(card.textContent).not.toContain("plains_3");
@@ -182,6 +185,12 @@ describe("title saved-battle card", () => {
         window.localStorage.setItem(AUTOSAVE_STORAGE_KEY, value);
         const app = mount();
         expect(titleError()).toBe(presentation.ui(`title.save.${status}`));
+        expect(document.querySelector(".kcq-title-screen__continue")).toBeNull();
+        button("Delete");
+        expect(document.activeElement?.textContent).toBe("Cancel");
+        button("Cancel");
+        expect(document.activeElement?.textContent).toBe("Delete");
+        expect(encoded()).toBe(value);
         button("Delete"); button("Delete Battle");
         expect(encoded()).toBeNull(); expect(titleError()).toBeUndefined();
         expect(document.querySelector(".kcq-title-screen__resume")).toBeNull();

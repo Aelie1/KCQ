@@ -153,7 +153,7 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(b.reactions.cues()).toEqual([]);
         expect(vi.getTimerCount()).toBe(0);
     });
-    it.each(["graze", "hit", "crit"] as const)("matches HP %s numbers at each binding bar's top center", band => {
+    it.each(["graze", "hit", "crit"] as const)("matches HP %s number styling above each binding bar's center", band => {
         const css = readFileSync("src/ui/web/app/app.css", "utf8");
         const style = document.createElement("style"); style.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + css; document.body.append(style);
         const b = mount();
@@ -183,7 +183,7 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(number.style.getPropertyValue("--float-x")).toBe("-8px");
         expect(number.style.getPropertyValue("--float-y")).toBe("-25px");
         expect(getComputedStyle(number).left).toBe("50%");
-        expect(getComputedStyle(number).top).toBe("0px");
+        expect(getComputedStyle(number).top).toBe("-50%");
         expect(number.parentElement).toBe(element(".kcq-party-card .kcq-binding-meter"));
         expect(element(".kcq-binding-reaction").style.animation).toBe("kcq-react-binding-fade 2500ms linear 0ms forwards");
         const lifetime = band === "crit" ? 3000 : 2500;
@@ -384,7 +384,7 @@ describe("combat reaction rendering and lifecycle", () => {
         expect(getComputedStyle(number).position).toBe("absolute");
         expect(getComputedStyle(number).pointerEvents).toBe("none");
         expect(getComputedStyle(number).left).toBe("50%");
-        expect(getComputedStyle(number).top).toBe("0px");
+        expect(getComputedStyle(number).top).toBe("-50%");
         expect(getComputedStyle(meter).position).toBe("relative");
         expect(getComputedStyle(meter).overflow).toBe("visible");
         expect(getComputedStyle(element(".kcq-party-card__bindings")).overflow).toBe("visible");

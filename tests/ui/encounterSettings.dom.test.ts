@@ -108,7 +108,11 @@ describe("encounter screen settings", () => {
         const { panel, prepareBattle } = mountSelection(screen);
         const { dialog } = openSettings();
         expect([...dialog.querySelectorAll("button, label, hr")].map(element => element.tagName))
-            .toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "LABEL", "BUTTON", "HR", "BUTTON"]);
+            .toEqual(["BUTTON", "LABEL", "LABEL", "LABEL", "LABEL", "HR", "BUTTON"]);
+        expect([...dialog.querySelectorAll("button")].map(control => control.textContent))
+            .toEqual(["Resume", "Back to Title Screen"]);
+        expect(document.querySelector(".kcq-combat-header__library")?.getAttribute("aria-label"))
+            .toBe(presentation.ui("library.title"));
         expect(dialog.querySelector(".kcq-battle-settings__version")?.textContent).toBe("v0.8-settings-test · abc1234");
         expect(button("Back to Title Screen")).toBeDefined();
         expect(button("Resume")).toBe(document.activeElement);
@@ -222,11 +226,13 @@ describe("encounter screen settings", () => {
         expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_1", "mythic");
         const { dialog } = openSettings();
         expect(dialog.querySelector("select")?.value).toBe("test");
-        expect(dialog.querySelectorAll("button")).toHaveLength(5);
+        expect([...dialog.querySelectorAll("button")].map(control => control.textContent))
+            .toEqual(["Continue test", "Retry Battle", "Back to Level Select", "Test title screen"]);
         button("Back to Level Select").click();
         expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test campaign");
         openSettings();
         expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings select")?.value).toBe("test");
-        expect(document.querySelector('[role="dialog"]')?.querySelectorAll("button")).toHaveLength(3);
+        expect([...document.querySelectorAll('[role="dialog"] button')].map(control => control.textContent))
+            .toEqual(["Continue test", "Test title screen"]);
     });
 });

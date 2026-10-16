@@ -124,7 +124,7 @@ describe("shared Library and Settings header controls", () => {
             expect(!!host.querySelector(".kcq-encounter-picker__show-all")).toBe(screen.name === "picker");
             const controls = host.querySelector<HTMLElement>(".kcq-header-controls")!;
             const buttons = [...controls.querySelectorAll<HTMLButtonElement>("button")];
-            expect(buttons.map(button => button.getAttribute("aria-label"))).toEqual(["Bibliotheque", "Options"]);
+            expect(buttons.map(button => button.getAttribute("aria-label"))).toEqual(["Options", "Bibliotheque"]);
             expect(host.querySelector(".kcq-screen-layout__body .kcq-library-access")).toBeNull();
             const layout = getComputedStyle(controls);
             expect(layout.display).toBe("grid");
@@ -169,7 +169,7 @@ describe("shared Library and Settings header controls", () => {
             }));
             const buttons = [...host.querySelectorAll<HTMLButtonElement>(".kcq-header-controls > button")];
             expect(buttons).toHaveLength(2);
-            expect(buttons.map(button => button.disabled)).toEqual([!libraryAvailable, !settingsAvailable]);
+            expect(buttons.map(button => button.disabled)).toEqual([!settingsAvailable, !libraryAvailable]);
             buttons.forEach(button => button.click());
             expect(onLibrary).toHaveBeenCalledTimes(libraryAvailable ? 1 : 0);
             expect(onSettings).toHaveBeenCalledTimes(settingsAvailable ? 1 : 0);

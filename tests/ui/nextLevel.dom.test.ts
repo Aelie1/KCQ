@@ -100,7 +100,7 @@ describe("Next Level navigation", () => {
     ] as const)("offers Next Level from %s %s and opens %s details", (encounter, outcome, next) => {
         const app = battle(encounter, outcome);
         expect(labels()).toEqual(["View Game Log", "Next Level", "Retry", "Back to Level Select"]);
-        expect(document.activeElement).toBe(element(".kcq-battle-result__retry"));
+        expect(document.activeElement).toBe(element(".kcq-battle-result__next"));
         const clears = window.localStorage.getItem("kcq.clears");
         const nextButton = element(".kcq-battle-result__next");
         expect(getComputedStyle(nextButton).backgroundColor).not.toBe(getComputedStyle(element(".kcq-battle-result__retry")).backgroundColor);
@@ -124,6 +124,7 @@ describe("Next Level navigation", () => {
         expect(document.querySelector(".kcq-battle-result__next")).toBeNull();
         const retry = element<HTMLButtonElement>(".kcq-battle-result__retry");
         expect(retry.disabled).toBe(false);
+        expect(document.activeElement).toBe(retry);
         expect(getComputedStyle(retry).backgroundColor).toBe(getComputedStyle(element(".kcq-battle-result__back")).backgroundColor);
         retry.click();
         expect(app.prepareBattle).toHaveBeenCalledTimes(2);
