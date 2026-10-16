@@ -4,7 +4,7 @@ import { Presentation } from "../../src/ui/presentation/presentation";
 import { stockStrings } from "../helpers/stockStrings";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { createBattle } from "../../src/ui/web/app";
@@ -13,11 +13,15 @@ import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverv
 import { enemyDetailsFixture } from "../../src/ui/web/app/fixtures/enemyDetails";
 import { EnemyDetailsPanel } from "../../src/ui/web/app/panels/EnemyDetailsPanel";
 
+const viewport = (window as unknown as HappyWindow).happyDOM;
+const initialViewport = { width: window.innerWidth, height: window.innerHeight };
+beforeEach(() => viewport.setViewport({ width: 390 }));
 let unmount: (() => void) | undefined;
 afterEach(() => {
     unmount?.();
     document.body.replaceChildren();
     vi.restoreAllMocks();
+    viewport.setViewport(initialViewport);
 });
 
 function mount(view: Parameters<typeof render>[0]): void {

@@ -99,7 +99,7 @@ describe("overview section configuration", () => {
 });
 
 describe("responsive battle overview", () => {
-    it.each([390, 1799, 1920])("keeps temporary and permanent status indicators inline in expanded cards (%ipx)", width => {
+    it.each([390, 1091, 1920])("keeps temporary and permanent status indicators inline in expanded cards (%ipx)", width => {
         const state: GameState = structuredClone(fixture.state);
         state.enemies = [{ ...state.enemies[0]!, id: "queen", buffs: [
             { id: "starlightBindings", duration: 3, icon: "shield-off", modifiers: { defense: -2 } },
@@ -113,7 +113,7 @@ describe("responsive battle overview", () => {
         const statuses = header.querySelector(".kcq-enemy-card__debuffs")!;
         const temporary = statuses.querySelector(".kcq-enemy-card__temporary-effects")!;
         const permanent = statuses.querySelector(".kcq-enemy-card__permanent-effects")!;
-        const expanded = width >= 1200;
+        const expanded = width >= 780;
         expect(card.querySelectorAll(".kcq-enemy-card__debuffs")).toHaveLength(1);
         expect(name.nextElementSibling).toBe(statuses);
         expect([...statuses.children]).toEqual([permanent, temporary]);
@@ -145,7 +145,7 @@ describe("responsive battle overview", () => {
             expect(header.querySelector(".kcq-enemy-card__hp-meter")).toBeNull();
         }
     });
-    it.each([390, 1799, 1920])("adds the HP meter and moves linked icons left in expanded mode at %ipx", width => {
+    it.each([390, 1091, 1920])("adds the HP meter and moves linked icons left in expanded mode at %ipx", width => {
         const state: GameState = structuredClone(fixture.state);
         const enemy = state.enemies[0]!;
         enemy.currHp = 50; enemy.maxHp = 200;
@@ -153,7 +153,7 @@ describe("responsive battle overview", () => {
         const { host } = mountBattle(width, 3, state);
         const header = host.querySelector(".kcq-enemy-card__header")!;
         const links = [...header.querySelectorAll(".kcq-linked-entity-chip")];
-        const expanded = width >= 1200;
+        const expanded = width >= 780;
         expect(links).toHaveLength(2);
         for (const link of links) expect(link.compareDocumentPosition(header.querySelector(".kcq-enemy-card__name")!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
         const meter = header.querySelector<HTMLElement>(".kcq-enemy-card__hp-meter");
@@ -164,8 +164,8 @@ describe("responsive battle overview", () => {
             expect(getComputedStyle(meter).maxWidth).toBe("90px");
         }
     });
-    it.each([390, 1199, 1200, 1799, 1800, 1920, 2560])("mounts only the active arrangement at %ipx", width => {
-        const { host } = mountBattle(width); const desktop = width >= 1200;
+    it.each([390, 779, 780, 1091, 1092, 1920, 2560])("mounts only the active arrangement at %ipx", width => {
+        const { host } = mountBattle(width); const desktop = width >= 780;
         const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
         const panels = [...host.querySelectorAll(".kcq-battle-overview")];
         expect(panels).toHaveLength(wide ? 4 : desktop ? 2 : 1);
@@ -211,12 +211,12 @@ describe("responsive battle overview", () => {
         }
     });
     it("shows every intention only in wide mode and restores existing summaries after resizing", () => {
-        const { host } = mountBattle(1199);
+        const { host } = mountBattle(779);
         const fullCount = fixture.state.enemies.reduce((count, enemy) => count + enemy.intentions.length, 0);
         const summaryCount = fixture.state.enemies.reduce((count, enemy) => count + Math.min(2, enemy.intentions.length), 0);
-        for (const width of [1920, 1799, 390, 1800]) {
+        for (const width of [1920, 1091, 390, 1092]) {
             viewport.setViewport({ width });
-            const expanded = width >= 1200;
+            const expanded = width >= 780;
             expect(host.querySelectorAll(".kcq-enemy-card__intent-slot"), String(width)).toHaveLength(expanded ? fullCount : summaryCount);
             expect(host.querySelectorAll(".kcq-enemy-card__overflow")).toHaveLength(expanded ? 0 : 1);
             expect(host.querySelectorAll(".kcq-intent-row--expanded").length > 0).toBe(expanded);
@@ -289,10 +289,10 @@ describe("responsive battle overview", () => {
         expect(card.querySelector(".kcq-intent-row__target")?.textContent).toBe("Skunkette 1");
     });
     it("switches repeatedly without duplicate shortcuts, controls, or engine actions", () => {
-        const { host, execute } = mountBattle(1199);
-        for (const width of [1200, 1199, 1799, 1800, 1920, 1799, 390, 1200]) {
+        const { host, execute } = mountBattle(779);
+        for (const width of [780, 779, 1091, 1092, 1920, 1091, 390, 780]) {
             viewport.setViewport({ width });
-            expect(host.querySelectorAll(".kcq-battle-overview")).toHaveLength(width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT ? 4 : width >= 1200 ? 2 : 1);
+            expect(host.querySelectorAll(".kcq-battle-overview")).toHaveLength(width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT ? 4 : width >= 780 ? 2 : 1);
             const ids = [...host.querySelectorAll("[id]")].map(node => node.id);
             expect(new Set(ids).size).toBe(ids.length);
             const shortcuts = [...host.querySelectorAll<HTMLElement>("[data-kcq-shortcut]")].map(node => node.dataset.kcqShortcut);
@@ -302,9 +302,9 @@ describe("responsive battle overview", () => {
         }
         expect(execute.mock.calls.every(([action]) => action.type === "endTurn")).toBe(true);
     });
-    it.each([390, 1200, 1799])("preserves full Game Log navigation below the wide breakpoint at %ipx", width => {
+    it.each([390, 780, 1091])("preserves full Game Log navigation below the wide breakpoint at %ipx", width => {
         const { host } = mountBattle(width);
-        element(width < 1200 ? ".kcq-compact-game-log" : ".kcq-game-log-heading-action").click();
+        element(width < 780 ? ".kcq-compact-game-log" : ".kcq-game-log-heading-action").click();
         expect(host.querySelector(".kcq-game-log")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back);
         expect(host.querySelector(".kcq-game-log")).toBeNull();

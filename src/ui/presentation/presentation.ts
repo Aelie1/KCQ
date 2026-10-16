@@ -45,8 +45,6 @@ export type UiLabel =
     | "battleSettings.backToTitle"
     | "battleSettings.language"
     | "battleSettings.columns"
-    | "battleSettings.zoom"
-    | "battleSettings.zoomAuto"
     | "battleSettings.enemyCards"
     | "battleSettings.auto"
     | "battleSettings.compact"

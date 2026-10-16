@@ -41,8 +41,6 @@ export const systemEnglishStrings: StringTable = {
     "ui.battleSettings.resume": "Resume",
     "ui.battleSettings.language": "Language",
     "ui.battleSettings.columns": "Columns",
-    "ui.battleSettings.zoom": "Zoom",
-    "ui.battleSettings.zoomAuto": "Auto Zoom",
     "ui.battleSettings.enemyCards": "Enemy Cards",
     "ui.battleSettings.auto": "Auto",
     "ui.battleSettings.compact": "Compact",

@@ -1,5 +1,5 @@
-import { onCleanup, onMount, useContext, type JSX } from "solid-js";
-import { setupResponsiveScale } from "./responsiveScale";
+import { createSignal, onCleanup, onMount, useContext, type JSX } from "solid-js";
+import { ResponsiveLayoutContext, setupResponsiveScale, type ResponsiveLayout } from "./responsiveScale";
 import { createViewPreferences, ViewPreferencesContext } from "./viewPreferences";
 
 export interface AppProps {
@@ -8,9 +8,12 @@ export interface AppProps {
 
 export function App(props: AppProps): JSX.Element {
     const preferences = useContext(ViewPreferencesContext) ?? createViewPreferences();
+    const [layout, setLayout] = createSignal<ResponsiveLayout>({ columns: 1, zoom: 1 });
     let shell!: HTMLElement;
-    onMount(() => onCleanup(setupResponsiveScale(shell, preferences)));
+    onMount(() => onCleanup(setupResponsiveScale(shell, preferences, setLayout)));
     return <ViewPreferencesContext.Provider value={preferences}>
-        <main class="kcq-app" ref={shell}>{props.children}</main>
+        <ResponsiveLayoutContext.Provider value={layout}>
+            <main class="kcq-app" ref={shell}>{props.children}</main>
+        </ResponsiveLayoutContext.Provider>
     </ViewPreferencesContext.Provider>;
 }

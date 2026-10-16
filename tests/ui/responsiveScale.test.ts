@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { setupResponsiveScale } from "../../src/ui/web/app/responsiveScale";
+import { BATTLE_LAYOUT_WIDTHS, calculateResponsiveLayout, setupResponsiveScale } from "../../src/ui/web/app/responsiveScale";
 
 function viewport(width = 390, height = 844, visualHeight?: number) {
     const style = new Map<string, string>();
@@ -32,7 +32,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 describe("graphical viewport sizing", () => {
     it.each([400, 600, 844, 1200])("uses the actual %ipx height with the existing desktop zoom cap", (height) => {
-        const { style } = viewport(900, height);
+        const { style } = viewport(1920, height);
         expect(style.get("--kcq-ui-zoom")).toBe("1.5");
         expect(parseFloat(style.get("--kcq-ui-height")!)).toBeCloseTo((height - 24) / 1.5);
     });
@@ -70,5 +70,41 @@ describe("graphical viewport sizing", () => {
         visualViewport!.dispatchEvent(new Event("resize"));
         browser.dispatchEvent(new Event("resize"));
         expect(style).toEqual(before);
+    });
+});
+
+describe("column-first scaling", () => {
+    it.each([
+        [296, 1, 1], [366, 1, 1], [500, 1, 500 / 366], [755, 1, 1.5],
+        [756, 2, 1], [900, 2, 900 / 756], [1067, 2, 1067 / 756],
+        [1068, 3, 1], [1256, 3, 1256 / 1068], [1602, 3, 1.5], [2500, 3, 1.5],
+    ])("fits the maximum columns at 100%% into %ipx before scaling", (width, columns, zoom) => {
+        expect(calculateResponsiveLayout(width)).toEqual({ columns, zoom });
+    });
+
+    it.each(["1", "2", "3"] as const)("keeps forced %s columns throughout resizing", preference => {
+        const columns = Number(preference) as 1 | 2 | 3;
+        for (const width of [296, 366, 755, 756, 1067, 1068, 1256, 2500, 366]) {
+            const layout = calculateResponsiveLayout(width, preference);
+            expect(layout.columns).toBe(columns);
+            expect(layout.zoom).toBe(Math.max(1, Math.min(1.5, width / BATTLE_LAYOUT_WIDTHS[columns])));
+            if (width < BATTLE_LAYOUT_WIDTHS[columns]) expect(layout.zoom).toBe(1);
+        }
+    });
+
+    it("uses the unzoomed shell width and stays stable at breakpoints", () => {
+        const { shell, style, observedResize } = viewport(1280);
+        expect(parseFloat(style.get("--kcq-ui-zoom")!)).toBeCloseTo(1.176);
+        for (const breakpoint of [780, 1092]) {
+            for (const width of [breakpoint - 1, breakpoint, breakpoint + 1, breakpoint, breakpoint - 1]) {
+                shell.clientWidth = width;
+                observedResize();
+                const before = new Map(style);
+                for (let index = 0; index < 10; index++) observedResize();
+                expect(style).toEqual(before);
+                expect(Number(style.get("--kcq-ui-zoom"))).toBe(calculateResponsiveLayout(width - 24).zoom);
+            }
+        }
+        expect(style.get("--kcq-ui-min-width")).toBe("366px");
     });
 });

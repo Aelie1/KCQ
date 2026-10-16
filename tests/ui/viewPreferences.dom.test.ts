@@ -8,12 +8,18 @@ import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { App } from "../../src/ui/web/app/App";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
-import { createViewPreferences, DEFAULT_MANUAL_ZOOM, ViewPreferencesContext, type BattleColumns, type EnemyCards } from "../../src/ui/web/app/viewPreferences";
+import { createViewPreferences, ViewPreferencesContext, type BattleColumns, type EnemyCards } from "../../src/ui/web/app/viewPreferences";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let unmount: (() => void) | undefined;
-beforeEach(() => { window.localStorage.clear(); viewport.setViewport({ width: 1920, height: 1080 }); });
+beforeEach(() => {
+    window.localStorage.clear(); viewport.setViewport({ width: 1920, height: 1080 });
+    // Happy DOM does not lay out elements; model the unzoomed viewport surfaces.
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+        return this.matches(".kcq-app, .kcq-battle-result__overlay") ? window.innerWidth : 0;
+    });
+});
 afterEach(() => {
     unmount?.(); unmount = undefined; document.body.replaceChildren();
     viewport.setViewport(initialViewport); window.localStorage.clear(); vi.restoreAllMocks();
@@ -60,10 +66,9 @@ describe("battle view preferences", () => {
             const { preferences, execute, engine } = mount();
             const before = engine.getGameState();
             preferences.setColumns(columns); preferences.setEnemyCards(cards);
-            preferences.setManualZoom(200); preferences.setAutoZoom(false);
-            for (const width of [390, 1200, 1920]) {
+            for (const width of [320, 390, 779, 780, 1000, 1091, 1092, 1280, 1920, 779, 780]) {
                 viewport.setViewport({ width });
-                const count = columns === "auto" ? width >= 1800 ? 3 : width >= 1200 ? 2 : 1 : Number(columns);
+                const count = columns === "auto" ? width >= 1092 ? 3 : width >= 780 ? 2 : 1 : Number(columns);
                 assertColumns(count);
                 const expanded = cards === "auto" ? count > 1 : cards === "expanded";
                 const enemies = [...document.querySelectorAll(".kcq-enemy-card")];
@@ -76,7 +81,8 @@ describe("battle view preferences", () => {
                 const expectedIntentions = battleOverviewFixture.state.enemies.reduce((sum, enemy) =>
                     sum + (expanded ? enemy.intentions.length : Math.min(2, enemy.intentions.length)), 0);
                 expect(document.querySelectorAll(".kcq-enemy-card__intent-slot")).toHaveLength(expectedIntentions);
-                expect(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom")).toBe("2");
+                const expectedZoom = Math.max(1, Math.min(1.5, (width - 24) / ({ 1: 366, 2: 756, 3: 1068 }[count]!)));
+                expect(Number(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(expectedZoom);
                 expect(getComputedStyle(element(".kcq-app")).overflowX).toBe("auto");
                 if (count > 1 && columns !== "auto") expect(getComputedStyle(element(".kcq-graphical-app__background")).minWidth).toBe(count === 2 ? "756px" : "1068px");
                 const grid = getComputedStyle(element(".kcq-battle-overview__enemies")).gridTemplateColumns;
@@ -85,30 +91,47 @@ describe("battle view preferences", () => {
             expect(execute).not.toHaveBeenCalled(); expect(engine.getGameState()).toEqual(before);
         },
     );
-    it("updates the shell and open portal at manual zoom extremes and restores the stored value", () => {
+    it("updates the shell and open Settings together when columns or viewport change", () => {
         const { preferences } = mount();
         element(".kcq-combat-header__settings").click();
         const shell = element(".kcq-app"), overlay = element(".kcq-battle-settings__overlay");
-        const slider = element<HTMLInputElement>(".kcq-battle-settings__zoom input");
-        const auto = element<HTMLInputElement>(".kcq-battle-settings__auto-zoom input");
-        expect(slider.disabled).toBe(true); expect(slider.value).toBe(String(DEFAULT_MANUAL_ZOOM));
-        expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
-        auto.click(); expect(slider.disabled).toBe(false);
-        for (const zoom of [75, 200, 135]) {
-            slider.value = String(zoom); slider.dispatchEvent(new Event("input", { bubbles: true }));
-            for (const surface of [shell, overlay]) {
-                expect(surface.style.getPropertyValue("--kcq-ui-zoom")).toBe(String(zoom / 100));
-                expect(parseFloat(surface.style.getPropertyValue("--kcq-ui-height"))).toBeCloseTo((1080 - 24) / (zoom / 100));
+        expect(document.querySelector('[aria-label="Zoom"], .kcq-battle-settings__zoom-row')).toBeNull();
+        const columns = element<HTMLSelectElement>(".kcq-battle-settings__columns select");
+        for (const width of [390, 1000, 1280, 1920]) {
+            viewport.setViewport({ width });
+            for (const selection of ["1", "2", "3", "auto"] as const) {
+                columns.value = selection; columns.dispatchEvent(new Event("change", { bubbles: true }));
+                expect(preferences.columns).toBe(selection);
+                const count = selection === "auto" ? width >= 1092 ? 3 : width >= 780 ? 2 : 1 : Number(selection);
+                assertColumns(count);
+                const zoom = Math.max(1, Math.min(1.5, (width - 24) / ({ 1: 366, 2: 756, 3: 1068 }[count]!)));
+                for (const surface of [shell, overlay]) {
+                    expect(Number(surface.style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(zoom);
+                    expect(parseFloat(surface.style.getPropertyValue("--kcq-ui-height"))).toBeCloseTo((1080 - 24) / zoom);
+                }
+                viewport.setViewport({ height: 480 });
+                for (const surface of [shell, overlay]) expect(parseFloat(surface.style.getPropertyValue("--kcq-ui-height"))).toBeCloseTo(456 / zoom);
+                viewport.setViewport({ height: 1080 });
             }
-            expect(element(".kcq-battle-settings__zoom output").textContent).toBe(`${zoom}%`);
-            viewport.setViewport({ height: 480 });
-            for (const surface of [shell, overlay]) expect(parseFloat(surface.style.getPropertyValue("--kcq-ui-height"))).toBeCloseTo(456 / (zoom / 100));
-            viewport.setViewport({ height: 1080 });
         }
-        auto.click(); expect(slider.disabled).toBe(true);
-        expect(preferences.manualZoom).toBe(135); expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
-        auto.click(); expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1.35");
-        const restored = createViewPreferences(); expect(restored.autoZoom).toBe(false); expect(restored.manualZoom).toBe(135);
+    });
+    it("shares the shell's unzoomed available width with the battle and Settings portal", () => {
+        mount();
+        const shell = element(".kcq-app");
+        let shellWidth = 1000;
+        Object.defineProperty(shell, "clientWidth", { get: () => shellWidth });
+        window.dispatchEvent(new Event("resize"));
+        assertColumns(2);
+        expect(Number(shell.style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(976 / 756);
+        element(".kcq-combat-header__settings").click();
+        const overlay = element(".kcq-battle-settings__overlay");
+        for (const width of [780, 1092, 1280, 1091, 779, 1280]) {
+            shellWidth = width;
+            window.dispatchEvent(new Event("resize"));
+            assertColumns(width >= 1092 ? 3 : width >= 780 ? 2 : 1);
+            expect(overlay.style.getPropertyValue("--kcq-ui-zoom")).toBe(shell.style.getPropertyValue("--kcq-ui-zoom"));
+        }
+        expect(Number(shell.style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(1256 / 1068);
     });
     it.each(["targeting", "escape", "enemy", "character"] as const)("preserves the %s screen and its choices while changing columns", screen => {
         const { preferences, execute, engine } = mount(true);
@@ -130,42 +153,44 @@ describe("battle view preferences", () => {
         const selection = element(selected).textContent;
         for (const columns of ["2", "1", "3", "auto", "1", "2", "3"] as const) {
             preferences.setColumns(columns);
-            preferences.setEnemyCards("compact"); preferences.setAutoZoom(false); preferences.setManualZoom(75);
+            preferences.setEnemyCards("compact");
             expect(element(selected).textContent).toBe(selection);
             expect(document.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
         }
         expect(execute).not.toHaveBeenCalled(); expect(engine.getGameState()).toEqual(before);
     });
     it("validates persisted values and retains changes when storage is unavailable", () => {
-        for (const [key, value] of Object.entries({ battleColumns: "4", autoZoom: "no", manualZoom: "202", enemyCards: "huge" })) {
-            window.localStorage.setItem(`kcq.${key}`, value);
-        }
+        window.localStorage.setItem("kcq.battleColumns", "4");
+        window.localStorage.setItem("kcq.enemyCards", "huge");
         const defaults = createViewPreferences();
-        expect([defaults.columns, defaults.autoZoom, defaults.manualZoom, defaults.enemyCards]).toEqual(["auto", true, 100, "auto"]);
+        expect([defaults.columns, defaults.enemyCards]).toEqual(["auto", "auto"]);
         vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("unavailable"); });
-        defaults.setColumns("3"); defaults.setAutoZoom(false); defaults.setManualZoom(75); defaults.setEnemyCards("expanded");
-        expect([defaults.columns, defaults.autoZoom, defaults.manualZoom, defaults.enemyCards]).toEqual(["3", false, 75, "expanded"]);
-        defaults.setManualZoom(151); defaults.setManualZoom(50); defaults.setManualZoom(NaN);
-        expect(defaults.manualZoom).toBe(75);
-        defaults.reset(); expect(defaults.manualZoom).toBe(DEFAULT_MANUAL_ZOOM);
+        defaults.setColumns("3"); defaults.setEnemyCards("expanded");
+        expect([defaults.columns, defaults.enemyCards]).toEqual(["3", "expanded"]);
+        defaults.reset(); expect([defaults.columns, defaults.enemyCards]).toEqual(["auto", "auto"]);
     });
 });
 
-it("restores all view preferences across remounts, including manual zoom stored while Auto is on", () => {
+it("restores columns and enemy cards across remounts and ignores obsolete zoom settings", () => {
+    window.localStorage.setItem("kcq.autoZoom", "false");
+    window.localStorage.setItem("kcq.manualZoom", "75");
     const { preferences } = mount();
-    preferences.setColumns("3"); preferences.setEnemyCards("compact"); preferences.setManualZoom(145);
-    expect(preferences.autoZoom).toBe(true);
+    preferences.setColumns("3"); preferences.setEnemyCards("compact");
     unmount?.(); unmount = undefined; document.body.replaceChildren();
     viewport.setViewport({ width: 390 });
     const { preferences: reloaded } = mount();
     assertColumns(3);
-    expect(reloaded.enemyCards).toBe("compact"); expect(reloaded.autoZoom).toBe(true); expect(reloaded.manualZoom).toBe(145);
-    reloaded.setAutoZoom(false);
-    expect(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom")).toBe("1.45");
+    expect(reloaded.enemyCards).toBe("compact");
+    expect(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
     expect(element(".kcq-app").style.getPropertyValue("--kcq-ui-min-width")).toBe("366px");
     element(".kcq-combat-header__settings").click();
     expect(element<HTMLSelectElement>(".kcq-battle-settings__columns select").value).toBe("3");
     expect(element<HTMLSelectElement>(".kcq-battle-settings__enemy-cards select").value).toBe("compact");
-    expect(element<HTMLInputElement>(".kcq-battle-settings__zoom input").value).toBe("145");
+    expect(document.querySelector('[aria-label="Zoom"], .kcq-battle-settings__zoom-row')).toBeNull();
     expect(getComputedStyle(element(".kcq-battle-settings__overlay")).overflow).toBe("auto");
+    // Column changes and Reset never write the retired preferences.
+    reloaded.reset();
+    expect(window.localStorage.getItem("kcq.autoZoom")).toBe("false");
+    expect(window.localStorage.getItem("kcq.manualZoom")).toBe("75");
+    expect([createViewPreferences().columns, createViewPreferences().enemyCards]).toEqual(["auto", "auto"]);
 });

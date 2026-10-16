@@ -1,3 +1,4 @@
+import type { Window as HappyWindow } from "happy-dom";
 import { createComponent, createRoot } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,13 +14,15 @@ import { useCombatKeyboard, type SharedKeyboard } from "../../src/ui/web/app/key
 import { createGameLogHistory } from "../../src/ui/web/app/viewModels/gameLogHistory";
 import { createGameLogViewModel } from "../../src/ui/web/app/viewModels/gameLog";
 
+const viewport = (window as unknown as HappyWindow).happyDOM;
+const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let unmount: (() => void) | undefined;
-beforeEach(() => { vi.useFakeTimers(); window.localStorage.clear(); });
+beforeEach(() => { vi.useFakeTimers(); window.localStorage.clear(); viewport.setViewport({ width: 390 }); });
 afterEach(() => {
     unmount?.(); unmount = undefined;
     document.body.replaceChildren();
     vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals();
-    window.localStorage.clear();
+    window.localStorage.clear(); viewport.setViewport(initialViewport);
 });
 
 function continueStory(): void {

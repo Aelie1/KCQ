@@ -67,7 +67,7 @@ button {
     overflow-x: auto;
 }
 
-/* Keep forced columns and manual zoom reachable by horizontal scrolling. */
+/* Keep layouts wider than the viewport reachable by horizontal scrolling. */
 .kcq-graphical-app__background {
     flex-shrink: 0;
     min-width: var(--kcq-ui-min-width, 0px);
@@ -3994,16 +3994,6 @@ button {
     margin-top: 8px;
 }
 
-.kcq-battle-settings__auto-zoom input {
-    min-width: 24px;
-    min-height: 24px;
-    accent-color: var(--kcq-accent-primary);
-}
-
-.kcq-battle-settings__zoom input:disabled {
-    opacity: 0.5;
-}
-
 .kcq-battle-settings__heading {
     margin: 0 0 4px;
     color: var(--kcq-text-primary);
@@ -4644,23 +4634,23 @@ button {
     margin: 0 0.35em;
 }
 
-:is(.kcq-battle-settings__log-lines, .kcq-battle-settings__zoom) {
+.kcq-battle-settings__log-lines {
     gap: 8px;
 }
 
-:is(.kcq-battle-settings__log-lines, .kcq-battle-settings__zoom) input {
+.kcq-battle-settings__log-lines input {
     flex: 1;
     min-width: 0;
     min-height: 44px;
     accent-color: var(--kcq-accent-primary);
 }
 
-:is(.kcq-battle-settings__log-lines, .kcq-battle-settings__zoom) output {
+.kcq-battle-settings__log-lines output {
     min-width: 1ch;
     color: var(--kcq-text-primary);
 }
 
-:is(.kcq-battle-settings__log-lines, .kcq-battle-settings__zoom) input:focus-visible {
+.kcq-battle-settings__log-lines input:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: 2px;
 }
@@ -5952,18 +5942,9 @@ button {
     }
 
     /* Sliders */
-    :is(.kcq-battle-settings__zoom,
-        .kcq-battle-settings__log-lines) input {
+    .kcq-battle-settings__log-lines input {
         flex: 0 0 170px;
         min-height: 32px;
-    }
-
-    /* Checkbox */
-    .kcq-battle-settings__auto-zoom input {
-        min-width: 18px;
-        min-height: 18px;
-        width: 18px;
-        height: 18px;
     }
 
     /* Compact buttons */
@@ -5986,41 +5967,6 @@ button {
     .kcq-battle-settings>.kcq-battle-result__actions:last-child {
         grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: 6px;
-    }
-
-    .kcq-battle-settings__zoom-row {
-        gap: 8px;
-    }
-
-    .kcq-battle-settings__zoom-row>span {
-        flex: 1 1 auto;
-        min-width: 0;
-    }
-
-    .kcq-battle-settings__zoom-auto {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        flex: 0 0 auto;
-        font-size: 12px;
-    }
-
-    .kcq-battle-settings__zoom-auto input {
-        width: 18px;
-        height: 18px;
-        margin: 0;
-        accent-color: var(--kcq-accent-primary);
-    }
-
-    .kcq-battle-settings__zoom-row>input[type="range"] {
-        flex: 0 1 130px;
-        min-width: 0;
-        accent-color: var(--kcq-accent-primary);
-    }
-
-    .kcq-battle-settings__zoom-row>output {
-        min-width: 40px;
-        text-align: right;
     }
 
 }

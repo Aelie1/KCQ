@@ -51,7 +51,7 @@ export function BattleSettingsPanel(props: {
     };
 
     onMount(() => {
-        onCleanup(setupResponsiveScale(overlay));
+        onCleanup(setupResponsiveScale(overlay, props.viewPreferences));
         const previousFocus = props.returnFocus ?? document.activeElement;
         resume.focus();
         document.addEventListener("keydown", onKeyDown, true);
@@ -96,21 +96,6 @@ export function BattleSettingsPanel(props: {
                             <For each={["1", "2", "3"]}>{value => <option value={value}>{value}</option>}</For>
                         </select>
                     </label>
-                    <div class="kcq-battle-settings__language kcq-battle-settings__zoom-row">
-                        <span>{props.presentation.ui("battleSettings.zoom")}</span>
-                        <label class="kcq-battle-settings__zoom-auto">
-                            Auto
-                            <input type="checkbox"
-                                checked={props.viewPreferences?.autoZoom}
-                                onChange={event => props.viewPreferences?.setAutoZoom(event.currentTarget.checked)} />
-                        </label>
-                        <input type="range" min="75" max="200" step="5"
-                            value={props.viewPreferences?.manualZoom}
-                            disabled={props.viewPreferences?.autoZoom}
-                            aria-label={props.presentation.ui("battleSettings.zoom")}
-                            onChange={event => props.viewPreferences?.setManualZoom(Number(event.currentTarget.value))} />
-                        <output>{props.viewPreferences?.manualZoom}%</output>
-                    </div>
                     <label class="kcq-battle-settings__language kcq-battle-settings__enemy-cards">
                         <span>{props.presentation.ui("battleSettings.enemyCards")}</span>
                         <select value={props.viewPreferences?.enemyCards}

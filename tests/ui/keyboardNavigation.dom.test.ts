@@ -15,7 +15,10 @@ const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let unmount: (() => void) | undefined;
 // Keep these navigation tests synchronous; combatPlayback covers timed input locking.
-beforeEach(() => window.localStorage.setItem("kcq.playbackSpeed", "instant"));
+beforeEach(() => {
+    window.localStorage.setItem("kcq.playbackSpeed", "instant");
+    viewport.setViewport({ width: 390 });
+});
 afterEach(() => {
     unmount?.();
     unmount = undefined;
@@ -551,7 +554,8 @@ describe("keyboard shortcut hint visibility", () => {
                 viewport.setViewport({ width });
                 // Happy DOM does not invalidate computed-style caches on viewport changes.
                 document.body.setAttribute("data-test-viewport", String(width));
-                for (const badge of badges) {
+                // Resizing across column breakpoints can replace the active panels.
+                for (const badge of document.querySelectorAll(".kcq-shortcut")) {
                     expect(getComputedStyle(badge).display).toBe(width <= 480 ? "none" : "inline-flex");
                     expect(getComputedStyle(badge).visibility).toBe("visible");
                 }

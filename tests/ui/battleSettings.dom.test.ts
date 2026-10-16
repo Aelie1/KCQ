@@ -105,7 +105,7 @@ describe("battle settings interactions", () => {
         expect(background.getAttribute("aria-hidden")).toBe("true");
         expect(document.activeElement).toBe(button("Resume", dialog));
         const controls = [...dialog.querySelectorAll("button, label, hr")];
-        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", ...Array(8).fill("LABEL"), "BUTTON", "HR", "BUTTON", "BUTTON", "BUTTON"]);
+        expect(controls.map(control => control.tagName)).toEqual(["BUTTON", ...Array(6).fill("LABEL"), "BUTTON", "HR", "BUTTON", "BUTTON", "BUTTON"]);
         expect(button("Resume", dialog).classList.contains("kcq-battle-result__retry")).toBe(true);
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent)).not.toContain(presentation.ui("library.title"));
         expect(dialog.querySelector("label")?.textContent).toContain("Language");
@@ -368,12 +368,10 @@ it("resets all preferences immediately and persistently without closing Settings
     change("select", "test");
     change(".kcq-battle-settings__columns select", "2");
     change(".kcq-battle-settings__enemy-cards select", "compact");
-    dialog.querySelector<HTMLInputElement>(".kcq-battle-settings__auto-zoom input")!.click();
-    change(".kcq-battle-settings__zoom input", "175", "input");
     change(".kcq-battle-settings__log-lines input", "8", "input");
     change(".kcq-battle-settings__playback-speed select", "slow");
     change(".kcq-battle-settings__shortcut-hints select", "always");
-    const keys = ["language", "battleColumns", "enemyCards", "autoZoom", "manualZoom", "overviewGameLogLines", "playbackSpeed", "keyboardShortcutHints"];
+    const keys = ["language", "battleColumns", "enemyCards", "overviewGameLogLines", "playbackSpeed", "keyboardShortcutHints"];
     const unrelated = Object.fromEntries(Object.keys(window.localStorage).filter(key => !keys.includes(key.replace(/^kcq\./, "")))
         .map(key => [key, window.localStorage.getItem(key)]));
     button("Reset to Defaults", dialog).click();
@@ -382,21 +380,17 @@ it("resets all preferences immediately and persistently without closing Settings
     expect(dialog.querySelector<HTMLSelectElement>("select")?.value).toBe("en");
     expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__columns select")?.value).toBe("auto");
     expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__enemy-cards select")?.value).toBe("auto");
-    expect(dialog.querySelector<HTMLInputElement>(".kcq-battle-settings__auto-zoom input")?.checked).toBe(true);
-    expect(dialog.querySelector<HTMLInputElement>(".kcq-battle-settings__zoom input")?.value).toBe("100");
-    expect(dialog.querySelector<HTMLInputElement>(".kcq-battle-settings__zoom input")?.disabled).toBe(true);
     expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__playback-speed select")?.value).toBe("normal");
     expect(dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__shortcut-hints select")?.value).toBe("temporary");
     expect(document.querySelector(".kcq-battle-stage")?.getAttribute("data-kcq-hints-visible")).toBe("false");
     expect(keys.map(key => window.localStorage.getItem(`kcq.${key}`)))
-        .toEqual(["en", "auto", "auto", "true", "100", "3", "normal", "temporary"]);
+        .toEqual(["en", "auto", "auto", "3", "normal", "temporary"]);
     for (const [key, value] of Object.entries(unrelated)) expect(window.localStorage.getItem(key)).toBe(value);
     expect(execute).not.toHaveBeenCalled(); expect(engine.getGameState()).toEqual(before);
     expect(prepareBattle).toHaveBeenCalledOnce(); expect(sessions[0]!.dispose).not.toHaveBeenCalled();
     unmount?.(); unmount = undefined; document.body.replaceChildren();
     mountBattle();
     const reloaded = openSettings();
-    expect(reloaded.querySelector<HTMLInputElement>(".kcq-battle-settings__zoom input")?.disabled).toBe(true);
     expect(reloaded.querySelector<HTMLInputElement>(".kcq-battle-settings__log-lines input")?.value).toBe("3");
     expect(reloaded.querySelector<HTMLSelectElement>(".kcq-battle-settings__playback-speed select")?.value).toBe("normal");
 });

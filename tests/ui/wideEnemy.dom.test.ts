@@ -53,7 +53,7 @@ function press(key: string, target: EventTarget = document): KeyboardEvent {
 
 const gameLog = () => document.querySelector<HTMLElement>('[role="log"]') ?? element(".kcq-battle-section--game-log");
 
-describe.each([1200, 1799, 1920])("desktop enemy details at %ipx", width => {
+describe.each([780, 1091, 1920])("desktop enemy details at %ipx", width => {
     beforeEach(() => viewport.setViewport({ width }));
     it("replaces only the enemy column and restores the list with the identity back button", () => {
         const { execute } = mountBattle();
@@ -119,13 +119,13 @@ describe.each([1200, 1799, 1920])("desktop enemy details at %ipx", width => {
         expect(execute).not.toHaveBeenCalled();
     });
 
-    it.each([390, 1199, 1200, WIDE_BATTLE_OVERVIEW_BREAKPOINT - 1, WIDE_BATTLE_OVERVIEW_BREAKPOINT, 1920])(
+    it.each([390, 779, 780, WIDE_BATTLE_OVERVIEW_BREAKPOINT - 1, WIDE_BATTLE_OVERVIEW_BREAKPOINT, 1920])(
         "embeds details in both desktop layouts at %ipx", width => {
             viewport.setViewport({ width });
             mountBattle();
             element('.kcq-enemy-card[data-kcq-shortcut="5"]').click();
             const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
-            const desktop = width >= 1200;
+            const desktop = width >= 780;
             const details = element(".kcq-enemy-details");
             expect(details.getAttribute("aria-label")).toBe("Skunkette 2");
             expect(!!details.closest(".kcq-battle-overview-wide")).toBe(wide);
@@ -146,7 +146,7 @@ describe.each([1200, 1799, 1920])("desktop enemy details at %ipx", width => {
     it("keeps the selected enemy across responsive changes without duplicate content or shortcuts", () => {
         mountBattle();
         press("5");
-        for (const width of [1799, 1200, 390, 1800, 1920]) {
+        for (const width of [1091, 780, 390, 1092, 1920]) {
             viewport.setViewport({ width });
             expect(document.querySelectorAll(".kcq-enemy-details")).toHaveLength(1);
             expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 2");

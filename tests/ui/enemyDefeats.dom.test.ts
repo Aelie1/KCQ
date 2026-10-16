@@ -118,8 +118,6 @@ describe("enemy defeat presentation", () => {
     it("preserves defeat timing and input blocking while resizing across the overview breakpoint", () => {
         viewport.setViewport({ width: 1920 });
         const b = mount();
-        // Happy DOM initializes media-listener state to false; prime its desktop match.
-        viewport.setViewport({ width: 1921 });
         b.kill();
         expect(element(".kcq-battle-overview__primary-action").hasAttribute("disabled")).toBe(true);
         vi.advanceTimersByTime(250);
@@ -128,7 +126,7 @@ describe("enemy defeat presentation", () => {
         expect(dead.dataset.enemyDefeat).toBe("true");
         expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("-250ms");
         expect(dead.style.getPropertyValue("--kcq-death-fade-delay")).toBe("250ms");
-        viewport.setViewport({ width: 1440 });
+        viewport.setViewport({ width: 1000 });
         expect(document.querySelector(".kcq-battle-overview-columns")).not.toBeNull();
         expect(cards()[0]!.style.getPropertyValue("--kcq-death-glow-delay")).toBe("-250ms");
         const resizedDead = cards()[0]!;

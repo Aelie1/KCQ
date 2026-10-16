@@ -40,6 +40,7 @@ import { LibraryPanel } from "./panels/LibraryPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
 import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
+import { BATTLE_LAYOUT_WIDTHS, calculateResponsiveLayout, ResponsiveLayoutContext } from "./responsiveScale";
 import { createSavePackage, type SavePackage } from "./savePackage";
 import { clearSave, writeSave } from "./savePersistence";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
@@ -82,9 +83,8 @@ type CharacterScreen = Extract<BattleScreen, { kind: "character" }>;
 type EscapeScreen = Extract<BattleScreen, { kind: "escape" }>;
 type TargetingScreen = Extract<BattleScreen, { kind: "targeting" }>;
 
-// Three stable columns and gutters at the existing desktop UI scale need
-// at least 1626 viewport pixels. Leave room before enabling the wide layout.
-export const WIDE_BATTLE_OVERVIEW_BREAKPOINT = 1800;
+// Layout width at 100%, plus the shell's 12px padding on each side.
+export const WIDE_BATTLE_OVERVIEW_BREAKPOINT = BATTLE_LAYOUT_WIDTHS[3] + 24;
 
 interface CurrentTargeting {
     action: ActionInfo;
@@ -404,25 +404,19 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const hintsVisible = props.keyboard?.hintsVisible
         ?? useCombatKeyboard(() => stage, () => !dialogOpen() && !playback.active(), globalKeyboardAction, () => shortcutHints.value);
 
-    const [autoWide, setAutoWide] = createSignal(false);
-    const [autoDesktop, setAutoDesktop] = createSignal(false);
-    const wide = () => viewPreferences.columns === "auto" ? autoWide() : viewPreferences.columns === "3";
-    const desktop = () => viewPreferences.columns === "auto" ? autoDesktop() : viewPreferences.columns !== "1";
+    const sharedLayout = useContext(ResponsiveLayoutContext);
+    // Standalone battles have no App shell; use the same calculation and padding.
+    const [viewportWidth, setViewportWidth] = createSignal(typeof window === "undefined" ? 390 : window.innerWidth);
+    const layout = sharedLayout ?? createMemo(() => calculateResponsiveLayout(viewportWidth() - 24, viewPreferences.columns));
+    const wide = () => layout().columns === 3;
+    const desktop = () => layout().columns > 1;
     const expandedEnemies = () => viewPreferences.enemyCards === "auto" ? desktop() : viewPreferences.enemyCards === "expanded";
     onMount(() => {
-        if (typeof window.matchMedia !== "function") return;
-        const media = window.matchMedia(`(min-width: ${WIDE_BATTLE_OVERVIEW_BREAKPOINT}px)`);
-        // Two 366px canvases + a 24px gutter at the maximum 1.5x UI scale,
-        // plus outer padding, need 1158px. Keep the existing medium breakpoint.
-        const desktopMedia = window.matchMedia("(min-width: 1200px)");
-        const update = () => setAutoWide(media.matches);
-        const updateDesktop = () => setAutoDesktop(desktopMedia.matches);
-        updateDesktop();
+        if (sharedLayout) return;
+        const update = () => setViewportWidth(window.innerWidth);
         update();
-        media.addEventListener("change", update);
-        desktopMedia.addEventListener("change", updateDesktop);
-        onCleanup(() => media.removeEventListener("change", update));
-        onCleanup(() => desktopMedia.removeEventListener("change", updateDesktop));
+        window.addEventListener("resize", update);
+        onCleanup(() => window.removeEventListener("resize", update));
     });
     const characterActorId = createMemo(() => characterScreen()?.actorId ?? targeting()?.screen.actorId ?? escapeScreen()?.actorId);
     const EnemyDetails = (): JSX.Element => <Show when={enemyScreen()}>

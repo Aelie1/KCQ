@@ -108,7 +108,7 @@ describe("encounter screen settings", () => {
         const { panel, prepareBattle } = mountSelection(screen);
         const { dialog } = openSettings();
         expect([...dialog.querySelectorAll("button, label, hr")].map(element => element.tagName))
-            .toEqual(["BUTTON", ...Array(8).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
+            .toEqual(["BUTTON", ...Array(6).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent))
             .toEqual(["Resume", "Reset to Defaults", "Back to Title Screen"]);
         expect(document.querySelector(".kcq-combat-header__library")?.getAttribute("aria-label"))
@@ -242,14 +242,12 @@ it("applies and resets shared view preferences from encounter Settings without c
     const { dialog } = openSettings();
     const columns = dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__columns select")!;
     columns.value = "3"; columns.dispatchEvent(new Event("change", { bubbles: true }));
-    dialog.querySelector<HTMLInputElement>(".kcq-battle-settings__auto-zoom input")!.click();
-    const zoom = dialog.querySelector<HTMLInputElement>(".kcq-battle-settings__zoom input")!;
-    zoom.value = "175"; zoom.dispatchEvent(new Event("input", { bubbles: true }));
     const shell = document.querySelector<HTMLElement>(".kcq-app")!;
-    expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1.75");
+    expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
     button("Reset to Defaults").click();
     expect(document.querySelector('[role="dialog"]')).toBe(dialog);
-    expect(columns.value).toBe("auto"); expect(zoom.disabled).toBe(true); expect(zoom.value).toBe("100");
+    expect(columns.value).toBe("auto");
+    expect(dialog.querySelector('[aria-label="Zoom"]')).toBeNull();
     expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
     button("Resume").click();
     expect(document.querySelector(".kcq-encounter-picker")).toBe(panel);
