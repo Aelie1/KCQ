@@ -781,25 +781,25 @@ button {
 .kcq-status-chip--success {
     border-color: var(--kcq-state-success);
     background: var(--kcq-state-success-bg);
-    color: var(--kcq-state-success);
+    color: var(--kcq-chip-text-success);
 }
 
 .kcq-status-chip--warning {
     border-color: var(--kcq-state-warning);
     background: var(--kcq-state-warning-bg);
-    color: var(--kcq-binding-moderate);
+    color: var(--kcq-chip-text-warning);
 }
 
 .kcq-status-chip--danger {
     border-color: var(--kcq-state-danger);
     background: var(--kcq-state-danger-bg);
-    color: var(--kcq-state-danger);
+    color: var(--kcq-chip-text-danger);
 }
 
 .kcq-status-chip--outcome {
     border-color: var(--kcq-binding-heavy);
     background: var(--kcq-binding-heavy-bg);
-    color: var(--kcq-binding-heavy);
+    color: var(--kcq-chip-text-heavy);
 }
 
 .kcq-status-chip--outcome-miss {
@@ -811,19 +811,19 @@ button {
 .kcq-status-chip--outcome-graze {
     border-color: var(--kcq-state-warning);
     background: var(--kcq-state-warning-bg);
-    color: var(--kcq-state-warning);
+    color: var(--kcq-chip-text-warning);
 }
 
 .kcq-status-chip--outcome-hit {
     border-color: var(--kcq-binding-heavy);
     background: var(--kcq-binding-heavy-bg);
-    color: var(--kcq-binding-heavy);
+    color: var(--kcq-chip-text-heavy);
 }
 
 .kcq-status-chip--outcome-crit {
     border-color: var(--kcq-state-danger);
     background: var(--kcq-state-danger-bg);
-    color: var(--kcq-state-danger);
+    color: var(--kcq-chip-text-danger);
 }
 
 .kcq-status-chip--glow-debuff {
@@ -1832,35 +1832,35 @@ button {
 .kcq-game-log__value--graze,
 .kcq-game-log__value--warning,
 .kcq-game-log__value--binding-moderate {
-    color: var(--kcq-state-warning);
+    color: var(--kcq-log-warning);
 }
 
 .kcq-game-log__value--hit,
 .kcq-game-log__value--binding-heavy {
-    color: var(--kcq-binding-heavy);
+    color: var(--kcq-log-hit);
 }
 
 .kcq-game-log__value--crit,
 .kcq-game-log__value--binding-severe {
-    color: var(--kcq-state-danger);
+    color: var(--kcq-log-danger);
     font-weight: 700;
 }
 
 .kcq-game-log__value--success {
-    color: var(--kcq-state-success);
+    color: var(--kcq-log-success);
 }
 
 .kcq-game-log__value--special {
-    color: var(--kcq-state-special);
+    color: var(--kcq-log-special);
 }
 
 .kcq-game-log__value--binding-light {
-    color: var(--kcq-binding-light);
+    color: var(--kcq-log-binding-light);
 }
 
 .kcq-game-log__value--binding-overwhelming,
 .kcq-game-log__value--binding-max {
-    color: var(--kcq-binding-impossible);
+    color: var(--kcq-log-binding-impossible);
     font-weight: 700;
 }
 
@@ -2508,32 +2508,32 @@ button {
 
 .kcq-command-tag--warning {
     background: var(--kcq-state-warning-bg);
-    color: var(--kcq-state-warning);
+    color: var(--kcq-chip-text-warning);
 }
 
 .kcq-command-tag--primary {
     background: var(--kcq-state-info-bg);
-    color: var(--kcq-state-info);
+    color: var(--kcq-chip-text-info);
 }
 
 .kcq-command-tag--danger {
     background: var(--kcq-state-danger-bg);
-    color: var(--kcq-state-danger);
+    color: var(--kcq-chip-text-danger);
 }
 
 .kcq-command-tag--special {
     background: var(--kcq-state-special-deep);
-    color: var(--kcq-state-special-vivid);
+    color: var(--kcq-chip-text-special);
 }
 
 .kcq-command-tag--success {
     background: var(--kcq-state-success-bg);
-    color: var(--kcq-state-success);
+    color: var(--kcq-chip-text-success);
 }
 
 .kcq-command-tag--ally {
     background: var(--kcq-binding-heavy-bg);
-    color: var(--kcq-binding-heavy);
+    color: var(--kcq-chip-text-heavy);
 }
 
 .kcq-command-tag--neutral {

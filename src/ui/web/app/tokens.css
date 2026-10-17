@@ -85,6 +85,28 @@
     --kcq-reaction-target-graze-border: #e7b79266;
     --kcq-reaction-target-hit-border: #e79e92aa;
     --kcq-reaction-target-crit-border: #f2bd9edd;
+
+    /* Semantic chip foregrounds */
+    --kcq-chip-text-info: var(--kcq-state-info);
+    --kcq-chip-text-success: var(--kcq-state-success);
+    --kcq-chip-text-warning: var(--kcq-state-warning);
+    --kcq-chip-text-danger: var(--kcq-state-danger);
+    --kcq-chip-text-special: var(--kcq-state-special-vivid);
+    --kcq-chip-text-heavy: var(--kcq-binding-heavy);
+
+    /* Game Log foregrounds */
+    --kcq-log-warning: var(--kcq-state-warning);
+    --kcq-log-hit: var(--kcq-binding-heavy);
+    --kcq-log-danger: var(--kcq-state-danger);
+    --kcq-log-success: var(--kcq-state-success);
+    --kcq-log-special: var(--kcq-state-special);
+    --kcq-log-binding-light: var(--kcq-binding-light);
+    --kcq-log-binding-impossible: var(--kcq-binding-impossible);
+
+    /* Character names */
+    --kcq-name-ko: var(--kcq-state-special);
+    --kcq-name-matsuko: var(--kcq-state-warning);
+    --kcq-name-hinari: var(--kcq-binding-light);
 }
 
 /* Light theme: cooler slate frame, bright active controls, and subdued inactive cards.
@@ -114,9 +136,9 @@
     --kcq-accent-primary-bg: #cbe7ee;
     --kcq-accent-primary-deep: #b7dce5;
 
-    --kcq-state-danger: #f84b65;
+    --kcq-state-danger: #c02664;
 
-    /* Pale semantic chip fills; text contrast is scoped to chips below. */
+    /* Semantic chip surfaces. */
     --kcq-state-success-bg: #c8f2e5;
     --kcq-state-warning-bg: #fff0ba;
     --kcq-state-danger-bg: #fad8e1;
@@ -142,72 +164,24 @@
     --kcq-feedback-text-shadow: 0 0 2px currentColor;
     --kcq-control-icon-filter: brightness(0.35);
     --kcq-effect-icon-filter: drop-shadow(0 1px 1px rgb(15 25 40 / 45%));
-}
 
-/* Light-mode chip lettering: preserve gameplay colors everywhere else.
-   These selectors belong here so palette experiments only require tokens.css. */
-:root[data-kcq-theme="light"] {
+    /* Light-on-light contrast variants. Gameplay colors remain independent. */
     --kcq-chip-text-info: #075a70;
     --kcq-chip-text-success: #08634d;
     --kcq-chip-text-warning: #805500;
     --kcq-chip-text-danger: #9a2442;
     --kcq-chip-text-special: #7032a0;
     --kcq-chip-text-heavy: #8b4516;
-}
 
-:root[data-kcq-theme="light"] .kcq-command-tag--primary {
-    color: var(--kcq-chip-text-info);
-}
+    --kcq-name-ko: #7b35c7;
+    --kcq-name-matsuko: #ad6900;
+    --kcq-name-hinari: #007c98;
 
-:root[data-kcq-theme="light"] .kcq-command-tag--success,
-:root[data-kcq-theme="light"] .kcq-status-chip--success {
-    color: var(--kcq-chip-text-success);
-}
-
-:root[data-kcq-theme="light"] .kcq-command-tag--warning,
-:root[data-kcq-theme="light"] .kcq-status-chip--warning,
-:root[data-kcq-theme="light"] .kcq-status-chip--outcome-graze {
-    color: var(--kcq-chip-text-warning);
-}
-
-:root[data-kcq-theme="light"] .kcq-command-tag--danger,
-:root[data-kcq-theme="light"] .kcq-status-chip--danger,
-:root[data-kcq-theme="light"] .kcq-status-chip--outcome-crit {
-    color: var(--kcq-chip-text-danger);
-}
-
-:root[data-kcq-theme="light"] .kcq-command-tag--special {
-    color: var(--kcq-chip-text-special);
-}
-
-:root[data-kcq-theme="light"] .kcq-command-tag--ally,
-:root[data-kcq-theme="light"] .kcq-status-chip--outcome,
-:root[data-kcq-theme="light"] .kcq-status-chip--outcome-hit {
-    color: var(--kcq-chip-text-heavy);
-}
-
-/* Darker character-name lettering on light surfaces. Keep the underlying
-   gameplay colors intact for meters, chips, effects and the dark theme. */
-:root[data-kcq-theme="light"] {
-    --kcq-name-ko: #7543a3;
-    --kcq-name-matsuko: #936000;
-    --kcq-name-hinari: #087d91;
-}
-
-:root[data-kcq-theme="light"] .kcq-player-identity--ko,
-:root[data-kcq-theme="light"] .kcq-game-log__actor--ko,
-:root[data-kcq-theme="light"] .kcq-game-log__value--entity-ko {
-    color: var(--kcq-name-ko);
-}
-
-:root[data-kcq-theme="light"] .kcq-player-identity--matsuko,
-:root[data-kcq-theme="light"] .kcq-game-log__actor--matsuko,
-:root[data-kcq-theme="light"] .kcq-game-log__value--entity-matsuko {
-    color: var(--kcq-name-matsuko);
-}
-
-:root[data-kcq-theme="light"] .kcq-player-identity--hinari,
-:root[data-kcq-theme="light"] .kcq-game-log__actor--hinari,
-:root[data-kcq-theme="light"] .kcq-game-log__value--entity-hinari {
-    color: var(--kcq-name-hinari);
+    --kcq-log-warning: #827000;
+    --kcq-log-hit: #b34a00;
+    --kcq-log-danger: #c02664;
+    --kcq-log-success: #087653;
+    --kcq-log-special: #7543a3;
+    --kcq-log-binding-light: #087d91;
+    --kcq-log-binding-impossible: #9139a4;
 }
