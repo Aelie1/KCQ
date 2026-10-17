@@ -195,6 +195,16 @@ function calculateAccuracy(actor: iEntity, actorStatus: GameStatus, target: iEnt
         }
     }
 
+    if (actorStatus?.autoWinsWillpower() && move.check === "willpower") {
+        contact = 100;
+    }
+
+    if (targetStatus?.autoWinsWillpower() && move.check === "willpower") {
+        contact = 0;
+        fullHit = 0;
+        crit = 0;
+    }
+
     /*
      * Convert the cumulative boundaries back into individual widths.
      */

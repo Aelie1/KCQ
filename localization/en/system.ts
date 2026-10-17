@@ -450,6 +450,7 @@ export const systemEnglishStrings: StringTable = {
     "flag.skipsTraps.name": "Ignores Traps",
     "flag.skipsTurn.name": "Skips Turn",
     "flag.incapacitated.name": "Incapacitated",
+    "flag.autoWillpower.name": "Absolute Will",
 
     "failure.invalidActor.text": "Invalid character.",
     "failure.invalidMove.text": "Invalid move.",

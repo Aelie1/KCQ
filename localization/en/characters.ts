@@ -55,6 +55,10 @@ export const matsukoEnglishStrings: StringTable = {
     "entity.matsuko.desc": "Student council vice-president.  Young Mistress of the Flame Clan.  Attacks with powerful white flame attacks and wields the [Power of Compulsion], which allows her to control the flow of battle.",
     "entity.matsuko.library": "Matsuko's Compulsion moves share cooldowns and do not consume her action.",
 
+    "passive.absoluteWill.name": "Absolute Will",
+    "passive.absoluteWill.desc": "An unnaturally strong willpower allows her to automatically win all willpower checks.",
+    "passive.absoluteWill.effect.autoWillpower": "Willpower based moves will fail against her, and her willpower based moves will always succeed.",
+
     "move.punch.name": "Punch",
     "move.punch.desc": "A basic punch.  Better than nothing once her powers are exhausted.",
     "move.kick.name": "Kick",

@@ -2,9 +2,9 @@ import { createSignal } from "solid-js";
 import type { ContentLibrary, ModifierReference, MoveReference } from "../../../../engine/public/library";
 import type { BindingId, ModifierId, ModifierSet, MoveTrait } from "../../../../engine/public/types";
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
+import { GAME_GUIDE_PAGES, gameGuidePage } from "../content/gameGuide";
 import type { CommandTagViewModel } from "./characterDetails";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
-import { GAME_GUIDE_PAGES, gameGuidePage } from "../content/gameGuide";
 
 export const LIBRARY_CATEGORIES = ["guide", "difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses"] as const;
 export type LibraryCategory = typeof LIBRARY_CATEGORIES[number];
@@ -96,7 +96,11 @@ export function libraryModifiers(modifiers: ModifierSet | undefined, p: Presenta
 }
 export function libraryRestrictions(reference: ModifierReference, p: Presentation) {
     return [
-        ...(reference.flags ?? []).map(flag => ({ label: flag === "blocksEscape" ? p.ui("library.blocksEscape") : p.flag(flag), tone: flag === "skipsTraps" ? "success" as const : "danger" as const })),
+        ...(reference.flags ?? []).map(flag => (
+            {
+                label: flag === "blocksEscape" ? p.ui("library.blocksEscape") : p.flag(flag),
+                tone: flag === "skipsTraps" || flag === "autoWillpower" ? "success" as const : "danger" as const
+            })),
         ...(reference.blockedMoveTypes ?? []).map(type => ({ label: p.ui("library.blocked", { type: p.moveType(type) }), tone: "danger" as const })),
         ...(reference.allowedMoveTypes ?? []).map(type => ({ label: p.ui("library.allowed", { type: p.moveType(type) }), tone: "success" as const })),
     ];

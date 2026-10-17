@@ -195,6 +195,10 @@ export class GameStatus {
         return this.hasFlag("incapacitated");
     }
 
+    autoWinsWillpower(): boolean {
+        return this.hasFlag("autoWillpower");
+    }
+
     private hasFlag(flag: FlagId): boolean {
         const cached = this.flags[flag];
         if (cached !== undefined) {

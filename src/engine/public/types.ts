@@ -395,6 +395,7 @@ export type FlagId =
     | "blocksAssist"
     | "blocksBonusEscape"
     | "blocksMoving"
+    | "autoWillpower"
     | "skipsTraps"
     | "skipsTurn"
     | "incapacitated";

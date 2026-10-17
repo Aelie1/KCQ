@@ -1,4 +1,4 @@
-import { CharacterDef, MoveDef } from "../../engine/protected/definitions";
+import { CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicDamageEffect, basicPlayerAccuracy, tr } from "../../engine/protected/mechanics";
 import { s } from "../../engine/protected/status";
@@ -33,6 +33,11 @@ const ATTACKME_MODIFIER = 3;
 const ATTACKME_BUFF = "defenseBarrier";
 
 const DEFAULT_COMPULSION_COOLDOWN = 2;
+
+export const absoluteWill: PassiveDef = {
+    id: "absoluteWill",
+    status: { flags: ["autoWillpower"] }
+}
 
 export const punch: MoveDef = {
     id: "punch",
@@ -298,10 +303,11 @@ export const matsuko: CharacterDef = {
     id: "matsuko",
     moves: [whiteFlame, phoenixKick, immolation, obey, stop, attackMe],
     empoweredMoves: [fairyWhiteFlame, fairyPhoenixKick],
-    passives: []
+    passives: [absoluteWill]
 };
 
 export const matsukoCatalog: ContentCatalogFragment = {
     characters: [matsuko],
     moves: [whiteFlame, phoenixKick, immolation, obey, stop, attackMe, fairyWhiteFlame, fairyPhoenixKick, punch, kick],
+    passives: [absoluteWill]
 };
