@@ -58,7 +58,7 @@ describe("character details panel", () => {
         const html = renderToString(() => createComponent(CharacterDetailsPanel, characterDetailsFixture));
         const text = renderedText(html);
 
-        expect(text).toContain("Status &amp; Capabilities");
+        expect(text).toContain("Modifiers");
         expect(text).toContain("MouthBlk");
         expect(text).toContain("Defense-8");
         expect(text).not.toContain("+0");

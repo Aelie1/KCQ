@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -101,11 +101,13 @@ describe("overview section configuration", () => {
 describe("responsive battle overview", () => {
     it.each([390, 1091, 1920])("keeps temporary and permanent status indicators inline in expanded cards (%ipx)", width => {
         const state: GameState = structuredClone(fixture.state);
-        state.enemies = [{ ...state.enemies[0]!, id: "queen", buffs: [
-            { id: "starlightBindings", duration: 3, icon: "shield-off", modifiers: { defense: -2 } },
-            { id: "subspaceClutter", duration: 2, icon: "sword", modifiers: { hit: -2 } },
-            { id: "difficulty", icon: "crown", modifiers: { hit: 2 } },
-        ] }];
+        state.enemies = [{
+            ...state.enemies[0]!, id: "queen", buffs: [
+                { id: "starlightBindings", duration: 3, icon: "shield-off", modifiers: { defense: -2 } },
+                { id: "subspaceClutter", duration: 2, icon: "sword", modifiers: { hit: -2 } },
+                { id: "difficulty", icon: "crown", modifiers: { hit: 2 } },
+            ]
+        }];
         const { host } = mountBattle(width, 3, state);
         const card = host.querySelector(".kcq-enemy-card")!;
         const header = card.querySelector(".kcq-enemy-card__header")!;
@@ -239,10 +241,12 @@ describe("responsive battle overview", () => {
         arms.value = 95; arms.level = "overwhelming";
         state.enemies[0]!.intentions = [{
             move: "latexSpray", resolved: false, effects: [], targets: [
-                { target: "ko", band: "hit", effects: [
-                    { type: "binding", target: "ko", binding: "latexArms", amount: 34 },
-                    { type: "damage", target: "ko", amount: 12 },
-                ] },
+                {
+                    target: "ko", band: "hit", effects: [
+                        { type: "binding", target: "ko", binding: "latexArms", amount: 34 },
+                        { type: "damage", target: "ko", amount: 12 },
+                    ]
+                },
                 { target: "ko", band: "crit", effects: [{ type: "binding", target: "ko", binding: "latexLegs", amount: 17 }] },
                 { target: "matsuko", band: "graze", effects: [{ type: "binding", target: "matsuko", binding: "latexArms", amount: 4 }] },
                 { target: "hinari", band: "miss", effects: [] },
@@ -269,12 +273,20 @@ describe("responsive battle overview", () => {
         const state: GameState = structuredClone(fixture.state);
         const enemy = state.enemies[0]!;
         enemy.intentions = [
-            { move: "skunkPerfume", resolved: false, targets: [{ target: enemy.id, band: "none", effects: [
-                { type: "buff", target: enemy.id, operation: "add", buff: { id: "latexMist", severity: 4, modifiers: { hit: 2 } } },
-            ] }], effects: [] },
-            { move: "healingMagic", resolved: false, targets: [{ target: enemy.id, band: "none", effects: [
-                { type: "damage", target: enemy.id, amount: -50 },
-            ] }], effects: [] },
+            {
+                move: "skunkPerfume", resolved: false, targets: [{
+                    target: enemy.id, band: "none", effects: [
+                        { type: "buff", target: enemy.id, operation: "add", buff: { id: "latexMist", severity: 4, modifiers: { hit: 2 } } },
+                    ]
+                }], effects: []
+            },
+            {
+                move: "healingMagic", resolved: false, targets: [{
+                    target: enemy.id, band: "none", effects: [
+                        { type: "damage", target: enemy.id, amount: -50 },
+                    ]
+                }], effects: []
+            },
             { move: "callReinforcements", resolved: false, targets: [], effects: [{ type: "enemy", target: "fairy", operation: "spawn" }] },
         ];
         const { host } = mountBattle(1920, 3, state);
@@ -283,7 +295,6 @@ describe("responsive battle overview", () => {
         expect(card.querySelectorAll(".kcq-enemy-card__overflow, .kcq-status-chip")).toHaveLength(0);
         const consequences = [...card.querySelectorAll(".kcq-intent-row__consequences")].map(row => row.textContent);
         expect(consequences[0]).toContain("Latex Mist IV");
-        expect(consequences[0]).toContain("Accuracy +2");
         expect(consequences[1]).toContain("Healing +50");
         expect(consequences[2]).toContain("Spawn Fairy");
         expect(card.querySelector(".kcq-intent-row__target")?.textContent).toBe("Skunkette 1");

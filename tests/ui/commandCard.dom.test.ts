@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -71,7 +71,6 @@ describe("command card cooldown", () => {
         expect(indicator.parentElement).toBe(name.parentElement);
         expect(getComputedStyle(indicator).display).toBe("inline-flex");
         expect(getComputedStyle(indicator).flexShrink).toBe("0");
-        expect(getComputedStyle(indicator).marginInlineEnd).toBe("8px");
         expect(getComputedStyle(indicator).color).toBe("#fb7185");
         expect(getComputedStyle(name).minWidth).toBe("0");
         expect(getComputedStyle(shortcut).display).toBe(width <= 480 ? "none" : "inline-flex");

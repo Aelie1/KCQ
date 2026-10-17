@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -33,7 +33,7 @@ function mountBattle() {
     document.body.append(style, host);
     unmount = render(() => createComponent(BattleApp, {
         engine, presentation: fixture.presentation,
-        playbackSpeed: { value: "instant", onChange: () => {} },
+        playbackSpeed: { value: "instant", onChange: () => { } },
     }), host);
     // Seed Happy DOM's media-query change tracking at the mounted width.
     window.dispatchEvent(new Event("resize"));
@@ -98,7 +98,7 @@ describe.each([780, 1091, 1920])("desktop enemy details at %ipx", width => {
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-enemy-details__identity").textContent).toContain("Skunkette 1");
         expect(element(".kcq-enemy-details__identity").textContent).toContain("152 / 200");
-        expect(element("#enemy-status-heading").textContent).toBe("Status & Modifiers");
+        expect(element("#enemy-status-heading").textContent).toBe("Modifiers");
         expect(element(".kcq-character-capabilities__list").textContent).toContain("-2");
         expect(element(".kcq-character-effects").textContent).toContain("Pounce");
         expect([...document.querySelectorAll(".kcq-enemy-details__intention")].map(node => node.getAttribute("aria-label")))
