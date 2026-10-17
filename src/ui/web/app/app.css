@@ -509,7 +509,7 @@ button {
 .kcq-battle-overview-wide,
 .kcq-character-details-wide {
     display: grid;
-    grid-template-columns: 366px 366px 288px;
+    grid-template-columns: 366px 366px 366px;
     grid-template-rows: auto minmax(0, 1fr);
     gap: 4px 24px;
     width: max-content;
@@ -912,15 +912,15 @@ button {
 }
 
 .kcq-intent-row__target--ko {
-    color: var(--kcq-state-special);
+    color: var(--kcq-name-ko);
 }
 
 .kcq-intent-row__target--matsuko {
-    color: var(--kcq-state-warning);
+    color: var(--kcq-name-matsuko);
 }
 
 .kcq-intent-row__target--hinari {
-    color: var(--kcq-binding-light);
+    color: var(--kcq-name-hinari);
 }
 
 .kcq-intent-row__target-separator {
@@ -1293,6 +1293,12 @@ button {
     --kcq-projected-meter-current: var(--kcq-text-dim);
     --kcq-projected-meter-change: var(--kcq-text-dim);
     --kcq-projected-meter-radius: 4px;
+}
+
+.kcq-binding-meter--standard .kcq-binding-meter__fill-clip,
+.kcq-projected-meter--standard .kcq-projected-meter__fill-clip {
+    border-top-left-radius: 4px;
+    border-bottom-left-radius: 4px;
 }
 
 .kcq-projected-meter--primary,
@@ -1696,22 +1702,22 @@ button {
 
 .kcq-game-log__actor--ko,
 .kcq-game-log__value--entity-ko {
-    color: var(--kcq-state-special);
+    color: var(--kcq-name-ko);
 }
 
 .kcq-game-log__actor--matsuko,
 .kcq-game-log__value--entity-matsuko {
-    color: var(--kcq-state-warning);
+    color: var(--kcq-name-matsuko);
 }
 
 .kcq-game-log__actor--hinari,
 .kcq-game-log__value--entity-hinari {
-    color: var(--kcq-binding-light);
+    color: var(--kcq-name-hinari);
 }
 
 .kcq-game-log__actor--neutral,
 .kcq-game-log__value--entity-neutral {
-    color: var(--kcq-state-danger);
+    color: var(--kcq-text-primary);
 }
 
 .kcq-game-log__entry--phase {
@@ -2094,17 +2100,17 @@ button {
 
 .kcq-player-identity--ko,
 .kcq-focused-character h2.kcq-player-identity--ko {
-    color: var(--kcq-state-special);
+    color: var(--kcq-name-ko);
 }
 
 .kcq-player-identity--matsuko,
 .kcq-focused-character h2.kcq-player-identity--matsuko {
-    color: var(--kcq-state-warning);
+    color: var(--kcq-name-matsuko);
 }
 
 .kcq-player-identity--hinari,
 .kcq-focused-character h2.kcq-player-identity--hinari {
-    color: var(--kcq-binding-light);
+    color: var(--kcq-name-hinari);
 }
 
 .kcq-focused-character .kcq-status-chip {
@@ -2740,15 +2746,15 @@ button {
 }
 
 .kcq-linked-entity-chip--ko {
-    color: var(--kcq-state-special);
+    color: var(--kcq-name-ko);
 }
 
 .kcq-linked-entity-chip--matsuko {
-    color: var(--kcq-state-warning);
+    color: var(--kcq-name-matsuko);
 }
 
 .kcq-linked-entity-chip--hinari {
-    color: var(--kcq-binding-light);
+    color: var(--kcq-name-hinari);
 }
 
 .kcq-target-header__name {
@@ -2765,17 +2771,17 @@ button {
 
 .kcq-target-header__name.kcq-player-identity--ko,
 .kcq-targeting__action-effect-group h3.kcq-player-identity--ko {
-    color: var(--kcq-state-special);
+    color: var(--kcq-name-ko);
 }
 
 .kcq-target-header__name.kcq-player-identity--matsuko,
 .kcq-targeting__action-effect-group h3.kcq-player-identity--matsuko {
-    color: var(--kcq-state-warning);
+    color: var(--kcq-name-matsuko);
 }
 
 .kcq-target-header__name.kcq-player-identity--hinari,
 .kcq-targeting__action-effect-group h3.kcq-player-identity--hinari {
-    color: var(--kcq-binding-light);
+    color: var(--kcq-name-hinari);
 }
 
 .kcq-target-header__meter {
@@ -3216,15 +3222,15 @@ button {
 }
 
 .kcq-escape-group__header h2.kcq-player-identity--ko {
-    color: var(--kcq-state-special);
+    color: var(--kcq-name-ko);
 }
 
 .kcq-escape-group__header h2.kcq-player-identity--matsuko {
-    color: var(--kcq-state-warning);
+    color: var(--kcq-name-matsuko);
 }
 
 .kcq-escape-group__header h2.kcq-player-identity--hinari {
-    color: var(--kcq-binding-light);
+    color: var(--kcq-name-hinari);
 }
 
 .kcq-escape-group__header p {
@@ -6213,8 +6219,7 @@ button {
 }
 
 /* Shared contrast for fixed gameplay foregrounds on either palette. */
-:where(
-    .kcq-combat-header__trap-value,
+:where(.kcq-combat-header__trap-value,
     .kcq-status-chip--success,
     .kcq-status-chip--warning,
     .kcq-status-chip--danger,
@@ -6310,8 +6315,7 @@ button {
     .kcq-library__binding-amount-heading>span,
     .kcq-library__status-modifier--danger strong,
     .kcq-library__status-modifier--success strong,
-    .kcq-library__binding-amount-heading .kcq-library__binding-limit
-) {
+    .kcq-library__binding-amount-heading .kcq-library__binding-limit) {
     text-shadow: var(--kcq-semantic-text-shadow);
 }
 

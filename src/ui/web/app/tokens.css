@@ -87,50 +87,127 @@
     --kcq-reaction-target-crit-border: #f2bd9edd;
 }
 
-/* Keep semantic badges dark enough for the unchanged gameplay foregrounds.
-   Only the theme-dependent section above is overridden here. */
+/* Light theme: cooler slate frame, bright active controls, and subdued inactive cards.
+   Gameplay identity colors above stay exactly the same. */
 :root[data-kcq-theme="light"] {
     color-scheme: light;
 
-    --kcq-surface-background: #edf2f7;
-    --kcq-surface-panel: #f8fafc;
-    --kcq-surface-panel-alt: #e8eef5;
-    --kcq-surface-card: #ffffff;
-    --kcq-surface-raised: #dbe4ef;
-    --kcq-surface-inset: #e4ebf3;
-    --kcq-surface-overlay: rgb(20 35 55 / 40%);
-    --kcq-shadow-raised: rgb(25 45 70 / 18%);
-    --kcq-structure-border: #b7c5d6;
-    --kcq-structure-border-strong: #869bb2;
-    --kcq-text-primary: #172438;
-    --kcq-text-secondary: #33475f;
-    --kcq-text-muted: #52657c;
-    --kcq-text-dim: #52657c;
-    --kcq-text-secondary-action: #23384e;
-    --kcq-accent-primary: #0c6a83;
-    --kcq-accent-primary-bg: #deedf4;
-    --kcq-accent-primary-deep: #dceef2;
-    --kcq-state-success-bg: #103e34;
-    --kcq-state-warning-bg: #453508;
-    --kcq-state-danger-bg: #4c2331;
-    --kcq-state-special-bg: #382b60;
-    --kcq-state-special-deep: #462047;
-    --kcq-state-neutral-bg: #e1e8f0;
-    --kcq-binding-heavy-bg: #4a280e;
-    --kcq-action-danger-text: #9e243f;
-    --kcq-action-danger-border: #c48694;
-    --kcq-action-danger-bg: #f9e5ea;
-    --kcq-action-danger-hover-text: #7d1930;
-    --kcq-action-danger-hover-border: #ad546a;
-    --kcq-action-danger-hover-bg: #f1cbd5;
-    --kcq-surface-danger: #f9e5ea;
-    --kcq-surface-special: #f1e5f7;
-    --kcq-surface-meter-track: #273449;
+    --kcq-surface-background: #cbd6dd;
+    --kcq-surface-panel: #fbf9f4;
+    --kcq-surface-panel-alt: #f4f2ed;
+    --kcq-surface-card: #dce5eb;
+    --kcq-surface-raised: #fffdf8;
+    --kcq-surface-inset: #e7edf0;
+    --kcq-surface-overlay: rgb(20 34 49 / 48%);
+    --kcq-shadow-raised: rgb(31 49 66 / 19%);
+
+    --kcq-structure-border: #a9bbc9;
+    --kcq-structure-border-strong: #7e96a9;
+
+    --kcq-text-primary: #18283d;
+    --kcq-text-secondary: #435872;
+    --kcq-text-muted: #596d82;
+    --kcq-text-dim: #596d82;
+    --kcq-text-secondary-action: #304962;
+
+    --kcq-accent-primary: #087c96;
+    --kcq-accent-primary-bg: #cbe7ee;
+    --kcq-accent-primary-deep: #b7dce5;
+
+    --kcq-state-danger: #f84b65;
+
+    /* Pale semantic chip fills; text contrast is scoped to chips below. */
+    --kcq-state-success-bg: #c8f2e5;
+    --kcq-state-warning-bg: #fff0ba;
+    --kcq-state-danger-bg: #fad8e1;
+    --kcq-state-special-bg: #eadcf8;
+    --kcq-state-special-deep: #eadcf8;
+    --kcq-state-neutral-bg: #d8e1e8;
+    --kcq-binding-heavy-bg: #ffe3c8;
+
+    --kcq-action-danger-text: #952d43;
+    --kcq-action-danger-border: #ba8592;
+    --kcq-action-danger-bg: #f2dfe1;
+    --kcq-action-danger-hover-text: #752035;
+    --kcq-action-danger-hover-border: #a85c6b;
+    --kcq-action-danger-hover-bg: #e9c9cf;
+
+    --kcq-surface-danger: #f2dfe1;
+    --kcq-surface-special: #e9dff1;
+    --kcq-surface-meter-track: #26364b;
     --kcq-text-on-accent: #ffffff;
     --kcq-text-on-avatar: #ffffff;
-    --kcq-state-info-bg: #0e3c46;
-    --kcq-semantic-text-shadow: 0 1px 1px rgb(15 23 42 / 90%), 0 0 2px rgb(15 23 42 / 85%);
-    --kcq-feedback-text-shadow: 0 1px 1px rgb(15 23 42 / 90%), 0 0 2px rgb(15 23 42 / 85%), 0 0 5px currentColor;
+    --kcq-state-info-bg: #cdeff5;
+    --kcq-semantic-text-shadow: none;
+    --kcq-feedback-text-shadow: 0 0 2px currentColor;
     --kcq-control-icon-filter: brightness(0.35);
-    --kcq-effect-icon-filter: drop-shadow(0 1px 1px rgb(15 23 42 / 90%));
+    --kcq-effect-icon-filter: drop-shadow(0 1px 1px rgb(15 25 40 / 45%));
+}
+
+/* Light-mode chip lettering: preserve gameplay colors everywhere else.
+   These selectors belong here so palette experiments only require tokens.css. */
+:root[data-kcq-theme="light"] {
+    --kcq-chip-text-info: #075a70;
+    --kcq-chip-text-success: #08634d;
+    --kcq-chip-text-warning: #805500;
+    --kcq-chip-text-danger: #9a2442;
+    --kcq-chip-text-special: #7032a0;
+    --kcq-chip-text-heavy: #8b4516;
+}
+
+:root[data-kcq-theme="light"] .kcq-command-tag--primary {
+    color: var(--kcq-chip-text-info);
+}
+
+:root[data-kcq-theme="light"] .kcq-command-tag--success,
+:root[data-kcq-theme="light"] .kcq-status-chip--success {
+    color: var(--kcq-chip-text-success);
+}
+
+:root[data-kcq-theme="light"] .kcq-command-tag--warning,
+:root[data-kcq-theme="light"] .kcq-status-chip--warning,
+:root[data-kcq-theme="light"] .kcq-status-chip--outcome-graze {
+    color: var(--kcq-chip-text-warning);
+}
+
+:root[data-kcq-theme="light"] .kcq-command-tag--danger,
+:root[data-kcq-theme="light"] .kcq-status-chip--danger,
+:root[data-kcq-theme="light"] .kcq-status-chip--outcome-crit {
+    color: var(--kcq-chip-text-danger);
+}
+
+:root[data-kcq-theme="light"] .kcq-command-tag--special {
+    color: var(--kcq-chip-text-special);
+}
+
+:root[data-kcq-theme="light"] .kcq-command-tag--ally,
+:root[data-kcq-theme="light"] .kcq-status-chip--outcome,
+:root[data-kcq-theme="light"] .kcq-status-chip--outcome-hit {
+    color: var(--kcq-chip-text-heavy);
+}
+
+/* Darker character-name lettering on light surfaces. Keep the underlying
+   gameplay colors intact for meters, chips, effects and the dark theme. */
+:root[data-kcq-theme="light"] {
+    --kcq-name-ko: #7543a3;
+    --kcq-name-matsuko: #936000;
+    --kcq-name-hinari: #087d91;
+}
+
+:root[data-kcq-theme="light"] .kcq-player-identity--ko,
+:root[data-kcq-theme="light"] .kcq-game-log__actor--ko,
+:root[data-kcq-theme="light"] .kcq-game-log__value--entity-ko {
+    color: var(--kcq-name-ko);
+}
+
+:root[data-kcq-theme="light"] .kcq-player-identity--matsuko,
+:root[data-kcq-theme="light"] .kcq-game-log__actor--matsuko,
+:root[data-kcq-theme="light"] .kcq-game-log__value--entity-matsuko {
+    color: var(--kcq-name-matsuko);
+}
+
+:root[data-kcq-theme="light"] .kcq-player-identity--hinari,
+:root[data-kcq-theme="light"] .kcq-game-log__actor--hinari,
+:root[data-kcq-theme="light"] .kcq-game-log__value--entity-hinari {
+    color: var(--kcq-name-hinari);
 }
