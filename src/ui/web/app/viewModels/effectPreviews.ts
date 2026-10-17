@@ -89,16 +89,16 @@ export function createEffectPreviewViewModels(
 }
 
 export function createEffectPreviews(effect: Effect, id: string, context: EffectContext): EffectPreviewViewModel[] {
-    if (effect.type !== "intention" || effect.operation !== "cancel") {
+    if (effect.type !== "intention" || effect.operation === "target") {
         return [createEffectPreview(effect, id, context)];
     }
 
+    const weaken = effect.operation === "weaken";
     const enemy = context.state?.enemies.find(({ id: enemyId }) => enemyId === effect.target);
-    const boss = enemy?.rank === "boss";
-    const label = context.presentation.ui(boss ? "targeting.effectWeaken" : "targeting.effectCancel");
-    const percentage = context.presentation.ui("targeting.percentage", {
+    const label = context.presentation.ui(weaken ? "targeting.effectWeaken" : "targeting.effectCancel");
+    const percentage = weaken ? context.presentation.ui("targeting.percentage", {
         value: effect.amount * 100,
-    });
+    }) : "";
     const intentions = enemy?.intentions ?? [];
 
     if (intentions.length === 0) {
@@ -107,7 +107,7 @@ export function createEffectPreviews(effect: Effect, id: string, context: Effect
             effect.type,
             "primary",
             label,
-            boss ? percentage : "",
+            percentage,
             recipientDetails(effect.target, context),
         )];
     }
@@ -117,7 +117,7 @@ export function createEffectPreviews(effect: Effect, id: string, context: Effect
         effect.type,
         "primary",
         label,
-        boss
+        weaken
             ? `${context.presentation.move(intention.move)} ${percentage}`
             : context.presentation.move(intention.move),
         recipientDetails(effect.target, context),
@@ -165,10 +165,8 @@ function createEffectPreview(effect: Effect, id: string, context: EffectContext)
                 }), []);
         }
         case "intention":
-            return compactEffect(id, effect.type, "primary",
-                presentation.ui(effect.operation === "cancel" ? "targeting.effectCancel" : "targeting.effectRetarget"),
-                effect.operation === "cancel" ? effect.amount.toString() : presentation.entity(effect.destination),
-                recipientDetails(effect.target, context));
+            return compactEffect(id, effect.type, "primary", presentation.ui("targeting.effectRetarget"),
+                presentation.entity(effect.operation === "target" ? effect.destination : ""), recipientDetails(effect.target, context));
         case "refresh":
             return compactEffect(id, effect.type, "primary", presentation.ui("targeting.effectRefresh"),
                 context.scopeTarget === effect.target ? "" : presentation.entity(effect.target), []);

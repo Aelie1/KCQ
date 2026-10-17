@@ -1,14 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { createStockEngine } from "../../src/stock";
-import type { Effect } from "../../src/engine/public/types";
-import { stockStrings } from "../helpers/stockStrings";
-import { Presentation } from "../../src/ui/presentation/presentation";
-import { createEncounterDetailsViewModel, createEncounterPickerViewModel, encounterStars } from "../../src/ui/web/app/viewModels/encounters";
 import { getThresholds } from "../../src/engine/public/mechanics";
+import type { Effect } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
+import { Presentation } from "../../src/ui/presentation/presentation";
+import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
 import { groupEffectPreviews } from "../../src/ui/web/app/viewModels/effectGroups";
 import { createEffectPreviewViewModels } from "../../src/ui/web/app/viewModels/effectPreviews";
+import { createEncounterDetailsViewModel, createEncounterPickerViewModel, encounterStars } from "../../src/ui/web/app/viewModels/encounters";
 import { createTargetingViewModel } from "../../src/ui/web/app/viewModels/targeting";
-import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
+import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
 const library = createStockEngine().getLibrary();
@@ -133,7 +133,7 @@ describe("encounter catalog view models", () => {
             { type: "move", move: "telekinesis" },
             { type: "data", target: "allies", name: "subspace", amount: 1 },
             { type: "refresh", target: "allies" },
-            { type: "intention", target: "empress", operation: "cancel", amount: 0.5 },
+            { type: "intention", target: "empress", operation: "weaken", amount: 0.5 },
         ];
         const previews = createEffectPreviewViewModels(effects, { presentation });
         expect(previews).toHaveLength(effects.length);
@@ -144,7 +144,7 @@ describe("encounter catalog view models", () => {
 
     it("keeps targeting and standalone formatting on the same path", () => {
         const fixture = targetingFixtures.telekinesisChoose;
-        const effects: Effect[] = [{ type: "trap", trap: "trapPuddle", amount: 12 }, { type: "intention", target: "skunketteQueen", operation: "cancel", amount: 0.5 }];
+        const effects: Effect[] = [{ type: "trap", trap: "trapPuddle", amount: 12 }, { type: "intention", target: "skunketteQueen", operation: "weaken", amount: 0.5 }];
         const model = createTargetingViewModel(fixture.state, fixture.actorId, { ...fixture.action, effects }, fixture.presentation, fixture.actions, fixture.thresholds);
         expect(model.actionEffects).toEqual(createEffectPreviewViewModels(effects, { state: fixture.state, actions: fixture.actions, thresholds: fixture.thresholds, presentation: fixture.presentation }, "action-effect"));
     });

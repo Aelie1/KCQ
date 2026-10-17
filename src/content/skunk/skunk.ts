@@ -388,7 +388,6 @@ export const skunk: EnemyDef = {
                 type: "intention",
                 operation: "cancel",
                 target: target,
-                amount: 0
             })
             effects.push({
                 type: "move",

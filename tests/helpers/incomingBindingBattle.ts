@@ -1,5 +1,5 @@
-import { isCharacter } from "../../src/engine/protected/helpers";
 import type { StatusDef } from "../../src/engine/protected/definitions";
+import { isCharacter } from "../../src/engine/protected/helpers";
 import type { iEffect } from "../../src/engine/protected/types";
 import type { GameState } from "../../src/engine/public/types";
 import { makeBindingDef, makeCharacterDef, makeEncounterDef, makeEnemyDef, makeMove } from "./helpers";
@@ -14,10 +14,12 @@ export function incomingBindingBattle(options: {
     repeatFirst?: boolean;
     nextRound?: boolean;
 } = {}) {
-    const interruptionStatus: StatusDef = { id: "stunned", levels: [{}, {
-        flags: options.interruption === "blocksAttack" || options.interruption === "skipsTurn"
-            ? [options.interruption] : [],
-    }] };
+    const interruptionStatus: StatusDef = {
+        id: "stunned", levels: [{}, {
+            flags: options.interruption === "blocksAttack" || options.interruption === "skipsTurn"
+                ? [options.interruption] : [],
+        }]
+    };
     const head = makeBindingDef("latexHead");
     const arms = makeBindingDef("latexArms");
     const attack = (id: string, headAmount: number, armsAmount: number, first = false) => makeMove(id, "none", {
@@ -31,14 +33,22 @@ export function incomingBindingBattle(options: {
             ]);
             if (first && options.interruption) {
                 const next = state.enemies.find(enemy => enemy.defId === "skunk");
-                if (options.interruption === "miss") effects.push({ type: "buff", operation: "add",
-                    target: state.characters[0]!, buff: { id: "guarded", active: true, modifiers: { defense: 1000 } } });
+                if (options.interruption === "miss") effects.push({
+                    type: "buff", operation: "add",
+                    target: state.characters[0]!, buff: { id: "guarded", active: true, modifiers: { defense: 1000 } }
+                });
                 else if (next) {
-                    if (options.interruption === "cancel") effects.push({ type: "intention", operation: "cancel", target: next, amount: 100 });
+                    if (options.interruption === "cancel") effects.push({ type: "intention", operation: "cancel", target: next });
                     else if (options.interruption === "defeat") effects.push({ type: "enemy", operation: "defeat", target: next });
-                    else effects.push({ type: "buff", operation: "add", target: next,
-                        buff: { id: "interrupted", active: true, statuses: [{ value: 1,
-                            definition: interruptionStatus }] } });
+                    else effects.push({
+                        type: "buff", operation: "add", target: next,
+                        buff: {
+                            id: "interrupted", active: true, statuses: [{
+                                value: 1,
+                                definition: interruptionStatus
+                            }]
+                        }
+                    });
                 }
             }
             return effects;

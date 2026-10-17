@@ -635,7 +635,7 @@ describe("targeting view model", () => {
         };
         const action: ActionInfo = {
             ...fixture.action,
-            effects: [{ type: "intention", operation: "cancel", target: "skunkette1", amount: 0.25 }],
+            effects: [{ type: "intention", operation: "cancel", target: "skunkette1" }],
         };
         const model = createTargetingViewModel(
             state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
@@ -659,7 +659,7 @@ describe("targeting view model", () => {
         };
         const action: ActionInfo = {
             ...fixture.action,
-            effects: [{ type: "intention", operation: "cancel", target: "skunkette1", amount: 0.25 }],
+            effects: [{ type: "intention", operation: "cancel", target: "skunkette1" }],
         };
         const model = createTargetingViewModel(
             state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
@@ -687,7 +687,7 @@ describe("targeting view model", () => {
         };
         const action: ActionInfo = {
             ...fixture.action,
-            effects: [{ type: "intention", operation: "cancel", target: "skunketteQueen", amount: 0.25 }],
+            effects: [{ type: "intention", operation: "weaken", target: "skunketteQueen", amount: 0.25 }],
         };
         const model = createTargetingViewModel(
             state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
@@ -701,7 +701,7 @@ describe("targeting view model", () => {
         const fortyPercent = createTargetingViewModel(
             state,
             fixture.actorId,
-            { ...action, effects: [{ type: "intention", operation: "cancel", target: "skunketteQueen", amount: 0.4 }] },
+            { ...action, effects: [{ type: "intention", operation: "weaken", target: "skunketteQueen", amount: 0.4 }] },
             fixture.presentation,
             fixture.actions,
             fixture.thresholds,

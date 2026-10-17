@@ -182,7 +182,7 @@ describe("responsive battle overview", () => {
             expect(getComputedStyle(panels[0]!).gridColumn).toBe("1 / -1");
             expect(getComputedStyle(host).width).toBe("100%");
             expect(getComputedStyle(element(".kcq-battle-overview-wide")).gridTemplateColumns)
-                .toBe("366px 366px 288px");
+                .toBe("366px 366px 366px");
             expect([...host.querySelectorAll(".kcq-battle-section")].map(section => section.className))
                 .toEqual(["party", "enemies", "game-log"].map(name => "kcq-battle-section kcq-battle-section--" + name));
             for (const panel of panels.slice(1)) expect(panel.querySelectorAll(".kcq-battle-section")).toHaveLength(1);

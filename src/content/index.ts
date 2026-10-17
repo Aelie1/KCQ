@@ -5,15 +5,17 @@ import { baseCatalog } from "./base";
 import { hinariCatalog } from "./characters/hinari";
 import { koCatalog } from "./characters/ko";
 import { matsukoCatalog } from "./characters/matsuko";
+import { naruyoCatalog } from "./characters/naruyo";
 import { skunkCatalog } from "./skunk/content";
 
-export type KCQCharacter = "ko" | "matsuko" | "hinari";
+export type KCQCharacter = "ko" | "matsuko" | "hinari" | "naruyo";
 export type KCQCampaign = "skunk";
 
 export const characterCatalogs: Record<KCQCharacter, ContentCatalogFragment> = {
     "ko": koCatalog,
     "matsuko": matsukoCatalog,
     "hinari": hinariCatalog,
+    "naruyo": naruyoCatalog,
 };
 
 export const campaignCatalogs: Record<KCQCampaign, ContentCatalogFragment> = {

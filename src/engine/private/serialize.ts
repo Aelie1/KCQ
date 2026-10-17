@@ -131,20 +131,31 @@ function serializeEffect(effect: iEffect): Effect | undefined {
             }
             break;
         case "intention":
-            if (effect.operation === "cancel") {
-                return {
-                    type: effect.type,
-                    operation: effect.operation,
-                    target: effect.target.id,
-                    amount: effect.amount
-                }
-            } else if (effect.operation === "target") {
-                return {
-                    type: effect.type,
-                    operation: effect.operation,
-                    target: effect.target.id,
-                    destination: effect.destination.id
-                }
+            switch (effect.operation) {
+
+                case "cancel":
+                    return {
+                        type: effect.type,
+                        operation: effect.operation,
+                        target: effect.target.id,
+                    }
+                    break;
+                case "weaken":
+                    return {
+                        type: effect.type,
+                        operation: effect.operation,
+                        target: effect.target.id,
+                        amount: effect.amount
+                    }
+                    break;
+                case "target":
+                    return {
+                        type: effect.type,
+                        operation: effect.operation,
+                        target: effect.target.id,
+                        destination: effect.destination.id
+                    }
+                    break;
             }
         case "refresh":
             return {

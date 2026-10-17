@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -43,8 +43,10 @@ function mockBattle(action: ActionInfo = fixture.action) {
     const state: GameState = structuredClone(fixture.state);
     state.traps = structuredClone(battleOverviewFixture.state.traps);
     const actions = fixture.actions.map(actor => actor.id === "ko"
-        ? { ...actor, moves: [action], stance: { available: true },
-            escapes: actor.escapes.map(escape => ({ ...escape, available: true })) } : actor);
+        ? {
+            ...actor, moves: [action], stance: { available: true },
+            escapes: actor.escapes.map(escape => ({ ...escape, available: true }))
+        } : actor);
     vi.spyOn(engine, "getGameState").mockReturnValue(state);
     vi.spyOn(engine, "getActionView").mockReturnValue(actions);
     const execute = vi.spyOn(engine, "executeAction").mockReturnValue({ success: false, reason: "actorAlreadyActed" });
@@ -84,7 +86,7 @@ describe.each([780, 1091, 1920])("desktop character workspace at %ipx", width =>
                 .toBe("repeat(2, minmax(0, 1fr))");
             expect(!!host.querySelector("#character-commands-heading")).toBe(!desktop);
             if (wide) {
-                expect(getComputedStyle(element(".kcq-character-details-wide")).gridTemplateColumns).toBe("366px 366px 288px");
+                expect(getComputedStyle(element(".kcq-character-details-wide")).gridTemplateColumns).toBe("366px 366px 366px");
                 expect(element(".kcq-character-information").contains(element(".kcq-character-bindings"))).toBe(true);
                 expect(element(".kcq-character-information").contains(element(".kcq-character-effects"))).toBe(true);
                 expect(element(".kcq-character-workspace").contains(command())).toBe(true);

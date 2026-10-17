@@ -605,6 +605,9 @@ function semanticTraitTag(
         case "trap": return tag(trait, presentation.ui("characterDetails.tagTrap"), "warning");
         case "retarget": return tag(trait, presentation.ui("characterDetails.tagRetarget"), "primary");
         case "binding": return tag(trait, presentation.ui("characterDetails.tagBinding"), "primary");
+        case "cancel": return tag(trait, presentation.ui("characterDetails.tagCancel"), "special");
+        case "weaken": return tag(trait, presentation.ui("characterDetails.tagWeaken"), "special");
+        case "bonus": return tag(trait, presentation.ui("characterDetails.tagBonusEscape"), "warning");
     }
 }
 

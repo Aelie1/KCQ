@@ -84,6 +84,7 @@ export type PartyActionStateKind =
     | "acted"
     | "incapacitated"
     | "ready"
+    | "bonus"
     | "skipped"
     | "unavailable";
 
@@ -91,7 +92,7 @@ export interface PartyActionState {
     compactLabel: string;
     kind: PartyActionStateKind;
     label: string;
-    tone: Extract<StatusChipTone, "danger" | "neutral" | "success">;
+    tone: Extract<StatusChipTone, "danger" | "neutral" | "success" | "warning">;
 }
 
 export interface PartyConditionState {

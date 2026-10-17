@@ -49,7 +49,8 @@ function mount() {
         createBattle(engine, encounter, difficulty);
         return { engine, dispose: vi.fn() };
     });
-    const alternate = new Presentation({ ...strings,
+    const alternate = new Presentation({
+        ...strings,
         "ui.party.title": "Localized party", "ui.party.instructions": "Choose {count}",
         "ui.party.count": "Chosen {selected} of {count}", "ui.party.continue": "Localized next",
         "entity.ko.name": "Localized Ko", "entity.ko.party.role": "Localized role",
@@ -72,9 +73,9 @@ describe("party selection navigation", () => {
         expect(prepareBattle).not.toHaveBeenCalled();
         const toggles = [...document.querySelectorAll<HTMLButtonElement>(".kcq-party-selection__toggle")];
         expect(toggles.map(toggle => toggle.dataset.characterId)).toEqual(availableCharacters);
-        expect(toggles.map(toggle => toggle.getAttribute("aria-pressed"))).toEqual(["true", "true", "true"]);
+        expect(toggles.map(toggle => toggle.getAttribute("aria-pressed"))).toEqual(["true", "true", "true", "false"]);
         expect(document.querySelectorAll(".kcq-party-selection__card.is-selected")).toHaveLength(3);
-        expect(document.querySelectorAll('.kcq-party-selection [role="listitem"]')).toHaveLength(9);
+        expect(document.querySelectorAll('.kcq-party-selection [role="listitem"]')).toHaveLength(12);
         for (const toggle of toggles) {
             expect(toggle.type).toBe("button");
             expect(toggle.tabIndex).toBe(0);

@@ -129,7 +129,38 @@ export const hinariEnglishStrings: StringTable = {
     "buff.brace.name": "Brace",
     "buff.subspaceClutter.name": "Subspace Clutter",
     "buff.instability.name": "Instability",
+    "buff.instability.block": "Seals [Power of Space]",
 
     "data.subspace.name": "Subspace",
     "data.subspace.short": "Sub",
+};
+
+export const naruyoEnglishStrings: StringTable = {
+    // Party-selection copy placeholders; replace with final authored prose.
+    "entity.naruyo.party.role": "Role description pending.",
+    "entity.naruyo.party.point1": "First trait description pending.",
+    "entity.naruyo.party.point2": "Second trait description pending.",
+    "entity.naruyo.party.point3": "Third trait description pending.",
+    "entity.naruyo.name": "Naruyo",
+    "entity.naruyo.desc": "Student council event planner.  Sworn retainer of Matsuko.  Speaks few words, but extremely capable.  Uses both snow magic and time magic.",
+
+    "passive.expertArtisan.name": "Expert Artisan",
+    "passive.expertArtisan.desc": "Unnatural skill with tools allows her to assist her allies no matter what her current condition is.",
+    "passive.expertArtisan.effect.allowAssist": "Bindings cannot block assists.",
+    "move.precisionStab.name": "Precision Stab",
+    "move.precisionStab.desc": "Time-infused footwork allows for an attack that always targets a weak point.",
+    "move.fairyprecisionStab.name": "Fairy Precision Stab",
+    "move.fairyprecisionStab.desc": "Footwork so fast, it seems like multiple clones appear.  Attacks all enemies at once.",
+    "move.snowstorm.name": "Snowstorm",
+    "move.snowstorm.desc": "A sudden snowstorm causes enemies to have lower accuracy.  The freezing cold causes their attacks to be less effective, as well.",
+    "move.timeAcceleration.name": "Time Acceleration",
+    "move.timeAcceleration.desc": "Manipulating the flow of time allows the party to make an extra attempt at escaping this turn, even if they've already acted.",
+    "move.temporalLock.name": "Temporal Lock",
+    "move.temporalLock.desc": "Slowing down an enemy's time causes their move to be more likely to miss or have a reduced effect.",
+    "move.powerOfTime.name": "[Power of Time]",
+    "move.powerOfTime.desc": "Freeze time in the entire area, causing all enemies to lose their turn.  Bosses can partially resist this effect.",
+
+    "buff.snowstorm.name": "Snowstorm",
+    "buff.chronostasis.name": "Chronostasis",
+    "buff.chronostasis.block": "Seals [Power of Time]",
 };

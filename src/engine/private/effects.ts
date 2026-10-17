@@ -123,7 +123,10 @@ export class GameEffects {
                             this.retargetIntention(effect.target, effect.destination);
                             break;
                         case "cancel":
-                            this.cancelIntentions(effect.target, effect.amount);
+                            this.cancelIntentions(effect.target);
+                            break;
+                        case "weaken":
+                            this.weakenIntentions(effect.target, effect.amount);
                             break;
                     }
                     break;
@@ -132,6 +135,10 @@ export class GameEffects {
                     break;
                 case "tick":
                     this.tickEffect(effect.operation, effect.target, effect.binding);
+                    break;
+                case "bonus":
+                    this.bonusEscape(effect.target, effect.amount);
+                    break;
             }
         }
     };
@@ -549,31 +556,29 @@ export class GameEffects {
         }
     }
 
-    private cancelIntentions(target: iEnemy, amount: number) {
-        if (target.definition.rank !== "boss") {
-            for (const intention of target.intentions) {
-                this.addEvent({
-                    type: "intentionCancelled",
-                    target: target.id,
-                    move: intention.move.definition.id
-                });
-                intention.resolved = true;
-            }
+    private cancelIntentions(target: iEnemy) {
+        for (const intention of target.intentions) {
+            this.addEvent({
+                type: "intentionCancelled",
+                target: target.id,
+                move: intention.move.definition.id
+            });
+            intention.resolved = true;
         }
-        else {
-            for (const intention of target.intentions) {
-                if (intention.move.roll) {
-                    intention.move.roll = Math.max(0, intention.move.roll - amount);
-                }
-                for (const roll of intention.rolls) {
-                    roll.roll = Math.max(0, roll.roll - amount * 100);
-                }
-                this.addEvent({
-                    type: "intentionWeakened",
-                    target: target.id,
-                    move: intention.move.definition.id
-                });
+    }
+    private weakenIntentions(target: iEnemy, amount: number) {
+        for (const intention of target.intentions) {
+            if (intention.move.roll) {
+                intention.move.roll = Math.max(0, intention.move.roll - amount);
             }
+            for (const roll of intention.rolls) {
+                roll.roll = Math.max(0, roll.roll - amount * 100);
+            }
+            this.addEvent({
+                type: "intentionWeakened",
+                target: target.id,
+                move: intention.move.definition.id
+            });
         }
     }
 
@@ -604,5 +609,15 @@ export class GameEffects {
                 binding: binding.id
             });
         }
+    }
+
+    private bonusEscape(target: iCharacter, amount: number) {
+        const origAmount = target.bonusEscapes;
+        target.bonusEscapes = Math.max(0, target.bonusEscapes + amount);
+        this.addEvent({
+            type: "bonusChanged",
+            target: target.id,
+            amount: target.bonusEscapes - origAmount
+        });
     }
 };

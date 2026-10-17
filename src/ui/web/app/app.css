@@ -1998,6 +1998,7 @@ button {
     color: var(--kcq-state-danger);
 }
 
+.kcq-character-roster__action--warning,
 .kcq-character-roster__condition--warning {
     color: var(--kcq-state-warning);
 }
@@ -3738,7 +3739,7 @@ button {
     padding-left: 20px;
 }
 
-.kcq-party-selection__points > [role="listitem"] {
+.kcq-party-selection__points>[role="listitem"] {
     display: list-item;
 }
 

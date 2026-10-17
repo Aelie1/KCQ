@@ -33,12 +33,21 @@ export function createCharacterActionState(
             return actedState(presentation);
         case undefined:
             if (action.available) {
-                return {
-                    compactLabel: presentation.ui("action.ready"),
-                    kind: "ready",
-                    label: presentation.ui("action.ready"),
-                    tone: "success",
-                };
+                if (character.acted && character.bonusEscapes > 0) {
+                    return {
+                        compactLabel: presentation.ui("action.bonus"),
+                        kind: "bonus",
+                        label: presentation.ui("action.bonus"),
+                        tone: "warning",
+                    };
+                } else {
+                    return {
+                        compactLabel: presentation.ui("action.ready"),
+                        kind: "ready",
+                        label: presentation.ui("action.ready"),
+                        tone: "success",
+                    };
+                }
             }
             return character.acted
                 ? actedState(presentation)

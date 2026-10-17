@@ -22,6 +22,7 @@ export const systemEnglishStrings: StringTable = {
     "entity.enemies.name": "Enemies",
 
     "ui.action.ready": "Ready",
+    "ui.action.bonus": "Bonus",
     "ui.action.acted": "Acted",
     "ui.action.skipped": "Skipped",
     "ui.action.unavailable": "Unavailable",
@@ -151,6 +152,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.characterDetails.tagAlly": "Ally",
     "ui.characterDetails.tagAoe": "AOE",
     "ui.characterDetails.tagBuff": "Buff",
+    "ui.characterDetails.tagCancel": "Cancel",
     "ui.characterDetails.tagDamage": "Damage",
     "ui.characterDetails.tagDebuff": "Debuff",
     "ui.characterDetails.tagEnemy": "Enemy",
@@ -161,6 +163,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.characterDetails.tagDefeat": "Defeat",
     "ui.characterDetails.tagSpawn": "Spawn",
     "ui.characterDetails.tagTrap": "Trap",
+    "ui.characterDetails.tagWeaken": "Weaken",
     "ui.characterDetails.tagRetarget": "Retarget",
     "ui.characterDetails.tagBinding": "Binding",
     "ui.characterDetails.tagHits": "{count} Hits",

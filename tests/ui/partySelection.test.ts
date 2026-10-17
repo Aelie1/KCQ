@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { characterCatalogs, type KCQCharacter } from "../../src/content";
 import { getStringTable } from "../../localization";
+import { characterCatalogs, type KCQCharacter } from "../../src/content";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { availableCharacters, isValidParty } from "../../src/ui/web/app/partySelection";
 import { createPartySelectionViewModel } from "../../src/ui/web/app/viewModels/partySelection";
@@ -31,8 +31,8 @@ describe("party selection data", () => {
         const extra = "future" as KCQCharacter;
         const available = [...availableCharacters, extra];
         const full = createPartySelectionViewModel(available, availableCharacters, presentation);
-        expect(full.characters).toHaveLength(4);
-        expect(full.characters[3]).toMatchObject({ id: extra, selected: false, disabled: true });
+        expect(full.characters).toHaveLength(5);
+        expect(full.characters[4]).toMatchObject({ id: extra, selected: false, disabled: true });
         expect(full.characters[0]).toMatchObject({ selected: true, disabled: false });
         const partial = createPartySelectionViewModel(available, ["matsuko", "hinari"], presentation);
         expect(partial.characters[3]).toMatchObject({ selected: false, disabled: false });

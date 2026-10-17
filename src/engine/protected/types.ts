@@ -131,8 +131,10 @@ export type iEffect =
     | iRefreshEffect
     | iRetargetEffect
     | iCancelEffect
+    | iWeakenEffect
     | iDataEffect
-    | iTickEffect;
+    | iTickEffect
+    | iBonusEffect;
 
 interface iDamageEffect extends Omit<DamageEffect, "source" | "target"> {
     source: iEntity;
@@ -206,6 +208,18 @@ interface iCancelEffect {
     type: "intention"
     operation: "cancel";
     target: iEnemy;
+}
+
+interface iWeakenEffect {
+    type: "intention"
+    operation: "weaken";
+    target: iEnemy;
+    amount: number;
+}
+
+interface iBonusEffect {
+    type: "bonus"
+    target: iCharacter;
     amount: number;
 }
 

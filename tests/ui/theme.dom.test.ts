@@ -1,13 +1,13 @@
 import { readFileSync } from "node:fs";
 import { createComponent, createRoot } from "solid-js";
 import { render } from "solid-js/web";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStockEngine } from "../../src/stock";
 import { createBattle } from "../../src/ui/web/app";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createThemePreference, type ThemePreference } from "../../src/ui/web/app/theme";
 import { resetPreferences } from "../../src/ui/web/app/resetPreferences";
+import { createThemePreference, type ThemePreference } from "../../src/ui/web/app/theme";
 
 const disposers: (() => void)[] = [];
 let media: MediaQueryList;

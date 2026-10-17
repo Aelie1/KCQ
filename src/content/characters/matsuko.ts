@@ -224,20 +224,30 @@ export const stop: MoveDef = {
         "obey": DEFAULT_COMPULSION_COOLDOWN,
         "attackMe": DEFAULT_COMPULSION_COOLDOWN
     },
-    traits: ["debuff"],
+    traits: ["cancel", "weaken"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                result.targets.push(tr(target, [
-                    {
-                        type: "intention",
-                        operation: "cancel",
-                        target: target.target,
-                        amount: STOP_BOSS_WEAKEN
-                    }]
-                ));
+                if (target.target.definition.rank === "boss") {
+                    result.targets.push(tr(target, [
+                        {
+                            type: "intention",
+                            operation: "weaken",
+                            target: target.target,
+                            amount: STOP_BOSS_WEAKEN
+                        }]
+                    ));
+                } else {
+                    result.targets.push(tr(target, [
+                        {
+                            type: "intention",
+                            operation: "cancel",
+                            target: target.target,
+                        }]
+                    ));
+                }
             }
         }
 

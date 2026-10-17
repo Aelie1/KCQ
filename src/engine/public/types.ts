@@ -163,7 +163,8 @@ export type Effect =
     | DataEffect
     | RetargetEffect
     | RefreshEffect
-    | CancelEffect;
+    | CancelEffect
+    | WeakenEffect;
 
 export interface DamageEffect {
     type: "damage";
@@ -220,6 +221,18 @@ export interface CancelEffect {
     type: "intention"
     operation: "cancel";
     target: EntityId;
+}
+
+export interface WeakenEffect {
+    type: "intention"
+    operation: "weaken";
+    target: EntityId;
+    amount: number;
+}
+
+export interface BonusEffect {
+    type: "bonus"
+    target: EntityId;
     amount: number;
 }
 
@@ -253,6 +266,8 @@ export type MoveTrait =
     | "damage"
     | "buff"
     | "debuff"
+    | "cancel"
+    | "weaken"
     | "escape"
     | "onetime"
     | "refresh"
@@ -261,7 +276,8 @@ export type MoveTrait =
     | "spawn"
     | "trap"
     | "retarget"
-    | "binding";
+    | "binding"
+    | "bonus";
 
 export type MoveId = string;
 
@@ -396,6 +412,7 @@ export type FlagId =
     | "blocksBonusEscape"
     | "blocksMoving"
     | "autoWillpower"
+    | "allowAssist"
     | "skipsTraps"
     | "skipsTurn"
     | "incapacitated";
@@ -525,7 +542,8 @@ export type LeafEvent =
     | WeakenEvent
     | DataEvent
     | IncapacitateEvent
-    | TickEvent;
+    | TickEvent
+    | BonusEvent;
 
 export interface MoveEvent {
     type: "useMove";
@@ -658,6 +676,12 @@ export interface TickEvent {
     type: "bindingTickStart" | "bindingTickEnd";
     target: EntityId;
     binding: BindingId;
+}
+
+export interface BonusEvent {
+    type: "bonusChanged";
+    target: EntityId;
+    amount: number;
 }
 
 /*******************************************************

@@ -172,7 +172,7 @@ export class GameStatus {
     }
 
     canAssist(): boolean {
-        return !this.hasFlag("blocksAssist");
+        return this.hasFlag("allowAssist") || !this.hasFlag("blocksAssist");
     }
 
     canMove(): boolean {
