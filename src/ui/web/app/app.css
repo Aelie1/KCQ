@@ -5287,11 +5287,8 @@ button {
     border-top: 1px solid var(--kcq-structure-border);
 }
 
-.kcq-library__guide-modifier {
-    display: flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
+.kcq-library__guide .kcq-library__guide-modifiers th:first-child {
+    width: 30%;
 }
 
 .kcq-library__intro {

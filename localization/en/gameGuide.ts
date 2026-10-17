@@ -84,6 +84,8 @@ export const gameGuideEnglishStrings: StringTable = {
     "guide.bindings-and-escaping.bonus-escapes.after": "Getting two escapes on your turn is incredibly useful for maintaining your party's condition, so do it whenever you need to escape in a hurry.",
     "guide.modifiers.summary": "Details about the modifiers in KCQ",
     "guide.modifiers.title": "Modifiers",
+    "guide.modifiers.column.name": "Name",
+    "guide.modifiers.column.description": "Description",
     "guide.modifiers.overview.heading": "Overview",
     "guide.modifiers.overview.paragraph.0": "Both characters and enemies are governed by the same set of modifiers.  They can be seen on the details screen as tiny pip bars.  Each point of modifier has roughly a 10% swing on its related accuracy or effectiveness calculation.",
     "guide.modifiers.mouth.heading": "[Mouth]",

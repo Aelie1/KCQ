@@ -60,14 +60,14 @@ describe("Game Guide in the Library", () => {
             expect(article().dataset.libraryId).toBe(page.id);
             expect(article().textContent).not.toMatch(/\[[^\]]+\]/);
             expect(document.querySelector(".kcq-library__guide button:disabled")).toBeNull();
-            expect(document.querySelectorAll(".kcq-library__guide-section")).toHaveLength(page.sections.length);
+            expect(document.querySelectorAll(".kcq-library__guide [data-library-section]")).toHaveLength(page.sections.length);
             if (columns === 3) expect(element('[data-library-tree-entry="guide:' + page.id + '"]').getAttribute("aria-current")).toBe("page");
             back(); await tick();
         }
         expect(execute).not.toHaveBeenCalled();
         expect(JSON.stringify(engine.getGameState())).toBe(before);
     });
-    it("renders command tags, authored tables, binding colors, modifier pips, and ordinary strategy bullets", async () => {
+    it("renders command tags, authored tables, binding colors, a plain modifier table, and ordinary strategy bullets", async () => {
         mount(1, { kind: "entry", category: "guide", id: "moves" }); await tick();
         expect([...document.querySelectorAll(".kcq-library__guide-traits .kcq-command-tag")].map(tag => tag.textContent)).toEqual(["Damage", "Buff", "Debuff", "Escape", "One-time", "Free"]);
         expect([...element('[data-library-section="move-results"] table').querySelectorAll("tr")].map(row => [...row.children].map(cell => cell.textContent))).toEqual([
@@ -88,9 +88,22 @@ describe("Game Guide in the Library", () => {
         expect([...element('[data-library-section="binding-severity"]').querySelectorAll("tr")].map(row => row.className)).toEqual(["kcq-escape-value--light", "kcq-escape-value--moderate", "kcq-escape-value--heavy", "kcq-escape-value--severe", "kcq-escape-value--overwhelming"]);
         expect(document.querySelectorAll('[data-library-section="bonus-escapes"] ol > li')).toHaveLength(3);
         dispose!(); mount(1, { kind: "entry", category: "guide", id: "modifiers" }); await tick();
-        expect(document.querySelectorAll(".kcq-library__guide-modifier .kcq-pip-meter")).toHaveLength(11);
-        link("guide:modifiers#traps").click(); await tick();
-        expect(document.activeElement).toBe(element('[data-library-section="traps"]'));
+        const modifiers = element(".kcq-library__guide-modifiers");
+        expect([...modifiers.querySelectorAll("thead th")].map(cell => cell.textContent)).toEqual(["Name", "Description"]);
+        expect([...modifiers.querySelectorAll("tbody tr")].map(row => [...row.children].map(cell => cell.textContent))).toEqual([
+            ["Mouth", "Affects accuracy of outgoing Mouth moves"],
+            ["Arms", "Affects accuracy of outgoing Arms moves"],
+            ["Legs", "Affects accuracy of outgoing Legs moves"],
+            ["Hit", "Affects accuracy of all outgoing moves"],
+            ["Defense", "Affects accuracy of incoming moves"],
+            ["Escape", "Affects the amount of binding removed during an escape"],
+            ["Vulnerability", "Affects the effectiveness of incoming moves"],
+            ["Potency", "Affects the effectiveness of outgoing moves"],
+            ["Traps", "Affects the chance of triggering a trap"],
+            ["Willpower", "Affects the accuracy of Willpower moves"],
+            ["Spread", "Affects the amount of binding that is spread to other locations by escapes"],
+        ]);
+        expect(article().querySelector(".kcq-pip-meter, button, a")).toBeNull();
         dispose!(); mount(1, { kind: "entry", category: "guide", id: "strategy" }); await tick();
         expect(document.querySelectorAll(".kcq-library__guide ul > li")).toHaveLength(8);
         expect(document.querySelector(".kcq-library__guide ol")).toBeNull();

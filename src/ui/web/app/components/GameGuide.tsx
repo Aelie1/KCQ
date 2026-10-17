@@ -5,7 +5,6 @@ import { gameGuidePage } from "../content/gameGuide";
 import { guideReferenceParts, guideText, type GuideReferenceContext } from "../viewModels/gameGuide";
 import { libraryHas, type LibraryPage } from "../viewModels/library";
 import { CommandTag } from "./CommandTag";
-import { PipMeter } from "./PipMeter";
 import { StatusChip } from "./StatusChip";
 
 export interface GameGuideProps {
@@ -19,14 +18,14 @@ export interface GameGuideProps {
 export function GameGuide(props: GameGuideProps): JSX.Element {
     const text = (key: string) => guideText(props.presentation, props.id, key);
     const ReferenceText = (reference: { text: string; context?: GuideReferenceContext; renderLabel?: (label: string) => JSX.Element }): JSX.Element =>
-        <For each={guideReferenceParts(reference.text, reference.context)}>{part => typeof part === "string" ? part :
+        <For each={guideReferenceParts(reference.text, reference.context)}>{part => typeof part === "string" ? part : props.id === "modifiers" ? part.label :
             <button type="button" class="kcq-library__link kcq-library__inline-link"
                 data-library-focus={part.page.kind === "entry" ? part.page.category + ":" + part.page.id + (part.page.section ? "#" + part.page.section : "") : part.page.kind === "category" ? part.page.category : "home"}
                 disabled={part.page.kind === "entry" && !libraryHas(props.library, part.page)}
                 onClick={() => props.onOpen(part.page)}>{reference.renderLabel?.(part.label) ?? part.label}</button>
         }</For>;
     return <div class="kcq-library__guide">
-        <For each={gameGuidePage(props.id)?.sections}>{section => {
+        <For each={gameGuidePage(props.id)?.sections.filter(section => !section.modifier)}>{section => {
             const context: GuideReferenceContext | undefined = section.id === "intentions" ? "intentions"
                 : props.id === "modifiers" ? "modifiers"
                 : props.id === "bindings-and-escaping" ? "bindings-and-escaping"
@@ -34,9 +33,8 @@ export function GameGuide(props: GameGuideProps): JSX.Element {
             const ListItems = (): JSX.Element => <For each={section.list?.items}>{key => <li><ReferenceText text={text(key)} context={context} /></li>}</For>;
             return <section class="kcq-card kcq-library__guide-section" data-library-section={section.id}
                 data-library-focus={"guide-section:" + props.id + "#" + section.id} tabindex="-1">
-                <Show when={section.heading}>{key => <h2 class="kcq-card-title" classList={{ "kcq-library__guide-modifier": !!section.modifier }}>
+                <Show when={section.heading}>{key => <h2 class="kcq-card-title">
                     <ReferenceText text={text(key())} context={context} />
-                    <Show when={section.modifier}><PipMeter active={0} tone="neutral" /></Show>
                 </h2>}</Show>
                 <For each={section.paragraphs}>{key => <p class="kcq-library__description"><ReferenceText text={text(key)} context={context} /></p>}</For>
                 <Show when={section.traits}><ul class="kcq-library__guide-traits">
@@ -64,5 +62,18 @@ export function GameGuide(props: GameGuideProps): JSX.Element {
                 <Show when={section.after}>{key => <p class="kcq-library__description"><ReferenceText text={text(key())} context={context} /></p>}</Show>
             </section>;
         }}</For>
+        <Show when={props.id === "modifiers"}>
+            <section class="kcq-card kcq-library__guide-section">
+                <table class="kcq-library__mechanics-table kcq-library__guide-table kcq-library__guide-modifiers" aria-label={text("title")}>
+                    <thead><tr><th scope="col">{text("column.name")}</th><th scope="col">{text("column.description")}</th></tr></thead>
+                    <tbody><For each={gameGuidePage(props.id)?.sections.filter(section => section.modifier)}>{section =>
+                        <tr data-library-section={section.id} data-library-focus={"guide-section:" + props.id + "#" + section.id} tabindex="-1">
+                            <th scope="row">{text(section.heading!).replace(/[\[\]]/g, "")}</th>
+                            <td><For each={section.paragraphs}>{key => <p class="kcq-library__description">{text(key).replace(/[\[\]]/g, "")}</p>}</For></td>
+                        </tr>
+                    }</For></tbody>
+                </table>
+            </section>
+        </Show>
     </div>;
 }
