@@ -4047,22 +4047,20 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-battle-settings__language {
+.kcq-battle-settings__option {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 0;
     color: var(--kcq-text-secondary);
     font-size: 13px;
 }
 
-.kcq-battle-settings__language span {
+.kcq-battle-settings__option span {
     width: 180px;
 }
 
-.kcq-battle-settings__language select {
+.kcq-battle-settings__option select {
     min-width: 0;
-    min-height: 44px;
     padding: 8px 12px;
     border: 1px solid var(--kcq-structure-border);
     border-radius: 8px;
@@ -4071,7 +4069,7 @@ button {
     font: inherit;
 }
 
-.kcq-battle-settings__language select:focus-visible {
+.kcq-battle-settings__option select:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: 2px;
 }
@@ -6166,20 +6164,20 @@ button {
     }
 
     /* Setting rows */
-    .kcq-battle-settings__language {
+    .kcq-battle-settings__option {
         min-height: 36px;
         padding: 2px 0;
         gap: 12px;
         font-size: 12px;
     }
 
-    .kcq-battle-settings__language span {
+    .kcq-battle-settings__option span {
         width: auto;
         flex: 1 1 auto;
     }
 
     /* Dropdowns */
-    .kcq-battle-settings__language select {
+    .kcq-battle-settings__option select {
         flex: 0 0 auto;
         width: 175px;
         max-width: 48%;
