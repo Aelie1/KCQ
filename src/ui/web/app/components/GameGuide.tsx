@@ -6,6 +6,7 @@ import { guideReferenceParts, guideText, type GuideReferenceContext } from "../v
 import { libraryHas, type LibraryPage } from "../viewModels/library";
 import { CommandTag } from "./CommandTag";
 import { PipMeter } from "./PipMeter";
+import { StatusChip } from "./StatusChip";
 
 export interface GameGuideProps {
     id: string;
@@ -49,7 +50,9 @@ export function GameGuide(props: GameGuideProps): JSX.Element {
                         <Show when={table().headers}><thead><tr><For each={table().headers}>{key => <th scope="col">{text(key)}</th>}</For></tr></thead></Show>
                         <tbody><For each={table().rows}>{(row, index) => <tr class={table().levels ? "kcq-escape-value--" + table().levels![index()] : undefined}>
                             <For each={row}>{(key, column) => column() === 0
-                                ? <th scope="row"><ReferenceText text={text(key)} context={context} /></th>
+                                ? <th scope="row"><Show when={table().bands?.[index()]} fallback={<ReferenceText text={text(key)} context={context} />}>
+                                    {band => <StatusChip size="compact" tone={`outcome-${band()}`}>{text(key).replace(/[\[\]]/g, "")}</StatusChip>}
+                                </Show></th>
                                 : <td><ReferenceText text={text(key)} context={context} /></td>}</For>
                         </tr>}</For></tbody>
                     </table>

@@ -194,7 +194,9 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                 <Match when={page().kind === "home" || (desktop() && page().kind === "category")}>
                     <p class="kcq-library__intro">{props.presentation.ui("library.intro")}</p>
                     <SurfaceCard title={props.presentation.ui("library.guide")}>
-                        <div class="kcq-library__links"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry => <ReferenceLink entry={entry} />}</For></div>
+                        <div class="kcq-library__guide-pages"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry =>
+                            <div class="kcq-library__guide-page"><ReferenceLink entry={entry} class="kcq-library__inline-link" />{": "}{libraryText(entry, props.presentation, "summary")}</div>
+                        }</For></div>
                     </SurfaceCard>
                     <Show when={!desktop()}><div class="kcq-library__categories"><For each={LIBRARY_CATEGORIES}>{category =>
                         <button type="button" class="kcq-library__category kcq-encounter-card" data-library-focus={category}

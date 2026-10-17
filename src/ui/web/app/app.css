@@ -5223,6 +5223,17 @@ button {
     line-height: 1.6;
 }
 
+.kcq-library__guide-pages {
+    display: grid;
+    gap: 8px;
+}
+
+.kcq-library__guide-page {
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
 .kcq-library__guide {
     display: grid;
     gap: 12px;

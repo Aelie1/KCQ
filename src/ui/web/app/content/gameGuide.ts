@@ -1,4 +1,4 @@
-import type { BindingLevel, ModifierId } from "../../../../engine/public/types";
+import type { BindingLevel, HitBand, ModifierId } from "../../../../engine/public/types";
 import type { CommandTagTone } from "../viewModels/characterDetails";
 
 /** Keys are variants under guide.<page> in the presentation string table. */
@@ -7,7 +7,7 @@ export interface GuideSection {
     heading?: string;
     paragraphs: readonly string[];
     traits?: readonly { label: string; text: string; tone: CommandTagTone }[];
-    table?: { headers?: readonly string[]; rows: readonly (readonly string[])[]; levels?: readonly BindingLevel[] };
+    table?: { headers?: readonly string[]; rows: readonly (readonly string[])[]; levels?: readonly BindingLevel[]; bands?: readonly Exclude<HitBand, "none">[] };
     list?: { ordered?: boolean; items: readonly string[] };
     after?: string;
     modifier?: ModifierId;
@@ -72,7 +72,8 @@ export const GAME_GUIDE_PAGES: readonly GuidePage[] = [
                         ["move-results.row.1.0", "move-results.row.1.1"],
                         ["move-results.row.2.0", "move-results.row.2.1"],
                         ["move-results.row.3.0", "move-results.row.3.1"]
-                    ]
+                    ],
+                    bands: ["miss", "graze", "hit", "crit"]
                 }
             },
             {

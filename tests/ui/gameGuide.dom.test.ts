@@ -37,8 +37,15 @@ const link = (destination: string) => element<HTMLButtonElement>('.kcq-library__
 describe("Game Guide in the Library", () => {
     it.each([1, 3] as const)("promotes all five pages on the %s-column home and preserves navigation order", async columns => {
         const { engine, before, execute } = mount(columns); await tick();
-        const quickLinks = [...document.querySelectorAll<HTMLButtonElement>('.kcq-library__links [data-library-focus^="guide:"]')];
+        const quickLinks = [...document.querySelectorAll<HTMLButtonElement>('.kcq-library__guide-pages [data-library-focus^="guide:"]')];
         expect(quickLinks.map(button => button.textContent)).toEqual(["Basics", "Moves", "Bindings and Escaping", "Modifiers", "Strategy"]);
+        expect([...document.querySelectorAll(".kcq-library__guide-page")].map(row => row.textContent)).toEqual([
+            "Basics: Learn about the basic structure of KCQ",
+            "Moves: Learn about moves, traits, and results",
+            "Bindings and Escaping: Learn about bindings and thresholds",
+            "Modifiers: Details about the modifiers in KCQ",
+            "Strategy: Some tips to get you started",
+        ]);
         quickLinks[0]!.click(); await tick();
         expect(article().dataset.libraryId).toBe("basics");
         expect(element(".kcq-library__breadcrumbs").textContent).toContain("Library/Game Guide");
@@ -65,6 +72,14 @@ describe("Game Guide in the Library", () => {
         expect([...document.querySelectorAll(".kcq-library__guide-traits .kcq-command-tag")].map(tag => tag.textContent)).toEqual(["Damage", "Buff", "Debuff", "Escape", "One-time", "Free"]);
         expect([...element('[data-library-section="move-results"] table').querySelectorAll("tr")].map(row => [...row.children].map(cell => cell.textContent))).toEqual([
             ["Miss", "0% Effectiveness"], ["Graze", "20-50% Effectiveness"], ["Hit", "80-100% Effectiveness"], ["Crit", "150-200% Effectiveness"],
+        ]);
+        const results = element('[data-library-section="move-results"]');
+        expect(results.querySelector("button")).toBeNull();
+        expect([...results.querySelectorAll(".kcq-status-chip")].map(chip => chip.className)).toEqual([
+            "kcq-status-chip kcq-status-chip--outcome-miss kcq-status-chip--compact",
+            "kcq-status-chip kcq-status-chip--outcome-graze kcq-status-chip--compact",
+            "kcq-status-chip kcq-status-chip--outcome-hit kcq-status-chip--compact",
+            "kcq-status-chip kcq-status-chip--outcome-crit kcq-status-chip--compact",
         ]);
         dispose!(); mount(1, { kind: "entry", category: "guide", id: "bindings-and-escaping" }); await tick();
         expect([...element('[data-library-section="escaping"] table').querySelectorAll("tr")].map(row => [...row.children].map(cell => cell.textContent))).toEqual([
