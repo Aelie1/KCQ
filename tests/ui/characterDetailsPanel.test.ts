@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { ModifierMeter } from "../../src/ui/web/app/components/ModifierMeter";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
@@ -14,6 +15,21 @@ function renderedText(html: string): string {
 }
 
 describe("character details panel", () => {
+    it("renders a ready move's own base cooldown from the content library", () => {
+        const fixture = characterDetailsFixture;
+        const library = createStockEngine().getLibrary();
+        const html = renderToString(() => createComponent(CharacterDetailsPanel, { ...fixture, library }));
+        const card = [...html.matchAll(/<button\b[^>]*>[\s\S]*?<\/button>/g)]
+            .map(([button]) => button)
+            .find(button => button.includes('aria-label="Fairy Transformation:'))!;
+        const count = library.moves.fairyTransformation!.cooldown!.fairyTransformation;
+        expect(card).toBeDefined();
+        expect(card).toContain('title="Cooldown after use: ' + count + '"');
+        expect(card).toContain("kcq-command-card__cooldown");
+        expect(card).not.toContain("kcq-command-card__cooldown--active");
+        expect(renderedText(card)).not.toContain("Cooldown");
+    });
+
     it("keeps an incapacitated roster character selectable for inspection", () => {
         const selected: string[] = [];
         const html = renderToString(() => createComponent(CharacterDetailsPanel, {

@@ -1,3 +1,4 @@
+import type { ContentLibrary } from "../../../../engine/public/library";
 import type {
     ActionInfo,
     ActionView,
@@ -42,6 +43,11 @@ export interface CommandTagViewModel {
 
 export interface CommandCardViewModel {
     available: boolean;
+    cooldown?: {
+        value: number;
+        active: boolean;
+        accessibleLabel: string;
+    };
     id: string;
     name: string;
     reasonLabel?: string;
@@ -154,6 +160,7 @@ export function createCharacterDetailsViewModel(
     focusedId: EntityId,
     thresholds: ThresholdInfo,
     presentation: Presentation,
+    library?: ContentLibrary,
 ): CharacterDetailsViewModel {
     const actionsById = new Map(actions.map((action) => [action.id, action]));
     const focusedAction = actionsById.get(focusedId);
@@ -166,6 +173,7 @@ export function createCharacterDetailsViewModel(
         focusedAction,
         thresholds,
         presentation,
+        library,
     );
     const {
         encounterLabel,
@@ -226,6 +234,7 @@ export function createFocusedCharacterViewModel(
     action: ActionView,
     thresholds: ThresholdInfo,
     presentation: Presentation,
+    library?: ContentLibrary,
 ): FocusedCharacterViewModel {
     const character = state.characters.find(({ id }) => id === action.id);
     if (!character) {
@@ -276,7 +285,7 @@ export function createFocusedCharacterViewModel(
                 statusLabels: binding.status.map((status) => statusLabel(status, presentation)),
             })),
         effects: character.buffs.map((buff) => createEffectDetail(buff, state, presentation)),
-        commands: createCommands(state, character, action, presentation),
+        commands: createCommands(state, character, action, presentation, library),
     };
 }
 
@@ -391,6 +400,7 @@ function createCommands(
     character: Character,
     action: ActionView,
     presentation: Presentation,
+    library?: ContentLibrary,
 ): CommandCardViewModel[] {
     const commands = action.moves.map((info, index) => createMoveCommand(
         info,
@@ -398,6 +408,7 @@ function createCommands(
         state,
         character,
         presentation,
+        library,
     ));
     const stanceDestination = character.standing ? "moving" : "standing";
 
@@ -464,17 +475,13 @@ function createMoveCommand(
     state: GameState,
     character: Character,
     presentation: Presentation,
+    library?: ContentLibrary,
 ): CommandCardViewModel {
     const shortcutKey = combatShortcut(shortcut - 1);
     const tags = createMoveTags(info, state, character, presentation);
-    const cooldown = character.cooldowns[info.move.id];
-    if (cooldown !== undefined && cooldown > 0) {
-        tags.push(tag(
-            `cooldown-${cooldown}`,
-            presentation.ui("characterDetails.cooldown", { count: cooldown }),
-            "danger",
-        ));
-    }
+    const remaining = character.cooldowns[info.move.id] ?? 0;
+    const active = remaining > 0;
+    const cooldown = active ? remaining : library?.moves[info.move.id]?.cooldown?.[info.move.id];
 
     return {
         id: info.move.id,
@@ -482,6 +489,13 @@ function createMoveCommand(
         shortcutKey,
         shortcutLabel: shortcutKey ? shortcutBadgeLabel(shortcutKey) : "",
         available: info.available,
+        ...(cooldown !== undefined && cooldown > 0 ? {
+            cooldown: {
+                value: cooldown,
+                active,
+                accessibleLabel: presentation.ui(active ? "characterDetails.cooldown" : "characterDetails.cooldownOnUse", { count: cooldown }),
+            },
+        } : {}),
         ...reasonLabel(info.available, info.reason, presentation),
         tags,
     };

@@ -489,6 +489,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             <Match when={characterScreen()}>
                 {(current) => (
                     <CharacterDetailsPanel
+                        library={library}
                         workspaceOnly={panelProps.workspaceOnly}
                         actions={actions()}
                         focusedCharacterId={current().actorId}

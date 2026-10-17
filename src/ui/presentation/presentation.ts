@@ -66,6 +66,7 @@ export type UiLabel =
     | "characterDetails.changeStance"
     | "characterDetails.commandsHeading"
     | "characterDetails.cooldown"
+    | "characterDetails.cooldownOnUse"
     | "characterDetails.effectModifier"
     | "characterDetails.escape"
     | "characterDetails.modifierValue"

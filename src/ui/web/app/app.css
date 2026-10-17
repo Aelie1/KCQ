@@ -2415,6 +2415,7 @@ button {
 
 .kcq-command-card__name {
     display: -webkit-box;
+    flex: 1;
     min-width: 0;
     max-height: 28px;
     overflow: hidden;
@@ -2425,6 +2426,29 @@ button {
     white-space: normal;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
+}
+
+.kcq-command-card__cooldown {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 1px;
+    color: var(--kcq-text-primary);
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 14px;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.kcq-command-card__cooldown--active {
+    color: var(--kcq-state-danger);
+}
+
+.kcq-command-card__cooldown-icon {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
 }
 
 .kcq-command-card__reason {
@@ -5001,7 +5025,7 @@ button {
     border-radius: 10px;
 }
 
-.kcq-library-host > .kcq-library {
+.kcq-library-host>.kcq-library {
     height: 100%;
 }
 

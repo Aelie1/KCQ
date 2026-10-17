@@ -24,6 +24,7 @@ describe("command card", () => {
                 shortcutKey: "8",
                 shortcutLabel: "8",
                 available: false,
+                cooldown: { value: 2, active: true, accessibleLabel: "Cooldown 2" },
                 tags,
             },
         }));
@@ -32,7 +33,28 @@ describe("command card", () => {
         expect(html).toContain('class="kcq-shortcut" aria-hidden="true">8</span>');
         expect(html).not.toContain("[8]");
         expect(html).toContain(reasonLabel);
+        expect(html).toContain('aria-label="' + name + ': ' + reasonLabel + ': Cooldown 2"');
+        expect(html).toContain('class="kcq-command-card__cooldown kcq-command-card__cooldown--active" aria-hidden="true" title="Cooldown 2"');
+        expect(html).toContain('class="kcq-command-card__cooldown-icon"');
+        expect(html).toContain(" disabled");
+        const text = html.replace(/<!--.*?-->|<[^>]+>/g, "");
+        expect(text).not.toContain("Cooldown 2");
+        expect(text).toContain("2");
         for (const tag of tags) expect(html).toContain(tag.label);
+    });
+
+    it.each([undefined, 0, -1])("omits the indicator without a positive cooldown value (%s)", (remaining) => {
+        const html = renderToString(() => createComponent(CommandCard, {
+            command: {
+                id: "obey", name: "Obey", available: true, shortcutLabel: "", tags: [],
+                ...(remaining !== undefined ? { cooldown: { value: remaining, active: false, accessibleLabel: "Cooldown " + remaining } } : {}),
+            },
+        }));
+
+        expect(html).not.toContain("kcq-command-card__cooldown");
+        expect(html).not.toContain("Cooldown");
+        expect(html).toContain('aria-label="Obey"');
+        expect(html).not.toContain(" disabled");
     });
 
     it("uses growing cards and two-line name, reason, and tag constraints", () => {
@@ -44,6 +66,8 @@ describe("command card", () => {
 
         expect(cardRule).not.toMatch(/(^|\s)height:\s*75px/);
         expect(nameRule).toContain("-webkit-line-clamp: 2");
+        expect(nameRule).toContain("flex: 1");
+        expect(nameRule).toContain("min-width: 0");
         expect(nameRule).not.toContain("text-overflow: ellipsis");
         expect(nameRule).not.toContain("white-space: nowrap");
         expect(reasonRule).toContain("-webkit-line-clamp: 2");

@@ -1,4 +1,5 @@
 import { createMemo, For, Show, type JSX } from "solid-js";
+import type { ContentLibrary } from "../../../../engine/public/library";
 import type {
     ActionView,
     EntityId,
@@ -13,6 +14,7 @@ import { CommandCard } from "../components/CommandCard";
 import { createCharacterDetailsViewModel } from "../viewModels/characterDetails";
 
 export interface CharacterDetailsPanelProps {
+    library?: ContentLibrary;
     workspaceOnly?: boolean;
     actions: readonly ActionView[];
     focusedCharacterId: EntityId;
@@ -31,6 +33,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
         props.focusedCharacterId,
         props.thresholds,
         props.presentation,
+        props.library,
     ));
 
     return (

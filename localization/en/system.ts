@@ -124,6 +124,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.characterDetails.stanceTransition": "→ {stance}",
     "ui.characterDetails.commandsHeading": "Commands / {character}",
     "ui.characterDetails.cooldown": "Cooldown {count}",
+    "ui.characterDetails.cooldownOnUse": "Cooldown after use: {count}",
     "ui.characterDetails.effectModifier": "{modifier} {value}",
     "ui.characterDetails.buffsHeading": "Buffs",
     "ui.characterDetails.escape": "Escape",

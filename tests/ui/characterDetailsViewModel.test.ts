@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ActionInfo } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { characterDetailsFixture } from "../../src/ui/web/app/fixtures/characterDetails";
 import {
@@ -236,6 +237,53 @@ describe("character details view model", () => {
             available: false,
             reasonLabel: "This character cannot escape.",
         });
+    });
+
+    it.each([5, 0, -1, undefined])("projects only Obey's own remaining or base cooldown (%s) without a cooldown tag", (remaining) => {
+        const fixture = characterDetailsFixture;
+        const state = {
+            ...fixture.state,
+            characters: fixture.state.characters.map((character) => character.id === "matsuko"
+                ? { ...character, cooldowns: { attackMe: 2, stop: 2, ...(remaining !== undefined ? { obey: remaining } : {}) } }
+                : character),
+        };
+        const obey: ActionInfo = {
+            move: { id: "obey", type: "mouth", targetSide: "player", targets: 1, traits: ["debuff", "refresh"] },
+            available: false,
+            reason: "cooldownIncomplete",
+            targets: [],
+            effects: [],
+        };
+        const presentation = new Presentation({
+            ...stockStrings,
+            "ui.characterDetails.cooldown": "Localized cooldown {count}",
+            "ui.characterDetails.cooldownOnUse": "Localized cooldown after use {count}",
+        });
+        const focused = createFocusedCharacterViewModel(
+            state, { ...fixture.actions[1], moves: [obey] }, fixture.thresholds, presentation, createStockEngine().getLibrary(),
+        );
+        const command = focused.commands.find(({ id }) => id === "obey")!;
+
+        expect(command.cooldown).toEqual(remaining !== undefined && remaining > 0
+            ? { value: remaining, active: true, accessibleLabel: "Localized cooldown " + remaining }
+            : { value: 3, active: false, accessibleLabel: "Localized cooldown after use 3" });
+        expect(command.available).toBe(false);
+        expect(command.reasonLabel).toBe(presentation.failure("cooldownIncomplete"));
+        expect(command.tags).toEqual(createMoveTags(obey, state, state.characters[1], presentation));
+        expect(command.tags.some(({ id, label }) => id.startsWith("cooldown") || label.includes("cooldown"))).toBe(false);
+        expect(focused.commands.filter(({ id }) => id !== "obey").every(({ cooldown }) => cooldown === undefined)).toBe(true);
+    });
+
+    it.each([0, undefined])("omits a ready move with no positive self cooldown (%s), even with shared cooldowns", base => {
+        const fixture = characterDetailsFixture;
+        const library = createStockEngine().getLibrary();
+        library.moves.obey!.cooldown = { attackMe: 2, stop: 2, ...(base !== undefined ? { obey: base } : {}) };
+        const action = {
+            ...fixture.actions[0],
+            moves: [{ ...fixture.actions[0].moves[0], move: { ...fixture.actions[0].moves[0].move, id: "obey" } }],
+        };
+        const model = createFocusedCharacterViewModel(fixture.state, action, fixture.thresholds, fixture.presentation, library);
+        expect(model.commands.find(({ id }) => id === "obey")!.cooldown).toBeUndefined();
     });
 
     it("uses public move traits without previews and retains traitless effect fallback", () => {
