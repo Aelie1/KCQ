@@ -222,7 +222,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.targeting.back": "Go Back",
     "ui.targeting.bindingAmount": "{amount} Binding",
     "ui.targeting.blockMove": "Block {move}",
-    "ui.targeting.bonus": "+{value} Bonus Escapes",
+    "ui.targeting.bonus": "+{value} Bonus Escape",
     "ui.targeting.chance": "{band} · {chance}%",
     "ui.targeting.characterSummary": "{action} · {stance}",
     "ui.targeting.chooseMany": "Target / Choose {count}",
