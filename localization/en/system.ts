@@ -2,6 +2,13 @@ import { StringTable } from "../../src/ui/presentation/presentation";
 
 
 export const systemEnglishStrings: StringTable = {
+    "ui.party.title": "Choose Your Party",
+    "ui.party.instructions": "Select exactly {count} characters. Deselect a character to make room for another.",
+    "ui.party.count": "{selected} / {count} selected",
+    "ui.party.continue": "Choose Encounter",
+    "ui.party.selected": "Selected",
+    "ui.party.unselected": "Not selected",
+    "ui.party.change": "Change Party",
     "campaign.skunk.name": "Latex Skunk Attacks!",
     "campaign.skunk.desc": "Random people are disappearing, and turning up later trapped in seamless latex skunk suits. The latex that they spray is spreading these living suits and their number is starting to grow out of hand! Find out what the cause of all this is!",
 

@@ -1,4 +1,5 @@
-import type { KCQCampaign } from "../../../content";
+import type { KCQCampaign, KCQCharacter } from "../../../content";
+import { stockCharacters } from "../../../stock";
 import { createSignal } from "solid-js";
 import type { CampaignReference, ContentLibrary } from "../../../engine/public/library";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
@@ -8,6 +9,7 @@ import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "
 import { loadCampaignUnlocks, saveCampaignUnlocks, type CampaignUnlocks } from "./campaignUnlocks";
 import { getNextEncounter } from "./nextEncounter";
 import type { SavePackage } from "./savePackage";
+import { isPlayableCharacter, isValidParty, PARTY_SIZE } from "./partySelection";
 
 export interface GraphicalBattleSession {
     engine: Engine;
@@ -17,13 +19,14 @@ export interface GraphicalBattleSession {
 }
 
 export type GraphicalScreen = { screen: "title" } | ({ campaign: KCQCampaign } & (
+    | { screen: "party" }
     | { screen: "picker" }
     | { screen: "details"; encounter: EncounterId }
     | { screen: "difficulty"; encounter: EncounterId; difficulty: DifficultyId }
     | { screen: "battle"; encounter: EncounterId; difficulty: DifficultyId; session: GraphicalBattleSession }));
 
 export function createGraphicalController(
-    prepareBattle: (campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId) => GraphicalBattleSession,
+    prepareBattle: (campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId, party: readonly KCQCharacter[]) => GraphicalBattleSession,
     storage?: Pick<Storage, "getItem" | "setItem">,
     getLibrary?: () => ContentLibrary | undefined,
 ) {
@@ -33,6 +36,7 @@ export function createGraphicalController(
     const [unlocks, setUnlocks] = createSignal<CampaignUnlocks>(loadCampaignUnlocks(storage));
     const [showAll, setShowAll] = createSignal(false);
     const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "title" });
+    const [party, setParty] = createSignal<readonly KCQCharacter[]>([...stockCharacters]);
 
     const unlockEncounter = (campaign: CampaignReference, encounter: EncounterId, outcome: "victory" | "defeat"): void => {
         const saved = unlocks()[campaign.id] ?? [];
@@ -80,18 +84,36 @@ export function createGraphicalController(
 
     return {
         screen,
+        party,
+        canConfirmParty: () => isValidParty(party()),
+        toggleCharacter(id: KCQCharacter): void {
+            if (screen().screen !== "party" || !isPlayableCharacter(id)) return;
+            const selected = party();
+            if (selected.includes(id)) setParty(selected.filter(character => character !== id));
+            else if (selected.length < PARTY_SIZE) setParty([...selected, id]);
+        },
+        confirmParty(): void {
+            const current = screen();
+            if (current.screen === "party" && isValidParty(party())) setScreen({ screen: "picker", campaign: current.campaign });
+        },
+        backToParty(): void {
+            const current = screen();
+            if (current.screen === "picker") setScreen({ screen: "party", campaign: current.campaign });
+        },
         bestClears,
         unlocks,
         showAll,
         setShowAll,
         nextEncounter,
-        continueBattle(campaign: KCQCampaign, save: SavePackage, createEngine: () => Engine): boolean {
+        continueBattle(campaign: KCQCampaign, save: SavePackage, createEngine: (party: readonly KCQCharacter[]) => Engine): boolean {
             if (screen().screen !== "title") return false;
             let restored: GraphicalBattleSession;
             const { encounter, difficulty } = save.saveState;
             try {
                 if (save.saveState.campaign !== campaign || !encounter || save.stats.terminal) return false;
-                const engine = createEngine();
+                const savedParty = save.saveState.characters.map(character => character.id);
+                if (!savedParty.length || !savedParty.every(isPlayableCharacter) || new Set(savedParty).size !== savedParty.length) return false;
+                const engine = createEngine(savedParty);
                 // Do not run encounter/character setup or attach fresh-run telemetry.
                 engine.loadSaveState(save.saveState);
                 const state = engine.getGameState();
@@ -102,6 +124,7 @@ export function createGraphicalController(
                 return false;
             }
             session = restored;
+            setParty(save.saveState.characters.map(character => character.id).filter(isPlayableCharacter));
             outcomeRecorded = false;
             setScreen({ screen: "battle", campaign, encounter, difficulty, session });
             return true;
@@ -132,7 +155,8 @@ export function createGraphicalController(
         selectCampaign(campaign: KCQCampaign): void {
             if (screen().screen === "title") {
                 setShowAll(false);
-                setScreen({ screen: "picker", campaign });
+                setParty([...stockCharacters]);
+                setScreen({ screen: "party", campaign });
             }
         },
         returnToTitle(): void {
@@ -166,7 +190,7 @@ export function createGraphicalController(
         startEncounter(): void {
             const current = screen();
             if (current.screen !== "difficulty") return;
-            session = prepareBattle(current.campaign, current.encounter, current.difficulty);
+            session = prepareBattle(current.campaign, current.encounter, current.difficulty, party());
             outcomeRecorded = false;
             setScreen({ screen: "battle", campaign: current.campaign, encounter: current.encounter, difficulty: current.difficulty, session });
         },
@@ -174,7 +198,7 @@ export function createGraphicalController(
             const current = screen();
             if (current.screen !== "battle") return;
             closeSession();
-            session = prepareBattle(current.campaign, current.encounter, current.difficulty);
+            session = prepareBattle(current.campaign, current.encounter, current.difficulty, party());
             outcomeRecorded = false;
             setScreen({ ...current, session });
         },

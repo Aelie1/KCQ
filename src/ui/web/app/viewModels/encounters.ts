@@ -87,7 +87,7 @@ export function createEncounterPickerViewModel(
     return {
         title: presentation.campaign(campaign.id),
         settingsLabel: presentation.ui("battleOverview.settings"),
-        backLabel: presentation.ui("title.back"),
+        backLabel: presentation.ui("party.change"),
         showAllLabel: presentation.ui("encounter.showAll"),
         showAll,
         encounters: encounters.map(encounter => {

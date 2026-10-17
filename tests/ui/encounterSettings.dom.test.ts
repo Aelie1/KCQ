@@ -77,6 +77,7 @@ function mountSelection(screen: SelectionScreen, release = "v0.8-settings-test")
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release, composeCampaign: () => ({ engine, presentation, languages }), presentation, languages, prepareBattle }), root);
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="1"]')!.click();
     document.querySelector<HTMLButtonElement>(".kcq-encounter-details__footer button")!.click();
     if (screen !== "picker") selectEncounter();
@@ -214,6 +215,7 @@ describe("encounter screen settings", () => {
         expect(document.querySelector(".kcq-graphical-app__background")?.hasAttribute("inert")).toBe(false);
         expect(prepareBattle).not.toHaveBeenCalled();
         document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
         openSettings();
         expect(document.querySelector(".kcq-battle-settings__version")?.textContent).toBe("Release v0.8-settings-test · abc1234");
@@ -230,7 +232,7 @@ describe("encounter screen settings", () => {
         expect(document.querySelector(".kcq-difficulty-select h1")?.textContent).toBe("Test Plains");
         button("Mythic").click();
         button("Start Encounter").click();
-        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_1", "mythic");
+        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_1", "mythic", ["ko", "matsuko", "hinari"]);
         const { dialog } = openSettings();
         expect(dialog.querySelector("select")?.value).toBe("test");
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent))

@@ -30,7 +30,7 @@ describe("graphical browser startup", () => {
         await import("../../src/ui/web/app/main");
         expect(create).not.toHaveBeenCalled();
         expect(strings).toHaveBeenCalledTimes(1 + Object.keys(content.campaignCatalogs).length);
-        expect(strings).toHaveBeenNthCalledWith(1, "en");
+        expect(strings).toHaveBeenNthCalledWith(1, "en", ["ko", "matsuko", "hinari"]);
 
         Object.keys(content.campaignCatalogs).forEach((campaign, index) => {
             expect(strings).toHaveBeenNthCalledWith(index + 2, "en", undefined, campaign);
@@ -39,23 +39,25 @@ describe("graphical browser startup", () => {
         const props = vi.mocked(GraphicalApp).mock.calls[0][0];
         expect(props.release).toBe("test");
         expect(props.campaigns).toEqual(Object.keys(content.campaignCatalogs));
-        const selection = props.composeCampaign("skunk");
+        const selection = props.composeCampaign("skunk", ["ko", "matsuko", "hinari"]);
         expect(create).toHaveBeenCalledExactlyOnceWith(["ko", "matsuko", "hinari"], "skunk");
         expect(strings).toHaveBeenLastCalledWith("en", ["ko", "matsuko", "hinari"], "skunk");
         expect(selection.engine.getGameState().characters).toEqual([]);
         expect(selection.engine.getLibrary().encounters).toHaveProperty("forest_3");
         expect(selection.presentation.encounter("forest_3")).not.toContain("[encounter.");
-        const first = props.prepareBattle("skunk", "forest_3", "mythic");
+        const party = ["hinari", "ko", "matsuko"] as const;
+        const first = props.prepareBattle("skunk", "forest_3", "mythic", party);
         first.engine.executeAction({ type: "endTurn" });
-        const retry = props.prepareBattle("skunk", "forest_3", "mythic");
+        const retry = props.prepareBattle("skunk", "forest_3", "mythic", party);
         expect(retry.engine).not.toBe(first.engine);
-        expect(create).toHaveBeenNthCalledWith(2, ["ko", "matsuko", "hinari"], "skunk");
-        expect(create).toHaveBeenNthCalledWith(3, ["ko", "matsuko", "hinari"], "skunk");
+        expect(create).toHaveBeenNthCalledWith(2, party, "skunk");
+        expect(create).toHaveBeenNthCalledWith(3, party, "skunk");
         expect(retry.engine.getGameState().turn).toMatchObject({ round: 1, outcome: "ongoing" });
         expect(retry.engine.getGameState().difficulty.id).toBe("mythic");
-        expect(retry.engine.getGameState().characters).toHaveLength(3);
+        expect(retry.engine.getGameState().characters.map((character: { id: string }) => character.id)).toEqual(party);
         expect(props).not.toHaveProperty("engine");
-        expect(props.composeCampaign("skunk").engine.getGameState().characters).toEqual([]);
+        expect(props.composeCampaign("skunk", ["ko", "matsuko", "hinari"]).engine.getGameState().characters).toEqual([]);
+        expect(props.composeCampaign("skunk", ["hinari"]).engine.listCharacters()).toEqual(["hinari"]);
         expect(addEventListener).toHaveBeenCalledTimes(2);
         first.dispose();
         retry.dispose();
@@ -78,7 +80,7 @@ describe("graphical browser startup", () => {
         expect(props).not.toHaveProperty("initialRoute");
         expect(props.prepareBattle).toBeTypeOf("function");
         expect(props).not.toHaveProperty("engine");
-        expect(props.composeCampaign("skunk").engine.getGameState().characters).toEqual([]);
+        expect(props.composeCampaign("skunk", ["ko", "matsuko", "hinari"]).engine.getGameState().characters).toEqual([]);
         expect(getSearch).not.toHaveBeenCalled();
     });
 });

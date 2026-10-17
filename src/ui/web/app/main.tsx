@@ -1,7 +1,6 @@
 import { render } from "solid-js/web";
 import { getStringTable } from "../../../../localization";
-import { stockCharacters } from "../../../stock";
-import { campaignCatalogs, createEngine, type KCQCampaign } from "../../../content";
+import { campaignCatalogs, createEngine, type KCQCampaign, type KCQCharacter } from "../../../content";
 import type { DifficultyId, EncounterId } from "../../../engine/public/types";
 import { Presentation } from "../../presentation/presentation";
 import { attachBattlePageLifecycle, createBattle } from "../app";
@@ -9,6 +8,7 @@ import { gameplayTelemetry } from "../posthog";
 import { createBattleTelemetryObserver } from "../telemetry";
 import { GraphicalApp } from "./GraphicalApp";
 import type { GraphicalBattleSession } from "./graphicalController";
+import { availableCharacters } from "./partySelection";
 import "./app.css";
 import "./tokens.css";
 
@@ -22,13 +22,13 @@ if (!root) {
 
 const campaigns = Object.keys(campaignCatalogs) as KCQCampaign[];
 // Include encounter names for the saved-battle summary without composing an engine.
-const presentation = new Presentation(Object.assign({}, getStringTable("en"),
+const presentation = new Presentation(Object.assign({}, getStringTable("en", availableCharacters),
     ...campaigns.map(campaign => getStringTable("en", undefined, campaign))));
 
 render(() => <GraphicalApp campaigns={campaigns} presentation={presentation} release={__KCQ_RELEASE_TAG__}
-    composeCampaign={campaign => ({
-        engine: createEngine(stockCharacters, campaign),
-        presentation: new Presentation(getStringTable("en", stockCharacters, campaign)),
+    composeCampaign={(campaign, party) => ({
+        engine: createEngine(party, campaign),
+        presentation: new Presentation(getStringTable("en", availableCharacters, campaign)),
     })}
     prepareBattle={prepareGraphicalBattle} />, root);
 
@@ -43,8 +43,9 @@ function prepareGraphicalBattle(
     campaign: KCQCampaign,
     encounter: EncounterId,
     difficulty: DifficultyId,
+    party: readonly KCQCharacter[],
 ): GraphicalBattleSession {
-    const battle = createBattle(createEngine(stockCharacters, campaign), encounter, difficulty);
+    const battle = createBattle(createEngine(party, campaign), encounter, difficulty);
     const observer = createBattleTelemetryObserver({
         telemetry: gameplayTelemetry,
         replayId: createId(),

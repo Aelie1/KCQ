@@ -41,7 +41,7 @@ function setup(storage = storageWith(), campaigns: Record<string, CampaignRefere
         return createGraphicalController(prepare, storage, () => ({ ...library, campaigns }));
     });
     const start = (encounter: EncounterId, difficulty: DifficultyId = "standard", id: KCQCampaign = "skunk") => {
-        controller.selectCampaign(id);
+        controller.selectCampaign(id); controller.confirmParty();
         controller.selectEncounter(encounter);
         controller.chooseDifficulty();
         controller.selectDifficulty(difficulty);
@@ -78,7 +78,7 @@ describe("campaign encounter unlocks", () => {
     });
 
     it.each(["prologue", "interlude_1", "interlude_2", "interlude_3", "epilogue"])("advances the story %s without starting combat or selecting difficulty", story => {
-        const app = setup(); app.controller.selectCampaign("skunk"); app.controller.selectEncounter(story);
+        const app = setup(); app.controller.selectCampaign("skunk"); app.controller.confirmParty(); app.controller.selectEncounter(story);
         const next = campaign.victory[story][0];
         expect(app.controller.nextEncounter()).toBe(next);
         app.controller.nextLevel();
@@ -99,7 +99,7 @@ describe("campaign encounter unlocks", () => {
 
     it("requires a valid first unlock instead of skipping to a later valid ID", () => {
         const app = setup(storageWith(), { skunk: { ...campaign, victory: { prologue: ["missing", "plains_1"], plains_1: ["missing", "plains_2"] } } });
-        app.controller.selectCampaign("skunk"); app.controller.selectEncounter("prologue");
+        app.controller.selectCampaign("skunk"); app.controller.confirmParty(); app.controller.selectEncounter("prologue");
         expect(app.controller.nextEncounter()).toBeUndefined();
         app.controller.nextLevel();
         expect(app.controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "prologue" });
@@ -110,7 +110,7 @@ describe("campaign encounter unlocks", () => {
     it("preserves the selected campaign and Show All when advancing", () => {
         const alternate = "alternate" as KCQCampaign;
         const app = setup(storageWith(), { ...library.campaigns, alternate: { id: alternate, initial: ["prologue"], victory: { prologue: ["outside"] }, defeat: {} } });
-        app.controller.selectCampaign(alternate); app.controller.setShowAll(true); app.controller.selectEncounter("prologue");
+        app.controller.selectCampaign(alternate); app.controller.confirmParty(); app.controller.setShowAll(true); app.controller.selectEncounter("prologue");
         app.controller.nextLevel();
         expect(app.controller.screen()).toEqual({ screen: "details", campaign: alternate, encounter: "outside" });
         expect(app.controller.showAll()).toBe(true);
@@ -123,7 +123,7 @@ describe("campaign encounter unlocks", () => {
     ])("opening %s immediately unlocks %s without combat or repeated writes", (story, next) => {
         const savedClears = { plains_1: "mythic" };
         const app = setup(storageWith({ "kcq.clears": JSON.stringify(savedClears) }));
-        app.controller.selectCampaign("skunk");
+        app.controller.selectCampaign("skunk"); app.controller.confirmParty();
         app.controller.selectEncounter(story);
         expect(app.controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: story });
         expect(app.controller.unlocks()).toEqual({ skunk: [next] });
@@ -141,7 +141,7 @@ describe("campaign encounter unlocks", () => {
         const app = setup(storageWith({ "kcq.unlocks": JSON.stringify(saved) }));
         expect(app.controller.unlocks()).toEqual(saved);
         expect(app.storage.setItem).not.toHaveBeenCalled();
-        app.controller.selectCampaign("skunk"); app.controller.selectEncounter("interlude_1");
+        app.controller.selectCampaign("skunk"); app.controller.confirmParty(); app.controller.selectEncounter("interlude_1");
         expect(app.storage.setItem).not.toHaveBeenCalled();
         app.controller.backToPicker(); app.controller.selectEncounter("interlude_2");
         expect(app.controller.unlocks()).toEqual({ ...saved, skunk: [...saved.skunk, "tower_1"] });
@@ -157,7 +157,7 @@ describe("campaign encounter unlocks", () => {
             disposers.push(dispose);
             return createGraphicalController(prepare, storage, () => changed);
         });
-        controller.selectCampaign(alternate); controller.selectEncounter("forest_1");
+        controller.selectCampaign(alternate); controller.confirmParty(); controller.selectEncounter("forest_1");
         expect(controller.unlocks()).toEqual({ alternate: ["plains_3"] });
         expect(controller.bestClears()).toEqual({});
         expect(prepare).not.toHaveBeenCalled();
@@ -243,7 +243,7 @@ describe("campaign encounter unlocks", () => {
 
     it("Show All permits locked selection and restores locks without saving progress", () => {
         const app = setup();
-        app.controller.selectCampaign("skunk"); app.controller.setShowAll(true);
+        app.controller.selectCampaign("skunk"); app.controller.confirmParty(); app.controller.setShowAll(true);
         expect(app.visible()).toEqual(Object.keys(library.encounters));
         app.controller.selectEncounter("outside");
         expect(app.controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "outside" });
@@ -287,7 +287,7 @@ describe("campaign encounter unlocks", () => {
         storage.getItem.mockImplementation(() => { throw new Error("blocked"); });
         storage.setItem.mockImplementation(() => { throw new Error("quota"); });
         const app = setup(storage);
-        app.controller.selectCampaign("skunk");
+        app.controller.selectCampaign("skunk"); app.controller.confirmParty();
         expect(() => app.controller.selectEncounter("prologue")).not.toThrow();
         expect(app.controller.unlocks()).toEqual({ skunk: ["plains_1"] });
         expect(app.controller.bestClears()).toEqual({});

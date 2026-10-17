@@ -1,5 +1,5 @@
 import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } from "solid-js";
-import type { KCQCampaign } from "../../../content";
+import type { KCQCampaign, KCQCharacter } from "../../../content";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { Presentation } from "../../presentation/presentation";
 import { LibraryPanel } from "./panels/LibraryPanel";
@@ -18,6 +18,9 @@ import { BattleApp } from "./BattleApp";
 import { DifficultySelectPanel } from "./components/DifficultySelectPanel";
 import { EncounterDetailsPanel } from "./components/EncounterDetailsPanel";
 import { EncounterPickerPanel } from "./components/EncounterPickerPanel";
+import { PartySelectionPanel } from "./components/PartySelectionPanel";
+import { createPartySelectionViewModel } from "./viewModels/partySelection";
+import { availableCharacters } from "./partySelection";
 import { createGraphicalController, type GraphicalBattleSession } from "./graphicalController";
 import { createDifficultySelectViewModel } from "./viewModels/difficulty";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel } from "./viewModels/encounters";
@@ -32,10 +35,10 @@ export interface GraphicalCampaignComposition {
 export interface GraphicalAppProps {
     campaigns: readonly KCQCampaign[];
     release: string;
-    composeCampaign: (campaign: KCQCampaign) => GraphicalCampaignComposition;
+    composeCampaign: (campaign: KCQCampaign, party: readonly KCQCharacter[]) => GraphicalCampaignComposition;
     presentation: Presentation;
     languages?: readonly LanguageOption[];
-    prepareBattle: (campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId) => GraphicalBattleSession;
+    prepareBattle: (campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId, party: readonly KCQCharacter[]) => GraphicalBattleSession;
 }
 
 export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
@@ -73,6 +76,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         if (!settingsOpen() && !libraryOpen()) callback();
     };
     const controller = createGraphicalController(props.prepareBattle, undefined, () => library());
+    const [restoredComposition, setRestoredComposition] = createSignal<GraphicalCampaignComposition>();
     const [autosave, setAutosave] = createSignal<SaveReadResult>({ status: "missing" });
     createEffect(() => {
         if (controller.screen().screen === "title") setAutosave(readSave());
@@ -82,7 +86,12 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         setAutosave(result);
         if (result.status !== "loaded") return;
         const campaign = props.campaigns.find(id => id === result.save.saveState.campaign);
-        if (!campaign || !controller.continueBattle(campaign, result.save, () => props.composeCampaign(campaign).engine)) {
+        if (!campaign || !controller.continueBattle(campaign, result.save, party => {
+            const restored = props.composeCampaign(campaign, party);
+            setRestoredComposition(restored);
+            return restored.engine;
+        })) {
+            setRestoredComposition(undefined);
             setAutosave({ status: "corrupted" });
         }
     };
@@ -99,15 +108,17 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         setSettingsOpen(false);
         setLibraryOpen(false);
         controller.returnToTitle();
+        setRestoredComposition(undefined);
     };
     onCleanup(controller.dispose);
     const selectedCampaign = createMemo(() => {
         const current = controller.screen();
-        return current.screen === "title" ? undefined : current.campaign;
+        return current.screen === "title" || current.screen === "party" ? undefined : current.campaign;
     });
     const composition = createMemo(() => {
         const campaign = selectedCampaign();
-        return campaign ? props.composeCampaign(campaign) : undefined;
+        if (!campaign) return undefined;
+        return restoredComposition() ?? props.composeCampaign(campaign, controller.party());
     });
     const presentation = () => {
         const selected = composition();
@@ -151,11 +162,21 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                         onDelete={deleteSave}
                         onSelect={campaign => navigate(() => controller.selectCampaign(campaign))} />
                 </Match>
+                <Match when={controller.screen().screen === "party"}>
+                    <PartySelectionPanel model={createPartySelectionViewModel(availableCharacters, controller.party(), presentation())}
+                        canContinue={controller.canConfirmParty()}
+                        onToggle={id => navigate(() => controller.toggleCharacter(id))}
+                        onBack={() => navigate(backToTitle)}
+                        onContinue={() => navigate(controller.confirmParty)} />
+                </Match>
                 <Match when={controller.screen().screen === "picker"}>
                     <EncounterPickerPanel model={createEncounterPickerViewModel(library()!, presentation(), library()!.campaigns[selectedCampaign()!],
                         controller.bestClears(), controller.unlocks()[selectedCampaign()!] ?? [], controller.showAll())}
                         onShowAllChange={showAll => navigate(() => controller.setShowAll(showAll))}
-                        onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")} onBack={() => navigate(controller.returnToTitle)}
+                        onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")} onBack={() => navigate(() => {
+                            controller.backToParty();
+                            setRestoredComposition(undefined);
+                        })}
                         onSelect={encounter => navigate(() => controller.selectEncounter(encounter))} />
                 </Match>
                 <Match when={details()} keyed>

@@ -154,6 +154,7 @@ describe("Encounter Details narrative tabs", () => {
             composeCampaign: () => ({ engine, presentation }), prepareBattle,
         }));
         element(".kcq-title-screen__campaign").click();
+        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         const select = (id: string) => {
             const row = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
                 .find(row => row.querySelector(".kcq-encounter-picker__name")?.textContent === presentation.encounter(id));

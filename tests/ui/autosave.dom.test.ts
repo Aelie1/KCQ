@@ -68,6 +68,7 @@ function mount(configure?: (engine: Engine) => void, titlePresentation = present
 }
 function start(encounter = "forest_3", difficulty = "Veteran"): void {
     click(".kcq-title-screen__campaign");
+    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
     const row = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
         .find(row => row.querySelector(".kcq-encounter-picker__name")?.textContent === presentation.encounter(encounter));
@@ -162,6 +163,7 @@ describe("title saved-battle card", () => {
         expect(document.activeElement?.textContent).toBe(presentation.ui("title.campaigns"));
         expect(app.composeCampaign).not.toHaveBeenCalled();
         click(".kcq-title-screen__campaign");
+        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
     });
 
@@ -289,7 +291,7 @@ describe("graphical autosave and Continue", () => {
         click(".kcq-battle-overview .kcq-combat-header__settings"); button("Back to Title Screen");
         expect(encoded()).toBe(before); click(".kcq-title-screen__continue");
         click(".kcq-battle-overview .kcq-combat-header__settings"); button("Retry Battle");
-        expect(app.prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "forest_3", "veteran");
+        expect(app.prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "forest_3", "veteran", ["ko", "matsuko", "hinari"]);
         expect(saved().stats.stats.actions).toBe(0); expect(saved().gameLog.entries).toEqual([]);
         expect(saved().saveState).toEqual(app.sessions[0]!.engine.getSaveState());
     });

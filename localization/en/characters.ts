@@ -1,6 +1,11 @@
 import { StringTable } from "../../src/ui/presentation/presentation";
 
 export const koEnglishStrings: StringTable = {
+    // Party-selection copy placeholders; replace with final authored prose.
+    "entity.ko.party.role": "Role description pending.",
+    "entity.ko.party.point1": "First trait description pending.",
+    "entity.ko.party.point2": "Second trait description pending.",
+    "entity.ko.party.point3": "Third trait description pending.",
     "entity.ko.name": "Ko-chan",
     "entity.ko.desc": "Student council president.  Self-proclaimed fairy.  Spends her days in restrictive costumes, but she has learned to adapt to any kind of binding.",
     "entity.ko.library": "[moves:fairyTransformation] unlocks empowered moves. Each empowered move consumes empowerment.",
@@ -41,6 +46,11 @@ export const koEnglishStrings: StringTable = {
 };
 
 export const matsukoEnglishStrings: StringTable = {
+    // Party-selection copy placeholders; replace with final authored prose.
+    "entity.matsuko.party.role": "Role description pending.",
+    "entity.matsuko.party.point1": "First trait description pending.",
+    "entity.matsuko.party.point2": "Second trait description pending.",
+    "entity.matsuko.party.point3": "Third trait description pending.",
     "entity.matsuko.name": "Matsuko",
     "entity.matsuko.desc": "Student council vice-president.  Young Mistress of the Flame Clan.  Attacks with powerful white flame attacks and wields the [Power of Compulsion], which allows her to control the flow of battle.",
     "entity.matsuko.library": "Matsuko's Compulsion moves share cooldowns and do not consume her action.",
@@ -78,6 +88,11 @@ export const matsukoEnglishStrings: StringTable = {
 };
 
 export const hinariEnglishStrings: StringTable = {
+    // Party-selection copy placeholders; replace with final authored prose.
+    "entity.hinari.party.role": "Role description pending.",
+    "entity.hinari.party.point1": "First trait description pending.",
+    "entity.hinari.party.point2": "Second trait description pending.",
+    "entity.hinari.party.point3": "Third trait description pending.",
     "entity.hinari.name": "Hinari",
     "entity.hinari.desc": "Student council treasurer.  Adept of the Power of Space.  She has her own personal inventory where she stores projectiles to be used as ammo, as well as helping to free her friends from their bindings.",
     "entity.hinari.library": "Subspace starts empty and can hold up to 100.\nThe emptier Subspace is, the more hits [moves:rockfall] deals.\n[moves:store] and [moves:brace] increase Subspace, while [moves:release] empties it.",

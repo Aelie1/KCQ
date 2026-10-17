@@ -52,6 +52,7 @@ function mount(strings: StringTable = victoryStoryStrings) {
         composeCampaign: () => ({ engine: createStockEngine(), presentation }),
     }), host);
     element(".kcq-title-screen__campaign").click();
+    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     element('.kcq-encounter-picker__row[data-kcq-shortcut="1"]').click();
     element(".kcq-encounter-details__footer button").click();
     element('.kcq-encounter-picker__row[data-kcq-shortcut="2"]').click();

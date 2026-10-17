@@ -10,6 +10,13 @@ type StringArg = number | string | boolean | StringKey;
 export type StringTable = Record<string, string>;
 
 export type UiLabel =
+    | "party.title"
+    | "party.instructions"
+    | "party.count"
+    | "party.continue"
+    | "party.selected"
+    | "party.unselected"
+    | "party.change"
     | "action.acted"
     | "action.ready"
     | "action.skipped"
@@ -384,6 +391,10 @@ export class Presentation {
 
     entity(entity: EntityId, variant: "name" | "desc" = "name"): string {
         return this.translate(this.entityKey(entity, variant));
+    }
+
+    characterSelection(id: EntityId, variant: "role" | "point1" | "point2" | "point3"): string {
+        return this.translate(this.definitionKey("entity", id, `party.${variant}`));
     }
 
     campaign(campaign: CampaignId, variant: "name" | "desc" = "name"): string {

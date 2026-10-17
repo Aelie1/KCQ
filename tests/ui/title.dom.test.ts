@@ -34,7 +34,7 @@ function mount(languages?: readonly LanguageOption[]) {
     const root = document.createElement("div");
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, {
-        campaigns: ["skunk"], release: "test", presentation: new Presentation(getStringTable("en")), languages,
+        campaigns: ["skunk"], release: "test", presentation: new Presentation(getStringTable("en", stockCharacters)), languages,
         composeCampaign, prepareBattle,
     }), root);
     return { composeCampaign, prepareBattle, compositions };
@@ -86,11 +86,13 @@ describe("title navigation", () => {
         expect(panel?.querySelector(".kcq-title-screen__language-label")?.textContent).toBe("Test language label");
         expect(composeCampaign).not.toHaveBeenCalled();
         click(".kcq-title-screen__campaign");
+        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test campaign");
         click(".kcq-encounter-picker .kcq-combat-header__settings");
         expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings select")?.value).toBe("test");
         document.querySelector<HTMLButtonElement>(".kcq-battle-settings__overlay button")!.click();
         click(".kcq-encounter-picker .kcq-targeting__back");
+        click(".kcq-party-selection .kcq-targeting__back");
         expect(document.querySelector<HTMLSelectElement>(".kcq-title-screen__language select")?.value).toBe("test");
         expect(document.querySelector(".kcq-title-screen h1")?.textContent).toBe("Test Quest");
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -101,7 +103,8 @@ describe("title navigation", () => {
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
         expect(composeCampaign).not.toHaveBeenCalled();
         click(".kcq-title-screen__campaign");
-        expect(composeCampaign).toHaveBeenCalledExactlyOnceWith("skunk");
+        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
+        expect(composeCampaign).toHaveBeenCalledExactlyOnceWith("skunk", ["ko", "matsuko", "hinari"]);
         expect(document.querySelector(".kcq-title-screen")).toBeNull();
         const library = compositions[0]!.getLibrary();
         const presentation = new Presentation(getStringTable("en", stockCharacters, "skunk"));
@@ -111,8 +114,10 @@ describe("title navigation", () => {
         expect(compositions[0]!.getGameState().characters).toEqual([]);
         expect(prepareBattle).not.toHaveBeenCalled();
         click(".kcq-encounter-picker .kcq-targeting__back");
+        click(".kcq-party-selection .kcq-targeting__back");
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
         click(".kcq-title-screen__campaign");
+        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         expect(composeCampaign).toHaveBeenCalledTimes(2);
         expect(compositions[1]).not.toBe(compositions[0]);
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -121,12 +126,13 @@ describe("title navigation", () => {
     it("keeps campaign composition through difficulty, battle, retry, and level select, then clears it at title", () => {
         const { composeCampaign, prepareBattle } = mount();
         click(".kcq-title-screen__campaign");
+        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         click('.kcq-encounter-picker__row[data-kcq-shortcut="1"]');
         click(".kcq-encounter-details__footer button");
         click('.kcq-encounter-picker__row[data-kcq-shortcut="2"]');
         click(".kcq-encounter-details .kcq-battle-overview__primary-action");
         click(".kcq-difficulty-select .kcq-battle-overview__primary-action");
-        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_1", "standard");
+        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_1", "standard", ["ko", "matsuko", "hinari"]);
         click(".kcq-battle-overview .kcq-combat-header__settings");
         const button = (label: string) => {
             const found = [...document.querySelectorAll<HTMLButtonElement>("button")].find(b => b.textContent === label);
@@ -134,7 +140,7 @@ describe("title navigation", () => {
             found.click();
         };
         button("Retry Battle");
-        expect(prepareBattle).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "standard");
+        expect(prepareBattle).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "standard", ["ko", "matsuko", "hinari"]);
         expect(prepareBattle.mock.results[0]!.value.dispose).toHaveBeenCalledOnce();
         expect(prepareBattle.mock.results[1]!.value.engine).not.toBe(prepareBattle.mock.results[0]!.value.engine);
         click(".kcq-battle-overview .kcq-combat-header__settings");
@@ -142,6 +148,7 @@ describe("title navigation", () => {
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
         expect(composeCampaign).toHaveBeenCalledOnce();
         click(".kcq-encounter-picker .kcq-targeting__back");
+        click(".kcq-party-selection .kcq-targeting__back");
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
         expect(document.querySelector(".kcq-battle-stage")).toBeNull();
         expect(prepareBattle.mock.results[1]!.value.dispose).toHaveBeenCalledOnce();

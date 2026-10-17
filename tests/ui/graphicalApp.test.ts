@@ -36,7 +36,7 @@ describe("outer graphical application", () => {
         // SSR renders one screen at a time; reuse the real controller to inspect transitions.
         vi.spyOn(controllers, "createGraphicalController").mockReturnValue(controller);
         const renderScreen = () => renderToString(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", composeCampaign: () => ({ engine, presentation }), presentation, prepareBattle }));
-        controller.selectCampaign("skunk");
+        controller.selectCampaign("skunk"); controller.confirmParty();
         controller.selectEncounter("forest_3");
         expect(renderScreen()).toContain("kcq-encounter-details");
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -54,7 +54,7 @@ describe("outer graphical application", () => {
         const battleHtml = renderScreen();
         expect(battleHtml).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
         expect(battleHtml).toContain(presentation.encounter("plains_2"));
-        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_2", "mythic");
+        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "plains_2", "mythic", ["ko", "matsuko", "hinari"]);
         expect(engine.getGameState().difficulty.id).toBe("mythic");
         controller.dispose();
         expect(prepareBattle.mock.results[0].value.dispose).toHaveBeenCalledOnce();

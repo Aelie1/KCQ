@@ -21,6 +21,11 @@ describe("outer graphical controller", () => {
         controller.startEncounter();
         expect(controller.screen()).toEqual({ screen: "title" });
         controller.selectCampaign("skunk");
+        expect(controller.screen()).toEqual({ screen: "party", campaign: "skunk" });
+        expect(controller.party()).toEqual(["ko", "matsuko", "hinari"]);
+        controller.selectEncounter("outside");
+        expect(controller.screen().screen).toBe("party");
+        controller.confirmParty();
         expect(controller.screen()).toEqual({ screen: "picker", campaign: "skunk" });
         controller.returnToTitle();
         expect(controller.screen()).toEqual({ screen: "title" });
@@ -28,10 +33,53 @@ describe("outer graphical controller", () => {
         dispose();
     }));
 
-    it("switches picker to details and back without preparing a battle", () => createRoot((dispose) => {
+    it("blocks incomplete parties and preserves the chosen order through navigation and retry", () => createRoot(dispose => {
         const { prepare } = sessionFactory();
         const controller = createGraphicalController(prepare);
         controller.selectCampaign("skunk");
+        controller.toggleCharacter("ko");
+        expect(controller.canConfirmParty()).toBe(false);
+        controller.confirmParty();
+        expect(controller.screen().screen).toBe("party");
+        expect(prepare).not.toHaveBeenCalled();
+        controller.toggleCharacter("unknown" as "ko");
+        expect(controller.party()).toEqual(["matsuko", "hinari"]);
+        controller.toggleCharacter("ko");
+        const selected = ["matsuko", "hinari", "ko"];
+        expect(controller.canConfirmParty()).toBe(true);
+        controller.confirmParty();
+        controller.toggleCharacter("ko");
+        expect(controller.party()).toEqual(selected);
+        controller.backToParty();
+        expect(controller.screen().screen).toBe("party");
+        expect(controller.party()).toEqual(selected);
+        controller.confirmParty();
+        controller.selectEncounter("outside");
+        controller.backToPicker();
+        controller.selectEncounter("plains_1");
+        controller.chooseDifficulty();
+        controller.backToDetails();
+        controller.chooseDifficulty();
+        controller.selectDifficulty("mythic");
+        controller.startEncounter();
+        controller.backToParty();
+        expect(controller.screen().screen).toBe("battle");
+        controller.retryEncounter();
+        expect(prepare).toHaveBeenNthCalledWith(1, "skunk", "plains_1", "mythic", selected);
+        expect(prepare).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "mythic", selected);
+        controller.returnToLevelSelect();
+        expect(controller.party()).toEqual(selected);
+        controller.returnToTitle();
+        controller.selectCampaign("skunk");
+        expect(controller.party()).toEqual(["ko", "matsuko", "hinari"]);
+        controller.dispose();
+        dispose();
+    }));
+
+    it("switches picker to details and back without preparing a battle", () => createRoot((dispose) => {
+        const { prepare } = sessionFactory();
+        const controller = createGraphicalController(prepare);
+        controller.selectCampaign("skunk"); controller.confirmParty();
         expect(controller.screen()).toEqual({ screen: "picker", campaign: "skunk" });
         controller.selectEncounter("forest_3");
         expect(controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "forest_3" });
@@ -46,7 +94,7 @@ describe("outer graphical controller", () => {
     it("enters Difficulty at Standard every time and returns to the same Details", () => createRoot((dispose) => {
         const { prepare } = sessionFactory();
         const controller = createGraphicalController(prepare);
-        controller.selectCampaign("skunk");
+        controller.selectCampaign("skunk"); controller.confirmParty();
         controller.selectEncounter("forest_3");
         controller.chooseDifficulty();
         expect(DEFAULT_DIFFICULTY).toBe("standard");
@@ -70,7 +118,7 @@ describe("outer graphical controller", () => {
         const setDifficulty = vi.spyOn(session.engine, "setDifficulty");
         const loadEncounter = vi.spyOn(session.engine, "loadEncounter");
         const controller = createGraphicalController(prepare);
-        controller.selectCampaign("skunk");
+        controller.selectCampaign("skunk"); controller.confirmParty();
         controller.selectEncounter("outside");
         controller.chooseDifficulty();
         for (const difficulty of difficultyIds) {
@@ -87,12 +135,12 @@ describe("outer graphical controller", () => {
     it.each(difficultyIds)("starts the selected encounter once at %s and preserves disposal", (difficulty) => createRoot((dispose) => {
         const { prepare, session } = sessionFactory();
         const controller = createGraphicalController(prepare);
-        controller.selectCampaign("skunk");
+        controller.selectCampaign("skunk"); controller.confirmParty();
         controller.selectEncounter("outside");
         controller.chooseDifficulty();
         controller.selectDifficulty(difficulty);
         controller.startEncounter();
-        expect(prepare).toHaveBeenCalledExactlyOnceWith("skunk", "outside", difficulty);
+        expect(prepare).toHaveBeenCalledExactlyOnceWith("skunk", "outside", difficulty, ["ko", "matsuko", "hinari"]);
         const battle = controller.screen();
         expect(battle).toEqual({ screen: "battle", campaign: "skunk", encounter: "outside", difficulty, session });
         controller.startEncounter();
@@ -116,7 +164,7 @@ describe("outer graphical controller", () => {
             return { engine, dispose: vi.fn() };
         });
         const controller = createGraphicalController(prepare);
-        controller.selectCampaign("skunk");
+        controller.selectCampaign("skunk"); controller.confirmParty();
         controller.selectEncounter("forest_3");
         controller.chooseDifficulty();
         controller.selectDifficulty("mythic");
@@ -128,7 +176,7 @@ describe("outer graphical controller", () => {
         vi.spyOn(first.engine, "getGameState").mockReturnValue(completed);
         controller.retryEncounter();
         expect(first.dispose).toHaveBeenCalledOnce();
-        expect(prepare).toHaveBeenNthCalledWith(2, "skunk", "forest_3", "mythic");
+        expect(prepare).toHaveBeenNthCalledWith(2, "skunk", "forest_3", "mythic", ["ko", "matsuko", "hinari"]);
         const current = controller.screen();
         expect(current.screen).toBe("battle");
         if (current.screen !== "battle") throw new Error("Expected battle");
@@ -153,7 +201,7 @@ describe("outer graphical controller", () => {
     it("ignores actions outside their screens and safely disposes before a battle", () => createRoot((dispose) => {
         const { prepare, session } = sessionFactory();
         const controller = createGraphicalController(prepare);
-        controller.selectCampaign("skunk");
+        controller.selectCampaign("skunk"); controller.confirmParty();
         controller.startEncounter();
         controller.retryEncounter();
         controller.returnToLevelSelect();

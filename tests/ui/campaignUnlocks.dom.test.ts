@@ -40,6 +40,7 @@ function mount() {
         composeCampaign: () => ({ engine: createStockEngine(), presentation }),
     }), host);
     element(".kcq-title-screen__campaign").click();
+    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     return { sessions, prepareBattle };
 }
 const toggle = () => element<HTMLInputElement>(".kcq-encounter-picker__show-all input");
@@ -112,7 +113,7 @@ describe("campaign unlock UI integration", () => {
         toggle().click();
         expect(names()).toEqual(encounterNames(Object.keys(createStockEngine().getLibrary().encounters)));
         start("outside");
-        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "outside", "standard");
+        expect(prepareBattle).toHaveBeenCalledExactlyOnceWith("skunk", "outside", "standard", ["ko", "matsuko", "hinari"]);
         element(".kcq-combat-header__settings").click();
         const back = [...document.querySelectorAll<HTMLButtonElement>(".kcq-battle-settings button")]
             .find(button => button.textContent === presentation.ui("battleResult.back"))!;
@@ -142,7 +143,7 @@ describe("campaign unlock UI integration", () => {
         press(combatShortcut(Object.keys(createStockEngine().getLibrary().encounters).indexOf("tower_2"))!);
         expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter("tower_2"));
         press("Enter"); press("Enter");
-        expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "tower_2", "standard");
+        expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "tower_2", "standard", ["ko", "matsuko", "hinari"]);
         finish(sessions[1]!.engine, "defeat"); returnFromResult();
         expect(names()).toEqual(encounterNames(["prologue", "tower_2", "tower_3"]));
         expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["tower_2", "tower_3"] });

@@ -48,6 +48,7 @@ function mount(localized = presentation) {
         composeCampaign: () => ({ engine: createStockEngine(), presentation: localized }),
     }), host);
     element(".kcq-title-screen__campaign").click();
+    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     return { sessions, prepareBattle };
 }
 function select(id: string, localized = presentation) {

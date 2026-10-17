@@ -3647,6 +3647,111 @@ button {
     white-space: nowrap;
 }
 
+/* Party selection uses the same scrolling body and pinned actions as encounter screens. */
+.kcq-graphical-app__background:has(.kcq-party-selection) {
+    width: 960px;
+}
+
+.kcq-party-selection {
+    width: 100%;
+}
+
+.kcq-party-selection__header {
+    padding: 12px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 8px;
+    background: var(--kcq-surface-raised);
+}
+
+.kcq-party-selection__header h1 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.kcq-party-selection__header p {
+    margin: 8px 0 0;
+    color: var(--kcq-text-secondary);
+    font-size: 12px;
+}
+
+.kcq-party-selection__characters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+    align-items: start;
+    gap: 12px;
+}
+
+.kcq-party-selection__card {
+    min-width: 0;
+    padding: 12px;
+    overflow-wrap: anywhere;
+    text-align: left;
+    cursor: pointer;
+}
+
+.kcq-party-selection__card.is-selected {
+    border-color: var(--kcq-accent-primary);
+    box-shadow: inset 0 0 0 1px var(--kcq-accent-primary);
+}
+
+.kcq-party-selection__identity {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    width: 100%;
+    min-height: 44px;
+    padding: 8px;
+    border: 1px solid var(--kcq-structure-border);
+    border-radius: 7px;
+    background: var(--kcq-surface-raised);
+    color: var(--kcq-text-primary);
+    text-align: left;
+}
+
+.kcq-party-selection__toggle[aria-pressed="true"] .kcq-party-selection__identity {
+    background: var(--kcq-accent-primary);
+    color: var(--kcq-text-on-accent);
+}
+
+.kcq-party-selection__state {
+    font-size: 11px;
+}
+
+.kcq-party-selection__description {
+    display: block;
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--kcq-text-secondary);
+}
+
+.kcq-party-selection__role {
+    display: block;
+    margin: 12px 0;
+    font-weight: 700;
+}
+
+.kcq-party-selection__points {
+    display: block;
+    margin: 0;
+    padding-left: 20px;
+}
+
+.kcq-party-selection__points > [role="listitem"] {
+    display: list-item;
+}
+
+.kcq-party-selection__toggle:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: 2px;
+}
+
+.kcq-party-selection button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
 /* Difficulty selection keeps its header and actions in the shared screen regions. */
 .kcq-difficulty-select__body {
     display: flex;

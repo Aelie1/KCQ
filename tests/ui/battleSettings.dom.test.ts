@@ -66,6 +66,7 @@ function mountBattle(languages?: readonly LanguageOption[], release = "v0.8-sett
         presentation, prepareBattle, languages,
     }), root);
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="1"]')!.click();
     document.querySelector<HTMLButtonElement>(".kcq-encounter-details__footer button")!.click();
     const encounter = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
@@ -234,7 +235,7 @@ describe("battle settings interactions", () => {
         button("End Turn").click();
         openSettings();
         button("Retry Battle").click();
-        expect(prepareBattle).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "mythic");
+        expect(prepareBattle).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "mythic", ["ko", "matsuko", "hinari"]);
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
         expect(sessions[0]!.observer.lifecycleState).toBe("quit");
         expect(capture.mock.calls.filter(call => call[0] === "battle_quit")).toHaveLength(1);
@@ -303,7 +304,7 @@ describe("battle settings interactions", () => {
         expect(document.querySelector(".kcq-battle-result--" + outcome)).not.toBeNull();
         expect(sessions[0]!.observer.lifecycleState).toBe("finished");
         button("Retry").click();
-        expect(prepareBattle).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "mythic");
+        expect(prepareBattle).toHaveBeenNthCalledWith(2, "skunk", "plains_1", "mythic", ["ko", "matsuko", "hinari"]);
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
         const fresh = sessions[1]!.engine;
         const freshState = fresh.getGameState.bind(fresh);
@@ -333,6 +334,7 @@ describe("battle settings interactions", () => {
         expect(capture.mock.calls.filter(call => call[0] === "battle_quit")).toHaveLength(1);
         expect(prepareBattle).toHaveBeenCalledOnce();
         document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
+        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="2"]')!.click();
         button("Choose Difficulty").click();
         expect(document.querySelector('[aria-pressed="true"]')?.textContent).toBe("Standard");

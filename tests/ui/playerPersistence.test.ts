@@ -74,7 +74,7 @@ function setup(storage = mockStorage()) {
         return createGraphicalController(prepare, storage);
     });
     const start = (encounter: EncounterId = "plains_1", difficulty: DifficultyId = "standard") => {
-        controller.selectCampaign("skunk");
+        controller.selectCampaign("skunk"); controller.confirmParty();
         controller.selectEncounter(encounter);
         controller.chooseDifficulty();
         controller.selectDifficulty(difficulty);
