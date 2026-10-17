@@ -248,7 +248,9 @@ describe("enemy defeat presentation", () => {
         expect(rule).toContain("kcq-enemy-defeat-glow"); expect(rule).toContain("kcq-enemy-defeat-fade");
         expect(rule).toContain("forwards !important");
         const animations = css.slice(css.indexOf("@keyframes kcq-enemy-defeat-glow"), css.indexOf("@keyframes kcq-react-actor"));
-        expect(animations).toContain("background-color: #ff2424cc"); expect(animations).toContain("box-shadow:");
+        expect(animations).toContain("background-color: var(--kcq-glow-defeat-fill)");
+        expect(animations).toContain("var(--kcq-glow-defeat-inset)");
+        expect(animations).toContain("var(--kcq-glow-negative)");
         expect(animations).toMatch(/to\s*\{\s*opacity:\s*0;\s*\}/);
         expect(animations).not.toMatch(/transform|height|width|scale/);
     });

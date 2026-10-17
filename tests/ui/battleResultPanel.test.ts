@@ -89,7 +89,9 @@ describe("post-battle result panel", () => {
         expect(overlay).toMatch(/position:\s*fixed;/);
         expect(overlay).toMatch(/inset:\s*0;/);
         expect(overlay).toMatch(/z-index:\s*3;/);
-        expect(overlay).toMatch(/background:\s*rgb\(2 6 23 \/ 65%\);/);
+        expect(overlay).toMatch(/background:\s*var\(--kcq-surface-overlay\);/);
+        const tokens = readFileSync(resolve("src/ui/web/app/tokens.css"), "utf8");
+        expect(tokens).toMatch(/--kcq-surface-overlay:\s*rgb\(2 6 23 \/ 65%\);/);
         expect(overlay).not.toMatch(/opacity:|pointer-events:\s*none/);
         const modal = css.match(/\.kcq-battle-result\s*\{([^}]+)\}/)?.[1];
         expect(modal).toMatch(/max-width:\s*340px;/);

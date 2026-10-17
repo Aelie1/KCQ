@@ -436,7 +436,7 @@ button {
 .kcq-battle-overview__secondary-action {
     border: 1px solid var(--kcq-structure-border-strong);
     background: var(--kcq-state-neutral-bg);
-    color: #e2e8f0;
+    color: var(--kcq-text-secondary-action);
 }
 
 .kcq-battle-overview__primary-action {
@@ -987,11 +987,11 @@ button {
 }
 
 .kcq-enemy-card__permanent-effect:has([data-icon="crown"]) {
-    color: #e8ba5c;
+    color: var(--kcq-effect-crown);
 }
 
 .kcq-enemy-card__permanent-effect:has([data-icon="sun"]) {
-    color: #a6d9f2;
+    color: var(--kcq-effect-sun);
 }
 
 
@@ -1297,8 +1297,8 @@ button {
 
 .kcq-projected-meter--primary,
 .kcq-projected-meter__change--primary {
-    --kcq-projected-meter-current: var(--kcq-accent-primary);
-    --kcq-projected-meter-change: var(--kcq-accent-primary);
+    --kcq-projected-meter-current: var(--kcq-state-info);
+    --kcq-projected-meter-change: var(--kcq-state-info);
 }
 
 .kcq-projected-meter--warning,
@@ -2507,7 +2507,7 @@ button {
 
 .kcq-command-tag--primary {
     background: var(--kcq-accent-primary-deep);
-    color: var(--kcq-accent-primary);
+    color: var(--kcq-state-info);
 }
 
 .kcq-command-tag--danger {
@@ -2898,7 +2898,7 @@ button {
 }
 
 .kcq-preview-effect--primary {
-    color: var(--kcq-accent-primary);
+    color: var(--kcq-state-info);
 }
 
 .kcq-preview-effect--primary .kcq-preview-effect__tag {
@@ -3810,7 +3810,7 @@ button {
     place-items: safe center;
     overflow: auto;
     padding: 12px;
-    background: rgb(2 6 23 / 65%);
+    background: var(--kcq-surface-overlay);
 }
 
 .kcq-battle-result__viewport {
@@ -4193,15 +4193,15 @@ button {
     padding: 3px 7px;
     font-size: 11px;
     line-height: 16px;
-    color: #f08080;
-    border-color: #75404a;
-    background: #2b1d28;
+    color: var(--kcq-action-danger-text);
+    border-color: var(--kcq-action-danger-border);
+    background: var(--kcq-action-danger-bg);
 }
 
 .kcq-title-screen__resume-buttons .kcq-title-screen__save-action:hover {
-    color: #ffe0e0;
-    border-color: #d06070;
-    background: #592936;
+    color: var(--kcq-action-danger-hover-text);
+    border-color: var(--kcq-action-danger-hover-border);
+    background: var(--kcq-action-danger-hover-bg);
 }
 
 .kcq-title-screen__delete-confirmation {
@@ -4708,8 +4708,8 @@ button {
 
     from,
     to {
-        background-color: #ff2424cc;
-        box-shadow: inset 0 0 20px 4px #ff3030, 0 0 12px 3px #ff2424;
+        background-color: var(--kcq-glow-defeat-fill);
+        box-shadow: inset 0 0 20px 4px var(--kcq-glow-defeat-inset), 0 0 12px 3px var(--kcq-glow-negative);
     }
 }
 
@@ -4727,8 +4727,8 @@ button {
 
     0%,
     35% {
-        box-shadow: inset 0 0 0 2px #db626277;
-        background-color: #b9363626;
+        box-shadow: inset 0 0 0 2px var(--kcq-reaction-actor-border);
+        background-color: var(--kcq-reaction-actor-bg);
     }
 
     100% {
@@ -4740,7 +4740,7 @@ button {
 
     0%,
     25% {
-        box-shadow: inset 0 0 0 1px #e7b79266;
+        box-shadow: inset 0 0 0 1px var(--kcq-reaction-target-graze-border);
     }
 
     100% {
@@ -4752,7 +4752,7 @@ button {
 
     0%,
     25% {
-        box-shadow: inset 0 0 0 2px #e79e92aa;
+        box-shadow: inset 0 0 0 2px var(--kcq-reaction-target-hit-border);
         transform: translateX(2px);
     }
 
@@ -4770,7 +4770,7 @@ button {
 
     0%,
     25% {
-        box-shadow: inset 0 0 0 3px #f2bd9edd;
+        box-shadow: inset 0 0 0 3px var(--kcq-reaction-target-crit-border);
         transform: translateX(4px);
     }
 
@@ -4999,7 +4999,7 @@ button {
     padding: 12px;
     overflow: auto;
     overscroll-behavior: contain;
-    background: rgb(2 6 23 / 65%);
+    background: var(--kcq-surface-overlay);
 }
 
 .kcq-library-host {
