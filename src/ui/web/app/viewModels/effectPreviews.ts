@@ -170,6 +170,9 @@ function createEffectPreview(effect: Effect, id: string, context: EffectContext)
         case "refresh":
             return compactEffect(id, effect.type, "primary", presentation.ui("targeting.effectRefresh"),
                 context.scopeTarget === effect.target ? "" : presentation.entity(effect.target), []);
+        case "bonus":
+            return compactEffect(id, effect.type, "warning", presentation.ui("targeting.effectBonus"),
+                presentation.ui("targeting.bonus", { value: effect.amount }), recipientDetails(effect.target, context));
     }
 }
 

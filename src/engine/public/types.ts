@@ -164,7 +164,8 @@ export type Effect =
     | RetargetEffect
     | RefreshEffect
     | CancelEffect
-    | WeakenEffect;
+    | WeakenEffect
+    | BonusEffect;
 
 export interface DamageEffect {
     type: "damage";

@@ -162,6 +162,12 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                 type: effect.type,
                 target: effect.target.id,
             }
+        case "bonus":
+            return {
+                type: effect.type,
+                target: effect.target.id,
+                amount: effect.amount,
+            }
     }
 }
 
