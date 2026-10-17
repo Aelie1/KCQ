@@ -244,6 +244,7 @@ export type UiLabel =
     | "library.probability"
     | "library.upTo"
     | "library.title"
+    | "library.guide"
     | "library.intro"
     | "library.difficulties"
     | "library.characters"
@@ -425,7 +426,7 @@ export class Presentation {
     }
 
     /** Optional authored reference text; incomplete descriptions are omitted. */
-    referenceText(namespace: "buff" | "entity" | "move" | "passive" | "binding" | "trap" | "status" | "encounter" | "difficulty", id: string, variant: string = "desc"): string | undefined {
+    referenceText(namespace: "buff" | "entity" | "move" | "passive" | "binding" | "trap" | "status" | "encounter" | "difficulty" | "guide", id: string, variant: string = "desc"): string | undefined {
         const text = this.strings[this.definitionKey(namespace, id, variant).id];
         return text === undefined || text.trim() === "..." || text.trim() === "" ? undefined : text;
     }

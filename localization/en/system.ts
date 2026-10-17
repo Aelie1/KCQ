@@ -281,7 +281,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.library.hp": "Base HP",
     "ui.library.immune": "Immune to {status}",
     "ui.library.immunityExplanation": "Unaffected by {status}, at any intensity.",
-    "ui.library.intro": "Explore the characters, abilities, and mechanics in this campaign.",
+    "ui.library.intro": "Welcome to the Ko-chan's Quest library!\n\nIn this guide, you can find detailed descriptions of nearly every mechanic in the game.\n\nIf you are new to the game, please check out the game guide to get some introductory knowledge and strategy which will make the game easier to get into.",
     "ui.library.modifierExplanation": "Changes {modifier} by {value}.",
     "ui.library.modifiersHeading": "Modifiers",
     "ui.library.moves": "Moves",

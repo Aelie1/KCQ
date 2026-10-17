@@ -5223,8 +5223,70 @@ button {
     line-height: 1.6;
 }
 
+.kcq-library__guide {
+    display: grid;
+    gap: 12px;
+    min-width: 0;
+    max-width: 76ch;
+    color: var(--kcq-text-primary);
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.kcq-library__guide-section {
+    min-width: 0;
+}
+
+.kcq-library__guide-section>p+p,
+.kcq-library__guide-section>.kcq-library__description:last-child:not(:first-child) {
+    margin-top: 10px;
+}
+
+.kcq-library__guide-traits {
+    display: grid;
+    gap: 8px;
+    padding: 0;
+    margin: 10px 0 0;
+    list-style: none;
+}
+
+.kcq-library__guide .kcq-command-tag {
+    white-space: normal;
+}
+
+.kcq-library__guide-table-wrap {
+    min-width: 0;
+    margin-top: 10px;
+    overflow-x: auto;
+}
+
+.kcq-library__guide .kcq-library__guide-table th,
+.kcq-library__guide .kcq-library__guide-table td {
+    width: auto;
+    padding: 6px;
+}
+
+.kcq-library__guide-table thead th {
+    color: var(--kcq-text-muted);
+    font-weight: 600;
+}
+
+.kcq-library__guide-table tr+tr {
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-library__guide-modifier {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
 .kcq-library__intro {
     padding: 0 4px;
+    white-space: pre-line;
+
 }
 
 .kcq-library__categories {

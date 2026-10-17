@@ -3,11 +3,12 @@ import type { StringTable } from "../src/ui/presentation/presentation";
 import { hinariEnglishStrings, koEnglishStrings, matsukoEnglishStrings } from "./en/characters";
 import { skunkEnglishStrings } from "./en/skunk";
 import { systemEnglishStrings } from "./en/system";
+import { gameGuideEnglishStrings } from "./en/gameGuide";
 
 export type KCQLanguage = "en";
 
 export const baseStrings: Record<KCQLanguage, StringTable> = {
-    "en": systemEnglishStrings
+    "en": { ...systemEnglishStrings, ...gameGuideEnglishStrings }
 };
 
 export const characterStrings: Record<KCQCharacter, Record<KCQLanguage, StringTable>> = {

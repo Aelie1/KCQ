@@ -4,10 +4,11 @@ import type { BindingId, ModifierId, ModifierSet, MoveTrait } from "../../../../
 import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import type { CommandTagViewModel } from "./characterDetails";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
+import { GAME_GUIDE_PAGES, gameGuidePage } from "../content/gameGuide";
 
-export const LIBRARY_CATEGORIES = ["difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses"] as const;
+export const LIBRARY_CATEGORIES = ["guide", "difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses"] as const;
 export type LibraryCategory = typeof LIBRARY_CATEGORIES[number];
-export interface LibraryEntry { category: LibraryCategory; id: string }
+export interface LibraryEntry { category: LibraryCategory; id: string; section?: string }
 export type LibraryPage = { kind: "home" } | { kind: "category"; category: LibraryCategory } | ({ kind: "entry" } & LibraryEntry);
 export interface LibraryVisit { page: LibraryPage; search: string; scroll: number; focus?: string }
 
@@ -27,7 +28,7 @@ export function createLibraryNavigation(initial: LibraryPage = { kind: "home" })
             const current = history().visits[history().index]!.page;
             if (current.kind === page.kind && (current.kind === "home"
                 || (page.kind !== "home" && current.category === page.category
-                    && (current.kind === "category" || (page.kind === "entry" && current.id === page.id))))) return;
+                    && (current.kind === "category" || (page.kind === "entry" && current.id === page.id && current.section === page.section))))) return;
             setHistory(state => ({ visits: [...state.visits.slice(0, state.index + 1), { page, search: "", scroll: 0 }], index: state.index + 1 }));
         },
         back(): void { setHistory(state => state.index > 0 ? { ...state, index: state.index - 1 } : state); },
@@ -41,6 +42,7 @@ export function createLibraryNavigation(initial: LibraryPage = { kind: "home" })
 const NAMESPACES = { difficulties: "difficulty", characters: "entity", enemies: "entity", moves: "move", passives: "passive", bindings: "binding", traps: "trap", statuses: "status" } as const;
 export function libraryName(entry: LibraryEntry, p: Presentation): string {
     switch (entry.category) {
+        case "guide": return p.referenceText("guide", entry.id, "title") ?? entry.id;
         case "difficulties": return p.difficulty(entry.id as keyof ContentLibrary["difficulties"]);
         case "characters": return p.entity(entry.id);
         case "enemies": return p.enemyDefinition(entry.id);
@@ -52,15 +54,20 @@ export function libraryName(entry: LibraryEntry, p: Presentation): string {
     }
 }
 export function libraryText(entry: LibraryEntry, p: Presentation, variant = "desc"): string | undefined {
+    if (entry.category === "guide") return p.referenceText("guide", entry.id, variant);
     return p.referenceText(NAMESPACES[entry.category], entry.id, variant);
 }
 export function libraryHas(library: ContentLibrary, entry: LibraryEntry): boolean {
+    if (entry.category === "guide") {
+        const page = gameGuidePage(entry.id);
+        return !!page && (entry.section === undefined || page.sections.some(section => section.id === entry.section));
+    }
     if (entry.category === "bindings" && entry.id === SKUNK_BINDINGS_ID) return SKUNK_BINDING_IDS.some(id => Object.hasOwn(library.bindings, id));
     return Object.hasOwn(library[entry.category], entry.id);
 }
 export function libraryEntries(library: ContentLibrary, category: LibraryCategory, p: Presentation, search = ""): LibraryEntry[] {
     const query = search.trim().toLocaleLowerCase();
-    const ids = Object.keys(library[category]);
+    const ids = category === "guide" ? GAME_GUIDE_PAGES.map(page => page.id) : Object.keys(library[category]);
     if (category === "bindings" && libraryHas(library, { category, id: SKUNK_BINDINGS_ID })) ids.unshift(SKUNK_BINDINGS_ID);
     return ids.map(id => ({ category, id }))
         .filter(entry => libraryName(entry, p).toLocaleLowerCase().includes(query));
@@ -136,6 +143,7 @@ export function libraryReferences(entry: LibraryEntry, library: ContentLibrary, 
 export function libraryRelated(entry: LibraryEntry, library: ContentLibrary, p: Presentation): LibraryEntry[] {
     const refs = libraryReferences(entry, library, p);
     for (const category of LIBRARY_CATEGORIES) {
+        if (category === "guide") continue;
         for (const id of Object.keys(library[category])) {
             const candidate = { category, id };
             if (libraryReferences(candidate, library, p).some(ref => ref.category === entry.category && ref.id === entry.id)) refs.push(candidate);

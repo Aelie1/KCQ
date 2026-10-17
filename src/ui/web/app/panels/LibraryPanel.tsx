@@ -7,6 +7,7 @@ import type { Presentation, UiLabel } from "../../../presentation/presentation";
 import { BindingMeter } from "../components/BindingMeter";
 import { CommandTag } from "../components/CommandTag";
 import { EffectPreview } from "../components/EffectPreview";
+import { GameGuide } from "../components/GameGuide";
 import { ModifierMeter } from "../components/ModifierMeter";
 import { ProjectedMeter } from "../components/ProjectedMeter";
 import { ScreenLayout } from "../components/ScreenLayout";
@@ -21,7 +22,7 @@ import { libraryBuffStatuses, libraryMoveEffectRows, libraryMoveRecipient, type 
 import { formatSignedNumber, isHarmfulModifierChange } from "../viewModels/presentationHelpers";
 
 export interface LibraryPanelProps { library: ContentLibrary; presentation: Presentation; onClose: () => void; initialPage?: LibraryPage }
-interface LibraryContextValue { library: ContentLibrary; presentation: Presentation; openEntry: (entry: LibraryEntry) => void }
+interface LibraryContextValue { library: ContentLibrary; presentation: Presentation; openEntry: (entry: LibraryEntry) => void; openPage: (page: LibraryPage) => void }
 const LibraryContext = createContext<LibraryContextValue>();
 const context = () => useContext(LibraryContext)!;
 const label = (p: Presentation, key: string) => p.ui(("library." + key) as UiLabel);
@@ -48,7 +49,20 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     const body = () => host.querySelector<HTMLElement>(".kcq-screen-layout__body");
     const remember = (): void => navigation.remember(navigation.current().search, body()?.scrollTop ?? 0,
         document.activeElement instanceof HTMLElement ? document.activeElement.dataset.libraryFocus : undefined);
-    const open = (next: LibraryPage): void => batch(() => { remember(); navigation.open(next); });
+    const revealSection = (next: LibraryPage): void => {
+        if (!alive || next.kind !== "entry" || !next.section) return;
+        const target = [...host.querySelectorAll<HTMLElement>("[data-library-section]")].find(element => element.dataset.librarySection === next.section);
+        const scroller = body();
+        if (!target || !scroller) return;
+        target.focus({ preventScroll: true });
+        const zoom = Number.parseFloat(overlay.style.getPropertyValue("--kcq-ui-zoom")) || 1;
+        scroller.scrollTop += (target.getBoundingClientRect().top - scroller.getBoundingClientRect().top) / zoom;
+    };
+    const open = (next: LibraryPage): void => {
+        batch(() => { remember(); navigation.open(next); });
+        // The regular visit restoration runs first; a new link then reveals its heading.
+        queueMicrotask(() => revealSection(next));
+    };
     const back = (): void => { if (navigation.canBack()) batch(() => { remember(); navigation.back(); }); else props.onClose(); };
     const go = (index: number): void => batch(() => { remember(); navigation.go(index); });
     const forward = (): void => batch(() => { remember(); navigation.forward(); });
@@ -59,7 +73,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     createEffect(() => {
         const current = navigation.current().page;
         if (!desktop()) return;
-        if (current.kind === "entry") setExpanded(previous => ({ ...previous, [current.category]: true }));
+        if (current.kind !== "home") setExpanded(previous => ({ ...previous, [current.category]: true }));
         queueMicrotask(() => {
             if (!alive || !desktop()) return;
             const revealSelection = (scroller: HTMLElement | null | undefined): void => {
@@ -86,6 +100,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
         });
     });
     onMount(() => {
+        if (props.initialPage) queueMicrotask(() => revealSection(props.initialPage!));
         onCleanup(setupResponsiveScale(overlay));
         const keyDown = (event: KeyboardEvent): void => {
             if (event.key === "Tab") {
@@ -112,6 +127,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     const value: LibraryContextValue = {
         get library() { return props.library; }, get presentation() { return props.presentation; },
         openEntry: entry => open({ kind: "entry", ...entry }),
+        openPage: open,
     };
     const modal = (): JSX.Element => <div ref={overlay} class="kcq-library-overlay"
         on:click={event => { if (event.target === event.currentTarget) { event.stopPropagation(); props.onClose(); } }}
@@ -169,8 +185,17 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                 <Show when={page().kind === "entry" && ["moves", "passives"].includes((page() as LibraryEntry).category)}><Owner category={(page() as LibraryEntry).category as "moves" | "passives"} id={(page() as LibraryEntry).id} /></Show>
             </div>}
             body={<Switch>
+                <Match when={page().kind === "category" && (page() as { category: LibraryCategory }).category === "guide"}>
+                    <div class="kcq-library__entries"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry =>
+                        <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}
+                            onClick={() => value.openEntry(entry)}><strong>{libraryName(entry, props.presentation)}</strong></button>
+                    }</For></div>
+                </Match>
                 <Match when={page().kind === "home" || (desktop() && page().kind === "category")}>
                     <p class="kcq-library__intro">{props.presentation.ui("library.intro")}</p>
+                    <SurfaceCard title={props.presentation.ui("library.guide")}>
+                        <div class="kcq-library__links"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry => <ReferenceLink entry={entry} />}</For></div>
+                    </SurfaceCard>
                     <Show when={!desktop()}><div class="kcq-library__categories"><For each={LIBRARY_CATEGORIES}>{category =>
                         <button type="button" class="kcq-library__category kcq-encounter-card" data-library-focus={category}
                             onClick={() => open({ kind: "category", category })}>
@@ -256,6 +281,7 @@ function LibraryDetail(props: { entry: LibraryEntry }): JSX.Element {
     return <Show when={libraryHas(c.library, props.entry)} fallback={<p class="kcq-library__empty">{c.presentation.ui("library.unavailable")}</p>}>
         <article class="kcq-library__detail" data-library-category={props.entry.category} data-library-id={props.entry.id}>
             <Switch>
+                <Match when={props.entry.category === "guide"}><GameGuide id={props.entry.id} library={c.library} presentation={c.presentation} onOpen={c.openPage} /></Match>
                 <Match when={props.entry.category === "characters"}><CharacterDetail reference={c.library.characters[props.entry.id]!} /></Match>
                 <Match when={props.entry.category === "enemies"}><EnemyDetail reference={c.library.enemies[props.entry.id]!} /></Match>
                 <Match when={props.entry.category === "moves"}><MoveDetail reference={c.library.moves[props.entry.id]!} /></Match>

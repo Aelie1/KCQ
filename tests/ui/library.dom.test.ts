@@ -34,8 +34,8 @@ const press = (key: string, target: EventTarget = document) => {
 };
 
 describe("Library navigation", () => {
-    it("offers all eight remaining categories and opens their entries", async () => {
-        const categories = ["difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses"];
+    it("offers the guide and all reference categories and opens their entries", async () => {
+        const categories = ["guide", "difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses"];
         libraryMount(); await tick();
         expect([...document.querySelectorAll<HTMLElement>(".kcq-library__category")].map(button => button.dataset.libraryFocus)).toEqual(categories);
         expect(document.querySelector('[data-library-focus="encounters"]')).toBeNull();
@@ -778,7 +778,7 @@ describe("Library modal and desktop navigation", () => {
     });
     it.each([2, 3] as const)("uses independently collapsible categories and persistent article selection in %s-column mode", async columns => {
         responsiveLibraryMount(columns); await tick();
-        expect(document.querySelectorAll(".kcq-library__tree-category")).toHaveLength(8);
+        expect(document.querySelectorAll(".kcq-library__tree-category")).toHaveLength(9);
         expect(document.querySelector(".kcq-library__category")).toBeNull();
         expect(document.querySelector(".kcq-library-host--desktop")).not.toBeNull();
         toggleCategory("characters"); toggleCategory("enemies");
@@ -871,7 +871,7 @@ describe("Library modal and desktop navigation", () => {
     it("preserves the shared article, full history, and expansions across column-mode changes", async () => {
         const { setColumns } = responsiveLibraryMount(1); await tick();
         expect(document.querySelector(".kcq-library__sidebar")).toBeNull();
-        expect(document.querySelectorAll(".kcq-library__category")).toHaveLength(8);
+        expect(document.querySelectorAll(".kcq-library__category")).toHaveLength(9);
         element('[data-library-focus="characters"]').click();
         expect(document.querySelector(".kcq-library__entry")).not.toBeNull();
         element('[data-library-focus="ko"]').click(); await tick();

@@ -92,11 +92,12 @@ describe("Library reference browser", () => {
             "See [encounters:tower_1] and ", { category: "enemies", id: "queen" }, ".",
         ]);
     });
-    it("renders every published entry across all eight categories without missing localization", () => {
+    it("renders every published reference and guide entry without missing localization", () => {
         const before = JSON.stringify(library);
         for (const category of LIBRARY_CATEGORIES) {
-            expect(Object.keys(library[category]).length).toBeGreaterThan(0);
-            for (const id of Object.keys(library[category])) {
+            const entries = libraryEntries(library, category, presentation);
+            expect(entries.length).toBeGreaterThan(0);
+            for (const { id } of entries) {
                 const html = renderToString(() => createComponent(LibraryPanel, { library, presentation, onClose: () => { }, initialPage: { kind: "entry", category, id } }));
                 expect(html, category + ":" + id).toContain('data-library-id="' + id + '"');
                 expect(html, category + ":" + id).not.toMatch(/\[(?:ui|entity|move|status|binding|trap|passive|difficulty|encounter)\./);
