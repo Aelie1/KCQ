@@ -15,7 +15,6 @@
       "tests/**/*.ts"
     ],
     "exclude": [
-      "src/ui/web/main.ts",
       "src/ui/web/posthog.ts"
     ]
   }

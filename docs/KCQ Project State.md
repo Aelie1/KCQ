@@ -36,7 +36,7 @@ The goal is a bounded stopping point, **not** a promise to implement every histo
 
 ### Game flow and presentation
 
-- Browser-playable graphical interface with the legacy console client separately available (`console.html`).
+- Browser-playable graphical interface. The legacy console interfaces and replay viewer have been removed.
 - Graphical title screen; campaign selection; encounter picker/details; difficulty selection; battle; story and result screens.
 - **0.15 delivered a lightweight connected story/progression path** for *Latex Skunk Attacks!*: Prologue, three Interludes, Epilogue, narrative encounter introductions, victory/defeat scenes, encounter unlocking, and Next Level navigation. The picker has **Show All**, allowing direct scenario selection without forced progression.
 - Local best-clear records and encounter unlocks persist across browser sessions.

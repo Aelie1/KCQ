@@ -1,4 +1,11 @@
-# Legacy console removal: Phase 1
+# Legacy console removal
+
+Phase 2 is complete: the legacy browser and terminal interfaces, console replay
+viewer, dedicated tests, and viewer wiring have been removed. Harness replay data
+and automated analysis remain intact. The Phase 1 record and deletion checklist
+below are retained for reference.
+
+## Phase 1 record
 
 Phase 1 keeps both browser interfaces, the terminal combat client, and the console
 replay viewer. No engine, content, build configuration, scripts, or runtime paths

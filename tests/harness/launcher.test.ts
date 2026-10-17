@@ -13,12 +13,9 @@ import {
     resolveNumberedChoice,
     runHarnessLauncher,
     type LauncherIO,
-    type LauncherDependencies,
 } from "../../src/harness/cli/launcher";
-import { runSingleFight } from "../../src/harness/harness";
 import { policies } from "../../src/harness/policies";
 import { basicPolicy } from "../../src/harness/policy/basic";
-import { idlePolicy } from "../../src/harness/policy/idle";
 
 describe("interactive launcher helpers", () => {
     it("defines the named encounter sets as extensible data", () => {
@@ -100,12 +97,11 @@ describe("encounter-set execution", () => {
     });
 
     it("prints compact per-encounter and aggregate output while saving every summary", async () => {
-        const answers = ["3", "n", "basic", "", "", "", "", "5"];
+        const answers = ["3", "n", "basic", "", "", "", "", "4"];
         const write = vi.fn();
         const io: LauncherIO = {
             question: vi.fn(async () => answers.shift() ?? ""),
             write,
-            close: vi.fn(),
         };
         const mkdir = vi.spyOn(fs, "mkdirSync").mockReturnValue(undefined);
         const writeFile = vi.spyOn(fs, "writeFileSync").mockImplementation(() => { });
@@ -159,42 +155,5 @@ describe("encounter-set execution", () => {
             encounters: ["plains_1", "plains_2", "plains_3"],
             policies: ["basic"],
         });
-    });
-});
-
-describe("replay launcher path", () => {
-    it("generates replay data and launches the existing console viewer", async () => {
-        const answers = ["4", "2", "2149783249", "1", "1543602598", ""];
-        const close = vi.fn();
-        const io: LauncherIO = {
-            question: vi.fn(async () => answers.shift() ?? ""),
-            write: vi.fn(),
-            close,
-        };
-        const viewer = vi.fn<NonNullable<LauncherDependencies["runConsoleReplay"]>>(async () => { });
-
-        await runHarnessLauncher(io, { runConsoleReplay: viewer });
-
-        expect(close).toHaveBeenCalledOnce();
-        expect(viewer).toHaveBeenCalledOnce();
-        const replayInput = viewer.mock.calls[0]![0];
-        expect(replayInput.encounter).toBe("plains_1");
-        expect(replayInput.seed).toBe(2149783249);
-        expect(replayInput.replay.steps.length).toBeGreaterThan(0);
-        expect(replayInput.replay.steps.at(-1)?.success).toBe(true);
-        const finalStep = replayInput.replay.steps.at(-1);
-        if (!finalStep?.success) throw new Error("Expected a successful final replay step");
-        expect(finalStep.state.turn.outcome).not.toBe("ongoing");
-        expect(finalStep.state.turn.round).toBeGreaterThan(0);
-
-        const direct = runSingleFight({
-            encounterId: "plains_1",
-            engineSeed: 2149783249,
-            policy: idlePolicy,
-            policySeed: 1543602598,
-            maxActions: 1_000,
-            replay: true,
-        });
-        expect(replayInput.replay).toEqual(direct.replay);
     });
 });

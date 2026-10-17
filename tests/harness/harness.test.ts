@@ -511,8 +511,6 @@ describe("policy-driven single-fight harness", () => {
         const harnessDirectory = resolve(process.cwd(), "src/harness");
         const sources = readdirSync(harnessDirectory, { recursive: true })
             .filter((entry) => entry.toString().endsWith(".ts"))
-            .filter((entry) => !["cli/launcher-main.ts", "cli/replay-csv-main.ts"]
-                .includes(entry.toString().replaceAll("\\", "/")))
             .map((entry) => readFileSync(resolve(harnessDirectory, entry.toString()), "utf8"));
         const imports = sources.flatMap((source) =>
             [...source.matchAll(/from\s+["']([^"']+)["']/g)].map((match) => match[1]),

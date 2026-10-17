@@ -14,7 +14,6 @@
         "batch": "tsx src/harness/cli/batch-main.ts",
         "compare": "tsx src/harness/cli/compare-main.ts",
         "harness": "tsx src/harness/cli/launcher-main.ts",
-        "replay:csv": "npm run build --silent && node dist/harness/cli/replay-csv-main.js",
         "get-replays": "npm run build --silent && node --env-file=.env dist/harness/cli/get-replays-main.js",
         "test": "tsc -p tsconfig.test.json && vitest run && vitest run --config vitest.dom.config.mts",
         "coverage": "vitest --coverage",

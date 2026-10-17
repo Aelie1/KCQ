@@ -1,7 +1,5 @@
 import { availableParallelism } from "node:os";
 import { createStockEngine } from "../../stock";
-import { getThresholds } from "../../engine/public/mechanics";
-import type { ThresholdInfo } from "../../engine/public/types";
 import { runBatch } from "../batch/batch";
 import {
     executePolicyComparison,
@@ -21,7 +19,7 @@ import {
     type BatchWorkerRunner,
 } from "../batch/parallel-batch";
 import { captureReplaySamples } from "../batch/replay-samples";
-import { runSingleFight, type FightPolicy, type FightReplay, type SingleFightInput } from "../harness";
+import { runSingleFight, type FightPolicy, type SingleFightInput } from "../harness";
 import {
     createBatchRunOutput,
     formatReplaySamples,
@@ -49,7 +47,6 @@ export const launcherDefaults = {
 export interface LauncherIO {
     question(prompt: string): Promise<string>;
     write(text: string): void;
-    close(): void;
 }
 
 export interface LauncherDependencies {
@@ -59,12 +56,6 @@ export interface LauncherDependencies {
     executePolicyComparison: typeof executePolicyComparison;
     executeEncounterSet: typeof executeEncounterSet;
     createBatchWorkerPool: (workers: number) => BatchWorkerRunner;
-    runConsoleReplay?: (input: {
-        replay: FightReplay;
-        encounter: string;
-        seed: number;
-        bindingThresholds: ThresholdInfo;
-    }) => Promise<void>;
     now: () => number;
     wallClockNow: () => Date;
 }
@@ -145,7 +136,7 @@ export async function runHarnessLauncher(
 
     for (; ;) {
         io.write("\nKCQ HARNESS\n\n[1] Run single fight\n[2] Run one encounter batch\n"
-            + "[3] Run encounter set\n[4] Replay fight\n[5] Quit\n\n");
+            + "[3] Run encounter set\n[4] Quit\n\n");
         const choice = (await io.question("Choice> ")).trim().toLowerCase();
         switch (choice) {
             case "1":
@@ -158,14 +149,11 @@ export async function runHarnessLauncher(
                 await runInteractiveEncounterSet(io, deps, policyIds);
                 break;
             case "4":
-                await runInteractiveReplay(io, deps, encounters, policyIds);
-                return;
-            case "5":
             case "q":
             case "quit":
                 return;
             default:
-                io.write("Please choose 1, 2, 3, 4, or 5.\n");
+                io.write("Please choose 1, 2, 3, or 4.\n");
         }
     }
 }
@@ -398,36 +386,6 @@ async function runInteractiveEncounterSet(
         encounterIds.length * selectedPolicies.length,
         output.directoryPath,
     )}\n`);
-}
-
-async function runInteractiveReplay(
-    io: LauncherIO,
-    deps: LauncherDependencies,
-    encounters: readonly string[],
-    policyIds: readonly string[],
-): Promise<void> {
-    const encounterId = await promptNumberedChoice(io, "Encounter", encounters);
-    const engineSeed = await promptInteger(io, "Engine seed", {});
-    const policy = await promptPolicy(io, policyIds);
-    const policySeed = await promptInteger(io, "Policy seed", { defaultValue: launcherDefaults.policySeed });
-    const maxActions = await promptInteger(io, "Max actions", {
-        defaultValue: launcherDefaults.maxActions,
-        positive: true,
-    });
-    const input: SingleFightInput = {
-        encounterId, engineSeed, policy, policySeed, maxActions, replay: true,
-    };
-    printFightConfiguration(io, input);
-    const result = deps.runSingleFight(input);
-    if (!result.replay) throw new Error("Replay was not generated.");
-    if (!deps.runConsoleReplay) throw new Error("Replay viewer is not configured.");
-    io.close();
-    await deps.runConsoleReplay({
-        replay: result.replay,
-        encounter: encounterId,
-        seed: engineSeed,
-        bindingThresholds: getThresholds(),
-    });
 }
 
 async function promptPolicy(
