@@ -511,6 +511,8 @@ describe("policy-driven single-fight harness", () => {
         const harnessDirectory = resolve(process.cwd(), "src/harness");
         const sources = readdirSync(harnessDirectory, { recursive: true })
             .filter((entry) => entry.toString().endsWith(".ts"))
+            .filter((entry) => !["cli/launcher-main.ts", "cli/replay-csv-main.ts"]
+                .includes(entry.toString().replaceAll("\\", "/")))
             .map((entry) => readFileSync(resolve(harnessDirectory, entry.toString()), "utf8"));
         const imports = sources.flatMap((source) =>
             [...source.matchAll(/from\s+["']([^"']+)["']/g)].map((match) => match[1]),
@@ -522,7 +524,7 @@ describe("policy-driven single-fight harness", () => {
             .toBe(true);
         const boundaryViolations = imports.filter((specifier) =>
             /(?:content|engine\/(?:private|protected))\//.test(specifier)
-            || (specifier.includes("console/") && !specifier.endsWith("/console/replay")));
+            || specifier.includes("console/"));
         expect(boundaryViolations).toEqual([]);
     });
 });

@@ -10,7 +10,7 @@ import type {
     Phase,
     PlayerAction,
 } from "../../engine/public/types";
-import { eventEntries } from "./eventEntries";
+import { eventEntries } from "../presentation/eventEntries";
 
 export const PRESENTATION_TIMING = {
     highlightMs: 2000,

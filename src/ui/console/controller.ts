@@ -25,7 +25,9 @@ import {
     type StyledLine,
 } from "./presentation";
 import { formatAccuracyRow, formatSuccessRow, type ScreenModel } from "./render";
-import { choiceShortcut, numberedShortcut } from "./shortcuts";
+import { choiceShortcut } from "./shortcuts";
+import { numberedShortcut } from "../presentation/shortcuts";
+import type { BattleObserver } from "../battleObserver";
 
 export interface BattleChoice {
     number: number;
@@ -55,16 +57,6 @@ export interface BattleUI {
     playback?(request: BattlePlaybackRequest): Promise<void>;
     showFinal?(screen: ScreenModel): Promise<void>;
     close?(): void | Promise<void>;
-}
-
-export interface BattleObserver {
-    onAction?(
-        action: PlayerAction,
-        result: ActionResult,
-        source: "player" | "automatic",
-    ): void | Promise<void>;
-    onOutcome?(outcome: BattleState): void | Promise<void>;
-    onQuit?(): void | Promise<void>;
 }
 
 interface MenuItem {

@@ -3,7 +3,7 @@ import type {
     GameState,
     PlayerAction,
 } from "../../engine/public/types";
-import type { BattleObserver } from "../console/controller";
+import type { BattleObserver } from "../battleObserver";
 
 export type TelemetryEvent =
     | "battle_started"

@@ -13,12 +13,12 @@ import {
     resolveNumberedChoice,
     runHarnessLauncher,
     type LauncherIO,
+    type LauncherDependencies,
 } from "../../src/harness/cli/launcher";
 import { runSingleFight } from "../../src/harness/harness";
 import { policies } from "../../src/harness/policies";
 import { basicPolicy } from "../../src/harness/policy/basic";
 import { idlePolicy } from "../../src/harness/policy/idle";
-import type { ConsoleReplayInput } from "../../src/ui/console/replay";
 
 describe("interactive launcher helpers", () => {
     it("defines the named encounter sets as extensible data", () => {
@@ -171,7 +171,7 @@ describe("replay launcher path", () => {
             write: vi.fn(),
             close,
         };
-        const viewer = vi.fn(async (_input: ConsoleReplayInput) => { });
+        const viewer = vi.fn<NonNullable<LauncherDependencies["runConsoleReplay"]>>(async () => { });
 
         await runHarnessLauncher(io, { runConsoleReplay: viewer });
 

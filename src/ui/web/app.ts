@@ -1,11 +1,5 @@
 import type { DifficultyId, EncounterId, Engine, GameEvent } from "../../engine/public/types";
-import { runBattleController, type BattleUI } from "../console/controller";
-import {
-    createBattleTelemetryObserver,
-    disabledTelemetry,
-    type BattleTelemetryObserver,
-    type GameplayTelemetry,
-} from "./telemetry";
+import type { BattleTelemetryObserver } from "./telemetry";
 
 export interface PreparedBattle {
     engine: Engine;
@@ -43,38 +37,6 @@ export function createBattle(
         encounterId,
         loadEvents,
     };
-}
-
-export async function startBattle(
-    engine: Engine,
-    encounter: EncounterId,
-    ui: BattleUI,
-    telemetry: GameplayTelemetry = disabledTelemetry,
-    release = "",
-    difficulty?: DifficultyId,
-): Promise<void> {
-    const battle = createBattle(engine, encounter, difficulty);
-    const observer = createBattleTelemetryObserver({
-        telemetry,
-        replayId: crypto.randomUUID(),
-        release,
-        encounter: battle.encounterId,
-        seed: battle.engine.getSeed(),
-        initialState: battle.engine.getGameState(),
-        getCurrentState: () => battle.engine.getGameState(),
-    });
-    const detachLifecycle = attachBattlePageLifecycle(observer);
-    try {
-        await runBattleController(
-            battle.engine,
-            battle.encounterId,
-            battle.loadEvents,
-            ui,
-            observer,
-        );
-    } finally {
-        detachLifecycle();
-    }
 }
 
 export interface PageLifecycleTarget {

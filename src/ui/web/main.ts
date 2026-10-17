@@ -9,7 +9,8 @@ import {
 import type { HighlightTarget, StyledLine, StyledText } from "../console/presentation";
 import { playActionGroups, PRESENTATION_TIMING } from "../console/presentation";
 import { renderStyledScreen, type ScreenModel } from "../console/render";
-import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES, startBattle } from "./app";
+import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES } from "./app";
+import { startBattle } from "../console/app";
 import { gameplayTelemetry } from "./posthog";
 import {
     browserChoiceForKey,

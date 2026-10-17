@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BattleUI } from "../../src/ui/console/controller";
-import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES, startBattle } from "../../src/ui/web/app";
+import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES } from "../../src/ui/web/app";
+import { startBattle } from "../../src/ui/console/app";
 
-vi.mock("../../src/ui/web/app", async (importOriginal) => ({
-    ...await importOriginal<typeof import("../../src/ui/web/app")>(),
+vi.mock("../../src/ui/console/app", () => ({
     startBattle: vi.fn(),
 }));
 vi.mock("../../src/ui/web/posthog", () => ({ gameplayTelemetry: {} }));

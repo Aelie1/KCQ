@@ -1,12 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { createStockEngine, stockCharacters } from "../../src/stock";
-import type { BattleUI } from "../../src/ui/console/controller";
 import {
     attachBattlePageLifecycle,
     createBattle,
     DEFAULT_DIFFICULTY,
     ENCOUNTER_DIFFICULTIES,
-    startBattle,
     type PageLifecycleTarget,
 } from "../../src/ui/web/app";
 import type { BattleTelemetryObserver } from "../../src/ui/web/telemetry";
@@ -63,22 +61,6 @@ describe("web battle application", () => {
             playerModifiers: {},
             enemyModifiers: { potency: 1 },
         });
-    });
-
-    it("returns after the shared controller exits", async () => {
-        const close = vi.fn();
-        const ui: BattleUI = {
-            choose: async ({ choices }) => {
-                const quit = choices.find((choice) => choice.label === "Quit");
-                if (!quit) throw new Error("Expected the battle's Quit choice.");
-                return quit.number;
-            },
-            close,
-        };
-        const engine = createStockEngine();
-
-        await expect(startBattle(engine, engine.listEncounters()[0], ui)).resolves.toBeUndefined();
-        expect(close).toHaveBeenCalledOnce();
     });
 
     it("attaches pagehide and detaches the battle-scoped lifecycle listener", () => {

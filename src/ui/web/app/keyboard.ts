@@ -1,5 +1,5 @@
 import { createEffect, createSignal, onCleanup, onMount, type Accessor } from "solid-js";
-import { numberedShortcut } from "../../console/shortcuts";
+import { numberedShortcut } from "../../presentation/shortcuts";
 import type { ShortcutHintMode } from "./shortcutHints";
 
 export const COMBAT_SHORTCUTS = {
@@ -23,7 +23,7 @@ export function shortcutBadgeLabel(key: string): string {
     return key.toUpperCase();
 }
 
-// Reserve permanent actions; use the console's ordinary-choice carryover order.
+// Reserve permanent actions; use the shared ordinary-choice carryover order.
 export function combatShortcut(index: number): string | undefined {
     const key = numberedShortcut(index + 1, 8);
     return key.length === 1 ? key : undefined;

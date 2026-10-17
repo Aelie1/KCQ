@@ -1,7 +1,7 @@
 import { availableParallelism } from "node:os";
 import { createStockEngine } from "../../stock";
 import { getThresholds } from "../../engine/public/mechanics";
-import { runConsoleReplay } from "../../ui/console/replay";
+import type { ThresholdInfo } from "../../engine/public/types";
 import { runBatch } from "../batch/batch";
 import {
     executePolicyComparison,
@@ -21,7 +21,7 @@ import {
     type BatchWorkerRunner,
 } from "../batch/parallel-batch";
 import { captureReplaySamples } from "../batch/replay-samples";
-import { runSingleFight, type FightPolicy, type SingleFightInput } from "../harness";
+import { runSingleFight, type FightPolicy, type FightReplay, type SingleFightInput } from "../harness";
 import {
     createBatchRunOutput,
     formatReplaySamples,
@@ -59,7 +59,12 @@ export interface LauncherDependencies {
     executePolicyComparison: typeof executePolicyComparison;
     executeEncounterSet: typeof executeEncounterSet;
     createBatchWorkerPool: (workers: number) => BatchWorkerRunner;
-    runConsoleReplay: typeof runConsoleReplay;
+    runConsoleReplay?: (input: {
+        replay: FightReplay;
+        encounter: string;
+        seed: number;
+        bindingThresholds: ThresholdInfo;
+    }) => Promise<void>;
     now: () => number;
     wallClockNow: () => Date;
 }
@@ -71,7 +76,6 @@ const defaultDependencies: LauncherDependencies = {
     executePolicyComparison,
     executeEncounterSet,
     createBatchWorkerPool: (workers) => new BatchWorkerPool(workers),
-    runConsoleReplay,
     now: () => performance.now(),
     wallClockNow: () => new Date(),
 };
@@ -416,6 +420,7 @@ async function runInteractiveReplay(
     printFightConfiguration(io, input);
     const result = deps.runSingleFight(input);
     if (!result.replay) throw new Error("Replay was not generated.");
+    if (!deps.runConsoleReplay) throw new Error("Replay viewer is not configured.");
     io.close();
     await deps.runConsoleReplay({
         replay: result.replay,

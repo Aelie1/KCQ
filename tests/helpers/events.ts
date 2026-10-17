@@ -1,6 +1,6 @@
 /** Ordered view of a GameEvent and its owned LeafEvents for behavior assertions. */
 import type { ActionResult, EventFrame, GameEvent } from "../../src/engine/public/types";
-import { eventEntries } from "../../src/ui/console/eventEntries";
+import { eventEntries } from "../../src/ui/presentation/eventEntries";
 
 export function resolvedEvents(events: readonly (GameEvent | EventFrame)[]) {
     return eventEntries(events.map((entry) => "event" in entry ? entry.event : entry));
