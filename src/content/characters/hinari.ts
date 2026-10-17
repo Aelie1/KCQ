@@ -318,7 +318,7 @@ export const powerOfSpace: MoveDef = {
     baseDamage: ROCKFALL_DAMAGE,
     type: "none",
     accuracy: basicPlayerAccuracy,
-    traits: ["debuff", "damage"],
+    traits: ["onetime", "debuff", "damage"],
     getHits: function (actor: iEntity, move: MoveDef): number {
         if (actor.data["subspace"] === undefined) {
             return move.baseHits ?? 1;
