@@ -287,7 +287,7 @@ button {
     height: 7px;
     overflow: hidden;
     border-radius: 4px;
-    background: var(--kcq-surface-raised);
+    background: var(--kcq-surface-meter-track);
 }
 
 .kcq-combat-header__trap-meter span {
@@ -442,7 +442,7 @@ button {
 .kcq-battle-overview__primary-action {
     border: 1px solid var(--kcq-accent-primary);
     background: var(--kcq-accent-primary);
-    color: var(--kcq-surface-inset);
+    color: var(--kcq-text-on-accent);
 }
 
 .kcq-battle-overview__primary-action.is-dimmed {
@@ -1320,7 +1320,7 @@ button {
     width: 100%;
     overflow: visible;
     border-radius: var(--kcq-projected-meter-radius, var(--kcq-binding-meter-radius));
-    background: var(--kcq-surface-raised);
+    background: var(--kcq-surface-meter-track);
 }
 
 .kcq-projected-meter__fill-clip,
@@ -2023,7 +2023,7 @@ button {
     margin-right: 2px;
     border-radius: 6px;
     background: var(--kcq-accent-primary);
-    color: var(--kcq-surface-background);
+    color: var(--kcq-text-on-avatar);
     font-size: 14px;
     font-weight: 700;
 }
@@ -2082,7 +2082,7 @@ button {
     height: 5px;
     overflow: hidden;
     border-radius: 3px;
-    background: var(--kcq-surface-raised);
+    background: var(--kcq-surface-meter-track);
 }
 
 .kcq-subspace-meter>span {
@@ -2166,7 +2166,7 @@ button {
     width: 7px;
     height: 12px;
     border-radius: 6px;
-    background: var(--kcq-state-neutral-bg);
+    background: var(--kcq-surface-meter-track);
 }
 
 .kcq-pip-meter__pip--active.kcq-pip-meter__pip--danger {
@@ -2506,7 +2506,7 @@ button {
 }
 
 .kcq-command-tag--primary {
-    background: var(--kcq-accent-primary-deep);
+    background: var(--kcq-state-info-bg);
     color: var(--kcq-state-info);
 }
 
@@ -2785,7 +2785,7 @@ button {
     overflow: hidden;
     border: 2px solid var(--kcq-structure-border);
     border-radius: 4px;
-    background: var(--kcq-surface-raised);
+    background: var(--kcq-surface-meter-track);
 }
 
 .kcq-target-header__meter span {
@@ -2902,7 +2902,7 @@ button {
 }
 
 .kcq-preview-effect--primary .kcq-preview-effect__tag {
-    background: var(--kcq-accent-primary-deep);
+    background: var(--kcq-state-info-bg);
 }
 
 .kcq-buff-effect,
@@ -3006,7 +3006,7 @@ button {
 }
 
 .kcq-binding-effect>.kcq-preview-effect__tag {
-    background: var(--kcq-state-special-deep);
+    background: var(--kcq-surface-special);
 }
 
 .kcq-damage-profile {
@@ -3129,7 +3129,7 @@ button {
 
 .kcq-targeting__execute {
     background: var(--kcq-accent-primary);
-    color: var(--kcq-surface-inset);
+    color: var(--kcq-text-on-accent);
     font-size: 12px;
     cursor: pointer;
 }
@@ -3289,7 +3289,7 @@ button {
 
 .kcq-escape-choice.is-increase:not(.is-selected) {
     border-color: var(--kcq-state-danger);
-    background: var(--kcq-state-danger-bg);
+    background: var(--kcq-surface-danger);
 }
 
 .kcq-escape-choice__name,
@@ -3345,7 +3345,7 @@ button {
 
 .kcq-escape__execute {
     background: var(--kcq-accent-primary);
-    color: var(--kcq-surface-inset);
+    color: var(--kcq-text-on-accent);
     font-size: 12px;
     cursor: pointer;
 }
@@ -3551,7 +3551,7 @@ button {
 .kcq-encounter-details__tab[aria-selected="true"] {
     border-color: var(--kcq-accent-primary);
     background: var(--kcq-accent-primary);
-    color: var(--kcq-surface-inset);
+    color: var(--kcq-text-on-accent);
 }
 
 .kcq-encounter-details__tab:disabled {
@@ -3705,7 +3705,7 @@ button {
 .kcq-difficulty-select__choice.is-selected {
     border-color: var(--kcq-accent-primary);
     background: var(--kcq-accent-primary);
-    color: var(--kcq-surface-inset);
+    color: var(--kcq-text-on-accent);
 }
 
 .kcq-difficulty-select__choice:focus-visible {
@@ -3948,7 +3948,7 @@ button {
 .kcq-battle-settings .kcq-battle-result__retry,
 .kcq-victory-story .kcq-battle-result__retry {
     background: var(--kcq-accent-primary);
-    color: var(--kcq-surface-inset);
+    color: var(--kcq-text-on-accent);
 }
 
 .kcq-battle-result__log,
@@ -4825,7 +4825,7 @@ button {
     font-size: 14px;
     font-weight: 800;
     line-height: 1;
-    text-shadow: 0 0 5px currentColor;
+    text-shadow: var(--kcq-feedback-text-shadow);
     animation-fill-mode: both;
 }
 
@@ -6210,4 +6210,117 @@ button {
         gap: 6px;
     }
 
+}
+
+/* Shared contrast for fixed gameplay foregrounds on either palette. */
+:where(
+    .kcq-combat-header__trap-value,
+    .kcq-status-chip--success,
+    .kcq-status-chip--warning,
+    .kcq-status-chip--danger,
+    .kcq-status-chip--outcome,
+    .kcq-status-chip--outcome-graze,
+    .kcq-status-chip--outcome-hit,
+    .kcq-status-chip--outcome-crit,
+    .kcq-intent-row__target--ko,
+    .kcq-intent-row__target--matsuko,
+    .kcq-intent-row__target--hinari,
+    .kcq-enemy-card__permanent-effect:has([data-icon="crown"]),
+    .kcq-enemy-card__permanent-effect:has([data-icon="sun"]),
+    .kcq-enemy-card__debuff.kcq-player-identity--enemy,
+    .kcq-binding-metric__value--light,
+    .kcq-binding-metric__value--moderate,
+    .kcq-binding-metric__value--heavy,
+    .kcq-binding-metric__value--severe,
+    .kcq-binding-metric__value--impossible,
+    .kcq-fixture-value dd,
+    .kcq-game-log__actor--ko,
+    .kcq-game-log__value--entity-ko,
+    .kcq-game-log__actor--matsuko,
+    .kcq-game-log__value--entity-matsuko,
+    .kcq-game-log__actor--hinari,
+    .kcq-game-log__value--entity-hinari,
+    .kcq-game-log__actor--neutral,
+    .kcq-game-log__value--entity-neutral,
+    .kcq-game-log__value--graze,
+    .kcq-game-log__value--warning,
+    .kcq-game-log__value--binding-moderate,
+    .kcq-game-log__value--hit,
+    .kcq-game-log__value--binding-heavy,
+    .kcq-game-log__value--crit,
+    .kcq-game-log__value--binding-severe,
+    .kcq-game-log__value--success,
+    .kcq-game-log__value--special,
+    .kcq-game-log__value--binding-light,
+    .kcq-game-log__value--binding-overwhelming,
+    .kcq-game-log__value--binding-max,
+    .kcq-game-log__value--incapacitated,
+    .kcq-character-roster__state--success,
+    .kcq-character-roster__state--danger,
+    .kcq-character-roster__action--success,
+    .kcq-character-roster__condition--success,
+    .kcq-character-roster__action--danger,
+    .kcq-character-roster__condition--danger,
+    .kcq-character-roster__condition--warning,
+    .kcq-character-commands__resource,
+    .kcq-player-identity--ko,
+    .kcq-player-identity--matsuko,
+    .kcq-player-identity--hinari,
+    .kcq-modifier-meter__value--danger,
+    .kcq-modifier-meter__value--success,
+    .kcq-character-binding__level--light,
+    .kcq-character-binding__level--moderate,
+    .kcq-character-binding__level--heavy,
+    .kcq-character-binding__level--severe,
+    .kcq-character-binding__level--overwhelming,
+    .kcq-character-binding__level--max,
+    .kcq-command-card__cooldown--active,
+    .kcq-command-tag--warning,
+    .kcq-command-tag--primary,
+    .kcq-command-tag--danger,
+    .kcq-command-tag--special,
+    .kcq-command-tag--success,
+    .kcq-command-tag--ally,
+    .kcq-targeting__reason,
+    .kcq-target-card__reason,
+    .kcq-linked-entity-chip--ko,
+    .kcq-linked-entity-chip--matsuko,
+    .kcq-linked-entity-chip--hinari,
+    .kcq-preview-effect--danger,
+    .kcq-preview-effect--special,
+    .kcq-preview-effect--success,
+    .kcq-preview-effect--warning,
+    .kcq-preview-effect--primary,
+    .kcq-damage-profile__band strong.is-emphasized,
+    .kcq-escape-choice__reason,
+    .kcq-escape-value--light,
+    .kcq-escape-value--moderate,
+    .kcq-escape-value--heavy,
+    .kcq-escape-value--severe,
+    .kcq-escape-value--danger,
+    .kcq-escape-value--overwhelming,
+    .kcq-escape-value--max,
+    .kcq-battle-result__heading h1,
+    .kcq-battle-result--defeat .kcq-battle-result__heading h1,
+    .kcq-library__binding-tier:has(.kcq-escape-value--light),
+    .kcq-library__binding-tier:has(.kcq-escape-value--moderate),
+    .kcq-library__binding-tier:has(.kcq-escape-value--heavy),
+    .kcq-library__binding-tier:has(.kcq-escape-value--severe),
+    .kcq-library__binding-tier:has(.kcq-escape-value--overwhelming),
+    .kcq-library__binding-amount-heading>span,
+    .kcq-library__status-modifier--danger strong,
+    .kcq-library__status-modifier--success strong,
+    .kcq-library__binding-amount-heading .kcq-library__binding-limit
+) {
+    text-shadow: var(--kcq-semantic-text-shadow);
+}
+
+.kcq-header-controls img {
+    filter: var(--kcq-control-icon-filter);
+}
+
+.kcq-duration-pips__icon,
+.kcq-linked-entity-chip__icon,
+.kcq-enemy-card__debuff .kcq-status-chip__segment {
+    filter: var(--kcq-effect-icon-filter);
 }

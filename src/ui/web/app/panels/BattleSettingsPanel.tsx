@@ -7,6 +7,7 @@ import { PLAYBACK_INTERVALS, type PlaybackSpeed, type PlaybackSpeedPreference } 
 import { resetPreferences } from "../resetPreferences";
 import { setupResponsiveScale } from "../responsiveScale";
 import type { ShortcutHintMode, ShortcutHintPreference } from "../shortcutHints";
+import type { Theme, ThemePreference } from "../theme";
 import { displayVersion } from "../version";
 import type { BattleColumns, EnemyCards, ViewPreferences } from "../viewPreferences";
 
@@ -14,6 +15,7 @@ export function BattleSettingsPanel(props: {
     presentation: Presentation;
     release: string;
     language?: LanguageSelection;
+    theme?: ThemePreference;
     overviewGameLog?: OverviewGameLogPreference;
     shortcutHints?: ShortcutHintPreference;
     playbackSpeed?: PlaybackSpeedPreference;
@@ -87,6 +89,17 @@ export function BattleSettingsPanel(props: {
                         </For>
                     </select>
                 </label>
+                <Show when={props.theme}>
+                    <label class="kcq-battle-settings__language kcq-battle-settings__theme">
+                        <span>{props.presentation.ui("battleSettings.theme")}</span>
+                        <select value={props.theme?.value}
+                            onChange={event => props.theme?.onChange(event.currentTarget.value as Theme)}>
+                            <For each={["dark", "light", "system"] as const}>
+                                {value => <option value={value}>{props.presentation.ui(`battleSettings.theme.${value}`)}</option>}
+                            </For>
+                        </select>
+                    </label>
+                </Show>
                 <Show when={props.viewPreferences}>
                     <label class="kcq-battle-settings__language kcq-battle-settings__columns">
                         <span>{props.presentation.ui("battleSettings.columns")}</span>

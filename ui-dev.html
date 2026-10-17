@@ -3,6 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Apply before styles and the app load; keep in sync with theme.ts. -->
+    <script>
+        (() => {
+            let theme = "dark";
+            try { theme = localStorage.getItem("kcq.theme") || "dark"; } catch { /* Storage may be unavailable. */ }
+            document.documentElement.dataset.kcqTheme = theme === "light"
+                || (theme === "system" && typeof matchMedia === "function"
+                    && matchMedia("(prefers-color-scheme: light)").matches) ? "light" : "dark";
+        })();
+    </script>
     <title>KCQ UI Debug Gallery</title>
 </head>
 <body>

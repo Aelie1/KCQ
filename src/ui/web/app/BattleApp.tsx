@@ -43,6 +43,7 @@ import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPr
 import { BATTLE_LAYOUT_WIDTHS, calculateResponsiveLayout, ResponsiveLayoutContext } from "./responsiveScale";
 import { createSavePackage, type SavePackage } from "./savePackage";
 import { clearSave, writeSave } from "./savePersistence";
+import { createThemePreference, type ThemePreference } from "./theme";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
 import { createViewPreferences, ViewPreferencesContext, type ViewPreferences } from "./viewPreferences";
 import { createBattleOverviewViewModel } from "./viewModels/battleOverview";
@@ -58,6 +59,7 @@ export interface BattleAppProps {
     presentation: Presentation;
     release?: string;
     language?: LanguageSelection;
+    theme?: ThemePreference;
     overviewGameLog?: OverviewGameLogPreference;
     shortcutHints?: ShortcutHintPreference;
     playbackSpeed?: PlaybackSpeedPreference;
@@ -92,6 +94,7 @@ interface CurrentTargeting {
 }
 
 export function BattleApp(props: BattleAppProps): JSX.Element {
+    const theme = props.theme ?? createThemePreference();
     const overviewGameLog = props.overviewGameLog ?? createOverviewGameLogPreference();
     const shortcutHints = props.shortcutHints ?? createShortcutHintPreference();
     const playbackSpeed = props.playbackSpeed ?? createPlaybackSpeedPreference();
@@ -596,7 +599,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 </ResponsiveLayoutContext.Provider></Show>
                 <Show when={settingsOpen() && !libraryOpen()}>
                     <BattleSettingsPanel presentation={props.presentation} release={props.release ?? ""}
-                        language={props.language} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} returnFocus={settingsTrigger}
+                        language={props.language} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} returnFocus={settingsTrigger}
                         onResume={() => setSettingsOpen(false)} onRetry={props.onRetry}
                         onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} />
                 </Show>

@@ -20,6 +20,10 @@ const presentation = new Presentation(stockStrings);
 const alternate = new Presentation({
     ...stockStrings,
     "ui.battleSettings.resume": "Continue test",
+    "ui.battleSettings.theme": "Test theme",
+    "ui.battleSettings.theme.dark": "Test dark",
+    "ui.battleSettings.theme.light": "Test light",
+    "ui.battleSettings.theme.system": "Test system",
     "ui.battleSettings.backToTitle": "Test title screen",
     "ui.version.name": "Release {version}",
     "ui.battleOverview.settings": "Test settings",
@@ -108,7 +112,7 @@ describe("encounter screen settings", () => {
         const { panel, prepareBattle } = mountSelection(screen);
         const { dialog } = openSettings();
         expect([...dialog.querySelectorAll("button, label, hr")].map(element => element.tagName))
-            .toEqual(["BUTTON", ...Array(6).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
+            .toEqual(["BUTTON", ...Array(7).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent))
             .toEqual(["Resume", "Reset to Defaults", "Back to Title Screen"]);
         expect(document.querySelector(".kcq-combat-header__library")?.getAttribute("aria-label"))
@@ -158,6 +162,9 @@ describe("encounter screen settings", () => {
         const before = engine.getGameState();
         openSettings();
         changeLanguage();
+        expect(document.querySelector(".kcq-battle-settings__theme span")?.textContent).toBe("Test theme");
+        expect([...document.querySelectorAll(".kcq-battle-settings__theme option")].map(option => option.textContent))
+            .toEqual(["Test dark", "Test light", "Test system"]);
         expect(document.querySelector(".kcq-battle-settings__version")?.textContent).toBe("Release v0.8-settings-test · abc1234");
         expect(button("Test title screen")).toBeDefined();
         expect(document.querySelector<HTMLButtonElement>(".kcq-combat-header__settings")?.getAttribute("aria-label"))
@@ -244,7 +251,12 @@ it("applies and resets shared view preferences from encounter Settings without c
     columns.value = "3"; columns.dispatchEvent(new Event("change", { bubbles: true }));
     const shell = document.querySelector<HTMLElement>(".kcq-app")!;
     expect(shell.style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
+    const theme = dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__theme select")!;
+    theme.value = "light"; theme.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(document.documentElement.dataset.kcqTheme).toBe("light");
     button("Reset to Defaults").click();
+    expect(theme.value).toBe("dark");
+    expect(document.documentElement.dataset.kcqTheme).toBe("dark");
     expect(document.querySelector('[role="dialog"]')).toBe(dialog);
     expect(columns.value).toBe("auto");
     expect(dialog.querySelector('[aria-label="Zoom"]')).toBeNull();
@@ -252,4 +264,54 @@ it("applies and resets shared view preferences from encounter Settings without c
     button("Resume").click();
     expect(document.querySelector(".kcq-encounter-picker")).toBe(panel);
     expect(prepareBattle).not.toHaveBeenCalled();
+});
+
+
+it("shares theme through selection, battle retry, Library, and return to title without resetting UI state", () => {
+    window.localStorage.setItem("kcq.theme", "light");
+    const { engine, panel, prepareBattle } = mountSelection("picker");
+    expect(document.documentElement.dataset.kcqTheme).toBe("light");
+    const before = engine.getGameState();
+    const { dialog } = openSettings();
+    const theme = dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__theme select")!;
+    expect(theme.closest("label")?.querySelector("span")?.textContent).toBe("Theme");
+    expect([...theme.options].map(option => [option.value, option.textContent]))
+        .toEqual([["dark", "Dark"], ["light", "Light"], ["system", "System"]]);
+    for (const choice of ["dark", "system", "light"]) {
+        theme.value = choice; theme.dispatchEvent(new Event("change", { bubbles: true }));
+        expect(theme.value).toBe(choice);
+        expect(document.querySelector(".kcq-encounter-picker")).toBe(panel);
+        expect(engine.getGameState()).toEqual(before);
+        expect(prepareBattle).not.toHaveBeenCalled();
+    }
+    button("Resume").click();
+    document.querySelector<HTMLButtonElement>(".kcq-combat-header__library")!.click();
+    expect(document.querySelector(".kcq-library-overlay")).not.toBeNull();
+    expect(document.documentElement.dataset.kcqTheme).toBe("light");
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    selectEncounter(); button("Choose Difficulty").click(); button("Mythic").click(); button("Start Encounter").click();
+    expect(prepareBattle).toHaveBeenCalledOnce();
+    const battleEngine = prepareBattle.mock.results[0]!.value.engine;
+    const battleBefore = battleEngine.getGameState();
+    const execute = vi.spyOn(battleEngine, "executeAction");
+    const background = document.querySelector(".kcq-battle-stage__background");
+    const battleDialog = openSettings().dialog;
+    const battleTheme = battleDialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__theme select")!;
+    expect(battleTheme.value).toBe("light");
+    battleTheme.value = "dark"; battleTheme.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(document.documentElement.dataset.kcqTheme).toBe("dark");
+    expect(document.querySelector(".kcq-battle-stage__background")).toBe(background);
+    expect(battleEngine.getGameState()).toEqual(battleBefore);
+    expect(execute).not.toHaveBeenCalled(); expect(prepareBattle).toHaveBeenCalledOnce();
+    battleTheme.value = "light"; battleTheme.dispatchEvent(new Event("change", { bubbles: true }));
+    button("Retry Battle").click();
+    expect(prepareBattle).toHaveBeenCalledTimes(2);
+    expect(document.documentElement.dataset.kcqTheme).toBe("light");
+    expect(openSettings().dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__theme select")?.value).toBe("light");
+    button("Back to Level Select").click();
+    expect(openSettings().dialog.querySelector<HTMLSelectElement>(".kcq-battle-settings__theme select")?.value).toBe("light");
+    button("Back to Title Screen").click();
+    expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
+    expect(document.documentElement.dataset.kcqTheme).toBe("light");
+    expect(window.localStorage.getItem("kcq.theme")).toBe("light");
 });

@@ -3,6 +3,7 @@ import { getStringTable } from "../../../../../localization";
 import { createStockEngine, stockCampaign, stockCharacters } from "../../../../stock";
 import { Presentation } from "../../../presentation/presentation";
 import { createBattle } from "../../app";
+import { createThemePreference, type ThemePreference } from "../theme";
 import { App } from "../App";
 import { BattleApp } from "../BattleApp";
 import { battleResultFixtures } from "../fixtures/battleResult";
@@ -28,6 +29,7 @@ export interface DevAppProps {
 }
 
 export function DevApp(props: DevAppProps = {}): JSX.Element {
+    const theme = createThemePreference();
     const [panel, setPanel] = createSignal<PanelId>(props.initialPanel ?? "battle");
     const selectedLabel = (): string =>
         PANEL_OPTIONS.find((option) => option.id === panel())?.label ?? "Unknown panel";
@@ -41,7 +43,7 @@ export function DevApp(props: DevAppProps = {}): JSX.Element {
                     <App>
                         <Switch fallback={<PlaceholderPanel title={selectedLabel()} />}>
                             <Match when={panel() === "playable"}>
-                                <PlayableBattle />
+                                <PlayableBattle theme={theme} />
                             </Match>
                             <Match when={panel() === "battle"}>
                                 <BattleOverviewPanel {...battleOverviewFixture} />
@@ -78,12 +80,12 @@ export function DevApp(props: DevAppProps = {}): JSX.Element {
     );
 }
 
-function PlayableBattle(): JSX.Element {
+function PlayableBattle(props: { theme: ThemePreference }): JSX.Element {
     const engine = createStockEngine(12345);
     createBattle(engine, "plains_1", "standard");
     const presentation = new Presentation(getStringTable("en", stockCharacters, stockCampaign));
 
-    return <BattleApp engine={engine} presentation={presentation} />;
+    return <BattleApp theme={props.theme} engine={engine} presentation={presentation} />;
 }
 
 

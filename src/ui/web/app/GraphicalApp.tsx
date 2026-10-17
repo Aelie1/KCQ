@@ -7,6 +7,7 @@ import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { loadLanguage, saveLanguage, type LanguageOption } from "./language";
 import { createOverviewGameLogPreference } from "./overviewGameLogLines";
 import { createPlaybackSpeedPreference } from "./playbackSpeed";
+import { createThemePreference } from "./theme";
 import { createShortcutHintPreference } from "./shortcutHints";
 import { createViewPreferences, ViewPreferencesContext } from "./viewPreferences";
 import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
@@ -38,6 +39,7 @@ export interface GraphicalAppProps {
 }
 
 export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
+    const theme = createThemePreference();
     const overviewGameLog = createOverviewGameLogPreference();
     const shortcutHints = createShortcutHintPreference();
     const playbackSpeed = createPlaybackSpeedPreference();
@@ -176,7 +178,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
                         saved={current.session.saved}
                         campaign={current.campaign} onNextLevel={controller.nextLevel}
-                        language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} keyboard={keyboard} release={props.release}
+                        language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} keyboard={keyboard} release={props.release}
                         observer={current.session.observer} onOutcome={controller.recordOutcome} onRetry={controller.retryEncounter}
                         onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
@@ -184,7 +186,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         </div>
         <Show when={libraryOpen() && library()}>{current => <LibraryPanel library={current()} presentation={presentation()} onClose={closeLibrary} />}</Show>
         <Show when={settingsOpen() && !libraryOpen()}>
-            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences}
+            <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences}
                 returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}
                 onBackToTitle={backToTitle} />
         </Show>
