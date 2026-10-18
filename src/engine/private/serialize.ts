@@ -1,6 +1,6 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/mechanics";
-import { GameStatus, getStatus, StatusMap } from "../protected/status";
+import { getStatus, StatusMap } from "../protected/status";
 import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMoveListModifier, iMoveResult, iStatus, iTargetInfo, iTrap } from "../protected/types";
 import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, MoveListModifier, PreviewInfo, Status, TargetInfo, Trap } from "../public/types";
 import { evaluateBattleState, evaluateIntention, resolveMove } from "./combat";
@@ -12,7 +12,7 @@ export function serializeGameState(state: iGameState, statuses: StatusMap): Game
             ...state.turn,
             outcome: evaluateBattleState(state, statuses)
         },
-        characters: state.characters.map(x => serializeCharacter(state, x, getStatus(statuses, x))),
+        characters: state.characters.map(x => serializeCharacter(state, x, statuses)),
         enemies: state.enemies.map(x => serializeEnemy(state, x, statuses)),
         traps: state.traps.map(serializeTraps),
         encounter: state.encounter ? serializeEncounter(state.encounter) : null,
@@ -24,14 +24,15 @@ export function serializeGameState(state: iGameState, statuses: StatusMap): Game
     };
 }
 
-function serializeCharacter(state: iGameState, character: iCharacter, status: GameStatus): Character {
+function serializeCharacter(state: iGameState, character: iCharacter, statuses: StatusMap): Character {
+    const status = getStatus(statuses, character);
     return {
         id: character.id,
         acted: character.acted,
         standing: character.standing,
         bonusEscapes: character.bonusEscapes,
         modifiers: status.getModifiers(),
-        bindings: character.bindings.map(x => serializeBinding(state, status, character, x)),
+        bindings: character.bindings.map(x => serializeBinding(state, statuses, character, x)),
         buffs: character.buffs.map(serializeBuff),
         cooldowns: { ...character.cooldowns },
         blockedMoveTypes: status.getBlockedMoveTypes(),
@@ -65,24 +66,24 @@ function serializeIntention(state: iGameState, statuses: StatusMap, intention: i
     const result = resolveMove(state, preview.move, preview.actor, iTargets);
     for (const iTarget of iTargets) {
         const effects = (result.targets.find(x => x.target === iTarget.target)?.effects) ?? [];
-        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(state, status, effects) });
+        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(state, statuses, effects) });
     }
     return {
         move: intention.move.definition.id,
         ...(preview.move.definition.targets === 0 && preview.move.band && preview.move.band !== "none"
             ? { band: preview.move.band } : {}),
         targets: targets,
-        effects: serializeEffects(state, status, result.effects),
+        effects: serializeEffects(state, statuses, result.effects),
         resolved: intention.resolved
     };
 }
 
 
-export function serializeEffects(state: iGameState, status: GameStatus, effects: iEffect[]): Effect[] {
-    return effects.flatMap(x => serializeEffect(state, status, x)).filter(x => x !== undefined);
+export function serializeEffects(state: iGameState, statuses: StatusMap, effects: iEffect[]): Effect[] {
+    return effects.flatMap(x => serializeEffect(state, statuses, x)).filter(x => x !== undefined);
 }
 
-function serializeEffect(state: iGameState, status: GameStatus, effect: iEffect): Effect | Effect[] | undefined {
+function serializeEffect(state: iGameState, statuses: StatusMap, effect: iEffect): Effect | Effect[] | undefined {
     switch (effect.type) {
         case "binding":
             return {
@@ -163,8 +164,11 @@ function serializeEffect(state: iGameState, status: GameStatus, effect: iEffect)
                             });
                             break;
                         case "discord":
+                            if (intention.move.definition.traits?.length !== 1 || !intention.move.definition.traits?.includes("binding")) {
+                                continue;
+                            }
                             let total = 0;
-                            const targets: iTargetInfo[] = evaluateIntention(state, intention, status);
+                            const targets: iTargetInfo[] = evaluateIntention(state, intention, getStatus(statuses, intention.actor));
                             const moveResults: iMoveResult = resolveMove(state, intention.move, intention.actor, targets);
                             for (const target of moveResults.targets) {
                                 total += target.effects.reduce((sum, x) => sum + (x.type === "binding" && (x.amount ?? 0) > 0 ? (x.amount ?? 0) : 0), 0);
@@ -174,7 +178,7 @@ function serializeEffect(state: iGameState, status: GameStatus, effect: iEffect)
                                 operation: effect.operation,
                                 target: effect.target.id,
                                 move: intention.move.definition.id,
-                                amount: 0
+                                amount: total
                             });
                             break;
                     }
@@ -218,7 +222,7 @@ export function serializeMoveList(list: iMoveListModifier | undefined): MoveList
     }
 }
 
-function serializeBinding(state: iGameState, status: GameStatus, target: iCharacter, binding: iBinding): Binding {
+function serializeBinding(state: iGameState, statuses: StatusMap, target: iCharacter, binding: iBinding): Binding {
     const level = getBindingLevel(binding);
     const bindingStatus = binding.definition.status;
     return {
@@ -227,7 +231,7 @@ function serializeBinding(state: iGameState, status: GameStatus, target: iCharac
         value: binding.value,
         level: level,
         status: bindingStatus ? (bindingStatus[level] ?? []).map(serializeStatus) : [],
-        tickEffects: serializeEffects(state, status, binding.definition.onTick?.(target, binding) ?? [])
+        tickEffects: serializeEffects(state, statuses, binding.definition.onTick?.(target, binding) ?? [])
     };
 }
 
@@ -257,7 +261,7 @@ export function serializeMove(actor: iEntity, move: MoveDef): Move {
     };
 }
 
-export function serializePreview(state: iGameState, status: GameStatus, info: iPreviewInfo): PreviewInfo {
+export function serializePreview(state: iGameState, statuses: StatusMap, info: iPreviewInfo): PreviewInfo {
     const target = info.target === null ? null : info.target.id;
 
     if (!info.valid) {
@@ -273,7 +277,7 @@ export function serializePreview(state: iGameState, status: GameStatus, info: iP
         target,
         ...(info.accuracy ? { accuracy: info.accuracy } : {}),
         damage: info.damage,
-        effects: serializeEffects(state, status, info.effects)
+        effects: serializeEffects(state, statuses, info.effects)
     };
 }
 
