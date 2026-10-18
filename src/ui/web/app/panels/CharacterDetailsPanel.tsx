@@ -48,7 +48,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                     <section class="kcq-character-section kcq-character-commands"
                         aria-label={props.workspaceOnly ? model().labels.commandsHeading : undefined}
                         aria-labelledby={props.workspaceOnly ? undefined : "character-commands-heading"}>
-                        <Show when={!props.workspaceOnly || model().focused.subspace || model().focused.thrillseeker}>
+                        <Show when={!props.workspaceOnly || model().focused.subspace}>
                             <div class="kcq-character-commands__header">
                                 <Show when={!props.workspaceOnly}>
                                     <h2 id="character-commands-heading">
@@ -71,16 +71,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                                         </div>
                                     )}
                                 </Show>
-                                <Show when={model().focused.thrillseeker} keyed>
-                                    {(thrillseeker) => (
-                                        <div class="kcq-character-commands__resource">
-                                            <span>{props.presentation.passive("thrillseeker")}</span>
-                                            <span>
-                                                {thrillseeker.binding} Binding → Hit +{thrillseeker.hit}
-                                            </span>
-                                        </div>
-                                    )}
-                                </Show>
+
                             </div>
                         </Show>
                         <div class="kcq-character-commands__grid">

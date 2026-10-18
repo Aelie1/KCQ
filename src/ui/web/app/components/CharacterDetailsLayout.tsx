@@ -1,7 +1,7 @@
 import { createUniqueId, For, Show, type JSX } from "solid-js";
 import type { EntityId } from "../../../../engine/public/types";
-import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
 import { reactionRef } from "../combatReactions";
+import type { CharacterDetailsViewModel } from "../viewModels/characterDetails";
 import { BindingMeter } from "./BindingMeter";
 import { CombatHeader } from "./CombatHeader";
 import { EffectDetails } from "./EffectDetails";
@@ -86,7 +86,18 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
 
         <Show when={props.model.focused.bindings.length > 0}>
             <section class="kcq-character-section kcq-character-bindings" aria-labelledby="character-bindings-heading">
-                <h2 id="character-bindings-heading">{props.model.labels.bindingsHeading}</h2>
+                <h2 id="character-bindings-heading">{props.model.labels.bindingsHeading}
+                    <Show when={props.model.focused.thrillseeker} keyed>
+                        {(thrillseeker) => (
+                            <div class="kcq-character-bindings__resource">
+                                <span>{thrillseeker.label}:</span>
+                                <span>
+                                    {thrillseeker.binding} Binding → Hit +{thrillseeker.hit}
+                                </span>
+                            </div>
+                        )}
+                    </Show>
+                </h2>
                 <div class="kcq-character-bindings__list">
                     <For each={props.model.focused.bindings.map(binding => binding.id)}>
                         {id => {

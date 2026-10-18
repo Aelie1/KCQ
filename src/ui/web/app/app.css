@@ -2077,7 +2077,7 @@ button {
     align-items: center;
     gap: 5px;
 
-    color: var(--kcq-binding-light);
+    color: var(--kcq-name-hinari);
     font-size: 10px;
     font-weight: 700;
     line-height: 18px;
@@ -2220,6 +2220,11 @@ button {
     gap: 10px;
     padding-top: 10px;
 }
+
+.kcq-character-bindings__resource {
+    color: var(--kcq-name-sakari);
+}
+
 
 .kcq-character-binding {
     display: grid;

@@ -104,6 +104,7 @@ export interface FocusedCharacterViewModel {
     thrillseeker?: {
         binding: number;
         hit: number;
+        label: string;
     };
     stanceState: PartyConditionState;
     tone: PlayerTone;
@@ -263,7 +264,8 @@ export function createFocusedCharacterViewModel(
             binding: character.bindings.reduce(
                 (sum, binding) => sum + binding.value, 0
             ),
-            hit: character.data["thrillseeker"]
+            hit: character.data["thrillseeker"],
+            label: presentation.data("thrillseeker"),
         }
         : undefined;
     return {
