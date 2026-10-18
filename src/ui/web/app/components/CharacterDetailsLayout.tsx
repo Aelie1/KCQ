@@ -86,18 +86,18 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
 
         <Show when={props.model.focused.bindings.length > 0}>
             <section class="kcq-character-section kcq-character-bindings" aria-labelledby="character-bindings-heading">
-                <h2 id="character-bindings-heading">{props.model.labels.bindingsHeading}
+                <div class="kcq-character-bindings__header">
+                    <span id="character-bindings-heading">{props.model.labels.bindingsHeading}</span>
                     <Show when={props.model.focused.thrillseeker} keyed>
                         {(thrillseeker) => (
                             <div class="kcq-character-bindings__resource">
-                                <span>{thrillseeker.label}:</span>
                                 <span>
                                     {thrillseeker.binding} Binding → Hit +{thrillseeker.hit}
                                 </span>
                             </div>
                         )}
                     </Show>
-                </h2>
+                </div>
                 <div class="kcq-character-bindings__list">
                     <For each={props.model.focused.bindings.map(binding => binding.id)}>
                         {id => {

@@ -2221,6 +2221,20 @@ button {
     padding-top: 10px;
 }
 
+.kcq-character-bindings__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    height: 18px;
+    color: var(--kcq-text-secondary);
+    font-size: 10px;
+    font-weight: 700;
+    line-height: 18px;
+    text-transform: uppercase;
+}
+
 .kcq-character-bindings__resource {
     color: var(--kcq-name-sakari);
 }

@@ -107,6 +107,8 @@
     --kcq-name-ko: var(--kcq-state-special);
     --kcq-name-matsuko: var(--kcq-state-warning);
     --kcq-name-hinari: var(--kcq-binding-light);
+    --kcq-name-naruyo: #60a5fa;
+    --kcq-name-sakari: #f472b6;
 }
 
 /* Light theme: cooler slate frame, bright active controls, and subdued inactive cards.

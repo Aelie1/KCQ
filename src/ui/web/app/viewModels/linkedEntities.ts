@@ -6,7 +6,7 @@ import type {
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 
-export type PlayerTone = "hinari" | "ko" | "matsuko" | "neutral";
+export type PlayerTone = "hinari" | "ko" | "matsuko" | "naruyo" | "sakari" | "neutral";
 export type LinkedEntityTone = PlayerTone;
 
 export interface LinkedEntityViewModel {
@@ -77,6 +77,8 @@ export function playerTone(id: EntityId): PlayerTone {
         case "ko":
         case "matsuko":
         case "hinari":
+        case "naruyo":
+        case "sakari":
             return id;
         default:
             return "neutral";
