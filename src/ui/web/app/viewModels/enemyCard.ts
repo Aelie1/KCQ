@@ -2,9 +2,9 @@ import type { Buff, Character, Enemy, EntityId, ModifierId } from "../../../../e
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import type { EnemyCardData } from "../components/componentTypes";
-import { createIntentViewModel } from "./intentRow";
 import type { EffectContext } from "./effectPreviews";
 import { createIntentPreviewRows } from "./intentPreview";
+import { createIntentViewModel } from "./intentRow";
 import { playerTone, projectLinkedPlayers } from "./linkedEntities";
 import { formatSignedNumber } from "./presentationHelpers";
 
@@ -52,7 +52,11 @@ export function createEnemyCardViewModel(
             },
         };
     });
-    const summary = summarizeIntentions(intentions);
+    const ordered = [
+        ...intentions.filter(x => !x.resolved),
+        ...intentions.filter(x => x.resolved),
+    ];
+    const summary = summarizeIntentions(ordered);
 
     return {
         id: enemy.id,
@@ -79,7 +83,7 @@ export function createEnemyCardViewModel(
             const source = effectSource(enemy.id, buff, history);
             const tone = source === undefined ? "neutral"
                 : partyIds.has(source) ? playerTone(source)
-                : enemyIds.has(source) ? "enemy" : "neutral";
+                    : enemyIds.has(source) ? "enemy" : "neutral";
             return [{
                 id: buff.id, duration, tone, icon: buff.icon,
                 accessibleLabel: (source === undefined ? "" : presentation.entity(source) + ": ")

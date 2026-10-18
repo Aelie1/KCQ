@@ -3,7 +3,7 @@ import { isServer, Portal } from "solid-js/web";
 import type { BindingReference, CharacterReference, ContentLibrary, DifficultyReference, EnemyReference, ModifierReference, MoveBuffReference, MoveReference, PassiveReference, StatusReference, TrapReference } from "../../../../engine/public/library";
 import { getThresholds } from "../../../../engine/public/mechanics";
 import type { BindingId, HitBand, ModifierId, ModifierSet } from "../../../../engine/public/types";
-import type { Presentation, UiLabel } from "../../../presentation/presentation";
+import type { Presentation } from "../../../presentation/presentation";
 import { BindingMeter } from "../components/BindingMeter";
 import { CommandTag } from "../components/CommandTag";
 import { EffectPreview } from "../components/EffectPreview";
@@ -25,7 +25,7 @@ export interface LibraryPanelProps { library: ContentLibrary; presentation: Pres
 interface LibraryContextValue { library: ContentLibrary; presentation: Presentation; openEntry: (entry: LibraryEntry) => void; openPage: (page: LibraryPage) => void }
 const LibraryContext = createContext<LibraryContextValue>();
 const context = () => useContext(LibraryContext)!;
-const label = (p: Presentation, key: string) => p.ui(("library." + key) as UiLabel);
+const label = (p: Presentation, key: string) => p.ui("library." + key);
 
 /** Read-only modal. Its caller keeps the underlying game screen inert. */
 export function LibraryPanel(props: LibraryPanelProps): JSX.Element {

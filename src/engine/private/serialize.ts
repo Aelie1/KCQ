@@ -56,6 +56,9 @@ function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): 
 }
 
 function serializeIntention(state: iGameState, statuses: StatusMap, intention: iIntention): Intention {
+    if (intention.resolved) {
+        return { move: intention.move.definition.id, resolved: true, targets: [], effects: [] };
+    }
     const preview = {
         ...intention,
         move: { ...intention.move }

@@ -1,7 +1,7 @@
 import type { ContentLibrary, MoveBuffReference, MoveReference } from "../../../../engine/public/library";
 import { getThresholds } from "../../../../engine/public/mechanics";
 import type { ModifierId, ModifierSet, MoveListModifier } from "../../../../engine/public/types";
-import type { Presentation, UiLabel } from "../../../presentation/presentation";
+import type { Presentation } from "../../../presentation/presentation";
 import { projectBuffMoveList } from "./buffMoveList";
 import type { EffectPreviewViewModel, EffectTone } from "./effectPreviews";
 import { libraryName, libraryOwners } from "./library";
@@ -27,7 +27,7 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
     const selected = move.targets === 0 ? actor : move.targetSide === "player" ? "target" : "enemies";
     const text = (key: string) => p.referenceText("move", move.id, key);
     const thresholds = getThresholds();
-    const row = (type: UiLabel, key: string, recipient = selected, tone: EffectTone = "primary", modifiers?: ModifierSet): void => {
+    const row = (type: string, key: string, recipient = selected, tone: EffectTone = "primary", modifiers?: ModifierSet): void => {
         if (type === "targeting.effectBinding") {
             bindingRow(recipient, text("effect." + key) ?? p.ui(type), p.ui("library.variableAmount"), text("effect." + key + ".note"));
         } else {
@@ -247,7 +247,7 @@ export function libraryMoveRecipient(id: string, library: ContentLibrary, p: Pre
     if (Object.hasOwn(library.characters, id))
         return p.entity(id);
 
-    return p.ui(("library.recipient." + id) as UiLabel);
+    return p.ui("library.recipient." + id);
 }
 
 export function libraryCompulsionCooldown(move: MoveReference): number | undefined {

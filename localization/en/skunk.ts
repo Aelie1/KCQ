@@ -20,6 +20,8 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunketteKo.name": "Skunkette Ko",
     "entity.skunketteMatsuko.name": "Skunkette Matsuko",
     "entity.skunketteHinari.name": "Skunkette Hinari",
+    "entity.skunketteNaruyo.name": "Skunkette Naruyo",
+    "entity.skunketteSakari.name": "Skunkette Sakari",
 
     "entity.skunkette.desc": "An unfortunate girl that has been trapped on her elbows and knees by a suit of living latex. The latex itself controls her body, and she can only watch on as she assaults anyone nearby, trying to create more skunks.",
     "entity.skunkette.rules": "Below 40% HP, the Skunkette suffers Potency −4 and Defense −1.\nEach time the Skunkette takes damage, [moves:pounce] loses one severity level. \nDefeating a Skunked character frees them from the latex's control and halves their bindings.",

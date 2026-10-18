@@ -1,5 +1,5 @@
 import type { BindingEndpoint, BuffOutcome, BuffParticipant, GameLogPresentationEntry, LogOutcome, StanceOutcome } from "../../../presentation/gameLog";
-import type { Presentation, UiLabel } from "../../../presentation/presentation";
+import type { Presentation } from "../../../presentation/presentation";
 import { playerTone, type PlayerTone } from "./linkedEntities";
 import { formatSignedNumber } from "./presentationHelpers";
 
@@ -48,7 +48,7 @@ export function createGameLogViewModel(
         ? p.ui("gameLog.bindingEndpoint", { value: endpoint.value, level: p.bindingLevel(endpoint.level) })
         : String(endpoint.value);
     // Substitute colored slots through Presentation, so complete phrases can be reordered.
-    const phrase = (key: UiLabel, slots: Record<string, GameLogText | GameLogValue>): GameLogValue => {
+    const phrase = (key: string, slots: Record<string, GameLogText | GameLogValue>): GameLogValue => {
         const args = Object.fromEntries(Object.keys(slots).map(name => [name, "\uE000" + name + "\uE001"]));
         const parts = p.ui(key, args).split(/(\uE000[^\uE001]+\uE001)/).filter(Boolean).flatMap(text => {
             const slot = slots[text.slice(1, -1)];
@@ -118,9 +118,11 @@ export function createGameLogViewModel(
                         child.targetParts = undefined;
                     }
                 }
-                return { kind: outcome.kind, target: p.entity(outcome.target),
+                return {
+                    kind: outcome.kind, target: p.entity(outcome.target),
                     label: p.ui("gameLog.bindingActivation", { binding: p.binding(outcome.binding), activated: p.ui("gameLog.activated") }),
-                    values: [], rows: children };
+                    values: [], rows: children
+                };
             }
             case "damage": return {
                 kind: outcome.kind, target: p.entity(outcome.target), values: outcome.hits.flatMap(hit => {
@@ -154,8 +156,10 @@ export function createGameLogViewModel(
                     }
                     change.binding = true;
                 }
-                return { kind: outcome.kind, target: p.entity(outcome.target),
-                    values: [change, ...(!compactBinding && outcome.blocked ? [blocked] : [])] };
+                return {
+                    kind: outcome.kind, target: p.entity(outcome.target),
+                    values: [change, ...(!compactBinding && outcome.blocked ? [blocked] : [])]
+                };
             }
             case "buff": return buffRow(outcome);
             case "resource": {
