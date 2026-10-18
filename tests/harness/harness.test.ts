@@ -391,14 +391,14 @@ describe("policy-driven single-fight harness", () => {
         );
     });
 
-    it("does not substitute another move when a programmed move is unavailable", () => {
+    it("uses a legal attack fallback when a programmed move is unavailable", () => {
         const context = policyContext(
             [actionView("ko", {
-                moves: [move("telekinesis", false), move("fallback", true)],
+                moves: [move("telekinesis", false), move("punch", true)],
             })],
         );
 
-        expect(basicPolicy.chooseAction(context)).toEqual({ type: "endTurn" });
+        expect(basicPolicy.chooseAction(context)).toEqual({ type: "move", actor: "ko", move: "punch", targets: ["enemy-1"] });
     });
 
     it.each([

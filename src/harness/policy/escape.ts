@@ -8,14 +8,13 @@ import type {
 } from "../harness";
 import { chooseBasicAction } from "./basic";
 
-const rescuers = ["matsuko", "hinari"] as const;
 const ESCAPE_THRESHOLD = 20;
 
 export const escapePolicy: FightPolicy = {
     id: "escape",
 
     chooseAction(context: PolicyContext): PlayerAction {
-        for (const actorId of rescuers) {
+        for (const { id: actorId } of context.actions) {
             const action = chooseRescueAction(context, actorId, ESCAPE_THRESHOLD);
             if (action) return action;
         }
@@ -38,7 +37,7 @@ function chooseRescueAction(
 
     // Finish the "double" once the first escape has already earned a bonus escape.
     if (actor.bonusEscapes > 0) {
-        const option = bestEscape(context, legalEscapes, actorId);
+        const option = bestEscape(context, legalEscapes);
         return option ? escapeAction(actorId, option) : undefined;
     }
 
@@ -49,7 +48,6 @@ function chooseRescueAction(
             option.target !== actorId
             && bindingValue(context, option) > threshold
         ),
-        actorId,
     );
 
     if (assist) {
@@ -66,7 +64,6 @@ function chooseRescueAction(
             option.target === actorId
             && bindingValue(context, option) > threshold
         ),
-        actorId,
     );
 
     if (selfEscape) {
@@ -82,7 +79,6 @@ function chooseRescueAction(
 function bestEscape(
     context: PolicyContext,
     options: readonly EscapeInfo[],
-    actorId: string,
 ): EscapeInfo | undefined {
     return [...options].sort(
         (a, b) => bindingValue(context, b) - bindingValue(context, a),
