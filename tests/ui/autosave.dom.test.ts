@@ -367,11 +367,12 @@ describe("autosave lifecycle and failures", () => {
         mount(); expect(document.querySelector(".kcq-title-screen__continue")).toBeNull(); expect(titleError()).toBeUndefined();
     });
 
-    it.each(["references", "engine", "terminal", "campaign"])("handles restoration failure (%s) without committing a session or deleting the save", failure => {
+    it.each(["references", "engine", "terminal", "campaign", "phase"])("handles restoration failure (%s) without committing a session or deleting the save", failure => {
         const source = seedSave();
         if (failure === "references") source.save.saveState.encounter = "missing-encounter";
         if (failure === "terminal") source.save.stats.terminal = true;
         if (failure === "campaign") source.save.saveState.campaign = "missing-campaign";
+        if (failure === "phase") source.save.saveState.turn.phase = "enemy";
         writeSave(source.save); const before = encoded();
         const app = mount(engine => {
             if (failure === "engine") vi.mocked(engine.loadSaveState).mockImplementation(() => { throw new Error("private details"); });
@@ -381,6 +382,7 @@ describe("autosave lifecycle and failures", () => {
         expect(document.querySelector(".kcq-battle-stage")).toBeNull();
         expect(document.body.textContent).not.toContain("private details");
         expect(app.prepareBattle).not.toHaveBeenCalled(); expect(encoded()).toBe(before);
+        if (failure === "phase") expect(app.composeCampaign).not.toHaveBeenCalled();
         start(); expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
 
@@ -391,14 +393,41 @@ describe("autosave lifecycle and failures", () => {
         endTurn(); expect(app.sessions[0]!.engine.getGameState().turn.round).toBe(before + 1);
     });
 
-    it("keeps playing after snapshot creation or storage writes fail", () => {
+    it.each(["normal", "instant"])("reports failed snapshots and writes until saving recovers with %s playback", speed => {
+        window.localStorage.setItem("kcq.playbackSpeed", speed);
         const app = mount(); start(); const engine = app.sessions[0]!.engine;
         const before = encoded();
+        const warning = () => document.querySelector(".kcq-autosave-warning");
+        expect(warning()).toBeNull();
         const snapshot = vi.spyOn(engine, "getSaveState").mockImplementation(() => { throw new Error("snapshot failed"); });
-        endTurn(); expect(encoded()).toBe(before);
+        endTurn(); vi.advanceTimersByTime(20000); expect(encoded()).toBe(before);
+        expect(warning()?.getAttribute("role")).toBe("alert");
+        expect(warning()?.textContent).toBe(presentation.ui("autosave.failed"));
         snapshot.mockRestore();
-        vi.spyOn(window.localStorage, "setItem").mockImplementation(() => { throw new Error("quota"); });
-        endTurn(); expect(encoded()).toBe(before);
+        const writes = vi.spyOn(window.localStorage, "setItem").mockImplementation(() => { throw new Error("quota"); });
+        endTurn(); vi.advanceTimersByTime(20000); expect(encoded()).toBe(before);
+        expect(warning()).not.toBeNull();
         expect(engine.getGameState().turn.round).toBe(3);
+        button("Game Log");
+        expect(warning()).not.toBeNull();
+        document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        document.dispatchEvent(new KeyboardEvent("keyup", { key: "Escape", bubbles: true }));
+        writes.mockRestore();
+        endTurn(); vi.advanceTimersByTime(20000);
+        expect(warning()).toBeNull();
+        expect(saved().saveState).toEqual(engine.getSaveState());
+        expect(saved().stats.stats.actions).toBe(3);
+    });
+
+    it("reports an initial autosave failure and clears the warning after the next successful save", () => {
+        const app = mount();
+        const writes = vi.spyOn(window.localStorage, "setItem").mockImplementation(() => { throw new Error("quota"); });
+        start();
+        expect(encoded()).toBeNull();
+        expect(document.querySelector(".kcq-autosave-warning")?.textContent).toBe(presentation.ui("autosave.failed"));
+        writes.mockRestore();
+        endTurn();
+        expect(document.querySelector(".kcq-autosave-warning")).toBeNull();
+        expect(saved().saveState).toEqual(app.sessions[0]!.engine.getSaveState());
     });
 });

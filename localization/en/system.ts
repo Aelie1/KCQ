@@ -41,6 +41,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.title.save.incompatible": "Your saved battle is from a different game version and cannot be continued. You can start a new battle.",
     "ui.title.save.corrupted": "Your saved battle could not be loaded. You can start a new battle.",
     "ui.title.save.inaccessible": "Saved battles are unavailable because browser storage could not be accessed. You can still start a new battle.",
+    "ui.autosave.failed": "Autosave failed. Recent progress is not saved. Saving will be retried after your next action.",
     "ui.battleOverview.enemies": "Enemies",
     "ui.battleOverview.gameLog": "Game Log",
     "ui.battleOverview.noEncounter": "Battle",

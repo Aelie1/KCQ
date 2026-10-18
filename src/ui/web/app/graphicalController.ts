@@ -126,7 +126,8 @@ export function createGraphicalController(
             let restored: GraphicalBattleSession;
             const { encounter, difficulty } = save.saveState;
             try {
-                if (save.saveState.campaign !== campaign || !encounter || save.stats.terminal) return false;
+                if (save.saveState.campaign !== campaign || !encounter || save.stats.terminal
+                    || save.saveState.turn.phase !== "player") return false;
                 const savedParty = save.saveState.characters.map(character => character.id);
                 if (!savedParty.length || !savedParty.every(isPlayableCharacter) || new Set(savedParty).size !== savedParty.length) return false;
                 const engine = createEngine(savedParty);

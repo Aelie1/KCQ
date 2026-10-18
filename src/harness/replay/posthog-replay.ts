@@ -1,5 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
-import { createStockEngine } from "../../stock";
+import { characterCatalogs, createEngine, type KCQCharacter } from "../../content";
+import { stockCampaign } from "../../stock";
 import type {
     BattleState,
     DifficultyId,
@@ -295,9 +296,15 @@ export function reconstructFightReplay(parsed: ParsedPostHogReplay): ImportedPos
 }
 
 function reconstructCandidate(parsed: ParsedPostHogReplay): ImportedPostHogReplay {
-    const engine = createStockEngine(parsed.seed);
+    const characters = parsed.initialState.characters;
+    const party = Array.isArray(characters) ? characters.map(character => character?.id) : [];
+    if (party.length === 0 || new Set(party).size !== party.length
+        || !party.every((id): id is KCQCharacter => typeof id === "string" && Object.hasOwn(characterCatalogs, id))) {
+        throw replayError(parsed.replayId, "invalid party in initial_state");
+    }
+    const engine = createEngine(party, stockCampaign, parsed.seed);
     engine.setDifficulty(parsed.difficulty);
-    loadStockBattle(engine, parsed.encounter, parsed.replayId);
+    loadReplayBattle(engine, parsed.encounter, parsed.replayId);
 
     const initialState = structuredClone(engine.getGameState());
     const initialActions = structuredClone(engine.getActionView());
@@ -604,7 +611,7 @@ function validateTerminal(parsed: ParsedPostHogReplay, finalView: GameState): vo
     }
 }
 
-function loadStockBattle(engine: Engine, encounter: string, replayId: string): void {
+function loadReplayBattle(engine: Engine, encounter: string, replayId: string): void {
     if (!engine.listEncounters().includes(encounter)) {
         throw replayError(replayId, `unknown encounter ${JSON.stringify(encounter)}`);
     }

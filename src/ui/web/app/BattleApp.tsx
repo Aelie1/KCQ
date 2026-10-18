@@ -141,11 +141,14 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [resultStats, setResultStats] = createSignal(tracker.getStats());
     const logHistory = createGameLogHistory(state(), props.saved?.gameLog);
     const [logEntries, setLogEntries] = createSignal<readonly GameLogPresentationEntry[]>(logHistory.record([]));
+    const [saveFailed, setSaveFailed] = createSignal(false);
     const autosave = (): void => {
         try {
-            writeSave(createSavePackage(props.engine.getSaveState(), logHistory.getSaveState(), tracker.getSaveState()));
+            const result = writeSave(createSavePackage(props.engine.getSaveState(), logHistory.getSaveState(), tracker.getSaveState()));
+            setSaveFailed(result.status !== "saved");
         } catch {
             // Saving, including snapshot creation, must never interrupt gameplay.
+            setSaveFailed(true);
         }
     };
     onMount(() => { if (!props.saved && engineState.turn.outcome === "ongoing") autosave(); });
@@ -608,6 +611,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     return (
         <ViewPreferencesContext.Provider value={viewPreferences}><CombatReactionsContext.Provider value={reactions}>
             <div class="kcq-battle-stage" ref={stage} data-kcq-columns={viewPreferences.columns} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
+                <Show when={saveFailed() && state().turn.outcome === "ongoing"}>
+                    <p class="kcq-autosave-warning" role="alert">{props.presentation.ui("autosave.failed")}</p>
+                </Show>
                 <div class="kcq-battle-stage__background" inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
                     <Show when={logOpen()}>
                         <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />

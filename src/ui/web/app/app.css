@@ -3979,6 +3979,8 @@ button {
 /* Keep the finished battle visible beneath a compact result dialog. */
 .kcq-battle-stage {
     position: relative;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     width: 366px;
     max-width: 100%;
     min-width: 0;
@@ -3994,6 +3996,26 @@ button {
 }
 
 .kcq-battle-stage__background {
+    grid-row: 2;
+    height: 100%;
+    min-height: 0;
+}
+
+.kcq-autosave-warning {
+    margin: 0 0 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--kcq-state-warning);
+    border-radius: 8px;
+    background: var(--kcq-state-warning-bg);
+    color: var(--kcq-chip-text-warning);
+    font-size: 13px;
+}
+
+/* Reserve space for save feedback without pushing battle controls offscreen. */
+.kcq-battle-stage__background > div,
+.kcq-battle-stage__background > .kcq-screen-layout,
+.kcq-battle-stage__background > div > :is(.kcq-screen-layout, .kcq-battle-overview-columns,
+    .kcq-battle-overview-wide, .kcq-character-details-wide) {
     height: 100%;
 }
 

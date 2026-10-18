@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { createStockEngine } from "../../src/stock";
+import { createEngine, type KCQCharacter } from "../../src/content";
+import { stockCharacters } from "../../src/stock";
 import type { Engine, PlayerAction } from "../../src/engine/public/types";
 import { runSingleFight } from "../../src/harness/harness";
 import { basicPolicy } from "../../src/harness/policy/basic";
@@ -81,6 +82,40 @@ describe("PostHog CSV replay import", () => {
 
         expect(parsed.initialState).toEqual(fixture.initialDigest);
         expect(parsed.actions).toHaveLength(2);
+    });
+
+    it.each<{ party: readonly KCQCharacter[] }>([
+        { party: ["naruyo", "matsuko", "hinari"] },
+        { party: ["sakari", "ko", "naruyo"] },
+        { party: ["matsuko", "hinari", "ko"] },
+    ])("reconstructs the recorded party and its order: $party", ({ party }) => {
+        const fixture = makeFixture({ party });
+        const imported = importPostHogReplayCsv(toCsv(fixture.rows));
+
+        expect(imported.replay.initialState.characters.map(character => character.id)).toEqual(party);
+        expect(compactStateDigest(imported.replay.initialState)).toEqual(fixture.initialDigest);
+        expect(imported.replay.steps.map(step => step.action)).toEqual(fixture.actions);
+        for (const [index, step] of imported.replay.steps.entries()) {
+            expect(step.success).toBe(true);
+            if (step.success) expect(compactStateDigest(step.state))
+                .toEqual(JSON.parse(actionRow(fixture.rows, index + 1).state_after));
+        }
+    });
+
+    it.each([
+        { characters: [] },
+        { characters: [{ id: "unknown" }] },
+        { characters: [{ id: "ko" }, { id: "ko" }] },
+        { characters: [null] },
+        { characters: null },
+    ])("rejects an invalid recorded party: $characters", ({ characters }) => {
+        const fixture = makeFixture();
+        const initial = JSON.parse(fixture.rows[0].initial_state);
+        initial.characters = characters;
+        fixture.rows[0].initial_state = JSON.stringify(initial);
+
+        expect(() => importPostHogReplayCsv(toCsv(fixture.rows)))
+            .toThrow("invalid party in initial_state");
     });
 
     it("reports malformed action JSON with its replay and sequence", () => {
@@ -332,6 +367,7 @@ describe("PostHog CSV replay import", () => {
 
 interface FixtureOptions {
     seed?: number;
+    party?: readonly KCQCharacter[];
     prettyJson?: boolean;
     actions?: Array<{ source: "player" | "automatic"; action: PlayerAction }>;
     terminal?: "finished" | "quit" | "abandoned" | null;
@@ -343,7 +379,7 @@ function makeFixture(options: FixtureOptions = {}): {
     initialDigest: ReturnType<typeof compactStateDigest>;
 } {
     const seed = options.seed ?? 12345;
-    const engine = loadedEngine(seed, "plains_1");
+    const engine = loadedEngine(seed, "plains_1", options.party);
     const initialDigest = compactStateDigest(engine.getGameState());
     const defaultActions = [
         { source: "player" as const, action: firstAvailableMove(engine) },
@@ -417,8 +453,8 @@ function makeFixture(options: FixtureOptions = {}): {
     };
 }
 
-function loadedEngine(seed: number, encounter: string): Engine {
-    const engine = createStockEngine(seed);
+function loadedEngine(seed: number, encounter: string, party: readonly KCQCharacter[] = stockCharacters): Engine {
+    const engine = createEngine(party, "skunk", seed);
     for (const id of engine.listCharacters()) engine.loadCharacter(id);
     engine.loadEncounter(encounter);
     return engine;
