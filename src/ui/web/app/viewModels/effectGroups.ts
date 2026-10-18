@@ -19,7 +19,7 @@ export function groupEffectPreviews(
         // Follow-up moves belong to the actor, even when nested in target effects.
         const target = effectRecipient(effect, context.actor);
         if (target === undefined || !shouldGroup(target)) {
-            ungrouped.push(...createEffectPreviews(effect, id, context));
+            ungrouped.push(createEffectPreviews(effect, id, context));
             return;
         }
         let group = groupsById.get(target);
@@ -28,7 +28,7 @@ export function groupEffectPreviews(
             groupsById.set(target, group);
             groups.push({ id: target, name: context.presentation.entity(target), effects: group });
         }
-        group.push(...createEffectPreviews(effect, id, { ...context, scopeTarget: target }));
+        group.push(createEffectPreviews(effect, id, { ...context, scopeTarget: target }));
     });
     return { groups, ungrouped };
 }

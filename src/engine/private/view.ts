@@ -79,8 +79,8 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
                 move: serializeMove(actor, move),
                 available: reason === undefined,
                 ...(reason !== undefined ? { reason } : {}),
-                targets: reason !== undefined ? [] : targets.map(serializePreview),
-                effects: serializeEffects(effects.effects),
+                targets: reason !== undefined ? [] : targets.map(x => serializePreview(state, status, x)),
+                effects: serializeEffects(state, status, effects.effects),
             });
         } else {
             actions.push({
@@ -220,7 +220,7 @@ function getEscapes(state: iGameState, actor: iCharacter, statuses: StatusMap): 
                 target: target.id,
                 binding: binding.id,
                 bonus: bonus,
-                effects: serializeEffects(effects)
+                effects: serializeEffects(state, actorStatus, effects)
             });
         }
     }

@@ -1,7 +1,7 @@
 import type { EncounterDef, MoveDef } from "../protected/definitions";
 import { getBindingLevel } from "../protected/mechanics";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
-import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMoveListModifier, iStatus, iTrap } from "../protected/types";
+import type { iBinding, iBuff, iCharacter, iEffect, iEnemy, iEntity, iGameState, iIntention, iMoveListModifier, iMoveResult, iStatus, iTargetInfo, iTrap } from "../protected/types";
 import type { Binding, Buff, Character, Effect, Encounter, Enemy, GameState, Intention, Move, MoveListModifier, PreviewInfo, Status, TargetInfo, Trap } from "../public/types";
 import { evaluateBattleState, evaluateIntention, resolveMove } from "./combat";
 import { iPreviewInfo } from "./types";
@@ -12,7 +12,7 @@ export function serializeGameState(state: iGameState, statuses: StatusMap): Game
             ...state.turn,
             outcome: evaluateBattleState(state, statuses)
         },
-        characters: state.characters.map(x => serializeCharacter(x, getStatus(statuses, x))),
+        characters: state.characters.map(x => serializeCharacter(state, x, getStatus(statuses, x))),
         enemies: state.enemies.map(x => serializeEnemy(state, x, statuses)),
         traps: state.traps.map(serializeTraps),
         encounter: state.encounter ? serializeEncounter(state.encounter) : null,
@@ -24,14 +24,14 @@ export function serializeGameState(state: iGameState, statuses: StatusMap): Game
     };
 }
 
-function serializeCharacter(character: iCharacter, status: GameStatus): Character {
+function serializeCharacter(state: iGameState, character: iCharacter, status: GameStatus): Character {
     return {
         id: character.id,
         acted: character.acted,
         standing: character.standing,
         bonusEscapes: character.bonusEscapes,
         modifiers: status.getModifiers(),
-        bindings: character.bindings.map(x => serializeBinding(character, x)),
+        bindings: character.bindings.map(x => serializeBinding(state, status, character, x)),
         buffs: character.buffs.map(serializeBuff),
         cooldowns: { ...character.cooldowns },
         blockedMoveTypes: status.getBlockedMoveTypes(),
@@ -59,29 +59,30 @@ function serializeIntention(state: iGameState, statuses: StatusMap, intention: i
         ...intention,
         move: { ...intention.move }
     };
-    const iTargets = evaluateIntention(state, preview, getStatus(statuses, intention.actor), statuses);
+    const status = getStatus(statuses, intention.actor)
+    const iTargets = evaluateIntention(state, preview, status, statuses);
     const targets: TargetInfo[] = [];
     const result = resolveMove(state, preview.move, preview.actor, iTargets);
     for (const iTarget of iTargets) {
         const effects = (result.targets.find(x => x.target === iTarget.target)?.effects) ?? [];
-        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(effects) });
+        targets.push({ target: iTarget.target.id, band: iTarget.band, effects: serializeEffects(state, status, effects) });
     }
     return {
         move: intention.move.definition.id,
         ...(preview.move.definition.targets === 0 && preview.move.band && preview.move.band !== "none"
             ? { band: preview.move.band } : {}),
         targets: targets,
-        effects: serializeEffects(result.effects),
+        effects: serializeEffects(state, status, result.effects),
         resolved: intention.resolved
     };
 }
 
 
-export function serializeEffects(effects: iEffect[]): Effect[] {
-    return effects.map(serializeEffect).filter(x => x !== undefined);
+export function serializeEffects(state: iGameState, status: GameStatus, effects: iEffect[]): Effect[] {
+    return effects.flatMap(x => serializeEffect(state, status, x)).filter(x => x !== undefined);
 }
 
-function serializeEffect(effect: iEffect): Effect | undefined {
+function serializeEffect(state: iGameState, status: GameStatus, effect: iEffect): Effect | Effect[] | undefined {
     switch (effect.type) {
         case "binding":
             return {
@@ -131,34 +132,55 @@ function serializeEffect(effect: iEffect): Effect | undefined {
             }
             break;
         case "intention":
-            switch (effect.operation) {
-                case "cancel":
-                    return {
-                        type: effect.type,
-                        operation: effect.operation,
-                        target: effect.target.id,
+            const effects: Effect[] = [];
+            for (const intention of effect.target.intentions) {
+                if (!intention.resolved) {
+                    switch (effect.operation) {
+                        case "cancel":
+                            effects.push({
+                                type: effect.type,
+                                operation: effect.operation,
+                                target: effect.target.id,
+                                move: intention.move.definition.id
+                            });
+                            break;
+                        case "weaken":
+                            effects.push({
+                                type: effect.type,
+                                operation: effect.operation,
+                                target: effect.target.id,
+                                move: intention.move.definition.id,
+                                amount: effect.amount
+                            })
+                            break;
+                        case "target":
+                            effects.push({
+                                type: effect.type,
+                                operation: effect.operation,
+                                target: effect.target.id,
+                                move: intention.move.definition.id,
+                                destination: effect.destination.id
+                            });
+                            break;
+                        case "discord":
+                            let total = 0;
+                            const targets: iTargetInfo[] = evaluateIntention(state, intention, status);
+                            const moveResults: iMoveResult = resolveMove(state, intention.move, intention.actor, targets);
+                            for (const target of moveResults.targets) {
+                                total += target.effects.reduce((sum, x) => sum + (x.type === "binding" && (x.amount ?? 0) > 0 ? (x.amount ?? 0) : 0), 0);
+                            }
+                            effects.push({
+                                type: effect.type,
+                                operation: effect.operation,
+                                target: effect.target.id,
+                                move: intention.move.definition.id,
+                                amount: 0
+                            });
+                            break;
                     }
-                case "weaken":
-                    return {
-                        type: effect.type,
-                        operation: effect.operation,
-                        target: effect.target.id,
-                        amount: effect.amount
-                    }
-                case "target":
-                    return {
-                        type: effect.type,
-                        operation: effect.operation,
-                        target: effect.target.id,
-                        destination: effect.destination.id
-                    }
-                case "discord":
-                    return {
-                        type: effect.type,
-                        operation: effect.operation,
-                        target: effect.target.id,
-                    }
+                }
             }
+            return effects;
         case "refresh":
             return {
                 type: effect.type,
@@ -196,16 +218,16 @@ export function serializeMoveList(list: iMoveListModifier | undefined): MoveList
     }
 }
 
-function serializeBinding(target: iCharacter, binding: iBinding): Binding {
+function serializeBinding(state: iGameState, status: GameStatus, target: iCharacter, binding: iBinding): Binding {
     const level = getBindingLevel(binding);
-    const status = binding.definition.status;
+    const bindingStatus = binding.definition.status;
     return {
         id: binding.id,
         data: { ...binding.data },
         value: binding.value,
         level: level,
-        status: status ? (status[level] ?? []).map(serializeStatus) : [],
-        tickEffects: serializeEffects(binding.definition.onTick?.(target, binding) ?? [])
+        status: bindingStatus ? (bindingStatus[level] ?? []).map(serializeStatus) : [],
+        tickEffects: serializeEffects(state, status, binding.definition.onTick?.(target, binding) ?? [])
     };
 }
 
@@ -235,7 +257,7 @@ export function serializeMove(actor: iEntity, move: MoveDef): Move {
     };
 }
 
-export function serializePreview(info: iPreviewInfo): PreviewInfo {
+export function serializePreview(state: iGameState, status: GameStatus, info: iPreviewInfo): PreviewInfo {
     const target = info.target === null ? null : info.target.id;
 
     if (!info.valid) {
@@ -251,7 +273,7 @@ export function serializePreview(info: iPreviewInfo): PreviewInfo {
         target,
         ...(info.accuracy ? { accuracy: info.accuracy } : {}),
         damage: info.damage,
-        effects: serializeEffects(info.effects)
+        effects: serializeEffects(state, status, info.effects)
     };
 }
 

@@ -218,6 +218,7 @@ export interface RetargetEffect {
     type: "intention"
     operation: "target";
     target: EntityId;
+    move: MoveId;
     destination: EntityId;
 }
 
@@ -225,12 +226,14 @@ export interface CancelEffect {
     type: "intention"
     operation: "cancel";
     target: EntityId;
+    move: MoveId;
 }
 
 export interface WeakenEffect {
     type: "intention"
     operation: "weaken";
     target: EntityId;
+    move: MoveId;
     amount: number;
 }
 
@@ -238,6 +241,8 @@ export interface DiscordEffect {
     type: "intention"
     operation: "discord";
     target: EntityId;
+    move: MoveId;
+    amount: number;
 }
 
 export interface BonusEffect {

@@ -88,44 +88,7 @@ export function createEffectPreviewViewModels(
     return effects.flatMap((effect, index) => createEffectPreviews(effect, `${idPrefix}-${index}`, context));
 }
 
-export function createEffectPreviews(effect: Effect, id: string, context: EffectContext): EffectPreviewViewModel[] {
-    if (effect.type !== "intention" || effect.operation === "target") {
-        return [createEffectPreview(effect, id, context)];
-    }
-
-    const weaken = effect.operation === "weaken";
-    const cancel = effect.operation === "weaken";
-    const enemy = context.state?.enemies.find(({ id: enemyId }) => enemyId === effect.target);
-    const label = context.presentation.ui(weaken ? "targeting.effectWeaken" : "targeting.effectCancel");
-    const percentage = weaken ? context.presentation.ui("targeting.percentage", {
-        value: effect.amount * 100,
-    }) : "";
-    const intentions = enemy?.intentions ?? [];
-
-    if (intentions.length === 0) {
-        return [compactEffect(
-            id,
-            effect.type,
-            "primary",
-            label,
-            percentage,
-            recipientDetails(effect.target, context),
-        )];
-    }
-
-    return intentions.map((intention, index) => compactEffect(
-        `${id}-intention-${index}`,
-        effect.type,
-        "primary",
-        label,
-        weaken
-            ? `${context.presentation.move(intention.move)} ${percentage}`
-            : context.presentation.move(intention.move),
-        recipientDetails(effect.target, context),
-    ));
-}
-
-function createEffectPreview(effect: Effect, id: string, context: EffectContext): EffectPreviewViewModel {
+export function createEffectPreviews(effect: Effect, id: string, context: EffectContext): EffectPreviewViewModel {
     const { presentation } = context;
     switch (effect.type) {
         case "damage":
@@ -166,8 +129,22 @@ function createEffectPreview(effect: Effect, id: string, context: EffectContext)
                 }), []);
         }
         case "intention":
-            return compactEffect(id, effect.type, "primary", presentation.ui("targeting.effectRetarget"),
-                presentation.entity(effect.operation === "target" ? effect.destination : ""), recipientDetails(effect.target, context));
+            switch (effect.operation) {
+                case "target":
+                    return compactEffect(`${id}-intention-${effect.move}`, effect.type, "primary", presentation.ui("targeting.effectRetarget"),
+                        presentation.entity(effect.operation === "target" ? effect.destination : ""), recipientDetails(effect.target, context));
+                case "cancel":
+                    return compactEffect(`${id}-intention-${effect.move}`, effect.type, "primary", presentation.ui("targeting.effectCancel"),
+                        context.presentation.move(effect.move), recipientDetails(effect.target, context));
+                case "weaken":
+                    return compactEffect(`${id}-intention-${effect.move}`, effect.type, "primary", presentation.ui("targeting.effectWeaken"),
+                        `${context.presentation.move(effect.move)} ${context.presentation.ui("targeting.percentage", { value: effect.amount * 100 })}`,
+                        recipientDetails(effect.target, context));
+                case "discord":
+                    return compactEffect(`${id}-intention-${effect.move}`, effect.type, "primary", presentation.ui("targeting.effectDiscord"),
+                        `${context.presentation.move(effect.move)} → ${context.presentation.ui("targeting.damageAmount", { amount: effect.amount })}`,
+                        recipientDetails(effect.target, context));
+            }
         case "refresh":
             return compactEffect(id, effect.type, "primary", presentation.ui("targeting.effectRefresh"),
                 context.scopeTarget === effect.target ? "" : presentation.entity(effect.target), []);

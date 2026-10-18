@@ -243,6 +243,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.targeting.effectData": "Data",
     "ui.targeting.effectResource": "Resource",
     "ui.targeting.effectCancel": "Cancel",
+    "ui.targeting.effectDiscord": "Discord",
     "ui.targeting.effectWeaken": "Weaken",
     "ui.targeting.effectRetarget": "Retarget",
     "ui.targeting.effectRefresh": "Refresh",

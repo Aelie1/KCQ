@@ -221,6 +221,7 @@ export type UiLabel =
     | "targeting.effectCancel"
     | "targeting.effectDamage"
     | "targeting.effectData"
+    | "targeting.effectDiscord"
     | "targeting.effectHealing"
     | "targeting.effectMove"
     | "targeting.effectRefresh"
