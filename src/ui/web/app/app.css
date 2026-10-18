@@ -5338,7 +5338,7 @@ button {
 }
 
 .kcq-library-host--desktop {
-    grid-template-columns: 200px 366px;
+    grid-template-columns: 220px 366px;
     gap: 12px;
     width: max-content;
     max-width: none;

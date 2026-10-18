@@ -207,6 +207,7 @@ export const discordSeal: MoveDef = {
                         {
                             type: "intention",
                             operation: "discord",
+                            actor: actor,
                             target: target.target,
                         }]
                     ));

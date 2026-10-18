@@ -108,6 +108,9 @@ export class GameEngine implements Engine {
     }
 
     setDifficulty(difficulty: DifficultyId) {
+        if (this.state.turn.round !== 1 || this.state.turn.step !== 1 || this.state.turn.phase !== "player") {
+            return;
+        }
         this.state.difficulty = difficulties[difficulty];
         this.refreshView();
     }
@@ -121,13 +124,26 @@ export class GameEngine implements Engine {
     }
 
     loadCharacter(id: EntityId): GameEvent {
-        const result = new GameEffects(this.catalog, this.state, this.accRng);
+        let reason: FailureReason | undefined;
+
+        if (this.state.characters.length >= 3) {
+            reason = "tooManyCharacters";
+        }
+
+        if (this.state.characters.find(x => x.id === id)) {
+            reason = "duplicateCharacter";
+        }
+
         const character = this.catalog.characters.find(x => x.id === id);
         if (!character) {
+            reason = "invalidCharacter";
+        }
+        if (reason || !character) {
             return {
                 type: "loadCharacter",
                 id: id,
                 success: false,
+                reason: reason,
                 effects: [],
             };
         }
@@ -176,6 +192,15 @@ export class GameEngine implements Engine {
         this.state.traps.length = 0;
         this.state.nextId = {};
         this.state.turn = { round: 1, step: 1, phase: "player" };
+        for (const character of this.state.characters) {
+            character.acted = false;
+            character.standing = false;
+            character.bonusEscapes = 0;
+            character.bindings = [];
+            character.buffs = [];
+            character.cooldowns = {};
+            character.data = { ...(character.data ?? {}) };
+        }
 
         this.state.encounter = encounter;
 

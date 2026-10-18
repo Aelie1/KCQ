@@ -128,9 +128,7 @@ export class GameStatus {
             }
         }
 
-        if (amount !== 0) {
-            this.modifiers[id] = amount;
-        }
+        this.modifiers[id] = amount;
         this.calculated[id] = true;
         return amount;
     }

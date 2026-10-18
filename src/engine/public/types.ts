@@ -522,7 +522,10 @@ export type FailureReason =
     | "cooldownIncomplete"
     | "insufficientResource"
     | "insufficientTargets"
-    | "insufficientBindingIntentions";
+    | "insufficientBindingIntentions"
+    | "invalidCharacter"
+    | "duplicateCharacter"
+    | "tooManyCharacters";
 
 
 
@@ -599,6 +602,7 @@ export interface CharacterEvent {
     type: "loadCharacter";
     id: string;
     success: boolean;
+    reason?: FailureReason;
     effects: LeafEvent[];
 }
 

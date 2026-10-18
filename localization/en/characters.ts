@@ -2,10 +2,10 @@ import { StringTable } from "../../src/ui/presentation/presentation";
 
 export const koEnglishStrings: StringTable = {
     // Party-selection copy placeholders; replace with final authored prose.
-    "entity.ko.party.role": "Role description pending.",
-    "entity.ko.party.point1": "First trait description pending.",
-    "entity.ko.party.point2": "Second trait description pending.",
-    "entity.ko.party.point3": "Third trait description pending.",
+    "entity.ko.party.role": "Resilient mage and party supporter.",
+    "entity.ko.party.point1": "Keeps fighting even with severe bindings.",
+    "entity.ko.party.point2": "Fairy transformations empower herself and allies.",
+    "entity.ko.party.point3": "Strong party support with reflection and debuffs.",
     "entity.ko.name": "Ko-chan",
     "entity.ko.desc": "Student council president.  Self-proclaimed fairy.  Spends her days in restrictive costumes, but she has learned to adapt to any kind of binding.",
     "entity.ko.library": "[moves:fairyTransformation] unlocks empowered moves. Each empowered move consumes empowerment.",
@@ -28,9 +28,9 @@ export const koEnglishStrings: StringTable = {
     "move.fairyReflect.name": "Fairy Reflect",
     "move.fairyReflect.desc": "An empowered retaliation that blocks the entire incoming binding while reflecting it.",
     "move.fairyTransformation.name": "Fairy Transformation",
-    "move.fairyTransformation.desc": "Transform into a real fairy to increase your defense and unlock the ability to empower your abilities temporarily.",
+    "move.fairyTransformation.desc": "Transform into a real fairy to increase your defense and unlock the ability to empower your moves temporarily.  Some of your bindings will be used to form the fairy costume.",
     "move.fairyEmpowerment.name": "Fairy Empowerment",
-    "move.fairyEmpowerment.desc": "A group transformation sequence!  All allies gain improved defense and empowered abilities.",
+    "move.fairyEmpowerment.desc": "A group transformation sequence!  All allies gain improved defense and empowered moves.  Some of each ally's bindings will be used to form the fairy costume.",
     "move.powerOfDenial.name": "[Power of Denial]",
     "move.powerOfDenial.desc": "The reality altering [Power of Denial] destroys a binding or defeats a non-boss enemy once per encounter.",
     "move.powerOfDenial.effect.defeat": "Target Non-Boss Enemy",
@@ -47,10 +47,10 @@ export const koEnglishStrings: StringTable = {
 
 export const matsukoEnglishStrings: StringTable = {
     // Party-selection copy placeholders; replace with final authored prose.
-    "entity.matsuko.party.role": "Role description pending.",
-    "entity.matsuko.party.point1": "First trait description pending.",
-    "entity.matsuko.party.point2": "Second trait description pending.",
-    "entity.matsuko.party.point3": "Third trait description pending.",
+    "entity.matsuko.party.role": "Aggressive striker and tempo control specialist.",
+    "entity.matsuko.party.point1": "Strong and varied flame based moves.",
+    "entity.matsuko.party.point2": "Compulsion moves do not use her main action.",
+    "entity.matsuko.party.point3": "Erupt in flames to escape in an emergency.",
     "entity.matsuko.name": "Matsuko",
     "entity.matsuko.desc": "Student council vice-president.  Young Mistress of the Flame Clan.  Attacks with powerful white flame attacks and wields the [Power of Compulsion], which allows her to control the flow of battle.",
     "entity.matsuko.library": "Matsuko's Compulsion moves share cooldowns and do not consume her action.",
@@ -93,10 +93,10 @@ export const matsukoEnglishStrings: StringTable = {
 
 export const hinariEnglishStrings: StringTable = {
     // Party-selection copy placeholders; replace with final authored prose.
-    "entity.hinari.party.role": "Role description pending.",
-    "entity.hinari.party.point1": "First trait description pending.",
-    "entity.hinari.party.point2": "Second trait description pending.",
-    "entity.hinari.party.point3": "Third trait description pending.",
+    "entity.hinari.party.role": "Defensive specialist that can store bindings.",
+    "entity.hinari.party.point1": "Can store bindings into subspace.",
+    "entity.hinari.party.point2": "Can release stored bindings as debuffs.",
+    "entity.hinari.party.point3": "Expels subspace in an emergency as an attack.",
     "entity.hinari.name": "Hinari",
     "entity.hinari.desc": "Student council treasurer.  Adept of the Power of Space.  She has her own personal inventory where she stores projectiles to be used as ammo, as well as helping to free her friends from their bindings.",
     "entity.hinari.library": "Subspace starts empty and can hold up to 100.\nThe emptier Subspace is, the more hits [moves:rockfall] deals.\n[moves:store] and [moves:brace] increase Subspace, while [moves:release] empties it.",
@@ -118,8 +118,8 @@ export const hinariEnglishStrings: StringTable = {
     "move.release.desc": "Release stored material as a binding or an enemy debuff.  Doesn't work if Subspace is empty.",
     "move.release.effect.binding": "Remembered Binding",
     "move.release.effect.binding.note": "Adds half the Subspace spent on the ally, rounded up.",
-    "move.release.effect.resource": "Subspace −25 / up to −50",
-    "move.release.effect.resource.note": "Spends 25 when targeting an enemy, or up to 50 when targeting an ally.",
+    "move.release.effect.resource": "Subspace −25 / up to −100",
+    "move.release.effect.resource.note": "Spends 25 when targeting an enemy, or up to 100 when targeting an ally.",
     "move.powerOfSpace.name": "[Power of Space]",
     "move.powerOfSpace.desc": "Expel all contents of Subspace in a whirlwind of debris.  Doesn't work if Subspace is empty.",
     "move.powerOfSpace.effect.resource": "Subspace −All",
@@ -137,10 +137,10 @@ export const hinariEnglishStrings: StringTable = {
 
 export const naruyoEnglishStrings: StringTable = {
     // Party-selection copy placeholders; replace with final authored prose.
-    "entity.naruyo.party.role": "Role description pending.",
-    "entity.naruyo.party.point1": "First trait description pending.",
-    "entity.naruyo.party.point2": "Second trait description pending.",
-    "entity.naruyo.party.point3": "Third trait description pending.",
+    "entity.naruyo.party.role": "Recovery and tempo support.",
+    "entity.naruyo.party.point1": "Grants the party bonus escapes.",
+    "entity.naruyo.party.point2": "Weakens enemy effectiveness and accuracy.",
+    "entity.naruyo.party.point3": "Assists allies even when under severe bindings.",
     "entity.naruyo.name": "Naruyo",
     "entity.naruyo.desc": "Student council event planner.  Sworn retainer of Matsuko.  Speaks few words, but extremely capable.  Uses both snow magic and time magic.",
 
@@ -155,10 +155,16 @@ export const naruyoEnglishStrings: StringTable = {
     "move.snowstorm.desc": "A sudden snowstorm causes enemies to have lower accuracy.  The freezing cold causes their attacks to be less effective, as well.",
     "move.timeAcceleration.name": "Time Acceleration",
     "move.timeAcceleration.desc": "Manipulating the flow of time allows the party to make an extra attempt at escaping this turn, even if they've already acted.",
+    "move.timeAcceleration.effect.bonus": "+1 Bonus Escape",
     "move.temporalLock.name": "Temporal Lock",
     "move.temporalLock.desc": "Slowing down an enemy's time causes their move to be more likely to miss or have a reduced effect.",
+    "move.temporalLock.effect.weaken": "Move Effect −25%",
+
     "move.powerOfTime.name": "[Power of Time]",
     "move.powerOfTime.desc": "Freeze time in the entire area, causing all enemies to lose their turn.  Bosses can partially resist this effect.",
+    "move.powerOfTime.effect.cancel": "All Moves",
+    "move.powerOfTime.effect.weaken": "Move Effect −40%",
+
 
     "buff.snowstorm.name": "Snowstorm",
     "buff.chronostasis.name": "Chronostasis",
@@ -167,10 +173,10 @@ export const naruyoEnglishStrings: StringTable = {
 
 export const sakariEnglishStrings: StringTable = {
     // Party-selection copy placeholders; replace with final authored prose.
-    "entity.sakari.party.role": "Role description pending.",
-    "entity.sakari.party.point1": "First trait description pending.",
-    "entity.sakari.party.point2": "Second trait description pending.",
-    "entity.sakari.party.point3": "Third trait description pending.",
+    "entity.sakari.party.role": "Disruptive attacker who loves risk and chaos.",
+    "entity.sakari.party.point1": "Attacks carry debilitating debuffs when they hit.",
+    "entity.sakari.party.point2": "Accuracy grows as bindings increase.",
+    "entity.sakari.party.point3": "Redirects attacks and trades defense for offense.",
     "entity.sakari.name": "Sakari",
     "entity.sakari.desc": "Student council public relations.  Wields chaos and distortion magic.  Good at manipulating emotions and desires",
 
@@ -178,7 +184,7 @@ export const sakariEnglishStrings: StringTable = {
     "passive.thrillseeker.desc": "Seeks out bondage and grows in power based on how much she is bound.  Be careful not to go too far though...",
     "passive.thrillseeker.effect": "+1 hit for every 40 total binding.",
     "move.malfunction.name": "Malfunction",
-    "move.precisionStab.desc": "Cause an enemy to suffer some kind of internal damage.  Lowers the potency of their next moves.",
+    "move.malfunction.desc": "Cause an enemy to suffer some kind of internal damage.  Lowers the potency of their next moves.",
     "move.fairyMalfunction.name": "Fairy Malfunction",
     "move.fairyMalfunction.desc": "An empowered malfunction that has lingering effects.  Lowers the potency of the target for several rounds.",
     "move.overload.name": "Overload",
@@ -189,8 +195,11 @@ export const sakariEnglishStrings: StringTable = {
     "move.overconfidence.desc": "Causes the target to discard defense to focus only on attacking.  Can be used on enemies or allies.",
     "move.discordSeal.name": "Discord Seal",
     "move.discordSeal.desc": "Causes the target's binding attacks to go haywire and hit nearby enemies instead of their intended target.",
+    "move.discordSeal.effect.discord": "All Binding Moves",
+
     "move.powerOfChaos.name": "[Power of Chaos]",
     "move.powerOfChaos.desc": "Causes all enemy attacks to go haywire.  They will hit nearby enemies instead of their original targets.",
+    "move.powerOfChaos.effect.discord": "All Binding Moves",
 
     "buff.malfunction.name": "Malfunction",
     "buff.overload.name": "Overload",

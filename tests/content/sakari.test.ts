@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { discordSeal, fairyMalfunction, fairyOverload, malfunction, overload, overconfidence, powerOfChaos, sakari, thrillseeker } from "../../src/content/characters/sakari";
+import { discordSeal, fairyMalfunction, fairyOverload, malfunction, overconfidence, overload, powerOfChaos, sakari, thrillseeker } from "../../src/content/characters/sakari";
 import { resolveMove } from "../../src/engine/private/combat";
 import { GameEffects } from "../../src/engine/private/effects";
 import { serializeEffects, serializeGameState } from "../../src/engine/private/serialize";
@@ -47,9 +47,11 @@ function bindingMove(id = "bind", accuracy: AccuracyProfile = { hit: 100 }, over
 }
 
 function binder(id = "binder", moves = [bindingMove()]): EnemyDef {
-    return { ...durableEnemy(id, moves), ai: (state, actor) => moves.map(definition => ({
-        type: "move", actor, move: { definition, binding: rope }, targets: [state.characters[0]],
-    })) };
+    return {
+        ...durableEnemy(id, moves), ai: (state, actor) => moves.map(definition => ({
+            type: "move", actor, move: { definition, binding: rope }, targets: [state.characters[0]],
+        }))
+    };
 }
 
 // Internal fixtures let us pin committed rolls and inspect RNG without changing live engine state.
@@ -67,29 +69,35 @@ function discordFixture(moves = [bindingMove()], rolls = [50]) {
     );
     const rng = new Random(12345);
     const effects = new GameEffects(createTestCatalog(), state, rng);
-    const discord: iEffect = { type: "intention", operation: "discord", target: source };
+    const discord: iEffect = { type: "intention", operation: "discord", actor: actor, target: source };
     return { actor, source, first, second, state, statuses, rng, effects, discord };
 }
 
 describe("Sakari's Thrillseeker", () => {
     it.each([[0, 0], [39, 0], [40, 1], [79, 1], [80, 2], [119, 2], [120, 3], [160, 4]])(
         "grants Hit %i total bondage -> %i", (total, hit) => {
-            const engine = load({ setup: state => [
-                { type: "binding", source: state.characters[0], target: state.characters[0], binding: rope, amount: Math.min(total, 80) },
-                { type: "binding", source: state.characters[0], target: state.characters[0], binding: ribbon, amount: Math.max(0, total - 80) },
-            ] });
+            const engine = load({
+                setup: state => [
+                    { type: "binding", source: state.characters[0], target: state.characters[0], binding: rope, amount: Math.min(total, 80) },
+                    { type: "binding", source: state.characters[0], target: state.characters[0], binding: ribbon, amount: Math.max(0, total - 80) },
+                ]
+            });
             expect((characterState(engine, sakari.id).modifiers.hit ?? 0)).toBe(hit);
         },
     );
 
     it("sums multiple bindings before rounding and recalculates after increases and decreases", () => {
-        const adjust = (id: string, amount: number) => makeBehavioralMove(id, "mouth", { targetSide: "player", resolve: (_state, actor, _move, targets) => targets.map(({ target }) => ({
-            type: "binding" as const, source: actor, target: target as ReturnType<typeof makeCharacter>, binding: rope, amount,
-        })) });
+        const adjust = (id: string, amount: number) => makeBehavioralMove(id, "mouth", {
+            targetSide: "player", resolve: (_state, actor, _move, targets) => targets.map(({ target }) => ({
+                type: "binding" as const, source: actor, target: target as ReturnType<typeof makeCharacter>, binding: rope, amount,
+            }))
+        });
         const assistant = makeBehavioralCharacter("assistant", [adjust("tighten", 1), adjust("loosen", -1)]);
-        const engine = load({ allies: [assistant], setup: state => [rope, ribbon].map(binding => ({
-            type: "binding", source: state.characters[0], target: state.characters[0], binding, amount: binding === rope ? 19 : 20,
-        })) });
+        const engine = load({
+            allies: [assistant], setup: state => [rope, ribbon].map(binding => ({
+                type: "binding", source: state.characters[0], target: state.characters[0], binding, amount: binding === rope ? 19 : 20,
+            }))
+        });
         expect((characterState(engine, sakari.id).modifiers.hit ?? 0)).toBe(0);
         execute(engine, { type: "move", actor: assistant.id, move: "tighten", targets: [sakari.id] });
         expect((characterState(engine, sakari.id).modifiers.hit ?? 0)).toBe(1);
@@ -112,73 +120,75 @@ const attacks = [
 
 describe.each(attacks.map(([move, debuff, modifiers, duration]) => ({ move, debuff, modifiers, duration })))(
     "Sakari's $move.id", ({ move, debuff, modifiers, duration }) => {
-    function attackEngine(reapply = false, miss = false) {
-        return load({ setup: state => [
-            buff(state.characters[0], "accuracy", { hit: miss ? -100 : 100 }),
-            { type: "buff", operation: "add", target: state.characters[0], buff: { id: EMPOWERMENT_BUFF, active: true, moveList: { addedMoves: sakari.empoweredMoves } } },
-            ...(reapply ? [buff(state.enemies[0], debuff, modifiers, 1)] : []),
-        ] });
-    }
+        function attackEngine(reapply = false, miss = false) {
+            return load({
+                setup: state => [
+                    buff(state.characters[0], "accuracy", { hit: miss ? -100 : 100 }),
+                    { type: "buff", operation: "add", target: state.characters[0], buff: { id: EMPOWERMENT_BUFF, active: true, moveList: { addedMoves: sakari.empoweredMoves } } },
+                    ...(reapply ? [buff(state.enemies[0], debuff, modifiers, 1)] : []),
+                ]
+            });
+        }
 
-    it("calculates 30 base damage and the debuff without mutating state", () => {
-        const actor = makeCharacter(sakari.id); actor.definition = sakari;
-        const target = makeEnemy(durableEnemy());
-        const state = makeInternalState({ characters: [actor], enemies: [target] });
-        const before = { ...state, characters: [{ ...actor, buffs: [], bindings: [] }], enemies: [{ ...target, buffs: [] }] };
-        const result = resolveMove(state, { definition: move }, actor, [{ target, band: "hit", effectiveness: 0.9 }]);
-        expect(result.targets.flatMap(entry => entry.effects)).toEqual(expect.arrayContaining([
-            { type: "damage", source: actor, target, amount: 27 },
-            expect.objectContaining({ type: "buff", operation: "add", target, buff: expect.objectContaining({ id: debuff, duration, modifiers }) }),
-        ]));
-        expect(state).toEqual(before);
-    });
+        it("calculates 30 base damage and the debuff without mutating state", () => {
+            const actor = makeCharacter(sakari.id); actor.definition = sakari;
+            const target = makeEnemy(durableEnemy());
+            const state = makeInternalState({ characters: [actor], enemies: [target] });
+            const before = { ...state, characters: [{ ...actor, buffs: [], bindings: [] }], enemies: [{ ...target, buffs: [] }] };
+            const result = resolveMove(state, { definition: move }, actor, [{ target, band: "hit", effectiveness: 0.9 }]);
+            expect(result.targets.flatMap(entry => entry.effects)).toEqual(expect.arrayContaining([
+                { type: "damage", source: actor, target, amount: 27 },
+                expect.objectContaining({ type: "buff", operation: "add", target, buff: expect.objectContaining({ id: debuff, duration, modifiers }) }),
+            ]));
+            expect(state).toEqual(before);
+        });
 
-    it("previews both damage and the debuff and applies them for the declared duration", () => {
-        const engine = attackEngine();
-        const preview = targetPreview(engine, sakari.id, move.id, "foe1");
-        expect(preview.effects).toContainEqual(expect.objectContaining({ type: "buff", operation: "add", target: "foe1", buff: expect.objectContaining({ id: debuff, duration, modifiers }) }));
-        const result = use(engine, move.id, ["foe1"]);
-        expect(damages(result)).toHaveLength(1);
-        const damage = damages(result)[0].amount;
-        expect(enemyState(engine).currHp).toBe(2_000 - damage);
-        expect(damage).toBeGreaterThanOrEqual(45);
-        expect(damage).toBeLessThanOrEqual(60);
-        expect(buffState(engine, debuff, "foe1")).toMatchObject({ duration, modifiers });
-        expect(enemyState(engine).modifiers).toMatchObject(modifiers);
-        for (let remaining = duration - 1; remaining >= 0; remaining--) {
-            endTurn(engine);
-            if (remaining) expect(buffState(engine, debuff, "foe1")?.duration).toBe(remaining);
-            else {
-                expect(buffState(engine, debuff, "foe1")).toBeUndefined();
-                expect(enemyState(engine).modifiers).toEqual({});
+        it("previews both damage and the debuff and applies them for the declared duration", () => {
+            const engine = attackEngine();
+            const preview = targetPreview(engine, sakari.id, move.id, "foe1");
+            expect(preview.effects).toContainEqual(expect.objectContaining({ type: "buff", operation: "add", target: "foe1", buff: expect.objectContaining({ id: debuff, duration, modifiers }) }));
+            const result = use(engine, move.id, ["foe1"]);
+            expect(damages(result)).toHaveLength(1);
+            const damage = damages(result)[0].amount;
+            expect(enemyState(engine).currHp).toBe(2_000 - damage);
+            expect(damage).toBeGreaterThanOrEqual(45);
+            expect(damage).toBeLessThanOrEqual(60);
+            expect(buffState(engine, debuff, "foe1")).toMatchObject({ duration, modifiers });
+            expect(enemyState(engine).modifiers).toMatchObject(modifiers);
+            for (let remaining = duration - 1; remaining >= 0; remaining--) {
+                endTurn(engine);
+                if (remaining) expect(buffState(engine, debuff, "foe1")?.duration).toBe(remaining);
+                else {
+                    expect(buffState(engine, debuff, "foe1")).toBeUndefined();
+                    expect(enemyState(engine).modifiers).toEqual({});
+                }
             }
-        }
-        if (duration === 3) {
-            expect(resolvedEvents(result.frames)).toContainEqual({ type: "buffRemoved", target: sakari.id, buff: EMPOWERMENT_BUFF });
-            expect(buffState(engine, EMPOWERMENT_BUFF, sakari.id)).toBeUndefined();
-            expect(actionView(engine, sakari.id).moves.map(({ move }) => move.id)).not.toContain(move.id);
-        }
-    });
+            if (duration === 3) {
+                expect(resolvedEvents(result.frames)).toContainEqual({ type: "buffRemoved", target: sakari.id, buff: EMPOWERMENT_BUFF });
+                expect(buffState(engine, EMPOWERMENT_BUFF, sakari.id)).toBeUndefined();
+                expect(actionView(engine, sakari.id).moves.map(({ move }) => move.id)).not.toContain(move.id);
+            }
+        });
 
-    it("misses without damage or a debuff and still consumes fairy empowerment", () => {
-        const engine = attackEngine(false, true);
-        const result = use(engine, move.id, ["foe1"]);
-        expect(resolvedEvents(result.frames)).toContainEqual(expect.objectContaining({ type: "useMove", targets: [{ target: "foe1", result: "miss", effects: [] }] }));
-        expect(damages(result)).toEqual([]);
-        expect(enemyState(engine).currHp).toBe(2_000);
-        expect(buffState(engine, debuff, "foe1")).toBeUndefined();
-        expect(!!buffState(engine, EMPOWERMENT_BUFF, sakari.id)).toBe(duration === 1);
-    });
+        it("misses without damage or a debuff and still consumes fairy empowerment", () => {
+            const engine = attackEngine(false, true);
+            const result = use(engine, move.id, ["foe1"]);
+            expect(resolvedEvents(result.frames)).toContainEqual(expect.objectContaining({ type: "useMove", targets: [{ target: "foe1", result: "miss", effects: [] }] }));
+            expect(damages(result)).toEqual([]);
+            expect(enemyState(engine).currHp).toBe(2_000);
+            expect(buffState(engine, debuff, "foe1")).toBeUndefined();
+            expect(!!buffState(engine, EMPOWERMENT_BUFF, sakari.id)).toBe(duration === 1);
+        });
 
-    it("replaces the existing debuff and refreshes duration without stacking modifiers", () => {
-        const engine = attackEngine(true);
-        const result = use(engine, move.id, ["foe1"]);
-        expect(resolvedEvents(result.frames)).toContainEqual({ type: "buffUpdated", target: "foe1", buff: debuff });
-        expect(enemyState(engine).buffs.filter(({ id }) => id === debuff)).toHaveLength(1);
-        expect(enemyState(engine).modifiers).toEqual(modifiers);
-        expect(buffState(engine, debuff, "foe1")?.duration).toBe(duration);
+        it("replaces the existing debuff and refreshes duration without stacking modifiers", () => {
+            const engine = attackEngine(true);
+            const result = use(engine, move.id, ["foe1"]);
+            expect(resolvedEvents(result.frames)).toContainEqual({ type: "buffUpdated", target: "foe1", buff: debuff });
+            expect(enemyState(engine).buffs.filter(({ id }) => id === debuff)).toHaveLength(1);
+            expect(enemyState(engine).modifiers).toEqual(modifiers);
+            expect(buffState(engine, debuff, "foe1")?.duration).toBe(duration);
+        });
     });
-});
 
 describe("Sakari's Overconfidence", () => {
     it.each([sakari.id, ally.id, "foe1"])("gives %s Hit +3 / Defense -3 for three rounds", target => {
@@ -241,9 +251,11 @@ describe("Sakari's Discord Seal", () => {
     });
 
     it.each(["miss", "graze", "hit", "crit"] as const)("redirects committed %s outcomes and previews the exact calculated damage without consuming RNG", band => {
-        const engine = load({ enemies: [binder("source", [bindingMove("bind", { [band]: 100 })]), durableEnemy("other")], setup: state => [
-            buff(state.enemies[0], "potent", { potency: 2 }), buff(state.characters[0], "vulnerable", { vulnerability: 3 }),
-        ] });
+        const engine = load({
+            enemies: [binder("source", [bindingMove("bind", { [band]: 100 })]), durableEnemy("other")], setup: state => [
+                buff(state.enemies[0], "potent", { potency: 2 }), buff(state.characters[0], "vulnerable", { vulnerability: 3 }),
+            ]
+        });
         const before = engine.getSaveState();
         const intention = enemyState(engine, "source1").intentions[0];
         const expected = intention.targets.flatMap(target => target.effects).reduce((sum, effect) => sum + (effect.type === "binding" ? effect.amount ?? 0 : 0), 0);
@@ -272,9 +284,13 @@ describe("Sakari's Discord Seal", () => {
     });
 
     it("selects another enemy independently for each binding effect", () => {
-        const move = bindingMove("multi-bind", { hit: 100 }, { resolve: (_state, actor, _move, targets) => ({ effects: [], targets: targets.map(target => tr(target, [rope, ribbon].map(binding => ({
-            type: "binding", source: actor, target: target.target as ReturnType<typeof makeCharacter>, binding, amount: 10,
-        })))) }) });
+        const move = bindingMove("multi-bind", { hit: 100 }, {
+            resolve: (_state, actor, _move, targets) => ({
+                effects: [], targets: targets.map(target => tr(target, [rope, ribbon].map(binding => ({
+                    type: "binding", source: actor, target: target.target as ReturnType<typeof makeCharacter>, binding, amount: 10,
+                }))))
+            })
+        });
         const f = discordFixture([move]);
         const expectedRng = new Random(12345);
         const destinations = [expectedRng.int(0, 1), expectedRng.int(0, 1)];
@@ -287,9 +303,13 @@ describe("Sakari's Discord Seal", () => {
     });
 
     it("processes multiple intentions but skips resolved ones and zero or negative binding amounts", () => {
-        const noDamage = bindingMove("nonpositive", { hit: 100 }, { resolve: (_state, actor, _move, targets) => ({ effects: [], targets: targets.map(target => tr(target, [0, -10].map(amount => ({
-            type: "binding", source: actor, target: target.target as ReturnType<typeof makeCharacter>, binding: rope, amount,
-        })))) }) });
+        const noDamage = bindingMove("nonpositive", { hit: 100 }, {
+            resolve: (_state, actor, _move, targets) => ({
+                effects: [], targets: targets.map(target => tr(target, [0, -10].map(amount => ({
+                    type: "binding", source: actor, target: target.target as ReturnType<typeof makeCharacter>, binding: rope, amount,
+                }))))
+            })
+        });
         const f = discordFixture([bindingMove("first"), bindingMove("resolved"), noDamage, bindingMove("last")]);
         f.source.intentions[1].resolved = true;
         expect(serializeEffects(f.state, f.statuses(), [f.discord])).toEqual([
@@ -306,9 +326,13 @@ describe("Sakari's Discord Seal", () => {
     });
 
     it("safely skips queued damage when its destination disappears during resolution", () => {
-        const multi = bindingMove("multi", { hit: 100 }, { resolve: (_state, actor, _move, targets) => ({ effects: [], targets: targets.map(target => tr(target, [10, 10].map(amount => ({
-            type: "binding", source: actor, target: target.target as ReturnType<typeof makeCharacter>, binding: rope, amount,
-        })))) }) });
+        const multi = bindingMove("multi", { hit: 100 }, {
+            resolve: (_state, actor, _move, targets) => ({
+                effects: [], targets: targets.map(target => tr(target, [10, 10].map(amount => ({
+                    type: "binding", source: actor, target: target.target as ReturnType<typeof makeCharacter>, binding: rope, amount,
+                }))))
+            })
+        });
         const f = discordFixture([multi]); f.state.enemies.pop(); f.first.currHp = 5;
         f.effects.merge([f.discord]);
         expect(f.state.enemies).toEqual([f.source]);

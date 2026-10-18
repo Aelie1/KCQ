@@ -12,6 +12,7 @@ const SNOWSTORM_MODIFIER = -2;
 const SNOWSTORM_DURATION = 2;
 
 const TIME_ACCELERATION_AMOUNT = 1;
+const TIME_ACCELERATION_COOLDOWN = 3;
 
 const TEMPORAL_LOCK_WEAKEN = 0.25;
 
@@ -95,6 +96,7 @@ export const timeAcceleration: MoveDef = {
     targetSide: "player",
     targets: "all",
     type: "mouth",
+    cooldown: { "timeAcceleration": TIME_ACCELERATION_COOLDOWN },
     traits: ["bonus"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };

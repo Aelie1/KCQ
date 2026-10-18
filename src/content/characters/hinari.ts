@@ -11,7 +11,7 @@ const SUBSPACE_MAX = 100;
 const STORE_REMOVE_AMOUNT = 25;
 const STORE_REMOVE_MODIFIER = 2;
 
-const RELEASE_PLAYER_AMOUNT = 50;
+const RELEASE_PLAYER_AMOUNT = 100;
 const RELEASE_ENEMY_AMOUNT = 25;
 const RELEASE_BUFF = "subspaceClutter";
 const RELEASE_DURATION = 2;
@@ -108,7 +108,7 @@ export const rockfall: MoveDef = {
         if (actor.data["subspace"] === undefined) {
             return move.baseHits ?? 1;
         }
-        return (move.baseHits ?? 1) - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX / (move.baseHits ?? 1)));
+        return (move.baseHits ?? 1) - Math.floor(actor.data["subspace"] / (SUBSPACE_MAX * 2 / (move.baseHits ?? 1)));
     },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
@@ -116,9 +116,6 @@ export const rockfall: MoveDef = {
     isValid: function (state: iGameState, move: MoveDef, actor: iEntity): FailureReason | undefined {
         if (actor.data["subspace"] === undefined) {
             return "invalidActor";
-        }
-        if (actor.data["subspace"] === SUBSPACE_MAX) {
-            return "insufficientResource";
         }
     }
 }

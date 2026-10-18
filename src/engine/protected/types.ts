@@ -214,6 +214,7 @@ interface iCancelEffect {
 interface iDiscordEffect {
     type: "intention"
     operation: "discord";
+    actor: iEntity;
     target: iEnemy;
 }
 

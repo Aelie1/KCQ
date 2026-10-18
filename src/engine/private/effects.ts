@@ -130,7 +130,7 @@ export class GameEffects {
                             this.weakenIntentions(effect.target, effect.amount);
                             break;
                         case "discord":
-                            this.discordIntentions(effect.target);
+                            this.discordIntentions(effect.actor, effect.target);
                             break;
                     }
                     break;
@@ -543,8 +543,9 @@ export class GameEffects {
     private retargetIntention(target: iEnemy, destination: iCharacter) {
         let retargetted = false;
         for (const intention of target.intentions) {
-            if ((intention.move.definition.targetSide === "either" ||
-                intention.move.definition.targetSide === "player")
+            if (!intention.resolved
+                && (intention.move.definition.targetSide === "either"
+                    || intention.move.definition.targetSide === "player")
                 && intention.move.definition.targets === 1
                 && intention.rolls[0].target !== destination) {
                 intention.rolls[0].target = destination;
@@ -587,7 +588,7 @@ export class GameEffects {
         }
     }
 
-    private discordIntentions(enemy: iEnemy) {
+    private discordIntentions(actor: iEntity, enemy: iEnemy) {
         const status = new GameStatus(this.state, enemy);
         for (const intention of enemy.intentions) {
             if (intention.move.definition.traits?.length === 1
@@ -609,7 +610,7 @@ export class GameEffects {
                             if (newTarget && isEnemy(newTarget)) {
                                 this.effects.push({
                                     type: "damage",
-                                    source: enemy,
+                                    source: actor,
                                     target: newTarget,
                                     amount: effect.amount ?? 0,
                                 })

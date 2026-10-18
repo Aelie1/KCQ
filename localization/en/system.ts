@@ -276,7 +276,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.library.navigation": "Library navigation",
     "ui.library.baseAmount": "Base Effect Amount",
     "ui.library.baseMoves": "Base Moves",
-    "ui.library.bindingReduction": "Escape potency ×2",
+    "ui.library.bindingReduction": "Escape potency ×{value}",
     "ui.library.bindings": "Bindings",
     "ui.library.blocked": "Blocks {type} moves",
     "ui.library.blockedExplanation": "Cannot use {type} moves.",

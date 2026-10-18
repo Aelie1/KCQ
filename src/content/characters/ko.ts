@@ -1,6 +1,6 @@
 import { BindingDef, CallbackDef, CharacterDef, EMPOWERMENT_BUFF, MoveDef, PassiveDef } from "../../engine/protected/definitions";
 import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
-import { basicDamageEffect, basicPlayerAccuracy, tr } from "../../engine/protected/mechanics";
+import { basicDamageEffect, basicPlayerAccuracy, getEscapePotency, tr } from "../../engine/protected/mechanics";
 import { ContentCatalogFragment, iBuff, iCallbackReturn, iCharacter, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 
 const TELEKINESIS_DAMAGE = 30;
@@ -11,6 +11,7 @@ const TRANSFORMATION_DURATION_KO = 3;
 const TRANSFORMATION_MODIFIER_KO = 3;
 const TRANSFORMATION_DURATION_ALLY = 2;
 const TRANSFORMATION_MODIFIER_ALLY = 2;
+const TRANSFORMATION_REMOVE_MODIFIER = 1;
 
 const STARLIGHT_BUFF = "starlightBindings";
 const STARLIGHT_MODIFIER = -2;
@@ -63,7 +64,8 @@ export function removeEmpowerment(actor: iEntity): iEffect[] {
     return effects;
 }
 
-function createTransformBuff(target: iEntity, duration: number, defense: number): iEffect {
+function createTransformEffects(target: iEntity, duration: number, defense: number): iEffect[] {
+    const effects: iEffect[] = [];
     const transformBuff: iBuff = {
         id: TRANSFORMATION_BUFF,
         active: true,
@@ -73,12 +75,33 @@ function createTransformBuff(target: iEntity, duration: number, defense: number)
         }
     }
 
-    return {
+    effects.push({
         type: "buff",
         target: target,
         buff: transformBuff,
         operation: "add"
+    })
+    if (isCharacter(target)) {
+        let highest = 0;
+        let highestBinding;
+        for (const binding of target.bindings) {
+            if (binding.value > highest) {
+                highest = binding.value;
+                highestBinding = binding.definition;
+            }
+        }
+        if (highestBinding) {
+            const removeAmount = Math.min(highest, getEscapePotency(highest, 0, TRANSFORMATION_REMOVE_MODIFIER));
+            effects.push({
+                type: "binding",
+                source: target,
+                target: target,
+                binding: highestBinding,
+                amount: -removeAmount
+            });
+        }
     }
+    return effects;
 }
 
 function createEmpowermentBuff(target: iCharacter): iEffect {
@@ -232,7 +255,7 @@ export const fairyTransformation: MoveDef = {
     cooldown: { "fairyTransformation": TRANSFORMATION_COOLDOWN },
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
-        result.effects.push(createTransformBuff(actor, TRANSFORMATION_DURATION_KO, TRANSFORMATION_MODIFIER_KO));
+        result.effects.push(...createTransformEffects(actor, TRANSFORMATION_DURATION_KO, TRANSFORMATION_MODIFIER_KO));
 
         const fairyBuff = findBuff(actor, EMPOWERMENT_BUFF);
         if (!fairyBuff && isCharacter(actor)) {
@@ -257,7 +280,7 @@ export const fairyEmpowerment: MoveDef = {
         const result: iMoveResult = { effects: [], targets: [] };
         const koEffects: iEffect[] = [];
 
-        koEffects.push(createTransformBuff(actor, TRANSFORMATION_DURATION_KO, TRANSFORMATION_MODIFIER_KO));
+        koEffects.push(...createTransformEffects(actor, TRANSFORMATION_DURATION_KO, TRANSFORMATION_MODIFIER_KO));
         koEffects.push(...removeEmpowerment(actor));
         result.targets.push({
             target: actor,
@@ -269,7 +292,7 @@ export const fairyEmpowerment: MoveDef = {
         for (const target of targets) {
             if (target.target !== actor && isCharacter(target.target)) {
                 const allyEffects: iEffect[] = [];
-                allyEffects.push(createTransformBuff(target.target, TRANSFORMATION_DURATION_ALLY, TRANSFORMATION_MODIFIER_ALLY));
+                allyEffects.push(...createTransformEffects(target.target, TRANSFORMATION_DURATION_ALLY, TRANSFORMATION_MODIFIER_ALLY));
                 allyEffects.push(createEmpowermentBuff(target.target));
                 result.targets.push(tr(target, allyEffects));
             }

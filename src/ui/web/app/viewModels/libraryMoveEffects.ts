@@ -122,10 +122,12 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
     if (move.baseDamage !== undefined && !damage) rows.push({ recipient: "", label: p.ui("library.baseAmount"), name: String(move.baseDamage), tone: "warning" });
     switch (move.id) {
         case "fairyTransformation":
+            bindingRow("ko", p.ui("library.strongestBinding"), p.ui("library.bindingReduction", { value: 1 }), text("effect.binding.note"));
             empowerment("self", "add");
             break;
         case "fairyEmpowerment":
             empowerment("self", "remove");
+            bindingRow("allies", p.ui("library.strongestBinding"), p.ui("library.bindingReduction", { value: 1 }), text("effect.binding.note"));
             empowerment("allies", "add");
             break;
         case "powerOfDenial":
@@ -146,14 +148,15 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             }, "add", true);
             break;
         case "stop":
-            row("targeting.effectWeaken", "weaken", "boss"); row("targeting.effectCancel", "cancel", "enemy");
+            row("targeting.effectWeaken", "weaken", "boss");
+            row("targeting.effectCancel", "cancel", "enemy");
             break;
         case "attackMe":
             row("targeting.effectRetarget", "retarget", "enemies");
             buff({ id: "defenseBarrier", recipient: "self", duration: 1, modifiers: { defense: 3 } });
             break;
         case "store":
-            bindingRow("allies", p.ui("library.strongestBinding"), p.ui("library.bindingReduction"), text("effect.binding.note"));
+            bindingRow("allies", p.ui("library.strongestBinding"), p.ui("library.bindingReduction", { value: 2 }), text("effect.binding.note"));
             row("targeting.effectResource", "resource", actor);
             break;
         case "release":
@@ -165,6 +168,22 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             buff({ id: "subspaceClutter", recipient: "enemies", modifiers: { defense: -2, hit: -2 } }, "add", true);
             buff({ id: "instability", recipient: "hinari", moveList: { blockedMoves: [move.id] } }, "add", true);
             row("targeting.effectResource", "resource", actor);
+            break;
+        case "discordSeal":
+            row("targeting.effectDiscord", "discord", "enemy");
+            break;
+        case "powerOfChaos":
+            row("targeting.effectDiscord", "discord", "enemies");
+            break;
+        case "timeAcceleration":
+            row("targeting.effectBonus", "bonus", "allies", "warning");
+            break;
+        case "temporalLock":
+            row("targeting.effectWeaken", "weaken", "enemy");
+            break;
+        case "powerOfTime":
+            row("targeting.effectWeaken", "weaken", "boss");
+            row("targeting.effectCancel", "cancel", "enemies");
             break;
         case "throwOff":
             buff({ id: "pounce", recipient: "self" }, "remove", true, text("effect.remove.note"));
