@@ -19,6 +19,7 @@ export interface EncounterPickerViewModel {
     title: string;
     settingsLabel: string;
     backLabel: string;
+    changePartyLabel: string;
     showAllLabel: string;
     showAll: boolean;
     encounters: readonly (EncounterSummaryViewModel & { locked: boolean })[];
@@ -87,7 +88,8 @@ export function createEncounterPickerViewModel(
     return {
         title: presentation.campaign(campaign.id),
         settingsLabel: presentation.ui("battleOverview.settings"),
-        backLabel: presentation.ui("party.change"),
+        backLabel: presentation.ui("title.back"),
+        changePartyLabel: presentation.ui("party.change"),
         showAllLabel: presentation.ui("encounter.showAll"),
         showAll,
         encounters: encounters.map(encounter => {

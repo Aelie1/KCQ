@@ -8,6 +8,7 @@ import { Shortcut } from "./Shortcut";
 
 export function EncounterPickerPanel(props: {
     onBack?: () => void;
+    onChangeParty?: () => void;
     onLibrary?: () => void;
     libraryLabel?: string;
     onSettings?: () => void;
@@ -41,11 +42,14 @@ export function EncounterPickerPanel(props: {
         </>
         }
         footer={
-            props.onBack && <footer class="kcq-screen-actions kcq-encounter-details__footer">
-                <button class="kcq-targeting__back kcq-shortcut-host" data-kcq-shortcut={COMBAT_SHORTCUTS.back} type="button" onClick={props.onBack}>
+            (props.onBack || props.onChangeParty) && <footer class="kcq-screen-actions kcq-encounter-details__footer">
+                <Show when={props.onBack}><button class="kcq-targeting__back kcq-shortcut-host" data-kcq-shortcut={COMBAT_SHORTCUTS.back} type="button" onClick={props.onBack}>
                     <Shortcut shortcut={COMBAT_SHORTCUTS.back} />
                     <span aria-hidden="true">↶ </span>{props.model.backLabel}
-                </button>
+                </button></Show>
+                <Show when={props.onChangeParty}>
+                    <button class="kcq-targeting__back kcq-encounter-picker__change-party" type="button" onClick={props.onChangeParty}>{props.model.changePartyLabel}</button>
+                </Show>
             </footer>
         }
     />;

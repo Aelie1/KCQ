@@ -62,7 +62,6 @@ function selectLanguage(id: string) {
 function start(difficulty = "Standard") {
     if (document.querySelector(".kcq-title-screen")) {
         click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     }
     const showAll = document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!;
     if (!showAll.checked) showAll.click();
@@ -100,7 +99,6 @@ describe("player persistence in the graphical application", () => {
     it("restores multiple clears in encounter selection and details", () => {
         window.localStorage.setItem("kcq.clears", JSON.stringify({ plains_1: "extreme", plains_2: "casual", unknown: "mythic" }));
         mount(); click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
         const labels = [...document.querySelectorAll(".kcq-encounter-picker__best-clear")].map(row => row.textContent);
         expect(labels.slice(0, 3)).toEqual(["👑 Extreme", "👑 Casual", "👑 ---"]);
@@ -113,7 +111,6 @@ describe("player persistence in the graphical application", () => {
         expect(JSON.parse(window.localStorage.getItem("kcq.clears")!)).toEqual({ plains_1: "veteran" });
         button("Back to Level Select"); expect(clearLabel()).toBe("👑 Veteran");
         ({ sessions } = mount()); click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
         expect(clearLabel()).toBe("👑 Veteran");
         start("Casual"); finish(sessions[0]!, "victory"); button("Back to Level Select");
@@ -149,7 +146,6 @@ describe("player persistence in the graphical application", () => {
         window.localStorage.removeItem("kcq.language"); window.localStorage.removeItem("kcq.clears");
         mount(); expect(document.querySelector<HTMLSelectElement>(".kcq-title-screen select")?.value).toBe("en");
         click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
         expect(clearLabel()).toBe("👑 ---");
     });

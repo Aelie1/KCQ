@@ -68,7 +68,6 @@ function mount(configure?: (engine: Engine) => void, titlePresentation = present
 }
 function start(encounter = "forest_3", difficulty = "Veteran"): void {
     click(".kcq-title-screen__campaign");
-    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
     const row = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
         .find(row => row.querySelector(".kcq-encounter-picker__name")?.textContent === presentation.encounter(encounter));
@@ -163,7 +162,6 @@ describe("title saved-battle card", () => {
         expect(document.activeElement?.textContent).toBe(presentation.ui("title.campaigns"));
         expect(app.composeCampaign).not.toHaveBeenCalled();
         click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
     });
 

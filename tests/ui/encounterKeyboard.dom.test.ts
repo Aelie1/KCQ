@@ -55,7 +55,6 @@ function mountApp() {
         composeCampaign: () => ({ engine: createStockEngine(), presentation }),
     }), host);
     button(".kcq-title-screen__campaign").click();
-    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     press("1"); press("Escape");
     return { prepareBattle, catalog };
 }
@@ -126,8 +125,6 @@ describe("encounter keyboard navigation", () => {
         expect(press("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
         expect(press("Escape").defaultPrevented).toBe(true);
-        expect(document.querySelector(".kcq-party-selection")).not.toBeNull();
-        expect(press("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
         expect(press("Escape").defaultPrevented).toBe(false);
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -180,8 +177,6 @@ describe("encounter keyboard navigation", () => {
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
         release("Escape");
         press("Escape");
-        expect(document.querySelector(".kcq-party-selection")).not.toBeNull();
-        expect(press("Escape").defaultPrevented).toBe(true);
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
     });
 

@@ -1,4 +1,5 @@
-import type { KCQCampaign } from "../../../../content";
+import type { KCQCampaign, KCQCharacter } from "../../../../content";
+import { stockCharacters } from "../../../../stock";
 import type { Presentation } from "../../../presentation/presentation";
 import type { SavePackage } from "../savePackage";
 import { displayVersion } from "../version";
@@ -6,6 +7,8 @@ import { displayVersion } from "../version";
 export interface TitleViewModel {
     title: string;
     campaignsHeading: string;
+    changePartyLabel: string;
+    partySummary: string;
     continueLabel: string;
     resumeHeading: string;
     deleteLabel: string;
@@ -28,6 +31,7 @@ export interface TitleViewModel {
 
 export function createTitleViewModel(
     campaigns: readonly KCQCampaign[], presentation: Presentation, release: string, save?: SavePackage,
+    party: readonly KCQCharacter[] = stockCharacters,
 ): TitleViewModel {
     const progress = save?.stats.stats.progress;
     const hp = progress?.boss ?? progress?.enemies;
@@ -41,6 +45,8 @@ export function createTitleViewModel(
     return {
         title: presentation.ui("title.name"),
         campaignsHeading: presentation.ui("title.campaigns"),
+        changePartyLabel: presentation.ui("party.change"),
+        partySummary: party.map(id => presentation.entity(id)).join(", "),
         continueLabel: presentation.ui("title.continue"),
         resumeHeading: presentation.ui("title.resumeBattle"),
         deleteLabel: presentation.ui("title.save.delete"),

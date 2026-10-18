@@ -68,7 +68,7 @@ function mount() {
 describe("party selection navigation", () => {
     it("shows the localized roster before creating an engine and guards mouse and keyboard confirmation", () => {
         const { composeCampaign, prepareBattle } = mount();
-        click(".kcq-title-screen__campaign");
+        click(".kcq-title-screen__party button");
         expect(composeCampaign).not.toHaveBeenCalled();
         expect(prepareBattle).not.toHaveBeenCalled();
         const toggles = [...document.querySelectorAll<HTMLButtonElement>(".kcq-party-selection__toggle")];
@@ -97,7 +97,10 @@ describe("party selection navigation", () => {
         press("1");
         expect(button(".kcq-party-selection__continue").disabled).toBe(false);
         press("Enter");
-        expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
+        expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
+        expect(document.querySelector(".kcq-title-screen__party p")?.textContent).toBe("Matsuko, Hinari, Ko-chan");
+        expect(JSON.parse(window.localStorage.getItem("kcq.party")!)).toEqual(["matsuko", "hinari", "ko"]);
+        click(".kcq-title-screen__campaign");
         expect(composeCampaign).toHaveBeenCalledExactlyOnceWith("skunk", ["matsuko", "hinari", "ko"]);
         expect(prepareBattle).not.toHaveBeenCalled();
     });
@@ -106,7 +109,7 @@ describe("party selection navigation", () => {
         const { composeCampaign } = mount();
         const select = document.querySelector<HTMLSelectElement>(".kcq-title-screen select")!;
         select.value = "test"; select.dispatchEvent(new Event("change", { bubbles: true }));
-        click(".kcq-title-screen__campaign");
+        click(".kcq-title-screen__party button");
         expect(document.querySelector(".kcq-party-selection h1")?.textContent).toBe("Localized party");
         expect(button('[data-character-id="ko"]').textContent).toContain("Localized Ko");
         expect(document.querySelector(".kcq-party-selection__role")?.textContent).toBe("Localized role");
@@ -119,8 +122,8 @@ describe("party selection navigation", () => {
 
     it("recomposes after changing party, preserves it through battle and retry, and restores saves directly", () => {
         const { composeCampaign, prepareBattle } = mount();
-        click(".kcq-title-screen__campaign"); click(".kcq-party-selection__continue");
-        click(".kcq-encounter-picker .kcq-targeting__back");
+        click(".kcq-title-screen__campaign");
+        click(".kcq-encounter-picker__change-party");
         expect(document.querySelector(".kcq-party-selection")).not.toBeNull();
         expect(document.querySelectorAll('[aria-pressed="true"]')).toHaveLength(3);
         click('[data-character-id="ko"]'); click('[data-character-id="ko"]');
@@ -152,9 +155,49 @@ describe("party selection navigation", () => {
         click(".kcq-battle-overview .kcq-combat-header__settings"); labeledButton("Retry Battle");
         expect(prepareBattle).toHaveBeenNthCalledWith(3, "skunk", "plains_1", "standard", party);
         click(".kcq-battle-overview .kcq-combat-header__settings"); labeledButton("Back to Level Select");
-        click(".kcq-encounter-picker .kcq-targeting__back");
+        click(".kcq-encounter-picker__change-party");
         click('[data-character-id="matsuko"]'); click('[data-character-id="matsuko"]');
         click(".kcq-party-selection__continue");
-        expect(composeCampaign).toHaveBeenNthCalledWith(4, "skunk", ["hinari", "ko", "matsuko"]);
+        expect(composeCampaign).toHaveBeenLastCalledWith("skunk", ["hinari", "ko", "matsuko"]);
+    });
+
+    it.each(["title", "picker"])("cancels an incomplete draft from %s and keeps the confirmed party after remount", origin => {
+        window.localStorage.setItem("kcq.party", '["naruyo","sakari","ko"]');
+        window.localStorage.setItem("kcq.unlocks", '{"skunk":["plains_1"]}');
+        mount();
+        expect(document.querySelector(".kcq-title-screen__party p")?.textContent)
+            .toBe(["naruyo", "sakari", "ko"].map(id => presentation.entity(id)).join(", "));
+        if (origin === "picker") click(".kcq-title-screen__campaign");
+        click(origin === "title" ? ".kcq-title-screen__party button" : ".kcq-encounter-picker__change-party");
+        click('[data-character-id="ko"]');
+        press("Escape");
+        expect(document.querySelector(origin === "title" ? ".kcq-title-screen" : ".kcq-encounter-picker")).not.toBeNull();
+        expect(window.localStorage.getItem("kcq.party")).toBe('["naruyo","sakari","ko"]');
+        expect(window.localStorage.getItem("kcq.unlocks")).toBe('{"skunk":["plains_1"]}');
+        unmount!(); document.body.replaceChildren(); mount();
+        expect(document.querySelector(".kcq-title-screen__party p")?.textContent)
+            .toBe(["naruyo", "sakari", "ko"].map(id => presentation.entity(id)).join(", "));
+    });
+
+    it("keeps a saved party for resume and retry, then composes the preferred party for a new battle", () => {
+        const { composeCampaign, prepareBattle } = mount();
+        click(".kcq-title-screen__campaign");
+        press("1"); press("Escape"); press("2"); press("Enter"); press("Enter");
+        click(".kcq-battle-overview .kcq-combat-header__settings"); labeledButton("Back to Title Screen");
+        const saved = readSave();
+        click(".kcq-title-screen__party button");
+        click('[data-character-id="ko"]'); click('[data-character-id="sakari"]');
+        click(".kcq-party-selection__continue");
+        const preferred = ["matsuko", "hinari", "sakari"];
+        expect(readSave()).toEqual(saved);
+        click(".kcq-title-screen__continue");
+        expect(composeCampaign).toHaveBeenLastCalledWith("skunk", ["ko", "matsuko", "hinari"]);
+        click(".kcq-battle-overview .kcq-combat-header__settings"); labeledButton("Retry Battle");
+        expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "plains_1", "standard", ["ko", "matsuko", "hinari"]);
+        click(".kcq-battle-overview .kcq-combat-header__settings"); labeledButton("Back to Level Select");
+        expect(composeCampaign).toHaveBeenLastCalledWith("skunk", preferred);
+        expect(composeCampaign.mock.results.at(-1)!.value.engine.listCharacters()).toEqual(preferred);
+        press("2"); press("Enter"); press("Enter");
+        expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "plains_1", "standard", preferred);
     });
 });

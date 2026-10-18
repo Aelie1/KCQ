@@ -9,6 +9,7 @@ export function TitleScreen(props: {
     model: TitleViewModel;
     language: LanguageSelection;
     onSelect: (campaign: KCQCampaign) => void;
+    onChangeParty?: () => void;
     saveStatus?: SaveReadResult["status"];
     onContinue?: () => void;
     onDelete?: () => boolean;
@@ -91,6 +92,12 @@ export function TitleScreen(props: {
                     <span>{campaign.description}</span>
                 </button>}
             </For>
+            <Show when={props.onChangeParty}>
+                <div class="kcq-encounter-card kcq-title-screen__party">
+                    <p>{props.model.partySummary}</p>
+                    <button class="kcq-targeting__back" type="button" onClick={props.onChangeParty}>{props.model.changePartyLabel}</button>
+                </div>
+            </Show>
         </div>}
         footer={<div class="kcq-title-screen__bottom">
             <label class="kcq-title-screen__language">

@@ -40,7 +40,6 @@ function mount() {
         composeCampaign: () => ({ engine: createStockEngine(), presentation }),
     }), host);
     element(".kcq-title-screen__campaign").click();
-    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     return { sessions, prepareBattle };
 }
 const toggle = () => element<HTMLInputElement>(".kcq-encounter-picker__show-all input");

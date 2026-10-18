@@ -86,13 +86,11 @@ describe("title navigation", () => {
         expect(panel?.querySelector(".kcq-title-screen__language-label")?.textContent).toBe("Test language label");
         expect(composeCampaign).not.toHaveBeenCalled();
         click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         expect(document.querySelector(".kcq-encounter-picker h1")?.textContent).toBe("Test campaign");
         click(".kcq-encounter-picker .kcq-combat-header__settings");
         expect(document.querySelector<HTMLSelectElement>(".kcq-battle-settings select")?.value).toBe("test");
         document.querySelector<HTMLButtonElement>(".kcq-battle-settings__overlay button")!.click();
         click(".kcq-encounter-picker .kcq-targeting__back");
-        click(".kcq-party-selection .kcq-targeting__back");
         expect(document.querySelector<HTMLSelectElement>(".kcq-title-screen__language select")?.value).toBe("test");
         expect(document.querySelector(".kcq-title-screen h1")?.textContent).toBe("Test Quest");
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -103,7 +101,6 @@ describe("title navigation", () => {
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
         expect(composeCampaign).not.toHaveBeenCalled();
         click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         expect(composeCampaign).toHaveBeenCalledExactlyOnceWith("skunk", ["ko", "matsuko", "hinari"]);
         expect(document.querySelector(".kcq-title-screen")).toBeNull();
         const library = compositions[0]!.getLibrary();
@@ -114,10 +111,8 @@ describe("title navigation", () => {
         expect(compositions[0]!.getGameState().characters).toEqual([]);
         expect(prepareBattle).not.toHaveBeenCalled();
         click(".kcq-encounter-picker .kcq-targeting__back");
-        click(".kcq-party-selection .kcq-targeting__back");
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
         click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         expect(composeCampaign).toHaveBeenCalledTimes(2);
         expect(compositions[1]).not.toBe(compositions[0]);
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -126,7 +121,6 @@ describe("title navigation", () => {
     it("keeps campaign composition through difficulty, battle, retry, and level select, then clears it at title", () => {
         const { composeCampaign, prepareBattle } = mount();
         click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         click('.kcq-encounter-picker__row[data-kcq-shortcut="1"]');
         click(".kcq-encounter-details__footer button");
         click('.kcq-encounter-picker__row[data-kcq-shortcut="2"]');
@@ -148,7 +142,6 @@ describe("title navigation", () => {
         expect(document.querySelector(".kcq-encounter-picker")).not.toBeNull();
         expect(composeCampaign).toHaveBeenCalledOnce();
         click(".kcq-encounter-picker .kcq-targeting__back");
-        click(".kcq-party-selection .kcq-targeting__back");
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
         expect(document.querySelector(".kcq-battle-stage")).toBeNull();
         expect(prepareBattle.mock.results[1]!.value.dispose).toHaveBeenCalledOnce();

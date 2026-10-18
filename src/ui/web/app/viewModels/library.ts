@@ -4,6 +4,7 @@ import type { BindingId, ModifierId, ModifierSet, MoveTrait } from "../../../../
 import type { Presentation } from "../../../presentation/presentation";
 import { GAME_GUIDE_PAGES, gameGuidePage } from "../content/gameGuide";
 import type { CommandTagViewModel } from "./characterDetails";
+import { semanticTraitTag } from "./moveTraitTags";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
 export const LIBRARY_CATEGORIES = ["guide", "difficulties", "characters", "enemies", "moves", "passives", "bindings", "traps", "statuses"] as const;
@@ -105,14 +106,8 @@ export function libraryRestrictions(reference: ModifierReference, p: Presentatio
         ...(reference.allowedMoveTypes ?? []).map(type => ({ label: p.ui("library.allowed", { type: p.moveType(type) }), tone: "success" as const })),
     ];
 }
-const TRAIT_LABELS: Record<MoveTrait, string> = {
-    damage: "characterDetails.tagDamage", buff: "characterDetails.tagBuff", debuff: "characterDetails.tagDebuff", escape: "characterDetails.tagEscape",
-    onetime: "characterDetails.tagOnetime", refresh: "characterDetails.tagRefresh", heal: "characterDetails.tagHeal", defeat: "characterDetails.tagDefeat",
-    spawn: "characterDetails.tagSpawn", trap: "characterDetails.tagTrap", retarget: "characterDetails.tagRetarget", binding: "characterDetails.tagBinding",
-    cancel: "characterDetails.tagCancel", weaken: "characterDetails.tagWeaken", bonus: "characterDetails.tagBonusEscape",
-};
-export function libraryTags(traits: readonly MoveTrait[] | undefined, p: Presentation) {
-    return (traits ?? []).map(trait => ({ id: trait, label: p.ui(TRAIT_LABELS[trait]), tone: trait === "damage" ? "danger" as const : trait === "debuff" ? "special" as const : "neutral" as const }));
+export function libraryTags(traits: readonly MoveTrait[] | undefined, p: Presentation): CommandTagViewModel[] {
+    return (traits ?? []).map(trait => semanticTraitTag(trait, p));
 }
 
 export function libraryReferences(entry: LibraryEntry, library: ContentLibrary, p: Presentation): LibraryEntry[] {

@@ -143,7 +143,7 @@ describe("encounter clear storage", () => {
         start(); controller.returnToTitle();
         controller.recordOutcome();
         expect(controller.bestClears()).toEqual({});
-        expect(storage.setItem).not.toHaveBeenCalled();
+        expect(storage.setItem.mock.calls.filter(([key]) => key === "kcq.clears")).toEqual([]);
     });
 
     it.each(["{broken", "null", "[]", "42", '"standard"'])("ignores malformed records %s", saved => {

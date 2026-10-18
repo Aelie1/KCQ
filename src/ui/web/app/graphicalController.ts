@@ -1,10 +1,10 @@
 import type { KCQCampaign, KCQCharacter } from "../../../content";
-import { stockCharacters } from "../../../stock";
 import { createSignal } from "solid-js";
 import type { CampaignReference, ContentLibrary } from "../../../engine/public/library";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { BattleTelemetryObserver } from "../telemetry";
-import { DEFAULT_DIFFICULTY, ENCOUNTER_DIFFICULTIES } from "../app";
+import { ENCOUNTER_DIFFICULTIES } from "../app";
+import { isKnownDifficulty, loadPreferredDifficulty, loadPreferredParty, savePreferredDifficulty, savePreferredParty } from "./battlePreferences";
 import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "./encounterClears";
 import { loadCampaignUnlocks, saveCampaignUnlocks, type CampaignUnlocks } from "./campaignUnlocks";
 import { getNextEncounter } from "./nextEncounter";
@@ -18,8 +18,9 @@ export interface GraphicalBattleSession {
     dispose: () => void;
 }
 
-export type GraphicalScreen = { screen: "title" } | ({ campaign: KCQCampaign } & (
-    | { screen: "party" }
+type PartyReturnScreen = { screen: "title" } | { screen: "picker"; campaign: KCQCampaign };
+
+export type GraphicalScreen = { screen: "title" } | { screen: "party"; returnTo: PartyReturnScreen } | ({ campaign: KCQCampaign } & (
     | { screen: "picker" }
     | { screen: "details"; encounter: EncounterId }
     | { screen: "difficulty"; encounter: EncounterId; difficulty: DifficultyId }
@@ -36,7 +37,10 @@ export function createGraphicalController(
     const [unlocks, setUnlocks] = createSignal<CampaignUnlocks>(loadCampaignUnlocks(storage));
     const [showAll, setShowAll] = createSignal(false);
     const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "title" });
-    const [party, setParty] = createSignal<readonly KCQCharacter[]>([...stockCharacters]);
+    const [party, setParty] = createSignal(loadPreferredParty(storage));
+    const [draftParty, setDraftParty] = createSignal(party());
+    let preferredDifficulty = loadPreferredDifficulty(storage);
+    let battleParty = party();
 
     const unlockEncounter = (campaign: CampaignReference, encounter: EncounterId, outcome: "victory" | "defeat"): void => {
         const saved = unlocks()[campaign.id] ?? [];
@@ -85,20 +89,32 @@ export function createGraphicalController(
     return {
         screen,
         party,
-        canConfirmParty: () => isValidParty(party()),
+        draftParty,
+        canConfirmParty: () => isValidParty(draftParty()),
         toggleCharacter(id: KCQCharacter): void {
             if (screen().screen !== "party" || !isPlayableCharacter(id)) return;
-            const selected = party();
-            if (selected.includes(id)) setParty(selected.filter(character => character !== id));
-            else if (selected.length < PARTY_SIZE) setParty([...selected, id]);
+            const selected = draftParty();
+            if (selected.includes(id)) setDraftParty(selected.filter(character => character !== id));
+            else if (selected.length < PARTY_SIZE) setDraftParty([...selected, id]);
         },
         confirmParty(): void {
             const current = screen();
-            if (current.screen === "party" && isValidParty(party())) setScreen({ screen: "picker", campaign: current.campaign });
+            if (current.screen !== "party" || !isValidParty(draftParty())) return;
+            setParty([...draftParty()]);
+            savePreferredParty(party(), storage);
+            setScreen(current.returnTo);
         },
-        backToParty(): void {
+        changeParty(): void {
             const current = screen();
-            if (current.screen === "picker") setScreen({ screen: "party", campaign: current.campaign });
+            if (current.screen !== "title" && current.screen !== "picker") return;
+            setDraftParty([...party()]);
+            setScreen({ screen: "party", returnTo: current });
+        },
+        cancelParty(): void {
+            const current = screen();
+            if (current.screen !== "party") return;
+            setDraftParty([...party()]);
+            setScreen(current.returnTo);
         },
         bestClears,
         unlocks,
@@ -124,7 +140,7 @@ export function createGraphicalController(
                 return false;
             }
             session = restored;
-            setParty(save.saveState.characters.map(character => character.id).filter(isPlayableCharacter));
+            battleParty = save.saveState.characters.map(character => character.id).filter(isPlayableCharacter);
             outcomeRecorded = false;
             setScreen({ screen: "battle", campaign, encounter, difficulty, session });
             return true;
@@ -155,8 +171,7 @@ export function createGraphicalController(
         selectCampaign(campaign: KCQCampaign): void {
             if (screen().screen === "title") {
                 setShowAll(false);
-                setParty([...stockCharacters]);
-                setScreen({ screen: "party", campaign });
+                setScreen({ screen: "picker", campaign });
             }
         },
         returnToTitle(): void {
@@ -176,12 +191,15 @@ export function createGraphicalController(
         chooseDifficulty(): void {
             const current = screen();
             if (current.screen === "details") {
-                setScreen({ screen: "difficulty", campaign: current.campaign, encounter: current.encounter, difficulty: DEFAULT_DIFFICULTY });
+                setScreen({ screen: "difficulty", campaign: current.campaign, encounter: current.encounter, difficulty: preferredDifficulty });
             }
         },
         selectDifficulty(difficulty: DifficultyId): void {
             const current = screen();
-            if (current.screen === "difficulty") setScreen({ ...current, difficulty });
+            if (current.screen !== "difficulty" || !isKnownDifficulty(difficulty)) return;
+            preferredDifficulty = difficulty;
+            savePreferredDifficulty(difficulty, storage);
+            setScreen({ ...current, difficulty });
         },
         backToDetails(): void {
             const current = screen();
@@ -191,6 +209,7 @@ export function createGraphicalController(
             const current = screen();
             if (current.screen !== "difficulty") return;
             session = prepareBattle(current.campaign, current.encounter, current.difficulty, party());
+            battleParty = party();
             outcomeRecorded = false;
             setScreen({ screen: "battle", campaign: current.campaign, encounter: current.encounter, difficulty: current.difficulty, session });
         },
@@ -198,7 +217,7 @@ export function createGraphicalController(
             const current = screen();
             if (current.screen !== "battle") return;
             closeSession();
-            session = prepareBattle(current.campaign, current.encounter, current.difficulty, party());
+            session = prepareBattle(current.campaign, current.encounter, current.difficulty, battleParty);
             outcomeRecorded = false;
             setScreen({ ...current, session });
         },

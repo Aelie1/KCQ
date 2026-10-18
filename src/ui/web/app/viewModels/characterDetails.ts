@@ -10,7 +10,6 @@ import type {
     FailureReason,
     GameState,
     ModifierId,
-    MoveTrait,
     MoveType,
     Status,
     ThresholdInfo,
@@ -22,6 +21,7 @@ import type {
     StatusChipTone,
 } from "../components/componentTypes";
 import { COMBAT_SHORTCUTS, combatShortcut, shortcutBadgeLabel } from "../keyboard";
+import { semanticTraitTag } from "./moveTraitTags";
 import { projectBindingZones } from "./bindingZones";
 import { projectBuffMoveList } from "./buffMoveList";
 import {
@@ -586,29 +586,6 @@ export function createMoveTags(
     }
 
     return tags;
-}
-
-function semanticTraitTag(
-    trait: MoveTrait,
-    presentation: Presentation,
-): CommandTagViewModel {
-    switch (trait) {
-        case "damage": return tag(trait, presentation.ui("characterDetails.tagDamage"), "danger");
-        case "buff": return tag(trait, presentation.ui("characterDetails.tagBuff"), "success");
-        case "debuff": return tag(trait, presentation.ui("characterDetails.tagDebuff"), "special");
-        case "escape": return tag(trait, presentation.ui("characterDetails.tagEscape"), "success");
-        case "onetime": return tag(trait, presentation.ui("characterDetails.tagOnetime"), "warning");
-        case "refresh": return tag(trait, presentation.ui("characterDetails.tagRefresh"), "success");
-        case "heal": return tag(trait, presentation.ui("characterDetails.tagHeal"), "success");
-        case "defeat": return tag(trait, presentation.ui("characterDetails.tagDefeat"), "danger");
-        case "spawn": return tag(trait, presentation.ui("characterDetails.tagSpawn"), "primary");
-        case "trap": return tag(trait, presentation.ui("characterDetails.tagTrap"), "warning");
-        case "retarget": return tag(trait, presentation.ui("characterDetails.tagRetarget"), "primary");
-        case "binding": return tag(trait, presentation.ui("characterDetails.tagBinding"), "primary");
-        case "cancel": return tag(trait, presentation.ui("characterDetails.tagCancel"), "special");
-        case "weaken": return tag(trait, presentation.ui("characterDetails.tagWeaken"), "special");
-        case "bonus": return tag(trait, presentation.ui("characterDetails.tagBonusEscape"), "warning");
-    }
 }
 
 function collectEffects(info: ActionInfo): Effect[] {

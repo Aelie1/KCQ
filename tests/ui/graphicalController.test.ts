@@ -21,12 +21,8 @@ describe("outer graphical controller", () => {
         controller.startEncounter();
         expect(controller.screen()).toEqual({ screen: "title" });
         controller.selectCampaign("skunk");
-        expect(controller.screen()).toEqual({ screen: "party", campaign: "skunk" });
-        expect(controller.party()).toEqual(["ko", "matsuko", "hinari"]);
-        controller.selectEncounter("outside");
-        expect(controller.screen().screen).toBe("party");
-        controller.confirmParty();
         expect(controller.screen()).toEqual({ screen: "picker", campaign: "skunk" });
+        expect(controller.party()).toEqual(["ko", "matsuko", "hinari"]);
         controller.returnToTitle();
         expect(controller.screen()).toEqual({ screen: "title" });
         expect(prepare).not.toHaveBeenCalled();
@@ -37,20 +33,22 @@ describe("outer graphical controller", () => {
         const { prepare } = sessionFactory();
         const controller = createGraphicalController(prepare);
         controller.selectCampaign("skunk");
+        controller.changeParty();
         controller.toggleCharacter("ko");
         expect(controller.canConfirmParty()).toBe(false);
         controller.confirmParty();
         expect(controller.screen().screen).toBe("party");
         expect(prepare).not.toHaveBeenCalled();
         controller.toggleCharacter("unknown" as "ko");
-        expect(controller.party()).toEqual(["matsuko", "hinari"]);
+        expect(controller.draftParty()).toEqual(["matsuko", "hinari"]);
+        expect(controller.party()).toEqual(["ko", "matsuko", "hinari"]);
         controller.toggleCharacter("ko");
         const selected = ["matsuko", "hinari", "ko"];
         expect(controller.canConfirmParty()).toBe(true);
         controller.confirmParty();
         controller.toggleCharacter("ko");
         expect(controller.party()).toEqual(selected);
-        controller.backToParty();
+        controller.changeParty();
         expect(controller.screen().screen).toBe("party");
         expect(controller.party()).toEqual(selected);
         controller.confirmParty();
@@ -62,7 +60,7 @@ describe("outer graphical controller", () => {
         controller.chooseDifficulty();
         controller.selectDifficulty("mythic");
         controller.startEncounter();
-        controller.backToParty();
+        controller.changeParty();
         expect(controller.screen().screen).toBe("battle");
         controller.retryEncounter();
         expect(prepare).toHaveBeenNthCalledWith(1, "skunk", "plains_1", "mythic", selected);
@@ -71,7 +69,7 @@ describe("outer graphical controller", () => {
         expect(controller.party()).toEqual(selected);
         controller.returnToTitle();
         controller.selectCampaign("skunk");
-        expect(controller.party()).toEqual(["ko", "matsuko", "hinari"]);
+        expect(controller.party()).toEqual(selected);
         controller.dispose();
         dispose();
     }));
@@ -91,7 +89,7 @@ describe("outer graphical controller", () => {
         dispose();
     }));
 
-    it("enters Difficulty at Standard every time and returns to the same Details", () => createRoot((dispose) => {
+    it("defaults to Standard, remembers explicit selections and returns to the same Details", () => createRoot((dispose) => {
         const { prepare } = sessionFactory();
         const controller = createGraphicalController(prepare);
         controller.selectCampaign("skunk"); controller.confirmParty();
@@ -103,12 +101,12 @@ describe("outer graphical controller", () => {
         controller.backToDetails();
         expect(controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: "forest_3" });
         controller.chooseDifficulty();
-        expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "forest_3", difficulty: DEFAULT_DIFFICULTY });
+        expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "forest_3", difficulty: "mythic" });
         controller.backToDetails();
         controller.backToPicker();
         controller.selectEncounter("plains_1");
         controller.chooseDifficulty();
-        expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "plains_1", difficulty: DEFAULT_DIFFICULTY });
+        expect(controller.screen()).toEqual({ screen: "difficulty", campaign: "skunk", encounter: "plains_1", difficulty: "mythic" });
         expect(prepare).not.toHaveBeenCalled();
         dispose();
     }));

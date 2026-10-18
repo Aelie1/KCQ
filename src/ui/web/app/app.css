@@ -4237,6 +4237,19 @@ button {
     opacity: 0.62;
 }
 
+.kcq-title-screen__party {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+}
+
+.kcq-title-screen__party p {
+    margin: 0;
+}
+
 .kcq-title-screen__continue {
     flex: 0 1 auto;
     max-width: 100%;
@@ -4447,7 +4460,7 @@ button {
 }
 
 .kcq-encounter-picker .kcq-screen-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .kcq-encounter-picker__show-all {

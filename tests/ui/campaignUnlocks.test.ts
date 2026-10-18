@@ -197,7 +197,8 @@ describe("campaign encounter unlocks", () => {
         expect(app.controller.unlocks()).toEqual({ skunk: campaign.victory.plains_1 });
         expect(app.visible()).toEqual(["prologue", "plains_2"]);
         expect(app.controller.bestClears()).toEqual({ plains_1: "mythic" });
-        expect(app.storage.setItem).toHaveBeenCalledExactlyOnceWith("kcq.unlocks", JSON.stringify({ skunk: ["plains_2"] }, null, 2));
+        expect(app.storage.setItem.mock.calls.filter(([key]) => key === "kcq.unlocks"))
+            .toEqual([["kcq.unlocks", JSON.stringify({ skunk: ["plains_2"] }, null, 2)]]);
     });
 
     it("accumulates Tower defeat unlocks and restores them in a new controller", () => {
@@ -218,9 +219,9 @@ describe("campaign encounter unlocks", () => {
         app.start("plains_3"); app.finish("victory");
         app.finish("victory"); app.finish("defeat");
         expect(app.controller.unlocks()).toEqual({ skunk: ["interlude_1"] });
-        expect(app.storage.setItem.mock.calls).toHaveLength(2);
+        expect(app.storage.setItem.mock.calls.filter(([key]) => key !== "kcq.difficulty")).toHaveLength(2);
         app.controller.retryEncounter(); app.finish("victory");
-        expect(app.storage.setItem.mock.calls).toHaveLength(2);
+        expect(app.storage.setItem.mock.calls.filter(([key]) => key !== "kcq.difficulty")).toHaveLength(2);
         expect(app.visible()).toEqual(["prologue", "interlude_1"]);
     });
 
@@ -258,7 +259,7 @@ describe("campaign encounter unlocks", () => {
         const app = setup(); app.start("tower_1"); app.finish("ongoing");
         app.controller[action]();
         expect(app.controller.unlocks()).toEqual({});
-        expect(app.storage.setItem).not.toHaveBeenCalled();
+        expect(app.storage.setItem.mock.calls.filter(([key]) => key === "kcq.unlocks")).toEqual([]);
         expect(app.prepare.mock.results[0]!.value.observer.onQuit).toHaveBeenCalledOnce();
     });
 
@@ -266,7 +267,7 @@ describe("campaign encounter unlocks", () => {
         const app = setup(storageWith(), { skunk: { ...campaign, victory: { plains_1: [...campaign.initial] } } });
         app.start("plains_1"); app.finish("victory");
         expect(app.controller.unlocks()).toEqual({});
-        expect(app.storage.setItem.mock.calls.map(([key]) => key)).toEqual(["kcq.clears"]);
+        expect(app.storage.setItem.mock.calls.filter(([key]) => key !== "kcq.difficulty").map(([key]) => key)).toEqual(["kcq.clears"]);
     });
 
     it.each(["{broken", "null", "[]", "42", '"plains_1"'])("ignores malformed storage %s and still progresses", saved => {

@@ -66,7 +66,6 @@ function mountBattle(languages?: readonly LanguageOption[], release = "v0.8-sett
         presentation, prepareBattle, languages,
     }), root);
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
-    document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
     document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="1"]')!.click();
     document.querySelector<HTMLButtonElement>(".kcq-encounter-details__footer button")!.click();
     const encounter = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
@@ -334,10 +333,9 @@ describe("battle settings interactions", () => {
         expect(capture.mock.calls.filter(call => call[0] === "battle_quit")).toHaveLength(1);
         expect(prepareBattle).toHaveBeenCalledOnce();
         document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="2"]')!.click();
         button("Choose Difficulty").click();
-        expect(document.querySelector('[aria-pressed="true"]')?.textContent).toBe("Standard");
+        expect(document.querySelector('[aria-pressed="true"]')?.textContent).toBe("Mythic");
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
     });
 

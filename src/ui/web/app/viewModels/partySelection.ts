@@ -9,7 +9,7 @@ export function createPartySelectionViewModel(
         title: presentation.ui("party.title"),
         instructions: presentation.ui("party.instructions", { count: PARTY_SIZE }),
         countLabel: presentation.ui("party.count", { selected: selected.length, count: PARTY_SIZE }),
-        backLabel: presentation.ui("title.back"),
+        backLabel: presentation.ui("party.cancel"),
         continueLabel: presentation.ui("party.continue"),
         characters: available.map(id => ({
             id,

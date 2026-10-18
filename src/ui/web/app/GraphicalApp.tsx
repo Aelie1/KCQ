@@ -110,6 +110,14 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         controller.returnToTitle();
         setRestoredComposition(undefined);
     };
+    const backToLevelSelect = (): void => {
+        controller.returnToLevelSelect();
+        setRestoredComposition(undefined);
+    };
+    const nextLevel = (): void => {
+        controller.nextLevel();
+        if (controller.screen().screen !== "battle") setRestoredComposition(undefined);
+    };
     onCleanup(controller.dispose);
     const selectedCampaign = createMemo(() => {
         const current = controller.screen();
@@ -156,25 +164,27 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} inert={settingsOpen() || libraryOpen()} aria-hidden={settingsOpen() || libraryOpen() ? true : undefined}>
             <Switch>
                 <Match when={controller.screen().screen === "title"}>
-                    <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release, savedBattle())}
+                    <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release, savedBattle(), controller.party())}
                         language={languageSelection}
+                        onChangeParty={() => navigate(controller.changeParty)}
                         saveStatus={autosave().status} onContinue={() => navigate(continueBattle)}
                         onDelete={deleteSave}
                         onSelect={campaign => navigate(() => controller.selectCampaign(campaign))} />
                 </Match>
                 <Match when={controller.screen().screen === "party"}>
-                    <PartySelectionPanel model={createPartySelectionViewModel(availableCharacters, controller.party(), presentation())}
+                    <PartySelectionPanel model={createPartySelectionViewModel(availableCharacters, controller.draftParty(), presentation())}
                         canContinue={controller.canConfirmParty()}
                         onToggle={id => navigate(() => controller.toggleCharacter(id))}
-                        onBack={() => navigate(backToTitle)}
+                        onBack={() => navigate(controller.cancelParty)}
                         onContinue={() => navigate(controller.confirmParty)} />
                 </Match>
                 <Match when={controller.screen().screen === "picker"}>
                     <EncounterPickerPanel model={createEncounterPickerViewModel(library()!, presentation(), library()!.campaigns[selectedCampaign()!],
                         controller.bestClears(), controller.unlocks()[selectedCampaign()!] ?? [], controller.showAll())}
                         onShowAllChange={showAll => navigate(() => controller.setShowAll(showAll))}
-                        onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")} onBack={() => navigate(() => {
-                            controller.backToParty();
+                        onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")}
+                        onBack={() => navigate(backToTitle)} onChangeParty={() => navigate(() => {
+                            controller.changeParty();
                             setRestoredComposition(undefined);
                         })}
                         onSelect={encounter => navigate(() => controller.selectEncounter(encounter))} />
@@ -184,7 +194,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                         model={createEncounterDetailsViewModel(library()!, current.encounter, presentation(), controller.bestClears()[current.encounter], current.campaign)}
                         onSettings={openSettings} onLibrary={openLibrary} libraryLabel={presentation().ui("library.title")}
                         onBack={() => navigate(controller.backToPicker)}
-                        onNextLevel={() => navigate(controller.nextLevel)}
+                        onNextLevel={() => navigate(nextLevel)}
                         onChooseDifficulty={() => navigate(controller.chooseDifficulty)} />}
                 </Match>
                 <Match when={difficulty()} keyed>
@@ -198,10 +208,10 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 <Match when={battle()} keyed>
                     {(current) => <BattleApp engine={current.session.engine} presentation={presentation()}
                         saved={current.session.saved}
-                        campaign={current.campaign} onNextLevel={controller.nextLevel}
+                        campaign={current.campaign} onNextLevel={nextLevel}
                         language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences} keyboard={keyboard} release={props.release}
                         observer={current.session.observer} onOutcome={controller.recordOutcome} onRetry={controller.retryEncounter}
-                        onBackToLevelSelect={controller.returnToLevelSelect} onBackToTitle={backToTitle} />}
+                        onBackToLevelSelect={backToLevelSelect} onBackToTitle={backToTitle} />}
                 </Match>
             </Switch>
         </div>

@@ -129,7 +129,7 @@ describe("Library game integration", () => {
         const before = JSON.stringify(engine.getGameState());
         mount(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ engine, presentation }), prepareBattle }));
         element(".kcq-title-screen__campaign").click();
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click(); const picker = element(".kcq-encounter-picker");
+        const picker = element(".kcq-encounter-picker");
         const libraryButton = element<HTMLButtonElement>(".kcq-header-controls > .kcq-combat-header__library");
         expect(libraryButton.getAttribute("aria-label")).toBe(presentation.ui("library.title"));
         expect(picker.querySelector(".kcq-screen-layout__body .kcq-library-access")).toBeNull();
@@ -174,7 +174,6 @@ describe("Library campaign selection and localization", () => {
         const prepareBattle = vi.fn(() => ({ engine, dispose: vi.fn() }));
         mount(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ engine, presentation }), prepareBattle }));
         element(".kcq-title-screen__campaign").click();
-        document.querySelector<HTMLButtonElement>(".kcq-party-selection__continue")!.click();
         element('.kcq-encounter-picker__row[data-kcq-shortcut="1"]').click();
         element(".kcq-encounter-details__footer button").click();
         element('.kcq-encounter-picker__row[data-kcq-shortcut="2"]').click();
