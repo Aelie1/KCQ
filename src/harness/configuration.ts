@@ -15,6 +15,22 @@ export interface FightConfiguration {
 
 export const harnessDifficulties = ["casual", "standard", "veteran", "extreme", "mythic"] as const;
 
+/** Content declaration order is the canonical order for generated combinations. */
+export function enumerateHarnessParties(): KCQCharacter[][] {
+    const characters = Object.keys(characterCatalogs) as KCQCharacter[];
+    const parties: KCQCharacter[][] = [];
+    for (let first = 0; first < characters.length - 2; first += 1) {
+        for (let second = first + 1; second < characters.length - 1; second += 1) {
+            for (let third = second + 1; third < characters.length; third += 1) {
+                parties.push([...resolveFightConfiguration({
+                    party: [characters[first], characters[second], characters[third]],
+                }).party]);
+            }
+        }
+    }
+    return parties;
+}
+
 /** Validate before constructing an engine or starting workers, including empty batches. */
 export function resolveFightConfiguration(input: FightConfigurationInput): FightConfiguration {
     const party = input.party === undefined ? stockCharacters : input.party;

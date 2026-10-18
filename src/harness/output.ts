@@ -10,6 +10,7 @@ import type { BatchSummary } from "./batch/summary";
 import type { SingleFightInput, SingleFightResult } from "./harness";
 import { resolveFightConfiguration, type FightConfiguration, type FightConfigurationInput } from "./configuration";
 import { stockCharacters } from "../stock";
+import { resolveMatrixInput, type MatrixInput, type MatrixEntry } from "./batch/matrix";
 
 export interface BatchRunOutputInput extends FightConfigurationInput {
     masterSeed: number;
@@ -41,6 +42,37 @@ export interface BatchRunOutput {
 export interface BatchRunOutputOptions {
     outputRoot?: string;
     now?: () => Date;
+}
+
+/** Matrix outputs are additive; existing fight/batch schemas and filenames stay compatible. */
+export function createMatrixRunOutput(input: MatrixInput, options: BatchRunOutputOptions = {}) {
+    const configuration = resolveMatrixInput(input);
+    const startedAt = options.now?.() ?? new Date();
+    const directoryPath = reserveDirectory(options.outputRoot ?? path.resolve("harness-output"),
+        formatBatchRunDirectoryName(startedAt, configuration.encounterIds.length, configuration.policies.length) + "_matrix");
+    const manifest = { ...configuration, policies: configuration.policies.map(policy => policy.id),
+        startedAt: formatLocalDateTime(startedAt), format: "kcq-matrix-v1",
+        parallelWorkers: configuration.runs === 0 ? 0 : Math.min(configuration.workers, configuration.runs),
+        seedMapping: "deriveRunSeeds(masterSeed, runIndex)", replaySampling: "up to two wins/losses per configuration" };
+    fs.writeFileSync(path.join(directoryPath, "run.json"), JSON.stringify(manifest, null, 2), "utf8");
+    return { directoryPath, manifest };
+}
+
+/** Append a small durable row after each batch, without duplicating per-run results. */
+export function appendMatrixEntry(entry: MatrixEntry, outputDir: string): void {
+    fs.appendFileSync(path.join(outputDir, "matrix.jsonl"), JSON.stringify(entry) + "\n", "utf8");
+}
+
+export function createMatrixConfigurationDirectory(index: number, outputDir: string): string {
+    const directoryPath = path.join(outputDir, `configuration-${String(index + 1).padStart(4, "0")}`);
+    fs.mkdirSync(directoryPath);
+    return directoryPath;
+}
+
+export function writeMatrixReports(lines: readonly string[], outputDir: string): string {
+    const outputPath = path.join(outputDir, "reports.txt");
+    fs.writeFileSync(outputPath, lines.join("\n") + "\n", "utf8");
+    return outputPath;
 }
 
 /** Reserves one collision-safe directory and writes its reproducibility manifest. */

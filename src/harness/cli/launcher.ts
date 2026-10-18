@@ -29,6 +29,10 @@ import {
     writeReplaySamples,
 } from "../output";
 import { policies } from "../policies";
+import { enumerateHarnessParties, harnessDifficulties } from "../configuration";
+import { executeMatrix, matrixConfigurationCount, resolveMatrixInput, type MatrixProgress } from "../batch/matrix";
+import { formatDifficultyProgression, formatPartyParity } from "../batch/matrix-reports";
+import { appendMatrixEntry, createMatrixConfigurationDirectory, createMatrixRunOutput, writeMatrixReports } from "../output";
 import {
     createProgressReporter,
     formatCompletion,
@@ -55,6 +59,7 @@ export interface LauncherDependencies {
     runBatchParallel: typeof runBatchParallel;
     executePolicyComparison: typeof executePolicyComparison;
     executeEncounterSet: typeof executeEncounterSet;
+    executeMatrix: typeof executeMatrix;
     createBatchWorkerPool: (workers: number) => BatchWorkerRunner;
     now: () => number;
     wallClockNow: () => Date;
@@ -66,6 +71,7 @@ const defaultDependencies: LauncherDependencies = {
     runBatchParallel,
     executePolicyComparison,
     executeEncounterSet,
+    executeMatrix,
     createBatchWorkerPool: (workers) => new BatchWorkerPool(workers),
     now: () => performance.now(),
     wallClockNow: () => new Date(),
@@ -136,7 +142,8 @@ export async function runHarnessLauncher(
 
     for (; ;) {
         io.write("\nKCQ HARNESS\n\n[1] Run single fight\n[2] Run one encounter batch\n"
-            + "[3] Run encounter set\n[4] Quit\n\n");
+            + "[3] Run encounter set\n[4] Quit\n[5] Party parity comparison\n"
+            + "[6] Difficulty progression comparison\n[7] Custom matrix comparison\n\n");
         const choice = (await io.question("Choice> ")).trim().toLowerCase();
         switch (choice) {
             case "1":
@@ -148,13 +155,93 @@ export async function runHarnessLauncher(
             case "3":
                 await runInteractiveEncounterSet(io, deps, policyIds);
                 break;
+            case "5":
+            case "6":
+            case "7":
+                await runInteractiveMatrix(io, deps, encounters, policyIds, choice);
+                break;
             case "4":
             case "q":
             case "quit":
                 return;
             default:
-                io.write("Please choose 1, 2, 3, or 4.\n");
+                io.write("Please choose 1 through 7.\n");
         }
+    }
+}
+
+async function runInteractiveMatrix(
+    io: LauncherIO,
+    deps: LauncherDependencies,
+    encounters: readonly string[],
+    policyIds: readonly string[],
+    workflow: "5" | "6" | "7",
+): Promise<void> {
+    const encounterIds = await promptMultiple(io, "Encounters", encounters);
+    const allParties = enumerateHarnessParties();
+    const partyChoices = allParties.map(party => party.join("/"));
+    const selectedParties = workflow === "6"
+        ? [await promptNumberedChoice(io, "Fixed party", partyChoices)]
+        : await promptMultiple(io, "Parties", partyChoices);
+    const parties = selectedParties.map(choice => allParties[partyChoices.indexOf(choice)]);
+    const difficulties = workflow === "5"
+        ? [await promptNumberedChoice(io, "Fixed difficulty", harnessDifficulties)]
+        : await promptMultiple(io, "Difficulties", harnessDifficulties);
+    const selectedPolicies = await promptPolicies(io, policyIds);
+    const masterSeed = await promptInteger(io, "Master seed", { defaultValue: launcherDefaults.masterSeed });
+    const runs = await promptInteger(io, "Runs per configuration", { defaultValue: launcherDefaults.runs, positive: true });
+    const maxActions = await promptInteger(io, "Max actions", { defaultValue: launcherDefaults.maxActions, positive: true });
+    const workers = await promptInteger(io, "Parallel workers", { defaultValue: launcherDefaults.parallelWorkers, positive: true });
+    const input = resolveMatrixInput({ encounterIds, parties, difficulties, policies: selectedPolicies, masterSeed, runs, maxActions, workers });
+    const count = matrixConfigurationCount(input);
+    io.write(`\nMatrix: ${count} configurations / ${(count * runs).toLocaleString("en-US")} fights / Seed: ${masterSeed}\n`);
+    const output = createMatrixRunOutput(input, { now: deps.wallClockNow });
+    let latest: MatrixProgress | undefined;
+    let completed = 0;
+    const progress = createProgressReporter({
+        now: deps.now, write: line => io.write(`${line}\n`),
+        formatLine(_completed, _total, elapsedMs) {
+            if (!latest) return "";
+            return `[${formatProgressClock(elapsedMs)}] ${latest.encounterId} / ${latest.party.join("/")} / ${latest.difficulty} / ${latest.policyId}\nOverall: `
+                + formatProgressMetrics(latest.overallCompleted, latest.overallTotal, elapsedMs);
+        },
+    });
+    const operationWorkers = effectiveWorkerCount(workers, runs);
+    const pool = operationWorkers > 1 ? deps.createBatchWorkerPool(operationWorkers) : undefined;
+    const result = await (async () => {
+        try {
+            return await deps.executeMatrix(input, {
+                now: deps.now, pool,
+                runBatch: (batchInput, options) => deps.runBatchParallel(batchInput, { workers, pool, onProgress: options?.onProgress }),
+                onProgress(update) {
+                    latest = update;
+                    progress.update(update.overallCompleted, update.overallTotal);
+                },
+                onConfigurationComplete(entry, comparison, batchInput) {
+                    const directory = createMatrixConfigurationDirectory(completed, output.directoryPath);
+                    writeBatchSummary(batchInput, comparison.summary, directory);
+                    const samples = writeReplaySamples(captureReplaySamples(batchInput, comparison.batch, deps.runSingleFight), directory);
+                    appendMatrixEntry(entry, output.directoryPath);
+                    completed += 1;
+                    io.write(`${formatReplaySamples(samples, `Replays (${entry.encounterId} / ${entry.party.join("/")} / ${entry.difficulty} / ${entry.policyId}):`)}\n`);
+                },
+            });
+        } finally { await pool?.close(); }
+    })();
+    const lines = workflow === "5" ? formatPartyParity(result.entries)
+        : workflow === "6" ? formatDifficultyProgression(result.entries)
+        : [...formatPartyParity(result.entries), ...formatDifficultyProgression(result.entries)];
+    writeMatrixReports(lines, output.directoryPath);
+    io.write(`${lines.join("\n")}\n${formatCompletion(count * runs, result.elapsedMs, "fights")}\n`);
+    io.write(`${formatSavedSummaries(completed, output.directoryPath)}\n`);
+}
+
+async function promptMultiple<T extends string>(io: LauncherIO, label: string, choices: readonly T[]): Promise<T[]> {
+    for (; ;) {
+        io.write(`${label}:\n${choices.map((choice, index) => `[${index + 1}] ${choice}`).join("\n")}\n[a] all\n`);
+        const selected = resolveMultipleChoices(await io.question("Choice> "), choices);
+        if (selected) return selected;
+        io.write(`Choose numbers from 1 to ${choices.length}, comma-separated choices, exact IDs, or a.\n`);
     }
 }
 

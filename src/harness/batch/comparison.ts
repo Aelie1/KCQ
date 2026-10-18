@@ -245,7 +245,7 @@ function formatMeanRuntime(value: number | null): string {
     return value < 10 ? value.toFixed(2) : value.toFixed(1);
 }
 
-function formatTable(headers: readonly string[], rows: readonly string[][]): string[] {
+export function formatTable(headers: readonly string[], rows: readonly string[][]): string[] {
     const widths = headers.map((header, column) => Math.max(
         header.length,
         ...rows.map((row) => row[column]?.length ?? 0),
