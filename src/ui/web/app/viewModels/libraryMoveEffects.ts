@@ -126,6 +126,7 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
             empowerment("self", "add");
             break;
         case "fairyEmpowerment":
+            bindingRow("ko", p.ui("library.strongestBinding"), p.ui("library.bindingReduction", { value: 1 }), text("effect.binding.note"));
             empowerment("self", "remove");
             bindingRow("allies", p.ui("library.strongestBinding"), p.ui("library.bindingReduction", { value: 1 }), text("effect.binding.note"));
             empowerment("allies", "add");

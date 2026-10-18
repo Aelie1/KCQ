@@ -199,7 +199,7 @@ export class GameEngine implements Engine {
             character.bindings = [];
             character.buffs = [];
             character.cooldowns = {};
-            character.data = { ...(character.data ?? {}) };
+            character.data = { ...(character.definition.data ?? {}) };
         }
 
         this.state.encounter = encounter;
