@@ -9,6 +9,8 @@ import type { PolicyContext } from "../../harness";
 import type { SmartCandidate } from "../smart";
 import type { SmartBoardAssessment } from "../smart-board";
 import { evaluateIntentionKnowledge } from "./intention-knowledge";
+import { evaluateNaruyoKnowledge } from "./naruyo-knowledge";
+import { evaluateSakariKnowledge } from "./sakari-knowledge";
 import { evaluateSkunkKnowledge } from "./skunk-knowledge";
 
 export interface KitKnowledgeRuleDiagnostic {
@@ -64,6 +66,8 @@ export function evaluateKitKnowledge(
         ...evaluateMatsukoKnowledge(context, board, candidate),
         ...evaluateHinariKnowledge(context, candidate),
         ...evaluateKoKnowledge(context, candidate),
+        ...evaluateNaruyoKnowledge(context, candidate),
+        ...evaluateSakariKnowledge(context, candidate),
         ...evaluateIntentionKnowledge(context, candidate),
         ...evaluateSkunkKnowledge(context, candidate),
     ];
