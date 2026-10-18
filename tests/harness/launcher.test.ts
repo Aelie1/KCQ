@@ -61,7 +61,7 @@ describe("encounter-set execution", () => {
         const seen: string[] = [];
         const fakeRunBatch = vi.fn((input): BatchResult => {
             seen.push(`${input.encounterId}/${input.policy.id}`);
-            return { encounterId: input.encounterId, policyId: input.policy.id, masterSeed: input.masterSeed, runs: [] };
+            return { party: input.party, difficulty: input.difficulty, encounterId: input.encounterId, policyId: input.policy.id, masterSeed: input.masterSeed, runs: [] };
         });
         const result = await executeEncounterSet({
             encounterIds: encounterSets.n123,
@@ -112,6 +112,7 @@ describe("encounter-set execution", () => {
                 now: () => 100,
                 wallClockNow: () => new Date(2026, 8, 21, 21, 3, 32),
                 runBatchParallel: async (input): Promise<BatchResult> => ({
+                    party: input.party ?? ["ko", "matsuko", "hinari"], difficulty: input.difficulty ?? "standard",
                     encounterId: input.encounterId,
                     policyId: input.policy.id,
                     masterSeed: input.masterSeed,

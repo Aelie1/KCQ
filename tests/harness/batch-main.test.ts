@@ -19,6 +19,7 @@ function batchFixture(): BatchResult {
         turn: { round: 1, step: 1, phase: "player", outcome: "victory" },
     });
     return {
+        party: ["ko", "matsuko", "hinari"], difficulty: "standard",
         encounterId: "plains_1",
         policyId: "escape",
         masterSeed: 1,
@@ -27,6 +28,7 @@ function batchFixture(): BatchResult {
             engineSeed: 100 + runIndex,
             policySeed: 200 + runIndex,
             result: {
+                party: ["ko", "matsuko", "hinari"], difficulty: "standard",
                 encounterId: "plains_1",
                 engineSeed: 100 + runIndex,
                 policyId: "escape",
@@ -71,6 +73,24 @@ afterEach(() => {
 });
 
 describe("batch CLI entry point", () => {
+    it("passes party and difficulty through execution, manifest, summary and replay capture", async () => {
+        const configuration = { party: ["sakari", "naruyo", "ko"], difficulty: "mythic" } as const;
+        process.argv.push("--party=sakari,naruyo,ko", "--difficulty=mythic");
+        const fixture = batchFixture();
+        fixture.party = configuration.party;
+        fixture.difficulty = configuration.difficulty;
+        vi.mocked(runBatch).mockReturnValue(fixture);
+        await import("../../src/harness/cli/batch-main");
+        expect(runBatch).toHaveBeenCalledWith(expect.objectContaining(configuration), expect.anything());
+        expect(runSingleFight).toHaveBeenCalledWith(expect.objectContaining({ ...configuration, replay: true }));
+        const writes = vi.mocked(fs.writeFileSync).mock.calls;
+        const manifest = writes.find(([file]) => String(file).endsWith("run.json"))!;
+        const summary = writes.find(([file]) => String(file).endsWith("plains_1-escape-sakari-naruyo-ko-mythic.json"))!;
+        expect(JSON.parse(manifest[1] as string)).toMatchObject(configuration);
+        expect(JSON.parse(summary[1] as string)).toMatchObject(configuration);
+        expect(console.error).not.toHaveBeenCalled();
+    });
+
     it("runs the batch without replay, then writes and reports two selected replay reruns", async () => {
         const summary = summarizeBatch(batchFixture());
         await import("../../src/harness/cli/batch-main");
@@ -103,6 +123,7 @@ describe("batch CLI entry point", () => {
         );
         const manifestCall = vi.mocked(fs.writeFileSync).mock.calls.find(([file]) => file === path.join(runDir, "run.json"));
         expect(JSON.parse(manifestCall?.[1] as string)).toEqual({
+            party: ["ko", "matsuko", "hinari"], difficulty: "standard",
             startedAt: expect.stringMatching(/^2026-09-21T21:15:04[+-]\d{2}:\d{2}$/),
             masterSeed: 1,
             runsPerEncounter: 3,

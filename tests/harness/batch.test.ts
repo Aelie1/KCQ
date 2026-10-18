@@ -94,6 +94,7 @@ describe("batch harness", () => {
             runs: 0,
             maxActions: 10,
         })).toEqual({
+            party: ["ko", "matsuko", "hinari"], difficulty: "standard",
             encounterId: "unused",
             policyId: basicPolicy.id,
             masterSeed: 1,

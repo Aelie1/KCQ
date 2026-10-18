@@ -81,6 +81,8 @@ export function captureReplaySamples(
 ): CapturedReplaySample[] {
     return selectReplaySamples(batch.runs).map((selected) => {
         const replayInput: SingleFightInput = {
+            party: batch.party,
+            difficulty: batch.difficulty,
             encounterId: input.encounterId,
             engineSeed: selected.engineSeed,
             policySeed: selected.policySeed,

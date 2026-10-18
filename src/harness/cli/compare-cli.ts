@@ -1,13 +1,15 @@
 import type { FightPolicy } from "../harness";
 import { getPolicy, policies } from "../policies";
+import type { FightConfigurationInput } from "../configuration";
+import { CONFIGURATION_USAGE, extractConfigurationArguments } from "./configuration-cli";
 
 const DEFAULT_MAX_ACTIONS = 1_000;
 const DEFAULT_WORKERS = 8;
 const REPLAY_LEVELS_OPTION = "--replay-levels";
 const USAGE = "Usage: npm run compare -- <encounters> <masterSeed> <policies> <runs>"
-    + " [maxActions] [workers] [--replay-levels <level,...|all|none>]";
+    + " [maxActions] [workers] [--replay-levels <level,...|all|none>]" + CONFIGURATION_USAGE;
 
-export interface CompareCommandArguments {
+export interface CompareCommandArguments extends FightConfigurationInput {
     encounterIds: string[];
     masterSeed: number;
     selectedPolicies: FightPolicy[];
@@ -19,7 +21,8 @@ export interface CompareCommandArguments {
 
 /** Parses positional comparison arguments plus the order-independent replay-level filter. */
 export function parseCompareCommandArguments(args: readonly string[]): CompareCommandArguments {
-    const { positionals, replayLevels } = extractOptions(args);
+    const extracted = extractConfigurationArguments(args);
+    const { positionals, replayLevels } = extractOptions(extracted.args);
     if (positionals.length < 4 || positionals.length > 6) {
         fail("Expected four required arguments and optional maxActions/workers.");
     }
@@ -48,6 +51,7 @@ export function parseCompareCommandArguments(args: readonly string[]): CompareCo
     });
 
     return {
+        ...extracted.configuration,
         encounterIds,
         masterSeed,
         selectedPolicies,

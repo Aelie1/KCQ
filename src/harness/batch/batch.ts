@@ -3,8 +3,9 @@ import {
     type FightPolicy,
     type SingleFightResult,
 } from "../harness";
+import { resolveFightConfiguration, type FightConfiguration, type FightConfigurationInput } from "../configuration";
 
-export interface BatchInput {
+export interface BatchInput extends FightConfigurationInput {
     encounterId: string;
     policy: FightPolicy;
     masterSeed: number;
@@ -20,7 +21,7 @@ export interface BatchRun {
     result: SingleFightResult;
 }
 
-export interface BatchResult {
+export interface BatchResult extends FightConfiguration {
     encounterId: string;
     policyId: string;
     masterSeed: number;
@@ -66,11 +67,13 @@ export function runBatch(
 ): BatchResult {
     assertSafeInteger(input.masterSeed, "masterSeed");
     assertNonNegativeSafeInteger(input.runs, "runs");
+    const configuration = resolveFightConfiguration(input);
 
     const runs: BatchRun[] = [];
     for (let runIndex = 0; runIndex < input.runs; runIndex += 1) {
         const { engineSeed, policySeed } = deriveRunSeeds(input.masterSeed, runIndex);
         const result = runSingleFight({
+            ...configuration,
             encounterId: input.encounterId,
             engineSeed,
             policySeed,
@@ -84,6 +87,7 @@ export function runBatch(
     }
 
     return {
+        ...configuration,
         encounterId: input.encounterId,
         policyId: input.policy.id,
         masterSeed: input.masterSeed,

@@ -1,5 +1,6 @@
 import { performance } from "node:perf_hooks";
 import type { FightPolicy } from "../harness";
+import { resolveFightConfiguration, type FightConfiguration, type FightConfigurationInput } from "../configuration";
 import { runBatch } from "./batch";
 import {
     BatchWorkerPool,
@@ -19,7 +20,7 @@ export const encounterSets = {
 
 export type EncounterSetId = keyof typeof encounterSets;
 
-export interface EncounterSetInput {
+export interface EncounterSetInput extends FightConfigurationInput {
     encounterIds: readonly string[];
     policies: readonly FightPolicy[];
     masterSeed: number;
@@ -44,7 +45,7 @@ export interface EncounterSetEncounterResult {
     comparison: PolicyComparisonResult;
 }
 
-export interface EncounterSetResult {
+export interface EncounterSetResult extends FightConfiguration {
     encounters: EncounterSetEncounterResult[];
     elapsedMs: number;
 }
@@ -66,6 +67,7 @@ export async function executeEncounterSet(
     input: EncounterSetInput,
     options: EncounterSetExecutionOptions = {},
 ): Promise<EncounterSetResult> {
+    const configuration = resolveFightConfiguration(input);
     const now = options.now ?? (() => performance.now());
     const startedAt = now();
     const encounters: EncounterSetEncounterResult[] = [];
@@ -83,6 +85,7 @@ export async function executeEncounterSet(
         for (let encounterIndex = 0; encounterIndex < input.encounterIds.length; encounterIndex += 1) {
             const encounterId = input.encounterIds[encounterIndex];
             const comparison = await executePolicyComparison({
+                ...configuration,
                 encounterId,
                 policies: input.policies,
                 masterSeed: input.masterSeed,
@@ -111,7 +114,7 @@ export async function executeEncounterSet(
             options.onEncounterComplete?.(result);
         }
 
-        return { encounters, elapsedMs: Math.max(0, now() - startedAt) };
+        return { ...configuration, encounters, elapsedMs: Math.max(0, now() - startedAt) };
     } finally {
         await ownedPool?.close();
     }

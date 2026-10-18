@@ -1,6 +1,7 @@
 import path from "node:path";
 import { Worker } from "node:worker_threads";
 import { getPolicy } from "../policies";
+import { resolveFightConfiguration } from "../configuration";
 import {
     runBatch,
     type BatchExecutionOptions,
@@ -282,6 +283,7 @@ export async function runBatchParallel(
     options: ParallelBatchExecutionOptions,
     dependencies: ParallelBatchDependencies = {},
 ): Promise<BatchResult> {
+    const configuration = resolveFightConfiguration(input);
     const workers = effectiveWorkerCount(options.workers, input.runs);
     if (workers <= 1) {
         return runBatch(input, { onProgress: options.onProgress });
@@ -299,6 +301,7 @@ export async function runBatchParallel(
         : undefined;
     const pool = options.pool ?? ownedPool!;
     const workerInput: BatchWorkerInput = {
+        ...configuration,
         encounterId: input.encounterId,
         policyId: input.policy.id,
         masterSeed: input.masterSeed,
@@ -340,6 +343,7 @@ export function assembleParallelBatchResult(
         }
     });
     return {
+        ...resolveFightConfiguration(input),
         encounterId: input.encounterId,
         policyId: input.policy.id,
         masterSeed: input.masterSeed,

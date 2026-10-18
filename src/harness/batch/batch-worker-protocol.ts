@@ -1,6 +1,7 @@
 import type { BatchRun } from "./batch";
+import type { FightConfigurationInput } from "../configuration";
 
-export interface BatchWorkerInput {
+export interface BatchWorkerInput extends FightConfigurationInput {
     encounterId: string;
     policyId: string;
     masterSeed: number;

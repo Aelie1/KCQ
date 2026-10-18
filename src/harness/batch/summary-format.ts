@@ -10,6 +10,7 @@ export function formatBatchSummary(summary: BatchSummary): string[] {
         `Defeat:  ${formatOutcome(summary.outcomes.defeat)}`,
         `Max:     ${formatOutcome(summary.outcomes.maxActions)}`,
         `Errors:  ${formatOutcome(summary.outcomes.error)}`,
+        `Party: ${summary.party.join(", ")} / Difficulty: ${summary.difficulty}`,
         "",
         `Actions: ${formatDistribution(summary.fightLength.actionCount)}`,
         `Rounds:  ${formatDistribution(summary.fightLength.round)}`,

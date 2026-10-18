@@ -1,4 +1,5 @@
 import type { SingleFightTermination } from "../harness";
+import type { FightConfiguration } from "../configuration";
 import type {
     BondageReceivedMetrics,
     BondageRemovedMetrics,
@@ -129,7 +130,7 @@ export interface ForensicExamples {
     errorExample: RunReference | null;
 }
 
-export interface BatchSummary {
+export interface BatchSummary extends FightConfiguration {
     encounterId: string;
     policyId: string;
     masterSeed: number;
@@ -266,6 +267,8 @@ export function summarizeBatch(batch: BatchResult): BatchSummary {
     const victories = outcomeCounts.victory;
     return {
         encounterId: batch.encounterId,
+        party: [...batch.party],
+        difficulty: batch.difficulty,
         policyId: batch.policyId,
         masterSeed: batch.masterSeed,
         runCount,

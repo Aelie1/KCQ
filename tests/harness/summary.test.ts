@@ -52,6 +52,7 @@ function view(fixture: RunFixture): GameState {
 function run(fixture: RunFixture): BatchRun {
     const trace = Array.from({ length: fixture.actionCount }, endTurn);
     const result: SingleFightResult = {
+        party: ["ko", "matsuko", "hinari"], difficulty: "standard",
         encounterId: "fixture",
         engineSeed: 1_000 + fixture.runIndex,
         policyId: "fixture-policy",
@@ -81,7 +82,7 @@ function run(fixture: RunFixture): BatchRun {
 }
 
 function batch(runs: BatchRun[]): BatchResult {
-    return { encounterId: "fixture", policyId: "fixture-policy", masterSeed: 99, runs };
+    return { party: ["ko", "matsuko", "hinari"], difficulty: "standard", encounterId: "fixture", policyId: "fixture-policy", masterSeed: 99, runs };
 }
 
 function fixtureBatch(): BatchResult {

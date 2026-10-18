@@ -1,5 +1,6 @@
 import { performance } from "node:perf_hooks";
 import type { FightPolicy } from "../harness";
+import { resolveFightConfiguration, type FightConfiguration, type FightConfigurationInput } from "../configuration";
 import { runBatch, type BatchResult } from "./batch";
 import {
     BatchWorkerPool,
@@ -9,7 +10,7 @@ import {
 } from "./parallel-batch";
 import { summarizeBatch, type BatchSummary } from "./summary";
 
-export interface PolicyComparisonInput {
+export interface PolicyComparisonInput extends FightConfigurationInput {
     encounterId: string;
     policies: readonly FightPolicy[];
     masterSeed: number;
@@ -30,7 +31,7 @@ export interface PolicyComparisonEntry {
     timing: PolicyTiming;
 }
 
-export interface PolicyComparisonResult {
+export interface PolicyComparisonResult extends FightConfiguration {
     encounterId: string;
     masterSeed: number;
     runs: number;
@@ -69,6 +70,7 @@ export async function executePolicyComparison(
     input: PolicyComparisonInput,
     options: PolicyComparisonExecutionOptions = {},
 ): Promise<PolicyComparisonResult> {
+    const configuration = resolveFightConfiguration(input);
     const now = options.now ?? (() => performance.now());
     const requestedWorkers = input.workers ?? 1;
     const parallelWorkers = effectiveWorkerCount(requestedWorkers, input.runs);
@@ -93,6 +95,7 @@ export async function executePolicyComparison(
             const policy = input.policies[policyIndex];
             const policyStartedAt = now();
             const batch = await executeBatch({
+                ...configuration,
                 encounterId: input.encounterId,
                 policy,
                 masterSeed: input.masterSeed,
@@ -128,6 +131,7 @@ export async function executePolicyComparison(
         }
 
         return {
+            ...configuration,
             encounterId: input.encounterId,
             masterSeed: input.masterSeed,
             runs: input.runs,
@@ -163,6 +167,7 @@ export function formatPolicyComparison(result: PolicyComparisonResult): string[]
 
     return [
         `===== ${result.encounterId} =====`,
+        `Party: ${result.party.join(", ")} / Difficulty: ${result.difficulty}`,
         "",
         ...formatTable(
             ["policy", "runs", "winRate", "meanRounds", "meanDecisions", "meanDamage", "meanPeakBondage", "meanEscapes", "ms/run", "win95"],
@@ -181,6 +186,8 @@ export function formatEncounterComparisons(
             return [
                 result.encounterId,
                 policyId,
+                result.party.join(","),
+                result.difficulty,
                 String(metrics.runs),
                 formatPercent(metrics.winRate),
                 formatNumber(summary.fightLength.round?.mean ?? null),
@@ -200,6 +207,8 @@ export function formatEncounterComparisons(
         [
             "level",
             "policy",
+            "party",
+            "difficulty",
             "runs",
             "winRate",
             "meanRounds",

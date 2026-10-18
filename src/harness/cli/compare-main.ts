@@ -21,9 +21,13 @@ async function main(): Promise<void> {
         maxActions,
         workers,
         replayEncounterIds,
+        party,
+        difficulty,
     } = parseCompareCommandArguments(process.argv.slice(2));
     const replayEncounters = new Set(replayEncounterIds);
     const output = createBatchRunOutput({
+        party,
+        difficulty,
         masterSeed,
         runsPerEncounter: runs,
         maxActions,
@@ -34,6 +38,8 @@ async function main(): Promise<void> {
     });
 
     const result = await executeEncounterSet({
+        party,
+        difficulty,
         encounterIds,
         policies: selectedPolicies,
         masterSeed,
@@ -52,6 +58,8 @@ async function main(): Promise<void> {
                 (candidate) => candidate.id === entry.policyId,
             )!;
             const batchInput = {
+                party,
+                difficulty,
                 encounterId: encounter.encounterId,
                 policy,
                 masterSeed,

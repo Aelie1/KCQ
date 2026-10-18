@@ -52,6 +52,25 @@ afterEach(() => {
 });
 
 describe("comparison CLI output", () => {
+    it("propagates explicit configuration through comparisons, metadata and replay capture", async () => {
+        const configuration = { party: ["sakari", "naruyo", "ko"], difficulty: "extreme" } as const;
+        process.argv.push("--party", "sakari,naruyo,ko", "--difficulty=extreme");
+        const fixture = { ...comparisonFixture(), ...configuration };
+        fixture.policies.forEach(entry => {
+            Object.assign(entry.batch, configuration);
+            entry.summary = summarizeBatch(entry.batch);
+        });
+        vi.mocked(executePolicyComparison).mockResolvedValue(fixture);
+        await import("../../src/harness/cli/compare-main");
+        expect(executePolicyComparison).toHaveBeenCalledWith(expect.objectContaining(configuration), expect.anything());
+        expect(captureReplaySamples).toHaveBeenCalledWith(expect.objectContaining(configuration), expect.anything());
+        const writes = vi.mocked(fs.writeFileSync).mock.calls;
+        expect(writes).toHaveLength(3);
+        writes.forEach(([, contents]) => expect(JSON.parse(contents as string)).toMatchObject(configuration));
+        expect(String(writes[1][0])).toContain("sakari-naruyo-ko-extreme");
+        expect(console.error).not.toHaveBeenCalled();
+    });
+
     it("writes one manifest and every policy summary to one one-level run directory", async () => {
         await import("../../src/harness/cli/compare-main");
 
@@ -120,6 +139,7 @@ describe("comparison CLI output", () => {
 function comparisonFixture(): PolicyComparisonResult {
     const policies = ["basic", "escape"].map((policyId) => {
         const batch: BatchResult = {
+            party: ["ko", "matsuko", "hinari"], difficulty: "standard",
             encounterId: "plains_1",
             policyId,
             masterSeed: 4,
@@ -133,6 +153,7 @@ function comparisonFixture(): PolicyComparisonResult {
         };
     });
     return {
+        party: ["ko", "matsuko", "hinari"], difficulty: "standard",
         encounterId: "plains_1",
         masterSeed: 4,
         runs: 3,

@@ -72,6 +72,7 @@ describe("batch run output", () => {
             replay: false,
         };
         const batch: BatchResult = {
+            party: ["ko", "matsuko", "hinari"], difficulty: "standard",
             encounterId: input.encounterId,
             policyId: input.policy.id,
             masterSeed: input.masterSeed,
@@ -87,6 +88,7 @@ describe("batch run output", () => {
         expect(fs.readFileSync(summaryPath, "utf8")).toBe(JSON.stringify(summary, null, 2));
         expect(JSON.parse(fs.readFileSync(path.join(output.directoryPath, "run.json"), "utf8")))
             .toEqual({
+                party: ["ko", "matsuko", "hinari"], difficulty: "standard",
                 startedAt: expect.stringMatching(/^2026-09-21T16:17:42[+-]\d{2}:\d{2}$/),
                 masterSeed: 4,
                 runsPerEncounter: 1_000,

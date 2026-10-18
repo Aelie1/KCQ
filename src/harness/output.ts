@@ -8,8 +8,10 @@ import type {
 } from "./batch/replay-samples";
 import type { BatchSummary } from "./batch/summary";
 import type { SingleFightInput, SingleFightResult } from "./harness";
+import { resolveFightConfiguration, type FightConfiguration, type FightConfigurationInput } from "./configuration";
+import { stockCharacters } from "../stock";
 
-export interface BatchRunOutputInput {
+export interface BatchRunOutputInput extends FightConfigurationInput {
     masterSeed: number;
     runsPerEncounter: number;
     maxActions: number;
@@ -20,7 +22,7 @@ export interface BatchRunOutputInput {
     replayEncounters?: readonly string[];
 }
 
-export interface BatchRunManifest {
+export interface BatchRunManifest extends FightConfiguration {
     startedAt: string;
     masterSeed: number;
     runsPerEncounter: number;
@@ -46,6 +48,7 @@ export function createBatchRunOutput(
     input: BatchRunOutputInput,
     options: BatchRunOutputOptions = {},
 ): BatchRunOutput {
+    const configuration = resolveFightConfiguration(input);
     const outputRoot = options.outputRoot ?? path.resolve("harness-output");
     const startedAt = options.now?.() ?? new Date();
     const baseName = formatBatchRunDirectoryName(
@@ -55,6 +58,7 @@ export function createBatchRunOutput(
     );
     const directoryPath = reserveDirectory(outputRoot, baseName);
     const manifest: BatchRunManifest = {
+        ...configuration,
         startedAt: formatLocalDateTime(startedAt),
         masterSeed: input.masterSeed,
         runsPerEncounter: input.runsPerEncounter,
@@ -98,8 +102,8 @@ export function writeBatchRunManifest(
     return outputPath;
 }
 
-export function batchSummaryFilename(input: Pick<BatchInput, "encounterId" | "policy">): string {
-    return `${safeFilenamePart(input.encounterId)}-${safeFilenamePart(input.policy.id)}.json`;
+export function batchSummaryFilename(input: Pick<BatchInput, "encounterId" | "policy" | "party" | "difficulty">): string {
+    return `${safeFilenamePart(input.encounterId)}-${safeFilenamePart(input.policy.id)}${configurationFilenameSuffix(input)}.json`;
 }
 
 export function writeBatchSummary(
@@ -122,6 +126,8 @@ export function fightResultFilename(
         safeFilenamePart(input.policy.id),
         `policy-${input.policySeed}`,
     ];
+    const suffix = configurationFilenameSuffix(input);
+    if (suffix) parts.push(suffix.slice(1));
     if (label) parts.push(label);
     return parts.join("-") + ".json";
 }
@@ -218,4 +224,13 @@ function pluralize(word: string, count: number): string {
 
 function safeFilenamePart(value: string): string {
     return value.replace(/[^a-zA-Z0-9_.-]/g, "_");
+}
+
+/** Keep legacy default filenames; distinguish every ordered non-default configuration. */
+function configurationFilenameSuffix(input: FightConfigurationInput): string {
+    const { party, difficulty } = resolveFightConfiguration(input);
+    if (difficulty === "standard" && party.every((id, index) => id === stockCharacters[index])) {
+        return "";
+    }
+    return `-${party.join("-")}-${difficulty}`;
 }

@@ -1,15 +1,17 @@
 import { runSingleFight } from "../harness";
 import { writeFightResult } from "../output";
 import { getPolicy, policies } from "../policies";
+import { CONFIGURATION_USAGE, extractConfigurationArguments } from "./configuration-cli";
 
 const DEFAULT_POLICY_SEED = 0;
 const DEFAULT_MAX_ACTIONS = 1_000;
-const [encounterId, engineSeedArgument, policyId, policySeedArgument] = process.argv.slice(2);
+const { args, configuration } = extractConfigurationArguments(process.argv.slice(2));
+const [encounterId, engineSeedArgument, policyId, policySeedArgument] = args;
 
-if (!encounterId || !engineSeedArgument || !policyId) {
+if (!encounterId || !engineSeedArgument || !policyId || args.length > 4 || args.some(arg => arg.startsWith("--"))) {
     fail(
         "Usage: npm run fight -- <encounterId> <engineSeed> <policy> [policySeed] "
-        + `(policySeed defaults to ${DEFAULT_POLICY_SEED})`,
+        + `${CONFIGURATION_USAGE} (policySeed defaults to ${DEFAULT_POLICY_SEED})`,
     );
 }
 
@@ -23,6 +25,7 @@ if (!policy) {
 }
 
 const input = {
+    ...configuration,
     encounterId,
     engineSeed,
     policy,

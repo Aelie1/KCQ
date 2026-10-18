@@ -13,6 +13,7 @@ function reference(runIndex: number, termination: RunReference["termination"]): 
 
 function summaryFixture(): BatchSummary {
     return {
+        party: ["ko", "matsuko", "hinari"], difficulty: "standard",
         encounterId: "fixture",
         policyId: "basic",
         masterSeed: 99,

@@ -101,6 +101,7 @@ describe("automatic batch replay samples", () => {
         expect(runner).toHaveBeenCalledTimes(2);
         expect(runner.mock.calls.map(([fightInput]) => fightInput)).toEqual(
             samples.map((sample) => ({
+                party: ["ko", "matsuko", "hinari"], difficulty: "standard",
                 encounterId: batchInput.encounterId,
                 engineSeed: sample.engineSeed,
                 policySeed: sample.policySeed,
@@ -150,6 +151,7 @@ function input(): BatchInput {
 
 function result(runs: BatchRun[]): BatchResult {
     return {
+        party: ["ko", "matsuko", "hinari"], difficulty: "standard",
         encounterId: "plains_1",
         policyId: basicPolicy.id,
         masterSeed: 91,
@@ -170,6 +172,7 @@ function run(
         engineSeed,
         policySeed,
         result: {
+            party: ["ko", "matsuko", "hinari"], difficulty: "standard",
             encounterId: "plains_1",
             engineSeed,
             policyId: basicPolicy.id,

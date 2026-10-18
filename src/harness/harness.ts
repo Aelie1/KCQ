@@ -1,4 +1,6 @@
-import { createStockEngine } from "../stock";
+import { createEngine } from "../content";
+import { stockCampaign } from "../stock";
+import { resolveFightConfiguration, type FightConfiguration, type FightConfigurationInput } from "./configuration";
 import type { ContentLibrary } from "../engine/public/library";
 import { getThresholds } from "../engine/public/mechanics";
 import type {
@@ -54,7 +56,7 @@ export interface ReplayPolicyDecision {
     readonly diagnostics: unknown;
 }
 
-export interface SingleFightInput {
+export interface SingleFightInput extends FightConfigurationInput {
     encounterId: string;
     engineSeed: number;
     policySeed: number;
@@ -109,7 +111,7 @@ export interface FightMetrics {
     escapes: number;
 }
 
-export interface SingleFightResult {
+export interface SingleFightResult extends FightConfiguration {
     encounterId: string;
     engineSeed: number;
     policyId: string;
@@ -127,7 +129,9 @@ export interface SingleFightResult {
 
 /** Runs one stock encounter, delegating every player decision to the supplied policy. */
 export function runSingleFight(input: SingleFightInput): SingleFightResult {
-    const engine = createStockEngine(input.engineSeed);
+    const configuration = resolveFightConfiguration(input);
+    const engine = createEngine(configuration.party, stockCampaign, input.engineSeed);
+    engine.setDifficulty(configuration.difficulty);
     const thresholds = getThresholds();
     const library = engine.getLibrary();
     const policyRandom = createPolicyRandom(input.policySeed);
@@ -154,6 +158,7 @@ export function runSingleFight(input: SingleFightInput): SingleFightResult {
             escapes: collectorMetrics.escapes.attempts,
         };
         return {
+            ...configuration,
             encounterId: input.encounterId,
             engineSeed: input.engineSeed,
             policyId: input.policy.id,

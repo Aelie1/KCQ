@@ -2,6 +2,7 @@ import { runSingleFight } from "../harness";
 import { getPolicy } from "../policies";
 import { deriveRunSeeds, type BatchRun } from "./batch";
 import type { BatchWorkerInput } from "./batch-worker-protocol";
+import { resolveFightConfiguration } from "../configuration";
 
 const PROGRESS_CHUNK_SIZE = 16;
 
@@ -10,6 +11,7 @@ export function executeBatchWorkerInput(
     input: BatchWorkerInput,
     onProgress?: (completedDelta: number) => void,
 ): BatchRun[] {
+    const configuration = resolveFightConfiguration(input);
     const policy = getPolicy(input.policyId);
     if (policy === undefined) {
         throw new Error(`Worker could not resolve registered policy: ${input.policyId}`);
@@ -20,6 +22,7 @@ export function executeBatchWorkerInput(
     for (const runIndex of input.runIndexes) {
         const { engineSeed, policySeed } = deriveRunSeeds(input.masterSeed, runIndex);
         const result = runSingleFight({
+            ...configuration,
             encounterId: input.encounterId,
             engineSeed,
             policySeed,

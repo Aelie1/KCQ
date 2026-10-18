@@ -16,6 +16,8 @@ async function main(): Promise<void> {
     const { input, workers } = parseBatchCommandArguments(process.argv.slice(2));
     const parallelWorkers = effectiveWorkerCount(workers, input.runs);
     const output = createBatchRunOutput({
+        party: input.party,
+        difficulty: input.difficulty,
         masterSeed: input.masterSeed,
         runsPerEncounter: input.runs,
         maxActions: input.maxActions,
