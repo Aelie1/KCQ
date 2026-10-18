@@ -12,6 +12,8 @@ import {
     type EncounterSetId,
     type EncounterSetProgress,
 } from "../batch/encounter-sets";
+import { executeMatrix, matrixConfigurationCount, resolveMatrixInput, type MatrixProgress } from "../batch/matrix";
+import { formatDifficultyProgression, formatPartyParity } from "../batch/matrix-reports";
 import {
     BatchWorkerPool,
     effectiveWorkerCount,
@@ -19,20 +21,20 @@ import {
     type BatchWorkerRunner,
 } from "../batch/parallel-batch";
 import { captureReplaySamples } from "../batch/replay-samples";
+import { enumerateHarnessParties, harnessDifficulties } from "../configuration";
 import { runSingleFight, type FightPolicy, type SingleFightInput } from "../harness";
 import {
+    appendMatrixEntry,
     createBatchRunOutput,
+    createMatrixConfigurationDirectory, createMatrixRunOutput,
     formatReplaySamples,
     formatSavedSummaries,
     writeBatchSummary,
     writeFightResult,
+    writeMatrixReports,
     writeReplaySamples,
 } from "../output";
 import { policies } from "../policies";
-import { enumerateHarnessParties, harnessDifficulties } from "../configuration";
-import { executeMatrix, matrixConfigurationCount, resolveMatrixInput, type MatrixProgress } from "../batch/matrix";
-import { formatDifficultyProgression, formatPartyParity } from "../batch/matrix-reports";
-import { appendMatrixEntry, createMatrixConfigurationDirectory, createMatrixRunOutput, writeMatrixReports } from "../output";
 import {
     createProgressReporter,
     formatCompletion,
@@ -220,17 +222,17 @@ async function runInteractiveMatrix(
                 onConfigurationComplete(entry, comparison, batchInput) {
                     const directory = createMatrixConfigurationDirectory(completed, output.directoryPath);
                     writeBatchSummary(batchInput, comparison.summary, directory);
-                    const samples = writeReplaySamples(captureReplaySamples(batchInput, comparison.batch, deps.runSingleFight), directory);
+                    //const samples = writeReplaySamples(captureReplaySamples(batchInput, comparison.batch, deps.runSingleFight), directory);
                     appendMatrixEntry(entry, output.directoryPath);
                     completed += 1;
-                    io.write(`${formatReplaySamples(samples, `Replays (${entry.encounterId} / ${entry.party.join("/")} / ${entry.difficulty} / ${entry.policyId}):`)}\n`);
+                    //io.write(`${formatReplaySamples(samples, `Replays (${entry.encounterId} / ${entry.party.join("/")} / ${entry.difficulty} / ${entry.policyId}):`)}\n`);
                 },
             });
         } finally { await pool?.close(); }
     })();
     const lines = workflow === "5" ? formatPartyParity(result.entries)
         : workflow === "6" ? formatDifficultyProgression(result.entries)
-        : [...formatPartyParity(result.entries), ...formatDifficultyProgression(result.entries)];
+            : [...formatPartyParity(result.entries), ...formatDifficultyProgression(result.entries)];
     writeMatrixReports(lines, output.directoryPath);
     io.write(`${lines.join("\n")}\n${formatCompletion(count * runs, result.elapsedMs, "fights")}\n`);
     io.write(`${formatSavedSummaries(completed, output.directoryPath)}\n`);

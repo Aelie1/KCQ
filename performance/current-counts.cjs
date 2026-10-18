@@ -94,7 +94,7 @@ globalThis.structuredClone = function countedStructuredClone(...args) {
     return result;
 };
 
-const { runBatch } = require("../dist/harness/batch.js");
+const { runBatch } = require("../dist/harness/batch/batch.js");
 const { getPolicy } = require("../dist/harness/policies.js");
 const basePolicy = getPolicy(policyId);
 if (!basePolicy) throw new Error(`unknown policy ${policyId}`);
