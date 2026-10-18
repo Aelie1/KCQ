@@ -591,7 +591,8 @@ export class GameEffects {
         const status = new GameStatus(this.state, enemy);
         for (const intention of enemy.intentions) {
             if (intention.move.definition.traits?.length === 1
-                && intention.move.definition.traits?.includes("binding")) {
+                && intention.move.definition.traits?.includes("binding")
+                && !intention.resolved) {
                 this.addEvent({
                     type: "intentionDiscorded",
                     target: enemy.id,

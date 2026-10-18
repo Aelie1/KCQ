@@ -21,6 +21,8 @@ const OVERCONFIDENCE_BUFF = "overconfidence";
 const OVERCONFIDENCE_MODIFIER = 3;
 const OVERCONFIDENCE_DURATION = 3;
 
+const DISCORD_SEAL_COOLDOWN = 3;
+
 const POWER_OF_CHAOS_BUFF = "stability";
 
 export const thrillseeker: PassiveDef = {
@@ -183,13 +185,14 @@ export const discordSeal: MoveDef = {
     targetSide: "enemy",
     targets: 1,
     type: "arms",
+    cooldown: { "discordSeal": DISCORD_SEAL_COOLDOWN },
     traits: ["retarget"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                if (target.target.intentions.filter(x => x.move.definition.traits?.length === 1 && x.move.definition.traits?.includes("binding")).length > 0) {
+                if (target.target.intentions.filter(x => x.move.definition.traits?.length === 1 && x.move.definition.traits?.includes("binding") && !x.resolved).length > 0) {
                     result.targets.push(tr(target, [
                         {
                             type: "intention",
@@ -211,7 +214,7 @@ export const discordSeal: MoveDef = {
         if (!target || !isEnemy(target)) {
             return "invalidTarget";
         }
-        if (target.intentions.filter(x => x.move.definition.traits?.length === 1 && x.move.definition.traits?.includes("binding")).length === 0) {
+        if (target.intentions.filter(x => x.move.definition.traits?.length === 1 && x.move.definition.traits?.includes("binding") && !x.resolved).length === 0) {
             return "insufficientBindingIntentions";
         }
     }
