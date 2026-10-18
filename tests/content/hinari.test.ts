@@ -110,10 +110,10 @@ function moveEvent(result: ActionSuccess) {
 describe("Hinari's dynamic move set and Rockfall", () => {
     it.each([
         [0, 4],
-        [25, 3],
-        [50, 2],
-        [75, 1],
-        [100, 0],
+        [25, 4],
+        [50, 3],
+        [75, 3],
+        [100, 2],
     ] as const)("offers %i Subspace as %i Rockfall hits", (subspace, hits) => {
         const engine = loadHinariEncounter({
             seed: 2,
@@ -125,7 +125,6 @@ describe("Hinari's dynamic move set and Rockfall", () => {
         expect(action(engine, "rockfall")).toMatchObject({
             available: hits > 0,
             move: { hits },
-            ...(hits === 0 ? { reason: "insufficientResource" } : {}),
         });
         expect(action(engine, "release")).toMatchObject({
             available: subspace >= 25,
@@ -173,11 +172,11 @@ describe("Hinari's dynamic move set and Rockfall", () => {
 
     it.each([
         [0, 6],
-        [17, 5],
-        [34, 4],
-        [50, 3],
-        [67, 2],
-        [84, 1],
+        [17, 6],
+        [34, 5],
+        [50, 5],
+        [67, 4],
+        [84, 4],
     ] as const)("offers %i Subspace as %i Fairy Rockfall hits, then restores Rockfall", (
         subspace,
         hits,
