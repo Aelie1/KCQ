@@ -1,0 +1,115 @@
+// Run against Vite and a test Chrome instance with remote debugging enabled:
+// node tests/ui/titleResize.browser.mjs http://127.0.0.1:5176 9334
+// Creates and closes its own tab; does not change saves or preferences.
+import assert from "node:assert/strict";
+
+const appUrl = process.argv[2] ?? "http://127.0.0.1:5173";
+const debugUrl = `http://127.0.0.1:${process.argv[3] ?? "9334"}`;
+
+async function connect(url) {
+    const socket = new WebSocket(url);
+    await new Promise((resolve, reject) => {
+        socket.addEventListener("open", resolve, { once: true });
+        socket.addEventListener("error", reject, { once: true });
+    });
+    let sequence = 0;
+    const pending = new Map();
+    socket.addEventListener("message", event => {
+        const message = JSON.parse(event.data);
+        const request = pending.get(message.id);
+        if (!request) return;
+        pending.delete(message.id);
+        if (message.error) request.reject(new Error(JSON.stringify(message.error)));
+        else request.resolve(message.result);
+    });
+    return {
+        send(method, params = {}) {
+            return new Promise((resolve, reject) => {
+                const id = ++sequence;
+                pending.set(id, { resolve, reject });
+                socket.send(JSON.stringify({ id, method, params }));
+            });
+        },
+        close() { socket.close(); },
+    };
+}
+
+const version = await (await fetch(`${debugUrl}/json/version`)).json();
+const browser = await connect(version.webSocketDebuggerUrl);
+const { targetId } = await browser.send("Target.createTarget", { url: "about:blank" });
+let page;
+try {
+    const targets = await (await fetch(`${debugUrl}/json/list`)).json();
+    page = await connect(targets.find(target => target.id === targetId).webSocketDebuggerUrl);
+    const evaluate = async expression => {
+        const result = await page.send("Runtime.evaluate", { expression, awaitPromise: true, returnByValue: true });
+        if (result.exceptionDetails) throw new Error(JSON.stringify(result.exceptionDetails));
+        return result.result.value;
+    };
+    await page.send("Emulation.setDeviceMetricsOverride", {
+        width: 2200, height: 900, deviceScaleFactor: 1.25, mobile: false,
+    });
+    await page.send("Page.navigate", { url: appUrl });
+    const deadline = Date.now() + 15000;
+    while (!await evaluate('!!document.querySelector(".kcq-title-screen__party")')) {
+        assert.ok(Date.now() < deadline, "Title screen did not load");
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    await evaluate(`document.fonts.ready`);
+    await evaluate(`(() => {
+        const upper = document.querySelector(".kcq-title-screen__upper");
+        // The bug concerns sizing the two existing section wrappers. Provide
+        // a second wrapper even when the test browser has no saved battle.
+        if (upper.children.length === 1) upper.prepend(upper.firstElementChild.cloneNode(true));
+    })()`);
+    const measure = () => evaluate(`(() => {
+        const shell = document.querySelector(".kcq-app");
+        const upper = document.querySelector(".kcq-title-screen__upper");
+        const parts = [...upper.children].map(element => element.getBoundingClientRect());
+        const footer = document.querySelector(".kcq-screen-layout__footer").getBoundingClientRect();
+        const body = document.querySelector(".kcq-screen-layout__body");
+        const zoom = Number(shell.style.getPropertyValue("--kcq-ui-zoom"));
+        return {
+            mode: shell.dataset.kcqTitleLayout, zoom,
+            appliedZoom: Number(getComputedStyle(document.querySelector(".kcq-graphical-app__background")).zoom),
+            columns: Math.abs(parts[0].y - parts[1].y) < 1 ? 2 : 1,
+            widths: parts.map(part => part.width / zoom),
+            footerFits: footer.bottom <= innerHeight && body.clientHeight > 0,
+            overflow: shell.scrollWidth > shell.clientWidth || body.scrollWidth > body.clientWidth,
+        };
+    })()`);
+    const widths = [375, 600, 779, 780, 781, 800, 950, 1024, 1091, 1092, 1280, 1600, 1920]
+        .flatMap(width => [0, .2, .4, .6, .8].map(fraction => width + fraction));
+    for (const width of [...widths, ...widths.toReversed()]) {
+        await evaluate(`document.getElementById("root").style.width = ${JSON.stringify(`${width}px`)}`);
+        // Let native ResizeObserver/resize delivery run; manually dispatching
+        // resize would hide timing and fractional-width failures.
+        await evaluate("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+        const result = await measure();
+        assert.equal(result.columns, result.mode === "desktop" ? 2 : 1,
+            `Unexpected row wrapping at ${width}px: ${JSON.stringify(result)}`);
+        assert.ok(result.widths.every(value => value <= 366.1), "A panel stretched");
+        assert.ok(Math.abs(result.appliedZoom - result.zoom) < .00001, "Title enlargement differs from the scaler");
+        assert.ok(result.footerFits && !result.overflow, `Overflow at ${width}px`);
+    }
+    for (const width of [800.6, 950.6, 1280.6]) {
+        await evaluate(`document.getElementById("root").style.width = "${width}px"`);
+        await evaluate("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+        const settled = await measure();
+        for (let frame = 0; frame < 40; frame++) {
+            await evaluate("new Promise(requestAnimationFrame)");
+            assert.deepEqual(await measure(), settled, `Layout oscillated while held at ${width}px`);
+        }
+    }
+    await evaluate(`document.querySelector(".kcq-title-screen__upper").firstElementChild.remove()`);
+    assert.ok(await evaluate(`(() => {
+        const upper = document.querySelector(".kcq-title-screen__upper").getBoundingClientRect();
+        const party = document.querySelector(".kcq-title-screen__upper").firstElementChild.getBoundingClientRect();
+        return Math.abs((upper.left + upper.right) / 2 - (party.left + party.right) / 2) < 1;
+    })()`), "Party did not center without a resume section");
+    console.log(`Title resize browser regression passed: ${widths.length * 2} resize steps and 120 held frames.`);
+} finally {
+    page?.close();
+    await browser.send("Target.closeTarget", { targetId });
+    browser.close();
+}

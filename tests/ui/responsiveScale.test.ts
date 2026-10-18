@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { BATTLE_LAYOUT_WIDTHS, calculateResponsiveLayout, setupResponsiveScale } from "../../src/ui/web/app/responsiveScale";
 
-function viewport(width = 390, height = 844, visualHeight?: number) {
+function viewport(width = 390, height = 844, visualHeight?: number, columns: "auto" | "1" | "2" | "3" = "auto") {
     const style = new Map<string, string>();
     const shell = {
         clientWidth: width,
+        dataset: {} as Record<string, string>,
         style: { setProperty: (key: string, value: string) => style.set(key, value) },
     };
     const windowEvents = new EventTarget();
@@ -24,7 +25,9 @@ function viewport(width = 390, height = 844, visualHeight?: number) {
         observe = observe;
         disconnect = disconnect;
     });
-    const cleanup = setupResponsiveScale(shell as unknown as HTMLElement);
+    const cleanup = setupResponsiveScale(shell as unknown as HTMLElement, {
+        columns, enemyCards: "auto", setColumns: vi.fn(), setEnemyCards: vi.fn(), reset: vi.fn(),
+    });
     return { shell, style, browser, visualViewport, observedResize, observe, disconnect, cleanup };
 }
 
@@ -106,5 +109,36 @@ describe("column-first scaling", () => {
             }
         }
         expect(style.get("--kcq-ui-min-width")).toBe("366px");
+    });
+});
+
+describe("title layout coordinated with scaling", () => {
+    it("settles on both sides of the breakpoint using the same width as zoom", () => {
+        const { shell, style, browser, observedResize } = viewport(800, 326);
+        for (const width of [800, 781, 780, 779, 778, 779, 780, 781, 800]) {
+            shell.clientWidth = width;
+            browser.dispatchEvent(new Event("resize"));
+            const expectedZoom = calculateResponsiveLayout(width - 24).zoom;
+            const expectedTitle = width >= 780 ? "desktop" : "mobile";
+            const before = new Map(style);
+            for (let frame = 0; frame < 30; frame++) {
+                observedResize();
+                browser.dispatchEvent(new Event("resize"));
+                expect(style).toEqual(before);
+                expect(Number(style.get("--kcq-ui-zoom"))).toBe(expectedZoom);
+                expect(shell.dataset.kcqTitleLayout).toBe(expectedTitle);
+            }
+        }
+    });
+
+    it.each([
+        ["auto", 1024, "desktop"], ["auto", 1920, "desktop"],
+        ["1", 1024, "mobile"], ["1", 1157, "mobile"], ["1", 1158, "desktop"],
+        ["2", 779, "mobile"], ["2", 780, "desktop"],
+        ["3", 779, "mobile"], ["3", 780, "desktop"],
+    ] as const)("fits title panels with preference %s at %ipx without changing zoom", (columns, width, title) => {
+        const { shell, style } = viewport(width, 800, undefined, columns);
+        expect(shell.dataset.kcqTitleLayout).toBe(title);
+        expect(Number(style.get("--kcq-ui-zoom"))).toBe(calculateResponsiveLayout(width - 24, columns).zoom);
     });
 });
