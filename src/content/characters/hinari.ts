@@ -113,7 +113,7 @@ export const rockfall: MoveDef = {
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         return basicDamageEffect(actor, move, targets);
     },
-    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+    isValid: function (state: iGameState, move: MoveDef, actor: iEntity): FailureReason | undefined {
         if (actor.data["subspace"] === undefined) {
             return "invalidActor";
         }
@@ -202,7 +202,7 @@ export const store: MoveDef = {
         }
         return result;
     },
-    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+    isValid: function (state: iGameState, move: MoveDef, actor: iEntity): FailureReason | undefined {
         if (actor.data["subspace"] === undefined) {
             return "invalidActor";
         }
@@ -246,7 +246,7 @@ export const brace: MoveDef = {
         });
         return result;
     },
-    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+    isValid: function (state: iGameState, move: MoveDef, actor: iEntity): FailureReason | undefined {
         if (actor.data["subspace"] === undefined) {
             return "invalidActor";
         }
@@ -300,7 +300,7 @@ export const release: MoveDef = {
         }
         return result;
     },
-    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+    isValid: function (state: iGameState, move: MoveDef, actor: iEntity): FailureReason | undefined {
         if (actor.data["subspace"] === undefined) {
             return "invalidActor";
         }
@@ -361,7 +361,7 @@ export const powerOfSpace: MoveDef = {
 
         return result;
     },
-    isValid: function (move: MoveDef, actor: iEntity): FailureReason | undefined {
+    isValid: function (state: iGameState, move: MoveDef, actor: iEntity): FailureReason | undefined {
         if (actor.data["subspace"] === undefined) {
             return "invalidActor";
         }

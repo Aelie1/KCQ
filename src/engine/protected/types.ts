@@ -132,6 +132,7 @@ export type iEffect =
     | iRetargetEffect
     | iCancelEffect
     | iWeakenEffect
+    | iDiscordEffect
     | iDataEffect
     | iTickEffect
     | iBonusEffect;
@@ -207,6 +208,12 @@ interface iRetargetEffect {
 interface iCancelEffect {
     type: "intention"
     operation: "cancel";
+    target: iEnemy;
+}
+
+interface iDiscordEffect {
+    type: "intention"
+    operation: "discord";
     target: iEnemy;
 }
 

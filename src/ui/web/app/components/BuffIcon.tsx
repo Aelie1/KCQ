@@ -13,10 +13,14 @@ export function BuffIcon(props: { icon: NonNullable<Buff["icon"]> }): JSX.Elemen
                     <path d="M12 3 3 7v5c0 5 5 8 9 10 4-2 9-5 9-10V7Z" />
                 </Match>
                 <Match when={props.icon === "sword"}>
-                    <path d="m14 5 7-2-2 7-9 9-5-5ZM3 21l4-4M3 12l9 9M9 15l7-7" />
+                    <path d="m14 5 7-2-2 7-9 9-5-5ZM3 21l4-4M3 12l9 9" />
                 </Match>
                 <Match when={props.icon === "shield-off"}>
                     <path d="m9 4 3-1 9 4v5c0 2-.8 3.8-2.1 5.3M5 5.9 3 7v5c0 5 5 8 9 10 1.6-.8 3.4-1.9 4.9-3.2M2 2l20 20" />
+                </Match>
+                <Match when={props.icon === "sword-off"}>
+                    <path d="m14 5 7-2-2 7-9 9-5-5ZM3 21l4-4M3 12l9 9" />
+                    <path d="M2 2 22 22" />
                 </Match>
                 <Match when={props.icon === "crown"}>
                     <path d="M3 7 7.5 11 12 4 16.5 11 21 7 18 15H6L3 7Z" />

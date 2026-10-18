@@ -1,11 +1,12 @@
 import { BindingDef, MoveDef } from "../protected/definitions";
-import { getValidTargets } from "../protected/enemies";
+import { getValidTargets, pickTarget } from "../protected/enemies";
 import { findBinding, findBuff, findEntity, isCharacter, isEnemy, isValidEntity } from "../protected/helpers";
 import { getBindingPotency } from "../protected/mechanics";
 import { Random } from "../protected/random";
 import { GameStatus } from "../protected/status";
-import { ContentCatalog, iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iTrap } from "../protected/types";
+import { ContentCatalog, iBinding, iBuff, iCharacter, iEnemy, iEntity, iGameState, iIntentionRoll, iMove, iMoveResult, iTargetInfo, iTrap } from "../protected/types";
 import { BondageEvent, EntityId, LeafEvent, StanceId } from "../public/types";
+import { evaluateIntention, resolveMove } from "./combat";
 import { TRAP_MAX } from "./constants";
 import { iEngineEffect } from "./types";
 
@@ -127,6 +128,9 @@ export class GameEffects {
                             break;
                         case "weaken":
                             this.weakenIntentions(effect.target, effect.amount);
+                            break;
+                        case "discord":
+                            this.discordIntentions(effect.target);
                             break;
                     }
                     break;
@@ -566,6 +570,7 @@ export class GameEffects {
             intention.resolved = true;
         }
     }
+
     private weakenIntentions(target: iEnemy, amount: number) {
         for (const intention of target.intentions) {
             if (intention.move.roll) {
@@ -579,6 +584,39 @@ export class GameEffects {
                 target: target.id,
                 move: intention.move.definition.id
             });
+        }
+    }
+
+    private discordIntentions(enemy: iEnemy) {
+        const status = new GameStatus(this.state, enemy);
+        for (const intention of enemy.intentions) {
+            if (intention.move.definition.traits?.length === 1
+                && intention.move.definition.traits?.includes("binding")) {
+                this.addEvent({
+                    type: "intentionDiscorded",
+                    target: enemy.id,
+                    move: intention.move.definition.id
+                });
+                intention.resolved = true;
+
+                const targets: iTargetInfo[] = evaluateIntention(this.state, intention, status);
+                const moveResults: iMoveResult = resolveMove(this.state, intention.move, intention.actor, targets);
+                for (const target of moveResults.targets) {
+                    for (const effect of target.effects) {
+                        if (effect.type === "binding" && (effect.amount ?? 0) > 0) {
+                            const newTarget = pickTarget(this.state.enemies.filter(x => x.id !== enemy.id), this.rng);
+                            if (newTarget && isEnemy(newTarget)) {
+                                this.effects.push({
+                                    type: "damage",
+                                    source: enemy,
+                                    target: newTarget,
+                                    amount: effect.amount ?? 0,
+                                })
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

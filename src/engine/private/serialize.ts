@@ -132,14 +132,12 @@ function serializeEffect(effect: iEffect): Effect | undefined {
             break;
         case "intention":
             switch (effect.operation) {
-
                 case "cancel":
                     return {
                         type: effect.type,
                         operation: effect.operation,
                         target: effect.target.id,
                     }
-                    break;
                 case "weaken":
                     return {
                         type: effect.type,
@@ -147,7 +145,6 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                         target: effect.target.id,
                         amount: effect.amount
                     }
-                    break;
                 case "target":
                     return {
                         type: effect.type,
@@ -155,7 +152,12 @@ function serializeEffect(effect: iEffect): Effect | undefined {
                         target: effect.target.id,
                         destination: effect.destination.id
                     }
-                    break;
+                case "discord":
+                    return {
+                        type: effect.type,
+                        operation: effect.operation,
+                        target: effect.target.id,
+                    }
             }
         case "refresh":
             return {

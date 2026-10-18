@@ -450,6 +450,7 @@ export const systemEnglishStrings: StringTable = {
     "flag.blocksAttack.name": "Cannot Attack",
     "flag.blocksEscape.name": "Cannot Escape",
     "flag.blocksAssist.name": "Cannot Assist",
+    "flag.allowAssist.name": "Can Always Assist",
     "flag.blocksBonusEscape.name": "No Bonus Escapes",
     "flag.blocksMoving.name": "Cannot Move",
     "flag.skipsTraps.name": "Ignores Traps",
@@ -479,6 +480,7 @@ export const systemEnglishStrings: StringTable = {
     "failure.cooldownIncomplete.text": "This move is still on cooldown.",
     "failure.insufficientResource.text": "Not enough resources.",
     "failure.insufficientTargets.text": "Not enough valid targets.",
+    "failure.insufficientBindingIntentions.text": "This target isn't using a binding attack.",
 
 };
 

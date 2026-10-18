@@ -64,7 +64,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
             reason = "bindingRestriction";
         }
         else if (move.isValid) {
-            reason = move.isValid(move, actor);
+            reason = move.isValid(state, move, actor);
         }
 
         if (!reason) {

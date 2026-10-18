@@ -6,9 +6,10 @@ import { hinariCatalog } from "./characters/hinari";
 import { koCatalog } from "./characters/ko";
 import { matsukoCatalog } from "./characters/matsuko";
 import { naruyoCatalog } from "./characters/naruyo";
+import { sakariCatalog } from "./characters/sakari";
 import { skunkCatalog } from "./skunk/content";
 
-export type KCQCharacter = "ko" | "matsuko" | "hinari" | "naruyo";
+export type KCQCharacter = "ko" | "matsuko" | "hinari" | "naruyo" | "sakari";
 export type KCQCampaign = "skunk";
 
 export const characterCatalogs: Record<KCQCharacter, ContentCatalogFragment> = {
@@ -16,6 +17,7 @@ export const characterCatalogs: Record<KCQCharacter, ContentCatalogFragment> = {
     "matsuko": matsukoCatalog,
     "hinari": hinariCatalog,
     "naruyo": naruyoCatalog,
+    "sakari": sakariCatalog,
 };
 
 export const campaignCatalogs: Record<KCQCampaign, ContentCatalogFragment> = {

@@ -94,6 +94,7 @@ export function createEffectPreviews(effect: Effect, id: string, context: Effect
     }
 
     const weaken = effect.operation === "weaken";
+    const cancel = effect.operation === "weaken";
     const enemy = context.state?.enemies.find(({ id: enemyId }) => enemyId === effect.target);
     const label = context.presentation.ui(weaken ? "targeting.effectWeaken" : "targeting.effectCancel");
     const percentage = weaken ? context.presentation.ui("targeting.percentage", {

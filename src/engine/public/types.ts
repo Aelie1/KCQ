@@ -77,6 +77,8 @@ export type CampaignId = string;
 
 export type CallbackId = string;
 
+export type IconId = "shield" | "sword" | "shield-off" | "sword-off" | "crown" | "sun" | "ambush" | "sprayer";
+
 
 /*******************************************************
  * Characters
@@ -139,7 +141,7 @@ export interface MoveListModifier {
 
 export interface Buff {
     id: BuffId;
-    icon?: "shield" | "sword" | "shield-off" | "crown" | "sun" | "ambush" | "sprayer";
+    icon?: IconId;
     severity?: number;
     duration?: number;
     statuses?: Status[];
@@ -165,6 +167,7 @@ export type Effect =
     | RefreshEffect
     | CancelEffect
     | WeakenEffect
+    | DiscordEffect
     | BonusEffect;
 
 export interface DamageEffect {
@@ -229,6 +232,12 @@ export interface WeakenEffect {
     operation: "weaken";
     target: EntityId;
     amount: number;
+}
+
+export interface DiscordEffect {
+    type: "intention"
+    operation: "discord";
+    target: EntityId;
 }
 
 export interface BonusEffect {
@@ -507,7 +516,8 @@ export type FailureReason =
     | "bindingRestriction"
     | "cooldownIncomplete"
     | "insufficientResource"
-    | "insufficientTargets";
+    | "insufficientTargets"
+    | "insufficientBindingIntentions";
 
 
 
@@ -539,8 +549,7 @@ export type LeafEvent =
     | CooldownEvent
     | TrapEvent
     | RetargetEvent
-    | CancelEvent
-    | WeakenEvent
+    | IntentionEvent
     | DataEvent
     | IncapacitateEvent
     | TickEvent
@@ -649,14 +658,8 @@ export interface RetargetEvent {
     destination: EntityId;
 }
 
-export interface CancelEvent {
-    type: "intentionCancelled";
-    target: EntityId;
-    move: MoveId;
-}
-
-export interface WeakenEvent {
-    type: "intentionWeakened";
+export interface IntentionEvent {
+    type: "intentionCancelled" | "intentionWeakened" | "intentionDiscorded";
     target: EntityId;
     move: MoveId;
 }

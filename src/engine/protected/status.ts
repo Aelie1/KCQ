@@ -31,6 +31,9 @@ export class GameStatus {
             if (passive.status) {
                 this.statuses.push(passive.status);
             }
+            if (passive.getStatus) {
+                this.statuses.push(passive.getStatus(target));
+            }
         }
         this.buffs = target.buffs.filter(buff => (buff.active && buff.modifiers));
         if (isCharacter(target)) {

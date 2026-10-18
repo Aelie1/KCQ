@@ -40,13 +40,14 @@ export interface MoveDef extends Move {
     bindings?: BindingDef[];
     getHits?: (actor: iEntity, move: MoveDef) => number;
     resolve: (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]) => iMoveResult;
-    isValid?: (move: MoveDef, actor: iEntity) => FailureReason | undefined;
+    isValid?: (state: iGameState, move: MoveDef, actor: iEntity) => FailureReason | undefined;
     isValidTarget?: (move: MoveDef, target: iEntity | null) => FailureReason | undefined;
 }
 
 export interface PassiveDef {
     id: PassiveId;
     status?: StatusLevelDef;
+    getStatus?: (target: iEntity) => StatusLevelDef;
     immunities?: StatusDef[];
 }
 

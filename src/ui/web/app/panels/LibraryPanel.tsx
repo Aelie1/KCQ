@@ -134,98 +134,98 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
         onClick={event => event.stopPropagation()}>
         <div ref={host} class="kcq-library-host" classList={{ "kcq-library-host--desktop": desktop() }}
             role="dialog" aria-modal="true" aria-labelledby={headingId}>
-        <Show when={desktop()}><aside class="kcq-library__sidebar">
-            <nav ref={tree} class="kcq-library__tree" aria-label={props.presentation.ui("library.navigation")}>
-                <ul><For each={LIBRARY_CATEGORIES}>{category => <li>
-                    <button type="button" class="kcq-library__tree-category" aria-expanded={!!expanded()[category]}
-                        aria-controls={treeId + "-" + category} data-library-category-toggle={category}
-                        onClick={() => setExpanded(previous => ({ ...previous, [category]: !previous[category] }))}>
-                        <span aria-hidden="true">{expanded()[category] ? "▾" : "▸"}</span>{label(props.presentation, category)}
-                    </button>
-                    <Show when={expanded()[category]}><ul id={treeId + "-" + category}>
-                        <For each={libraryEntries(props.library, category, props.presentation)}>{entry => <li>
-                            <button type="button" class="kcq-library__tree-entry" data-library-tree-entry={category + ":" + entry.id}
-                                aria-current={page().kind === "entry" && (page() as LibraryEntry).category === category && (page() as LibraryEntry).id === entry.id ? "page" : undefined}
-                                onClick={() => value.openEntry(entry)}>{libraryName(entry, props.presentation)}</button>
-                        </li>}</For>
-                    </ul></Show>
-                </li>}</For></ul>
-            </nav>
-            <section class="kcq-library__history" aria-label={props.presentation.ui("library.history")}>
-                <div class="kcq-library__history-header"><h2>{props.presentation.ui("library.history")}</h2>
-                    <button type="button" class="kcq-library__history-back" disabled={!navigation.canBack()}
-                        aria-label={props.presentation.ui("library.back")} onClick={back}>←</button>
-                    <button type="button" class="kcq-library__history-forward" disabled={!navigation.canForward()}
-                        aria-label={props.presentation.ui("library.forward")} onClick={forward}>→</button>
-                </div>
-                <ol class="kcq-library__history-list"><For each={historyEntries()}>{visit => <li>
-                    <button type="button" data-library-history-index={visit.index}
-                        data-history-direction={visit.index < navigation.position() ? "previous" : visit.index > navigation.position() ? "forward" : "current"}
-                        aria-current={visit.index === navigation.position() ? "page" : undefined}
-                        onClick={() => go(visit.index)}>{title(visit.page)}</button>
-                </li>}</For></ol>
-            </section>
-        </aside></Show>
-        <ScreenLayout class="kcq-library" ariaLabel={props.presentation.ui("library.title")}
-            header={<div class="kcq-library__header">
-                <button type="button" class="kcq-library__header-back" onClick={back} aria-label={props.presentation.ui("library.back")}>←</button>
-                <div class="kcq-library__identity">
-                    <h1 ref={heading} id={headingId} tabindex="-1">{title()}</h1>
-                    <nav class="kcq-library__breadcrumbs" aria-label={props.presentation.ui("library.title")}>
-                        <button type="button" onClick={() => open({ kind: "home" })}>{props.presentation.ui("library.title")}</button>
-                        <Show when={page().kind !== "home"}>
-                            <span aria-hidden="true">/</span>
-                            <button type="button" onClick={() => {
-                                const current = page();
-                                if (current.kind !== "home") open({ kind: "category", category: current.category });
-                            }}>{page().kind !== "home" ? label(props.presentation, (page() as Exclude<LibraryPage, { kind: "home" }>).category) : ""}</button>
-                        </Show>
-                    </nav>
-                </div>
-                <Show when={page().kind === "entry" && ["moves", "passives"].includes((page() as LibraryEntry).category)}><Owner category={(page() as LibraryEntry).category as "moves" | "passives"} id={(page() as LibraryEntry).id} /></Show>
-            </div>}
-            body={<Switch>
-                <Match when={page().kind === "category" && (page() as { category: LibraryCategory }).category === "guide"}>
-                    <div class="kcq-library__entries"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry =>
-                        <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}
-                            onClick={() => value.openEntry(entry)}><strong>{libraryName(entry, props.presentation)}</strong></button>
-                    }</For></div>
-                </Match>
-                <Match when={page().kind === "home" || (desktop() && page().kind === "category")}>
-                    <p class="kcq-library__intro">{props.presentation.ui("library.intro")}</p>
-                    <SurfaceCard title={props.presentation.ui("library.guide")}>
-                        <div class="kcq-library__guide-pages"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry =>
-                            <div class="kcq-library__guide-page"><ReferenceLink entry={entry} class="kcq-library__inline-link" />{": "}{libraryText(entry, props.presentation, "summary")}</div>
+            <Show when={desktop()}><aside class="kcq-library__sidebar">
+                <nav ref={tree} class="kcq-library__tree" aria-label={props.presentation.ui("library.navigation")}>
+                    <ul><For each={LIBRARY_CATEGORIES}>{category => <li>
+                        <button type="button" class="kcq-library__tree-category" aria-expanded={!!expanded()[category]}
+                            aria-controls={treeId + "-" + category} data-library-category-toggle={category}
+                            onClick={() => setExpanded(previous => ({ ...previous, [category]: !previous[category] }))}>
+                            <span aria-hidden="true">{expanded()[category] ? "▾" : "▸"}</span>{label(props.presentation, category)}
+                        </button>
+                        <Show when={expanded()[category]}><ul id={treeId + "-" + category}>
+                            <For each={libraryEntries(props.library, category, props.presentation)}>{entry => <li>
+                                <button type="button" class="kcq-library__tree-entry" data-library-tree-entry={category + ":" + entry.id}
+                                    aria-current={page().kind === "entry" && (page() as LibraryEntry).category === category && (page() as LibraryEntry).id === entry.id ? "page" : undefined}
+                                    onClick={() => value.openEntry(entry)}>{libraryName(entry, props.presentation)}</button>
+                            </li>}</For>
+                        </ul></Show>
+                    </li>}</For></ul>
+                </nav>
+                <section class="kcq-library__history" aria-label={props.presentation.ui("library.history")}>
+                    <div class="kcq-library__history-header"><h2>{props.presentation.ui("library.history")}</h2>
+                        <button type="button" class="kcq-library__history-back" disabled={!navigation.canBack()}
+                            aria-label={props.presentation.ui("library.back")} onClick={back}>←</button>
+                        <button type="button" class="kcq-library__history-forward" disabled={!navigation.canForward()}
+                            aria-label={props.presentation.ui("library.forward")} onClick={forward}>→</button>
+                    </div>
+                    <ol class="kcq-library__history-list"><For each={historyEntries()}>{visit => <li>
+                        <button type="button" data-library-history-index={visit.index}
+                            data-history-direction={visit.index < navigation.position() ? "previous" : visit.index > navigation.position() ? "forward" : "current"}
+                            aria-current={visit.index === navigation.position() ? "page" : undefined}
+                            onClick={() => go(visit.index)}>{title(visit.page)}</button>
+                    </li>}</For></ol>
+                </section>
+            </aside></Show>
+            <ScreenLayout class="kcq-library" ariaLabel={props.presentation.ui("library.title")}
+                header={<div class="kcq-library__header">
+                    <button type="button" class="kcq-library__header-back" onClick={back} aria-label={props.presentation.ui("library.back")}>←</button>
+                    <div class="kcq-library__identity">
+                        <h1 ref={heading} id={headingId} tabindex="-1">{title()}</h1>
+                        <nav class="kcq-library__breadcrumbs" aria-label={props.presentation.ui("library.title")}>
+                            <button type="button" onClick={() => open({ kind: "home" })}>{props.presentation.ui("library.title")}</button>
+                            <Show when={page().kind !== "home"}>
+                                <span aria-hidden="true">/</span>
+                                <button type="button" onClick={() => {
+                                    const current = page();
+                                    if (current.kind !== "home") open({ kind: "category", category: current.category });
+                                }}>{page().kind !== "home" ? label(props.presentation, (page() as Exclude<LibraryPage, { kind: "home" }>).category) : ""}</button>
+                            </Show>
+                        </nav>
+                    </div>
+                    <Show when={page().kind === "entry" && ["moves", "passives"].includes((page() as LibraryEntry).category)}><Owner category={(page() as LibraryEntry).category as "moves" | "passives"} id={(page() as LibraryEntry).id} /></Show>
+                </div>}
+                body={<Switch>
+                    <Match when={page().kind === "category" && (page() as { category: LibraryCategory }).category === "guide"}>
+                        <div class="kcq-library__entries"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry =>
+                            <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}
+                                onClick={() => value.openEntry(entry)}><strong>{libraryName(entry, props.presentation)}</strong></button>
                         }</For></div>
-                    </SurfaceCard>
-                    <Show when={!desktop()}><div class="kcq-library__categories"><For each={LIBRARY_CATEGORIES}>{category =>
-                        <button type="button" class="kcq-library__category kcq-encounter-card" data-library-focus={category}
-                            onClick={() => open({ kind: "category", category })}>
-                            <strong>{label(props.presentation, category)}</strong>
-                            <span>{props.presentation.ui("library.count", { count: libraryEntries(props.library, category, props.presentation).length })}</span>
-                            <span aria-hidden="true">›</span>
-                        </button>}
-                    </For></div></Show>
-                </Match>
-                <Match when={!desktop() && page().kind === "category" && page()} keyed>{current => {
-                    const category = (current as Extract<LibraryPage, { kind: "category" }>).category;
-                    const entries = () => libraryEntries(props.library, category, props.presentation);
-                    const entryButton = (entry: LibraryEntry): JSX.Element => <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}
-                        onClick={() => value.openEntry(entry)}><strong>{libraryName(entry, props.presentation)}</strong></button>;
-                    return <Show when={entries().length} fallback={<p class="kcq-library__empty">{props.presentation.ui("library.empty")}</p>}>
-                        <Show when={category === "moves"} fallback={<div class="kcq-library__entries"><For each={entries()}>{entryButton}</For></div>}>
-                            <div class="kcq-library__move-groups"><For each={libraryMoveGroups(props.library, props.presentation)}>{group =>
-                                <section class="kcq-library__move-group">
-                                    <h2>{group.owner ? libraryName(group.owner, props.presentation) : props.presentation.ui("library.moves")}</h2>
-                                    <div class="kcq-library__move-list"><For each={group.entries}>{entryButton}</For></div>
-                                </section>}
-                            </For></div>
-                        </Show>
-                    </Show>;
-                }}</Match>
-                <Match when={page().kind === "entry" && page()} keyed>{current => <LibraryDetail entry={current as LibraryEntry} />}</Match>
-            </Switch>} />
-    </div></div>;
+                    </Match>
+                    <Match when={page().kind === "home" || (desktop() && page().kind === "category")}>
+                        <p class="kcq-library__intro">{props.presentation.ui("library.intro")}</p>
+                        <SurfaceCard title={props.presentation.ui("library.guide")}>
+                            <div class="kcq-library__guide-pages"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry =>
+                                <div class="kcq-library__guide-page"><ReferenceLink entry={entry} class="kcq-library__inline-link" />{": "}{libraryText(entry, props.presentation, "summary")}</div>
+                            }</For></div>
+                        </SurfaceCard>
+                        <Show when={!desktop()}><div class="kcq-library__categories"><For each={LIBRARY_CATEGORIES}>{category =>
+                            <button type="button" class="kcq-library__category kcq-encounter-card" data-library-focus={category}
+                                onClick={() => open({ kind: "category", category })}>
+                                <strong>{label(props.presentation, category)}</strong>
+                                <span>{props.presentation.ui("library.count", { count: libraryEntries(props.library, category, props.presentation).length })}</span>
+                                <span aria-hidden="true">›</span>
+                            </button>}
+                        </For></div></Show>
+                    </Match>
+                    <Match when={!desktop() && page().kind === "category" && page()} keyed>{current => {
+                        const category = (current as Extract<LibraryPage, { kind: "category" }>).category;
+                        const entries = () => libraryEntries(props.library, category, props.presentation);
+                        const entryButton = (entry: LibraryEntry): JSX.Element => <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}
+                            onClick={() => value.openEntry(entry)}><strong>{libraryName(entry, props.presentation)}</strong></button>;
+                        return <Show when={entries().length} fallback={<p class="kcq-library__empty">{props.presentation.ui("library.empty")}</p>}>
+                            <Show when={category === "moves"} fallback={<div class="kcq-library__entries"><For each={entries()}>{entryButton}</For></div>}>
+                                <div class="kcq-library__move-groups"><For each={libraryMoveGroups(props.library, props.presentation)}>{group =>
+                                    <section class="kcq-library__move-group">
+                                        <h2>{group.owner ? libraryName(group.owner, props.presentation) : props.presentation.ui("library.moves")}</h2>
+                                        <div class="kcq-library__move-list"><For each={group.entries}>{entryButton}</For></div>
+                                    </section>}
+                                </For></div>
+                            </Show>
+                        </Show>;
+                    }}</Match>
+                    <Match when={page().kind === "entry" && page()} keyed>{current => <LibraryDetail entry={current as LibraryEntry} />}</Match>
+                </Switch>} />
+        </div></div>;
     return <LibraryContext.Provider value={value}>{isServer ? modal() : <Portal>{modal()}</Portal>}</LibraryContext.Provider>;
 }
 function ReferenceLink(props: { entry: LibraryEntry; children?: JSX.Element; class?: string; selected?: boolean }): JSX.Element {
@@ -483,8 +483,17 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
 function PassiveDetail(props: { reference: PassiveReference }): JSX.Element {
     const c = context();
     const rows = () => libraryPassiveRows(props.reference, c.presentation);
+    const effect = () => c.presentation.referenceText("passive", props.reference.id, "effect");
+
     return <>
         <Description entry={{ category: "passives", id: props.reference.id }} />
+        <Show when={effect()}>
+            <SurfaceCard title={c.presentation.ui("library.effects")}>
+                <p class="kcq-library__notes" style={{ margin: "0" }}>
+                    <ReferenceText text={effect()!} />
+                </p>
+            </SurfaceCard>
+        </Show>
         <Show when={rows().length || props.reference.immunities?.length}>
             <SurfaceCard title={c.presentation.ui("library.effects")}>
                 <table class="kcq-library__mechanics-table"><tbody>

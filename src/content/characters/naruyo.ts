@@ -39,9 +39,9 @@ export const precisionStab: MoveDef = {
 }
 
 
-export const fairyprecisionStab: MoveDef = {
+export const fairyPrecisionStab: MoveDef = {
     ...precisionStab,
-    id: "fairyprecisionStab",
+    id: "fairyPrecisionStab",
     index: 2,
     targets: "all",
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
@@ -64,7 +64,7 @@ export const snowstorm: MoveDef = {
 
         const buff: iBuff = {
             id: SNOWSTORM_BUFF,
-            icon: "shield-off",
+            icon: "sword-off",
             duration: SNOWSTORM_DURATION,
             active: true,
             modifiers: {
@@ -195,12 +195,12 @@ export const powerOfTime: MoveDef = {
 export const naruyo: CharacterDef = {
     id: "naruyo",
     moves: [precisionStab, snowstorm, timeAcceleration, temporalLock, powerOfTime],
-    empoweredMoves: [fairyprecisionStab],
+    empoweredMoves: [fairyPrecisionStab],
     passives: [expertArtisan]
 };
 
 export const naruyoCatalog: ContentCatalogFragment = {
     characters: [naruyo],
-    moves: [precisionStab, fairyprecisionStab, snowstorm, timeAcceleration, temporalLock, powerOfTime],
+    moves: [precisionStab, fairyPrecisionStab, snowstorm, timeAcceleration, temporalLock, powerOfTime],
     passives: [expertArtisan]
 };

@@ -1,4 +1,4 @@
-import { BindingId, BuffId, CallbackId, CampaignId, DefinitionId, DifficultyId, EncounterId, EntityId, HitBand, ModifierSet, MoveId, MoveListModifier, Phase, Status, Trap } from "./types";
+import { BindingId, BuffId, CallbackId, CampaignId, DefinitionId, DifficultyId, EncounterId, EntityId, HitBand, IconId, ModifierSet, MoveId, MoveListModifier, Phase, Status, Trap } from "./types";
 
 export interface SaveState {
     campaign: CampaignId;
@@ -64,7 +64,7 @@ export interface SaveMove {
 
 export interface SaveBuff {
     id: BuffId;
-    icon?: "shield" | "sword" | "shield-off" | "crown" | "sun" | "ambush" | "sprayer";
+    icon?: IconId;
     severity?: number;
     duration?: number;
     statuses?: Status[];

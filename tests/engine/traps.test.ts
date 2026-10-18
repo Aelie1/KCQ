@@ -250,7 +250,7 @@ describe("generic traps through GameEngine", () => {
             targets: 0,
             accuracy: undefined,
             cooldown: { "resource-gated": 3 },
-            isValid: (_move, actor) => actor.data.ready === 1
+            isValid: (state, _move, actor) => actor.data.ready === 1
                 ? undefined
                 : "insufficientResource",
             resolve: (state, actor) => [{

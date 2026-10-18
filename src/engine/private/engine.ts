@@ -285,7 +285,7 @@ export class GameEngine implements Engine {
                 }
 
                 if (move.isValid) {
-                    const reason = move.isValid(move, actor);
+                    const reason = move.isValid(this.state, move, actor);
                     if (reason) {
                         return {
                             success: false,
@@ -395,7 +395,7 @@ export class GameEngine implements Engine {
                     }
 
                     if (!reason && move.isValid) {
-                        reason = move.isValid(move, actor);
+                        reason = move.isValid(this.state, move, actor);
                     }
 
                     if (reason) {
