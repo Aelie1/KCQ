@@ -30,6 +30,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.battleOverview.endTurn": "End Turn",
     "ui.title.continue": "Continue",
     "ui.title.resumeBattle": "Resume Battle",
+    "ui.title.party": "Party",
     "ui.title.save.delete": "Delete",
     "ui.title.save.deletePrompt": "Delete this saved battle? This cannot be undone.",
     "ui.title.save.deleteConfirm": "Delete Battle",

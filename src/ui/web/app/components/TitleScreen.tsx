@@ -84,6 +84,13 @@ export function TitleScreen(props: {
                     </Show>
                 </section>
             </Show>
+            <Show when={props.onChangeParty}>
+                <h2>{props.model.partyHeading}</h2>
+                <section class="kcq-encounter-card kcq-title-screen__party" aria-label={props.model.partyHeading}>
+                    <p>{props.model.partySummary}</p>
+                    <button class="kcq-battle-overview__secondary-action kcq-title-screen__change-party" type="button" onClick={props.onChangeParty}>{props.model.changePartyLabel}</button>
+                </section>
+            </Show>
             <h2 ref={campaignsHeading} tabIndex={-1}>{props.model.campaignsHeading}</h2>
             <For each={props.model.campaigns}>
                 {campaign => <button class="kcq-encounter-card kcq-title-screen__campaign" type="button"
@@ -92,12 +99,6 @@ export function TitleScreen(props: {
                     <span>{campaign.description}</span>
                 </button>}
             </For>
-            <Show when={props.onChangeParty}>
-                <div class="kcq-encounter-card kcq-title-screen__party">
-                    <p>{props.model.partySummary}</p>
-                    <button class="kcq-targeting__back" type="button" onClick={props.onChangeParty}>{props.model.changePartyLabel}</button>
-                </div>
-            </Show>
         </div>}
         footer={<div class="kcq-title-screen__bottom">
             <label class="kcq-title-screen__language">

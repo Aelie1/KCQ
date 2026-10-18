@@ -422,6 +422,7 @@ button {
 }
 
 .kcq-battle-overview__footer button,
+.kcq-title-screen__change-party,
 .kcq-combat-header--with-action>.kcq-battle-overview__primary-action {
     height: 42px;
     padding: 0 10px;
@@ -4247,7 +4248,26 @@ button {
 }
 
 .kcq-title-screen__party p {
+    flex: 1 1 160px;
+    min-width: 0;
     margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.kcq-title-screen__change-party {
+    flex: 0 0 auto;
+    max-width: 100%;
+    min-height: 42px;
+    height: auto;
+    padding: 8px 10px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+
+.kcq-title-screen__change-party:hover {
+    border-color: var(--kcq-accent-primary);
+    background: var(--kcq-accent-primary-deep);
 }
 
 .kcq-title-screen__continue {
@@ -4343,7 +4363,8 @@ button {
     margin: 0;
 }
 
-.kcq-title-screen__resume button:focus-visible {
+.kcq-title-screen__resume button:focus-visible,
+.kcq-title-screen__change-party:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: 2px;
 }

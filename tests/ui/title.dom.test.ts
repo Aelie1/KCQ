@@ -44,6 +44,17 @@ describe("title navigation", () => {
     it("has a labeled native language selector and a keyboard-focusable semantic campaign button", () => {
         const { composeCampaign, prepareBattle } = mount();
         const presentation = new Presentation(getStringTable("en"));
+        expect([...document.querySelectorAll(".kcq-title-screen h2")].map(heading => heading.textContent))
+            .toEqual([presentation.ui("title.party"), presentation.ui("title.campaigns")]);
+        const party = document.querySelector(".kcq-title-screen__party")!;
+        expect(party.getAttribute("aria-label")).toBe(presentation.ui("title.party"));
+        expect(party.querySelector("p")?.textContent).toBe("Ko-chan, Matsuko, Hinari");
+        const changeParty = party.querySelector<HTMLButtonElement>("button")!;
+        expect(changeParty.classList.contains("kcq-battle-overview__secondary-action")).toBe(true);
+        expect(changeParty.classList.contains("kcq-targeting__back")).toBe(false);
+        expect(changeParty.type).toBe("button");
+        changeParty.focus();
+        expect(document.activeElement).toBe(changeParty);
         const label = document.querySelector<HTMLLabelElement>(".kcq-title-screen__language")!;
         const select = label.querySelector("select")!;
         expect(label.querySelector(".kcq-title-screen__language-label")?.textContent)
@@ -66,7 +77,7 @@ describe("title navigation", () => {
     it("updates localized title content in place and shares language with campaign screens and return to title", () => {
         const presentation = new Presentation(getStringTable("en"));
         const alternate = new Presentation({ ...getStringTable("en", stockCharacters, "skunk"),
-            "ui.title.name": "Test Quest", "ui.title.campaigns": "Test campaigns",
+            "ui.title.name": "Test Quest", "ui.title.campaigns": "Test campaigns", "ui.title.party": "Test party",
             "ui.battleSettings.language": "Test language label",
             "campaign.skunk.name": "Test campaign", "campaign.skunk.desc": "Test description",
         });
@@ -80,7 +91,8 @@ describe("title navigation", () => {
         select.dispatchEvent(new Event("change", { bubbles: true }));
         expect(document.querySelector(".kcq-title-screen")).toBe(panel);
         expect(panel?.querySelector("h1")?.textContent).toBe("Test Quest");
-        expect(panel?.querySelector("h2")?.textContent).toBe("Test campaigns");
+        expect([...panel!.querySelectorAll("h2")].map(heading => heading.textContent)).toEqual(["Test party", "Test campaigns"]);
+        expect(panel?.querySelector(".kcq-title-screen__party")?.getAttribute("aria-label")).toBe("Test party");
         expect(panel?.querySelector("strong")?.textContent).toBe("Test campaign");
         expect(panel?.querySelector(".kcq-title-screen__campaign > span")?.textContent).toBe("Test description");
         expect(panel?.querySelector(".kcq-title-screen__language-label")?.textContent).toBe("Test language label");

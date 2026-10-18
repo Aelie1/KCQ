@@ -7,6 +7,7 @@ import { displayVersion } from "../version";
 export interface TitleViewModel {
     title: string;
     campaignsHeading: string;
+    partyHeading: string;
     changePartyLabel: string;
     partySummary: string;
     continueLabel: string;
@@ -45,6 +46,7 @@ export function createTitleViewModel(
     return {
         title: presentation.ui("title.name"),
         campaignsHeading: presentation.ui("title.campaigns"),
+        partyHeading: presentation.ui("title.party"),
         changePartyLabel: presentation.ui("party.change"),
         partySummary: party.map(id => presentation.entity(id)).join(", "),
         continueLabel: presentation.ui("title.continue"),

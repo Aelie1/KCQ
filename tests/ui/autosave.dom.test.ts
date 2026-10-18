@@ -109,10 +109,13 @@ describe("title saved-battle card", () => {
             "campaign.skunk.name": "Localized campaign", "encounter.plains_3.name": "Localized encounter",
             "difficulty.veteran.name": "Localized difficulty", "ui.battleOverview.round": "Turn {round}",
             "ui.title.resumeBattle": "Localized resume", "ui.title.continue": "Localized continue",
+            "ui.title.party": "Localized party", "ui.title.campaigns": "Localized campaigns",
             "ui.title.save.delete": "Localized delete",
             "ui.battleResult.bossHp.short": "Localized boss {percent}%",
         });
         const app = mount(undefined, localized);
+        expect([...document.querySelectorAll(".kcq-title-screen h2")].map(heading => heading.textContent))
+            .toEqual(["Localized resume", "Localized party", "Localized campaigns"]);
         const card = document.querySelector(".kcq-title-screen__resume")!;
         expect(card.previousElementSibling?.tagName).toBe("H2");
         expect(card.previousElementSibling?.textContent).toBe("Localized resume");
