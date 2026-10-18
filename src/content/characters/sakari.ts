@@ -60,7 +60,7 @@ export const malfunction: MoveDef = {
         }
 
         for (const target of targets) {
-            if (isEnemy(target.target)) {
+            if (isEnemy(target.target) && target.effectiveness > 0) {
                 result.targets.push(tr(target, [
                     {
                         type: "buff",
@@ -113,7 +113,7 @@ export const overload: MoveDef = {
         }
 
         for (const target of targets) {
-            if (isEnemy(target.target)) {
+            if (isEnemy(target.target) && target.effectiveness > 0) {
                 result.targets.push(tr(target, [
                     {
                         type: "buff",
@@ -189,13 +189,15 @@ export const discordSeal: MoveDef = {
 
         for (const target of targets) {
             if (isEnemy(target.target)) {
-                result.targets.push(tr(target, [
-                    {
-                        type: "intention",
-                        operation: "discord",
-                        target: target.target,
-                    }]
-                ));
+                if (target.target.intentions.filter(x => x.move.definition.traits?.length === 1 && x.move.definition.traits?.includes("binding")).length > 0) {
+                    result.targets.push(tr(target, [
+                        {
+                            type: "intention",
+                            operation: "discord",
+                            target: target.target,
+                        }]
+                    ));
+                }
             }
         }
         return result;
