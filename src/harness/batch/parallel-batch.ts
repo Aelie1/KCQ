@@ -56,6 +56,9 @@ interface WorkerRecord {
 
 interface ActiveJob {
     id: number;
+    input: BatchWorkerInput;
+    chunkSize: number;
+    nextRunOffset: number;
     total: number;
     completed: number;
     pending: Set<WorkerRecord>;
@@ -100,35 +103,29 @@ export class BatchWorkerPool implements BatchWorkerRunner {
         }
 
         this.ensureWorkers();
-        const assignments = partitionIndexes(input.runIndexes, this.workerCount);
-        const assignedWorkers = this.workers.slice(0, assignments.length);
         const jobId = this.nextJobId;
         this.nextJobId += 1;
 
         return new Promise<BatchRun[]>((resolve, reject) => {
-            this.activeJob = {
+            const job: ActiveJob = {
                 id: jobId,
+                input: { ...input, runIndexes: [...input.runIndexes] },
+                // Keep tails short while leaving enough initial chunks for every worker.
+                chunkSize: Math.min(4, Math.max(1, Math.floor(input.runIndexes.length / this.workerCount))),
+                nextRunOffset: 0,
                 total: input.runIndexes.length,
                 completed: 0,
-                pending: new Set(assignedWorkers),
+                pending: new Set(),
                 chunks: [],
                 onProgress,
                 resolve,
                 reject,
             };
+            this.activeJob = job;
 
-            try {
-                assignedWorkers.forEach((record, index) => {
-                    const runIndexes = assignments[index];
-                    record.assignedIndexes = runIndexes;
-                    record.worker.postMessage({
-                        type: "run",
-                        jobId,
-                        input: { ...input, runIndexes },
-                    });
-                });
-            } catch (error: unknown) {
-                this.failPool(this.contextualError(error, undefined));
+            for (const record of this.workers) {
+                if (this.activeJob !== job) break;
+                this.assignNextChunk(record, job);
             }
         });
     }
@@ -195,6 +192,24 @@ export class BatchWorkerPool implements BatchWorkerRunner {
         }
     }
 
+    private assignNextChunk(record: WorkerRecord, job: ActiveJob): void {
+        if (job.nextRunOffset >= job.total) return;
+
+        const runIndexes = job.input.runIndexes.slice(job.nextRunOffset, job.nextRunOffset + job.chunkSize);
+        job.nextRunOffset += runIndexes.length;
+        record.assignedIndexes = runIndexes;
+        job.pending.add(record);
+        try {
+            record.worker.postMessage({
+                type: "run",
+                jobId: job.id,
+                input: { ...job.input, runIndexes },
+            });
+        } catch (error: unknown) {
+            this.failPool(this.contextualError(error, record));
+        }
+    }
+
     private handleMessage(record: WorkerRecord, message: BatchWorkerResponse): void {
         const job = this.activeJob;
         if (!job || message.jobId !== job.id || !job.pending.has(record)) return;
@@ -225,7 +240,9 @@ export class BatchWorkerPool implements BatchWorkerRunner {
         job.chunks.push(message.runs);
         job.pending.delete(record);
         record.assignedIndexes = [];
-        if (job.pending.size === 0) {
+        this.assignNextChunk(record, job);
+        if (this.activeJob !== job) return;
+        if (job.nextRunOffset === job.total && job.pending.size === 0) {
             this.activeJob = undefined;
             if (job.completed !== job.total) {
                 const error = new Error(
@@ -320,12 +337,6 @@ export async function runBatchParallel(
     }
 }
 
-/** Round-robin assignment keeps expensive run indexes distributed predictably. */
-export function partitionRunIndexes(runs: number, workers: number): number[][] {
-    const effective = effectiveWorkerCount(workers, runs);
-    return partitionIndexes(Array.from({ length: runs }, (_, index) => index), effective);
-}
-
 /** Sorts worker output and proves that no global run index is missing or duplicated. */
 export function assembleParallelBatchResult(
     input: BatchInput,
@@ -349,14 +360,6 @@ export function assembleParallelBatchResult(
         masterSeed: input.masterSeed,
         runs,
     };
-}
-
-function partitionIndexes(indexes: readonly number[], workers: number): number[][] {
-    if (indexes.length === 0) return [];
-    const count = Math.min(workers, indexes.length);
-    const partitions = Array.from({ length: count }, (): number[] => []);
-    indexes.forEach((runIndex, index) => partitions[index % count].push(runIndex));
-    return partitions;
 }
 
 function createBatchWorker(): WorkerHandle {
