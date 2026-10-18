@@ -24,7 +24,7 @@ const band = oneOf("none", "miss", "graze", "hit", "crit");
 const level = oneOf("none", "light", "moderate", "heavy", "severe", "overwhelming", "max");
 const trap = shape({ id: text, amount: number });
 const buffFields = {
-    id: text, icon: optional(oneOf("shield", "sword", "shield-off", "crown", "sun", "ambush", "sprayer")),
+    id: text, icon: optional(oneOf("shield", "sword", "shield-off", "sword-off", "crown", "sun", "ambush", "sprayer")),
     severity: optional(number), duration: optional(number), linkedEntity: optional(text),
     statuses: optional(list(shape({ id: text, value: number }))), modifiers: optional(record(number)),
     moveList: optional(shape({ addedMoves: optional(list(text)), blockedMoves: optional(list(text)) })),
@@ -58,8 +58,10 @@ const stanceOutcome = shape({ kind: oneOf("stance"), ...stanceFields });
 const outcome: Check = variant("kind", {
     bindingTick: { target: text, binding: text, outcomes: list(value => outcome(value)) },
     resource: { target: text, resource: text, change: number, initial: optional(number), final: optional(number), max: optional(number) },
-    damage: { target: text, damage: number, healing: number, blocked: number,
-        hits: list(shape({ result: band, damage: number, healing: number, blocked: number, recordedZeroEffect: optional(oneOf(true)) })) },
+    damage: {
+        target: text, damage: number, healing: number, blocked: number,
+        hits: list(shape({ result: band, damage: number, healing: number, blocked: number, recordedZeroEffect: optional(oneOf(true)) }))
+    },
     binding: { target: text, binding: text, change: number, blocked: number, initial: optional(endpoint), final: optional(endpoint) },
     buff: { buff: text, participants: list(shape({ target: text, initial: buffEndpoint, final: buffEndpoint })), summarized: optional(oneOf(true)) },
     stance: stanceFields,
@@ -67,7 +69,8 @@ const outcome: Check = variant("kind", {
     character: { target: text, operation: oneOf("incapacitated", "rescued") },
     enemy: { target: text, operation: oneOf("spawned", "defeated") },
     interrupt: { actor: text, reason: text }, refresh: { target: text }, retarget: { target: text, destination: text },
-    intention: { target: text, move: text, operation: oneOf("cancelled", "weakened") },
+    intention: { target: text, move: text, operation: oneOf("cancelled", "weakened", "discorded") },
+    bonus: { target: text, amount: number },
 });
 const outcomes = list(outcome);
 const loadEntry = { id: text, success: boolean, outcomes };
@@ -77,8 +80,10 @@ const entry = variant("kind", {
     encounter: loadEntry, character: loadEntry,
 });
 const context = shape({
-    characters: list(shape({ id: text, standing: boolean, data: record(number), buffs: list(buff),
-        bindings: list(shape({ id: text, value: number, level: optional(level) })) })),
+    characters: list(shape({
+        id: text, standing: boolean, data: record(number), buffs: list(buff),
+        bindings: list(shape({ id: text, value: number, level: optional(level) }))
+    })),
     enemies: list(shape({ id: text, buffs: list(buff) })), traps: list(trap), turn: shape({ round: integer }),
 });
 
@@ -93,9 +98,10 @@ const leaf = variant("type", {
     stanceSet: { actor: text, stance }, cooldownChanged: { target: text, move: text, value: number },
     trapAdded: { actor: text, trap: text, amount: number }, trapRemoved: { actor: text, trap: text, amount: number }, trapTriggered: { actor: text, trap: text, amount: number },
     actionInterrupted: { actor: text, reason: text }, actionRefreshed: { target: text }, targetChanged: { target: text, destination: text },
-    intentionCancelled: { target: text, move: text }, intentionWeakened: { target: text, move: text },
+    intentionCancelled: { target: text, move: text }, intentionWeakened: { target: text, move: text }, intentionDiscorded: { target: text, move: text },
     dataChanged: { ...targetAmount, name: text }, characterIncapacitated: { target: text }, characterRescued: { target: text },
     bindingTickStart: { target: text, binding: text }, bindingTickEnd: { target: text, binding: text },
+    bonusChanged: { target: text, amount: number },
 });
 const effects = list(leaf);
 const event = variant("type", {
@@ -105,13 +111,17 @@ const event = variant("type", {
 });
 const gameLog = shape({
     entries: list(entry), previous: context, mergingStance: boolean,
-    pendingBuffs: list(shape({ index: integer, event, before: context, after: context,
-        waiting: list(shape(buffMutation)), recorded: list(shape({ target: text, buff })) })),
+    pendingBuffs: list(shape({
+        index: integer, event, before: context, after: context,
+        waiting: list(shape(buffMutation)), recorded: list(shape({ target: text, buff }))
+    })),
 });
 const summary = shape({ count: integer, total: number, max: number, maxMove: optional(text) });
 const stats = shape({
-    stats: shape({ rounds: integer, actions: integer, escapes: summary, hits: summary, bindings: summary,
-        peakBinding: number, incapacitations: integer, rescues: integer, progress: shape({ boss: optional(number), enemies: optional(number) }) }),
+    stats: shape({
+        rounds: integer, actions: integer, escapes: summary, hits: summary, bindings: summary,
+        peakBinding: number, incapacitations: integer, rescues: integer, progress: shape({ boss: optional(number), enemies: optional(number) })
+    }),
     playerIds: list(text), tracks: list(shape({ id: text, bindings: list(shape({ id: text, value: number })) })),
     enemyHp: list(shape({ id: text, rank: oneOf("minion", "enemy", "boss"), maxHp: number, currHp: number })),
     previous: list(shape({ id: text, incapacitated: boolean, skunkLink: optional(text) })), terminal: boolean,
@@ -125,8 +135,10 @@ export function isSavePackage(value: unknown): value is SavePackage {
     return (!gameLog.mergingStance || last?.kind === "stance" && last.outcomes.length === 0)
         && gameLog.pendingBuffs.every(pending => {
             const entry = gameLog.entries[pending.index];
-            const expectedKind = { useMove: "move", useEscape: "escape", changePhase: "phase", changeStance: "stance",
-                loadEncounter: "encounter", loadCharacter: "character" }[pending.event.type];
+            const expectedKind = {
+                useMove: "move", useEscape: "escape", changePhase: "phase", changeStance: "stance",
+                loadEncounter: "encounter", loadCharacter: "character"
+            }[pending.event.type];
             const effects = [...(pending.event.type === "useMove" ? pending.event.targets.flatMap(target => target.effects) : []), ...pending.event.effects];
             return entry?.kind === expectedKind && pending.waiting.length > 0
                 && !(gameLog.mergingStance && pending.index === gameLog.entries.length - 1)

@@ -125,6 +125,8 @@ export const systemEnglishStrings: StringTable = {
     "ui.gameLog.cancelled": "{move} Cancelled",
     "ui.gameLog.weakened": "{move} Weakened",
     "ui.gameLog.retargeted": "Retargeted → {destination}",
+    "ui.gameLog.discorded": "{move} Backfired",
+    "ui.gameLog.bonus": "Bonus Escapes +{amount}",
     "ui.combatHeader.character": "Character",
     "ui.combatHeader.escape": "Escape",
     "ui.combatHeader.gameLog": "Game Log",

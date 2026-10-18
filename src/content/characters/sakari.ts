@@ -32,8 +32,10 @@ export const thrillseeker: PassiveDef = {
             return {};
         }
         const totalBindings = target.bindings.reduce((sum, binding) => sum + binding.value, 0);
+        const modifier = Math.floor(totalBindings / 40);
+        target.data["thrillseeker"] = modifier
         return {
-            modifiers: { hit: Math.floor(totalBindings / 40) }
+            modifiers: { hit: modifier }
         }
     }
 }

@@ -7,10 +7,10 @@ import type {
     ThresholdInfo,
 } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
-import { COMBAT_SHORTCUTS } from "../keyboard";
-import { Shortcut } from "../components/Shortcut";
 import { CharacterDetailsLayout } from "../components/CharacterDetailsLayout";
 import { CommandCard } from "../components/CommandCard";
+import { Shortcut } from "../components/Shortcut";
+import { COMBAT_SHORTCUTS } from "../keyboard";
 import { createCharacterDetailsViewModel } from "../viewModels/characterDetails";
 
 export interface CharacterDetailsPanelProps {
@@ -48,7 +48,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                     <section class="kcq-character-section kcq-character-commands"
                         aria-label={props.workspaceOnly ? model().labels.commandsHeading : undefined}
                         aria-labelledby={props.workspaceOnly ? undefined : "character-commands-heading"}>
-                        <Show when={!props.workspaceOnly || model().focused.resource}>
+                        <Show when={!props.workspaceOnly || model().focused.subspace || model().focused.thrillseeker}>
                             <div class="kcq-character-commands__header">
                                 <Show when={!props.workspaceOnly}>
                                     <h2 id="character-commands-heading">
@@ -56,7 +56,7 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                                     </h2>
                                 </Show>
 
-                                <Show when={model().focused.resource} keyed>
+                                <Show when={model().focused.subspace} keyed>
                                     {(resource) => (
                                         <div class="kcq-character-commands__resource">
                                             <span>{props.presentation.data("subspace")}</span>
@@ -68,6 +68,16 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                                                 />
                                             </span>
                                             <span>{resource.current}/{resource.max}</span>
+                                        </div>
+                                    )}
+                                </Show>
+                                <Show when={model().focused.thrillseeker} keyed>
+                                    {(thrillseeker) => (
+                                        <div class="kcq-character-commands__resource">
+                                            <span>{props.presentation.passive("thrillseeker")}</span>
+                                            <span>
+                                                {thrillseeker.binding} Binding → Hit +{thrillseeker.hit}
+                                            </span>
                                         </div>
                                     )}
                                 </Show>

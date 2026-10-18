@@ -63,7 +63,8 @@ export type LogOutcome = BindingTickOutcome | ResourceOutcome | DamageOutcome | 
     | { kind: "interrupt"; actor: EntityId; reason: FailureReason }
     | { kind: "refresh"; target: EntityId }
     | { kind: "retarget"; target: EntityId; destination: EntityId }
-    | { kind: "intention"; target: EntityId; move: MoveId; operation: "cancelled" | "weakened" };
+    | { kind: "intention"; target: EntityId; move: MoveId; operation: "cancelled" | "weakened" | "discorded" }
+    | { kind: "bonus"; target: EntityId; amount: number };
 
 export type GameLogPresentationEntry =
     | { kind: "move"; actor: EntityId; move: MoveId; outcomes: LogOutcome[] }
@@ -274,9 +275,11 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                 let group = current().find((outcome): outcome is BindingOutcome => outcome.kind === "binding"
                     && outcome.target === effect.target && outcome.binding === effect.binding);
                 if (!group) {
-                    group = { kind: "binding", target: effect.target, binding: effect.binding, change: 0, blocked: 0,
+                    group = {
+                        kind: "binding", target: effect.target, binding: effect.binding, change: 0, blocked: 0,
                         initial: bindingEndpoint(before, effect.target, effect.binding),
-                        final: bindingEndpoint(after, effect.target, effect.binding) };
+                        final: bindingEndpoint(after, effect.target, effect.binding)
+                    };
                     outcomes.push(group);
                 }
                 if (effect.type === "bondageBlocked") group.blocked += effect.amount;
@@ -300,9 +303,11 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                 if (!group) {
                     group = { kind: "buff", buff: effect.buff, participants: [] };
                     for (const target of linked ? [effect.target, linked] : [effect.target]) {
-                        group.participants.push({ target,
+                        group.participants.push({
+                            target,
                             initial: buffEndpoint(before, target, effect.buff, effect.type !== "buffAdded", new Map()),
-                            final: buffEndpoint(after, target, effect.buff, effect.type !== "buffRemoved", recorded) });
+                            final: buffEndpoint(after, target, effect.buff, effect.type !== "buffRemoved", recorded)
+                        });
                     }
                     outcomes.push(group);
                 }
@@ -318,9 +323,11 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                 if (!group) {
                     const initial = before?.characters.find(({ id }) => id === effect.target)?.data;
                     const final = after?.characters.find(({ id }) => id === effect.target)?.data;
-                    group = { kind: "resource", target: effect.target, resource: effect.name, change: 0,
+                    group = {
+                        kind: "resource", target: effect.target, resource: effect.name, change: 0,
                         initial: initial?.[effect.name], final: final?.[effect.name],
-                        max: effect.name === "subspace" ? (final ?? initial)?.subspaceMax : undefined };
+                        max: effect.name === "subspace" ? (final ?? initial)?.subspaceMax : undefined
+                    };
                     outcomes.push(group);
                 }
                 group.change += effect.amount;
@@ -341,9 +348,11 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
             case "trapTriggered": {
                 let group = current().find((outcome): outcome is TrapOutcome => outcome.kind === "trap" && outcome.trap === effect.trap);
                 if (!group) {
-                    group = { kind: "trap", trap: effect.trap, change: 0, triggers: [],
+                    group = {
+                        kind: "trap", trap: effect.trap, change: 0, triggers: [],
                         initial: before ? before.traps.find(({ id }) => id === effect.trap)?.amount ?? 0 : undefined,
-                        final: after ? after.traps.find(({ id }) => id === effect.trap)?.amount ?? 0 : undefined };
+                        final: after ? after.traps.find(({ id }) => id === effect.trap)?.amount ?? 0 : undefined
+                    };
                     outcomes.push(group);
                 }
                 trapDeltas.set(group, (trapDeltas.get(group) ?? 0) + (effect.type === "trapAdded" ? effect.amount : -effect.amount));
@@ -354,8 +363,10 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                 break;
             }
             case "characterIncapacitated":
-            case "characterRescued": outcomes.push({ kind: "character", target: effect.target,
-                operation: effect.type === "characterIncapacitated" ? "incapacitated" : "rescued" }); break;
+            case "characterRescued": outcomes.push({
+                kind: "character", target: effect.target,
+                operation: effect.type === "characterIncapacitated" ? "incapacitated" : "rescued"
+            }); break;
             case "enemySpawned":
             case "enemyDefeated": outcomes.push({ kind: "enemy", target: effect.target, operation: effect.type === "enemySpawned" ? "spawned" : "defeated" }); break;
             case "actionInterrupted": outcomes.push({ kind: "interrupt", actor: effect.actor, reason: effect.reason }); break;
@@ -367,7 +378,25 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                 break;
             }
             case "intentionCancelled":
-            case "intentionWeakened": outcomes.push({ kind: "intention", target: effect.target, move: effect.move, operation: effect.type === "intentionCancelled" ? "cancelled" : "weakened" }); break;
+            case "intentionWeakened":
+            case "intentionDiscorded":
+                outcomes.push({
+                    kind: "intention",
+                    target: effect.target,
+                    move: effect.move,
+                    operation: effect.type === "intentionCancelled" ? "cancelled"
+                        : effect.type === "intentionWeakened" ? "weakened"
+                            : "discorded"
+                });
+                break;
+
+            case "bonusChanged":
+                outcomes.push({
+                    kind: "bonus",
+                    target: effect.target,
+                    amount: effect.amount
+                });
+                break;
             case "cooldownChanged": break; // bookkeeping, not an action outcome
         }
     };
@@ -435,11 +464,13 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
             }
         }
         const thresholds = Object.entries(getThresholds().thresholds) as [BindingLevel, number][];
-        const endpoint = (value: number, knownLevels: boolean): BindingEndpoint => ({ value,
+        const endpoint = (value: number, knownLevels: boolean): BindingEndpoint => ({
+            value,
             ...(value === 0 ? { level: "none" as const } : knownLevels ? {
                 level: thresholds.filter(([, threshold]) => value >= threshold)
                     .sort((a, b) => b[1] - a[1])[0]?.[0] ?? "none",
-            } : {}) });
+            } : {})
+        });
         for (const groups of bindings.values()) {
             if (groups.length < 2) continue;
             const first = groups[0]!;
@@ -552,12 +583,16 @@ export function gameLogEntry(event: GameEvent, outcomes: LogOutcome[], round?: n
         case "useMove": return { kind: "move", actor: event.actor, move: event.move, outcomes };
         case "useEscape": return { kind: "escape", actor: event.actor, target: event.target, outcomes };
         case "changePhase": return { kind: "phase", phase: event.phase, round, outcomes };
-        case "changeStance": return { kind: "stance", changes: outcomes.filter((outcome): outcome is StanceOutcome => outcome.kind === "stance"),
-            outcomes: outcomes.filter((outcome) => outcome.kind !== "stance") };
+        case "changeStance": return {
+            kind: "stance", changes: outcomes.filter((outcome): outcome is StanceOutcome => outcome.kind === "stance"),
+            outcomes: outcomes.filter((outcome) => outcome.kind !== "stance")
+        };
         case "loadEncounter":
         case "loadCharacter":
-            if (!event.success || outcomes.length) return { kind: event.type === "loadEncounter" ? "encounter" : "character",
-                id: event.id, success: event.success, outcomes };
+            if (!event.success || outcomes.length) return {
+                kind: event.type === "loadEncounter" ? "encounter" : "character",
+                id: event.id, success: event.success, outcomes
+            };
     }
 }
 

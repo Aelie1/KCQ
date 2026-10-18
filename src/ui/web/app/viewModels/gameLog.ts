@@ -209,8 +209,24 @@ export function createGameLogViewModel(
                 values: [{ text: p.ui("gameLog.retargeted", { destination: p.entity(outcome.destination) }) }]
             };
             case "intention": return {
-                kind: outcome.kind, target: p.entity(outcome.target),
-                values: [{ text: p.ui(outcome.operation === "cancelled" ? "gameLog.cancelled" : "gameLog.weakened", { move: p.move(outcome.move) }) }]
+                kind: outcome.kind,
+                target: p.entity(outcome.target),
+                values: [{
+                    text: p.ui(`gameLog.${outcome.operation}`, {
+                        move: p.move(outcome.move)
+                    })
+                }]
+            };
+
+            case "bonus": return {
+                kind: outcome.kind,
+                target: p.entity(outcome.target),
+                values: [{
+                    text: p.ui("gameLog.bonus", {
+                        amount: outcome.amount
+                    }),
+                    tone: "success"
+                }]
             };
         }
     };
@@ -269,6 +285,30 @@ export function createGameLogViewModel(
             const first = bindingRows.get(outcome.target);
             if (first) { first.values.push(...formatted.values); rows.delete(outcome); }
             else bindingRows.set(outcome.target, formatted);
+        }
+        // Combine identical bonus escape changes across recipients.
+        const bonusRows = new Map<number, {
+            row: GameLogRow;
+            ids: string[];
+        }>();
+
+        for (const outcome of outcomes) {
+            if (outcome.kind !== "bonus") continue;
+            const formatted = rows.get(outcome);
+            if (!formatted) continue;
+            const existing = bonusRows.get(outcome.amount);
+            if (existing) {
+                existing.ids.push(outcome.target);
+                const recipients = targets(existing.ids);
+                existing.row.target = recipients.text;
+                existing.row.targetParts = recipients.parts;
+                rows.delete(outcome);
+            } else {
+                bonusRows.set(outcome.amount, {
+                    row: formatted,
+                    ids: [outcome.target]
+                });
+            }
         }
         // Net binding changes can share all executed target bands. Buff attribution
         // remains restricted to a single hit, preserving shared-buff suppression.

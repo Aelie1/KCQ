@@ -197,4 +197,8 @@ export const sakariEnglishStrings: StringTable = {
     "buff.overconfidence.name": "Overconfidence",
     "buff.stability.name": "Stability",
     "buff.stability.block": "Seals [Power of Chaos]",
+
+    "data.thrillseeker.name": "Thrillseeker",
+    "data.thrillseeker.short": "Hit",
+
 };

@@ -21,7 +21,6 @@ import type {
     StatusChipTone,
 } from "../components/componentTypes";
 import { COMBAT_SHORTCUTS, combatShortcut, shortcutBadgeLabel } from "../keyboard";
-import { semanticTraitTag } from "./moveTraitTags";
 import { projectBindingZones } from "./bindingZones";
 import { projectBuffMoveList } from "./buffMoveList";
 import {
@@ -30,6 +29,7 @@ import {
 } from "./characterState";
 import { createCombatHeaderViewModel } from "./combatHeader";
 import { playerTone, projectLinkedEntity, type LinkedEntityViewModel, type PlayerTone } from "./linkedEntities";
+import { semanticTraitTag } from "./moveTraitTags";
 import { formatSignedNumber, isHarmfulModifierChange } from "./presentationHelpers";
 
 export type CommandTagTone = "ally" | "danger" | "neutral" | "primary" | "special" | "success" | "warning";
@@ -96,10 +96,14 @@ export interface FocusedCharacterViewModel {
     initial: string;
     modifiers: readonly ModifierMeterViewModel[];
     name: string;
-    resource?: {
+    subspace?: {
         current: number;
         label: string;
         max: number;
+    };
+    thrillseeker?: {
+        binding: number;
+        hit: number;
     };
     stanceState: PartyConditionState;
     tone: PlayerTone;
@@ -254,7 +258,14 @@ export function createFocusedCharacterViewModel(
             }),
         }
         : undefined;
-
+    const thrillseeker = character.id === "sakari"
+        ? {
+            binding: character.bindings.reduce(
+                (sum, binding) => sum + binding.value, 0
+            ),
+            hit: character.data["thrillseeker"]
+        }
+        : undefined;
     return {
         id: character.id,
         name: presentation.entity(character.id),
@@ -262,7 +273,8 @@ export function createFocusedCharacterViewModel(
         initial: presentation.entity(character.id).trim().charAt(0).toLocaleUpperCase(),
         actionState: createCharacterActionState(character, action, presentation),
         stanceState: createCharacterStanceState(character, action, presentation),
-        ...(resource ? { resource } : {}),
+        ...(resource ? { subspace: resource } : {}),
+        ...(thrillseeker ? { thrillseeker: thrillseeker } : {}),
         modifiers: CAPABILITIES.map((definition) => createModifierMeter(
             definition,
             character,
