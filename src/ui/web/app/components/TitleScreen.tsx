@@ -42,65 +42,77 @@ export function TitleScreen(props: {
     };
     return <ScreenLayout class="kcq-title-screen"
         header={<h1 class="kcq-title-screen__title">{props.model.title}</h1>}
-        body={<div class="kcq-title-screen__campaigns">
-            <Show when={props.saveStatus && props.saveStatus !== "missing"}>
-                <h2>{props.model.resumeHeading}</h2>
-                <section class="kcq-encounter-card kcq-title-screen__resume" aria-label={props.model.resumeHeading}>
-                    <Show when={props.saveStatus === "loaded" && props.model.resume}>
-                        {resume => <div class="kcq-title-screen__resume-content">
-                            <div class="kcq-title-screen__resume-details">
-                                <strong>{resume().campaign}</strong>
-                                <p>
-                                    {resume().summary}
-                                    {resume().progress && ` · ${resume().progress}`}
-                                </p>
-                            </div>
-                            <div class="kcq-title-screen__resume-buttons" >
-                                <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
-                                    aria-expanded={confirming()} onClick={toggleDelete}>{props.model.deleteLabel}</button>
+        body={<div class="kcq-title-screen__main">
+            <Show when={(props.saveStatus && props.saveStatus !== "missing") || props.onChangeParty}>
+                <div class="kcq-title-screen__upper">
+                    <Show when={props.saveStatus && props.saveStatus !== "missing"}>
+                        <div class="kcq-title-screen__section">
+                            <h2>{props.model.resumeHeading}</h2>
+                            <section class="kcq-encounter-card kcq-title-screen__resume" aria-label={props.model.resumeHeading}>
+                                <Show when={props.saveStatus === "loaded" && props.model.resume}>
+                                    {resume => <div class="kcq-title-screen__resume-content">
+                                        <div class="kcq-title-screen__resume-details">
+                                            <strong>{resume().campaign}</strong>
+                                            <p>
+                                                {resume().summary}
+                                                {resume().progress && ` · ${resume().progress}`}
+                                            </p>
+                                        </div>
+                                        <div class="kcq-title-screen__resume-buttons" >
+                                            <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
+                                                aria-expanded={confirming()} onClick={toggleDelete}>{props.model.deleteLabel}</button>
 
-                                <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
-                                    onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
-                            </div>
-                        </div>}
-                    </Show>
-                    <Show when={saveMessage()}>{message => <p class="kcq-title-screen__save-message" role="status">{message()}</p>}</Show>
-                    <Show when={saveMessage()}>
-                        <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
-                            aria-expanded={confirming()} onClick={toggleDelete}>{props.model.deleteLabel}</button>
-                    </Show>
-                    <Show when={confirming()}>
-                        <div class="kcq-title-screen__delete-confirmation" role="group" aria-label={props.model.deletePrompt}
-                            onKeyDown={event => {
-                                if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); cancelDelete(); }
-                            }}>
-                            <p>{props.model.deletePrompt}</p>
-                            <button ref={cancelButton} class="kcq-title-screen__save-action" type="button"
-                                onClick={cancelDelete}>{props.model.deleteCancelLabel}</button>
-                            <button class="kcq-title-screen__save-action" type="button"
-                                onClick={confirmDelete}>{props.model.deleteConfirmLabel}</button>
-                            <Show when={deleteFailed()}><p role="alert">{props.model.deleteError}</p></Show>
+                                            <button class="kcq-battle-overview__primary-action kcq-title-screen__continue" type="button"
+                                                onClick={() => props.onContinue?.()}>{props.model.continueLabel}</button>
+                                        </div>
+                                    </div>}
+                                </Show>
+                                <Show when={saveMessage()}>{message => <p class="kcq-title-screen__save-message" role="status">{message()}</p>}</Show>
+                                <Show when={saveMessage()}>
+                                    <button ref={deleteButton} class="kcq-title-screen__save-action" type="button"
+                                        aria-expanded={confirming()} onClick={toggleDelete}>{props.model.deleteLabel}</button>
+                                </Show>
+                                <Show when={confirming()}>
+                                    <div class="kcq-title-screen__delete-confirmation" role="group" aria-label={props.model.deletePrompt}
+                                        onKeyDown={event => {
+                                            if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); cancelDelete(); }
+                                        }}>
+                                        <p>{props.model.deletePrompt}</p>
+                                        <button ref={cancelButton} class="kcq-title-screen__save-action" type="button"
+                                            onClick={cancelDelete}>{props.model.deleteCancelLabel}</button>
+                                        <button class="kcq-title-screen__save-action" type="button"
+                                            onClick={confirmDelete}>{props.model.deleteConfirmLabel}</button>
+                                        <Show when={deleteFailed()}><p role="alert">{props.model.deleteError}</p></Show>
+                                    </div>
+                                </Show>
+                            </section>
                         </div>
                     </Show>
-                </section>
+                    <Show when={props.onChangeParty}>
+                        <div class="kcq-title-screen__section">
+                            <h2>{props.model.partyHeading}</h2>
+                            <section class="kcq-title-screen__party" aria-label={props.model.partyHeading}>
+                                <p>{props.model.partySummary}</p>
+                                <button class="kcq-battle-overview__secondary-action kcq-title-screen__change-party" type="button" onClick={props.onChangeParty}>{props.model.changePartyLabel}</button>
+                            </section>
+                        </div>
+                    </Show>
+                </div>
             </Show>
-            <Show when={props.onChangeParty}>
-                <h2>{props.model.partyHeading}</h2>
-                <section class="kcq-title-screen__party" aria-label={props.model.partyHeading}>
-                    <p>{props.model.partySummary}</p>
-                    <button class="kcq-battle-overview__secondary-action kcq-title-screen__change-party" type="button" onClick={props.onChangeParty}>{props.model.changePartyLabel}</button>
-                </section>
-            </Show>
-            <h2 ref={campaignsHeading} tabIndex={-1}>{props.model.campaignsHeading}</h2>
-            <For each={props.model.campaigns}>
-                {campaign => <button class="kcq-encounter-card kcq-title-screen__campaign" type="button"
-                    onClick={() => props.onSelect(campaign.id)}>
-                    <strong>{campaign.name}</strong>
-                    <span>{campaign.description}</span>
-                </button>}
-            </For>
+            <section class="kcq-title-screen__campaigns" aria-label={props.model.campaignsHeading}>
+                <h2 ref={campaignsHeading} tabIndex={-1}>{props.model.campaignsHeading}</h2>
+                <div class="kcq-title-screen__campaign-list">
+                    <For each={props.model.campaigns}>
+                        {campaign => <button class="kcq-encounter-card kcq-title-screen__campaign" type="button"
+                            onClick={() => props.onSelect(campaign.id)}>
+                            <strong>{campaign.name}</strong>
+                            <span>{campaign.description}</span>
+                        </button>}
+                    </For>
+                </div>
+            </section>
         </div>}
-        footer={<div class="kcq-title-screen__bottom">
+        footer={<footer class="kcq-title-screen__bottom">
             <label class="kcq-title-screen__language">
                 <span class="kcq-title-screen__language-label">{props.model.languageLabel}</span>
                 <span class="kcq-title-screen__language-control">
@@ -113,13 +125,11 @@ export function TitleScreen(props: {
                     <span class="kcq-title-screen__language-arrow" aria-hidden="true">v</span>
                 </span>
             </label>
-            <footer class="kcq-title-screen__credits">
-                <div>
-                    <p>{props.model.credit}</p>
-                    <p>{props.model.copyright}</p>
-                </div>
-                <p class="kcq-title-screen__version">{props.model.version}</p>
-            </footer>
-        </div>}
+            <div class="kcq-title-screen__credits">
+                <p>{props.model.credit}</p>
+                <p>{props.model.copyright}</p>
+            </div>
+            <p class="kcq-title-screen__version">{props.model.version}</p>
+        </footer>}
     />;
 }

@@ -117,6 +117,11 @@ describe("title saved-battle card", () => {
         expect([...document.querySelectorAll(".kcq-title-screen h2")].map(heading => heading.textContent))
             .toEqual(["Localized resume", "Localized party", "Localized campaigns"]);
         const card = document.querySelector(".kcq-title-screen__resume")!;
+        const upper = document.querySelector(".kcq-title-screen__upper")!;
+        expect(upper.children).toHaveLength(2);
+        expect(upper.children[0]?.contains(card)).toBe(true);
+        expect(upper.children[1]?.querySelector(".kcq-title-screen__party")).not.toBeNull();
+        expect(upper.contains(document.querySelector(".kcq-title-screen__campaigns"))).toBe(false);
         expect(card.previousElementSibling?.tagName).toBe("H2");
         expect(card.previousElementSibling?.textContent).toBe("Localized resume");
         expect(card.getAttribute("aria-label")).toBe("Localized resume");
@@ -161,6 +166,8 @@ describe("title saved-battle card", () => {
         expect(remove).toHaveBeenCalledExactlyOnceWith(AUTOSAVE_STORAGE_KEY);
         expect(readSave().status).toBe("missing");
         expect(document.querySelector(".kcq-title-screen__resume")).toBeNull();
+        expect(document.querySelector(".kcq-title-screen__upper")?.children).toHaveLength(1);
+        expect(document.querySelector(".kcq-title-screen__upper .kcq-title-screen__party")).not.toBeNull();
         expect(document.querySelector(".kcq-title-screen__campaign")?.textContent).toBe(campaign?.textContent);
         expect(document.activeElement?.textContent).toBe(presentation.ui("title.campaigns"));
         expect(app.composeCampaign).not.toHaveBeenCalled();

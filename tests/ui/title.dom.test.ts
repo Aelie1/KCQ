@@ -9,6 +9,8 @@ import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import type { LanguageOption } from "../../src/ui/web/app/language";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
+import { TitleScreen } from "../../src/ui/web/app/components/TitleScreen";
+import { createTitleViewModel } from "../../src/ui/web/app/viewModels/title";
 
 let unmount: (() => void) | undefined;
 afterEach(() => { unmount?.(); unmount = undefined; document.body.replaceChildren(); });
@@ -41,6 +43,52 @@ function mount(languages?: readonly LanguageOption[]) {
 }
 
 describe("title navigation", () => {
+    it("keeps the header and footer outside the scrolling content and Party visible without a save placeholder", () => {
+        mount();
+        const screen = document.querySelector(".kcq-title-screen")!;
+        expect([...screen.children].map(child => child.className)).toEqual([
+            "kcq-screen-layout__header", "kcq-screen-layout__body", "kcq-screen-layout__footer",
+        ]);
+        const main = screen.querySelector(".kcq-screen-layout__body .kcq-title-screen__main")!;
+        expect([...main.children].map(child => child.className)).toEqual([
+            "kcq-title-screen__upper", "kcq-title-screen__campaigns",
+        ]);
+        const upper = main.querySelector(".kcq-title-screen__upper")!;
+        expect(upper.children).toHaveLength(1);
+        expect(upper.querySelector(".kcq-title-screen__party")).not.toBeNull();
+        expect(upper.querySelector(".kcq-encounter-card")).toBeNull();
+        const footer = screen.querySelector(".kcq-screen-layout__footer")!;
+        for (const selector of [".kcq-title-screen__credits", ".kcq-title-screen__language", ".kcq-title-screen__version"]) {
+            expect(footer.querySelector(selector)?.parentElement?.className).toBe("kcq-title-screen__bottom");
+            expect(main.querySelector(selector)).toBeNull();
+        }
+    });
+
+    it.each([0, 1, 3])("renders %i campaign cards in their own list with full descriptions", count => {
+        const presentation = new Presentation(getStringTable("en"));
+        const description = "A complete campaign description. ".repeat(30);
+        const model = createTitleViewModel([], presentation, "test");
+        model.campaigns = Array.from({ length: count }, (_, index) => ({
+            id: "skunk", name: `Campaign ${index + 1}`, description,
+        }));
+        const onSelect = vi.fn();
+        const root = document.createElement("div");
+        document.body.append(root);
+        unmount = render(() => createComponent(TitleScreen, {
+            model, onSelect,
+            language: { value: "en", options: [{ id: "en", label: "English", presentation }], onChange: vi.fn() },
+        }), root);
+        expect(root.querySelector(".kcq-title-screen__upper")).toBeNull();
+        const list = root.querySelector(".kcq-title-screen__campaigns > .kcq-title-screen__campaign-list")!;
+        expect(list.children).toHaveLength(count);
+        for (const card of list.querySelectorAll<HTMLButtonElement>("button")) {
+            expect(card.querySelector("span")?.textContent).toBe(description);
+            card.click();
+        }
+        expect(onSelect).toHaveBeenCalledTimes(count);
+        if (count) expect(onSelect).toHaveBeenCalledWith("skunk");
+    });
+
     it("has a labeled native language selector and a keyboard-focusable semantic campaign button", () => {
         const { composeCampaign, prepareBattle } = mount();
         const presentation = new Presentation(getStringTable("en"));
