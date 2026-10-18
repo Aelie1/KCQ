@@ -2682,6 +2682,7 @@ button {
 
 .kcq-target-card--selectable.is-invalid {
     opacity: 0.68;
+    min-height: 0px;
 }
 
 .kcq-targeting__targets--predetermined {
