@@ -86,7 +86,7 @@ export function TitleScreen(props: {
             </Show>
             <Show when={props.onChangeParty}>
                 <h2>{props.model.partyHeading}</h2>
-                <section class="kcq-encounter-card kcq-title-screen__party" aria-label={props.model.partyHeading}>
+                <section class="kcq-title-screen__party" aria-label={props.model.partyHeading}>
                     <p>{props.model.partySummary}</p>
                     <button class="kcq-battle-overview__secondary-action kcq-title-screen__change-party" type="button" onClick={props.onChangeParty}>{props.model.changePartyLabel}</button>
                 </section>

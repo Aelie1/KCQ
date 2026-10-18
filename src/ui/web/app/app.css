@@ -4244,7 +4244,6 @@ button {
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 12px 16px;
 }
 
 .kcq-title-screen__party p {
@@ -4257,7 +4256,6 @@ button {
 .kcq-title-screen__change-party {
     flex: 0 0 auto;
     max-width: 100%;
-    min-height: 42px;
     height: auto;
     padding: 8px 10px;
     white-space: normal;
