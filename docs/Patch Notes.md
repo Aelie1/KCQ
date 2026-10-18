@@ -1,5 +1,105 @@
 # Ko-chan's Quest Patch Notes
 
+## 0.18.0 — 2026-10-18
+
+### New Playable Characters
+
+Expanded the playable roster from **three to five characters**, introducing Naruyo and Sakari with new combat abilities, passives, and tactical options.
+
+**Naruyo — Time and Battlefield Control**
+
+* **Precision Stab** — A highly accurate physical attack.
+* **Snowstorm** — Reduces the Hit and Potency of all enemies for two rounds.
+* **Time Acceleration** — Grants an additional action to every party member.
+* **Temporal Lock** — Weakens an enemy's committed intentions by 25%.
+* **Power of Time** — A once-per-battle ability that cancels all normal enemy intentions and weakens boss intentions by 40%.
+* **Expert Artisan** — Allows Naruyo to assist allies with their bindings even when ordinary binding restrictions would prevent assistance.
+* Added an empowered version of Precision Stab that attacks all enemies.
+
+**Sakari — Chaos and Disruption**
+
+* **Malfunction** — Damages an enemy and reduces its Potency.
+* **Overload** — Damages an enemy and increases its Vulnerability.
+* **Overconfidence** — Increases a target's Hit while reducing its Defense. Can target either allies or enemies.
+* **Discord Seal** — Redirects an enemy's binding intentions against another enemy.
+* **Power of Chaos** — A once-per-battle ability that disrupts binding intentions across the enemy party.
+* **Thrillseeker** — Increases Sakari's Hit based on her accumulated bindings, gaining +1 Hit for every 40 binding points.
+* Added empowered versions of Malfunction and Overload with extended debuff durations.
+
+### Party Selection
+
+* Added a new **Party Selection** screen before entering combat.
+* Players can now choose any three characters from the five available council members.
+* Character selection displays each character's combat role and key abilities.
+* Added selection indicators and keyboard shortcuts.
+* The Continue button becomes available only when a valid three-character party is selected.
+* The selected party is remembered between encounters and browser sessions.
+* Updated battle initialization, encounter navigation, and saved-game handling to support variable party compositions.
+
+### Game Guide
+
+* Added a comprehensive **Game Guide** to the in-game Library.
+* The guide includes five sections:
+  * **Combat Basics** — Battle flow, turns, stances, and enemy intentions.
+  * **Moves** — Move types, accuracy, outcomes, cooldowns, and special traits.
+  * **Bindings and Escaping** — Binding severity, escaping, assisting, and bonus escapes.
+  * **Modifiers** — Explanations of combat statistics and their effects.
+  * **Strategy** — Practical advice for approaching combat encounters.
+* Added visual tables for binding severity, attack outcomes, and escape mechanics.
+* Added examples of move traits and modifier descriptions using existing interface elements.
+* Integrated the guide into the Library's navigation system for desktop and mobile layouts.
+
+### Light Mode and Interface Themes
+
+* Added a complete **Light Mode** for the graphical interface.
+* Added theme selection with three options:
+  * **Dark** — The original appearance.
+  * **Light** — A brighter interface with a redesigned color palette.
+  * **System** — Automatically follows the operating system's appearance setting.
+* Theme preferences are saved between browser sessions.
+* Introduced shared color tokens to provide consistent styling throughout the interface.
+* Updated battle panels, cards, buttons, dialogs, navigation, and the Library to support both themes.
+
+### Combat and Interface Improvements
+
+* Added new move trait indicators to make special combat actions easier to identify.
+* Improved move descriptions, target previews, and effect presentation.
+* Updated combat previews to support new intention cancellation, weakening, and redirection mechanics.
+* Improved character information and Library entries for the expanded roster.
+* Added more persistent presentation settings, including preferred difficulty and party composition.
+* Refined the title screen and encounter-selection flow to accommodate party selection.
+* Additional responsive-layout, spacing, and visual refinements.
+
+### Engine and Gameplay Changes
+
+* Added support for new intention manipulation effects used by Naruyo and Sakari.
+* Expanded status and passive handling to support special assistance permissions and Willpower behavior.
+* Added **Absolute Will**, Matsuko's new passive ability affecting Willpower checks.
+* Updated combat effect resolution and serialization to support the new mechanics.
+* Updated existing character abilities and combat data for compatibility with the expanded roster.
+* Improved effect previews and combat event reporting.
+
+### Legacy Client Removal
+
+* Removed the original text-based Console UI.
+* Removed the old browser console entry point and associated presentation code.
+* Consolidated the application around the graphical browser interface.
+* Removed obsolete console-specific tests and unused legacy code.
+* Retained the combat engine and automated testing infrastructure.
+
+### Testing and Maintenance
+
+* Added dedicated combat tests for Naruyo and Sakari.
+* Added tests for party selection, saved preferences, and new character combinations.
+* Added coverage for the Game Guide and theme switching.
+* Expanded UI tests for combat controls, previews, and responsive presentation.
+* Updated regression tests for new engine mechanics and removed legacy dependencies.
+* General code cleanup and internal refactoring.
+
+---
+
+**0.18.0 completes the five-character Student Council roster, introduces customizable party compositions, and adds the Game Guide and Light Mode.** Together, these changes significantly expand combat strategy while making the game more approachable for new players.
+
 ## 0.17.0 — 2026-10-16
 
 ### Desktop and Responsive Interface
