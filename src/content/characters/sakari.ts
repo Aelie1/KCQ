@@ -1,7 +1,7 @@
 import { CharacterDef, MoveDef, PassiveDef, StatusLevelDef } from "../../engine/protected/definitions";
 import { isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicDamageEffect, basicPlayerAccuracy, tr } from "../../engine/protected/mechanics";
-import { ContentCatalogFragment, iBuff, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
+import { ContentCatalogFragment, iBuff, iEffect, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
 import { removeEmpowerment } from "./ko";
 
@@ -62,15 +62,19 @@ export const malfunction: MoveDef = {
         }
 
         for (const target of targets) {
-            if (isEnemy(target.target) && target.effectiveness > 0) {
-                result.targets.push(tr(target, [
-                    {
-                        type: "buff",
-                        target: target.target,
-                        buff: buff,
-                        operation: "add"
-                    }]
-                ));
+            if (isEnemy(target.target) && (target.band === "none" || target.effectiveness > 0)) {
+                const effect: iEffect = {
+                    type: "buff",
+                    target: target.target,
+                    buff: buff,
+                    operation: "add"
+                }
+                const targetResult = result.targets.find(x => x.target === target.target);
+                if (!targetResult) {
+                    result.targets.push(tr(target, [effect]));
+                } else {
+                    targetResult.effects.push(effect);
+                }
             }
         }
         return result;
@@ -115,15 +119,19 @@ export const overload: MoveDef = {
         }
 
         for (const target of targets) {
-            if (isEnemy(target.target) && target.effectiveness > 0) {
-                result.targets.push(tr(target, [
-                    {
-                        type: "buff",
-                        target: target.target,
-                        buff: buff,
-                        operation: "add"
-                    }]
-                ));
+            if (isEnemy(target.target) && (target.band === "none" || target.effectiveness > 0)) {
+                const effect: iEffect = {
+                    type: "buff",
+                    target: target.target,
+                    buff: buff,
+                    operation: "add"
+                }
+                const targetResult = result.targets.find(x => x.target === target.target);
+                if (!targetResult) {
+                    result.targets.push(tr(target, [effect]));
+                } else {
+                    targetResult.effects.push(effect);
+                }
             }
         }
         return result;

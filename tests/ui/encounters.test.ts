@@ -133,7 +133,7 @@ describe("encounter catalog view models", () => {
             { type: "move", move: "telekinesis" },
             { type: "data", target: "allies", name: "subspace", amount: 1 },
             { type: "refresh", target: "allies" },
-            { type: "intention", target: "empress", operation: "weaken", amount: 0.5 },
+            { type: "intention", target: "empress", move: "skunkGun", operation: "weaken", amount: 0.5 },
         ];
         const previews = createEffectPreviewViewModels(effects, { presentation });
         expect(previews).toHaveLength(effects.length);
@@ -144,7 +144,7 @@ describe("encounter catalog view models", () => {
 
     it("keeps targeting and standalone formatting on the same path", () => {
         const fixture = targetingFixtures.telekinesisChoose;
-        const effects: Effect[] = [{ type: "trap", trap: "trapPuddle", amount: 12 }, { type: "intention", target: "skunketteQueen", operation: "weaken", amount: 0.5 }];
+        const effects: Effect[] = [{ type: "trap", trap: "trapPuddle", amount: 12 }, { type: "intention", target: "skunketteQueen", move: "skunkGun", operation: "weaken", amount: 0.5 }];
         const model = createTargetingViewModel(fixture.state, fixture.actorId, { ...fixture.action, effects }, fixture.presentation, fixture.actions, fixture.thresholds);
         expect(model.actionEffects).toEqual(createEffectPreviewViewModels(effects, { state: fixture.state, actions: fixture.actions, thresholds: fixture.thresholds, presentation: fixture.presentation }, "action-effect"));
     });

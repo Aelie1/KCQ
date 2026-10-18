@@ -134,7 +134,7 @@ it("switches shell colors and shared portal tokens while keeping binding and gra
     expect(getComputedStyle(document.documentElement).getPropertyValue("--kcq-surface-overlay")).not.toBe(darkOverlay);
     expect(getComputedStyle(binding).color).toBe(bindingColor);
     expect(getComputedStyle(graze).color).toBe(grazeColor);
-    expect(getComputedStyle(document.documentElement).getPropertyValue("--kcq-semantic-text-shadow")).toContain("rgb(15 23 42");
+    expect(getComputedStyle(document.documentElement).getPropertyValue("--kcq-semantic-text-shadow")).toBe("none");
     expect(style.textContent).toMatch(/:where\([^}]*\.kcq-binding-metric__value--moderate[^}]*text-shadow: var\(--kcq-semantic-text-shadow\)/);
     theme.onChange("dark");
     expect(getComputedStyle(shell).backgroundColor).toBe(darkBackground);

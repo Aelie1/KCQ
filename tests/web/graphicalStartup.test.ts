@@ -30,7 +30,7 @@ describe("graphical browser startup", () => {
         await import("../../src/ui/web/app/main");
         expect(create).not.toHaveBeenCalled();
         expect(strings).toHaveBeenCalledTimes(1 + Object.keys(content.campaignCatalogs).length);
-        expect(strings).toHaveBeenNthCalledWith(1, "en", ["ko", "matsuko", "hinari", "naruyo"]);
+        expect(strings).toHaveBeenNthCalledWith(1, "en", Object.keys(content.characterCatalogs));
 
         Object.keys(content.campaignCatalogs).forEach((campaign, index) => {
             expect(strings).toHaveBeenNthCalledWith(index + 2, "en", undefined, campaign);
@@ -41,7 +41,7 @@ describe("graphical browser startup", () => {
         expect(props.campaigns).toEqual(Object.keys(content.campaignCatalogs));
         const selection = props.composeCampaign("skunk", ["ko", "matsuko", "hinari"]);
         expect(create).toHaveBeenCalledExactlyOnceWith(["ko", "matsuko", "hinari"], "skunk");
-        expect(strings).toHaveBeenLastCalledWith("en", ["ko", "matsuko", "hinari", "naruyo"], "skunk");
+        expect(strings).toHaveBeenLastCalledWith("en", Object.keys(content.characterCatalogs), "skunk");
         expect(selection.engine.getGameState().characters).toEqual([]);
         expect(selection.engine.getLibrary().encounters).toHaveProperty("forest_3");
         expect(selection.presentation.encounter("forest_3")).not.toContain("[encounter.");

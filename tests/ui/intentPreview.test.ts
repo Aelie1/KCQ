@@ -48,7 +48,7 @@ describe("wide enemy intention previews", () => {
                     { type: "buff", target: "matsuko", operation: "remove", buff: { id: "latexMist", severity: 4 } },
                 ]
             }], effects: [
-                { type: "intention", target: "skunkette1", operation: "target", destination: "hinari" },
+                { type: "intention", target: "skunkette1", move: "latexSpray", operation: "target", destination: "hinari" },
                 { type: "enemy", target: "skunkette1", operation: "defeat" },
             ]
         });

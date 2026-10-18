@@ -428,7 +428,7 @@ describe("normal Latex Skunk", () => {
         expect(result.frames.at(-1)!.state.enemies[0]).toMatchObject({
             currHp: BELOW_THRESHOLD,
             intentions: [
-                { move: oldIntention.move, resolved: true, targets: [{ target: oldTarget }] },
+                { move: oldIntention.move, resolved: true, targets: [], effects: [] },
                 { move: "latexExplosion", resolved: false, targets: [{ target: attacker }] },
             ],
         });

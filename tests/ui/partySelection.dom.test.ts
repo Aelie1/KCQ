@@ -73,13 +73,15 @@ describe("party selection navigation", () => {
         expect(prepareBattle).not.toHaveBeenCalled();
         const toggles = [...document.querySelectorAll<HTMLButtonElement>(".kcq-party-selection__toggle")];
         expect(toggles.map(toggle => toggle.dataset.characterId)).toEqual(availableCharacters);
-        expect(toggles.map(toggle => toggle.getAttribute("aria-pressed"))).toEqual(["true", "true", "true", "false"]);
+        expect(toggles.map(toggle => toggle.getAttribute("aria-pressed"))).toEqual(availableCharacters.map((_, index) => index < 3 ? "true" : "false"));
         expect(document.querySelectorAll(".kcq-party-selection__card.is-selected")).toHaveLength(3);
-        expect(document.querySelectorAll('.kcq-party-selection [role="listitem"]')).toHaveLength(12);
+        expect(document.querySelectorAll('.kcq-party-selection [role="listitem"]')).toHaveLength(availableCharacters.length * 3);
         for (const toggle of toggles) {
             expect(toggle.type).toBe("button");
             expect(toggle.tabIndex).toBe(0);
-            toggle.focus(); expect(document.activeElement).toBe(toggle);
+            toggle.focus();
+            if (toggle.disabled) expect(document.activeElement).not.toBe(toggle);
+            else expect(document.activeElement).toBe(toggle);
         }
         const koCard = button('[data-character-id="ko"]');
         expect(koCard.matches(".kcq-party-selection__card")).toBe(true);

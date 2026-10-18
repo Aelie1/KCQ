@@ -618,7 +618,7 @@ describe("targeting view model", () => {
         expect(JSON.stringify(model)).not.toContain("Block Fairy White Flame");
     });
 
-    it("expands non-boss cancellation into named rows without percentages", () => {
+    it("renders per-intention non-boss cancellation into named rows without percentages", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const state = {
             ...fixture.state,
@@ -635,7 +635,10 @@ describe("targeting view model", () => {
         };
         const action: ActionInfo = {
             ...fixture.action,
-            effects: [{ type: "intention", operation: "cancel", target: "skunkette1" }],
+            effects: [
+                { type: "intention", operation: "cancel", target: "skunkette1", move: "latexSpray" },
+                { type: "intention", operation: "cancel", target: "skunkette1", move: "pounce" },
+            ],
         };
         const model = createTargetingViewModel(
             state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
@@ -659,7 +662,7 @@ describe("targeting view model", () => {
         };
         const action: ActionInfo = {
             ...fixture.action,
-            effects: [{ type: "intention", operation: "cancel", target: "skunkette1" }],
+            effects: [{ type: "intention", operation: "cancel", target: "skunkette1", move: "latexSpray" }],
         };
         const model = createTargetingViewModel(
             state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
@@ -670,7 +673,7 @@ describe("targeting view model", () => {
         ]);
     });
 
-    it("expands boss weakening in intention order with computed percentages", () => {
+    it("renders per-intention boss weakening in intention order with computed percentages", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const state = {
             ...fixture.state,
@@ -687,7 +690,10 @@ describe("targeting view model", () => {
         };
         const action: ActionInfo = {
             ...fixture.action,
-            effects: [{ type: "intention", operation: "weaken", target: "skunketteQueen", amount: 0.25 }],
+            effects: [
+                { type: "intention", operation: "weaken", target: "skunketteQueen", move: "skunkGun", amount: 0.25 },
+                { type: "intention", operation: "weaken", target: "skunketteQueen", move: "latexRain", amount: 0.25 },
+            ],
         };
         const model = createTargetingViewModel(
             state, fixture.actorId, action, fixture.presentation, fixture.actions, fixture.thresholds,
@@ -701,7 +707,7 @@ describe("targeting view model", () => {
         const fortyPercent = createTargetingViewModel(
             state,
             fixture.actorId,
-            { ...action, effects: [{ type: "intention", operation: "weaken", target: "skunketteQueen", amount: 0.4 }] },
+            { ...action, effects: action.effects.map(effect => ({ ...effect, amount: 0.4 })) },
             fixture.presentation,
             fixture.actions,
             fixture.thresholds,

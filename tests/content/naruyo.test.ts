@@ -134,7 +134,7 @@ describe("Naruyo's Expert Artisan", () => {
 });
 
 describe("Naruyo's Precision Stab", () => {
-    it.each(["precisionStab", "fairyprecisionStab"])(
+    it.each(["precisionStab", "fairyPrecisionStab"])(
         "previews and deals 30 base damage with +3 Hit for %s",
         move => {
             const engine = loadNaruyoEncounter({
@@ -164,12 +164,12 @@ describe("Naruyo's Precision Stab", () => {
                 expect(damage.amount).toBeLessThanOrEqual(band!.max);
                 expect(enemyState(engine, target.target).currHp).toBe(2_000 - damage.amount);
             }
-            if (move === "fairyprecisionStab") {
+            if (move === "fairyPrecisionStab") {
                 expect(resolvedEvents(result.frames)).toContainEqual({
                     type: "buffRemoved", target: naruyo.id, buff: EMPOWERMENT_BUFF,
                 });
                 expect(buffState(engine, EMPOWERMENT_BUFF, naruyo.id)).toBeUndefined();
-                expect(actionView(engine, naruyo.id).moves.map(({ move }) => move.id)).not.toContain("fairyprecisionStab");
+                expect(actionView(engine, naruyo.id).moves.map(({ move }) => move.id)).not.toContain("fairyPrecisionStab");
             } else {
                 expect(enemyState(engine, "second1").currHp).toBe(2_000);
                 expect(buffState(engine, EMPOWERMENT_BUFF, naruyo.id)).toBeDefined();
@@ -188,14 +188,14 @@ describe("Naruyo's Fairy Precision Stab misses", () => {
                 buff: { id: EMPOWERMENT_BUFF, active: true, moveList: { addedMoves: naruyo.empoweredMoves } },
             }],
         });
-        const result = use(engine, "fairyprecisionStab");
+        const result = use(engine, "fairyPrecisionStab");
         expect(moveEvent(result).targets).toEqual([
             { target: "first1", result: "miss", effects: [] },
             { target: "second1", result: "miss", effects: [] },
         ]);
         expect(engine.getGameState().enemies.map(({ currHp }) => currHp)).toEqual([2_000, 2_000]);
         expect(buffState(engine, EMPOWERMENT_BUFF, naruyo.id)).toBeUndefined();
-        expect(actionView(engine, naruyo.id).moves.map(({ move }) => move.id)).not.toContain("fairyprecisionStab");
+        expect(actionView(engine, naruyo.id).moves.map(({ move }) => move.id)).not.toContain("fairyPrecisionStab");
     });
 });
 
@@ -390,7 +390,8 @@ describe("Naruyo's intention control", () => {
         const engine = loadNaruyoEncounter({ enemies: [threateningEnemy("selected", rank), threateningEnemy("other")] });
         const before = engine.getSaveState().enemies;
         expect(targetPreview(engine, naruyo.id, "temporalLock", "selected1").effects).toEqual([
-            { type: "intention", operation: "weaken", target: "selected1", amount: 0.25 },
+            { type: "intention", operation: "weaken", target: "selected1", move: "selected-first", amount: 0.25 },
+            { type: "intention", operation: "weaken", target: "selected1", move: "selected-second", amount: 0.25 },
         ]);
         const result = use(engine, "temporalLock", ["selected1"]);
         const after = engine.getSaveState().enemies;
@@ -423,9 +424,9 @@ describe("Naruyo's intention control", () => {
         const before = engine.getSaveState().enemies;
         const preview = moveInfo(engine, "powerOfTime");
         expect(preview.targets.map(target => target.valid ? target.effects : [])).toEqual([
-            [{ type: "intention", operation: "cancel", target: "first1" }],
-            [{ type: "intention", operation: "cancel", target: "second1" }],
-            [{ type: "intention", operation: "weaken", target: "boss1", amount: 0.4 }],
+            ["first-first", "first-second"].map(move => ({ type: "intention", operation: "cancel", target: "first1", move })),
+            ["second-first", "second-second"].map(move => ({ type: "intention", operation: "cancel", target: "second1", move })),
+            ["boss-first", "boss-second"].map(move => ({ type: "intention", operation: "weaken", target: "boss1", move, amount: 0.4 })),
         ]);
         expect(preview.effects).toMatchObject([{
             type: "buff", operation: "add", target: naruyo.id,
