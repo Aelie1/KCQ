@@ -226,6 +226,7 @@ export const powerOfChaos: MoveDef = {
     index: 7,
     type: "mouth",
     targets: "all",
+    cooldown: undefined,
     traits: ["onetime", "retarget"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result = discordSeal.resolve(state, actor, move, targets);
