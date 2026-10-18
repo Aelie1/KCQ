@@ -57,6 +57,7 @@ export function createPartyCardViewModel(
     const effectSummary = summarizeEffects(character.buffs);
     const hiddenEffectCount = effectSummary.hiddenEffectCount;
     const subspace = character.data["subspace"];
+    const subspaceMax = character.data["subspaceMax"];
     const thrillseeker = character.data["thrillseeker"];
 
     return {
@@ -65,11 +66,24 @@ export function createPartyCardViewModel(
         tone: playerTone(character.id),
         actionState: createCharacterActionState(character, action, presentation),
         stanceState: createCharacterStanceState(character, action, presentation),
-        ...(character.id === "hinari" && Number.isFinite(subspace)
-            ? { resourceLabel: presentation.ui("partyCard.resourceValue", { resource: presentation.data("subspace", "short"), value: subspace, }) }
-            : (character.id === "sakari" && Number.isFinite(thrillseeker)
-                ? { resourceLabel: presentation.ui("partyCard.resourceValue", { resource: presentation.data("thrillseeker", "short"), value: thrillseeker, }) }
-                : {})),
+        ...(character.id === "hinari"
+            && Number.isFinite(subspace)
+            && Number.isFinite(subspaceMax)
+            ? {
+                resourceMeter: {
+                    current: subspace,
+                    max: subspaceMax,
+                    label: presentation.data("subspace"),
+                },
+            }
+            : character.id === "sakari" && Number.isFinite(thrillseeker)
+                ? {
+                    resourceLabel: presentation.ui("partyCard.resourceValue", {
+                        resource: presentation.data("thrillseeker", "short"),
+                        value: thrillseeker,
+                    }),
+                }
+                : {}),
         blockedCapabilities: character.blockedMoveTypes
             .filter(isDisplayableMoveType)
             .map((kind): BlockedCapabilityData => ({

@@ -312,7 +312,8 @@ function createModifierMeter(
     const blocked = definition.moveType !== undefined
         ? (character.blockedMoveTypes.includes(definition.moveType) || !action.attack.available)
         : (definition.availability === "escape" && !action.escape.available);
-    const value = character.modifiers[definition.modifier] ?? 0;
+    const value = (character.modifiers[definition.modifier] ?? 0)
+        + (definition.moveType ? character.modifiers.hit ?? 0 : 0);
 
     return createModifierMeterViewModel(definition.modifier, value, presentation, blocked,
         definition.moveType ? presentation.moveType(definition.moveType) : undefined);

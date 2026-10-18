@@ -11,7 +11,7 @@ import { StatusChip } from "./StatusChip";
 
 export interface CharacterDetailsLayoutProps {
     workspaceOnly?: boolean;
-    desktop?: { wide: boolean; header: JSX.Element; gameLog: () => JSX.Element; workspaceHeading: string };
+    desktop?: { wide: boolean; header: JSX.Element; gameLog: () => JSX.Element; workspaceHeading: string; workspaceHeadingExtra?: JSX.Element; };
     actionRegion: JSX.Element;
     footer?: JSX.Element;
     contextLabel: string;
@@ -159,6 +159,7 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                 <Show when={!props.desktop.wide}>{props.desktop.gameLog()}</Show>
                 <header class="kcq-battle-section__heading">
                     <h2 id={workspaceHeadingId}>{props.desktop.workspaceHeading}</h2>
+                    {props.desktop.workspaceHeadingExtra}
                 </header>
                 {props.actionRegion}
             </section>

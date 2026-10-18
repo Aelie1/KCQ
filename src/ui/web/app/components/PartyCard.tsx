@@ -3,6 +3,7 @@ import type { ThresholdInfo } from "../../../../engine/public/types";
 import { reactionRef } from "../combatReactions";
 import { BindingMeter } from "./BindingMeter";
 import type { PartyCardData } from "./componentTypes";
+import { ProjectedMeter } from "./ProjectedMeter";
 import { Shortcut } from "./Shortcut";
 import { StatusChip } from "./StatusChip";
 
@@ -46,6 +47,19 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                         <span class="kcq-party-card__resource kcq-subspace-value">
                             {props.character.resourceLabel}
                         </span>
+                    </Show>
+                    <Show when={props.character.resourceMeter} keyed>
+                        {(resource) => (
+                            <span class="kcq-party-card__resource-meter">
+                                <ProjectedMeter
+                                    value={resource.current}
+                                    max={resource.max}
+                                    tone="subspace"
+                                    size="standard"
+                                    ariaLabel={resource.label}
+                                />
+                            </span>
+                        )}
                     </Show>
                     <StatusChip tone={props.character.actionState.tone}>
                         {props.character.actionState.label}

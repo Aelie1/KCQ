@@ -48,30 +48,19 @@ export function CharacterDetailsPanel(props: CharacterDetailsPanelProps): JSX.El
                     <section class="kcq-character-section kcq-character-commands"
                         aria-label={props.workspaceOnly ? model().labels.commandsHeading : undefined}
                         aria-labelledby={props.workspaceOnly ? undefined : "character-commands-heading"}>
-                        <Show when={!props.workspaceOnly || model().focused.subspace}>
+                        <Show when={!props.workspaceOnly}>
                             <div class="kcq-character-commands__header">
-                                <Show when={!props.workspaceOnly}>
-                                    <h2 id="character-commands-heading">
-                                        {model().labels.commandsHeading}
-                                    </h2>
-                                </Show>
+                                <h2 id="character-commands-heading">
+                                    {model().labels.commandsHeading}
+                                </h2>
 
                                 <Show when={model().focused.subspace} keyed>
                                     {(resource) => (
                                         <div class="kcq-character-commands__resource">
-                                            <span>{props.presentation.data("subspace")}</span>
-                                            <span class="kcq-subspace-meter">
-                                                <span
-                                                    style={{
-                                                        width: `${resource.current / resource.max * 100}%`,
-                                                    }}
-                                                />
-                                            </span>
-                                            <span>{resource.current}/{resource.max}</span>
+                                            ...
                                         </div>
                                     )}
                                 </Show>
-
                             </div>
                         </Show>
                         <div class="kcq-character-commands__grid">

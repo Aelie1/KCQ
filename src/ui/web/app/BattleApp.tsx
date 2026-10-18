@@ -43,14 +43,14 @@ import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPr
 import { BATTLE_LAYOUT_WIDTHS, calculateResponsiveLayout, ResponsiveLayoutContext } from "./responsiveScale";
 import { createSavePackage, type SavePackage } from "./savePackage";
 import { clearSave, writeSave } from "./savePersistence";
-import { createThemePreference, type ThemePreference } from "./theme";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
-import { createViewPreferences, ViewPreferencesContext, type ViewPreferences } from "./viewPreferences";
+import { createThemePreference, type ThemePreference } from "./theme";
 import { createBattleOverviewViewModel } from "./viewModels/battleOverview";
 import { createBattleResultTracker, createBattleResultViewModel } from "./viewModels/battleResult";
 import { createCharacterDetailsViewModel } from "./viewModels/characterDetails";
 import { createGameLogHistory } from "./viewModels/gameLogHistory";
 import { createVictoryStoryViewModel } from "./viewModels/victoryStory";
+import { createViewPreferences, ViewPreferencesContext, type ViewPreferences } from "./viewPreferences";
 
 export interface BattleAppProps {
     engine: Engine;
@@ -557,10 +557,34 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             actionRegion={<ScreenPanels workspaceOnly />}
             desktop={{
                 get wide() { return wide(); },
+
                 get workspaceHeading() {
-                    if (targeting()) return `${props.presentation.ui("combatHeader.targeting")} / ${character().focused.name}`;
-                    if (escapeScreen()) return `${props.presentation.ui("combatHeader.escape")} / ${character().focused.name}`;
+                    if (targeting()) {
+                        return `${props.presentation.ui("combatHeader.targeting")} / ${character().focused.name}`;
+                    }
+                    if (escapeScreen()) {
+                        return `${props.presentation.ui("combatHeader.escape")} / ${character().focused.name}`;
+                    }
                     return character().labels.commandsHeading;
+                },
+
+                get workspaceHeadingExtra() {
+                    const resource = character().focused.subspace;
+                    if (!resource || targeting() || escapeScreen()) return undefined;
+
+                    return (
+                        <div class="kcq-character-commands__resource">
+                            <span>{props.presentation.data("subspace")}</span>
+                            <span class="kcq-subspace-meter">
+                                <span
+                                    style={{
+                                        width: `${resource.current / resource.max * 100}%`,
+                                    }}
+                                />
+                            </span>
+                            <span>{resource.current}/{resource.max}</span>
+                        </div>
+                    );
                 },
                 header: <CombatHeader variant="overview"
                     encounterLabel={overview().header.encounterLabel}

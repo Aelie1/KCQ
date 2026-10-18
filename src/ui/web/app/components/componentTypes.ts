@@ -127,6 +127,11 @@ export interface PartyCardData {
     noEffectsLabel: string;
     stanceState: PartyConditionState;
     resourceLabel?: string;
+    resourceMeter?: {
+        current: number;
+        max: number;
+        label: string;
+    };
     visibleEffects: readonly {
         id?: string;
         name: string;

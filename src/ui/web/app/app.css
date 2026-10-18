@@ -585,6 +585,14 @@ button {
     flex-shrink: 0;
 }
 
+.kcq-character-details-desktop__workspace>.kcq-battle-section__heading .kcq-character-commands__resource {
+    margin-left: auto;
+}
+
+.kcq-battle-section__heading .kcq-character-commands__resource span {
+    font-weight: 700;
+}
+
 .kcq-battle-overview-wide>.kcq-screen-layout {
     width: 100%;
     height: 100%;
@@ -922,6 +930,14 @@ button {
 
 .kcq-intent-row__target--hinari {
     color: var(--kcq-name-hinari);
+}
+
+.kcq-intent-row__target--naruyo {
+    color: var(--kcq-name-naruyo);
+}
+
+.kcq-intent-row__target--sakari {
+    color: var(--kcq-name-sakari);
 }
 
 .kcq-intent-row__target-separator {
@@ -1716,6 +1732,16 @@ button {
     color: var(--kcq-name-hinari);
 }
 
+.kcq-game-log__actor--naruyo,
+.kcq-game-log__value--entity-naruyo {
+    color: var(--kcq-name-naruyo);
+}
+
+.kcq-game-log__actor--sakari,
+.kcq-game-log__value--entity-sakari {
+    color: var(--kcq-name-sakari);
+}
+
 .kcq-game-log__actor--neutral,
 .kcq-game-log__value--entity-neutral {
     color: var(--kcq-text-primary);
@@ -2113,6 +2139,16 @@ button {
 .kcq-player-identity--hinari,
 .kcq-focused-character h2.kcq-player-identity--hinari {
     color: var(--kcq-name-hinari);
+}
+
+.kcq-player-identity--naruyo,
+.kcq-focused-character h2.kcq-player-identity--naruyo {
+    color: var(--kcq-name-naruyo);
+}
+
+.kcq-player-identity--sakari,
+.kcq-focused-character h2.kcq-player-identity--sakari {
+    color: var(--kcq-name-sakari);
 }
 
 .kcq-focused-character .kcq-status-chip {
@@ -2779,6 +2815,14 @@ button {
     color: var(--kcq-name-hinari);
 }
 
+.kcq-linked-entity-chip--naruyo {
+    color: var(--kcq-name-naruyo);
+}
+
+.kcq-linked-entity-chip--sakari {
+    color: var(--kcq-name-sakari);
+}
+
 .kcq-target-header__name {
     flex: 0 1 auto;
     min-width: 0;
@@ -2804,6 +2848,16 @@ button {
 .kcq-target-header__name.kcq-player-identity--hinari,
 .kcq-targeting__action-effect-group h3.kcq-player-identity--hinari {
     color: var(--kcq-name-hinari);
+}
+
+.kcq-target-header__name.kcq-player-identity--naruyo,
+.kcq-targeting__action-effect-group h3.kcq-player-identity--naruyo {
+    color: var(--kcq-name-naruyo);
+}
+
+.kcq-target-header__name.kcq-player-identity--sakari,
+.kcq-targeting__action-effect-group h3.kcq-player-identity--sakari {
+    color: var(--kcq-name-sakari);
 }
 
 .kcq-target-header__meter {
@@ -3253,6 +3307,14 @@ button {
 
 .kcq-escape-group__header h2.kcq-player-identity--hinari {
     color: var(--kcq-name-hinari);
+}
+
+.kcq-escape-group__header h2.kcq-player-identity--naruyo {
+    color: var(--kcq-name-naruyo);
+}
+
+.kcq-escape-group__header h2.kcq-player-identity--sakari {
+    color: var(--kcq-name-sakari);
 }
 
 .kcq-escape-group__header p {
@@ -4938,6 +5000,14 @@ button {
     position: relative;
 }
 
+.kcq-party-card__resource-meter {
+    width: 30px;
+}
+
+.kcq-projected-meter--subspace {
+    --kcq-projected-meter-current: var(--kcq-binding-light);
+}
+
 .kcq-enemy-presentation-slot {
     display: grid;
     min-width: 0;
@@ -6476,6 +6546,8 @@ button {
     .kcq-intent-row__target--ko,
     .kcq-intent-row__target--matsuko,
     .kcq-intent-row__target--hinari,
+    .kcq-intent-row__target--naruyo,
+    .kcq-intent-row__target--sakari,
     .kcq-enemy-card__permanent-effect:has([data-icon="crown"]),
     .kcq-enemy-card__permanent-effect:has([data-icon="sun"]),
     .kcq-enemy-card__debuff.kcq-player-identity--enemy,
@@ -6491,6 +6563,10 @@ button {
     .kcq-game-log__value--entity-matsuko,
     .kcq-game-log__actor--hinari,
     .kcq-game-log__value--entity-hinari,
+    .kcq-game-log__actor--naruyo,
+    .kcq-game-log__value--entity-naruyo,
+    .kcq-game-log__actor--sakari,
+    .kcq-game-log__value--entity-sakari,
     .kcq-game-log__actor--neutral,
     .kcq-game-log__value--entity-neutral,
     .kcq-game-log__value--graze,
@@ -6517,6 +6593,8 @@ button {
     .kcq-player-identity--ko,
     .kcq-player-identity--matsuko,
     .kcq-player-identity--hinari,
+    .kcq-player-identity--naruyo,
+    .kcq-player-identity--sakari,
     .kcq-modifier-meter__value--danger,
     .kcq-modifier-meter__value--success,
     .kcq-character-binding__level--light,
@@ -6537,6 +6615,8 @@ button {
     .kcq-linked-entity-chip--ko,
     .kcq-linked-entity-chip--matsuko,
     .kcq-linked-entity-chip--hinari,
+    .kcq-linked-entity-chip--naruyo,
+    .kcq-linked-entity-chip--sakari,
     .kcq-preview-effect--danger,
     .kcq-preview-effect--special,
     .kcq-preview-effect--success,
