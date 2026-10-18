@@ -163,7 +163,7 @@ describe("character details panel", () => {
         expect(pipRule).toContain("width: 7px");
     });
 
-    it("shows Hinari's public Subspace resource in the Commands header", () => {
+    it("renders Hinari's Commands header without the former Subspace meter", () => {
         const fixture = characterDetailsFixture;
         const state = {
             ...fixture.state,
@@ -184,11 +184,10 @@ describe("character details panel", () => {
         expect(html).not.toContain("kcq-character-effects");
         expect(html).toContain("kcq-character-commands");
         expect(html).toContain("kcq-character-commands__resource");
-        expect(html).toContain("kcq-subspace-meter");
-        expect(html).toContain('style="width:27%"');
+        expect(html).not.toContain("kcq-subspace-meter");
+        expect(html).not.toContain('aria-label="Subspace"');
         expect(renderedText(html)).toContain("Commands / Hinari");
-        expect(renderedText(html)).toContain("Subspace");
-        expect(renderedText(html)).toContain("27/100");
+        expect(renderedText(html)).not.toContain("27/100");
 
         for (const focusedCharacterId of ["ko", "matsuko"] as const) {
             const otherHtml = renderToString(() => createComponent(CharacterDetailsPanel, {
@@ -202,7 +201,7 @@ describe("character details panel", () => {
         }
     });
 
-    it("keeps Subspace and command cards when the wide workspace supplies its heading", () => {
+    it("keeps command cards without the header when the wide workspace supplies its heading", () => {
         const fixture = characterDetailsFixture;
         const state = {
             ...fixture.state,
@@ -217,9 +216,9 @@ describe("character details panel", () => {
         expect(html).not.toContain('id="character-commands-heading"');
         expect(html).not.toContain('aria-labelledby="character-commands-heading"');
         expect(html).toContain('aria-label="Commands / Hinari"');
-        expect(html).toContain("kcq-character-commands__resource");
-        expect(html).toContain('style="width:27%"');
-        expect(renderedText(html)).toContain("27/100");
+        expect(html).not.toContain("kcq-character-commands__header");
+        expect(html).not.toContain("kcq-character-commands__resource");
+        expect(renderedText(html)).not.toContain("27/100");
         expect(html).toContain("kcq-command-card__name");
     });
 

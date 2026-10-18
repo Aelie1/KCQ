@@ -1,6 +1,8 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { getStringTable } from "../../localization";
+import { Presentation } from "../../src/ui/presentation/presentation";
 import { PartyCard } from "../../src/ui/web/app/components/PartyCard";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { createPartyCardViewModel, summarizeEffects } from "../../src/ui/web/app/viewModels/partyCard";
@@ -58,35 +60,45 @@ describe("party card", () => {
         }
     });
 
-    it("shows only Hinari's compact numeric Subspace value", () => {
+    it("shows Hinari's Subspace meter and Sakari's compact Hit value", () => {
         const fixture = battleOverviewFixture;
-        const characters = fixture.state.characters.map((character) => ({
+        const presentation = new Presentation(getStringTable("en", ["ko", "matsuko", "hinari", "sakari"], "skunk"));
+        const characters = [...fixture.state.characters, { ...fixture.state.characters[0], id: "sakari" }].map((character) => ({
             ...character,
             data: character.id === "hinari"
                 ? { ...character.data, subspace: 27, subspaceMax: 100 }
-                : { ...character.data, subspace: 99 },
+                : { ...character.data, subspace: 99, subspaceMax: 100, thrillseeker: 3 },
         }));
         const models = characters.map((character) => createPartyCardViewModel(
             character,
-            fixture.actions.find(({ id }) => id === character.id)!,
+            { ...fixture.actions[0], id: character.id },
             fixture.thresholds,
-            fixture.presentation,
+            presentation,
             fixture.state.encounter?.bindings,
         ));
         const hinari = models.find(({ id }) => id === "hinari")!;
+        const sakari = models.find(({ id }) => id === "sakari")!;
+        const sakariHtml = renderToString(() => createComponent(PartyCard, { character: sakari }));
         const hinariHtml = renderToString(() => createComponent(PartyCard, { character: hinari }));
         const otherHtml = models
-            .filter(({ id }) => id !== "hinari")
+            .filter(({ id }) => id !== "hinari" && id !== "sakari")
             .map((character) => renderToString(() => createComponent(PartyCard, { character })))
             .join("");
-        expect(hinari.resourceLabel).toBe("Sub: 27");
-        expect(hinariHtml).toContain("kcq-party-card__resource");
-        expect(hinariHtml).toContain("kcq-subspace-value");
-        expect(renderedText(hinariHtml)).toContain("Sub: 27");
-        expect(hinariHtml).not.toContain("Subspace");
+        expect(hinari.resourceMeter).toEqual({ current: 27, max: 100, label: "Subspace" });
+        expect(hinari.resourceLabel).toBeUndefined();
+        expect(hinariHtml).toContain("kcq-party-card__resource-meter");
+        expect(hinariHtml).toContain("kcq-projected-meter--subspace");
+        expect(hinariHtml).toMatch(/role="progressbar" aria-label="Subspace" aria-valuemin="0" aria-valuemax="100" aria-valuenow="27"/);
+        expect(hinariHtml).toContain('style="width:27%"');
+        expect(renderedText(hinariHtml)).not.toContain("Sub: 27");
         expect(hinariHtml).not.toContain("Store");
+        expect(sakari.resourceLabel).toBe("Hit: 3");
+        expect(sakari.resourceMeter).toBeUndefined();
+        expect(sakariHtml).toContain("kcq-party-card__resource kcq-subspace-value");
+        expect(renderedText(sakariHtml)).toContain("Hit: 3");
+        expect(sakariHtml).not.toContain("kcq-party-card__resource-meter");
         expect(otherHtml).not.toContain("kcq-party-card__resource");
-        expect(models.filter(({ id }) => id !== "hinari")
-            .every((model) => model.resourceLabel === undefined)).toBe(true);
+        expect(models.filter(({ id }) => id !== "hinari" && id !== "sakari")
+            .every((model) => model.resourceLabel === undefined && model.resourceMeter === undefined)).toBe(true);
     });
 });
