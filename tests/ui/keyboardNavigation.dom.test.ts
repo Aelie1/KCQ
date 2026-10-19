@@ -6,7 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionInfo, ActionView, GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { createBattle } from "../../src/ui/web/app";
-import { calculateResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import {
+    AUTO_MEDIUM_BREAKPOINT,
+    AUTO_WIDE_BREAKPOINT,
+    availableWidthFromViewport,
+    calculateResponsiveLayout,
+} from "../../src/ui/web/app/responsiveScale";
 import { App } from "../../src/ui/web/app/App";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { escapeFixtures } from "../../src/ui/web/app/fixtures/escape";
@@ -368,7 +373,7 @@ describe("combat keyboard navigation", () => {
         assertBadges(".kcq-escape-choice[data-kcq-shortcut]");
     });
 
-    it.each([320, 390, 600, 779, 780, 1024])("hides only badges in narrow layout and shows them in medium/wide at %i", width => {
+    it.each([320, 390, 600, AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT + 1, 1024, AUTO_WIDE_BREAKPOINT])("hides badges in narrow layout and shows them on visible medium/wide controls at %i", width => {
         viewport.setViewport({ width });
         const style = document.createElement("style");
         style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
@@ -380,12 +385,17 @@ describe("combat keyboard navigation", () => {
             expect(badges.length).toBeGreaterThan(0);
             for (const badge of badges) {
                 const computed = getComputedStyle(badge);
-                expect(computed.display).toBe(calculateResponsiveLayout(width - 24).size === "narrow" ? "none" : "inline-flex");
+                expect(computed.display).toBe(calculateResponsiveLayout(availableWidthFromViewport(width)).size === "narrow" ? "none" : "inline-flex");
                 expect(computed.visibility).toBe("visible");
                 expect(computed.pointerEvents).toBe("none");
                 expect(computed.position).toBe("absolute");
                 expect(getComputedStyle(badge.parentElement!).position).toBe("relative");
-                expect(getComputedStyle(badge.parentElement!).display).not.toBe("none");
+                // Expanded character panels use their identity Back control instead.
+                if (badge.parentElement!.matches(".kcq-character-details-expanded .kcq-combat-header__back")) {
+                    expect(getComputedStyle(badge.parentElement!).display).toBe("none");
+                } else {
+                    expect(getComputedStyle(badge.parentElement!).display).not.toBe("none");
+                }
             }
         };
         assertVisibility();
@@ -567,12 +577,12 @@ describe("keyboard shortcut hint visibility", () => {
             navigate();
             const badges = [...document.querySelectorAll(".kcq-shortcut")];
             expect(badges.length).toBeGreaterThan(0);
-            for (const width of [600, 390, 320, 779, 780, 1024, 1170]) {
+            for (const width of [600, 390, 320, AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, 1024, AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT]) {
                 viewport.setViewport({ width });
                 window.dispatchEvent(new Event("resize"));
                 // Resizing across column breakpoints can replace the active panels.
                 for (const badge of document.querySelectorAll(".kcq-shortcut")) {
-                    expect(getComputedStyle(badge).display).toBe(calculateResponsiveLayout(width - 24).size === "narrow" ? "none" : "inline-flex");
+                    expect(getComputedStyle(badge).display).toBe(calculateResponsiveLayout(availableWidthFromViewport(width)).size === "narrow" ? "none" : "inline-flex");
                     expect(getComputedStyle(badge).visibility).toBe("visible");
                 }
             }

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleResultPanel } from "../../src/ui/web/app/panels/BattleResultPanel";
 import { BattleSettingsPanel } from "../../src/ui/web/app/panels/BattleSettingsPanel";
 import { VictoryStoryPanel } from "../../src/ui/web/app/panels/VictoryStoryPanel";
-import { calculateResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import { AUTO_MEDIUM_BREAKPOINT, availableWidthFromViewport, calculateResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import type { BattleColumns } from "../../src/ui/web/app/viewPreferences";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import type { BattleResultRow, BattleResultViewModel } from "../../src/ui/web/app/viewModels/battleResult";
@@ -69,7 +69,7 @@ describe("outcome dialog presentation", () => {
         for (const [width, height] of [[1024, 768], [1920, 480], [600, 800], [390, 844]] as const) {
             viewport.setViewport({ width, height }); window.dispatchEvent(new Event("resize"));
             expect(element('[role="dialog"]')).toBe(dialog);
-            const layout = calculateResponsiveLayout(width - 24).size;
+            const layout = calculateResponsiveLayout(availableWidthFromViewport(width)).size;
             expect(element(".kcq-outcome__overlay").dataset.kcqLayout).toBe(layout);
             expect(parseFloat(style(".kcq-battle-result__viewport").width)).toBe(layout === "narrow" ? 366 : desktopWidth);
         }
@@ -94,16 +94,16 @@ describe("outcome dialog presentation", () => {
         expect(element(".kcq-outcome__overlay").style.getPropertyValue("--kcq-ui-height")).toBe("304px");
     });
 
-    it.each([390, 780, 1920])("uses compact story typography and preserves the reading region at %ipx", width => {
+    it.each([390, 1024, 1920])("uses compact story typography and preserves the reading region at %ipx", width => {
         viewport.setViewport({ width, height: 844 });
         mount("story");
-        expect(style(".kcq-victory-story__narrative").fontSize).toBe("13px");
+        expect(style(".kcq-victory-story__narrative").fontSize).toBe(width < AUTO_MEDIUM_BREAKPOINT ? "11px" : "13px");
         expect(style(".kcq-victory-story__narrative").lineHeight).toBe("1.6");
         expect(style(".kcq-victory-story__narrative").whiteSpace).toBe("pre-wrap");
         expect(parseFloat(style(".kcq-victory-story__narrative").textIndent)).toBeGreaterThan(0);
         expect(style(".kcq-victory-story__narrative").overflowY).toBe("auto");
         expect(element(".kcq-victory-story__narrative").textContent).toBe(narrativeText);
-        expect(style(".kcq-victory-story").maxHeight).toBe(width < 780 ? "min(100%, 600px)" : "100%");
+        expect(style(".kcq-victory-story").maxHeight).toBe(width < AUTO_MEDIUM_BREAKPOINT ? "min(100%, 600px)" : "100%");
     });
 
     it("returns focus to View Game Log when reopening the result", () => {
@@ -126,7 +126,7 @@ describe("outcome dialog presentation", () => {
         }
     });
 
-    it.each([390, 780, 1920])("renders three boxed headline cards and each supplied secondary summary at %ipx", width => {
+    it.each([390, 1024, 1920])("renders three boxed headline cards and each supplied secondary summary at %ipx", width => {
         viewport.setViewport({ width, height: 1080 });
         mount("results", model("defeat"));
         const cards = [...document.querySelectorAll(".kcq-battle-result__stat")];
@@ -230,7 +230,7 @@ describe("outcome dialog presentation", () => {
         if (kind === "story") {
             expect(reading.textContent).toBe(narrativeText);
             expect(getComputedStyle(reading).whiteSpace).toBe("pre-wrap");
-            expect(getComputedStyle(reading).maxWidth).toBe("76ch");
+            expect(getComputedStyle(reading).maxWidth).toBe("66ch");
             expect(getComputedStyle(reading).fontSize).toBe("13px");
             expect(getComputedStyle(reading).lineHeight).toBe("1.6");
             const proceed = element("footer button"); proceed.focus();
@@ -251,7 +251,7 @@ describe("outcome dialog presentation", () => {
     });
 
     it.each([
-        [390, "auto"], [1024, "auto"], [1180, "auto"],
+        [390, "auto"], [1024, "auto"], [1920, "auto"],
         [1024, "3"], [1920, "1"], [1920, "2"],
     ] as const)("selects compact Settings by semantic layout at %ipx with %s columns", (width, columns: BattleColumns) => {
         viewport.setViewport({ width, height: 900 });
@@ -261,7 +261,7 @@ describe("outcome dialog presentation", () => {
             viewPreferences: { columns, enemyCards: "auto", setColumns: vi.fn(), setEnemyCards: vi.fn(), reset: vi.fn() },
             overviewGameLog: { value: 4, onChange: vi.fn() },
         }), host);
-        const layout = calculateResponsiveLayout(width - 24, columns).size;
+        const layout = calculateResponsiveLayout(availableWidthFromViewport(width), columns).size;
         const wide = layout === "wide";
         expect(element(".kcq-battle-settings__overlay").dataset.kcqLayout).toBe(layout);
         expect(style(".kcq-battle-result__viewport").width).toBe(wide ? "400px" : "366px");

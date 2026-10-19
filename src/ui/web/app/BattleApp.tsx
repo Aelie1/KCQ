@@ -41,7 +41,7 @@ import { LibraryPanel } from "./panels/LibraryPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
 import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
-import { calculateResponsiveLayout, ResponsiveLayoutContext, setupResponsiveScale } from "./responsiveScale";
+import { availableWidthFromViewport, calculateResponsiveLayout, ResponsiveLayoutContext, setupResponsiveScale } from "./responsiveScale";
 import { createSavePackage, type SavePackage } from "./savePackage";
 import { clearSave, writeSave } from "./savePersistence";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
@@ -430,7 +430,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const sharedLayout = useContext(ResponsiveLayoutContext);
     // Standalone battles have no App shell; use the same calculation and padding.
     const [viewportWidth, setViewportWidth] = createSignal(typeof window === "undefined" ? 390 : window.innerWidth);
-    const layout = sharedLayout ?? createMemo(() => calculateResponsiveLayout(viewportWidth() - 24, viewPreferences.columns));
+    const layout = sharedLayout ?? createMemo(() => calculateResponsiveLayout(availableWidthFromViewport(viewportWidth()), viewPreferences.columns));
     const wide = () => layout().size === "wide";
     const nonNarrow = () => layout().size !== "narrow";
     const logReplacement = () => logOpen() && layout().size === "narrow";

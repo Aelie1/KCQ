@@ -1,5 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LAYOUT_WIDTHS, calculateResponsiveLayout, layoutSize, setupResponsiveScale } from "../../src/ui/web/app/responsiveScale";
+import {
+    AUTO_MEDIUM_BREAKPOINT,
+    AUTO_WIDE_BREAKPOINT,
+    SHELL_HORIZONTAL_PADDING,
+    availableWidthFromViewport,
+    LAYOUT_WIDTHS,
+    calculateResponsiveLayout,
+    layoutSize,
+    setupResponsiveScale,
+} from "../../src/ui/web/app/responsiveScale";
 
 function viewport(width = 390, height = 844, visualHeight?: number, columns: "auto" | "1" | "2" | "3" = "auto") {
     const style = new Map<string, string>();
@@ -14,7 +23,7 @@ function viewport(width = 390, height = 844, visualHeight?: number, columns: "au
     const browser = Object.assign(windowEvents, {
         innerHeight: height,
         visualViewport,
-        getComputedStyle: () => ({ paddingLeft: "12px", paddingRight: "12px", paddingTop: "12px", paddingBottom: "12px" }),
+        getComputedStyle: () => ({ paddingLeft: `${SHELL_HORIZONTAL_PADDING / 2}px`, paddingRight: `${SHELL_HORIZONTAL_PADDING / 2}px`, paddingTop: "12px", paddingBottom: "12px" }),
     });
     let observedResize!: () => void;
     const observe = vi.fn();
@@ -92,39 +101,61 @@ describe("column-first scaling", () => {
         expect(layoutSize(columns)).toBe(size);
     });
 
+    it("preserves the canonical canvases independently of auto breakpoints", () => {
+        expect(LAYOUT_WIDTHS).toEqual({ 1: 366, 2: 756, 3: 1146 });
+        expect(availableWidthFromViewport(390)).toBe(366);
+    });
+
     it.each([
-        [296, 1, "narrow", 1], [366, 1, "narrow", 1], [500, 1, "narrow", 500 / 366], [755, 1, "narrow", 1.5],
-        [755.999, 1, "narrow", 1.5], [756, 2, "medium", 1], [756.001, 2, "medium", 756.001 / 756],
-        [900, 2, "medium", 900 / 756], [1145, 2, "medium", 1.5], [1145.999, 2, "medium", 1.5],
-        [1146, 3, "wide", 1], [1146.001, 3, "wide", 1146.001 / LAYOUT_WIDTHS[3]],
-        [1256, 3, "wide", 1256 / LAYOUT_WIDTHS[3]],
-        [LAYOUT_WIDTHS[3] * 1.5 - 0.001, 3, "wide", (LAYOUT_WIDTHS[3] * 1.5 - 0.001) / LAYOUT_WIDTHS[3]],
-        [LAYOUT_WIDTHS[3] * 1.5, 3, "wide", 1.5], [2500, 3, "wide", 1.5],
-    ])("fits the maximum columns at 100%% into %ipx before scaling", (width, columns, size, zoom) => {
-        expect(calculateResponsiveLayout(width)).toEqual({ columns, size, zoom });
+        [296, 1, "narrow"], [366, 1, "narrow"], [500, 1, "narrow"],
+        [LAYOUT_WIDTHS[2], 1, "narrow"], [900, 2, "medium"],
+        [LAYOUT_WIDTHS[3], 2, "medium"], [availableWidthFromViewport(1280), 2, "medium"],
+        ...([-1, -0.001, 0, 0.001, 1] as const).flatMap(offset => [
+            [availableWidthFromViewport(AUTO_MEDIUM_BREAKPOINT) + offset, offset < 0 ? 1 : 2, offset < 0 ? "narrow" : "medium"],
+            [availableWidthFromViewport(AUTO_WIDE_BREAKPOINT) + offset, offset < 0 ? 2 : 3, offset < 0 ? "medium" : "wide"],
+        ] as const),
+    ] as const)("selects %s available pixels by viewport policy (%i columns, %s)", (availableWidth, columns, size) => {
+        expect(calculateResponsiveLayout(availableWidth)).toEqual({
+            columns, size,
+            zoom: Math.min(1.5, Math.max(1, availableWidth / LAYOUT_WIDTHS[columns])),
+        });
+    });
+
+    it.each([
+        [LAYOUT_WIDTHS[3] * 1.5 - 0.001, (LAYOUT_WIDTHS[3] * 1.5 - 0.001) / LAYOUT_WIDTHS[3]],
+        [LAYOUT_WIDTHS[3] * 1.5, 1.5], [2500, 1.5],
+    ])("caps wide zoom at 1.5 for %s available pixels", (availableWidth, zoom) => {
+        expect(calculateResponsiveLayout(availableWidth)).toEqual({ columns: 3, size: "wide", zoom });
     });
 
     it.each([
         ["1", "narrow"], ["2", "medium"], ["3", "wide"],
     ] as const)("keeps forced %s columns throughout resizing with size %s", (preference, size) => {
         const columns = Number(preference) as 1 | 2 | 3;
-        for (const width of [296, 366, 755, 756, 1145, 1146, 1256, 2500, 366]) {
-            const layout = calculateResponsiveLayout(width, preference);
+        for (const availableWidth of [
+            296, 366, LAYOUT_WIDTHS[2], LAYOUT_WIDTHS[3],
+            ...[AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT].flatMap(breakpoint =>
+                [-1, 0, 1].map(offset => availableWidthFromViewport(breakpoint + offset))),
+            2500, 366,
+        ]) {
+            const layout = calculateResponsiveLayout(availableWidth, preference);
             expect(layout.columns).toBe(columns);
             expect(layout.size).toBe(size);
-            expect(layout.zoom).toBe(Math.max(1, Math.min(1.5, width / LAYOUT_WIDTHS[columns])));
-            if (width < LAYOUT_WIDTHS[columns]) expect(layout.zoom).toBe(1);
+            expect(layout.zoom).toBe(Math.max(1, Math.min(1.5, availableWidth / LAYOUT_WIDTHS[columns])));
+            if (availableWidth < LAYOUT_WIDTHS[columns]) expect(layout.zoom).toBe(1);
         }
     });
 
     it("publishes canonical layout sizes as the shell crosses boundaries in both directions", () => {
         const { shell, style, observedResize, onLayout } = viewport(390);
         expect(shell.dataset.kcqLayout).toBe("narrow");
-        for (const [availableWidth, size] of [
-            [755.999, "narrow"], [756, "medium"], [1145.999, "medium"], [1146, "wide"],
-            [1145.999, "medium"], [755.999, "narrow"],
+        for (const [viewportWidth, size] of [
+            [AUTO_MEDIUM_BREAKPOINT - 1, "narrow"], [AUTO_MEDIUM_BREAKPOINT, "medium"], [AUTO_MEDIUM_BREAKPOINT + 1, "medium"],
+            [AUTO_WIDE_BREAKPOINT - 1, "medium"], [AUTO_WIDE_BREAKPOINT, "wide"], [AUTO_WIDE_BREAKPOINT + 1, "wide"],
+            [AUTO_WIDE_BREAKPOINT - 1, "medium"], [AUTO_MEDIUM_BREAKPOINT - 1, "narrow"],
         ] as const) {
-            shell.clientWidth = availableWidth + 24;
+            shell.clientWidth = viewportWidth;
+            const availableWidth = availableWidthFromViewport(viewportWidth);
             observedResize();
             expect(shell.dataset.kcqLayout).toBe(size);
             expect(onLayout.mock.lastCall![0]).toMatchObject({ size, availableWidth });
@@ -146,15 +177,15 @@ describe("column-first scaling", () => {
 
     it("uses the unzoomed shell width and stays stable at breakpoints", () => {
         const { shell, style, observedResize } = viewport(1280);
-        expect(parseFloat(style.get("--kcq-ui-zoom")!)).toBeCloseTo((1280 - 24) / LAYOUT_WIDTHS[3]);
-        for (const breakpoint of [LAYOUT_WIDTHS[2] + 24, LAYOUT_WIDTHS[3] + 24]) {
+        expect(parseFloat(style.get("--kcq-ui-zoom")!)).toBeCloseTo(1.5);
+        for (const breakpoint of [AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT]) {
             for (const width of [breakpoint - 1, breakpoint, breakpoint + 1, breakpoint, breakpoint - 1]) {
                 shell.clientWidth = width;
                 observedResize();
                 const before = new Map(style);
                 for (let index = 0; index < 10; index++) observedResize();
                 expect(style).toEqual(before);
-                const expected = calculateResponsiveLayout(width - 24);
+                const expected = calculateResponsiveLayout(availableWidthFromViewport(width));
                 expect(Number(style.get("--kcq-ui-zoom"))).toBe(expected.zoom);
                 expect(shell.dataset.kcqLayout).toBe(expected.size);
             }

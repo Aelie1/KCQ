@@ -10,8 +10,16 @@ export const LAYOUT_WIDTHS = {
     3: COLUMN_WIDTH * 3 + COLUMN_GAP * 2,
 } as const;
 
+// Auto breakpoints are browser viewport widths, independent of canvas geometry.
 export const AUTO_MEDIUM_BREAKPOINT = 800;
 export const AUTO_WIDE_BREAKPOINT = 1400;
+
+// The normal .kcq-app shell has 12px of padding on each horizontal edge.
+export const SHELL_HORIZONTAL_PADDING = 24;
+
+export function availableWidthFromViewport(viewportWidth: number): number {
+    return viewportWidth - SHELL_HORIZONTAL_PADDING;
+}
 
 export type LayoutSize = "narrow" | "medium" | "wide";
 
@@ -27,14 +35,14 @@ export interface ResponsiveLayout {
 }
 export const ResponsiveLayoutContext = createContext<Accessor<ResponsiveLayout>>();
 
-/** Choose columns at 100% first, then fit that layout without shrinking it. */
+/** Select auto columns from usable shell width, then scale without shrinking. */
 export function calculateResponsiveLayout(
     availableWidth: number,
     preference: BattleColumns = "auto",
 ): ResponsiveLayout {
     const columns = preference === "auto"
-        ? availableWidth >= (AUTO_WIDE_BREAKPOINT - COLUMN_GAP) ? 3
-            : availableWidth >= (AUTO_MEDIUM_BREAKPOINT - COLUMN_GAP) ? 2
+        ? availableWidth >= availableWidthFromViewport(AUTO_WIDE_BREAKPOINT) ? 3
+            : availableWidth >= availableWidthFromViewport(AUTO_MEDIUM_BREAKPOINT) ? 2
                 : 1 : Number(preference) as 1 | 2 | 3;
 
     return {

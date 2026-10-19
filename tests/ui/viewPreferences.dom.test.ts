@@ -8,7 +8,13 @@ import { App } from "../../src/ui/web/app/App";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
-import { calculateResponsiveLayout, LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
+import {
+    AUTO_MEDIUM_BREAKPOINT,
+    AUTO_WIDE_BREAKPOINT,
+    availableWidthFromViewport,
+    calculateResponsiveLayout,
+    LAYOUT_WIDTHS,
+} from "../../src/ui/web/app/responsiveScale";
 import { createViewPreferences, ViewPreferencesContext, type BattleColumns, type EnemyCards } from "../../src/ui/web/app/viewPreferences";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
@@ -73,9 +79,13 @@ describe("battle view preferences", () => {
                 const { preferences, execute, engine } = mount();
                 const before = engine.getGameState();
                 preferences.setColumns(columns); preferences.setEnemyCards(cards);
-                for (const width of [320, 390, 779, 780, 1000, 1169, 1170, 1280, 1920, 779, 780]) {
+                for (const width of [
+                    320, 390, AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT + 1, 1000,
+                    AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, AUTO_WIDE_BREAKPOINT + 1, 1280, 1920,
+                    AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT,
+                ]) {
                     viewport.setViewport({ width });
-                    const count = calculateResponsiveLayout(width - 24, columns).columns;
+                    const count = calculateResponsiveLayout(availableWidthFromViewport(width), columns).columns;
                     assertColumns(count);
                     const expanded = cards === "auto" ? count > 1 : cards === "expanded";
                     const enemies = [...document.querySelectorAll(".kcq-enemy-card")];
@@ -88,7 +98,7 @@ describe("battle view preferences", () => {
                     const expectedIntentions = battleOverviewFixture.state.enemies.reduce((sum, enemy) =>
                         sum + (expanded ? enemy.intentions.length : Math.min(2, enemy.intentions.length)), 0);
                     expect(document.querySelectorAll(".kcq-enemy-card__intent-slot")).toHaveLength(expectedIntentions);
-                    const expectedZoom = Math.max(1, Math.min(1.5, (width - 24) / LAYOUT_WIDTHS[count]));
+                    const expectedZoom = Math.max(1, Math.min(1.5, availableWidthFromViewport(width) / LAYOUT_WIDTHS[count]));
                     expect(Number(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(expectedZoom);
                     expect(getComputedStyle(element(".kcq-app")).overflowX).toBe("auto");
                     expect(getComputedStyle(element(".kcq-graphical-app__background")).minWidth).toBe(`${LAYOUT_WIDTHS[count]}px`);
@@ -109,9 +119,9 @@ describe("battle view preferences", () => {
             for (const selection of ["1", "2", "3", "auto"] as const) {
                 columns.value = selection; columns.dispatchEvent(new Event("change", { bubbles: true }));
                 expect(preferences.columns).toBe(selection);
-                const count = calculateResponsiveLayout(width - 24, selection).columns;
+                const count = calculateResponsiveLayout(availableWidthFromViewport(width), selection).columns;
                 assertColumns(count);
-                const zoom = Math.max(1, Math.min(1.5, (width - 24) / LAYOUT_WIDTHS[count]));
+                const zoom = Math.max(1, Math.min(1.5, availableWidthFromViewport(width) / LAYOUT_WIDTHS[count]));
                 for (const surface of [shell, overlay]) {
                     expect(Number(surface.style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(zoom);
                     expect(parseFloat(surface.style.getPropertyValue("--kcq-ui-height"))).toBeCloseTo((1080 - 24) / zoom);
@@ -132,13 +142,13 @@ describe("battle view preferences", () => {
         expect(Number(shell.style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(976 / 756);
         element(".kcq-combat-header__settings").click();
         const overlay = element(".kcq-battle-settings__overlay");
-        for (const width of [780, 1170, 1280, 1169, 779, 1280]) {
+        for (const width of [AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT, 1280, AUTO_WIDE_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT - 1, 1280]) {
             shellWidth = width;
             window.dispatchEvent(new Event("resize"));
-            assertColumns(width >= 1170 ? 3 : width >= 780 ? 2 : 1);
+            assertColumns(width >= AUTO_WIDE_BREAKPOINT ? 3 : width >= AUTO_MEDIUM_BREAKPOINT ? 2 : 1);
             expect(overlay.style.getPropertyValue("--kcq-ui-zoom")).toBe(shell.style.getPropertyValue("--kcq-ui-zoom"));
         }
-        expect(Number(shell.style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo((1280 - 24) / LAYOUT_WIDTHS[3]);
+        expect(Number(shell.style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(Math.min(1.5, availableWidthFromViewport(1280) / LAYOUT_WIDTHS[2]));
     });
     it.each(["targeting", "escape", "enemy", "character"] as const)("preserves the %s screen and its choices while changing columns", screen => {
         const { preferences, execute, engine } = mount(true);

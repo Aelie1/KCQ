@@ -13,7 +13,14 @@ import type { LibrarySettingsControlsProps } from "../../src/ui/web/app/componen
 import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { useCombatKeyboard } from "../../src/ui/web/app/keyboard";
-import { calculateResponsiveLayout, ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import {
+    AUTO_MEDIUM_BREAKPOINT,
+    AUTO_WIDE_BREAKPOINT,
+    availableWidthFromViewport,
+    calculateResponsiveLayout,
+    ResponsiveLayoutContext,
+    type ResponsiveLayout,
+} from "../../src/ui/web/app/responsiveScale";
 import { createEncounterPickerViewModel, createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 import { stockStrings } from "../helpers/stockStrings";
@@ -40,7 +47,7 @@ function mount(view: Parameters<typeof render>[0], selectedLayout?: ResponsiveLa
     const host = document.createElement("div");
     document.body.append(host);
     unmount = render(() => createComponent(ResponsiveLayoutContext.Provider, {
-        value: () => selectedLayout ?? calculateResponsiveLayout(window.innerWidth - 24),
+        value: () => selectedLayout ?? calculateResponsiveLayout(availableWidthFromViewport(window.innerWidth)),
         get children() { return view(); },
     }), host);
     return host;
@@ -75,7 +82,10 @@ describe("shared Library and Settings header controls", () => {
         expect(getComputedStyle(controls).gridTemplateRows.includes("repeat(2,")).toBe(!compact);
     });
 
-    it.each([320, 390, 779, 780, 1024, 1169, 1170])("places the accessible Show All control between the title and buttons at width %s", width => {
+    it.each([
+        320, 390, AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT + 1, 1024,
+        AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, AUTO_WIDE_BREAKPOINT + 1,
+    ])("places the accessible Show All control between the title and buttons at width %s", width => {
         viewport.setViewport({ width });
         const onShowAllChange = vi.fn(); const globalAction = vi.fn(() => false);
         const host = mount(() => {
@@ -91,18 +101,18 @@ describe("shared Library and Settings header controls", () => {
         const controls = header.querySelector<HTMLElement>(".kcq-header-controls")!;
         expect(label.previousElementSibling).toBe(header.querySelector("h1"));
         expect(label.nextElementSibling).toBe(controls);
-        expect(getComputedStyle(header).gridTemplateColumns).toBe(width >= 780 ? "minmax(0, 1fr) auto auto" : "minmax(0, 1fr) auto 42px");
+        expect(getComputedStyle(header).gridTemplateColumns).toBe(width >= AUTO_MEDIUM_BREAKPOINT ? "minmax(0, 1fr) auto auto" : "minmax(0, 1fr) auto 42px");
         expect(parseFloat(getComputedStyle(header.querySelector("h1")!).minWidth)).toBe(0);
         expect(header.querySelector("h1")?.textContent).toBe("Localized campaign");
         expect(getComputedStyle(label).display).toBe("flex");
         expect(getComputedStyle(label).alignItems).toBe("center");
         const text = label.querySelector("span")!;
         expect(checkbox.nextElementSibling).toBe(text);
-        expect(getComputedStyle(text).width).toBe(width >= 780 ? "auto" : "min-content");
-        expect(getComputedStyle(text).whiteSpace).toBe(width >= 780 ? "nowrap" : "normal");
+        expect(getComputedStyle(text).width).toBe(width >= AUTO_MEDIUM_BREAKPOINT ? "auto" : "min-content");
+        expect(getComputedStyle(text).whiteSpace).toBe(width >= AUTO_MEDIUM_BREAKPOINT ? "nowrap" : "normal");
         expect(text.textContent).toBe(presentation.ui("encounter.showAll"));
         expect(text.childElementCount).toBe(0);
-        expect(getComputedStyle(controls).gridTemplateRows.includes("repeat(2,")).toBe(width < 780);
+        expect(getComputedStyle(controls).gridTemplateRows.includes("repeat(2,")).toBe(width < AUTO_MEDIUM_BREAKPOINT);
         expect(host.querySelector(".kcq-screen-layout__body .kcq-encounter-picker__show-all")).toBeNull();
         expect(checkbox.type).toBe("checkbox");
         expect(checkbox.tabIndex).toBe(0);
@@ -119,7 +129,10 @@ describe("shared Library and Settings header controls", () => {
         expect(globalAction).not.toHaveBeenCalled();
     });
 
-    it.each(screens.flatMap(screen => [320, 390, 779, 780, 1024, 1169, 1170].map(width => ({ ...screen, width }))))(
+    it.each(screens.flatMap(screen => [
+        320, 390, AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT + 1, 1024,
+        AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, AUTO_WIDE_BREAKPOINT + 1,
+    ].map(width => ({ ...screen, width }))))(
         "keeps labeled $name actions keyboard accessible at width $width", screen => {
             viewport.setViewport({ width: screen.width });
             const onLibrary = vi.fn();
@@ -136,7 +149,7 @@ describe("shared Library and Settings header controls", () => {
             expect(!!host.querySelector(".kcq-encounter-picker__show-all")).toBe(screen.name === "picker");
             const controls = host.querySelector<HTMLElement>(".kcq-header-controls")!;
             const buttons = [...controls.querySelectorAll<HTMLButtonElement>("button")];
-            const compact = screen.width >= 780 && screen.name !== "combat";
+            const compact = screen.width >= AUTO_MEDIUM_BREAKPOINT && screen.name !== "combat";
             expect(buttons.map(button => button.getAttribute("aria-label"))).toEqual(compact ? ["Bibliotheque", "Options"] : ["Options", "Bibliotheque"]);
             expect(host.querySelector(".kcq-screen-layout__body .kcq-library-access")).toBeNull();
             const layout = getComputedStyle(controls);

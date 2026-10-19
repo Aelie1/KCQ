@@ -4,7 +4,7 @@ import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it } from "vitest";
 import { App } from "../../src/ui/web/app/App";
-import { LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
+import { AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT, LAYOUT_WIDTHS, SHELL_HORIZONTAL_PADDING } from "../../src/ui/web/app/responsiveScale";
 import { createViewPreferences, ViewPreferencesContext } from "../../src/ui/web/app/viewPreferences";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
@@ -43,15 +43,20 @@ describe("canonical graphical canvas", () => {
             get children() { return createComponent(App, { children: background }); },
         }), host);
         const shell = host.querySelector<HTMLElement>(".kcq-app")!;
+        const shellStyle = getComputedStyle(shell);
+        expect(parseFloat(shellStyle.paddingLeft) + parseFloat(shellStyle.paddingRight)).toBe(SHELL_HORIZONTAL_PADDING);
         // Happy DOM does not calculate element geometry.
         Object.defineProperty(shell, "clientWidth", { get: () => window.innerWidth });
         for (const columns of ["1", "2", "3", "auto"] as const) {
             preferences.setColumns(columns);
-            for (const width of [390, LAYOUT_WIDTHS[2] + 24, LAYOUT_WIDTHS[3] + 24, 390]) {
+            for (const width of [
+                390, AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT + 1,
+                AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, AUTO_WIDE_BREAKPOINT + 1, 1280, 390,
+            ]) {
                 viewport.setViewport({ width });
                 window.dispatchEvent(new Event("resize"));
                 const count = columns === "auto"
-                    ? width >= LAYOUT_WIDTHS[3] + 24 ? 3 : width >= LAYOUT_WIDTHS[2] + 24 ? 2 : 1
+                    ? width >= AUTO_WIDE_BREAKPOINT ? 3 : width >= AUTO_MEDIUM_BREAKPOINT ? 2 : 1
                     : Number(columns) as 1 | 2 | 3;
                 const expected = `${LAYOUT_WIDTHS[count]}px`;
                 expect(shell.style.getPropertyValue("--kcq-layout-width")).toBe(expected);

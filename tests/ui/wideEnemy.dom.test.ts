@@ -7,7 +7,7 @@ import { createStockEngine } from "../../src/stock";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { enemyDetailsFixture as fixture } from "../../src/ui/web/app/fixtures/enemyDetails";
-import { AUTO_WIDE_BREAKPOINT } from "../../src/ui/web/app/responsiveScale";
+import { AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT } from "../../src/ui/web/app/responsiveScale";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
@@ -54,7 +54,7 @@ function press(key: string, target: EventTarget = document): KeyboardEvent {
 
 const gameLog = () => document.querySelector<HTMLElement>('[role="log"]') ?? element(".kcq-battle-section--game-log");
 
-describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
+describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details at %ipx", width => {
     beforeEach(() => viewport.setViewport({ width }));
     it("replaces only the enemy column and restores the list with the identity back button", () => {
         const { execute } = mountBattle();
@@ -120,13 +120,16 @@ describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
         expect(execute).not.toHaveBeenCalled();
     });
 
-    it.each([390, 779, 780, AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, 1920])(
+    it.each([
+        390, AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT + 1,
+        AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, AUTO_WIDE_BREAKPOINT + 1, 1920,
+    ])(
         "embeds details in medium and wide layouts at %ipx", width => {
             viewport.setViewport({ width });
             mountBattle();
             element('.kcq-enemy-card[data-kcq-shortcut="5"]').click();
             const wide = width >= AUTO_WIDE_BREAKPOINT;
-            const nonNarrow = width >= 780;
+            const nonNarrow = width >= AUTO_MEDIUM_BREAKPOINT;
             const details = element(".kcq-enemy-details");
             expect(details.getAttribute("aria-label")).toBe("Skunkette 2");
             expect(!!details.closest(".kcq-battle-overview-wide")).toBe(wide);
@@ -147,7 +150,7 @@ describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
     it("keeps the selected enemy across responsive changes without duplicate content or shortcuts", () => {
         mountBattle();
         press("5");
-        for (const width of [1169, 780, 390, 1170, 1920]) {
+        for (const width of [AUTO_WIDE_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, 390, AUTO_WIDE_BREAKPOINT, 1920]) {
             viewport.setViewport({ width });
             expect(document.querySelectorAll(".kcq-enemy-details")).toHaveLength(1);
             expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 2");

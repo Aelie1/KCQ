@@ -85,7 +85,11 @@ try {
                 || body.scrollWidth > body.clientWidth,
         };
     })()`);
-    const widths = [375, 600, 779, 780, 781, 800, 950, 1024, 1169, 1170, 1280, 1600, 1920]
+    const breakpoints = await evaluate(`(async () => {
+        const { AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT } = await import("/src/ui/web/app/responsiveScale.ts");
+        return [AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT];
+    })()`);
+    const widths = [375, 600, ...breakpoints.flatMap(width => [width - 1, width, width + 1]), 950, 1024, 1280, 1600, 1920]
         .flatMap(width => [0, .2, .4, .6, .8].map(fraction => width + fraction));
     for (const width of [...widths, ...widths.toReversed()]) {
         await evaluate(`document.getElementById("root").style.width = ${JSON.stringify(`${width}px`)}`);
@@ -101,7 +105,8 @@ try {
         assert.ok(Math.abs(result.appliedZoom - result.zoom) < .00001, "Title enlargement differs from the scaler");
         assert.ok(result.footerFits && !result.overflow, `Overflow beyond the canonical canvas at ${width}px: ${JSON.stringify(result)}`);
     }
-    for (const width of [800.6, 950.6, 1280.6]) {
+    const heldWidths = [...breakpoints.flatMap(width => [width - .4, width + .6]), 950.6, 1280.6];
+    for (const width of heldWidths) {
         await evaluate(`document.getElementById("root").style.width = "${width}px"`);
         await evaluate("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
         const settled = await measure();
@@ -145,7 +150,7 @@ try {
         assert.ok(actions.every(action => action.label && action.focusable && action.contained && action.hittable),
             `Inaccessible header action at ${width}px: ${JSON.stringify(actions)}`);
     }
-    console.log(`Title resize browser regression passed: ${widths.length * 2} resize steps, 120 held frames, and header actions at three viewport sizes.`);
+    console.log(`Title resize browser regression passed: ${widths.length * 2} resize steps, ${heldWidths.length * 40} held frames, and header actions at three viewport sizes.`);
 } finally {
     page?.close();
     await browser.send("Target.closeTarget", { targetId });

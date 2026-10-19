@@ -66,7 +66,7 @@ describe("encounter details responsive layout", () => {
         expect(getComputedStyle(summary).width).toBe("100%");
         expect(getComputedStyle(summary.firstElementChild!).minHeight).toBe("28px");
         expect(summary.textContent).toContain(combat().bestClearLabel);
-        expect(getComputedStyle(columns).gridTemplateColumns).toBe("minmax(0, 1fr) 366px");
+        expect(getComputedStyle(columns).gridTemplateColumns).toBe("minmax(0, 66ch) 366px");
         expect(getComputedStyle(columns).gap).toBe("24px");
         expect([...element(".kcq-encounter-details__information").children]).toEqual([
             element(".kcq-encounter-details__enemies"), element(".kcq-encounter-details__rules"),

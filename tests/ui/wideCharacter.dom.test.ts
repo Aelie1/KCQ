@@ -11,7 +11,7 @@ import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
 import { COMBAT_SHORTCUTS } from "../../src/ui/web/app/keyboard";
-import { AUTO_WIDE_BREAKPOINT, LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
+import { AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT, LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
 
 const fixture = targetingFixtures.telekinesisChoose;
 const viewport = (window as unknown as HappyWindow).happyDOM;
@@ -79,14 +79,17 @@ const command = () => button('.kcq-command-card[data-kcq-shortcut="1"]');
 const gameLog = () => document.querySelector<HTMLElement>('[role="log"]') ?? element(".kcq-battle-section--game-log");
 const targets = () => [...document.querySelectorAll<HTMLButtonElement>("button.kcq-target-card")];
 
-describe.each([780, 1169, 1920])("non-narrow character workspace at %ipx", width => {
+describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow character workspace at %ipx", width => {
     beforeEach(() => viewport.setViewport({ width }));
-    it.each([390, 779, 780, AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, 1920, 2560])(
+    it.each([
+        390, AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT + 1,
+        AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, AUTO_WIDE_BREAKPOINT + 1, 1920, 2560,
+    ])(
         "uses two columns at medium width and three at wide width (%ipx)", width => {
             viewport.setViewport({ width });
             const { host } = mockBattle();
             const wide = width >= AUTO_WIDE_BREAKPOINT;
-            const nonNarrow = width >= 780;
+            const nonNarrow = width >= AUTO_MEDIUM_BREAKPOINT;
             expect(!!host.querySelector(".kcq-character-details-wide")).toBe(wide);
             expect(host.querySelectorAll(".kcq-character-roster")).toHaveLength(1);
             expect(host.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
@@ -175,14 +178,14 @@ describe.each([780, 1169, 1920])("non-narrow character workspace at %ipx", width
     it("preserves targeting while resizing without duplicate controls or actions", () => {
         const { execute } = mockBattle({ ...fixture.action, move: { ...fixture.action.move, targets: 2 } });
         command().click(); targets()[0]!.click();
-        for (const width of [1169, 1170, 390, 1920]) {
+        for (const width of [AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, 390, 1920]) {
             viewport.setViewport({ width });
             expect(element(".kcq-targeting")).toBeDefined();
             expect(targets()[0]!.getAttribute("aria-pressed")).toBe("true");
             expect(document.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
             expect(document.querySelectorAll(".kcq-character-roster")).toHaveLength(1);
             expect(document.querySelectorAll(".kcq-targeting__execute")).toHaveLength(1);
-            if (width >= 780) {
+            if (width >= AUTO_MEDIUM_BREAKPOINT) {
                 expect(document.querySelectorAll(".kcq-battle-section--game-log")).toHaveLength(1);
                 expect(element(".kcq-character-details-expanded__workspace > header h2").textContent).toBe("Targeting / Ko-chan");
                 expect(!!gameLog().closest(".kcq-character-details-expanded__workspace")).toBe(width < AUTO_WIDE_BREAKPOINT);
@@ -208,7 +211,7 @@ describe.each([780, 1169, 1920])("non-narrow character workspace at %ipx", width
         expect(gameLog()).toBe(log);
         button('.kcq-escape-choice[data-kcq-shortcut="1"]').click();
         const selected = element('.kcq-escape-choice[aria-pressed="true"]').textContent;
-        for (const width of [1169, 1170, 780, 779, 390, 1920]) {
+        for (const width of [AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT - 1, 390, 1920]) {
             viewport.setViewport({ width });
             expect(element('.kcq-escape-choice[aria-pressed="true"]').textContent).toBe(selected);
         }
@@ -220,7 +223,7 @@ describe.each([780, 1169, 1920])("non-narrow character workspace at %ipx", width
         const { execute, actions } = mockBattle();
         press(COMBAT_SHORTCUTS.escape);
         press("1");
-        for (const width of [1170, 1169, 1920, 780]) {
+        for (const width of [AUTO_WIDE_BREAKPOINT, AUTO_WIDE_BREAKPOINT - 1, 1920, 1024]) {
             viewport.setViewport({ width });
             expect(document.querySelectorAll('.kcq-escape-choice[aria-pressed="true"]')).toHaveLength(1);
             expect(button(".kcq-escape__execute").disabled).toBe(false);
