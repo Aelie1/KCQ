@@ -2,6 +2,7 @@ import type { GameState } from "../../../../engine/public/types";
 import type { Presentation } from "../../../presentation/presentation";
 
 export interface VictoryStoryViewModel {
+    outcome: "victory" | "defeat";
     heading: string;
     encounter: string;
     narrative: string;
@@ -22,6 +23,7 @@ export function createVictoryStoryViewModel(
     if (!narrative) return undefined;
 
     return {
+        outcome,
         heading: presentation.battleState(outcome),
         encounter: presentation.encounter(state.encounter.id),
         narrative,

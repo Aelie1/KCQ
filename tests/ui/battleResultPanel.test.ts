@@ -73,7 +73,7 @@ describe("post-battle result panel", () => {
         expect(html).toContain('role="dialog"');
         expect(html).toContain('aria-modal="true"');
         expect(html).toContain('aria-labelledby="' + headingId + '"');
-        expect(html).toContain('class="kcq-battle-result__overlay"');
+        expect(html).toContain('class="kcq-battle-result__overlay kcq-outcome__overlay"');
         expect(html).not.toContain("kcq-screen-layout");
         expect(html).not.toMatch(/<dialog|Close|Dismiss|aria-label="X"/);
         expect(html.match(/<button/g)).toHaveLength(2);

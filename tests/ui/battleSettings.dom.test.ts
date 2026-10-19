@@ -62,7 +62,8 @@ function mountBattle(languages?: readonly LanguageOption[], release = "v0.8-sett
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, {
         campaigns: ["skunk"], release,
-        composeCampaign: () => ({ engine: createStockEngine(), presentation, languages }),
+        characterLibrary: createStockEngine().getLibrary(), createEngine: () => createStockEngine(),
+        composeCampaign: () => ({ library: createStockEngine().getLibrary(), presentation, languages }),
         presentation, prepareBattle, languages,
     }), root);
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();

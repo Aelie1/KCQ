@@ -6841,6 +6841,7 @@ button {
     min-height: 0;
     margin: 0;
     padding: 8px 4px;
+    text-indent: 1em;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
@@ -6858,6 +6859,111 @@ button {
 
 .kcq-victory-story__continue {
     grid-column: 1 / -1;
+}
+
+/* Outcome dialogs follow the portal's zoom-aware desktop breakpoint. Keep the
+   Settings padding/frame treatment, with extra reading width for outcome prose. */
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__viewport {
+    width: 600px;
+    min-width: 0;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result {
+    max-width: 580px;
+    gap: 12px;
+    padding: 16px;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__heading {
+    padding: 0 0 8px;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__heading h1 {
+    margin-bottom: 4px;
+    font-size: 26px;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__progress {
+    margin-top: 6px;
+    font-size: 20px;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__summary {
+    padding-top: 4px;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 20px;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    padding: 10px 0;
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__row dd {
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__row dd span {
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.kcq-battle-result__stats:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: -2px;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    grid-auto-rows: 1fr;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__actions>button {
+    grid-column: auto;
+    overflow-wrap: anywhere;
+}
+
+/* An odd last action fills its row without changing the action/tab order. */
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__actions>button:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-victory-story {
+    max-height: 100%;
+}
+
+.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-victory-story__narrative {
+    width: 100%;
+    max-width: 76ch;
+    align-self: center;
+    padding: 8px;
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+/* Keep room for a readable scroll region at shorter scaled desktop heights. */
+@media (max-height: 600px) {
+    .kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result {
+        gap: 6px;
+        padding: 12px;
+    }
+
+    .kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__heading h1 {
+        font-size: 24px;
+    }
+
+    .kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__actions button {
+        min-height: 36px;
+        padding: 6px 10px;
+    }
 }
 
 /* Compact desktop settings */

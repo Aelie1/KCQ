@@ -19,6 +19,7 @@ describe("victory story view model", () => {
         });
         const reference = vi.spyOn(presentation, "referenceText");
         expect(createVictoryStoryViewModel(victory(), presentation)).toEqual({
+            outcome: "victory",
             heading: "Localized Victory", encounter: "Localized Encounter",
             narrative: victoryNarrative, continueLabel: "Localized Continue",
         });
@@ -50,7 +51,7 @@ describe("victory story view model", () => {
         const presentation = new Presentation(strings);
         const reference = vi.spyOn(presentation, "referenceText");
         expect(createVictoryStoryViewModel(state, presentation)).toMatchObject({
-            heading: "Defeat", narrative: "Defeat fixture narrative.",
+            outcome: "defeat", heading: "Defeat", narrative: "Defeat fixture narrative.",
         });
         expect(reference).toHaveBeenCalledExactlyOnceWith("encounter", "plains_1", "defeat");
         delete strings["encounter.plains_1.defeat"];

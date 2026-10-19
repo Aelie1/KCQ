@@ -49,7 +49,8 @@ function mount(strings: StringTable = victoryStoryStrings) {
     });
     unmount = render(() => createComponent(GraphicalApp, {
         campaigns: ["skunk"], release: "test", presentation, prepareBattle,
-        composeCampaign: () => ({ engine: createStockEngine(), presentation }),
+        characterLibrary: createStockEngine().getLibrary(), createEngine: () => createStockEngine(),
+        composeCampaign: () => ({ library: createStockEngine().getLibrary(), presentation }),
     }), host);
     element(".kcq-title-screen__campaign").click();
     element('.kcq-encounter-picker__row[data-kcq-shortcut="1"]').click();
@@ -82,7 +83,7 @@ describe("victory story screen flow", () => {
         expect(story.querySelector(".kcq-victory-story__narrative")?.textContent).toBe(victoryNarrative);
         expect(story.querySelectorAll("button")).toHaveLength(1);
         expect(story.querySelector("dl")).toBeNull();
-        expect(document.querySelector(".kcq-battle-result--victory")).toBeNull();
+        expect(story.classList.contains("kcq-battle-result--victory")).toBe(true);
         expect(element(".kcq-battle-stage__background").hasAttribute("inert")).toBe(true);
         expect(element(".kcq-battle-stage__background").getAttribute("aria-hidden")).toBe("true");
         expect(element(".kcq-battle-result__overlay").parentElement?.parentElement).toBe(document.body);
@@ -142,7 +143,7 @@ describe("victory story screen flow", () => {
         finish(sessions[0]!.engine, "defeat");
         expect(element(".kcq-victory-story h1").textContent).toBe("Defeat");
         expect(element(".kcq-victory-story__narrative").textContent).toBe("Defeat narrative fixture.");
-        expect(document.querySelector(".kcq-battle-result--defeat")).toBeNull();
+        expect(element(".kcq-victory-story").classList.contains("kcq-battle-result--defeat")).toBe(true);
         expect(window.localStorage.getItem("kcq.clears")).toBeNull();
         button("Continue").click();
         expect(element(".kcq-battle-result--defeat").textContent).toContain("Enemy HP Remaining");

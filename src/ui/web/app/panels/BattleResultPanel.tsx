@@ -42,7 +42,7 @@ export function BattleResultPanel(props: {
         }
     };
 
-    return <Portal><div ref={overlay} class="kcq-battle-result__overlay">
+    return <Portal><div ref={overlay} class="kcq-battle-result__overlay kcq-outcome__overlay">
         <div class="kcq-battle-result__viewport">
             <section class={"kcq-encounter-card kcq-battle-result kcq-battle-result--" + props.model.outcome}
                 role="dialog" aria-modal="true" aria-labelledby={headingId} onKeyDown={keepFocusInDialog}>

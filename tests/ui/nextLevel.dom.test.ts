@@ -45,7 +45,8 @@ function mount(localized = presentation) {
     const host = document.createElement("div"); document.body.append(host);
     unmount = render(() => createComponent(GraphicalApp, {
         campaigns: ["skunk"], release: "test", presentation: localized, prepareBattle,
-        composeCampaign: () => ({ engine: createStockEngine(), presentation: localized }),
+        characterLibrary: createStockEngine().getLibrary(), createEngine: () => createStockEngine(),
+        composeCampaign: () => ({ library: createStockEngine().getLibrary(), presentation: localized }),
     }), host);
     element(".kcq-title-screen__campaign").click();
     return { sessions, prepareBattle };
