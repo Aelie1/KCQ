@@ -716,3 +716,10 @@ export interface EnemySetup {
     defId: EntityId;
     id?: EntityId;
 }
+
+interface CampaignLayoutSection {
+    name: SectionId;
+    chapters: EncounterId[];
+}
+
+export type CampaignLayout = CampaignLayoutSection[][];

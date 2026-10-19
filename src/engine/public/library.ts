@@ -1,5 +1,4 @@
-import { CampaignLayout } from "../protected/definitions";
-import { AccuracyProfile, BindingId, BindingLevel, CampaignId, DifficultyId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveTrait, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
+import { AccuracyProfile, BindingId, BindingLevel, CampaignId, CampaignLayout, DifficultyId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveTrait, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
 
 export interface ContentLibrary {
     difficulties: Record<DifficultyId, DifficultyReference>;

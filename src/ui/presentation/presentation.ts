@@ -28,8 +28,8 @@ export class Presentation {
         return this.translate(this.definitionKey("campaign", campaign, variant));
     }
 
-    campaignSection(campaign: CampaignId, section: SectionId, variant: "name"): string {
-        return this.translate(this.definitionKey("campaign", `${campaign}.${section}`, variant));
+    campaignSection(campaign: CampaignId, section: SectionId): string {
+        return this.translate(this.definitionKey("campaign", `${campaign}.${section}`, "name"));
     }
 
     enemyDefinition(id: EntityId): string {
