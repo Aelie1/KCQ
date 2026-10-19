@@ -3622,11 +3622,11 @@ button {
 }
 
 .kcq-encounter-picker--overview .kcq-encounter-picker__row {
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas: "name stars" ". best";
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+        "name name name"
+        "stars . best";
     gap: 2px 8px;
-    /* Reserve the top-right corner for the shortcut badge, even when hidden. */
-    padding: 6px 18px 6px 8px;
 }
 
 .kcq-encounter-picker--overview .kcq-encounter-picker__name {
@@ -3639,7 +3639,7 @@ button {
 
 .kcq-encounter-picker--overview .kcq-encounter-picker__stars {
     grid-area: stars;
-    justify-self: end;
+    justify-self: start;
     line-height: 17px;
 }
 
