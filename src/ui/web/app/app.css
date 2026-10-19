@@ -1617,33 +1617,6 @@ button {
     text-transform: uppercase;
 }
 
-.kcq-fixture-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.55rem;
-    margin: 0;
-}
-
-.kcq-fixture-value {
-    min-width: 0;
-    padding: 0.65rem;
-    border-radius: 0.45rem;
-    background: var(--kcq-surface-inset);
-}
-
-.kcq-fixture-value dt {
-    color: var(--kcq-text-dim);
-    font-size: 0.68rem;
-    text-transform: uppercase;
-}
-
-.kcq-fixture-value dd {
-    margin: 0.3rem 0 0;
-    color: var(--kcq-state-success);
-    font-weight: 700;
-    text-transform: capitalize;
-}
-
 .kcq-placeholder-note {
     margin: 0;
     padding: 0.9rem;
@@ -2010,16 +1983,7 @@ button {
     white-space: nowrap;
 }
 
-.kcq-character-roster__state--success {
-    color: var(--kcq-state-success);
-}
-
-.kcq-character-roster__state--danger {
-    color: var(--kcq-state-danger);
-}
-
-.kcq-character-roster__action--success,
-.kcq-character-roster__condition--success {
+.kcq-character-roster__action--success {
     color: var(--kcq-state-success);
 }
 
@@ -2028,8 +1992,7 @@ button {
     color: var(--kcq-state-danger);
 }
 
-.kcq-character-roster__action--warning,
-.kcq-character-roster__condition--warning {
+.kcq-character-roster__action--warning {
     color: var(--kcq-state-warning);
 }
 
@@ -2063,18 +2026,6 @@ button {
     color: var(--kcq-text-on-avatar);
     font-size: 14px;
     font-weight: 700;
-}
-
-.kcq-focused-character h2 {
-    color: var(--kcq-accent-primary);
-    font-size: 14px;
-    font-weight: 700;
-    line-height: 17px;
-    white-space: nowrap;
-}
-
-.kcq-focused-character__resource {
-    margin-left: auto;
 }
 
 .kcq-subspace-value {
@@ -2128,37 +2079,24 @@ button {
     background: var(--kcq-binding-light);
 }
 
-.kcq-player-identity--ko,
-.kcq-focused-character h2.kcq-player-identity--ko {
+.kcq-player-identity--ko {
     color: var(--kcq-name-ko);
 }
 
-.kcq-player-identity--matsuko,
-.kcq-focused-character h2.kcq-player-identity--matsuko {
+.kcq-player-identity--matsuko {
     color: var(--kcq-name-matsuko);
 }
 
-.kcq-player-identity--hinari,
-.kcq-focused-character h2.kcq-player-identity--hinari {
+.kcq-player-identity--hinari {
     color: var(--kcq-name-hinari);
 }
 
-.kcq-player-identity--naruyo,
-.kcq-focused-character h2.kcq-player-identity--naruyo {
+.kcq-player-identity--naruyo {
     color: var(--kcq-name-naruyo);
 }
 
-.kcq-player-identity--sakari,
-.kcq-focused-character h2.kcq-player-identity--sakari {
+.kcq-player-identity--sakari {
     color: var(--kcq-name-sakari);
-}
-
-.kcq-focused-character .kcq-status-chip {
-    min-height: 19px;
-    padding: 3px 5px;
-    border-color: var(--kcq-structure-border);
-    font-size: 9px;
-    line-height: 11px;
 }
 
 .kcq-character-section {
@@ -2462,20 +2400,6 @@ button {
     font-size: 10px;
     font-weight: 700;
     line-height: normal;
-}
-
-.kcq-command-card__stance {
-    display: block;
-    font-size: 12px;
-    line-height: 1.4;
-    color: var(--kcq-text-secondary);
-    overflow-wrap: anywhere;
-}
-
-.kcq-command-card__heading:has(.kcq-command-card__stance) {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2px;
 }
 
 .kcq-command-card__name {
@@ -3408,8 +3332,7 @@ button {
     color: var(--kcq-binding-heavy);
 }
 
-.kcq-escape-value--severe,
-.kcq-escape-value--danger {
+.kcq-escape-value--severe {
     color: var(--kcq-binding-severe);
 }
 
@@ -4457,14 +4380,12 @@ button {
     line-height: 1.4;
 }
 
-.kcq-battle-result__stat dt,
-.kcq-battle-result__detail dt {
+.kcq-battle-result__stat dt {
     color: var(--kcq-text-secondary);
     overflow-wrap: anywhere;
 }
 
-.kcq-battle-result__stat dd,
-.kcq-battle-result__detail dd {
+.kcq-battle-result__stat dd {
     min-width: 0;
     margin: 0;
     overflow-wrap: anywhere;
@@ -4481,18 +4402,6 @@ button {
     margin: 10px 0 0;
     font-size: 12px;
     line-height: 1.5;
-}
-
-.kcq-battle-result__detail {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0 4px;
-}
-
-.kcq-battle-result__detail dd {
-    flex: 1 1 160px;
-    color: var(--kcq-text-muted);
 }
 
 .kcq-battle-result-panel .kcq-battle-result__actions {
@@ -6221,10 +6130,7 @@ button {
 }
 
 .kcq-library__level h3,
-.kcq-library__global-effects h3,
-.kcq-library__cooldowns h3,
-.kcq-library__immunities h3,
-.kcq-library__effect-bindings h3 {
+.kcq-library__global-effects h3 {
     margin: 0;
     font-size: 12px;
     font-weight: 700;
@@ -6304,31 +6210,6 @@ button {
     line-height: 1.3;
     padding: 1px 3px;
     font-size: 9px;
-}
-
-.kcq-library__resource {
-    display: grid;
-    gap: 6px;
-    font-size: 12px;
-}
-
-.kcq-library__resource+.kcq-library__resource {
-    margin-top: 6px;
-}
-
-.kcq-library__cooldowns,
-.kcq-library__immunities,
-.kcq-library__effect-bindings {
-    display: grid;
-    gap: 5px;
-    margin-top: 8px;
-}
-
-.kcq-library__cooldown {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 6px;
 }
 
 .kcq-library__tags {
@@ -6490,10 +6371,6 @@ button {
     color: var(--kcq-text-secondary);
 }
 
-.kcq-library__binding-amount-heading>span {
-    color: var(--kcq-state-warning);
-}
-
 .kcq-library__trap-binding .kcq-projected-meter {
     width: 100%;
 }
@@ -6623,22 +6500,6 @@ button {
     align-items: baseline;
 }
 
-.kcq-library__status-modifier {
-    color: var(--kcq-text-secondary);
-}
-
-.kcq-library__status-modifier--danger strong {
-    color: var(--kcq-state-danger);
-}
-
-.kcq-library__status-modifier--success strong {
-    color: var(--kcq-state-success);
-}
-
-.kcq-library__binding-context {
-    padding: 0 7px;
-}
-
 .kcq-library__effect-cards {
     display: grid;
     gap: 6px;
@@ -6701,14 +6562,6 @@ button {
     text-align: left;
 }
 
-.kcq-library__spread-table {
-    margin: 6px 0;
-}
-
-.kcq-library__spread-table th {
-    width: 50%;
-}
-
 .kcq-library__passive-card .kcq-library__restrictions .kcq-status-chip {
     white-space: nowrap;
 }
@@ -6745,14 +6598,6 @@ button {
 .kcq-library__facts .kcq-library__cooldown-stack>.kcq-library__stat {
     flex: 0 0 auto;
     min-height: 0;
-}
-
-.kcq-library__cooldown-summary>div {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
 }
 
 .kcq-victory-story {
@@ -7029,7 +6874,6 @@ button {
     .kcq-binding-metric__value--heavy,
     .kcq-binding-metric__value--severe,
     .kcq-binding-metric__value--impossible,
-    .kcq-fixture-value dd,
     .kcq-game-log__actor--ko,
     .kcq-game-log__value--entity-ko,
     .kcq-game-log__actor--matsuko,
@@ -7055,13 +6899,9 @@ button {
     .kcq-game-log__value--binding-overwhelming,
     .kcq-game-log__value--binding-max,
     .kcq-game-log__value--incapacitated,
-    .kcq-character-roster__state--success,
-    .kcq-character-roster__state--danger,
     .kcq-character-roster__action--success,
-    .kcq-character-roster__condition--success,
     .kcq-character-roster__action--danger,
     .kcq-character-roster__condition--danger,
-    .kcq-character-roster__condition--warning,
     .kcq-character-commands__resource,
     .kcq-player-identity--ko,
     .kcq-player-identity--matsuko,
@@ -7101,7 +6941,6 @@ button {
     .kcq-escape-value--moderate,
     .kcq-escape-value--heavy,
     .kcq-escape-value--severe,
-    .kcq-escape-value--danger,
     .kcq-escape-value--overwhelming,
     .kcq-escape-value--max,
     .kcq-battle-result__heading h1,
@@ -7111,9 +6950,6 @@ button {
     .kcq-library__binding-tier:has(.kcq-escape-value--heavy),
     .kcq-library__binding-tier:has(.kcq-escape-value--severe),
     .kcq-library__binding-tier:has(.kcq-escape-value--overwhelming),
-    .kcq-library__binding-amount-heading>span,
-    .kcq-library__status-modifier--danger strong,
-    .kcq-library__status-modifier--success strong,
     .kcq-library__binding-amount-heading .kcq-library__binding-limit) {
     text-shadow: var(--kcq-semantic-text-shadow);
 }

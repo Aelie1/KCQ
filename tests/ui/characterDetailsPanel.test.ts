@@ -236,9 +236,9 @@ describe("character details panel", () => {
         expect(html).toContain('aria-label="Ready · Immobilized"');
         expect(html).toContain('aria-label="Incapacitated · Moving"');
 
-        const successRule = css.match(/\.kcq-character-roster__action--success,\s*\.kcq-character-roster__condition--success\s*\{([^}]*)\}/)?.[1] ?? "";
+        const successRule = css.match(/\.kcq-character-roster__action--success\s*\{([^}]*)\}/)?.[1] ?? "";
         const dangerRule = css.match(/\.kcq-character-roster__action--danger,\s*\.kcq-character-roster__condition--danger\s*\{([^}]*)\}/)?.[1] ?? "";
-        const warningRule = css.match(/\.kcq-character-roster__condition--warning\s*\{([^}]*)\}/)?.[1] ?? "";
+        const warningRule = css.match(/\.kcq-character-roster__action--warning\s*\{([^}]*)\}/)?.[1] ?? "";
         expect(successRule).toContain("color: var(--kcq-state-success)");
         expect(dangerRule).toContain("color: var(--kcq-state-danger)");
         expect(warningRule).toContain("color: var(--kcq-state-warning)");
