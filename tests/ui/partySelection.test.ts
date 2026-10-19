@@ -19,6 +19,7 @@ describe("party selection data", () => {
         const model = createPartySelectionViewModel(availableCharacters, availableCharacters, presentation);
         for (const character of model.characters) {
             expect(character.name).toBe(presentation.entity(character.id));
+            expect(character.libraryLabel).toBe("View " + character.name + " in Library");
             expect(character.role).toBe(presentation.characterSelection(character.id, "role"));
             expect(character.points).toHaveLength(3);
             expect([character.name, character.role, ...character.points].join(" ")).not.toContain("[entity.");

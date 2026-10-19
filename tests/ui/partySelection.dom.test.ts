@@ -29,10 +29,10 @@ function button(selector: string): HTMLButtonElement {
     return found;
 }
 const click = (selector: string) => button(selector).click();
-function press(key: string): KeyboardEvent {
+function press(key: string, target: EventTarget = document): KeyboardEvent {
     const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
-    document.dispatchEvent(event);
-    document.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
+    target.dispatchEvent(event);
+    target.dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
     return event;
 }
 function labeledButton(label: string) {
@@ -53,6 +53,7 @@ function mount() {
         ...strings,
         "ui.party.title": "Localized party", "ui.party.instructions": "Choose {count}",
         "ui.party.count": "Chosen {selected} of {count}", "ui.party.continue": "Localized next",
+        "ui.party.viewInLibrary": "Library for {name}",
         "entity.ko.name": "Localized Ko", "entity.ko.party.role": "Localized role",
         "entity.ko.party.point1": "Localized first point", "entity.ko.party.point2": "Localized second point",
         "entity.ko.party.point3": "Localized third point",
@@ -84,7 +85,7 @@ describe("party selection navigation", () => {
             else expect(document.activeElement).toBe(toggle);
         }
         const koCard = button('[data-character-id="ko"]');
-        expect(koCard.matches(".kcq-party-selection__card")).toBe(true);
+        expect(koCard.parentElement?.matches(".kcq-party-selection__card")).toBe(true);
         koCard.querySelector<HTMLElement>('[role="listitem"]')!.click();
         expect(button('[data-character-id="ko"]').getAttribute("aria-pressed")).toBe("false");
         expect(document.querySelectorAll(".kcq-party-selection__card.is-selected")).toHaveLength(2);
@@ -105,6 +106,79 @@ describe("party selection navigation", () => {
         expect(prepareBattle).not.toHaveBeenCalled();
     });
 
+    it.each(["title", "picker"])("opens every character directly from %s and restores the unchanged draft and focus", async origin => {
+        const { composeCampaign, prepareBattle } = mount();
+        if (origin === "picker") click(".kcq-title-screen__campaign");
+        click(origin === "title" ? ".kcq-title-screen__party button" : ".kcq-encounter-picker__change-party");
+        click('[data-character-id="ko"]'); click('[data-character-id="naruyo"]');
+        const selection = () => [...document.querySelectorAll(".kcq-party-selection__toggle")].map(toggle => toggle.getAttribute("aria-pressed"));
+        const draft = selection();
+        const storage = { ...localStorage };
+        for (const id of availableCharacters) {
+            const toggle = button('[data-character-id="' + id + '"]');
+            const libraryButton = toggle.parentElement!.querySelector<HTMLButtonElement>(".kcq-party-selection__library")!;
+            expect(libraryButton.disabled).toBe(false);
+            expect(libraryButton.getAttribute("aria-label")).toBe("View " + presentation.entity(id) + " in Library");
+            libraryButton.focus(); libraryButton.click();
+            await new Promise<void>(resolve => queueMicrotask(resolve));
+            expect(document.querySelector(".kcq-library h1")?.textContent).toBe(presentation.entity(id));
+            expect(document.querySelector(".kcq-library__intro")).toBeNull();
+            expect(document.querySelector(".kcq-graphical-app__background")?.hasAttribute("inert")).toBe(true);
+            expect(selection()).toEqual(draft);
+            press("1");
+            expect(selection()).toEqual(draft);
+            if (id === "ko") click(".kcq-library__header-back");
+            else press("Escape");
+            expect(document.querySelector(".kcq-library")).toBeNull();
+            expect(document.querySelector(".kcq-party-selection")).not.toBeNull();
+            expect(selection()).toEqual(draft);
+            expect(document.activeElement).toBe(libraryButton);
+            expect({ ...localStorage }).toEqual(storage);
+        }
+        expect(prepareBattle).not.toHaveBeenCalled();
+        for (const result of composeCampaign.mock.results.slice(origin === "picker" ? 1 : 0)) {
+            expect(result.value.engine.getGameState().characters).toEqual([]);
+            expect(Object.keys(result.value.engine.getLibrary().characters)).toEqual(availableCharacters);
+        }
+        // Character shortcuts still work after returning from the modal.
+        expect(press("4").defaultPrevented).toBe(true);
+        expect(button('[data-character-id="naruyo"]').getAttribute("aria-pressed")).toBe("false");
+        press("Escape");
+        expect(document.querySelector(origin === "title" ? ".kcq-title-screen" : ".kcq-encounter-picker")).not.toBeNull();
+        if (origin === "picker") {
+            click(".kcq-encounter-header .kcq-combat-header__library");
+            expect(document.querySelector(".kcq-library h1")?.textContent).toBe("Library");
+            expect(document.querySelector(".kcq-library__intro")).not.toBeNull();
+        }
+    });
+
+    it.each(["Enter", " "])("keeps independent native %j activation for selection and Library", key => {
+        mount(); click(".kcq-title-screen__party button");
+        const toggle = button('[data-character-id="ko"]');
+        const libraryButton = toggle.parentElement!.querySelector<HTMLButtonElement>(".kcq-party-selection__library")!;
+        expect(document.querySelectorAll(".kcq-party-selection__library")).toHaveLength(availableCharacters.length);
+        expect(document.querySelector(".kcq-party-selection button button, .kcq-party-selection button a, .kcq-party-selection button [tabindex]")).toBeNull();
+        expect(toggle.parentElement!.tagName).toBe("DIV");
+        expect(libraryButton.parentElement).toBe(toggle.parentElement);
+        expect(toggle.nextElementSibling).toBe(libraryButton);
+        for (const selector of ['[data-character-id="ko"]', ".kcq-party-selection__library"]) {
+            const control = button(selector);
+            expect(control.type).toBe("button"); expect(control.tabIndex).toBe(0);
+            control.focus(); expect(document.activeElement).toBe(control);
+            expect(press(key, control).defaultPrevented).toBe(false);
+            // Happy DOM does not perform native keyboard activation; apply its default click.
+            control.click();
+            expect(button('[data-character-id="ko"]').getAttribute("aria-pressed")).toBe("false");
+        }
+        expect(document.querySelector(".kcq-library h1")?.textContent).toBe("Ko-chan");
+        press("Escape");
+        document.activeElement instanceof HTMLElement && document.activeElement.blur();
+        expect(press("1").defaultPrevented).toBe(true);
+        expect(button('[data-character-id="ko"]').getAttribute("aria-pressed")).toBe("true");
+        expect(press(" ").defaultPrevented).toBe(true);
+        expect(document.querySelector(".kcq-title-screen")).not.toBeNull();
+    });
+
     it("uses the selected language for every character description without engine initialization", () => {
         const { composeCampaign } = mount();
         const select = document.querySelector<HTMLSelectElement>(".kcq-title-screen select")!;
@@ -113,6 +187,7 @@ describe("party selection navigation", () => {
         expect(document.querySelector(".kcq-party-selection h1")?.textContent).toBe("Localized party");
         expect(button('[data-character-id="ko"]').textContent).toContain("Localized Ko");
         expect(document.querySelector(".kcq-party-selection__role")?.textContent).toBe("Localized role");
+        expect(button(".kcq-party-selection__library").getAttribute("aria-label")).toBe("Library for Localized Ko");
         expect([...document.querySelectorAll('.kcq-party-selection__card:first-child [role="listitem"]')].map(li => li.textContent))
             .toEqual(["Localized first point", "Localized second point", "Localized third point"]);
         expect(composeCampaign).not.toHaveBeenCalled();

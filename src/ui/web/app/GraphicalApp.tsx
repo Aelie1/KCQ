@@ -1,6 +1,7 @@
 import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } from "solid-js";
 import type { KCQCampaign, KCQCharacter } from "../../../content";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
+import type { ContentLibrary } from "../../../engine/public/library";
 import type { Presentation } from "../../presentation/presentation";
 import { LibraryPanel } from "./panels/LibraryPanel";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
@@ -25,6 +26,7 @@ import { createGraphicalController, type GraphicalBattleSession } from "./graphi
 import { createDifficultySelectViewModel } from "./viewModels/difficulty";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel } from "./viewModels/encounters";
 import { clearSave, readSave, type SaveReadResult } from "./savePersistence";
+import type { LibraryPage } from "./viewModels/library";
 
 export interface GraphicalCampaignComposition {
     engine: Engine;
@@ -61,8 +63,23 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     const languageSelection = { get value() { return language().id; }, options, onChange: selectLanguage };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
     const [libraryOpen, setLibraryOpen] = createSignal(false);
+    const [libraryInitialPage, setLibraryInitialPage] = createSignal<LibraryPage>({ kind: "home" });
+    const [partyLibrary, setPartyLibrary] = createSignal<ContentLibrary>();
     let libraryTrigger: Element | null = null;
-    const openLibrary = (): void => { libraryTrigger = document.activeElement; setLibraryOpen(true); };
+    const openLibrary = (page: LibraryPage = { kind: "home" }): void => {
+        libraryTrigger = document.activeElement;
+        setLibraryInitialPage(page);
+        setLibraryOpen(true);
+    };
+    const openCharacterLibrary = (id: KCQCharacter): void => {
+        const current = controller.screen();
+        const campaign = current.screen === "party" && current.returnTo.screen === "picker"
+            ? current.returnTo.campaign : props.campaigns[0];
+        if (!campaign) return;
+        // A read-only full-roster library, independent of the confirmed or draft party.
+        setPartyLibrary(props.composeCampaign(campaign, availableCharacters).engine.getLibrary());
+        openLibrary({ kind: "entry", category: "characters", id });
+    };
     const closeLibrary = (): void => {
         setLibraryOpen(false);
         if (!settingsOpen() && libraryTrigger instanceof HTMLElement && libraryTrigger.isConnected) libraryTrigger.focus();
@@ -175,6 +192,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                     <PartySelectionPanel model={createPartySelectionViewModel(availableCharacters, controller.draftParty(), presentation())}
                         canContinue={controller.canConfirmParty()}
                         onToggle={id => navigate(() => controller.toggleCharacter(id))}
+                        onLibrary={id => navigate(() => openCharacterLibrary(id))}
                         onBack={() => navigate(controller.cancelParty)}
                         onContinue={() => navigate(controller.confirmParty)} />
                 </Match>
@@ -215,7 +233,9 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
             </Switch>
         </div>
-        <Show when={libraryOpen() && library()}>{current => <LibraryPanel library={current()} presentation={presentation()} onClose={closeLibrary} />}</Show>
+        <Show when={libraryOpen() && (controller.screen().screen === "party" ? partyLibrary() : library())}>
+            {current => <LibraryPanel library={current()} presentation={presentation()} initialPage={libraryInitialPage()} onClose={closeLibrary} />}
+        </Show>
         <Show when={settingsOpen() && !libraryOpen()}>
             <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences}
                 returnFocus={settingsTrigger} showBattleActions={false} onResume={() => setSettingsOpen(false)}

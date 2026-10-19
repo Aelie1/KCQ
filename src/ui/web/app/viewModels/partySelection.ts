@@ -18,7 +18,7 @@ export function createPartySelectionViewModel(
             points: (["point1", "point2", "point3"] as const).map(point => presentation.characterSelection(id, point)),
             selected: selected.includes(id),
             disabled: !selected.includes(id) && selected.length >= PARTY_SIZE,
-            selectionLabel: presentation.ui(selected.includes(id) ? "party.selected" : "party.unselected"),
+            libraryLabel: presentation.ui("party.viewInLibrary", { name: presentation.entity(id) }),
         })),
     };
 }

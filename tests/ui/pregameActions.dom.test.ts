@@ -24,7 +24,7 @@ const picker = (onBack: (() => void) | undefined, onChangeParty: (() => void) | 
 const screens: Record<string, () => JSX.Element> = {
     party: () => createComponent(PartySelectionPanel, {
         model: createPartySelectionViewModel(availableCharacters, availableCharacters, presentation), canContinue: true,
-        onToggle: noop, onBack: noop, onContinue: noop,
+        onToggle: noop, onLibrary: noop, onBack: noop, onContinue: noop,
     }),
     picker: () => picker(noop, noop),
     details: () => createComponent(EncounterDetailsPanel, {

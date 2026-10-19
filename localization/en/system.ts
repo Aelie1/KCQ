@@ -10,6 +10,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.party.selected": "Selected",
     "ui.party.unselected": "Not selected",
     "ui.party.change": "Change Party",
+    "ui.party.viewInLibrary": "View {name} in Library",
     "campaign.skunk.name": "Latex Skunk Attacks!",
     "campaign.skunk.desc": "Random people are disappearing, and turning up later trapped in seamless latex skunk suits. The latex that they spray is spreading these living suits and their number is starting to grow out of hand! Find out what the cause of all this is!",
 

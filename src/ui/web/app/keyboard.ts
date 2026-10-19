@@ -97,6 +97,9 @@ export function useCombatKeyboard(
             // Header actions retain native activation even when a screen has a confirmation shortcut.
             if ((key === "enter" || isSpace) && focusedControl?.closest(".kcq-header-controls")) return;
 
+            // Party card controls use native Enter/Space instead of screen confirmation.
+            if ((key === "enter" || isSpace) && focusedControl?.hasAttribute("data-kcq-native-activation")) return;
+
             if (event.repeat || held.has(key) || handling) {
                 if (isSpace || focusedConfirmation ||
                     (held.has(key) && key === COMBAT_SHORTCUTS.back)) {
