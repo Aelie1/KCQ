@@ -8,6 +8,12 @@ const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
 
 describe("campaign encounter picker", () => {
+    it("uses the shared localized Go Back label", () => {
+        expect(createEncounterPickerViewModel(library, presentation, library.campaigns.skunk).backLabel).toBe("Go Back");
+        const localized = new Presentation({ ...stockStrings, "ui.targeting.back": "Retour" });
+        expect(createEncounterPickerViewModel(library, localized, library.campaigns.skunk).backLabel).toBe("Retour");
+    });
+
     it("localizes sections and preserves authored rows, columns, and chapters using the flat summaries", () => {
         const campaign = { ...library.campaigns.skunk, layout: [
             [{ name: "act3", chapters: ["tower_3", "tower_1"] }],

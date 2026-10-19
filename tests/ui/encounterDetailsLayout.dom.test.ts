@@ -69,9 +69,9 @@ describe("encounter details responsive layout", () => {
             element(".kcq-encounter-details__enemies"), element(".kcq-encounter-details__rules"),
         ]);
         const footer = getComputedStyle(element(".kcq-encounter-details__footer"));
-        expect(footer.maxWidth).toBe("366px");
+        expect(footer.maxWidth).toBe("640px");
         expect(footer.marginInline).toBe("auto");
-        expect(footer.height).toBe("auto");
+        expect(footer.height).toBe("48px");
         expect(footer.gap).toBe("8px");
         element<HTMLButtonElement>(".kcq-combat-header__settings").click();
         element<HTMLButtonElement>(".kcq-combat-header__library").click();

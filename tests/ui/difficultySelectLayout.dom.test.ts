@@ -124,9 +124,9 @@ describe("difficulty selection responsive layout", () => {
         expect(info.tabIndex).toBe(0);
         expect(getComputedStyle(info.firstElementChild!).flexShrink).toBe("0");
         const footer = getComputedStyle(element(".kcq-difficulty-select__footer"));
-        expect(footer.maxWidth).toBe("366px");
+        expect(footer.maxWidth).toBe("640px");
         expect(footer.marginInline).toBe("auto");
-        expect(footer.height).toBe("auto");
+        expect(footer.height).toBe("48px");
         expect(footer.gap).toBe("8px");
     });
 

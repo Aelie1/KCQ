@@ -64,8 +64,8 @@ describe("desktop encounter overview", () => {
         expect(getComputedStyle(host.querySelector(".kcq-encounter-picker__show-all span")!).whiteSpace).toBe("nowrap");
         const footer = host.querySelector<HTMLElement>(".kcq-screen-actions")!;
         expect(getComputedStyle(footer).display).toBe("grid");
-        expect(getComputedStyle(footer).height).toBe("auto");
-        expect(getComputedStyle(footer).maxWidth).toBe("366px");
+        expect(getComputedStyle(footer).height).toBe("48px");
+        expect(getComputedStyle(footer).maxWidth).toBe("640px");
         expect(getComputedStyle(footer).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
         expect(getComputedStyle(footer.querySelector("button")!).fontSize).toBe("12px");
         expect(getComputedStyle(host.querySelector(".kcq-screen-layout__body")!).overflowY).toBe("auto");

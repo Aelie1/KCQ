@@ -8,6 +8,12 @@ import { createPartySelectionViewModel } from "../../src/ui/web/app/viewModels/p
 const presentation = new Presentation(getStringTable("en", availableCharacters));
 
 describe("party selection data", () => {
+    it("uses the shared localized Go Back label", () => {
+        expect(createPartySelectionViewModel(availableCharacters, availableCharacters, presentation).backLabel).toBe("Go Back");
+        const localized = new Presentation({ ...getStringTable("en", availableCharacters), "ui.targeting.back": "Retour" });
+        expect(createPartySelectionViewModel(availableCharacters, availableCharacters, localized).backLabel).toBe("Retour");
+    });
+
     it("derives the roster from content and supplies localized identity, role and three points", () => {
         expect(availableCharacters).toEqual(Object.keys(characterCatalogs));
         const model = createPartySelectionViewModel(availableCharacters, availableCharacters, presentation);

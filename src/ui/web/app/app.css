@@ -3447,6 +3447,10 @@ button {
 }
 
 /* Catalog entry screens share the combat canvas, cards, tokens and controls. */
+.kcq-graphical-app__background:has(.kcq-encounter-screen) {
+    min-width: 0;
+}
+
 .kcq-encounter-header {
     grid-template-columns: minmax(0, 1fr) 42px;
     gap: 8px;
@@ -3473,12 +3477,30 @@ button {
     letter-spacing: -0.01em;
 }
 
+.kcq-encounter-header--compact {
+    grid-template-columns: minmax(0, 1fr) auto;
+    height: 68px;
+    padding-block: 8px;
+}
+
+.kcq-encounter-header--compact.kcq-encounter-header--picker {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
 .kcq-header-controls {
     display: grid;
     grid-template-rows: repeat(2, minmax(0, 1fr));
     gap: 2px;
     width: 42px;
     height: 56px;
+}
+
+.kcq-encounter-header--compact .kcq-header-controls {
+    grid-template-columns: repeat(2, 42px);
+    grid-template-rows: minmax(0, 1fr);
+    gap: 8px;
+    width: 92px;
+    height: 42px;
 }
 
 .kcq-header-controls>button {
@@ -3913,21 +3935,22 @@ button {
     outline-offset: -2px;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__footer {
+/* All pregame screens share the same actions, capped to two 316px buttons. */
+.kcq-pregame-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     width: 100%;
-    max-width: 366px;
-    height: auto;
+    max-width: 640px;
     margin-inline: auto;
     gap: 8px;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__footer:has(>button:only-child) {
+.kcq-pregame-actions:has(>button:only-child) {
     grid-template-columns: minmax(0, 1fr);
-    max-width: 180px;
+    max-width: 316px;
 }
 
-.kcq-encounter-details__footer button,
-.kcq-difficulty-select__footer button {
+.kcq-pregame-actions button {
+    min-width: 0;
     width: 100%;
     height: 42px;
     padding: 0 10px;
@@ -3938,15 +3961,8 @@ button {
     cursor: pointer;
 }
 
-.kcq-encounter-details__footer .kcq-targeting__back,
-.kcq-difficulty-select__footer .kcq-targeting__back {
+.kcq-pregame-actions .kcq-targeting__back {
     border: 1px solid var(--kcq-structure-border);
-    border-radius: 7px;
-    font-size: 10px;
-}
-
-.kcq-encounter-details--desktop .kcq-encounter-details__footer .kcq-targeting__back {
-    font-size: 12px;
 }
 
 .kcq-meter-effect__transition {
@@ -3979,6 +3995,29 @@ button {
     margin: 8px 0 0;
     color: var(--kcq-text-secondary);
     font-size: 12px;
+}
+
+@media (min-width: 481px) {
+    .kcq-party-selection__header {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 4px 12px;
+        min-height: 68px;
+        padding: 8px 12px;
+    }
+
+    .kcq-party-selection__header p {
+        margin: 0;
+    }
+
+    .kcq-party-selection__header p[id] {
+        grid-area: 2 / 1 / auto / -1;
+    }
+
+    .kcq-party-selection__header [role="status"] {
+        grid-area: 1 / 2;
+    }
 }
 
 .kcq-party-selection__characters {
@@ -4271,18 +4310,6 @@ button {
 .kcq-difficulty-select--desktop .kcq-difficulty-select__information:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: -2px;
-}
-
-.kcq-difficulty-select--desktop .kcq-difficulty-select__footer {
-    width: 100%;
-    max-width: 366px;
-    height: auto;
-    margin-inline: auto;
-    gap: 8px;
-}
-
-.kcq-difficulty-select--desktop .kcq-difficulty-select__footer .kcq-targeting__back {
-    font-size: 12px;
 }
 
 /* Keep the finished battle visible beneath a compact result dialog. */
@@ -4980,10 +5007,6 @@ button {
     grid-area: 1 / 3;
 }
 
-.kcq-encounter-picker .kcq-screen-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .kcq-encounter-picker__show-all {
     display: flex;
     align-items: center;
@@ -5008,20 +5031,6 @@ button {
 .kcq-encounter-picker--overview .kcq-encounter-picker__show-all span {
     width: auto;
     white-space: nowrap;
-}
-
-.kcq-encounter-picker--overview .kcq-screen-actions {
-    /* Override the details footer's stacked layout and fixed action-bar height. */
-    display: grid;
-    width: 100%;
-    max-width: 366px;
-    height: auto;
-    margin-inline: auto;
-    gap: 8px;
-}
-
-.kcq-encounter-picker--overview .kcq-screen-actions .kcq-targeting__back {
-    font-size: 12px;
 }
 
 @media (max-width: 480px) {

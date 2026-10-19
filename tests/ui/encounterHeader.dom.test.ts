@@ -13,6 +13,7 @@ import type { LibrarySettingsControlsProps } from "../../src/ui/web/app/componen
 import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { useCombatKeyboard } from "../../src/ui/web/app/keyboard";
+import { ResponsiveLayoutContext } from "../../src/ui/web/app/responsiveScale";
 import { createEncounterPickerViewModel, createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 import { stockStrings } from "../helpers/stockStrings";
@@ -37,7 +38,10 @@ function mount(view: Parameters<typeof render>[0]): HTMLElement {
     document.body.append(style);
     const host = document.createElement("div");
     document.body.append(host);
-    unmount = render(view, host);
+    unmount = render(() => createComponent(ResponsiveLayoutContext.Provider, {
+        value: () => ({ columns: window.innerWidth >= 756 ? 2 : 1, zoom: 1, availableWidth: window.innerWidth }),
+        get children() { return view(); },
+    }), host);
     return host;
 }
 
@@ -63,7 +67,7 @@ const screens = [
 ];
 
 describe("shared Library and Settings header controls", () => {
-    it.each([320, 390, 1024])("places the accessible Show All control between the title and stacked buttons at width %s", width => {
+    it.each([320, 390, 1024])("places the accessible Show All control between the title and buttons at width %s", width => {
         viewport.setViewport({ width });
         const onShowAllChange = vi.fn(); const globalAction = vi.fn(() => false);
         const host = mount(() => {
@@ -79,18 +83,18 @@ describe("shared Library and Settings header controls", () => {
         const controls = header.querySelector<HTMLElement>(".kcq-header-controls")!;
         expect(label.previousElementSibling).toBe(header.querySelector("h1"));
         expect(label.nextElementSibling).toBe(controls);
-        expect(getComputedStyle(header).gridTemplateColumns).toBe("minmax(0, 1fr) auto 42px");
+        expect(getComputedStyle(header).gridTemplateColumns).toBe(width >= 756 ? "minmax(0, 1fr) auto auto" : "minmax(0, 1fr) auto 42px");
         expect(parseFloat(getComputedStyle(header.querySelector("h1")!).minWidth)).toBe(0);
         expect(header.querySelector("h1")?.textContent).toBe("Localized campaign");
         expect(getComputedStyle(label).display).toBe("flex");
         expect(getComputedStyle(label).alignItems).toBe("center");
         const text = label.querySelector("span")!;
         expect(checkbox.nextElementSibling).toBe(text);
-        expect(getComputedStyle(text).width).toBe("min-content");
-        expect(getComputedStyle(text).whiteSpace).toBe("normal");
+        expect(getComputedStyle(text).width).toBe(width >= 756 ? "auto" : "min-content");
+        expect(getComputedStyle(text).whiteSpace).toBe(width >= 756 ? "nowrap" : "normal");
         expect(text.textContent).toBe(presentation.ui("encounter.showAll"));
         expect(text.childElementCount).toBe(0);
-        expect(getComputedStyle(controls).gridTemplateRows).toBe("repeat(2, minmax(0, 1fr))");
+        expect(getComputedStyle(controls).gridTemplateRows).toBe(width >= 756 ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))");
         expect(host.querySelector(".kcq-screen-layout__body .kcq-encounter-picker__show-all")).toBeNull();
         expect(checkbox.type).toBe("checkbox");
         expect(checkbox.tabIndex).toBe(0);
@@ -124,15 +128,16 @@ describe("shared Library and Settings header controls", () => {
             expect(!!host.querySelector(".kcq-encounter-picker__show-all")).toBe(screen.name === "picker");
             const controls = host.querySelector<HTMLElement>(".kcq-header-controls")!;
             const buttons = [...controls.querySelectorAll<HTMLButtonElement>("button")];
-            expect(buttons.map(button => button.getAttribute("aria-label"))).toEqual(["Options", "Bibliotheque"]);
+            const compact = screen.width >= 756 && screen.name !== "combat";
+            expect(buttons.map(button => button.getAttribute("aria-label"))).toEqual(compact ? ["Bibliotheque", "Options"] : ["Options", "Bibliotheque"]);
             expect(host.querySelector(".kcq-screen-layout__body .kcq-library-access")).toBeNull();
             const layout = getComputedStyle(controls);
             expect(layout.display).toBe("grid");
-            expect(layout.width).toBe("42px");
-            expect(layout.height).toBe(screen.height);
-            expect(layout.gridTemplateRows).toBe("repeat(2, minmax(0, 1fr))");
-            expect(layout.gap).toBe("2px");
-            expect(getComputedStyle(host.querySelector(".kcq-combat-header")!).height).toBe("72px");
+            expect(layout.width).toBe(compact ? "92px" : "42px");
+            expect(layout.height).toBe(compact ? "42px" : screen.height);
+            expect(layout.gridTemplateRows).toBe(compact ? "minmax(0, 1fr)" : "repeat(2, minmax(0, 1fr))");
+            expect(layout.gap).toBe(compact ? "8px" : "2px");
+            expect(getComputedStyle(host.querySelector(".kcq-combat-header")!).height).toBe(compact ? "68px" : "72px");
             for (const button of buttons) {
                 expect(button.type).toBe("button");
                 expect(button.disabled).toBe(false);
@@ -169,7 +174,8 @@ describe("shared Library and Settings header controls", () => {
             }));
             const buttons = [...host.querySelectorAll<HTMLButtonElement>(".kcq-header-controls > button")];
             expect(buttons).toHaveLength(2);
-            expect(buttons.map(button => button.disabled)).toEqual([!settingsAvailable, !libraryAvailable]);
+            expect(host.querySelector<HTMLButtonElement>(".kcq-combat-header__library")!.disabled).toBe(!libraryAvailable);
+            expect(host.querySelector<HTMLButtonElement>(".kcq-combat-header__settings")!.disabled).toBe(!settingsAvailable);
             buttons.forEach(button => button.click());
             expect(onLibrary).toHaveBeenCalledTimes(libraryAvailable ? 1 : 0);
             expect(onSettings).toHaveBeenCalledTimes(settingsAvailable ? 1 : 0);

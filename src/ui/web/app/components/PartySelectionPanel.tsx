@@ -42,7 +42,7 @@ export function PartySelectionPanel(props: {
                 </button>;
             }}</For>
         </div>}
-        footer={<footer class="kcq-screen-actions kcq-encounter-details__footer">
+        footer={<footer class="kcq-screen-actions kcq-pregame-actions kcq-encounter-details__footer">
             <button class="kcq-targeting__back kcq-shortcut-host" type="button" data-kcq-shortcut={COMBAT_SHORTCUTS.back} onClick={props.onBack}>
                 <Shortcut shortcut={COMBAT_SHORTCUTS.back} />{props.model.backLabel}
             </button>

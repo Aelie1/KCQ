@@ -135,7 +135,7 @@ export function EncounterDetailsPanel(props: {
             </div>
         }
         footer={
-            <footer class="kcq-screen-actions kcq-encounter-details__footer">
+            <footer class="kcq-screen-actions kcq-pregame-actions kcq-encounter-details__footer">
                 <button class="kcq-targeting__back kcq-shortcut-host" data-kcq-shortcut={COMBAT_SHORTCUTS.back} type="button" onClick={props.onBack}>
                     <Shortcut shortcut={COMBAT_SHORTCUTS.back} />
                     <span aria-hidden="true">↶ </span>{props.model.labels.back}
