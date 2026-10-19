@@ -3786,7 +3786,8 @@ button {
 
 .kcq-encounter-details--desktop .kcq-encounter-details__columns {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 366px;
+    grid-template-columns: minmax(0, 66ch) 366px;
+    justify-content: center;
     gap: 24px;
     flex: 1 1 0;
     min-height: 0;
@@ -5834,7 +5835,7 @@ button {
     display: grid;
     gap: 12px;
     min-width: 0;
-    max-width: 76ch;
+    max-width: 66ch;
     color: var(--kcq-text-primary);
     font-size: 12px;
     line-height: 1.6;
@@ -6759,7 +6760,7 @@ button {
 
 .kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-victory-story__narrative {
     width: 100%;
-    max-width: 76ch;
+    max-width: 66ch;
     font-size: 13px;
     align-self: center;
     padding: 8px;
