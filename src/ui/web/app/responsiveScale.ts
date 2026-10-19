@@ -6,6 +6,7 @@ export const BATTLE_LAYOUT_WIDTHS = { 1: 366, 2: 756, 3: 1068 } as const;
 export interface ResponsiveLayout {
     columns: 1 | 2 | 3;
     zoom: number;
+    availableWidth?: number;
 }
 export const ResponsiveLayoutContext = createContext<Accessor<ResponsiveLayout>>();
 
@@ -43,7 +44,7 @@ export function setupResponsiveScale(
         // Decide title layout from the same unzoomed width as the scaler.
         // Comparing ratios also avoids rounding at exactly two scaled panels.
         shell.dataset.kcqTitleLayout = zoom <= availableWidth / BATTLE_LAYOUT_WIDTHS[2] ? "desktop" : "mobile";
-        onLayout?.(layout);
+        onLayout?.({ ...layout, availableWidth });
     };
 
     const observer = new ResizeObserver(resizeGame);

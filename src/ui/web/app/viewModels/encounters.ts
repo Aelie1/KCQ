@@ -23,6 +23,13 @@ export interface EncounterPickerViewModel {
     showAllLabel: string;
     showAll: boolean;
     encounters: readonly (EncounterSummaryViewModel & { locked: boolean })[];
+    layout?: readonly (readonly EncounterPickerSectionViewModel[])[];
+    additionalEncounters: EncounterPickerViewModel["encounters"];
+    additionalEncountersLabel: string;
+}
+export interface EncounterPickerSectionViewModel {
+    name: string;
+    encounters: EncounterPickerViewModel["encounters"];
 }
 export interface EncounterEnemyViewModel {
     name: string;
@@ -85,6 +92,20 @@ export function createEncounterPickerViewModel(
         encounters.push(...remaining.splice(index < 0 ? 0 : index, 1));
     }
     if (showAll) encounters.push(...Object.values(library.encounters).filter(encounter => !campaignIds.has(encounter.id)));
+    const summaries = encounters.map(encounter => {
+        const locked = !showAll && !available.has(encounter.id);
+        const summary = encounterSummary(encounter, presentation, locked ? undefined : bestClears[encounter.id]);
+        return { ...summary, locked, name: locked ? summary.name.replace(/\S/gu, "?") : summary.name };
+    });
+    const summariesById = new Map(summaries.map(encounter => [encounter.id, encounter]));
+    const layout = campaign.layout?.map(row => row.map(section => ({
+        name: presentation.campaignSection(campaign.id, section.name),
+        encounters: section.chapters.flatMap(id => {
+            const summary = summariesById.get(id);
+            return summary ? [summary] : [];
+        }),
+    })));
+    const layoutIds = new Set(layout?.flatMap(row => row.flatMap(section => section.encounters.map(({ id }) => id))));
     return {
         title: presentation.campaign(campaign.id),
         settingsLabel: presentation.ui("battleOverview.settings"),
@@ -92,11 +113,10 @@ export function createEncounterPickerViewModel(
         changePartyLabel: presentation.ui("party.change"),
         showAllLabel: presentation.ui("encounter.showAll"),
         showAll,
-        encounters: encounters.map(encounter => {
-            const locked = !showAll && !available.has(encounter.id);
-            const summary = encounterSummary(encounter, presentation, locked ? undefined : bestClears[encounter.id]);
-            return { ...summary, locked, name: locked ? summary.name.replace(/\S/gu, "?") : summary.name };
-        }),
+        encounters: summaries,
+        layout,
+        additionalEncounters: layout ? summaries.filter(({ id }) => !layoutIds.has(id)) : [],
+        additionalEncountersLabel: presentation.ui("encounter.additionalEncounters"),
     };
 }
 

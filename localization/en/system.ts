@@ -189,6 +189,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.encounter.bestClear": "Best Clear",
     "ui.encounter.uncleared": "---",
     "ui.encounter.showAll": "Show All",
+    "ui.encounter.additionalEncounters": "Other Encounters",
     "ui.encounter.nextLevel": "Next Level",
     "ui.encounter.description": "Description",
     "ui.encounter.enemies": "Enemies",

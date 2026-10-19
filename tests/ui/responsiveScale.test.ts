@@ -25,15 +25,24 @@ function viewport(width = 390, height = 844, visualHeight?: number, columns: "au
         observe = observe;
         disconnect = disconnect;
     });
+    const onLayout = vi.fn();
     const cleanup = setupResponsiveScale(shell as unknown as HTMLElement, {
         columns, enemyCards: "auto", setColumns: vi.fn(), setEnemyCards: vi.fn(), reset: vi.fn(),
-    });
-    return { shell, style, browser, visualViewport, observedResize, observe, disconnect, cleanup };
+    }, onLayout);
+    return { shell, style, browser, visualViewport, observedResize, observe, disconnect, cleanup, onLayout };
 }
 
 afterEach(() => vi.unstubAllGlobals());
 
 describe("graphical viewport sizing", () => {
+    it("publishes usable width independently of forced battle columns for responsive screens", () => {
+        const { shell, observedResize, onLayout } = viewport(390, 844, undefined, "3");
+        expect(onLayout).toHaveBeenLastCalledWith({ columns: 3, zoom: 1, availableWidth: 366 });
+        shell.clientWidth = 1920;
+        observedResize();
+        expect(onLayout).toHaveBeenLastCalledWith({ columns: 3, zoom: 1.5, availableWidth: 1896 });
+    });
+
     it.each([400, 600, 844, 1200])("uses the actual %ipx height with the existing desktop zoom cap", (height) => {
         const { style } = viewport(1920, height);
         expect(style.get("--kcq-ui-zoom")).toBe("1.5");

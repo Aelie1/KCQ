@@ -3561,6 +3561,78 @@ button {
     line-height: 16px;
 }
 
+/* Use the app's column selection so the overview fits the zoomed canvas. */
+.kcq-graphical-app__background:has(.kcq-encounter-picker--overview) {
+    width: 756px;
+}
+
+.kcq-graphical-app__background:has(.kcq-encounter-picker--wide) {
+    width: 1068px;
+}
+
+.kcq-encounter-picker--overview,
+.kcq-encounter-picker--overview .kcq-encounter-header {
+    width: 100%;
+}
+
+.kcq-encounter-picker__campaign-row {
+    display: grid;
+    align-items: start;
+    gap: 24px;
+    min-width: 0;
+}
+
+.kcq-encounter-picker__section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+}
+
+.kcq-encounter-picker__campaign-row > .kcq-encounter-picker__section:only-child {
+    width: min(100%, 366px);
+    justify-self: center;
+}
+
+.kcq-encounter-picker__section h2 {
+    margin: 0;
+    color: var(--kcq-text-secondary);
+    font-size: 16px;
+    line-height: 20px;
+    text-align: center;
+    overflow-wrap: anywhere;
+}
+
+.kcq-encounter-picker--overview .kcq-encounter-picker__row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    gap: 4px 8px;
+}
+
+.kcq-encounter-picker--overview .kcq-encounter-picker__name {
+    grid-column: 1 / -1;
+}
+
+.kcq-encounter-picker--overview .kcq-encounter-picker__stars {
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.kcq-encounter-picker--overview .kcq-encounter-picker__best-clear {
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.kcq-encounter-picker__additional {
+    padding-top: 12px;
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-encounter-picker__additional-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+    gap: 8px 24px;
+}
+
 .kcq-encounter-details__info {
     display: flex;
     padding: 9px 8px;

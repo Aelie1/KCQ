@@ -8,6 +8,46 @@ const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
 
 describe("campaign encounter picker", () => {
+    it("localizes sections and preserves authored rows, columns, and chapters using the flat summaries", () => {
+        const campaign = { ...library.campaigns.skunk, layout: [
+            [{ name: "act3", chapters: ["tower_3", "tower_1"] }],
+            [{ name: "act2", chapters: ["forest_2", "forest_1"] }, { name: "act1", chapters: ["plains_3"] }],
+        ] };
+        const localized = new Presentation({ ...stockStrings, "campaign.skunk.act3.name": "Third Act" });
+        const model = createEncounterPickerViewModel(library, localized, campaign, { forest_1: "mythic" }, ["forest_1"]);
+        expect(model.layout?.map(row => row.map(section => section.name))).toEqual([["Third Act"], ["Act 2", "Act 1"]]);
+        expect(model.layout?.map(row => row.map(section => section.encounters.map(({ id }) => id))))
+            .toEqual([[["tower_3", "tower_1"]], [["forest_2", "forest_1"], ["plains_3"]]]);
+        for (const section of model.layout!.flat()) {
+            for (const summary of section.encounters) {
+                expect(summary).toBe(model.encounters.find(({ id }) => id === summary.id));
+            }
+        }
+        expect(model.layout![0]![0]!.encounters.every(encounter => encounter.locked && !encounter.bestClear)).toBe(true);
+        expect(model.layout![1]![0]!.encounters[1]!.bestClearLabel).toContain("Mythic");
+    });
+
+    it("keeps encounters outside the layout accessible and reveals catalog extras with Show All", () => {
+        const campaign = { ...library.campaigns.skunk, initial: ["plains_1"], victory: {}, defeat: {},
+            layout: [[{ name: "act1", chapters: ["plains_1", "missing"] }]] };
+        const model = createEncounterPickerViewModel(library, presentation, campaign);
+        expect(model.layout![0]![0]!.encounters.map(({ id }) => id)).toEqual(["plains_1"]);
+        expect(model.additionalEncounters).toEqual([]);
+        const revealed = createEncounterPickerViewModel(library, presentation, campaign, { outside: "standard" }, [], true);
+        expect(revealed.additionalEncounters.map(({ id }) => id)).toEqual(Object.keys(library.encounters).filter(id => id !== "plains_1"));
+        expect(revealed.additionalEncounters.every(encounter => !encounter.locked)).toBe(true);
+        expect(revealed.additionalEncounters.find(({ id }) => id === "outside")?.bestClearLabel).toContain("Standard");
+        const partialLayout = { ...library.campaigns.skunk, layout: campaign.layout };
+        expect(createEncounterPickerViewModel(library, presentation, partialLayout).additionalEncounters.map(({ id }) => id)).toContain("prologue");
+    });
+
+    it.each([undefined, []])("preserves the flat fallback without a populated layout: %s", layout => {
+        const campaign = { ...library.campaigns.skunk, layout };
+        const model = createEncounterPickerViewModel(library, presentation, campaign);
+        expect(model.encounters).toEqual(createEncounterPickerViewModel(library, presentation, library.campaigns.skunk).encounters);
+        expect(model.layout).toEqual(layout);
+    });
+
     it("includes locked encounters in progression order and keeps unlocked summaries unchanged", () => {
         const campaign = library.campaigns.skunk;
         const model = createEncounterPickerViewModel(library, presentation, campaign, { plains_1: "mythic" }, ["plains_2"]);
