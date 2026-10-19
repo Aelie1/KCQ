@@ -3794,7 +3794,7 @@ button {
 }
 
 .kcq-encounter-details--non-narrow .kcq-encounter-details__columns:not(:has(.kcq-encounter-details__information)) {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 66ch);
 }
 
 .kcq-encounter-details--non-narrow .kcq-encounter-details__description {
@@ -4946,7 +4946,7 @@ button {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 8px 0;
+    padding: 4px 0;
     font-size: 14px;
     color: var(--kcq-text-primary);
     cursor: pointer;

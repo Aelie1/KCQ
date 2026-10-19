@@ -1,5 +1,120 @@
 # Ko-chan's Quest Patch Notes
 
+## 1.0.0 — 2026-10-19
+
+### Responsive Interface Overhaul
+
+The graphical interface received a final large-scale responsive-layout and presentation pass.
+
+* Reworked the interface around consistent **Narrow**, **Medium**, and **Wide** layouts.
+* Improved automatic layout selection so transitions between one, two, and three columns make better use of available screen space.
+* Increased the amount of screen space available to the two-column layout before switching to three columns, reducing abrupt changes in interface scale.
+* Standardized the canonical widths used throughout the graphical interface.
+* Removed several older independent responsive-layout systems and consolidated screens around the shared layout model.
+* Improved scaling, centering, overflow handling, and behavior when resizing the browser.
+* Cleaned up obsolete mobile/desktop layout terminology throughout the interface and tests.
+
+### Encounter and Party Screens
+
+* Redesigned the Encounter Picker for larger displays.
+  * Medium layouts present encounters in organized campaign rows.
+  * Wide layouts make additional use of horizontal space.
+  * Narrow layouts retain the compact card presentation while now displaying campaign section headings.
+* Redesigned Encounter Details for medium and wide layouts.
+  * Encounter information, story text, enemies, and special rules make better use of available horizontal space.
+  * Long narrative and rules sections can scroll independently where appropriate.
+  * Narrative text is now constrained to a more comfortable reading width on large displays.
+* Redesigned Difficulty Selection for medium and wide layouts, keeping the difficulty choices visible alongside the selected difficulty's details.
+* Improved Party Selection layouts and character descriptions.
+* Added final combat-role and tactical descriptions for all five playable characters.
+
+### Battle Interface Improvements
+
+* Continued refining the two- and three-column battle layouts introduced in 0.17.0.
+* Unified battle headers and navigation across the battle overview, character details, enemy details, targeting, and Escape screens.
+* Improved character workspaces so information, commands, targeting, and the Game Log remain organized consistently across responsive layouts.
+* Improved handling of enemy details within medium and wide battle layouts.
+* Improved layout and scrolling behavior for short screens and resized browser windows.
+* Incapacitated character cards now hide stance and character-specific resource information that is no longer relevant while incapacitated.
+* Numerous spacing, typography, wrapping, alignment, and overflow fixes throughout combat screens.
+
+### Game Log
+
+* Improved Game Log behavior across responsive layouts.
+* Narrow layouts continue to use a dedicated full-screen Game Log.
+* Medium layouts display the full Game Log as a modal while keeping the current battle mounted behind it.
+* Wide layouts retain the persistent third-column Game Log during battle.
+* Opening the Game Log from a completed battle now displays the full modal log even in Wide mode.
+* Improved focus handling, keyboard navigation, scrolling, and return behavior when opening and closing the full log.
+
+### Battle Results and Story Presentation
+
+* Redesigned the battle-result presentation.
+* Bindings, Hits, and Escapes are now presented as three consistent headline statistic cards across all layout sizes.
+* Improved presentation of secondary battle statistics and encounter results.
+* Improved Victory and Defeat dialog sizing and behavior across Narrow, Medium, and Wide layouts.
+* Standardized story typography and reduced excessively wide story text on large displays.
+* Improved scrolling and focus behavior for long victory and defeat narratives.
+
+### Character and Balance Adjustments
+
+**Ko-chan**
+
+* Fairy Transformation and Fairy Empowerment now use part of a character's strongest binding as part of the transformation, removing some of that binding when the transformation occurs.
+* Updated transformation descriptions and Library information to explain the new behavior.
+
+**Hinari**
+
+* Release can now spend up to **100 Subspace** when releasing stored material onto an ally, increased from 50.
+* Rockfall now loses hits more gradually as Subspace fills.
+* Rockfall can now still be used when Subspace is completely full.
+* Updated move descriptions and effect information to reflect the new behavior.
+
+### Binding Mechanics
+
+* Removed the general reduction previously applied to binding gained above **80**.
+* Binding now accumulates at full effectiveness all the way to the maximum value of **100**.
+* Incoming binding that would exceed 100 is still capped at 100.
+
+### Combat Fixes
+
+* Improved target validation when actions are executed, including actions whose legal targets changed after being selected.
+* All-target moves now correctly become unavailable when no valid targets remain.
+* Fixed bonus Escape consumption when a character has already used their primary action.
+* Fixed several cases involving enemy intention redirection and manipulation.
+* Difficulty can no longer be changed after an encounter has begun.
+* Fixed encounter progression so unavailable encounters accessed through alternate navigation cannot incorrectly unlock later campaign levels.
+* Fixed character-specific data being carried incorrectly between encounters.
+* Improved save-state validation and restoration behavior.
+* Additional fixes to combat previews, status handling, serialization, and event reporting.
+
+### Automated Balance Harness
+
+The simulation and balance-testing harness received a major expansion in preparation for 1.0.
+
+* Harness runs can now select any valid three-character party and any difficulty.
+* Added party and difficulty configuration to fight, batch, comparison, replay, and command-line workflows.
+* Added matrix testing across:
+  * party compositions;
+  * difficulty levels;
+  * encounters;
+  * policies.
+* Added compact comparison reports for party parity and difficulty progression.
+* Expanded automated policies to better support the complete five-character roster.
+* Added character-specific policy knowledge and compatibility testing.
+* Improved parallel batch execution with dynamic worker scheduling.
+* Added extensive validation to ensure serial and parallel simulations remain deterministic.
+* Added documentation for harness configuration and policy compatibility.
+
+### Testing and Maintenance
+
+* Greatly expanded responsive-interface regression testing across Narrow, Medium, and Wide layouts.
+* Added dedicated tests for Encounter Picker, Encounter Details, Difficulty Selection, Party Selection, battle results, responsive scaling, and multi-column character and enemy views.
+* Expanded combat and content regression coverage.
+* Added additional save, campaign-progression, replay, and harness tests.
+* Consolidated responsive CSS and removed obsolete selectors and duplicated layout rules.
+* General cleanup, refactoring, and bug fixing throughout the engine and graphical interface.
+
 ## 0.18.0 — 2026-10-18
 
 ### New Playable Characters
