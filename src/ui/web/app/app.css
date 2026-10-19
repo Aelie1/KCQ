@@ -4060,10 +4060,15 @@ button {
 }
 
 /* Difficulty selection keeps its header and actions in the shared screen regions. */
-.kcq-difficulty-select__body {
+.kcq-difficulty-select__body,
+.kcq-difficulty-select__information {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.kcq-difficulty-select__information:empty {
+    display: none;
 }
 
 .kcq-difficulty-select .kcq-encounter-card {
@@ -4197,6 +4202,87 @@ button {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+/* Keep the five choices visible while longer difficulty information scrolls. */
+.kcq-graphical-app__background:has(.kcq-difficulty-select--desktop) {
+    width: 840px;
+}
+
+.kcq-difficulty-select--desktop,
+.kcq-difficulty-select--desktop .kcq-encounter-header {
+    width: 100%;
+}
+
+.kcq-difficulty-select--desktop {
+    --kcq-screen-gap: 8px;
+}
+
+.kcq-difficulty-select--desktop>.kcq-screen-layout__body>.kcq-screen-layout__content,
+.kcq-difficulty-select--desktop .kcq-difficulty-select__body {
+    height: 100%;
+    /* Preserve the selector at exceptionally short heights; ScreenLayout
+       scrolls the columns together while the header and footer stay pinned. */
+    min-height: 260px;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__body {
+    display: grid;
+    grid-template-columns: minmax(0, 35fr) minmax(0, 65fr);
+    gap: 24px;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__card {
+    align-self: start;
+    min-width: 0;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__choices {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__choice {
+    width: 100%;
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__information {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__information>.kcq-encounter-card {
+    flex-shrink: 0;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__summary h2 {
+    color: var(--kcq-accent-primary);
+    font-size: 16px;
+    line-height: 20px;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__information:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: -2px;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__footer {
+    width: 100%;
+    max-width: 366px;
+    height: auto;
+    margin-inline: auto;
+    gap: 8px;
+}
+
+.kcq-difficulty-select--desktop .kcq-difficulty-select__footer .kcq-targeting__back {
+    font-size: 12px;
 }
 
 /* Keep the finished battle visible beneath a compact result dialog. */

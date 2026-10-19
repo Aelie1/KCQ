@@ -1,4 +1,4 @@
-import { For, Show, type JSX } from "solid-js";
+import { For, Show, useContext, type JSX } from "solid-js";
 import type { DifficultyId } from "../../../../engine/public/types";
 import type { DifficultySelectViewModel } from "../viewModels/difficulty";
 import { EffectPreview } from "./EffectPreview";
@@ -6,6 +6,7 @@ import { EncounterHeader } from "./EncounterHeader";
 import { COMBAT_SHORTCUTS } from "../keyboard";
 import { Shortcut } from "./Shortcut";
 import { ScreenLayout } from "./ScreenLayout";
+import { BATTLE_LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
 
 export function DifficultySelectPanel(props: {
     onSettings?: () => void;
@@ -16,7 +17,15 @@ export function DifficultySelectPanel(props: {
     onBack: () => void;
     onStart: () => void;
 }): JSX.Element {
-    return <ScreenLayout class="kcq-encounter-screen kcq-difficulty-select"
+    const responsiveLayout = useContext(ResponsiveLayoutContext);
+    const desktop = () => {
+        const layout = responsiveLayout?.();
+        // Match the encounter details canvas, accounting for the app's UI zoom.
+        return !!layout && (layout.availableWidth === undefined
+            ? BATTLE_LAYOUT_WIDTHS[layout.columns] >= 840
+            : layout.zoom <= layout.availableWidth / 840);
+    };
+    return <ScreenLayout class={`kcq-encounter-screen kcq-difficulty-select${desktop() ? " kcq-difficulty-select--desktop" : ""}`}
         header={<EncounterHeader title={props.model.encounterName} settingsLabel={props.model.labels.settings} onSettings={props.onSettings}
             libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} />}
         body={
@@ -24,7 +33,7 @@ export function DifficultySelectPanel(props: {
                 <section class="kcq-encounter-card kcq-difficulty-select__card">
                     <div class="kcq-difficulty-select__heading">
                         <h2>{props.model.labels.title}</h2>
-                        <strong>{props.model.selectedDifficultyName}</strong>
+                        <Show when={!desktop()}><strong>{props.model.selectedDifficultyName}</strong></Show>
                     </div>
                     <div class="kcq-difficulty-select__choices" role="group" aria-label={props.model.labels.title}>
                         <For each={props.model.choices}>
@@ -33,29 +42,38 @@ export function DifficultySelectPanel(props: {
                                 onClick={() => props.onSelectDifficulty(choice.id)}>{choice.label}</button>}
                         </For>
                     </div>
-                    <p class="kcq-difficulty-select__description">{props.model.description}</p>
+                    <Show when={!desktop()}><p class="kcq-difficulty-select__description">{props.model.description}</p></Show>
                 </section>
-                <Show when={props.model.globalEffects}>
-                    {(globalEffects) => <section class="kcq-encounter-card kcq-difficulty-select__global-effects">
-                        <h2>{props.model.labels.globalEffects}</h2>
-                        <h3>{globalEffects().recipientName}</h3>
-                        <For each={globalEffects().effects}>{(effect) => <EffectPreview effect={effect} />}</For>
-                    </section>}
-                </Show>
-                <Show when={props.model.specialRules}>
-                    {(specialRules) => <section class="kcq-encounter-card kcq-difficulty-select__special-rules">
-                        <h2>{props.model.labels.specialRules}</h2>
-                        <table class="kcq-difficulty-select__rules-table">
-                            <thead><tr>
-                                <th scope="col">{props.model.labels.enemyColumn}</th>
-                                <th scope="col">{props.model.labels.changeColumn}</th>
-                            </tr></thead>
-                            <tbody><For each={specialRules().rows}>
-                                {(row) => <tr><th scope="row">{row.enemyName}</th><td>{row.description}</td></tr>}
-                            </For></tbody>
-                        </table>
-                    </section>}
-                </Show>
+                <div class="kcq-difficulty-select__information" tabIndex={desktop() ? 0 : undefined}
+                    role={desktop() ? "region" : undefined} aria-label={desktop() ? props.model.selectedDifficultyName : undefined}>
+                    <Show when={desktop()}>
+                        <section class="kcq-encounter-card kcq-difficulty-select__summary">
+                            <h2>{props.model.selectedDifficultyName}</h2>
+                            <p class="kcq-difficulty-select__description">{props.model.description}</p>
+                        </section>
+                    </Show>
+                    <Show when={props.model.globalEffects}>
+                        {(globalEffects) => <section class="kcq-encounter-card kcq-difficulty-select__global-effects">
+                            <h2>{props.model.labels.globalEffects}</h2>
+                            <h3>{globalEffects().recipientName}</h3>
+                            <For each={globalEffects().effects}>{(effect) => <EffectPreview effect={effect} />}</For>
+                        </section>}
+                    </Show>
+                    <Show when={props.model.specialRules}>
+                        {(specialRules) => <section class="kcq-encounter-card kcq-difficulty-select__special-rules">
+                            <h2>{props.model.labels.specialRules}</h2>
+                            <table class="kcq-difficulty-select__rules-table">
+                                <thead><tr>
+                                    <th scope="col">{props.model.labels.enemyColumn}</th>
+                                    <th scope="col">{props.model.labels.changeColumn}</th>
+                                </tr></thead>
+                                <tbody><For each={specialRules().rows}>
+                                    {(row) => <tr><th scope="row">{row.enemyName}</th><td>{row.description}</td></tr>}
+                                </For></tbody>
+                            </table>
+                        </section>}
+                    </Show>
+                </div>
             </div>
         }
         footer={
