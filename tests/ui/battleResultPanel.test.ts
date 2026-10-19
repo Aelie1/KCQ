@@ -41,16 +41,16 @@ const render = (outcome: "victory" | "defeat", overrides?: Partial<BattleResultS
 describe("post-battle result panel", () => {
     it.each(["victory", "defeat"] as const)("offers View Game Log alongside existing actions on %s", outcome => {
         const html = renderToString(() => createComponent(BattleResultPanel, { model: model(outcome), onGameLog: () => {} }));
-        expect(html.match(/<button/g)).toHaveLength(3);
+        expect(html.match(/<button/g)).toHaveLength(outcome === "victory" ? 3 : 4);
         expect(html).toContain(">View Game Log</button>");
-        expect(html).toContain(">Retry</button>");
+        expect(html.includes(">Retry</button>")).toBe(outcome === "defeat");
         expect(html).toContain(">Back to Level Select</button>");
         const css = readFileSync(resolve("src/ui/web/app/app.css"), "utf8");
         expect(css.match(/\.kcq-battle-result__stats\s*\{([^}]+)\}/)?.[1]).toContain("overflow-y: auto");
-        expect(css.match(/\.kcq-battle-result__actions\s*\{([^}]+)\}/)?.[1]).toContain("flex-shrink: 0");
+        expect(css.match(/^\.kcq-battle-result__actions\s*\{([^}]+)\}/m)?.[1]).toContain("flex-shrink: 0");
         expect(css).toMatch(/\.kcq-battle-result__log\s*\{\s*grid-column: 1 \/ -1;/);
     });
-    it.each(["victory", "defeat"] as const)("renders %s heading, encounter, difficulty, summary and exactly the two result actions", outcome => {
+    it.each(["victory", "defeat"] as const)("renders %s heading, encounter, difficulty, summary and outcome-specific actions", outcome => {
         const html = render(outcome);
         expect(html).toMatch(new RegExp('<h1 id="[^"]+">' + presentation.battleState(outcome) + '</h1>'));
         expect(html).toContain(presentation.encounter("forest_3"));
@@ -59,9 +59,9 @@ describe("post-battle result panel", () => {
         expect(html.match(/12 Rounds · 34 Actions/g)).toHaveLength(1);
         expect(html).not.toContain("<dt>Rounds</dt>");
         expect(html).not.toContain("<dt>Actions</dt>");
-        expect(html.match(/<button[^>]*>([^<]+)<\/button>/g)).toHaveLength(2);
-        expect(html).toContain('class="kcq-battle-result__retry"');
-        expect(html).toContain(">Retry</button>");
+        expect(html.match(/<button[^>]*>([^<]+)<\/button>/g)).toHaveLength(outcome === "victory" ? 2 : 3);
+        expect(html).toContain(">Back to Title Screen</button>");
+        expect(html.includes(">Retry</button>")).toBe(outcome === "defeat");
         expect(html).toContain(">Back to Level Select</button>");
         expect(html).not.toContain("Settings");
         expect(html).not.toContain("Party");
@@ -76,8 +76,8 @@ describe("post-battle result panel", () => {
         expect(html).toContain('class="kcq-battle-result__overlay kcq-outcome__overlay"');
         expect(html).not.toContain("kcq-screen-layout");
         expect(html).not.toMatch(/<dialog|Close|Dismiss|aria-label="X"/);
-        expect(html.match(/<button/g)).toHaveLength(2);
-        expect(html.indexOf(">Retry</button>")).toBeLessThan(html.indexOf(">Back to Level Select</button>"));
+        expect(html.match(/<button/g)).toHaveLength(outcome === "victory" ? 2 : 3);
+        expect(html.indexOf(">Back to Level Select</button>")).toBeLessThan(html.indexOf(">Back to Title Screen</button>"));
     });
 
     it("mounts the result in the default body portal with a viewport backdrop", () => {
@@ -141,7 +141,7 @@ describe("post-battle result panel", () => {
     });
     it("formats averages and maximum action totals with localized move names", () => {
         const rows = model("victory").rows;
-        expect(rows.find(row => row.label === "Escapes")).toEqual({ label: "Escapes", value: "12", detail: "avg 22" });
+        expect(rows.find(row => row.label === "Escapes")).toEqual({ id: "escapes", label: "Escapes", value: "12", detail: "avg 22" });
         expect(rows.find(row => row.label === "Hits")?.detail).toBe("avg 32 · max 68 — " + presentation.move("fairyRockfall"));
         expect(rows.find(row => row.label === "Bindings")?.detail).toBe("avg 12 · max 38 — " + presentation.move("latexSpray"));
         expect(render("victory", { hits: { count: 0, total: 0, max: 0 }, bindings: { count: 0, total: 0, max: 0 } })).not.toMatch(/NaN|Infinity/);

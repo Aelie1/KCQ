@@ -74,17 +74,14 @@ const labels = () => [...element(".kcq-battle-result__actions").querySelectorAll
 const details = () => element(".kcq-encounter-details h1").textContent;
 
 describe("Next Level navigation", () => {
-    it.each([["tower_1", true], ["plains_1", false]] as const)("keeps compact result actions readable for %s defeat", (encounter, hasNext) => {
+    it.each(["tower_1", "plains_1"] as const)("keeps compact result actions readable for %s defeat", encounter => {
         viewport.setViewport({ width: 390, height: 400 });
         battle(encounter, "defeat");
-        expect(getComputedStyle(element(".kcq-battle-result__actions")).gridTemplateColumns).toBe("1fr 1fr");
-        expect(getComputedStyle(element(".kcq-battle-result__log")).gridColumn).toBe("1 / -1");
-        if (hasNext) expect(getComputedStyle(element(".kcq-battle-result__back")).gridColumn).toBe("1 / -1");
-        expect(labels()).toEqual(hasNext ? ["View Game Log", "Next Level", "Retry", "Back to Level Select"]
-            : ["View Game Log", "Retry", "Back to Level Select"]);
+        expect(getComputedStyle(element(".kcq-battle-result__actions")).gridTemplateColumns).toBe("minmax(0, 1fr)");
+        expect(labels()).toEqual(["Retry", "View Game Log", "Back to Level Select", "Back to Title Screen"]);
     });
 
-    it("keeps the narrative Continue button cyan while result Retry becomes secondary", () => {
+    it("keeps the narrative Continue button cyan and victory Next Level cyan with neutral secondary actions", () => {
         battle("plains_1", "victory", presentation, false);
         const reference = document.createElement("button");
         reference.style.background = "var(--kcq-accent-primary)"; document.body.append(reference);
@@ -92,21 +89,21 @@ describe("Next Level navigation", () => {
         expect(getComputedStyle(proceed).backgroundColor).toBe(getComputedStyle(reference).backgroundColor);
         proceed.click();
         expect(getComputedStyle(element(".kcq-battle-result__next")).backgroundColor).toBe(getComputedStyle(reference).backgroundColor);
-        expect(getComputedStyle(element(".kcq-battle-result__retry")).backgroundColor).not.toBe(getComputedStyle(reference).backgroundColor);
+        expect(document.querySelector(".kcq-battle-result-panel .kcq-battle-result__retry")).toBeNull();
+        expect(getComputedStyle(element(".kcq-battle-result__title")).backgroundColor).not.toBe(getComputedStyle(reference).backgroundColor);
     });
 
     it.each([
         ["plains_1", "victory", "plains_2"], ["plains_3", "victory", "interlude_1"],
-        ["tower_1", "defeat", "tower_2"], ["tower_2", "defeat", "tower_3"],
         ["tower_1", "victory", campaign.victory.tower_1[0]], ["tower_2", "victory", campaign.victory.tower_2[0]],
     ] as const)("offers Next Level from %s %s and opens %s details", (encounter, outcome, next) => {
         const app = battle(encounter, outcome);
-        expect(labels()).toEqual(["View Game Log", "Next Level", "Retry", "Back to Level Select"]);
+        expect(labels()).toEqual(["Next Level", "View Game Log", "Back to Level Select", "Back to Title Screen"]);
         expect(document.activeElement).toBe(element(".kcq-battle-result__next"));
         const clears = window.localStorage.getItem("kcq.clears");
         const nextButton = element(".kcq-battle-result__next");
-        expect(getComputedStyle(nextButton).backgroundColor).not.toBe(getComputedStyle(element(".kcq-battle-result__retry")).backgroundColor);
-        expect(getComputedStyle(element(".kcq-battle-result__retry")).backgroundColor).toBe(getComputedStyle(element(".kcq-battle-result__back")).backgroundColor);
+        expect(getComputedStyle(nextButton).backgroundColor).not.toBe(getComputedStyle(element(".kcq-battle-result__title")).backgroundColor);
+        expect(getComputedStyle(element(".kcq-battle-result__title")).backgroundColor).toBe(getComputedStyle(element(".kcq-battle-result__back")).backgroundColor);
         nextButton.click();
         expect(details()).toBe(presentation.encounter(next));
         expect(document.querySelector(".kcq-difficulty-select")).toBeNull();
@@ -120,19 +117,27 @@ describe("Next Level navigation", () => {
         }
     });
 
-    it.each([["outside", "victory"], ["outside", "defeat"], ["plains_1", "defeat"]] as const)("omits Next Level after %s %s while keeping secondary Retry available", (encounter, outcome) => {
+    it.each([["outside", "victory"], ["outside", "defeat"], ["plains_1", "defeat"], ["tower_1", "defeat"], ["tower_2", "defeat"]] as const)("keeps outcome-specific actions after %s %s", (encounter, outcome) => {
         const app = battle(encounter, outcome);
-        expect(labels()).toEqual(["View Game Log", "Retry", "Back to Level Select"]);
+        expect(labels()).toEqual([...(outcome === "defeat" ? ["Retry"] : []), "View Game Log", "Back to Level Select", "Back to Title Screen"]);
         expect(document.querySelector(".kcq-battle-result__next")).toBeNull();
-        const retry = element<HTMLButtonElement>(".kcq-battle-result__retry");
-        expect(retry.disabled).toBe(false);
-        expect(document.activeElement).toBe(retry);
-        expect(getComputedStyle(retry).backgroundColor).toBe(getComputedStyle(element(".kcq-battle-result__back")).backgroundColor);
-        retry.click();
-        expect(app.prepareBattle).toHaveBeenCalledTimes(2);
+        if (outcome === "victory") {
+            expect(document.querySelector(".kcq-battle-result__retry")).toBeNull();
+            expect(document.activeElement).toBe(element(".kcq-battle-result__log"));
+            element(".kcq-battle-result__title").click();
+            expect(element(".kcq-title-screen")).toBeDefined();
+            expect(app.prepareBattle).toHaveBeenCalledOnce();
+        } else {
+            const retry = element<HTMLButtonElement>(".kcq-battle-result__retry");
+            expect(retry.disabled).toBe(false);
+            expect(document.activeElement).toBe(retry);
+            expect(getComputedStyle(retry).backgroundColor).not.toBe(getComputedStyle(element(".kcq-battle-result__back")).backgroundColor);
+            retry.click();
+            expect(app.prepareBattle).toHaveBeenCalledTimes(2);
+            expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
+        }
         expect(app.sessions[0]!.dispose).toHaveBeenCalledOnce();
         expect(document.querySelector('[role="dialog"]')).toBeNull();
-        expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
 
     it.each(["prologue", "interlude_1", "interlude_2", "interlude_3", "epilogue"])("advances story %s to details with the existing footer shortcut", story => {
@@ -154,18 +159,28 @@ describe("Next Level navigation", () => {
         if (destination === "epilogue") expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!).skunk).toContain("outside");
     });
 
+    it.each(["victory", "defeat"] as const)("returns from %s results to title through the existing lifecycle", outcome => {
+        const app = battle("plains_1", outcome);
+        element(".kcq-battle-result__title").click();
+        expect(element(".kcq-title-screen")).toBeDefined();
+        expect(document.querySelector(".kcq-battle-stage")).toBeNull();
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
+        expect(app.sessions[0]!.dispose).toHaveBeenCalledOnce();
+        expect(app.prepareBattle).toHaveBeenCalledOnce();
+    });
+
     it("preserves result focus trapping, Game Log return, and level-select navigation", () => {
         const app = battle("tower_1", "defeat");
-        const stats = element(".kcq-battle-result__stats"); const back = element(".kcq-battle-result__back");
+        const stats = element(".kcq-battle-result__stats"); const back = element(".kcq-battle-result__title");
         stats.focus(); expect(key("Tab", stats, true).defaultPrevented).toBe(true); expect(document.activeElement).toBe(back);
         expect(key("Tab", back).defaultPrevented).toBe(true); expect(document.activeElement).toBe(stats);
-        const next = element(".kcq-battle-result__next"); next.focus();
+        const next = element(".kcq-battle-result__retry"); next.focus();
         expect(key("Escape", next).defaultPrevented).toBe(true);
         expect(key("Enter", next).defaultPrevented).toBe(false);
         element(".kcq-battle-result__log").click();
         element(".kcq-game-log .kcq-combat-header__back").click();
         expect(document.activeElement).toBe(element(".kcq-battle-result__log"));
-        expect(labels()).toEqual(["View Game Log", "Next Level", "Retry", "Back to Level Select"]);
+        expect(labels()).toEqual(["Retry", "View Game Log", "Back to Level Select", "Back to Title Screen"]);
         element(".kcq-battle-result__back").click();
         expect(element<HTMLInputElement>(".kcq-encounter-picker__show-all input").checked).toBe(true);
         expect(app.sessions[0]!.dispose).toHaveBeenCalledOnce();

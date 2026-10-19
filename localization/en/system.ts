@@ -92,6 +92,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.battleResult.gameLog": "View Game Log",
     "ui.battleResult.retry": "Retry",
     "ui.battleResult.back": "Back to Level Select",
+    "ui.battleResult.backToTitle": "Back to Title Screen",
     "ui.victoryStory.continue": "Continue",
     "ui.gameLog.openFull": "Open full Game Log",
     "ui.gameLog.chronological": "Chronological game events",

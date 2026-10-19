@@ -32,6 +32,15 @@ export interface BattleStatsSaveState {
     terminal: boolean;
 }
 
+export type BattleResultStatId = "bindings" | "hits" | "escapes" | "peakBinding" | "incapacitations" | "rescues";
+
+export interface BattleResultRow {
+    id: BattleResultStatId;
+    label: string;
+    value: string;
+    detail?: string;
+}
+
 export interface BattleResultViewModel {
     outcome: "victory" | "defeat";
     heading: string;
@@ -39,9 +48,10 @@ export interface BattleResultViewModel {
     difficulty: string;
     summary: string;
     progress?: string;
-    rows: { label: string; value: string; detail?: string }[];
+    rows: BattleResultRow[];
     retryLabel: string;
     backLabel: string;
+    backToTitleLabel: string;
     gameLogLabel: string;
     nextLevelLabel: string;
     nextEncounter?: EncounterId;
@@ -290,9 +300,8 @@ export function createBattleResultViewModel(
     const outcome = state.turn.outcome;
     if (outcome === "ongoing") return undefined;
     const number = (value: number): string => String(Math.round(value * 10) / 10);
-    type StatId = "rounds" | "actions" | "escapes" | "peakBinding" | "hits" | "bindings" | "incapacitations" | "rescues";
-    const row = (id: StatId, value: number) => ({ label: presentation.ui(`battleResult.${id}`), value: number(value) });
-    const actionRow = (id: StatId, summary: ActionSummary, withMax: boolean) => ({
+    const row = (id: BattleResultStatId, value: number) => ({ id, label: presentation.ui(`battleResult.${id}`), value: number(value) });
+    const actionRow = (id: BattleResultStatId, summary: ActionSummary, withMax: boolean) => ({
         ...row(id, summary.count),
         detail: summary.count > 0 ? presentation.ui(withMax ? "battleResult.actionDetail" : "battleResult.escapeDetail", {
             average: number(summary.total / summary.count), max: number(summary.max),
@@ -313,6 +322,7 @@ export function createBattleResultViewModel(
             stats.progress.boss !== undefined ? "battleResult.bossHp" : "battleResult.enemyHp",
             { percent: Math.round((stats.progress.boss ?? stats.progress.enemies ?? 0) * 100) },
         ) : undefined,
+        backToTitleLabel: presentation.ui("battleResult.backToTitle"),
         gameLogLabel: presentation.ui("battleResult.gameLog"),
         nextLevelLabel: presentation.ui("encounter.nextLevel"),
         nextEncounter,

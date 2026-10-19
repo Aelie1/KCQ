@@ -94,7 +94,7 @@ describe("victory story screen flow", () => {
         expect(document.querySelector(".kcq-victory-story")).toBeNull();
         const result = element(".kcq-battle-result--victory");
         expect(result.querySelector(".kcq-battle-result__summary")?.textContent).toBe("1 Rounds · 1 Actions");
-        expect(result.querySelector("dl")?.textContent).toContain("Peak Binding");
+        expect(result.querySelector(".kcq-battle-result__details")?.textContent).toContain("Peak Binding");
         expect(result.querySelectorAll("button")).toHaveLength(4);
         expect(document.activeElement).toBe(button("Next Level"));
     });
@@ -173,7 +173,7 @@ describe("victory story screen flow", () => {
     });
 
     it("starts a fresh story dismissal state after retrying the encounter", () => {
-        const { sessions, prepareBattle } = mount(); finish(sessions[0]!.engine);
+        const { sessions, prepareBattle } = mount({ ...victoryStoryStrings, "encounter.plains_1.defeat": "Defeat narrative fixture." }); finish(sessions[0]!.engine, "defeat");
         button("Continue").click(); button("Retry").click();
         expect(prepareBattle).toHaveBeenCalledTimes(2);
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();

@@ -263,7 +263,7 @@ describe("battle settings interactions", () => {
         const captures = capture.mock.calls.length;
         const stats = dialog.querySelector<HTMLElement>(".kcq-battle-result__stats")!;
         stats.focus(); key("Tab", true);
-        expect(document.activeElement).toBe(button("Back to Level Select"));
+        expect(document.activeElement).toBe(button("Back to Title Screen"));
         key("Tab"); expect(document.activeElement).toBe(stats);
         button("View Game Log").click();
         expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -291,7 +291,8 @@ describe("battle settings interactions", () => {
         expect(capture).toHaveBeenCalledTimes(captures);
     });
 
-    it.each(["victory", "defeat"] as const)("preserves result-modal retry and leave handling after %s", outcome => {
+    it("preserves result-modal retry and leave handling after defeat", () => {
+        const outcome = "defeat";
         const { engine, sessions, prepareBattle, capture } = mountBattle();
         const getState = engine.getGameState.bind(engine);
         vi.spyOn(engine, "getGameState").mockImplementation(() => {

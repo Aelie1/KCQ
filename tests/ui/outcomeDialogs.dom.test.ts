@@ -7,21 +7,21 @@ import { BattleResultPanel } from "../../src/ui/web/app/panels/BattleResultPanel
 import { BattleSettingsPanel } from "../../src/ui/web/app/panels/BattleSettingsPanel";
 import { VictoryStoryPanel } from "../../src/ui/web/app/panels/VictoryStoryPanel";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import type { BattleResultViewModel } from "../../src/ui/web/app/viewModels/battleResult";
+import type { BattleResultRow, BattleResultViewModel } from "../../src/ui/web/app/viewModels/battleResult";
 import { stockStrings } from "../helpers/stockStrings";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let dispose: (() => void) | undefined;
 const narrativeText = "First paragraph.\n\n  Authored indentation.\n".repeat(150) + "Final narrative line.";
-const rows = Array.from({ length: 17 }, (_, i) => ({
-    label: "Statistic " + i, value: i === 0 ? "-" : String(i),
+const rows: BattleResultRow[] = ["escapes", "peakBinding", "hits", "bindings", "incapacitations", "rescues"].map((id, i) => ({
+    id: id as BattleResultRow["id"], label: "Localized " + id, value: String(i),
     ...(i % 2 ? { detail: "Long localized detail and move name. ".repeat(12) } : {}),
 }));
 const model = (outcome: "victory" | "defeat" = "victory"): BattleResultViewModel => ({
     outcome, heading: outcome === "victory" ? "Victory" : "Defeat", encounter: "Encounter", difficulty: "Standard",
     summary: "12 Rounds \u00b7 34 Actions", progress: outcome === "defeat" ? "27% Boss HP Remaining" : undefined,
-    rows, retryLabel: "Retry", backLabel: "Back to Level Select", gameLogLabel: "View Game Log", nextLevelLabel: "Next Level",
+    rows, retryLabel: "Retry", backLabel: "Back to Level Select", gameLogLabel: "View Game Log", nextLevelLabel: "Next Level", backToTitleLabel: "Back to Title Screen",
 });
 const element = <T extends HTMLElement = HTMLElement>(selector: string): T => document.querySelector<T>(selector)!;
 const style = (selector: string) => getComputedStyle(element(selector));
@@ -45,14 +45,14 @@ afterEach(() => {
 function mount(kind: "results" | "story", result = model(), log = true, next = true, focusGameLog = false) {
     const host = document.createElement("div"); document.body.append(host);
     const trigger = document.createElement("button"); document.body.append(trigger); trigger.focus();
-    const onRetry = vi.fn(), onBackToLevelSelect = vi.fn(), onGameLog = vi.fn(), onNextLevel = vi.fn(), onContinue = vi.fn();
+    const onRetry = vi.fn(), onBackToLevelSelect = vi.fn(), onBackToTitle = vi.fn(), onGameLog = vi.fn(), onNextLevel = vi.fn(), onContinue = vi.fn();
     dispose = render(() => kind === "story" ? createComponent(VictoryStoryPanel, {
         model: { outcome: result.outcome, heading: result.heading, encounter: result.encounter, narrative: narrativeText, continueLabel: "Continue" }, onContinue,
     }) : createComponent(BattleResultPanel, {
-        model: { ...result, nextEncounter: next ? "plains_2" : undefined }, onRetry, onBackToLevelSelect, focusGameLog,
+        model: { ...result, nextEncounter: next ? "plains_2" : undefined }, onRetry, onBackToLevelSelect, onBackToTitle, focusGameLog,
         onGameLog: log ? onGameLog : undefined, onNextLevel,
     }), host);
-    return { trigger, onRetry, onBackToLevelSelect, onGameLog, onNextLevel, onContinue };
+    return { trigger, onRetry, onBackToLevelSelect, onBackToTitle, onGameLog, onNextLevel, onContinue };
 }
 
 describe("outcome dialog presentation", () => {
@@ -61,7 +61,7 @@ describe("outcome dialog presentation", () => {
         const dialog = element('[role="dialog"]');
         expect(style(".kcq-battle-result__viewport").width).toBe("600px");
         expect(style(".kcq-battle-result").maxWidth).toBe("580px");
-        expect(style(".kcq-battle-result__actions").gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
+        expect(style(".kcq-battle-result__actions").gridTemplateColumns).toBe(kind === "results" ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))");
         for (const [width, height, desktop] of [[1024, 768, true], [1920, 480, true], [779, 800, false], [780, 800, true], [390, 844, false]] as const) {
             viewport.setViewport({ width, height }); window.dispatchEvent(new Event("resize"));
             expect(element('[role="dialog"]')).toBe(dialog);
@@ -75,7 +75,7 @@ describe("outcome dialog presentation", () => {
         viewport.setViewport({ width, height });
         mount("results");
         expect(style(".kcq-battle-result__viewport").width).toBe("366px");
-        expect(style(".kcq-battle-result__actions").gridTemplateColumns).toBe("");
+        expect(style(".kcq-battle-result__actions").gridTemplateColumns).toBe("minmax(0, 1fr)");
         expect(style(".kcq-battle-result__stats").display).toBe("block");
     });
 
@@ -83,10 +83,10 @@ describe("outcome dialog presentation", () => {
         viewport.setViewport({ width: 1920, height: 480 });
         mount(kind);
         expect(style(".kcq-battle-result").gap).toBe("6px");
-        expect(style("footer button").minHeight).toBe("36px");
+        expect(style("footer button").minHeight).toBe(kind === "results" ? "42px" : "36px");
         expect(style("header").flexShrink).toBe("0");
         expect(style("footer").flexShrink).toBe("0");
-        expect(style(kind === "story" ? ".kcq-victory-story__narrative" : "dl").overflowY).toBe("auto");
+        expect(style(kind === "story" ? ".kcq-victory-story__narrative" : ".kcq-battle-result__stats").overflowY).toBe("auto");
         expect(element(".kcq-outcome__overlay").style.getPropertyValue("--kcq-ui-height")).toBe("304px");
     });
 
@@ -118,36 +118,82 @@ describe("outcome dialog presentation", () => {
         }
     });
 
-    it("renders every supplied statistic, value and optional detail in order", () => {
+    it("renders fixed headline cards and all supplied secondary values/details", () => {
         mount("results", model("defeat"));
-        expect([...document.querySelectorAll("dt")].map(node => node.textContent)).toEqual(rows.map(row => row.label));
-        expect([...document.querySelectorAll("dd strong")].map(node => node.textContent)).toEqual(rows.map(row => row.value));
-        expect([...document.querySelectorAll("dd span")].map(node => node.textContent)).toEqual(rows.flatMap(row => row.detail ? [row.detail] : []));
+        const cards = [...document.querySelectorAll(".kcq-battle-result__stat")];
+        expect(cards.map(card => card.getAttribute("data-stat-id"))).toEqual(["bindings", "hits", "escapes"]);
+        for (const card of cards) {
+            const row = rows.find(row => row.id === card.getAttribute("data-stat-id"))!;
+            expect(card.querySelector("dt")?.textContent).toBe(row.label);
+            expect(card.querySelector("dd")?.textContent).toBe(row.value);
+            expect(card.textContent).not.toContain("Long localized detail");
+        }
+        const details = [...document.querySelectorAll(".kcq-battle-result__detail")];
+        for (const row of rows) {
+            const headline = ["bindings", "hits", "escapes"].includes(row.id);
+            const detail = details.find(detail => detail.getAttribute("data-stat-id") === row.id);
+            if (headline && !row.detail) expect(detail).toBeUndefined();
+            else expect(detail?.textContent).toBe(row.label + ":" + (headline ? row.detail : row.value + (row.detail ? " " + row.detail : "")));
+        }
         expect(element(".kcq-battle-result__progress").textContent).toBe("27% Boss HP Remaining");
-        expect(style(".kcq-battle-result__stats").gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
-        expect(style(".kcq-battle-result__row dd").overflowWrap).toBe("anywhere");
+        expect(style(".kcq-battle-result__headlines").gridTemplateColumns).toBe("repeat(3, minmax(0, 1fr))");
+        expect(style(".kcq-battle-result__detail dd").overflowWrap).toBe("anywhere");
         expect(style(".kcq-battle-result__stats").overflowY).toBe("auto");
     });
 
-    it.each([[true, true, 4], [true, false, 3], [false, true, 3], [false, false, 2]] as const)("keeps action order and behavior with log=%s next=%s", (log, next, count) => {
-        const actions = mount("results", model(), log, next);
+    it.each(["victory", "defeat"] as const)("keeps action hierarchy, callbacks and focus containment on %s", outcome => {
+        const actions = mount("results", model(outcome));
         const buttons = [...element("footer").querySelectorAll("button")];
-        expect(buttons.map(button => button.textContent)).toEqual([...(log ? ["View Game Log"] : []), ...(next ? ["Next Level"] : []), "Retry", "Back to Level Select"]);
-        expect(buttons).toHaveLength(count);
-        expect(getComputedStyle(buttons[count - 1]!).gridColumn).toBe(count % 2 ? "1 / -1" : "auto");
+        expect(buttons.map(button => button.textContent)).toEqual([outcome === "victory" ? "Next Level" : "Retry", "View Game Log", "Back to Level Select", "Back to Title Screen"]);
+        expect(document.activeElement).toBe(buttons[0]);
+        expect(getComputedStyle(buttons[0]!).gridColumn).toBe("1 / -1");
         buttons.forEach(button => button.click());
-        expect(actions.onRetry).toHaveBeenCalledOnce(); expect(actions.onBackToLevelSelect).toHaveBeenCalledOnce();
-        expect(actions.onGameLog).toHaveBeenCalledTimes(log ? 1 : 0); expect(actions.onNextLevel).toHaveBeenCalledTimes(next ? 1 : 0);
-        expect(document.activeElement).toBe(element(next ? ".kcq-battle-result__next" : ".kcq-battle-result__retry"));
-        expect(press(buttons[count - 1]!, "Tab").defaultPrevented).toBe(true);
-        expect(document.activeElement).toBe(element("dl"));
-        expect(press(element("dl"), "Tab", true).defaultPrevented).toBe(true);
-        expect(document.activeElement).toBe(buttons[count - 1]);
+        expect(actions.onRetry).toHaveBeenCalledTimes(outcome === "defeat" ? 1 : 0);
+        expect(actions.onNextLevel).toHaveBeenCalledTimes(outcome === "victory" ? 1 : 0);
+        expect(actions.onBackToLevelSelect).toHaveBeenCalledOnce();
+        expect(actions.onBackToTitle).toHaveBeenCalledOnce(); expect(actions.onGameLog).toHaveBeenCalledOnce();
+        const final = buttons[buttons.length - 1]!;
+        expect(press(final, "Tab").defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(element(".kcq-battle-result__stats"));
+        expect(press(element(".kcq-battle-result__stats"), "Tab", true).defaultPrevented).toBe(true);
+        expect(document.activeElement).toBe(final);
+    });
+
+    it.each([true, false])("omits unavailable Next Level without substituting Retry (log=%s)", log => {
+        mount("results", model(), log, false);
+        expect(document.querySelector(".kcq-battle-result__primary")).toBeNull();
+        expect(document.querySelector(".kcq-battle-result__retry")).toBeNull();
+        expect(document.activeElement).toBe(element(log ? ".kcq-battle-result__log" : ".kcq-battle-result__stats"));
+    });
+
+    it.each(["victory", "defeat"] as const)("keeps every headline detail out of its card on %s", outcome => {
+        const headlineRows: BattleResultRow[] = ["bindings", "hits", "escapes"].map((id, index) => ({
+            id: id as BattleResultRow["id"], label: "Same localized label", value: String(index + 10), detail: "Detail " + id,
+        }));
+        mount("results", { ...model(outcome), rows: [...headlineRows].reverse() });
+        expect([...document.querySelectorAll(".kcq-battle-result__stat dd")].map(node => node.textContent)).toEqual(["10", "11", "12"]);
+        expect(element(".kcq-battle-result__headlines").textContent).not.toContain("Detail");
+        expect([...document.querySelectorAll(".kcq-battle-result__detail dd")].map(node => node.textContent)).toEqual(["Detail escapes", "Detail hits", "Detail bindings"]);
+    });
+
+    it("renders future non-headline rows as ordinary details", () => {
+        const future = { id: "futureStatistic" as BattleResultRow["id"], label: "Future statistic", value: "-", detail: "Additional context" };
+        mount("results", { ...model(), rows: [...rows, future] });
+        expect(document.querySelectorAll(".kcq-battle-result__stat")).toHaveLength(3);
+        expect(element('.kcq-battle-result__details [data-stat-id="futureStatistic"]').textContent).toBe("Future statistic:- Additional context");
+    });
+
+    it("omits an empty detail stack and keeps three zero headline cards", () => {
+        mount("results", { ...model(), rows: rows.filter(row => ["bindings", "hits", "escapes"].includes(row.id)).map(row => ({ ...row, value: "0", detail: undefined })) });
+        expect(document.querySelector(".kcq-battle-result__details")).toBeNull();
+        expect([...document.querySelectorAll(".kcq-battle-result__stat dd")].map(node => node.textContent)).toEqual(["0", "0", "0"]);
+        expect(style(".kcq-battle-result").height).not.toBe("100%");
+        expect(style(".kcq-battle-result__stats").flexGrow).not.toBe("1");
     });
 
     it.each(["results", "story"] as const)("keeps %s reading regions keyboard accessible, headers/actions fixed and restores focus", kind => {
         const { trigger, onContinue } = mount(kind);
-        const reading = element(kind === "story" ? ".kcq-victory-story__narrative" : "dl");
+        const reading = element(kind === "story" ? ".kcq-victory-story__narrative" : ".kcq-battle-result__stats");
         expect(reading.tabIndex).toBe(0);
         expect(getComputedStyle(reading).minHeight).toBe("0");
         expect(getComputedStyle(reading).overflowY).toBe("auto");

@@ -639,7 +639,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 <Show when={!logOpen() && !storyModel() && resultModel()} keyed>
                     {(model) => <BattleResultPanel model={model} onRetry={props.onRetry}
                         onNextLevel={props.onNextLevel}
-                        onBackToLevelSelect={props.onBackToLevelSelect} onGameLog={openResultLog}
+                        onBackToLevelSelect={props.onBackToLevelSelect} onBackToTitle={props.onBackToTitle} onGameLog={openResultLog}
                         focusGameLog={resultLogVisited()} />}
                 </Show>
             </div>
