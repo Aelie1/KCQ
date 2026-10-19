@@ -1,5 +1,5 @@
 import { useContext, type JSX } from "solid-js";
-import { BATTLE_LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
+import { LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
 import { LibrarySettingsControls } from "./LibrarySettingsControls";
 
 export function EncounterHeader(props: {
@@ -12,7 +12,7 @@ export function EncounterHeader(props: {
         const current = layout?.();
         return !!current && (current.availableWidth === undefined
             ? current.columns >= 2
-            : current.zoom <= current.availableWidth / BATTLE_LAYOUT_WIDTHS[2]);
+            : current.zoom <= current.availableWidth / LAYOUT_WIDTHS[2]);
     };
     return <>
         <header class="kcq-combat-header kcq-encounter-header" classList={{ "kcq-encounter-header--picker": props.picker, "kcq-encounter-header--compact": compact() }}>

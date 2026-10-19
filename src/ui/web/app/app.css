@@ -3856,9 +3856,8 @@ button {
     gap: 12px;
 }
 
-/* Match the picker: choose a canvas using the app's available width and zoom. */
 .kcq-graphical-app__background:has(.kcq-encounter-details--desktop) {
-    width: 840px;
+    width: 756px;
 }
 
 .kcq-encounter-details--desktop,
@@ -4285,7 +4284,7 @@ button {
 
 /* Keep the five choices visible while longer difficulty information scrolls. */
 .kcq-graphical-app__background:has(.kcq-difficulty-select--desktop) {
-    width: 840px;
+    width: 756px;
 }
 
 .kcq-difficulty-select--desktop,

@@ -1,12 +1,12 @@
 import { For, Show, useContext, type JSX } from "solid-js";
 import type { DifficultyId } from "../../../../engine/public/types";
+import { COMBAT_SHORTCUTS } from "../keyboard";
+import { LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
 import type { DifficultySelectViewModel } from "../viewModels/difficulty";
 import { EffectPreview } from "./EffectPreview";
 import { EncounterHeader } from "./EncounterHeader";
-import { COMBAT_SHORTCUTS } from "../keyboard";
-import { Shortcut } from "./Shortcut";
 import { ScreenLayout } from "./ScreenLayout";
-import { BATTLE_LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
+import { Shortcut } from "./Shortcut";
 
 export function DifficultySelectPanel(props: {
     onSettings?: () => void;
@@ -22,7 +22,7 @@ export function DifficultySelectPanel(props: {
         const layout = responsiveLayout?.();
         // Match the encounter details canvas, accounting for the app's UI zoom.
         return !!layout && (layout.availableWidth === undefined
-            ? BATTLE_LAYOUT_WIDTHS[layout.columns] >= 840
+            ? LAYOUT_WIDTHS[layout.columns] >= 840
             : layout.zoom <= layout.availableWidth / 840);
     };
     return <ScreenLayout class={`kcq-encounter-screen kcq-difficulty-select${desktop() ? " kcq-difficulty-select--desktop" : ""}`}

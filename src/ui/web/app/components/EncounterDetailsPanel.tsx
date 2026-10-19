@@ -1,6 +1,6 @@
 import { createEffect, createSignal, createUniqueId, For, on, Show, useContext, type JSX } from "solid-js";
 import { COMBAT_SHORTCUTS } from "../keyboard";
-import { BATTLE_LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
+import { LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
 import type { EncounterDetailsViewModel } from "../viewModels/encounters";
 import { EffectPreview } from "./EffectPreview";
 import { EncounterHeader } from "./EncounterHeader";
@@ -23,7 +23,7 @@ export function EncounterDetailsPanel(props: {
         const layout = responsiveLayout?.();
         // 450px narrative + 24px gutter + the existing 366px information canvas.
         return !!layout && (layout.availableWidth === undefined
-            ? BATTLE_LAYOUT_WIDTHS[layout.columns] >= 840
+            ? LAYOUT_WIDTHS[layout.columns] >= 840
             : layout.zoom <= layout.availableWidth / 840);
     };
     const hasInformation = () => props.model.enemies.length > 0 || props.model.effects.length > 0 || props.model.effectGroups.length > 0;

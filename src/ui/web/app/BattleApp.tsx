@@ -40,7 +40,7 @@ import { LibraryPanel } from "./panels/LibraryPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
 import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
-import { BATTLE_LAYOUT_WIDTHS, calculateResponsiveLayout, ResponsiveLayoutContext } from "./responsiveScale";
+import { calculateResponsiveLayout, LAYOUT_WIDTHS, ResponsiveLayoutContext } from "./responsiveScale";
 import { createSavePackage, type SavePackage } from "./savePackage";
 import { clearSave, writeSave } from "./savePersistence";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
@@ -86,7 +86,7 @@ type EscapeScreen = Extract<BattleScreen, { kind: "escape" }>;
 type TargetingScreen = Extract<BattleScreen, { kind: "targeting" }>;
 
 // Layout width at 100%, plus the shell's 12px padding on each side.
-export const WIDE_BATTLE_OVERVIEW_BREAKPOINT = BATTLE_LAYOUT_WIDTHS[3] + 24;
+export const WIDE_BATTLE_OVERVIEW_BREAKPOINT = LAYOUT_WIDTHS[3] + 24;
 
 interface CurrentTargeting {
     action: ActionInfo;

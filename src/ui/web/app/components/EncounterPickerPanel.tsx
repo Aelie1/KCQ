@@ -1,7 +1,7 @@
 import { createMemo, For, Show, useContext, type JSX } from "solid-js";
 import type { EncounterId } from "../../../../engine/public/types";
 import { COMBAT_SHORTCUTS, combatShortcut } from "../keyboard";
-import { BATTLE_LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
+import { LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
 import type { EncounterPickerViewModel } from "../viewModels/encounters";
 import { EncounterHeader } from "./EncounterHeader";
 import { ScreenLayout } from "./ScreenLayout";
@@ -20,10 +20,10 @@ export function EncounterPickerPanel(props: {
     const fitsCanvas = (width: number) => {
         const layout = responsiveLayout?.();
         return !!layout && (layout.availableWidth === undefined
-            ? BATTLE_LAYOUT_WIDTHS[layout.columns] >= width
+            ? LAYOUT_WIDTHS[layout.columns] >= width
             : layout.zoom <= layout.availableWidth / width);
     };
-    const organized = () => fitsCanvas(BATTLE_LAYOUT_WIDTHS[2]) && !!props.model.layout?.length;
+    const organized = () => fitsCanvas(LAYOUT_WIDTHS[2]) && !!props.model.layout?.length;
     const sectionColumns = createMemo(() => Math.max(1, ...(props.model.layout?.map(row => row.length) ?? [])));
     const shortcuts = createMemo(() => new Map(props.model.encounters.map((encounter, index) => [encounter.id, combatShortcut(index)])));
     const encounterCard = (encounter: EncounterPickerViewModel["encounters"][number]): JSX.Element => {
@@ -40,7 +40,7 @@ export function EncounterPickerPanel(props: {
         </button>;
         return organized() ? <div class="kcq-encounter-picker__card-container">{card}</div> : card;
     };
-    return <ScreenLayout class={`kcq-encounter-screen kcq-encounter-picker${organized() ? " kcq-encounter-picker--overview" : ""}${organized() && fitsCanvas(BATTLE_LAYOUT_WIDTHS[3]) ? " kcq-encounter-picker--wide" : ""}`}
+    return <ScreenLayout class={`kcq-encounter-screen kcq-encounter-picker${organized() ? " kcq-encounter-picker--overview" : ""}${organized() && fitsCanvas(LAYOUT_WIDTHS[3]) ? " kcq-encounter-picker--wide" : ""}`}
         header={
             <EncounterHeader title={props.model.title} settingsLabel={props.model.settingsLabel} onSettings={props.onSettings}
                 libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} picker

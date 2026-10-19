@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { BATTLE_LAYOUT_WIDTHS, calculateResponsiveLayout, layoutSize, setupResponsiveScale } from "../../src/ui/web/app/responsiveScale";
+import { LAYOUT_WIDTHS, calculateResponsiveLayout, layoutSize, setupResponsiveScale } from "../../src/ui/web/app/responsiveScale";
 
 function viewport(width = 390, height = 844, visualHeight?: number, columns: "auto" | "1" | "2" | "3" = "auto") {
     const style = new Map<string, string>();
@@ -110,8 +110,8 @@ describe("column-first scaling", () => {
             const layout = calculateResponsiveLayout(width, preference);
             expect(layout.columns).toBe(columns);
             expect(layout.size).toBe(size);
-            expect(layout.zoom).toBe(Math.max(1, Math.min(1.5, width / BATTLE_LAYOUT_WIDTHS[columns])));
-            if (width < BATTLE_LAYOUT_WIDTHS[columns]) expect(layout.zoom).toBe(1);
+            expect(layout.zoom).toBe(Math.max(1, Math.min(1.5, width / LAYOUT_WIDTHS[columns])));
+            if (width < LAYOUT_WIDTHS[columns]) expect(layout.zoom).toBe(1);
         }
     });
 

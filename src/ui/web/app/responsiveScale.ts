@@ -1,7 +1,15 @@
 import { createContext, createRenderEffect, createRoot, useContext, type Accessor } from "solid-js";
 import { ViewPreferencesContext, type BattleColumns, type ViewPreferences } from "./viewPreferences";
 
-export const BATTLE_LAYOUT_WIDTHS = { 1: 366, 2: 756, 3: 1068 } as const;
+const COLUMN_WIDTH = 366;
+const COLUMN_GAP = 24;
+
+export const LAYOUT_WIDTHS = {
+    1: COLUMN_WIDTH,
+    2: COLUMN_WIDTH * 2 + COLUMN_GAP,
+    3: COLUMN_WIDTH * 3 + COLUMN_GAP * 2,
+} as const;
+
 export type LayoutSize = "narrow" | "medium" | "wide";
 
 export function layoutSize(columns: 1 | 2 | 3): LayoutSize {
@@ -19,9 +27,9 @@ export const ResponsiveLayoutContext = createContext<Accessor<ResponsiveLayout>>
 /** Choose columns at 100% first, then fit that layout without shrinking it. */
 export function calculateResponsiveLayout(availableWidth: number, preference: BattleColumns = "auto"): ResponsiveLayout {
     const columns = preference === "auto"
-        ? availableWidth >= BATTLE_LAYOUT_WIDTHS[3] ? 3 : availableWidth >= BATTLE_LAYOUT_WIDTHS[2] ? 2 : 1
+        ? availableWidth >= LAYOUT_WIDTHS[3] ? 3 : availableWidth >= LAYOUT_WIDTHS[2] ? 2 : 1
         : Number(preference) as 1 | 2 | 3;
-    return { columns, size: layoutSize(columns), zoom: Math.min(1.5, Math.max(1, availableWidth / BATTLE_LAYOUT_WIDTHS[columns])) };
+    return { columns, size: layoutSize(columns), zoom: Math.min(1.5, Math.max(1, availableWidth / LAYOUT_WIDTHS[columns])) };
 }
 
 /** Publish viewport dimensions in the coordinates used by the zoomed screens. */
@@ -50,7 +58,7 @@ export function setupResponsiveScale(
         shell.dataset.kcqLayout = layout.size;
         // Decide title layout from the same unzoomed width as the scaler.
         // Comparing ratios also avoids rounding at exactly two scaled panels.
-        shell.dataset.kcqTitleLayout = zoom <= availableWidth / BATTLE_LAYOUT_WIDTHS[2] ? "desktop" : "mobile";
+        shell.dataset.kcqTitleLayout = zoom <= availableWidth / LAYOUT_WIDTHS[2] ? "desktop" : "mobile";
         onLayout?.({ ...layout, availableWidth });
     };
 
