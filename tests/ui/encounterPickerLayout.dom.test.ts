@@ -10,6 +10,7 @@ import { combatShortcut, useCombatKeyboard } from "../../src/ui/web/app/keyboard
 import { ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import { createEncounterPickerViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { stockStrings } from "../helpers/stockStrings";
+import { responsiveLayouts, responsivePresentationCases } from "../helpers/responsiveLayouts";
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation({ ...stockStrings, "campaign.skunk.act3.name": "Third Act" });
@@ -21,7 +22,7 @@ function mount(campaign: CampaignReference = library.campaigns.skunk, showAll = 
     const style = document.createElement("style");
     style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
     document.body.append(style, host);
-    const [layout, setLayout] = createSignal<ResponsiveLayout>({ columns: 3, size: "wide", zoom: 1, availableWidth: 1068 });
+    const [layout, setLayout] = createSignal<ResponsiveLayout>(responsiveLayouts.wide);
     const [all, setAll] = createSignal(showAll);
     const onSelect = vi.fn();
     const onBack = vi.fn();
@@ -123,17 +124,23 @@ describe("desktop encounter overview", () => {
             expect(onSelect).toHaveBeenLastCalledWith(encounter.id);
         }
         expect(host.querySelector(".kcq-encounter-picker__additional h2")?.textContent).toBe("Other Encounters");
-        // A forced battle column setting must still preserve the phone picker.
-        setLayout({ columns: 3, size: "wide", zoom: 1, availableWidth: 366 });
+        setLayout(responsiveLayouts.narrow);
         expect(host.querySelector(".kcq-encounter-picker--overview")).toBeNull();
         expect(host.querySelector("h2")).toBeNull();
         expect(names(host)).toEqual(flat.map(encounter => encounter.name));
         expect(cards(host).map(card => card.dataset.kcqShortcut)).toEqual(flat.map((_, index) => combatShortcut(index)));
         expect(getComputedStyle(cards(host)[0]!).gridTemplateColumns).toBe("minmax(0, 1fr) auto 75px");
-        setLayout({ columns: 2, size: "medium", zoom: 1, availableWidth: 756 });
+        setLayout(responsiveLayouts.medium);
         expect(host.querySelector(".kcq-encounter-picker--overview")).not.toBeNull();
         expect(host.querySelector(".kcq-encounter-picker--wide")).toBeNull();
         expect(cards(host)).toHaveLength(flat.length);
+    });
+
+    it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, organized) => {
+        const { host, setLayout } = mount();
+        setLayout(layout);
+        expect(!!host.querySelector(".kcq-encounter-picker--overview")).toBe(organized);
+        expect(!!host.querySelector(".kcq-encounter-picker--wide")).toBe(layout.size === "wide");
     });
 
     it("reveals extra encounters beneath the overview with Show All and removes them when switched off", () => {

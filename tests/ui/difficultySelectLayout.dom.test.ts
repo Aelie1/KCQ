@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { createComponent, createSignal } from "solid-js";
+import { createComponent, createRenderEffect, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DifficultyId } from "../../src/engine/public/types";
@@ -7,30 +7,32 @@ import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { DifficultySelectPanel } from "../../src/ui/web/app/components/DifficultySelectPanel";
 import { useCombatKeyboard } from "../../src/ui/web/app/keyboard";
-import { ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import { LAYOUT_WIDTHS, ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 import { stockStrings } from "../helpers/stockStrings";
+import { responsiveLayouts, responsivePresentationCases } from "../helpers/responsiveLayouts";
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
-const desktop: ResponsiveLayout = { columns: 3, size: "wide", zoom: 1, availableWidth: 1068 };
-const mobile: ResponsiveLayout = { columns: 1, size: "narrow", zoom: 1, availableWidth: 366 };
+const desktop = responsiveLayouts.wide;
+const mobile = responsiveLayouts.narrow;
 const difficulties = ["casual", "standard", "veteran", "extreme", "mythic"] as const;
 let dispose: (() => void) | undefined;
 afterEach(() => { dispose?.(); document.body.replaceChildren(); });
 
-function mount(initialLayout = desktop, height = 480) {
+function mount(initialLayout: ResponsiveLayout = desktop, height = 480) {
     const style = document.createElement("style");
     style.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + readFileSync("src/ui/web/app/app.css", "utf8");
     const host = document.createElement("div");
     host.className = "kcq-graphical-app__background";
     host.style.setProperty("--kcq-ui-height", `${height}px`);
     document.body.append(style, host);
-    const [layout, setLayout] = createSignal(initialLayout);
+    const [layout, setLayout] = createSignal<ResponsiveLayout>(initialLayout);
     const [difficulty, setDifficulty] = createSignal<DifficultyId>("standard");
     const model = () => createDifficultySelectViewModel(library, "forest_3", difficulty(), presentation);
     const onBack = vi.fn(), onStart = vi.fn(), onSettings = vi.fn(), onLibrary = vi.fn();
     dispose = render(() => {
+        createRenderEffect(() => host.style.setProperty("--kcq-layout-width", `${LAYOUT_WIDTHS[layout().columns]}px`));
         useCombatKeyboard(() => host, () => true, () => false, () => "always");
         return createComponent(ResponsiveLayoutContext.Provider, {
             value: layout,
@@ -57,7 +59,7 @@ function press(key: string) {
 }
 
 describe("difficulty selection responsive layout", () => {
-    it.each([desktop, mobile])("updates all five difficulties and optional information in layout %j", layout => {
+    it.each(Object.values(responsiveLayouts))("updates all five difficulties and optional information in layout %j", layout => {
         const { host, element, choices, model } = mount(layout);
         expect(choices().map(choice => choice.textContent)).toEqual(difficulties.map(id => presentation.difficulty(id)));
         for (const [index, difficulty] of difficulties.entries()) {
@@ -77,7 +79,7 @@ describe("difficulty selection responsive layout", () => {
                 expect([...host.querySelectorAll("tbody tr")].map(row => row.textContent)).toEqual(
                     expected.specialRules.rows.map(row => row.enemyName + row.description));
             }
-            if (layout === desktop) {
+            if (layout.size !== "narrow") {
                 const info = element(".kcq-difficulty-select__information");
                 expect(info.getAttribute("aria-label")).toBe(expected.selectedDifficultyName);
                 expect(element(".kcq-difficulty-select__summary h2").textContent).toBe(expected.selectedDifficultyName);
@@ -94,22 +96,14 @@ describe("difficulty selection responsive layout", () => {
         }
     });
 
-    it.each([
-        [{ columns: 3, size: "wide", zoom: 1, availableWidth: 366 }, false],
-        [{ columns: 3, size: "wide", zoom: 1, availableWidth: 839 }, false],
-        [{ columns: 2, size: "medium", zoom: 1, availableWidth: 840 }, true],
-        [{ columns: 2, size: "medium", zoom: 1.5, availableWidth: 1259 }, false],
-        [{ columns: 1, size: "narrow", zoom: 1.5, availableWidth: 1260 }, true],
-        [{ columns: 2, size: "medium", zoom: 1 }, false],
-        [{ columns: 3, size: "wide", zoom: 1 }, true],
-    ] satisfies [ResponsiveLayout, boolean][])("fits the zoomed canvas with layout %j: %s", (layout, wide) => {
+    it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, wide) => {
         expect(!!mount(layout).host.querySelector(".kcq-difficulty-select--desktop")).toBe(wide);
     });
 
     it.each([720, 480, 320])("bounds the columns and scrolling information at %ipx height", height => {
         const { host, element, choices, setDifficulty } = mount(desktop, height);
         setDifficulty("mythic");
-        expect(getComputedStyle(host).width).toBe("840px");
+        expect(getComputedStyle(host).width).toBe(`${LAYOUT_WIDTHS[3]}px`);
         expect(getComputedStyle(element(".kcq-difficulty-select__body")).gridTemplateColumns).toBe("minmax(0, 35fr) minmax(0, 65fr)");
         expect(getComputedStyle(element(".kcq-difficulty-select__choices")).gridTemplateColumns).toBe("minmax(0, 1fr)");
         expect(choices().every(choice => getComputedStyle(choice).width === "100%")).toBe(true);
@@ -151,7 +145,7 @@ describe("difficulty selection responsive layout", () => {
         expect(element(".kcq-difficulty-select__rules-table")).toBe(table);
     });
 
-    it.each([desktop, mobile])("preserves header controls, footer clicks and shortcuts in layout %j", layout => {
+    it.each(Object.values(responsiveLayouts))("preserves header controls, footer clicks and shortcuts in layout %j", layout => {
         const { element, onBack, onStart, onSettings, onLibrary } = mount(layout);
         expect(element("h1").textContent).toBe(presentation.encounter("forest_3"));
         element<HTMLButtonElement>(".kcq-combat-header__settings").click();

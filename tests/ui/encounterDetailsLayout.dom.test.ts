@@ -1,33 +1,35 @@
 import { readFileSync } from "node:fs";
-import { createComponent, createSignal } from "solid-js";
+import { createComponent, createRenderEffect, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { EncounterDetailsPanel } from "../../src/ui/web/app/components/EncounterDetailsPanel";
 import { useCombatKeyboard } from "../../src/ui/web/app/keyboard";
-import { ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import { LAYOUT_WIDTHS, ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import { createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { stockStrings } from "../helpers/stockStrings";
+import { responsiveLayouts, responsivePresentationCases } from "../helpers/responsiveLayouts";
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
-const desktop: ResponsiveLayout = { columns: 3, size: "wide", zoom: 1, availableWidth: 1068 };
-const mobile: ResponsiveLayout = { columns: 1, size: "narrow", zoom: 1, availableWidth: 366 };
+const desktop = responsiveLayouts.wide;
+const mobile = responsiveLayouts.narrow;
 const combat = () => createEncounterDetailsViewModel(library, "outside", presentation, "standard");
 let dispose: (() => void) | undefined;
 afterEach(() => { dispose?.(); document.body.replaceChildren(); });
 
-function mount(model = combat(), initialLayout = desktop) {
+function mount(model = combat(), initialLayout: ResponsiveLayout = desktop) {
     const style = document.createElement("style");
     style.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + readFileSync("src/ui/web/app/app.css", "utf8");
     const host = document.createElement("div");
     host.className = "kcq-graphical-app__background";
     host.style.setProperty("--kcq-ui-height", "480px");
     document.body.append(style, host);
-    const [layout, setLayout] = createSignal(initialLayout);
+    const [layout, setLayout] = createSignal<ResponsiveLayout>(initialLayout);
     const onBack = vi.fn(), onChooseDifficulty = vi.fn(), onNextLevel = vi.fn(), onSettings = vi.fn(), onLibrary = vi.fn();
     dispose = render(() => {
+        createRenderEffect(() => host.style.setProperty("--kcq-layout-width", `${LAYOUT_WIDTHS[layout().columns]}px`));
         useCombatKeyboard(() => host, () => true, () => false, () => "always");
         return createComponent(ResponsiveLayoutContext.Provider, {
             value: layout,
@@ -52,9 +54,10 @@ function press(key: string, target: EventTarget = document) {
 }
 
 describe("encounter details responsive layout", () => {
-    it("places a compact summary above two columns and centers compact footer actions", () => {
-        const { host, element, onBack, onChooseDifficulty, onSettings, onLibrary } = mount();
-        expect(getComputedStyle(host).width).toBe("840px");
+    it.each([responsiveLayouts.medium, responsiveLayouts.wide])("places a compact summary above two columns and centers compact footer actions in $size", layout => {
+        const { host, element, onBack, onChooseDifficulty, onSettings, onLibrary } = mount(undefined, layout);
+        expect(getComputedStyle(host).width).toBe(`${LAYOUT_WIDTHS[layout.columns]}px`);
+        expect(getComputedStyle(element(".kcq-encounter-details")).width).toBe("100%");
         expect(getComputedStyle(element(".kcq-encounter-header")).width).toBe("100%");
         expect(element("h1").textContent).toBe(combat().name);
         const summary = element(".kcq-encounter-details__info");
@@ -83,15 +86,7 @@ describe("encounter details responsive layout", () => {
         expect(onBack).toHaveBeenCalledOnce();
     });
 
-    it.each([
-        [{ columns: 3, size: "wide", zoom: 1, availableWidth: 366 }, false],
-        [{ columns: 3, size: "wide", zoom: 1, availableWidth: 839 }, false],
-        [{ columns: 2, size: "medium", zoom: 1, availableWidth: 840 }, true],
-        [{ columns: 2, size: "medium", zoom: 1.5, availableWidth: 1259 }, false],
-        [{ columns: 1, size: "narrow", zoom: 1.5, availableWidth: 1260 }, true],
-        [{ columns: 2, size: "medium", zoom: 1 }, false],
-        [{ columns: 3, size: "wide", zoom: 1 }, true],
-    ] satisfies [ResponsiveLayout, boolean][])("fits the zoomed canvas with layout %j: %s", (layout, wide) => {
+    it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, wide) => {
         const { host } = mount(undefined, layout);
         expect(!!host.querySelector(".kcq-encounter-details--desktop")).toBe(wide);
     });

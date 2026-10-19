@@ -1,10 +1,12 @@
 import type { Window as HappyWindow } from "happy-dom";
 import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
-import { render } from "solid-js/web";
+import { insert, render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
+import { App } from "../../src/ui/web/app/App";
+import { LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
 import { BattleApp, WIDE_BATTLE_OVERVIEW_BREAKPOINT } from "../../src/ui/web/app/BattleApp";
 import { ScreenLayout } from "../../src/ui/web/app/components/ScreenLayout";
 import { battleOverviewFixture as fixture } from "../../src/ui/web/app/fixtures/battleOverview";
@@ -14,17 +16,33 @@ import { BattleOverviewPanel, type BattleOverviewSections } from "../../src/ui/w
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let unmount: (() => void) | undefined;
-beforeEach(() => { viewport.setViewport({ width: 390, height: 844 }); window.localStorage.clear(); });
+beforeEach(() => {
+    viewport.setViewport({ width: 390, height: 844 }); window.localStorage.clear();
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(function (this: HTMLElement) {
+        return this.matches(".kcq-app") ? window.innerWidth : 0;
+    });
+});
 afterEach(() => {
     unmount?.(); unmount = undefined;
     document.body.replaceChildren(); viewport.setViewport(initialViewport);
     window.localStorage.clear(); vi.restoreAllMocks();
 });
-function mount(view: Parameters<typeof render>[0]): HTMLElement {
+function mount(view: Parameters<typeof render>[0], responsive = false): HTMLElement {
     const style = document.createElement("style");
     style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
     const host = document.createElement("div"); host.className = "kcq-graphical-app__background";
-    document.body.append(style, host); unmount = render(view, host); return host;
+    document.body.append(style);
+    if (responsive) {
+        const root = document.createElement("div");
+        document.body.append(root);
+        unmount = render(() => createComponent(App, {
+            get children() { insert(host, view()); return host; },
+        }), root);
+    } else {
+        document.body.append(host);
+        unmount = render(view, host);
+    }
+    return host;
 }
 function mountBattle(width = 1920, lines = 3, initialState: GameState = fixture.state) {
     viewport.setViewport({ width, height: 1080 });
@@ -35,7 +53,7 @@ function mountBattle(width = 1920, lines = 3, initialState: GameState = fixture.
     const execute = vi.spyOn(engine, "executeAction").mockReturnValue({ success: false, reason: "actorAlreadyActed" });
     const host = mount(() => createComponent(BattleApp, {
         engine, presentation: fixture.presentation, overviewGameLog: { value: lines, onChange: vi.fn() },
-    }));
+    }), true);
     return { host, execute };
 }
 function element(selector: string): HTMLElement {
@@ -99,7 +117,7 @@ describe("overview section configuration", () => {
 });
 
 describe("responsive battle overview", () => {
-    it.each([390, 1091, 1920])("keeps temporary and permanent status indicators inline in expanded cards (%ipx)", width => {
+    it.each([390, 1169, 1920])("keeps temporary and permanent status indicators inline in expanded cards (%ipx)", width => {
         const state: GameState = structuredClone(fixture.state);
         state.enemies = [{
             ...state.enemies[0]!, id: "queen", buffs: [
@@ -147,7 +165,7 @@ describe("responsive battle overview", () => {
             expect(header.querySelector(".kcq-enemy-card__hp-meter")).toBeNull();
         }
     });
-    it.each([390, 1091, 1920])("adds the HP meter and moves linked icons left in expanded mode at %ipx", width => {
+    it.each([390, 1169, 1920])("adds the HP meter and moves linked icons left in expanded mode at %ipx", width => {
         const state: GameState = structuredClone(fixture.state);
         const enemy = state.enemies[0]!;
         enemy.currHp = 50; enemy.maxHp = 200;
@@ -166,7 +184,7 @@ describe("responsive battle overview", () => {
             expect(getComputedStyle(meter).maxWidth).toBe("90px");
         }
     });
-    it.each([390, 779, 780, 1091, 1092, 1920, 2560])("mounts only the active arrangement at %ipx", width => {
+    it.each([390, 779, 780, 1169, 1170, 1920, 2560])("mounts only the active arrangement at %ipx", width => {
         const { host } = mountBattle(width); const desktop = width >= 780;
         const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
         const panels = [...host.querySelectorAll(".kcq-battle-overview")];
@@ -180,7 +198,7 @@ describe("responsive battle overview", () => {
             expect(panels[0]!.querySelector(".kcq-combat-header")).not.toBeNull();
             expect(panels[0]!.querySelector(".kcq-screen-layout__body")).toBeNull();
             expect(getComputedStyle(panels[0]!).gridColumn).toBe("1 / -1");
-            expect(getComputedStyle(host).width).toBe("100%");
+            expect(getComputedStyle(host).width).toBe(`${LAYOUT_WIDTHS[3]}px`);
             expect(getComputedStyle(element(".kcq-battle-overview-wide")).gridTemplateColumns)
                 .toBe("366px 366px 366px");
             expect([...host.querySelectorAll(".kcq-battle-section")].map(section => section.className))
@@ -216,7 +234,7 @@ describe("responsive battle overview", () => {
         const { host } = mountBattle(779);
         const fullCount = fixture.state.enemies.reduce((count, enemy) => count + enemy.intentions.length, 0);
         const summaryCount = fixture.state.enemies.reduce((count, enemy) => count + Math.min(2, enemy.intentions.length), 0);
-        for (const width of [1920, 1091, 390, 1092]) {
+        for (const width of [1920, 1169, 390, 1170]) {
             viewport.setViewport({ width });
             const expanded = width >= 780;
             expect(host.querySelectorAll(".kcq-enemy-card__intent-slot"), String(width)).toHaveLength(expanded ? fullCount : summaryCount);
@@ -301,7 +319,7 @@ describe("responsive battle overview", () => {
     });
     it("switches repeatedly without duplicate shortcuts, controls, or engine actions", () => {
         const { host, execute } = mountBattle(779);
-        for (const width of [780, 779, 1091, 1092, 1920, 1091, 390, 780]) {
+        for (const width of [780, 779, 1169, 1170, 1920, 1169, 390, 780]) {
             viewport.setViewport({ width });
             expect(host.querySelectorAll(".kcq-battle-overview")).toHaveLength(width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT ? 4 : width >= 780 ? 2 : 1);
             const ids = [...host.querySelectorAll("[id]")].map(node => node.id);
@@ -313,7 +331,7 @@ describe("responsive battle overview", () => {
         }
         expect(execute.mock.calls.every(([action]) => action.type === "endTurn")).toBe(true);
     });
-    it.each([390, 780, 1091])("preserves full Game Log navigation below the wide breakpoint at %ipx", width => {
+    it.each([390, 780, 1169])("preserves full Game Log navigation below the wide breakpoint at %ipx", width => {
         const { host } = mountBattle(width);
         element(width < 780 ? ".kcq-compact-game-log" : ".kcq-game-log-heading-action").click();
         expect(host.querySelector(".kcq-game-log")).not.toBeNull();
@@ -327,7 +345,7 @@ describe("responsive battle overview", () => {
         press(COMBAT_SHORTCUTS.back); press("4"); expect(host.querySelector(".kcq-enemy-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); expect(host.querySelector(".kcq-compact-game-log")).toBeNull();
         press(COMBAT_SHORTCUTS.gameLog); expect(host.querySelector(".kcq-game-log")).not.toBeNull();
-        expect(getComputedStyle(host).width).toBe("366px");
+        expect(getComputedStyle(host).width).toBe(`${LAYOUT_WIDTHS[3]}px`);
         press(COMBAT_SHORTCUTS.back); viewport.setViewport({ width: 390 });
         press("1"); expect(host.querySelector(".kcq-character-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); viewport.setViewport({ width: 1920 });

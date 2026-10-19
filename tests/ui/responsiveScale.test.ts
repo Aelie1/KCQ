@@ -95,9 +95,11 @@ describe("column-first scaling", () => {
     it.each([
         [296, 1, "narrow", 1], [366, 1, "narrow", 1], [500, 1, "narrow", 500 / 366], [755, 1, "narrow", 1.5],
         [755.999, 1, "narrow", 1.5], [756, 2, "medium", 1], [756.001, 2, "medium", 756.001 / 756],
-        [900, 2, "medium", 900 / 756], [1067, 2, "medium", 1067 / 756], [1067.999, 2, "medium", 1067.999 / 756],
-        [1068, 3, "wide", 1], [1068.001, 3, "wide", 1068.001 / 1068],
-        [1256, 3, "wide", 1256 / 1068], [1602, 3, "wide", 1.5], [2500, 3, "wide", 1.5],
+        [900, 2, "medium", 900 / 756], [1145, 2, "medium", 1.5], [1145.999, 2, "medium", 1.5],
+        [1146, 3, "wide", 1], [1146.001, 3, "wide", 1146.001 / LAYOUT_WIDTHS[3]],
+        [1256, 3, "wide", 1256 / LAYOUT_WIDTHS[3]],
+        [LAYOUT_WIDTHS[3] * 1.5 - 0.001, 3, "wide", (LAYOUT_WIDTHS[3] * 1.5 - 0.001) / LAYOUT_WIDTHS[3]],
+        [LAYOUT_WIDTHS[3] * 1.5, 3, "wide", 1.5], [2500, 3, "wide", 1.5],
     ])("fits the maximum columns at 100%% into %ipx before scaling", (width, columns, size, zoom) => {
         expect(calculateResponsiveLayout(width)).toEqual({ columns, size, zoom });
     });
@@ -106,7 +108,7 @@ describe("column-first scaling", () => {
         ["1", "narrow"], ["2", "medium"], ["3", "wide"],
     ] as const)("keeps forced %s columns throughout resizing with size %s", (preference, size) => {
         const columns = Number(preference) as 1 | 2 | 3;
-        for (const width of [296, 366, 755, 756, 1067, 1068, 1256, 2500, 366]) {
+        for (const width of [296, 366, 755, 756, 1145, 1146, 1256, 2500, 366]) {
             const layout = calculateResponsiveLayout(width, preference);
             expect(layout.columns).toBe(columns);
             expect(layout.size).toBe(size);
@@ -116,34 +118,37 @@ describe("column-first scaling", () => {
     });
 
     it("publishes canonical layout sizes as the shell crosses boundaries in both directions", () => {
-        const { shell, observedResize, onLayout } = viewport(390);
+        const { shell, style, observedResize, onLayout } = viewport(390);
         expect(shell.dataset.kcqLayout).toBe("narrow");
         for (const [availableWidth, size] of [
-            [755.999, "narrow"], [756, "medium"], [1067.999, "medium"], [1068, "wide"],
-            [1067.999, "medium"], [755.999, "narrow"],
+            [755.999, "narrow"], [756, "medium"], [1145.999, "medium"], [1146, "wide"],
+            [1145.999, "medium"], [755.999, "narrow"],
         ] as const) {
             shell.clientWidth = availableWidth + 24;
             observedResize();
             expect(shell.dataset.kcqLayout).toBe(size);
             expect(onLayout.mock.lastCall![0]).toMatchObject({ size, availableWidth });
+            expect(style.get("--kcq-layout-width")).toBe(`${LAYOUT_WIDTHS[calculateResponsiveLayout(availableWidth).columns]}px`);
         }
     });
 
     it.each([
         ["1", "narrow"], ["2", "medium"], ["3", "wide"],
     ] as const)("publishes forced %s columns as %s independently of shell width", (columns, size) => {
-        const { shell, observedResize } = viewport(390, 844, undefined, columns);
+        const { shell, style, observedResize } = viewport(390, 844, undefined, columns);
         expect(shell.dataset.kcqLayout).toBe(size);
+        expect(style.get("--kcq-layout-width")).toBe(`${LAYOUT_WIDTHS[Number(columns) as 1 | 2 | 3]}px`);
         shell.clientWidth = 1920;
         observedResize();
         expect(shell.dataset.kcqLayout).toBe(size);
+        expect(style.get("--kcq-layout-width")).toBe(`${LAYOUT_WIDTHS[Number(columns) as 1 | 2 | 3]}px`);
         expect(shell.dataset.kcqTitleLayout).toBe("desktop");
     });
 
     it("uses the unzoomed shell width and stays stable at breakpoints", () => {
         const { shell, style, observedResize } = viewport(1280);
-        expect(parseFloat(style.get("--kcq-ui-zoom")!)).toBeCloseTo(1.176);
-        for (const breakpoint of [780, 1092]) {
+        expect(parseFloat(style.get("--kcq-ui-zoom")!)).toBeCloseTo((1280 - 24) / LAYOUT_WIDTHS[3]);
+        for (const breakpoint of [LAYOUT_WIDTHS[2] + 24, LAYOUT_WIDTHS[3] + 24]) {
             for (const width of [breakpoint - 1, breakpoint, breakpoint + 1, breakpoint, breakpoint - 1]) {
                 shell.clientWidth = width;
                 observedResize();

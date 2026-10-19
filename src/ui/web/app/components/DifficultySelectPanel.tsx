@@ -1,7 +1,7 @@
 import { For, Show, useContext, type JSX } from "solid-js";
 import type { DifficultyId } from "../../../../engine/public/types";
 import { COMBAT_SHORTCUTS } from "../keyboard";
-import { LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
+import { ResponsiveLayoutContext } from "../responsiveScale";
 import type { DifficultySelectViewModel } from "../viewModels/difficulty";
 import { EffectPreview } from "./EffectPreview";
 import { EncounterHeader } from "./EncounterHeader";
@@ -18,13 +18,7 @@ export function DifficultySelectPanel(props: {
     onStart: () => void;
 }): JSX.Element {
     const responsiveLayout = useContext(ResponsiveLayoutContext);
-    const desktop = () => {
-        const layout = responsiveLayout?.();
-        // Match the encounter details canvas, accounting for the app's UI zoom.
-        return !!layout && (layout.availableWidth === undefined
-            ? LAYOUT_WIDTHS[layout.columns] >= 840
-            : layout.zoom <= layout.availableWidth / 840);
-    };
+    const desktop = () => (responsiveLayout?.().size ?? "narrow") !== "narrow";
     return <ScreenLayout class={`kcq-encounter-screen kcq-difficulty-select${desktop() ? " kcq-difficulty-select--desktop" : ""}`}
         header={<EncounterHeader title={props.model.encounterName} settingsLabel={props.model.labels.settings} onSettings={props.onSettings}
             libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} />}

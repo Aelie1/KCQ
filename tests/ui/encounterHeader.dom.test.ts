@@ -13,10 +13,11 @@ import type { LibrarySettingsControlsProps } from "../../src/ui/web/app/componen
 import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { useCombatKeyboard } from "../../src/ui/web/app/keyboard";
-import { layoutSize, ResponsiveLayoutContext } from "../../src/ui/web/app/responsiveScale";
+import { calculateResponsiveLayout, ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import { createEncounterPickerViewModel, createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 import { stockStrings } from "../helpers/stockStrings";
+import { responsivePresentationCases } from "../helpers/responsiveLayouts";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
@@ -32,17 +33,14 @@ afterEach(() => {
     viewport.setViewport(initialViewport);
 });
 
-function mount(view: Parameters<typeof render>[0]): HTMLElement {
+function mount(view: Parameters<typeof render>[0], selectedLayout?: ResponsiveLayout): HTMLElement {
     const style = document.createElement("style");
     style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
     document.body.append(style);
     const host = document.createElement("div");
     document.body.append(host);
     unmount = render(() => createComponent(ResponsiveLayoutContext.Provider, {
-        value: () => {
-            const columns = window.innerWidth >= 756 ? 2 : 1;
-            return { columns, size: layoutSize(columns), zoom: 1, availableWidth: window.innerWidth };
-        },
+        value: () => selectedLayout ?? calculateResponsiveLayout(window.innerWidth - 24),
         get children() { return view(); },
     }), host);
     return host;
@@ -70,7 +68,14 @@ const screens = [
 ];
 
 describe("shared Library and Settings header controls", () => {
-    it.each([320, 390, 1024])("places the accessible Show All control between the title and buttons at width %s", width => {
+    it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, compact) => {
+        const host = mount(() => createComponent(EncounterHeader, { title: "Encounter", settingsLabel: "Settings" }), layout);
+        expect(!!host.querySelector(".kcq-encounter-header--compact")).toBe(compact);
+        const controls = host.querySelector(".kcq-header-controls")!;
+        expect(getComputedStyle(controls).gridTemplateRows.includes("repeat(2,")).toBe(!compact);
+    });
+
+    it.each([320, 390, 779, 780, 1024, 1169, 1170])("places the accessible Show All control between the title and buttons at width %s", width => {
         viewport.setViewport({ width });
         const onShowAllChange = vi.fn(); const globalAction = vi.fn(() => false);
         const host = mount(() => {
@@ -86,18 +91,18 @@ describe("shared Library and Settings header controls", () => {
         const controls = header.querySelector<HTMLElement>(".kcq-header-controls")!;
         expect(label.previousElementSibling).toBe(header.querySelector("h1"));
         expect(label.nextElementSibling).toBe(controls);
-        expect(getComputedStyle(header).gridTemplateColumns).toBe(width >= 756 ? "minmax(0, 1fr) auto auto" : "minmax(0, 1fr) auto 42px");
+        expect(getComputedStyle(header).gridTemplateColumns).toBe(width >= 780 ? "minmax(0, 1fr) auto auto" : "minmax(0, 1fr) auto 42px");
         expect(parseFloat(getComputedStyle(header.querySelector("h1")!).minWidth)).toBe(0);
         expect(header.querySelector("h1")?.textContent).toBe("Localized campaign");
         expect(getComputedStyle(label).display).toBe("flex");
         expect(getComputedStyle(label).alignItems).toBe("center");
         const text = label.querySelector("span")!;
         expect(checkbox.nextElementSibling).toBe(text);
-        expect(getComputedStyle(text).width).toBe(width >= 756 ? "auto" : "min-content");
-        expect(getComputedStyle(text).whiteSpace).toBe(width >= 756 ? "nowrap" : "normal");
+        expect(getComputedStyle(text).width).toBe(width >= 780 ? "auto" : "min-content");
+        expect(getComputedStyle(text).whiteSpace).toBe(width >= 780 ? "nowrap" : "normal");
         expect(text.textContent).toBe(presentation.ui("encounter.showAll"));
         expect(text.childElementCount).toBe(0);
-        expect(getComputedStyle(controls).gridTemplateRows.includes("repeat(2,")).toBe(width < 756);
+        expect(getComputedStyle(controls).gridTemplateRows.includes("repeat(2,")).toBe(width < 780);
         expect(host.querySelector(".kcq-screen-layout__body .kcq-encounter-picker__show-all")).toBeNull();
         expect(checkbox.type).toBe("checkbox");
         expect(checkbox.tabIndex).toBe(0);
@@ -114,7 +119,7 @@ describe("shared Library and Settings header controls", () => {
         expect(globalAction).not.toHaveBeenCalled();
     });
 
-    it.each(screens.flatMap(screen => [320, 390, 1024].map(width => ({ ...screen, width }))))(
+    it.each(screens.flatMap(screen => [320, 390, 779, 780, 1024, 1169, 1170].map(width => ({ ...screen, width }))))(
         "keeps labeled $name actions keyboard accessible at width $width", screen => {
             viewport.setViewport({ width: screen.width });
             const onLibrary = vi.fn();
@@ -131,7 +136,7 @@ describe("shared Library and Settings header controls", () => {
             expect(!!host.querySelector(".kcq-encounter-picker__show-all")).toBe(screen.name === "picker");
             const controls = host.querySelector<HTMLElement>(".kcq-header-controls")!;
             const buttons = [...controls.querySelectorAll<HTMLButtonElement>("button")];
-            const compact = screen.width >= 756 && screen.name !== "combat";
+            const compact = screen.width >= 780 && screen.name !== "combat";
             expect(buttons.map(button => button.getAttribute("aria-label"))).toEqual(compact ? ["Bibliotheque", "Options"] : ["Options", "Bibliotheque"]);
             expect(host.querySelector(".kcq-screen-layout__body .kcq-library-access")).toBeNull();
             const layout = getComputedStyle(controls);

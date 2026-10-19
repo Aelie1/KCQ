@@ -50,9 +50,9 @@ button {
 }
 
 .kcq-graphical-app__background {
-    width: 366px;
-    max-width: 100%;
-    min-width: 0;
+    width: var(--kcq-layout-width, 366px);
+    min-width: var(--kcq-layout-width, 366px);
+    flex-shrink: 0;
 }
 
 .kcq-app {
@@ -65,20 +65,6 @@ button {
     justify-content: safe center;
     height: 100%;
     overflow-x: auto;
-}
-
-/* Keep layouts wider than the viewport reachable by horizontal scrolling. */
-.kcq-graphical-app__background {
-    flex-shrink: 0;
-    min-width: var(--kcq-ui-min-width, 0px);
-}
-
-.kcq-graphical-app__background:has(.kcq-battle-overview-columns):not(:has(.kcq-game-log)) {
-    min-width: 756px;
-}
-
-.kcq-graphical-app__background:has(.kcq-battle-overview-wide, .kcq-character-details-wide):not(:has(.kcq-game-log)) {
-    min-width: 1068px;
 }
 
 .kcq-screen-layout {
@@ -450,11 +436,6 @@ button {
     opacity: 0.65;
 }
 
-/* Keep the existing card canvases and scale on desktop. */
-.kcq-graphical-app__background:has(.kcq-battle-overview-columns):not(:has(.kcq-game-log)) {
-    width: 756px;
-}
-
 .kcq-battle-overview-columns {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -501,10 +482,6 @@ button {
 .kcq-battle-overview-columns .kcq-compact-game-log {
     max-height: 180px;
     overflow-y: auto;
-}
-
-.kcq-graphical-app__background:has(.kcq-battle-overview-wide, .kcq-character-details-wide):not(:has(.kcq-game-log)) {
-    width: 100%;
 }
 
 .kcq-battle-overview-wide,
@@ -3446,11 +3423,6 @@ button {
     cursor: default;
 }
 
-/* Catalog entry screens share the combat canvas, cards, tokens and controls. */
-.kcq-graphical-app__background:has(.kcq-encounter-screen) {
-    min-width: 0;
-}
-
 .kcq-encounter-header {
     grid-template-columns: minmax(0, 1fr) 42px;
     gap: 8px;
@@ -3593,15 +3565,6 @@ button {
 .kcq-encounter-picker__best-clear {
     font-size: 12px;
     line-height: 16px;
-}
-
-/* Use the app's column selection so the overview fits the zoomed canvas. */
-.kcq-graphical-app__background:has(.kcq-encounter-picker--overview) {
-    width: 756px;
-}
-
-.kcq-graphical-app__background:has(.kcq-encounter-picker--wide) {
-    width: 1068px;
 }
 
 .kcq-encounter-picker--overview,
@@ -3856,10 +3819,6 @@ button {
     gap: 12px;
 }
 
-.kcq-graphical-app__background:has(.kcq-encounter-details--desktop) {
-    width: 756px;
-}
-
 .kcq-encounter-details--desktop,
 .kcq-encounter-details--desktop .kcq-encounter-header {
     width: 100%;
@@ -3982,10 +3941,6 @@ button {
 }
 
 /* Party selection uses the same scrolling body and pinned actions as encounter screens. */
-.kcq-graphical-app__background:has(.kcq-party-selection) {
-    width: 960px;
-}
-
 .kcq-party-selection {
     width: 100%;
 }
@@ -4283,10 +4238,6 @@ button {
 }
 
 /* Keep the five choices visible while longer difficulty information scrolls. */
-.kcq-graphical-app__background:has(.kcq-difficulty-select--desktop) {
-    width: 756px;
-}
-
 .kcq-difficulty-select--desktop,
 .kcq-difficulty-select--desktop .kcq-encounter-header {
     width: 100%;
@@ -4713,17 +4664,9 @@ button {
     grid-template-columns: 1fr;
 }
 
-/* Expand only the title screen's shell, in the existing zoomed coordinates. */
+/* ScreenLayout owns vertical title scrolling; forced canvases can scroll horizontally. */
 .kcq-app:has(> .kcq-graphical-app__background > .kcq-title-screen) {
-    /* Outer scrollbars must not change the width used to calculate zoom.
-       ScreenLayout's middle row owns title-screen scrolling. */
-    overflow: hidden;
-}
-
-.kcq-graphical-app__background:has(> .kcq-title-screen) {
-    width: 100%;
-    max-width: none;
-    min-width: 0;
+    overflow-y: hidden;
 }
 
 .kcq-title-screen {

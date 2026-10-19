@@ -53,7 +53,7 @@ function press(key: string, target: EventTarget = document): KeyboardEvent {
 
 const gameLog = () => document.querySelector<HTMLElement>('[role="log"]') ?? element(".kcq-battle-section--game-log");
 
-describe.each([780, 1091, 1920])("desktop enemy details at %ipx", width => {
+describe.each([780, 1169, 1920])("desktop enemy details at %ipx", width => {
     beforeEach(() => viewport.setViewport({ width }));
     it("replaces only the enemy column and restores the list with the identity back button", () => {
         const { execute } = mountBattle();
@@ -146,7 +146,7 @@ describe.each([780, 1091, 1920])("desktop enemy details at %ipx", width => {
     it("keeps the selected enemy across responsive changes without duplicate content or shortcuts", () => {
         mountBattle();
         press("5");
-        for (const width of [1091, 780, 390, 1092, 1920]) {
+        for (const width of [1169, 780, 390, 1170, 1920]) {
             viewport.setViewport({ width });
             expect(document.querySelectorAll(".kcq-enemy-details")).toHaveLength(1);
             expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 2");

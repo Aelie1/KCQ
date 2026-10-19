@@ -53,6 +53,7 @@ export function setupResponsiveScale(
         const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
 
         shell.style.setProperty("--kcq-ui-zoom", String(zoom));
+        shell.style.setProperty("--kcq-layout-width", `${LAYOUT_WIDTHS[layout.columns]}px`);
         shell.style.setProperty("--kcq-ui-min-width", "366px");
         shell.style.setProperty("--kcq-ui-height", `${Math.max(0, viewportHeight - verticalPadding) / zoom}px`);
         shell.dataset.kcqLayout = layout.size;

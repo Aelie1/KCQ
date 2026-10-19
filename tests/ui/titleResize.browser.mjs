@@ -78,7 +78,7 @@ try {
             overflow: shell.scrollWidth > shell.clientWidth || body.scrollWidth > body.clientWidth,
         };
     })()`);
-    const widths = [375, 600, 779, 780, 781, 800, 950, 1024, 1091, 1092, 1280, 1600, 1920]
+    const widths = [375, 600, 779, 780, 781, 800, 950, 1024, 1169, 1170, 1280, 1600, 1920]
         .flatMap(width => [0, .2, .4, .6, .8].map(fraction => width + fraction));
     for (const width of [...widths, ...widths.toReversed()]) {
         await evaluate(`document.getElementById("root").style.width = ${JSON.stringify(`${width}px`)}`);

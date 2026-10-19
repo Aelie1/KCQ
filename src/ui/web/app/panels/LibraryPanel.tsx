@@ -32,7 +32,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     const navigation = createLibraryNavigation(props.initialPage);
     const page = createMemo(() => navigation.current().page);
     const layout = useContext(ResponsiveLayoutContext);
-    const desktop = () => (layout?.().columns ?? 1) > 1;
+    const desktop = () => (layout?.().size ?? "narrow") !== "narrow";
     const headingId = createUniqueId();
     const treeId = createUniqueId();
     const [expanded, setExpanded] = createSignal<Partial<Record<LibraryCategory, boolean>>>({});

@@ -414,8 +414,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     // Standalone battles have no App shell; use the same calculation and padding.
     const [viewportWidth, setViewportWidth] = createSignal(typeof window === "undefined" ? 390 : window.innerWidth);
     const layout = sharedLayout ?? createMemo(() => calculateResponsiveLayout(viewportWidth() - 24, viewPreferences.columns));
-    const wide = () => layout().columns === 3;
-    const desktop = () => layout().columns > 1;
+    const wide = () => layout().size === "wide";
+    const desktop = () => layout().size !== "narrow";
     const expandedEnemies = () => viewPreferences.enemyCards === "auto" ? desktop() : viewPreferences.enemyCards === "expanded";
     onMount(() => {
         if (sharedLayout) return;

@@ -1,6 +1,6 @@
 import { createEffect, createSignal, createUniqueId, For, on, Show, useContext, type JSX } from "solid-js";
 import { COMBAT_SHORTCUTS } from "../keyboard";
-import { LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
+import { ResponsiveLayoutContext } from "../responsiveScale";
 import type { EncounterDetailsViewModel } from "../viewModels/encounters";
 import { EffectPreview } from "./EffectPreview";
 import { EncounterHeader } from "./EncounterHeader";
@@ -19,13 +19,7 @@ export function EncounterDetailsPanel(props: {
     model: EncounterDetailsViewModel; onBack: () => void; onChooseDifficulty: () => void;
 }): JSX.Element {
     const responsiveLayout = useContext(ResponsiveLayoutContext);
-    const desktop = () => {
-        const layout = responsiveLayout?.();
-        // 450px narrative + 24px gutter + the existing 366px information canvas.
-        return !!layout && (layout.availableWidth === undefined
-            ? LAYOUT_WIDTHS[layout.columns] >= 840
-            : layout.zoom <= layout.availableWidth / 840);
-    };
+    const desktop = () => (responsiveLayout?.().size ?? "narrow") !== "narrow";
     const hasInformation = () => props.model.enemies.length > 0 || props.model.effects.length > 0 || props.model.effectGroups.length > 0;
     const [selectedTab, setSelectedTab] = createSignal<NarrativeTab>("description");
     createEffect(on(() => props.model.id, () => setSelectedTab("description")));
