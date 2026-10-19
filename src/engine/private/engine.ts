@@ -448,6 +448,21 @@ export class GameEngine implements Engine {
                             actions: this.getActionView(),
                         };
                     }
+                    for (let i = 0; i < targetInfo.length; i++) {
+                        const target = targetInfo[i].target;
+                        const targetStatus = target && isValidEntity(this.state, target)
+                            ? new GameStatus(this.state, target)
+                            : null;
+
+                        targetInfo[i] = isValidTarget(
+                            this.state,
+                            actor,
+                            status,
+                            target,
+                            targetStatus,
+                            move
+                        );
+                    }
                 }
 
                 const iMove: iMove = { definition: move };

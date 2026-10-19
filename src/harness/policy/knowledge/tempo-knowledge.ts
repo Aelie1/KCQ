@@ -255,9 +255,10 @@ function queenAddClearRules(
             && remainingReinforcementThresholds.length > 0;
         const phaseStackingCrossing = pendingPhaseIntentions.length > 0
             ? thresholdCrossingProbabilities[0]
-            : thresholdCrossingProbabilities[1];
+            : undefined;
         const phaseStackingProbability = phaseStackingCrossing?.probability ?? 0;
-        const unresolvedPendingPhase = phaseStackingProbability > 0;
+        const unresolvedPendingPhase = pendingPhaseIntentions.length > 0
+            && phaseStackingProbability > 0;
         if (!unresolvedLivingAdds && !unresolvedPendingPhase) continue;
 
         const expectedLethalBypassed = expectedDamage >= queen.currHp;
