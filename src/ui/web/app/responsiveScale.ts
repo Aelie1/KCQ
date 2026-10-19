@@ -1,7 +1,6 @@
 import { createContext, createRenderEffect, createRoot, useContext, type Accessor } from "solid-js";
 import { ViewPreferencesContext, type BattleColumns, type ViewPreferences } from "./viewPreferences";
 
-// Match app.css: 366px canvases, 24px gutters, and a 288px third column.
 export const BATTLE_LAYOUT_WIDTHS = { 1: 366, 2: 756, 3: 1068 } as const;
 export type LayoutSize = "narrow" | "medium" | "wide";
 
