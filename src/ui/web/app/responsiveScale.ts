@@ -10,6 +10,9 @@ export const LAYOUT_WIDTHS = {
     3: COLUMN_WIDTH * 3 + COLUMN_GAP * 2,
 } as const;
 
+export const AUTO_MEDIUM_BREAKPOINT = 800;
+export const AUTO_WIDE_BREAKPOINT = 1400;
+
 export type LayoutSize = "narrow" | "medium" | "wide";
 
 export function layoutSize(columns: 1 | 2 | 3): LayoutSize {
@@ -25,11 +28,20 @@ export interface ResponsiveLayout {
 export const ResponsiveLayoutContext = createContext<Accessor<ResponsiveLayout>>();
 
 /** Choose columns at 100% first, then fit that layout without shrinking it. */
-export function calculateResponsiveLayout(availableWidth: number, preference: BattleColumns = "auto"): ResponsiveLayout {
+export function calculateResponsiveLayout(
+    availableWidth: number,
+    preference: BattleColumns = "auto",
+): ResponsiveLayout {
     const columns = preference === "auto"
-        ? availableWidth >= LAYOUT_WIDTHS[3] ? 3 : availableWidth >= LAYOUT_WIDTHS[2] ? 2 : 1
-        : Number(preference) as 1 | 2 | 3;
-    return { columns, size: layoutSize(columns), zoom: Math.min(1.5, Math.max(1, availableWidth / LAYOUT_WIDTHS[columns])) };
+        ? availableWidth >= (AUTO_WIDE_BREAKPOINT - COLUMN_GAP) ? 3
+            : availableWidth >= (AUTO_MEDIUM_BREAKPOINT - COLUMN_GAP) ? 2
+                : 1 : Number(preference) as 1 | 2 | 3;
+
+    return {
+        columns,
+        size: layoutSize(columns),
+        zoom: Math.min(1.5, Math.max(1, availableWidth / LAYOUT_WIDTHS[columns])),
+    };
 }
 
 /** Publish viewport dimensions in the coordinates used by the zoomed screens. */

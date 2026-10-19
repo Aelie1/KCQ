@@ -41,7 +41,7 @@ import { LibraryPanel } from "./panels/LibraryPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
 import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
-import { calculateResponsiveLayout, LAYOUT_WIDTHS, ResponsiveLayoutContext, setupResponsiveScale } from "./responsiveScale";
+import { calculateResponsiveLayout, ResponsiveLayoutContext, setupResponsiveScale } from "./responsiveScale";
 import { createSavePackage, type SavePackage } from "./savePackage";
 import { clearSave, writeSave } from "./savePersistence";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
@@ -85,9 +85,6 @@ export type BattleScreen =
 type CharacterScreen = Extract<BattleScreen, { kind: "character" }>;
 type EscapeScreen = Extract<BattleScreen, { kind: "escape" }>;
 type TargetingScreen = Extract<BattleScreen, { kind: "targeting" }>;
-
-// Layout width at 100%, plus the shell's 12px padding on each side.
-export const WIDE_BATTLE_OVERVIEW_BREAKPOINT = LAYOUT_WIDTHS[3] + 24;
 
 interface CurrentTargeting {
     action: ActionInfo;
@@ -657,22 +654,22 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         });
         return <Portal mount={logModal() ? document.body : stage} ref={container => { container.style.display = "contents"; }}>
             <div ref={host} class="kcq-battle-log" classList={{ "kcq-battle-log--modal": logModal() }}
-            role={logModal() ? "dialog" : undefined} aria-modal={logModal() ? true : undefined}
-            aria-label={logModal() ? props.presentation.ui("combatHeader.gameLog") : undefined}
-            onClick={event => { if (logModal() && event.target === host) closeLog(); }}
-            onKeyDown={event => {
-                if (!logModal() || event.key !== "Tab") return;
-                const controls = host.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]');
-                const first = controls[0], last = controls[controls.length - 1];
-                if (event.shiftKey && document.activeElement === first) {
-                    event.preventDefault(); last?.focus();
-                } else if (!event.shiftKey && document.activeElement === last) {
-                    event.preventDefault(); first?.focus();
-                }
-            }}>
-            <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back}
-                showBack={!logModal()} focusBackOnMount={!logModal()} />
-        </div></Portal>;
+                role={logModal() ? "dialog" : undefined} aria-modal={logModal() ? true : undefined}
+                aria-label={logModal() ? props.presentation.ui("combatHeader.gameLog") : undefined}
+                onClick={event => { if (logModal() && event.target === host) closeLog(); }}
+                onKeyDown={event => {
+                    if (!logModal() || event.key !== "Tab") return;
+                    const controls = host.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]');
+                    const first = controls[0], last = controls[controls.length - 1];
+                    if (event.shiftKey && document.activeElement === first) {
+                        event.preventDefault(); last?.focus();
+                    } else if (!event.shiftKey && document.activeElement === last) {
+                        event.preventDefault(); first?.focus();
+                    }
+                }}>
+                <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back}
+                    showBack={!logModal()} focusBackOnMount={!logModal()} />
+            </div></Portal>;
     };
 
     return (

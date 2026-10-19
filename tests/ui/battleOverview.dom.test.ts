@@ -6,12 +6,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { App } from "../../src/ui/web/app/App";
-import { LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
-import { BattleApp, WIDE_BATTLE_OVERVIEW_BREAKPOINT } from "../../src/ui/web/app/BattleApp";
+import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { ScreenLayout } from "../../src/ui/web/app/components/ScreenLayout";
 import { battleOverviewFixture as fixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { COMBAT_SHORTCUTS } from "../../src/ui/web/app/keyboard";
 import { BattleOverviewPanel, type BattleOverviewSections } from "../../src/ui/web/app/panels/BattleOverviewPanel";
+import { AUTO_WIDE_BREAKPOINT, LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
@@ -186,7 +186,7 @@ describe("responsive battle overview", () => {
     });
     it.each([390, 779, 780, 1169, 1170, 1920, 2560])("mounts only the active arrangement at %ipx", width => {
         const { host } = mountBattle(width); const nonNarrow = width >= 780;
-        const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
+        const wide = width >= AUTO_WIDE_BREAKPOINT;
         const panels = [...host.querySelectorAll(".kcq-battle-overview")];
         expect(panels).toHaveLength(wide ? 4 : nonNarrow ? 2 : 1);
         expect(host.querySelectorAll(".kcq-party-card")).toHaveLength(fixture.state.characters.length);
@@ -321,7 +321,7 @@ describe("responsive battle overview", () => {
         const { host, execute } = mountBattle(779);
         for (const width of [780, 779, 1169, 1170, 1920, 1169, 390, 780]) {
             viewport.setViewport({ width });
-            expect(host.querySelectorAll(".kcq-battle-overview")).toHaveLength(width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT ? 4 : width >= 780 ? 2 : 1);
+            expect(host.querySelectorAll(".kcq-battle-overview")).toHaveLength(width >= AUTO_WIDE_BREAKPOINT ? 4 : width >= 780 ? 2 : 1);
             const ids = [...host.querySelectorAll("[id]")].map(node => node.id);
             expect(new Set(ids).size).toBe(ids.length);
             const shortcuts = [...host.querySelectorAll<HTMLElement>("[data-kcq-shortcut]")].map(node => node.dataset.kcqShortcut);

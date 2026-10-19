@@ -4,9 +4,10 @@ import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStockEngine } from "../../src/stock";
-import { BattleApp, WIDE_BATTLE_OVERVIEW_BREAKPOINT } from "../../src/ui/web/app/BattleApp";
+import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { enemyDetailsFixture as fixture } from "../../src/ui/web/app/fixtures/enemyDetails";
+import { AUTO_WIDE_BREAKPOINT } from "../../src/ui/web/app/responsiveScale";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
@@ -67,7 +68,7 @@ describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
         element(".kcq-enemy-card").click();
 
         const details = element(".kcq-enemy-details");
-        if (width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT) expect(overview.children[2]).toBe(details);
+        if (width >= AUTO_WIDE_BREAKPOINT) expect(overview.children[2]).toBe(details);
         else {
             expect(overview.children[1]!.contains(details)).toBe(true);
             expect(overview.children).toHaveLength(2);
@@ -84,7 +85,7 @@ describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
         expect(partyBody.scrollTop).toBe(25);
         expect(log.scrollTop).toBe(43);
         expect(getComputedStyle(details).width).toBe("100%");
-        expect(getComputedStyle(details).height).toBe(width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT ? "100%" : "auto");
+        expect(getComputedStyle(details).height).toBe(width >= AUTO_WIDE_BREAKPOINT ? "100%" : "auto");
         expect(getComputedStyle(details).gridTemplateRows).toBe("auto minmax(0, 1fr)");
         const heading = element(".kcq-enemy-details > .kcq-screen-layout__header .kcq-battle-section__heading");
         expect(heading.textContent).toBe("Enemy / Skunkette 1");
@@ -92,8 +93,8 @@ describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
         expect(getComputedStyle(heading).height).toBe(getComputedStyle(element(".kcq-battle-section--party .kcq-battle-section__heading")).height);
         expect(getComputedStyle(heading.querySelector("h2")!).textTransform).toBe("uppercase");
         const logHeading = element(".kcq-battle-section--game-log .kcq-battle-section__heading");
-        expect(logHeading.textContent).toBe(width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT ? "Game Log" : "- Game Log");
-        expect(!!logHeading.querySelector(".kcq-game-log-heading-action")).toBe(width < WIDE_BATTLE_OVERVIEW_BREAKPOINT);
+        expect(logHeading.textContent).toBe(width >= AUTO_WIDE_BREAKPOINT ? "Game Log" : "- Game Log");
+        expect(!!logHeading.querySelector(".kcq-game-log-heading-action")).toBe(width < AUTO_WIDE_BREAKPOINT);
         logHeading.click();
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-enemy-details__identity").textContent).toContain("Skunkette 1");
@@ -119,12 +120,12 @@ describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
         expect(execute).not.toHaveBeenCalled();
     });
 
-    it.each([390, 779, 780, WIDE_BATTLE_OVERVIEW_BREAKPOINT - 1, WIDE_BATTLE_OVERVIEW_BREAKPOINT, 1920])(
+    it.each([390, 779, 780, AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, 1920])(
         "embeds details in medium and wide layouts at %ipx", width => {
             viewport.setViewport({ width });
             mountBattle();
             element('.kcq-enemy-card[data-kcq-shortcut="5"]').click();
-            const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
+            const wide = width >= AUTO_WIDE_BREAKPOINT;
             const nonNarrow = width >= 780;
             const details = element(".kcq-enemy-details");
             expect(details.getAttribute("aria-label")).toBe("Skunkette 2");
@@ -163,14 +164,14 @@ describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
         const { execute } = mountBattle();
         expect(press("5").defaultPrevented).toBe(true);
         const details = element(".kcq-enemy-details");
-        const body = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT
+        const body = width >= AUTO_WIDE_BREAKPOINT
             ? element(".kcq-enemy-details .kcq-screen-layout__body")
             : details.closest(".kcq-battle-overview > .kcq-screen-layout__body") as HTMLElement;
         body.scrollTop = 42;
-        if (width < WIDE_BATTLE_OVERVIEW_BREAKPOINT) element(".kcq-game-log-heading-action").click();
+        if (width < AUTO_WIDE_BREAKPOINT) element(".kcq-game-log-heading-action").click();
         else press("-");
-        expect(!!document.querySelector(".kcq-game-log")).toBe(width < WIDE_BATTLE_OVERVIEW_BREAKPOINT);
-        if (width < WIDE_BATTLE_OVERVIEW_BREAKPOINT) expect(press("1").defaultPrevented).toBe(false);
+        expect(!!document.querySelector(".kcq-game-log")).toBe(width < AUTO_WIDE_BREAKPOINT);
+        if (width < AUTO_WIDE_BREAKPOINT) expect(press("1").defaultPrevented).toBe(false);
         press("Escape");
         expect(element(".kcq-enemy-details")).toBe(details);
         expect(body.scrollTop).toBe(42);

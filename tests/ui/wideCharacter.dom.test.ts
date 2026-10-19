@@ -7,11 +7,11 @@ import type { ActionInfo, GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { createBattle } from "../../src/ui/web/app";
 import { App } from "../../src/ui/web/app/App";
-import { LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
-import { BattleApp, WIDE_BATTLE_OVERVIEW_BREAKPOINT } from "../../src/ui/web/app/BattleApp";
+import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
 import { COMBAT_SHORTCUTS } from "../../src/ui/web/app/keyboard";
+import { AUTO_WIDE_BREAKPOINT, LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
 
 const fixture = targetingFixtures.telekinesisChoose;
 const viewport = (window as unknown as HappyWindow).happyDOM;
@@ -81,11 +81,11 @@ const targets = () => [...document.querySelectorAll<HTMLButtonElement>("button.k
 
 describe.each([780, 1169, 1920])("non-narrow character workspace at %ipx", width => {
     beforeEach(() => viewport.setViewport({ width }));
-    it.each([390, 779, 780, WIDE_BATTLE_OVERVIEW_BREAKPOINT - 1, WIDE_BATTLE_OVERVIEW_BREAKPOINT, 1920, 2560])(
+    it.each([390, 779, 780, AUTO_WIDE_BREAKPOINT - 1, AUTO_WIDE_BREAKPOINT, 1920, 2560])(
         "uses two columns at medium width and three at wide width (%ipx)", width => {
             viewport.setViewport({ width });
             const { host } = mockBattle();
-            const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
+            const wide = width >= AUTO_WIDE_BREAKPOINT;
             const nonNarrow = width >= 780;
             expect(!!host.querySelector(".kcq-character-details-wide")).toBe(wide);
             expect(host.querySelectorAll(".kcq-character-roster")).toHaveLength(1);
@@ -185,7 +185,7 @@ describe.each([780, 1169, 1920])("non-narrow character workspace at %ipx", width
             if (width >= 780) {
                 expect(document.querySelectorAll(".kcq-battle-section--game-log")).toHaveLength(1);
                 expect(element(".kcq-character-details-expanded__workspace > header h2").textContent).toBe("Targeting / Ko-chan");
-                expect(!!gameLog().closest(".kcq-character-details-expanded__workspace")).toBe(width < WIDE_BATTLE_OVERVIEW_BREAKPOINT);
+                expect(!!gameLog().closest(".kcq-character-details-expanded__workspace")).toBe(width < AUTO_WIDE_BREAKPOINT);
             }
             const shortcuts = [...document.querySelectorAll<HTMLElement>("[data-kcq-shortcut]")].map(node => node.dataset.kcqShortcut);
             expect(new Set(shortcuts).size).toBe(shortcuts.length);
@@ -271,10 +271,10 @@ describe.each([780, 1169, 1920])("non-narrow character workspace at %ipx", width
         expect(element(".kcq-library")).toBeDefined();
         button(".kcq-library__header-back").click();
         expect(element(".kcq-targeting")).toBe(workspace);
-        if (width < WIDE_BATTLE_OVERVIEW_BREAKPOINT) button(".kcq-game-log-heading-action").click();
+        if (width < AUTO_WIDE_BREAKPOINT) button(".kcq-game-log-heading-action").click();
         else press(COMBAT_SHORTCUTS.gameLog);
-        expect(!!document.querySelector(".kcq-game-log")).toBe(width < WIDE_BATTLE_OVERVIEW_BREAKPOINT);
-        if (width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT) expect(gameLog()).toBe(log);
+        expect(!!document.querySelector(".kcq-game-log")).toBe(width < AUTO_WIDE_BREAKPOINT);
+        if (width >= AUTO_WIDE_BREAKPOINT) expect(gameLog()).toBe(log);
         press(COMBAT_SHORTCUTS.back);
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-targeting")).toBe(workspace);
