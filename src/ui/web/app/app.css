@@ -3772,6 +3772,7 @@ button {
     font-size: 12px;
     line-height: 19px;
     white-space: pre-wrap;
+    text-indent: 1em;
     overflow-wrap: anywhere;
     line-height: 1.6;
 }
@@ -3813,10 +3814,116 @@ button {
     background: transparent;
 }
 
-.kcq-encounter-details__body {
+.kcq-encounter-details__body,
+.kcq-encounter-details__columns,
+.kcq-encounter-details__information {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+/* Match the picker: choose a canvas using the app's available width and zoom. */
+.kcq-graphical-app__background:has(.kcq-encounter-details--desktop) {
+    width: 840px;
+}
+
+.kcq-encounter-details--desktop,
+.kcq-encounter-details--desktop .kcq-encounter-header {
+    width: 100%;
+}
+
+.kcq-encounter-details--desktop {
+    --kcq-screen-gap: 8px;
+}
+
+.kcq-encounter-details--desktop>.kcq-screen-layout__body>.kcq-screen-layout__content,
+.kcq-encounter-details--desktop .kcq-encounter-details__body {
+    height: 100%;
+    min-height: 0;
+}
+
+.kcq-encounter-details--desktop>.kcq-screen-layout__body>.kcq-screen-layout__content {
+    /* At very short heights, let ScreenLayout scroll the summary and columns
+       together while its header and footer stay pinned. */
+    min-height: 128px;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__info {
+    flex: 0 0 auto;
+    padding: 6px 8px;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__info>div {
+    flex-direction: row;
+    flex-wrap: wrap;
+    min-height: 28px;
+    gap: 4px 12px;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__columns {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 366px;
+    gap: 24px;
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__columns:not(:has(.kcq-encounter-details__information)) {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__description {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    /* Keep tabs reachable even at exceptionally short viewport heights. */
+    overflow-y: auto;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__tabs {
+    flex-shrink: 0;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__narrative {
+    flex: 1 1 auto;
+    min-height: 24px;
+    overflow: auto;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__information {
+    min-width: 0;
+    min-height: 0;
+    overflow: auto;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__information>.kcq-encounter-card {
+    flex-shrink: 0;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__description,
+.kcq-encounter-details--desktop .kcq-encounter-details__narrative,
+.kcq-encounter-details--desktop .kcq-encounter-details__information {
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__narrative:focus-visible,
+.kcq-encounter-details--desktop .kcq-encounter-details__information:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: -2px;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__footer {
+    width: 100%;
+    max-width: 366px;
+    height: auto;
+    margin-inline: auto;
+    gap: 8px;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__footer:has(>button:only-child) {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: 180px;
 }
 
 .kcq-encounter-details__footer button,
@@ -3836,6 +3943,10 @@ button {
     border: 1px solid var(--kcq-structure-border);
     border-radius: 7px;
     font-size: 10px;
+}
+
+.kcq-encounter-details--desktop .kcq-encounter-details__footer .kcq-targeting__back {
+    font-size: 12px;
 }
 
 .kcq-meter-effect__transition {

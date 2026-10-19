@@ -1,5 +1,6 @@
-import { createEffect, createSignal, createUniqueId, For, on, Show, type JSX } from "solid-js";
+import { createEffect, createSignal, createUniqueId, For, on, Show, useContext, type JSX } from "solid-js";
 import { COMBAT_SHORTCUTS } from "../keyboard";
+import { BATTLE_LAYOUT_WIDTHS, ResponsiveLayoutContext } from "../responsiveScale";
 import type { EncounterDetailsViewModel } from "../viewModels/encounters";
 import { EffectPreview } from "./EffectPreview";
 import { EncounterHeader } from "./EncounterHeader";
@@ -17,6 +18,15 @@ export function EncounterDetailsPanel(props: {
     onNextLevel?: () => void;
     model: EncounterDetailsViewModel; onBack: () => void; onChooseDifficulty: () => void;
 }): JSX.Element {
+    const responsiveLayout = useContext(ResponsiveLayoutContext);
+    const desktop = () => {
+        const layout = responsiveLayout?.();
+        // 450px narrative + 24px gutter + the existing 366px information canvas.
+        return !!layout && (layout.availableWidth === undefined
+            ? BATTLE_LAYOUT_WIDTHS[layout.columns] >= 840
+            : layout.zoom <= layout.availableWidth / 840);
+    };
+    const hasInformation = () => props.model.enemies.length > 0 || props.model.effects.length > 0 || props.model.effectGroups.length > 0;
     const [selectedTab, setSelectedTab] = createSignal<NarrativeTab>("description");
     createEffect(on(() => props.model.id, () => setSelectedTab("description")));
     const activeTab = () => props.model.bestClear ? selectedTab() : "description";
@@ -46,7 +56,7 @@ export function EncounterDetailsPanel(props: {
         }
     };
 
-    return <ScreenLayout class="kcq-encounter-screen kcq-encounter-details"
+    return <ScreenLayout class={`kcq-encounter-screen kcq-encounter-details${desktop() ? " kcq-encounter-details--desktop" : ""}`}
         header={
             <EncounterHeader title={props.model.name} settingsLabel={props.model.labels.settings} onSettings={props.onSettings}
                 libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} />
@@ -65,48 +75,63 @@ export function EncounterDetailsPanel(props: {
                         </div>
                     </section>
                 </Show>
-                <section class="kcq-encounter-card kcq-encounter-details__description">
-                    <Show when={props.model.stars > 0} fallback={<p>{props.model.description}</p>}>
-                        <div class="kcq-encounter-details__tabs" role="tablist" aria-label={props.model.labels.description}>
-                            <For each={narrativeTabs}>{tab => <button
-                                ref={element => { tabButtons[tab] = element; }}
-                                id={`${tabId}-${tab}`} type="button" role="tab"
-                                class="kcq-encounter-details__tab"
-                                aria-selected={activeTab() === tab} aria-controls={`${tabId}-panel`}
-                                tabIndex={activeTab() === tab ? 0 : -1}
-                                disabled={tab !== "description" && !props.model.bestClear}
-                                onClick={() => setSelectedTab(tab)} onKeyDown={event => tabKeydown(event, tab)}
-                            >{props.model.labels[tab]}</button>}</For>
-                        </div>
-                        <div id={`${tabId}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${activeTab()}`} tabIndex={0}>
-                            <p>{props.model[activeTab()] ?? props.model.labels.narrativeUnavailable}</p>
+                <div class="kcq-encounter-details__columns">
+                    <section class="kcq-encounter-card kcq-encounter-details__description">
+                        <Show when={props.model.stars > 0} fallback={
+                            <div class="kcq-encounter-details__narrative" tabIndex={desktop() ? 0 : undefined} aria-label={props.model.labels.description}>
+                                <p>{props.model.description}</p>
+                            </div>
+                        }>
+                            <div class="kcq-encounter-details__tabs" role="tablist" aria-label={props.model.labels.description}>
+                                <For each={narrativeTabs}>{tab => <button
+                                    ref={element => { tabButtons[tab] = element; }}
+                                    id={`${tabId}-${tab}`} type="button" role="tab"
+                                    class="kcq-encounter-details__tab"
+                                    aria-selected={activeTab() === tab} aria-controls={`${tabId}-panel`}
+                                    tabIndex={activeTab() === tab ? 0 : -1}
+                                    disabled={tab !== "description" && !props.model.bestClear}
+                                    onClick={() => setSelectedTab(tab)} onKeyDown={event => tabKeydown(event, tab)}
+                                >{props.model.labels[tab]}</button>}</For>
+                            </div>
+                            <div class="kcq-encounter-details__narrative" id={`${tabId}-panel`} role="tabpanel" aria-labelledby={`${tabId}-${activeTab()}`} tabIndex={0}>
+                                <p>{props.model[activeTab()] ?? props.model.labels.narrativeUnavailable}</p>
+                            </div>
+                        </Show>
+                    </section>
+                    <Show when={hasInformation()}>
+                        <div class="kcq-encounter-details__information" tabIndex={desktop() ? 0 : undefined}
+                            role={desktop() ? "region" : undefined}
+                            aria-label={desktop() ? [
+                                props.model.enemies.length > 0 ? props.model.labels.enemies : undefined,
+                                props.model.effects.length > 0 || props.model.effectGroups.length > 0 ? props.model.labels.specialRules : undefined,
+                            ].filter(Boolean).join(", ") : undefined}>
+                            <Show when={props.model.enemies.length > 0}>
+                                <section class="kcq-encounter-card kcq-encounter-details__enemies">
+                                    <h2 class="kcq-encounter-details__heading">{props.model.labels.enemies}</h2>
+                                    <For each={props.model.enemies}>
+                                        {(enemy) => <div class="kcq-encounter-details__enemy">
+                                            <strong class="kcq-encounter-details__enemy-name">{enemy.name}</strong>
+                                            <StatusChip tone={enemy.rankTone}>{enemy.rankLabel}</StatusChip>
+                                            <strong class="kcq-encounter-details__hp">{enemy.hpLabel}</strong>
+                                        </div>}
+                                    </For>
+                                </section>
+                            </Show>
+                            <Show when={props.model.effects.length > 0 || props.model.effectGroups.length > 0}>
+                                <section class="kcq-encounter-card kcq-encounter-details__rules">
+                                    <h2 class="kcq-encounter-details__heading">{props.model.labels.specialRules}</h2>
+                                    <For each={props.model.effects}>{(effect) => <EffectPreview effect={effect} />}</For>
+                                    <For each={props.model.effectGroups}>
+                                        {(group) => <div class="kcq-encounter-details__effect-group">
+                                            <h3>{group.name}</h3>
+                                            <For each={group.effects}>{(effect) => <EffectPreview effect={effect} />}</For>
+                                        </div>}
+                                    </For>
+                                </section>
+                            </Show>
                         </div>
                     </Show>
-                </section>
-                <Show when={props.model.enemies.length > 0}>
-                    <section class="kcq-encounter-card kcq-encounter-details__enemies">
-                        <h2 class="kcq-encounter-details__heading">{props.model.labels.enemies}</h2>
-                        <For each={props.model.enemies}>
-                            {(enemy) => <div class="kcq-encounter-details__enemy">
-                                <strong class="kcq-encounter-details__enemy-name">{enemy.name}</strong>
-                                <StatusChip tone={enemy.rankTone}>{enemy.rankLabel}</StatusChip>
-                                <strong class="kcq-encounter-details__hp">{enemy.hpLabel}</strong>
-                            </div>}
-                        </For>
-                    </section>
-                </Show>
-                <Show when={props.model.effects.length > 0 || props.model.effectGroups.length > 0}>
-                    <section class="kcq-encounter-card kcq-encounter-details__rules">
-                        <h2 class="kcq-encounter-details__heading">{props.model.labels.specialRules}</h2>
-                        <For each={props.model.effects}>{(effect) => <EffectPreview effect={effect} />}</For>
-                        <For each={props.model.effectGroups}>
-                            {(group) => <div class="kcq-encounter-details__effect-group">
-                                <h3>{group.name}</h3>
-                                <For each={group.effects}>{(effect) => <EffectPreview effect={effect} />}</For>
-                            </div>}
-                        </For>
-                    </section>
-                </Show>
+                </div>
             </div>
         }
         footer={
