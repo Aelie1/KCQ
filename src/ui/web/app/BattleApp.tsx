@@ -1,4 +1,5 @@
 import { batch, createEffect, createMemo, createSignal, Match, onCleanup, onMount, Show, Switch, useContext, type JSX } from "solid-js";
+import { Portal } from "solid-js/web";
 import { getThresholds } from "../../../engine/public/mechanics";
 import type {
     ActionInfo,
@@ -40,7 +41,7 @@ import { LibraryPanel } from "./panels/LibraryPanel";
 import { TargetingPanel } from "./panels/TargetingPanel";
 import { VictoryStoryPanel } from "./panels/VictoryStoryPanel";
 import { createPlaybackSpeedPreference, PLAYBACK_INTERVALS, type PlaybackSpeedPreference } from "./playbackSpeed";
-import { calculateResponsiveLayout, LAYOUT_WIDTHS, ResponsiveLayoutContext } from "./responsiveScale";
+import { calculateResponsiveLayout, LAYOUT_WIDTHS, ResponsiveLayoutContext, setupResponsiveScale } from "./responsiveScale";
 import { createSavePackage, type SavePackage } from "./savePackage";
 import { clearSave, writeSave } from "./savePersistence";
 import { createShortcutHintPreference, type ShortcutHintPreference } from "./shortcutHints";
@@ -638,11 +639,24 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     // Keep the same panel and scroll state when narrow replacement becomes a medium dialog.
     const FullGameLog = (): JSX.Element => {
         let host!: HTMLDivElement;
+        createEffect(() => {
+            if (!logModal()) return;
+            const cleanup = setupResponsiveScale(host, viewPreferences);
+            onCleanup(() => { cleanup(); host.removeAttribute("style"); });
+        });
+        createEffect(() => {
+            const modal = logModal();
+            queueMicrotask(() => {
+                if (!logOpen() || wide()) return;
+                if (modal || !host.contains(document.activeElement)) host.querySelector<HTMLElement>(".kcq-screen-layout__body")?.focus();
+            });
+        });
         onMount(() => {
             const body = host.querySelector<HTMLElement>(".kcq-screen-layout__body");
             if (body) body.tabIndex = 0;
         });
-        return <div ref={host} class="kcq-battle-log" classList={{ "kcq-battle-log--modal": logModal() }}
+        return <Portal mount={logModal() ? document.body : stage} ref={container => { container.style.display = "contents"; }}>
+            <div ref={host} class="kcq-battle-log" classList={{ "kcq-battle-log--modal": logModal() }}
             role={logModal() ? "dialog" : undefined} aria-modal={logModal() ? true : undefined}
             aria-label={logModal() ? props.presentation.ui("combatHeader.gameLog") : undefined}
             onClick={event => { if (logModal() && event.target === host) closeLog(); }}
@@ -656,8 +670,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     event.preventDefault(); first?.focus();
                 }
             }}>
-            <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount />
-        </div>;
+            <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back}
+                showBack={!logModal()} focusBackOnMount={!logModal()} />
+        </div></Portal>;
     };
 
     return (
@@ -675,7 +690,9 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         </Show>
                     </div>
                 </div>
-                <Show when={logOpen() && !wide()}><FullGameLog /></Show>
+                <Show when={logOpen() && !wide()}><ResponsiveLayoutContext.Provider value={layout}>
+                    <FullGameLog />
+                </ResponsiveLayoutContext.Provider></Show>
                 <Show when={libraryOpen()}><ResponsiveLayoutContext.Provider value={layout}>
                     <LibraryPanel library={library} presentation={props.presentation} onClose={closeLibrary} />
                 </ResponsiveLayoutContext.Provider></Show>

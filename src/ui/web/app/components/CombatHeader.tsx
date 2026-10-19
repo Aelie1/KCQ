@@ -34,6 +34,7 @@ interface CombatHeaderOverviewProps extends CombatHeaderBaseProps {
 
 interface CombatHeaderSubscreenProps extends CombatHeaderBaseProps {
     backLabel: string;
+    showBack?: boolean;
     backShortcut?: string;
     characterLabel?: string;
     contextLabel: string;
@@ -44,13 +45,14 @@ interface CombatHeaderSubscreenProps extends CombatHeaderBaseProps {
 export type CombatHeaderProps = CombatHeaderOverviewProps | CombatHeaderSubscreenProps;
 
 export function CombatHeader(props: CombatHeaderProps): JSX.Element {
-    const navigation = () => props.variant === "subscreen" ? props : props.navigation;
+    const navigation = () => props.variant === "subscreen" ? props.showBack === false ? undefined : props : props.navigation;
     return (
         <header
             class="kcq-combat-header"
             classList={{
                 "kcq-combat-header--overview": props.variant === "overview",
                 "kcq-combat-header--subscreen": props.variant === "subscreen",
+                "kcq-combat-header--without-navigation": props.variant === "subscreen" && !navigation(),
                 "kcq-combat-header--with-action": props.variant === "overview" && !!props.action,
             }}
         >

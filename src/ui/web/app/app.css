@@ -207,6 +207,10 @@ button {
     height: 56px;
 }
 
+.kcq-combat-header--subscreen.kcq-combat-header--without-navigation {
+    grid-template-columns: minmax(0, 1fr) 88px;
+}
+
 .kcq-combat-header--subscreen .kcq-combat-header__encounter {
     justify-content: center;
     gap: 3px;
@@ -1671,20 +1675,23 @@ button {
 }
 
 .kcq-battle-log--modal {
-    position: absolute;
+    position: fixed;
     inset: 0;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    z-index: 10;
+    display: grid;
+    place-items: safe center;
+    height: auto;
     padding: 12px;
+    overflow: auto;
     background: var(--kcq-surface-overlay);
 }
 
 .kcq-battle-log--modal>.kcq-game-log {
-    width: 600px;
-    max-width: 100%;
-    max-height: 720px;
+    width: 366px;
+    min-width: 366px;
+    max-width: none;
+    height: min(720px, var(--kcq-ui-height));
+    zoom: var(--kcq-ui-zoom, 1);
 }
 
 .kcq-game-log__scroll {
@@ -7217,4 +7224,8 @@ button {
 .kcq-linked-entity-chip__icon,
 .kcq-enemy-card__debuff .kcq-status-chip__segment {
     filter: var(--kcq-effect-icon-filter);
+}
+
+.kcq-game-log>.kcq-screen-layout__body {
+    scrollbar-width: thin;
 }

@@ -108,6 +108,17 @@ describe("compact graphical Game Log", () => {
         const translated = new Presentation({ ...stockStrings, "ui.gameLog.trapTriggeredActor": "Activation: {actor}" });
         expect(text(renderEntries(createGameLogEntries([{ event, state: after }], before), translated))).toContain("Activation: Matsuko");
     });
+    it("omits modal navigation without changing the log entries", () => {
+        const clean = (html: string) => html.replace(/<!--[^>]*-->/g, "");
+        const narrow = clean(renderToString(() => createComponent(GameLogPanel, gameLogFixture)));
+        const modal = clean(renderToString(() => createComponent(GameLogPanel, { ...gameLogFixture, showBack: false })));
+        expect(narrow).toContain('class="kcq-combat-header__back');
+        expect(modal).not.toContain('class="kcq-combat-header__back');
+        expect(modal).toContain("kcq-combat-header--without-navigation");
+        const entries = (html: string) => html.slice(html.indexOf('class="kcq-game-log__scroll"'));
+        expect(entries(modal)).toBe(entries(narrow));
+    });
+
     it("renders localized fixture entries in chronological event order", () => {
         const html = renderToString(() => createComponent(GameLogPanel, gameLogFixture));
         const body = text(html);

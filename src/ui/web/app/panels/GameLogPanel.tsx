@@ -14,6 +14,7 @@ export interface GameLogPanelProps {
     presentation: Presentation;
     state: GameState;
     onBack?: () => void;
+    showBack?: boolean;
     focusBackOnMount?: boolean;
 }
 
@@ -74,6 +75,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                     roundLabel={header().roundLabel}
                     phaseLabel={header().phaseLabel}
                     backLabel={props.presentation.ui("characterDetails.back")}
+                    showBack={props.showBack}
                     backShortcut={COMBAT_SHORTCUTS.back}
                     onBack={props.onBack}
                 />

@@ -215,7 +215,7 @@ describe("responsive battle overview", () => {
             expect(heading.textContent).toBe("Game Log");
             expect(heading.querySelector("button, a, [data-kcq-shortcut]")).toBeNull();
             heading.click();
-            expect(host.querySelector(".kcq-game-log")).toBeNull();
+            expect(document.querySelector(".kcq-game-log")).toBeNull();
             expect(getComputedStyle(panels[2]!.querySelector(".kcq-screen-layout__body")!).overflowY).toBe("auto");
         } else if (desktop) {
             expect(panels[0]!.querySelectorAll(".kcq-party-card")).toHaveLength(3);
@@ -334,9 +334,9 @@ describe("responsive battle overview", () => {
     it.each([390, 780, 1169])("preserves full Game Log navigation below the wide breakpoint at %ipx", width => {
         const { host } = mountBattle(width);
         element(width < 780 ? ".kcq-compact-game-log" : ".kcq-game-log-heading-action").click();
-        expect(host.querySelector(".kcq-game-log")).not.toBeNull();
+        expect(document.querySelector(".kcq-game-log")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back);
-        expect(host.querySelector(".kcq-game-log")).toBeNull();
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(host.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
     it.each([390, 780, 1169])("keeps the %ipx battle mounted while presenting full history", async width => {
@@ -347,36 +347,50 @@ describe("responsive battle overview", () => {
         trigger.focus(); trigger.click();
         const panel = element(".kcq-game-log");
         const body = panel.querySelector<HTMLElement>(".kcq-screen-layout__body")!;
-        const back = panel.querySelector<HTMLButtonElement>(".kcq-combat-header__back")!;
+        const back = panel.querySelector<HTMLButtonElement>(".kcq-combat-header__back");
         expect(background.hidden).toBe(width < 780);
         expect(background.hasAttribute("inert")).toBe(true);
         expect(background.getAttribute("aria-hidden")).toBe("true");
         expect(battle.isConnected).toBe(true);
-        expect(document.activeElement).toBe(back);
+        await Promise.resolve();
+        expect(document.activeElement).toBe(width < 780 ? back : body);
+        expect(getComputedStyle(panel).width).toBe("366px");
         expect(body.tabIndex).toBe(0);
         expect(getComputedStyle(body).overflowY).toBe("auto");
-        const modal = host.querySelector('[role="dialog"]');
+        const modal = document.querySelector<HTMLElement>('[role="dialog"]');
         expect(!!modal).toBe(width >= 780);
         if (modal) {
             expect(modal.getAttribute("aria-modal")).toBe("true");
             expect(modal.getAttribute("aria-label")).toBe("Game Log");
-            expect(getComputedStyle(modal).position).toBe("absolute");
+            expect(back).toBeNull();
+            expect(getComputedStyle(panel.querySelector(".kcq-combat-header")!).gridTemplateColumns).toBe("minmax(0, 1fr) 88px");
+            const overlay = getComputedStyle(modal);
+            expect(overlay.position).toBe("fixed");
+            expect(overlay.inset).toBe("0");
+            expect(overlay.display).toBe("grid");
+            expect(overlay.placeItems).toBe("safe center");
+            expect(Number(overlay.zIndex)).toBeGreaterThan(5);
+            expect(host.contains(modal)).toBe(false);
+            expect(modal.style.getPropertyValue("--kcq-ui-zoom")).toBe(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom"));
+            expect(getComputedStyle(panel).minWidth).toBe("366px");
+            expect(getComputedStyle(panel).maxWidth).toBe("none");
             expect(element(".kcq-game-log-heading-action")).toBe(trigger);
             const tab = (target: HTMLElement, shiftKey = false) => {
                 const event = new KeyboardEvent("keydown", { key: "Tab", shiftKey, bubbles: true, cancelable: true });
                 target.dispatchEvent(event); return event;
             };
-            expect(tab(back, true).defaultPrevented).toBe(true);
+            expect(tab(body, true).defaultPrevented).toBe(true);
             expect(document.activeElement).toBe(body);
             expect(tab(body).defaultPrevented).toBe(true);
-            expect(document.activeElement).toBe(back);
+            expect(document.activeElement).toBe(body);
         }
         for (const key of ["1", COMBAT_SHORTCUTS.endTurn]) press(key);
         expect(execute).not.toHaveBeenCalled();
         body.scrollTop = 120;
-        back.click();
+        if (back) back.click();
+        else press(COMBAT_SHORTCUTS.back);
         await Promise.resolve();
-        expect(host.querySelector(".kcq-game-log")).toBeNull();
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(background.hidden).toBe(false);
         expect(background.hasAttribute("inert")).toBe(false);
         expect(background.hasAttribute("aria-hidden")).toBe(false);
@@ -384,7 +398,7 @@ describe("responsive battle overview", () => {
         expect(document.activeElement).toBe(width < 780 ? element(".kcq-compact-game-log") : trigger);
     });
 
-    it("preserves the open panel, following, scroll position, and focus between narrow and medium", () => {
+    it("preserves the open panel, following, scroll position, and focus between narrow and medium", async () => {
         let nextFrame = 0;
         const pending = new Map<number, FrameRequestCallback>();
         const resizes: (() => void)[] = [];
@@ -415,7 +429,10 @@ describe("responsive battle overview", () => {
             height += 100;
             resizes.forEach(callback => callback());
             flush();
+            await Promise.resolve();
             expect(element(".kcq-game-log")).toBe(panel);
+            expect(getComputedStyle(panel).width).toBe("366px");
+            expect(!!panel.querySelector(".kcq-combat-header__back")).toBe(width < 780);
             expect(body.scrollTop).toBe(123);
             expect(document.activeElement).toBe(body);
             expect(!!document.querySelector('[role="dialog"]')).toBe(width >= 780);
@@ -505,7 +522,7 @@ describe("responsive battle overview", () => {
         element(".kcq-party-card").click(); expect(host.querySelector(".kcq-character-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); press("4"); expect(host.querySelector(".kcq-enemy-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); expect(host.querySelector(".kcq-compact-game-log")).toBeNull();
-        press(COMBAT_SHORTCUTS.gameLog); expect(host.querySelector(".kcq-game-log")).toBeNull();
+        press(COMBAT_SHORTCUTS.gameLog); expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(host.querySelector(".kcq-overview-game-log-history")).not.toBeNull();
         expect(getComputedStyle(host).width).toBe(`${LAYOUT_WIDTHS[3]}px`);
         press(COMBAT_SHORTCUTS.back); viewport.setViewport({ width: 390 });
@@ -513,7 +530,7 @@ describe("responsive battle overview", () => {
         press(COMBAT_SHORTCUTS.back); viewport.setViewport({ width: 1920 });
         element(".kcq-enemy-card").click(); expect(host.querySelector(".kcq-enemy-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); press(COMBAT_SHORTCUTS.gameLog);
-        expect(host.querySelector(".kcq-game-log")).toBeNull();
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(host.querySelector(".kcq-overview-game-log-history")).not.toBeNull();
     });
 });
