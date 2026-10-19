@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { calculateResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import { CommandCard } from "../../src/ui/web/app/components/CommandCard";
 import type { CommandCardViewModel } from "../../src/ui/web/app/viewModels/characterDetails";
 
@@ -25,6 +26,7 @@ function mountCard() {
     });
     const onSelect = vi.fn();
     const host = document.createElement("div");
+    host.dataset.kcqLayout = calculateResponsiveLayout(window.innerWidth - 24).size;
     document.body.append(host);
     unmount = render(() => createComponent(CommandCard, { get command() { return command(); }, onSelect }), host);
     return { card: host.querySelector("button")!, setCommand, onSelect };
@@ -73,7 +75,7 @@ describe("command card cooldown", () => {
         expect(getComputedStyle(indicator).flexShrink).toBe("0");
         expect(getComputedStyle(indicator).color).toBe("#fb7185");
         expect(getComputedStyle(name).minWidth).toBe("0");
-        expect(getComputedStyle(shortcut).display).toBe(width <= 480 ? "none" : "inline-flex");
+        expect(getComputedStyle(shortcut).display).toBe(calculateResponsiveLayout(width - 24).size === "narrow" ? "none" : "inline-flex");
         setCommand(command => ({ ...command, cooldown: { value: 3, active: false, accessibleLabel: "Cooldown after use: 3" } }));
         const readyIndicator = card.querySelector<HTMLElement>(".kcq-command-card__cooldown")!;
         expect(getComputedStyle(readyIndicator).color).toBe("#f1f5f9");

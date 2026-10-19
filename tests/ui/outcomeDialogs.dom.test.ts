@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { BattleResultPanel } from "../../src/ui/web/app/panels/BattleResultPanel";
 import { BattleSettingsPanel } from "../../src/ui/web/app/panels/BattleSettingsPanel";
 import { VictoryStoryPanel } from "../../src/ui/web/app/panels/VictoryStoryPanel";
+import { calculateResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import type { BattleColumns } from "../../src/ui/web/app/viewPreferences";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import type { BattleResultRow, BattleResultViewModel } from "../../src/ui/web/app/viewModels/battleResult";
 import { stockStrings } from "../helpers/stockStrings";
@@ -64,11 +66,12 @@ describe("outcome dialog presentation", () => {
         expect(style(".kcq-battle-result").width).toBe("100%");
         expect(style(".kcq-battle-result__viewport").maxWidth).toBe("100%");
         expect(style(".kcq-battle-result__actions").gridTemplateColumns).toBe(kind === "results" ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))");
-        for (const [width, height, desktop] of [[1024, 768, true], [1920, 480, true], [600, 800, false], [390, 844, false]] as const) {
+        for (const [width, height] of [[1024, 768], [1920, 480], [600, 800], [390, 844]] as const) {
             viewport.setViewport({ width, height }); window.dispatchEvent(new Event("resize"));
             expect(element('[role="dialog"]')).toBe(dialog);
-            expect(element(".kcq-outcome__overlay").dataset.kcqTitleLayout).toBe(desktop ? "desktop" : "mobile");
-            expect(parseFloat(style(".kcq-battle-result__viewport").width)).toBe(desktop ? desktopWidth : 366);
+            const layout = calculateResponsiveLayout(width - 24).size;
+            expect(element(".kcq-outcome__overlay").dataset.kcqLayout).toBe(layout);
+            expect(parseFloat(style(".kcq-battle-result__viewport").width)).toBe(layout === "narrow" ? 366 : desktopWidth);
         }
     });
 
@@ -227,6 +230,32 @@ describe("outcome dialog presentation", () => {
         expect(document.querySelector(".kcq-outcome__overlay")).toBeNull();
         expect(style(".kcq-battle-result__viewport").width).toBe("400px");
         expect(style(".kcq-battle-settings").maxWidth).toBe("380px");
+        expect(style(".kcq-battle-settings").overflowY).toBe("auto");
+    });
+
+    it.each([
+        [390, "auto"], [1024, "auto"], [1180, "auto"],
+        [1024, "3"], [1920, "1"], [1920, "2"],
+    ] as const)("selects compact Settings by semantic layout at %ipx with %s columns", (width, columns: BattleColumns) => {
+        viewport.setViewport({ width, height: 900 });
+        const host = document.createElement("div"); document.body.append(host);
+        dispose = render(() => createComponent(BattleSettingsPanel, {
+            presentation: new Presentation(stockStrings), release: "test", onResume: vi.fn(), onBackToTitle: vi.fn(),
+            viewPreferences: { columns, enemyCards: "auto", setColumns: vi.fn(), setEnemyCards: vi.fn(), reset: vi.fn() },
+            overviewGameLog: { value: 4, onChange: vi.fn() },
+        }), host);
+        const layout = calculateResponsiveLayout(width - 24, columns).size;
+        const wide = layout === "wide";
+        expect(element(".kcq-battle-settings__overlay").dataset.kcqLayout).toBe(layout);
+        expect(style(".kcq-battle-result__viewport").width).toBe(wide ? "400px" : "366px");
+        expect(style(".kcq-battle-settings").maxWidth).toBe(wide ? "380px" : "340px");
+        expect(style(".kcq-battle-settings").gap).toBe(wide ? "6px" : "10px");
+        expect(style(".kcq-battle-settings__option").fontSize).toBe(wide ? "12px" : "13px");
+        expect(style(".kcq-battle-settings__option select").width).toBe(wide ? "175px" : "");
+        expect(style(".kcq-battle-settings__log-lines input").flexBasis).toBe(wide ? "170px" : "0%");
+        expect(style(".kcq-battle-settings>.kcq-battle-result__actions:last-child").gridTemplateColumns)
+            .toBe(wide ? "repeat(3, minmax(0, 1fr))" : "1fr");
+        expect(style(".kcq-battle-result__actions button").minHeight).toBe(wide ? "36px" : "44px");
         expect(style(".kcq-battle-settings").overflowY).toBe("auto");
     });
 });

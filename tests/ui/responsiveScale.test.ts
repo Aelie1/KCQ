@@ -142,7 +142,6 @@ describe("column-first scaling", () => {
         observedResize();
         expect(shell.dataset.kcqLayout).toBe(size);
         expect(style.get("--kcq-layout-width")).toBe(`${LAYOUT_WIDTHS[Number(columns) as 1 | 2 | 3]}px`);
-        expect(shell.dataset.kcqTitleLayout).toBe("desktop");
     });
 
     it("uses the unzoomed shell width and stays stable at breakpoints", () => {
@@ -155,40 +154,11 @@ describe("column-first scaling", () => {
                 const before = new Map(style);
                 for (let index = 0; index < 10; index++) observedResize();
                 expect(style).toEqual(before);
-                expect(Number(style.get("--kcq-ui-zoom"))).toBe(calculateResponsiveLayout(width - 24).zoom);
+                const expected = calculateResponsiveLayout(width - 24);
+                expect(Number(style.get("--kcq-ui-zoom"))).toBe(expected.zoom);
+                expect(shell.dataset.kcqLayout).toBe(expected.size);
             }
         }
         expect(style.get("--kcq-ui-min-width")).toBe("366px");
-    });
-});
-
-describe("title layout coordinated with scaling", () => {
-    it("settles on both sides of the breakpoint using the same width as zoom", () => {
-        const { shell, style, browser, observedResize } = viewport(800, 326);
-        for (const width of [800, 781, 780, 779, 778, 779, 780, 781, 800]) {
-            shell.clientWidth = width;
-            browser.dispatchEvent(new Event("resize"));
-            const expectedZoom = calculateResponsiveLayout(width - 24).zoom;
-            const expectedTitle = width >= 780 ? "desktop" : "mobile";
-            const before = new Map(style);
-            for (let frame = 0; frame < 30; frame++) {
-                observedResize();
-                browser.dispatchEvent(new Event("resize"));
-                expect(style).toEqual(before);
-                expect(Number(style.get("--kcq-ui-zoom"))).toBe(expectedZoom);
-                expect(shell.dataset.kcqTitleLayout).toBe(expectedTitle);
-            }
-        }
-    });
-
-    it.each([
-        ["auto", 1024, "desktop"], ["auto", 1920, "desktop"],
-        ["1", 1024, "mobile"], ["1", 1157, "mobile"], ["1", 1158, "desktop"],
-        ["2", 779, "mobile"], ["2", 780, "desktop"],
-        ["3", 779, "mobile"], ["3", 780, "desktop"],
-    ] as const)("fits title panels with preference %s at %ipx without changing zoom", (columns, width, title) => {
-        const { shell, style } = viewport(width, 800, undefined, columns);
-        expect(shell.dataset.kcqTitleLayout).toBe(title);
-        expect(Number(style.get("--kcq-ui-zoom"))).toBe(calculateResponsiveLayout(width - 24, columns).zoom);
     });
 });

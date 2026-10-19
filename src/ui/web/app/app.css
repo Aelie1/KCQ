@@ -105,16 +105,13 @@ button {
     flex-shrink: 0;
 }
 
-@media (min-width: 481px) {
-
-    /* Expand the clip boundary into the app's outer padding, then inset the
-       content by the same amount. Cards keep their width and position while
-       the 14px badges' 25% overhang fits inside the scroll viewport.
-       Keep this space fixed even when hints are hidden to avoid layout shifts. */
-    .kcq-screen-layout__body:has(.kcq-shortcut) {
-        margin: -4px -8px;
-        padding: 4px 8px;
-    }
+/* Expand the clip boundary into the app's outer padding, then inset the
+   content by the same amount. Cards keep their width and position while
+   the 14px badges' 25% overhang fits inside the scroll viewport.
+   Keep this space fixed even when hints are hidden to avoid layout shifts. */
+:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-screen-layout__body:has(.kcq-shortcut) {
+    margin: -4px -8px;
+    padding: 4px 8px;
 }
 
 /* With no actions, the body occupies all of the remaining height. */
@@ -1947,12 +1944,6 @@ button {
     color: var(--kcq-text-muted);
 }
 
-@media (max-width: 480px) {
-    .kcq-game-log__scroll {
-        padding: 6px 8px;
-    }
-}
-
 .kcq-character-details p,
 .kcq-character-details h1,
 .kcq-character-details h2 {
@@ -3649,7 +3640,6 @@ button {
 
 .kcq-encounter-picker__card-container {
     min-width: 0;
-    container: encounter-card / inline-size;
 }
 
 .kcq-encounter-picker--overview .kcq-encounter-picker__row {
@@ -3686,11 +3676,9 @@ button {
     grid-template-areas: "name";
 }
 
-@container encounter-card (min-width: 320px) {
-    .kcq-encounter-picker--overview .kcq-encounter-picker__row {
-        grid-template-columns: minmax(0, 1fr) auto auto;
-        grid-template-areas: "name stars best";
-    }
+.kcq-encounter-picker--wide .kcq-encounter-picker__row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas: "name stars best";
 }
 
 .kcq-encounter-picker__additional {
@@ -3997,27 +3985,25 @@ button {
     font-size: 12px;
 }
 
-@media (min-width: 481px) {
-    .kcq-party-selection__header {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        align-items: center;
-        gap: 4px 12px;
-        min-height: 68px;
-        padding: 8px 12px;
-    }
+:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-party-selection__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 4px 12px;
+    min-height: 68px;
+    padding: 8px 12px;
+}
 
-    .kcq-party-selection__header p {
-        margin: 0;
-    }
+:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-party-selection__header p {
+    margin: 0;
+}
 
-    .kcq-party-selection__header p[id] {
-        grid-area: 2 / 1 / auto / -1;
-    }
+:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-party-selection__header p[id] {
+    grid-area: 2 / 1 / auto / -1;
+}
 
-    .kcq-party-selection__header [role="status"] {
-        grid-area: 1 / 2;
-    }
+:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-party-selection__header [role="status"] {
+    grid-area: 1 / 2;
 }
 
 .kcq-party-selection__characters {
@@ -5025,42 +5011,41 @@ button {
     text-align: right;
 }
 
-/* The scaler chooses this layout before applying zoom, rather than querying
-   a zoomed container whose width can change during layout. */
-.kcq-app[data-kcq-title-layout="desktop"] .kcq-title-screen__title {
+/* Medium and wide use the two-section title arrangement. */
+.kcq-app:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-title-screen__title {
     max-width: none;
     max-height: max(1.2em, calc(var(--kcq-ui-height) - 160px));
     font-size: 64px;
 }
 
-.kcq-app[data-kcq-title-layout="desktop"] .kcq-title-screen__upper {
+.kcq-app:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-title-screen__upper {
     /* Zoom and fractional shell widths can leave slightly less than 756px.
        Let the panels shrink by that fraction instead of choosing a new row. */
     flex-wrap: nowrap;
 }
 
-.kcq-app[data-kcq-title-layout="desktop"] .kcq-title-screen__campaigns {
+.kcq-app:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-title-screen__campaigns {
     width: 100%;
 }
 
-.kcq-app[data-kcq-title-layout="desktop"] .kcq-title-screen__campaigns>h2 {
+.kcq-app:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-title-screen__campaigns>h2 {
     text-align: center;
 }
 
-.kcq-app[data-kcq-title-layout="desktop"] .kcq-title-screen__bottom {
+.kcq-app:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-title-screen__bottom {
     width: 100%;
     grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 }
 
-.kcq-app[data-kcq-title-layout="desktop"] .kcq-title-screen__credits {
+.kcq-app:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-title-screen__credits {
     grid-area: 1 / 1;
 }
 
-.kcq-app[data-kcq-title-layout="desktop"] .kcq-title-screen__language {
+.kcq-app:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-title-screen__language {
     grid-area: 1 / 2;
 }
 
-.kcq-app[data-kcq-title-layout="desktop"] .kcq-title-screen__version {
+.kcq-app:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-title-screen__version {
     grid-area: 1 / 3;
 }
 
@@ -5090,11 +5075,9 @@ button {
     white-space: nowrap;
 }
 
-@media (max-width: 480px) {
-    .kcq-encounter-header__title--picker {
-        font-size: 20px;
-        line-height: 24px;
-    }
+[data-kcq-layout="narrow"] .kcq-encounter-header__title--picker {
+    font-size: 20px;
+    line-height: 24px;
 }
 
 .kcq-encounter-picker__show-all input:focus-visible {
@@ -5139,17 +5122,14 @@ button {
     visibility: visible;
 }
 
-@media (max-width: 480px) {
+/* Narrow layouts suppress hints. Contain fixed-width content within the
+   vertical viewport without changing card dimensions. */
+[data-kcq-layout="narrow"] .kcq-screen-layout__content {
+    overflow-x: clip;
+}
 
-    /* Hints are suppressed on phones. Contain fixed-width content within the
-       vertical viewport without changing card dimensions. */
-    .kcq-screen-layout__content {
-        overflow-x: clip;
-    }
-
-    .kcq-shortcut {
-        display: none;
-    }
+[data-kcq-layout="narrow"] .kcq-shortcut {
+    display: none;
 }
 
 .kcq-enemy-details__back {
@@ -6503,20 +6483,6 @@ button {
     outline-offset: 2px;
 }
 
-@media (max-width: 360px) {
-    .kcq-library__modifiers {
-        grid-template-columns: minmax(0, 1fr);
-    }
-
-    .kcq-library__facts {
-        flex-wrap: wrap;
-    }
-
-    .kcq-library__move-card {
-        padding: 8px;
-    }
-}
-
 .kcq-library__facts .kcq-command-tag {
     font-size: 14px;
     line-height: 1.2;
@@ -6748,16 +6714,6 @@ button {
     grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
 }
 
-@media (max-width: 360px) {
-    .kcq-library__move-facts {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .kcq-library__header:has(.kcq-library__owner) h1 {
-        font-size: 18px;
-    }
-}
-
 .kcq-library__reference-effect {
     grid-template-columns: 3px auto minmax(0, 1fr);
 }
@@ -6878,26 +6834,26 @@ button {
     grid-column: 1 / -1;
 }
 
-/* Outcome dialogs follow the portal's zoom-aware desktop breakpoint. Keep the
-   Settings padding/frame treatment, with extra reading width for outcome prose. */
+/* Outcome dialogs follow the portal's semantic layout. Keep the Settings
+   padding/frame treatment, with extra reading width for outcome prose. */
 
-.kcq-battle-result-summary__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__viewport {
+.kcq-battle-result-summary__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__viewport {
     width: 424px;
     min-width: 0;
 }
 
-.kcq-battle-result-summary__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result {
+.kcq-battle-result-summary__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result {
     max-width: 400px;
     gap: 12px;
     padding: 16px;
 }
 
-.kcq-victory-story__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__viewport {
+.kcq-victory-story__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__viewport {
     width: 600px;
     min-width: 0;
 }
 
-.kcq-victory-story__overlay[data-kcq-title-layout="desktop"] .kcq-victory-story {
+.kcq-victory-story__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-victory-story {
     max-width: 580px;
     max-height: 100%;
 }
@@ -6920,36 +6876,36 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result {
     max-width: 580px;
     gap: 12px;
     padding: 16px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__heading {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__heading {
     padding: 0 0 8px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__heading h1 {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__heading h1 {
     margin-bottom: 4px;
     font-size: 26px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__progress {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__progress {
     margin-top: 6px;
     font-size: 20px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__summary {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__summary {
     padding-top: 4px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result-panel .kcq-battle-result__headlines {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result-panel .kcq-battle-result__headlines {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result-panel .kcq-battle-result__stat {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result-panel .kcq-battle-result__stat {
     grid-template-columns: minmax(0, 1fr);
     gap: 4px;
     padding: 8px;
@@ -6959,25 +6915,25 @@ button {
     text-align: center;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result-panel .kcq-battle-result__stat dd {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result-panel .kcq-battle-result__stat dd {
     font-size: 24px;
     line-height: 1.2;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result-panel .kcq-battle-result__actions {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result-panel .kcq-battle-result__actions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     grid-auto-rows: auto;
     gap: 8px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result-panel .kcq-battle-result__actions>button {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result-panel .kcq-battle-result__actions>button {
     grid-column: auto;
     min-height: 42px;
     padding: 6px 8px;
     font-size: 12px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result-panel .kcq-battle-result__actions>.kcq-battle-result__primary {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result-panel .kcq-battle-result__actions>.kcq-battle-result__primary {
     grid-column: 1 / -1;
 }
 
@@ -6986,27 +6942,27 @@ button {
     outline-offset: -2px;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result:not(.kcq-battle-result-panel) .kcq-battle-result__actions {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result:not(.kcq-battle-result-panel) .kcq-battle-result__actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 8px;
     grid-auto-rows: 1fr;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result:not(.kcq-battle-result-panel) .kcq-battle-result__actions>button {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result:not(.kcq-battle-result-panel) .kcq-battle-result__actions>button {
     grid-column: auto;
     overflow-wrap: anywhere;
 }
 
 /* An odd last action fills its row without changing the action/tab order. */
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result:not(.kcq-battle-result-panel) .kcq-battle-result__actions>button:last-child:nth-child(odd) {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result:not(.kcq-battle-result-panel) .kcq-battle-result__actions>button:last-child:nth-child(odd) {
     grid-column: 1 / -1;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-victory-story {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-victory-story {
     max-height: 100%;
 }
 
-.kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-victory-story__narrative {
+.kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-victory-story__narrative {
     width: 100%;
     max-width: 76ch;
     align-self: center;
@@ -7017,92 +6973,88 @@ button {
 
 /* Keep room for a readable scroll region at shorter scaled desktop heights. */
 @media (max-height: 600px) {
-    .kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result {
+    .kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result {
         gap: 6px;
         padding: 12px;
     }
 
-    .kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result__heading h1 {
+    .kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result__heading h1 {
         font-size: 24px;
     }
 
-    .kcq-outcome__overlay[data-kcq-title-layout="desktop"] .kcq-battle-result:not(.kcq-battle-result-panel) .kcq-battle-result__actions button {
+    .kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result:not(.kcq-battle-result-panel) .kcq-battle-result__actions button {
         min-height: 36px;
         padding: 6px 10px;
     }
 }
 
-/* Compact desktop settings */
-@media (min-width: 1200px) {
+/* Compact settings for the wide portal layout. */
+/* Dialog sizing */
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-result__viewport {
+    width: 400px;
+    max-width: 100%;
+}
 
-    /* Dialog sizing */
-    .kcq-battle-settings__overlay .kcq-battle-result__viewport {
-        width: 400px;
-        max-width: 100%;
-    }
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings {
+    max-width: 380px;
+    gap: 6px;
+    padding: 16px;
+}
 
-    .kcq-battle-settings {
-        max-width: 380px;
-        gap: 6px;
-        padding: 16px;
-    }
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__shortcut-hints span {
+    max-width: 150px;
+    line-height: 1.3;
+}
 
-    .kcq-battle-settings__shortcut-hints span {
-        max-width: 150px;
-        line-height: 1.3;
-    }
+/* Setting rows */
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__option {
+    min-height: 36px;
+    padding: 2px 0;
+    gap: 12px;
+    font-size: 12px;
+}
 
-    /* Setting rows */
-    .kcq-battle-settings__option {
-        min-height: 36px;
-        padding: 2px 0;
-        gap: 12px;
-        font-size: 12px;
-    }
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__option span {
+    width: auto;
+    flex: 1 1 auto;
+}
 
-    .kcq-battle-settings__option span {
-        width: auto;
-        flex: 1 1 auto;
-    }
+/* Dropdowns */
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__option select {
+    flex: 0 0 auto;
+    width: 175px;
+    max-width: 48%;
+    min-height: 32px;
+    padding: 4px 8px;
+    font-size: 12px;
+}
 
-    /* Dropdowns */
-    .kcq-battle-settings__option select {
-        flex: 0 0 auto;
-        width: 175px;
-        max-width: 48%;
-        min-height: 32px;
-        padding: 4px 8px;
-        font-size: 12px;
-    }
+/* Sliders */
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__log-lines input {
+    flex: 0 0 170px;
+    min-height: 32px;
+}
 
-    /* Sliders */
-    .kcq-battle-settings__log-lines input {
-        flex: 0 0 170px;
-        min-height: 32px;
-    }
+/* Compact buttons */
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings .kcq-battle-result__actions button {
+    min-height: 36px;
+    padding: 6px 10px;
+    font-size: 12px;
+}
 
-    /* Compact buttons */
-    .kcq-battle-settings .kcq-battle-result__actions button {
-        min-height: 36px;
-        padding: 6px 10px;
-        font-size: 12px;
-    }
+/* Reset button */
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__reset {
+    margin-top: 8px;
+}
 
-    /* Reset button */
-    .kcq-battle-settings__reset {
-        margin-top: 8px;
-    }
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings__reset button {
+    width: 100%;
+}
 
-    .kcq-battle-settings__reset button {
-        width: 100%;
-    }
-
-    /* Battle navigation buttons */
-    .kcq-battle-settings>.kcq-battle-result__actions:last-child {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 6px;
-    }
-
+/* Battle navigation buttons */
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings>.kcq-battle-result__actions:last-child {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
 }
 
 /* Shared contrast for fixed gameplay foregrounds on either palette. */

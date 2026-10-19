@@ -57,9 +57,6 @@ export function setupResponsiveScale(
         shell.style.setProperty("--kcq-ui-min-width", "366px");
         shell.style.setProperty("--kcq-ui-height", `${Math.max(0, viewportHeight - verticalPadding) / zoom}px`);
         shell.dataset.kcqLayout = layout.size;
-        // Decide title layout from the same unzoomed width as the scaler.
-        // Comparing ratios also avoids rounding at exactly two scaled panels.
-        shell.dataset.kcqTitleLayout = zoom <= availableWidth / LAYOUT_WIDTHS[2] ? "desktop" : "mobile";
         onLayout?.({ ...layout, availableWidth });
     };
 

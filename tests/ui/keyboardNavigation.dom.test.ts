@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ActionInfo, ActionView, GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { createBattle } from "../../src/ui/web/app";
+import { calculateResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import { App } from "../../src/ui/web/app/App";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { escapeFixtures } from "../../src/ui/web/app/fixtures/escape";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
@@ -18,6 +20,7 @@ let unmount: (() => void) | undefined;
 beforeEach(() => {
     window.localStorage.setItem("kcq.playbackSpeed", "instant");
     viewport.setViewport({ width: 390 });
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => window.innerWidth);
 });
 afterEach(() => {
     unmount?.();
@@ -63,7 +66,9 @@ function mountBattle(options: { state?: GameState; actions?: readonly ActionView
     });
     const host = document.createElement("div");
     document.body.append(host);
-    unmount = render(() => createComponent(BattleApp, { engine, presentation: fixture.presentation }), host);
+    unmount = render(() => createComponent(App, {
+        get children() { return createComponent(BattleApp, { engine, presentation: fixture.presentation }); },
+    }), host);
     return { engine, execute, state, actions };
 }
 function openTargeting(): void { press("1"); press("1"); }
@@ -363,7 +368,7 @@ describe("combat keyboard navigation", () => {
         assertBadges(".kcq-escape-choice[data-kcq-shortcut]");
     });
 
-    it.each([320, 390, 480, 481, 1024])("hides only badges at mobile widths and shows them at desktop width %i", width => {
+    it.each([320, 390, 600, 779, 780, 1024])("hides only badges in narrow layout and shows them in medium/wide at %i", width => {
         viewport.setViewport({ width });
         const style = document.createElement("style");
         style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
@@ -375,7 +380,7 @@ describe("combat keyboard navigation", () => {
             expect(badges.length).toBeGreaterThan(0);
             for (const badge of badges) {
                 const computed = getComputedStyle(badge);
-                expect(computed.display).toBe(width <= 480 ? "none" : "inline-flex");
+                expect(computed.display).toBe(calculateResponsiveLayout(width - 24).size === "narrow" ? "none" : "inline-flex");
                 expect(computed.visibility).toBe("visible");
                 expect(computed.pointerEvents).toBe("none");
                 expect(computed.position).toBe("absolute");
@@ -552,7 +557,7 @@ describe("keyboard shortcut hint visibility", () => {
         expect(stage.getAttribute("data-kcq-hints-visible")).toBe("true");
     });
 
-    it.each(["temporary", "always"] as const)("suppresses %s hints on phones and updates when resizing", mode => {
+    it.each(["temporary", "always"] as const)("suppresses %s hints in narrow layout and updates when resizing", mode => {
         addShortcutStyles();
         viewport.setViewport({ width: 1024 });
         mountBattle();
@@ -562,13 +567,12 @@ describe("keyboard shortcut hint visibility", () => {
             navigate();
             const badges = [...document.querySelectorAll(".kcq-shortcut")];
             expect(badges.length).toBeGreaterThan(0);
-            for (const width of [480, 390, 320, 481, 1024]) {
+            for (const width of [600, 390, 320, 779, 780, 1024, 1170]) {
                 viewport.setViewport({ width });
-                // Happy DOM does not invalidate computed-style caches on viewport changes.
-                document.body.setAttribute("data-test-viewport", String(width));
+                window.dispatchEvent(new Event("resize"));
                 // Resizing across column breakpoints can replace the active panels.
                 for (const badge of document.querySelectorAll(".kcq-shortcut")) {
-                    expect(getComputedStyle(badge).display).toBe(width <= 480 ? "none" : "inline-flex");
+                    expect(getComputedStyle(badge).display).toBe(calculateResponsiveLayout(width - 24).size === "narrow" ? "none" : "inline-flex");
                     expect(getComputedStyle(badge).visibility).toBe("visible");
                 }
             }

@@ -62,20 +62,27 @@ try {
         // a second wrapper even when the test browser has no saved battle.
         if (upper.children.length === 1) upper.prepend(upper.firstElementChild.cloneNode(true));
     })()`);
-    const measure = () => evaluate(`(() => {
+    const measure = () => evaluate(`(async () => {
+        const { calculateResponsiveLayout, LAYOUT_WIDTHS } = await import("/src/ui/web/app/responsiveScale.ts");
         const shell = document.querySelector(".kcq-app");
         const upper = document.querySelector(".kcq-title-screen__upper");
         const parts = [...upper.children].map(element => element.getBoundingClientRect());
         const footer = document.querySelector(".kcq-screen-layout__footer").getBoundingClientRect();
         const body = document.querySelector(".kcq-screen-layout__body");
         const zoom = Number(shell.style.getPropertyValue("--kcq-ui-zoom"));
+        const padding = getComputedStyle(shell);
+        const horizontalPadding = parseFloat(padding.paddingLeft) + parseFloat(padding.paddingRight);
+        const expected = calculateResponsiveLayout(shell.clientWidth - horizontalPadding);
         return {
-            mode: shell.dataset.kcqTitleLayout, zoom,
+            expectedLayout: expected.size, expectedZoom: expected.zoom,
+            layout: shell.dataset.kcqLayout, zoom,
             appliedZoom: Number(getComputedStyle(document.querySelector(".kcq-graphical-app__background")).zoom),
             columns: Math.abs(parts[0].y - parts[1].y) < 1 ? 2 : 1,
             widths: parts.map(part => part.width / zoom),
             footerFits: footer.bottom <= innerHeight && body.clientHeight > 0,
-            overflow: shell.scrollWidth > shell.clientWidth || body.scrollWidth > body.clientWidth,
+            // Below the canonical canvas width, the shell intentionally scrolls.
+            overflow: shell.scrollWidth > Math.max(shell.clientWidth, LAYOUT_WIDTHS[expected.columns] * zoom + horizontalPadding) + 1
+                || body.scrollWidth > body.clientWidth,
         };
     })()`);
     const widths = [375, 600, 779, 780, 781, 800, 950, 1024, 1169, 1170, 1280, 1600, 1920]
@@ -86,11 +93,13 @@ try {
         // resize would hide timing and fractional-width failures.
         await evaluate("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
         const result = await measure();
-        assert.equal(result.columns, result.mode === "desktop" ? 2 : 1,
+        assert.equal(result.layout, result.expectedLayout, "Layout differs from the scaler");
+        assert.equal(result.zoom, result.expectedZoom, "Zoom differs from the scaler");
+        assert.equal(result.columns, result.layout === "narrow" ? 1 : 2,
             `Unexpected row wrapping at ${width}px: ${JSON.stringify(result)}`);
         assert.ok(result.widths.every(value => value <= 366.1), "A panel stretched");
         assert.ok(Math.abs(result.appliedZoom - result.zoom) < .00001, "Title enlargement differs from the scaler");
-        assert.ok(result.footerFits && !result.overflow, `Overflow at ${width}px`);
+        assert.ok(result.footerFits && !result.overflow, `Overflow beyond the canonical canvas at ${width}px: ${JSON.stringify(result)}`);
     }
     for (const width of [800.6, 950.6, 1280.6]) {
         await evaluate(`document.getElementById("root").style.width = "${width}px"`);

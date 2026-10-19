@@ -18,7 +18,10 @@ const presentation = new Presentation(stockStrings);
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let unmount: (() => void) | undefined;
-beforeEach(() => vi.stubGlobal("__KCQ_GIT_REVISION__", "test"));
+beforeEach(() => {
+    vi.stubGlobal("__KCQ_GIT_REVISION__", "test");
+    vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockImplementation(() => window.innerWidth);
+});
 afterEach(() => {
     unmount?.();
     unmount = undefined;
@@ -215,7 +218,7 @@ describe("encounter keyboard navigation", () => {
         expect(remove).toHaveBeenCalledWith("keydown", listeners[0]![1]);
     });
 
-    it.each(["temporary", "always"] as const)("uses shared %s hints on every pre-combat screen and the log at desktop and phone widths", mode => {
+    it.each(["temporary", "always"] as const)("uses shared %s hints on every pre-combat screen and the log at medium and narrow layouts", mode => {
         vi.useFakeTimers();
         viewport.setViewport({ width: 1024 });
         window.localStorage.setItem("kcq.keyboardShortcutHints", mode);
@@ -236,11 +239,10 @@ describe("encounter keyboard navigation", () => {
             navigate();
             assertBadges(true);
             viewport.setViewport({ width: 390 });
-            // Invalidate Happy DOM's computed-style cache after changing viewport size.
-            document.body.setAttribute("data-test-viewport", "390");
+            window.dispatchEvent(new Event("resize"));
             assertBadges(true, true);
             viewport.setViewport({ width: 1024 });
-            document.body.setAttribute("data-test-viewport", "1024");
+            window.dispatchEvent(new Event("resize"));
             assertBadges(true);
         }
     });

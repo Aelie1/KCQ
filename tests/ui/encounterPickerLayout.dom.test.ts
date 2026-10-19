@@ -56,8 +56,8 @@ describe("desktop encounter overview", () => {
         const row = cards(host)[1]!;
         expect(row.parentElement!.className).toBe("kcq-encounter-picker__card-container");
         expect(getComputedStyle(row).display).toBe("grid");
-        // Compact cards place metadata below the name; wider containers may
-        // move it beside the name. Protect each semantic region in either form.
+        expect(getComputedStyle(row).gridTemplateAreas.replace(/\s+/g, " ")).toBe('"name stars best"');
+        // Wide cards place metadata beside the name in named regions.
         for (const [selector, area] of [["strong", "name"], [".kcq-encounter-picker__stars", "stars"], [".kcq-encounter-picker__best-clear", "best"]] as const) {
             expect(getComputedStyle(row.querySelector(selector)!).gridArea).toBe(area);
             expect(getComputedStyle(row).gridTemplateAreas).toContain(area);
@@ -134,6 +134,7 @@ describe("desktop encounter overview", () => {
         expect(host.querySelector(".kcq-encounter-picker--overview")).not.toBeNull();
         expect(host.querySelector(".kcq-encounter-picker--wide")).toBeNull();
         expect(cards(host)).toHaveLength(flat.length);
+        expect(getComputedStyle(cards(host)[0]!).gridTemplateAreas.replace(/\s+/g, " ")).toBe('"name name name" "stars . best"');
     });
 
     it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, organized) => {
@@ -141,6 +142,9 @@ describe("desktop encounter overview", () => {
         setLayout(layout);
         expect(!!host.querySelector(".kcq-encounter-picker--overview")).toBe(organized);
         expect(!!host.querySelector(".kcq-encounter-picker--wide")).toBe(layout.size === "wide");
+        const card = cards(host).find(card => card.querySelector(".kcq-encounter-picker__stars"))!;
+        expect(getComputedStyle(card).gridTemplateAreas.replace(/\s+/g, " ")).toBe(layout.size === "narrow" ? "" :
+            layout.size === "medium" ? '"name name name" "stars . best"' : '"name stars best"');
     });
 
     it("reveals extra encounters beneath the overview with Show All and removes them when switched off", () => {
