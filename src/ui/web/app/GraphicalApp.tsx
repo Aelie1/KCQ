@@ -1,35 +1,35 @@
 import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } from "solid-js";
 import type { KCQCampaign, KCQCharacter } from "../../../content";
-import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { ContentLibrary } from "../../../engine/public/library";
+import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import type { Presentation } from "../../presentation/presentation";
-import { LibraryPanel } from "./panels/LibraryPanel";
-import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
-import { loadLanguage, saveLanguage, type LanguageOption } from "./language";
-import { createOverviewGameLogPreference } from "./overviewGameLogLines";
-import { createPlaybackSpeedPreference } from "./playbackSpeed";
-import { createThemePreference } from "./theme";
-import { createShortcutHintPreference } from "./shortcutHints";
-import { createViewPreferences, ViewPreferencesContext } from "./viewPreferences";
-import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import { App } from "./App";
-import { TitleScreen } from "./components/TitleScreen";
-import { createTitleViewModel } from "./viewModels/title";
 import { BattleApp } from "./BattleApp";
 import { DifficultySelectPanel } from "./components/DifficultySelectPanel";
 import { EncounterDetailsPanel } from "./components/EncounterDetailsPanel";
 import { EncounterPickerPanel } from "./components/EncounterPickerPanel";
 import { PartySelectionPanel } from "./components/PartySelectionPanel";
-import { createPartySelectionViewModel } from "./viewModels/partySelection";
-import { availableCharacters } from "./partySelection";
+import { TitleScreen } from "./components/TitleScreen";
 import { createGraphicalController, type GraphicalBattleSession } from "./graphicalController";
+import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
+import { loadLanguage, saveLanguage, type LanguageOption } from "./language";
+import { createOverviewGameLogPreference } from "./overviewGameLogLines";
+import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
+import { LibraryPanel } from "./panels/LibraryPanel";
+import { availableCharacters } from "./partySelection";
+import { createPlaybackSpeedPreference } from "./playbackSpeed";
+import { clearSave, readSave, type SaveReadResult } from "./savePersistence";
+import { createShortcutHintPreference } from "./shortcutHints";
+import { createThemePreference } from "./theme";
 import { createDifficultySelectViewModel } from "./viewModels/difficulty";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel } from "./viewModels/encounters";
-import { clearSave, readSave, type SaveReadResult } from "./savePersistence";
 import type { LibraryPage } from "./viewModels/library";
+import { createPartySelectionViewModel } from "./viewModels/partySelection";
+import { createTitleViewModel } from "./viewModels/title";
+import { createViewPreferences, ViewPreferencesContext } from "./viewPreferences";
 
 export interface GraphicalCampaignComposition {
-    engine: Engine;
+    library: ContentLibrary;
     presentation: Presentation;
     languages?: readonly LanguageOption[];
 }
@@ -37,10 +37,12 @@ export interface GraphicalCampaignComposition {
 export interface GraphicalAppProps {
     campaigns: readonly KCQCampaign[];
     release: string;
+    characterLibrary: ContentLibrary;
     composeCampaign: (campaign: KCQCampaign, party: readonly KCQCharacter[]) => GraphicalCampaignComposition;
     presentation: Presentation;
     languages?: readonly LanguageOption[];
     prepareBattle: (campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId, party: readonly KCQCharacter[]) => GraphicalBattleSession;
+    createEngine: (characters: readonly KCQCharacter[], campaign: KCQCampaign,) => Engine;
 }
 
 export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
@@ -64,7 +66,6 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     const [settingsOpen, setSettingsOpen] = createSignal(false);
     const [libraryOpen, setLibraryOpen] = createSignal(false);
     const [libraryInitialPage, setLibraryInitialPage] = createSignal<LibraryPage>({ kind: "home" });
-    const [partyLibrary, setPartyLibrary] = createSignal<ContentLibrary>();
     let libraryTrigger: Element | null = null;
     const openLibrary = (page: LibraryPage = { kind: "home" }): void => {
         libraryTrigger = document.activeElement;
@@ -72,12 +73,6 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         setLibraryOpen(true);
     };
     const openCharacterLibrary = (id: KCQCharacter): void => {
-        const current = controller.screen();
-        const campaign = current.screen === "party" && current.returnTo.screen === "picker"
-            ? current.returnTo.campaign : props.campaigns[0];
-        if (!campaign) return;
-        // A read-only full-roster library, independent of the confirmed or draft party.
-        setPartyLibrary(props.composeCampaign(campaign, availableCharacters).engine.getLibrary());
         openLibrary({ kind: "entry", category: "characters", id });
     };
     const closeLibrary = (): void => {
@@ -102,11 +97,15 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         const result = readSave();
         setAutosave(result);
         if (result.status !== "loaded") return;
-        const campaign = props.campaigns.find(id => id === result.save.saveState.campaign);
+
+        const campaign = props.campaigns.find(
+            id => id === result.save.saveState.campaign
+        );
+
         if (!campaign || !controller.continueBattle(campaign, result.save, party => {
             const restored = props.composeCampaign(campaign, party);
             setRestoredComposition(restored);
-            return restored.engine;
+            return props.createEngine(party, campaign);
         })) {
             setRestoredComposition(undefined);
             setAutosave({ status: "corrupted" });
@@ -151,7 +150,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
             ? selected.languages?.find(option => option.id === language().id)?.presentation ?? selected.presentation
             : language().presentation;
     };
-    const library = createMemo(() => composition()?.engine.getLibrary());
+    const library = createMemo(() => composition()?.library);
     const details = () => {
         const current = controller.screen();
         return current.screen === "details" ? current : undefined;
@@ -233,8 +232,13 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
             </Switch>
         </div>
-        <Show when={libraryOpen() && (controller.screen().screen === "party" ? partyLibrary() : library())}>
-            {current => <LibraryPanel library={current()} presentation={presentation()} initialPage={libraryInitialPage()} onClose={closeLibrary} />}
+        <Show when={libraryOpen() && (controller.screen().screen === "party" ? props.characterLibrary : library())}>
+            {current => <LibraryPanel
+                library={current()}
+                presentation={presentation()}
+                initialPage={libraryInitialPage()}
+                onClose={closeLibrary}
+            />}
         </Show>
         <Show when={settingsOpen() && !libraryOpen()}>
             <BattleSettingsPanel presentation={presentation()} release={props.release} language={languageSelection} theme={theme} shortcutHints={shortcutHints} overviewGameLog={overviewGameLog} playbackSpeed={playbackSpeed} viewPreferences={viewPreferences}

@@ -1,8 +1,8 @@
 import { For, createUniqueId, type JSX } from "solid-js";
 import type { KCQCharacter } from "../../../../content";
+import libraryIconUrl from "../assets/library.svg";
 import { COMBAT_SHORTCUTS, combatShortcut } from "../keyboard";
 import type { PartySelectionViewModel } from "../viewModels/partySelection";
-import libraryIconUrl from "../assets/library.svg";
 import { ScreenLayout } from "./ScreenLayout";
 import { Shortcut } from "./Shortcut";
 
@@ -53,7 +53,7 @@ export function PartySelectionPanel(props: {
         </div>}
         footer={<footer class="kcq-screen-actions kcq-pregame-actions kcq-encounter-details__footer">
             <button class="kcq-targeting__back kcq-shortcut-host" type="button" data-kcq-shortcut={COMBAT_SHORTCUTS.back} onClick={props.onBack}>
-                <Shortcut shortcut={COMBAT_SHORTCUTS.back} />{props.model.backLabel}
+                <Shortcut shortcut={COMBAT_SHORTCUTS.back} /><span aria-hidden="true">↶ </span>{props.model.backLabel}
             </button>
             <button class="kcq-battle-overview__primary-action kcq-party-selection__continue kcq-shortcut-host" type="button"
                 data-kcq-shortcut="enter" disabled={!props.canContinue} onClick={props.onContinue}>

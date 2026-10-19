@@ -1,5 +1,6 @@
 import { ContentCatalog, ContentCatalogFragment } from "../engine/protected/types";
-import { createGameEngine } from "../engine/public/engine";
+import { createGameEngine, createLibrary } from "../engine/public/engine";
+import { ContentLibrary } from "../engine/public/library";
 import { Engine } from "../engine/public/types";
 import { baseCatalog } from "./base";
 import { hinariCatalog } from "./characters/hinari";
@@ -47,4 +48,16 @@ export function createEngine(characters: readonly KCQCharacter[], campaign: KCQC
     }
     catalogs.push(campaignCatalogs[campaign]);
     return createGameEngine(campaign, mergeCatalogs(...catalogs), seed);
+}
+
+export function createCharacterLibrary(): ContentLibrary {
+    return createLibrary(
+        mergeCatalogs(...Object.values(characterCatalogs))
+    );
+}
+
+export function createCampaignLibrary(characters: readonly KCQCharacter[], campaign: KCQCampaign,): ContentLibrary {
+    return createLibrary(
+        mergeCatalogs(baseCatalog, ...characters.map(id => characterCatalogs[id]), campaignCatalogs[campaign])
+    );
 }

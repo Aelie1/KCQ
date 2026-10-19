@@ -41,6 +41,11 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
         const start = Math.max(0, Math.min(navigation.position() - 5, visits.length - 12));
         return visits.slice(start, start + 12).map((visit, offset) => ({ ...visit, index: start + offset }));
     });
+    const treeCategories = createMemo(() =>
+        LIBRARY_CATEGORIES.filter(category =>
+            libraryEntries(props.library, category, props.presentation).length > 0
+        )
+    );
     let overlay!: HTMLDivElement;
     let host!: HTMLDivElement;
     let tree: HTMLElement | undefined;
@@ -136,7 +141,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
             role="dialog" aria-modal="true" aria-labelledby={headingId}>
             <Show when={desktop()}><aside class="kcq-library__sidebar">
                 <nav ref={tree} class="kcq-library__tree" aria-label={props.presentation.ui("library.navigation")}>
-                    <ul><For each={LIBRARY_CATEGORIES}>{category => <li>
+                    <ul><For each={treeCategories()}>{category => <li>
                         <button type="button" class="kcq-library__tree-category" aria-expanded={!!expanded()[category]}
                             aria-controls={treeId + "-" + category} data-library-category-toggle={category}
                             onClick={() => setExpanded(previous => ({ ...previous, [category]: !previous[category] }))}>

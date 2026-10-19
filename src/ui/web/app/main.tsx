@@ -1,15 +1,15 @@
 import { render } from "solid-js/web";
 import { getStringTable } from "../../../../localization";
-import { campaignCatalogs, createEngine, type KCQCampaign, type KCQCharacter } from "../../../content";
+import { campaignCatalogs, createCampaignLibrary, createCharacterLibrary, createEngine, type KCQCampaign, type KCQCharacter } from "../../../content";
 import type { DifficultyId, EncounterId } from "../../../engine/public/types";
 import { Presentation } from "../../presentation/presentation";
 import { attachBattlePageLifecycle, createBattle } from "../app";
 import { gameplayTelemetry } from "../posthog";
 import { createBattleTelemetryObserver } from "../telemetry";
+import "./app.css";
 import { GraphicalApp } from "./GraphicalApp";
 import type { GraphicalBattleSession } from "./graphicalController";
 import { availableCharacters } from "./partySelection";
-import "./app.css";
 import "./tokens.css";
 
 declare const __KCQ_RELEASE_TAG__: string;
@@ -25,12 +25,20 @@ const campaigns = Object.keys(campaignCatalogs) as KCQCampaign[];
 const presentation = new Presentation(Object.assign({}, getStringTable("en", availableCharacters),
     ...campaigns.map(campaign => getStringTable("en", undefined, campaign))));
 
-render(() => <GraphicalApp campaigns={campaigns} presentation={presentation} release={__KCQ_RELEASE_TAG__}
+render(() => <GraphicalApp
+    campaigns={campaigns}
+    presentation={presentation}
+    release={__KCQ_RELEASE_TAG__}
+    characterLibrary={createCharacterLibrary()}
+    createEngine={createEngine}
     composeCampaign={(campaign, party) => ({
-        engine: createEngine(party, campaign),
-        presentation: new Presentation(getStringTable("en", availableCharacters, campaign)),
+        library: createCampaignLibrary(party, campaign),
+        presentation: new Presentation(
+            getStringTable("en", availableCharacters, campaign)
+        ),
     })}
-    prepareBattle={prepareGraphicalBattle} />, root);
+    prepareBattle={prepareGraphicalBattle}
+/>, root);
 
 function createId(): string {
     if (typeof crypto.randomUUID === "function") {
