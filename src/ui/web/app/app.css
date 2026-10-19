@@ -4377,13 +4377,12 @@ button {
 }
 
 .kcq-battle-result__viewport {
-    /* Preserve the battle column's sizing and padding inside the body portal. */
-    min-width: var(--kcq-ui-min-width, 0px);
+    min-width: 366px;
+    width: 366px;
+    max-width: 100%;
     zoom: var(--kcq-ui-zoom, 1);
     display: grid;
     place-items: center;
-    width: 366px;
-    max-width: 100%;
     height: var(--kcq-ui-height);
     min-height: 0;
     padding: 12px;
@@ -5724,8 +5723,8 @@ button {
     display: grid;
     grid-template-columns: minmax(0, 366px);
     width: 366px;
-    max-width: 100%;
-    min-width: 0;
+    min-width: 366px;
+    max-width: none;
     height: min(720px, var(--kcq-ui-height, calc(100dvh - 24px)));
     min-height: 0;
     background: var(--kcq-surface-background);
