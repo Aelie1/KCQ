@@ -108,7 +108,7 @@ export class GameEngine implements Engine {
     }
 
     setDifficulty(difficulty: DifficultyId) {
-        if (this.state.turn.round !== 1 || this.state.turn.step !== 1 || this.state.turn.phase !== "player") {
+        if (this.state.encounter) {
             return;
         }
         this.state.difficulty = difficulties[difficulty];
@@ -340,6 +340,12 @@ export class GameEngine implements Engine {
                             const targetStatus = new GameStatus(this.state, character);
                             targetInfo.push(isValidTarget(this.state, actor, status, character, targetStatus, move));
                         }
+                    }
+                    if (!targetInfo.some(x => x.valid)) {
+                        return {
+                            success: false,
+                            reason: "insufficientTargets"
+                        };
                     }
                 } else if (move.targets === 0) {
                     if (action.targets.length !== 0) {
@@ -608,7 +614,11 @@ export class GameEngine implements Engine {
                             actor: actor.id,
                             reason: reason
                         });
-                        actor.acted = true;
+                        if (actor.acted) {
+                            actor.bonusEscapes--;
+                        } else {
+                            actor.acted = true;
+                        }
                         this.state.turn.step++;
                         this.refreshView();
                         result.push({

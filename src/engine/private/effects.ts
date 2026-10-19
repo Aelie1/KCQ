@@ -547,6 +547,7 @@ export class GameEffects {
                 && (intention.move.definition.targetSide === "either"
                     || intention.move.definition.targetSide === "player")
                 && intention.move.definition.targets === 1
+                && intention.rolls.length > 0
                 && intention.rolls[0].target !== destination) {
                 intention.rolls[0].target = destination;
                 retargetted = true;

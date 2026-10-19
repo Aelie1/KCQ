@@ -130,9 +130,8 @@ function getTargets(state: iGameState, actor: iCharacter, statuses: StatusMap, m
 
 
     const validTargets = result.filter(x => x.valid).length;
-    if (move.targets !== "all"
-        && move.targets > 0
-        && move.targets > validTargets) {
+    if ((move.targets === "all" && validTargets === 0)
+        || (move.targets !== "all" && move.targets > 0 && move.targets > validTargets)) {
         return [{
             valid: false,
             target: null,

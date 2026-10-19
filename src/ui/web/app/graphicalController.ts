@@ -1,15 +1,15 @@
-import type { KCQCampaign, KCQCharacter } from "../../../content";
 import { createSignal } from "solid-js";
+import type { KCQCampaign, KCQCharacter } from "../../../content";
 import type { CampaignReference, ContentLibrary } from "../../../engine/public/library";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
-import type { BattleTelemetryObserver } from "../telemetry";
 import { ENCOUNTER_DIFFICULTIES } from "../app";
+import type { BattleTelemetryObserver } from "../telemetry";
 import { isKnownDifficulty, loadPreferredDifficulty, loadPreferredParty, savePreferredDifficulty, savePreferredParty } from "./battlePreferences";
-import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "./encounterClears";
 import { loadCampaignUnlocks, saveCampaignUnlocks, type CampaignUnlocks } from "./campaignUnlocks";
+import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "./encounterClears";
 import { getNextEncounter } from "./nextEncounter";
-import type { SavePackage } from "./savePackage";
 import { isPlayableCharacter, isValidParty, PARTY_SIZE } from "./partySelection";
+import type { SavePackage } from "./savePackage";
 
 export interface GraphicalBattleSession {
     engine: Engine;
@@ -135,7 +135,7 @@ export function createGraphicalController(
                 engine.loadSaveState(save.saveState);
                 const state = engine.getGameState();
                 if (state.turn.outcome !== "ongoing" || state.encounter?.id !== encounter) return false;
-                restored = { engine, saved: save, dispose: () => {} };
+                restored = { engine, saved: save, dispose: () => { } };
             } catch {
                 // Commit the session and screen only after restoration succeeds.
                 return false;
@@ -161,7 +161,12 @@ export function createGraphicalController(
             if (outcome === "ongoing") return;
             outcomeRecorded = true;
             const campaign = session.engine.getLibrary().campaigns[current.campaign];
-            if (campaign) unlockEncounter(campaign, current.encounter, outcome);
+            if (campaign) {
+                const available = new Set([...campaign.initial, ...(unlocks()[campaign.id] ?? []),]);
+                if (available.has(current.encounter)) {
+                    unlockEncounter(campaign, current.encounter, outcome);
+                }
+            }
             if (outcome !== "victory") return;
             const rank = (difficulty: DifficultyId | undefined) => ENCOUNTER_DIFFICULTIES.findIndex(({ id }) => id === difficulty);
             if (rank(current.difficulty) <= rank(bestClears()[current.encounter])) return;
