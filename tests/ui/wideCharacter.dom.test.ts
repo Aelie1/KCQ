@@ -271,7 +271,8 @@ describe.each([780, 1169, 1920])("desktop character workspace at %ipx", width =>
         expect(element(".kcq-targeting")).toBe(workspace);
         if (width < WIDE_BATTLE_OVERVIEW_BREAKPOINT) button(".kcq-game-log-heading-action").click();
         else press(COMBAT_SHORTCUTS.gameLog);
-        expect(element(".kcq-game-log")).toBeDefined();
+        expect(!!document.querySelector(".kcq-game-log")).toBe(width < WIDE_BATTLE_OVERVIEW_BREAKPOINT);
+        if (width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT) expect(gameLog()).toBe(log);
         press(COMBAT_SHORTCUTS.back);
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-targeting")).toBe(workspace);

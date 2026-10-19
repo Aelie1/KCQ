@@ -25,7 +25,7 @@ beforeEach(() => {
 afterEach(() => {
     unmount?.(); unmount = undefined;
     document.body.replaceChildren(); viewport.setViewport(initialViewport);
-    window.localStorage.clear(); vi.restoreAllMocks();
+    window.localStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
 function mount(view: Parameters<typeof render>[0], responsive = false): HTMLElement {
     const style = document.createElement("style");
@@ -339,18 +339,181 @@ describe("responsive battle overview", () => {
         expect(host.querySelector(".kcq-game-log")).toBeNull();
         expect(host.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
+    it.each([390, 780, 1169])("keeps the %ipx battle mounted while presenting full history", async width => {
+        const { host, execute } = mountBattle(width);
+        const battle = element(width < 780 ? ".kcq-battle-overview" : ".kcq-battle-overview-columns");
+        const background = element(".kcq-battle-stage__background");
+        const trigger = element(width < 780 ? ".kcq-compact-game-log" : ".kcq-game-log-heading-action");
+        trigger.focus(); trigger.click();
+        const panel = element(".kcq-game-log");
+        const body = panel.querySelector<HTMLElement>(".kcq-screen-layout__body")!;
+        const back = panel.querySelector<HTMLButtonElement>(".kcq-combat-header__back")!;
+        expect(background.hidden).toBe(width < 780);
+        expect(background.hasAttribute("inert")).toBe(true);
+        expect(background.getAttribute("aria-hidden")).toBe("true");
+        expect(battle.isConnected).toBe(true);
+        expect(document.activeElement).toBe(back);
+        expect(body.tabIndex).toBe(0);
+        expect(getComputedStyle(body).overflowY).toBe("auto");
+        const modal = host.querySelector('[role="dialog"]');
+        expect(!!modal).toBe(width >= 780);
+        if (modal) {
+            expect(modal.getAttribute("aria-modal")).toBe("true");
+            expect(modal.getAttribute("aria-label")).toBe("Game Log");
+            expect(getComputedStyle(modal).position).toBe("absolute");
+            expect(element(".kcq-game-log-heading-action")).toBe(trigger);
+            const tab = (target: HTMLElement, shiftKey = false) => {
+                const event = new KeyboardEvent("keydown", { key: "Tab", shiftKey, bubbles: true, cancelable: true });
+                target.dispatchEvent(event); return event;
+            };
+            expect(tab(back, true).defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(body);
+            expect(tab(body).defaultPrevented).toBe(true);
+            expect(document.activeElement).toBe(back);
+        }
+        for (const key of ["1", COMBAT_SHORTCUTS.endTurn]) press(key);
+        expect(execute).not.toHaveBeenCalled();
+        body.scrollTop = 120;
+        back.click();
+        await Promise.resolve();
+        expect(host.querySelector(".kcq-game-log")).toBeNull();
+        expect(background.hidden).toBe(false);
+        expect(background.hasAttribute("inert")).toBe(false);
+        expect(background.hasAttribute("aria-hidden")).toBe(false);
+        expect(element(width < 780 ? ".kcq-battle-overview" : ".kcq-battle-overview-columns")).toBe(battle);
+        expect(document.activeElement).toBe(width < 780 ? element(".kcq-compact-game-log") : trigger);
+    });
+
+    it("preserves the open panel, following, scroll position, and focus between narrow and medium", () => {
+        let nextFrame = 0;
+        const pending = new Map<number, FrameRequestCallback>();
+        const resizes: (() => void)[] = [];
+        vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++nextFrame, callback); return nextFrame; });
+        vi.stubGlobal("cancelAnimationFrame", (id: number) => pending.delete(id));
+        vi.stubGlobal("ResizeObserver", class {
+            constructor(callback: () => void) { resizes.push(callback); }
+            observe = vi.fn();
+            disconnect = vi.fn();
+        });
+        const flush = () => { for (const [id, callback] of [...pending]) { pending.delete(id); callback(0); } };
+        mountBattle(780);
+        element(".kcq-game-log-heading-action").click();
+        const panel = element(".kcq-game-log");
+        const body = panel.querySelector<HTMLElement>(".kcq-screen-layout__body")!;
+        let height = 1000;
+        Object.defineProperties(body, {
+            scrollHeight: { get: () => height }, clientHeight: { get: () => 200 },
+        });
+        flush();
+        expect(body.scrollTop).toBe(800);
+        body.scrollTop = 123;
+        body.dispatchEvent(new Event("scroll"));
+        body.focus();
+        for (const width of [390, 780, 1169, 390, 780]) {
+            viewport.setViewport({ width });
+            window.dispatchEvent(new Event("resize"));
+            height += 100;
+            resizes.forEach(callback => callback());
+            flush();
+            expect(element(".kcq-game-log")).toBe(panel);
+            expect(body.scrollTop).toBe(123);
+            expect(document.activeElement).toBe(body);
+            expect(!!document.querySelector('[role="dialog"]')).toBe(width >= 780);
+            expect(element(".kcq-battle-stage__background").hidden).toBe(width < 780);
+        }
+        body.scrollTop = height - 200;
+        body.dispatchEvent(new Event("scroll"));
+        height += 100;
+        resizes.forEach(callback => callback());
+        flush();
+        expect(body.scrollTop).toBe(height - 200);
+        press(COMBAT_SHORTCUTS.back);
+        expect(document.querySelector(".kcq-game-log")).toBeNull();
+        flush(); // Unmount cancels the panel's pending follow work.
+    });
+
+    it("dismisses the medium modal with the backdrop and log shortcut", async () => {
+        mountBattle(780);
+        const trigger = element(".kcq-game-log-heading-action");
+        trigger.focus(); trigger.click();
+        element(".kcq-battle-log--modal").click();
+        await Promise.resolve();
+        expect(document.activeElement).toBe(trigger);
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
+        press(COMBAT_SHORTCUTS.gameLog);
+        expect(document.querySelector('[role="dialog"]')).not.toBeNull();
+        press(COMBAT_SHORTCUTS.gameLog);
+        await Promise.resolve();
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
+        expect(document.activeElement).toBe(trigger);
+    });
+
+    it.each([1170, 1920])("keeps wide history inline with its scroll state at %ipx", async width => {
+        const { host, execute } = mountBattle(width, 0);
+        const history = element(".kcq-overview-game-log-history");
+        const battle = element(".kcq-battle-overview-wide");
+        history.scrollTop = 43;
+        history.dispatchEvent(new Event("scroll"));
+        const trigger = element(".kcq-combat-header__settings");
+        trigger.focus();
+        press(COMBAT_SHORTCUTS.gameLog);
+        await Promise.resolve();
+        expect(host.querySelector(".kcq-game-log, .kcq-battle-log, [role=dialog]")).toBeNull();
+        expect(element(".kcq-overview-game-log-history")).toBe(history);
+        expect(history.scrollTop).toBe(43);
+        expect(document.activeElement).toBe(history);
+        expect(battle.closest("[hidden], [inert], [aria-hidden=true]")).toBeNull();
+        expect(getComputedStyle(battle).gridTemplateColumns).toBe("366px 366px 366px");
+        press(COMBAT_SHORTCUTS.endTurn);
+        expect(execute).toHaveBeenCalledExactlyOnceWith({ type: "endTurn" });
+        press(COMBAT_SHORTCUTS.back);
+        await Promise.resolve();
+        expect(document.activeElement).toBe(trigger);
+        expect(element(".kcq-overview-game-log-history")).toBe(history);
+    });
+
+    it.each(["2", "3"])("uses forced %s presentation on a narrow physical viewport", async columns => {
+        window.localStorage.setItem("kcq.battleColumns", columns);
+        mountBattle(390);
+        press(COMBAT_SHORTCUTS.gameLog);
+        await Promise.resolve();
+        expect(!!document.querySelector(".kcq-battle-log--modal")).toBe(columns === "2");
+        expect(!!document.querySelector(".kcq-game-log")).toBe(columns === "2");
+        expect(!!document.querySelector(".kcq-overview-game-log-history")).toBe(columns === "3");
+    });
+
+    it.each([390, 780, 1170])("returns from history to the completed result at %ipx", async width => {
+        const state: GameState = structuredClone(fixture.state);
+        state.turn.outcome = "defeat";
+        mountBattle(width, 0, state);
+        document.querySelector<HTMLButtonElement>(".kcq-victory-story__continue")?.click();
+        const resultText = element(".kcq-battle-result-panel").textContent;
+        element(".kcq-battle-result__log").click();
+        await Promise.resolve();
+        expect(document.querySelector(".kcq-battle-result-panel")).toBeNull();
+        expect(!!document.querySelector(".kcq-game-log")).toBe(width < 1170);
+        expect(!!document.querySelector(".kcq-battle-log--modal")).toBe(width >= 780 && width < 1170);
+        if (width >= 1170) expect(document.activeElement).toBe(element(".kcq-overview-game-log-history"));
+        press(COMBAT_SHORTCUTS.back);
+        await Promise.resolve();
+        expect(element(".kcq-battle-result-panel").textContent).toBe(resultText);
+        expect(document.activeElement).toBe(element(".kcq-battle-result__log"));
+    });
+
     it("retains character, enemy, and log navigation after resizing, including zero log lines", () => {
         const { host } = mountBattle(1920, 0);
         element(".kcq-party-card").click(); expect(host.querySelector(".kcq-character-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); press("4"); expect(host.querySelector(".kcq-enemy-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); expect(host.querySelector(".kcq-compact-game-log")).toBeNull();
-        press(COMBAT_SHORTCUTS.gameLog); expect(host.querySelector(".kcq-game-log")).not.toBeNull();
+        press(COMBAT_SHORTCUTS.gameLog); expect(host.querySelector(".kcq-game-log")).toBeNull();
+        expect(host.querySelector(".kcq-overview-game-log-history")).not.toBeNull();
         expect(getComputedStyle(host).width).toBe(`${LAYOUT_WIDTHS[3]}px`);
         press(COMBAT_SHORTCUTS.back); viewport.setViewport({ width: 390 });
         press("1"); expect(host.querySelector(".kcq-character-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); viewport.setViewport({ width: 1920 });
         element(".kcq-enemy-card").click(); expect(host.querySelector(".kcq-enemy-details")).not.toBeNull();
         press(COMBAT_SHORTCUTS.back); press(COMBAT_SHORTCUTS.gameLog);
-        expect(host.querySelector(".kcq-game-log")).not.toBeNull();
+        expect(host.querySelector(".kcq-game-log")).toBeNull();
+        expect(host.querySelector(".kcq-overview-game-log-history")).not.toBeNull();
     });
 });

@@ -1660,6 +1660,33 @@ button {
     background: var(--kcq-surface-panel);
 }
 
+.kcq-battle-log {
+    grid-row: 2;
+    height: 100%;
+    min-height: 0;
+}
+
+.kcq-battle-log>.kcq-game-log {
+    height: 100%;
+}
+
+.kcq-battle-log--modal {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: var(--kcq-surface-overlay);
+}
+
+.kcq-battle-log--modal>.kcq-game-log {
+    width: 600px;
+    max-width: 100%;
+    max-height: 720px;
+}
+
 .kcq-game-log__scroll {
     display: flex;
     flex-direction: column;

@@ -268,7 +268,8 @@ describe("battle settings interactions", () => {
         button("View Game Log").click();
         expect(document.querySelector('[role="dialog"]')).toBeNull();
         expect(document.querySelector(".kcq-game-log")).not.toBeNull();
-        expect(document.querySelector(".kcq-battle-stage__background")?.hasAttribute("inert")).toBe(false);
+        expect(document.querySelector(".kcq-battle-stage__background")?.hasAttribute("inert")).toBe(true);
+        expect(document.querySelector<HTMLElement>(".kcq-battle-stage__background")?.hidden).toBe(true);
         expect(document.activeElement?.classList.contains("kcq-combat-header__back")).toBe(true);
         const history = document.querySelector(".kcq-game-log__scroll")!.textContent;
         expect(document.querySelectorAll(".kcq-game-log__entry").length).toBeGreaterThan(0);

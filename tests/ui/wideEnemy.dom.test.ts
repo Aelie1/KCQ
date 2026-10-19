@@ -169,8 +169,8 @@ describe.each([780, 1169, 1920])("desktop enemy details at %ipx", width => {
         body.scrollTop = 42;
         if (width < WIDE_BATTLE_OVERVIEW_BREAKPOINT) element(".kcq-game-log-heading-action").click();
         else press("-");
-        expect(document.querySelector(".kcq-game-log")).not.toBeNull();
-        expect(press("1").defaultPrevented).toBe(false);
+        expect(!!document.querySelector(".kcq-game-log")).toBe(width < WIDE_BATTLE_OVERVIEW_BREAKPOINT);
+        if (width < WIDE_BATTLE_OVERVIEW_BREAKPOINT) expect(press("1").defaultPrevented).toBe(false);
         press("Escape");
         expect(element(".kcq-enemy-details")).toBe(details);
         expect(body.scrollTop).toBe(42);

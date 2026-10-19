@@ -109,7 +109,24 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     let selectedTargetIds: readonly EntityId[] = [];
     let selectedEscape: Pick<EscapeInfo, "binding" | "target"> | undefined;
     const [logOpen, setLogOpen] = createSignal(false);
-    const toggleLog = (): void => { if (!dialogOpen() && !playback.active()) setLogOpen(open => !open); };
+    let logTrigger: Element | null = null;
+    const closeLog = (): void => {
+        setLogOpen(false);
+        queueMicrotask(() => {
+            if (resultModel()) return; // The result panel restores its own View Game Log focus.
+            const target = logTrigger instanceof HTMLElement && logTrigger.isConnected
+                ? logTrigger : stage?.querySelector<HTMLElement>(".kcq-game-log-heading-action, .kcq-compact-game-log");
+            if (target && !target.closest("[inert], [hidden]")) target.focus();
+        });
+    };
+    const toggleLog = (): void => {
+        if (dialogOpen() || playback.active()) return;
+        if (logOpen()) closeLog();
+        else {
+            logTrigger = document.activeElement;
+            setLogOpen(true);
+        }
+    };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
     const [libraryOpen, setLibraryOpen] = createSignal(false);
     let libraryTrigger: Element | null = null;
@@ -135,6 +152,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [resultLogVisited, setResultLogVisited] = createSignal(false);
     const openResultLog = (): void => {
         setResultLogVisited(true);
+        logTrigger = document.activeElement;
         setLogOpen(true);
     };
     const tracker = createBattleResultTracker(state(), props.saved?.stats);
@@ -252,6 +270,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             const result = props.engine.executeAction(action);
             notifyObserver(() => props.observer?.onAction?.(action, result, "player"));
             if (result.success) {
+                if (wide()) setLogOpen(false);
                 const nextState = props.engine.getGameState();
                 engineState = nextState;
                 finalActions = result.actions;
@@ -373,7 +392,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     const back = (): boolean => {
         if (playback.active()) return false;
-        if (logOpen()) { setLogOpen(false); return true; }
+        if (logOpen()) { closeLog(); return true; }
         const current = screen();
         if (current.kind === "overview") return false;
         setScreen(current.kind === "targeting" || current.kind === "escape"
@@ -390,12 +409,12 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
-            if (logOpen() || (screen().kind !== "overview" && !(desktop() && (characterActorId() || enemyScreen())))) return false;
+            if ((logOpen() && !wide()) || (screen().kind !== "overview" && !(desktop() && (characterActorId() || enemyScreen())))) return false;
 
             endTurn();
             return true;
         }
-        if (logOpen()) return false;
+        if (logOpen() && !wide()) return false;
         const current = screen();
         if (current.kind !== "character" && current.kind !== "targeting" && current.kind !== "escape") return false;
         const commandId = key === COMBAT_SHORTCUTS.stance ? "stance" : "escape";
@@ -416,6 +435,14 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const layout = sharedLayout ?? createMemo(() => calculateResponsiveLayout(viewportWidth() - 24, viewPreferences.columns));
     const wide = () => layout().size === "wide";
     const desktop = () => layout().size !== "narrow";
+    const logReplacement = () => logOpen() && layout().size === "narrow";
+    const logModal = () => logOpen() && layout().size === "medium";
+    createEffect(() => {
+        if (!logOpen() || !wide()) return;
+        queueMicrotask(() => {
+            if (logOpen() && wide()) stage?.querySelector<HTMLElement>(".kcq-overview-game-log-history")?.focus();
+        });
+    });
     const expandedEnemies = () => viewPreferences.enemyCards === "auto" ? desktop() : viewPreferences.enemyCards === "expanded";
     onMount(() => {
         if (sharedLayout) return;
@@ -438,7 +465,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         ));
         const overview: BattleOverviewPanelProps = {
             get actions() { return actions(); },
-            get gameLogLines() { return logOpen() ? 0 : overviewGameLog.value; },
+            get gameLogLines() { return logReplacement() ? 0 : overviewGameLog.value; },
             get history() { return logEntries(); },
             library,
             get presentation() { return props.presentation; },
@@ -468,7 +495,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     }>
                         <EnemyDetails />
                     </Show>
-                    <BattleOverviewPanel {...overview} gameLogScrollable={!logOpen()}
+                    <BattleOverviewPanel {...overview} gameLogScrollable
                         sections={{ header: false, enemies: false, party: false, footer: false }} />
                 </div>
             </Match>
@@ -608,22 +635,47 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             }} />;
     };
 
+    // Keep the same panel and scroll state when narrow replacement becomes a medium dialog.
+    const FullGameLog = (): JSX.Element => {
+        let host!: HTMLDivElement;
+        onMount(() => {
+            const body = host.querySelector<HTMLElement>(".kcq-screen-layout__body");
+            if (body) body.tabIndex = 0;
+        });
+        return <div ref={host} class="kcq-battle-log" classList={{ "kcq-battle-log--modal": logModal() }}
+            role={logModal() ? "dialog" : undefined} aria-modal={logModal() ? true : undefined}
+            aria-label={logModal() ? props.presentation.ui("combatHeader.gameLog") : undefined}
+            onClick={event => { if (logModal() && event.target === host) closeLog(); }}
+            onKeyDown={event => {
+                if (!logModal() || event.key !== "Tab") return;
+                const controls = host.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]');
+                const first = controls[0], last = controls[controls.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                    event.preventDefault(); last?.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                    event.preventDefault(); first?.focus();
+                }
+            }}>
+            <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount />
+        </div>;
+    };
+
     return (
         <ViewPreferencesContext.Provider value={viewPreferences}><CombatReactionsContext.Provider value={reactions}>
             <div class="kcq-battle-stage" ref={stage} data-kcq-columns={viewPreferences.columns} data-kcq-hints-visible={hintsVisible()} aria-busy={playback.active()}>
                 <Show when={saveFailed() && state().turn.outcome === "ongoing"}>
                     <p class="kcq-autosave-warning" role="alert">{props.presentation.ui("autosave.failed")}</p>
                 </Show>
-                <div class="kcq-battle-stage__background" inert={dialogOpen() || playback.active()} aria-hidden={dialogOpen() ? true : undefined}>
-                    <Show when={logOpen()}>
-                        <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back} focusBackOnMount={!!resultModel()} />
-                    </Show>
-                    <div hidden={logOpen()} inert={logOpen()} aria-hidden={logOpen() ? true : undefined}>
+                <div class="kcq-battle-stage__background" hidden={logReplacement()}
+                    inert={dialogOpen() || logModal() || logReplacement() || playback.active()}
+                    aria-hidden={dialogOpen() || logModal() || logReplacement() ? true : undefined}>
+                    <div>
                         <Show when={desktop() && !!characterActorId()} fallback={<ScreenPanels />}>
                             <DesktopCharacter />
                         </Show>
                     </div>
                 </div>
+                <Show when={logOpen() && !wide()}><FullGameLog /></Show>
                 <Show when={libraryOpen()}><ResponsiveLayoutContext.Provider value={layout}>
                     <LibraryPanel library={library} presentation={props.presentation} onClose={closeLibrary} />
                 </ResponsiveLayoutContext.Provider></Show>
