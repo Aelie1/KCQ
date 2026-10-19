@@ -99,16 +99,17 @@ describe("harness party and difficulty configuration", () => {
         })).rejects.toThrow(message);
     });
 
-    it("preserves the original default gameplay and produces identical explicit default results", () => {
+    it("produces identical default and explicit configuration results with current gameplay", () => {
         const input = { ...fightInput, policy: basicPolicy, maxActions: 1000, replay: true };
         const result = runSingleFight(input);
         expect(result.party).toEqual(stockCharacters);
         expect(result.difficulty).toBe("standard");
         expect(result).toEqual(runSingleFight({ ...input, party: stockCharacters, difficulty: "standard" }));
-        // Recorded before configuration support: includes gameplay, metrics, trace and full replay.
+        // Full result baseline updated for Ko's binding-removal preview on Fairy Transformation.
+        // Comparing the original configuration-support revision isolates the changes to that preview.
         const { party, difficulty, ...legacyResult } = result;
         expect(createHash("sha256").update(JSON.stringify(legacyResult)).digest("hex"))
-            .toBe("5d046ba47d9d943f5a5905d181f7551dcaf54d99c23d90e618a90a25b5cba9c7");
+            .toBe("d26939c99b7f2be0cf0e56b7e1dcc4071b90a3954f04f9fb5c68e9787e7ea422");
         expect(runBatch(batchInput)).toEqual(runBatch({ ...batchInput, party: stockCharacters, difficulty: "standard" }));
     });
 

@@ -162,9 +162,9 @@ describe("latex escape spread through GameEngine", () => {
         {
             range: "Overwhelming",
             application: 180,
-            initial: 90,
+            initial: 100,
             removed: 5,
-            spread: 8,
+            spread: 10,
         },
     ])("applies representative $range-range spread", ({
         application,

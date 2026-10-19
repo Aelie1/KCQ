@@ -100,7 +100,8 @@ describe.each(harnessDifficulties)("real-engine policy kit restrictions on %s", 
                 moveList: { addedMoves: actor.id === "naruyo" ? ["fairyPrecisionStab"] : ["fairyMalfunction", "fairyOverload"] } });
         }
         engine.loadSaveState(save);
-        expect(candidates(engine, "hinari", "rockfall")).toEqual([]);
+        expect(candidates(engine, "hinari", "rockfall").map(({ action }) => action))
+            .toEqual(["binder1", "watcher1"].map(target => ({ type: "move", actor: "hinari", move: "rockfall", targets: [target] })));
         expect(candidates(engine, "hinari", "release").length).toBeGreaterThan(0);
         expect(candidates(engine, "naruyo", "fairyPrecisionStab")).toHaveLength(1);
         expect(candidates(engine, "sakari", "fairyMalfunction").length).toBeGreaterThan(0);

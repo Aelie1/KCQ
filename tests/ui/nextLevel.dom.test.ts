@@ -57,6 +57,7 @@ function select(id: string, localized = presentation) {
     row.click();
 }
 function battle(encounter: string, outcome: "victory" | "defeat", localized = presentation, dismissStory = true) {
+    window.localStorage.setItem("kcq.unlocks", JSON.stringify({ skunk: [encounter] }));
     const app = mount(localized);
     element<HTMLInputElement>(".kcq-encounter-picker__show-all input").click(); select(encounter, localized);
     key("Enter"); key("Enter");
@@ -134,6 +135,7 @@ describe("Next Level navigation", () => {
     });
 
     it.each(["prologue", "interlude_1", "interlude_2", "interlude_3", "epilogue"])("advances story %s to details with the existing footer shortcut", story => {
+        window.localStorage.setItem("kcq.unlocks", JSON.stringify({ skunk: [story] }));
         const app = mount();
         element(".kcq-encounter-picker__show-all input").click(); select(story);
         const footer = element(".kcq-encounter-details__footer");

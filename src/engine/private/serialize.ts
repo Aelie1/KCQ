@@ -31,7 +31,7 @@ function serializeCharacter(state: iGameState, character: iCharacter, statuses: 
         acted: character.acted,
         standing: character.standing,
         bonusEscapes: character.bonusEscapes,
-        modifiers: status.getModifiers(),
+        modifiers: { ...status.getModifiers() },
         bindings: character.bindings.map(x => serializeBinding(state, statuses, character, x)),
         buffs: character.buffs.map(serializeBuff),
         cooldowns: { ...character.cooldowns },
@@ -51,7 +51,7 @@ function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): 
         intentions: enemy.intentions.map(x => (serializeIntention(state, statuses, x))),
         buffs: enemy.buffs.map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
-        modifiers: getStatus(statuses, enemy).getModifiers(),
+        modifiers: { ...getStatus(statuses, enemy).getModifiers() },
     };
 }
 

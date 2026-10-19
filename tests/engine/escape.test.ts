@@ -70,24 +70,22 @@ function escapeAmount(engine: Engine, actor: string, target: string, binding: st
 }
 
 describe("escape progress", () => {
-    it("falls as binding strength rises and does not worsen past Overwhelming", () => {
+    it.each([thresholds.overwhelming, thresholds.max])("falls as binding strength rises and has minimum potency at %s", value => {
         const restraint = makeBindingDef("rope");
         const engine = setupEscapeScenario(
             "helper",
-            ["helper", "light", "overwhelming", "over-overwhelming"],
+            ["helper", "light", "overwhelming"],
             [
                 { target: "light", binding: restraint, amount: thresholds.light },
-                { target: "overwhelming", binding: restraint, amount: thresholds.overwhelming },
-                { target: "over-overwhelming", binding: restraint, amount: thresholds.max },
+                { target: "overwhelming", binding: restraint, amount: value },
             ],
         );
 
         const light = escapeAmount(engine, "helper", "light", restraint.id);
         const overwhelming = escapeAmount(engine, "helper", "overwhelming", restraint.id);
-        const overOverwhelming = escapeAmount(engine, "helper", "over-overwhelming", restraint.id);
 
         expect(light).toBeGreaterThan(overwhelming);
-        expect(overOverwhelming).toBe(overwhelming);
+        expect(overwhelming).toBe(8);
     });
 
     it("applies the actor's escape modifier and the assistance multiplier", () => {
@@ -101,8 +99,8 @@ describe("escape progress", () => {
         });
         const targetBinding = makeBindingDef("rope");
         const engine = setupEscapeScenario(
-            "setup",
-            ["setup", "unpenalized-helper", "penalized-helper", "target"],
+            "unpenalized-helper",
+            ["unpenalized-helper", "penalized-helper", "target"],
             [
                 { target: "penalized-helper", binding: modifierBinding, amount: thresholds.light },
                 { target: "target", binding: modifierBinding, amount: thresholds.light },

@@ -50,9 +50,24 @@ describe("character catalogue", () => {
             type: "loadCharacter",
             id: "missing-character",
             success: false,
+            reason: "invalidCharacter",
             effects: [],
         });
         expect(engine.getGameState().characters).toEqual(before);
+    });
+
+    it("rejects a fourth character without changing the three-member party", () => {
+        const characters = ["first", "second", "third", "fourth"].map(id => makeCharacterDef(id));
+        const engine = createTestEngine([], characters, 1);
+        for (const character of characters.slice(0, 3)) {
+            expect(engine.loadCharacter(character.id)).toMatchObject({ success: true });
+        }
+        const before = engine.getGameState();
+        expect(engine.loadCharacter("fourth")).toEqual({
+            type: "loadCharacter", id: "fourth", success: false, reason: "tooManyCharacters", effects: [],
+        });
+        expect(engine.getGameState()).toEqual(before);
+        expect(before.characters.map(({ id }) => id)).toEqual(["first", "second", "third"]);
     });
 
     it("cannot load a repository definition that was not injected", () => {
@@ -62,6 +77,7 @@ describe("character catalogue", () => {
             type: "loadCharacter",
             id: ko.id,
             success: false,
+            reason: "invalidCharacter",
             effects: [],
         });
         expect(engine.getGameState().characters).toEqual([]);
@@ -69,6 +85,25 @@ describe("character catalogue", () => {
 });
 
 describe("state serialization and combatant loading", () => {
+    it("isolates serialized modifiers from later status cache queries and mutations", () => {
+        const character = makeCharacter();
+        const enemy = makeEnemy(makeEnemyDef("foe", [makeWaitMove()]));
+        const state = makeInternalState({ characters: [character], enemies: [enemy] });
+        const characterStatus = new GameStatus(state, character);
+        const enemyStatus = new GameStatus(state, enemy);
+        const statuses = new Map<iEntity, GameStatus>([[character, characterStatus], [enemy, enemyStatus]]);
+        const snapshot = serializeGameState(state, statuses);
+
+        characterStatus.getModifier("escape");
+        enemyStatus.getModifier("hit");
+        expect(snapshot.characters[0].modifiers).toEqual({});
+        expect(snapshot.enemies[0].modifiers).toEqual({});
+
+        snapshot.characters[0].modifiers.escape = 50;
+        snapshot.enemies[0].modifiers.hit = 50;
+        expect(characterStatus.getModifier("escape")).toBe(0);
+        expect(enemyStatus.getModifier("hit")).toBe(0);
+    });
     it.each(["miss", "graze", "hit", "crit", "none"] as const)("publishes only the existing zero-target preview band (%s)", band => {
         const move = makeMove("zero-preview", "none", {
             targetSide: "none", targets: 0,

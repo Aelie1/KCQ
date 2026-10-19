@@ -198,9 +198,9 @@ describe("party card view model", () => {
 
         expect(model.bindings[0]).toMatchObject({
             current: 90,
-            change: 3,
+            change: 10,
             peak: 96,
-            resultLevel: "overwhelming",
+            resultLevel: "max",
         });
     });
 

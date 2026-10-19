@@ -329,14 +329,16 @@ describe("stance toggling", () => {
             },
         });
         const enemy = makeEnemyDef("immobilizer", [immobilize]);
-        const encounter = makeEncounterDef("immobilizer", { enemies: [enemy.id] });
-        const { engine, hero } = setupBoundEngine(
-            restraint,
-            thresholds.overwhelming,
-            [encounter],
-            [],
-            [enemy],
-        );
+        const encounter = makeEncounterDef("immobilizer", {
+            enemies: [enemy.id],
+            setup: state => [{
+                type: "binding", source: state.characters[0], target: state.characters[0],
+                binding: restraint, amount: thresholds.overwhelming,
+            }],
+        });
+        const hero = makeCharacterDef("hero");
+        const engine = createTestEngine([encounter], [hero], 1, { enemies: [enemy] });
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
         expect(engine.executeAction({
             type: "stance",

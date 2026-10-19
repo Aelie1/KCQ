@@ -32,7 +32,7 @@ function use(engine: ReturnType<typeof makeBehavioralEngine>, actor: string, mov
 }
 
 describe("binding behavior through GameEngine", () => {
-    it("adds, accumulates, scales above Overwhelming, caps, and removes a binding", () => {
+    it("adds and accumulates at full strength above Overwhelming, caps, and removes a binding", () => {
         const rope = makeBehavioralBinding("rope");
         const moves = [
             bindingMove("add-75", rope, 75),
@@ -52,15 +52,15 @@ describe("binding behavior through GameEngine", () => {
             type: "bondageChanged",
             target: "hero",
             binding: "rope",
-            amount: 7,
+            amount: 20,
         });
-        expect(bindingState(engine, "rope")?.value).toBe(82);
+        expect(bindingState(engine, "rope")?.value).toBe(95);
 
         expect(use(engine, "hero", "add-1000").frames[0].event.effects[0]).toEqual({
             type: "bondageChanged",
             target: "hero",
             binding: "rope",
-            amount: 18,
+            amount: 5,
         });
         expect(bindingState(engine, "rope")).toMatchObject({ value: 100, level: "overwhelming" });
 

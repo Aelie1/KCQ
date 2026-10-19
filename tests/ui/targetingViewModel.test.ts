@@ -427,7 +427,7 @@ describe("targeting view model", () => {
         expect(effects[1]).not.toHaveProperty("deltaLabel");
     });
 
-    it("passes effective binding deltas to previews after high-binding resistance", () => {
+    it("caps positive binding previews at 100 while preserving full removal previews", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const action: ActionInfo = {
             ...fixture.action,
@@ -443,7 +443,7 @@ describe("targeting view model", () => {
         const effects = model.actionEffectGroups[0].effects;
 
         expect(effects[0]).toMatchObject({
-            kind: "binding", currentValue: 89, change: 2, projectedValue: 91,
+            kind: "binding", currentValue: 89, change: 11, projectedValue: 100,
         });
         expect(effects[1]).toMatchObject({
             kind: "binding", currentValue: 89, change: -25, projectedValue: 64,

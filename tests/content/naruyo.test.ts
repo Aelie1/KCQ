@@ -256,12 +256,15 @@ describe("Naruyo's Snowstorm", () => {
 });
 
 describe("Naruyo's Time Acceleration", () => {
-    it("previews and grants one bonus escape to every eligible member, including Naruyo", () => {
+    it.each([false, true])("grants bonus escapes to Naruyo and eligible allies (skipped: %s), excluding incapacitated allies", isSkipped => {
         const skipped = makeBehavioralCharacter("skipped");
         const unavailable = makeBehavioralCharacter("unavailable");
         const engine = loadNaruyoEncounter({
-            allies: [ally, skipped, unavailable],
-            setup: state => [statusBuff(state.characters[2], helpless), statusBuff(state.characters[3], incapacitated)],
+            allies: [isSkipped ? skipped : ally, unavailable],
+            setup: state => [
+                ...(isSkipped ? [statusBuff(state.characters[1], helpless)] : []),
+                statusBuff(state.characters[2], incapacitated),
+            ],
         });
         const before = engine.getGameState();
         const preview = moveInfo(engine, "timeAcceleration");
@@ -269,7 +272,7 @@ describe("Naruyo's Time Acceleration", () => {
             available: true, effects: [], move: { targetSide: "player", targets: "all", traits: ["bonus"] },
         });
         expect(preview.targets).toEqual([
-            ...[naruyo.id, ally.id, skipped.id].map(target => ({
+            ...[naruyo.id, isSkipped ? skipped.id : ally.id].map(target => ({
                 valid: true, target, damage: undefined, effects: [{ type: "bonus", target, amount: 1 }],
             })),
             { valid: false, target: unavailable.id, reason: "targetIncapacitated" },
@@ -277,10 +280,10 @@ describe("Naruyo's Time Acceleration", () => {
         expect(engine.getGameState()).toEqual(before);
         const result = use(engine, "timeAcceleration");
         expect(resolvedEvents(result.frames).filter(({ type }) => type === "bonusChanged")).toEqual(
-            [naruyo.id, ally.id, skipped.id].map(target => ({ type: "bonusChanged", target, amount: 1 })),
+            [naruyo.id, isSkipped ? skipped.id : ally.id].map(target => ({ type: "bonusChanged", target, amount: 1 })),
         );
-        expect(engine.getGameState().characters.map(({ bonusEscapes }) => bonusEscapes)).toEqual([1, 1, 1, 0]);
-        expect(characterState(engine, ally.id).acted).toBe(false);
+        expect(engine.getGameState().characters.map(({ bonusEscapes }) => bonusEscapes)).toEqual([1, 1, 0]);
+        expect(characterState(engine, isSkipped ? skipped.id : ally.id).acted).toBe(false);
         expect(characterState(engine, naruyo.id).acted).toBe(true);
     });
 

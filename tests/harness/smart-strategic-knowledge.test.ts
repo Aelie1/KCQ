@@ -500,7 +500,7 @@ describe("Smart tempo and pressure knowledge", () => {
             expect.objectContaining({ id: "tempo.queen-phase-push" }),
         );
     });
-    it("treats multiple Queen thresholds crossed by one action as unresolved phase pressure", () => {
+    it("charges tempo risk for multiple Queen thresholds without reserving add-clear value before adds are queued", () => {
         const fixture = context(
             [makePublicCharacter("matsuko")],
             [enemy("queen1", {
@@ -517,13 +517,19 @@ describe("Smart tempo and pressure knowledge", () => {
         const result = tempo(fixture, "big-hit");
 
         expect(result.rules).toContainEqual(expect.objectContaining({
-            id: "tempo.queen-clear-adds",
-            adjustment: -QUEEN_ADD_CLEAR_PENALTY,
+            id: "tempo.queen-phase-push",
+            adjustment: -180,
             details: expect.objectContaining({
                 pendingPhaseIntentions: [],
-                crossedReinforcementThresholds: [300, 250],
+                crossingRisk: 1,
+                thresholdCrossings: [
+                    expect.objectContaining({ threshold: 300, probability: 1 }),
+                    expect.objectContaining({ threshold: 250, probability: 1 }),
+                    expect.objectContaining({ threshold: 150, probability: 0 }),
+                ],
             }),
         }));
+        expect(result.rules.find(({ id }) => id === "tempo.queen-clear-adds")).toBeUndefined();
     });
     it("weights a possible second threshold from a multihit crit tail", () => {
         const fixture = context(
@@ -562,9 +568,8 @@ describe("Smart tempo and pressure knowledge", () => {
         expect(phaseDetails.thresholdCrossings[1].probability).toBeCloseTo(0.36);
         expect(phaseDetails.thresholdCrossings[2].probability).toBe(0);
         expect(phaseDetails.crossingRisk).toBeCloseTo(0.36);
-        expect(addClear?.adjustment).toBeCloseTo(-0.36 * QUEEN_ADD_CLEAR_PENALTY);
-        expect((addClear?.details as { phaseStackingProbability: number })
-            .phaseStackingProbability).toBeCloseTo(0.36);
+        // No living adds or pending phase: only the probabilistic tempo penalty applies.
+        expect(addClear).toBeUndefined();
     });
     for (const pendingMove of ["callReinforcements", "latexRainmaker"]) {
         it(`weights ${pendingMove} reserve by a below-EV threshold tail`, () => {

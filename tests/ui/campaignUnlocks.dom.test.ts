@@ -75,18 +75,28 @@ describe("campaign unlock UI integration", () => {
     it.each([
         ["interlude_1", "forest_1"], ["interlude_2", "tower_1"],
         ["interlude_3", "epilogue"], ["epilogue", "outside"],
-    ])("opening %s unlocks %s even through Show All, without combat or clears", (story, next) => {
+    ])("opening available %s unlocks %s through Show All, without combat or clears", (story, next) => {
         window.localStorage.setItem("kcq.clears", JSON.stringify({ plains_1: "mythic" }));
+        window.localStorage.setItem("kcq.unlocks", JSON.stringify({ skunk: [story] }));
         const { prepareBattle } = mount();
         toggle().click();
-        expect(window.localStorage.getItem("kcq.unlocks")).toBeNull();
         select(story);
-        expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: [next] });
+        expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: [story, next] });
         expect(JSON.parse(window.localStorage.getItem("kcq.clears")!)).toEqual({ plains_1: "mythic" });
         expect(prepareBattle).not.toHaveBeenCalled();
         press("Escape"); toggle().click();
         expect(names()).toEqual(encounterNames(Object.keys(createStockEngine().getLibrary().encounters)
-            .filter(id => id === "prologue" || id === next)));
+            .filter(id => id === "prologue" || id === story || id === next)));
+    });
+
+    it.each(["interlude_1", "interlude_2", "interlude_3", "epilogue"])("viewing locked story %s through Show All preserves progression", story => {
+        const { prepareBattle } = mount(); toggle().click(); select(story);
+        expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter(story));
+        expect(window.localStorage.getItem("kcq.unlocks")).toBeNull();
+        expect(window.localStorage.getItem("kcq.clears")).toBeNull();
+        expect(prepareBattle).not.toHaveBeenCalled();
+        press("Escape"); toggle().click();
+        expect(names()).toEqual(encounterNames(["prologue"]));
     });
 
     it("defaults to initial encounters being selectable and exposes a localized, labeled Show All checkbox", () => {
@@ -135,17 +145,18 @@ describe("campaign unlock UI integration", () => {
     });
 
     it("unlocks Tower 2 and Tower 3 on defeat and selects the correct visible encounter by shortcut", () => {
+        window.localStorage.setItem("kcq.unlocks", JSON.stringify({ skunk: ["tower_1"] }));
         const { sessions, prepareBattle } = mount();
         toggle().click(); start("tower_1"); finish(sessions[0]!.engine, "defeat"); returnFromResult();
         toggle().click();
-        expect(names()).toEqual(encounterNames(["prologue", "tower_2"]));
+        expect(names()).toEqual(encounterNames(["prologue", "tower_1", "tower_2"]));
         press(combatShortcut(Object.keys(createStockEngine().getLibrary().encounters).indexOf("tower_2"))!);
         expect(document.querySelector(".kcq-encounter-details h1")?.textContent).toBe(presentation.encounter("tower_2"));
         press("Enter"); press("Enter");
         expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "tower_2", "standard", ["ko", "matsuko", "hinari"]);
         finish(sessions[1]!.engine, "defeat"); returnFromResult();
-        expect(names()).toEqual(encounterNames(["prologue", "tower_2", "tower_3"]));
-        expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["tower_2", "tower_3"] });
+        expect(names()).toEqual(encounterNames(["prologue", "tower_1", "tower_2", "tower_3"]));
+        expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!)).toEqual({ skunk: ["tower_1", "tower_2", "tower_3"] });
         expect(window.localStorage.getItem("kcq.clears")).toBeNull();
         toggle().click(); toggle().click();
         press(combatShortcut(Object.keys(createStockEngine().getLibrary().encounters).indexOf("tower_3"))!);

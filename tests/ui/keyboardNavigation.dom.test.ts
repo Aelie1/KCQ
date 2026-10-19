@@ -85,22 +85,34 @@ describe("combat keyboard navigation", () => {
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
     });
 
-    it("uses all eight digits then QWERTY letters, preserving ordinary move order and variants", () => {
+    const moveKeys = "12345678qwertyuiopasdfghjklzxcvbnm".split("");
+    function mountVariantMoves() {
         const fixture = escapeFixtures.unselected;
         const base = targetingFixtures.telekinesisChoose.action;
-        const keys = "12345678qwertyuiopasdfghjklzxcvbnm".split("");
-        const moves = keys.map((_, index) => ({ ...base, move: { ...base.move, id: "variant" + index } }));
+        const moves = moveKeys.map((_, index) => ({ ...base, move: { ...base.move, id: "variant" + index } }));
         mountBattle({ actions: fixture.actions.map(action => ({ ...action, moves })) });
         press("1");
-        expect(commands().slice(0, keys.length).map(command => command.dataset.kcqShortcut)).toEqual(keys);
-        for (const [index, key] of keys.entries()) {
-            expect(commands()[index]!.querySelector(".kcq-shortcut")?.textContent).toContain(key.toUpperCase());
-            press(key.toUpperCase());
-            expect(document.querySelector(".kcq-targeting")?.getAttribute("aria-label")).toBe(fixture.presentation.move("variant" + index));
-            press("Escape");
+        return fixture;
+    }
+
+    it("assigns all eight digits then QWERTY letters, preserving ordinary move order and variants", () => {
+        mountVariantMoves();
+        const cards = commands();
+        expect(cards.slice(0, moveKeys.length).map(command => command.dataset.kcqShortcut)).toEqual(moveKeys);
+        for (const [index, key] of moveKeys.entries()) {
+            expect(cards[index]!.querySelector(".kcq-shortcut")?.textContent).toContain(key.toUpperCase());
         }
-        expect(commands().slice(-2).map(command => command.dataset.kcqShortcut)).toEqual([COMBAT_SHORTCUTS.stance, COMBAT_SHORTCUTS.escape]);
-        expect(combatShortcut(keys.length)).toBeUndefined();
+        expect(cards.slice(-2).map(command => command.dataset.kcqShortcut)).toEqual([COMBAT_SHORTCUTS.stance, COMBAT_SHORTCUTS.escape]);
+        expect(combatShortcut(moveKeys.length)).toBeUndefined();
+    });
+
+    it.each(moveKeys.map((key, index) => ({ key, index })))("opens move $index with shortcut $key and returns to commands", ({ key, index }) => {
+        const fixture = mountVariantMoves();
+        expect(press(key.toUpperCase()).defaultPrevented).toBe(true);
+        expect(document.querySelector(".kcq-targeting")?.getAttribute("aria-label"))
+            .toBe(fixture.presentation.move("variant" + index));
+        expect(press("Escape").defaultPrevented).toBe(true);
+        expect(document.querySelector(".kcq-character-commands")).not.toBeNull();
     });
 
     it("skips invalid targets and immediately submits the valid numbered single target", () => {

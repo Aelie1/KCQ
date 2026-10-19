@@ -602,16 +602,13 @@ describe("Skunkette behavior through GameEngine", () => {
                 amount: 80,
             })),
         });
-        const encounter = makeEncounterDef("select-latex", { enemies: [skunkette.id] });
+        const encounter = makeEncounterDef("select-latex", {
+            enemies: [skunkette.id],
+            setup: state => prepare.resolve(state, state.characters[0], { definition: prepare }, []).effects,
+        });
         const hero = makeBehavioralCharacter("hero", [prepare]);
         const engine = createTestEngine([encounter], [hero], 1, { enemies: [skunkette] });
         engine.loadCharacter(hero.id);
-        execute(engine, {
-            type: "move",
-            actor: "hero",
-            move: prepare.id,
-            targets: [],
-        });
         engine.loadEncounter(encounter.id);
         execute(engine, { type: "endTurn" });
 
@@ -655,13 +652,16 @@ describe("Skunkette behavior through GameEngine", () => {
                 })),
             ],
         });
-        const encounter = makeEncounterDef("mist", { enemies: [skunkette.id] });
+        const encounter = makeEncounterDef("mist", {
+            enemies: [skunkette.id],
+            setup: state => prepare.resolve(state, state.characters[0], { definition: prepare }, []).effects,
+        });
         const first = makeBehavioralCharacter("first", [prepare]);
         const second = makeBehavioralCharacter("second");
-        const engine = createTestEngine([encounter], [first, second], 23, { enemies: [skunkette] });
+        // Initial Mist roll gives spread 1, then graze/hit target rolls.
+        const engine = createTestEngine([encounter], [first, second], 68, { enemies: [skunkette] });
         engine.loadCharacter(first.id);
         engine.loadCharacter(second.id);
-        execute(engine, { type: "move", actor: "first", move: prepare.id, targets: [] });
         engine.loadEncounter(encounter.id);
 
         const preview = enemyState(engine, "skunkette1").intentions[0];
@@ -708,16 +708,14 @@ describe("Skunkette behavior through GameEngine", () => {
                 },
             ],
         });
-        const encounter = makeEncounterDef("mist-crit", { enemies: [skunkette.id] });
-        const hero = makeBehavioralCharacter("hero", [prepare]);
-        const engine = createTestEngine([encounter], [hero], 428, { enemies: [skunkette] });
-        engine.loadCharacter(hero.id);
-        execute(engine, {
-            type: "move",
-            actor: "hero",
-            move: prepare.id,
-            targets: [],
+        const encounter = makeEncounterDef("mist-crit", {
+            enemies: [skunkette.id],
+            setup: state => prepare.resolve(state, state.characters[0], { definition: prepare }, []).effects,
         });
+        const hero = makeBehavioralCharacter("hero", [prepare]);
+        // Initial Mist roll gives spread 1, then a crit target roll.
+        const engine = createTestEngine([encounter], [hero], 321, { enemies: [skunkette] });
+        engine.loadCharacter(hero.id);
         engine.loadEncounter(encounter.id);
 
         expect(enemyState(engine, "skunkette1").intentions).toMatchObject([{

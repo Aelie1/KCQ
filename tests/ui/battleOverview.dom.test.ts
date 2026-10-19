@@ -261,7 +261,7 @@ describe("responsive battle overview", () => {
         for (const [index, band] of ["hit", "crit", "graze", "miss"].entries()) {
             expect(rows[index]!.querySelector(".kcq-status-chip--outcome-" + band)).not.toBeNull();
         }
-        expect(rows[0]!.querySelector(".kcq-intent-row__consequences")?.textContent).toContain("Arms +4 \u00b7 12 damage");
+        expect(rows[0]!.querySelector(".kcq-intent-row__consequences")?.textContent).toContain("Arms +5 \u00b7 12 damage");
         expect(rows[1]!.textContent).toContain("Legs +17");
         expect(rows[2]!.textContent).toContain("Arms +4");
         expect(rows[3]!.querySelector(".kcq-intent-row__consequences")).toBeNull();

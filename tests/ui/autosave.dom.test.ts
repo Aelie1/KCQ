@@ -308,6 +308,7 @@ describe("graphical autosave and Continue", () => {
 describe("autosave lifecycle and failures", () => {
     it.each(["victory", "defeat"] as const)("processes %s progression and clears the slot after playback", outcome => {
         window.localStorage.setItem("kcq.playbackSpeed", "normal");
+        window.localStorage.setItem("kcq.unlocks", JSON.stringify({ skunk: ["plains_1"] }));
         const app = mount(); start("plains_1", "Standard");
         const engine = app.sessions[0]!.engine;
         const initial = encoded();

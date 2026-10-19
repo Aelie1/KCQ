@@ -63,16 +63,16 @@ describe("BattleApp incoming binding playback", () => {
     it("recalculates both existing meters at each real-engine action and keeps the log in sync", () => {
         const b = mount();
         const originalMeters = meters();
-        expectMeters([[72, 11], [35, 20]]);
+        expectMeters([[72, 28], [35, 20]]);
         b.endTurn();
-        expect(b.engine.getGameState().characters[0]!.bindings.map(binding => binding.value)).toEqual([84, 55]);
-        expectMeters([[81, 3], [41, 14]]);
-        b.paint(); expectMeters([[81, 3], [41, 14]]);
-        b.paint(); expectMeters([[81, 3], [41, 14]]);
+        expect(b.engine.getGameState().characters[0]!.bindings.map(binding => binding.value)).toEqual([100, 55]);
+        expectMeters([[84, 16], [41, 14]]);
+        b.paint(); expectMeters([[84, 16], [41, 14]]);
+        b.paint(); expectMeters([[84, 16], [41, 14]]);
         expect(loggedActors()).toEqual(["skunkette1"]);
-        vi.advanceTimersByTime(500); expectMeters([[83, 1], [51, 4]]);
+        vi.advanceTimersByTime(500); expectMeters([[100, 0], [51, 4]]);
         expect(loggedActors()).toEqual(["skunkette1", "skunk1"]);
-        vi.advanceTimersByTime(500); expectMeters([[84, undefined], [55, undefined]]);
+        vi.advanceTimersByTime(500); expectMeters([[100, undefined], [55, undefined]]);
         expect(loggedActors()).toEqual(["skunkette1", "skunk1", "queen1"]);
         expectMeters(authoritativeMeters(b));
         meters().forEach((meter, index) => expect(meter).toBe(originalMeters[index]));
@@ -80,29 +80,29 @@ describe("BattleApp incoming binding playback", () => {
     });
     it("shows the new projection when an earlier action makes a pending attack miss", () => {
         const b = mount({ interruption: "miss" });
-        expectMeters([[72, 11], [35, 20]]);
+        expectMeters([[72, 28], [35, 20]]);
         b.endTurn(); b.paint(); b.paint();
-        expectMeters([[81, 1], [41, 4]]);
-        vi.advanceTimersByTime(500); expectMeters([[81, 1], [41, 4]]);
+        expectMeters([[84, 8], [41, 4]]);
+        vi.advanceTimersByTime(500); expectMeters([[84, 8], [41, 4]]);
         expect(loggedActors()).toEqual(["skunkette1", "skunk1"]);
-        vi.advanceTimersByTime(500); expectMeters([[82, undefined], [45, undefined]]);
+        vi.advanceTimersByTime(500); expectMeters([[92, undefined], [45, undefined]]);
         expectMeters(authoritativeMeters(b));
     });
     it.each(["cancel", "defeat", "blocksAttack", "skipsTurn"] as const)("excludes %s attacks as soon as playback makes them non-actionable", interruption => {
         const b = mount({ interruption });
-        expectMeters([[72, 11], [35, 20]]);
+        expectMeters([[72, 28], [35, 20]]);
         b.endTurn(); b.paint(); b.paint();
-        expectMeters([[81, 1], [41, 4]]);
+        expectMeters([[84, 8], [41, 4]]);
         expect(loggedActors()).toEqual(["skunkette1"]);
         vi.advanceTimersByTime(500);
-        expectMeters([[82, undefined], [45, undefined]]);
+        expectMeters([[92, undefined], [45, undefined]]);
         expect(loggedActors()).toEqual(["skunkette1", "queen1"]);
         expectMeters(authoritativeMeters(b));
     });
     it.each([false, true])("Instant presents the authoritative final meters (next round intentions: %s)", nextRound => {
         const b = mount({ nextRound }, "instant");
         b.endTurn();
-        expectMeters(nextRound ? [[84, 4], [55, 20]] : [[84, undefined], [55, undefined]]);
+        expectMeters(nextRound ? [[100, 0], [55, 20]] : [[100, undefined], [55, undefined]]);
         expectMeters(authoritativeMeters(b));
         expect(loggedActors()).toEqual(["skunkette1", "skunk1", "queen1"]);
         expect(document.querySelector(".kcq-battle-stage")!.getAttribute("aria-busy")).toBe("false");

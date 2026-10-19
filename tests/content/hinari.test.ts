@@ -626,8 +626,8 @@ describe("Hinari's Store", () => {
         const bodyBindingGained = afterHinariBinding - initialHinariBinding;
         expect(allyRemoved).toBe(10);
         expect(subspaceGained).toBe(10);
-        expect(bodyBindingGained).toBe(6);
-        expect(afterHinariBinding).toBe(thresholds.overwhelming + 1);
+        expect(bodyBindingGained).toBe(15);
+        expect(afterHinariBinding).toBe(90);
     });
 
     it("refuses characters with no bindings while keeping bound characters valid", () => {
@@ -791,8 +791,8 @@ describe("Hinari's Release", () => {
         expect(target(high, "ally")).toEqual({
             valid: true, target: "ally", damage: undefined,
             effects: [
-                { type: "binding", target: "ally", binding: tape.id, amount: 25 },
-                { type: "data", target: hinari.id, name: "subspace", amount: -50 },
+                { type: "binding", target: "ally", binding: tape.id, amount: 30 },
+                { type: "data", target: hinari.id, name: "subspace", amount: -60 },
             ],
         });
         expect(target(low, "foe1")).toEqual({
@@ -839,7 +839,7 @@ describe("Hinari's Release", () => {
         expect(characterState(engine, hinari.id).data.subspace).toBe(35);
     });
 
-    it("applies up to 25 of the remembered binding to an ally and spends 50 Subspace", () => {
+    it("releases all 60 Subspace as 30 of the remembered binding onto an ally", () => {
         const ally = makeBehavioralCharacter("ally");
         const engine = loadHinariEncounter({
             allies: [ally],
@@ -853,9 +853,9 @@ describe("Hinari's Release", () => {
             targets: [ally.id],
         });
 
-        expect(bindingState(engine, tape.id, ally.id)?.value).toBe(25);
+        expect(bindingState(engine, tape.id, ally.id)?.value).toBe(30);
         expect(bindingState(engine, rope.id, ally.id)).toBeUndefined();
-        expect(characterState(engine, hinari.id).data.subspace).toBe(10);
+        expect(characterState(engine, hinari.id).data.subspace).toBe(0);
     });
 
     it("spends the minimum available Subspace and scales friendly Release", () => {
