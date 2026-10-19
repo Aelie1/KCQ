@@ -8,7 +8,7 @@ export interface AppProps {
 
 export function App(props: AppProps): JSX.Element {
     const preferences = useContext(ViewPreferencesContext) ?? createViewPreferences();
-    const [layout, setLayout] = createSignal<ResponsiveLayout>({ columns: 1, zoom: 1 });
+    const [layout, setLayout] = createSignal<ResponsiveLayout>({ columns: 1, size: "narrow", zoom: 1 });
     let shell!: HTMLElement;
     onMount(() => onCleanup(setupResponsiveScale(shell, preferences, setLayout)));
     return <ViewPreferencesContext.Provider value={preferences}>

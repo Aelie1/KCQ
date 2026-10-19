@@ -9,7 +9,7 @@ import { EncounterPickerPanel } from "../../src/ui/web/app/components/EncounterP
 import { EncounterDetailsPanel } from "../../src/ui/web/app/components/EncounterDetailsPanel";
 import { DifficultySelectPanel } from "../../src/ui/web/app/components/DifficultySelectPanel";
 import { availableCharacters } from "../../src/ui/web/app/partySelection";
-import { ResponsiveLayoutContext } from "../../src/ui/web/app/responsiveScale";
+import { layoutSize, ResponsiveLayoutContext } from "../../src/ui/web/app/responsiveScale";
 import { createPartySelectionViewModel } from "../../src/ui/web/app/viewModels/partySelection";
 import { createEncounterPickerViewModel, createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
@@ -43,7 +43,7 @@ function mount(view: () => JSX.Element, columns: 1 | 3 = 3) {
     const host = document.createElement("div");
     document.body.append(style, host);
     dispose = render(() => createComponent(ResponsiveLayoutContext.Provider, {
-        value: () => ({ columns, zoom: 1 }), get children() { return view(); },
+        value: () => ({ columns, size: layoutSize(columns), zoom: 1 }), get children() { return view(); },
     }), host);
     return host;
 }

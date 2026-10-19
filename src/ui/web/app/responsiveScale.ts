@@ -3,8 +3,15 @@ import { ViewPreferencesContext, type BattleColumns, type ViewPreferences } from
 
 // Match app.css: 366px canvases, 24px gutters, and a 288px third column.
 export const BATTLE_LAYOUT_WIDTHS = { 1: 366, 2: 756, 3: 1068 } as const;
+export type LayoutSize = "narrow" | "medium" | "wide";
+
+export function layoutSize(columns: 1 | 2 | 3): LayoutSize {
+    return columns === 1 ? "narrow" : columns === 2 ? "medium" : "wide";
+}
+
 export interface ResponsiveLayout {
     columns: 1 | 2 | 3;
+    size: LayoutSize;
     zoom: number;
     availableWidth?: number;
 }
@@ -15,7 +22,7 @@ export function calculateResponsiveLayout(availableWidth: number, preference: Ba
     const columns = preference === "auto"
         ? availableWidth >= BATTLE_LAYOUT_WIDTHS[3] ? 3 : availableWidth >= BATTLE_LAYOUT_WIDTHS[2] ? 2 : 1
         : Number(preference) as 1 | 2 | 3;
-    return { columns, zoom: Math.min(1.5, Math.max(1, availableWidth / BATTLE_LAYOUT_WIDTHS[columns])) };
+    return { columns, size: layoutSize(columns), zoom: Math.min(1.5, Math.max(1, availableWidth / BATTLE_LAYOUT_WIDTHS[columns])) };
 }
 
 /** Publish viewport dimensions in the coordinates used by the zoomed screens. */
@@ -41,6 +48,7 @@ export function setupResponsiveScale(
         shell.style.setProperty("--kcq-ui-zoom", String(zoom));
         shell.style.setProperty("--kcq-ui-min-width", "366px");
         shell.style.setProperty("--kcq-ui-height", `${Math.max(0, viewportHeight - verticalPadding) / zoom}px`);
+        shell.dataset.kcqLayout = layout.size;
         // Decide title layout from the same unzoomed width as the scaler.
         // Comparing ratios also avoids rounding at exactly two scaled panels.
         shell.dataset.kcqTitleLayout = zoom <= availableWidth / BATTLE_LAYOUT_WIDTHS[2] ? "desktop" : "mobile";

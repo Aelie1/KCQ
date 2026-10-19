@@ -13,7 +13,7 @@ import type { LibrarySettingsControlsProps } from "../../src/ui/web/app/componen
 import { BattleOverviewPanel } from "../../src/ui/web/app/panels/BattleOverviewPanel";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { useCombatKeyboard } from "../../src/ui/web/app/keyboard";
-import { ResponsiveLayoutContext } from "../../src/ui/web/app/responsiveScale";
+import { layoutSize, ResponsiveLayoutContext } from "../../src/ui/web/app/responsiveScale";
 import { createEncounterPickerViewModel, createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { createDifficultySelectViewModel } from "../../src/ui/web/app/viewModels/difficulty";
 import { stockStrings } from "../helpers/stockStrings";
@@ -39,7 +39,10 @@ function mount(view: Parameters<typeof render>[0]): HTMLElement {
     const host = document.createElement("div");
     document.body.append(host);
     unmount = render(() => createComponent(ResponsiveLayoutContext.Provider, {
-        value: () => ({ columns: window.innerWidth >= 756 ? 2 : 1, zoom: 1, availableWidth: window.innerWidth }),
+        value: () => {
+            const columns = window.innerWidth >= 756 ? 2 : 1;
+            return { columns, size: layoutSize(columns), zoom: 1, availableWidth: window.innerWidth };
+        },
         get children() { return view(); },
     }), host);
     return host;

@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
-import { ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import { layoutSize, ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import { GAME_GUIDE_PAGES } from "../../src/ui/web/app/content/gameGuide";
 import type { LibraryPage } from "../../src/ui/web/app/viewModels/library";
 import { stockStrings } from "../helpers/stockStrings";
@@ -24,7 +24,7 @@ function mount(columns: ResponsiveLayout["columns"], initialPage?: LibraryPage, 
     const before = JSON.stringify(engine.getGameState());
     const host = document.createElement("div"); document.body.append(host);
     dispose = render(() => createComponent(ResponsiveLayoutContext.Provider, {
-        value: () => ({ columns, zoom }),
+        value: () => ({ columns, size: layoutSize(columns), zoom }),
         get children() { return createComponent(LibraryPanel, { library: engine.getLibrary(), presentation, onClose() {}, initialPage }); },
     }), host);
     return { engine, before, execute };

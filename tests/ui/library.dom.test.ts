@@ -10,7 +10,7 @@ import { createBattle } from "../../src/ui/web/app";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import { LibraryPanel } from "../../src/ui/web/app/panels/LibraryPanel";
-import { ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import { layoutSize, ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import type { LibraryPage } from "../../src/ui/web/app/viewModels/library";
 import { libraryDamageProfile } from "../../src/ui/web/app/viewModels/libraryMechanics";
 import { createEmptyContentLibrary } from "../helpers/library";
@@ -741,13 +741,13 @@ describe("Library Round 5 systematic presentation", () => {
 });
 
 function responsiveLibraryMount(columns: ResponsiveLayout["columns"] = 3, initialPage?: LibraryPage) {
-    const [layout, setLayout] = createSignal<ResponsiveLayout>({ columns, zoom: 1 });
+    const [layout, setLayout] = createSignal<ResponsiveLayout>({ columns, size: layoutSize(columns), zoom: 1 });
     const close = vi.fn();
     mount(() => createComponent(ResponsiveLayoutContext.Provider, {
         value: layout,
         get children() { return createComponent(LibraryPanel, { library: createStockEngine().getLibrary(), presentation, onClose: close, initialPage }); },
     }));
-    return { close, setColumns: (columns: ResponsiveLayout["columns"]) => setLayout({ columns, zoom: 1 }) };
+    return { close, setColumns: (columns: ResponsiveLayout["columns"]) => setLayout({ columns, size: layoutSize(columns), zoom: 1 }) };
 }
 const toggleCategory = (category: string) => element<HTMLButtonElement>('[data-library-category-toggle="' + category + '"]').click();
 const treeEntry = (category: string, id: string) => element<HTMLButtonElement>('[data-library-tree-entry="' + category + ':' + id + '"]');
@@ -756,6 +756,17 @@ const historyBack = () => element<HTMLButtonElement>(".kcq-library__history-back
 const historyForward = () => element<HTMLButtonElement>(".kcq-library__history-forward").click();
 
 describe("Library modal and desktop navigation", () => {
+    it("publishes shared canonical sizes on the portal shell as columns change", async () => {
+        const { setColumns } = responsiveLibraryMount(1); await tick();
+        const overlay = element(".kcq-library-overlay");
+        expect(overlay.dataset.kcqLayout).toBe("narrow");
+        for (const [columns, size] of [[2, "medium"], [3, "wide"], [1, "narrow"]] as const) {
+            setColumns(columns); await tick();
+            expect(element(".kcq-library-overlay")).toBe(overlay);
+            expect(overlay.dataset.kcqLayout).toBe(size);
+        }
+    });
+
     it.each([1, 2, 3] as const)("uses a modal with interior isolation and Escape/backdrop dismissal in %s-column mode", async columns => {
         const { close } = responsiveLibraryMount(columns); await tick();
         const dialog = element('[role="dialog"]');

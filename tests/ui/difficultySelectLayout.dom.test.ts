@@ -13,8 +13,8 @@ import { stockStrings } from "../helpers/stockStrings";
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
-const desktop: ResponsiveLayout = { columns: 3, zoom: 1, availableWidth: 1068 };
-const mobile: ResponsiveLayout = { columns: 1, zoom: 1, availableWidth: 366 };
+const desktop: ResponsiveLayout = { columns: 3, size: "wide", zoom: 1, availableWidth: 1068 };
+const mobile: ResponsiveLayout = { columns: 1, size: "narrow", zoom: 1, availableWidth: 366 };
 const difficulties = ["casual", "standard", "veteran", "extreme", "mythic"] as const;
 let dispose: (() => void) | undefined;
 afterEach(() => { dispose?.(); document.body.replaceChildren(); });
@@ -95,13 +95,13 @@ describe("difficulty selection responsive layout", () => {
     });
 
     it.each([
-        [{ columns: 3, zoom: 1, availableWidth: 366 }, false],
-        [{ columns: 3, zoom: 1, availableWidth: 839 }, false],
-        [{ columns: 2, zoom: 1, availableWidth: 840 }, true],
-        [{ columns: 2, zoom: 1.5, availableWidth: 1259 }, false],
-        [{ columns: 1, zoom: 1.5, availableWidth: 1260 }, true],
-        [{ columns: 2, zoom: 1 }, false],
-        [{ columns: 3, zoom: 1 }, true],
+        [{ columns: 3, size: "wide", zoom: 1, availableWidth: 366 }, false],
+        [{ columns: 3, size: "wide", zoom: 1, availableWidth: 839 }, false],
+        [{ columns: 2, size: "medium", zoom: 1, availableWidth: 840 }, true],
+        [{ columns: 2, size: "medium", zoom: 1.5, availableWidth: 1259 }, false],
+        [{ columns: 1, size: "narrow", zoom: 1.5, availableWidth: 1260 }, true],
+        [{ columns: 2, size: "medium", zoom: 1 }, false],
+        [{ columns: 3, size: "wide", zoom: 1 }, true],
     ] satisfies [ResponsiveLayout, boolean][])("fits the zoomed canvas with layout %j: %s", (layout, wide) => {
         expect(!!mount(layout).host.querySelector(".kcq-difficulty-select--desktop")).toBe(wide);
     });
