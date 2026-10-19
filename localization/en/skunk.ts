@@ -1,6 +1,12 @@
 import { StringTable } from "../../src/ui/presentation/presentation";
 
 export const skunkEnglishStrings: StringTable = {
+    "campaign.skunk.prologue.name": "Prologue",
+    "campaign.skunk.act1.name": "Act 1",
+    "campaign.skunk.act2.name": "Act 2",
+    "campaign.skunk.act3.name": "Act 3",
+    "campaign.skunk.epilogue.name": "Epilogue",
+
     "entity.skunkette.generic": "Skunkette",
     "entity.skunkette.name": "Skunkette {index}",
     "entity.skunk.generic": "Skunk",

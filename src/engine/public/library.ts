@@ -1,3 +1,4 @@
+import { CampaignLayout } from "../protected/definitions";
 import { AccuracyProfile, BindingId, BindingLevel, CampaignId, DifficultyId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, EntitySide, FlagId, ModifierSet, MoveId, MoveTrait, MoveType, PassiveId, StatusId, TargetCount, TrapId } from "./types";
 
 export interface ContentLibrary {
@@ -114,4 +115,5 @@ export interface CampaignReference {
     initial: EncounterId[];
     victory: Record<EncounterId, EncounterId[]>;
     defeat: Record<EncounterId, EncounterId[]>;
+    layout?: CampaignLayout;
 }

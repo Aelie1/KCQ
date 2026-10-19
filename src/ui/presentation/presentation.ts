@@ -1,4 +1,4 @@
-import { BattleState, BindingId, BindingLevel, BuffId, CampaignId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, HitBand, ModifierId, MoveId, MoveType, PassiveId, Phase, StanceId, StatusId, TrapId } from "../../engine/public/types";
+import { BattleState, BindingId, BindingLevel, BuffId, CampaignId, DifficultyId, EncounterId, EnemyRank, EntityId, FailureReason, FlagId, HitBand, ModifierId, MoveId, MoveType, PassiveId, Phase, SectionId, StanceId, StatusId, TrapId } from "../../engine/public/types";
 
 interface StringKey {
     id: string;
@@ -26,6 +26,10 @@ export class Presentation {
 
     campaign(campaign: CampaignId, variant: "name" | "desc" = "name"): string {
         return this.translate(this.definitionKey("campaign", campaign, variant));
+    }
+
+    campaignSection(campaign: CampaignId, section: SectionId, variant: "name"): string {
+        return this.translate(this.definitionKey("campaign", `${campaign}.${section}`, variant));
     }
 
     enemyDefinition(id: EntityId): string {

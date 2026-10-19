@@ -430,5 +430,14 @@ export const skunkCampaign: CampaignDef = {
     defeat: {
         tower_1: ["tower_2"],
         tower_2: ["tower_3"],
-    }
+    },
+    layout: [
+        [{ name: "prologue", chapters: ["prologue"] }],
+        [
+            { name: "act1", chapters: ["plains_1", "plains_2", "plains_3", "interlude_1"] },
+            { name: "act2", chapters: ["forest_1", "forest_2", "forest_3", "interlude_2"] },
+            { name: "act3", chapters: ["tower_1", "tower_2", "tower_3", "interlude_3"] },
+        ],
+        [{ name: "epilogue", chapters: ["epilogue", "outside"] }],
+    ]
 }

@@ -75,6 +75,8 @@ export type PassiveId = string;
 
 export type CampaignId = string;
 
+export type SectionId = string;
+
 export type CallbackId = string;
 
 export type IconId = "shield" | "sword" | "shield-off" | "sword-off" | "crown" | "sun" | "ambush" | "sprayer";

@@ -1,5 +1,5 @@
 import type { MoveBuffReference, MoveReference } from "../public/library";
-import type { AccuracyProfile, BindingId, BindingLevel, CallbackId, CampaignId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
+import type { AccuracyProfile, BindingId, BindingLevel, CallbackId, CampaignId, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, SectionId, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
 import type { iBinding, iBuff, iCallbackReturn, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
 
@@ -104,9 +104,17 @@ export interface TrapSetup {
     amount: number;
 }
 
+interface CampaignLayoutSection {
+    name: SectionId;
+    chapters: EncounterId[];
+}
+
+export type CampaignLayout = CampaignLayoutSection[][];
+
 export interface CampaignDef {
     id: CampaignId,
     initial: EncounterId[];
     victory: Record<EncounterId, EncounterId[]>;
     defeat: Record<EncounterId, EncounterId[]>;
+    layout?: CampaignLayout;
 }
