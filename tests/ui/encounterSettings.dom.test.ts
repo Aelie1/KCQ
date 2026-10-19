@@ -1,6 +1,7 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCharacterLibrary, createEngine } from "../../src/content";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -75,7 +76,11 @@ function mountSelection(screen: SelectionScreen, release = "v0.8-settings-test")
     });
     const root = document.createElement("div");
     document.body.append(root);
-    unmount = render(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release, composeCampaign: () => ({ engine, presentation, languages }), presentation, languages, prepareBattle }), root);
+    unmount = render(() => createComponent(GraphicalApp, {
+        characterLibrary: createCharacterLibrary(), createEngine,
+        campaigns: ["skunk"], release, presentation, languages, prepareBattle,
+        composeCampaign: () => ({ library: engine.getLibrary(), presentation, languages }),
+    }), root);
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
     document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="1"]')!.click();
     document.querySelector<HTMLButtonElement>(".kcq-encounter-details__footer button")!.click();

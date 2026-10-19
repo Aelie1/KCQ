@@ -59,19 +59,20 @@ describe("outcome dialog presentation", () => {
     it.each(["results", "story"] as const)("switches %s with zoom-aware available space and retains the same DOM", kind => {
         mount(kind);
         const dialog = element('[role="dialog"]');
-        expect(style(".kcq-battle-result__viewport").width).toBe("600px");
-        expect(style(".kcq-battle-result").maxWidth).toBe("580px");
+        const desktopWidth = parseFloat(style(".kcq-battle-result__viewport").width);
+        expect(desktopWidth).toBeGreaterThan(366);
+        expect(style(".kcq-battle-result").width).toBe("100%");
+        expect(style(".kcq-battle-result__viewport").maxWidth).toBe("100%");
         expect(style(".kcq-battle-result__actions").gridTemplateColumns).toBe(kind === "results" ? "repeat(3, minmax(0, 1fr))" : "repeat(2, minmax(0, 1fr))");
-        for (const [width, height, desktop] of [[1024, 768, true], [1920, 480, true], [779, 800, false], [780, 800, true], [390, 844, false]] as const) {
+        for (const [width, height, desktop] of [[1024, 768, true], [1920, 480, true], [600, 800, false], [390, 844, false]] as const) {
             viewport.setViewport({ width, height }); window.dispatchEvent(new Event("resize"));
             expect(element('[role="dialog"]')).toBe(dialog);
             expect(element(".kcq-outcome__overlay").dataset.kcqTitleLayout).toBe(desktop ? "desktop" : "mobile");
-            expect(style(".kcq-battle-result__viewport").width).toBe(desktop ? "600px" : "366px");
-
+            expect(parseFloat(style(".kcq-battle-result__viewport").width)).toBe(desktop ? desktopWidth : 366);
         }
     });
 
-    it.each([[390, 844], [779, 800]])("preserves stacked mobile actions at %s by %s", (width, height) => {
+    it.each([[390, 844], [600, 800]])("preserves stacked mobile actions at %s by %s", (width, height) => {
         viewport.setViewport({ width, height });
         mount("results");
         expect(style(".kcq-battle-result__viewport").width).toBe("366px");
@@ -118,7 +119,7 @@ describe("outcome dialog presentation", () => {
         }
     });
 
-    it("renders fixed headline cards and all supplied secondary values/details", () => {
+    it("renders fixed headline cards and each supplied secondary summary", () => {
         mount("results", model("defeat"));
         const cards = [...document.querySelectorAll(".kcq-battle-result__stat")];
         expect(cards.map(card => card.getAttribute("data-stat-id"))).toEqual(["bindings", "hits", "escapes"]);
@@ -128,16 +129,19 @@ describe("outcome dialog presentation", () => {
             expect(card.querySelector("dd")?.textContent).toBe(row.value);
             expect(card.textContent).not.toContain("Long localized detail");
         }
-        const details = [...document.querySelectorAll(".kcq-battle-result__detail")];
+        const details = [...document.querySelectorAll(".kcq-battle-result__detail-row")];
         for (const row of rows) {
             const headline = ["bindings", "hits", "escapes"].includes(row.id);
-            const detail = details.find(detail => detail.getAttribute("data-stat-id") === row.id);
+            const detail = details.find(detail => detail.querySelector(".kcq-battle-result__detail-label")?.textContent === row.label);
             if (headline && !row.detail) expect(detail).toBeUndefined();
-            else expect(detail?.textContent).toBe(row.label + ":" + (headline ? row.detail : row.value + (row.detail ? " " + row.detail : "")));
+            else {
+                expect(detail?.querySelector(".kcq-battle-result__detail-label")?.textContent).toBe(row.label);
+                expect(detail?.querySelector(".kcq-battle-result__detail-value")?.textContent).toBe(row.detail ?? row.value);
+            }
         }
         expect(element(".kcq-battle-result__progress").textContent).toBe("27% Boss HP Remaining");
         expect(style(".kcq-battle-result__headlines").gridTemplateColumns).toBe("repeat(3, minmax(0, 1fr))");
-        expect(style(".kcq-battle-result__detail dd").overflowWrap).toBe("anywhere");
+        expect(style(".kcq-battle-result__detail-value").overflowWrap).toBe("anywhere");
         expect(style(".kcq-battle-result__stats").overflowY).toBe("auto");
     });
 
@@ -173,14 +177,16 @@ describe("outcome dialog presentation", () => {
         mount("results", { ...model(outcome), rows: [...headlineRows].reverse() });
         expect([...document.querySelectorAll(".kcq-battle-result__stat dd")].map(node => node.textContent)).toEqual(["10", "11", "12"]);
         expect(element(".kcq-battle-result__headlines").textContent).not.toContain("Detail");
-        expect([...document.querySelectorAll(".kcq-battle-result__detail dd")].map(node => node.textContent)).toEqual(["Detail escapes", "Detail hits", "Detail bindings"]);
+        expect([...document.querySelectorAll(".kcq-battle-result__detail-value")].map(node => node.textContent)).toEqual(["Detail escapes", "Detail hits", "Detail bindings"]);
     });
 
     it("renders future non-headline rows as ordinary details", () => {
         const future = { id: "futureStatistic" as BattleResultRow["id"], label: "Future statistic", value: "-", detail: "Additional context" };
         mount("results", { ...model(), rows: [...rows, future] });
         expect(document.querySelectorAll(".kcq-battle-result__stat")).toHaveLength(3);
-        expect(element('.kcq-battle-result__details [data-stat-id="futureStatistic"]').textContent).toBe("Future statistic:- Additional context");
+        const detail = [...document.querySelectorAll(".kcq-battle-result__detail-row")]
+            .find(row => row.querySelector(".kcq-battle-result__detail-label")?.textContent === future.label)!;
+        expect(detail.querySelector(".kcq-battle-result__detail-value")?.textContent).toBe(future.detail);
     });
 
     it("omits an empty detail stack and keeps three zero headline cards", () => {

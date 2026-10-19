@@ -2,6 +2,7 @@ import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { afterEach, describe, expect, expectTypeOf, it, vi } from "vitest";
 import { stockStrings } from "../helpers/stockStrings";
+import { createCharacterLibrary, createEngine } from "../../src/content";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
@@ -16,7 +17,10 @@ describe("outer graphical application", () => {
     it("starts at the title screen without preparing a battle", () => {
         const engine = createStockEngine();
         const prepareBattle = vi.fn(() => ({ engine, dispose: () => {} }));
-        const html = renderToString(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", composeCampaign: () => ({ engine, presentation }), presentation, prepareBattle }));
+        const html = renderToString(() => createComponent(GraphicalApp, {
+            characterLibrary: createCharacterLibrary(), createEngine,
+            campaigns: ["skunk"], release: "test", composeCampaign: () => ({ library: engine.getLibrary(), presentation }), presentation, prepareBattle,
+        }));
         expect(html).toContain("kcq-title-screen");
         expect(html).not.toContain("kcq-encounter-picker");
         expect(prepareBattle).not.toHaveBeenCalled();
@@ -35,7 +39,10 @@ describe("outer graphical application", () => {
         const controller = controllers.createGraphicalController(prepareBattle);
         // SSR renders one screen at a time; reuse the real controller to inspect transitions.
         vi.spyOn(controllers, "createGraphicalController").mockReturnValue(controller);
-        const renderScreen = () => renderToString(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", composeCampaign: () => ({ engine, presentation }), presentation, prepareBattle }));
+        const renderScreen = () => renderToString(() => createComponent(GraphicalApp, {
+            characterLibrary: createCharacterLibrary(), createEngine,
+            campaigns: ["skunk"], release: "test", composeCampaign: () => ({ library: engine.getLibrary(), presentation }), presentation, prepareBattle,
+        }));
         controller.selectCampaign("skunk"); controller.confirmParty();
         controller.selectEncounter("forest_3");
         expect(renderScreen()).toContain("kcq-encounter-details");
@@ -64,6 +71,8 @@ describe("outer graphical application", () => {
         expectTypeOf<GraphicalAppProps>().toEqualTypeOf<{
             campaigns: GraphicalAppProps["campaigns"];
             release: string;
+            characterLibrary: GraphicalAppProps["characterLibrary"];
+            createEngine: GraphicalAppProps["createEngine"];
             composeCampaign: GraphicalAppProps["composeCampaign"];
             presentation: GraphicalAppProps["presentation"];
             prepareBattle: GraphicalAppProps["prepareBattle"];

@@ -1,6 +1,7 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createCharacterLibrary, createEngine } from "../../src/content";
 import { getStringTable } from "../../localization";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
@@ -27,6 +28,7 @@ describe("title and campaign presentation", () => {
         const prepareBattle = vi.fn(() => { throw new Error("Premature battle preparation"); });
         const html = renderToString(() => createComponent(GraphicalApp, {
             campaigns: ["skunk"], release, presentation, composeCampaign, prepareBattle,
+            characterLibrary: createCharacterLibrary(), createEngine,
         }));
         for (const text of [presentation.ui("title.name"), presentation.ui("title.campaigns"),
             presentation.campaign("skunk"), presentation.campaign("skunk", "desc"),

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createCharacterLibrary, createEngine } from "../../src/content";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { EncounterDetailsPanel } from "../../src/ui/web/app/components/EncounterDetailsPanel";
@@ -150,8 +151,9 @@ describe("Encounter Details narrative tabs", () => {
         const engine = createStockEngine();
         const prepareBattle = vi.fn(() => ({ engine, dispose: () => {} }));
         mount(() => createComponent(GraphicalApp, {
+            characterLibrary: createCharacterLibrary(), createEngine,
             campaigns: ["skunk"], release: "test", presentation,
-            composeCampaign: () => ({ engine, presentation }), prepareBattle,
+            composeCampaign: () => ({ library: engine.getLibrary(), presentation }), prepareBattle,
         }));
         element(".kcq-title-screen__campaign").click();
         const select = (id: string) => {

@@ -2,7 +2,7 @@ import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getStringTable } from "../../localization";
-import { createEngine, type KCQCampaign, type KCQCharacter } from "../../src/content";
+import { createCampaignLibrary, createCharacterLibrary, createEngine, type KCQCampaign, type KCQCharacter } from "../../src/content";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
@@ -41,8 +41,9 @@ function labeledButton(label: string) {
     found.click();
 }
 function mount() {
+    const restoreEngine = vi.fn(createEngine);
     const composeCampaign = vi.fn((campaign: KCQCampaign, party: readonly KCQCharacter[]) => ({
-        engine: createEngine(party, campaign, 12345), presentation,
+        library: createCampaignLibrary(party, campaign), presentation,
     }));
     const prepareBattle = vi.fn((campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId, party: readonly KCQCharacter[]) => {
         const engine = createEngine(party, campaign, 12345);
@@ -61,17 +62,19 @@ function mount() {
     const host = document.createElement("div"); document.body.append(host);
     unmount = render(() => createComponent(GraphicalApp, {
         campaigns: ["skunk"], release: "test", presentation, composeCampaign, prepareBattle,
+        characterLibrary: createCharacterLibrary(), createEngine: restoreEngine,
         languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }],
     }), host);
-    return { composeCampaign, prepareBattle };
+    return { composeCampaign, prepareBattle, restoreEngine };
 }
 
 describe("party selection navigation", () => {
     it("shows the localized roster before creating an engine and guards mouse and keyboard confirmation", () => {
-        const { composeCampaign, prepareBattle } = mount();
+        const { composeCampaign, prepareBattle, restoreEngine } = mount();
         click(".kcq-title-screen__party button");
         expect(composeCampaign).not.toHaveBeenCalled();
         expect(prepareBattle).not.toHaveBeenCalled();
+        expect(restoreEngine).not.toHaveBeenCalled();
         const toggles = [...document.querySelectorAll<HTMLButtonElement>(".kcq-party-selection__toggle")];
         expect(toggles.map(toggle => toggle.dataset.characterId)).toEqual(availableCharacters);
         expect(toggles.map(toggle => toggle.getAttribute("aria-pressed"))).toEqual(availableCharacters.map((_, index) => index < 3 ? "true" : "false"));
@@ -107,7 +110,7 @@ describe("party selection navigation", () => {
     });
 
     it.each(["title", "picker"])("opens every character directly from %s and restores the unchanged draft and focus", async origin => {
-        const { composeCampaign, prepareBattle } = mount();
+        const { composeCampaign, prepareBattle, restoreEngine } = mount();
         if (origin === "picker") click(".kcq-title-screen__campaign");
         click(origin === "title" ? ".kcq-title-screen__party button" : ".kcq-encounter-picker__change-party");
         click('[data-character-id="ko"]'); click('[data-character-id="naruyo"]');
@@ -136,9 +139,9 @@ describe("party selection navigation", () => {
             expect({ ...localStorage }).toEqual(storage);
         }
         expect(prepareBattle).not.toHaveBeenCalled();
+        expect(restoreEngine).not.toHaveBeenCalled();
         for (const result of composeCampaign.mock.results.slice(origin === "picker" ? 1 : 0)) {
-            expect(result.value.engine.getGameState().characters).toEqual([]);
-            expect(Object.keys(result.value.engine.getLibrary().characters)).toEqual(availableCharacters);
+            expect(Object.keys(result.value.library.characters)).toEqual(availableCharacters);
         }
         // Character shortcuts still work after returning from the modal.
         expect(press("4").defaultPrevented).toBe(true);
@@ -196,7 +199,7 @@ describe("party selection navigation", () => {
     });
 
     it("recomposes after changing party, preserves it through battle and retry, and restores saves directly", () => {
-        const { composeCampaign, prepareBattle } = mount();
+        const { composeCampaign, prepareBattle, restoreEngine } = mount();
         click(".kcq-title-screen__campaign");
         click(".kcq-encounter-picker__change-party");
         expect(document.querySelector(".kcq-party-selection")).not.toBeNull();
@@ -206,7 +209,7 @@ describe("party selection navigation", () => {
         expect(composeCampaign).toHaveBeenCalledOnce();
         click(".kcq-party-selection__continue");
         expect(composeCampaign).toHaveBeenNthCalledWith(2, "skunk", party);
-        expect(composeCampaign.mock.results[1]!.value.engine.listCharacters()).toEqual(party);
+        expect(Object.keys(composeCampaign.mock.results[1]!.value.library.characters)).toEqual(party);
         click('.kcq-encounter-picker__row[data-kcq-shortcut="1"]');
         click(".kcq-encounter-details .kcq-targeting__back");
         click('.kcq-encounter-picker__row[data-kcq-shortcut="2"]');
@@ -225,7 +228,8 @@ describe("party selection navigation", () => {
         expect(composeCampaign).toHaveBeenNthCalledWith(3, "skunk", party);
         expect(composeCampaign).toHaveBeenCalledTimes(3);
         if (saved.status !== "loaded") throw new Error("Expected save");
-        expect(composeCampaign.mock.results[2]!.value.engine.getSaveState()).toEqual(saved.save.saveState);
+        expect(restoreEngine).toHaveBeenCalledExactlyOnceWith(party, "skunk");
+        expect(restoreEngine.mock.results[0]!.value.getSaveState()).toEqual(saved.save.saveState);
         expect(prepareBattle).toHaveBeenCalledTimes(2);
         click(".kcq-battle-overview .kcq-combat-header__settings"); labeledButton("Retry Battle");
         expect(prepareBattle).toHaveBeenNthCalledWith(3, "skunk", "plains_1", "standard", party);
@@ -271,7 +275,7 @@ describe("party selection navigation", () => {
         expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "plains_1", "standard", ["ko", "matsuko", "hinari"]);
         click(".kcq-battle-overview .kcq-combat-header__settings"); labeledButton("Back to Level Select");
         expect(composeCampaign).toHaveBeenLastCalledWith("skunk", preferred);
-        expect(composeCampaign.mock.results.at(-1)!.value.engine.listCharacters()).toEqual(preferred);
+        expect(Object.keys(composeCampaign.mock.results.at(-1)!.value.library.characters)).toEqual(preferred);
         press("2"); press("Enter"); press("Enter");
         expect(prepareBattle).toHaveBeenLastCalledWith("skunk", "plains_1", "standard", preferred);
     });

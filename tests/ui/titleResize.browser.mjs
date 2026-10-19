@@ -107,7 +107,36 @@ try {
         const party = document.querySelector(".kcq-title-screen__upper").firstElementChild.getBoundingClientRect();
         return Math.abs((upper.left + upper.right) / 2 - (party.left + party.right) / 2) < 1;
     })()`), "Party did not center without a resume section");
-    console.log(`Title resize browser regression passed: ${widths.length * 2} resize steps and 120 held frames.`);
+    // A controls wrapper can be narrower than its buttons without clipping them.
+    // Protect the usable button bounds and hit targets in the rendered header.
+    await evaluate('document.getElementById("root").style.width = ""');
+    await evaluate('document.querySelector(".kcq-title-screen__campaign").click()');
+    for (const width of [390, 1024, 1920]) {
+        await page.send("Emulation.setDeviceMetricsOverride", {
+            width, height: 900, deviceScaleFactor: 1.25, mobile: false,
+        });
+        await evaluate("new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))");
+        const actions = await evaluate(`(() => {
+            const header = document.querySelector(".kcq-encounter-header");
+            const bounds = header.getBoundingClientRect();
+            return [...header.querySelectorAll(".kcq-header-controls > button")].map(button => {
+                const rect = button.getBoundingClientRect();
+                button.focus();
+                return {
+                    label: button.getAttribute("aria-label"),
+                    focusable: !button.disabled && document.activeElement === button,
+                    contained: rect.width > 0 && rect.height > 0
+                        && rect.left >= bounds.left && rect.right <= bounds.right
+                        && rect.top >= bounds.top && rect.bottom <= bounds.bottom,
+                    hittable: button.contains(document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2)),
+                };
+            });
+        })()`);
+        assert.equal(actions.length, 2, "Missing header actions");
+        assert.ok(actions.every(action => action.label && action.focusable && action.contained && action.hittable),
+            `Inaccessible header action at ${width}px: ${JSON.stringify(actions)}`);
+    }
+    console.log(`Title resize browser regression passed: ${widths.length * 2} resize steps, 120 held frames, and header actions at three viewport sizes.`);
 } finally {
     page?.close();
     await browser.send("Target.closeTarget", { targetId });

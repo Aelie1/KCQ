@@ -1,6 +1,7 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCampaignLibrary, createCharacterLibrary } from "../../src/content";
 import { compressToBase64 } from "lz-string";
 import { createStockEngine } from "../../src/stock";
 import type { DifficultyId, EncounterId, Engine } from "../../src/engine/public/types";
@@ -45,7 +46,7 @@ function button(label: string): void {
 function mount(configure?: (engine: Engine) => void, titlePresentation = presentation) {
     unmount?.(); document.body.replaceChildren();
     const sessions: { engine: Engine; dispose: ReturnType<typeof vi.fn> }[] = [];
-    const compositions: Engine[] = [];
+    const restoredEngines: Engine[] = [];
     const prepareBattle = vi.fn((_campaign: "skunk", encounter: EncounterId, difficulty: DifficultyId) => {
         const engine = createStockEngine(12345 + sessions.length);
         createBattle(engine, encounter, difficulty);
@@ -53,18 +54,20 @@ function mount(configure?: (engine: Engine) => void, titlePresentation = present
         sessions.push(session);
         return session;
     });
-    const composeCampaign = vi.fn(() => {
+    const createEngine = vi.fn(() => {
         const engine = createStockEngine(999);
         vi.spyOn(engine, "loadCharacter"); vi.spyOn(engine, "loadEncounter"); vi.spyOn(engine, "loadSaveState");
         configure?.(engine);
-        compositions.push(engine);
-        return { engine, presentation };
+        restoredEngines.push(engine);
+        return engine;
     });
+    const composeCampaign = vi.fn(() => ({ library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation }));
     const host = document.createElement("div"); document.body.append(host);
     unmount = render(() => createComponent(GraphicalApp, {
         campaigns: ["skunk"], release: "test", presentation: titlePresentation, prepareBattle, composeCampaign,
+        characterLibrary: createCharacterLibrary(), createEngine,
     }), host);
-    return { sessions, compositions, prepareBattle, composeCampaign };
+    return { sessions, restoredEngines, prepareBattle, composeCampaign };
 }
 function start(encounter = "forest_3", difficulty = "Veteran"): void {
     click(".kcq-title-screen__campaign");
@@ -187,7 +190,7 @@ describe("title saved-battle card", () => {
         expect(document.querySelector('[role="alert"]')).toBeNull();
         remove.mockRestore();
         click(".kcq-title-screen__continue");
-        expect(app.compositions[0]!.getSaveState()).toEqual(source.save.saveState);
+        expect(app.restoredEngines[0]!.getSaveState()).toEqual(source.save.saveState);
     });
 
     it.each(["corrupted", "incompatible"] as const)("can delete a %s save without starting a battle", status => {
@@ -235,7 +238,7 @@ describe("graphical autosave and Continue", () => {
         expect(initial).not.toEqual(previous);
         const refreshed = mount(); click(".kcq-title-screen__continue");
         expect(document.querySelector(".kcq-battle-overview")).not.toBeNull();
-        expect(refreshed.compositions[0]!.getSaveState()).toEqual(initial.saveState);
+        expect(refreshed.restoredEngines[0]!.getSaveState()).toEqual(initial.saveState);
         expect(refreshed.prepareBattle).not.toHaveBeenCalled();
     });
 
@@ -264,7 +267,7 @@ describe("graphical autosave and Continue", () => {
         expect(app.sessions[0]!.engine.getSaveState()).not.toEqual(initial.saveState);
         const refreshed = mount(); vi.advanceTimersByTime(20000); expect(saved()).toEqual(initial);
         click(".kcq-title-screen__continue");
-        expect(refreshed.compositions[0]!.getSaveState()).toEqual(initial.saveState);
+        expect(refreshed.restoredEngines[0]!.getSaveState()).toEqual(initial.saveState);
     });
 
     it("does not save failed decisions", () => {
@@ -277,9 +280,9 @@ describe("graphical autosave and Continue", () => {
 
     it("restores engine, immediate historical log and statistics, then continues identically", () => {
         const original = seedSave(); const app = mount(); click(".kcq-title-screen__continue");
-        const restored = app.compositions[0]!;
+        const restored = app.restoredEngines[0]!;
         expect(restored.loadSaveState).toHaveBeenCalledExactlyOnceWith(original.save.saveState);
-        for (const engine of app.compositions) {
+        for (const engine of app.restoredEngines) {
             expect(engine.loadCharacter).not.toHaveBeenCalled(); expect(engine.loadEncounter).not.toHaveBeenCalled();
         }
         expect(app.prepareBattle).not.toHaveBeenCalled();
@@ -332,14 +335,21 @@ describe("autosave lifecycle and failures", () => {
             expect(JSON.parse(window.localStorage.getItem("kcq.unlocks")!).skunk).toContain("plains_2");
         }
         document.querySelector<HTMLButtonElement>(".kcq-victory-story__continue")?.click();
-        button("Retry");
+        if (outcome === "defeat") button("Retry");
+        else {
+            // Victory returns to selection; retry is offered only after defeat.
+            button("Back to Level Select");
+            const row = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]
+                .find(row => row.querySelector(".kcq-encounter-picker__name")?.textContent === presentation.encounter("plains_1"))!;
+            row.click(); button("Choose Difficulty"); button("Start Encounter");
+        }
         expect(saved().stats.stats.actions).toBe(0);
         expect(saved().saveState).toEqual(app.sessions[1]!.engine.getSaveState());
     });
 
     it("starts the next encounter with its own initial autosave after a continued victory", () => {
         seedSave("plains_1"); const app = mount(); click(".kcq-title-screen__continue");
-        const engine = app.compositions[0]!;
+        const engine = app.restoredEngines[0]!;
         const state = engine.getGameState();
         vi.spyOn(engine, "getGameState").mockReturnValue({ ...state, turn: { ...state.turn, outcome: "victory" } });
         vi.spyOn(engine, "executeAction").mockReturnValue({ success: true, frames: [], actions: engine.getActionView() });

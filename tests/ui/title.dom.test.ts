@@ -2,7 +2,7 @@ import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getStringTable } from "../../localization";
-import { createEngine, type KCQCampaign } from "../../src/content";
+import { createCampaignLibrary, createCharacterLibrary, createEngine, type KCQCampaign } from "../../src/content";
 import { stockCharacters } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -22,11 +22,11 @@ function click(selector: string) {
 }
 
 function mount(languages?: readonly LanguageOption[]) {
-    const compositions: ReturnType<typeof createEngine>[] = [];
+    const compositions: ReturnType<typeof createCampaignLibrary>[] = [];
     const composeCampaign = vi.fn((campaign: KCQCampaign) => {
-        const engine = createEngine(stockCharacters, campaign, 12345);
-        compositions.push(engine);
-        return { engine, presentation: new Presentation(getStringTable("en", stockCharacters, campaign)), languages };
+        const library = createCampaignLibrary(stockCharacters, campaign);
+        compositions.push(library);
+        return { library, presentation: new Presentation(getStringTable("en", stockCharacters, campaign)), languages };
     });
     const prepareBattle = vi.fn((campaign: KCQCampaign, encounter: EncounterId, difficulty: DifficultyId) => {
         const engine = createEngine(stockCharacters, campaign, 12345);
@@ -37,7 +37,7 @@ function mount(languages?: readonly LanguageOption[]) {
     document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, {
         campaigns: ["skunk"], release: "test", presentation: new Presentation(getStringTable("en", stockCharacters)), languages,
-        composeCampaign, prepareBattle,
+        composeCampaign, prepareBattle, characterLibrary: createCharacterLibrary(), createEngine,
     }), root);
     return { composeCampaign, prepareBattle, compositions };
 }
@@ -163,12 +163,12 @@ describe("title navigation", () => {
         click(".kcq-title-screen__campaign");
         expect(composeCampaign).toHaveBeenCalledExactlyOnceWith("skunk", ["ko", "matsuko", "hinari"]);
         expect(document.querySelector(".kcq-title-screen")).toBeNull();
-        const library = compositions[0]!.getLibrary();
+        const library = compositions[0]!;
         const presentation = new Presentation(getStringTable("en", stockCharacters, "skunk"));
         expect([...document.querySelectorAll(".kcq-encounter-picker__row:not(:disabled) .kcq-encounter-picker__name")].map(row => row.textContent))
             .toEqual(library.campaigns.skunk.initial.map(id => presentation.encounter(id)));
         expect(library.encounters).toHaveProperty("forest_3");
-        expect(compositions[0]!.getGameState().characters).toEqual([]);
+        expect(composeCampaign.mock.results[0]!.value).not.toHaveProperty("engine");
         expect(prepareBattle).not.toHaveBeenCalled();
         click(".kcq-encounter-picker .kcq-targeting__back");
         expect(document.querySelector(".kcq-title-screen")).not.toBeNull();

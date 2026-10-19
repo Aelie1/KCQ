@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCampaignLibrary, createCharacterLibrary, createEngine } from "../../src/content";
 import type { BattleState, DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -36,8 +37,9 @@ function mount() {
     });
     const host = document.createElement("div"); document.body.append(host);
     unmount = render(() => createComponent(GraphicalApp, {
+        characterLibrary: createCharacterLibrary(), createEngine,
         campaigns: ["skunk"], release: "test", presentation, prepareBattle,
-        composeCampaign: () => ({ engine: createStockEngine(), presentation }),
+        composeCampaign: () => ({ library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation }),
     }), host);
     element(".kcq-title-screen__campaign").click();
     return { sessions, prepareBattle };

@@ -3,6 +3,7 @@ import type { Window as HappyWindow } from "happy-dom";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCampaignLibrary, createCharacterLibrary, createEngine } from "../../src/content";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
@@ -51,8 +52,9 @@ function mountApp() {
     const host = document.createElement("div");
     document.body.append(host);
     unmount = render(() => createComponent(GraphicalApp, {
+        characterLibrary: createCharacterLibrary(), createEngine,
         campaigns: ["skunk"], release: "test", presentation, prepareBattle,
-        composeCampaign: () => ({ engine: createStockEngine(), presentation }),
+        composeCampaign: () => ({ library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation }),
     }), host);
     button(".kcq-title-screen__campaign").click();
     press("1"); press("Escape");

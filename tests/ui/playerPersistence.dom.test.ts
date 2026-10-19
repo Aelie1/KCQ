@@ -1,6 +1,7 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCampaignLibrary, createCharacterLibrary, createEngine } from "../../src/content";
 import { createStockEngine } from "../../src/stock";
 import type { BattleState, DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -45,8 +46,9 @@ function mount(supported = languages) {
     const sessions: ReturnType<typeof createStockEngine>[] = [];
     const root = document.createElement("div"); document.body.append(root);
     unmount = render(() => createComponent(GraphicalApp, {
+        characterLibrary: createCharacterLibrary(), createEngine,
         campaigns: ["skunk"], release: "test", presentation, languages: supported,
-        composeCampaign: () => ({ engine: createStockEngine(), presentation, languages: supported }),
+        composeCampaign: () => ({ library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation, languages: supported }),
         prepareBattle: (_campaign, encounter: EncounterId, difficulty: DifficultyId) => {
             const engine = createStockEngine(12345);
             createBattle(engine, encounter, difficulty); sessions.push(engine);

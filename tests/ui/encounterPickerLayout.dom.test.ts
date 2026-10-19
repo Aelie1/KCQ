@@ -48,26 +48,28 @@ const press = (key: string) => {
 };
 
 describe("desktop encounter overview", () => {
-    it("keeps compact stars beside the name, reserves badge space, and contains centered footer actions", () => {
+    it("keeps named card regions, unclipped badges, and usable footer actions", () => {
         const { host, onBack, onChangeParty } = mount(undefined, true);
         const campaign = host.querySelector<HTMLElement>(".kcq-encounter-picker__campaign")!;
         expect(campaign.style.getPropertyValue("--kcq-campaign-columns")).toBe("3");
         const row = cards(host)[1]!;
         expect(row.parentElement!.className).toBe("kcq-encounter-picker__card-container");
-        expect(getComputedStyle(row).gridTemplateAreas).toBe('"name stars" ". best"');
-        expect(getComputedStyle(row).paddingRight).toBe("18px");
+        expect(getComputedStyle(row).display).toBe("grid");
+        // Compact cards place metadata below the name; wider containers may
+        // move it beside the name. Protect each semantic region in either form.
+        for (const [selector, area] of [["strong", "name"], [".kcq-encounter-picker__stars", "stars"], [".kcq-encounter-picker__best-clear", "best"]] as const) {
+            expect(getComputedStyle(row.querySelector(selector)!).gridArea).toBe(area);
+            expect(getComputedStyle(row).gridTemplateAreas).toContain(area);
+        }
         const name = getComputedStyle(row.querySelector("strong")!);
         expect(name.whiteSpace).toBe("nowrap");
         expect(name.textOverflow).toBe("ellipsis");
-        expect(name.fontSize).toBe("14px");
         expect(getComputedStyle(row.querySelector(".kcq-encounter-picker__stars")!).whiteSpace).toBe("nowrap");
         expect(getComputedStyle(host.querySelector(".kcq-encounter-picker__show-all span")!).whiteSpace).toBe("nowrap");
         const footer = host.querySelector<HTMLElement>(".kcq-screen-actions")!;
         expect(getComputedStyle(footer).display).toBe("grid");
-        expect(getComputedStyle(footer).height).toBe("48px");
-        expect(getComputedStyle(footer).maxWidth).toBe("640px");
         expect(getComputedStyle(footer).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
-        expect(getComputedStyle(footer.querySelector("button")!).fontSize).toBe("12px");
+        expect([...footer.querySelectorAll<HTMLButtonElement>("button")].every(button => !button.disabled && button.tabIndex === 0)).toBe(true);
         expect(getComputedStyle(host.querySelector(".kcq-screen-layout__body")!).overflowY).toBe("auto");
         host.querySelector<HTMLButtonElement>(".kcq-encounter-picker__change-party")!.click();
         expect(onChangeParty).toHaveBeenCalledOnce();

@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createCharacterLibrary, createEngine } from "../../src/content";
 import type { ContentLibrary } from "../../src/engine/public/library";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -127,7 +128,10 @@ describe("Library game integration", () => {
         const engine = createStockEngine(12345); const prepareBattle = vi.fn(() => ({ engine, dispose: vi.fn() }));
         const execute = vi.spyOn(engine, "executeAction"); const load = vi.spyOn(engine, "loadEncounter");
         const before = JSON.stringify(engine.getGameState());
-        mount(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ engine, presentation }), prepareBattle }));
+        mount(() => createComponent(GraphicalApp, {
+            characterLibrary: createCharacterLibrary(), createEngine,
+            campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ library: engine.getLibrary(), presentation }), prepareBattle,
+        }));
         element(".kcq-title-screen__campaign").click();
         const picker = element(".kcq-encounter-picker");
         const libraryButton = element<HTMLButtonElement>(".kcq-header-controls > .kcq-combat-header__library");
@@ -172,7 +176,10 @@ describe("Library campaign selection and localization", () => {
     it.each(["details", "difficulty"] as const)("returns to the same %s selection and preserves difficulty", async screen => {
         const engine = createStockEngine(12345);
         const prepareBattle = vi.fn(() => ({ engine, dispose: vi.fn() }));
-        mount(() => createComponent(GraphicalApp, { campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ engine, presentation }), prepareBattle }));
+        mount(() => createComponent(GraphicalApp, {
+            characterLibrary: createCharacterLibrary(), createEngine,
+            campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ library: engine.getLibrary(), presentation }), prepareBattle,
+        }));
         element(".kcq-title-screen__campaign").click();
         element('.kcq-encounter-picker__row[data-kcq-shortcut="1"]').click();
         element(".kcq-encounter-details__footer button").click();

@@ -1,6 +1,7 @@
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createCampaignLibrary, createCharacterLibrary, createEngine } from "../../src/content";
 import type { ActionResult, DifficultyId, EncounterId, GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { createGameLogEntries, type GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
@@ -64,8 +65,9 @@ function mountBattle() {
     const host = document.createElement("div");
     document.body.append(host);
     unmount = render(() => createComponent(GraphicalApp, {
+        characterLibrary: createCharacterLibrary(), createEngine,
         campaigns: ["skunk"], release: "test", presentation, prepareBattle,
-        composeCampaign: () => ({ engine: createStockEngine(), presentation,
+        composeCampaign: () => ({ library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation,
             languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }] }),
         languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }],
     }), host);

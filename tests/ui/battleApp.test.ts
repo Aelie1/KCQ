@@ -59,11 +59,12 @@ describe("playable Solid battle application", () => {
         expect(modal).toContain(new Presentation(stockStrings).battleState(outcome));
         expect(html).toContain("kcq-battle-overview");
         expect(html).toMatch(/class="kcq-battle-stage__background"[^>]*inert[^>]*aria-hidden="true"/);
-        expect(modal).toContain('class="kcq-battle-result__overlay"');
+        expect(modal).toMatch(/class="[^"]*\bkcq-battle-result__overlay\b[^"]*"/);
         expect(modal).toContain('role="dialog"');
-        expect(modal.match(/<button/g)).toHaveLength(3);
+        expect(modal.match(/<button/g)).toHaveLength(outcome === "victory" ? 3 : 4);
         expect(modal).toContain(">View Game Log</button>");
-        expect(modal).toContain(">Retry</button>");
+        expect(modal.includes(">Retry</button>")).toBe(outcome === "defeat");
+        expect(modal).toContain(">Back to Title Screen</button>");
         expect(modal).toContain(">Back to Level Select</button>");
         expect(modal).not.toContain("End Turn");
         expect(modal).toContain("View Game Log");
