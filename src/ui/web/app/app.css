@@ -438,7 +438,7 @@ button {
     opacity: 0.65;
 }
 
-.kcq-battle-overview-columns {
+:is(.kcq-battle-overview-medium, .kcq-character-details-medium) {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: auto minmax(0, 1fr);
@@ -452,15 +452,15 @@ button {
 }
 
 /* Share the medium canvas with the header while keeping both body columns. */
-.kcq-battle-overview-columns>.kcq-battle-overview:has(> .kcq-screen-layout__header) {
+.kcq-battle-overview-medium>.kcq-battle-overview:has(> .kcq-screen-layout__header) {
     display: contents;
 }
 
-.kcq-battle-overview-columns .kcq-screen-layout__header {
+:is(.kcq-battle-overview-medium, .kcq-character-details-medium) .kcq-screen-layout__header {
     grid-column: 1 / -1;
 }
 
-.kcq-battle-overview-columns>.kcq-battle-overview:not(:has(> .kcq-screen-layout__header)) {
+.kcq-battle-overview-medium>.kcq-battle-overview:not(:has(> .kcq-screen-layout__header)) {
     grid-column: 2;
     grid-row: 2;
     height: 100%;
@@ -481,7 +481,7 @@ button {
     height: 28px;
 }
 
-.kcq-battle-overview-columns .kcq-compact-game-log {
+:is(.kcq-battle-overview-medium, .kcq-character-details-medium) .kcq-compact-game-log {
     max-height: 180px;
     overflow-y: auto;
 }
@@ -500,71 +500,71 @@ button {
     min-height: 0;
 }
 
-.kcq-character-details-desktop__header {
+.kcq-character-details-expanded__header {
     grid-column: 1 / -1;
     padding-bottom: 6px;
 }
 
-.kcq-character-details-desktop__column {
+.kcq-character-details-expanded__column {
     min-height: 0;
     gap: 6px;
 }
 
-.kcq-character-details-desktop__information {
+.kcq-character-details-expanded__information {
     gap: 8px;
 }
 
-.kcq-character-details-desktop__column>.kcq-screen-layout {
+.kcq-character-details-expanded__column>.kcq-screen-layout {
     flex: 1 1 0;
     width: 100%;
     height: auto;
 }
 
-.kcq-character-details-desktop__column>.kcq-battle-section__heading {
+.kcq-character-details-expanded__column>.kcq-battle-section__heading {
     flex-shrink: 0;
 }
 
-.kcq-character-details-desktop__column .kcq-battle-section__heading h2,
+.kcq-character-details-expanded__column .kcq-battle-section__heading h2,
 .kcq-enemy-details>.kcq-screen-layout__header>.kcq-battle-section__heading h2 {
     flex-basis: auto;
 }
 
-.kcq-character-details-desktop .kcq-combat-header__back {
+.kcq-character-details-expanded .kcq-combat-header__back {
     display: none;
 }
 
-.kcq-character-details-desktop .kcq-character-commands__header {
+.kcq-character-details-expanded .kcq-character-commands__header {
     justify-content: flex-end;
 }
 
-.kcq-character-details-wide>.kcq-character-details-desktop__log,
-.kcq-character-details-wide>.kcq-character-details-desktop__log>.kcq-battle-section--game-log {
+.kcq-character-details-wide>.kcq-character-details-expanded__log,
+.kcq-character-details-wide>.kcq-character-details-expanded__log>.kcq-battle-section--game-log {
     height: 100%;
     min-width: 0;
     min-height: 0;
 }
 
-.kcq-character-details-desktop .kcq-targeting,
-.kcq-character-details-desktop .kcq-escape {
+.kcq-character-details-expanded .kcq-targeting,
+.kcq-character-details-expanded .kcq-escape {
     width: 100%;
 }
 
 /* Embedded medium details scroll with the existing log/enemy column. */
-.kcq-battle-overview-columns .kcq-battle-overview .kcq-enemy-details {
+.kcq-battle-overview-medium .kcq-battle-overview .kcq-enemy-details {
     width: 100%;
     height: auto;
     gap: 6px;
 }
 
-.kcq-battle-overview-columns .kcq-battle-overview .kcq-enemy-details>.kcq-screen-layout__body {
+.kcq-battle-overview-medium .kcq-battle-overview .kcq-enemy-details>.kcq-screen-layout__body {
     overflow: visible;
 }
 
-.kcq-battle-overview-columns .kcq-character-details-desktop__workspace>.kcq-battle-section--game-log {
+.kcq-character-details-medium .kcq-character-details-expanded__workspace>.kcq-battle-section--game-log {
     flex-shrink: 0;
 }
 
-.kcq-character-details-desktop__workspace>.kcq-battle-section__heading .kcq-character-commands__resource {
+.kcq-character-details-expanded__workspace>.kcq-battle-section__heading .kcq-character-commands__resource {
     margin-left: auto;
 }
 
@@ -586,41 +586,41 @@ button {
     height: auto;
 }
 
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header {
     display: flex;
     gap: 12px;
     width: 100%;
     padding: 4px 10px;
 }
 
-/* Flatten desktop header wrappers so the meter owns the spare space. */
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header__encounter,
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header__trap {
+/* Flatten non-narrow header wrappers so the meter owns the spare space. */
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header__encounter,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header__trap {
     display: contents;
 }
 
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header__title,
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header__trap-summary,
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header__metadata,
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-header-controls,
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header>.kcq-battle-overview__primary-action {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header__title,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header__trap-summary,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header__metadata,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-header-controls,
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header>.kcq-battle-overview__primary-action {
     flex: 0 0 auto;
 }
 
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header__trap-meter {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header__trap-meter {
     flex: 1 1 96px;
     min-width: 96px;
     width: auto;
 }
 
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header__metadata {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header__metadata {
     display: flex;
     align-items: center;
     gap: 0;
     margin-left: auto;
 }
 
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns, .kcq-character-details-wide) .kcq-combat-header__metadata p+p::before {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium, .kcq-character-details-medium, .kcq-character-details-wide) .kcq-combat-header__metadata p+p::before {
     content: "\00b7";
     margin-inline: 6px;
     color: var(--kcq-text-dim);
@@ -634,35 +634,35 @@ button {
     height: 28px;
 }
 
-.kcq-battle-overview-columns .kcq-header-controls {
+:is(.kcq-battle-overview-medium, .kcq-character-details-medium) .kcq-header-controls {
     display: flex;
     gap: 6px;
     width: auto;
     height: 32px;
 }
 
-.kcq-battle-overview-columns .kcq-combat-header__trap-meter {
+:is(.kcq-battle-overview-medium, .kcq-character-details-medium) .kcq-combat-header__trap-meter {
     flex-basis: 32px;
     min-width: 32px;
 }
 
-.kcq-battle-overview-columns .kcq-combat-header__metadata {
+:is(.kcq-battle-overview-medium, .kcq-character-details-medium) .kcq-combat-header__metadata {
     display: grid;
     grid-template-columns: auto auto;
     gap: 3px 0;
 
 }
 
-.kcq-battle-overview-columns .kcq-combat-header__phase {
+:is(.kcq-battle-overview-medium, .kcq-character-details-medium) .kcq-combat-header__phase {
     grid-column: 1 / -1;
     margin-inline: auto;
 }
 
-.kcq-battle-overview-columns .kcq-combat-header__metadata .kcq-combat-header__phase::before {
+:is(.kcq-battle-overview-medium, .kcq-character-details-medium) .kcq-combat-header__metadata .kcq-combat-header__phase::before {
     content: none;
 }
 
-:is(.kcq-battle-overview-wide, .kcq-battle-overview-columns) .kcq-battle-overview__enemies:not(.kcq-battle-overview__enemies--expanded) {
+:is(.kcq-battle-overview-wide, .kcq-battle-overview-medium) .kcq-battle-overview__enemies:not(.kcq-battle-overview__enemies--expanded) {
     width: 100%;
     grid-template-columns: repeat(auto-fit, 180px);
 }
@@ -3751,40 +3751,40 @@ button {
     gap: 12px;
 }
 
-.kcq-encounter-details--desktop,
-.kcq-encounter-details--desktop .kcq-encounter-header {
+.kcq-encounter-details--non-narrow,
+.kcq-encounter-details--non-narrow .kcq-encounter-header {
     width: 100%;
 }
 
-.kcq-encounter-details--desktop {
+.kcq-encounter-details--non-narrow {
     --kcq-screen-gap: 8px;
 }
 
-.kcq-encounter-details--desktop>.kcq-screen-layout__body>.kcq-screen-layout__content,
-.kcq-encounter-details--desktop .kcq-encounter-details__body {
+.kcq-encounter-details--non-narrow>.kcq-screen-layout__body>.kcq-screen-layout__content,
+.kcq-encounter-details--non-narrow .kcq-encounter-details__body {
     height: 100%;
     min-height: 0;
 }
 
-.kcq-encounter-details--desktop>.kcq-screen-layout__body>.kcq-screen-layout__content {
+.kcq-encounter-details--non-narrow>.kcq-screen-layout__body>.kcq-screen-layout__content {
     /* At very short heights, let ScreenLayout scroll the summary and columns
        together while its header and footer stay pinned. */
     min-height: 128px;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__info {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__info {
     flex: 0 0 auto;
     padding: 6px 8px;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__info>div {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__info>div {
     flex-direction: row;
     flex-wrap: wrap;
     min-height: 28px;
     gap: 4px 12px;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__columns {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__columns {
     display: grid;
     grid-template-columns: minmax(0, 66ch) 366px;
     justify-content: center;
@@ -3793,11 +3793,11 @@ button {
     min-height: 0;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__columns:not(:has(.kcq-encounter-details__information)) {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__columns:not(:has(.kcq-encounter-details__information)) {
     grid-template-columns: minmax(0, 1fr);
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__description {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__description {
     display: flex;
     flex-direction: column;
     min-height: 0;
@@ -3805,35 +3805,35 @@ button {
     overflow-y: auto;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__tabs {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__tabs {
     flex-shrink: 0;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__narrative {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__narrative {
     flex: 1 1 auto;
     min-height: 24px;
     overflow: auto;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__information {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__information {
     min-width: 0;
     min-height: 0;
     overflow: auto;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__information>.kcq-encounter-card {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__information>.kcq-encounter-card {
     flex-shrink: 0;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__description,
-.kcq-encounter-details--desktop .kcq-encounter-details__narrative,
-.kcq-encounter-details--desktop .kcq-encounter-details__information {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__description,
+.kcq-encounter-details--non-narrow .kcq-encounter-details__narrative,
+.kcq-encounter-details--non-narrow .kcq-encounter-details__information {
     overscroll-behavior: contain;
     scrollbar-width: thin;
 }
 
-.kcq-encounter-details--desktop .kcq-encounter-details__narrative:focus-visible,
-.kcq-encounter-details--desktop .kcq-encounter-details__information:focus-visible {
+.kcq-encounter-details--non-narrow .kcq-encounter-details__narrative:focus-visible,
+.kcq-encounter-details--non-narrow .kcq-encounter-details__information:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: -2px;
 }
@@ -4169,40 +4169,40 @@ button {
 }
 
 /* Keep the five choices visible while longer difficulty information scrolls. */
-.kcq-difficulty-select--desktop,
-.kcq-difficulty-select--desktop .kcq-encounter-header {
+.kcq-difficulty-select--non-narrow,
+.kcq-difficulty-select--non-narrow .kcq-encounter-header {
     width: 100%;
 }
 
-.kcq-difficulty-select--desktop {
+.kcq-difficulty-select--non-narrow {
     --kcq-screen-gap: 8px;
 }
 
-.kcq-difficulty-select--desktop>.kcq-screen-layout__body>.kcq-screen-layout__content,
-.kcq-difficulty-select--desktop .kcq-difficulty-select__body {
+.kcq-difficulty-select--non-narrow>.kcq-screen-layout__body>.kcq-screen-layout__content,
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__body {
     height: 100%;
     /* Preserve the selector at exceptionally short heights; ScreenLayout
        scrolls the columns together while the header and footer stay pinned. */
     min-height: 260px;
 }
 
-.kcq-difficulty-select--desktop .kcq-difficulty-select__body {
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__body {
     display: grid;
     grid-template-columns: minmax(0, 35fr) minmax(0, 65fr);
     gap: 24px;
 }
 
-.kcq-difficulty-select--desktop .kcq-difficulty-select__card {
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__card {
     align-self: start;
     min-width: 0;
 }
 
-.kcq-difficulty-select--desktop .kcq-difficulty-select__choices {
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__choices {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
 }
 
-.kcq-difficulty-select--desktop .kcq-difficulty-select__choice {
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__choice {
     width: 100%;
     min-height: 36px;
     padding: 6px 10px;
@@ -4210,7 +4210,7 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-difficulty-select--desktop .kcq-difficulty-select__information {
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__information {
     min-width: 0;
     min-height: 0;
     overflow: auto;
@@ -4218,17 +4218,17 @@ button {
     scrollbar-width: thin;
 }
 
-.kcq-difficulty-select--desktop .kcq-difficulty-select__information>.kcq-encounter-card {
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__information>.kcq-encounter-card {
     flex-shrink: 0;
 }
 
-.kcq-difficulty-select--desktop .kcq-difficulty-select__summary h2 {
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__summary h2 {
     color: var(--kcq-accent-primary);
     font-size: 16px;
     line-height: 20px;
 }
 
-.kcq-difficulty-select--desktop .kcq-difficulty-select__information:focus-visible {
+.kcq-difficulty-select--non-narrow .kcq-difficulty-select__information:focus-visible {
     outline: 2px solid var(--kcq-accent-primary);
     outline-offset: -2px;
 }
@@ -4246,7 +4246,7 @@ button {
     isolation: isolate;
 }
 
-.kcq-battle-stage:has(.kcq-battle-overview-columns,
+.kcq-battle-stage:has(.kcq-battle-overview-medium, .kcq-character-details-medium,
     .kcq-battle-overview-wide, .kcq-character-details-wide) {
     width: 100%;
     max-width: none;
@@ -4271,7 +4271,7 @@ button {
 /* Reserve space for save feedback without pushing battle controls offscreen. */
 .kcq-battle-stage__background>div,
 .kcq-battle-stage__background>.kcq-screen-layout,
-.kcq-battle-stage__background>div> :is(.kcq-screen-layout, .kcq-battle-overview-columns,
+.kcq-battle-stage__background>div> :is(.kcq-screen-layout, .kcq-battle-overview-medium, .kcq-character-details-medium,
     .kcq-battle-overview-wide, .kcq-character-details-wide) {
     height: 100%;
 }
@@ -5611,7 +5611,7 @@ button {
     zoom: var(--kcq-ui-zoom, 1);
 }
 
-.kcq-library-host--desktop {
+.kcq-library-host--non-narrow {
     grid-template-columns: 220px 366px;
     gap: 12px;
     width: max-content;
@@ -6766,7 +6766,7 @@ button {
     padding: 8px;
 }
 
-/* Keep room for a readable scroll region at shorter scaled desktop heights. */
+/* Keep room for a readable scroll region at shorter scaled non-narrow heights. */
 @media (max-height: 600px) {
     .kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-battle-result {
         gap: 6px;

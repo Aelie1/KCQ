@@ -19,7 +19,7 @@ export function EncounterDetailsPanel(props: {
     model: EncounterDetailsViewModel; onBack: () => void; onChooseDifficulty: () => void;
 }): JSX.Element {
     const responsiveLayout = useContext(ResponsiveLayoutContext);
-    const desktop = () => (responsiveLayout?.().size ?? "narrow") !== "narrow";
+    const nonNarrow = () => (responsiveLayout?.().size ?? "narrow") !== "narrow";
     const hasInformation = () => props.model.enemies.length > 0 || props.model.effects.length > 0 || props.model.effectGroups.length > 0;
     const [selectedTab, setSelectedTab] = createSignal<NarrativeTab>("description");
     createEffect(on(() => props.model.id, () => setSelectedTab("description")));
@@ -50,7 +50,7 @@ export function EncounterDetailsPanel(props: {
         }
     };
 
-    return <ScreenLayout class={`kcq-encounter-screen kcq-encounter-details${desktop() ? " kcq-encounter-details--desktop" : ""}`}
+    return <ScreenLayout class={`kcq-encounter-screen kcq-encounter-details${nonNarrow() ? " kcq-encounter-details--non-narrow" : ""}`}
         header={
             <EncounterHeader title={props.model.name} settingsLabel={props.model.labels.settings} onSettings={props.onSettings}
                 libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} />
@@ -72,7 +72,7 @@ export function EncounterDetailsPanel(props: {
                 <div class="kcq-encounter-details__columns">
                     <section class="kcq-encounter-card kcq-encounter-details__description">
                         <Show when={props.model.stars > 0} fallback={
-                            <div class="kcq-encounter-details__narrative" tabIndex={desktop() ? 0 : undefined} aria-label={props.model.labels.description}>
+                            <div class="kcq-encounter-details__narrative" tabIndex={nonNarrow() ? 0 : undefined} aria-label={props.model.labels.description}>
                                 <p>{props.model.description}</p>
                             </div>
                         }>
@@ -93,9 +93,9 @@ export function EncounterDetailsPanel(props: {
                         </Show>
                     </section>
                     <Show when={hasInformation()}>
-                        <div class="kcq-encounter-details__information" tabIndex={desktop() ? 0 : undefined}
-                            role={desktop() ? "region" : undefined}
-                            aria-label={desktop() ? [
+                        <div class="kcq-encounter-details__information" tabIndex={nonNarrow() ? 0 : undefined}
+                            role={nonNarrow() ? "region" : undefined}
+                            aria-label={nonNarrow() ? [
                                 props.model.enemies.length > 0 ? props.model.labels.enemies : undefined,
                                 props.model.effects.length > 0 || props.model.effectGroups.length > 0 ? props.model.labels.specialRules : undefined,
                             ].filter(Boolean).join(", ") : undefined}>

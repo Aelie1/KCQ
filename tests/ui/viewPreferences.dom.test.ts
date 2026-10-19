@@ -62,7 +62,7 @@ function mount(workspace = false) {
 }
 function assertColumns(columns: number) {
     expect(!!document.querySelector(".kcq-battle-overview-wide, .kcq-character-details-wide")).toBe(columns === 3);
-    expect(!!document.querySelector(".kcq-battle-overview-columns")).toBe(columns === 2);
+    expect(!!document.querySelector(".kcq-battle-overview-medium, .kcq-character-details-medium")).toBe(columns === 2);
     expect(document.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
 }
 

@@ -799,7 +799,7 @@ describe("Library modal and desktop navigation", () => {
         responsiveLibraryMount(columns); await tick();
         expect(document.querySelectorAll(".kcq-library__tree-category")).toHaveLength(9);
         expect(document.querySelector(".kcq-library__category")).toBeNull();
-        expect(document.querySelector(".kcq-library-host--desktop")).not.toBeNull();
+        expect(document.querySelector(".kcq-library-host--non-narrow")).not.toBeNull();
         toggleCategory("characters"); toggleCategory("enemies");
         treeEntry("characters", "ko").click(); await tick();
         const article = element(".kcq-library__detail");

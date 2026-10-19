@@ -316,10 +316,10 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const scrollToActionRegion = (): void => {
         nextPaint(() => {
             if (state().turn.outcome !== "ongoing" || playback.active()) return;
-            const desktopCharacter = desktop() && characterActorId();
-            const body = stage?.querySelector<HTMLElement>(desktopCharacter
+            const expandedCharacter = nonNarrow() && characterActorId();
+            const body = stage?.querySelector<HTMLElement>(expandedCharacter
                 ? ".kcq-character-workspace .kcq-screen-layout__body" : ".kcq-screen-layout__body");
-            body?.scrollTo({ top: desktopCharacter ? 0 : body.scrollHeight, behavior: "instant" });
+            body?.scrollTo({ top: expandedCharacter ? 0 : body.scrollHeight, behavior: "instant" });
         });
     };
 
@@ -410,7 +410,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
-            if ((logOpen() && !wide()) || (screen().kind !== "overview" && !(desktop() && (characterActorId() || enemyScreen())))) return false;
+            if ((logOpen() && !wide()) || (screen().kind !== "overview" && !(nonNarrow() && (characterActorId() || enemyScreen())))) return false;
 
             endTurn();
             return true;
@@ -435,7 +435,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const [viewportWidth, setViewportWidth] = createSignal(typeof window === "undefined" ? 390 : window.innerWidth);
     const layout = sharedLayout ?? createMemo(() => calculateResponsiveLayout(viewportWidth() - 24, viewPreferences.columns));
     const wide = () => layout().size === "wide";
-    const desktop = () => layout().size !== "narrow";
+    const nonNarrow = () => layout().size !== "narrow";
     const logReplacement = () => logOpen() && layout().size === "narrow";
     const logModal = () => logOpen() && (layout().size === "medium" || (wide() && !!resultModel()));
     createEffect(() => {
@@ -444,7 +444,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             if (logOpen() && wide() && !logModal()) stage?.querySelector<HTMLElement>(".kcq-overview-game-log-history")?.focus();
         });
     });
-    const expandedEnemies = () => viewPreferences.enemyCards === "auto" ? desktop() : viewPreferences.enemyCards === "expanded";
+    const expandedEnemies = () => viewPreferences.enemyCards === "auto" ? nonNarrow() : viewPreferences.enemyCards === "expanded";
     onMount(() => {
         if (sharedLayout) return;
         const update = () => setViewportWidth(window.innerWidth);
@@ -500,8 +500,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         sections={{ header: false, enemies: false, party: false, footer: false }} />
                 </div>
             </Match>
-            <Match when={desktop()}>
-                <div class="kcq-battle-overview-columns">
+            <Match when={nonNarrow()}>
+                <div class="kcq-battle-overview-medium">
                     <BattleOverviewPanel {...overview} endTurnInHeader
                         sections={{ log: false, enemies: false, footer: false }} />
                     <BattleOverviewPanel {...overview} gameLogHeadingAction
@@ -514,7 +514,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     const ScreenPanels = (panelProps: { workspaceOnly?: boolean }): JSX.Element => (
         <Switch fallback={<Overview />}>
-            <Match when={!desktop() && enemyScreen()}>
+            <Match when={!nonNarrow() && enemyScreen()}>
                 {(current) => <EnemyDetailsPanel
                     actions={actions()} enemyId={current().enemyId}
                     presentation={props.presentation} state={state()} thresholds={thresholds()}
@@ -575,7 +575,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             </Match>
         </Switch>
     );
-    const DesktopCharacter = (): JSX.Element => {
+    const ExpandedCharacter = (): JSX.Element => {
         const character = createMemo(() => createCharacterDetailsViewModel(
             state(), actions(), characterActorId()!, thresholds(), props.presentation,
         ));
@@ -586,7 +586,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             contextLabel={props.presentation.ui("combatHeader.character")}
             onSelectCharacter={selectCharacter}
             actionRegion={<ScreenPanels workspaceOnly />}
-            desktop={{
+            expanded={{
                 get wide() { return wide(); },
 
                 get workspaceHeading() {
@@ -685,8 +685,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     inert={dialogOpen() || logModal() || logReplacement() || playback.active()}
                     aria-hidden={dialogOpen() || logModal() || logReplacement() ? true : undefined}>
                     <div>
-                        <Show when={desktop() && !!characterActorId()} fallback={<ScreenPanels />}>
-                            <DesktopCharacter />
+                        <Show when={nonNarrow() && !!characterActorId()} fallback={<ScreenPanels />}>
+                            <ExpandedCharacter />
                         </Show>
                     </div>
                 </div>

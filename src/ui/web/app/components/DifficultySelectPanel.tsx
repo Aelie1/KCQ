@@ -18,8 +18,8 @@ export function DifficultySelectPanel(props: {
     onStart: () => void;
 }): JSX.Element {
     const responsiveLayout = useContext(ResponsiveLayoutContext);
-    const desktop = () => (responsiveLayout?.().size ?? "narrow") !== "narrow";
-    return <ScreenLayout class={`kcq-encounter-screen kcq-difficulty-select${desktop() ? " kcq-difficulty-select--desktop" : ""}`}
+    const nonNarrow = () => (responsiveLayout?.().size ?? "narrow") !== "narrow";
+    return <ScreenLayout class={`kcq-encounter-screen kcq-difficulty-select${nonNarrow() ? " kcq-difficulty-select--non-narrow" : ""}`}
         header={<EncounterHeader title={props.model.encounterName} settingsLabel={props.model.labels.settings} onSettings={props.onSettings}
             libraryLabel={props.libraryLabel} onLibrary={props.onLibrary} />}
         body={
@@ -27,7 +27,7 @@ export function DifficultySelectPanel(props: {
                 <section class="kcq-encounter-card kcq-difficulty-select__card">
                     <div class="kcq-difficulty-select__heading">
                         <h2>{props.model.labels.title}</h2>
-                        <Show when={!desktop()}><strong>{props.model.selectedDifficultyName}</strong></Show>
+                        <Show when={!nonNarrow()}><strong>{props.model.selectedDifficultyName}</strong></Show>
                     </div>
                     <div class="kcq-difficulty-select__choices" role="group" aria-label={props.model.labels.title}>
                         <For each={props.model.choices}>
@@ -36,11 +36,11 @@ export function DifficultySelectPanel(props: {
                                 onClick={() => props.onSelectDifficulty(choice.id)}>{choice.label}</button>}
                         </For>
                     </div>
-                    <Show when={!desktop()}><p class="kcq-difficulty-select__description">{props.model.description}</p></Show>
+                    <Show when={!nonNarrow()}><p class="kcq-difficulty-select__description">{props.model.description}</p></Show>
                 </section>
-                <div class="kcq-difficulty-select__information" tabIndex={desktop() ? 0 : undefined}
-                    role={desktop() ? "region" : undefined} aria-label={desktop() ? props.model.selectedDifficultyName : undefined}>
-                    <Show when={desktop()}>
+                <div class="kcq-difficulty-select__information" tabIndex={nonNarrow() ? 0 : undefined}
+                    role={nonNarrow() ? "region" : undefined} aria-label={nonNarrow() ? props.model.selectedDifficultyName : undefined}>
+                    <Show when={nonNarrow()}>
                         <section class="kcq-encounter-card kcq-difficulty-select__summary">
                             <h2>{props.model.selectedDifficultyName}</h2>
                             <p class="kcq-difficulty-select__description">{props.model.description}</p>

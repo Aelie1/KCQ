@@ -127,7 +127,7 @@ describe("enemy defeat presentation", () => {
         expect(dead.style.getPropertyValue("--kcq-death-glow-delay")).toBe("-250ms");
         expect(dead.style.getPropertyValue("--kcq-death-fade-delay")).toBe("250ms");
         viewport.setViewport({ width: 1000 });
-        expect(document.querySelector(".kcq-battle-overview-columns")).not.toBeNull();
+        expect(document.querySelector(".kcq-battle-overview-medium")).not.toBeNull();
         expect(cards()[0]!.style.getPropertyValue("--kcq-death-glow-delay")).toBe("-250ms");
         const resizedDead = cards()[0]!;
         element(".kcq-battle-overview__primary-action").click();

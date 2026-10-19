@@ -32,7 +32,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     const navigation = createLibraryNavigation(props.initialPage);
     const page = createMemo(() => navigation.current().page);
     const layout = useContext(ResponsiveLayoutContext);
-    const desktop = () => (layout?.().size ?? "narrow") !== "narrow";
+    const nonNarrow = () => (layout?.().size ?? "narrow") !== "narrow";
     const headingId = createUniqueId();
     const treeId = createUniqueId();
     const [expanded, setExpanded] = createSignal<Partial<Record<LibraryCategory, boolean>>>({});
@@ -77,10 +77,10 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     };
     createEffect(() => {
         const current = navigation.current().page;
-        if (!desktop()) return;
+        if (!nonNarrow()) return;
         if (current.kind !== "home") setExpanded(previous => ({ ...previous, [current.category]: true }));
         queueMicrotask(() => {
-            if (!alive || !desktop()) return;
+            if (!alive || !nonNarrow()) return;
             const revealSelection = (scroller: HTMLElement | null | undefined): void => {
                 const selected = scroller?.querySelector<HTMLElement>('[aria-current="page"]');
                 if (!scroller?.isConnected || !selected) return;
@@ -94,7 +94,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     });
     createEffect(() => {
         page();
-        desktop();
+        nonNarrow();
         queueMicrotask(() => {
             if (!alive) return;
             const visit = navigation.current();
@@ -137,9 +137,9 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
     const modal = (): JSX.Element => <div ref={overlay} class="kcq-library-overlay"
         on:click={event => { if (event.target === event.currentTarget) { event.stopPropagation(); props.onClose(); } }}
         onClick={event => event.stopPropagation()}>
-        <div ref={host} class="kcq-library-host" classList={{ "kcq-library-host--desktop": desktop() }}
+        <div ref={host} class="kcq-library-host" classList={{ "kcq-library-host--non-narrow": nonNarrow() }}
             role="dialog" aria-modal="true" aria-labelledby={headingId}>
-            <Show when={desktop()}><aside class="kcq-library__sidebar">
+            <Show when={nonNarrow()}><aside class="kcq-library__sidebar">
                 <nav ref={tree} class="kcq-library__tree" aria-label={props.presentation.ui("library.navigation")}>
                     <ul><For each={treeCategories()}>{category => <li>
                         <button type="button" class="kcq-library__tree-category" aria-expanded={!!expanded()[category]}
@@ -196,14 +196,14 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                                 onClick={() => value.openEntry(entry)}><strong>{libraryName(entry, props.presentation)}</strong></button>
                         }</For></div>
                     </Match>
-                    <Match when={page().kind === "home" || (desktop() && page().kind === "category")}>
+                    <Match when={page().kind === "home" || (nonNarrow() && page().kind === "category")}>
                         <p class="kcq-library__intro">{props.presentation.ui("library.intro")}</p>
                         <SurfaceCard title={props.presentation.ui("library.guide")}>
                             <div class="kcq-library__guide-pages"><For each={libraryEntries(props.library, "guide", props.presentation)}>{entry =>
                                 <div class="kcq-library__guide-page"><ReferenceLink entry={entry} class="kcq-library__inline-link" />{": "}{libraryText(entry, props.presentation, "summary")}</div>
                             }</For></div>
                         </SurfaceCard>
-                        <Show when={!desktop()}><div class="kcq-library__categories"><For each={LIBRARY_CATEGORIES}>{category =>
+                        <Show when={!nonNarrow()}><div class="kcq-library__categories"><For each={LIBRARY_CATEGORIES}>{category =>
                             <button type="button" class="kcq-library__category kcq-encounter-card" data-library-focus={category}
                                 onClick={() => open({ kind: "category", category })}>
                                 <strong>{label(props.presentation, category)}</strong>
@@ -212,7 +212,7 @@ export function LibraryPanel(props: LibraryPanelProps): JSX.Element {
                             </button>}
                         </For></div></Show>
                     </Match>
-                    <Match when={!desktop() && page().kind === "category" && page()} keyed>{current => {
+                    <Match when={!nonNarrow() && page().kind === "category" && page()} keyed>{current => {
                         const category = (current as Extract<LibraryPage, { kind: "category" }>).category;
                         const entries = () => libraryEntries(props.library, category, props.presentation);
                         const entryButton = (entry: LibraryEntry): JSX.Element => <button type="button" class="kcq-library__entry kcq-encounter-card" data-library-focus={entry.id}

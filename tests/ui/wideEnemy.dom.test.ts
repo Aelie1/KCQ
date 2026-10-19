@@ -53,11 +53,11 @@ function press(key: string, target: EventTarget = document): KeyboardEvent {
 
 const gameLog = () => document.querySelector<HTMLElement>('[role="log"]') ?? element(".kcq-battle-section--game-log");
 
-describe.each([780, 1169, 1920])("desktop enemy details at %ipx", width => {
+describe.each([780, 1169, 1920])("non-narrow enemy details at %ipx", width => {
     beforeEach(() => viewport.setViewport({ width }));
     it("replaces only the enemy column and restores the list with the identity back button", () => {
         const { execute } = mountBattle();
-        const overview = element(".kcq-battle-overview-wide, .kcq-battle-overview-columns");
+        const overview = element(".kcq-battle-overview-wide, .kcq-battle-overview-medium");
         const party = element(".kcq-battle-section--party");
         const log = gameLog();
         const header = element(".kcq-combat-header");
@@ -112,7 +112,7 @@ describe.each([780, 1169, 1920])("desktop enemy details at %ipx", width => {
 
         expect(document.querySelector(".kcq-enemy-details")).toBeNull();
         expect(document.querySelectorAll(".kcq-enemy-card")).toHaveLength(battleOverviewFixture.state.enemies.length);
-        expect(element(".kcq-battle-overview-wide, .kcq-battle-overview-columns")).toBe(overview);
+        expect(element(".kcq-battle-overview-wide, .kcq-battle-overview-medium")).toBe(overview);
         expect(element(".kcq-battle-section--party")).toBe(party);
         expect(gameLog()).toBe(log);
         expect(log.scrollTop).toBe(43);
@@ -120,24 +120,24 @@ describe.each([780, 1169, 1920])("desktop enemy details at %ipx", width => {
     });
 
     it.each([390, 779, 780, WIDE_BATTLE_OVERVIEW_BREAKPOINT - 1, WIDE_BATTLE_OVERVIEW_BREAKPOINT, 1920])(
-        "embeds details in both desktop layouts at %ipx", width => {
+        "embeds details in medium and wide layouts at %ipx", width => {
             viewport.setViewport({ width });
             mountBattle();
             element('.kcq-enemy-card[data-kcq-shortcut="5"]').click();
             const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
-            const desktop = width >= 780;
+            const nonNarrow = width >= 780;
             const details = element(".kcq-enemy-details");
             expect(details.getAttribute("aria-label")).toBe("Skunkette 2");
             expect(!!details.closest(".kcq-battle-overview-wide")).toBe(wide);
-            expect(!!document.querySelector(".kcq-battle-section--party")).toBe(desktop);
+            expect(!!document.querySelector(".kcq-battle-section--party")).toBe(nonNarrow);
             expect(!!document.querySelector('[role="log"]')).toBe(wide);
-            expect(!!details.querySelector(".kcq-enemy-details__back")).toBe(desktop);
-            expect(!!details.querySelector(".kcq-focused-character__avatar")).toBe(!desktop);
-            expect(!!details.querySelector(".kcq-combat-header__back")).toBe(!desktop);
-            expect(!!details.querySelector(".kcq-battle-section__heading")).toBe(desktop);
-            if (desktop) expect(details.querySelector(".kcq-battle-section__heading h2")?.textContent).toBe("Enemy / Skunkette 2");
+            expect(!!details.querySelector(".kcq-enemy-details__back")).toBe(nonNarrow);
+            expect(!!details.querySelector(".kcq-focused-character__avatar")).toBe(!nonNarrow);
+            expect(!!details.querySelector(".kcq-combat-header__back")).toBe(!nonNarrow);
+            expect(!!details.querySelector(".kcq-battle-section__heading")).toBe(nonNarrow);
+            if (nonNarrow) expect(details.querySelector(".kcq-battle-section__heading h2")?.textContent).toBe("Enemy / Skunkette 2");
             expect(document.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
-            element(desktop ? ".kcq-enemy-details__back" : ".kcq-combat-header__back").click();
+            element(nonNarrow ? ".kcq-enemy-details__back" : ".kcq-combat-header__back").click();
             expect(document.querySelector(".kcq-enemy-details")).toBeNull();
             expect(document.querySelectorAll(".kcq-enemy-card")).toHaveLength(battleOverviewFixture.state.enemies.length);
         },
@@ -181,7 +181,7 @@ describe.each([780, 1169, 1920])("desktop enemy details at %ipx", width => {
         expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 1");
         press("1");
         expect(document.querySelector(".kcq-enemy-details")).toBeNull();
-        expect(document.querySelector(".kcq-character-details-desktop")).not.toBeNull();
+        expect(document.querySelector(".kcq-character-details-expanded")).not.toBeNull();
         press("Escape");
         press("4");
         press(" ");

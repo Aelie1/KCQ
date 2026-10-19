@@ -20,11 +20,11 @@ afterEach(() => {
 // Exercise the selectors that previously chose independent outer canvases.
 describe("canonical graphical canvas", () => {
     it.each([
-        "kcq-battle-overview-columns", "kcq-battle-overview-wide", "kcq-character-details-wide",
+        "kcq-battle-overview-medium", "kcq-character-details-medium", "kcq-battle-overview-wide", "kcq-character-details-wide",
         "kcq-encounter-screen kcq-encounter-picker--overview",
         "kcq-encounter-screen kcq-encounter-picker--overview kcq-encounter-picker--wide",
-        "kcq-encounter-screen kcq-encounter-details--desktop",
-        "kcq-encounter-screen kcq-difficulty-select--desktop",
+        "kcq-encounter-screen kcq-encounter-details--non-narrow",
+        "kcq-encounter-screen kcq-difficulty-select--non-narrow",
         "kcq-party-selection", "kcq-title-screen",
     ])("keeps %s on the selected canvas through forced and automatic resizing", screenClass => {
         viewport.setViewport({ width: 390, height: 844 });

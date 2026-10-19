@@ -14,13 +14,13 @@ import { responsiveLayouts, responsivePresentationCases } from "../helpers/respo
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
-const desktop = responsiveLayouts.wide;
-const mobile = responsiveLayouts.narrow;
+const wideLayout = responsiveLayouts.wide;
+const narrowLayout = responsiveLayouts.narrow;
 const difficulties = ["casual", "standard", "veteran", "extreme", "mythic"] as const;
 let dispose: (() => void) | undefined;
 afterEach(() => { dispose?.(); document.body.replaceChildren(); });
 
-function mount(initialLayout: ResponsiveLayout = desktop, height = 480) {
+function mount(initialLayout: ResponsiveLayout = wideLayout, height = 480) {
     const style = document.createElement("style");
     style.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + readFileSync("src/ui/web/app/app.css", "utf8");
     const host = document.createElement("div");
@@ -96,12 +96,12 @@ describe("difficulty selection responsive layout", () => {
         }
     });
 
-    it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, wide) => {
-        expect(!!mount(layout).host.querySelector(".kcq-difficulty-select--desktop")).toBe(wide);
+    it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, nonNarrow) => {
+        expect(!!mount(layout).host.querySelector(".kcq-difficulty-select--non-narrow")).toBe(nonNarrow);
     });
 
     it.each([720, 480, 320])("bounds the columns and scrolling information at %ipx height", height => {
-        const { host, element, choices, setDifficulty } = mount(desktop, height);
+        const { host, element, choices, setDifficulty } = mount(wideLayout, height);
         setDifficulty("mythic");
         expect(getComputedStyle(host).width).toBe(`${LAYOUT_WIDTHS[3]}px`);
         expect(getComputedStyle(element(".kcq-difficulty-select__body")).gridTemplateColumns).toBe("minmax(0, 35fr) minmax(0, 65fr)");
@@ -124,21 +124,21 @@ describe("difficulty selection responsive layout", () => {
         expect(footer.gap).toBe("8px");
     });
 
-    it("preserves focus, previews, rules, and horizontal mobile controls across resizing", () => {
+    it("preserves focus, previews, rules, and horizontal narrow controls across resizing", () => {
         const { host, element, choices, setDifficulty, setLayout } = mount();
         setDifficulty("extreme");
         const buttons = choices();
         buttons[3]!.focus();
         const previews = [...host.querySelectorAll(".kcq-preview-effect")];
         const table = element(".kcq-difficulty-select__rules-table");
-        setLayout(mobile);
+        setLayout(narrowLayout);
         expect(getComputedStyle(host).width).toBe("366px");
         expect(getComputedStyle(element(".kcq-difficulty-select__body")).flexDirection).toBe("column");
         expect(getComputedStyle(element(".kcq-difficulty-select__choices")).gridTemplateColumns).toBe("repeat(5, minmax(0, 1fr))");
         expect(getComputedStyle(element(".kcq-difficulty-select__footer")).height).toBe("48px");
         expect(element(".kcq-difficulty-select__information").hasAttribute("tabindex")).toBe(false);
         expect(element(".kcq-difficulty-select__information").hasAttribute("role")).toBe(false);
-        setLayout(desktop);
+        setLayout(wideLayout);
         expect(choices()).toEqual(buttons);
         expect(document.activeElement).toBe(buttons[3]);
         expect([...host.querySelectorAll(".kcq-preview-effect")]).toEqual(previews);

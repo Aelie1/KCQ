@@ -13,13 +13,13 @@ import { responsiveLayouts, responsivePresentationCases } from "../helpers/respo
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
-const desktop = responsiveLayouts.wide;
-const mobile = responsiveLayouts.narrow;
+const wideLayout = responsiveLayouts.wide;
+const narrowLayout = responsiveLayouts.narrow;
 const combat = () => createEncounterDetailsViewModel(library, "outside", presentation, "standard");
 let dispose: (() => void) | undefined;
 afterEach(() => { dispose?.(); document.body.replaceChildren(); });
 
-function mount(model = combat(), initialLayout: ResponsiveLayout = desktop) {
+function mount(model = combat(), initialLayout: ResponsiveLayout = wideLayout) {
     const style = document.createElement("style");
     style.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + readFileSync("src/ui/web/app/app.css", "utf8");
     const host = document.createElement("div");
@@ -86,12 +86,12 @@ describe("encounter details responsive layout", () => {
         expect(onBack).toHaveBeenCalledOnce();
     });
 
-    it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, wide) => {
+    it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, nonNarrow) => {
         const { host } = mount(undefined, layout);
-        expect(!!host.querySelector(".kcq-encounter-details--desktop")).toBe(wide);
+        expect(!!host.querySelector(".kcq-encounter-details--non-narrow")).toBe(nonNarrow);
     });
 
-    it("bounds the desktop body and gives long narrative and complex rules independent scroll areas", () => {
+    it("bounds the non-narrow body and gives long narrative and complex rules independent scroll areas", () => {
         const base = combat();
         const description = "First paragraph.\n\n  Indented line.\n".repeat(150) + "Narrative ending.";
         const model = { ...base, description, effectGroups: Array.from({ length: 30 }, (_, index) => ({
@@ -122,7 +122,7 @@ describe("encounter details responsive layout", () => {
         expect(information.getAttribute("aria-label")).toBe(`${model.labels.enemies}, ${model.labels.specialRules}`);
     });
 
-    it("preserves every enemy and preview node and the stacked mobile presentation when resized", () => {
+    it("preserves every enemy and preview node and the stacked narrow presentation when resized", () => {
         const model = combat();
         const { host, element, setLayout } = mount(model);
         const enemies = [...host.querySelectorAll(".kcq-encounter-details__enemy")];
@@ -130,8 +130,8 @@ describe("encounter details responsive layout", () => {
         const previews = [...host.querySelectorAll(".kcq-preview-effect")];
         const ruleText = element(".kcq-encounter-details__rules").textContent;
         expect(previews.length).toBeGreaterThan(0);
-        setLayout(mobile);
-        expect(host.querySelector(".kcq-encounter-details--desktop")).toBeNull();
+        setLayout(narrowLayout);
+        expect(host.querySelector(".kcq-encounter-details--non-narrow")).toBeNull();
         expect(getComputedStyle(host).width).toBe("366px");
         expect(getComputedStyle(element(".kcq-encounter-details__columns")).display).toBe("flex");
         expect(getComputedStyle(element(".kcq-encounter-details__columns")).flexDirection).toBe("column");
@@ -140,7 +140,7 @@ describe("encounter details responsive layout", () => {
         expect(getComputedStyle(element(".kcq-encounter-details__footer")).height).toBe("48px");
         expect(element(".kcq-encounter-details__information").hasAttribute("tabindex")).toBe(false);
         expect(element(".kcq-encounter-details__information").hasAttribute("role")).toBe(false);
-        setLayout(desktop);
+        setLayout(wideLayout);
         expect([...host.querySelectorAll(".kcq-encounter-details__enemy")]).toEqual(enemies);
         expect([...host.querySelectorAll(".kcq-preview-effect")]).toEqual(previews);
         expect(element(".kcq-encounter-details__rules").textContent).toBe(ruleText);
@@ -158,8 +158,8 @@ describe("encounter details responsive layout", () => {
         }
         tabs[1]!.focus();
         press(" ", tabs[1]);
-        setLayout(mobile);
-        setLayout(desktop);
+        setLayout(narrowLayout);
+        setLayout(wideLayout);
         expect(document.activeElement).toBe(tabs[1]);
         expect(tabs[1]!.getAttribute("aria-selected")).toBe("true");
         expect(element('[role="tabpanel"]').getAttribute("aria-labelledby")).toBe(tabs[1]!.id);
@@ -182,7 +182,7 @@ describe("encounter details responsive layout", () => {
         }
     });
 
-    it("keeps locked narratives disabled on desktop", () => {
+    it("keeps locked narratives disabled in wide layout", () => {
         const { host, element } = mount(createEncounterDetailsViewModel(library, "outside", presentation));
         const tabs = [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
         expect(tabs.map(tab => tab.disabled)).toEqual([false, true, true]);

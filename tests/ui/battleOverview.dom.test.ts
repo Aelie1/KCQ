@@ -185,15 +185,15 @@ describe("responsive battle overview", () => {
         }
     });
     it.each([390, 779, 780, 1169, 1170, 1920, 2560])("mounts only the active arrangement at %ipx", width => {
-        const { host } = mountBattle(width); const desktop = width >= 780;
+        const { host } = mountBattle(width); const nonNarrow = width >= 780;
         const wide = width >= WIDE_BATTLE_OVERVIEW_BREAKPOINT;
         const panels = [...host.querySelectorAll(".kcq-battle-overview")];
-        expect(panels).toHaveLength(wide ? 4 : desktop ? 2 : 1);
+        expect(panels).toHaveLength(wide ? 4 : nonNarrow ? 2 : 1);
         expect(host.querySelectorAll(".kcq-party-card")).toHaveLength(fixture.state.characters.length);
         expect(host.querySelectorAll(".kcq-enemy-card")).toHaveLength(fixture.state.enemies.length);
         expect(host.querySelectorAll(".kcq-battle-overview__primary-action")).toHaveLength(1);
         expect(host.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
-        expect(host.querySelectorAll(".kcq-battle-overview__footer")).toHaveLength(desktop ? 0 : 1);
+        expect(host.querySelectorAll(".kcq-battle-overview__footer")).toHaveLength(nonNarrow ? 0 : 1);
         if (wide) {
             expect(panels[0]!.querySelector(".kcq-combat-header")).not.toBeNull();
             expect(panels[0]!.querySelector(".kcq-screen-layout__body")).toBeNull();
@@ -217,14 +217,14 @@ describe("responsive battle overview", () => {
             heading.click();
             expect(document.querySelector(".kcq-game-log")).toBeNull();
             expect(getComputedStyle(panels[2]!.querySelector(".kcq-screen-layout__body")!).overflowY).toBe("auto");
-        } else if (desktop) {
+        } else if (nonNarrow) {
             expect(panels[0]!.querySelectorAll(".kcq-party-card")).toHaveLength(3);
             expect(panels[0]!.querySelector(".kcq-enemy-card, .kcq-compact-game-log")).toBeNull();
             expect(panels[1]!.querySelector(".kcq-party-card, .kcq-screen-layout__header, .kcq-screen-layout__footer")).toBeNull();
             expect(panels[1]!.querySelector(".kcq-battle-section--game-log")!.nextElementSibling)
                 .toBe(panels[1]!.querySelector(".kcq-battle-section--enemies"));
             expect(getComputedStyle(host).width).toBe("756px");
-            expect(getComputedStyle(element(".kcq-battle-overview-columns")).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
+            expect(getComputedStyle(element(".kcq-battle-overview-medium")).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
         } else {
             expect([...host.querySelectorAll(".kcq-battle-section")].map(section => section.className))
                 .toEqual(["game-log", "enemies", "party"].map(name => "kcq-battle-section kcq-battle-section--" + name));
@@ -341,7 +341,7 @@ describe("responsive battle overview", () => {
     });
     it.each([390, 780, 1169])("keeps the %ipx battle mounted while presenting full history", async width => {
         const { host, execute } = mountBattle(width);
-        const battle = element(width < 780 ? ".kcq-battle-overview" : ".kcq-battle-overview-columns");
+        const battle = element(width < 780 ? ".kcq-battle-overview" : ".kcq-battle-overview-medium");
         const background = element(".kcq-battle-stage__background");
         const trigger = element(width < 780 ? ".kcq-compact-game-log" : ".kcq-game-log-heading-action");
         trigger.focus(); trigger.click();
@@ -394,7 +394,7 @@ describe("responsive battle overview", () => {
         expect(background.hidden).toBe(false);
         expect(background.hasAttribute("inert")).toBe(false);
         expect(background.hasAttribute("aria-hidden")).toBe(false);
-        expect(element(width < 780 ? ".kcq-battle-overview" : ".kcq-battle-overview-columns")).toBe(battle);
+        expect(element(width < 780 ? ".kcq-battle-overview" : ".kcq-battle-overview-medium")).toBe(battle);
         expect(document.activeElement).toBe(width < 780 ? element(".kcq-compact-game-log") : trigger);
     });
 
