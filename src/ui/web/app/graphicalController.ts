@@ -52,6 +52,10 @@ export function createGraphicalController(
         saveCampaignUnlocks(updated, storage);
     };
 
+    const isEncounterAvailable = (campaign: CampaignReference, encounter: EncounterId,): boolean => {
+        return campaign.initial.includes(encounter) || (unlocks()[campaign.id] ?? []).includes(encounter);
+    };
+
     const closeSession = (): void => {
         if (session?.engine.getGameState().turn.outcome === "ongoing") {
             try {
@@ -68,7 +72,12 @@ export function createGraphicalController(
     const openDetails = (campaignId: KCQCampaign, encounter: EncounterId, library: ContentLibrary | undefined): void => {
         setScreen({ screen: "details", campaign: campaignId, encounter });
         const campaign = library?.campaigns[campaignId];
-        if (library?.encounters[encounter]?.stars === 0 && campaign) unlockEncounter(campaign, encounter, "victory");
+
+        if (campaign
+            && library?.encounters[encounter]?.stars === 0
+            && isEncounterAvailable(campaign, encounter)) {
+            unlockEncounter(campaign, encounter, "victory");
+        }
     };
 
     const nextEncounter = (): EncounterId | undefined => {
@@ -161,11 +170,8 @@ export function createGraphicalController(
             if (outcome === "ongoing") return;
             outcomeRecorded = true;
             const campaign = session.engine.getLibrary().campaigns[current.campaign];
-            if (campaign) {
-                const available = new Set([...campaign.initial, ...(unlocks()[campaign.id] ?? []),]);
-                if (available.has(current.encounter)) {
-                    unlockEncounter(campaign, current.encounter, outcome);
-                }
+            if (campaign && isEncounterAvailable(campaign, current.encounter)) {
+                unlockEncounter(campaign, current.encounter, outcome);
             }
             if (outcome !== "victory") return;
             const rank = (difficulty: DifficultyId | undefined) => ENCOUNTER_DIFFICULTIES.findIndex(({ id }) => id === difficulty);

@@ -70,7 +70,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
         if (!reason) {
             const targets = getTargets(state, actor, statuses, move);
             const effects = resolveMove(state, { definition: move }, actor, []);
-            if (move.targets !== "all" && !targets.some(x => x.valid)) {
+            if (!targets.some(x => x.valid)) {
                 if (targets.length && !targets[0].valid) {
                     reason = targets[0].reason;
                 }

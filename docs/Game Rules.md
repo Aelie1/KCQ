@@ -4,7 +4,7 @@ This document describes the stable mechanical rules of **Ko-chan's Quest (KCQ)**
 
 The current repository and its tests are authoritative. This document is a human-readable description of those rules and should be updated when the intended game rules change, not merely when implementation details are refactored.
 
-Source baseline: `Aelie1/KCQ`, `master`, commit `f30b6c0` (2026-09-24).
+Source baseline: `Aelie1/KCQ`, `master`, commit `599ea3d` (2026-10-18).
 
 ---
 
@@ -16,6 +16,8 @@ Battles alternate between two phases:
 2. **Enemy Phase**
 
 A battle begins on **Round 1, Step 1, Player Phase**.
+
+A battle uses a party of **three playable characters**, selected from the available roster before the encounter begins.
 
 During the player phase, the player may act with characters in any order and may end the phase whenever desired. Characters do not all need to act before `End Turn` is selected.
 
@@ -58,7 +60,7 @@ Primary actions include:
 
 After the primary action is consumed, that character normally cannot perform another move, escape, or stance change during the phase.
 
-There are exceptions created by specific mechanics, such as bonus escapes, action refreshes, and moves explicitly marked as free.
+There are exceptions created by specific mechanics, such as bonus escapes, action refreshes, and moves explicitly marked as free. A **bonus escape** is not another general-purpose action: it permits escaping or assisting, not another move or stance change.
 
 ### Stance changes
 
@@ -95,7 +97,7 @@ Both player and enemy cooldowns tick once when the enemy phase ends and the next
 
 ### Action refresh
 
-Effects may explicitly refresh a character who has already acted, allowing that character to take another normal action.
+Effects may explicitly refresh a character who has already acted, allowing that character to take another normal action. This differs from granting a bonus escape, which only permits an additional escape or assist.
 
 ---
 
@@ -274,6 +276,8 @@ Some moves use **Willpower** instead of normal accuracy.
 
 These compare the attacker's Willpower against the target's Willpower and ignore ordinary Defense and body-part accuracy modifiers.
 
+An explicit **automatic Willpower** ability overrides the ordinary comparison: it makes the bearer's Willpower attacks connect and opposing Willpower attacks against the bearer fail. This does not change ordinary accuracy checks.
+
 ### How accuracy reshapes the result bands
 
 Accuracy does not simply add the same percentage to every successful result.
@@ -324,23 +328,19 @@ The maximum binding value is **100**.
 
 When a binding reaches zero, it is removed from the character.
 
-### Resistance above Overwhelming
+### Binding accumulation and maximum
 
-Binding accumulates normally up to 80.
+Binding accumulates at full effectiveness through the Overwhelming threshold and up to the maximum of **100**. Binding above 80 does **not** receive a general reduction.
 
-Additional bondage above the Overwhelming threshold receives only **10% effectiveness**.
-
-If an incoming effect crosses 80, the portion needed to reach 80 applies normally and only the overflow is reduced.
+Any incoming binding exceeding the remaining room to 100 is capped at 100.
 
 Example:
 
-* Current binding: 75
-* Incoming binding: 20
-* First 5 points reach Overwhelming normally.
-* Remaining 15 points are reduced to 10%.
-* The final increase rounds upward, producing a value of 82.
+* Current binding: 75.
+* Incoming binding: 20.
+* New binding: **95**.
 
-No binding can exceed 100.
+A further 20 from 95 would bring the binding to **100**, not 115.
 
 ### Binding-specific behavior
 
@@ -390,23 +390,24 @@ The final amount is rounded upward and cannot remove more bondage than currently
 
 The first escape normally consumes the character's primary action.
 
+### Bonus escapes
+
+Bonus escapes allow a character to escape one binding or assist an ally without requiring an unused primary action. They do **not** permit another move or stance change.
+
+A bonus escape may be granted directly by an ability, even to a character who has already acted. Multiple bonus escapes can coexist, including those granted by Standing. Each bonus escape is consumed by one escape or assist made after the normal action is spent. Any unused bonus escapes are cleared when the next player phase begins.
+
+A bonus escape does not override effects that block escaping, assisting, or acting altogether.
+
 ### Standing bonus escape
 
-If the character is Standing when performing their normal escape, they receive exactly **one bonus escape** when:
+If a character is Standing when performing their normal escape or assist, they receive **one additional bonus escape** when:
 
 * bonus escapes are not blocked; and
 * at least one legal follow-up escape remains somewhere in the party.
 
-The bonus escape may be:
+The follow-up may be another self-escape or an assist on another character. If no legal follow-up escape remains, no unnecessary bonus escape is created.
 
-* another self-escape; or
-* an assist on another character.
-
-Once used, the bonus escape is gone.
-
-If the first escape removes the last binding that the character could legally work on, no unnecessary bonus escape is created.
-
-Some statuses, such as Vibrating, explicitly prevent the Standing bonus escape.
+Some statuses, such as Vibrating, explicitly prevent the Standing bonus escape. A character may also receive bonus escapes from other abilities; these stack with the Standing bonus rather than replacing it.
 
 ### Escape versus Assist restrictions
 
@@ -416,6 +417,8 @@ A status may separately:
 * prevent assisting other characters.
 
 A character blocked from assisting may still work on their own bindings unless escaping itself is also blocked.
+
+An explicit permission to assist overrides ordinary **Assist** blocking, but does not override being Incapacitated, having the turn skipped, or a separate prohibition on escaping.
 
 ---
 
@@ -451,9 +454,11 @@ The engine currently supports flags that can:
 * block attacks;
 * block escapes;
 * block assisting;
-* block Standing bonus escapes;
+* explicitly allow assisting despite ordinary assistance restrictions;
+* block bonus escapes;
 * block movement;
 * ignore traps;
+* automatically win Willpower checks;
 * skip the character's turn;
 * mark the character as Incapacitated.
 
@@ -593,7 +598,7 @@ This allows the UI to preview what enemies currently intend to do.
 
 ### Committed rolls, live conditions
 
-The random roll behind an intention is committed when the intention is created.
+The random roll behind an intention is committed when the intention is created. Under ordinary circumstances it is not rerolled.
 
 However, its result is recalculated against the **current game state**.
 
@@ -604,7 +609,18 @@ Therefore the player can alter the outcome of an already-visible intention by ch
 * buffs;
 * targeting.
 
-The enemy keeps the same underlying random roll, but that roll may move from Hit to Miss or vice versa as modifiers change.
+The enemy normally keeps the same underlying random roll, but that roll may move from Hit to Miss or vice versa as modifiers change.
+
+### Explicit intention manipulation
+
+Specific abilities can alter a committed intention rather than merely changing surrounding modifiers. Supported effects include:
+
+* **Retargeting:** redirecting a compatible single-target intention to a different character.
+* **Cancellation:** preventing an intention from executing.
+* **Weakening:** modifying the intention's committed rolls so that its projected result can change.
+* **Discord:** disrupting qualifying binding intentions and converting their binding effects into damage against other enemies.
+
+These effects are exceptions to the ordinary rule that committed rolls remain unchanged. Their availability and exact strengths are defined by the abilities that produce them.
 
 If an intended target disappears before resolution, the target is dropped rather than automatically replaced unless a specific effect retargets the intention.
 
@@ -620,8 +636,8 @@ KCQ has five game-wide difficulty levels:
 | ---------- | ------------- | -------------- |
 | Casual     | Players gain Hit +2 and Escape +2 | Standard |
 | Standard   | None | Standard |
-| Veteran    | Enemies gain Potency +2 | Standard |
-| Extreme    | Enemies gain Potency +2 | Selected enemies gain enhanced behaviors |
+| Veteran    | Enemies gain Potency +1 | Standard |
+| Extreme    | Enemies gain Potency +1 | Selected enemies gain enhanced behaviors |
 | Mythic     | Enemies gain Potency +2 | Enhanced enemy behaviors are used at their strongest level |
 
 **Standard** is the baseline difficulty around which normal encounter behavior is defined.
