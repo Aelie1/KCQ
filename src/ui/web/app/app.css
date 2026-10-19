@@ -163,6 +163,7 @@ button {
 .kcq-game-log>.kcq-screen-layout__body {
     overflow-anchor: none;
     background: var(--kcq-surface-card);
+    scrollbar-width: thin;
 }
 
 .kcq-combat-header {
@@ -2085,7 +2086,6 @@ button {
 }
 
 .kcq-party-card__resource {
-    padding: 3px 5px;
     background: var(--kcq-state-neutral-bg);
     border: 1px solid var(--kcq-structure-border);
     border-radius: 6px;
@@ -2701,7 +2701,8 @@ button {
     line-height: 12px;
 }
 
-.kcq-targeting__targets {
+.kcq-targeting__targets,
+.kcq-target-card {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -2710,11 +2711,6 @@ button {
 }
 
 .kcq-target-card {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-    min-width: 0;
     min-height: 70px;
     padding: 8px 11px;
     overflow: hidden;
@@ -3031,10 +3027,7 @@ button {
     min-width: 0;
 }
 
-.kcq-buff-effect__header .kcq-preview-effect__payload {
-    flex: 1 1 auto;
-}
-
+.kcq-buff-effect__header .kcq-preview-effect__payload,
 .kcq-binding-effect__header .kcq-preview-effect__payload,
 .kcq-meter-effect__header .kcq-preview-effect__payload {
     flex: 1 1 auto;
@@ -3254,7 +3247,8 @@ button {
     text-transform: uppercase;
 }
 
-.kcq-escape__groups {
+.kcq-escape__groups,
+.kcq-escape-group {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -3263,11 +3257,6 @@ button {
 }
 
 .kcq-escape-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    width: 100%;
-    min-width: 0;
     padding: 8px 9px;
     border: 1px solid var(--kcq-structure-border);
     border-radius: 12px;
@@ -3476,7 +3465,6 @@ button {
 
 .kcq-encounter-header--compact {
     grid-template-columns: minmax(0, 1fr) auto;
-    padding-block: 8px;
     height: auto;
     min-height: 0;
     padding: 6px 10px;
@@ -3789,7 +3777,6 @@ button {
 .kcq-encounter-details__description p {
     margin: 0;
     font-size: 12px;
-    line-height: 19px;
     white-space: pre-wrap;
     text-indent: 1em;
     overflow-wrap: anywhere;
@@ -4595,11 +4582,8 @@ button {
         grid-template-columns: 1fr 1fr;
     }
 
+    .kcq-battle-result__actions:has(> .kcq-battle-result__next)>.kcq-battle-result__back,
     .kcq-battle-result__log {
-        grid-column: 1 / -1;
-    }
-
-    .kcq-battle-result__actions:has(> .kcq-battle-result__next)>.kcq-battle-result__back {
         grid-column: 1 / -1;
     }
 
@@ -5148,12 +5132,12 @@ button {
 .kcq-enemy-details__intentions,
 .kcq-enemy-details__intention {
     display: grid;
-    gap: 7px;
+    gap: 4px;
     min-width: 0;
 }
 
 .kcq-enemy-details__intention+.kcq-enemy-details__intention {
-    padding-top: 7px;
+    padding-top: 6px;
     border-top: 1px solid var(--kcq-structure-border);
 }
 
@@ -5200,15 +5184,6 @@ button {
 
 .kcq-target-header__identity>.kcq-status-chip {
     flex: 0 0 auto;
-}
-
-.kcq-enemy-details__intentions,
-.kcq-enemy-details__intention {
-    gap: 4px;
-}
-
-.kcq-enemy-details__intention+.kcq-enemy-details__intention {
-    padding-top: 6px;
 }
 
 .kcq-enemy-details__intentions .kcq-selected-command {
@@ -5350,14 +5325,8 @@ button {
     margin-right: 0.35em;
 }
 
-.kcq-compact-game-log .kcq-game-log__row>.kcq-game-log__values+.kcq-game-log__values {
-    margin-left: 0.35em;
-}
-
-.kcq-compact-game-log .kcq-game-log__recipient>*+* {
-    margin-left: 0.35em;
-}
-
+.kcq-compact-game-log .kcq-game-log__row>.kcq-game-log__values+.kcq-game-log__values,
+.kcq-compact-game-log .kcq-game-log__recipient>*+*,
 .kcq-compact-game-log .kcq-game-log__recipient::after {
     margin-left: 0.35em;
 }
@@ -5891,6 +5860,7 @@ button {
 }
 
 .kcq-library__identity {
+    flex: 1 1 0;
     min-width: 0;
 }
 
@@ -6054,9 +6024,10 @@ button {
     align-items: center;
     justify-content: space-between;
     gap: 8px;
-    min-height: 44px;
+    min-height: 34px;
     width: 100%;
-    padding: 10px 12px;
+    padding: 6px 9px;
+    border-radius: 8px;
     text-align: left;
     color: var(--kcq-text-primary);
     cursor: pointer;
@@ -6064,7 +6035,8 @@ button {
 
 .kcq-library__entry strong {
     overflow-wrap: anywhere;
-    font-size: 13px;
+    font-size: 12px;
+    line-height: 1.3;
 }
 
 .kcq-library__entry span {
@@ -6401,11 +6373,14 @@ button {
 .kcq-library__passive-card {
     display: flex;
     flex-direction: column;
+    align-items: stretch;
     gap: 6px;
+    min-width: 0;
     padding: 8px 10px;
     border: 1px solid var(--kcq-structure-border);
     border-radius: 8px;
     background: var(--kcq-surface-raised);
+    color: var(--kcq-text-primary);
 }
 
 .kcq-library__passive-name {
@@ -6413,6 +6388,7 @@ button {
     padding: 0;
     background: transparent;
     color: var(--kcq-text-primary);
+    font-size: 12px;
     font-weight: 700;
 }
 
@@ -6522,10 +6498,6 @@ button {
     width: 100%;
 }
 
-.kcq-library__identity {
-    flex: 1 1 0;
-}
-
 .kcq-library__header .kcq-library__owner {
     flex: 0 1 auto;
     max-width: 35%;
@@ -6549,17 +6521,6 @@ button {
 
 .kcq-library__entries {
     gap: 4px;
-}
-
-.kcq-library__entry {
-    min-height: 34px;
-    padding: 6px 9px;
-    border-radius: 8px;
-}
-
-.kcq-library__entry strong {
-    font-size: 12px;
-    line-height: 1.3;
 }
 
 .kcq-library__move-groups {
@@ -6590,18 +6551,8 @@ button {
     height: 100%;
 }
 
-.kcq-library__passive-card {
-    align-items: stretch;
-    min-width: 0;
-    color: var(--kcq-text-primary);
-}
-
 .kcq-library__passive-card:hover {
     background: var(--kcq-accent-primary-deep);
-}
-
-.kcq-library__passive-name {
-    font-size: 12px;
 }
 
 .kcq-library__resource-title {
@@ -7175,8 +7126,4 @@ button {
 .kcq-linked-entity-chip__icon,
 .kcq-enemy-card__debuff .kcq-status-chip__segment {
     filter: var(--kcq-effect-icon-filter);
-}
-
-.kcq-game-log>.kcq-screen-layout__body {
-    scrollbar-width: thin;
 }

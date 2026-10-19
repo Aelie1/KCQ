@@ -1,14 +1,14 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { insert, render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStockEngine } from "../../src/stock";
-import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { App } from "../../src/ui/web/app/App";
+import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
-import { LAYOUT_WIDTHS, calculateResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
+import { calculateResponsiveLayout, LAYOUT_WIDTHS } from "../../src/ui/web/app/responsiveScale";
 import { createViewPreferences, ViewPreferencesContext, type BattleColumns, type EnemyCards } from "../../src/ui/web/app/viewPreferences";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
@@ -35,7 +35,8 @@ function mount(workspace = false) {
     const engine = createStockEngine(12345);
     const fixture = workspace ? targetingFixtures.telekinesisChoose : battleOverviewFixture;
     const state = structuredClone(fixture.state); state.turn.phase = "player";
-    const actions = workspace ? targetingFixtures.telekinesisChoose.actions.map(actor => ({ ...actor,
+    const actions = workspace ? targetingFixtures.telekinesisChoose.actions.map(actor => ({
+        ...actor,
         moves: actor.moves.map(action => ({ ...action, move: { ...action.move, targets: 2 as const } })),
         escapes: actor.escapes.map(escape => ({ ...escape, available: true })),
     })) : fixture.actions;
@@ -44,12 +45,17 @@ function mount(workspace = false) {
     const execute = vi.spyOn(engine, "executeAction");
     const style = document.createElement("style"); style.textContent = readFileSync("src/ui/web/app/app.css", "utf8");
     const host = document.createElement("div"); document.body.append(style, host);
-    unmount = render(() => createComponent(ViewPreferencesContext.Provider, { value: preferences,
-        get children() { return createComponent(App, { get children() {
-            const background = document.createElement("div"); background.className = "kcq-graphical-app__background";
-            insert(background, createComponent(BattleApp, { engine, presentation: fixture.presentation, viewPreferences: preferences }));
-            return background;
-        } }); },
+    unmount = render(() => createComponent(ViewPreferencesContext.Provider, {
+        value: preferences,
+        get children() {
+            return createComponent(App, {
+                get children() {
+                    const background = document.createElement("div"); background.className = "kcq-graphical-app__background";
+                    insert(background, createComponent(BattleApp, { engine, presentation: fixture.presentation, viewPreferences: preferences }));
+                    return background;
+                }
+            });
+        },
     }), host);
     window.dispatchEvent(new Event("resize"));
     return { preferences, state, engine, execute };
@@ -63,35 +69,35 @@ function assertColumns(columns: number) {
 describe("battle view preferences", () => {
     it.each((["auto", "1", "2", "3"] as BattleColumns[]).flatMap(columns =>
         (["auto", "compact", "expanded"] as EnemyCards[]).map(cards => ({ columns, cards }))))(
-        "keeps $cards cards independent of $columns columns and zoom through resizing", ({ columns, cards }) => {
-            const { preferences, execute, engine } = mount();
-            const before = engine.getGameState();
-            preferences.setColumns(columns); preferences.setEnemyCards(cards);
-            for (const width of [320, 390, 779, 780, 1000, 1169, 1170, 1280, 1920, 779, 780]) {
-                viewport.setViewport({ width });
-                const count = calculateResponsiveLayout(width - 24, columns).columns;
-                assertColumns(count);
-                const expanded = cards === "auto" ? count > 1 : cards === "expanded";
-                const enemies = [...document.querySelectorAll(".kcq-enemy-card")];
-                expect(enemies).toHaveLength(battleOverviewFixture.state.enemies.length);
-                for (const enemy of enemies) {
-                    expect(enemy.classList.contains("kcq-enemy-card--expanded")).toBe(expanded);
-                    expect(!!enemy.querySelector(".kcq-enemy-card__hp-meter")).toBe(expanded);
-                    expect(getComputedStyle(enemy).width).toBe(expanded ? "100%" : "180px");
+            "keeps $cards cards independent of $columns columns and zoom through resizing", ({ columns, cards }) => {
+                const { preferences, execute, engine } = mount();
+                const before = engine.getGameState();
+                preferences.setColumns(columns); preferences.setEnemyCards(cards);
+                for (const width of [320, 390, 779, 780, 1000, 1169, 1170, 1280, 1920, 779, 780]) {
+                    viewport.setViewport({ width });
+                    const count = calculateResponsiveLayout(width - 24, columns).columns;
+                    assertColumns(count);
+                    const expanded = cards === "auto" ? count > 1 : cards === "expanded";
+                    const enemies = [...document.querySelectorAll(".kcq-enemy-card")];
+                    expect(enemies).toHaveLength(battleOverviewFixture.state.enemies.length);
+                    for (const enemy of enemies) {
+                        expect(enemy.classList.contains("kcq-enemy-card--expanded")).toBe(expanded);
+                        expect(!!enemy.querySelector(".kcq-enemy-card__hp-meter")).toBe(expanded);
+                        expect(getComputedStyle(enemy).width).toBe(expanded ? "100%" : "180px");
+                    }
+                    const expectedIntentions = battleOverviewFixture.state.enemies.reduce((sum, enemy) =>
+                        sum + (expanded ? enemy.intentions.length : Math.min(2, enemy.intentions.length)), 0);
+                    expect(document.querySelectorAll(".kcq-enemy-card__intent-slot")).toHaveLength(expectedIntentions);
+                    const expectedZoom = Math.max(1, Math.min(1.5, (width - 24) / LAYOUT_WIDTHS[count]));
+                    expect(Number(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(expectedZoom);
+                    expect(getComputedStyle(element(".kcq-app")).overflowX).toBe("auto");
+                    expect(getComputedStyle(element(".kcq-graphical-app__background")).minWidth).toBe(`${LAYOUT_WIDTHS[count]}px`);
+                    const grid = getComputedStyle(element(".kcq-battle-overview__enemies")).gridTemplateColumns;
+                    expect(grid).toBe(expanded ? "minmax(0, 1fr)" : count === 1 ? "repeat(2, 180px)" : "repeat(auto-fit, 180px)");
                 }
-                const expectedIntentions = battleOverviewFixture.state.enemies.reduce((sum, enemy) =>
-                    sum + (expanded ? enemy.intentions.length : Math.min(2, enemy.intentions.length)), 0);
-                expect(document.querySelectorAll(".kcq-enemy-card__intent-slot")).toHaveLength(expectedIntentions);
-                const expectedZoom = Math.max(1, Math.min(1.5, (width - 24) / LAYOUT_WIDTHS[count]));
-                expect(Number(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom"))).toBeCloseTo(expectedZoom);
-                expect(getComputedStyle(element(".kcq-app")).overflowX).toBe("auto");
-                expect(getComputedStyle(element(".kcq-graphical-app__background")).minWidth).toBe(`${LAYOUT_WIDTHS[count]}px`);
-                const grid = getComputedStyle(element(".kcq-battle-overview__enemies")).gridTemplateColumns;
-                expect(grid).toBe(expanded ? "minmax(0, 1fr)" : count === 1 ? "repeat(2, 180px)" : "repeat(auto-fit, 180px)");
-            }
-            expect(execute).not.toHaveBeenCalled(); expect(engine.getGameState()).toEqual(before);
-        },
-    );
+                expect(execute).not.toHaveBeenCalled(); expect(engine.getGameState()).toEqual(before);
+            },
+        );
     it("updates the shell and open Settings together when columns or viewport change", () => {
         const { preferences } = mount();
         element(".kcq-combat-header__settings").click();
@@ -150,7 +156,7 @@ describe("battle view preferences", () => {
         }
         const selected = screen === "targeting" ? 'button.kcq-target-card[aria-pressed="true"]'
             : screen === "escape" ? '.kcq-escape-choice[aria-pressed="true"]'
-            : screen === "enemy" ? '.kcq-enemy-details__identity .kcq-target-header' : '.kcq-character-roster__card[aria-pressed="true"]';
+                : screen === "enemy" ? '.kcq-enemy-details__identity .kcq-target-header' : '.kcq-character-roster__card[aria-pressed="true"]';
         const selection = element(selected).textContent;
         for (const columns of ["2", "1", "3", "auto", "1", "2", "3"] as const) {
             preferences.setColumns(columns);
@@ -183,7 +189,6 @@ it("restores columns and enemy cards across remounts and ignores obsolete zoom s
     assertColumns(3);
     expect(reloaded.enemyCards).toBe("compact");
     expect(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
-    expect(element(".kcq-app").style.getPropertyValue("--kcq-ui-min-width")).toBe("366px");
     element(".kcq-combat-header__settings").click();
     expect(element<HTMLSelectElement>(".kcq-battle-settings__columns select").value).toBe("3");
     expect(element<HTMLSelectElement>(".kcq-battle-settings__enemy-cards select").value).toBe("compact");

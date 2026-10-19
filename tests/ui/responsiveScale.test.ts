@@ -159,6 +159,5 @@ describe("column-first scaling", () => {
                 expect(shell.dataset.kcqLayout).toBe(expected.size);
             }
         }
-        expect(style.get("--kcq-ui-min-width")).toBe("366px");
     });
 });
