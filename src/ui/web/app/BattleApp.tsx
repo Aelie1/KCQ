@@ -437,11 +437,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const wide = () => layout().size === "wide";
     const desktop = () => layout().size !== "narrow";
     const logReplacement = () => logOpen() && layout().size === "narrow";
-    const logModal = () => logOpen() && layout().size === "medium";
+    const logModal = () => logOpen() && (layout().size === "medium" || (wide() && !!resultModel()));
     createEffect(() => {
-        if (!logOpen() || !wide()) return;
+        if (!logOpen() || !wide() || logModal()) return;
         queueMicrotask(() => {
-            if (logOpen() && wide()) stage?.querySelector<HTMLElement>(".kcq-overview-game-log-history")?.focus();
+            if (logOpen() && wide() && !logModal()) stage?.querySelector<HTMLElement>(".kcq-overview-game-log-history")?.focus();
         });
     });
     const expandedEnemies = () => viewPreferences.enemyCards === "auto" ? desktop() : viewPreferences.enemyCards === "expanded";
@@ -647,7 +647,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         createEffect(() => {
             const modal = logModal();
             queueMicrotask(() => {
-                if (!logOpen() || wide()) return;
+                if (!logOpen() || (wide() && !logModal())) return;
                 if (modal || !host.contains(document.activeElement)) host.querySelector<HTMLElement>(".kcq-screen-layout__body")?.focus();
             });
         });
@@ -690,7 +690,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         </Show>
                     </div>
                 </div>
-                <Show when={logOpen() && !wide()}><ResponsiveLayoutContext.Provider value={layout}>
+                <Show when={logReplacement() || logModal()}><ResponsiveLayoutContext.Provider value={layout}>
                     <FullGameLog />
                 </ResponsiveLayoutContext.Provider></Show>
                 <Show when={libraryOpen()}><ResponsiveLayoutContext.Provider value={layout}>

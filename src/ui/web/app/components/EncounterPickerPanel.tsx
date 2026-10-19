@@ -2,7 +2,7 @@ import { createMemo, For, Show, useContext, type JSX } from "solid-js";
 import type { EncounterId } from "../../../../engine/public/types";
 import { COMBAT_SHORTCUTS, combatShortcut } from "../keyboard";
 import { ResponsiveLayoutContext } from "../responsiveScale";
-import type { EncounterPickerViewModel } from "../viewModels/encounters";
+import type { EncounterPickerSectionViewModel, EncounterPickerViewModel } from "../viewModels/encounters";
 import { EncounterHeader } from "./EncounterHeader";
 import { ScreenLayout } from "./ScreenLayout";
 import { Shortcut } from "./Shortcut";
@@ -20,6 +20,19 @@ export function EncounterPickerPanel(props: {
     const organized = () => (responsiveLayout?.().size ?? "narrow") !== "narrow" && !!props.model.layout?.length;
     const sectionColumns = createMemo(() => Math.max(1, ...(props.model.layout?.map(row => row.length) ?? [])));
     const shortcuts = createMemo(() => new Map(props.model.encounters.map((encounter, index) => [encounter.id, combatShortcut(index)])));
+    const flatSections = createMemo(() => {
+        if (!props.model.layout?.length) return [];
+        const sectionsById = new Map(props.model.layout.flatMap(row => row.flatMap(section =>
+            section.encounters.map(encounter => [encounter.id, section] as const))));
+        const groups: { section: EncounterPickerSectionViewModel | undefined; encounters: EncounterPickerViewModel["encounters"][number][] }[] = [];
+        for (const encounter of props.model.encounters) {
+            const section = sectionsById.get(encounter.id);
+            const previous = groups[groups.length - 1];
+            if (previous && previous.section === section) previous.encounters.push(encounter);
+            else groups.push({ section, encounters: [encounter] });
+        }
+        return groups;
+    });
     const encounterCard = (encounter: EncounterPickerViewModel["encounters"][number]): JSX.Element => {
         const card = <button class="kcq-encounter-card kcq-encounter-picker__row kcq-shortcut-host" type="button"
             data-kcq-shortcut={shortcuts().get(encounter.id)}
@@ -44,7 +57,16 @@ export function EncounterPickerPanel(props: {
                     <span>{props.model.showAllLabel}</span>
                 </label>} />
         }
-        body={<Show when={organized()} fallback={<For each={props.model.encounters}>{encounterCard}</For>}>
+        body={<Show when={organized()} fallback={
+            <Show when={props.model.layout?.length} fallback={<For each={props.model.encounters}>{encounterCard}</For>}>
+                <For each={flatSections()}>{group =>
+                    <section class="kcq-encounter-picker__section" aria-label={group.section?.name ?? props.model.additionalEncountersLabel}>
+                        <h2>{group.section?.name ?? props.model.additionalEncountersLabel}</h2>
+                        <For each={group.encounters}>{encounterCard}</For>
+                    </section>
+                }</For>
+            </Show>
+        }>
             <div class="kcq-encounter-picker__campaign" style={{ "--kcq-campaign-columns": sectionColumns() }}>
                 <For each={props.model.layout}>{row =>
                     <div class="kcq-encounter-picker__campaign-row" style={{ "grid-template-columns": `repeat(${row.length || 1}, minmax(0, 1fr))` }}>

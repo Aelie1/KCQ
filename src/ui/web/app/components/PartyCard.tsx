@@ -20,6 +20,7 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
     const actorReaction = reactionRef("actor", () => props.character.id);
     const cardReaction = (element: HTMLElement) => { actorReaction(element); };
     const interactive = (): boolean => props.onSelect !== undefined;
+    const incapacitated = () => props.character.actionState.kind === "incapacitated";
 
     return (
         <article
@@ -43,12 +44,12 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                     <h3 class="kcq-party-card__name" classList={{ [`kcq-player-identity--${props.character.tone}`]: true }} title={props.character.name}>
                         {props.character.name}
                     </h3>
-                    <Show when={props.character.resourceLabel !== undefined}>
+                    <Show when={!incapacitated() && props.character.resourceLabel !== undefined}>
                         <span class="kcq-party-card__resource kcq-subspace-value">
                             {props.character.resourceLabel}
                         </span>
                     </Show>
-                    <Show when={props.character.resourceMeter} keyed>
+                    <Show when={!incapacitated() && props.character.resourceMeter} keyed>
                         {(resource) => (
                             <span class="kcq-party-card__resource-meter">
                                 <ProjectedMeter
@@ -64,9 +65,11 @@ export function PartyCard(props: PartyCardProps): JSX.Element {
                     <StatusChip tone={props.character.actionState.tone}>
                         {props.character.actionState.label}
                     </StatusChip>
-                    <StatusChip tone={props.character.stanceState.tone}>
-                        {props.character.stanceState.label}
-                    </StatusChip>
+                    <Show when={!incapacitated()}>
+                        <StatusChip tone={props.character.stanceState.tone}>
+                            {props.character.stanceState.label}
+                        </StatusChip>
+                    </Show>
                 </div>
                 <div
                     class="kcq-party-card__capabilities"

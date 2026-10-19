@@ -101,4 +101,31 @@ describe("party card", () => {
         expect(models.filter(({ id }) => id !== "hinari" && id !== "sakari")
             .every((model) => model.resourceLabel === undefined && model.resourceMeter === undefined)).toBe(true);
     });
+
+    it.each(["hinari", "sakari"])("hides only resources and stance for incapacitated %s and retains ready rendering", id => {
+        const fixture = battleOverviewFixture;
+        const presentation = new Presentation(getStringTable("en", ["hinari", "sakari"], "skunk"));
+        const character = { ...fixture.state.characters[0], id, data: { subspace: 27, subspaceMax: 100, thrillseeker: 3 } };
+        const ready = createPartyCardViewModel(character, { ...fixture.actions[0], id }, fixture.thresholds, presentation, fixture.state.encounter.bindings);
+        const incapacitated = createPartyCardViewModel(character,
+            { ...fixture.actions[0], id, available: false, reason: "actorIncapacitated" }, fixture.thresholds, presentation, fixture.state.encounter.bindings);
+        const original = structuredClone(incapacitated);
+        const readyHtml = renderToString(() => createComponent(PartyCard, { character: ready, onSelect: () => {} }));
+        const html = renderToString(() => createComponent(PartyCard, { character: incapacitated, onSelect: () => {} }));
+        expect(ready.actionState.kind).toBe("ready");
+        expect(renderedText(readyHtml)).toContain("Ready");
+        expect(renderedText(readyHtml)).toContain(ready.stanceState.label);
+        expect(readyHtml).toContain(id === "hinari" ? "kcq-party-card__resource-meter" : "kcq-party-card__resource kcq-subspace-value");
+        expect(incapacitated.resourceMeter).toEqual(ready.resourceMeter);
+        expect(incapacitated.resourceLabel).toBe(ready.resourceLabel);
+        expect(incapacitated.stanceState).toEqual(ready.stanceState);
+        expect(html).not.toContain("kcq-party-card__resource");
+        expect(renderedText(html)).toContain("Incapacitated");
+        expect(renderedText(html)).not.toContain(incapacitated.stanceState.label);
+        expect(renderedText(html)).toContain(incapacitated.name);
+        expect(html).toContain('role="button" tabindex="0"');
+        expect(html.match(/role="progressbar"/g)).toHaveLength(incapacitated.bindings.length);
+        for (const effect of incapacitated.visibleEffects) expect(renderedText(html)).toContain(effect.name);
+        expect(incapacitated).toEqual(original);
+    });
 });

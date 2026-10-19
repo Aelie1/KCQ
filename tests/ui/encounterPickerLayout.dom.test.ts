@@ -110,12 +110,14 @@ describe("desktop encounter overview", () => {
         expect(onSelect).toHaveBeenCalledWith("plains_1");
     });
 
-    it("keeps flat shortcut assignments when the visual ordering differs and switches to the unchanged mobile list", () => {
+    it("keeps flat shortcut assignments and adds mobile headings without changing encounter order", () => {
         const campaign = { ...library.campaigns.skunk, layout: [
             [{ name: "act3", chapters: ["tower_3", "tower_1"] }, { name: "act1", chapters: ["plains_2", "plains_1"] }],
         ] };
         const { host, setLayout, onSelect } = mount(campaign, true);
         const flat = createEncounterPickerViewModel(library, presentation, campaign, {}, [], true).encounters;
+        expect(host.querySelector(".kcq-encounter-picker--wide")).not.toBeNull();
+        expect(getComputedStyle(cards(host)[0]!).gridTemplateAreas.replace(/\s+/g, " ")).toBe('"name stars best"');
         expect(names(host).slice(0, 4)).toEqual(["tower_3", "tower_1", "plains_2", "plains_1"].map(id => presentation.encounter(id)));
         for (const [index, encounter] of flat.entries()) {
             const card = cards(host).find(card => card.querySelector("strong")?.textContent === encounter.name)!;
@@ -126,7 +128,14 @@ describe("desktop encounter overview", () => {
         expect(host.querySelector(".kcq-encounter-picker__additional h2")?.textContent).toBe("Other Encounters");
         setLayout(responsiveLayouts.narrow);
         expect(host.querySelector(".kcq-encounter-picker--overview")).toBeNull();
-        expect(host.querySelector("h2")).toBeNull();
+        expect(host.querySelector(".kcq-encounter-picker--wide")).toBeNull();
+        expect(host.querySelector(".kcq-encounter-picker__campaign")).toBeNull();
+        const sectionNames = new Map([
+            ["tower_3", "Third Act"], ["tower_1", "Third Act"], ["plains_2", "Act 1"], ["plains_1", "Act 1"],
+        ]);
+        const expectedHeadings = flat.map(encounter => sectionNames.get(encounter.id) ?? "Other Encounters")
+            .filter((name, index, sequence) => index === 0 || name !== sequence[index - 1]);
+        expect([...host.querySelectorAll("h2")].map(heading => heading.textContent)).toEqual(expectedHeadings);
         expect(names(host)).toEqual(flat.map(encounter => encounter.name));
         expect(cards(host).map(card => card.dataset.kcqShortcut)).toEqual(flat.map((_, index) => combatShortcut(index)));
         expect(getComputedStyle(cards(host)[0]!).gridTemplateColumns).toBe("minmax(0, 1fr) auto 75px");
@@ -135,6 +144,25 @@ describe("desktop encounter overview", () => {
         expect(host.querySelector(".kcq-encounter-picker--wide")).toBeNull();
         expect(cards(host)).toHaveLength(flat.length);
         expect(getComputedStyle(cards(host)[0]!).gridTemplateAreas.replace(/\s+/g, " ")).toBe('"name name name" "stars . best"');
+    });
+
+    it("repeats localized headings when flat progression re-enters a section and labels Show All extras", () => {
+        const campaign = { ...library.campaigns.skunk, initial: ["plains_1"], defeat: {},
+            victory: { plains_1: ["tower_1"], tower_1: ["plains_2"], plains_2: ["tower_3"] },
+            layout: [[{ name: "act1", chapters: ["plains_1", "plains_2"] }, { name: "act3", chapters: ["tower_1", "tower_3"] }]],
+        };
+        const { host, setLayout } = mount(campaign);
+        setLayout(responsiveLayouts.narrow);
+        expect([...host.querySelectorAll("h2")].map(heading => heading.textContent)).toEqual(["Act 1", "Third Act", "Act 1", "Third Act"]);
+        expect(cards(host).map(card => card.dataset.kcqShortcut)).toEqual([0, 1, 2, 3].map(combatShortcut));
+        host.querySelector<HTMLInputElement>("input")!.click();
+        const sections = [...host.querySelectorAll(".kcq-encounter-picker__section")];
+        expect(sections.map(section => section.querySelector("h2")?.textContent)).toEqual(["Act 1", "Third Act", "Act 1", "Third Act", "Other Encounters"]);
+        expect(names(host).slice(0, 4)).toEqual(["plains_1", "tower_1", "plains_2", "tower_3"].map(id => presentation.encounter(id)));
+        expect(cards(sections[4]!)).toHaveLength(Object.keys(library.encounters).length - 4);
+        host.querySelector<HTMLInputElement>("input")!.click();
+        expect(host.querySelectorAll("h2")).toHaveLength(4);
+        expect(cards(host)).toHaveLength(4);
     });
 
     it.each(responsivePresentationCases)("uses the selected form factor with layout %j: %s", (layout, organized) => {
@@ -165,10 +193,15 @@ describe("desktop encounter overview", () => {
     });
 
     it.each([undefined, []])("uses the original list on desktop without populated metadata: %s", layout => {
-        const { host } = mount({ ...library.campaigns.skunk, layout }, true);
+        const { host, setLayout } = mount({ ...library.campaigns.skunk, layout }, true);
         expect(host.querySelector(".kcq-encounter-picker--overview")).toBeNull();
         expect(host.querySelector("h2")).toBeNull();
         expect(cards(host)).toHaveLength(Object.keys(library.encounters).length);
         expect(getComputedStyle(cards(host)[0]!).gridTemplateColumns).toBe("minmax(0, 1fr) auto 75px");
+        const flatNames = names(host);
+        setLayout(responsiveLayouts.narrow);
+        expect(host.querySelector("h2")).toBeNull();
+        expect(host.querySelector(".kcq-encounter-picker--overview, .kcq-encounter-picker--wide")).toBeNull();
+        expect(names(host)).toEqual(flatNames);
     });
 });

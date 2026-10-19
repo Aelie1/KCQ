@@ -94,12 +94,16 @@ describe("outcome dialog presentation", () => {
         expect(element(".kcq-outcome__overlay").style.getPropertyValue("--kcq-ui-height")).toBe("304px");
     });
 
-    it("preserves the mobile story typography and height cap", () => {
-        viewport.setViewport({ width: 390, height: 844 });
+    it.each([390, 780, 1920])("uses compact story typography and preserves the reading region at %ipx", width => {
+        viewport.setViewport({ width, height: 844 });
         mount("story");
-        expect(style(".kcq-victory-story__narrative").fontSize).toBe("14px");
-        expect(style(".kcq-victory-story__narrative").lineHeight).toBe("1.7");
-        expect(style(".kcq-victory-story").maxHeight).toBe("min(100%, 600px)");
+        expect(style(".kcq-victory-story__narrative").fontSize).toBe("13px");
+        expect(style(".kcq-victory-story__narrative").lineHeight).toBe("1.6");
+        expect(style(".kcq-victory-story__narrative").whiteSpace).toBe("pre-wrap");
+        expect(parseFloat(style(".kcq-victory-story__narrative").textIndent)).toBeGreaterThan(0);
+        expect(style(".kcq-victory-story__narrative").overflowY).toBe("auto");
+        expect(element(".kcq-victory-story__narrative").textContent).toBe(narrativeText);
+        expect(style(".kcq-victory-story").maxHeight).toBe(width < 780 ? "min(100%, 600px)" : "100%");
     });
 
     it("returns focus to View Game Log when reopening the result", () => {
@@ -122,15 +126,27 @@ describe("outcome dialog presentation", () => {
         }
     });
 
-    it("renders fixed headline cards and each supplied secondary summary", () => {
+    it.each([390, 780, 1920])("renders three boxed headline cards and each supplied secondary summary at %ipx", width => {
+        viewport.setViewport({ width, height: 1080 });
         mount("results", model("defeat"));
         const cards = [...document.querySelectorAll(".kcq-battle-result__stat")];
+        const surface = document.createElement("span");
+        surface.style.backgroundColor = "var(--kcq-surface-raised)";
+        element(".kcq-battle-result-panel").append(surface);
         expect(cards.map(card => card.getAttribute("data-stat-id"))).toEqual(["bindings", "hits", "escapes"]);
         for (const card of cards) {
             const row = rows.find(row => row.id === card.getAttribute("data-stat-id"))!;
             expect(card.querySelector("dt")?.textContent).toBe(row.label);
             expect(card.querySelector("dd")?.textContent).toBe(row.value);
             expect(card.textContent).not.toContain("Long localized detail");
+            const cardStyle = getComputedStyle(card);
+            expect(cardStyle.gridTemplateColumns).toBe("minmax(0, 1fr)");
+            expect(cardStyle.borderWidth).toBe("1px");
+            expect(cardStyle.borderStyle).toBe("solid");
+            expect(cardStyle.borderRadius).toBe("8px");
+            expect(cardStyle.backgroundColor).toBe(getComputedStyle(surface).backgroundColor);
+            expect(cardStyle.textAlign).toBe("center");
+            expect(getComputedStyle(card.querySelector("dd")!).fontSize).toBe("24px");
         }
         const details = [...document.querySelectorAll(".kcq-battle-result__detail-row")];
         for (const row of rows) {
@@ -216,6 +232,7 @@ describe("outcome dialog presentation", () => {
             expect(getComputedStyle(reading).whiteSpace).toBe("pre-wrap");
             expect(getComputedStyle(reading).maxWidth).toBe("76ch");
             expect(getComputedStyle(reading).fontSize).toBe("13px");
+            expect(getComputedStyle(reading).lineHeight).toBe("1.6");
             const proceed = element("footer button"); proceed.focus();
             expect(press(proceed, "Tab").defaultPrevented).toBe(true); expect(document.activeElement).toBe(reading);
             expect(press(reading, "Tab", true).defaultPrevented).toBe(true); expect(document.activeElement).toBe(proceed);
