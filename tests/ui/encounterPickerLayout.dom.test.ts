@@ -24,17 +24,19 @@ function mount(campaign: CampaignReference = library.campaigns.skunk, showAll = 
     const [layout, setLayout] = createSignal<ResponsiveLayout>({ columns: 3, zoom: 1, availableWidth: 1068 });
     const [all, setAll] = createSignal(showAll);
     const onSelect = vi.fn();
+    const onBack = vi.fn();
+    const onChangeParty = vi.fn();
     dispose = render(() => {
         useCombatKeyboard(() => host, () => true, () => false, () => "always");
         return createComponent(ResponsiveLayoutContext.Provider, {
             value: layout,
             get children() { return createComponent(EncounterPickerPanel, {
                 get model() { return createEncounterPickerViewModel(library, presentation, campaign, { plains_1: "mythic" }, ["plains_1"], all()); },
-                onSelect, onShowAllChange: setAll,
+                onSelect, onShowAllChange: setAll, onBack, onChangeParty,
             }); },
         });
     }, host);
-    return { host, setLayout, onSelect };
+    return { host, setLayout, onSelect, onBack, onChangeParty };
 }
 const cards = (root: ParentNode) => [...root.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")];
 const names = (root: ParentNode) => cards(root).map(card => card.querySelector("strong")?.textContent);
@@ -46,6 +48,47 @@ const press = (key: string) => {
 };
 
 describe("desktop encounter overview", () => {
+    it("keeps compact stars beside the name, reserves badge space, and contains centered footer actions", () => {
+        const { host, onBack, onChangeParty } = mount(undefined, true);
+        const campaign = host.querySelector<HTMLElement>(".kcq-encounter-picker__campaign")!;
+        expect(campaign.style.getPropertyValue("--kcq-campaign-columns")).toBe("3");
+        const row = cards(host)[1]!;
+        expect(row.parentElement!.className).toBe("kcq-encounter-picker__card-container");
+        expect(getComputedStyle(row).gridTemplateAreas).toBe('"name stars" ". best"');
+        expect(getComputedStyle(row).paddingRight).toBe("18px");
+        const name = getComputedStyle(row.querySelector("strong")!);
+        expect(name.whiteSpace).toBe("nowrap");
+        expect(name.textOverflow).toBe("ellipsis");
+        expect(name.fontSize).toBe("14px");
+        expect(getComputedStyle(row.querySelector(".kcq-encounter-picker__stars")!).whiteSpace).toBe("nowrap");
+        expect(getComputedStyle(host.querySelector(".kcq-encounter-picker__show-all span")!).whiteSpace).toBe("nowrap");
+        const footer = host.querySelector<HTMLElement>(".kcq-screen-actions")!;
+        expect(getComputedStyle(footer).display).toBe("grid");
+        expect(getComputedStyle(footer).height).toBe("auto");
+        expect(getComputedStyle(footer).maxWidth).toBe("366px");
+        expect(getComputedStyle(footer).gridTemplateColumns).toBe("repeat(2, minmax(0, 1fr))");
+        expect(getComputedStyle(footer.querySelector("button")!).fontSize).toBe("12px");
+        expect(getComputedStyle(host.querySelector(".kcq-screen-layout__body")!).overflowY).toBe("auto");
+        host.querySelector<HTMLButtonElement>(".kcq-encounter-picker__change-party")!.click();
+        expect(onChangeParty).toHaveBeenCalledOnce();
+        expect(press("Escape").defaultPrevented).toBe(true);
+        expect(onBack).toHaveBeenCalledOnce();
+    });
+
+    it("derives shared track sizing from arbitrary authored column counts", () => {
+        const campaign = { ...library.campaigns.skunk, layout: [
+            library.campaigns.skunk.layout![0]!,
+            [...library.campaigns.skunk.layout![1]!, { name: "act1", chapters: [] }],
+            library.campaigns.skunk.layout![2]!,
+        ] };
+        const { host } = mount(campaign);
+        expect(host.querySelector<HTMLElement>(".kcq-encounter-picker__campaign")!.style.getPropertyValue("--kcq-campaign-columns")).toBe("4");
+        const rows = [...host.querySelectorAll<HTMLElement>(".kcq-encounter-picker__campaign-row")];
+        expect(rows.map(row => row.style.gridTemplateColumns)).toEqual([
+            "repeat(1, minmax(0, 1fr))", "repeat(4, minmax(0, 1fr))", "repeat(1, minmax(0, 1fr))",
+        ]);
+    });
+
     it("renders the stock authored rows with localized section headings and shared disabled cards", () => {
         const { host, onSelect } = mount();
         const rows = [...host.querySelectorAll(".kcq-encounter-picker__campaign-row")];

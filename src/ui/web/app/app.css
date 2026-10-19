@@ -3544,7 +3544,7 @@ button {
 }
 
 .kcq-encounter-picker__name {
-    font-size: 14px;
+    font-size: 13px;
     line-height: 17px;
     overflow-wrap: anywhere;
 }
@@ -3575,22 +3575,35 @@ button {
     width: 100%;
 }
 
+.kcq-encounter-picker--overview {
+    --kcq-screen-gap: 8px;
+}
+
+.kcq-encounter-picker__campaign {
+    --kcq-campaign-column-gap: 16px;
+    /* Match one track in the campaign's widest authored row. */
+    --kcq-campaign-column-width: calc((100% - (var(--kcq-campaign-columns) - 1) * var(--kcq-campaign-column-gap)) / var(--kcq-campaign-columns));
+    display: grid;
+    gap: 8px;
+    min-width: 0;
+}
+
 .kcq-encounter-picker__campaign-row {
     display: grid;
     align-items: start;
-    gap: 24px;
+    gap: var(--kcq-campaign-column-gap);
     min-width: 0;
 }
 
 .kcq-encounter-picker__section {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     min-width: 0;
 }
 
-.kcq-encounter-picker__campaign-row > .kcq-encounter-picker__section:only-child {
-    width: min(100%, 366px);
+.kcq-encounter-picker__campaign-row>.kcq-encounter-picker__section:only-child {
+    width: var(--kcq-campaign-column-width);
     justify-self: center;
 }
 
@@ -3603,23 +3616,50 @@ button {
     overflow-wrap: anywhere;
 }
 
+.kcq-encounter-picker__card-container {
+    min-width: 0;
+    container: encounter-card / inline-size;
+}
+
 .kcq-encounter-picker--overview .kcq-encounter-picker__row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-    gap: 4px 8px;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "name stars" ". best";
+    gap: 2px 8px;
+    /* Reserve the top-right corner for the shortcut badge, even when hidden. */
+    padding: 6px 18px 6px 8px;
 }
 
 .kcq-encounter-picker--overview .kcq-encounter-picker__name {
-    grid-column: 1 / -1;
+    grid-area: name;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .kcq-encounter-picker--overview .kcq-encounter-picker__stars {
-    white-space: normal;
-    overflow-wrap: anywhere;
+    grid-area: stars;
+    justify-self: end;
+    line-height: 17px;
 }
 
 .kcq-encounter-picker--overview .kcq-encounter-picker__best-clear {
+    grid-area: best;
+    justify-self: end;
     text-align: right;
-    overflow-wrap: anywhere;
+    white-space: nowrap;
+}
+
+.kcq-encounter-picker--overview .kcq-encounter-picker__row:not(:has(.kcq-encounter-picker__stars)) {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "name";
+}
+
+@container encounter-card (min-width: 320px) {
+    .kcq-encounter-picker--overview .kcq-encounter-picker__row {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+        grid-template-areas: "name stars best";
+    }
 }
 
 .kcq-encounter-picker__additional {
@@ -4084,9 +4124,9 @@ button {
 }
 
 /* Reserve space for save feedback without pushing battle controls offscreen. */
-.kcq-battle-stage__background > div,
-.kcq-battle-stage__background > .kcq-screen-layout,
-.kcq-battle-stage__background > div > :is(.kcq-screen-layout, .kcq-battle-overview-columns,
+.kcq-battle-stage__background>div,
+.kcq-battle-stage__background>.kcq-screen-layout,
+.kcq-battle-stage__background>div> :is(.kcq-screen-layout, .kcq-battle-overview-columns,
     .kcq-battle-overview-wide, .kcq-character-details-wide) {
     height: 100%;
 }
@@ -4766,6 +4806,25 @@ button {
     margin: 0;
     accent-color: var(--kcq-accent-primary);
     cursor: pointer;
+}
+
+.kcq-encounter-picker--overview .kcq-encounter-picker__show-all span {
+    width: auto;
+    white-space: nowrap;
+}
+
+.kcq-encounter-picker--overview .kcq-screen-actions {
+    /* Override the details footer's stacked layout and fixed action-bar height. */
+    display: grid;
+    width: 100%;
+    max-width: 366px;
+    height: auto;
+    margin-inline: auto;
+    gap: 8px;
+}
+
+.kcq-encounter-picker--overview .kcq-screen-actions .kcq-targeting__back {
+    font-size: 12px;
 }
 
 @media (max-width: 480px) {
