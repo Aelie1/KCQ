@@ -66,12 +66,12 @@ export type LogOutcome = BindingTickOutcome | ResourceOutcome | DamageOutcome | 
     | { kind: "intention"; target: EntityId; move: MoveId; operation: "cancelled" | "weakened" | "discorded" }
     | { kind: "bonus"; target: EntityId; amount: number };
 
-export type GameLogPresentationEntry =
-    | { kind: "move"; actor: EntityId; move: MoveId; outcomes: LogOutcome[]; livingEnemies?: EntityId[] }
+export type GameLogPresentationEntry = { livingEnemies?: EntityId[] } & (
+    | { kind: "move"; actor: EntityId; move: MoveId; outcomes: LogOutcome[] }
     | { kind: "escape"; actor: EntityId; target: EntityId; outcomes: LogOutcome[] }
     | { kind: "phase"; phase: Phase; round?: number; outcomes: LogOutcome[] }
     | { kind: "stance"; changes: StanceOutcome[]; outcomes: LogOutcome[] }
-    | { kind: "encounter" | "character"; id: string; success: boolean; outcomes: LogOutcome[] };
+    | { kind: "encounter" | "character"; id: string; success: boolean; outcomes: LogOutcome[] });
 
 /** Only the semantic endpoints used by aggregation, never a full public snapshot. */
 export interface GameLogContext {
@@ -586,25 +586,21 @@ function delayedBuffPayloads(input: readonly (GameEvent | EventFrame)[]): Record
 
 /** Preserve top-level event boundaries after semantic outcome aggregation. */
 export function gameLogEntry(event: GameEvent, outcomes: LogOutcome[], round?: number, before?: GameLogContext): GameLogPresentationEntry | undefined {
+    const livingEnemies = livingEnemyIds(before);
+    const roster = livingEnemies?.length ? { livingEnemies: [...livingEnemies] } : {};
     switch (event.type) {
-        case "useMove": {
-            const livingEnemies = livingEnemyIds(before);
-            return {
-                kind: "move", actor: event.actor, move: event.move, outcomes,
-                ...(livingEnemies?.length ? { livingEnemies: [...livingEnemies] } : {}),
-            };
-        }
-        case "useEscape": return { kind: "escape", actor: event.actor, target: event.target, outcomes };
-        case "changePhase": return { kind: "phase", phase: event.phase, round, outcomes };
+        case "useMove": return { kind: "move", actor: event.actor, move: event.move, outcomes, ...roster };
+        case "useEscape": return { kind: "escape", actor: event.actor, target: event.target, outcomes, ...roster };
+        case "changePhase": return { kind: "phase", phase: event.phase, round, outcomes, ...roster };
         case "changeStance": return {
             kind: "stance", changes: outcomes.filter((outcome): outcome is StanceOutcome => outcome.kind === "stance"),
-            outcomes: outcomes.filter((outcome) => outcome.kind !== "stance")
+            outcomes: outcomes.filter((outcome) => outcome.kind !== "stance"), ...roster,
         };
         case "loadEncounter":
         case "loadCharacter":
             if (!event.success || outcomes.length) return {
                 kind: event.type === "loadEncounter" ? "encounter" : "character",
-                id: event.id, success: event.success, outcomes
+                id: event.id, success: event.success, outcomes, ...roster,
             };
     }
 }

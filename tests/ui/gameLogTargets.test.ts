@@ -118,7 +118,7 @@ describe("target aggregation in logs saved before enemy rosters were recorded", 
     const legacySave = (history: ReturnType<typeof createGameLogHistory>) => {
         const saved = history.getSaveState();
         delete saved.previous.livingEnemies;
-        for (const entry of saved.entries) if (entry.kind === "move") delete entry.livingEnemies;
+        for (const entry of saved.entries) delete entry.livingEnemies;
         for (const pending of saved.pendingBuffs) {
             delete pending.before.livingEnemies;
             delete pending.after.livingEnemies;
@@ -172,3 +172,28 @@ describe("target aggregation in logs saved before enemy rosters were recorded", 
     });
 });
 
+
+describe("enemy buff expiration at phase transitions", () => {
+    it.each<[string[], string, boolean]>([
+        [all, "All Enemies", false],
+        [["skunkette1", "fairy1"], "Skunkette 1, Fairy 1", false],
+        [all.filter(id => id !== "skunkette3"), "All Enemies", true],
+        [["skunkette1", "fairy1"], "Skunkette 1, Fairy 1", true],
+    ])("formats removed buff targets %j as %s (defeated enemy: %s)", (ids, expected, defeated) => {
+        const before = frame(state(), all).state;
+        if (defeated) before.enemies.find(enemy => enemy.id === "skunkette3")!.currHp = 0;
+        const after = structuredClone(before);
+        for (const enemy of after.enemies) if (ids.includes(enemy.id)) enemy.buffs = [];
+        const expiration: EventFrame = { state: after, event: {
+            type: "changePhase", phase: "player", effects: ids.map(target => ({ type: "buffRemoved", target, buff: "empoweringMagic" })),
+        } };
+        const history = createGameLogHistory(before);
+        const entries = history.record([expiration]);
+        expect(entries).toEqual(createGameLogEntries([expiration], before));
+        expect(models(entries)[0]!.rows[0]).toMatchObject({ target: expected, values: [{ text: "Empowering Magic Removed" }] });
+        const saved = history.getSaveState();
+        for (const entry of saved.entries) delete entry.livingEnemies;
+        delete saved.previous.livingEnemies;
+        expect(models(createGameLogHistory(after, saved).record([]))[0]!.rows[0]!.target).toBe(expected);
+    });
+});

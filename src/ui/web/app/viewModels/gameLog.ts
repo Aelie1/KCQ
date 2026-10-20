@@ -405,7 +405,7 @@ export function createGameLogViewModel(
         return rendered;
     };
     return entries.map(entry => {
-        enemies = entry.kind === "move" ? entry.livingEnemies ?? [] : [];
+        enemies = entry.livingEnemies ?? [];
         const model: GameLogViewModelEntry = { kind: entry.kind, rows: renderOutcomes(entry.outcomes, entry.kind === "move" ? entry.actor : undefined) };
         switch (entry.kind) {
             case "move":

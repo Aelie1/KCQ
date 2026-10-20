@@ -70,7 +70,7 @@ it("shows All Enemies when continuing a battle whose saved log predates roster m
     stats.record(action, result, engine.getGameState());
     const gameLog = history.getSaveState();
     delete gameLog.previous.livingEnemies;
-    for (const entry of gameLog.entries) if (entry.kind === "move") delete entry.livingEnemies;
+    for (const entry of gameLog.entries) delete entry.livingEnemies;
     for (const pending of gameLog.pendingBuffs) {
         delete pending.before.livingEnemies;
         delete pending.after.livingEnemies;
@@ -78,4 +78,20 @@ it("shows All Enemies when continuing a battle whose saved log predates roster m
     mount(engine, { gameLog, stats: stats.getSaveState() });
     expect(target()).toBe("All Enemies");
 
+});
+
+it.each([390, 1500])("shows All Enemies when real Empowering Magic expires next turn at width %i", width => {
+    (window as unknown as HappyWindow).happyDOM.setViewport({ width });
+    const engine = preparedBattle();
+    mount(engine);
+    const endTurn = () => document.querySelector<HTMLButtonElement>(".kcq-battle-overview__primary-action")!.click();
+    endTurn();
+    expect(target()).toBe("All Enemies");
+    endTurn();
+    // Open the full log on narrow screens so phase outcomes are visible.
+    if (width === 390) document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!.click();
+    const removal = [...document.querySelectorAll('[data-kind="phase"] [data-outcome="buff"]')]
+        .find(row => row.textContent?.includes("Empowering Magic") && row.textContent.includes("Removed"));
+    expect(removal).toBeDefined();
+    expect(removal!.querySelector(".kcq-game-log__target")?.textContent).toBe("All Enemies");
 });

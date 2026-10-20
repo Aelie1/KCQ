@@ -73,10 +73,11 @@ const outcome: Check = variant("kind", {
     bonus: { target: text, amount: number },
 });
 const outcomes = list(outcome);
-const loadEntry = { id: text, success: boolean, outcomes };
+const roster = { livingEnemies: optional(list(text)) };
+const loadEntry = { id: text, success: boolean, outcomes, ...roster };
 const entry = variant("kind", {
-    move: { actor: text, move: text, outcomes, livingEnemies: optional(list(text)) }, escape: { actor: text, target: text, outcomes },
-    phase: { phase, round: optional(integer), outcomes }, stance: { changes: list(stanceOutcome), outcomes },
+    move: { actor: text, move: text, outcomes, ...roster }, escape: { actor: text, target: text, outcomes, ...roster },
+    phase: { phase, round: optional(integer), outcomes, ...roster }, stance: { changes: list(stanceOutcome), outcomes, ...roster },
     encounter: loadEntry, character: loadEntry,
 });
 const context = shape({

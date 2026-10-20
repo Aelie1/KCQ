@@ -58,7 +58,7 @@ export function createGameLogHistory(initialState: GameState, saved?: GameLogSav
             const pending = pendingByIndex.get(index);
             if (pending) pending.after.livingEnemies ??= [...living];
             undo(entry.outcomes);
-            if (entry.kind === "move" && living.size) entry.livingEnemies ??= [...living];
+            if (living.size && (entry.kind !== "stance" || entry.outcomes.length)) entry.livingEnemies ??= [...living];
             if (pending) pending.before.livingEnemies ??= [...living];
         }
     }
