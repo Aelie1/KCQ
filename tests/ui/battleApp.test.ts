@@ -5,7 +5,6 @@ import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
-import { DevApp } from "../../src/ui/web/app/dev/DevApp";
 import { stockStrings } from "../helpers/stockStrings";
 
 // Portals emit no in-stage markup; retain their separately rendered body content.
@@ -74,21 +73,5 @@ describe("playable Solid battle application", () => {
         for (const enemy of state.enemies) {
             expect(html).toContain(new Presentation(stockStrings).entity(enemy.id));
         }
-    });
-
-    it("keeps the static fixture panels renderable without callback props", () => {
-        for (const initialPanel of ["battle", "character", "enemy", "targeting", "escape", "log", "victory", "defeat"] as const) {
-            expect(() => renderToString(() => createComponent(DevApp, { initialPanel })))
-                .not.toThrow();
-        }
-    });
-
-    it("exposes the deterministic playable battle debug entry", () => {
-        const html = renderToString(() => createComponent(DevApp, {
-            initialPanel: "playable" as const,
-        }));
-
-        expect(html).toMatch(/class="[^"]*\bkcq-battle-overview\b[^"]*"/);
-        expect(html).toContain(new Presentation(stockStrings).encounter("plains_1"));
     });
 });

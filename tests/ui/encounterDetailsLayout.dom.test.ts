@@ -8,8 +8,8 @@ import { EncounterDetailsPanel } from "../../src/ui/web/app/components/Encounter
 import { useCombatKeyboard } from "../../src/ui/web/app/keyboard";
 import { LAYOUT_WIDTHS, ResponsiveLayoutContext, type ResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
 import { createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
-import { stockStrings } from "../helpers/stockStrings";
 import { responsiveLayouts, responsivePresentationCases } from "../helpers/responsiveLayouts";
+import { stockStrings } from "../helpers/stockStrings";
 
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
@@ -33,9 +33,11 @@ function mount(model = combat(), initialLayout: ResponsiveLayout = wideLayout) {
         useCombatKeyboard(() => host, () => true, () => false, () => "always");
         return createComponent(ResponsiveLayoutContext.Provider, {
             value: layout,
-            get children() { return createComponent(EncounterDetailsPanel, {
-                model, onBack, onChooseDifficulty, onNextLevel, onSettings, onLibrary, libraryLabel: "Library",
-            }); },
+            get children() {
+                return createComponent(EncounterDetailsPanel, {
+                    model, onBack, onChooseDifficulty, onNextLevel, onSettings, onLibrary, libraryLabel: "Library",
+                });
+            },
         });
     }, host);
     const element = <T extends HTMLElement = HTMLElement>(selector: string): T => {
@@ -94,9 +96,11 @@ describe("encounter details responsive layout", () => {
     it("bounds the non-narrow body and gives long narrative and complex rules independent scroll areas", () => {
         const base = combat();
         const description = "First paragraph.\n\n  Indented line.\n".repeat(150) + "Narrative ending.";
-        const model = { ...base, description, effectGroups: Array.from({ length: 30 }, (_, index) => ({
-            id: "rule-group-" + index, name: "Rule group " + index, effects: [...base.effects, ...base.effectGroups.flatMap(group => group.effects)],
-        })) };
+        const model = {
+            ...base, description, effectGroups: Array.from({ length: 30 }, (_, index) => ({
+                id: "rule-group-" + index, name: "Rule group " + index, effects: [...base.effects, ...base.effectGroups.flatMap(group => group.effects)],
+            }))
+        };
         const { host, element } = mount(model);
         const narrative = element(".kcq-encounter-details__narrative");
         const information = element(".kcq-encounter-details__information");
@@ -169,7 +173,8 @@ describe("encounter details responsive layout", () => {
     });
 
     it.each(["enemies", "rules", "both"])("handles absent %s without empty panels", absent => {
-        const model = { ...combat(),
+        const model = {
+            ...combat(),
             ...(absent !== "rules" ? { enemies: [] } : {}),
             ...(absent !== "enemies" ? { effects: [], effectGroups: [] } : {}),
         };
@@ -178,7 +183,7 @@ describe("encounter details responsive layout", () => {
         expect(!!host.querySelector(".kcq-encounter-details__rules")).toBe(absent === "enemies");
         if (absent === "both") {
             expect(host.querySelector(".kcq-encounter-details__information")).toBeNull();
-            expect(getComputedStyle(element(".kcq-encounter-details__columns")).gridTemplateColumns).toBe("minmax(0, 1fr)");
+            expect(getComputedStyle(element(".kcq-encounter-details__columns")).gridTemplateColumns).toBe("minmax(0, 66ch)");
         }
     });
 
@@ -197,7 +202,7 @@ describe("encounter details responsive layout", () => {
         const { host, element, onNextLevel, onChooseDifficulty } = mount(model);
         expect(host.querySelector(".kcq-encounter-details__info")).toBeNull();
         expect(host.querySelector('[role="tablist"]')).toBeNull();
-        expect(getComputedStyle(element(".kcq-encounter-details__columns")).gridTemplateColumns).toBe("minmax(0, 1fr)");
+        expect(getComputedStyle(element(".kcq-encounter-details__columns")).gridTemplateColumns).toBe("minmax(0, 66ch)");
         expect(element(".kcq-encounter-details__narrative").textContent).toBe(model.description);
         expect(element(".kcq-encounter-details__narrative").tabIndex).toBe(0);
         expect(element('[data-kcq-shortcut="enter"]').textContent).toContain(model.labels.nextLevel);

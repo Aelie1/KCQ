@@ -428,6 +428,27 @@ export class GameEngine implements Engine {
                     if (!reason && move.isValid) {
                         reason = move.isValid(this.state, move, actor);
                     }
+                    for (let i = 0; i < targetInfo.length; i++) {
+                        const target = targetInfo[i].target;
+                        const targetStatus = target && isValidEntity(this.state, target)
+                            ? new GameStatus(this.state, target)
+                            : null;
+
+                        targetInfo[i] = isValidTarget(
+                            this.state,
+                            actor,
+                            status,
+                            target,
+                            targetStatus,
+                            move
+                        );
+                    }
+
+                    const validTargets = targetInfo.filter(target => target.valid).length;
+
+                    if (!reason && (validTargets === 0 || (move.targets !== "all" && validTargets !== targetInfo.length))) {
+                        reason = "insufficientTargets";
+                    }
 
                     if (reason) {
                         effects.addEvent({
@@ -454,21 +475,7 @@ export class GameEngine implements Engine {
                             actions: this.getActionView(),
                         };
                     }
-                    for (let i = 0; i < targetInfo.length; i++) {
-                        const target = targetInfo[i].target;
-                        const targetStatus = target && isValidEntity(this.state, target)
-                            ? new GameStatus(this.state, target)
-                            : null;
 
-                        targetInfo[i] = isValidTarget(
-                            this.state,
-                            actor,
-                            status,
-                            target,
-                            targetStatus,
-                            move
-                        );
-                    }
                 }
 
                 const iMove: iMove = { definition: move };

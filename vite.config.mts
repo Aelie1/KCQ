@@ -24,11 +24,5 @@ export default defineConfig({
     },
     build: {
         outDir: "dist-web",
-        rollupOptions: {
-            input: {
-                main: new URL("./index.html", import.meta.url).pathname,
-                "ui-dev": new URL("./ui-dev.html", import.meta.url).pathname,
-            },
-        },
     },
 });

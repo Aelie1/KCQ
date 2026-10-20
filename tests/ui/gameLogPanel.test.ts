@@ -14,7 +14,6 @@ import { immobilized } from "../../src/engine/protected/statuses";
 import type { Buff, Enemy, EventFrame, GameState, LeafEvent, MoveEvent } from "../../src/engine/public/types";
 import { createGameLogEntries, type GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import { DevApp } from "../../src/ui/web/app/dev/DevApp";
 import { gameLogFixture } from "../../src/ui/web/app/fixtures/gameLog";
 import { makeFixtureCharacter } from "../../src/ui/web/app/fixtures/publicFixture";
 import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
@@ -377,14 +376,6 @@ describe("compact graphical Game Log", () => {
         expect(text(renderEntries([], p))).toContain("Empty test");
     });
 
-    it("uses the production panel for the screenshot review entry", () => {
-        const html = renderToString(() => createComponent(DevApp, { initialPanel: "log" as const }));
-        expect(html).toMatch(/class="[^"]*\bkcq-game-log\b[^"]*"/);
-        expect(html).toContain("kcq-combat-header--subscreen");
-        expect(html).not.toContain("kcq-combat-header__settings");
-        expect(text(html)).toContain("Pounce IV → I");
-        expect(html).not.toContain("Gallery placeholder");
-    });
 });
 
 
