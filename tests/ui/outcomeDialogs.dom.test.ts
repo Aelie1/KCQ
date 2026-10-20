@@ -258,7 +258,7 @@ describe("outcome dialog presentation", () => {
         const host = document.createElement("div"); document.body.append(host);
         dispose = render(() => createComponent(BattleSettingsPanel, {
             presentation: new Presentation(stockStrings), release: "test", onResume: vi.fn(), onBackToTitle: vi.fn(),
-            viewPreferences: { columns, enemyCards: "auto", setColumns: vi.fn(), setEnemyCards: vi.fn(), reset: vi.fn() },
+            viewPreferences: { columns, enemyCards: "auto", bindingDescriptions: "auto", setBindingDescriptions: vi.fn(), setColumns: vi.fn(), setEnemyCards: vi.fn(), reset: vi.fn() },
             overviewGameLog: { value: 4, onChange: vi.fn() },
         }), host);
         const layout = calculateResponsiveLayout(availableWidthFromViewport(width), columns).size;

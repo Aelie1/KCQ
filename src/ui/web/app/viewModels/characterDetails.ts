@@ -65,6 +65,7 @@ export interface ModifierMeterViewModel {
 }
 
 export interface BindingDetailViewModel {
+    description?: string;
     id: string;
     level: BindingLevel;
     levelLabel: string;
@@ -295,6 +296,7 @@ export function createFocusedCharacterViewModel(
                     value: binding.value,
                 }),
                 level: binding.level,
+                description: binding.level === "none" ? undefined : presentation.referenceText("binding", binding.id, binding.level),
                 levelLabel: presentation.bindingLevel(binding.level),
                 statusLabels: binding.status.map((status) => statusLabel(status, presentation)),
             })),

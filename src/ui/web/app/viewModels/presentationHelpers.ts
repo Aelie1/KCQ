@@ -22,17 +22,20 @@ export function isDebuff(buff: Buff): boolean {
         || (classifications.length > 0 && classifications.every(value => value === true));
 }
 
-export function bindingLevelAtValue(value: number, info: ThresholdInfo): BindingLevel {
-    const levels: BindingLevel[] = [
-        "max",
-        "overwhelming",
-        "severe",
-        "heavy",
-        "moderate",
-        "light",
-    ];
+// Descending severity order, shared by threshold lookup and combat reactions.
+export const BINDING_LEVELS: readonly BindingLevel[] = [
+    "max",
+    "overwhelming",
+    "severe",
+    "heavy",
+    "moderate",
+    "light",
+    "none",
+];
 
-    for (const level of levels) {
+export function bindingLevelAtValue(value: number, info: ThresholdInfo): BindingLevel {
+    for (const level of BINDING_LEVELS) {
+        if (level === "none") continue;
         const threshold = level === "max" ? info.max : info.thresholds[level];
         if (threshold !== undefined && value >= threshold) return level;
     }

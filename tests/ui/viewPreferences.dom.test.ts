@@ -179,12 +179,13 @@ describe("battle view preferences", () => {
     it("validates persisted values and retains changes when storage is unavailable", () => {
         window.localStorage.setItem("kcq.battleColumns", "4");
         window.localStorage.setItem("kcq.enemyCards", "huge");
+        window.localStorage.setItem("kcq.bindingDescriptions", "invalid");
         const defaults = createViewPreferences();
-        expect([defaults.columns, defaults.enemyCards]).toEqual(["auto", "auto"]);
+        expect([defaults.columns, defaults.enemyCards, defaults.bindingDescriptions]).toEqual(["auto", "auto", "auto"]);
         vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => { throw new Error("unavailable"); });
-        defaults.setColumns("3"); defaults.setEnemyCards("expanded");
-        expect([defaults.columns, defaults.enemyCards]).toEqual(["3", "expanded"]);
-        defaults.reset(); expect([defaults.columns, defaults.enemyCards]).toEqual(["auto", "auto"]);
+        defaults.setColumns("3"); defaults.setEnemyCards("expanded"); defaults.setBindingDescriptions("on");
+        expect([defaults.columns, defaults.enemyCards, defaults.bindingDescriptions]).toEqual(["3", "expanded", "on"]);
+        defaults.reset(); expect([defaults.columns, defaults.enemyCards, defaults.bindingDescriptions]).toEqual(["auto", "auto", "auto"]);
     });
 });
 
@@ -192,12 +193,13 @@ it("restores columns and enemy cards across remounts and ignores obsolete zoom s
     window.localStorage.setItem("kcq.autoZoom", "false");
     window.localStorage.setItem("kcq.manualZoom", "75");
     const { preferences } = mount();
-    preferences.setColumns("3"); preferences.setEnemyCards("compact");
+    preferences.setColumns("3"); preferences.setEnemyCards("compact"); preferences.setBindingDescriptions("off");
     unmount?.(); unmount = undefined; document.body.replaceChildren();
     viewport.setViewport({ width: 390 });
     const { preferences: reloaded } = mount();
     assertColumns(3);
     expect(reloaded.enemyCards).toBe("compact");
+    expect(reloaded.bindingDescriptions).toBe("off");
     expect(element(".kcq-app").style.getPropertyValue("--kcq-ui-zoom")).toBe("1");
     element(".kcq-combat-header__settings").click();
     expect(element<HTMLSelectElement>(".kcq-battle-settings__columns select").value).toBe("3");
@@ -208,5 +210,27 @@ it("restores columns and enemy cards across remounts and ignores obsolete zoom s
     reloaded.reset();
     expect(window.localStorage.getItem("kcq.autoZoom")).toBe("false");
     expect(window.localStorage.getItem("kcq.manualZoom")).toBe("75");
-    expect([createViewPreferences().columns, createViewPreferences().enemyCards]).toEqual(["auto", "auto"]);
+    expect([createViewPreferences().columns, createViewPreferences().enemyCards, createViewPreferences().bindingDescriptions]).toEqual(["auto", "auto", "auto"]);
+});
+
+it.each(["auto", "on", "off"] as const)("updates %s binding descriptions for semantic layouts and forced columns", mode => {
+    const { preferences, execute } = mount();
+    element(".kcq-combat-header__settings").click();
+    const control = element<HTMLSelectElement>(".kcq-battle-settings__binding-descriptions select");
+    control.value = mode; control.dispatchEvent(new Event("change", { bubbles: true }));
+    expect(preferences.bindingDescriptions).toBe(mode);
+    expect(document.querySelector(".kcq-party-card .kcq-binding-description")).toBeNull();
+    element(".kcq-battle-result__retry").click();
+    element(".kcq-party-card").click();
+    for (const columns of ["auto", "1", "2", "3"] as const) {
+        preferences.setColumns(columns);
+        for (const width of [AUTO_MEDIUM_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, AUTO_WIDE_BREAKPOINT, AUTO_MEDIUM_BREAKPOINT - 1]) {
+            viewport.setViewport({ width });
+            const size = calculateResponsiveLayout(availableWidthFromViewport(width), columns).size;
+            const visible = mode === "on" || (mode === "auto" && size !== "narrow");
+            expect(!!document.querySelector(".kcq-character-binding .kcq-binding-description")).toBe(visible);
+            expect(document.querySelector(".kcq-party-card .kcq-binding-description")).toBeNull();
+        }
+    }
+    expect(execute).not.toHaveBeenCalled();
 });

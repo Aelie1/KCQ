@@ -9,7 +9,7 @@ import { setupResponsiveScale } from "../responsiveScale";
 import type { ShortcutHintMode, ShortcutHintPreference } from "../shortcutHints";
 import type { Theme, ThemePreference } from "../theme";
 import { displayVersion } from "../version";
-import type { BattleColumns, EnemyCards, ViewPreferences } from "../viewPreferences";
+import type { BattleColumns, BindingDescriptions, EnemyCards, ViewPreferences } from "../viewPreferences";
 
 export function BattleSettingsPanel(props: {
     presentation: Presentation;
@@ -115,6 +115,17 @@ export function BattleSettingsPanel(props: {
                             onChange={event => props.viewPreferences?.setEnemyCards(event.currentTarget.value as EnemyCards)}>
                             <For each={["auto", "compact", "expanded"] as const}>
                                 {value => <option value={value}>{props.presentation.ui(`battleSettings.${value}`)}</option>}
+                            </For>
+                        </select>
+                    </label>
+                </Show>
+                <Show when={props.viewPreferences}>
+                    <label class="kcq-battle-settings__option kcq-battle-settings__binding-descriptions">
+                        <span>{props.presentation.ui("battleSettings.bindingDescriptions")}</span>
+                        <select value={props.viewPreferences?.bindingDescriptions}
+                            onChange={event => props.viewPreferences?.setBindingDescriptions(event.currentTarget.value as BindingDescriptions)}>
+                            <For each={["auto", "on", "off"] as const}>
+                                {value => <option value={value}>{props.presentation.ui(`battleSettings.bindingDescriptions.${value}`)}</option>}
                             </For>
                         </select>
                     </label>

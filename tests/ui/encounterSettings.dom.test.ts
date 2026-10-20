@@ -117,7 +117,7 @@ describe("encounter screen settings", () => {
         const { panel, prepareBattle } = mountSelection(screen);
         const { dialog } = openSettings();
         expect([...dialog.querySelectorAll("button, label, hr")].map(element => element.tagName))
-            .toEqual(["BUTTON", ...Array(7).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
+            .toEqual(["BUTTON", ...Array(8).fill("LABEL"), "BUTTON", "HR", "BUTTON"]);
         expect([...dialog.querySelectorAll("button")].map(control => control.textContent))
             .toEqual(["Resume", "Reset to Defaults", "Back to Title Screen"]);
         expect(document.querySelector(".kcq-combat-header__library")?.getAttribute("aria-label"))

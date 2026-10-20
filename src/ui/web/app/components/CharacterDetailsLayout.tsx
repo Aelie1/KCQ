@@ -124,6 +124,7 @@ export function CharacterDetailsLayout(props: CharacterDetailsLayoutProps): JSX.
                                         peak={binding().peak}
                                         max={binding().max}
                                         level={binding().level}
+                                        description={binding().description}
                                         size="compact"
                                         ariaLabel={binding().name}
                                     />

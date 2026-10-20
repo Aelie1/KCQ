@@ -36,7 +36,7 @@ function viewport(width = 390, height = 844, visualHeight?: number, columns: "au
     });
     const onLayout = vi.fn();
     const cleanup = setupResponsiveScale(shell as unknown as HTMLElement, {
-        columns, enemyCards: "auto", setColumns: vi.fn(), setEnemyCards: vi.fn(), reset: vi.fn(),
+        columns, enemyCards: "auto", bindingDescriptions: "auto", setBindingDescriptions: vi.fn(), setColumns: vi.fn(), setEnemyCards: vi.fn(), reset: vi.fn(),
     }, onLayout);
     return { shell, style, browser, visualViewport, observedResize, observe, disconnect, cleanup, onLayout };
 }

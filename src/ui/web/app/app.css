@@ -1285,6 +1285,24 @@ button {
     --kcq-binding-meter-radius: 4px;
 }
 
+.kcq-binding-description {
+    margin: 5px 0 0;
+    color: var(--kcq-text-secondary);
+    font-size: 11px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    border-radius: 3px;
+}
+
+.kcq-binding-description[data-combat-binding-description="increase"] {
+    --kcq-buff-reaction-glow: var(--kcq-glow-negative);
+}
+
+.kcq-binding-description[data-combat-binding-description="recovery"] {
+    --kcq-buff-reaction-glow: var(--kcq-glow-positive);
+}
+
 .kcq-projected-meter {
     --kcq-projected-meter-current: var(--kcq-text-dim);
     --kcq-projected-meter-change: var(--kcq-text-dim);
