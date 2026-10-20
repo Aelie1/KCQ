@@ -13,6 +13,7 @@ export interface CompactGameLogProps {
     party: readonly string[];
     lines: number;
     onOpen?: () => void;
+    onOpenFull?: () => void;
     headingAction?: boolean;
     scrollable?: boolean;
 }
@@ -125,6 +126,10 @@ export function CompactGameLog(props: CompactGameLogProps): JSX.Element {
                         </button>
                     </Show>
                 </h2>
+                <Show when={props.scrollable && props.onOpenFull}>
+                    <button type="button" class="kcq-game-log-heading-action kcq-game-log-heading-action--full"
+                        onClick={() => props.onOpenFull?.()}>{props.presentation.ui("gameLog.openFull")}</button>
+                </Show>
             </header>
             <Show when={props.scrollable} fallback={<Show when={props.lines > 0}><MeasuredGameLog {...props} /></Show>}>
                 <ScrollableGameLog {...props} />

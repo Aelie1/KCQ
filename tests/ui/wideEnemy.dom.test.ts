@@ -93,8 +93,9 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
         expect(getComputedStyle(heading).height).toBe(getComputedStyle(element(".kcq-battle-section--party .kcq-battle-section__heading")).height);
         expect(getComputedStyle(heading.querySelector("h2")!).textTransform).toBe("uppercase");
         const logHeading = element(".kcq-battle-section--game-log .kcq-battle-section__heading");
-        expect(logHeading.textContent).toBe(width >= AUTO_WIDE_BREAKPOINT ? "Game Log" : "- Game Log");
-        expect(!!logHeading.querySelector(".kcq-game-log-heading-action")).toBe(width < AUTO_WIDE_BREAKPOINT);
+        expect(logHeading.querySelector("h2")!.textContent).toBe(width >= AUTO_WIDE_BREAKPOINT ? "Game Log" : "- Game Log");
+        expect(!!logHeading.querySelector("h2 .kcq-game-log-heading-action")).toBe(width < AUTO_WIDE_BREAKPOINT);
+        expect(!!logHeading.querySelector(".kcq-game-log-heading-action--full")).toBe(width >= AUTO_WIDE_BREAKPOINT);
         logHeading.click();
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-enemy-details__identity").textContent).toContain("Skunkette 1");

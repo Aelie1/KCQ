@@ -116,7 +116,8 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow character work
                 }
                 expect(host.querySelector(".kcq-character-commands h2")).toBeNull();
                 const logHeading = element(".kcq-battle-section--game-log .kcq-battle-section__heading");
-                expect(logHeading.querySelector("button, a, [data-kcq-shortcut]")).toBeNull();
+                expect(logHeading.querySelector("[data-kcq-shortcut]")).toBeNull();
+                expect(logHeading.querySelector(".kcq-game-log-heading-action--full")).not.toBeNull();
                 logHeading.click();
                 expect(host.querySelector(".kcq-game-log")).toBeNull();
                 expect(element(".kcq-combat-header__trap-meter").getAttribute("role")).toBe("meter");

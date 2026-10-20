@@ -130,6 +130,12 @@ export class Presentation {
         return this.translate({ id: `ui.${label}`, args });
     }
 
+    /** Authored narrative keys are optional; blank placeholders also fall through. */
+    narrative(keys: readonly string[], args: Record<string, StringArg> = {}): string | undefined {
+        const id = keys.find(key => this.strings[key]?.trim() && this.strings[key]?.trim() !== "...");
+        return id === undefined ? undefined : this.translate({ id, args });
+    }
+
     difficulty(difficulty: DifficultyId, variant: string = "name"): string {
         return this.translate(this.definitionKey("difficulty", difficulty, variant));
     }

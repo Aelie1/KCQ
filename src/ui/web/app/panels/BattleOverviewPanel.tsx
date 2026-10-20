@@ -48,6 +48,7 @@ export interface BattleOverviewPanelProps {
     onLibrary?: () => void;
     onEndTurn?: () => void;
     onGameLog?: () => void;
+    onFullGameLog?: () => void;
     onSelectEnemy?: (id: EntityId) => void;
     onSelectCharacter?: (id: EntityId) => void;
 }
@@ -103,7 +104,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         party={props.state.characters.map(character => character.id)}
                         headingAction={props.gameLogHeadingAction}
                         scrollable={props.gameLogScrollable}
-                        lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog} />
+                        lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog} onOpenFull={props.onFullGameLog} />
                 </Show>
                 <Show when={visible("enemies") && props.enemyDetails}>{details => details()}</Show>
                 <Show when={visible("enemies") && !props.enemyDetails}>

@@ -510,3 +510,88 @@ describe("Game Log bottom following", () => {
         expect(log.viewport.scrollTop).toBe(100);
     });
 });
+
+describe("Combat and Story tabs", () => {
+    it("defaults to Combat and switches presentation without mutating the battle or mechanical rows", () => {
+        const log = mountScrollingLog();
+        log.setEntries(createGameLogEntries([{ type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [
+            { target: "skunkette1", result: "hit", effects: [{ type: "enemyDamaged", target: "skunkette1", amount: 10 }] },
+        ] }]));
+        const saved = JSON.stringify(log.state());
+        const combat = log.viewport.querySelector('.kcq-game-log__scroll')!.innerHTML;
+        expect(button("Combat").getAttribute("aria-selected")).toBe("true");
+        button("Story").click();
+        expect(button("Story").getAttribute("aria-selected")).toBe("true");
+        expect(log.viewport.textContent).toContain("landing an attack");
+        expect(log.viewport.textContent).toContain("Skunkette 1 takes 10 damage.");
+        expect(log.viewport.querySelector('[data-outcome]')).toBeNull();
+        button("Combat").click();
+        expect(log.viewport.querySelector('.kcq-game-log__scroll')!.innerHTML).toBe(combat);
+        expect(JSON.stringify(log.state())).toBe(saved);
+    });
+
+    it("supports roving keyboard focus and associates the active panel and tab", () => {
+        const log = mountScrollingLog();
+        button("Combat").focus();
+        button("Combat").dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+        expect(document.activeElement).toBe(button("Story"));
+        expect(button("Story").tabIndex).toBe(0);
+        expect(button("Combat").tabIndex).toBe(-1);
+        const panel = log.viewport.querySelector('[role="tabpanel"]')!;
+        expect(panel.getAttribute("aria-labelledby")).toBe(button("Story").id);
+        expect(button("Story").getAttribute("aria-controls")).toBe(panel.id);
+        button("Story").dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true, cancelable: true }));
+        expect(document.activeElement).toBe(button("Combat"));
+        button("Combat").dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true, cancelable: true }));
+        expect(document.activeElement).toBe(button("Story"));
+    });
+
+    it("keeps independent scrollback and auto-follow for each tab as history grows", () => {
+        const log = mountScrollingLog();
+        log.flush(); log.scroll(140);
+        button("Story").click(); log.flush();
+        expect(log.viewport.scrollTop).toBe(800);
+        log.append(); log.flush();
+        expect(log.viewport.scrollTop).toBe(900);
+        log.scroll(260);
+        button("Combat").click(); log.flush();
+        expect(log.viewport.scrollTop).toBe(140);
+        log.append(); log.flush();
+        expect(log.viewport.scrollTop).toBe(140);
+        button("Story").click(); log.flush();
+        expect(log.viewport.scrollTop).toBe(260);
+        log.scroll(1000); log.append(); log.flush();
+        expect(log.viewport.scrollTop).toBe(1100);
+    });
+
+    it("updates and relocalizes Story while selected, and clears both tab positions for a new battle", () => {
+        const log = mountScrollingLog();
+        button("Story").click(); log.flush();
+        log.append();
+        expect(log.viewport.querySelectorAll('[data-kind="phase"]')).toHaveLength(3);
+        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.story": "Story translated", "narrative.event.phase": "A new {phase} phase." }));
+        expect(button("Story translated").getAttribute("aria-selected")).toBe("true");
+        expect(log.viewport.textContent).toContain("A new Player phase.");
+        log.scroll(100);
+        log.setEntries([]); log.setHeight(0); log.flush();
+        expect(log.viewport.textContent).toContain("No combat events yet.");
+        log.setHeight(900); log.setEntries([log.entry(1)]); log.flush();
+        expect(log.viewport.scrollTop).toBe(700);
+        button("Combat").click(); log.flush();
+        expect(log.viewport.scrollTop).toBe(700);
+    });
+
+    it("keeps the overview preview mechanical after visiting Story", () => {
+        const { engine } = mountBattle();
+        useTelekinesis();
+        const state = JSON.stringify(engine.getGameState());
+        const preview = document.querySelector<HTMLButtonElement>('.kcq-compact-game-log')!;
+        const mechanical = preview.textContent;
+        preview.click(); button("Story").click();
+        expect(document.querySelector('.kcq-game-log__story-text')).not.toBeNull();
+        click('.kcq-combat-header__back');
+        expect(document.querySelector('.kcq-compact-game-log')!.textContent).toBe(mechanical);
+        expect(document.querySelector('.kcq-compact-game-log .kcq-game-log__story-text')).toBeNull();
+        expect(JSON.stringify(engine.getGameState())).toBe(state);
+    });
+});

@@ -107,9 +107,11 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     let selectedTargetIds: readonly EntityId[] = [];
     let selectedEscape: Pick<EscapeInfo, "binding" | "target"> | undefined;
     const [logOpen, setLogOpen] = createSignal(false);
+    const [fullLogRequested, setFullLogRequested] = createSignal(false);
     let logTrigger: Element | null = null;
     const closeLog = (): void => {
         setLogOpen(false);
+        setFullLogRequested(false);
         queueMicrotask(() => {
             if (resultModel()) return; // The result panel restores its own View Game Log focus.
             const target = logTrigger instanceof HTMLElement && logTrigger.isConnected
@@ -124,6 +126,12 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             logTrigger = document.activeElement;
             setLogOpen(true);
         }
+    };
+    const openFullLog = (): void => {
+        if (dialogOpen() || playback.active()) return;
+        logTrigger = document.activeElement;
+        setFullLogRequested(true);
+        setLogOpen(true);
     };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
     const [libraryOpen, setLibraryOpen] = createSignal(false);
@@ -407,12 +415,12 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
         if (key === COMBAT_SHORTCUTS.back) return back();
         if (state().turn.phase !== "player" || state().turn.outcome !== "ongoing") return false;
         if (key === COMBAT_SHORTCUTS.endTurn) {
-            if ((logOpen() && !wide()) || (screen().kind !== "overview" && !(nonNarrow() && (characterActorId() || enemyScreen())))) return false;
+            if ((logOpen() && (!wide() || logModal())) || (screen().kind !== "overview" && !(nonNarrow() && (characterActorId() || enemyScreen())))) return false;
 
             endTurn();
             return true;
         }
-        if (logOpen() && !wide()) return false;
+        if (logOpen() && (!wide() || logModal())) return false;
         const current = screen();
         if (current.kind !== "character" && current.kind !== "targeting" && current.kind !== "escape") return false;
         const commandId = key === COMBAT_SHORTCUTS.stance ? "stance" : "escape";
@@ -434,7 +442,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const wide = () => layout().size === "wide";
     const nonNarrow = () => layout().size !== "narrow";
     const logReplacement = () => logOpen() && layout().size === "narrow";
-    const logModal = () => logOpen() && (layout().size === "medium" || (wide() && !!resultModel()));
+    const logModal = () => logOpen() && (layout().size === "medium" || (wide() && (!!resultModel() || fullLogRequested())));
     createEffect(() => {
         if (!logOpen() || !wide() || logModal()) return;
         queueMicrotask(() => {
@@ -478,6 +486,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             get onSettings() { return resultModel() ? undefined : openSettings; },
             get onLibrary() { return resultModel() ? undefined : openLibrary; },
             get onGameLog() { return resultModel() ? openResultLog : toggleLog; },
+            onFullGameLog: openFullLog,
             onEndTurn: endTurn,
         };
         return <Switch fallback={<BattleOverviewPanel {...overview} />}>
@@ -629,7 +638,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     </button>} />,
                 gameLog: () => <CompactGameLog entries={logEntries()} presentation={props.presentation}
                     party={state().characters.map(character => character.id)} lines={overviewGameLog.value}
-                    scrollable={wide()} headingAction={!wide()} onOpen={toggleLog} />,
+                    scrollable={wide()} headingAction={!wide()} onOpen={toggleLog} onOpenFull={openFullLog} />,
             }} />;
     };
 
@@ -659,7 +668,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 onClick={event => { if (logModal() && event.target === host) closeLog(); }}
                 onKeyDown={event => {
                     if (!logModal() || event.key !== "Tab") return;
-                    const controls = host.querySelectorAll<HTMLElement>('button:not(:disabled), [tabindex="0"]');
+                    const controls = host.querySelectorAll<HTMLElement>('button:not(:disabled):not([tabindex="-1"]), [tabindex="0"]');
                     const first = controls[0], last = controls[controls.length - 1];
                     if (event.shiftKey && document.activeElement === first) {
                         event.preventDefault(); last?.focus();

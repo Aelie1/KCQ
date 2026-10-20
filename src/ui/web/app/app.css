@@ -711,6 +711,10 @@ button {
     cursor: pointer;
 }
 
+.kcq-game-log-heading-action--full {
+    margin-left: auto;
+}
+
 .kcq-status-chip {
     display: inline-flex;
     flex: 0 0 auto;
@@ -1691,6 +1695,34 @@ button {
     background: var(--kcq-surface-card);
     font-size: 0.7rem;
     line-height: 1.5;
+}
+
+.kcq-game-log__tabs {
+    display: flex;
+    gap: 6px;
+    padding: 0 12px 8px;
+}
+
+.kcq-game-log__tabs button {
+    flex: 1;
+    min-width: 0;
+}
+
+.kcq-game-log__tabs [aria-selected="true"] {
+    border-color: var(--kcq-structure-border);
+    background: var(--kcq-surface-card);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+
+.kcq-game-log__story-text {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+.kcq-game-log__story-text + .kcq-game-log__story-text {
+    margin-top: 4px;
 }
 
 .kcq-game-log__entry {

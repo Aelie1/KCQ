@@ -2,6 +2,7 @@ import type { BindingEndpoint, BuffOutcome, BuffParticipant, GameLogPresentation
 import type { Presentation } from "../../../presentation/presentation";
 import { playerTone, type PlayerTone } from "./linkedEntities";
 import { formatSignedNumber } from "./presentationHelpers";
+import { formatGameLogTargets } from "./gameLogTargets";
 
 export interface GameLogText {
     text: string;
@@ -58,20 +59,8 @@ export function createGameLogViewModel(
     };
     const name = (id: string): GameLogText => ({ text: p.entity(id), tone: "entity-" + playerTone(id) });
     let enemies: readonly string[] = [];
-    const targets = (ids: string[], linked = false, collapseSide = true): GameLogValue => {
-        if (collapseSide && !linked && ids.length > 1) {
-            const side = [
-                { ids: party, label: "gameLog.allies" },
-                { ids: enemies, label: "gameLog.enemies" },
-            ].find(side => ids.length === side.ids.length && side.ids.every(id => ids.includes(id)));
-            if (side) {
-                const text = p.ui(side.label);
-                return { text, parts: [{ text, tone: "muted" }] };
-            }
-        }
-        return ids.map(id => ({ ...name(id), parts: [name(id)] })).reduce<GameLogValue>((first, second) =>
-            first.text ? phrase(linked ? "gameLog.linkedTargets" : "gameLog.targetList", { first, second }) : second, { text: "" });
-    };
+    const targets = (ids: string[], linked = false, collapseSide = true): GameLogValue =>
+        formatGameLogTargets(ids, p, party, enemies, linked, collapseSide);
     const buffOperation = ({ initial, final }: BuffParticipant) => !initial.present && final.present ? "added"
         : initial.present && !final.present ? "removed"
             : initial.details?.severity === final.details?.severity
