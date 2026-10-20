@@ -75,7 +75,7 @@ const outcome: Check = variant("kind", {
 const outcomes = list(outcome);
 const loadEntry = { id: text, success: boolean, outcomes };
 const entry = variant("kind", {
-    move: { actor: text, move: text, outcomes }, escape: { actor: text, target: text, outcomes },
+    move: { actor: text, move: text, outcomes, livingEnemies: optional(list(text)) }, escape: { actor: text, target: text, outcomes },
     phase: { phase, round: optional(integer), outcomes }, stance: { changes: list(stanceOutcome), outcomes },
     encounter: loadEntry, character: loadEntry,
 });
@@ -84,7 +84,8 @@ const context = shape({
         id: text, standing: boolean, data: record(number), buffs: list(buff),
         bindings: list(shape({ id: text, value: number, level: optional(level) }))
     })),
-    enemies: list(shape({ id: text, buffs: list(buff) })), traps: list(trap), turn: shape({ round: integer }),
+    enemies: list(shape({ id: text, buffs: list(buff) })), livingEnemies: optional(list(text)),
+    traps: list(trap), turn: shape({ round: integer }),
 });
 
 const targetAmount = { target: text, amount: number };

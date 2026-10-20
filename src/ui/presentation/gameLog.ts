@@ -67,7 +67,7 @@ export type LogOutcome = BindingTickOutcome | ResourceOutcome | DamageOutcome | 
     | { kind: "bonus"; target: EntityId; amount: number };
 
 export type GameLogPresentationEntry =
-    | { kind: "move"; actor: EntityId; move: MoveId; outcomes: LogOutcome[] }
+    | { kind: "move"; actor: EntityId; move: MoveId; outcomes: LogOutcome[]; livingEnemies?: EntityId[] }
     | { kind: "escape"; actor: EntityId; target: EntityId; outcomes: LogOutcome[] }
     | { kind: "phase"; phase: Phase; round?: number; outcomes: LogOutcome[] }
     | { kind: "stance"; changes: StanceOutcome[]; outcomes: LogOutcome[] }
@@ -78,10 +78,16 @@ export interface GameLogContext {
     characters: (Pick<Character, "id" | "standing" | "data" | "buffs"> & {
         bindings: { id: BindingId; value: number; level?: BindingLevel }[];
     })[];
-    enemies: { id: EntityId; buffs: Buff[] }[];
+    enemies: { id: EntityId; buffs: Buff[]; currHp?: number }[];
+    /** Complete roster survives effect-specific context filtering. Absent in older saves. */
+    livingEnemies?: EntityId[];
     traps: { id: TrapId; amount: number }[];
     turn: { round: number };
 }
+
+const livingEnemyIds = (state?: GameLogContext): EntityId[] | undefined => state?.livingEnemies
+    ?? (state?.enemies.every(enemy => enemy.currHp !== undefined)
+        ? state.enemies.filter(enemy => enemy.currHp! > 0).map(enemy => enemy.id) : undefined);
 
 export function gameLogContext(state: GameLogContext, event?: GameEvent): GameLogContext {
     const effects = event ? [...(event.type === "useMove" ? event.targets.flatMap(target => target.effects) : []), ...event.effects] : [];
@@ -98,6 +104,7 @@ export function gameLogContext(state: GameLogContext, event?: GameEvent): GameLo
                 .map(({ id, value, level }) => ({ id, value, level })),
         })),
         enemies: state.enemies.filter(relevant).map(({ id, buffs: payloads }) => ({ id, buffs: payloads.filter(buff => !event || buffs.has(buff.id)) })),
+        livingEnemies: livingEnemyIds(state),
         traps: state.traps.filter(trap => !event || effects.some(effect => "trap" in effect && effect.trap === trap.id)).map(({ id, amount }) => ({ id, amount })),
         turn: { round: state.turn.round },
     });
@@ -578,9 +585,15 @@ function delayedBuffPayloads(input: readonly (GameEvent | EventFrame)[]): Record
 }
 
 /** Preserve top-level event boundaries after semantic outcome aggregation. */
-export function gameLogEntry(event: GameEvent, outcomes: LogOutcome[], round?: number): GameLogPresentationEntry | undefined {
+export function gameLogEntry(event: GameEvent, outcomes: LogOutcome[], round?: number, before?: GameLogContext): GameLogPresentationEntry | undefined {
     switch (event.type) {
-        case "useMove": return { kind: "move", actor: event.actor, move: event.move, outcomes };
+        case "useMove": {
+            const livingEnemies = livingEnemyIds(before);
+            return {
+                kind: "move", actor: event.actor, move: event.move, outcomes,
+                ...(livingEnemies?.length ? { livingEnemies: [...livingEnemies] } : {}),
+            };
+        }
         case "useEscape": return { kind: "escape", actor: event.actor, target: event.target, outcomes };
         case "changePhase": return { kind: "phase", phase: event.phase, round, outcomes };
         case "changeStance": return {
@@ -630,7 +643,7 @@ export function createGameLogEntries(
             }
         } else {
             flushStance();
-            const entry = gameLogEntry(event, outcomes, after?.turn.round);
+            const entry = gameLogEntry(event, outcomes, after?.turn.round, before);
             if (entry) entries.push(entry);
         }
         before = after;

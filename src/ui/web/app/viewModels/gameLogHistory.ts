@@ -1,7 +1,7 @@
 import type { Buff, EventFrame, GameEvent, GameState } from "../../../../engine/public/types";
 import {
     aggregateGameLogOutcomes, gameLogContext, gameLogEntry,
-    type GameLogContext, type GameLogPresentationEntry,
+    type GameLogContext, type GameLogPresentationEntry, type LogOutcome,
 } from "../../../presentation/gameLog";
 
 interface BuffReference { target: string; buff: string }
@@ -38,6 +38,31 @@ export function createGameLogHistory(initialState: GameState, saved?: GameLogSav
         entries: [], previous: gameLogContext(initialState), mergingStance: false, pendingBuffs: [],
     };
 
+    if (saved) {
+        // Older logs have no roster metadata. Recover each action's roster by
+        // walking recorded spawns/defeats backward from the restored battle.
+        const living = new Set(initialState.enemies.filter(enemy => enemy.currHp > 0).map(enemy => enemy.id));
+        history.previous.livingEnemies ??= [...living];
+        const undo = (outcomes: readonly LogOutcome[]) => {
+            for (const outcome of [...outcomes].reverse()) {
+                if (outcome.kind === "bindingTick") undo(outcome.outcomes);
+                if (outcome.kind === "enemy") {
+                    if (outcome.operation === "defeated") living.add(outcome.target);
+                    else living.delete(outcome.target);
+                }
+            }
+        };
+        const pendingByIndex = new Map(history.pendingBuffs.map(pending => [pending.index, pending]));
+        for (let index = history.entries.length - 1; index >= 0; index--) {
+            const entry = history.entries[index]!;
+            const pending = pendingByIndex.get(index);
+            if (pending) pending.after.livingEnemies ??= [...living];
+            undo(entry.outcomes);
+            if (entry.kind === "move" && living.size) entry.livingEnemies ??= [...living];
+            if (pending) pending.before.livingEnemies ??= [...living];
+        }
+    }
+
     const finishStance = () => {
         const last = history.entries.at(-1);
         if (history.mergingStance && last?.kind === "stance") {
@@ -70,7 +95,7 @@ export function createGameLogHistory(initialState: GameState, saved?: GameLogSav
                         recorded.get(target)!.set(buff.id, buff);
                     }
                     history.entries[pending.index] = gameLogEntry(pending.event,
-                        aggregateGameLogOutcomes(pending.event, pending.before, pending.after, recorded), pending.after.turn.round)!;
+                        aggregateGameLogOutcomes(pending.event, pending.before, pending.after, recorded), pending.after.turn.round, pending.before)!;
                 }
                 history.pendingBuffs = history.pendingBuffs.filter(pending => pending.waiting.length > 0);
 
@@ -88,7 +113,7 @@ export function createGameLogHistory(initialState: GameState, saved?: GameLogSav
                     }
                 } else {
                     finishStance();
-                    const entry = gameLogEntry(event, outcomes, after.turn.round);
+                    const entry = gameLogEntry(event, outcomes, after.turn.round, history.previous);
                     if (entry) {
                         const index = history.entries.push(entry) - 1;
                         const waiting = changed.filter((ref, index) => !changed.slice(0, index).some(other => sameBuff(ref, other))

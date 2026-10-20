@@ -106,6 +106,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.gameLog.to": "To {value}",
     "ui.gameLog.bindingEndpoint": "{value} ({level})",
     "ui.gameLog.allies": "All Allies",
+    "ui.gameLog.enemies": "All Enemies",
     "ui.gameLog.targetList": "{first}, {second}",
     "ui.gameLog.buffOutcome": "{buff} {operation}",
     "ui.gameLog.bindingOutcome": "{binding} {value}",

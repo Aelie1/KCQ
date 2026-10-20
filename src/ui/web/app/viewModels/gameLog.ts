@@ -57,9 +57,17 @@ export function createGameLogViewModel(
         return { text: parts.map(part => part.text).join(""), parts };
     };
     const name = (id: string): GameLogText => ({ text: p.entity(id), tone: "entity-" + playerTone(id) });
-    const targets = (ids: string[], linked = false, collapseParty = true): GameLogValue => {
-        if (collapseParty && !linked && ids.length > 1 && party.length > 0 && ids.length === party.length && party.every(id => ids.includes(id))) {
-            return { text: p.ui("gameLog.allies"), parts: [{ text: p.ui("gameLog.allies"), tone: "muted" }] };
+    let enemies: readonly string[] = [];
+    const targets = (ids: string[], linked = false, collapseSide = true): GameLogValue => {
+        if (collapseSide && !linked && ids.length > 1) {
+            const side = [
+                { ids: party, label: "gameLog.allies" },
+                { ids: enemies, label: "gameLog.enemies" },
+            ].find(side => ids.length === side.ids.length && side.ids.every(id => ids.includes(id)));
+            if (side) {
+                const text = p.ui(side.label);
+                return { text, parts: [{ text, tone: "muted" }] };
+            }
         }
         return ids.map(id => ({ ...name(id), parts: [name(id)] })).reduce<GameLogValue>((first, second) =>
             first.text ? phrase(linked ? "gameLog.linkedTargets" : "gameLog.targetList", { first, second }) : second, { text: "" });
@@ -397,6 +405,7 @@ export function createGameLogViewModel(
         return rendered;
     };
     return entries.map(entry => {
+        enemies = entry.kind === "move" ? entry.livingEnemies ?? [] : [];
         const model: GameLogViewModelEntry = { kind: entry.kind, rows: renderOutcomes(entry.outcomes, entry.kind === "move" ? entry.actor : undefined) };
         switch (entry.kind) {
             case "move":
