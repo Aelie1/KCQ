@@ -6778,7 +6778,6 @@ button {
 
 .kcq-outcome__overlay:is([data-kcq-layout="medium"], [data-kcq-layout="wide"]) .kcq-victory-story__narrative {
     width: 100%;
-    max-width: 66ch;
     font-size: 13px;
     align-self: center;
     padding: 8px;
