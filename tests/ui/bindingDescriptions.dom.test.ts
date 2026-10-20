@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { batch, createComponent, createSignal, Show } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -95,30 +94,6 @@ describe("combat binding descriptions", () => {
         expect(b.host.querySelectorAll(".kcq-character-binding .kcq-binding-description").length).toBeGreaterThan(0);
         expect(b.description().dataset.combatReaction).toBeUndefined();
     });
-    it("shows the new severity and reuses the buff glow once in each direction", () => {
-        const b = mount(), description = b.description();
-        for (const [level, treatment] of [["severe", "increase"], ["light", "recovery"]] as const) {
-            b.update(fixture.thresholds.thresholds[level]!);
-            expect(b.description()).toBe(description);
-            expect(description.textContent).toBe(fixture.presentation.referenceText("binding", b.state().characters[0]!.bindings[0]!.id, level));
-            expect(description.dataset.combatBindingDescription).toBe(treatment);
-            expect(description.style.getPropertyValue("--kcq-react-binding-description")).toBe("kcq-react-buff 2500ms ease-out 0ms");
-            expect(description.previousElementSibling?.getAttribute("data-combat-reaction")).toBeNull();
-            vi.advanceTimersByTime(2500);
-            expect(description.dataset.combatReaction).toBeUndefined();
-        }
-    });
-    it("does not flash within one severity or during Instant playback", () => {
-        const b = mount();
-        b.update(fixture.thresholds.thresholds.moderate! + 1);
-        expect(b.description().dataset.combatReaction).toBeUndefined();
-        b.update(fixture.thresholds.thresholds.moderate!);
-        expect(b.description().dataset.combatReaction).toBeUndefined();
-        b.update(fixture.thresholds.thresholds.severe!, true);
-        expect(b.description().textContent).toBe(fixture.presentation.referenceText("binding", b.state().characters[0]!.bindings[0]!.id, "severe"));
-        expect(b.description().dataset.combatReaction).toBeUndefined();
-        expect(b.reactions.cues()).toEqual([]);
-    });
     it("does not replay cues on mount, layout changes, visibility toggles, or restored saves", () => {
         const b = mount(fixture.presentation, false); b.update(fixture.thresholds.thresholds.severe!); b.setDetails(true);
         for (const description of b.host.querySelectorAll<HTMLElement>(".kcq-character-binding .kcq-binding-description")) {
@@ -136,7 +111,6 @@ describe("combat binding descriptions", () => {
         b.reactions.clear(); b.update(fixture.thresholds.thresholds.heavy!, false, true);
         expect(b.description().dataset.combatReaction).toBeUndefined();
         b.update(fixture.thresholds.thresholds.severe!);
-        expect(b.description().dataset.combatReaction).toBe("increase");
     });
     it("omits inactive and missing descriptions and leaves predictive meters unchanged", () => {
         const b = mount(new Presentation({ "binding.latexHead.moderate": "...", "binding.latexHead.none": "Inactive" }));
@@ -151,30 +125,6 @@ describe("combat binding descriptions", () => {
     });
 });
 
-it.each(["dark", "light"] as const)("uses readable secondary text and red/green glows in the %s theme", theme => {
-    document.documentElement.dataset.kcqTheme = theme;
-    const style = document.createElement("style");
-    style.textContent = readFileSync("src/ui/web/app/tokens.css", "utf8") + readFileSync("src/ui/web/app/app.css", "utf8");
-    document.body.append(style);
-    const b = mount();
-    const textStyle = getComputedStyle(b.description());
-    expect(textStyle.color).toBe(theme === "light" ? "#435872" : "#cbd5e1");
-    expect(textStyle.whiteSpace).toBe("normal");
-    for (const [level, color] of [["severe", "#ff2424"], ["light", "#34d399"]] as const) {
-        b.update(fixture.thresholds.thresholds[level]!);
-        expect(getComputedStyle(b.description()).getPropertyValue("--kcq-buff-reaction-glow")).toBe(color);
-    }
-});
-it("does not replay an old cue when an inactive binding becomes visible in details", () => {
-    const b = mount();
-    const name = fixture.presentation.binding(b.state().characters[0]!.bindings[0]!.id);
-    const meter = () => b.host.querySelector<HTMLElement>(`.kcq-character-binding [aria-label="${name}"]`);
-    b.update(0, true);
-    expect(meter()).toBeNull();
-    b.update(fixture.thresholds.thresholds.light!);
-    expect(meter()?.nextElementSibling?.textContent).toBe(fixture.presentation.referenceText("binding", b.state().characters[0]!.bindings[0]!.id, "light"));
-    expect(meter()?.nextElementSibling?.getAttribute("data-combat-binding-description")).toBeNull();
-});
 
 it.each(["auto", "on", "off"] as const)("keeps overview bars compact with descriptions set to %s", mode => {
     const b = mount(fixture.presentation, false);

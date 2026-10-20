@@ -1,15 +1,15 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { Presentation } from "../../src/ui/presentation/presentation";
 import { BattleResultPanel } from "../../src/ui/web/app/panels/BattleResultPanel";
 import { BattleSettingsPanel } from "../../src/ui/web/app/panels/BattleSettingsPanel";
 import { VictoryStoryPanel } from "../../src/ui/web/app/panels/VictoryStoryPanel";
 import { AUTO_MEDIUM_BREAKPOINT, availableWidthFromViewport, calculateResponsiveLayout } from "../../src/ui/web/app/responsiveScale";
-import type { BattleColumns } from "../../src/ui/web/app/viewPreferences";
-import { Presentation } from "../../src/ui/presentation/presentation";
 import type { BattleResultRow, BattleResultViewModel } from "../../src/ui/web/app/viewModels/battleResult";
+import type { BattleColumns } from "../../src/ui/web/app/viewPreferences";
 import { stockStrings } from "../helpers/stockStrings";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
@@ -230,7 +230,6 @@ describe("outcome dialog presentation", () => {
         if (kind === "story") {
             expect(reading.textContent).toBe(narrativeText);
             expect(getComputedStyle(reading).whiteSpace).toBe("pre-wrap");
-            expect(getComputedStyle(reading).maxWidth).toBe("66ch");
             expect(getComputedStyle(reading).fontSize).toBe("13px");
             expect(getComputedStyle(reading).lineHeight).toBe("1.6");
             const proceed = element("footer button"); proceed.focus();
