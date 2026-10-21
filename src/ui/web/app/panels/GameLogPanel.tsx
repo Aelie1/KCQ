@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, createUniqueId, For, onCleanup, onMount, Show, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { GameState } from "../../../../engine/public/types";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
@@ -10,6 +10,7 @@ import { createGameLogViewModel } from "../viewModels/gameLog";
 import { GameLogEntry } from "../components/GameLogEntry";
 import { StoryLogEntry } from "../components/StoryLogEntry";
 import { createStoryLogViewModel } from "../viewModels/storyLog";
+import { GameLogTabs, type GameLogMode } from "../components/GameLogTabs";
 
 export interface GameLogPanelProps {
     entries: readonly GameLogPresentationEntry[];
@@ -18,12 +19,14 @@ export interface GameLogPanelProps {
     onBack?: () => void;
     showBack?: boolean;
     focusBackOnMount?: boolean;
+    mode?: GameLogMode;
+    onModeChange?: (mode: GameLogMode) => void;
 }
 
 export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     const header = createMemo(() => createCombatHeaderViewModel(props.state, props.presentation));
     const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation, props.state.characters.map(character => character.id)));
-    const [tab, setTab] = createSignal<"combat" | "story">("combat");
+    const [tab, setTab] = createSignal<GameLogMode>(props.mode ?? "combat");
     const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation) : []);
     const id = createUniqueId();
     const positions = { combat: { top: 0, following: true }, story: { top: 0, following: true } };
@@ -51,15 +54,17 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
             restoreTop = undefined;
         }
     };
-    const selectTab = (next: "combat" | "story") => {
+    const selectTab = (next: GameLogMode) => {
         if (next === tab()) return;
         positions[tab()] = { top: viewport?.scrollTop ?? 0, following };
         following = positions[next].following;
         restoreTop = positions[next].top;
         setTab(next);
+        props.onModeChange?.(next);
         if (viewport) viewport.scrollTop = following ? Math.max(0, viewport.scrollHeight - viewport.clientHeight) : positions[next].top;
         scheduleFollow();
     };
+    createEffect(on(() => props.mode, mode => { if (mode !== undefined) selectTab(mode); }));
     onMount(() => {
         // ScreenLayout's middle row owns scrolling; the log div is its content.
         viewport = content.closest<HTMLElement>(".kcq-screen-layout__body")!;
@@ -107,20 +112,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
                         backShortcut={COMBAT_SHORTCUTS.back}
                         onBack={props.onBack}
                     />
-                    <div class="kcq-game-log__tabs" role="tablist" aria-label={props.presentation.ui("gameLog.tabs")}>
-                        <For each={["combat", "story"] as const}>{item => (
-                            <button type="button" role="tab" id={`${id}-${item}`} aria-controls={`${id}-panel`}
-                                aria-selected={tab() === item} tabIndex={tab() === item ? 0 : -1}
-                                onClick={() => selectTab(item)} onKeyDown={event => {
-                                    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
-                                    event.preventDefault();
-                                    event.stopPropagation();
-                                    const next = event.key === "Home" ? "combat" : event.key === "End" ? "story" : item === "combat" ? "story" : "combat";
-                                    selectTab(next);
-                                    document.getElementById(`${id}-${next}`)?.focus({ preventScroll: true });
-                                }}>{props.presentation.ui(`gameLog.${item}`)}</button>
-                        )}</For>
-                    </div>
+                    <GameLogTabs id={id} mode={tab()} onSelect={selectTab} presentation={props.presentation} />
                 </>
             }
             body={

@@ -10,6 +10,7 @@ import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import { CombatHeader } from "../components/CombatHeader";
 import { CompactGameLog } from "../components/CompactGameLog";
+import type { GameLogMode } from "../components/GameLogTabs";
 import { EnemyCard } from "../components/EnemyCard";
 import { PartyCard } from "../components/PartyCard";
 import { ScreenLayout } from "../components/ScreenLayout";
@@ -48,7 +49,8 @@ export interface BattleOverviewPanelProps {
     onLibrary?: () => void;
     onEndTurn?: () => void;
     onGameLog?: () => void;
-    onFullGameLog?: () => void;
+    gameLogMode?: GameLogMode;
+    onGameLogModeChange?: (mode: GameLogMode) => void;
     onSelectEnemy?: (id: EntityId) => void;
     onSelectCharacter?: (id: EntityId) => void;
 }
@@ -104,7 +106,8 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                         party={props.state.characters.map(character => character.id)}
                         headingAction={props.gameLogHeadingAction}
                         scrollable={props.gameLogScrollable}
-                        lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog} onOpenFull={props.onFullGameLog} />
+                        lines={props.gameLogLines ?? DEFAULT_OVERVIEW_GAME_LOG_LINES} onOpen={props.onGameLog}
+                        mode={props.gameLogMode} onModeChange={props.onGameLogModeChange} />
                 </Show>
                 <Show when={visible("enemies") && props.enemyDetails}>{details => details()}</Show>
                 <Show when={visible("enemies") && !props.enemyDetails}>

@@ -1,6 +1,6 @@
 import type { GameLogViewModelEntry } from "./gameLog";
 
-export function latestGameLogActionIndex(entries: readonly GameLogViewModelEntry[]): number {
+export function latestGameLogActionIndex(entries: readonly Pick<GameLogViewModelEntry, "kind">[]): number {
     for (let index = entries.length - 1; index >= 0; index--) {
         if (entries[index]!.kind !== "phase") return index;
     }

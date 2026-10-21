@@ -159,7 +159,7 @@ describe("battle settings interactions", () => {
         expect(document.activeElement).toBe(button("Resume"));
         // DOM emulators allow programmatic clicks on inert content; also check the action guard.
         button("End Turn").click();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         const character = document.querySelector<HTMLElement>(".kcq-party-card")!;
         expect(character).not.toBeNull();
         character.click();

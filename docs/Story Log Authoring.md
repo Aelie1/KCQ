@@ -1,8 +1,8 @@
 # Story Log authoring
 
-The full Game Log opens on **Combat**. **Story** presents the same semantic history as localized prose. Tabs remember their own scroll position and whether they follow new events while the panel stays open. The battle overview preview remains mechanical.
+The Game Log starts on **Combat**. **Story** presents the same semantic history as localized prose. The selected presentation is shared between the overview and full log and survives layout changes. Full and Wide logs remember each tab's scroll position and whether it follows new events while mounted.
 
-Narrow uses the existing log subscreen and Medium uses its existing dialog. Wide keeps its mechanical overview history and keyboard focus shortcut; its **Open full Game Log** heading control opens the tabbed dialog. Completed battle results also open the tabbed log in every layout.
+Every overview has compact **Game Log** and **Story Log** tabs. Clicking a name switches the displayed log. In Narrow and Medium, clicking the preview body opens the selected log in the existing full subscreen or dialog. Wide switches its scrollable history in place, with the existing keyboard shortcut focusing that history. The full log uses the same compact text-tab styling. Completed battle results also open the tabbed log in every layout.
 
 ## Adding move prose
 

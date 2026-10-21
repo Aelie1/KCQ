@@ -164,7 +164,7 @@ describe("live graphical Game Log history", () => {
         slider.value = "0"; slider.dispatchEvent(new Event("input", { bubbles: true }));
         expect(document.querySelector(".kcq-compact-game-log")).toBeNull();
         button("Resume").click();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(document.querySelector(".kcq-game-log__scroll")!.textContent).toContain("Telekinesis");
         click(".kcq-combat-header__back");
         click(".kcq-combat-header__settings");
@@ -181,29 +181,29 @@ describe("live graphical Game Log history", () => {
         const { engine } = mountBattle();
         const initial = engine.getGameState();
         const execute = vi.spyOn(engine, "executeAction");
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(logEntries()).toHaveLength(0);
         expect(document.querySelector(".kcq-game-log__empty")?.textContent).toBe("No combat events yet.");
         click(".kcq-combat-header__back");
         useTelekinesis();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expectHistory(execute.mock.results.map(result => result.value), initial);
         expect(logEntries()).toHaveLength(1);
         const firstHTML = document.querySelector(".kcq-game-log__scroll")!.innerHTML;
         click(".kcq-combat-header__back");
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(document.querySelector(".kcq-game-log__scroll")!.innerHTML).toBe(firstHTML);
         expect(execute).toHaveBeenCalledTimes(1);
         click(".kcq-combat-header__back");
         button("End Turn").click();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expectHistory(execute.mock.results.map(result => result.value), initial);
         expect(logEntries().filter(entry => entry.dataset.actor?.startsWith("skunkette"))).not.toHaveLength(0);
         expect(logEntries().filter(entry => entry.dataset.kind === "phase")).toHaveLength(2);
         expect(document.querySelector('.kcq-game-log__entry[data-actor="ko"] .kcq-game-log__title')?.textContent).toBe("Telekinesis");
         click(".kcq-combat-header__back");
         button("End Turn").click();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expectHistory(execute.mock.results.map(result => result.value), initial);
         expect(execute).toHaveBeenCalledTimes(3);
     });
@@ -212,7 +212,7 @@ describe("live graphical Game Log history", () => {
         const { engine, prepareBattle } = mountBattle();
         const execute = vi.spyOn(engine, "executeAction");
         useTelekinesis();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         const count = logEntries().length;
         expect(document.querySelector(".kcq-game-log__scroll")?.textContent).toContain("Telekinesis");
         click(".kcq-combat-header__back");
@@ -221,7 +221,7 @@ describe("live graphical Game Log history", () => {
         select.value = "test";
         select.dispatchEvent(new Event("change", { bubbles: true }));
         button("Resume").click();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(logEntries()).toHaveLength(count);
         expect(document.querySelector(".kcq-game-log__scroll")?.textContent).toContain("Translated move");
         expect(document.querySelector(".kcq-game-log__scroll")?.textContent).toContain("Translated actor");
@@ -234,18 +234,18 @@ describe("live graphical Game Log history", () => {
         const { engine, sessions, prepareBattle } = mountBattle();
         useTelekinesis();
         button("End Turn").click();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(logEntries().length).toBeGreaterThan(1);
         click(".kcq-combat-header__back");
         click(".kcq-combat-header__settings");
         button("Retry Battle").click();
         expect(sessions[0]!.dispose).toHaveBeenCalledOnce();
         expect(sessions[1]!.engine).not.toBe(engine);
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(logEntries()).toHaveLength(0);
         click(".kcq-combat-header__back");
         button("End Turn").click();
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(logEntries().length).toBeGreaterThan(0);
         expect(document.querySelector('.kcq-game-log__entry[data-actor="ko"]')).toBeNull();
         click(".kcq-combat-header__back");
@@ -254,7 +254,7 @@ describe("live graphical Game Log history", () => {
         expect(sessions[1]!.dispose).toHaveBeenCalledOnce();
         document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
         chooseEncounter("plains_2");
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(logEntries()).toHaveLength(0);
         expect(sessions[2]!.engine.getGameState().encounter?.id).toBe("plains_2");
         expect(prepareBattle).toHaveBeenCalledTimes(3);
@@ -270,7 +270,7 @@ describe("live graphical Game Log history", () => {
         cards[1]!.click();
         click('.kcq-command-card[aria-label="Change Stance"]');
         click(".kcq-combat-header__back");
-        button("Game Log").click();
+        document.querySelector<HTMLButtonElement>(".kcq-battle-overview__secondary-action")!.click();
         expect(execute).toHaveBeenCalledTimes(2);
         expect(logEntries()).toHaveLength(1);
         expect(logEntries()[0]!.dataset.kind).toBe("stance");
@@ -581,7 +581,7 @@ describe("Combat and Story tabs", () => {
         expect(log.viewport.scrollTop).toBe(700);
     });
 
-    it("keeps the overview preview mechanical after visiting Story", () => {
+    it("keeps the selected Story presentation when returning to the overview", () => {
         const { engine } = mountBattle();
         useTelekinesis();
         const state = JSON.stringify(engine.getGameState());
@@ -590,8 +590,8 @@ describe("Combat and Story tabs", () => {
         preview.click(); button("Story").click();
         expect(document.querySelector('.kcq-game-log__story-text')).not.toBeNull();
         click('.kcq-combat-header__back');
-        expect(document.querySelector('.kcq-compact-game-log')!.textContent).toBe(mechanical);
-        expect(document.querySelector('.kcq-compact-game-log .kcq-game-log__story-text')).toBeNull();
+        expect(document.querySelector('.kcq-compact-game-log')!.textContent).not.toBe(mechanical);
+        expect(document.querySelector('.kcq-compact-game-log .kcq-game-log__story-text')).not.toBeNull();
         expect(JSON.stringify(engine.getGameState())).toBe(state);
     });
 });

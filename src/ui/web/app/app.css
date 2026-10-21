@@ -696,23 +696,37 @@ button {
     flex-shrink: 0;
 }
 
-.kcq-battle-section__heading:has(.kcq-game-log-heading-action) {
+.kcq-overview-game-log-tabs {
+    gap: 16px;
     overflow: visible;
 }
 
-.kcq-game-log-heading-action {
+.kcq-overview-game-log-tabs h2 {
+    flex: 0 0 auto;
+}
+
+.kcq-log-tab {
     padding: 0;
     border: 0;
+    border-radius: 0;
     background: transparent;
-    color: inherit;
+    color: var(--kcq-text-muted);
     font: inherit;
-    text-transform: inherit;
-    text-decoration: underline;
+    font-weight: 700;
+    text-transform: uppercase;
     cursor: pointer;
 }
 
-.kcq-game-log-heading-action--full {
-    margin-left: auto;
+.kcq-log-tab[aria-selected="true"] {
+    color: var(--kcq-text-primary);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.kcq-overview-game-log-panel {
+    display: flex;
+    flex: 1 1 0;
+    min-height: 0;
 }
 
 .kcq-status-chip {
@@ -1699,21 +1713,10 @@ button {
 
 .kcq-game-log__tabs {
     display: flex;
-    gap: 6px;
-    padding: 0 12px 8px;
-}
-
-.kcq-game-log__tabs button {
-    flex: 1;
-    min-width: 0;
-}
-
-.kcq-game-log__tabs [aria-selected="true"] {
-    border-color: var(--kcq-structure-border);
-    background: var(--kcq-surface-card);
-    font-weight: 700;
-    text-decoration: underline;
-    text-underline-offset: 4px;
+    align-items: center;
+    gap: 16px;
+    padding: 6px 12px 8px;
+    font-size: 10px;
 }
 
 .kcq-game-log__story-text {

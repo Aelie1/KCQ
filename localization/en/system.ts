@@ -104,6 +104,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.gameLog.tabs": "Game Log presentation",
     "ui.gameLog.combat": "Combat",
     "ui.gameLog.story": "Story",
+    "ui.gameLog.storyLog": "Story Log",
     "ui.gameLog.transition": "{initial} → {final}",
     "ui.gameLog.from": "From {value}",
     "ui.gameLog.to": "To {value}",

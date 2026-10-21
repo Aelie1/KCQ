@@ -288,7 +288,7 @@ describe("graphical autosave and Continue", () => {
         expect(app.prepareBattle).not.toHaveBeenCalled();
         expect(restored.getGameState()).toEqual(original.engine.getGameState());
         expect(document.querySelector(".kcq-character-details")).toBeNull();
-        button("Game Log");
+        click(".kcq-battle-overview__secondary-action");
         expect(document.querySelectorAll(".kcq-game-log [data-kind=move]").length).toBeGreaterThan(0);
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
         document.dispatchEvent(new KeyboardEvent("keyup", { key: "Escape", bubbles: true }));
@@ -419,7 +419,7 @@ describe("autosave lifecycle and failures", () => {
         endTurn(); vi.advanceTimersByTime(20000); expect(encoded()).toBe(before);
         expect(warning()).not.toBeNull();
         expect(engine.getGameState().turn.round).toBe(3);
-        button("Game Log");
+        click(".kcq-battle-overview__secondary-action");
         expect(warning()).not.toBeNull();
         document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
         document.dispatchEvent(new KeyboardEvent("keyup", { key: "Escape", bubbles: true }));

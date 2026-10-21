@@ -188,3 +188,63 @@ describe("compact Game Log preview", () => {
         unmount?.(); unmount = undefined; expect(disconnect).toHaveBeenCalledOnce();
     });
 });
+
+describe("inline Wide history tabs", () => {
+    it("switches to localized Story prose in the same viewport and restores the mechanical history", () => {
+        const log = mountPreview([action()], true);
+        const viewport = log.host.querySelector<HTMLElement>('[role="log"]')!;
+        const combat = viewport.innerHTML;
+        const tabs = [...log.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+        expect(tabs.map(tab => tab.textContent)).toEqual(["Game Log", "Story Log"]);
+        tabs[1]!.click();
+        expect(viewport.textContent).toContain("Ko-chan uses Telekinesis.");
+        expect(log.host.querySelector('[role="log"]')).toBe(viewport);
+        expect(tabs[1]!.getAttribute("aria-selected")).toBe("true");
+        expect(log.onOpen).not.toHaveBeenCalled();
+        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.storyLog": "Translated Story", "narrative.event.move": "{actor}: {move}!" }));
+        expect(tabs[1]!.textContent).toBe("Translated Story");
+        expect(viewport.textContent).toContain("Ko-chan: Telekinesis!");
+        log.setLanguage(presentation);
+        tabs[0]!.click();
+        expect(viewport.innerHTML).toBe(combat);
+    });
+
+    it("retains each tab's scrollback and auto-follow, with keyboard tab navigation", () => {
+        const pending = new Map<number, FrameRequestCallback>(); let id = 0;
+        vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++id, callback); return id; });
+        vi.stubGlobal("cancelAnimationFrame", (frame: number) => pending.delete(frame));
+        const flush = () => { for (const [frame, callback] of [...pending]) { pending.delete(frame); callback(0); } };
+        const entries = Array.from({ length: 12 }, () => action());
+        const log = mountPreview(entries, true);
+        const viewport = log.host.querySelector<HTMLElement>('[role="log"]')!;
+        Object.defineProperties(viewport, { scrollHeight: { value: 1000 }, clientHeight: { value: 100 } });
+        const tabs = [...log.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+        const scroll = (top: number) => { viewport.scrollTop = top; viewport.dispatchEvent(new Event("scroll")); };
+        flush(); expect(viewport.scrollTop).toBe(900);
+        scroll(125); tabs[1]!.click(); flush(); expect(viewport.scrollTop).toBe(900);
+        scroll(250); tabs[0]!.click(); flush(); expect(viewport.scrollTop).toBe(125);
+        log.setEntries([...entries, action()]); flush(); expect(viewport.scrollTop).toBe(125);
+        tabs[0]!.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true, cancelable: true }));
+        flush(); expect(document.activeElement).toBe(tabs[1]); expect(viewport.scrollTop).toBe(250);
+        expect(tabs[0]!.tabIndex).toBe(-1);
+        const panel = log.host.querySelector('[role="tabpanel"]')!;
+        expect(panel.getAttribute("aria-labelledby")).toBe(tabs[1]!.id);
+        expect(tabs[1]!.getAttribute("aria-controls")).toBe(panel.id);
+        scroll(900); log.setEntries([...entries, action(), action()]); flush(); expect(viewport.scrollTop).toBe(900);
+    });
+});
+
+describe("cropped preview tabs", () => {
+    it("switches prose without opening history and opens it only from the log body", () => {
+        const log = mountPreview([action()]);
+        const tabs = [...log.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+        tabs[1]!.click();
+        const body = log.host.querySelector<HTMLButtonElement>('.kcq-compact-game-log')!;
+        expect(body.textContent).toContain('Ko-chan uses Telekinesis.');
+        expect(body.querySelector('.kcq-game-log__story-text')).not.toBeNull();
+        expect(log.onOpen).not.toHaveBeenCalled();
+        body.click(); expect(log.onOpen).toHaveBeenCalledOnce();
+        tabs[0]!.click(); expect(body.querySelector('.kcq-game-log__story-text')).toBeNull();
+        expect(body.textContent).toContain('Telekinesis');
+    });
+});

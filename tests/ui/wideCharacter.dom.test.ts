@@ -117,7 +117,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow character work
                 expect(host.querySelector(".kcq-character-commands h2")).toBeNull();
                 const logHeading = element(".kcq-battle-section--game-log .kcq-battle-section__heading");
                 expect(logHeading.querySelector("[data-kcq-shortcut]")).toBeNull();
-                expect(logHeading.querySelector(".kcq-game-log-heading-action--full")).not.toBeNull();
+                expect(logHeading.querySelector('[role="tablist"] [role="tab"]')).not.toBeNull();
                 logHeading.click();
                 expect(host.querySelector(".kcq-game-log")).toBeNull();
                 expect(element(".kcq-combat-header__trap-meter").getAttribute("role")).toBe("meter");
@@ -275,8 +275,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow character work
         expect(element(".kcq-library")).toBeDefined();
         button(".kcq-library__header-back").click();
         expect(element(".kcq-targeting")).toBe(workspace);
-        if (width < AUTO_WIDE_BREAKPOINT) button(".kcq-game-log-heading-action").click();
-        else press(COMBAT_SHORTCUTS.gameLog);
+        press(COMBAT_SHORTCUTS.gameLog);
         expect(!!document.querySelector(".kcq-game-log")).toBe(width < AUTO_WIDE_BREAKPOINT);
         if (width >= AUTO_WIDE_BREAKPOINT) expect(gameLog()).toBe(log);
         press(COMBAT_SHORTCUTS.back);

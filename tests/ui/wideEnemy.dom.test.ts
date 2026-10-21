@@ -93,9 +93,9 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
         expect(getComputedStyle(heading).height).toBe(getComputedStyle(element(".kcq-battle-section--party .kcq-battle-section__heading")).height);
         expect(getComputedStyle(heading.querySelector("h2")!).textTransform).toBe("uppercase");
         const logHeading = element(".kcq-battle-section--game-log .kcq-battle-section__heading");
-        expect(logHeading.querySelector("h2")!.textContent).toBe(width >= AUTO_WIDE_BREAKPOINT ? "Game Log" : "- Game Log");
-        expect(!!logHeading.querySelector("h2 .kcq-game-log-heading-action")).toBe(width < AUTO_WIDE_BREAKPOINT);
-        expect(!!logHeading.querySelector(".kcq-game-log-heading-action--full")).toBe(width >= AUTO_WIDE_BREAKPOINT);
+        expect(logHeading.querySelector("h2")!.textContent).toBe("Game Log");
+        expect(logHeading.querySelectorAll('[role="tab"]')).toHaveLength(2);
+        expect(logHeading.querySelector('[role="tablist"] [role="tab"]')).not.toBeNull();
         logHeading.click();
         expect(document.querySelector(".kcq-game-log")).toBeNull();
         expect(element(".kcq-enemy-details__identity").textContent).toContain("Skunkette 1");
@@ -172,7 +172,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
             ? element(".kcq-enemy-details .kcq-screen-layout__body")
             : details.closest(".kcq-battle-overview > .kcq-screen-layout__body") as HTMLElement;
         body.scrollTop = 42;
-        if (width < AUTO_WIDE_BREAKPOINT) element(".kcq-game-log-heading-action").click();
+        if (width < AUTO_WIDE_BREAKPOINT) element(".kcq-compact-game-log").click();
         else press("-");
         expect(!!document.querySelector(".kcq-game-log")).toBe(width < AUTO_WIDE_BREAKPOINT);
         if (width < AUTO_WIDE_BREAKPOINT) expect(press("1").defaultPrevented).toBe(false);

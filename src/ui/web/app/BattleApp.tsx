@@ -24,6 +24,7 @@ import { CombatReactionsContext, createCombatReactions } from "./combatReactions
 import { CharacterDetailsLayout } from "./components/CharacterDetailsLayout";
 import { CombatHeader } from "./components/CombatHeader";
 import { CompactGameLog } from "./components/CompactGameLog";
+import type { GameLogMode } from "./components/GameLogTabs";
 import { Shortcut } from "./components/Shortcut";
 import { createEnemyDefeats } from "./enemyDefeats";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
@@ -107,15 +108,15 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     let selectedTargetIds: readonly EntityId[] = [];
     let selectedEscape: Pick<EscapeInfo, "binding" | "target"> | undefined;
     const [logOpen, setLogOpen] = createSignal(false);
-    const [fullLogRequested, setFullLogRequested] = createSignal(false);
+    const [gameLogMode, setGameLogMode] = createSignal<GameLogMode>("combat");
     let logTrigger: Element | null = null;
     const closeLog = (): void => {
         setLogOpen(false);
-        setFullLogRequested(false);
         queueMicrotask(() => {
             if (resultModel()) return; // The result panel restores its own View Game Log focus.
             const target = logTrigger instanceof HTMLElement && logTrigger.isConnected
-                ? logTrigger : stage?.querySelector<HTMLElement>(".kcq-game-log-heading-action, .kcq-compact-game-log");
+                ? logTrigger : stage?.querySelector<HTMLElement>(".kcq-compact-game-log")
+                    ?? stage?.querySelector<HTMLElement>('.kcq-overview-game-log-tabs [aria-selected="true"]');
             if (target && !target.closest("[inert], [hidden]")) target.focus();
         });
     };
@@ -126,12 +127,6 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             logTrigger = document.activeElement;
             setLogOpen(true);
         }
-    };
-    const openFullLog = (): void => {
-        if (dialogOpen() || playback.active()) return;
-        logTrigger = document.activeElement;
-        setFullLogRequested(true);
-        setLogOpen(true);
     };
     const [settingsOpen, setSettingsOpen] = createSignal(false);
     const [libraryOpen, setLibraryOpen] = createSignal(false);
@@ -442,7 +437,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     const wide = () => layout().size === "wide";
     const nonNarrow = () => layout().size !== "narrow";
     const logReplacement = () => logOpen() && layout().size === "narrow";
-    const logModal = () => logOpen() && (layout().size === "medium" || (wide() && (!!resultModel() || fullLogRequested())));
+    const logModal = () => logOpen() && (layout().size === "medium" || (wide() && !!resultModel()));
     createEffect(() => {
         if (!logOpen() || !wide() || logModal()) return;
         queueMicrotask(() => {
@@ -473,6 +468,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             get actions() { return actions(); },
             get gameLogLines() { return logReplacement() ? 0 : overviewGameLog.value; },
             get history() { return logEntries(); },
+            get gameLogMode() { return gameLogMode(); },
+            onGameLogModeChange: setGameLogMode,
             library,
             get presentation() { return props.presentation; },
             get state() { return state(); },
@@ -486,7 +483,6 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             get onSettings() { return resultModel() ? undefined : openSettings; },
             get onLibrary() { return resultModel() ? undefined : openLibrary; },
             get onGameLog() { return resultModel() ? openResultLog : toggleLog; },
-            onFullGameLog: openFullLog,
             onEndTurn: endTurn,
         };
         return <Switch fallback={<BattleOverviewPanel {...overview} />}>
@@ -638,7 +634,8 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     </button>} />,
                 gameLog: () => <CompactGameLog entries={logEntries()} presentation={props.presentation}
                     party={state().characters.map(character => character.id)} lines={overviewGameLog.value}
-                    scrollable={wide()} headingAction={!wide()} onOpen={toggleLog} onOpenFull={openFullLog} />,
+                    scrollable={wide()} headingAction={!wide()} onOpen={toggleLog}
+                    mode={gameLogMode()} onModeChange={setGameLogMode} />,
             }} />;
     };
 
@@ -677,6 +674,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                     }
                 }}>
                 <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back}
+                    mode={gameLogMode()} onModeChange={setGameLogMode}
                     showBack={!logModal()} focusBackOnMount={!logModal()} />
             </div></Portal>;
     };
