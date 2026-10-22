@@ -74,4 +74,20 @@ Other semantic events use the following extensible keys. Edit their translations
 | `bonus` | `target`, `amount` (recorded signed delta) |
 | `encounter.loaded`, `encounter.failed`, `character.loaded`, `character.failed` | `target` (localized name on success, requested ID on failure) |
 
+### Buff prose
+
+Each buff participant tries these keys in order, using the actual buff ID and `added`, `removed`, or `changed` as the operation:
+
+1. `narrative.buff.{buffId}.{operation}.{side}.{severity}` (when side and severity are known).
+2. `narrative.buff.{buffId}.{operation}.{side}` (when side is known).
+3. `narrative.buff.{buffId}.{operation}.{severity}` (when severity is recorded).
+4. `narrative.buff.{buffId}.{operation}`.
+5. `narrative.event.buff.{operation}` (the existing generic translation).
+
+`side` is `characters` or `enemies`, determined from the battle's party roster. These keys apply to every participant on that side; no per-character translations are needed. Callers without a roster skip side-specific keys. Linked participants are looked up separately using their own recorded payloads and side, so the same buff can describe both sides differently.
+
+For example, Pounce additions can define `narrative.buff.pounce.added.1`, `narrative.buff.pounce.added.2`, `narrative.buff.pounce.added.3`, and `narrative.buff.pounce.added.4`. Use `narrative.buff.pounce.added.characters.1` and `narrative.buff.pounce.added.enemies.1` for distinct side-specific prose at severity 1. Side-specific prose takes priority over shared prose, including a shared severity-specific key. Missing, blank/whitespace, and `...` translations fall through. No custom buff keys are required.
+
+Templates receive `{target}` (the localized participant name) and `{buff}` (the localized buff name including known severity). Severity comes from the final recorded buff payload, or the initial payload when the final payload is absent, including removal. Older histories without a recorded severity skip the severity-specific keys.
+
 Buff and stance changes already marked as summarized by an explicit incapacitation/rescue transition are omitted. Binding ticks retain separate activation sentences. No custom move prose is required for any move to appear in Story.

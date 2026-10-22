@@ -30,6 +30,18 @@ function mountPreview(initial = [action()], scrollable = false) {
     return { host, setEntries, setLines, setLanguage, onOpen };
 }
 
+it.each([false, true])("uses side-specific buff prose in Story previews (scrollable: %s)", scrollable => {
+    const log = mountPreview([{ kind: "move", actor: "ko", move: "telekinesis", outcomes: [{ kind: "buff", buff: "pounce", participants: [
+        { target: "ko", initial: { present: false }, final: { present: true, details: { id: "pounce", severity: 2 } } },
+        { target: "skunkette1", initial: { present: false }, final: { present: true, details: { id: "pounce", severity: 2 } } },
+    ] }] }], scrollable);
+    log.setLanguage(new Presentation({ ...stockStrings, "narrative.buff.pounce.added.characters.2": "character: {target}",
+        "narrative.buff.pounce.added.enemies.2": "enemy: {target}" }));
+    log.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1]!.click();
+    expect(log.host.textContent).toContain("character: Ko-chan");
+    expect(log.host.textContent).toContain("enemy: Skunkette 1");
+});
+
 describe("Overview Game Log preference", () => {
     it("defaults to three lines, persists every discrete value and rejects invalid values", () => {
         const preference = createOverviewGameLogPreference();

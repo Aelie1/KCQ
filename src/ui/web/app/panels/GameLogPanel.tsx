@@ -27,7 +27,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     const header = createMemo(() => createCombatHeaderViewModel(props.state, props.presentation));
     const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation, props.state.characters.map(character => character.id)));
     const [tab, setTab] = createSignal<GameLogMode>(props.mode ?? "combat");
-    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation) : []);
+    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation, props.state.characters.map(character => character.id)) : []);
     const id = createUniqueId();
     const positions = { combat: { top: 0, following: true }, story: { top: 0, following: true } };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GameEvent, MoveEvent } from "../../src/engine/public/types";
-import { createGameLogEntries, type GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
+import { createGameLogEntries, type BuffOutcome, type GameLogPresentationEntry } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createGameLogViewModel } from "../../src/ui/web/app/viewModels/gameLog";
 import { createStoryLogViewModel } from "../../src/ui/web/app/viewModels/storyLog";
@@ -48,6 +48,85 @@ describe("Story Log localization", () => {
             ...stockStrings, "entity.ko.name": "K", "entity.matsuko.name": "M",
             "ui.gameLog.targetList": "{second} / {first}", "narrative.generic.hit": "{targets}",
         })).toEqual(["M / K"]);
+    });
+});
+
+describe("Story Log buff localization", () => {
+    const renderBuff = (participants: BuffOutcome["participants"], strings = stockStrings, party?: readonly string[], buff = "pounce") =>
+        createStoryLogViewModel([{ kind: "phase", phase: "player", outcomes: [{ kind: "buff", buff, participants }] }],
+            new Presentation(strings), party)[0]!.paragraphs.slice(1);
+
+    it.each([1, 2, 3, 4])("uses severity %s for an added buff", severity => {
+        expect(renderBuff([{ target: "ko", initial: { present: false }, final: { present: true, details: { id: "pounce", severity } } }], {
+            ...stockStrings,
+            [`narrative.buff.pounce.added.${severity}`]: "{target} gains a custom {buff}.",
+            "narrative.buff.pounce.added": "wrong fallback",
+        })).toEqual([`Ko-chan gains a custom ${new Presentation(stockStrings).buff("pounce", severity)}.`]);
+    });
+
+    it.each(["changed", "removed"] as const)("uses the recorded endpoint severity when %s", operation => {
+        expect(renderBuff([{
+            target: "ko", initial: { present: true, details: { id: "pounce", severity: 4 } },
+            final: operation === "removed" ? { present: false } : { present: true, details: { id: "pounce", severity: 2 } },
+        }], {
+            ...stockStrings,
+            [`narrative.buff.pounce.${operation}.4`]: "initial severity",
+            [`narrative.buff.pounce.${operation}.2`]: "final severity",
+        })).toEqual([operation === "removed" ? "initial severity" : "final severity"]);
+    });
+
+    it.each([undefined, "", "   ", "..."])("falls through unavailable severity and buff templates (%j)", placeholder => {
+        const strings = { ...stockStrings };
+        if (placeholder !== undefined) strings["narrative.buff.pounce.added.2"] = placeholder;
+        const participants = [{ target: "ko", initial: { present: false }, final: { present: true, details: { id: "pounce", severity: 2 } } }];
+        expect(renderBuff(participants, { ...strings, "narrative.buff.pounce.added": "buff fallback" })).toEqual(["buff fallback"]);
+        if (placeholder !== undefined) strings["narrative.buff.pounce.added"] = placeholder;
+        expect(renderBuff(participants, strings)).toEqual([`Ko-chan gains ${new Presentation(stockStrings).buff("pounce", 2)}.`]);
+    });
+
+    it("does not invent severity for older histories and supports other buff IDs", () => {
+        expect(renderBuff([{ target: "ko", initial: { present: false }, final: { present: true } }], {
+            ...stockStrings,
+            "narrative.buff.latexMist.added.1": "wrong severity",
+            "narrative.buff.latexMist.added.undefined": "unknown severity must be skipped",
+            "narrative.buff.latexMist.added": "{target}: {buff}",
+        }, undefined, "latexMist")).toEqual(["Ko-chan: Latex Mist"]);
+    });
+
+    it.each([0, 1, 2, 3, 4])("selects the first available character-side key at priority %s", priority => {
+        const keys = ["narrative.buff.pounce.added.characters.2", "narrative.buff.pounce.added.characters",
+            "narrative.buff.pounce.added.2", "narrative.buff.pounce.added", "narrative.event.buff.added"];
+        const strings = { ...stockStrings };
+        keys.forEach((key, index) => { if (index >= priority) strings[key] = `priority ${index}: {target}`; });
+        expect(renderBuff(["ko", "matsuko"].map(target => ({ target, initial: { present: false },
+            final: { present: true, details: { id: "pounce", severity: 2 } } })), strings, ["ko", "matsuko"]))
+            .toEqual([`priority ${priority}: Ko-chan`, `priority ${priority}: Matsuko`]);
+    });
+
+    it("distinguishes linked sides, including removed enemies, without changing history or the Game Log", () => {
+        const entries: GameLogPresentationEntry[] = [{ kind: "phase", phase: "player", livingEnemies: [], outcomes: [{ kind: "buff", buff: "pounce", participants: [
+            { target: "skunkette1", initial: { present: true, details: { id: "pounce", severity: 4, linkedEntity: "ko" } }, final: { present: false } },
+            { target: "ko", initial: { present: true, details: { id: "pounce", severity: 2, linkedEntity: "skunkette1" } }, final: { present: false } },
+        ] }] }];
+        const saved = JSON.stringify(entries);
+        const before = createGameLogViewModel(entries, new Presentation(stockStrings));
+        const strings = { ...stockStrings, "narrative.buff.pounce.removed.characters.2": "free: {target}",
+            "narrative.buff.pounce.removed.enemies.4": "released: {target}" };
+        expect(createStoryLogViewModel(entries, new Presentation(strings), ["ko"])[0]!.paragraphs.slice(1))
+            .toEqual(["released: Skunkette 1", "free: Ko-chan"]);
+        expect(JSON.stringify(entries)).toBe(saved);
+        expect(createGameLogViewModel(entries, new Presentation(strings))).toEqual(before);
+        expect(createStoryLogViewModel(JSON.parse(saved), new Presentation(strings), ["ko"]))
+            .toEqual(createStoryLogViewModel(entries, new Presentation(strings), ["ko"]));
+    });
+
+    it("skips side templates without a roster and skips blank side templates", () => {
+        const participants = [{ target: "ko", initial: { present: false }, final: { present: true } }];
+        const strings = { ...stockStrings, "narrative.buff.pounce.added.characters": "character prose",
+            "narrative.buff.pounce.added.enemies": "enemy prose", "narrative.buff.pounce.added": "generic prose" };
+        expect(renderBuff(participants, strings)).toEqual(["generic prose"]);
+        expect(renderBuff(participants, { ...strings, "narrative.buff.pounce.added.characters": "..." }, ["ko"])).toEqual(["generic prose"]);
+        expect(renderBuff(participants, strings, ["ko"])).toEqual(["character prose"]);
     });
 });
 

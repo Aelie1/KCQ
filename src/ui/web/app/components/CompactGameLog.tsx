@@ -24,7 +24,7 @@ export interface CompactGameLogProps {
 function ScrollableGameLog(props: CompactGameLogProps & { headingId: string }): JSX.Element {
     const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation, props.party));
     const [tab, setTab] = createSignal<GameLogMode>(props.mode ?? "combat");
-    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation) : []);
+    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation, props.party) : []);
     const positions = { combat: { top: 0, following: true }, story: { top: 0, following: true } };
     let viewport!: HTMLDivElement;
     let following = true;
@@ -79,7 +79,7 @@ function ScrollableGameLog(props: CompactGameLogProps & { headingId: string }): 
 
 function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
     const entries = createMemo(() => props.lines <= 0 ? [] : props.mode === "story"
-        ? createStoryLogViewModel(props.entries, props.presentation).filter(entry => entry.kind !== "phase" && (entry.title || entry.paragraphs.length)).slice(-props.lines)
+        ? createStoryLogViewModel(props.entries, props.presentation, props.party).filter(entry => entry.kind !== "phase" && (entry.title || entry.paragraphs.length)).slice(-props.lines)
         : recentGameLogEntries(createGameLogViewModel(props.entries, props.presentation, props.party), props.lines));
     const [offset, setOffset] = createSignal(0);
     const [hiddenCount, setHiddenCount] = createSignal(0);

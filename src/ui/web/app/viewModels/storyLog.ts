@@ -15,7 +15,7 @@ type Unit = { order: number } & (
 );
 
 /** Independent semantic presentation. Never consumes mechanical log text or rows. */
-export function createStoryLogViewModel(entries: readonly GameLogPresentationEntry[], p: Presentation): StoryLogEntry[] {
+export function createStoryLogViewModel(entries: readonly GameLogPresentationEntry[], p: Presentation, party?: readonly string[]): StoryLogEntry[] {
     const event = (kind: string, args: Args = {}) => p.narrative([`narrative.event.${kind}`], args)!;
     const names = (ids: readonly string[]) => formatGameLogTargets(ids, p, [], [], false, false).text;
     const hp = (target: string, hit: LogHit): string[] => [
@@ -33,10 +33,20 @@ export function createStoryLogViewModel(entries: readonly GameLogPresentationEnt
                 ...(outcome.change ? [event("binding", { target, binding: p.binding(outcome.binding), change: outcome.change })] : []),
                 ...(outcome.blocked ? [event("bindingBlocked", { target, binding: p.binding(outcome.binding), blocked: outcome.blocked })] : []),
             ];
-            case "buff": return outcome.participants.map(({ target, initial, final }) => event(
-                `buff.${!initial.present && final.present ? "added" : initial.present && !final.present ? "removed" : "changed"}`,
-                { target: p.entity(target), buff: p.buff(outcome.buff, (final.details ?? initial.details)?.severity) },
-            ));
+            case "buff": return outcome.participants.map(({ target, initial, final }) => {
+                const operation = !initial.present && final.present ? "added" : initial.present && !final.present ? "removed" : "changed";
+                const severity = (final.details ?? initial.details)?.severity;
+                const base = `narrative.buff.${outcome.buff}.${operation}`;
+                const side = party === undefined ? undefined : party.includes(target) ? "characters" : "enemies";
+                return p.narrative([
+                    ...(side ? [
+                        ...(severity !== undefined ? [`${base}.${side}.${severity}`] : []),
+                        `${base}.${side}`,
+                    ] : []),
+                    ...(severity !== undefined ? [`${base}.${severity}`] : []),
+                    base, `narrative.event.buff.${operation}`,
+                ], { target: p.entity(target), buff: p.buff(outcome.buff, severity) })!;
+            });
             case "stance": return [event("stance", { actor: p.entity(outcome.actor), stance: p.stance(outcome.final) })];
             case "resource": return outcome.change ? [event("resource", { target, resource: p.data(outcome.resource), change: outcome.change })] : [];
             case "trap": return [
