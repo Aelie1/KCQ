@@ -4,12 +4,11 @@ import { hinariEnglishStrings, koEnglishStrings, matsukoEnglishStrings, naruyoEn
 import { gameGuideEnglishStrings } from "./en/gameGuide";
 import { skunkEnglishStrings } from "./en/skunk";
 import { systemEnglishStrings } from "./en/system";
-import { narrativeEnglishStrings } from "./en/narrative";
 
 export type KCQLanguage = "en";
 
 export const baseStrings: Record<KCQLanguage, StringTable> = {
-    "en": { ...systemEnglishStrings, ...gameGuideEnglishStrings, ...narrativeEnglishStrings }
+    "en": { ...systemEnglishStrings, ...gameGuideEnglishStrings }
 };
 
 export const characterStrings: Record<KCQCharacter, Record<KCQLanguage, StringTable>> = {

@@ -10,9 +10,9 @@ Add keys to an existing character or campaign localization table under `localiza
 
 For each attack group, lookup stops at the first nonempty translation in this order:
 
-1. `narrative.move.{moveId}.{band}.plural` — only for multiple distinct targets.
-2. `narrative.move.{moveId}.{band}`.
-3. `narrative.move.{moveId}.{category}`.
+1. `move.{moveId}.narrative.{band}.plural` — only for multiple distinct targets.
+2. `move.{moveId}.narrative.{band}`.
+3. `move.{moveId}.narrative.{category}`.
 4. `narrative.generic.{category}`.
 
 `band` is `miss`, `graze`, `hit`, or `crit`. The category is `miss` for misses and `hit` for the other three bands. When the exact band equals the category, steps 2 and 3 are the same key. Missing keys, empty/whitespace strings, and `...` placeholders fall through. Keep both generic category translations in every language's base table.
@@ -22,9 +22,9 @@ Plural lookup applies to the **exact band**, not the broader category. For examp
 The small `latexMist` examples in `localization/en/skunk.ts` demonstrate `.hit`, `.hit.plural`, and `.crit`. Grazes fall back to `.hit`; misses use the generic miss text.
 
 ```ts
-"narrative.move.latexMist.hit": "{actor} releases a cloud of mist, catching {targets} in its path.",
-"narrative.move.latexMist.hit.plural": "{actor} releases a cloud of mist. {targets} are caught in its path.",
-"narrative.move.latexMist.crit": "{actor}'s mist engulfs {targets} with a critical strike.",
+"move.latexMist.narrative.hit": "{actor} releases a cloud of mist, catching {targets} in its path.",
+"move.latexMist.narrative.hit.plural": "{actor} releases a cloud of mist. {targets} are caught in its path.",
+"move.latexMist.narrative.crit": "{actor}'s mist engulfs {targets} with a critical strike.",
 ```
 
 ## Attack variables
