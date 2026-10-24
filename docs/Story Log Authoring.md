@@ -19,6 +19,41 @@ Without this optional key, the renderer uses the existing `ui.gameLog.targetList
 - `trap.{trapId}.narrative.triggered` — trap triggers (not stock changes)
 - `escape.narrative.progress|failed`, `assist.narrative.progress|failed` — binding reduction to the escapee distinguishes progress from no progress
 
+## Suppressing duplicate narration
+
+Add an optional `.suppress` entry beside a narrative when its prose already describes
+another consequence. The value is a comma-separated list of narrative-key patterns.
+Whitespace around patterns and empty items are ignored.
+
+```ts
+"move.throwOff.narrative.hit.suppress": "buff.pounce.narrative.removed.characters*",
+```
+
+This suppresses the character-side Pounce removal paragraph on successful Throw Off,
+including severity variants such as `.characters.4`. Failure narration, enemy-side
+removal, unrelated consequences, and removal in other events remain visible.
+
+- `some.key` matches only the exact resolved key `some.key`.
+- `some.key*` matches every resolved key starting with `some.key`, including `some.key` itself.
+- Only a trailing `*` has special meaning; patterns are not regular expressions.
+- Use commas for multiple patterns, for example:
+
+```ts
+"move.example.narrative.hit.suppress":
+    "buff.example.narrative.removed*, character.narrative.rescued",
+```
+
+Directives belong to the key actually selected by the narrative fallback chain.
+For example, if `.crit.plural` falls back to `.hit`, only `.hit.suppress` applies.
+Targets are also matched by their selected fallback keys. Missing, blank, and `...`
+narratives cannot suppress anything.
+
+All active narratives in one `GameLogPresentationEntry` are collected before filtering,
+so directives work regardless of paragraph generation order and never affect another
+event. Rules run once, simultaneously: a suppressed narrative still contributes its
+directive, and mutually suppressing narratives are both removed. Surviving paragraphs
+keep their original order and grouping.
+
 ## Substitutions
 
 - Move: `{actor}`, `{move}`, `{target}` / `{targets}` (all selected targets), `{hits}` (non-misses), `{misses}`, `{grazes}`, `{crits}`, `{damage}`, `{band}`.

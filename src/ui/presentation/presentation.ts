@@ -9,6 +9,12 @@ type StringArg = number | string | boolean | StringKey;
 
 export type StringTable = Record<string, string>;
 
+export interface ResolvedNarrative {
+    key: string;
+    text: string;
+    suppress: string[];
+}
+
 export class Presentation {
     private readonly strings: StringTable;
 
@@ -132,8 +138,20 @@ export class Presentation {
 
     /** Authored narrative keys are optional; blank placeholders also fall through. */
     narrative(keys: readonly string[], args: Record<string, StringArg> = {}): string | undefined {
+        return this.resolveNarrative(keys, args)?.text;
+    }
+
+    /** Retain the selected fallback key and its comma-separated suppression patterns. */
+    resolveNarrative(keys: readonly string[], args: Record<string, StringArg> = {}): ResolvedNarrative | undefined {
         const id = keys.find(key => this.strings[key]?.trim() && this.strings[key]?.trim() !== "...");
-        return id === undefined ? undefined : this.translate({ id, args });
+        if (id === undefined) return undefined;
+        const text = this.translate({ id, args });
+        if (!text.trim() || text.trim() === "...") return undefined;
+        return {
+            key: id,
+            text,
+            suppress: (this.strings[`${id}.suppress`] ?? "").split(",").map(pattern => pattern.trim()).filter(Boolean),
+        };
     }
 
     difficulty(difficulty: DifficultyId, variant: string = "name"): string {

@@ -86,7 +86,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.throwOff.effect.cooldown": "[moves:pounce] · 2 rounds",
     "move.throwOff.narrative.miss": "{actor} tries to free herself, but is unable to throw the skunkette off of her.",
     "move.throwOff.narrative.hit": "{actor} throws the skunkette off and scrambles to her feet, ready to continue the fight!",
-    "move.throwOff.narrative.hit.suppress": "buff.pounce.narrative.removed.characters",
+    "move.throwOff.narrative.hit.suppress": "buff.pounce.narrative.removed.characters*",
     "move.throwOff.source": "[enemies:skunkette]",
 
     "buff.pounce.name": "Pounce",

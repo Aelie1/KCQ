@@ -1,5 +1,5 @@
 import type { GameLogPresentationEntry, LogHit, LogOutcome } from "../../../presentation/gameLog";
-import type { Presentation } from "../../../presentation/presentation";
+import type { Presentation, ResolvedNarrative } from "../../../presentation/presentation";
 
 export interface StoryLogEntry {
     kind: GameLogPresentationEntry["kind"];
@@ -83,7 +83,7 @@ export function createStoryLogViewModel(
         };
     };
 
-    const moveNarrative = (entry: MoveEntry): string | undefined => {
+    const moveNarrative = (entry: MoveEntry): ResolvedNarrative | undefined => {
         const results: HitResult[] = [];
         entry.outcomes.forEach((outcome, index) => {
             if (outcome.kind !== "damage") return;
@@ -99,9 +99,9 @@ export function createStoryLogViewModel(
         const move = p.move(entry.move);
         if (!results.length) {
             if (entry.result && entry.result !== "none") {
-                return p.narrative([`${base}.${entry.result}`], { actor, move, band: p.hitBand(entry.result) });
+                return p.resolveNarrative([`${base}.${entry.result}`], { actor, move, band: p.hitBand(entry.result) });
             }
-            return p.narrative([`${base}.action`], { actor, move });
+            return p.resolveNarrative([`${base}.action`], { actor, move });
         }
 
         const hits = results.filter(result => result.hit.result !== "miss");
@@ -133,7 +133,7 @@ export function createStoryLogViewModel(
                     : bindings.length >= 4
                         ? p.ui("storyLog.hitLocation.many")
                         : "";
-        return p.narrative(keys, {
+        return p.resolveNarrative(keys, {
             actor,
             move,
             target: allTargets,
@@ -148,13 +148,13 @@ export function createStoryLogViewModel(
         });
     };
 
-    const escapeNarrative = (entry: Extract<GameLogPresentationEntry, { kind: "escape" }>, outcomes: readonly LogOutcome[]): string | undefined => {
+    const escapeNarrative = (entry: Extract<GameLogPresentationEntry, { kind: "escape" }>, outcomes: readonly LogOutcome[]): ResolvedNarrative | undefined => {
         const progress = outcomes.filter((outcome): outcome is Extract<LogOutcome, { kind: "binding" }> =>
             outcome.kind === "binding" && outcome.target === entry.target && outcome.change < 0);
         const assisting = entry.actor !== entry.target;
         const base = assisting ? "assist" : "escape";
         const result = progress.length ? "progress" : "failed";
-        return p.narrative([`${base}.narrative.${result}`], {
+        return p.resolveNarrative([`${base}.narrative.${result}`], {
             actor: p.entity(entry.actor),
             target: p.entity(entry.target),
             amount: progress.reduce((sum, outcome) => sum - outcome.change, 0),
@@ -162,7 +162,7 @@ export function createStoryLogViewModel(
         });
     };
 
-    const effects = (entry: GameLogPresentationEntry, outcomes: readonly LogOutcome[]): string[] => {
+    const effects = (entry: GameLogPresentationEntry, outcomes: readonly LogOutcome[]): ResolvedNarrative[] => {
         const grouped = new Map<string, BuffGroup>();
         for (const outcome of outcomes) {
             if (outcome.kind !== "buff") continue;
@@ -175,10 +175,10 @@ export function createStoryLogViewModel(
         }
 
         const emitted = new Set<string>();
-        const paragraphs: string[] = [];
+        const narratives: ResolvedNarrative[] = [];
         for (const outcome of outcomes) {
             if ("summarized" in outcome && outcome.summarized) continue;
-            let text: string | undefined;
+            let text: ResolvedNarrative | undefined;
             switch (outcome.kind) {
                 case "buff": {
                     for (const change of buffChanges(outcome)) {
@@ -189,13 +189,13 @@ export function createStoryLogViewModel(
                         if (!group) continue;
                         const targets = names(group.changes.map(item => item.target));
                         const severity = change.severity;
-                        const line = p.narrative(group.keys, {
+                        const line = p.resolveNarrative(group.keys, {
                             target: targets,
                             targets,
                             buff: p.buff(change.buff, severity),
                             ...(entry.kind === "move" || entry.kind === "escape" ? { actor: p.entity(entry.actor) } : {}),
                         });
-                        if (line) paragraphs.push(line);
+                        if (line) narratives.push(line);
                     }
                     break;
                 }
@@ -204,7 +204,7 @@ export function createStoryLogViewModel(
                     const direction = outcome.change > 0 ? "increased" : outcome.change < 0 ? "decreased" : undefined;
                     if (!direction) break;
                     const base = `binding.${outcome.binding}.narrative.${direction}`;
-                    text = p.narrative([`${base}.${outcome.final.level}`, base], {
+                    text = p.resolveNarrative([`${base}.${outcome.final.level}`, base], {
                         target: p.entity(outcome.target),
                         binding: p.binding(outcome.binding),
                         level: p.bindingLevel(outcome.final.level),
@@ -214,7 +214,7 @@ export function createStoryLogViewModel(
                 }
                 case "character":
                 case "enemy":
-                    text = p.narrative([
+                    text = p.resolveNarrative([
                         `entity.${outcome.target}.narrative.${outcome.operation}`,
                         `${outcome.kind}.narrative.${outcome.operation}`,
                     ], { target: p.entity(outcome.target) });
@@ -222,7 +222,7 @@ export function createStoryLogViewModel(
                 case "trap": {
                     if (!outcome.triggers.length) break;
                     const actors = names(outcome.triggers.map(trigger => trigger.actor));
-                    text = p.narrative([`trap.${outcome.trap}.narrative.triggered`], {
+                    text = p.resolveNarrative([`trap.${outcome.trap}.narrative.triggered`], {
                         actor: actors,
                         targets: actors,
                         trap: p.trap(outcome.trap),
@@ -231,24 +231,32 @@ export function createStoryLogViewModel(
                     break;
                 }
             }
-            if (text) paragraphs.push(text);
+            if (text) narratives.push(text);
         }
-        return paragraphs;
+        return narratives;
     };
 
     const result: StoryLogEntry[] = [];
     let pendingPhase: StoryLogEntry | undefined;
     for (const entry of entries) {
         const outcomes = flatten(entry.outcomes);
-        const paragraphs: string[] = [];
+        const narratives: ResolvedNarrative[] = [];
         if (entry.kind === "move") {
             const text = moveNarrative(entry);
-            if (text) paragraphs.push(text);
+            if (text) narratives.push(text);
         } else if (entry.kind === "escape") {
             const text = escapeNarrative(entry, outcomes);
-            if (text) paragraphs.push(text);
+            if (text) narratives.push(text);
         }
-        paragraphs.push(...effects(entry, outcomes));
+        narratives.push(...effects(entry, outcomes));
+
+        // Apply every active directive once, including those on suppressed narratives.
+        const patterns = narratives.flatMap(narrative => narrative.suppress);
+        const paragraphs = narratives.filter(narrative => !patterns.some(pattern =>
+            pattern.endsWith("*")
+                ? narrative.key.startsWith(pattern.slice(0, -1))
+                : narrative.key === pattern,
+        )).map(narrative => narrative.text);
 
         if (entry.kind === "phase") {
             const title = [
