@@ -64,25 +64,6 @@ describe("Game Log presentation aggregation", () => {
         ]);
     });
 
-    it("preserves hit order and combines linked Pounce severity 4 to 1 into one outcome", () => {
-        const result = outcomes([{ event: multiHitPounceExample, state: pounceAfter }], pounceBefore);
-        expect(result).toHaveLength(2);
-        expect(result[0]).toEqual({
-            kind: "damage", target: "skunkette1", damage: 27, healing: 0, blocked: 0, hits: [
-                { order: 0, result: "miss", damage: 0, healing: 0, blocked: 0 },
-                { order: 1, result: "graze", damage: 3, healing: 0, blocked: 0 },
-                { order: 5, result: "hit", damage: 8, healing: 0, blocked: 0 },
-                { order: 9, result: "crit", damage: 16, healing: 0, blocked: 0 },
-            ]
-        });
-        expect(result[1]).toEqual({
-            order: 3, kind: "buff", buff: "pounce", participants: [
-                { target: "ko", initial: { present: true, details: pounceInitialVictim }, final: { present: true, details: pounceFinalVictim } },
-                { target: "skunkette1", initial: { present: true, details: pounceInitialEnemy }, final: { present: true, details: pounceFinalEnemy } },
-            ]
-        });
-    });
-
     it("keeps AoE outcomes attributed to each target", () => {
         const result = outcomes([{
             ...move([
@@ -574,7 +555,7 @@ describe("outcome prioritization aggregation", () => {
             { target: "skunkette1", result: "hit", effects: [damage("skunkette1", 3)] },
         ])]);
         expect(result[0]).toMatchObject({ damage: 5, hits: [{ result: "hit", damage: 2 }, { result: "miss" }, { result: "hit", damage: 3 }] });
-        expect(result).toContainEqual({ order: 4, kind: "resource", target: "hinari", resource: "subspace", change: 2 });
+        expect(result).toContainEqual({ kind: "resource", target: "hinari", resource: "subspace", change: 2 });
     });
 
     it("preserves both explicit transitions in their originating event without repeating them", () => {

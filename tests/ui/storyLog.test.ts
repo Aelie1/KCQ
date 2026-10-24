@@ -13,10 +13,10 @@ const render = (entries: GameLogPresentationEntry[], extra: StringTable = {}, pa
     createStoryLogViewModel(entries, new Presentation(strings(extra)), party);
 const paragraphs = (entries: GameLogPresentationEntry[], extra: StringTable = {}, party?: string[]) =>
     render(entries, extra, party).flatMap(entry => entry.paragraphs);
-const hit = (result: "hit" | "miss" | "crit" | "graze", order: number) =>
+const hit = (result: "hit" | "miss" | "crit" | "graze") =>
     ({ result, order, damage: 0, healing: 0, blocked: 0 });
-const damage = (target: string, result: "hit" | "miss" | "crit" | "graze", order: number): LogOutcome =>
-    ({ kind: "damage", target, hits: [hit(result, order)], damage: 0, healing: 0, blocked: 0 });
+const damage = (target: string, result: "hit" | "miss" | "crit" | "graze"): LogOutcome =>
+    ({ kind: "damage", target, hits: [hit(result)], damage: 0, healing: 0, blocked: 0 });
 const move = (...outcomes: LogOutcome[]): GameLogPresentationEntry =>
     ({ kind: "move", actor: "skunkette1", move: "latexMist", outcomes });
 const buff = (target: string, severity = 3, buffId = "latexMist"): LogOutcome => ({

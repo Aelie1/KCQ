@@ -7,8 +7,6 @@ import { getThresholds } from "../../engine/public/mechanics";
 
 /** Semantic IDs are localized by Presentation at render time. No preview mechanics run here. */
 export interface LogHit {
-    /** Presentation chronology within this action; absent in older saved histories. */
-    order?: number;
     result: HitBand;
     damage: number;
     healing: number;
@@ -59,7 +57,7 @@ export interface ResourceOutcome {
 export interface BindingTickOutcome {
     kind: "bindingTick"; target: EntityId; binding: BindingId; outcomes: LogOutcome[];
 }
-export type LogOutcome = { order?: number } & (BindingTickOutcome | ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
+export type LogOutcome = (BindingTickOutcome | ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
     | { kind: "character"; target: EntityId; operation: "incapacitated" | "rescued" }
     | { kind: "enemy"; target: EntityId; operation: "spawned" | "defeated" }
     | { kind: "interrupt"; actor: EntityId; reason: FailureReason }
@@ -208,7 +206,6 @@ function transitionConsequences(event: GameEvent, before: GameLogContext | undef
 
 export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogContext, after?: GameLogContext, recorded: RecordedBuffs = new Map()): LogOutcome[] {
     const result: LogOutcome[] = [];
-    let sequence = 0;
     let outcomes = result;
     let segmentStart = 0;
     const scopes: { outcomes: LogOutcome[]; segmentStart: number }[] = [];
@@ -249,7 +246,6 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
     const consume = (effect: LeafEvent, hit?: { target: EntityId; value: LogHit }): void => {
         const scope = outcomes;
         const start = scope.length;
-        const order = sequence++;
         switch (effect.type) {
             case "bindingTickStart": {
                 if (!boundaries.has(effect)) break;
@@ -278,7 +274,7 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                     hit.value[field] += effect.amount;
                     if (effect.amount === 0) hit.value.recordedZeroEffect = true;
                 }
-                else group.hits.push({ order, result: "none", damage: 0, healing: 0, blocked: 0, [field]: effect.amount });
+                else group.hits.push({ result: "none", damage: 0, healing: 0, blocked: 0, [field]: effect.amount });
                 break;
             }
             case "bondageAdded":
@@ -412,7 +408,6 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                 break;
             case "cooldownChanged": break; // bookkeeping, not an action outcome
         }
-        for (const outcome of scope.slice(start)) outcome.order ??= order;
     };
     if (event.type === "useMove") {
         const defeated = new Set<EntityId>();
@@ -421,7 +416,7 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
             // Effects can still resolve on other recipients (e.g. callbacks/resources),
             // so a nonempty result must retain its gameplay events and accuracy evidence.
             if (defeated.has(target.target) && target.effects.length === 0) continue;
-            const hit: LogHit = { order: sequence++, result: target.result, damage: 0, healing: 0, blocked: 0 };
+            const hit: LogHit = { result: target.result, damage: 0, healing: 0, blocked: 0 };
             // Accuracy remains useful even when a binding/buff attack has no HP damage.
             if (target.result !== "none" || target.effects.some((effect) =>
                 (effect.type === "enemyDamaged" || effect.type === "enemyHealed" || effect.type === "damageBlocked") && effect.target === target.target)) {
@@ -553,20 +548,6 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
         return outcome.kind !== "stance" || outcome.initial !== outcome.final;
     });
     const visibleOutcomes = visible(result);
-    // Most actions already retain chronology in their aggregated array. Store
-    // extra ordering only when repeated targets pull a later hit before an effect
-    // or another target. Ordinary semantic histories keep their existing shape.
-    const retainNeededOrder = (items: LogOutcome[]) => {
-        for (const outcome of items) if (outcome.kind === "bindingTick") retainNeededOrder(outcome.outcomes);
-        const units = items.flatMap<{ order?: number }>(outcome => outcome.kind === "damage" ? outcome.hits : [outcome]);
-        if (units.every((unit, index) => index === 0 || (unit.order ?? 0) >= (units[index - 1]!.order ?? 0))) {
-            for (const outcome of items) {
-                delete outcome.order;
-                if (outcome.kind === "damage") for (const hit of outcome.hits) delete hit.order;
-            }
-        }
-    };
-    retainNeededOrder(visibleOutcomes);
     return visibleOutcomes;
 }
 

@@ -10,7 +10,7 @@ export interface StoryLogEntry {
 }
 
 type MoveEntry = Extract<GameLogPresentationEntry, { kind: "move" }>;
-type HitResult = { target: string; hit: LogHit; order: number };
+type HitResult = { target: string; hit: LogHit; };
 type BuffOutcome = Extract<LogOutcome, { kind: "buff" }>;
 type BuffOperation = "added" | "removed" | "changed";
 type Side = "characters" | "enemies";
@@ -91,12 +91,9 @@ export function createStoryLogViewModel(
                 if (hit.result !== "none") results.push({
                     target: outcome.target,
                     hit,
-                    order: hit.order ?? outcome.order ?? index + hitIndex / (outcome.hits.length + 1),
                 });
             });
         });
-        results.sort((a, b) => a.order - b.order);
-
         const base = `move.${entry.move}.narrative`;
         const actor = p.entity(entry.actor);
         const move = p.move(entry.move);
