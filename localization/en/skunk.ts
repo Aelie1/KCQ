@@ -86,6 +86,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.throwOff.effect.cooldown": "[moves:pounce] · 2 rounds",
     "move.throwOff.narrative.miss": "{actor} tries to free herself, but is unable to throw the skunkette off of her.",
     "move.throwOff.narrative.hit": "{actor} throws the skunkette off and scrambles to her feet, ready to continue the fight!",
+    "move.throwOff.narrative.hit.suppress": "buff.pounce.narrative.removed.characters",
     "move.throwOff.source": "[enemies:skunkette]",
 
     "buff.pounce.name": "Pounce",
@@ -93,6 +94,7 @@ export const skunkEnglishStrings: StringTable = {
     "buff.pounce.narrative.added.2": "and holds her arms to the ground!",
     "buff.pounce.narrative.added.3": "and lands on her back, keeping her from fighting back!",
     "buff.pounce.narrative.added.4": "and forces her to the ground! The skunkette lands on her stomach, with her arms behind her... With the skunk pressing her body to the ground, she is helpless to resist!",
+    "buff.pounce.narrative.removed.characters": "The attack knocks the skunkette off of {target} in the process!",
     "buff.pounce.allow": "",
     "buff.latexMist.name": "Latex Mist",
     "buff.latexMist.narrative.added.1": "They barely notice their bindings starting to come alive",
