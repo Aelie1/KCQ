@@ -106,7 +106,7 @@ export function createStoryLogViewModel(
 
         const hits = results.filter(result => result.hit.result !== "miss");
         const misses = results.filter(result => result.hit.result === "miss");
-        const category = !hits.length ? "miss" : !misses.length ? "hit" : "mixed";
+        const category = !hits.length ? "miss" : "hit";
         const firstBand = results[0]?.hit.result;
         const exactBand = firstBand && results.every(result => result.hit.result === firstBand) ? firstBand : undefined;
         const plural = new Set(results.map(result => result.target)).size > 1;
@@ -204,8 +204,18 @@ export function createStoryLogViewModel(
                     const direction = outcome.change > 0 ? "increased" : outcome.change < 0 ? "decreased" : undefined;
                     if (!direction) break;
                     const base = `binding.${outcome.binding}.narrative.${direction}`;
-                    text = p.resolveNarrative([`${base}.${outcome.final.level}`, base], {
-                        target: p.entity(outcome.target),
+                    const target = p.entity(outcome.target);
+                    const targetPossessive = entry.kind === "escape" && entry.actor === outcome.target
+                        ? "her"
+                        : `${target}'s`;
+                    text = p.resolveNarrative([
+                        `${base}.${outcome.initial.level}.${outcome.final.level}`,
+                        `${base}.${outcome.final.level}`,
+                        base,
+                    ], {
+                        ...(entry.kind === "escape" ? { actor: p.entity(entry.actor) } : {}),
+                        target,
+                        targetPossessive,
                         binding: p.binding(outcome.binding),
                         level: p.bindingLevel(outcome.final.level),
                         previous: p.bindingLevel(outcome.initial.level),
@@ -236,6 +246,15 @@ export function createStoryLogViewModel(
         return narratives;
     };
 
+    const matchesPattern = (key: string, pattern: string): boolean => {
+        const escaped = pattern
+            .split("*")
+            .map(part => part.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+            .join(".*");
+
+        return new RegExp(`^${escaped}$`).test(key);
+    };
+
     const result: StoryLogEntry[] = [];
     let pendingPhase: StoryLogEntry | undefined;
     for (const entry of entries) {
@@ -252,11 +271,9 @@ export function createStoryLogViewModel(
 
         // Apply every active directive once, including those on suppressed narratives.
         const patterns = narratives.flatMap(narrative => narrative.suppress);
-        const paragraphs = narratives.filter(narrative => !patterns.some(pattern =>
-            pattern.endsWith("*")
-                ? narrative.key.startsWith(pattern.slice(0, -1))
-                : narrative.key === pattern,
-        )).map(narrative => narrative.text);
+        const paragraphs = narratives
+            .filter(narrative => !patterns.some(pattern => matchesPattern(narrative.key, pattern)))
+            .map(narrative => narrative.text);
 
         if (entry.kind === "phase") {
             const title = [

@@ -12,7 +12,6 @@ Without this optional key, the renderer uses the existing `ui.gameLog.targetList
 
 - `move.{moveId}.narrative.action` — move with no hit roll
 - `move.{moveId}.narrative.miss|graze|hit|crit` (and `.plural`) — same-band results
-- `move.{moveId}.narrative.mixed` (and `.plural`) — combination of misses and non-misses
 - `buff.{buffId}.narrative.added|removed|changed[.{severity}]` — one paragraph per effect, operation and severity **per action**, regardless of recipient count. Use `.characters` or `.enemies` before severity only if distinct side narration is explicitly authored.
 - `binding.{bindingId}.narrative.increased|decreased.{finalLevel}` — narrate meaningful level transitions, with optional fallback to the explicitly authored `.increased` / `.decreased` key
 - `character.narrative.incapacitated|rescued`, `enemy.narrative.spawned|defeated` — generic authored transitions; `entity.{id}.narrative.{operation}` can override them
@@ -58,7 +57,7 @@ keep their original order and grouping.
 
 - Move: `{actor}`, `{move}`, `{target}` / `{targets}` (all selected targets), `{hits}` (non-misses), `{misses}`, `{grazes}`, `{crits}`, `{damage}`, `{band}`.
 - Buff: `{target}` / `{targets}` (all targets in a grouped consequence), `{buff}`, and `{actor}` for move/escape actions.
-- Binding: `{target}`, `{binding}`, `{level}` (final level), `{previous}` (prior level).
+- Binding: `{actor}`, `{target}`,`{targetPossessive}`, `{binding}`, `{level}` (final level), `{previous}` (prior level).
 - Character/enemy: `{target}`.
 - Trap: `{actor}` / `{targets}` (all triggering actors), `{trap}`, `{amount}`.
 - Escape/assist: `{actor}`, `{target}`, `{amount}` (binding reduced), `{bindings}`.
@@ -66,7 +65,6 @@ keep their original order and grouping.
 ## Sample keys
 
 ```ts
-"move.latexMist.narrative.mixed": "{actor} emits a cloud of mist. {hits} are caught, but {misses} avoid it.",
 "buff.latexMist.narrative.added.3": "The latex on their bodies grows more active.",
 "binding.latexArms.narrative.increased.severe": "The latex on {target}'s arms forces them to fold into skunk paws.",
 "character.narrative.incapacitated": "{target} loses control of her body!",
