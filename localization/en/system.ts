@@ -22,6 +22,16 @@ export const systemEnglishStrings: StringTable = {
 
     "entity.allies.name": "Allies",
     "entity.enemies.name": "Enemies",
+    "entity.index.1": "A",
+    "entity.index.2": "B",
+    "entity.index.3": "C",
+    "entity.index.4": "D",
+    "entity.index.5": "E",
+    "entity.index.6": "F",
+    "entity.index.7": "G",
+    "entity.index.8": "H",
+    "entity.index.9": "I",
+    "entity.index.10": "J",
 
     "ui.action.ready": "Ready",
     "ui.action.bonus": "Bonus",
@@ -139,6 +149,11 @@ export const systemEnglishStrings: StringTable = {
     "ui.gameLog.retargeted": "Retargeted → {destination}",
     "ui.gameLog.discorded": "{move} Backfired",
     "ui.gameLog.bonus": "Bonus Escapes +{amount}",
+    "ui.storyLog.targetListFinal": "{first} and {second}",
+    "ui.storyLog.hitLocation.single": "on her {binding}",
+    "ui.storyLog.hitLocation.two": "in two areas",
+    "ui.storyLog.hitLocation.three": "in three areas",
+    "ui.storyLog.hitLocation.many": "all over her body",
     "ui.combatHeader.character": "Character",
     "ui.combatHeader.escape": "Escape",
     "ui.combatHeader.gameLog": "Game Log",
@@ -475,6 +490,7 @@ export const systemEnglishStrings: StringTable = {
     "flag.skipsTurn.name": "Skips Turn",
     "flag.incapacitated.name": "Incapacitated",
     "flag.autoWillpower.name": "Absolute Will",
+
 
     "failure.invalidActor.text": "Invalid character.",
     "failure.invalidMove.text": "Invalid move.",

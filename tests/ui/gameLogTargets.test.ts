@@ -48,9 +48,9 @@ describe("Game Log side target labels", () => {
     });
 
     it.each<[string[], string]>([
-        [["skunkette1", "skunkette2"], "Skunkette 1, Skunkette 2"],
-        [["skunkette1", "skunkette2", "skunkette3", "skunkette4"], "Skunkette 1, Skunkette 2, Skunkette 3, Skunkette 4"],
-        [["skunkette1", "fairy1"], "Skunkette 1, Fairy 1"],
+        [["skunkette1", "skunkette2"], "Skunkette A, Skunkette B"],
+        [["skunkette1", "skunkette2", "skunkette3", "skunkette4"], "Skunkette A, Skunkette B, Skunkette C, Skunkette D"],
+        [["skunkette1", "fairy1"], "Skunkette A, Fairy A"],
     ])("retains individual names for partial targets %j", (ids, expected) => {
         const before = state();
         expect(models(createGameLogEntries([frame(before, ids)], before))[0]!.rows[0]!.target).toBe(expected);
@@ -69,14 +69,14 @@ describe("Game Log side target labels", () => {
         before.enemies[1]!.currHp = 0;
         before.enemies[2]!.currHp = 0;
         expect(models(createGameLogEntries([frame(before, ["skunkette1", "fairy1"])], before))[0]!.rows[0]!.target)
-            .toBe("Skunkette 1, Fairy 1");
+            .toBe("Skunkette A, Fairy A");
     });
 
     it("uses the pre-action roster even if an untargeted enemy disappears in the resulting frame", () => {
         const before = state();
         const resolved = frame(before, ["skunkette1", "fairy1"]);
         resolved.state.enemies = resolved.state.enemies.filter(enemy => ["skunkette1", "fairy1"].includes(enemy.id));
-        expect(models(createGameLogEntries([resolved], before))[0]!.rows[0]!.target).toBe("Skunkette 1, Fairy 1");
+        expect(models(createGameLogEntries([resolved], before))[0]!.rows[0]!.target).toBe("Skunkette A, Fairy A");
     });
 
     it("keeps All Allies from the player's perspective for enemy abilities", () => {
@@ -93,12 +93,12 @@ describe("Game Log side target labels", () => {
 
     it("preserves names when no pre-action roster is available", () => {
         const resolved = frame(state(), ["skunkette1", "fairy1"]);
-        expect(models(createGameLogEntries([resolved.event]))[0]!.rows[0]!.target).toBe("Skunkette 1, Fairy 1");
+        expect(models(createGameLogEntries([resolved.event]))[0]!.rows[0]!.target).toBe("Skunkette A, Fairy A");
     });
 
     it.each<[string[], string]>([
         [all, "All Enemies"],
-        [["skunkette1", "fairy1"], "Skunkette 1, Fairy 1"],
+        [["skunkette1", "fairy1"], "Skunkette A, Fairy A"],
     ])("retains the original roster across delayed buffs, defeats and save restoration for %j", (ids, expected) => {
         const before = state();
         const history = createGameLogHistory(before);
@@ -134,9 +134,13 @@ describe("target aggregation in logs saved before enemy rosters were recorded", 
         const current = structuredClone(resolved.state);
         current.enemies = current.enemies.filter(enemy => enemy.id !== "skunkette3");
         current.enemies.push(enemy("skunkette5"));
-        history.record([{ state: current, event: { type: "changePhase", phase: "player", effects: [
-            { type: "enemyDefeated", target: "skunkette3" }, { type: "enemySpawned", target: "skunkette5" },
-        ] } }]);
+        history.record([{
+            state: current, event: {
+                type: "changePhase", phase: "player", effects: [
+                    { type: "enemyDefeated", target: "skunkette3" }, { type: "enemySpawned", target: "skunkette5" },
+                ]
+            }
+        }]);
         const restored = createGameLogHistory(current, legacySave(history));
         expect(models(restored.record([]))[0]!.rows[0]!.target).toBe("All Enemies");
     });
@@ -148,16 +152,20 @@ describe("target aggregation in logs saved before enemy rosters were recorded", 
         history.record([resolved]);
         const current = structuredClone(resolved.state);
         current.enemies = current.enemies.filter(enemy => enemy.id !== "skunkette3");
-        history.record([{ state: current, event: { type: "changePhase", phase: "player", effects: [
-            { type: "enemyDefeated", target: "skunkette3" },
-        ] } }]);
+        history.record([{
+            state: current, event: {
+                type: "changePhase", phase: "player", effects: [
+                    { type: "enemyDefeated", target: "skunkette3" },
+                ]
+            }
+        }]);
         const restored = createGameLogHistory(current, legacySave(history));
-        expect(models(restored.record([]))[0]!.rows[0]!.target).toBe("Skunkette 4, Skunkette 1, Skunkette 2, Fairy 1");
+        expect(models(restored.record([]))[0]!.rows[0]!.target).toBe("Skunkette D, Skunkette A, Skunkette B, Fairy A");
     });
 
     it.each<[string[], string]>([
         [all, "All Enemies"],
-        [["skunkette1", "fairy1"], "Skunkette 1, Fairy 1"],
+        [["skunkette1", "fairy1"], "Skunkette A, Fairy A"],
     ])("recovers pending buff entries and future actions for %j", (ids, expected) => {
         const before = state();
         const history = createGameLogHistory(before);
@@ -176,17 +184,19 @@ describe("target aggregation in logs saved before enemy rosters were recorded", 
 describe("enemy buff expiration at phase transitions", () => {
     it.each<[string[], string, boolean]>([
         [all, "All Enemies", false],
-        [["skunkette1", "fairy1"], "Skunkette 1, Fairy 1", false],
+        [["skunkette1", "fairy1"], "Skunkette A, Fairy A", false],
         [all.filter(id => id !== "skunkette3"), "All Enemies", true],
-        [["skunkette1", "fairy1"], "Skunkette 1, Fairy 1", true],
+        [["skunkette1", "fairy1"], "Skunkette A, Fairy A", true],
     ])("formats removed buff targets %j as %s (defeated enemy: %s)", (ids, expected, defeated) => {
         const before = frame(state(), all).state;
         if (defeated) before.enemies.find(enemy => enemy.id === "skunkette3")!.currHp = 0;
         const after = structuredClone(before);
         for (const enemy of after.enemies) if (ids.includes(enemy.id)) enemy.buffs = [];
-        const expiration: EventFrame = { state: after, event: {
-            type: "changePhase", phase: "player", effects: ids.map(target => ({ type: "buffRemoved", target, buff: "empoweringMagic" })),
-        } };
+        const expiration: EventFrame = {
+            state: after, event: {
+                type: "changePhase", phase: "player", effects: ids.map(target => ({ type: "buffRemoved", target, buff: "empoweringMagic" })),
+            }
+        };
         const history = createGameLogHistory(before);
         const entries = history.record([expiration]);
         expect(entries).toEqual(createGameLogEntries([expiration], before));

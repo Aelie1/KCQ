@@ -1,17 +1,17 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
-import { Presentation } from "../../src/ui/presentation/presentation";
-import { stockStrings } from "../helpers/stockStrings";
+import { readFileSync } from "node:fs";
 import { createComponent, createSignal } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GameState } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
+import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { BattleApp } from "../../src/ui/web/app/BattleApp";
 import { battleOverviewFixture } from "../../src/ui/web/app/fixtures/battleOverview";
 import { enemyDetailsFixture } from "../../src/ui/web/app/fixtures/enemyDetails";
 import { EnemyDetailsPanel } from "../../src/ui/web/app/panels/EnemyDetailsPanel";
+import { stockStrings } from "../helpers/stockStrings";
 
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
@@ -49,7 +49,7 @@ function mountBattle() {
     vi.spyOn(engine, "getGameState").mockReturnValue({ ...battleOverviewFixture.state, turn: { ...battleOverviewFixture.state.turn, phase: "player" } });
     vi.spyOn(engine, "getActionView").mockReturnValue(battleOverviewFixture.actions);
     const execute = vi.spyOn(engine, "executeAction").mockReturnValue({ success: false, reason: "wrongPhase" });
-    mount(() => createComponent(BattleApp, { engine, presentation: battleOverviewFixture.presentation, playbackSpeed: { value: "instant", onChange: () => {} } }));
+    mount(() => createComponent(BattleApp, { engine, presentation: battleOverviewFixture.presentation, playbackSpeed: { value: "instant", onChange: () => { } } }));
     return { engine, execute };
 }
 
@@ -58,7 +58,7 @@ describe("Enemy Details navigation and live state", () => {
         const { execute } = mountBattle();
         const cards = [...document.querySelectorAll<HTMLElement>(".kcq-enemy-card")];
         cards[1]!.click();
-        expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 2");
+        expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette B");
         expect(element(".kcq-enemy-details__identity").textContent).toContain("200 / 200");
         element(".kcq-combat-header__back").click();
         expect(document.querySelector(".kcq-enemy-details")).toBeNull();
@@ -74,11 +74,11 @@ describe("Enemy Details navigation and live state", () => {
         card.focus();
         expect(document.activeElement).toBe(card);
         press("Enter", card);
-        expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 2");
+        expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette B");
         expect(element(".kcq-combat-header__back .kcq-shortcut").textContent).toBe("Esc");
         expect(press("Escape").defaultPrevented).toBe(true);
         expect(press("4").defaultPrevented).toBe(true);
-        expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 1");
+        expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette A");
         press("Shift");
         expect(element(".kcq-battle-stage").dataset.kcqHintsVisible).toBe("true");
     });
@@ -159,17 +159,23 @@ describe("compact intention target rows", () => {
                 intentions: ["ko", "matsuko"].map(target => ({
                     resolved: false,
                     move: "pounce",
-                    targets: [{ target, band: "hit", effects: [
-                        { type: "buff", target, operation: "add", buff: {
-                            id: "pounce", severity: 3, linkedEntity: enemy.id,
-                            statuses: [{ id: "immobilized", value: 1 }, { id: "stunned", value: 1 }],
-                            moveList: { addedMoves: ["throwOff"] },
-                        } },
-                        { type: "buff", target: enemy.id, operation: "add", buff: {
-                            id: "pounce", severity: 3, linkedEntity: target, modifiers: { defense: -2, hit: 8 },
-                        } },
-                        { type: "move", move: "latexSpray" },
-                    ] }],
+                    targets: [{
+                        target, band: "hit", effects: [
+                            {
+                                type: "buff", target, operation: "add", buff: {
+                                    id: "pounce", severity: 3, linkedEntity: enemy.id,
+                                    statuses: [{ id: "immobilized", value: 1 }, { id: "stunned", value: 1 }],
+                                    moveList: { addedMoves: ["throwOff"] },
+                                }
+                            },
+                            {
+                                type: "buff", target: enemy.id, operation: "add", buff: {
+                                    id: "pounce", severity: 3, linkedEntity: target, modifiers: { defense: -2, hit: 8 },
+                                }
+                            },
+                            { type: "move", move: "latexSpray" },
+                        ]
+                    }],
                     effects: [],
                 })),
             })),
@@ -183,7 +189,7 @@ describe("compact intention target rows", () => {
         intentions.forEach((intention, index) => {
             const cards = [...intention.querySelectorAll(".kcq-target-card")];
             expect(cards.map(card => card.querySelector(".kcq-target-header__name")?.textContent))
-                .toEqual([index === 0 ? "Ko-chan" : "Matsuko", "Skunkette 1"]);
+                .toEqual([index === 0 ? "Ko-chan" : "Matsuko", "Skunkette A"]);
             const debuff = cards[0]!.querySelector(".kcq-buff-effect")!;
             const buff = cards[1]!.querySelector(".kcq-buff-effect")!;
             expect(debuff.classList.contains("kcq-preview-effect--special")).toBe(true);

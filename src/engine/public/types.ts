@@ -569,6 +569,7 @@ export interface MoveEvent {
     type: "useMove";
     actor: EntityId;
     move: MoveId;
+    result?: HitBand;
     effects: LeafEvent[];
     targets: MoveResult[];
 }

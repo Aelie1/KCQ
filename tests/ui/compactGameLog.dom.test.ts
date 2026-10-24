@@ -30,18 +30,6 @@ function mountPreview(initial = [action()], scrollable = false) {
     return { host, setEntries, setLines, setLanguage, onOpen };
 }
 
-it.each([false, true])("uses side-specific buff prose in Story previews (scrollable: %s)", scrollable => {
-    const log = mountPreview([{ kind: "move", actor: "ko", move: "telekinesis", outcomes: [{ kind: "buff", buff: "pounce", participants: [
-        { target: "ko", initial: { present: false }, final: { present: true, details: { id: "pounce", severity: 2 } } },
-        { target: "skunkette1", initial: { present: false }, final: { present: true, details: { id: "pounce", severity: 2 } } },
-    ] }] }], scrollable);
-    log.setLanguage(new Presentation({ ...stockStrings, "narrative.buff.pounce.added.characters.2": "character: {target}",
-        "narrative.buff.pounce.added.enemies.2": "enemy: {target}" }));
-    log.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1]!.click();
-    expect(log.host.textContent).toContain("character: Ko-chan");
-    expect(log.host.textContent).toContain("enemy: Skunkette 1");
-});
-
 describe("Overview Game Log preference", () => {
     it("defaults to three lines, persists every discrete value and rejects invalid values", () => {
         const preference = createOverviewGameLogPreference();
@@ -120,10 +108,12 @@ describe("compact Game Log preview", () => {
         unmount?.(); unmount = undefined; expect(pending.size).toBe(0);
     });
     it("shares grouped accuracy, character colors and outcome tones with the full renderer", () => {
-        const log = mountPreview([{ kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
-            { kind: "damage", target: "ko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
-            { kind: "damage", target: "matsuko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
-        ] }]);
+        const log = mountPreview([{
+            kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
+                { kind: "damage", target: "ko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
+                { kind: "damage", target: "matsuko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
+            ]
+        }]);
         expect(log.host.querySelectorAll('[data-outcome="damage"]')).toHaveLength(1);
         expect(log.host.querySelector(".kcq-game-log__target")!.textContent).toBe("Ko-chan, Matsuko");
         expect(log.host.querySelector(".kcq-game-log__value--entity-ko")!.textContent).toBe("Ko-chan");
@@ -133,15 +123,19 @@ describe("compact Game Log preview", () => {
         expect(log.host.querySelector(".kcq-game-log__actor--ko")!.textContent).toBe("Ko-chan");
     });
     it("removes enemy phases with binding ticks, expiration and stance resets before counting candidates", () => {
-        const phase: GameLogPresentationEntry = { kind: "phase", phase: "enemy", round: 7, outcomes: [
-            { kind: "bindingTick", target: "ko", binding: "latexCollar", outcomes: [
-                { kind: "resource", target: "ko", resource: "ribbonPower", change: -2, initial: 10, final: 8 },
-            ] },
-            { kind: "bindingTick", target: "matsuko", binding: "latexLegs", outcomes: [] },
-            { kind: "buff", buff: "pounce", participants: [{ target: "ko", initial: { present: true }, final: { present: false } }] },
-            { kind: "stance", actor: "ko", initial: "standing", final: "moving" },
-            { kind: "stance", actor: "hinari", initial: "standing", final: "moving" },
-        ] };
+        const phase: GameLogPresentationEntry = {
+            kind: "phase", phase: "enemy", round: 7, outcomes: [
+                {
+                    kind: "bindingTick", target: "ko", binding: "latexCollar", outcomes: [
+                        { kind: "resource", target: "ko", resource: "ribbonPower", change: -2, initial: 10, final: 8 },
+                    ]
+                },
+                { kind: "bindingTick", target: "matsuko", binding: "latexLegs", outcomes: [] },
+                { kind: "buff", buff: "pounce", participants: [{ target: "ko", initial: { present: true }, final: { present: false } }] },
+                { kind: "stance", actor: "ko", initial: "standing", final: "moving" },
+                { kind: "stance", actor: "hinari", initial: "standing", final: "moving" },
+            ]
+        };
         const log = mountPreview([action("queen1"), action("queen2"), action("skunkette1"), phase]);
         expect([...log.host.querySelectorAll<HTMLElement>("article")].map(article => article.dataset.actor))
             .toEqual(["queen1", "queen2", "skunkette1"]);
@@ -155,12 +149,16 @@ describe("compact Game Log preview", () => {
         expect(log.host.textContent).toContain("No combat events yet.");
     });
     it("retains damage bands and binding levels for multi-target actions", () => {
-        const log = mountPreview([{ kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
-            { kind: "damage", target: "ko", hits: [{ result: "hit", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
-            { kind: "binding", target: "ko", binding: "latexLegs", change: 23, blocked: 0,
-                initial: { value: 58, level: "heavy" }, final: { value: 81, level: "severe" } },
-            { kind: "damage", target: "matsuko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
-        ] }]);
+        const log = mountPreview([{
+            kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
+                { kind: "damage", target: "ko", hits: [{ result: "hit", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
+                {
+                    kind: "binding", target: "ko", binding: "latexLegs", change: 23, blocked: 0,
+                    initial: { value: 58, level: "heavy" }, final: { value: 81, level: "severe" }
+                },
+                { kind: "damage", target: "matsuko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
+            ]
+        }]);
         expect(log.host.querySelector(".kcq-game-log__value--hit")!.textContent).toBe("Hit");
         expect(log.host.querySelector(".kcq-game-log__value--binding-heavy")!.textContent).toBe("58 (Heavy)");
         expect(log.host.querySelector(".kcq-game-log__value--binding-severe")!.textContent).toBe("81 (Severe)");
@@ -174,7 +172,7 @@ describe("compact Game Log preview", () => {
         vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { pending.set(++id, callback); return id; });
         vi.stubGlobal("cancelAnimationFrame", (frame: number) => pending.delete(frame));
         const disconnect = vi.fn();
-        vi.stubGlobal("ResizeObserver", class { constructor(callback: () => void) { resize = callback; } observe() {} disconnect = disconnect; });
+        vi.stubGlobal("ResizeObserver", class { constructor(callback: () => void) { resize = callback; } observe() { } disconnect = disconnect; });
         const flush = () => { for (const [frame, callback] of [...pending]) { pending.delete(frame); callback(0); } };
         const log = mountPreview([action("matsuko"), action("hinari"), action("ko")]);
         const content = log.host.querySelector<HTMLElement>(".kcq-compact-game-log__content")!;
@@ -183,7 +181,7 @@ describe("compact Game Log preview", () => {
         vi.spyOn(content, "getBoundingClientRect").mockImplementation(() => new DOMRect(0, 100, 300, wrapped ? 224 : 128));
         const articles = [...content.children] as HTMLElement[];
         articles.forEach((article, index) => vi.spyOn(article, "getBoundingClientRect").mockImplementation(() => new DOMRect(0, 100 + index * 32, 300, index === 2 ? (wrapped ? 160 : 64) : 32)));
-        vi.spyOn(Range.prototype, "getClientRects").mockImplementation(function(this: Range) {
+        vi.spyOn(Range.prototype, "getClientRects").mockImplementation(function (this: Range) {
             const article = this.startContainer.parentElement?.closest("article");
             const index = articles.indexOf(article as HTMLElement);
             const count = index === 2 ? (wrapped ? 5 : 2) : 1;

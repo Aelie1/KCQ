@@ -69,7 +69,7 @@ export type LogOutcome = { order?: number } & (BindingTickOutcome | ResourceOutc
     | { kind: "bonus"; target: EntityId; amount: number });
 
 export type GameLogPresentationEntry = { livingEnemies?: EntityId[] } & (
-    | { kind: "move"; actor: EntityId; move: MoveId; outcomes: LogOutcome[] }
+    | { kind: "move"; actor: EntityId; move: MoveId; result?: HitBand; outcomes: LogOutcome[] }
     | { kind: "escape"; actor: EntityId; target: EntityId; outcomes: LogOutcome[] }
     | { kind: "phase"; phase: Phase; round?: number; outcomes: LogOutcome[] }
     | { kind: "stance"; changes: StanceOutcome[]; outcomes: LogOutcome[] }
@@ -611,7 +611,7 @@ export function gameLogEntry(event: GameEvent, outcomes: LogOutcome[], round?: n
     const livingEnemies = livingEnemyIds(before);
     const roster = livingEnemies?.length ? { livingEnemies: [...livingEnemies] } : {};
     switch (event.type) {
-        case "useMove": return { kind: "move", actor: event.actor, move: event.move, outcomes, ...roster };
+        case "useMove": return { kind: "move", actor: event.actor, move: event.move, result: event.result, outcomes, ...roster };
         case "useEscape": return { kind: "escape", actor: event.actor, target: event.target, outcomes, ...roster };
         case "changePhase": return { kind: "phase", phase: event.phase, round, outcomes, ...roster };
         case "changeStance": return {

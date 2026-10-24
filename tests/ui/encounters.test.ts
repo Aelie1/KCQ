@@ -102,7 +102,7 @@ describe("encounter catalog view models", () => {
         expect(presentation.enemyDefinition("skunk")).toBe("Skunk");
         expect(presentation.enemyDefinition("rainmaker")).toBe("Rainmaker");
         // Runtime numbering in combat is unchanged.
-        expect(presentation.entity("skunkette2")).toBe("Skunkette 2");
+        expect(presentation.entity("skunkette2")).toBe("Skunkette B");
     });
 
     it("uses named setup identities instead of their generic definition", () => {

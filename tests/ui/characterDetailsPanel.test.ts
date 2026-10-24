@@ -50,8 +50,8 @@ describe("character details panel", () => {
         const html = renderToString(() => createComponent(CharacterDetailsPanel, characterDetailsFixture));
 
         expect(html).toContain("kcq-linked-entity-chip__icon");
-        expect(html).toContain("Skunkette 1");
-        expect(html).not.toContain("↗ Skunkette 1");
+        expect(html).toContain("Skunkette A");
+        expect(html).not.toContain("↗ Skunkette A");
     });
 
     it("renders nonzero rows and a blocked zero capability without ordinary +0 rows", () => {

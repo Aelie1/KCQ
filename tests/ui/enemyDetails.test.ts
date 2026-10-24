@@ -18,7 +18,7 @@ describe("Enemy Details", () => {
             characters: fixture.state.characters.map(character => ({ ...character, buffs: [] })),
         };
         const model = modelFor(state);
-        expect(model.identity.name).toBe("Skunkette 1");
+        expect(model.identity.name).toBe("Skunkette A");
         expect(model.identity.health).toMatchObject({ current: 152, max: 200, currentLabel: "152 / 200", fillPercent: 76 });
         expect(model.modifiers.map(metric => [metric.label, metric.valueLabel])).toEqual([
             ["Defense", "-2"], ["Accuracy", "+8"],
@@ -56,9 +56,11 @@ describe("Enemy Details", () => {
                 intentions: [{
                     resolved: false,
                     move: "latexSpray",
-                    targets: [{ target: "hinari", band: "none", effects: [
-                        { type: "data", target: "hinari", name: "subspace", amount: 5 },
-                    ] }],
+                    targets: [{
+                        target: "hinari", band: "none", effects: [
+                            { type: "data", target: "hinari", name: "subspace", amount: 5 },
+                        ]
+                    }],
                     effects: [
                         { type: "damage", target: "skunkette1", amount: 10 },
                         { type: "buff", operation: "add", target: "ko", buff: { id: "pounce" } },
@@ -79,23 +81,29 @@ describe("Enemy Details", () => {
     it("groups crossed target effects and action effects under actual recipients without repeating the move", () => {
         const state: GameState = {
             ...fixture.state,
-            enemies: fixture.state.enemies.map(enemy => ({ ...enemy, intentions: [{
-                resolved: false,
-                move: "pounce", targets: [
-                    { target: "ko", band: "hit", effects: [
-                        { type: "buff", target: "ko", operation: "add", buff: { id: "pounce", linkedEntity: "skunkette1" } },
-                        { type: "buff", target: "skunkette1", operation: "add", buff: { id: "pounce", linkedEntity: "ko" } },
-                        { type: "move", move: "pounce" },
-                    ] },
-                    { target: "matsuko", band: "graze", effects: [
-                        { type: "binding", target: "matsuko", binding: "latexArms", amount: 5 },
-                        { type: "damage", target: "ko", amount: 2 },
-                    ] },
-                ], effects: [
-                    { type: "damage", target: "skunkette1", amount: 3 },
-                    { type: "binding", target: "ko", binding: "latexArms", amount: 4 },
-                ],
-            }] })),
+            enemies: fixture.state.enemies.map(enemy => ({
+                ...enemy, intentions: [{
+                    resolved: false,
+                    move: "pounce", targets: [
+                        {
+                            target: "ko", band: "hit", effects: [
+                                { type: "buff", target: "ko", operation: "add", buff: { id: "pounce", linkedEntity: "skunkette1" } },
+                                { type: "buff", target: "skunkette1", operation: "add", buff: { id: "pounce", linkedEntity: "ko" } },
+                                { type: "move", move: "pounce" },
+                            ]
+                        },
+                        {
+                            target: "matsuko", band: "graze", effects: [
+                                { type: "binding", target: "matsuko", binding: "latexArms", amount: 5 },
+                                { type: "damage", target: "ko", amount: 2 },
+                            ]
+                        },
+                    ], effects: [
+                        { type: "damage", target: "skunkette1", amount: 3 },
+                        { type: "binding", target: "ko", binding: "latexArms", amount: 4 },
+                    ],
+                }]
+            })),
         };
         const intention = modelFor(state).intentions[0]!;
         expect(intention.targets.map(target => target.outcome?.band)).toEqual(["hit", "graze"]);
@@ -112,21 +120,26 @@ describe("Enemy Details", () => {
     });
 
     it("groups a move-only projection under its actor for other intentions", () => {
-        const state: GameState = { ...fixture.state,
-            enemies: fixture.state.enemies.map(enemy => ({ ...enemy, intentions: [{
-                resolved: false,
-                move: "latexMist", targets: [], effects: [{ type: "move", move: "latexSpray" }],
-            }] })),
+        const state: GameState = {
+            ...fixture.state,
+            enemies: fixture.state.enemies.map(enemy => ({
+                ...enemy, intentions: [{
+                    resolved: false,
+                    move: "latexMist", targets: [], effects: [{ type: "move", move: "latexSpray" }],
+                }]
+            })),
         };
         const intention = modelFor(state).intentions[0]!;
         expect(intention.effects).toEqual([]);
-        expect(intention.effectTargets).toMatchObject([{ target: "skunkette1", effects: [{
-            kind: "compact", type: "move", payload: "Latex Spray",
-        }] }]);
+        expect(intention.effectTargets).toMatchObject([{
+            target: "skunkette1", effects: [{
+                kind: "compact", type: "move", payload: "Latex Spray",
+            }]
+        }]);
     });
 
     it("renders the existing displays in the shared scrolling body with an Escape hint", () => {
-        const html = renderToString(() => createComponent(EnemyDetailsPanel, { ...fixture, onBack: () => {} }));
+        const html = renderToString(() => createComponent(EnemyDetailsPanel, { ...fixture, onBack: () => { } }));
         expect(html).toContain("kcq-combat-header--subscreen");
         expect(html).toContain('data-kcq-shortcut="escape"');
         expect(html).toContain("kcq-target-header__meter");
@@ -149,17 +162,23 @@ describe("Enemy Details", () => {
                 ...enemy,
                 intentions: [
                     ...enemy.intentions,
-                    { resolved: false, move: "callReinforcements", targets: [], effects: [
-                        { type: "enemy", operation: "spawn", target: "skunk" },
-                        { type: "enemy", operation: "spawn", target: "fairy" },
-                    ] },
-                    { resolved: false, move: "latexSpray", targets: [
-                        { target: "ko", band: "miss", effects: [] },
-                        { target: "matsuko", band: "crit", effects: [{
-                            type: "buff", operation: "add", target: "matsuko",
-                            buff: { id: "pounce", modifiers: { defense: -2, hit: 2 } },
-                        }] },
-                    ], effects: [] },
+                    {
+                        resolved: false, move: "callReinforcements", targets: [], effects: [
+                            { type: "enemy", operation: "spawn", target: "skunk" },
+                            { type: "enemy", operation: "spawn", target: "fairy" },
+                        ]
+                    },
+                    {
+                        resolved: false, move: "latexSpray", targets: [
+                            { target: "ko", band: "miss", effects: [] },
+                            {
+                                target: "matsuko", band: "crit", effects: [{
+                                    type: "buff", operation: "add", target: "matsuko",
+                                    buff: { id: "pounce", modifiers: { defense: -2, hit: 2 } },
+                                }]
+                            },
+                        ], effects: []
+                    },
                 ],
             })),
         };
@@ -180,9 +199,11 @@ describe("Enemy Details", () => {
     });
 
     it("handles absent intentions and never reconstructs buffs from characters", () => {
-        const state = { ...fixture.state, enemies: fixture.state.enemies.map(enemy => ({
-            ...enemy, buffs: [], intentions: [], modifiers: {},
-        })) };
+        const state = {
+            ...fixture.state, enemies: fixture.state.enemies.map(enemy => ({
+                ...enemy, buffs: [], intentions: [], modifiers: {},
+            }))
+        };
         const html = renderToString(() => createComponent(EnemyDetailsPanel, { ...fixture, state }));
         expect(html).toContain("No upcoming intentions.");
         expect(html).not.toContain('id="enemy-effects-heading"');

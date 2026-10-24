@@ -28,10 +28,10 @@ afterEach(() => {
 });
 function button(label: string, scope: ParentNode = document): HTMLButtonElement {
     const found = [...scope.querySelectorAll<HTMLButtonElement>("button")].find(button => {
-            const content = button.cloneNode(true) as HTMLElement;
-            content.querySelectorAll(".kcq-shortcut").forEach(shortcut => shortcut.remove());
-            return content.textContent?.trim() === label;
-        });
+        const content = button.cloneNode(true) as HTMLElement;
+        content.querySelectorAll(".kcq-shortcut").forEach(shortcut => shortcut.remove());
+        return content.textContent?.trim() === label;
+    });
     if (!found) throw new Error("Missing button: " + label);
     return found;
 }
@@ -49,7 +49,8 @@ function chooseEncounter(encounter: string): void {
     button("Start Encounter").click();
 }
 function mountBattle() {
-    const alternate = new Presentation({ ...stockStrings,
+    const alternate = new Presentation({
+        ...stockStrings,
         "move.telekinesis.name": "Translated move", "entity.ko.name": "Translated actor",
         "ui.gameLog.chronological": "Translated history",
         "ui.gameLog.hitDamage": "{band}: {amount} translated damage",
@@ -67,8 +68,10 @@ function mountBattle() {
     unmount = render(() => createComponent(GraphicalApp, {
         characterLibrary: createCharacterLibrary(), createEngine,
         campaigns: ["skunk"], release: "test", presentation, prepareBattle,
-        composeCampaign: () => ({ library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation,
-            languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }] }),
+        composeCampaign: () => ({
+            library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation,
+            languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }]
+        }),
         languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }],
     }), host);
     click(".kcq-title-screen__campaign");
@@ -311,18 +314,22 @@ function mountScrollingLog() {
     const flush = () => { for (const [id, callback] of [...pending]) { pending.delete(id); callback(0); } };
     const scroll = (top: number) => { viewport.scrollTop = top; viewport.dispatchEvent(new Event("scroll")); };
     const append = () => { height += 100; setEntries(previous => [...previous, entry(previous.length + 1)]); };
-    return { viewport, flush, scroll, append, resize: () => resize(), setEntries, entry, setState, state, setLanguage, disconnect, observe,
-        setHeight: (value: number) => { height = value; }, setClient: (value: number) => { client = value; }, pending };
+    return {
+        viewport, flush, scroll, append, resize: () => resize(), setEntries, entry, setState, state, setLanguage, disconnect, observe,
+        setHeight: (value: number) => { height = value; }, setClient: (value: number) => { client = value; }, pending
+    };
 }
 
 describe("Game Log bottom following", () => {
     it("renders grouped misses with localized colored names and a separate successful buff recipient", () => {
         const log = mountScrollingLog();
-        log.setEntries(createGameLogEntries([{ type: "useMove", actor: "queen1", move: "skunkPerfume", effects: [], targets: [
-            { target: "ko", result: "miss", effects: [] },
-            { target: "matsuko", result: "miss", effects: [] },
-            { target: "hinari", result: "hit", effects: [{ type: "buffAdded", target: "hinari", buff: "escapePerfume" }] },
-        ] }]));
+        log.setEntries(createGameLogEntries([{
+            type: "useMove", actor: "queen1", move: "skunkPerfume", effects: [], targets: [
+                { target: "ko", result: "miss", effects: [] },
+                { target: "matsuko", result: "miss", effects: [] },
+                { target: "hinari", result: "hit", effects: [{ type: "buffAdded", target: "hinari", buff: "escapePerfume" }] },
+            ]
+        }]));
         const rows = () => [...log.viewport.querySelectorAll('[data-outcome="damage"]')];
         expect(rows()).toHaveLength(2);
         expect(rows()[0]!.querySelector('.kcq-game-log__target')!.textContent).toBe("Ko-chan, Matsuko");
@@ -331,7 +338,8 @@ describe("Game Log bottom following", () => {
         expect(rows()[0]!.querySelector(':scope > .kcq-game-log__values')!.textContent).toBe("Miss");
         expect(rows()[1]!.querySelector('.kcq-game-log__value--entity-hinari')!.textContent).toBe("Hinari");
         expect(rows()[1]!.querySelector(':scope > .kcq-game-log__values')!.textContent).toBe("HitEscape Perfume Added");
-        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.targetList": "{second} / {first}",
+        log.setLanguage(new Presentation({
+            ...stockStrings, "ui.gameLog.targetList": "{second} / {first}",
             "entity.ko.name": "Localized Ko", "entity.matsuko.name": "Localized Matsuko",
         }));
         expect(rows()).toHaveLength(2);
@@ -342,14 +350,16 @@ describe("Game Log bottom following", () => {
 
     it("keeps activation consequences nested and relocalizes the live activation heading", () => {
         const log = mountScrollingLog();
-        log.setEntries(createGameLogEntries([{ type: "changePhase", phase: "player", effects: [
-            { type: "bindingTickStart", target: "ko", binding: "latexCollar" },
-            { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 10 },
-            { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 2 },
-            { type: "buffAdded", target: "ko", buff: "latexMist" },
-            { type: "bindingTickEnd", target: "ko", binding: "latexCollar" },
-            { type: "actionRefreshed", target: "hinari" },
-        ] }]));
+        log.setEntries(createGameLogEntries([{
+            type: "changePhase", phase: "player", effects: [
+                { type: "bindingTickStart", target: "ko", binding: "latexCollar" },
+                { type: "bondageChanged", target: "ko", binding: "latexHead", amount: 10 },
+                { type: "bondageChanged", target: "ko", binding: "latexArms", amount: 2 },
+                { type: "buffAdded", target: "ko", buff: "latexMist" },
+                { type: "bindingTickEnd", target: "ko", binding: "latexCollar" },
+                { type: "actionRefreshed", target: "hinari" },
+            ]
+        }]));
         const activation = log.viewport.querySelector('[data-outcome="bindingTick"]')!;
         expect(activation.querySelector(':scope > .kcq-game-log__tick-outcomes > [data-outcome="binding"]')).not.toBeNull();
         expect(log.viewport.querySelectorAll('[data-outcome="binding"]')).toHaveLength(1);
@@ -368,16 +378,22 @@ describe("Game Log bottom following", () => {
 
     it("keeps target, accuracy, and binding transitions in one flowing container per AoE recipient", () => {
         const log = mountScrollingLog();
-        log.setEntries(createGameLogEntries([{ type: "useMove", actor: "rainmaker1", move: "latexRain", effects: [], targets: [
-            { target: "ko", result: "hit", effects: [
-                { type: "bondageAdded", target: "ko", binding: "latexHead", amount: 10 },
-                { type: "bondageAdded", target: "ko", binding: "latexArms", amount: 15 },
-            ] },
-            { target: "hinari", result: "crit", effects: [
-                { type: "bondageAdded", target: "hinari", binding: "latexArms", amount: 20 },
-                { type: "bondageAdded", target: "hinari", binding: "latexLegs", amount: 30 },
-            ] },
-        ] }]));
+        log.setEntries(createGameLogEntries([{
+            type: "useMove", actor: "rainmaker1", move: "latexRain", effects: [], targets: [
+                {
+                    target: "ko", result: "hit", effects: [
+                        { type: "bondageAdded", target: "ko", binding: "latexHead", amount: 10 },
+                        { type: "bondageAdded", target: "ko", binding: "latexArms", amount: 15 },
+                    ]
+                },
+                {
+                    target: "hinari", result: "crit", effects: [
+                        { type: "bondageAdded", target: "hinari", binding: "latexArms", amount: 20 },
+                        { type: "bondageAdded", target: "hinari", binding: "latexLegs", amount: 30 },
+                    ]
+                },
+            ]
+        }]));
         const rows = [...log.viewport.querySelectorAll('.kcq-game-log__row--compactBindings')];
         expect(rows).toHaveLength(2);
         expect(rows.map(row => row.querySelector('.kcq-game-log__target')!.textContent)).toEqual(["Ko-chan", "Hinari"]);
@@ -397,12 +413,14 @@ describe("Game Log bottom following", () => {
 
     it("preserves multi-hit accuracy in the compact flow and leaves single-zone rows unchanged", () => {
         const log = mountScrollingLog();
-        log.setEntries(createGameLogEntries([{ type: "useMove", actor: "rainmaker1", move: "arbitraryMove", effects: [], targets: [
-            { target: "ko", result: "hit", effects: [{ type: "bondageAdded", target: "ko", binding: "latexHead", amount: 10 }] },
-            { target: "ko", result: "graze", effects: [{ type: "bondageAdded", target: "ko", binding: "latexArms", amount: 5 }] },
-            { target: "ko", result: "miss", effects: [] },
-            { target: "hinari", result: "hit", effects: [{ type: "bondageAdded", target: "hinari", binding: "latexHead", amount: 10 }] },
-        ] }]));
+        log.setEntries(createGameLogEntries([{
+            type: "useMove", actor: "rainmaker1", move: "arbitraryMove", effects: [], targets: [
+                { target: "ko", result: "hit", effects: [{ type: "bondageAdded", target: "ko", binding: "latexHead", amount: 10 }] },
+                { target: "ko", result: "graze", effects: [{ type: "bondageAdded", target: "ko", binding: "latexArms", amount: 5 }] },
+                { target: "ko", result: "miss", effects: [] },
+                { target: "hinari", result: "hit", effects: [{ type: "bondageAdded", target: "hinari", binding: "latexHead", amount: 10 }] },
+            ]
+        }]));
         const rows = [...log.viewport.querySelectorAll('[data-outcome="damage"]')];
         const compact = rows[0]!.querySelector(':scope > .kcq-game-log__values--bindings')!;
         expect([...compact.children].map(value => value.textContent)).toEqual(["Ko-chan", "Hit", "Graze", "Miss", "Head 0 → 10", "Arms 0 → 5"]);
@@ -514,16 +532,18 @@ describe("Game Log bottom following", () => {
 describe("Combat and Story tabs", () => {
     it("defaults to Combat and switches presentation without mutating the battle or mechanical rows", () => {
         const log = mountScrollingLog();
-        log.setEntries(createGameLogEntries([{ type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [
-            { target: "skunkette1", result: "hit", effects: [{ type: "enemyDamaged", target: "skunkette1", amount: 10 }] },
-        ] }]));
+        log.setEntries(createGameLogEntries([{
+            type: "useMove", actor: "ko", move: "telekinesis", effects: [], targets: [
+                { target: "skunkette1", result: "hit", effects: [{ type: "enemyDamaged", target: "skunkette1", amount: 10 }] },
+            ]
+        }]));
         const saved = JSON.stringify(log.state());
         const combat = log.viewport.querySelector('.kcq-game-log__scroll')!.innerHTML;
         expect(button("Combat").getAttribute("aria-selected")).toBe("true");
         button("Story").click();
         expect(button("Story").getAttribute("aria-selected")).toBe("true");
         expect(log.viewport.textContent).toContain("landing an attack");
-        expect(log.viewport.textContent).toContain("Skunkette 1 takes 10 damage.");
+        expect(log.viewport.textContent).toContain("Skunkette A takes 10 damage.");
         expect(log.viewport.querySelector('[data-outcome]')).toBeNull();
         button("Combat").click();
         expect(log.viewport.querySelector('.kcq-game-log__scroll')!.innerHTML).toBe(combat);

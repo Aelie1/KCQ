@@ -202,8 +202,9 @@ export class Presentation {
         }
 
         const key = this.definitionKey("entity", match[1], variant);
+        const index = this.definitionKey("entity", "index", match[2]);
         return variant === "name"
-            ? { ...key, args: { index: Number(match[2]) } }
+            ? { ...key, args: { index: index } }
             : key;
     }
 }

@@ -319,7 +319,7 @@ describe("responsive battle overview", () => {
         expect(consequences[0]).toContain("Latex Mist IV");
         expect(consequences[1]).toContain("Healing +50");
         expect(consequences[2]).toContain("Spawn Fairy");
-        expect(card.querySelector(".kcq-intent-row__target")?.textContent).toBe("Skunkette 1");
+        expect(card.querySelector(".kcq-intent-row__target")?.textContent).toBe("Skunkette A");
     });
     it("switches repeatedly without duplicate shortcuts, controls, or engine actions", () => {
         const { host, execute } = mountBattle(AUTO_MEDIUM_BREAKPOINT - 1);

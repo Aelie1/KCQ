@@ -364,9 +364,9 @@ describe("character details view model", () => {
                 name: "Pounce",
                 details: ["Immobilized", "Accuracy -1"],
                 linkedEntity: {
-                    accessibleLabel: "Linked to Skunkette 1",
+                    accessibleLabel: "Linked to Skunkette A",
                     id: "skunkette1",
-                    name: "Skunkette 1",
+                    name: "Skunkette A",
                     tone: "neutral",
                 },
             },

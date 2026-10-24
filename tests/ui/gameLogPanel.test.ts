@@ -63,7 +63,7 @@ describe("compact graphical Game Log", () => {
         const entries = createGameLogEntries(result.frames, before).filter(entry => entry.kind === "move" && entry.move === "latexPuddle");
         const translated = new Presentation({ ...stockStrings, "hitBand.graze.name": "Effleure" });
         const html = renderEntries(entries, translated);
-        expect(text(html)).toContain("Skunk 1—Latex Puddle");
+        expect(text(html)).toContain("Skunk A—Latex Puddle");
         expect(text(html)).not.toContain("Effleure");
         expect(entries[0]).not.toHaveProperty("band");
         expect(createGameLogViewModel(entries, translated)[0]).not.toHaveProperty("band");
@@ -125,7 +125,7 @@ describe("compact graphical Game Log", () => {
         expect(body.indexOf("Telekinesis")).toBeLessThan(body.indexOf("Rockfall"));
         expect(body.indexOf("Rockfall")).toBeLessThan(body.indexOf("Immolation"));
         expect(body.indexOf("Immolation")).toBeLessThan(body.indexOf("Round 4 · Enemy Phase"));
-        expect(body.indexOf("Round 4 · Enemy Phase")).toBeLessThan(body.indexOf("Skunkette 1—Latex Spray"));
+        expect(body.indexOf("Round 4 · Enemy Phase")).toBeLessThan(body.indexOf("Skunkette A—Latex Spray"));
         expect(body.indexOf("Latex Spray")).toBeLessThan(body.indexOf("Round 5 · Player Phase"));
         expect(html).toContain('aria-label="Chronological game events"');
         expect(body).not.toMatch(/latexArms|latexTorso|telekinesis|tried to|took .* damage/);
@@ -148,7 +148,7 @@ describe("compact graphical Game Log", () => {
         for (const hit of ["Hit 18", "Miss", "Graze 3", "Hit 8", "Crit 16"]) expect(text(html)).toContain(hit);
         expect(html).toContain("kcq-game-log__value--crit");
         expect(text(html).match(/Rockfall/g)).toHaveLength(1);
-        expect(text(html).match(/Skunkette 1/g)).toHaveLength(2);
+        expect(text(html).match(/Skunkette A/g)).toHaveLength(2);
     });
 
     it("distinguishes AoE targets and preserves healing and blocked damage", () => {
@@ -157,8 +157,8 @@ describe("compact graphical Game Log", () => {
             { target: "skunkette2", result: "crit", effects: [damaged("skunkette2", 24)] },
         ], [{ type: "enemyHealed", target: "skunkette2", amount: 5 }], "immolation")]));
         expect(count(html, "damage")).toBe(2);
-        expect(text(html)).toContain("Skunkette 1Graze 6Blocked 4");
-        expect(text(html)).toContain("Skunkette 2Crit 24Heal 5");
+        expect(text(html)).toContain("Skunkette AGraze 6Blocked 4");
+        expect(text(html)).toContain("Skunkette BCrit 24Heal 5");
         expect(text(html).match(/Immolation/g)).toHaveLength(1);
     });
 
@@ -203,7 +203,7 @@ describe("compact graphical Game Log", () => {
         const html = renderToString(() => createComponent(GameLogPanel, gameLogFixture));
         const rows = html.match(/<div[^>]+data-outcome="buff"[\s\S]*?(?=<\/article>)/g) ?? [];
         expect(rows.filter(row => text(row).includes("Pounce"))).toHaveLength(1);
-        expect(text(html)).toContain("Ko-chan ↔ Skunkette 1Pounce IV → I");
+        expect(text(html)).toContain("Ko-chan ↔ Skunkette APounce IV → I");
         expect(text(html).match(/IV → I/g)).toHaveLength(1);
     });
 
@@ -219,7 +219,7 @@ describe("compact graphical Game Log", () => {
         const html = renderEntries(entries);
         expect(count(html, "buff")).toBe(1);
         expect(text(html)).toContain("Ko-chan: Pounce IV → I");
-        expect(text(html)).toContain("Skunkette 1: Pounce III → II");
+        expect(text(html)).toContain("Skunkette A: Pounce III → II");
     });
 
     it("shows resource endpoints without a redundant applied delta", () => {
@@ -291,7 +291,7 @@ describe("compact graphical Game Log", () => {
         }], before));
         expect(count(html, "trap")).toBe(1);
         for (const label of ["Latex Puddle10 → 5", "Triggered by Ko-chan", "Pounce Cancelled", "Latex Mist Weakened", "Retargeted → Matsuko",
-            "Interrupted · Bindings prevent this action.", "HinariAction Refreshed", "Skunkette 3Spawned", "Skunkette 2Defeated", "Moving → Standing"]) expect(text(html)).toContain(label);
+            "Interrupted · Bindings prevent this action.", "HinariAction Refreshed", "Skunkette CSpawned", "Skunkette BDefeated", "Moving → Standing"]) expect(text(html)).toContain(label);
     });
 
     it("shows only meaningful encounter and character entries supplied by Pass 1", () => {
@@ -371,7 +371,7 @@ describe("compact graphical Game Log", () => {
                 { type: "dataChanged", target: "ko", name: "subspace", amount: 3 },
             ])
         }], before), p);
-        for (const label of ["Actor test", "Target 1", "Move test", "Result test 18", "Binding test", "Buff test Level four becomes Level one", "Resource test+3"]) expect(text(html)).toContain(label);
+        for (const label of ["Actor test", "Target A", "Move test", "Result test 18", "Binding test", "Buff test Level four becomes Level one", "Resource test+3"]) expect(text(html)).toContain(label);
         expect(html).toContain('aria-label="History test"');
         expect(text(renderEntries([], p))).toContain("Empty test");
     });
@@ -536,7 +536,7 @@ describe("Game Log presentation refinements", () => {
         }], before);
         const rows = models(entries)[0]!.rows;
         expect(rows).toHaveLength(1);
-        expect(rows[0]!.target).toBe("Ko-chan ↔ Skunkette 1");
+        expect(rows[0]!.target).toBe("Ko-chan ↔ Skunkette A");
         expect(rows[0]!.values[0]!.text).toBe("Pounce III Removed");
     });
 
@@ -557,7 +557,7 @@ describe("Game Log presentation refinements", () => {
         expect(rows[4]!.emphasis).toBeUndefined();
         const html = renderEntries(entries);
         expect(html).toContain("kcq-game-log__row--defeat");
-        expect(html).toContain('class="kcq-game-log__value--entity-neutral">Skunkette 1');
+        expect(html).toContain('class="kcq-game-log__value--entity-neutral">Skunkette A');
         expect(text(html)).not.toContain("+25");
     });
 
@@ -606,7 +606,7 @@ describe("Game Log presentation refinements", () => {
             ]
         }];
         expect(models(entries)[0]!.rows.map(row => row.kind)).toEqual(["buff"]);
-        expect(models(entries)[0]!.rows[0]!.target).toBe("Ko-chan ↔ Skunkette 1");
+        expect(models(entries)[0]!.rows[0]!.target).toBe("Ko-chan ↔ Skunkette A");
     });
 
 });

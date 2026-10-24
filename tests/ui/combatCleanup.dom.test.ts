@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -80,7 +80,7 @@ describe("combat cleanup at mobile width", () => {
         expect(groups).toHaveLength(2);
         expect(groups[0]!.querySelector(".kcq-target-header__name")?.textContent).toBe("Hinari");
         expect(groups[0]!.querySelector(".kcq-buff-effect__tag")?.textContent).toBe("Add Debuff");
-        expect(groups[1]!.querySelector(".kcq-target-header__name")?.textContent).toBe("Skunkette 1");
+        expect(groups[1]!.querySelector(".kcq-target-header__name")?.textContent).toBe("Skunkette A");
         expect(groups[1]!.querySelector(".kcq-buff-effect__tag")?.textContent).toBe("Add Buff");
         const rows = [...groups[1]!.querySelectorAll<HTMLElement>(".kcq-preview-effect")];
         expect(rows).toHaveLength(2);

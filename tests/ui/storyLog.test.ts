@@ -29,7 +29,7 @@ describe("Story Log: authored moments", () => {
         const entry = move(damage("ko", "hit", 1), damage("matsuko", "miss", 2), damage("hinari", "crit", 3));
         expect(paragraphs([entry], {
             "move.latexMist.narrative.mixed": "{actor} catches {hits}, but not {misses}.",
-        })).toEqual(["Skunkette 1 catches Ko-chan and Hinari, but not Matsuko."]);
+        })).toEqual(["Skunkette A catches Ko-chan and Hinari, but not Matsuko."]);
     });
 
     it("chooses exact bands before the hit category, with plural variants", () => {
@@ -44,7 +44,7 @@ describe("Story Log: authored moments", () => {
 
     it("uses action for a no-roll move and never substitutes a missing string", () => {
         expect(paragraphs([move()], { "move.latexMist.narrative.action": "{actor} releases a mist." }))
-            .toEqual(["Skunkette 1 releases a mist."]);
+            .toEqual(["Skunkette A releases a mist."]);
         expect(paragraphs([move()], { "move.latexMist.narrative.action": "..." })).toEqual([]);
         expect(paragraphs([move(damage("ko", "miss", 1))])).toEqual([]);
     });
@@ -78,10 +78,14 @@ describe("Story Log: authored moments", () => {
     });
 
     it("narrates binding level transitions but ignores numerical changes within a level", () => {
-        const changing: LogOutcome = { kind: "binding", target: "ko", binding: "latexArms", change: 30,
-            initial: { value: 40, level: "heavy" }, final: { value: 70, level: "severe" } };
-        const sameLevel: LogOutcome = { kind: "binding", target: "matsuko", binding: "latexArms", change: 1,
-            initial: { value: 70, level: "severe" }, final: { value: 71, level: "severe" } };
+        const changing: LogOutcome = {
+            kind: "binding", target: "ko", binding: "latexArms", change: 30,
+            initial: { value: 40, level: "heavy" }, final: { value: 70, level: "severe" }
+        };
+        const sameLevel: LogOutcome = {
+            kind: "binding", target: "matsuko", binding: "latexArms", change: 1,
+            initial: { value: 70, level: "severe" }, final: { value: 71, level: "severe" }
+        };
         expect(paragraphs([move(changing, sameLevel)], {
             "binding.latexArms.narrative.increased.severe": "{target}'s arms become paws.",
         })).toEqual(["Ko-chan's arms become paws."]);
@@ -97,20 +101,24 @@ describe("Story Log: authored moments", () => {
             "character.narrative.incapacitated": "{target} loses control!",
             "character.narrative.rescued": "{target} is free!",
             "enemy.narrative.defeated": "{target} collapses!",
-        })).toEqual(["Hinari loses control!", "Ko-chan is free!", "Skunkette 1 collapses!"]);
+        })).toEqual(["Hinari loses control!", "Ko-chan is free!", "Skunkette A collapses!"]);
     });
 
     it("narrates a triggered trap once without narrating trap stock changes", () => {
-        const trigger: LogOutcome = { kind: "trap", trap: "trapPuddle", change: -3,
-            triggers: [{ actor: "ko", amount: 1 }, { actor: "matsuko", amount: 2 }] };
+        const trigger: LogOutcome = {
+            kind: "trap", trap: "trapPuddle", change: -3,
+            triggers: [{ actor: "ko", amount: 1 }, { actor: "matsuko", amount: 2 }]
+        };
         expect(paragraphs([move(trigger)], {
             "trap.trapPuddle.narrative.triggered": "{targets} fall into a puddle!",
         })).toEqual(["Ko-chan and Matsuko fall into a puddle!"]);
     });
 
     it("distinguishes escape progress, failed escapes and assists", () => {
-        const decrease: LogOutcome = { kind: "binding", target: "ko", binding: "latexArms", change: -3,
-            initial: { value: 10, level: "light" }, final: { value: 7, level: "light" } };
+        const decrease: LogOutcome = {
+            kind: "binding", target: "ko", binding: "latexArms", change: -3,
+            initial: { value: 10, level: "light" }, final: { value: 7, level: "light" }
+        };
         const entries: GameLogPresentationEntry[] = [
             { kind: "escape", actor: "ko", target: "ko", outcomes: [decrease] },
             { kind: "escape", actor: "ko", target: "ko", outcomes: [] },
@@ -121,6 +129,29 @@ describe("Story Log: authored moments", () => {
             "escape.narrative.failed": "{actor} fails to escape.",
             "assist.narrative.progress": "{actor} helps {target} escape.",
         })).toEqual(["Ko-chan loosens her bindings.", "Ko-chan fails to escape.", "Matsuko helps Ko-chan escape."]);
+    });
+
+    it("uses move-wide accuracy for targetless rolled moves", () => {
+        const hitMove: GameLogPresentationEntry = {
+            kind: "move",
+            actor: "matsuko",
+            move: "throwOff",
+            result: "hit",
+            outcomes: [],
+        };
+
+        const missMove: GameLogPresentationEntry = {
+            ...hitMove,
+            result: "miss",
+        };
+
+        expect(paragraphs([hitMove], {
+            "move.throwOff.narrative.hit": "{actor} throws her attacker off!",
+        })).toEqual(["Matsuko throws her attacker off!"]);
+
+        expect(paragraphs([missMove], {
+            "move.throwOff.narrative.miss": "{actor} cannot throw her attacker off.",
+        })).toEqual(["Matsuko cannot throw her attacker off."]);
     });
 
     it("shows phase headings only when they lead to visible narration", () => {
@@ -139,11 +170,15 @@ describe("Story Log: authored moments", () => {
 
     it("processes nested binding ticks and leaves its input unchanged", () => {
         const entries: GameLogPresentationEntry[] = [
-            { kind: "phase", phase: "enemy", round: 1, outcomes: [
-                { kind: "bindingTick", target: "ko", binding: "latexArms", outcomes: [
-                    { kind: "character", target: "ko", operation: "incapacitated" },
-                ] },
-            ] },
+            {
+                kind: "phase", phase: "enemy", round: 1, outcomes: [
+                    {
+                        kind: "bindingTick", target: "ko", binding: "latexArms", outcomes: [
+                            { kind: "character", target: "ko", operation: "incapacitated" },
+                        ]
+                    },
+                ]
+            },
         ];
         const saved = JSON.stringify(entries);
         expect(paragraphs(entries, { "character.narrative.incapacitated": "{target} is overcome." }))

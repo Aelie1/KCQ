@@ -100,7 +100,12 @@ export function createStoryLogViewModel(
         const base = `move.${entry.move}.narrative`;
         const actor = p.entity(entry.actor);
         const move = p.move(entry.move);
-        if (!results.length) return p.narrative([`${base}.action`], { actor, move });
+        if (!results.length) {
+            if (entry.result && entry.result !== "none") {
+                return p.narrative([`${base}.${entry.result}`], { actor, move, band: p.hitBand(entry.result) });
+            }
+            return p.narrative([`${base}.action`], { actor, move });
+        }
 
         const hits = results.filter(result => result.hit.result !== "miss");
         const misses = results.filter(result => result.hit.result === "miss");
@@ -119,6 +124,18 @@ export function createStoryLogViewModel(
         }
 
         const allTargets = names(results.map(result => result.target));
+        const bindings = [...new Set(entry.outcomes.flatMap(outcome =>
+            outcome.kind === "binding" && outcome.change > 0
+                ? [outcome.binding] : []))];
+        const hitLocation = bindings.length === 1
+            ? p.ui("storyLog.hitLocation.single", { binding: p.binding(bindings[0]!, "short").toLowerCase() })
+            : bindings.length === 2
+                ? p.ui("storyLog.hitLocation.two")
+                : bindings.length === 3
+                    ? p.ui("storyLog.hitLocation.three")
+                    : bindings.length >= 4
+                        ? p.ui("storyLog.hitLocation.many")
+                        : "";
         return p.narrative(keys, {
             actor,
             move,
@@ -130,6 +147,7 @@ export function createStoryLogViewModel(
             crits: names(results.filter(result => result.hit.result === "crit").map(result => result.target)),
             damage: results.reduce((sum, result) => sum + result.hit.damage, 0),
             band: p.hitBand(exactBand ?? (category === "miss" ? "miss" : "hit")),
+            hitLocation,
         });
     };
 

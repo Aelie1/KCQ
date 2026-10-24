@@ -527,6 +527,7 @@ export class GameEngine implements Engine {
                     type: "useMove",
                     actor: actor.id,
                     move: move.id,
+                    result: iMove.band,
                     effects: [],
                     targets: []
                 }
@@ -721,6 +722,7 @@ export class GameEngine implements Engine {
             type: "useMove",
             actor: actor.id,
             move: move.definition.id,
+            result: move.band,
             effects: [],
             targets: []
         }

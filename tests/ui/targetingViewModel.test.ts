@@ -470,7 +470,7 @@ describe("targeting view model", () => {
 
         expect(model.targets[0].effects).toEqual([]);
         expect(model.actionEffects[0]).toMatchObject({
-            label: "Data", payload: "Skunkette 1   [data.mystery.name] -4", details: [],
+            label: "Data", payload: "Skunkette A   [data.mystery.name] -4", details: [],
         });
         expect(model.actionEffects).toHaveLength(1);
         expect(model.actionEffectGroups).toHaveLength(1);

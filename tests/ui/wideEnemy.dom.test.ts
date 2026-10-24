@@ -88,7 +88,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
         expect(getComputedStyle(details).height).toBe(width >= AUTO_WIDE_BREAKPOINT ? "100%" : "auto");
         expect(getComputedStyle(details).gridTemplateRows).toBe("auto minmax(0, 1fr)");
         const heading = element(".kcq-enemy-details > .kcq-screen-layout__header .kcq-battle-section__heading");
-        expect(heading.textContent).toBe("Enemy / Skunkette 1");
+        expect(heading.textContent).toBe("Enemy / Skunkette A");
         expect(heading.querySelector("button, a")).toBeNull();
         expect(getComputedStyle(heading).height).toBe(getComputedStyle(element(".kcq-battle-section--party .kcq-battle-section__heading")).height);
         expect(getComputedStyle(heading.querySelector("h2")!).textTransform).toBe("uppercase");
@@ -98,7 +98,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
         expect(logHeading.querySelector('[role="tablist"] [role="tab"]')).not.toBeNull();
         logHeading.click();
         expect(document.querySelector(".kcq-game-log")).toBeNull();
-        expect(element(".kcq-enemy-details__identity").textContent).toContain("Skunkette 1");
+        expect(element(".kcq-enemy-details__identity").textContent).toContain("Skunkette A");
         expect(element(".kcq-enemy-details__identity").textContent).toContain("152 / 200");
         expect(element("#enemy-status-heading").textContent).toBe("Modifiers");
         expect(element(".kcq-character-capabilities__list").textContent).toContain("-2");
@@ -132,7 +132,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
             const wide = width >= AUTO_WIDE_BREAKPOINT;
             const nonNarrow = width >= AUTO_MEDIUM_BREAKPOINT;
             const details = element(".kcq-enemy-details");
-            expect(details.getAttribute("aria-label")).toBe("Skunkette 2");
+            expect(details.getAttribute("aria-label")).toBe("Skunkette B");
             expect(!!details.closest(".kcq-battle-overview-wide")).toBe(wide);
             expect(!!document.querySelector(".kcq-battle-section--party")).toBe(nonNarrow);
             expect(!!document.querySelector('[role="log"]')).toBe(wide);
@@ -140,7 +140,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
             expect(!!details.querySelector(".kcq-focused-character__avatar")).toBe(!nonNarrow);
             expect(!!details.querySelector(".kcq-combat-header__back")).toBe(!nonNarrow);
             expect(!!details.querySelector(".kcq-battle-section__heading")).toBe(nonNarrow);
-            if (nonNarrow) expect(details.querySelector(".kcq-battle-section__heading h2")?.textContent).toBe("Enemy / Skunkette 2");
+            if (nonNarrow) expect(details.querySelector(".kcq-battle-section__heading h2")?.textContent).toBe("Enemy / Skunkette B");
             expect(document.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
             element(nonNarrow ? ".kcq-enemy-details__back" : ".kcq-combat-header__back").click();
             expect(document.querySelector(".kcq-enemy-details")).toBeNull();
@@ -154,7 +154,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
         for (const width of [AUTO_WIDE_BREAKPOINT - 1, AUTO_MEDIUM_BREAKPOINT, 390, AUTO_WIDE_BREAKPOINT, 1920]) {
             viewport.setViewport({ width });
             expect(document.querySelectorAll(".kcq-enemy-details")).toHaveLength(1);
-            expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 2");
+            expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette B");
             expect(document.querySelectorAll(".kcq-combat-header")).toHaveLength(1);
             expect(document.querySelectorAll('[data-kcq-shortcut="escape"]')).toHaveLength(1);
             expect(document.querySelectorAll("#enemy-intentions-heading")).toHaveLength(1);
@@ -183,7 +183,7 @@ describe.each([1024, AUTO_WIDE_BREAKPOINT - 1, 1920])("non-narrow enemy details 
         const card = element('.kcq-enemy-card[data-kcq-shortcut="4"]');
         card.focus();
         press("Enter", card);
-        expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette 1");
+        expect(element(".kcq-enemy-details").getAttribute("aria-label")).toBe("Skunkette A");
         press("1");
         expect(document.querySelector(".kcq-enemy-details")).toBeNull();
         expect(document.querySelector(".kcq-character-details-expanded")).not.toBeNull();

@@ -1,19 +1,19 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
-import { createStockEngine } from "../../src/stock";
+import { getThresholds } from "../../src/engine/public/mechanics";
 import type { ActionInfo, DataEffect, Effect } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
+import { Presentation } from "../../src/ui/presentation/presentation";
 import { EffectPreview } from "../../src/ui/web/app/components/EffectPreview";
 import { EncounterDetailsPanel } from "../../src/ui/web/app/components/EncounterDetailsPanel";
-import { TargetingPanel } from "../../src/ui/web/app/panels/TargetingPanel";
 import { targetingFixtures } from "../../src/ui/web/app/fixtures/targeting";
+import { TargetingPanel } from "../../src/ui/web/app/panels/TargetingPanel";
+import { groupEffectPreviews } from "../../src/ui/web/app/viewModels/effectGroups";
 import { createEffectPreviewViewModels } from "../../src/ui/web/app/viewModels/effectPreviews";
 import { createEncounterDetailsViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { createTargetingViewModel } from "../../src/ui/web/app/viewModels/targeting";
-import { getThresholds } from "../../src/engine/public/mechanics";
-import { Presentation } from "../../src/ui/presentation/presentation";
 import { stockStrings } from "../helpers/stockStrings";
-import { groupEffectPreviews } from "../../src/ui/web/app/viewModels/effectGroups";
 
 const presentation = targetingFixtures.telekinesisChoose.presentation;
 const library = createStockEngine().getLibrary();
@@ -35,31 +35,35 @@ describe("linked buff preview chips", () => {
             type: "buff", operation: "add", target: "ko",
             buff: { id, linkedEntity: "skunkette1", statuses: [{ id: "immobilized", value: 1 }] },
         }], { presentation, scopeTarget: "ko" });
-        expect(effect).toMatchObject({ linkedEntity: "Skunkette 1", details: ["Immobilized"] });
+        expect(effect).toMatchObject({ linkedEntity: "Skunkette A", details: ["Immobilized"] });
         const renderPreview = (showLinkedEntities?: boolean) => visibleMarkup(renderToString(() =>
             createComponent(EffectPreview, { effect, showLinkedEntities })));
         for (const showLinkedEntities of [undefined, true]) {
-            expect(renderPreview(showLinkedEntities)).toMatch(/kcq-status-chip[^>]*>Skunkette 1<\/span>/);
+            expect(renderPreview(showLinkedEntities)).toMatch(/kcq-status-chip[^>]*>Skunkette A<\/span>/);
         }
-        expect(renderPreview(false)).not.toContain("Skunkette 1");
+        expect(renderPreview(false)).not.toContain("Skunkette A");
         expect(renderPreview(false)).toMatch(/kcq-status-chip[^>]*>Immobilized<\/span>/);
-        expect(effect).toHaveProperty("linkedEntity", "Skunkette 1");
+        expect(effect).toHaveProperty("linkedEntity", "Skunkette A");
     });
 
     it("retains participant chips in ordinary Targeting target cards and action effect groups", () => {
         const fixture = targetingFixtures.telekinesisChoose;
         const action: ActionInfo = {
             ...fixture.action,
-            targets: [{ valid: true, target: "skunkette1", effects: [{
-                type: "buff", operation: "add", target: "skunkette1",
-                buff: { id: "pounce", linkedEntity: "ko" },
-            }] }],
-            effects: [{ type: "buff", operation: "add", target: "ko",
-                buff: { id: "pounce", linkedEntity: "skunkette1" } }],
+            targets: [{
+                valid: true, target: "skunkette1", effects: [{
+                    type: "buff", operation: "add", target: "skunkette1",
+                    buff: { id: "pounce", linkedEntity: "ko" },
+                }]
+            }],
+            effects: [{
+                type: "buff", operation: "add", target: "ko",
+                buff: { id: "pounce", linkedEntity: "skunkette1" }
+            }],
         };
         const html = visibleMarkup(renderToString(() => createComponent(TargetingPanel, { ...fixture, action })));
         expect(html).toMatch(/kcq-status-chip[^>]*>Ko-chan<\/span>/);
-        expect(html).toMatch(/kcq-status-chip[^>]*>Skunkette 1<\/span>/);
+        expect(html).toMatch(/kcq-status-chip[^>]*>Skunkette A<\/span>/);
     });
 });
 
@@ -194,7 +198,7 @@ describe("encounter setup recipient groups", () => {
         });
         expect(allies.effects[1]).toMatchObject({ kind: "buff", name: "Ambushed!", durationLabel: "1 Rounds", details: ["Helpless"] });
         model.effectGroups.flatMap(({ effects }) => effects).forEach((effect) => expect(effect).not.toHaveProperty("recipient"));
-        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => {}, onBack: () => {} }));
+        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => { }, onBack: () => { } }));
         expect(html.match(/class="kcq-encounter-details__effect-group"/g)).toHaveLength(2);
         expect(visibleMarkup(html)).toContain("<h3>Allies</h3>");
         expect(visibleMarkup(html)).toContain("<h3>Enemies</h3>");
@@ -210,7 +214,7 @@ describe("encounter setup recipient groups", () => {
         expect(model.effectGroups).toEqual([]);
         expect(model.effects).toHaveLength(1);
         expect(model.effects[0]).toMatchObject({ kind: "trap", currentValue: 0, change: 50, max: 100, projectedValue: 50 });
-        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => {}, onBack: () => {} }));
+        const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => { }, onBack: () => { } }));
         expect(visibleMarkup(html)).toContain("0 → 50");
         expect(html).toContain("kcq-projected-meter--warning");
         expect(html).not.toContain("kcq-encounter-details__effect-group");
@@ -256,11 +260,11 @@ describe("projected spawn identities", () => {
             { type: "enemy", operation: "spawn", target: "skunk" },
             { type: "enemy", operation: "defeat", target: "skunk2" },
         ], { presentation: localized });
-        expect(grouped.groups.map(group => group.name)).toEqual(["Créature 2"]);
+        expect(grouped.groups.map(group => group.name)).toEqual(["Créature B"]);
         expect(grouped.ungrouped).toHaveLength(1);
         expect(grouped.ungrouped[0]).toMatchObject({ payload: "Créature invoquée" });
         expect(createEffectPreviewViewModels([
             { type: "enemy", operation: "defeat", target: "skunk2" },
-        ], { presentation: localized })[0]).toMatchObject({ payload: "Créature 2" });
+        ], { presentation: localized })[0]).toMatchObject({ payload: "Créature B" });
     });
 });

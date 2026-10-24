@@ -76,7 +76,7 @@ const outcomes = list(outcome);
 const roster = { livingEnemies: optional(list(text)) };
 const loadEntry = { id: text, success: boolean, outcomes, ...roster };
 const entry = variant("kind", {
-    move: { actor: text, move: text, outcomes, ...roster }, escape: { actor: text, target: text, outcomes, ...roster },
+    move: { actor: text, move: text, result: optional(band), outcomes, ...roster }, escape: { actor: text, target: text, outcomes, ...roster },
     phase: { phase, round: optional(integer), outcomes, ...roster }, stance: { changes: list(stanceOutcome), outcomes, ...roster },
     encounter: loadEntry, character: loadEntry,
 });
@@ -107,7 +107,7 @@ const leaf = variant("type", {
 });
 const effects = list(leaf);
 const event = variant("type", {
-    useMove: { actor: text, move: text, targets: list(shape({ target: text, result: band, effects })), effects },
+    useMove: { actor: text, move: text, result: optional(band), targets: list(shape({ target: text, result: band, effects })), effects },
     useEscape: { actor: text, target: text, effects }, changePhase: { phase, effects }, changeStance: { actor: text, effects },
     loadEncounter: { id: text, success: boolean, bindings: list(text), effects }, loadCharacter: { id: text, success: boolean, effects },
 });

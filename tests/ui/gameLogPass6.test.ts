@@ -1,15 +1,15 @@
 import { createComponent } from "solid-js";
 import { renderToString } from "solid-js/web";
 import { describe, expect, it } from "vitest";
+import { latexCollar } from "../../src/content/skunk/latex";
+import { latexRain, rainmaker } from "../../src/content/skunk/rainmaker";
+import { isCharacter } from "../../src/engine/protected/helpers";
 import type { Binding, GameEvent, GameState, LeafEvent, MoveEvent } from "../../src/engine/public/types";
 import { createGameLogEntries, type BindingTickOutcome } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
 import { makeFixtureCharacter } from "../../src/ui/web/app/fixtures/publicFixture";
+import { GameLogPanel } from "../../src/ui/web/app/panels/GameLogPanel";
 import { createGameLogViewModel } from "../../src/ui/web/app/viewModels/gameLog";
-import { isCharacter } from "../../src/engine/protected/helpers";
-import { latexCollar } from "../../src/content/skunk/latex";
-import { latexRain, rainmaker } from "../../src/content/skunk/rainmaker";
 import { execute, makeBehavioralCharacter, makeBehavioralEngine, makeBehavioralMove } from "../helpers/behavioralHelpers";
 import { stockStrings } from "../helpers/stockStrings";
 
@@ -108,11 +108,13 @@ describe("Pass 6 semantic binding activations", () => {
     });
 
     it("does not duplicate damage attribution when delimiters occur in a move result", () => {
-        const event = move([{ target: "ko", result: "hit", effects: [
-            { type: "enemyDamaged", target: "ko", amount: 2 },
-            ...tick("ko", [{ type: "enemyDamaged", target: "ko", amount: 3 }]),
-            { type: "enemyDamaged", target: "ko", amount: 5 },
-        ] }]);
+        const event = move([{
+            target: "ko", result: "hit", effects: [
+                { type: "enemyDamaged", target: "ko", amount: 2 },
+                ...tick("ko", [{ type: "enemyDamaged", target: "ko", amount: 3 }]),
+                { type: "enemyDamaged", target: "ko", amount: 5 },
+            ]
+        }]);
         const result = entries(event)[0]!.outcomes;
         expect(result).toMatchObject([
             { kind: "damage", damage: 2, hits: [{ result: "hit", damage: 2 }] },
@@ -191,9 +193,10 @@ describe("Pass 6 rendered activation and multi-zone rows", () => {
         const before = state(); before.characters[0]!.bindings = [binding("latexArms", 72, "severe"), binding("latexLegs", 30, "heavy")];
         const after = structuredClone(before); after.characters[0]!.bindings = [binding("latexArms", 81, "overwhelming"), binding("latexLegs", 15, "light")];
         const event = phase(tick("ko", [change("ko", "latexArms", 9), change("ko", "latexLegs", -15),
-            { type: "bondageBlocked", target: "ko", binding: "latexArms", amount: 4 },
+        { type: "bondageBlocked", target: "ko", binding: "latexArms", amount: 4 },
         ]));
-        const translated = new Presentation({ ...stockStrings,
+        const translated = new Presentation({
+            ...stockStrings,
             "binding.latexArms.name": "Full name that must stay out of compact rows", "binding.latexArms.short": "Sleeves",
             "ui.gameLog.bindingOutcome": "{binding}: {value}", "ui.gameLog.blocked": "Stopped {amount}",
         });
@@ -225,8 +228,8 @@ describe("Pass 6 rendered activation and multi-zone rows", () => {
 
     it("renders an activation alone for zero applied changes and zero HP effects", () => {
         const event = phase(tick("ko", [change("ko", "latexHead", 0),
-            { type: "enemyDamaged", target: "skunkette1", amount: 0 },
-            { type: "dataChanged", target: "ko", name: "subspace", amount: 0 },
+        { type: "enemyDamaged", target: "skunkette1", amount: 0 },
+        { type: "dataChanged", target: "ko", name: "subspace", amount: 0 },
         ]));
         expect((entries(event)[0]!.outcomes[0] as BindingTickOutcome).outcomes).toHaveLength(3);
         expect(models(event).rows[0]!.rows).toEqual([]);
@@ -245,7 +248,7 @@ describe("Pass 6 rendered activation and multi-zone rows", () => {
         const rows = models(event).rows[0]!.rows!;
         expect(rows.map(row => row.kind)).toEqual(["binding", "damage", "buff", "resource"]);
         expect(rows[0]!.values.map(value => value.text)).toEqual(["Head +10 (Blocked 4)", "Arms +2 (Blocked 3)"]);
-        expect(rows[1]!.target).toBe("Skunkette 1"); expect(rows[2]!.target).toBe("Hinari");
+        expect(rows[1]!.target).toBe("Skunkette A"); expect(rows[2]!.target).toBe("Hinari");
         const html = render(event); expect(count(html, "damage")).toBe(1); expect(count(html, "buff")).toBe(1); expect(count(html, "resource")).toBe(1);
     });
 
@@ -322,9 +325,11 @@ describe("Pass 6 real-engine boundaries", () => {
     });
 
     it("consolidates real Latex Rain targets and preserves their executed accuracy", () => {
-        const caster = { ...rainmaker, ai: (_state: Parameters<typeof rainmaker.ai>[0], actor: Parameters<typeof rainmaker.ai>[1]) => [{
-            type: "move" as const, actor, move: { definition: { ...latexRain, accuracy: { hit: 100 } } }, targets: _state.characters,
-        }] };
+        const caster = {
+            ...rainmaker, ai: (_state: Parameters<typeof rainmaker.ai>[0], actor: Parameters<typeof rainmaker.ai>[1]) => [{
+                type: "move" as const, actor, move: { definition: { ...latexRain, accuracy: { hit: 100 } } }, targets: _state.characters,
+            }]
+        };
         const engine = makeBehavioralEngine([makeBehavioralCharacter("ko"), makeBehavioralCharacter("hinari")], [caster], 3);
         const initial = engine.getGameState();
         const result = execute(engine, { type: "endTurn" });
