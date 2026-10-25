@@ -94,6 +94,27 @@ export function createStoryLogViewModel(
         };
     };
 
+    const targetSummary = (ids: readonly string[], enemies: readonly string[] = []): string => {
+        const unique = [...new Set(ids)];
+
+        if (unique.length === 0) {
+            return p.ui("storyLog.targets.none");
+        }
+
+        if (unique.length === 1) {
+            return p.entity(unique[0]!);
+        }
+
+        if (enemies.length > 1 && unique.length === enemies.length && enemies.every(id => unique.includes(id))) {
+            return p.ui("storyLog.targets.allEnemies");
+        }
+
+        return p.ui("storyLog.targets.count", {
+            count: unique.length,
+            number: p.ui(`storyLog.number.${unique.length}`),
+        });
+    };
+
     const moveNarrative = (entry: MoveEntry): ResolvedNarrative | undefined => {
         const results: HitResult[] = [];
         entry.outcomes.forEach((outcome, index) => {
@@ -108,11 +129,12 @@ export function createStoryLogViewModel(
         const base = `move.${entry.move}.narrative`;
         const actor = p.entity(entry.actor);
         const move = p.move(entry.move);
+        const target = names(entry.targetIds);
         if (!results.length) {
             if (entry.result && entry.result !== "none") {
                 return p.resolveNarrative([`${base}.${entry.result}`], { actor, move, band: p.hitBand(entry.result) });
             }
-            return p.resolveNarrative([`${base}.action`], { actor, move });
+            return p.resolveNarrative([`${base}.action`], { actor, move, target });
         }
 
         const hits = results.filter(result => result.hit.result !== "miss");
@@ -131,6 +153,7 @@ export function createStoryLogViewModel(
             keys.push(`${base}.${category}`);
         }
 
+        const targetIds = [...new Set(results.map(result => result.target))];
         const allTargets = names(results.map(result => result.target));
         const bindings = [...new Set(entry.outcomes.flatMap(outcome =>
             outcome.kind === "binding" && outcome.change > 0
@@ -148,7 +171,7 @@ export function createStoryLogViewModel(
             actor,
             move,
             target: allTargets,
-            targets: allTargets,
+            targetCount: targetSummary(targetIds, entry.livingEnemies),
             hits: names(hits.map(result => result.target)),
             misses: names(misses.map(result => result.target)),
             grazes: names(results.filter(result => result.hit.result === "graze").map(result => result.target)),
@@ -243,7 +266,6 @@ export function createStoryLogViewModel(
                 "enemy.narrative.spawned",
             ], {
                 target: spawnedTargets,
-                targets: spawnedTargets,
             });
 
             if (text) narratives.push(text);
@@ -262,7 +284,7 @@ export function createStoryLogViewModel(
                         const group = grouped.get(id);
                         if (!group) continue;
                         const targetIds = [...new Set(group.changes.map(item => item.target))];
-                        const targets = names(targetIds);
+                        const target = names(targetIds);
                         const severity = change.severity;
                         const plural = targetIds.length > 1;
 
@@ -271,8 +293,7 @@ export function createStoryLogViewModel(
                             : group.keys;
 
                         const line = p.resolveNarrative(keys, {
-                            target: targets,
-                            targets,
+                            target,
                             buff: p.buff(change.buff, severity),
                             ...(entry.kind === "move" || entry.kind === "escape" ? { actor: p.entity(entry.actor) } : {}),
                         });
@@ -338,7 +359,7 @@ export function createStoryLogViewModel(
                         `trap.${outcome.trap}.narrative.triggered`,
                     ], {
                         actor: actors,
-                        targets: actors,
+                        target: actors,
                         trap: p.trap(outcome.trap),
                         amount: outcome.triggers.reduce((sum, trigger) => sum + trigger.amount, 0),
                     });

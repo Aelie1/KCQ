@@ -35,11 +35,11 @@ describe("Story Log: authored moments", () => {
 
     it("chooses exact bands before the hit category, with plural variants", () => {
         expect(paragraphs([move(damage("ko", "crit"), damage("matsuko", "crit"))], {
-            "move.latexMist.narrative.crit.plural": "Critical: {targets}",
+            "move.latexMist.narrative.crit.plural": "Critical: {target}",
             "move.latexMist.narrative.hit": "Ordinary hit",
         })).toEqual(["Critical: Ko-chan and Matsuko"]);
         expect(paragraphs([move(damage("ko", "graze"), damage("matsuko", "hit"))], {
-            "move.latexMist.narrative.hit": "Some kind of hit: {targets}",
+            "move.latexMist.narrative.hit": "Some kind of hit: {target}",
         })).toEqual(["Some kind of hit: Ko-chan and Matsuko"]);
     });
 
@@ -52,7 +52,7 @@ describe("Story Log: authored moments", () => {
 
     it("narrates a common buff application just once across several targets", () => {
         expect(paragraphs([move(buff("ko"), buff("matsuko"), buff("hinari"))], {
-            "buff.latexMist.narrative.added.3": "The latex covering {targets} comes alive.",
+            "buff.latexMist.narrative.added.3": "The latex covering {target} comes alive.",
         })).toEqual(["The latex covering Ko-chan, Matsuko and Hinari comes alive."]);
     });
 
