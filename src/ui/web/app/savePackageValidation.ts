@@ -56,7 +56,7 @@ const buffEndpoint = shape({ present: boolean, details: optional(buff) });
 const stanceFields = { actor: text, initial: optional(stance), final: stance, summarized: optional(oneOf(true)) };
 const stanceOutcome = shape({ kind: oneOf("stance"), ...stanceFields });
 const outcome: Check = variant("kind", {
-    bindingTick: { target: text, binding: text, outcomes: list(value => outcome(value)) },
+    bindingTick: { target: text, binding: text, level: optional(level), outcomes: list(value => outcome(value)) },
     resource: { target: text, resource: text, change: number, initial: optional(number), final: optional(number), max: optional(number) },
     damage: {
         target: text, damage: number, healing: number, blocked: number,

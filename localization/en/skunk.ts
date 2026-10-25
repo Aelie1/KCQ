@@ -410,7 +410,11 @@ export const skunkEnglishStrings: StringTable = {
     "binding.latexCollar.narrative.decreased.overwhelming.moderate": "{actor} breaks the magic of {targetPossessive} collar, but it is still buckled shut.",
     "binding.latexCollar.narrative.decreased.overwhelming.heavy": "{actor} dispels the magic of {targetPossessive} collar, but there are still two buckles holding it closed.",
     "binding.latexCollar.narrative.decreased.overwhelming.severe": "{actor} dismantles the magic of {targetPossessive} collar, revealing the padlocks holding it tightly around her neck.",
-
+    "binding.latexCollar.narrative.tick.light": "{target}'s collar spreads a little latex onto her body.",
+    "binding.latexCollar.narrative.tick.moderate": "{target}'s collar spreads latex onto her body.",
+    "binding.latexCollar.narrative.tick.heavy": "{target}'s collar spreads a lot of latex onto her body!",
+    "binding.latexCollar.narrative.tick.severe": "{target}'s collar is covering her body with waves of latex!",
+    "binding.latexCollar.narrative.tick.overwhelming": "{target}'s body is being engulfed in latex from her collar!",
 
 
     "binding.skunkBindings.desc": "Used by the Skunk Queen to create an army coated in shiny black latex.  Anyone covered in it will be controlled by it and follow the Skunk Queen's wishes.",

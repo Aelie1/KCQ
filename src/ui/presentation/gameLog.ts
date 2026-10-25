@@ -55,7 +55,7 @@ export interface ResourceOutcome {
 }
 /** Explicit onTick boundaries own all consequences, including indirect effects. */
 export interface BindingTickOutcome {
-    kind: "bindingTick"; target: EntityId; binding: BindingId; outcomes: LogOutcome[];
+    kind: "bindingTick"; target: EntityId; binding: BindingId; level?: BindingLevel; outcomes: LogOutcome[];
 }
 export type LogOutcome = (BindingTickOutcome | ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
     | { kind: "character"; target: EntityId; operation: "incapacitated" | "rescued" }
@@ -249,7 +249,7 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
         switch (effect.type) {
             case "bindingTickStart": {
                 if (!boundaries.has(effect)) break;
-                const tick: BindingTickOutcome = { kind: "bindingTick", target: effect.target, binding: effect.binding, outcomes: [] };
+                const tick: BindingTickOutcome = { kind: "bindingTick", target: effect.target, binding: effect.binding, level: bindingEndpoint(before, effect.target, effect.binding)?.level, outcomes: [] };
                 outcomes.push(tick);
                 // Aggregation on either side must not move an outcome across an activation.
                 scopes.push({ outcomes, segmentStart: outcomes.length });

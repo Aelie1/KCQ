@@ -198,6 +198,21 @@ export function createStoryLogViewModel(
         });
     };
 
+    const tickNarrative = (
+        outcome: Extract<LogOutcome, { kind: "bindingTick" }>,
+    ): ResolvedNarrative | undefined => {
+        const base = `binding.${outcome.binding}.narrative.tick`;
+
+        return p.resolveNarrative([
+            ...(outcome.level ? [`${base}.${outcome.level}`] : []),
+            base,
+        ], {
+            target: p.entity(outcome.target),
+            binding: p.binding(outcome.binding),
+            ...(outcome.level ? { level: p.bindingLevel(outcome.level) } : {}),
+        });
+    };
+
     const effects = (entry: GameLogPresentationEntry, outcomes: readonly LogOutcome[]): StoryNarrative[] => {
         const grouped = new Map<string, BuffGroup>();
         for (const outcome of outcomes) {
@@ -299,6 +314,24 @@ export function createStoryLogViewModel(
                     });
                     break;
                 }
+                case "bindingTick": {
+                    const tick = tickNarrative(outcome);
+
+                    if (tick) {
+                        narratives.push(tick);
+
+                        // The authored tick summarizes its ordinary binding changes,
+                        // but important secondary state changes still get narrated.
+                        narratives.push(...effects(
+                            entry,
+                            outcome.outcomes.filter(child => child.kind !== "binding"),
+                        ));
+                    } else {
+                        narratives.push(...effects(entry, outcome.outcomes));
+                    }
+
+                    break;
+                }
             }
             if (text) narratives.push({ ...text, tone });
         }
@@ -329,7 +362,7 @@ export function createStoryLogViewModel(
             if (text) narratives.push(text);
         }
 
-        narratives.push(...effects(entry, outcomes));
+        narratives.push(...effects(entry, entry.outcomes));
 
         // Apply every active directive once, including those on suppressed narratives.
         const patterns = narratives.flatMap(narrative => narrative.suppress);
