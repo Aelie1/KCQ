@@ -7,6 +7,17 @@ export function StoryLogEntry(props: { entry: Entry; hidden?: boolean }): JSX.El
         <Show when={props.entry.title}>
             <div class="kcq-game-log__heading"><strong class="kcq-game-log__title">{props.entry.title}</strong></div>
         </Show>
-        <For each={props.entry.paragraphs}>{text => <p class="kcq-game-log__story-text">{text}</p>}</For>
+        <For each={props.entry.paragraphs}>
+            {paragraph =>
+                <p class="kcq-game-log__story-text"
+                    classList={{
+                        "kcq-game-log__story-text--success": paragraph.tone === "success",
+                        "kcq-game-log__story-text--warning": paragraph.tone === "warning",
+                        "kcq-game-log__story-text--danger": paragraph.tone === "danger",
+                    }}>
+                    {paragraph.text}
+                </p>
+            }
+        </For>
     </article>;
 }

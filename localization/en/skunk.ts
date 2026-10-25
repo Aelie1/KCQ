@@ -15,6 +15,7 @@ export const skunkEnglishStrings: StringTable = {
 
     "character.narrative.incapacitated": "{target} has been bound so tight that the latex has taken control of her body! Attack her to free her from her predicament!",
     "character.narrative.rescued": "{target} was able to regain control of her body! Her bindings have been partially damaged by the attacks!",
+    "character.narrative.rescued.suppress": "binding.*",
 
     "buff.skunked.name": "Fully Skunked",
     "buff.ambushed.name": "Ambushed!",

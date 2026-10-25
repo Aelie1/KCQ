@@ -1724,7 +1724,22 @@ button {
     overflow-wrap: anywhere;
 }
 
-.kcq-game-log__story-text + .kcq-game-log__story-text {
+.kcq-game-log__story-text--success {
+    color: var(--kcq-state-success);
+    font-weight: 700;
+}
+
+.kcq-game-log__story-text--warning {
+    color: var(--kcq-state-warning);
+    font-weight: 700;
+}
+
+.kcq-game-log__story-text--danger {
+    color: var(--kcq-state-danger);
+    font-weight: 700;
+}
+
+.kcq-game-log__story-text+.kcq-game-log__story-text {
     margin-top: 4px;
 }
 

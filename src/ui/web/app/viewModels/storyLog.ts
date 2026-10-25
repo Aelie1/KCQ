@@ -1,13 +1,24 @@
 import type { GameLogPresentationEntry, LogHit, LogOutcome } from "../../../presentation/gameLog";
 import type { Presentation, ResolvedNarrative } from "../../../presentation/presentation";
 
+type StoryTone = "success" | "warning" | "danger";
+
+export interface StoryLogParagraph {
+    text: string;
+    tone?: StoryTone;
+}
+
 export interface StoryLogEntry {
     kind: GameLogPresentationEntry["kind"];
     actorId?: string;
     phase?: string;
     title?: string;
-    paragraphs: string[];
+    paragraphs: StoryLogParagraph[];
 }
+
+type StoryNarrative = ResolvedNarrative & {
+    tone?: StoryTone;
+};
 
 type MoveEntry = Extract<GameLogPresentationEntry, { kind: "move" }>;
 type HitResult = { target: string; hit: LogHit; };
@@ -187,7 +198,7 @@ export function createStoryLogViewModel(
         });
     };
 
-    const effects = (entry: GameLogPresentationEntry, outcomes: readonly LogOutcome[]): ResolvedNarrative[] => {
+    const effects = (entry: GameLogPresentationEntry, outcomes: readonly LogOutcome[]): StoryNarrative[] => {
         const grouped = new Map<string, BuffGroup>();
         for (const outcome of outcomes) {
             if (outcome.kind !== "buff") continue;
@@ -200,10 +211,11 @@ export function createStoryLogViewModel(
         }
 
         const emitted = new Set<string>();
-        const narratives: ResolvedNarrative[] = [];
+        const narratives: StoryNarrative[] = [];
         for (const outcome of outcomes) {
             if ("summarized" in outcome && outcome.summarized) continue;
             let text: ResolvedNarrative | undefined;
+            let tone: StoryTone | undefined;
             switch (outcome.kind) {
                 case "buff": {
                     for (const change of buffChanges(outcome)) {
@@ -249,12 +261,21 @@ export function createStoryLogViewModel(
                 }
                 case "character":
                 case "enemy":
+                    if (outcome.kind === "character" && outcome.operation === "incapacitated") {
+                        tone = "danger";
+                    }
+                    if (outcome.kind === "character" && outcome.operation === "rescued") {
+                        tone = "success";
+                    }
+                    if (outcome.kind === "enemy" && outcome.operation === "defeated") {
+                        tone = "warning";
+                    }
                     text = p.entityNarrative(
                         outcome.target,
                         outcome.operation,
                         { target: p.entity(outcome.target) },
                     ) ?? p.resolveNarrative([
-                        `enemy.narrative.${outcome.operation}`,
+                        `${outcome.kind}.narrative.${outcome.operation}`,
                     ], {
                         target: p.entity(outcome.target),
                     });
@@ -279,7 +300,7 @@ export function createStoryLogViewModel(
                     break;
                 }
             }
-            if (text) narratives.push(text);
+            if (text) narratives.push({ ...text, tone });
         }
         return narratives;
     };
@@ -295,9 +316,11 @@ export function createStoryLogViewModel(
 
     const result: StoryLogEntry[] = [];
     let pendingPhase: StoryLogEntry | undefined;
+
     for (const entry of entries) {
         const outcomes = flatten(entry.outcomes);
-        const narratives: ResolvedNarrative[] = [];
+        const narratives: StoryNarrative[] = [];
+
         if (entry.kind === "move") {
             const text = moveNarrative(entry);
             if (text) narratives.push(text);
@@ -305,44 +328,86 @@ export function createStoryLogViewModel(
             const text = escapeNarrative(entry, outcomes);
             if (text) narratives.push(text);
         }
+
         narratives.push(...effects(entry, outcomes));
 
         // Apply every active directive once, including those on suppressed narratives.
         const patterns = narratives.flatMap(narrative => narrative.suppress);
-        const activeNarratives = narratives
-            .filter(narrative => !patterns.some(pattern => matchesPattern(narrative.key, pattern)))
-            .map(narrative => narrative.text);
+        const activeNarratives = narratives.filter(
+            narrative => !patterns.some(pattern => matchesPattern(narrative.key, pattern))
+        );
 
-        const paragraphs = entry.kind === "phase"
-            ? activeNarratives
-            : activeNarratives.length
-                ? [activeNarratives.join(" ")]
-                : [];
-
+        // Phase entries must be handled before the empty-paragraph check.
+        // Most phases have no narrative of their own and are held until the next
+        // visible story entry.
         if (entry.kind === "phase") {
             const title = [
-                entry.round === undefined ? undefined : p.ui("battleOverview.round", { round: entry.round }),
+                entry.round === undefined
+                    ? undefined
+                    : p.ui("battleOverview.round", { round: entry.round }),
                 p.ui("battleOverview.phase", { phase: p.phase(entry.phase) }),
             ].filter(Boolean).join(" · ");
-            const phase: StoryLogEntry = { kind: "phase", phase: entry.phase, title, paragraphs };
-            if (paragraphs.length) {
+
+            const phase: StoryLogEntry = {
+                kind: "phase",
+                phase: entry.phase,
+                title,
+                paragraphs: activeNarratives.map(narrative => ({
+                    text: narrative.text,
+                    tone: narrative.tone,
+                })),
+            };
+
+            if (phase.paragraphs.length) {
                 result.push(phase);
                 pendingPhase = undefined;
             } else {
                 pendingPhase = phase;
             }
+
             continue;
         }
+
+        const paragraphs: StoryLogParagraph[] = [];
+        let normal = "";
+
+        for (const narrative of activeNarratives) {
+            if (narrative.tone) {
+                if (normal) {
+                    paragraphs.push({ text: normal });
+                    normal = "";
+                }
+
+                paragraphs.push({
+                    text: narrative.text,
+                    tone: narrative.tone,
+                });
+            } else {
+                normal = normal
+                    ? `${normal} ${narrative.text}`
+                    : narrative.text;
+            }
+        }
+
+        if (normal) {
+            paragraphs.push({ text: normal });
+        }
+
         if (!paragraphs.length) continue;
+
         if (pendingPhase) {
             result.push(pendingPhase);
             pendingPhase = undefined;
         }
+
         result.push({
             kind: entry.kind,
-            ...(entry.kind === "move" || entry.kind === "escape" ? { actorId: entry.actor } : {}),
+            ...(entry.kind === "move" || entry.kind === "escape"
+                ? { actorId: entry.actor }
+                : {}),
             paragraphs,
         });
     }
+
     return result;
 }
