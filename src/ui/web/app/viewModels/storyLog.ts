@@ -146,7 +146,10 @@ export function createStoryLogViewModel(
         const exactBand = firstBand && results.every(result => result.hit.result === firstBand) ? firstBand : undefined;
         const plural = new Set(results.map(result => result.target)).size > 1;
         const keys: string[] = [];
-        if (hits.length > 0) {
+        if (exactBand && hits.length > 0) {
+            keys.push(`${base}.${exactBand}.${hits.length}`);
+        }
+        if (hits.length > 0 && category !== exactBand) {
             keys.push(`${base}.${category}.${hits.length}`);
         }
         if (exactBand) {
