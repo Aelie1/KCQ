@@ -130,11 +130,13 @@ export function createStoryLogViewModel(
         const actor = p.entity(entry.actor);
         const move = p.move(entry.move);
         const target = names(entry.targetIds);
+        const targetCount = targetSummary(entry.targetIds, entry.livingEnemies);
+        const targetSide = entry.targetIds.some(id => party?.includes(id)) ? "characters" : "enemies";
         if (!results.length) {
             if (entry.result && entry.result !== "none") {
                 return p.resolveNarrative([`${base}.${entry.result}`], { actor, move, band: p.hitBand(entry.result) });
             }
-            return p.resolveNarrative([`${base}.action`], { actor, move, target });
+            return p.resolveNarrative([`${base}.action.${targetSide}`, `${base}.action`], { actor, move, target, targetCount });
         }
 
         const hits = results.filter(result => result.hit.result !== "miss");
@@ -144,6 +146,9 @@ export function createStoryLogViewModel(
         const exactBand = firstBand && results.every(result => result.hit.result === firstBand) ? firstBand : undefined;
         const plural = new Set(results.map(result => result.target)).size > 1;
         const keys: string[] = [];
+        if (hits.length > 0) {
+            keys.push(`${base}.${category}.${hits.length}`);
+        }
         if (exactBand) {
             if (plural) keys.push(`${base}.${exactBand}.plural`);
             keys.push(`${base}.${exactBand}`);
@@ -153,25 +158,19 @@ export function createStoryLogViewModel(
             keys.push(`${base}.${category}`);
         }
 
-        const targetIds = [...new Set(results.map(result => result.target))];
-        const allTargets = names(results.map(result => result.target));
         const bindings = [...new Set(entry.outcomes.flatMap(outcome =>
             outcome.kind === "binding" && outcome.change > 0
                 ? [outcome.binding] : []))];
-        const hitLocation = bindings.length === 1
-            ? p.ui("storyLog.hitLocation.single", { binding: p.binding(bindings[0]!, "short").toLowerCase() })
-            : bindings.length === 2
-                ? p.ui("storyLog.hitLocation.two")
-                : bindings.length === 3
-                    ? p.ui("storyLog.hitLocation.three")
-                    : bindings.length >= 4
-                        ? p.ui("storyLog.hitLocation.many")
+        const hitLocation = bindings.length === 1 ? p.ui("storyLog.hitLocation.single", { binding: p.binding(bindings[0]!, "short").toLowerCase() })
+            : bindings.length === 2 ? p.ui("storyLog.hitLocation.two")
+                : bindings.length === 3 ? p.ui("storyLog.hitLocation.three")
+                    : bindings.length >= 4 ? p.ui("storyLog.hitLocation.many")
                         : "";
         return p.resolveNarrative(keys, {
             actor,
             move,
-            target: allTargets,
-            targetCount: targetSummary(targetIds, entry.livingEnemies),
+            target,
+            targetCount,
             hits: names(hits.map(result => result.target)),
             misses: names(misses.map(result => result.target)),
             grazes: names(results.filter(result => result.hit.result === "graze").map(result => result.target)),
