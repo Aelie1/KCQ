@@ -249,10 +249,15 @@ export function createStoryLogViewModel(
                 }
                 case "character":
                 case "enemy":
-                    text = p.resolveNarrative([
-                        `entity.${outcome.target}.narrative.${outcome.operation}`,
-                        `${outcome.kind}.narrative.${outcome.operation}`,
-                    ], { target: p.entity(outcome.target) });
+                    text = p.entityNarrative(
+                        outcome.target,
+                        outcome.operation,
+                        { target: p.entity(outcome.target) },
+                    ) ?? p.resolveNarrative([
+                        `enemy.narrative.${outcome.operation}`,
+                    ], {
+                        target: p.entity(outcome.target),
+                    });
                     break;
                 case "trap": {
                     if (!outcome.triggers.length) break;

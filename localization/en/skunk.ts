@@ -13,9 +13,14 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunketteNaruyo.name": "Skunkette Naruyo",
     "entity.skunketteSakari.name": "Skunkette Sakari",
 
+    "character.narrative.incapacitated": "{target} has been bound so tight that the latex has taken control of her body! Attack her to free her from her predicament!",
+    "character.narrative.rescued": "{target} was able to regain control of her body! Her bindings have been partially damaged by the attacks!",
+
     "buff.skunked.name": "Fully Skunked",
     "buff.ambushed.name": "Ambushed!",
     "buff.collar.name": "Slave Collar",
+
+
 
     // Skunkette
     "entity.skunkette.generic": "Skunkette",
@@ -25,6 +30,8 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunketteQueen.desc": "The former Skunk Queen, reduced to a minion after her failure.",
     "entity.skunkette.rules": "Below 40% HP, the Skunkette suffers Potency −4 and Defense −1.\nEach time the Skunkette takes damage, [moves:pounce] loses one severity level. \nDefeating a Skunked character frees them from the latex's control and halves their bindings.",
     "entity.skunkette.strategy": "If currently pouncing a character, the Skunkette uses [moves:latexSpray] on that character.\nOtherwise, if [moves:pounce] is available, it chooses a random valid character who is not already pounced.\nOtherwise, it chooses [moves:latexMist] or [moves:latexSpray] with equal probability. Spray targets a random valid character and body-zone binding, while Mist hits all characters.",
+    "entity.skunkette.narrative.spawned": "{target} answers the call and joins the battle.",
+    "entity.skunkette.narrative.defeated": "{target} loses control of its victim, who lies on the ground unconscious.",
     "difficulty.extreme.skunkette": "Gets a followup Latex Spray on strong hits as well as criticals.",
     "difficulty.mythic.skunkette": "Gets a followup Latex Spray on any hit.",
 
@@ -81,6 +88,8 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunkEmpress.desc": "The former Skunk Empress, reduced to a minion after her failure.",
     "entity.skunk.rules": "When it falls below 20%, it changes its next move to [moves:latexExplosion] against the attacker.",
     "entity.skunk.strategy": "Below 20% HP, the Skunk uses [moves:latexExplosion] against the most bound character. If nobody is bound, it chooses a random valid character.\nIt may use [moves:latexPuddle] to replenish the arena's puddles. This is more likely when there are less puddles present.\nIt may use [moves:latexRegeneration] on the character with the most potential regeneration. This becomes more likely as the potential regeneration grows.\nUses [moves:latexShower] on a random valid character and location.",
+    "entity.skunk.narrative.spawned": "{target} answers the call and joins the battle.",
+    "entity.skunk.narrative.defeated": "{target}'s core finally stops functioning, and it turns back into a pool of latex.",
     "difficulty.extreme.skunk": "Survives Latex Explosion when it hits a target.",
     "difficulty.mythic.skunk": "Survives Latex Explosion whether it hits or misses.",
 
@@ -118,6 +127,8 @@ export const skunkEnglishStrings: StringTable = {
     "entity.fairy.name": "Fairy {index}",
     "entity.fairy.desc": "A tiny skunk with fairy wings. Just what kind of experiment created this being?",
     "entity.fairy.strategy": "The Fairy chooses one of three support actions: healing Skunkettes or Skunks with [moves:healingMagic], shield an ally using [moves:barrierMagic], or strengthen an ally with [moves:empoweringMagic].\nIf there are no valid support targets, it uses [moves:bindingMagic] on a random valid character.",
+    "entity.fairy.narrative.spawned": "{target} answers the call and joins the battle.",
+    "entity.fairy.narrative.defeated": "{target}'s magic fades, along with its wings.  It dissolves into a pool of latex.",
     "difficulty.extreme.fairy": "Has a 50% chance to use Binding Magic as an extra attack each turn.",
     "difficulty.mythic.fairy": "Uses Binding Magic as an extra attack each turn.",
 
@@ -151,6 +162,7 @@ export const skunkEnglishStrings: StringTable = {
     "entity.rainmaker.name": "Rainmaker {index}",
     "entity.rainmaker.desc": "A creation of an insane genius. It sprays latex everywhere, covering everyone in the vicinity!",
     "entity.rainmaker.strategy": "Uses [moves:latexRain] every turn against the entire party.",
+    "entity.rainmaker.narrative.defeated": "{target} sparks and crackles as it malfunctions, turning into mere scrap on the ground oozing with latex.",
     "difficulty.extreme.rainmaker": "Explodes into 50 Latex Puddles when defeated.",
     "difficulty.mythic.rainmaker": "Explodes into 100 Latex Puddles when defeated.",
 
@@ -173,6 +185,8 @@ export const skunkEnglishStrings: StringTable = {
     "entity.queen.desc": "A girl obsessed with latex skunks, she is their creator! She wishes to turn every girl in the world into a cute skunk and rule over them as their queen!",
     "entity.queen.rules": "Crossing the 80%, 60%, 40%, or 20% HP threshold triggers [moves:callReinforcements] on her next move.\nCrossing the two-thirds or one-third HP threshold triggers [moves:latexRainmaker] on her next move.\nEach threshold triggers only once. Encounter setup determines the next wave.",
     "entity.queen.strategy": "Uses [moves:skunkCollar] if it is available and no character already has a collar. The Queen targets whoever has dealt her the most damage so far in the encounter.\nUses [moves:skunkPerfume] if it is available, choosing randomly between its three effects. \nUses [moves:skunkGun] on a random character.",
+    "entity.queen.narrative.defeated": "{target} lets out a pitiful cry and falls to the ground, surrounded by her broken machines and constructs.",
+
     "entity.empress.desc": "This is the original creator of the latex skunk technology, unlike the usurper in the woods.",
     "entity.goddess.desc": "The Goddess of the Realms, here to offer the ultimate challenge after saving you from the Skunk Empress.",
     "difficulty.extreme.queen": "Uses Skunk Gun as an extra attack each turn below 50% HP.",
@@ -193,7 +207,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.callReinforcements.name": "Call Reinforcements",
     "move.callReinforcements.desc": "The Skunk Queen never fights alone! You'll need to go through her creations to finish her for good! Summons increasingly powerful waves of enemy allies.",
     "move.callReinforcements.effect.spawn": "[enemies:skunkette] / [enemies:skunk] / [enemies:fairy]",
-    "move.callReinforcements.narrative.action": "The Skunk Queen calls into the forest for help...",
+    "move.callReinforcements.narrative.action": "The {actor} calls for help from her underlings...",
     "move.latexRainmaker.name": "Construct Rainmaker",
     "move.latexRainmaker.desc": "The Skunk Queen is adept at static weapons as well as living constructs. Activates increasingly powerful contraptions to spray the party.",
     "move.latexRainmaker.effect.spawn": "[enemies:rainmaker]",

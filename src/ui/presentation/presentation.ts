@@ -26,6 +26,17 @@ export class Presentation {
         return this.translate(this.entityKey(entity, variant));
     }
 
+    entityNarrative(entity: EntityId, operation: string, args: Record<string, StringArg> = {},): ResolvedNarrative | undefined {
+        const definition = this.entityDefinition(entity);
+
+        return this.resolveNarrative([
+            `entity.${entity}.narrative.${operation}`,
+            ...(definition !== entity
+                ? [`entity.${definition}.narrative.${operation}`]
+                : []),
+        ], args);
+    }
+
     characterSelection(id: EntityId, variant: "role" | "point1" | "point2" | "point3"): string {
         return this.translate(this.definitionKey("entity", id, `party.${variant}`));
     }
@@ -44,6 +55,8 @@ export class Presentation {
             ? generic
             : this.definitionKey("entity", id, "name"));
     }
+
+
 
     enemyRank(rank: EnemyRank): string {
         return this.ui(`enemyRank.${rank}`);
@@ -212,17 +225,22 @@ export class Presentation {
         return { id: `${namespace}.${id}.${variant}` };
     }
 
-    private entityKey(entity: EntityId, variant: "name" | "desc" = "name"): StringKey {
-        const match = entity.match(/^(.*?)(\d+)$/);
+    private entityDefinition(entity: EntityId): EntityId {
+        return entity.match(/^(.*?)(\d+)$/)?.[1] ?? entity;
+    }
 
-        if (!match) {
+    private entityKey(entity: EntityId, variant: "name" | "desc" = "name"): StringKey {
+        const definition = this.entityDefinition(entity);
+
+        if (definition === entity) {
             return this.definitionKey("entity", entity, variant);
         }
 
-        const key = this.definitionKey("entity", match[1], variant);
-        const index = this.definitionKey("entity", "index", match[2]);
+        const index = entity.slice(definition.length);
+
+        const key = this.definitionKey("entity", definition, variant);
         return variant === "name"
-            ? { ...key, args: { index: index } }
+            ? { ...key, args: { index: this.definitionKey("entity", "index", index) } }
             : key;
     }
 }
