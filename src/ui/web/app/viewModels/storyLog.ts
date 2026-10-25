@@ -148,16 +148,42 @@ export function createStoryLogViewModel(
         });
     };
 
-    const escapeNarrative = (entry: Extract<GameLogPresentationEntry, { kind: "escape" }>, outcomes: readonly LogOutcome[]): ResolvedNarrative | undefined => {
-        const progress = outcomes.filter((outcome): outcome is Extract<LogOutcome, { kind: "binding" }> =>
-            outcome.kind === "binding" && outcome.target === entry.target && outcome.change < 0);
+    const escapeNarrative = (entry: Extract<GameLogPresentationEntry, { kind: "escape" }>, outcomes: readonly LogOutcome[],): ResolvedNarrative | undefined => {
+        const progress = outcomes.filter(
+            (outcome): outcome is Extract<LogOutcome, { kind: "binding" }> =>
+                outcome.kind === "binding" && outcome.target === entry.target && outcome.change < 0
+        );
+
+        const hasSpecificTransition = progress.some(outcome => {
+            const initial = outcome.initial?.level;
+            const final = outcome.final?.level;
+
+            if (!initial || !final || initial === final) {
+                return false;
+            }
+
+            const base = `binding.${outcome.binding}.narrative.decreased`;
+
+            return p.narrative([
+                `${base}.${initial}.${final}`,
+                `${base}.${final}`,
+                base,
+            ]) !== undefined;
+        });
+
+        if (hasSpecificTransition) {
+            return undefined;
+        }
+
         const assisting = entry.actor !== entry.target;
         const base = assisting ? "assist" : "escape";
+
         return p.resolveNarrative([`ui.storyLog.${base}`], {
             actor: p.entity(entry.actor),
             target: p.entity(entry.target),
             amount: progress.reduce((sum, outcome) => sum - outcome.change, 0),
-            binding: list(progress.map(outcome => p.binding(outcome.binding, "short").toLowerCase())),
+            binding: list(progress.map(outcome =>
+                p.binding(outcome.binding, "short").toLowerCase())),
         });
     };
 
