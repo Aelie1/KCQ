@@ -225,8 +225,30 @@ export function createStoryLogViewModel(
             }
         }
 
+        const spawned = outcomes.filter(
+            (outcome): outcome is Extract<LogOutcome, { kind: "enemy" }> =>
+                outcome.kind === "enemy" && outcome.operation === "spawned"
+        );
+
+        const spawnedTargets = names(spawned.map(outcome => outcome.target));
+
         const emitted = new Set<string>();
         const narratives: StoryNarrative[] = [];
+
+        if (spawned.length) {
+            const plural = spawned.length > 1;
+
+            const text = p.resolveNarrative([
+                ...(plural ? ["enemy.narrative.spawned.plural"] : []),
+                "enemy.narrative.spawned",
+            ], {
+                target: spawnedTargets,
+                targets: spawnedTargets,
+            });
+
+            if (text) narratives.push(text);
+        }
+
         for (const outcome of outcomes) {
             if ("summarized" in outcome && outcome.summarized) continue;
             let text: ResolvedNarrative | undefined;
@@ -276,6 +298,7 @@ export function createStoryLogViewModel(
                 }
                 case "character":
                 case "enemy":
+                    if (outcome.operation === "spawned") break;
                     if (outcome.kind === "character" && outcome.operation === "incapacitated") {
                         tone = "danger";
                     }

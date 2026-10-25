@@ -17,6 +17,9 @@ export const skunkEnglishStrings: StringTable = {
     "character.narrative.rescued": "{target} was able to regain control of her body! Her bindings have been partially damaged by the attacks!",
     "character.narrative.rescued.suppress": "binding.*",
 
+    "enemy.narrative.spawned": "{target} answers the call and joins the battle.",
+    "enemy.narrative.spawned.plural": "{target} answer the call and join the battle.",
+
     "buff.skunked.name": "Fully Skunked",
     "buff.ambushed.name": "Ambushed!",
     "buff.collar.name": "Slave Collar",
@@ -31,7 +34,6 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunketteQueen.desc": "The former Skunk Queen, reduced to a minion after her failure.",
     "entity.skunkette.rules": "Below 40% HP, the Skunkette suffers Potency −4 and Defense −1.\nEach time the Skunkette takes damage, [moves:pounce] loses one severity level. \nDefeating a Skunked character frees them from the latex's control and halves their bindings.",
     "entity.skunkette.strategy": "If currently pouncing a character, the Skunkette uses [moves:latexSpray] on that character.\nOtherwise, if [moves:pounce] is available, it chooses a random valid character who is not already pounced.\nOtherwise, it chooses [moves:latexMist] or [moves:latexSpray] with equal probability. Spray targets a random valid character and body-zone binding, while Mist hits all characters.",
-    "entity.skunkette.narrative.spawned": "{target} answers the call and joins the battle.",
     "entity.skunkette.narrative.defeated": "{target} loses control of its victim, who lies on the ground unconscious.",
     "difficulty.extreme.skunkette": "Gets a followup Latex Spray on strong hits as well as criticals.",
     "difficulty.mythic.skunkette": "Gets a followup Latex Spray on any hit.",
@@ -89,7 +91,6 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunkEmpress.desc": "The former Skunk Empress, reduced to a minion after her failure.",
     "entity.skunk.rules": "When it falls below 20%, it changes its next move to [moves:latexExplosion] against the attacker.",
     "entity.skunk.strategy": "Below 20% HP, the Skunk uses [moves:latexExplosion] against the most bound character. If nobody is bound, it chooses a random valid character.\nIt may use [moves:latexPuddle] to replenish the arena's puddles. This is more likely when there are less puddles present.\nIt may use [moves:latexRegeneration] on the character with the most potential regeneration. This becomes more likely as the potential regeneration grows.\nUses [moves:latexShower] on a random valid character and location.",
-    "entity.skunk.narrative.spawned": "{target} answers the call and joins the battle.",
     "entity.skunk.narrative.defeated": "{target}'s core finally stops functioning, and it turns back into a pool of latex.",
     "difficulty.extreme.skunk": "Survives Latex Explosion when it hits a target.",
     "difficulty.mythic.skunk": "Survives Latex Explosion whether it hits or misses.",
@@ -128,7 +129,6 @@ export const skunkEnglishStrings: StringTable = {
     "entity.fairy.name": "Fairy {index}",
     "entity.fairy.desc": "A tiny skunk with fairy wings. Just what kind of experiment created this being?",
     "entity.fairy.strategy": "The Fairy chooses one of three support actions: healing Skunkettes or Skunks with [moves:healingMagic], shield an ally using [moves:barrierMagic], or strengthen an ally with [moves:empoweringMagic].\nIf there are no valid support targets, it uses [moves:bindingMagic] on a random valid character.",
-    "entity.fairy.narrative.spawned": "{target} answers the call and joins the battle.",
     "entity.fairy.narrative.defeated": "{target}'s magic fades, along with its wings.  It dissolves into a pool of latex.",
     "difficulty.extreme.fairy": "Has a 50% chance to use Binding Magic as an extra attack each turn.",
     "difficulty.mythic.fairy": "Uses Binding Magic as an extra attack each turn.",
