@@ -94,7 +94,7 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunk.rules": "When it falls below 20%, it changes its next move to [moves:latexExplosion] against the attacker.",
     "entity.skunk.strategy": "Below 20% HP, the Skunk uses [moves:latexExplosion] against the most bound character. If nobody is bound, it chooses a random valid character.\nIt may use [moves:latexPuddle] to replenish the arena's puddles. This is more likely when there are less puddles present.\nIt may use [moves:latexRegeneration] on the character with the most potential regeneration. This becomes more likely as the potential regeneration grows.\nUses [moves:latexShower] on a random valid character and location.",
     "entity.skunk.narrative.defeated": "{target}'s core finally stops functioning, and it turns back into a pool of latex.",
-    "entity.skunkEmpress.narrative.defeated": "{target} is wearing a special collar that regenerates her skunk suit endlessly, but she simply has no energy to continue, so she just lies on the ground and watches the fight.'",
+    "entity.skunkEmpress.narrative.defeated": "{target} is wearing a special collar that regenerates her skunk suit endlessly, but she simply has no energy to continue, so she just lies on the ground and watches the fight.",
     "difficulty.extreme.skunk": "Survives Latex Explosion when it hits a target.",
     "difficulty.mythic.skunk": "Survives Latex Explosion whether it hits or misses.",
 
@@ -194,7 +194,7 @@ export const skunkEnglishStrings: StringTable = {
     "entity.queen.rules": "Crossing the 80%, 60%, 40%, or 20% HP threshold triggers [moves:callReinforcements] on her next move.\nCrossing the two-thirds or one-third HP threshold triggers [moves:latexRainmaker] on her next move.\nEach threshold triggers only once. Encounter setup determines the next wave.",
     "entity.queen.strategy": "Uses [moves:skunkCollar] if it is available and no character already has a collar. The Queen targets whoever has dealt her the most damage so far in the encounter.\nUses [moves:skunkPerfume] if it is available, choosing randomly between its three effects. \nUses [moves:skunkGun] on a random character.",
     "entity.queen.narrative.defeated": "{target} lets out a pitiful cry and falls to the ground, surrounded by her broken machines and constructs.",
-    "entity.empress.narrative.defeated": "{target} watches as her grand plans for conquest fall to pieces around her.  She lays helplessly on the ground hoping her remaining underlings can finish the job.",
+    "entity.empress.narrative.defeated": "{target} watches as her grand plans for conquest fall to pieces around her.  She lies helplessly on the ground hoping her remaining underlings can finish the job.",
     "entity.goddess.narrative.defeated": "{target} smiles as you land the 'finishing blow' and doesn't seem worried at all about losing the fight or her possible future fate.",
 
     "entity.empress.desc": "This is the original creator of the latex skunk technology, unlike the usurper in the woods.",

@@ -261,9 +261,16 @@ export function createStoryLogViewModel(
                         emitted.add(id);
                         const group = grouped.get(id);
                         if (!group) continue;
-                        const targets = names(group.changes.map(item => item.target));
+                        const targetIds = [...new Set(group.changes.map(item => item.target))];
+                        const targets = names(targetIds);
                         const severity = change.severity;
-                        const line = p.resolveNarrative(group.keys, {
+                        const plural = targetIds.length > 1;
+
+                        const keys = plural
+                            ? group.keys.flatMap(key => [`${key}.plural`, key])
+                            : group.keys;
+
+                        const line = p.resolveNarrative(keys, {
                             target: targets,
                             targets,
                             buff: p.buff(change.buff, severity),
