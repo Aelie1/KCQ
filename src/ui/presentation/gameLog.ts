@@ -46,7 +46,7 @@ export interface TrapOutcome {
     kind: "trap"; trap: TrapId;
     change?: number; initial?: number; final?: number;
     /** Trigger consumption is separate from adjustment leaves; frames supply net change. */
-    triggers: { actor: EntityId; amount: number }[];
+    triggers: { actor: EntityId; amount: number, severity?: number }[];
 }
 export interface ResourceOutcome {
     kind: "resource"; target: EntityId; resource: string;
@@ -366,7 +366,7 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                 }
                 trapDeltas.set(group, (trapDeltas.get(group) ?? 0) + (effect.type === "trapAdded" ? effect.amount : -effect.amount));
                 if (effect.type === "trapTriggered") {
-                    group.triggers.push({ actor: effect.actor, amount: effect.amount });
+                    group.triggers.push({ actor: effect.actor, amount: effect.amount, severity: effect.severity });
                     group.change = undefined;
                 } else if (group.change !== undefined) group.change += effect.type === "trapRemoved" ? -effect.amount : effect.amount;
                 break;

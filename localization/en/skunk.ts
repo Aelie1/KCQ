@@ -407,6 +407,10 @@ export const skunkEnglishStrings: StringTable = {
     // Trap
     "trap.trapPuddle.name": "Latex Puddle",
     "trap.trapPuddle.desc": "A field hazard that consumes puddles to bind moving characters.",
+    "trap.trapPuddle.narrative.triggered.1": "{actor} tries to avoid the puddles of latex, but still gets a little on her feet.",
+    "trap.trapPuddle.narrative.triggered.2": "{actor} tries to avoid the puddles of latex, but splashes a bit onto her legs.",
+    "trap.trapPuddle.narrative.triggered.3": "{actor} tries to avoid the puddles of latex, but trips and lands on her hands and knees!",
+    "trap.trapPuddle.narrative.triggered.4": "{actor} tries to avoid the puddles of latex, but falls face-first into a puddle, getting drenched in latex!",
 
     // Encounters
     "encounter.prologue.name": "Ko-chan's New Game",

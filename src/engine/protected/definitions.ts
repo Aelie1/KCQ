@@ -1,7 +1,7 @@
 import type { MoveBuffReference, MoveReference } from "../public/library";
 import type { AccuracyProfile, BindingId, BindingLevel, CallbackId, CampaignId, CampaignLayout, Effect, EncounterId, EnemyRank, EnemySetup, EntityId, FailureReason, FlagId, ModifierSet, Move, MoveId, MoveType, PassiveId, StatusId, TrapId } from "../public/types";
 import type { Random } from "./random";
-import type { iBinding, iBuff, iCallbackReturn, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo, iTrap } from "./types";
+import type { iBinding, iBuff, iCallbackReturn, iCharacter, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo } from "./types";
 
 export const EMPOWERMENT_BUFF = "empowerment";
 
@@ -63,10 +63,10 @@ export interface BindingDef {
 export interface TrapDef {
     id: TrapId;
     outcomes: TrapOutcome[];
-    onTrigger: (target: iCharacter, trap: iTrap, roll: number) => iEffect[];
 }
 
 export type TrapOutcome = {
+    severity: number;
     threshold: number;
     bindings: [BindingDef, number][];
 };

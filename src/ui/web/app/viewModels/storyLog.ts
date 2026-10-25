@@ -256,8 +256,16 @@ export function createStoryLogViewModel(
                     break;
                 case "trap": {
                     if (!outcome.triggers.length) break;
+
                     const actors = names(outcome.triggers.map(trigger => trigger.actor));
-                    text = p.resolveNarrative([`trap.${outcome.trap}.narrative.triggered`], {
+                    const severity = outcome.triggers[0]?.severity;
+
+                    text = p.resolveNarrative([
+                        ...(severity !== undefined
+                            ? [`trap.${outcome.trap}.narrative.triggered.${severity}`]
+                            : []),
+                        `trap.${outcome.trap}.narrative.triggered`,
+                    ], {
                         actor: actors,
                         targets: actors,
                         trap: p.trap(outcome.trap),

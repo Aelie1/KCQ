@@ -651,6 +651,7 @@ export interface TrapEvent {
     actor: EntityId;
     trap: TrapId;
     amount: number;
+    severity?: number;
 }
 
 export interface InterruptEvent {

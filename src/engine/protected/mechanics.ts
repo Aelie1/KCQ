@@ -56,6 +56,39 @@ export function getBindingLevel(binding: iBinding): BindingLevel {
     return "none";
 }
 
+export function getTrapSeverity(trap: iTrap, roll: number): number {
+    const ratio = roll / trap.amount;
+
+    for (const threshold of trap.definition.outcomes) {
+        if (ratio <= threshold.threshold) {
+            return threshold.severity;
+        }
+    }
+
+    return Math.min(...trap.definition.outcomes.map(x => x.severity));
+}
+
+export function getTrapEffect(target: iCharacter, trap: iTrap, severity: number): iEffect[] {
+    const effects: iEffect[] = [];
+    const _trap = { ...trap }
+    const outcome = trap.definition.outcomes.find(x => x.severity === severity);
+    if (!outcome) {
+        return effects;
+    }
+    for (const [binding, amount] of outcome.bindings) {
+        effects.push(...basicTrapEffect(target, _trap, binding, amount))
+    }
+
+    effects.push({
+        type: "trap",
+        actor: target,
+        trap: trap,
+        amount: _trap.amount - trap.amount
+    });
+
+    return effects;
+}
+
 export function findMove(entity: iCharacter, id: MoveId): MoveDef | undefined {
     return getMoves(entity).find(move => move.id === id);
 }

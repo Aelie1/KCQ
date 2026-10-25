@@ -1,5 +1,5 @@
 import { findBinding, findCharacter, findEntity, isValidEntity } from "../protected/helpers";
-import { findMove } from "../protected/mechanics";
+import { findMove, getTrapEffect, getTrapSeverity } from "../protected/mechanics";
 import { mixSeed, Random } from "../protected/random";
 import { GameStatus, StatusMap } from "../protected/status";
 import { ContentCatalog, iEffect, iMoveResult, type iGameState, type iIntention, type iMove, type iTargetInfo } from "../protected/types";
@@ -397,14 +397,16 @@ export class GameEngine implements Engine {
                         const roll = Math.max(0, this.accRng.accuracy() + status.getModifier("traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
+                            const severity = getTrapSeverity(trap, roll);
                             const triggered: TrapEvent = {
                                 type: "trapTriggered",
                                 actor: actor.id,
                                 trap: trap.id,
-                                amount: 0
+                                amount: 0,
+                                severity: severity
                             };
                             effects.addEvent(triggered);
-                            effects.merge(trap.definition.onTrigger(actor, trap, roll));
+                            effects.merge(getTrapEffect(actor, trap, severity));
                             triggered.amount = origValue - trap.amount;
                         }
                     }
@@ -591,14 +593,16 @@ export class GameEngine implements Engine {
                         const roll = Math.max(0, this.accRng.accuracy() + status.getModifier("traps") * TRAP_MODIFIER);
                         if (roll < trap.amount) {
                             const origValue = trap.amount;
+                            const severity = getTrapSeverity(trap, roll);
                             const triggered: TrapEvent = {
                                 type: "trapTriggered",
                                 actor: actor.id,
                                 trap: trap.id,
-                                amount: 0
+                                amount: 0,
+                                severity: severity
                             };
                             effects.addEvent(triggered);
-                            effects.merge(trap.definition.onTrigger(actor, trap, roll));
+                            effects.merge(getTrapEffect(actor, trap, severity));
                             triggered.amount = origValue - trap.amount;
                         }
                     }
