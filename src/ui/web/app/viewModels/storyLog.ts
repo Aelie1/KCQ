@@ -271,9 +271,15 @@ export function createStoryLogViewModel(
 
         // Apply every active directive once, including those on suppressed narratives.
         const patterns = narratives.flatMap(narrative => narrative.suppress);
-        const paragraphs = narratives
+        const activeNarratives = narratives
             .filter(narrative => !patterns.some(pattern => matchesPattern(narrative.key, pattern)))
             .map(narrative => narrative.text);
+
+        const paragraphs = entry.kind === "phase"
+            ? activeNarratives
+            : activeNarratives.length
+                ? [activeNarratives.join(" ")]
+                : [];
 
         if (entry.kind === "phase") {
             const title = [
