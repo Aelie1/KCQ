@@ -154,6 +154,8 @@ export const systemEnglishStrings: StringTable = {
     "ui.storyLog.hitLocation.two": "in two areas",
     "ui.storyLog.hitLocation.three": "in three areas",
     "ui.storyLog.hitLocation.many": "all over her body",
+    "ui.storyLog.escape": "{actor} struggles with her {binding} binding.",
+    "ui.storyLog.assist": "{actor} helps {target} escape her {binding} binding.",
     "ui.combatHeader.character": "Character",
     "ui.combatHeader.escape": "Escape",
     "ui.combatHeader.gameLog": "Game Log",

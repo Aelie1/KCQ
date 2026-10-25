@@ -126,9 +126,8 @@ describe("Story Log: authored moments", () => {
             { kind: "escape", actor: "matsuko", target: "ko", outcomes: [decrease] },
         ];
         expect(paragraphs(entries, {
-            "escape.narrative.progress": "{actor} loosens her bindings.",
-            "escape.narrative.failed": "{actor} fails to escape.",
-            "assist.narrative.progress": "{actor} helps {target} escape.",
+            "ui.storyLog.escape": "{actor} loosens her bindings.",
+            "ui.storyLog.assist": "{actor} helps {target} escape.",
         })).toEqual(["Ko-chan loosens her bindings.", "Ko-chan fails to escape.", "Matsuko helps Ko-chan escape."]);
     });
 
@@ -301,9 +300,11 @@ describe("Story Log: narrative suppression", () => {
             "escape.narrative.failed.suppress": "character.narrative.rescued",
             "character.narrative.rescued": "Rescued.",
         })).toEqual(["Still bound."]);
-        const actual = render([{ kind: "phase", phase: "enemy", outcomes: [
-            { kind: "bindingTick", target: "ko", binding: "latexArms", outcomes: [rescued, defeated] },
-        ] }], {
+        const actual = render([{
+            kind: "phase", phase: "enemy", outcomes: [
+                { kind: "bindingTick", target: "ko", binding: "latexArms", outcomes: [rescued, defeated] },
+            ]
+        }], {
             "character.narrative.rescued": "Rescued.",
             "character.narrative.rescued.suppress": "enemy.narrative.defeated",
             "enemy.narrative.defeated": "Defeated.",
@@ -351,9 +352,11 @@ describe("Story Log: narrative suppression", () => {
         const presentation = new Presentation(stockStrings);
         const entries: GameLogPresentationEntry[] = [
             { kind: "move", actor: "ko", move: "attack", outcomes: [damage("skunkette1", "hit"), pounceRemoval] },
-            { kind: "phase", phase: "enemy", outcomes: [
-                { kind: "bindingTick", target: "ko", binding: "latexArms", outcomes: [pounceRemoval] },
-            ] },
+            {
+                kind: "phase", phase: "enemy", outcomes: [
+                    { kind: "bindingTick", target: "ko", binding: "latexArms", outcomes: [pounceRemoval] },
+                ]
+            },
             { kind: "escape", actor: "ko", target: "ko", outcomes: [pounceRemoval] },
         ];
         const removal = stockStrings["buff.pounce.narrative.removed.characters"]!.replace("{target}", "Ko-chan");

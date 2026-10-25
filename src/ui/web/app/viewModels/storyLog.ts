@@ -153,12 +153,11 @@ export function createStoryLogViewModel(
             outcome.kind === "binding" && outcome.target === entry.target && outcome.change < 0);
         const assisting = entry.actor !== entry.target;
         const base = assisting ? "assist" : "escape";
-        const result = progress.length ? "progress" : "failed";
-        return p.resolveNarrative([`${base}.narrative.${result}`], {
+        return p.resolveNarrative([`ui.storyLog.${base}`], {
             actor: p.entity(entry.actor),
             target: p.entity(entry.target),
             amount: progress.reduce((sum, outcome) => sum - outcome.change, 0),
-            bindings: list(progress.map(outcome => p.binding(outcome.binding))),
+            binding: list(progress.map(outcome => p.binding(outcome.binding, "short").toLowerCase())),
         });
     };
 
