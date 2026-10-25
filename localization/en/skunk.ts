@@ -35,6 +35,7 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunkette.rules": "Below 40% HP, the Skunkette suffers Potency −4 and Defense −1.\nEach time the Skunkette takes damage, [moves:pounce] loses one severity level. \nDefeating a Skunked character frees them from the latex's control and halves their bindings.",
     "entity.skunkette.strategy": "If currently pouncing a character, the Skunkette uses [moves:latexSpray] on that character.\nOtherwise, if [moves:pounce] is available, it chooses a random valid character who is not already pounced.\nOtherwise, it chooses [moves:latexMist] or [moves:latexSpray] with equal probability. Spray targets a random valid character and body-zone binding, while Mist hits all characters.",
     "entity.skunkette.narrative.defeated": "{target} loses control of its victim, who lies on the ground unconscious.",
+    "entity.skunketteQueen.narrative.defeated": "Even though {target}'s special collar keeps her completely trapped inside her skunk suit, she doesn't have the energy to continue and slumps to the ground, exhausted.",
     "difficulty.extreme.skunkette": "Gets a followup Latex Spray on strong hits as well as criticals.",
     "difficulty.mythic.skunkette": "Gets a followup Latex Spray on any hit.",
 
@@ -70,6 +71,7 @@ export const skunkEnglishStrings: StringTable = {
     "buff.pounce.narrative.added.2": "and holds her arms to the ground!",
     "buff.pounce.narrative.added.3": "and lands on her back, keeping her from fighting back!",
     "buff.pounce.narrative.added.4": "and forces her to the ground! The skunkette lands on her stomach, with her arms behind her... With the skunk pressing her body to the ground, she is helpless to resist!",
+    "buff.pounce.narrative.changed.enemies": "The damage causes {target}'s grip to weaken!",
     "buff.pounce.narrative.removed.characters": "The attack knocks the skunkette off of {target} in the process!",
     "buff.pounce.allow": "",
     "buff.latexMist.name": "Latex Mist",
@@ -92,6 +94,7 @@ export const skunkEnglishStrings: StringTable = {
     "entity.skunk.rules": "When it falls below 20%, it changes its next move to [moves:latexExplosion] against the attacker.",
     "entity.skunk.strategy": "Below 20% HP, the Skunk uses [moves:latexExplosion] against the most bound character. If nobody is bound, it chooses a random valid character.\nIt may use [moves:latexPuddle] to replenish the arena's puddles. This is more likely when there are less puddles present.\nIt may use [moves:latexRegeneration] on the character with the most potential regeneration. This becomes more likely as the potential regeneration grows.\nUses [moves:latexShower] on a random valid character and location.",
     "entity.skunk.narrative.defeated": "{target}'s core finally stops functioning, and it turns back into a pool of latex.",
+    "entity.skunkEmpress.narrative.defeated": "{target} is wearing a special collar that regenerates her skunk suit endlessly, but she simply has no energy to continue, so she just lies on the ground and watches the fight.'",
     "difficulty.extreme.skunk": "Survives Latex Explosion when it hits a target.",
     "difficulty.mythic.skunk": "Survives Latex Explosion whether it hits or misses.",
 
@@ -157,6 +160,7 @@ export const skunkEnglishStrings: StringTable = {
 
     "buff.empoweringMagic.name": "Empowering Magic",
     "buff.barrierMagic.name": "Barrier Magic",
+    "buff.barrierMagic.narrative.removed": "{target}'s barrier consumes the last of its power and fades away.",
 
     // Rainmaker    
     "entity.rainmaker.generic": "Rainmaker",
@@ -173,9 +177,12 @@ export const skunkEnglishStrings: StringTable = {
     "move.latexRain.effect.amount.graze": "2 × 10",
     "move.latexRain.effect.amount.hit": "3 × 10",
     "move.latexRain.narrative.miss": "{actor} sprays latex everywhere, causing globs of latex to rain from the sky.  The party easily dodges the falling globs of latex.",
-    "move.latexRain.narrative.graze": "{actor} sprays latex everywhere, causing globs of latex to rain from the sky.  The rain hits {targets} in several places.",
-    "move.latexRain.narrative.hit": "{actor} sprays latex everywhere, causing globs of latex to rain from the sky.  The rain nearly covers {targets} in bits of latex!",
-    "move.latexRain.narrative.crit": "{actor} sprays latex everywhere, causing globs of latex to rain from the sky.  The rain soaks {targets} completely!",
+    "move.latexRain.narrative.graze": "{actor} sprays latex everywhere, causing globs of latex to rain from the sky.  The rain hits {hits} in several places.",
+    "move.latexRain.narrative.graze.suppress": "binding.*",
+    "move.latexRain.narrative.hit": "{actor} sprays latex everywhere, causing globs of latex to rain from the sky.  The rain nearly covers {hits} in bits of latex!",
+    "move.latexRain.narrative.hit.suppress": "binding.*",
+    "move.latexRain.narrative.crit": "{actor} sprays latex everywhere, causing globs of latex to rain from the sky.  The rain soaks {hits} completely!",
+    "move.latexRain.narrative.crit.suppress": "binding.*",
 
     "buff.extraSprayers.name": "Extra Sprayers",
 
@@ -187,6 +194,8 @@ export const skunkEnglishStrings: StringTable = {
     "entity.queen.rules": "Crossing the 80%, 60%, 40%, or 20% HP threshold triggers [moves:callReinforcements] on her next move.\nCrossing the two-thirds or one-third HP threshold triggers [moves:latexRainmaker] on her next move.\nEach threshold triggers only once. Encounter setup determines the next wave.",
     "entity.queen.strategy": "Uses [moves:skunkCollar] if it is available and no character already has a collar. The Queen targets whoever has dealt her the most damage so far in the encounter.\nUses [moves:skunkPerfume] if it is available, choosing randomly between its three effects. \nUses [moves:skunkGun] on a random character.",
     "entity.queen.narrative.defeated": "{target} lets out a pitiful cry and falls to the ground, surrounded by her broken machines and constructs.",
+    "entity.empress.narrative.defeated": "{target} watches as her grand plans for conquest fall to pieces around her.  She lays helplessly on the ground hoping her remaining underlings can finish the job.",
+    "entity.goddess.narrative.defeated": "{target} smiles as you land the 'finishing blow' and doesn't seem worried at all about losing the fight or her possible future fate.",
 
     "entity.empress.desc": "This is the original creator of the latex skunk technology, unlike the usurper in the woods.",
     "entity.goddess.desc": "The Goddess of the Realms, here to offer the ultimate challenge after saving you from the Skunk Empress.",
@@ -217,13 +226,14 @@ export const skunkEnglishStrings: StringTable = {
     "move.skunkPerfume.desc": "The Skunk Queen sprays her perfume, but it's a sweet, rubbery scent that makes those who smell it more attracted to skunks... Randomly applies one of two weakening perfumes or a regenerative perfume.",
     "move.skunkPerfume.effect.heal.note": "Heals damaged [enemies:skunkette], [enemies:skunk], and [enemies:fairy].",
     "move.skunkPerfume.narrative.action": "The {actor} sprays her skunk-scented perfume all over the place...",
+    "move.skunkPerfume.narrative.miss": "{targets} ignore the perfume even though it smells bad.",
 
     "buff.defensePerfume.name": "Defense Perfume",
-    "buff.defensePerfume.narrative.miss": "{targets} ignore the perfume even though it smells bad.",
-    "buff.defensePerfume.narrative.hit": "{targets} can't resist the urge and lower their defenses a bit in response.",
+    "buff.defensePerfume.narrative.added": "{targets} can't resist the urge and lowers her defenses a bit in response.",
+    "buff.defensePerfume.narrative.added.plural": "{targets} can't resist the urge and lower their defenses a bit in response.",
     "buff.escapePerfume.name": "Escape Perfume",
-    "buff.escapePerfume.narrative.miss": "{targets} ignore the perfume even though it smells bad.",
-    "buff.escapePerfume.narrative.hit": "{targets} can't resist the urge and start to feel like becoming a skunk wouldn't be so bad...",
+    "buff.escapePerfume.narrative.added": "{targets} can't resist the urge and starts to feel like becoming a skunk wouldn't be so bad...",
+    "buff.escapePerfume.narrative.added.plural": "{targets} can't resist the urge and start to feel like becoming a skunk wouldn't be so bad...",
     "buff.empressMight.name": "Empress's Might",
     "buff.goddessMight.name": "Goddess's Might",
     "buff.might.name": "Might",
