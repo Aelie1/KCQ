@@ -18,17 +18,17 @@ export const releaseHistory: ReleaseHistory = {
         {
             version: "1.1.0",
             titleKey: "patchNotes.1.1.0.title",
-            sections: [{ bulletKeys: ["patchNotes.1.1.0.story", "patchNotes.1.1.0.effects", "patchNotes.1.1.0.preferences"] }],
+            sections: [{ bulletKeys: ["patchNotes.1.1.0.line1", "patchNotes.1.1.0.line2"] }],
         },
         {
             version: "1.0.1",
             titleKey: "patchNotes.1.0.1.title",
-            sections: [{ bulletKeys: ["patchNotes.1.0.1.responsiveness", "patchNotes.1.0.1.display", "patchNotes.1.0.1.usability"] }],
+            sections: [{ bulletKeys: ["patchNotes.1.0.1.line1"] }],
         },
         {
             version: "1.0.0",
             titleKey: "patchNotes.1.0.0.title",
-            sections: [{ bulletKeys: ["patchNotes.1.0.0.campaign", "patchNotes.1.0.0.combat", "patchNotes.1.0.0.interface"] }],
+            sections: [{ bulletKeys: ["patchNotes.1.0.0.line1", "patchNotes.1.0.0.line2"] }],
         },
     ],
 };
