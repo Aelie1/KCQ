@@ -160,6 +160,7 @@ export function createStoryLogViewModel(
             if (plural) keys.push(`${base}.${category}.plural`);
             keys.push(`${base}.${category}`);
         }
+        keys.push(`${base}.action`);
 
         const bindings = [...new Set(entry.outcomes.flatMap(outcome =>
             outcome.kind === "binding" && outcome.change > 0
