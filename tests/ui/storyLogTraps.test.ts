@@ -37,7 +37,7 @@ const binding = (id: string): LogOutcome => ({
     kind: "binding", target: "ko", binding: id, change: 20, blocked: 0,
     initial: { value: 0, level: "none" }, final: { value: 20, level: "moderate" },
 });
-const buff = (target: string, id: string): LogOutcome => ({
+const buff = (target: string, id: string): Extract<LogOutcome, { kind: "buff" }> => ({
     kind: "buff", buff: id, participants: [{ target, initial: { present: false }, final: { present: true } }],
 });
 const activation = (...outcomes: LogOutcome[]): TrapActivationOutcome => ({ kind: "trapActivation", outcomes: [trigger, ...outcomes] });
@@ -263,5 +263,41 @@ describe("Story Log trap ordering", () => {
         expect(rows.slice(0, 2).map(row => row.kind)).toEqual(["trapActivation", "trapActivation"]);
         expect(rows[0]!.rows?.some(row => row.kind === "bindingTick")).toBe(true);
         expect(rows[2]?.kind).toBe("damage");
+    });
+});
+
+describe("Combat Log trap activation headings", () => {
+    const combat = new Presentation({
+        ...strings,
+        "trap.puddle.name": "Latex Puddle",
+        "ui.gameLog.trapTriggered": "Triggered by {actor} x{amount}",
+        "ui.gameLog.bindingOutcome": "{binding} {value}",
+        "ui.gameLog.transition": "{initial} -> {final}",
+    });
+    const hidden: LogOutcome = { ...buff("ko", "slow"), summarized: true };
+    const stockChange: LogOutcome = { kind: "trap", trap: "other", change: 5, triggers: [] };
+
+    it.each<{ description: string; earlier: LogOutcome[] }>([
+        { description: "a visible binding", earlier: [binding("legs")] },
+        { description: "an invisible outcome and a binding", earlier: [hidden, binding("legs")] },
+        { description: "a trap stock adjustment", earlier: [stockChange, binding("legs")] },
+        { description: "only an invisible outcome", earlier: [hidden] },
+    ])("keeps the triggering trap as the heading after $description", ({ earlier }) => {
+        const reference = createGameLogViewModel([move([activation(...earlier, binding("arms"))])], combat, ["ko"])[0]!.rows[0]!;
+        const reordered: TrapActivationOutcome = { kind: "trapActivation", outcomes: [...earlier, trigger, binding("arms")] };
+        const input = move([reordered]);
+        const saved = JSON.stringify(input);
+        const parent = createGameLogViewModel([input], combat, ["ko"])[0]!.rows[0]!;
+        expect(parent).toEqual(reference);
+        expect(parent).toMatchObject({
+            kind: "trapActivation", label: "Latex Puddle",
+            values: [{ text: "Triggered by Ko x20", tone: "warning" }],
+        });
+        expect(parent.rows?.some(row => row.kind === "buff")).toBe(false);
+        const bindings = parent.rows?.filter(row => row.kind === "binding");
+        expect(bindings).toHaveLength(1);
+        expect(bindings![0]!.values).toHaveLength(earlier.some(outcome => outcome.kind === "binding") ? 2 : 1);
+        expect(bindings![0]!.values.every(value => value.binding)).toBe(true);
+        expect(JSON.stringify(input)).toBe(saved);
     });
 });

@@ -102,8 +102,10 @@ export function createGameLogViewModel(
     const row = (outcome: LogOutcome, compactBinding = false): GameLogRow => {
         switch (outcome.kind) {
             case "trapActivation": {
-                const [trigger, ...children] = renderOutcomes(outcome.outcomes, undefined, true);
-                return { ...trigger, kind: outcome.kind, values: trigger?.values ?? [], rows: children };
+                const trigger = outcome.outcomes.find(effect => effect.kind === "trap" && effect.triggers.length > 0);
+                const heading = trigger ? row(trigger) : undefined;
+                const children = renderOutcomes(outcome.outcomes.filter(effect => effect !== trigger), undefined, true);
+                return { ...heading, kind: outcome.kind, values: heading?.values ?? [], rows: children };
             }
             case "bindingTick": {
                 const visible = outcome.outcomes.filter(effect => {
