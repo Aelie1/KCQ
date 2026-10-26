@@ -91,7 +91,6 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                                                     <span>{modifier.label}</span>
                                                     <PipMeter
                                                         active={modifier.value}
-                                                        direction={modifier.direction}
                                                         tone={modifier.harmful ? "danger" : "success"}
                                                     />
                                                     <strong>{modifier.signedValue}</strong>

@@ -3,7 +3,6 @@ import { For, type JSX } from "solid-js";
 export interface PipMeterProps {
     active: number;
     blocked?: boolean;
-    direction?: "left" | "right";
     tone: "danger" | "neutral" | "success";
 }
 
@@ -11,10 +10,9 @@ const PIPS = Array.from({ length: 8 }, (_, index) => index);
 
 export function PipMeter(props: PipMeterProps): JSX.Element {
     const activePips = (): number => Math.min(PIPS.length, Math.max(0, Math.abs(props.active)));
-    const active = (index: number): boolean => props.direction === "left"
+    const active = (index: number): boolean => props.active >= 0
         ? index < activePips()
         : index >= PIPS.length - activePips();
-
     return (
         <span
             class="kcq-pip-meter"
