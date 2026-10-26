@@ -4,7 +4,7 @@ import type { CampaignReference, ContentLibrary } from "../../../engine/public/l
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
 import { ENCOUNTER_DIFFICULTIES } from "../app";
 import type { BattleTelemetryObserver } from "../telemetry";
-import { isKnownDifficulty, loadPreferredDifficulty, loadPreferredParty, savePreferredDifficulty, savePreferredParty } from "./battlePreferences";
+import { isKnownDifficulty, loadPreferredDifficulty, loadPreferredParty, loadShowAll, savePreferredDifficulty, savePreferredParty, saveShowAll } from "./battlePreferences";
 import { loadCampaignUnlocks, saveCampaignUnlocks, type CampaignUnlocks } from "./campaignUnlocks";
 import { loadEncounterClears, saveEncounterClears, type EncounterClears } from "./encounterClears";
 import { getNextEncounter } from "./nextEncounter";
@@ -35,7 +35,7 @@ export function createGraphicalController(
     let outcomeRecorded = false;
     const [bestClears, setBestClears] = createSignal<EncounterClears>(loadEncounterClears(storage));
     const [unlocks, setUnlocks] = createSignal<CampaignUnlocks>(loadCampaignUnlocks(storage));
-    const [showAll, setShowAll] = createSignal(false);
+    const [showAll, setShowAll] = createSignal(loadShowAll(storage));
     const [screen, setScreen] = createSignal<GraphicalScreen>({ screen: "title" });
     const [party, setParty] = createSignal(loadPreferredParty(storage));
     const [draftParty, setDraftParty] = createSignal(party());
@@ -128,7 +128,10 @@ export function createGraphicalController(
         bestClears,
         unlocks,
         showAll,
-        setShowAll,
+        setShowAll(value: boolean): void {
+            setShowAll(value);
+            saveShowAll(value, storage);
+        },
         nextEncounter,
         continueBattle(campaign: KCQCampaign, save: SavePackage, createEngine: (party: readonly KCQCharacter[]) => Engine): boolean {
             if (screen().screen !== "title") return false;
@@ -182,7 +185,6 @@ export function createGraphicalController(
         },
         selectCampaign(campaign: KCQCampaign): void {
             if (screen().screen === "title") {
-                setShowAll(false);
                 setScreen({ screen: "picker", campaign });
             }
         },

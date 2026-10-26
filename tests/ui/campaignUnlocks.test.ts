@@ -257,7 +257,7 @@ describe("campaign encounter unlocks", () => {
         expect(app.visible()).toEqual(campaign.initial);
         expect(app.controller.unlocks()).toEqual({});
         expect(app.controller.bestClears()).toEqual({});
-        expect(app.storage.setItem).not.toHaveBeenCalled();
+        expect(app.storage.setItem.mock.calls).toEqual([["kcq.showAll", "true"], ["kcq.showAll", "false"]]);
     });
 
     it.each(["interlude_1", "interlude_2", "interlude_3", "epilogue"])("does not unlock progress by viewing locked story %s through Show All", story => {
@@ -266,7 +266,7 @@ describe("campaign encounter unlocks", () => {
         app.controller.selectEncounter(story);
         expect(app.controller.screen()).toEqual({ screen: "details", campaign: "skunk", encounter: story });
         expect(app.controller.unlocks()).toEqual({});
-        expect(app.storage.setItem).not.toHaveBeenCalled();
+        expect(app.storage.setItem).toHaveBeenCalledExactlyOnceWith("kcq.showAll", "true");
     });
 
     it.each(["victory", "defeat"] as const)("does not grant campaign unlocks for a locked combat %s", outcome => {

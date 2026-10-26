@@ -102,7 +102,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
             )}
             body={(visible("log") || visible("enemies") || visible("party")) && <>
                 <Show when={visible("log")}>
-                    <CompactGameLog entries={props.history ?? []} presentation={props.presentation}
+                    <CompactGameLog entries={props.history ?? []} presentation={props.presentation} library={props.library}
                         party={props.state.characters.map(character => character.id)}
                         headingAction={props.gameLogHeadingAction}
                         scrollable={props.gameLogScrollable}

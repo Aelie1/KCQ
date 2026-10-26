@@ -113,7 +113,7 @@ describe("player persistence in the graphical application", () => {
         expect(JSON.parse(window.localStorage.getItem("kcq.clears")!)).toEqual({ plains_1: "veteran" });
         button("Back to Level Select"); expect(clearLabel()).toBe("👑 Veteran");
         ({ sessions } = mount()); click(".kcq-title-screen__campaign");
-        document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
+        expect(document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.checked).toBe(true);
         expect(clearLabel()).toBe("👑 Veteran");
         start("Casual"); finish(sessions[0]!, "victory"); button("Back to Level Select");
         expect(clearLabel()).toBe("👑 Veteran");

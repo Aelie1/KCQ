@@ -1,5 +1,6 @@
 import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
+import type { ContentLibrary } from "../../../../engine/public/library";
 import type { Presentation } from "../../../presentation/presentation";
 import { createGameLogViewModel } from "../viewModels/gameLog";
 import { latestGameLogActionIndex, mergeLogLines, recentGameLogEntries, recentLogOffset } from "../viewModels/compactGameLog";
@@ -11,6 +12,7 @@ import { GameLogTabs, type GameLogMode } from "./GameLogTabs";
 export interface CompactGameLogProps {
     entries: readonly GameLogPresentationEntry[];
     presentation: Presentation;
+    library?: ContentLibrary;
     party: readonly string[];
     lines: number;
     onOpen?: () => void;
@@ -24,7 +26,7 @@ export interface CompactGameLogProps {
 function ScrollableGameLog(props: CompactGameLogProps & { headingId: string }): JSX.Element {
     const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation, props.party));
     const [tab, setTab] = createSignal<GameLogMode>(props.mode ?? "combat");
-    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation, props.party) : []);
+    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation, props.party, props.library) : []);
     const positions = { combat: { top: 0, following: true }, story: { top: 0, following: true } };
     let viewport!: HTMLDivElement;
     let following = true;
@@ -79,7 +81,7 @@ function ScrollableGameLog(props: CompactGameLogProps & { headingId: string }): 
 
 function MeasuredGameLog(props: CompactGameLogProps): JSX.Element {
     const entries = createMemo(() => props.lines <= 0 ? [] : props.mode === "story"
-        ? createStoryLogViewModel(props.entries, props.presentation, props.party).filter(entry => entry.kind !== "phase" && (entry.title || entry.paragraphs.length)).slice(-props.lines)
+        ? createStoryLogViewModel(props.entries, props.presentation, props.party, props.library).filter(entry => entry.kind !== "phase" && (entry.title || entry.paragraphs.length)).slice(-props.lines)
         : recentGameLogEntries(createGameLogViewModel(props.entries, props.presentation, props.party), props.lines));
     const [offset, setOffset] = createSignal(0);
     const [hiddenCount, setHiddenCount] = createSignal(0);

@@ -34,3 +34,13 @@ export function savePreferredDifficulty(difficulty: DifficultyId, storage?: Pick
     try { (storage ?? window.localStorage).setItem("kcq.difficulty", difficulty); }
     catch { /* Keep the selected difficulty in-session. */ }
 }
+
+export function loadShowAll(storage?: Pick<Storage, "getItem">): boolean {
+    try { return (storage ?? window.localStorage).getItem("kcq.showAll") === "true"; }
+    catch { return false; }
+}
+
+export function saveShowAll(showAll: boolean, storage?: Pick<Storage, "setItem">): void {
+    try { (storage ?? window.localStorage).setItem("kcq.showAll", String(showAll)); }
+    catch { /* Keep the in-session preference. */ }
+}

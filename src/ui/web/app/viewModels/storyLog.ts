@@ -1,11 +1,20 @@
+import type { ContentLibrary } from "../../../../engine/public/library";
 import type { GameLogPresentationEntry, LogHit, LogOutcome } from "../../../presentation/gameLog";
 import type { Presentation, ResolvedNarrative } from "../../../presentation/presentation";
+import { playerTone, type PlayerTone } from "./linkedEntities";
 
 type StoryTone = "success" | "warning" | "danger";
+
+export interface StoryLogText {
+    text: string;
+    glow?: PlayerTone;
+}
 
 export interface StoryLogParagraph {
     text: string;
     tone?: StoryTone;
+    /** Inline parts keep skill highlighting separate from consequences in the same paragraph. */
+    parts?: StoryLogText[];
 }
 
 export interface StoryLogEntry {
@@ -18,6 +27,7 @@ export interface StoryLogEntry {
 
 type StoryNarrative = ResolvedNarrative & {
     tone?: StoryTone;
+    glow?: PlayerTone;
 };
 
 type MoveEntry = Extract<GameLogPresentationEntry, { kind: "move" }>;
@@ -44,6 +54,7 @@ export function createStoryLogViewModel(
     entries: readonly GameLogPresentationEntry[],
     p: Presentation,
     party?: readonly string[],
+    library?: Pick<ContentLibrary, "moves">,
 ): StoryLogEntry[] {
     const list = (values: readonly string[]): string => {
         const unique = [...new Set(values)];
@@ -410,7 +421,11 @@ export function createStoryLogViewModel(
 
         if (entry.kind === "move") {
             const text = moveNarrative(entry);
-            if (text) narratives.push(text);
+            if (text) narratives.push({
+                ...text,
+                ...(library?.moves[entry.move]?.traits?.includes("onetime")
+                    ? { glow: playerTone(entry.actor) } : {}),
+            });
         } else if (entry.kind === "escape") {
             const text = escapeNarrative(entry, outcomes);
             if (text) narratives.push(text);
@@ -457,28 +472,36 @@ export function createStoryLogViewModel(
 
         const paragraphs: StoryLogParagraph[] = [];
         let normal = "";
+        let parts: StoryLogText[] = [];
+        const flushNormal = () => {
+            if (normal) paragraphs.push({
+                text: normal,
+                ...(parts.some(part => part.glow) ? { parts } : {}),
+            });
+            normal = "";
+            parts = [];
+        };
 
         for (const narrative of activeNarratives) {
             if (narrative.tone) {
-                if (normal) {
-                    paragraphs.push({ text: normal });
-                    normal = "";
-                }
+                flushNormal();
 
                 paragraphs.push({
                     text: narrative.text,
                     tone: narrative.tone,
                 });
             } else {
+                parts.push({
+                    text: normal ? ` ${narrative.text}` : narrative.text,
+                    ...(narrative.glow ? { glow: narrative.glow } : {}),
+                });
                 normal = normal
                     ? `${normal} ${narrative.text}`
                     : narrative.text;
             }
         }
 
-        if (normal) {
-            paragraphs.push({ text: normal });
-        }
+        flushNormal();
 
         if (!paragraphs.length) continue;
 

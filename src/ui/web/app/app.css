@@ -1724,6 +1724,12 @@ button {
     overflow-wrap: anywhere;
 }
 
+.kcq-game-log__one-shot {
+    text-shadow:
+        0 0 3px var(--kcq-story-glow),
+        0 0 10px color-mix(in srgb, var(--kcq-story-glow) 75%, transparent);
+}
+
 .kcq-game-log__story-text--success {
     color: var(--kcq-state-success);
     font-weight: 700;

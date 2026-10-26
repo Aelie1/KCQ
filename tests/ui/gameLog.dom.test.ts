@@ -615,3 +615,32 @@ describe("Combat and Story tabs", () => {
         expect(JSON.stringify(engine.getGameState())).toBe(state);
     });
 });
+
+describe("persistent Game Log selection across battles", () => {
+    it.each(["story", "combat"] as const)("restores %s across shared presentations, another battle, and app recreation", mode => {
+        window.localStorage.setItem("kcq.gameLogMode", mode === "story" ? "combat" : "story");
+        mountBattle();
+        document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!.click();
+        button(mode === "story" ? "Story" : "Combat").click();
+        expect(window.localStorage.getItem("kcq.gameLogMode")).toBe(mode);
+        click(".kcq-combat-header__back");
+        const selected = () => document.querySelector<HTMLButtonElement>('.kcq-overview-game-log-tabs [aria-selected="true"]')!;
+        expect(selected().textContent).toBe(mode === "story" ? "Story Log" : "Game Log");
+        click(".kcq-combat-header__settings");
+        button("Back to Level Select").click();
+        document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.click();
+        chooseEncounter("plains_2");
+        expect(selected().textContent).toBe(mode === "story" ? "Story Log" : "Game Log");
+        document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!.click();
+        expect(button(mode === "story" ? "Story" : "Combat").getAttribute("aria-selected")).toBe("true");
+        unmount?.(); unmount = undefined; document.body.replaceChildren();
+        mountBattle();
+        expect(selected().textContent).toBe(mode === "story" ? "Story Log" : "Game Log");
+        document.querySelector<HTMLButtonElement>(".kcq-compact-game-log")!.click();
+        expect(button(mode === "story" ? "Story" : "Combat").getAttribute("aria-selected")).toBe("true");
+        click(".kcq-combat-header__back");
+        click(".kcq-combat-header__settings");
+        button("Back to Level Select").click();
+        expect(document.querySelector<HTMLInputElement>(".kcq-encounter-picker__show-all input")!.checked).toBe(true);
+    });
+});

@@ -1,5 +1,6 @@
 import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, onMount, Show, type JSX } from "solid-js";
 import type { GameState } from "../../../../engine/public/types";
+import type { ContentLibrary } from "../../../../engine/public/library";
 import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import { COMBAT_SHORTCUTS } from "../keyboard";
@@ -16,6 +17,7 @@ export interface GameLogPanelProps {
     entries: readonly GameLogPresentationEntry[];
     presentation: Presentation;
     state: GameState;
+    library?: ContentLibrary;
     onBack?: () => void;
     showBack?: boolean;
     focusBackOnMount?: boolean;
@@ -27,7 +29,7 @@ export function GameLogPanel(props: GameLogPanelProps): JSX.Element {
     const header = createMemo(() => createCombatHeaderViewModel(props.state, props.presentation));
     const entries = createMemo(() => createGameLogViewModel(props.entries, props.presentation, props.state.characters.map(character => character.id)));
     const [tab, setTab] = createSignal<GameLogMode>(props.mode ?? "combat");
-    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation, props.state.characters.map(character => character.id)) : []);
+    const story = createMemo(() => tab() === "story" ? createStoryLogViewModel(props.entries, props.presentation, props.state.characters.map(character => character.id), props.library) : []);
     const id = createUniqueId();
     const positions = { combat: { top: 0, following: true }, story: { top: 0, following: true } };
 

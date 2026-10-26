@@ -140,6 +140,7 @@ export const matsukoEnglishStrings: StringTable = {
     "move.attackMe.narrative.action": "{actor} yells out [Focus all your attacks on me!] which forces every enemy in earshot to turn and focus solely on {actor}.  A defensive barrier flares to life in front of her to absorb the incoming attacks.",
 
     "buff.burnout.name": "Burnout",
+    "buff.burnout.narrative.added": "The flames inside {target}'s eyes fade away, and it will be some time before they recover.",
     "buff.burnout.block": "Seals Flame Moves",
     "buff.burnout.allow": "Adds Basic Moves",
     "buff.defenseBarrier.name": "Defense Barrier",

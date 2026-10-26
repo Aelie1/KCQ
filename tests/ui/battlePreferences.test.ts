@@ -47,6 +47,7 @@ describe("battle preferences", () => {
         const storage = storageWith({ "kcq.unlocks": '{"skunk":["plains_2"]}', "kcq.clears": '{"plains_1":"veteran"}' });
         const controller = createGraphicalController(prepareBattle, storage);
         if (origin === "picker") { controller.selectCampaign("skunk"); controller.setShowAll(true); }
+        storage.setItem.mockClear();
         const previous = controller.screen();
         controller.changeParty();
         expect(controller.screen()).toEqual({ screen: "party", returnTo: previous });
@@ -148,5 +149,54 @@ describe("battle preferences", () => {
         expect(prepare).toHaveBeenNthCalledWith(2, "skunk", "plains_2", "mythic", preferredParty);
         expect(storage.setItem).not.toHaveBeenCalled();
         controller.dispose(); dispose();
+    }));
+});
+
+describe("Show All preference", () => {
+    it("persists both values across picker visits, battles, and controller recreation without changing progression", () => createRoot(dispose => {
+        const storage = storageWith({ "kcq.unlocks": '{"skunk":["plains_2"]}', "kcq.clears": '{"plains_1":"veteran"}' });
+        const controller = createGraphicalController(prepareBattle, storage);
+        expect(controller.showAll()).toBe(false);
+        expect(storage.setItem).not.toHaveBeenCalled();
+        controller.selectCampaign("skunk");
+        controller.setShowAll(true);
+        expect(storage.setItem).toHaveBeenCalledExactlyOnceWith("kcq.showAll", "true");
+        controller.selectEncounter("plains_1"); controller.backToPicker();
+        expect(controller.showAll()).toBe(true);
+        controller.returnToTitle(); controller.selectCampaign("skunk");
+        expect(controller.showAll()).toBe(true);
+        controller.selectEncounter("plains_1"); controller.chooseDifficulty(); controller.startEncounter();
+        controller.returnToLevelSelect();
+        expect(controller.showAll()).toBe(true);
+        const restored = createGraphicalController(prepareBattle, storage);
+        restored.selectCampaign("skunk");
+        expect(restored.showAll()).toBe(true);
+        restored.setShowAll(false);
+        expect(storage.setItem).toHaveBeenLastCalledWith("kcq.showAll", "false");
+        expect(createGraphicalController(prepareBattle, storage).showAll()).toBe(false);
+        expect(restored.unlocks()).toEqual({ skunk: ["plains_2"] });
+        expect(restored.bestClears()).toEqual({ plains_1: "veteran" });
+        expect(storage.setItem.mock.calls.map(([key]) => key)).toEqual(["kcq.showAll", "kcq.showAll"]);
+        controller.dispose(); dispose();
+    }));
+
+    it.each(["", "TRUE", "1", "null", "{}", '"true"', "obsolete"])("defaults to false for invalid stored value %s", saved => createRoot(dispose => {
+        const controller = createGraphicalController(prepareBattle, storageWith({ "kcq.showAll": saved }));
+        expect(controller.showAll()).toBe(false);
+        dispose();
+    }));
+
+    it("keeps the selection through navigation when storage is unavailable", () => createRoot(dispose => {
+        const storage = storageWith();
+        storage.getItem.mockImplementation(() => { throw new Error("blocked"); });
+        storage.setItem.mockImplementation(() => { throw new Error("quota"); });
+        const controller = createGraphicalController(prepareBattle, storage);
+        expect(controller.showAll()).toBe(false);
+        controller.selectCampaign("skunk"); controller.setShowAll(true); controller.returnToTitle();
+        controller.selectCampaign("skunk");
+        expect(controller.showAll()).toBe(true);
+        controller.setShowAll(false);
+        expect(controller.showAll()).toBe(false);
+        dispose();
     }));
 });

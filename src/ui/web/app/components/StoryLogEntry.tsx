@@ -15,7 +15,14 @@ export function StoryLogEntry(props: { entry: Entry; hidden?: boolean }): JSX.El
                         "kcq-game-log__story-text--warning": paragraph.tone === "warning",
                         "kcq-game-log__story-text--danger": paragraph.tone === "danger",
                     }}>
-                    {paragraph.text}
+                    <Show when={paragraph.parts} fallback={paragraph.text}>
+                        {parts => <For each={parts()}>{part => <Show when={part.glow} fallback={part.text}>
+                            {tone => <span class="kcq-game-log__one-shot"
+                                style={{ "--kcq-story-glow": tone() === "neutral" ? "var(--kcq-text-primary)" : `var(--kcq-name-${tone()})` }}>
+                                {part.text}
+                            </span>}
+                        </Show>}</For>}
+                    </Show>
                 </p>
             }
         </For>

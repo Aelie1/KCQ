@@ -24,7 +24,7 @@ import { CombatReactionsContext, createCombatReactions } from "./combatReactions
 import { CharacterDetailsLayout } from "./components/CharacterDetailsLayout";
 import { CombatHeader } from "./components/CombatHeader";
 import { CompactGameLog } from "./components/CompactGameLog";
-import type { GameLogMode } from "./components/GameLogTabs";
+import { createGameLogModePreference } from "./gameLogMode";
 import { Shortcut } from "./components/Shortcut";
 import { createEnemyDefeats } from "./enemyDefeats";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
@@ -108,7 +108,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
     let selectedTargetIds: readonly EntityId[] = [];
     let selectedEscape: Pick<EscapeInfo, "binding" | "target"> | undefined;
     const [logOpen, setLogOpen] = createSignal(false);
-    const [gameLogMode, setGameLogMode] = createSignal<GameLogMode>("combat");
+    const [gameLogMode, setGameLogMode] = createGameLogModePreference();
     let logTrigger: Element | null = null;
     const closeLog = (): void => {
         setLogOpen(false);
@@ -632,7 +632,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         disabled={playback.active() || !!resultModel()} onClick={endTurn}>
                         <Shortcut shortcut={COMBAT_SHORTCUTS.endTurn} /> {overview().controls.endTurnLabel}
                     </button>} />,
-                gameLog: () => <CompactGameLog entries={logEntries()} presentation={props.presentation}
+                gameLog: () => <CompactGameLog entries={logEntries()} presentation={props.presentation} library={library}
                     party={state().characters.map(character => character.id)} lines={overviewGameLog.value}
                     scrollable={wide()} headingAction={!wide()} onOpen={toggleLog}
                     mode={gameLogMode()} onModeChange={setGameLogMode} />,
@@ -673,7 +673,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                         event.preventDefault(); first?.focus();
                     }
                 }}>
-                <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} onBack={back}
+                <GameLogPanel entries={logEntries()} presentation={props.presentation} state={state()} library={library} onBack={back}
                     mode={gameLogMode()} onModeChange={setGameLogMode}
                     showBack={!logModal()} focusBackOnMount={!logModal()} />
             </div></Portal>;
