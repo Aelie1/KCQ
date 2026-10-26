@@ -79,7 +79,7 @@ export type SectionId = string;
 
 export type CallbackId = string;
 
-export type IconId = "shield" | "sword" | "shield-off" | "sword-off" | "crown" | "sun" | "ambush" | "sprayer";
+export type IconId = "shield" | "sword" | "shield-off" | "sword-off" | "crown" | "sun" | "ambush" | "sprayer" | "regen";
 
 
 /*******************************************************
@@ -130,7 +130,7 @@ export interface TargetInfo {
     effects: Effect[];
 }
 
-export type EnemyRank = "minion" | "enemy" | "boss";
+export type EnemyRank = "minion" | "enemy" | "elite" | "boss";
 
 /*******************************************************
  * Buffs
@@ -420,7 +420,8 @@ export type ModifierId =
     | "potency"
     | "traps"
     | "willpower"
-    | "spread";
+    | "spread"
+    | "regeneration";
 
 export type FlagId =
     | "blocksAttack"

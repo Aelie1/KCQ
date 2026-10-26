@@ -5,8 +5,8 @@ import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./late
 import { trapPuddle } from "./puddles";
 import { callReinforcements, latexRainmaker, queen, skunkCollar, skunkGun, skunkPerfume } from "./queen";
 import { latexRain, rainmaker } from "./rainmaker";
-import { latexExplosion, latexPuddle, latexRegeneration, latexShower, skunk } from "./skunk";
-import { latexMist, latexSpray, pounce, skunkette, throwOff } from "./skunkette";
+import { latexExplosion, latexPuddle, latexRegeneration, latexShower, skunk, skunkEmpress } from "./skunk";
+import { latexMist, latexSpray, pounce, skunkette, skunketteQueen, throwOff } from "./skunkette";
 
 export const skunkCatalog: ContentCatalogFragment = {
     enemies: [
@@ -15,6 +15,8 @@ export const skunkCatalog: ContentCatalogFragment = {
         queen,
         fairy,
         rainmaker,
+        skunketteQueen,
+        skunkEmpress,
     ],
 
     moves: [

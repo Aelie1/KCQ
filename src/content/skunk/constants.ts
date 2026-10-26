@@ -1,7 +1,9 @@
 export const SKUNKED_BUFF = "skunked";
 export const POUNCE_BUFF = "pounce";
 export const SKUNKETTE_ID = "skunkette";
+export const SKUNKETTE_QUEEN_ID = "skunketteQueen";
 export const SKUNK_ID = "skunk";
+export const SKUNK_EMPRESS_ID = "skunkEmpress";
 export const FAIRY_ID = "fairy";
 export const RAINMAKER_ID = "rainmaker";
 export const QUEEN_ID = "queen";
@@ -9,3 +11,5 @@ export const EMPRESS_BUFF = "empressMight";
 export const GODDESS_BUFF = "goddessMight";
 export const MIGHT_BUFF = "might";
 export const SPRAYER_BUFF = "extraSprayers";
+export const ELITE_HP_MODIFIER = 1.5;
+export const ELITE_DEF_MODIFIER = 2;

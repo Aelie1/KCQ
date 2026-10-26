@@ -22,6 +22,7 @@ export const systemEnglishStrings: StringTable = {
 
     "entity.allies.name": "Allies",
     "entity.enemies.name": "Enemies",
+    "entity.elites.name": "Elites",
     "entity.index.1": "A",
     "entity.index.2": "B",
     "entity.index.3": "C",
@@ -237,6 +238,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.encounter.chooseDifficulty": "Choose Difficulty",
     "ui.encounter.hp": "HP: {hp}",
     "ui.enemyRank.boss": "Boss",
+    "ui.enemyRank.elite": "Elite",
     "ui.enemyRank.enemy": "Enemy",
     "ui.enemyRank.minion": "Minion",
     "ui.escape.assist": "Assist {character}'s {binding}",
@@ -492,6 +494,8 @@ export const systemEnglishStrings: StringTable = {
     "modifier.willpower.compact": "WILL",
     "modifier.spread.name": "Spread",
     "modifier.spread.compact": "SPRD",
+    "modifier.regeneration.name": "Regeneration",
+    "modifier.regeneration.compact": "REGEN",
 
     "flag.blocksAttack.name": "Cannot Attack",
     "flag.blocksEscape.name": "Cannot Escape",

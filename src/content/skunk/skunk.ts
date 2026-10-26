@@ -4,7 +4,7 @@ import { findBinding, findTrap, isCharacter, isEnemy } from "../../engine/protec
 import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
-import { SKUNK_ID } from "./constants";
+import { ELITE_DEF_MODIFIER, ELITE_HP_MODIFIER, SKUNK_EMPRESS_ID, SKUNK_ID } from "./constants";
 import { latexArms, latexBindings, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 
@@ -383,20 +383,49 @@ export const skunk: EnemyDef = {
         const effects: iEffect[] = [];
         const oldRatio = (target.currHp + damage) / target.definition.hp;
         const newRatio = target.currHp / target.definition.hp;
+
         if (target.currHp > 0 && oldRatio >= EXPLOSION_HP_RATIO && newRatio < EXPLOSION_HP_RATIO) {
+            let newTarget = actor;
+            if (!isCharacter(newTarget)) {
+                const validTargets = getValidTargets(state, state.characters);
+                let total = -1;
+                for (const character of validTargets) {
+                    if (isCharacter(character)) {
+                        let amount = 0
+                        for (const binding of character.bindings) {
+                            amount += binding.value;
+                        }
+                        if (amount > total) {
+                            total = amount;
+                            newTarget = character;
+                        }
+                    }
+                }
+            }
+
             effects.push({
                 type: "intention",
                 operation: "cancel",
                 target: target,
             })
-            effects.push({
-                type: "move",
-                actor: target,
-                targets: [actor],
-                move: { definition: latexExplosion }
-            });
+            if (isCharacter(newTarget)) {
+                effects.push({
+                    type: "move",
+                    actor: target,
+                    targets: [newTarget],
+                    move: { definition: latexExplosion }
+                });
+            }
         }
 
         return effects;
     }
+}
+
+export const skunkEmpress: EnemyDef = {
+    ...skunk,
+    id: SKUNK_EMPRESS_ID,
+    rank: "elite",
+    hp: SKUNK_HP * ELITE_HP_MODIFIER,
+    defense: SKUNK_DEF + ELITE_DEF_MODIFIER,
 }

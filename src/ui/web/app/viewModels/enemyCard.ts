@@ -73,7 +73,7 @@ export function createEnemyCardViewModel(
             return [{
                 id: buff.id, icon: buff.icon,
                 // The compact bonus is hit; all authored modifiers remain in the tooltip and Details.
-                valueLabel: buff.modifiers?.hit === undefined ? undefined : formatSignedNumber(buff.modifiers.hit),
+                valueLabel: buff.modifiers?.hit !== undefined ? formatSignedNumber(buff.modifiers.hit) : buff.modifiers?.regeneration !== undefined ? formatSignedNumber(buff.modifiers.regeneration) : undefined,
                 accessibleLabel: [presentation.buff(buff.id, buff.severity), ...modifiers].join(": "),
             }];
         }),

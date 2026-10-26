@@ -7,7 +7,7 @@ import { s } from "../../engine/protected/status";
 import { helpless, immobilized, stunned } from "../../engine/protected/statuses";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iStatus, iTargetInfo } from "../../engine/protected/types";
 import { ModifierSet } from "../../engine/public/types";
-import { POUNCE_BUFF, SKUNKED_BUFF, SKUNKETTE_ID } from "./constants";
+import { ELITE_DEF_MODIFIER, ELITE_HP_MODIFIER, POUNCE_BUFF, SKUNKED_BUFF, SKUNKETTE_ID, SKUNKETTE_QUEEN_ID } from "./constants";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const SKUNKETTE_HP = 200;
@@ -461,4 +461,12 @@ export const skunkette: EnemyDef = {
         }
         return effects;
     }
+}
+
+export const skunketteQueen: EnemyDef = {
+    ...skunkette,
+    id: SKUNKETTE_QUEEN_ID,
+    rank: "elite",
+    hp: SKUNKETTE_HP * ELITE_HP_MODIFIER,
+    defense: SKUNKETTE_DEF + ELITE_DEF_MODIFIER,
 }

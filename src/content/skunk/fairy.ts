@@ -89,8 +89,7 @@ export const healingMagic: MoveDef = {
             }
         }
         if (target.band === "crit") {
-            const filter = ["skunkette", "skunk", "fairy"];
-            const enemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.definition.hp));
+            const enemies = state.enemies.filter(x => ((x.definition.rank === "enemy" || x.definition.rank === "elite") && x.currHp < x.definition.hp));
             for (const enemy of enemies) {
                 if (enemy !== target.target) {
                     result.effects.push({
@@ -145,8 +144,7 @@ export const empoweringMagic: MoveDef = {
             }
         }
         if (target.band === "crit") {
-            const filter = ["skunkette", "skunk", "fairy", "queen"];
-            const enemies = state.enemies.filter(x => (filter.includes(x.definition.id)));
+            const enemies = state.enemies.filter(x => (x.definition.rank !== "minion"));
             for (const enemy of enemies) {
                 if (enemy !== target.target) {
                     result.effects.push({

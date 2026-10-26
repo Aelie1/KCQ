@@ -16,9 +16,10 @@ const GUN_DAMAGE = 35;
 const COLLAR_DAMAGE = 50;
 
 const PERFUME_DURATION = 4;
-const PERFUME_HEAL_RATIO = 0.10;
+const PERFUME_HEAL_MODIFIER = 1;
 const DEFENSE_BUFF = "defensePerfume";
 const ESCAPE_BUFF = "escapePerfume";
+const REGEN_BUFF = "regenPerfume";
 
 function makeMightBuff(name: string, severity: number): iBuff {
     return {
@@ -169,7 +170,7 @@ export const skunkPerfume: MoveDef = {
 
         switch (type) {
             case 0:  //Defense perfume
-                const defBuff = {
+                const defBuff: iBuff = {
                     id: DEFENSE_BUFF,
                     active: false,
                     modifiers: { defense: -2 },
@@ -187,7 +188,7 @@ export const skunkPerfume: MoveDef = {
                 }
                 break;
             case 1:  //Escape perfume
-                const escBuff = {
+                const escBuff: iBuff = {
                     id: ESCAPE_BUFF,
                     active: false,
                     modifiers: { escape: -2 },
@@ -206,14 +207,24 @@ export const skunkPerfume: MoveDef = {
                 break;
 
             case 2:  //Heal perfume
-                const filter = ["skunkette", "skunk", "fairy"];
-                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.definition.hp));
+                const damagedEnemies = state.enemies.filter(x => ((x.definition.rank === "enemy" || x.definition.rank === "elite") && x.currHp < x.definition.hp));
+                const regenBuff: iBuff = {
+                    id: REGEN_BUFF,
+                    icon: "regen",
+                    active: true,
+                    modifiers: { regeneration: PERFUME_HEAL_MODIFIER },
+                    duration: Math.ceil(PERFUME_DURATION / 2),
+                }
                 for (const enemy of damagedEnemies) {
-                    result.effects.push({
-                        type: "damage",
-                        source: actor,
+                    result.targets.push({
                         target: enemy,
-                        amount: -PERFUME_HEAL_RATIO * enemy.definition.hp
+                        result: "none",
+                        effects: [{
+                            type: "buff",
+                            operation: "add",
+                            buff: regenBuff,
+                            target: enemy
+                        }]
                     });
                 }
                 break;
@@ -284,8 +295,7 @@ export const queen: EnemyDef = {
         {
             if ((actor.cooldowns['skunkPerfume'] ?? 0) === 0) {
                 const roll = rng.random();
-                const filter = ["skunkette", "skunk", "fairy"];
-                const damagedEnemies = state.enemies.filter(x => (filter.includes(x.definition.id) && x.currHp < x.definition.hp));
+                const damagedEnemies = state.enemies.filter(x => ((x.definition.rank === "enemy" || x.definition.rank === "elite") && x.currHp < x.definition.hp));
                 const type = damagedEnemies.length > 0 ? Math.floor(roll * 3) : Math.floor(roll * 2);
 
                 effects.push({

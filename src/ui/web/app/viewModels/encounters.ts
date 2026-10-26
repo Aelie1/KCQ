@@ -141,7 +141,7 @@ export function createEncounterDetailsViewModel(
                 name: setup.id ? presentation.entity(setup.id) : presentation.enemyDefinition(setup.defId),
                 rank: enemy.rank,
                 rankLabel: presentation.enemyRank(enemy.rank),
-                rankTone: enemy.rank === "boss" ? "danger" : enemy.rank === "enemy" ? "warning" : "neutral",
+                rankTone: enemy.rank === "boss" ? "danger" : enemy.rank === "elite" ? "warning" : enemy.rank === "enemy" ? "success" : "neutral",
                 hp: enemy.hp,
                 hpLabel: presentation.ui("encounter.hp", { hp: enemy.hp }),
             };

@@ -344,7 +344,7 @@ function EnemyDetail(props: { reference: EnemyReference }): JSX.Element {
     });
     return <>
         <dl class="kcq-library__facts kcq-encounter-card">
-            <Stat label={c.presentation.ui("library.rank")}><StatusChip tone={props.reference.rank === "boss" ? "danger" : props.reference.rank === "enemy" ? "warning" : "neutral"}>{c.presentation.enemyRank(props.reference.rank)}</StatusChip></Stat>
+            <Stat label={c.presentation.ui("library.rank")}><StatusChip tone={props.reference.rank === "boss" ? "danger" : props.reference.rank === "elite" ? "warning" : props.reference.rank === "enemy" ? "success" : "neutral"}>{c.presentation.enemyRank(props.reference.rank)}</StatusChip></Stat>
             <Stat label={c.presentation.ui("library.hp")}>{props.reference.hp}</Stat>
             <Show when={props.reference.defense !== 0}><Stat label={c.presentation.ui("library.defense")}>{formatSignedNumber(props.reference.defense)}</Stat></Show>
         </dl>

@@ -23,6 +23,7 @@ export const skunkEnglishStrings: StringTable = {
     "buff.skunked.name": "Fully Skunked",
     "buff.ambushed.name": "Ambushed!",
     "buff.collar.name": "Slave Collar",
+    "buff.skunkCollar.name": "Skunk Collar",
 
 
 
@@ -240,6 +241,7 @@ export const skunkEnglishStrings: StringTable = {
     "buff.escapePerfume.name": "Escape Perfume",
     "buff.escapePerfume.narrative.added": "{target} can't resist the urge and starts to feel like becoming a skunk wouldn't be so bad...",
     "buff.escapePerfume.narrative.added.plural": "The party can't resist the urge and starts to feel like becoming a skunk wouldn't be so bad...",
+    "buff.regenPerfume.name": "Healing Perfume",
     "buff.empressMight.name": "Empress's Might",
     "buff.goddessMight.name": "Goddess's Might",
     "buff.might.name": "Might",

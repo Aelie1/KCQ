@@ -9,7 +9,7 @@ import type { AccuracyResult, ActionResult, ActionView, CampaignId, DifficultyId
 import {
     applyCooldowns,
     evaluateIntention, evaluateProfile, evaluateResult, isValidTarget, resolveEscape,
-    resolveMove, tickBindings, tickBuffs, tickCooldowns, tickPlayers
+    resolveMove, tickBindings, tickBuffs, tickCooldowns, tickEnemies, tickPlayers
 } from "./combat";
 import { difficulties, TRAP_MODIFIER } from "./constants";
 import { GameEffects } from "./effects";
@@ -787,6 +787,7 @@ export class GameEngine implements Engine {
         } else {
             tickCooldowns(this.state.characters);
             tickCooldowns(this.state.enemies);
+            result.merge(tickEnemies(this.state));
             result.merge(tickBuffs(this.state));
             result.merge(tickPlayers(this.state));
             this.updateIntentions();

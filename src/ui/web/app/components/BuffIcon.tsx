@@ -52,6 +52,9 @@ export function BuffIcon(props: { icon: NonNullable<Buff["icon"]> }): JSX.Elemen
                     <path d="M17 14v.01" />
                     <path d="M20 11v.01" />
                 </Match>
+                <Match when={props.icon === "regen"}>
+                    <path d="M8 2h8v6h6v8h-6v6H8v-6H2V8h6V2Z" />
+                </Match>
             </Switch>
         </svg>
     );

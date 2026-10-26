@@ -4,7 +4,7 @@ import { getEscapePotency, tr } from "../protected/mechanics";
 import { GameStatus, getStatus, StatusMap } from "../protected/status";
 import { iBinding, iCharacter, iEffect, iEntity, iGameState, iIntention, iMove, iMoveResult, iTargetInfo } from "../protected/types";
 import { AccuracyProfile, AccuracyResult, BattleState, HitBand, type EntitySide } from "../public/types";
-import { DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
+import { DEFENSE_MODIFIER, EFFECTIVENESS_MODIFIER, effectivenessRange, HIT_MODIFIER, REGEN_MODIFIER, WILLPOWER_MODIFIER } from "./constants";
 import { iValidityInfo } from "./types";
 
 function getIEntitySide(entity: iEntity): EntitySide {
@@ -322,6 +322,23 @@ export function tickPlayers(state: iGameState): iEffect[] {
             stance: status.canMove() ? "moving" : "standing"
         });
         character.bonusEscapes = 0;
+    }
+    return effects;
+}
+
+export function tickEnemies(state: iGameState): iEffect[] {
+    const effects: iEffect[] = [];
+    for (const enemy of state.enemies) {
+        const status = new GameStatus(state, enemy);
+        const regen = status.getModifier("regeneration");
+        if (regen !== 0) {
+            effects.push({
+                type: "damage",
+                source: enemy,
+                target: enemy,
+                amount: -regen * REGEN_MODIFIER
+            });
+        }
     }
     return effects;
 }

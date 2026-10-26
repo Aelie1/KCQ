@@ -3,14 +3,14 @@ import { s } from "../../engine/protected/status";
 import { helpless } from "../../engine/protected/statuses";
 import { iEffect, iEntity, iGameState } from "../../engine/protected/types";
 import { Effect, EnemySetup } from "../../engine/public/types";
-import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, QUEEN_ID, SKUNK_ID, SKUNKETTE_ID } from "./constants";
+import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, QUEEN_ID, SKUNK_EMPRESS_ID, SKUNK_ID, SKUNKETTE_ID, SKUNKETTE_QUEEN_ID } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 
 const skunketteSetup: EnemySetup = { defId: SKUNKETTE_ID };
-const skunketteQueenSetup: EnemySetup = { defId: SKUNKETTE_ID, id: "skunketteQueen" };
+const skunketteQueenSetup: EnemySetup = { defId: SKUNKETTE_QUEEN_ID };
 const skunkSetup: EnemySetup = { defId: SKUNK_ID };
-const skunkEmpressSetup: EnemySetup = { defId: SKUNK_ID, id: "skunkEmpress" };
+const skunkEmpressSetup: EnemySetup = { defId: SKUNK_EMPRESS_ID };
 const fairySetup: EnemySetup = { defId: FAIRY_ID };
 const queenSetup: EnemySetup = { defId: QUEEN_ID };
 const empressSetup: EnemySetup = { defId: QUEEN_ID, id: "empress" };
@@ -52,6 +52,7 @@ interface TowerSetup {
     enemyMod: number;
     queenWave: number;
     collarAmount: number;
+    regenAmount: number;
     playerMod: number;
     playerAmbushed: boolean;
     enemyAmbushed: boolean;
@@ -62,6 +63,7 @@ const setupTower_1: TowerSetup = {
     enemyMod: 8,
     queenWave: 4,
     collarAmount: 50,
+    regenAmount: 5,
     playerMod: 0,
     playerAmbushed: true,
     enemyAmbushed: false,
@@ -72,6 +74,7 @@ const setupTower_2: TowerSetup = {
     enemyMod: 4,
     queenWave: 4,
     collarAmount: 30,
+    regenAmount: 3,
     playerMod: 1,
     playerAmbushed: false,
     enemyAmbushed: false,
@@ -82,6 +85,7 @@ const setupTower_3: TowerSetup = {
     enemyMod: 2,
     queenWave: 4,
     collarAmount: 10,
+    regenAmount: 1,
     playerMod: 2,
     playerAmbushed: false,
     enemyAmbushed: true,
@@ -92,6 +96,7 @@ const setupOutside: TowerSetup = {
     enemyMod: 8,
     queenWave: 6,
     collarAmount: 0,
+    regenAmount: 5,
     playerMod: 0,
     playerAmbushed: false,
     enemyAmbushed: false,
@@ -161,6 +166,19 @@ function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
                 }
             });
         }
+        if (setup.regenAmount > 0 && enemy.definition.rank === "elite") {
+            effects.push({
+                type: "buff",
+                operation: "add",
+                target: enemy,
+                buff: {
+                    id: "skunkCollar",
+                    icon: "regen",
+                    active: true,
+                    modifiers: { regeneration: setup.regenAmount }
+                }
+            });
+        }
         if (setup.enemyAmbushed) {
             effects.push(ambushBuff(enemy));
         }
@@ -206,6 +224,15 @@ function libraryTowerBuffs(setup: TowerSetup): Effect[] {
             buff: {
                 id: buffName,
                 modifiers: { hit: setup.enemyMod }
+            }
+        });
+        effects.push({
+            type: "buff",
+            operation: "add",
+            target: "elites",
+            buff: {
+                id: "skunkCollar",
+                modifiers: { regeneration: setup.regenAmount }
             }
         });
     }
