@@ -13,11 +13,13 @@ import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import type { LanguageOption } from "../../src/ui/web/app/language";
 import { BattleSettingsPanel } from "../../src/ui/web/app/panels/BattleSettingsPanel";
 import { PATCH_NOTES_STORAGE_KEY } from "../../src/ui/web/app/patchNotes";
+import { releaseHistory } from "../../src/ui/web/app/content/releaseHistory";
 import { displayVersion } from "../../src/ui/web/app/version";
 import { createViewPreferences } from "../../src/ui/web/app/viewPreferences";
 
 const strings = getStringTable("en", stockCharacters, "skunk");
 const presentation = new Presentation(strings);
+const bulletKeys = releaseHistory.releases.flatMap(release => release.sections.flatMap(section => section.bulletKeys));
 const viewport = (window as unknown as HappyWindow).happyDOM;
 const initialViewport = { width: window.innerWidth, height: window.innerHeight };
 let unmount: (() => void) | undefined;
@@ -75,7 +77,7 @@ describe("Patch Notes startup and navigation", () => {
         expect(element(".kcq-graphical-app__background").getAttribute("aria-hidden")).toBe("true");
         expect(element(".kcq-app").contains(element(".kcq-patch-notes"))).toBe(false);
         expect(document.querySelectorAll(".kcq-patch-notes__release")).toHaveLength(3);
-        expect([...document.querySelectorAll(".kcq-patch-notes li")].map(note => note.textContent)).toEqual(Array(9).fill("Placeholder"));
+        expect([...document.querySelectorAll(".kcq-patch-notes li")].map(note => note.textContent)).toEqual(bulletKeys.map(key => presentation.ui(key)));
         expect(document.querySelector(".kcq-patch-notes__notice")).toBeNull();
         expect(window.localStorage.getItem(PATCH_NOTES_STORAGE_KEY)).toBeNull();
         expect(composeCampaign).not.toHaveBeenCalled(); expect(prepareBattle).not.toHaveBeenCalled();
@@ -227,7 +229,7 @@ describe("Patch Notes startup and navigation", () => {
         const localized = new Presentation({
             ...strings,
             "ui.patchNotes.title": "Localized updates", "ui.patchNotes.back": "Retour",
-            "ui.patchNotes.1.1.0.title": "Localized title", "ui.patchNotes.1.1.0.story": "Nouveaux r?cits.",
+            "ui.patchNotes.1.1.0.title": "Localized title", "ui.patchNotes.1.1.0.line1": "Nouveaux r?cits.",
         });
         const languages = [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: localized }];
         window.localStorage.setItem("kcq.language", "test"); mount("1.1.0", languages);
@@ -292,7 +294,7 @@ describe("Patch Notes responsive presentation", () => {
         expect(element(".kcq-app").dataset.kcqLayout).toBe(layout);
         expect(getComputedStyle(element(".kcq-patch-notes")).width).toBe("100%");
         expectSettingsSizing();
-        close(); open(); expect(document.querySelectorAll(".kcq-patch-notes li")).toHaveLength(9);
+        close(); open(); expect(document.querySelectorAll(".kcq-patch-notes li")).toHaveLength(bulletKeys.length);
     });
 
     it.each(["light", "dark"])("uses the %s theme's text and release separators", theme => {

@@ -40,7 +40,7 @@ describe("one-time Story Log highlighting", () => {
         }
     });
 
-    it("keeps effects, later actions, prose, paragraph grouping and ordering unchanged", () => {
+    it("keeps highlighted skill prose separate from consequences and later actions", () => {
         const entries: GameLogPresentationEntry[] = [{
             ...action("matsuko", "immolation"), outcomes: [
                 { kind: "buff", buff: "test", participants: [{ target: "ko", initial: { present: false }, final: { present: true } }] },
@@ -55,14 +55,14 @@ describe("one-time Story Log highlighting", () => {
         });
         const result = createStoryLogViewModel(entries, presentation, party, library);
         expect(result[0]?.paragraphs).toEqual([
-            { text: "The skill. An unrelated effect.", parts: [
-                { text: "The skill.", glow: "matsuko" }, { text: " An unrelated effect." },
-            ] },
+            { text: "The skill.", parts: [{ text: "The skill.", glow: "matsuko" }] },
+            { text: "An unrelated effect." },
             { text: "An enemy falls.", tone: "warning" },
         ]);
         expect(result[1]?.paragraphs).toEqual([{ text: "The next action." }]);
-        expect(result.map(entry => ({ ...entry, paragraphs: entry.paragraphs.map(({ parts, ...paragraph }) => paragraph) })))
-            .toEqual(createStoryLogViewModel(entries, presentation, party));
+        expect(result.flatMap(entry => entry.paragraphs.map(paragraph => paragraph.text)).join(" "))
+            .toBe(createStoryLogViewModel(entries, presentation, party)
+                .flatMap(entry => entry.paragraphs.map(paragraph => paragraph.text)).join(" "));
     });
 
     it("preserves suppression and never transfers a suppressed skill's glow to effects", () => {

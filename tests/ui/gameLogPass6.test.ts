@@ -74,7 +74,10 @@ describe("Pass 6 semantic binding activations", () => {
         expect(result[0]!.outcomes[0]).toMatchObject({ initial: { value: 40, level: "heavy" }, final: { value: 50, level: "severe" } });
         expect(result[2]!.outcomes[0]).toMatchObject({ initial: { value: 50, level: "severe" }, final: { value: 60, level: "severe" } });
         // A final frame alone can still anchor applied deltas.
-        expect(entries(event, undefined, after)[0]!.outcomes).toEqual(result);
+        const withoutBaseline = entries(event, undefined, after)[0]!.outcomes as BindingTickOutcome[];
+        expect(withoutBaseline.map(({ outcomes }) => outcomes)).toEqual(result.map(({ outcomes }) => outcomes));
+        // The final frame cannot establish the activation binding's starting level.
+        expect(withoutBaseline.map(({ level }) => level)).toEqual([undefined, undefined, undefined]);
     });
 
     it("preserves effects on both sides without borrowing them into an activation", () => {

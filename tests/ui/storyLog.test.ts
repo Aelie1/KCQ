@@ -11,7 +11,9 @@ const strings = (overrides: StringTable = {}): StringTable => ({
     ...overrides,
 });
 const render = (entries: GameLogPresentationEntry[], extra: StringTable = {}, party?: string[]) =>
-    createStoryLogViewModel(entries, new Presentation(strings(extra)), party);
+    createStoryLogViewModel(entries, new Presentation(strings(extra)), party).map(entry => ({
+        ...entry, paragraphs: entry.paragraphs.map(paragraph => paragraph.text),
+    }));
 const paragraphs = (entries: GameLogPresentationEntry[], extra: StringTable = {}, party?: string[]) =>
     render(entries, extra, party).flatMap(entry => entry.paragraphs);
 const hit = (result: "hit" | "miss" | "crit" | "graze") =>
@@ -19,7 +21,7 @@ const hit = (result: "hit" | "miss" | "crit" | "graze") =>
 const damage = (target: string, result: "hit" | "miss" | "crit" | "graze"): LogOutcome =>
     ({ kind: "damage", target, hits: [hit(result)], damage: 0, healing: 0, blocked: 0 });
 const move = (...outcomes: LogOutcome[]): GameLogPresentationEntry =>
-    ({ kind: "move", actor: "skunkette1", move: "latexMist", outcomes });
+    ({ kind: "move", targetIds: outcomes.flatMap(outcome => outcome.kind === "damage" ? [outcome.target] : []), actor: "skunkette1", move: "latexMist", outcomes });
 const buff = (target: string, severity = 3, buffId = "latexMist"): LogOutcome => ({
     kind: "buff", buff: buffId,
     participants: [{ target, initial: { present: false }, final: { present: true, details: { id: buffId, severity } } }],
@@ -29,7 +31,7 @@ describe("Story Log: authored moments", () => {
     it("writes one paragraph for a mixed move, no matter the target ordering", () => {
         const entry = move(damage("ko", "hit"), damage("matsuko", "miss"), damage("hinari", "crit"));
         expect(paragraphs([entry], {
-            "move.latexMist.narrative.mixed": "{actor} catches {hits}, but not {misses}.",
+            "move.latexMist.narrative.hit": "{actor} catches {hits}, but not {misses}.",
         })).toEqual(["Skunkette A catches Ko-chan and Hinari, but not Matsuko."]);
     });
 
@@ -68,14 +70,14 @@ describe("Story Log: authored moments", () => {
         expect(paragraphs([move(linked)], {
             "buff.pounce.narrative.added.characters.4": "The victim is pinned.",
             "buff.pounce.narrative.added.enemies.4": "The attacker establishes her grip.",
-        }, ["ko"])).toEqual(["The victim is pinned.", "The attacker establishes her grip."]);
+        }, ["ko"])).toEqual(["The victim is pinned. The attacker establishes her grip."]);
     });
 
     it("does not combine distinct severity levels", () => {
         expect(paragraphs([move(buff("ko", 2), buff("matsuko", 3))], {
             "buff.latexMist.narrative.added.2": "Lighter mist.",
             "buff.latexMist.narrative.added.3": "Stronger mist.",
-        })).toEqual(["Lighter mist.", "Stronger mist."]);
+        })).toEqual(["Lighter mist. Stronger mist."]);
     });
 
     it("narrates binding level transitions but ignores numerical changes within a level", () => {
@@ -111,11 +113,11 @@ describe("Story Log: authored moments", () => {
             triggers: [{ actor: "ko", amount: 1 }, { actor: "matsuko", amount: 2 }]
         };
         expect(paragraphs([move(trigger)], {
-            "trap.trapPuddle.narrative.triggered": "{targets} fall into a puddle!",
+            "trap.trapPuddle.narrative.triggered": "{target} fall into a puddle!",
         })).toEqual(["Ko-chan and Matsuko fall into a puddle!"]);
     });
 
-    it("distinguishes escape progress, failed escapes and assists", () => {
+    it("uses escape and assist fallbacks when no binding transition is authored", () => {
         const decrease: LogOutcome = {
             kind: "binding", target: "ko", binding: "latexArms", change: -3, blocked: 0,
             initial: { value: 10, level: "light" }, final: { value: 7, level: "light" }
@@ -126,14 +128,14 @@ describe("Story Log: authored moments", () => {
             { kind: "escape", actor: "matsuko", target: "ko", outcomes: [decrease] },
         ];
         expect(paragraphs(entries, {
-            "ui.storyLog.escape": "{actor} loosens her bindings.",
+            "ui.storyLog.escape": "{actor} struggles with her bindings.",
             "ui.storyLog.assist": "{actor} helps {target} escape.",
-        })).toEqual(["Ko-chan loosens her bindings.", "Ko-chan fails to escape.", "Matsuko helps Ko-chan escape."]);
+        })).toEqual(["Ko-chan struggles with her bindings.", "Ko-chan struggles with her bindings.", "Matsuko helps Ko-chan escape."]);
     });
 
     it("uses move-wide accuracy for targetless rolled moves", () => {
         const hitMove: GameLogPresentationEntry = {
-            kind: "move",
+            kind: "move", targetIds: [],
             actor: "matsuko",
             move: "throwOff",
             result: "hit",
@@ -204,11 +206,11 @@ describe("Story Log: narrative suppression", () => {
         expect(paragraphs([entry], {
             ...text,
             "move.latexMist.narrative.action.suppress": "buff.latexMist.narrative.added.2",
-        })).toEqual(["Action.", "Stronger mist.", "Rescued."]);
+        })).toEqual(["Action. Stronger mist.", "Rescued."]);
         expect(paragraphs([entry], {
             ...text,
             "move.latexMist.narrative.action.suppress": "buff.latexMist.narrative.added",
-        })).toEqual(["Action.", "Lighter mist.", "Stronger mist.", "Rescued."]);
+        })).toEqual(["Action. Lighter mist. Stronger mist.", "Rescued."]);
     });
 
     it("matches wildcard prefixes including the unsuffixed key", () => {
@@ -296,8 +298,8 @@ describe("Story Log: narrative suppression", () => {
 
     it("supports escape directives and nested phase outcomes", () => {
         expect(paragraphs([{ kind: "escape", actor: "ko", target: "ko", outcomes: [rescued] }], {
-            "escape.narrative.failed": "Still bound.",
-            "escape.narrative.failed.suppress": "character.narrative.rescued",
+            "ui.storyLog.escape": "Still bound.",
+            "ui.storyLog.escape.suppress": "character.narrative.rescued",
             "character.narrative.rescued": "Rescued.",
         })).toEqual(["Still bound."]);
         const actual = render([{
@@ -328,30 +330,30 @@ describe("Story Log: narrative suppression", () => {
             "character.narrative.rescued": "Rescued.",
         });
         const entry: GameLogPresentationEntry = {
-            kind: "move", actor: "ko", move: "throwOff", result: "hit", outcomes: [pounceRemoval, rescued],
+            kind: "move", targetIds: [], actor: "ko", move: "throwOff", result: "hit", outcomes: [pounceRemoval, rescued],
         };
-        expect(createStoryLogViewModel([entry], presentation, ["ko"])[0]?.paragraphs).toEqual([
-            stockStrings["move.throwOff.narrative.hit"]!.replace("{actor}", "Ko-chan"),
-            "Enemy released.", "Rescued.",
+        expect(createStoryLogViewModel([entry], presentation, ["ko"])[0]?.paragraphs.map(paragraph => paragraph.text)).toEqual([
+            stockStrings["move.throwOff.narrative.hit"]!.replace("{actor}", "Ko-chan") + " Enemy released.",
+            "Rescued.",
         ]);
     });
 
     it("narrates failed Throw Off without activating the success directive", () => {
         const presentation = new Presentation(stockStrings);
         const entry: GameLogPresentationEntry = {
-            kind: "move", actor: "ko", move: "throwOff", result: "miss", outcomes: [],
+            kind: "move", targetIds: [], actor: "ko", move: "throwOff", result: "miss", outcomes: [],
         };
         const failure = stockStrings["move.throwOff.narrative.miss"]!.replace("{actor}", "Ko-chan");
-        expect(createStoryLogViewModel([entry], presentation, ["ko"])[0]?.paragraphs).toEqual([failure]);
+        expect(createStoryLogViewModel([entry], presentation, ["ko"])[0]?.paragraphs.map(paragraph => paragraph.text)).toEqual([failure]);
         // Another effect can still remove Pounce during a failed action.
-        expect(createStoryLogViewModel([{ ...entry, outcomes: [pounceRemoval] }], presentation, ["ko"])[0]?.paragraphs)
-            .toEqual([failure, stockStrings["buff.pounce.narrative.removed.characters"]!.replace("{target}", "Ko-chan")]);
+        expect(createStoryLogViewModel([{ ...entry, outcomes: [pounceRemoval] }], presentation, ["ko"])[0]?.paragraphs.map(paragraph => paragraph.text))
+            .toEqual([failure + " " + stockStrings["buff.pounce.narrative.removed.characters"]!.replace("{target}", "Ko-chan")]);
     });
 
     it("still narrates ordinary Pounce removal by damage, ticks, and other effects", () => {
-        const presentation = new Presentation(stockStrings);
+        const presentation = new Presentation({ ...stockStrings, "ui.storyLog.escape": "..." });
         const entries: GameLogPresentationEntry[] = [
-            { kind: "move", actor: "ko", move: "attack", outcomes: [damage("skunkette1", "hit"), pounceRemoval] },
+            { kind: "move", targetIds: [], actor: "ko", move: "attack", outcomes: [damage("skunkette1", "hit"), pounceRemoval] },
             {
                 kind: "phase", phase: "enemy", outcomes: [
                     { kind: "bindingTick", target: "ko", binding: "latexArms", outcomes: [pounceRemoval] },
@@ -360,7 +362,7 @@ describe("Story Log: narrative suppression", () => {
             { kind: "escape", actor: "ko", target: "ko", outcomes: [pounceRemoval] },
         ];
         const removal = stockStrings["buff.pounce.narrative.removed.characters"]!.replace("{target}", "Ko-chan");
-        expect(createStoryLogViewModel(entries, presentation, ["ko"]).map(entry => entry.paragraphs))
+        expect(createStoryLogViewModel(entries, presentation, ["ko"]).map(entry => entry.paragraphs.map(paragraph => paragraph.text)))
             .toEqual([[removal], [removal], [removal]]);
     });
 });

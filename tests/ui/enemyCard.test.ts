@@ -324,7 +324,7 @@ describe("enemy card", () => {
 
 function application(actor: string, buff: Buff, target = battleOverviewFixture.state.enemies[0]!.id): GameLogPresentationEntry {
     return {
-        kind: "move", actor, move: "arbitrary-move", outcomes: [{
+        kind: "move", targetIds: [target], actor, move: "arbitrary-move", outcomes: [{
             kind: "buff", buff: buff.id, participants: [{
                 target,
                 initial: { present: false }, final: { present: true, details: buff },

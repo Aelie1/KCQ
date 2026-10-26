@@ -70,7 +70,7 @@ describe("enemy card live durations", () => {
                 { id: "subspaceClutter", duration: 5, icon: "sword", modifiers: { hit: -2 } },
             ];
             const history: GameLogPresentationEntry[] = buffs.map((buff, index) => ({
-                kind: "move", actor: ["ko", "matsuko", "hinari"][index]!, move: "applied-effect", outcomes: [{
+                kind: "move", targetIds: [enemy.id], actor: ["ko", "matsuko", "hinari"][index]!, move: "applied-effect", outcomes: [{
                     kind: "buff", buff: buff.id, participants: [{ target: enemy.id, initial: { present: false },
                         final: { present: true, details: buff } }],
                 }],

@@ -76,7 +76,7 @@ describe("compact graphical Game Log", () => {
     });
     it.each([0, 8, 16, 32])("does not infer zero-target accuracy from a trap amount of %i", amount => {
         const entries = createGameLogEntries([move([], [{ type: "trapAdded", actor: "skunk1", trap: "trapPuddle", amount }], "latexPuddle")]);
-        expect(entries[0]).toMatchObject({ kind: "move", move: "latexPuddle" });
+        expect(entries[0]).toMatchObject({ kind: "move", targetIds: [], move: "latexPuddle" });
         expect(entries[0]).not.toHaveProperty("band");
         expect(createGameLogViewModel(entries, presentation)[0]).not.toHaveProperty("band");
         const html = renderEntries(entries);
@@ -209,7 +209,7 @@ describe("compact graphical Game Log", () => {
 
     it("keeps distinct linked participant severities in one logical outcome", () => {
         const entries: GameLogPresentationEntry[] = [{
-            kind: "move", actor: "ko", move: "telekinesis", outcomes: [{
+            kind: "move", targetIds: [], actor: "ko", move: "telekinesis", outcomes: [{
                 kind: "buff", buff: "pounce", participants: [
                     { target: "ko", initial: { present: true, details: { id: "pounce", severity: 4 } }, final: { present: true, details: { id: "pounce", severity: 1 } } },
                     { target: "skunkette1", initial: { present: true, details: { id: "pounce", severity: 3 } }, final: { present: true, details: { id: "pounce", severity: 2 } } },
@@ -542,7 +542,7 @@ describe("Game Log presentation refinements", () => {
 
     it("shows Subspace endpoints once, actual fallback deltas, Action Refreshed, and restrained enemy defeat emphasis", () => {
         const entries: GameLogPresentationEntry[] = [{
-            kind: "move", actor: "hinari", move: "rockfall", outcomes: [
+            kind: "move", targetIds: [], actor: "hinari", move: "rockfall", outcomes: [
                 { kind: "resource", target: "hinari", resource: "subspace", initial: 0, final: 25, change: 25 },
                 { kind: "resource", target: "hinari", resource: "subspace", final: 10, change: -15 },
                 { kind: "refresh", target: "ko" }, { kind: "enemy", target: "skunkette1", operation: "defeated" },
@@ -592,7 +592,7 @@ describe("Game Log presentation refinements", () => {
         expect(rows).toHaveLength(1);
         expect(rows[0]!.values.map(value => value.text)).toEqual(["Graze", "Latex Mist III Added", "Skunk Legs 0 (None) → 13 (Light)"]);
         const entries: GameLogPresentationEntry[] = [{
-            kind: "move", actor: "skunkette1", move: "pounce", outcomes: [
+            kind: "move", targetIds: [], actor: "skunkette1", move: "pounce", outcomes: [
                 ...["ko", "skunkette1"].map(target => ({
                     kind: "damage" as const, target,
                     hits: [{ result: "hit" as const, damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0
@@ -930,7 +930,7 @@ describe("Game Log accuracy-only recipient groups", () => {
         const first = entries[0]!.outcomes[0]!;
         const second = entries[2]!.outcomes[0]!;
         const ticks: GameLogPresentationEntry[] = [{
-            kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
+            kind: "move", targetIds: [], actor: "queen1", move: "skunkPerfume", outcomes: [
                 first, { kind: "bindingTick", target: "hinari", binding: "latexCollar", outcomes: [first, second] }, second,
                 { kind: "bindingTick", target: "hinari", binding: "latexCollar", outcomes: [first, second] }, first,
             ]

@@ -8,7 +8,7 @@ import { createOverviewGameLogPreference } from "../../src/ui/web/app/overviewGa
 import { BattleSettingsPanel } from "../../src/ui/web/app/panels/BattleSettingsPanel";
 import { stockStrings } from "../helpers/stockStrings";
 
-const presentation = new Presentation(stockStrings);
+const presentation = new Presentation({ ...stockStrings, "move.telekinesis.narrative.action": "{actor} uses {move}." });
 let unmount: (() => void) | undefined;
 beforeEach(() => window.localStorage.clear());
 afterEach(() => {
@@ -16,7 +16,7 @@ afterEach(() => {
     document.body.replaceChildren();
     vi.restoreAllMocks(); vi.unstubAllGlobals();
 });
-const action = (actor = "ko"): GameLogPresentationEntry => ({ kind: "move", actor, move: "telekinesis", outcomes: [] });
+const action = (actor = "ko"): GameLogPresentationEntry => ({ kind: "move", targetIds: [], actor, move: "telekinesis", outcomes: [] });
 function mountPreview(initial = [action()], scrollable = false) {
     const host = document.createElement("div"); document.body.append(host);
     const [entries, setEntries] = createSignal<readonly GameLogPresentationEntry[]>(initial);
@@ -109,7 +109,7 @@ describe("compact Game Log preview", () => {
     });
     it("shares grouped accuracy, character colors and outcome tones with the full renderer", () => {
         const log = mountPreview([{
-            kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
+            kind: "move", targetIds: ["ko", "matsuko"], actor: "queen1", move: "skunkPerfume", outcomes: [
                 { kind: "damage", target: "ko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
                 { kind: "damage", target: "matsuko", hits: [{ result: "miss", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
             ]
@@ -150,7 +150,7 @@ describe("compact Game Log preview", () => {
     });
     it("retains damage bands and binding levels for multi-target actions", () => {
         const log = mountPreview([{
-            kind: "move", actor: "queen1", move: "skunkPerfume", outcomes: [
+            kind: "move", targetIds: ["ko", "matsuko"], actor: "queen1", move: "skunkPerfume", outcomes: [
                 { kind: "damage", target: "ko", hits: [{ result: "hit", damage: 0, healing: 0, blocked: 0 }], damage: 0, healing: 0, blocked: 0 },
                 {
                     kind: "binding", target: "ko", binding: "latexLegs", change: 23, blocked: 0,
@@ -211,7 +211,7 @@ describe("inline Wide history tabs", () => {
         expect(log.host.querySelector('[role="log"]')).toBe(viewport);
         expect(tabs[1]!.getAttribute("aria-selected")).toBe("true");
         expect(log.onOpen).not.toHaveBeenCalled();
-        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.storyLog": "Translated Story", "narrative.event.move": "{actor}: {move}!" }));
+        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.storyLog": "Translated Story", "move.telekinesis.narrative.action": "{actor}: {move}!" }));
         expect(tabs[1]!.textContent).toBe("Translated Story");
         expect(viewport.textContent).toContain("Ko-chan: Telekinesis!");
         log.setLanguage(presentation);

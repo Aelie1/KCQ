@@ -610,6 +610,12 @@ export class GameEngine implements Engine {
                             effects.addEvent(triggered);
                             effects.merge(getTrapEffect(actor, trap, severity));
                             triggered.amount = origValue - trap.amount;
+                            effects.addEvent({
+                                type: "trapTriggeredEnd",
+                                actor: actor.id,
+                                trap: trap.id,
+                                amount: 0,
+                            });
                         }
                     }
 

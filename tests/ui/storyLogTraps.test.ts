@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { makeBindingDef, makeCharacterDef, makeEncounterDef } from "../helpers/helpers";
+import { createTestEngine } from "../helpers/testCatalog";
+import type { TrapDef } from "../../src/engine/protected/definitions";
 import type { GameState, LeafEvent, MoveEvent } from "../../src/engine/public/types";
 import { aggregateGameLogOutcomes, createGameLogEntries, gameLogEntry, type GameLogContext, type GameLogPresentationEntry, type LogOutcome, type TrapActivationOutcome } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
@@ -299,5 +302,64 @@ describe("Combat Log trap activation headings", () => {
         expect(bindings![0]!.values).toHaveLength(earlier.some(outcome => outcome.kind === "binding") ? 2 : 1);
         expect(bindings![0]!.values.every(value => value.binding)).toBe(true);
         expect(JSON.stringify(input)).toBe(saved);
+    });
+});
+
+describe("real engine escape trap boundaries", () => {
+    it.each([
+        { target: "hero", interrupted: false },
+        { target: "ally", interrupted: false },
+        { target: "hero", interrupted: true },
+        { target: "ally", interrupted: true },
+    ])("groups the trap before escaping $target (interrupted: $interrupted)", ({ target, interrupted }) => {
+        const rope = makeBindingDef("rope");
+        const snare = makeBindingDef("snare", interrupted ? {
+            light: [{ definition: { id: "bound", levels: [{}, {
+                flags: [target === "hero" ? "blocksEscape" : "blocksAssist"],
+            }] }, value: 1 }],
+        } : {});
+        const trap: TrapDef = {
+            id: "puddle", outcomes: [{ severity: 1, threshold: 1, bindings: [[snare, 10]] }],
+        };
+        const encounter = makeEncounterDef("escape-trap", {
+            traps: [{ definition: trap, amount: 100 }],
+            setup: state => state.characters.map(character => ({
+                type: "binding", source: character, target: character, binding: rope, amount: 30,
+            })),
+        });
+        const engine = createTestEngine([encounter], [makeCharacterDef("hero"), makeCharacterDef("ally")], 1);
+        engine.loadCharacter("hero");
+        engine.loadCharacter("ally");
+        engine.loadEncounter(encounter.id);
+        const before = engine.getGameState();
+        const result = engine.executeAction({ type: "escape", actor: "hero", target, binding: rope.id });
+        if (!result.success) throw new Error("Expected trap effects to commit");
+
+        expect(result.frames[0]!.event.effects.slice(0, 3)).toEqual([
+            { type: "trapTriggered", actor: "hero", trap: "puddle", amount: 10, severity: 1 },
+            { type: "bondageAdded", target: "hero", binding: "snare", amount: 10 },
+            { type: "trapTriggeredEnd", actor: "hero", trap: "puddle", amount: 0 },
+        ]);
+        const entries = createGameLogEntries(result.frames, before);
+        expect(entries[0]!.outcomes.map(outcome => outcome.kind))
+            .toEqual(["trapActivation", interrupted ? "interrupt" : "binding"]);
+        expect(entries[0]!.outcomes[0]).toMatchObject({ kind: "trapActivation", outcomes: [
+            { kind: "trap", triggers: [{ actor: "hero", amount: 10 }] },
+            { kind: "binding", target: "hero", binding: "snare", change: 10 },
+        ] });
+        const presentation = new Presentation({
+            "trap.puddle.narrative.triggered": "A trap triggers.",
+            "binding.snare.narrative.increased.light": "The snare tightens.",
+            "ui.storyLog.escape": "Escape progress.",
+            "ui.storyLog.assist": "Assist progress.",
+            "ui.gameLog.interrupted": "Action interrupted.",
+        });
+        expect(createStoryLogViewModel(entries, presentation, ["hero", "ally"])[0]!.paragraphs)
+            .toEqual([
+                { text: "A trap triggers. The snare tightens." },
+                interrupted ? { text: "Action interrupted.", tone: "warning" }
+                    : { text: target === "hero" ? "Escape progress." : "Assist progress." },
+            ]);
+        expect(engine.getGameState().traps[0]!.amount).toBe(90);
     });
 });

@@ -543,8 +543,8 @@ describe("Combat and Story tabs", () => {
         expect(button("Combat").getAttribute("aria-selected")).toBe("true");
         button("Story").click();
         expect(button("Story").getAttribute("aria-selected")).toBe("true");
-        expect(log.viewport.textContent).toContain("landing an attack");
-        expect(log.viewport.textContent).toContain("Skunkette A takes 10 damage.");
+        expect(log.viewport.textContent).toContain("Ko-chan launches a rock at Skunkette A");
+        expect(log.viewport.textContent).toContain("gets a clean hit");
         expect(log.viewport.querySelector('[data-outcome]')).toBeNull();
         button("Combat").click();
         expect(log.viewport.querySelector('.kcq-game-log__scroll')!.innerHTML).toBe(combat);
@@ -589,10 +589,14 @@ describe("Combat and Story tabs", () => {
         const log = mountScrollingLog();
         button("Story").click(); log.flush();
         log.append();
+        // Empty phases stay hidden; give each phase an authored consequence.
+        log.setEntries(entries => entries.map(entry => ({ ...entry, outcomes: [
+            { kind: "character", target: "ko", operation: "rescued" },
+        ] })));
         expect(log.viewport.querySelectorAll('[data-kind="phase"]')).toHaveLength(3);
-        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.story": "Story translated", "narrative.event.phase": "A new {phase} phase." }));
+        log.setLanguage(new Presentation({ ...stockStrings, "ui.gameLog.story": "Story translated", "character.narrative.rescued": "A new rescue passage." }));
         expect(button("Story translated").getAttribute("aria-selected")).toBe("true");
-        expect(log.viewport.textContent).toContain("A new Player phase.");
+        expect(log.viewport.textContent).toContain("A new rescue passage.");
         log.scroll(100);
         log.setEntries([]); log.setHeight(0); log.flush();
         expect(log.viewport.textContent).toContain("No combat events yet.");

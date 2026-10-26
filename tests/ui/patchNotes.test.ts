@@ -3,10 +3,10 @@ import { renderToString } from "solid-js/web";
 import { describe, expect, it, vi } from "vitest";
 import { getStringTable } from "../../localization";
 import { Presentation } from "../../src/ui/presentation/presentation";
-import { patchNotesScreen } from "../../src/ui/web/app/components/patchNotesScreen";
+import { PatchNotesScreen } from "../../src/ui/web/app/components/PatchNotesScreen";
 import { releaseHistory } from "../../src/ui/web/app/content/releaseHistory";
-import { hasSeenPatchNotes, markpatchNotesSeen, PATCH_NOTES_STORAGE_KEY } from "../../src/ui/web/app/patchNotes";
-import { createpatchNotesViewModel } from "../../src/ui/web/app/viewModels/patchNotes";
+import { hasSeenPatchNotes, markPatchNotesSeen, PATCH_NOTES_STORAGE_KEY } from "../../src/ui/web/app/patchNotes";
+import { createPatchNotesViewModel } from "../../src/ui/web/app/viewModels/patchNotes";
 
 // Render portal contents inline for server-side content assertions.
 vi.mock("solid-js/web", async importOriginal => ({
@@ -27,7 +27,7 @@ describe("Patch Notes storage", () => {
             getItem: (key: string) => values.get(key) ?? null,
             setItem: (key: string, value: string) => { values.set(key, value); }
         };
-        markpatchNotesSeen("preview \u00b7 abc123", storage);
+        markPatchNotesSeen("preview \u00b7 abc123", storage);
         expect(values.get(PATCH_NOTES_STORAGE_KEY)).toBe("preview \u00b7 abc123");
         expect(hasSeenPatchNotes("preview \u00b7 abc123", storage)).toBe(true);
         expect(hasSeenPatchNotes("preview \u00b7 def456", storage)).toBe(false);
@@ -35,29 +35,29 @@ describe("Patch Notes storage", () => {
 
     it("handles unavailable storage without throwing", () => {
         expect(hasSeenPatchNotes("1.1.0", { getItem: () => { throw new Error("denied"); } })).toBe(false);
-        expect(() => markpatchNotesSeen("1.1.0", { setItem: () => { throw new Error("full"); } })).not.toThrow();
+        expect(() => markPatchNotesSeen("1.1.0", { setItem: () => { throw new Error("full"); } })).not.toThrow();
         // Node has no window; default storage access must be safe there as well.
         expect(hasSeenPatchNotes("1.1.0")).toBe(false);
-        expect(() => markpatchNotesSeen("1.1.0")).not.toThrow();
+        expect(() => markPatchNotesSeen("1.1.0")).not.toThrow();
     });
 });
 
 describe("player release history", () => {
     const presentation = new Presentation(getStringTable("en"));
 
-    it("renders all localized placeholder releases newest first, with nine bullet points and no dates", () => {
-        const model = createpatchNotesViewModel(presentation);
-        const html = renderToString(() => createComponent(patchNotesScreen, { model, onClose: () => { } }))
+    it("renders all localized releases newest first with authored bullet points and no dates", () => {
+        const model = createPatchNotesViewModel(presentation);
+        const html = renderToString(() => createComponent(PatchNotesScreen, { model, onClose: () => { } }))
             .replace(/\sdata-hk="[^"]*"/g, "").replace(/<!--.*?-->/g, "");
         expect(model.releases.map(release => release.version)).toEqual(["1.1.0", "1.0.1", "1.0.0"]);
         expect(model.releases.map(release => release.title)).toEqual([
-            "Storytelling Improvements", "Quality-of-Life Update", "Initial Release",
+            "Story Log", "Binding Descriptions", "Initial Release",
         ]);
-        expect(html.match(/>Placeholder</g)).toHaveLength(9);
+        expect(html).not.toContain(">Placeholder<");
         expect(html).not.toContain("kcq-patch-notes__notice");
         expect(html.indexOf("1.1.0")).toBeLessThan(html.indexOf("1.0.1"));
         expect(html.indexOf("1.0.1")).toBeLessThan(html.indexOf("1.0.0"));
-        expect(html.match(/<li>/g)).toHaveLength(9);
+        expect(html.match(/<li>/g)).toHaveLength(releaseHistory.releases.flatMap(release => release.sections.flatMap(section => section.bulletKeys)).length);
         expect(html).not.toContain("<time");
         for (const release of releaseHistory.releases) {
             for (const section of release.sections) {
@@ -72,7 +72,7 @@ describe("player release history", () => {
             "ui.patchNotes.title": "Localized updates", "ui.patchNotes.back": "Retour",
             "ui.notes.heading": "Localized improvements", "ui.notes.bullet": "Nouvelle interface.",
         });
-        const model = createpatchNotesViewModel(localized, {
+        const model = createPatchNotesViewModel(localized, {
             releases: [{
                 version: "next", sections: [
                     { headingKey: "notes.heading", bulletKeys: ["notes.bullet"] },
@@ -80,7 +80,7 @@ describe("player release history", () => {
                 ]
             }]
         });
-        const html = renderToString(() => createComponent(patchNotesScreen, { model, onClose: () => { } }))
+        const html = renderToString(() => createComponent(PatchNotesScreen, { model, onClose: () => { } }))
             .replace(/\sdata-hk="[^"]*"/g, "").replace(/<!--.*?-->/g, "");
         expect(html).toContain("Localized updates"); expect(html).toContain("Retour");
         expect(html).toContain("<h2>next"); expect(html).not.toContain(" \u2014 ");

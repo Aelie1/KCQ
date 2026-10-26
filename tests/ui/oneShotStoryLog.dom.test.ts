@@ -45,7 +45,7 @@ describe("one-time Story Log rendering", () => {
         expect(glows.map(span => span.style.getPropertyValue("--kcq-story-glow")))
             .toEqual(["var(--kcq-name-ko)", "var(--kcq-name-matsuko)"]);
         expect([...host.querySelectorAll("p.kcq-game-log__story-text")].map(p => p.textContent))
-            .toEqual(["Denial prose. Unrelated effect.", "Immolation prose.", "Ordinary prose."]);
+            .toEqual(["Denial prose.", "Unrelated effect.", "Immolation prose.", "Ordinary prose."]);
         host.querySelector<HTMLButtonElement>('[role="tab"]')!.click();
         expect(host.querySelector(".kcq-game-log__one-shot")).toBeNull();
         expect(host.querySelector(".kcq-game-log__story-text")).toBeNull();

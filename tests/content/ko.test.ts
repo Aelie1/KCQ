@@ -692,19 +692,7 @@ describe("Ko's Reflect source handling", () => {
         const trapBinding = makeBehavioralBinding("trap-rope");
         const trap: TrapDef = {
             id: "reflectTrap",
-            outcomes: [],
-            onTrigger: (target, instance) => [{
-                type: "binding",
-                source: target,
-                target,
-                binding: trapBinding,
-                amount: 10,
-            }, {
-                type: "trap",
-                actor: target,
-                trap: instance,
-                amount: -instance.amount,
-            }],
+            outcomes: [{ severity: 1, threshold: 1, bindings: [[trapBinding, 10]] }],
         };
         const foe = makeBehavioralEnemy("foe");
         const encounter = makeEncounterDef("reflect-trap", {

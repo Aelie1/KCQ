@@ -57,7 +57,7 @@ describe("Game Log presentation aggregation", () => {
     it("summarizes a single hit", () => {
         expect(createGameLogEntries([move([{ target: "skunkette1", result: "hit", effects: [damage("skunkette1", 18)] }])])).toEqual([
             {
-                kind: "move", actor: "ko", move: "telekinesis", outcomes: [
+                kind: "move", actor: "ko", move: "telekinesis", result: undefined, targetIds: ["skunkette1"], outcomes: [
                     { kind: "damage", target: "skunkette1", hits: [{ result: "hit", damage: 18, healing: 0, blocked: 0 }], damage: 18, healing: 0, blocked: 0 },
                 ]
             },

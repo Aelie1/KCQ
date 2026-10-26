@@ -66,10 +66,9 @@ describe("public content library", () => {
         const trap: TrapDef = {
             id: "snare",
             outcomes: [
-                { threshold: 0.25, bindings: [[restraint, 5]] },
-                { threshold: 1, bindings: [[restraint, 10]] },
+                { severity: 2, threshold: 0.25, bindings: [[restraint, 5]] },
+                { severity: 1, threshold: 1, bindings: [[restraint, 10]] },
             ],
-            onTrigger: () => [],
         };
         const setup = [{ type: "trap" as const, trap: trap.id, amount: 25 }];
         const encounter = makeEncounterDef("library-encounter", {

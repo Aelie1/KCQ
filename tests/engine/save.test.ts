@@ -56,7 +56,7 @@ function battle() {
     const foe = makeEnemyDef("foe", [threat, wait], ai);
     const hero = makeCharacterDef("hero", [strike, blocked]);
     const ally = makeCharacterDef("ally", [strike]);
-    const trap: TrapDef = { id: "snare", outcomes: [], onTrigger: () => [] };
+    const trap: TrapDef = { id: "snare", outcomes: [] };
     const setup = vi.fn<NonNullable<ReturnType<typeof makeEncounterDef>["setup"]>>(state => {
         const character = state.characters[0];
         character.bonusEscapes = 1;
