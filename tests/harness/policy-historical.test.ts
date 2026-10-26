@@ -3,16 +3,17 @@ import { expect, it } from "vitest";
 import { runSingleFight } from "../../src/harness/harness";
 import { policies, type PolicyId } from "../../src/harness/policies";
 
-// Seeded trace/state baselines. The three high-binding cases were refreshed after
-// removing the 90% reduction above 80; restoring that old rule reproduces their
-// original Cycle 3A hashes exactly. The other three hashes remain unchanged.
+// Seeded trace/state baselines include the public Enemy.skipped field added
+// with Elite dormancy and the Fairy's broader support targeting. Plains hashes
+// reproduce the previous baselines when only skipped is omitted. These remain
+// full-state hashes; no fields are omitted in the assertions.
 const historical: [string, PolicyId, string][] = [
-    ["plains_1", "idle", "a82dc6c7ec1870abd1f845aac31a605886c979fdee21139a527020593cdacfaa"],
-    ["plains_1", "smart", "33f70ad0ecb5f7b7606daf3dd69253e46ca5d27859608295c6f522d8175da05d"],
-    ["plains_1", "basic", "25365da1411e16ea5e879e1b6b956892a8a2722d093dc243fa096cbc3a868e77"],
-    ["forest_1", "idle", "395e82d761bb8d53744554f454ebc0fc132433810cbd9606a77b50f6befd8105"],
-    ["forest_1", "smart", "cfce6c9385f05f1bf6b07fd88009663603a69b10ec9087e4dc08115e6760b257"],
-    ["forest_1", "basic", "33c92796a746351597c20df02cef90d29aa6e8d511cdfc9e891c29ecc24743b5"],
+    ["plains_1", "idle", "81cd1827f87e12de3f32e0099c83bcc17bcf4a77b18cc349c8e28b3f49958e5c"],
+    ["plains_1", "smart", "cdc3b7d2186f696a7b1eaf386f04419bc39cbf6d15d3bffa2c64e0ef7190fd40"],
+    ["plains_1", "basic", "4ec89660b4cba1e0ffecef08205e46cd473680c877242878f5e4a9c1343ede8c"],
+    ["forest_1", "idle", "928c6c32c4d6fe42c38378d933715a1ab37ad37309000d779b45b2747c370c10"],
+    ["forest_1", "smart", "5bad3d999f5fa25b9e9fe726c5443d7ed5916937f53cdf10d863f712c9069dfc"],
+    ["forest_1", "basic", "316b1c4ac84d4ed691bfc028c5fb91e6b025238e205f2df3fe5ab38fe9c76449"],
 ];
 
 it.each(historical)("preserves the seeded %s %s trace and state", (encounterId, policyId, expected) => {

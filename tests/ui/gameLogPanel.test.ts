@@ -25,7 +25,7 @@ import { createTestEngine } from "../helpers/testCatalog";
 
 const presentation = new Presentation(stockStrings);
 const enemy = (id: string, buffs: Buff[] = []): Enemy => ({
-    id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, defense: 0, modifiers: {}, buffs, intentions: [], cooldowns: {},
+    id, defId: "skunkette", rank: "enemy", skipped: false, maxHp: 200, currHp: 200, defense: 0, modifiers: {}, buffs, intentions: [], cooldowns: {},
 });
 const state = (): GameState => ({
     turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },

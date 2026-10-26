@@ -507,7 +507,7 @@ describe("buff modifyDamage integration through GameEngine", () => {
         expect(enemyState(engine).currHp).toBe(33);
     });
 
-    it("invokes modifyDamage only for positive damage", () => {
+    it("invokes modifyDamage for healing, zero, and positive damage", () => {
         const modifier = {
             id: "modifier", modifyDamage: vi.fn((_target: iEntity, _buff: iBuff, amount: number) => ({
                 value: amount,
@@ -536,7 +536,6 @@ describe("buff modifyDamage integration through GameEngine", () => {
         execute(engine, { type: "move", actor: "hero", move: zero.id, targets: ["foe1"] });
         execute(engine, { type: "move", actor: "hero", move: strike.id, targets: ["foe1"] });
 
-        expect(modifier.modifyDamage).toHaveBeenCalledOnce();
-        expect(modifier.modifyDamage.mock.calls[0][2]).toBe(4);
+        expect(modifier.modifyDamage.mock.calls.map(call => call[2])).toEqual([-5, 0, 4]);
     });
 });

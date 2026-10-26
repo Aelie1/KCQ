@@ -8,7 +8,7 @@ import { buildCombatPlaybackSteps } from "../../src/ui/web/app/combatPlayback";
 import { incomingBindingBattle } from "../helpers/incomingBindingBattle";
 
 function projections(state: GameState, actions: ReturnType<typeof incomingBindingBattle>["actions"], library: ContentLibrary) {
-    return createBattleOverviewViewModel(state, actions, getThresholds(), battleOverviewFixture.presentation, [], library)
+    return createBattleOverviewViewModel(state, actions, getThresholds(), battleOverviewFixture.presentation)
         .party[0]!.bindings.map(({ current, change }) => [current, change]);
 }
 function resolve(options: Parameters<typeof incomingBindingBattle>[0] = {}) {

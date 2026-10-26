@@ -46,7 +46,7 @@ export function libraryMoveEffectRows(move: MoveReference, library: ContentLibra
                 name: p.buff(effect.id, undefined), tone: operation === "remove" || harmful ? "special" : "success",
                 durationLabel: durationLabel ?? (effect.duration === undefined ? undefined : p.ui("characterDetails.rounds", { count: effect.duration })),
                 modifiers: operation === "remove" ? [] : Object.entries(effect.modifiers ?? {}).map(([id, value]) => ({
-                    label: p.modifier(id as ModifierId, "compact"), value: Math.abs(value), signedValue: formatSignedNumber(value),
+                    label: p.modifier(id as ModifierId, "compact"), value, signedValue: formatSignedNumber(value),
                     harmful: isHarmfulModifierChange(id as ModifierId, value) === true, direction: value >= 0 ? "left" : "right",
                 })), moveList: operation === "add" ? projectBuffMoveList(effect, p, undefined, true) : [], details: [],
             }, note

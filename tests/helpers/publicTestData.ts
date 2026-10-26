@@ -40,6 +40,7 @@ export function makePublicEnemy(
         id,
         defId: id,
         rank: "enemy",
+        skipped: false,
         maxHp: 100,
         currHp: 100,
         defense: 0,

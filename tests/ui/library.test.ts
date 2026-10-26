@@ -245,3 +245,24 @@ describe("Library structured effect projections", () => {
         expect(effects).toContain("min-width: 0");
     });
 });
+
+describe("perfume library references", () => {
+    it.each([
+        ["skunkPerfume", "debuff", "Debuff"],
+        ["healingPerfume", "heal", "Heal"],
+    ] as const)("classifies %s by its authored semantic trait", (id, trait, label) => {
+        expect(library.moves[id]!.traits).toEqual([trait]);
+        expect(libraryMoveTags(library.moves[id]!, presentation)).toContainEqual(expect.objectContaining({ id: trait, label }));
+    });
+    it("keeps perfume preview recipients, signed modifiers, and durations aligned with combat", () => {
+        const debuff = libraryMoveEffectRows(library.moves.skunkPerfume!, library, presentation);
+        expect(debuff.map(row => ({ recipient: row.recipient, duration: row.duration, preview: row.preview }))).toMatchObject([
+            { recipient: "players", duration: 4, preview: { kind: "buff", name: "Defense Perfume", modifiers: [{ value: -2, signedValue: "-2" }] } },
+            { recipient: "players", duration: 4, preview: { kind: "buff", name: "Escape Perfume", modifiers: [{ value: -2, signedValue: "-2" }] } },
+        ]);
+        const healing = libraryMoveEffectRows(library.moves.healingPerfume!, library, presentation);
+        expect(healing).toMatchObject([
+            { recipient: "enemies", duration: 2, preview: { kind: "buff", name: "Healing Perfume", modifiers: [{ value: 3, signedValue: "+3" }] } },
+        ]);
+    });
+});

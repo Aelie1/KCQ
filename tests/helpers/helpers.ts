@@ -212,10 +212,9 @@ export function expectMoveRejection(
     target: string,
     reason: FailureReason,
 ) {
-    expect(actionView(engine, actor).moves.find((action) => action.move.id === move)).toMatchObject({
-        available: false,
-        reason,
-    });
+    const action = actionView(engine, actor).moves.find((action) => action.move.id === move);
+    if (reason === "attackUnavailable") expect(action).toBeUndefined();
+    else expect(action).toMatchObject({ available: false, reason });
     expect(engine.executeAction({
         type: "move",
         actor,

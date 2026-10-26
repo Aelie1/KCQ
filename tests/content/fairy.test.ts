@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fairy } from "../../src/content/skunk/fairy";
+import { fairy, healingMagic, barrierMagic, empoweringMagic } from "../../src/content/skunk/fairy";
 import { latexArms, latexHead, latexLegs, latexTorso } from "../../src/content/skunk/latex";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import { difficulties } from "../../src/engine/private/constants";
@@ -51,6 +51,7 @@ function rawState(
 function testEnemy(id: string, hp = 100): EnemyDef {
     const enemy = makeBehavioralEnemy(id, [makeEnemyWaitMove()]);
     enemy.hp = hp;
+    enemy.rank = id === "queen" ? "boss" : id === "outsider" ? "minion" : "enemy";
     return enemy;
 }
 
@@ -77,24 +78,8 @@ function selectedActions(
     );
 }
 
-function selectedMove(action: iMoveEffect | undefined): MoveDef {
-    if (!action || action.type !== "move") throw new Error("Expected the Fairy to select a move");
-    return action.move.definition;
-}
-
 function fairySpell(id: typeof HEALING_ID | typeof BARRIER_ID | typeof EMPOWER_ID): MoveDef {
-    const skunk = makeEnemy(testEnemy("skunk"), "skunk1");
-
-    if (id === HEALING_ID) {
-        skunk.currHp = 50;
-        return selectedMove(selectedAction([skunk], [0, 0]));
-    }
-    if (id === BARRIER_ID) {
-        return selectedMove(selectedAction([skunk], [0, 0]));
-    }
-
-    skunk.buffs.push({ id: BARRIER_ID, active: true });
-    return selectedMove(selectedAction([skunk], [0, 0]));
+    return { healingMagic, barrierMagic, empoweringMagic }[id];
 }
 
 function spellMove(definition: MoveDef, band: Exclude<HitBand, "none" | "miss">): MoveDef {
@@ -191,7 +176,10 @@ describe("Skunk Fairy AI", () => {
         const skunk = makeEnemy(testEnemy("skunk"), "skunk1");
         skunk.buffs.push({ id: BARRIER_ID, active: false, duration: 2 });
 
-        const action = selectedAction([skunk], [0, 0]);
+        const barrier = selectedAction([skunk], [0, 0]);
+        expect(barrier?.move.definition.id).toBe(BARRIER_ID);
+        expect(barrier?.targets.map(target => target.id)).toEqual(["fairy1"]);
+        const action = selectedAction([skunk], [0.99, 0]);
         expect(action?.type === "move" ? action.move.definition.id : undefined).toBe(EMPOWER_ID);
         expect(action?.targets).toEqual([skunk]);
     });
@@ -201,28 +189,25 @@ describe("Skunk Fairy AI", () => {
         const queen = makeEnemy(testEnemy("queen"), "queen1");
         queen.buffs.push({ id: BARRIER_ID, active: true });
 
-        const action = selectedAction([outsider, queen], [0, 0]);
+        const action = selectedAction([outsider, queen], [0.99, 0.4]);
         expect(action?.type === "move" ? action.move.definition.id : undefined).toBe(EMPOWER_ID);
         expect(action?.targets).toEqual([queen]);
     });
 
-    it("uses its basic binding attack when no support action is available", () => {
+    it("can support itself when no other ally is present", () => {
         const action = selectedAction([], [0, 0, 0], true);
 
-        expect(action?.type === "move" ? action.move.definition.id : undefined).toBe(BINDING_ID);
-        expect(action?.targets[0]?.id).toBe("hero");
-        expect([latexHead, latexArms, latexTorso, latexLegs].map(({ id }) => id)).toContain(
-            action?.type === "move" ? action.move.binding?.id : undefined,
-        );
+        expect(action?.type === "move" ? action.move.definition.id : undefined).toBe(BARRIER_ID);
+        expect(action?.targets[0]?.id).toBe("fairy1");
     });
 });
 
 describe("Binding Magic", () => {
     it.each([
-        ["standard", [0, 0, 0], 1],
-        ["extreme", [0.5, 0, 0], 1],
-        ["extreme", [0.49, 0, 0, 0, 0], 2],
-        ["mythic", [0, 0, 0, 0], 2],
+        ["standard", [0, 0, 0], 0],
+        ["extreme", [0.5, 0, 0], 0],
+        ["extreme", [0.49, 0, 0, 0, 0], 1],
+        ["mythic", [0, 0, 0, 0], 1],
     ] as const)(
         "%s with deterministic rolls %j queues %s Binding Magic attack(s)",
         (difficulty, rolls, expectedAttacks) => {
@@ -241,6 +226,7 @@ describe("Binding Magic", () => {
         const hero = makeBehavioralCharacter("hero");
         const engine = createTestEngine([encounter], [hero], 2, { enemies: [fairy, skunkette] });
         engine.loadCharacter(hero.id);
+        engine.setDifficulty("mythic");
         engine.loadEncounter(encounter.id);
 
         const intention = enemyState(engine, "fairy1").intentions[0];
@@ -347,7 +333,7 @@ describe("Healing Magic", () => {
         expect(enemyState(engine, "skunk1").currHp).toBe(100);
     });
 
-    it("does not invoke modifyDamage while healing", () => {
+    it("invokes the current callback signature while healing", () => {
         const modifier = vi.fn((_target, _buff, amount: number) => ({ value: amount, effects: [] }));
         const move = spellMove(healing, "hit");
         const engine = makeEngine([testEnemy("skunk")], [move], (state) => {
@@ -361,13 +347,14 @@ describe("Healing Magic", () => {
                 type: "buff",
                 operation: "add",
                 target: enemy,
-                buff: { id: "damage-hook", active: true, modifyDamage: modifier },
+                buff: { id: "damage-hook", active: true, callback: { id: "damage-hook", modifyDamage: modifier } },
             }];
         });
 
         cast(engine, move, "skunk1");
 
-        expect(modifier).not.toHaveBeenCalled();
+        expect(modifier).toHaveBeenCalledOnce();
+        expect(modifier.mock.calls[0]![2]).toBe(-25);
         expect(enemyState(engine, "skunk1").currHp).toBe(75);
     });
 });
@@ -517,8 +504,8 @@ describe("Empowering Magic", () => {
         const buffed = resolvedEvents(result.frames).flatMap((event) =>
             event.type === "buffAdded" && event.buff === EMPOWER_ID ? [event.target] : []);
 
-        expect(buffed).toEqual(["skunk1", "skunkette1", "fairy1", "queen1"]);
-        expect(buffState(engine, EMPOWER_ID, "outsider1")).toBeUndefined();
+        expect(buffed).toEqual(["skunk1", "skunkette1", "fairy1", "queen1", "outsider1"]);
+        expect(buffState(engine, EMPOWER_ID, "outsider1")?.modifiers).toEqual({ potency: 5 });
     });
 
     it("starts pending and activates through the normal buff lifecycle", () => {

@@ -105,11 +105,10 @@ describe("harness party and difficulty configuration", () => {
         expect(result.party).toEqual(stockCharacters);
         expect(result.difficulty).toBe("standard");
         expect(result).toEqual(runSingleFight({ ...input, party: stockCharacters, difficulty: "standard" }));
-        // Full result baseline updated for Ko's binding-removal preview on Fairy Transformation.
-        // Comparing the original configuration-support revision isolates the changes to that preview.
+        // Full result baseline includes the public Enemy.skipped field.
         const { party, difficulty, ...legacyResult } = result;
         expect(createHash("sha256").update(JSON.stringify(legacyResult)).digest("hex"))
-            .toBe("d26939c99b7f2be0cf0e56b7e1dcc4071b90a3954f04f9fb5c68e9787e7ea422");
+            .toBe("c723c93e748a126d0f569c698d129e75ddc54b3e34743df78b38e991e8569c00");
         expect(runBatch(batchInput)).toEqual(runBatch({ ...batchInput, party: stockCharacters, difficulty: "standard" }));
     });
 

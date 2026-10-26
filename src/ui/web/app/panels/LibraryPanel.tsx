@@ -362,7 +362,7 @@ function EnemyDetail(props: { reference: EnemyReference }): JSX.Element {
 function StaticBuff(props: { effect: MoveBuffReference; showDuration?: boolean }): JSX.Element {
     const c = context();
     const modifiers = () => (Object.entries(props.effect.modifiers ?? {}) as [ModifierId, number][]).map(([id, value]) => ({
-        label: c.presentation.modifier(id, "compact"), value: Math.abs(value), signedValue: formatSignedNumber(value),
+        label: c.presentation.modifier(id, "compact"), value, signedValue: formatSignedNumber(value),
         harmful: isHarmfulModifierChange(id, value) === true, direction: value >= 0 ? "left" as const : "right" as const,
     }));
     return <EffectPreview renderStatus={status => (

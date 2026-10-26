@@ -112,7 +112,8 @@ describe("combat keyboard navigation", () => {
         for (const [index, key] of moveKeys.entries()) {
             expect(cards[index]!.querySelector(".kcq-shortcut")?.textContent).toContain(key.toUpperCase());
         }
-        expect(cards.slice(-2).map(command => command.dataset.kcqShortcut)).toEqual([COMBAT_SHORTCUTS.stance, COMBAT_SHORTCUTS.escape]);
+        expect(cards.at(-1)!.dataset.kcqShortcut).toBe(COMBAT_SHORTCUTS.escape);
+        expect(cards.some(command => command.dataset.kcqShortcut === COMBAT_SHORTCUTS.stance)).toBe(false);
         expect(combatShortcut(moveKeys.length)).toBeUndefined();
     });
 

@@ -186,10 +186,12 @@ describe("encounter setup recipient groups", () => {
         expect(model.effectGroups.map(({ id, name }) => ({ id, name }))).toEqual([
             { id: "allies", name: "Allies" },
             { id: "enemies", name: "Enemies" },
+            { id: "elites", name: "Elites" },
         ]);
         expect(model.effectGroups[1].effects).toMatchObject([{
             kind: "buff", modifiers: [{ value: 8, signedValue: "+8" }],
         }]);
+        expect(model.effectGroups[2].effects).toMatchObject([{ kind: "buff", modifiers: [{ value: 5, signedValue: "+5" }] }]);
         const allies = model.effectGroups[0];
         expect(allies.effects).toHaveLength(2);
         expect(allies.effects[0]).toMatchObject({
@@ -199,7 +201,7 @@ describe("encounter setup recipient groups", () => {
         expect(allies.effects[1]).toMatchObject({ kind: "buff", name: "Ambushed!", durationLabel: "1 Rounds", details: ["Helpless"] });
         model.effectGroups.flatMap(({ effects }) => effects).forEach((effect) => expect(effect).not.toHaveProperty("recipient"));
         const html = renderToString(() => createComponent(EncounterDetailsPanel, { model, onChooseDifficulty: () => { }, onBack: () => { } }));
-        expect(html.match(/class="kcq-encounter-details__effect-group"/g)).toHaveLength(2);
+        expect(html.match(/class="kcq-encounter-details__effect-group"/g)).toHaveLength(3);
         expect(visibleMarkup(html)).toContain("<h3>Allies</h3>");
         expect(visibleMarkup(html)).toContain("<h3>Enemies</h3>");
         expect(html).toContain("kcq-binding-meter--increase");

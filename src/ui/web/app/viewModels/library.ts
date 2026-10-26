@@ -90,7 +90,7 @@ export function referenceParts(text: string): ReferencePart[] {
 
 export function libraryModifiers(modifiers: ModifierSet | undefined, p: Presentation) {
     return (Object.entries(modifiers ?? {}) as [ModifierId, number][]).map(([id, value]) => ({
-        id, label: libraryModifierLabel(id, p), value: Math.abs(value), valueLabel: formatSignedNumber(value),
+        id, label: libraryModifierLabel(id, p), value, valueLabel: formatSignedNumber(value),
         tone: value === 0 ? "neutral" as const : isHarmfulModifierChange(id, value) ? "danger" as const : "success" as const,
         blocked: false,
     }));

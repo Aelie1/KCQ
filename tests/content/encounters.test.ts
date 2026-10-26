@@ -144,7 +144,7 @@ describe("encounters", () => {
 
         expect(engine.getGameState().enemies).toEqual(expect.arrayContaining([
             expect.objectContaining({ id: "empress", defId: "queen" }),
-            expect.objectContaining({ id: "skunketteQueen", defId: "skunkette" }),
+            expect.objectContaining({ id: "skunketteQueen1", defId: "skunketteQueen" }),
         ]));
     });
 
@@ -161,7 +161,7 @@ describe("encounters", () => {
             engine.loadEncounter(encounter.id);
             const state = engine.getGameState();
             const loadedQueen = state.enemies.find(({ defId }) => defId === queen.id);
-            const loadedSkunkette = state.enemies.find(({ defId }) => defId === skunkette.id);
+            const loadedSkunkette = state.enemies.find(({ defId }) => defId === "skunketteQueen");
             const character = state.characters[0];
 
             expect(loadedQueen).toMatchObject({
@@ -175,12 +175,12 @@ describe("encounters", () => {
                 })] : [])],
             });
             expect(loadedSkunkette).toMatchObject({
-                id: "skunketteQueen",
-                defId: skunkette.id,
+                id: "skunketteQueen1",
+                defId: "skunketteQueen",
                 buffs: [expect.objectContaining({
                     id: enemyBuff,
                     modifiers: { hit: enemyHit },
-                }), ...(enemyAmbushed ? [expect.objectContaining({
+                }), expect.objectContaining({ id: "skunkCollar", modifiers: { regeneration: encounter === tower_1 ? 5 : encounter === tower_2 ? 3 : 1 } }), ...(enemyAmbushed ? [expect.objectContaining({
                     id: "ambushed", duration: 1, statuses: [{ id: "helpless", value: 1 }],
                 })] : [])],
             });
@@ -205,12 +205,12 @@ describe("encounters", () => {
                 : { available: true });
 
             if (encounter === outside) {
-                expect(state.enemies.find(({ defId }) => defId === skunk.id)).toMatchObject({
-                    id: "skunkEmpress",
+                expect(state.enemies.find(({ defId }) => defId === "skunkEmpress")).toMatchObject({
+                    id: "skunkEmpress1",
                     buffs: [expect.objectContaining({
                         id: enemyBuff,
                         modifiers: { hit: 8 },
-                    })],
+                    }), expect.objectContaining({ id: "skunkCollar", modifiers: { regeneration: 1 } })],
                 });
             }
         },

@@ -3,9 +3,8 @@ import { ko } from "../../src/content/characters/ko";
 import { plains_1 } from "../../src/content/skunk/encounters";
 import { skunkette } from "../../src/content/skunk/skunkette";
 import type { StatusDef } from "../../src/engine/protected/definitions";
-import { createStockEngine } from "../../src/stock";
-import { stunned } from "../../src/engine/protected/statuses";
 import type { Engine, PlayerAction } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { actionView } from "../helpers/actionView";
 import { resolvedEvents } from "../helpers/events";
 import { makeBindingDef, makeCharacterDef, makeEncounterDef, makeEnemyDef, makeMove, makeWaitMove } from "../helpers/helpers";
@@ -131,54 +130,6 @@ describe("turn phases and enemy intentions", () => {
             turn: { round: 2, step: 1, phase: "player" },
             characters: [{ acted: false }],
         });
-    });
-
-    it("cancels a committed enemy intention when an active status blocks attacking", () => {
-        const threatened = makeBindingDef("threatened");
-        const threat = makeMove("threat", "none", {
-            targetSide: "player",
-            resolve: (state, actor) => [{
-                type: "binding",
-                source: actor,
-                target: state.characters[0],
-                binding: threatened,
-                amount: 10,
-            }],
-        });
-        const stunEnemy = makeMove("stun-enemy", "mouth", {
-            targetSide: "none",
-            targets: 0,
-            resolve: (state) => state.enemies[0] ? [{
-                type: "buff",
-                target: state.enemies[0],
-                buff: {
-                    id: "stunned-enemy",
-                    active: true,
-                    statuses: [{ definition: stunned, value: 1 }],
-                },
-                operation: "add",
-            }] : [],
-        });
-        const foe = makeEnemyDef("foe", [threat]);
-        const encounter = makeEncounterDef("cancel-intention", { enemies: [foe.id] });
-        const hero = makeCharacterDef("hero", [stunEnemy]);
-        const engine = createTestEngine([encounter], [hero], 1, { enemies: [foe] });
-        engine.loadCharacter(hero.id);
-        engine.loadEncounter(encounter.id);
-
-        expect(engine.getGameState().enemies[0].intentions[0]?.move).toBe(threat.id);
-        expect(engine.executeAction({
-            type: "move",
-            actor: "hero",
-            move: stunEnemy.id,
-            targets: [],
-        }).success).toBe(true);
-
-        const result = engine.executeAction({ type: "endTurn" });
-        expect(result.success).toBe(true);
-        if (!result.success) throw new Error("Expected the enemy phase to resolve");
-        expect(resolvedEvents(result.frames).filter(({ type }) => type === "useMove")).toEqual([]);
-        expect(engine.getGameState().characters[0].bindings).toEqual([]);
     });
 
     it("drops a committed target that is no longer in state without adding a replacement", () => {

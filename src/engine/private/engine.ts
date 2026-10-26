@@ -726,7 +726,7 @@ export class GameEngine implements Engine {
         }
 
         const status = new GameStatus(this.state, actor);
-        if (!status.canAttack() || status.isSkipped()) {
+        if (status.isSkipped()) {
             return;
         }
 

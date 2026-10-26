@@ -53,7 +53,7 @@ function expectMeters(expected: readonly (readonly [number, number | undefined])
 }
 function authoritativeMeters(battle: ReturnType<typeof incomingBindingBattle>) {
     return createBattleOverviewViewModel(battle.engine.getGameState(), battle.engine.getActionView(),
-        getThresholds(), battleOverviewFixture.presentation, [], battle.library).party[0]!.bindings
+        getThresholds(), battleOverviewFixture.presentation).party[0]!.bindings
         .map(({ current, change }) => [current, change] as const);
 }
 const loggedActors = () => [...document.querySelectorAll<HTMLElement>(".kcq-compact-game-log [data-kind=move]")]

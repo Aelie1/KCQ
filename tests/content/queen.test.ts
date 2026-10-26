@@ -463,13 +463,13 @@ describe("Queen Perfume", () => {
         }
         for (const id of missed) {
             expect(engine.getGameState().characters.find((character) => character.id === id)?.buffs)
-                .not.toContainEqual(expect.objectContaining({ id: "skunkPerfume" }));
+                .not.toContainEqual(expect.objectContaining({ id: "defensePerfume" }));
         }
 
         for (let turn = 0; turn < 4; turn++) endTurn(engine);
         for (const id of successful) {
             expect(engine.getGameState().characters.find((character) => character.id === id)?.buffs)
-                .not.toContainEqual(expect.objectContaining({ id: "skunkPerfume" }));
+                .not.toContainEqual(expect.objectContaining({ id: "defensePerfume" }));
         }
     });
 
@@ -498,7 +498,7 @@ describe("Queen Perfume", () => {
             setup: (state) => {
                 const actor = state.enemies[0];
                 return [
-                    ...queenSetupEffects(state, 1, 0),
+                    ...queenSetupEffects(state, 1, 99),
                     ...state.enemies.slice(1).map((target) => ({
                         type: "damage" as const,
                         source: actor,
@@ -513,8 +513,8 @@ describe("Queen Perfume", () => {
     function healingSeed(extraEnemies: EnemyDef[] = [skunk]): number {
         return findSeed(
             (seed) => healingPerfumeEngine(seed, [], extraEnemies),
-            (engine) => intentionFor(engine, "skunkPerfume")?.effects.some(
-                (effect) => effect.type === "damage" && effect.amount < 0,
+            (engine) => intentionFor(engine, "healingPerfume")?.targets.some(
+                ({ effects }) => effects.some(effect => effect.type === "buff" && effect.buff.id === "regenPerfume"),
             ) ?? false,
         );
     }
@@ -526,7 +526,7 @@ describe("Queen Perfume", () => {
         const byPrefix = (prefix: string) => result.frames.at(-1)!.state.enemies.find(({ id }) => id.startsWith(prefix));
 
         expect(byPrefix("skunk1")).toMatchObject({ currHp: 280, maxHp: 300 });
-        expect(byPrefix("skunkette1")).toMatchObject({ currHp: 170, maxHp: 200 });
+        expect(byPrefix("skunkette1")).toMatchObject({ currHp: 180, maxHp: 200 });
         expect(byPrefix("rainmaker1")).toMatchObject({ currHp: 150, maxHp: 200 });
         expect(result.frames.at(-1)!.state.enemies.every(({ currHp, maxHp }) => currHp <= maxHp)).toBe(true);
     });
@@ -535,8 +535,8 @@ describe("Queen Perfume", () => {
         const healSkunk = healingMove("heal-skunk", 100);
         const seed = healingSeed();
         const engine = healingPerfumeEngine(seed, [healSkunk]);
-        const preview = intentionFor(engine, "skunkPerfume");
-        expect(preview?.effects).toContainEqual({ type: "damage", target: "skunk1", amount: -30 });
+        const preview = intentionFor(engine, "healingPerfume");
+        expect(preview?.targets).toContainEqual(expect.objectContaining({ target: "skunk1", effects: [expect.objectContaining({ type: "buff", buff: expect.objectContaining({ id: "regenPerfume", duration: 2, modifiers: { regeneration: 3 } }) })] }));
 
         execute(engine, { type: "move", actor: "hero", move: healSkunk.id, targets: ["skunk1"] });
         const phase = endTurn(engine);
@@ -562,14 +562,14 @@ describe("Queen Perfume", () => {
         const control = build(seed);
         endTurn(control);
         const expectedModifiers = control.getGameState().characters[0].buffs
-            .find(({ id }) => id === "skunkPerfume")?.modifiers;
+            .find(({ id }) => id === before?.targets[0]?.effects.find(effect => effect.type === "buff")?.buff.id)?.modifiers;
 
         execute(engine, { type: "move", actor: "hero", move: wound.id, targets: ["skunk1"] });
         expect(intentionFor(engine, "skunkPerfume")).toEqual(before);
         const phase = endTurn(engine);
 
         expect(phase.frames.at(-1)!.state.enemies.find(({ id }) => id === "skunk1")?.currHp).toBe(skunk.hp - 20);
-        expect(phase.frames.at(-1)!.state.characters[0].buffs.find(({ id }) => id === "skunkPerfume")?.modifiers)
+        expect(phase.frames.at(-1)!.state.characters[0].buffs.find(({ id }) => id === before?.targets[0]?.effects.find(effect => effect.type === "buff")?.buff.id)?.modifiers)
             .toEqual(expectedModifiers);
     });
 
@@ -585,14 +585,14 @@ describe("Queen Perfume", () => {
                 const target = state.enemies.find(({ definition }) => definition === skunk);
                 if (!target) throw new Error("Expected setup Skunk state");
                 return [
-                    ...queenSetupEffects(state, 1, 0),
+                    ...queenSetupEffects(state, 1, 99),
                     { type: "damage", source: actor, target, amount: 50 },
                 ];
             },
         });
         const seed = findSeed(build, (candidate) =>
-            intentionFor(candidate, "skunkPerfume")?.effects.some(
-                (effect) => effect.type === "damage" && effect.target === "skunk1",
+            intentionFor(candidate, "healingPerfume")?.targets.some(
+                ({ target }) => target === "skunk1",
             ) ?? false,
         );
         const engine = build(seed);

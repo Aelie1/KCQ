@@ -54,10 +54,10 @@ describe("combat cleanup at mobile width", () => {
         expect(selected).toHaveBeenCalledTimes(2);
     });
 
-    it("preserves the disabled stance card and its reason and chips", () => {
+    it("preserves disabled stance rendering when the actor has already acted", () => {
         const selected = vi.fn();
         const command = createFocusedCharacterViewModel(fixture.state, {
-            ...fixture.actions[0]!, stance: { available: false, reason: "actorImmobilized" },
+            ...fixture.actions[0]!, available: false, reason: "actorAlreadyActed", stance: { available: true },
         }, fixture.thresholds, fixture.presentation).commands.find(command => command.id === "stance")!;
         mount(() => createComponent(CommandCard, { command, onSelect: selected }), 320);
         const card = document.querySelector<HTMLButtonElement>(".kcq-command-card")!;

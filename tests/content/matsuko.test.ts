@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { matsuko, obey } from "../../src/content/characters/matsuko";
+import { matsuko, obey, servitude } from "../../src/content/characters/matsuko";
 import type { EncounterDef, EnemyDef, MoveDef } from "../../src/engine/protected/definitions";
 import { EMPOWERMENT_BUFF } from "../../src/engine/protected/definitions";
 import { s } from "../../src/engine/protected/status";
-import { gagged, servitude } from "../../src/engine/protected/statuses";
+import { gagged } from "../../src/engine/protected/statuses";
 import type { iEffect, iGameState } from "../../src/engine/protected/types";
 import type {
     AccuracyProfile,

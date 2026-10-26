@@ -173,7 +173,7 @@ describe("public move previews", () => {
         engine.loadCharacter("hero");
         engine.loadEncounter(encounter.id);
 
-        expect(actionView(engine, "hero").moves).toEqual([{
+        expect(actionView(engine, "hero").moves).toEqual(reason === "attackUnavailable" ? [] : [{
             move: { id: strike.id, type: "arms", targetSide: "enemy", targets: 1 },
             available: false, reason, targets: [], effects: [],
         }]);

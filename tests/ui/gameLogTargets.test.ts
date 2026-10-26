@@ -10,6 +10,7 @@ import { stockStrings } from "../helpers/stockStrings";
 const presentation = new Presentation(stockStrings);
 const enemy = (id: string, currHp = 200): Enemy => ({
     id, defId: id.startsWith("fairy") ? "fairy" : "skunkette", rank: "enemy",
+    skipped: false,
     maxHp: 200, currHp, defense: 0, modifiers: {}, buffs: [], intentions: [], cooldowns: {},
 });
 const state = (): GameState => ({

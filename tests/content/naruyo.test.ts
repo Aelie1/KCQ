@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { servitude } from "../../src/content/characters/matsuko";
 import { naruyo } from "../../src/content/characters/naruyo";
 import { EMPOWERMENT_BUFF, type CharacterDef, type EncounterDef, type EnemyDef, type StatusDef } from "../../src/engine/protected/definitions";
 import { basicBindingEffect, thresholds } from "../../src/engine/protected/mechanics";
 import { s } from "../../src/engine/protected/status";
-import { bound, helpless, incapacitated, servitude } from "../../src/engine/protected/statuses";
+import { bound, helpless, incapacitated } from "../../src/engine/protected/statuses";
 import type { iCharacter, iEffect } from "../../src/engine/protected/types";
 import type { AccuracyProfile, ActionSuccess, Engine } from "../../src/engine/public/types";
 import {

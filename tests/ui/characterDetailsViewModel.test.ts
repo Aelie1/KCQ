@@ -229,10 +229,7 @@ describe("character details view model", () => {
             "Ally",
             "Enemy",
         ]);
-        expect(command("stance")).toMatchObject({
-            available: false,
-            reasonLabel: "This character cannot move.",
-        });
+        expect(command("stance")).toBeUndefined();
         expect(command("escape")).toMatchObject({
             available: false,
             reasonLabel: "This character cannot escape.",
@@ -447,7 +444,7 @@ describe("character details view model", () => {
                     : character),
             };
             return createFocusedCharacterViewModel(
-                state, fixture.actions[0], fixture.thresholds, fixture.presentation,
+                state, { ...fixture.actions[0], stance: { available: true } }, fixture.thresholds, fixture.presentation,
             ).commands.find(({ id }) => id === "stance");
         };
 
