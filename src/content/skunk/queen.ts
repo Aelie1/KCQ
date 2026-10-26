@@ -16,7 +16,7 @@ const GUN_DAMAGE = 35;
 const COLLAR_DAMAGE = 50;
 
 const PERFUME_DURATION = 4;
-const PERFUME_HEAL_MODIFIER = 1;
+const PERFUME_HEAL_MODIFIER = 3;
 const DEFENSE_BUFF = "defensePerfume";
 const ESCAPE_BUFF = "escapePerfume";
 const REGEN_BUFF = "regenPerfume";
@@ -207,7 +207,8 @@ export const skunkPerfume: MoveDef = {
                 break;
 
             case 2:  //Heal perfume
-                const damagedEnemies = state.enemies.filter(x => ((x.definition.rank === "enemy" || x.definition.rank === "elite") && x.currHp < x.definition.hp));
+                const rankFilter = ["enemy", "elite"];
+                const damagedEnemies = state.enemies.filter(x => (rankFilter.includes(x.definition.rank) && x.currHp < x.definition.hp));
                 const regenBuff: iBuff = {
                     id: REGEN_BUFF,
                     icon: "regen",
@@ -295,7 +296,8 @@ export const queen: EnemyDef = {
         {
             if ((actor.cooldowns['skunkPerfume'] ?? 0) === 0) {
                 const roll = rng.random();
-                const damagedEnemies = state.enemies.filter(x => ((x.definition.rank === "enemy" || x.definition.rank === "elite") && x.currHp < x.definition.hp));
+                const rankFilter = ["enemy", "elite"];
+                const damagedEnemies = state.enemies.filter(x => (rankFilter.includes(x.definition.rank) && x.currHp < x.definition.hp));
                 const type = damagedEnemies.length > 0 ? Math.floor(roll * 3) : Math.floor(roll * 2);
 
                 effects.push({

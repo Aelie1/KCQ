@@ -89,7 +89,8 @@ export const healingMagic: MoveDef = {
             }
         }
         if (target.band === "crit") {
-            const enemies = state.enemies.filter(x => ((x.definition.rank === "enemy" || x.definition.rank === "elite") && x.currHp < x.definition.hp));
+            const rankFilter = ["enemy", "elite"];
+            const enemies = state.enemies.filter(x => (rankFilter.includes(x.definition.rank) && x.currHp < x.definition.hp));
             for (const enemy of enemies) {
                 if (enemy !== target.target) {
                     result.effects.push({
@@ -240,14 +241,14 @@ export const fairy: EnemyDef = {
         }
 
         //0) Determine which moves are valid
-        const healFilter = ["skunkette", "skunk"];
-        const healTargets = validTargets.filter(x => (isEnemy(x) && healFilter.includes(x.definition.id) && x.currHp < x.definition.hp));
+        const healFilter = ["enemy", "elite"];
+        const healTargets = validTargets.filter(x => (isEnemy(x) && healFilter.includes(x.definition.rank) && x.currHp < x.definition.hp));
 
-        const barrierFilter = ["skunkette", "skunk", "queen"];
-        const barrierTargets = validTargets.filter(x => (barrierFilter.includes(x.definition.id)) && !x.buffs.some(y => y.id === "barrierMagic"));
+        const barrierFilter = ["enemy", "elite", "boss"];
+        const barrierTargets = validTargets.filter(x => (isEnemy(x) && barrierFilter.includes(x.definition.rank)) && !x.buffs.some(y => y.id === "barrierMagic"));
 
-        const empowerFilter = ["skunkette", "skunk", "queen"];
-        const empowerTargets = validTargets.filter(x => (empowerFilter.includes(x.definition.id)));
+        const empowerFilter = ["enemy", "elite", "boss"];
+        const empowerTargets = validTargets.filter(x => (isEnemy(x) && empowerFilter.includes(x.definition.rank)));
 
         type FairyAction = "heal" | "barrier" | "empower";
         const actions: FairyAction[] = [];

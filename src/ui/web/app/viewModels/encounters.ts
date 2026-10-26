@@ -35,7 +35,7 @@ export interface EncounterEnemyViewModel {
     name: string;
     rank: EnemyRank;
     rankLabel: string;
-    rankTone: "danger" | "warning" | "neutral";
+    rankTone: "danger" | "warning" | "success" | "neutral";
     hp: number;
     hpLabel: string;
 }
