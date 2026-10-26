@@ -210,7 +210,7 @@ export const skunkEnglishStrings: StringTable = {
     "move.skunkGun.name": "Skunk Gun",
     "move.skunkGun.desc": "The Queen's gun shoots compressed globs of latex at its targets. They explode and start to cover anything they hit on impact.",
     "move.skunkGun.narrative.miss": "The {actor} aims her gun at {target}, but her gun misfires, causing no effects.",
-    "move.skunkGun.narrative.graze": "The {actor} shoots {target} with her skunk gun, barely hitting her {hitLocation}.",
+    "move.skunkGun.narrative.graze": "The {actor} shoots {target} with her skunk gun, barely hitting {hitLocation}.",
     "move.skunkGun.narrative.hit": "The {actor} shoots {target} {hitLocation} with compressed latex bullets, which quickly spread latex where they land.",
     "move.skunkGun.narrative.crit": "The {actor} unloads her skunk gun on {target} and the bullets explode {hitLocation}, instantly covering quite a bit of her in latex.",
     "move.skunkCollar.name": "Skunk Collar",
