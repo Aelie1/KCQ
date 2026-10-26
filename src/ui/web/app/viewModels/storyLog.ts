@@ -531,17 +531,19 @@ export function createStoryLogViewModel(
         };
 
         for (const narrative of activeNarratives) {
-            if (narrative.tone) {
+            if (narrative.tone || narrative.glow) {
                 flushNormal();
 
                 paragraphs.push({
                     text: narrative.text,
                     tone: narrative.tone,
+                    ...(narrative.glow ? {
+                        parts: [{ text: narrative.text, glow: narrative.glow }],
+                    } : {}),
                 });
             } else {
                 parts.push({
                     text: normal ? ` ${narrative.text}` : narrative.text,
-                    ...(narrative.glow ? { glow: narrative.glow } : {}),
                 });
                 normal = normal
                     ? `${normal} ${narrative.text}`
