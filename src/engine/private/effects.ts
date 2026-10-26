@@ -374,12 +374,14 @@ export class GameEffects {
             }
         }
         if (blocked) {
-            this.addEvent({
-                type: "enemyDamaged",
-                target: target.id,
-                amount: target.currHp
-            });
-            target.currHp = 0;
+            if (target.currHp > 0) {
+                this.addEvent({
+                    type: "enemyDamaged",
+                    target: target.id,
+                    amount: target.currHp
+                });
+                target.currHp = 0;
+            }
             return;
         }
 

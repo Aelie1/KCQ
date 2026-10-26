@@ -395,14 +395,6 @@ export const queen: EnemyDef = {
     onDefeat(state: iGameState, target: iEnemy): iEffect[] {
         const effects: iEffect[] = [];
         for (const enemy of state.enemies) {
-            if (findBuff(enemy, DORMANT_BUFF)) {
-                effects.push({
-                    type: "enemy",
-                    target: enemy,
-                    operation: "defeat"
-                });
-                continue;
-            }
             const buff = findBuff(enemy, COLLAR_BUFF);
             if (buff) {
                 effects.push({
@@ -410,6 +402,13 @@ export const queen: EnemyDef = {
                     target: enemy,
                     buff: buff,
                     operation: "remove"
+                });
+            }
+            if (findBuff(enemy, DORMANT_BUFF)) {
+                effects.push({
+                    type: "enemy",
+                    target: enemy,
+                    operation: "defeat"
                 });
             }
         }
