@@ -81,6 +81,7 @@ function mountSelection(screen: SelectionScreen, release = "v0.8-settings-test")
         campaigns: ["skunk"], release, presentation, languages, prepareBattle,
         composeCampaign: () => ({ library: engine.getLibrary(), presentation, languages }),
     }), root);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
     document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="1"]')!.click();
     document.querySelector<HTMLButtonElement>(".kcq-encounter-details__footer button")!.click();

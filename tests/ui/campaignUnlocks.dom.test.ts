@@ -41,6 +41,7 @@ function mount() {
         campaigns: ["skunk"], release: "test", presentation, prepareBattle,
         composeCampaign: () => ({ library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation }),
     }), host);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     element(".kcq-title-screen__campaign").click();
     return { sessions, prepareBattle };
 }

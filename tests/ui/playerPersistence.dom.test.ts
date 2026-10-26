@@ -2,8 +2,8 @@ import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCampaignLibrary, createCharacterLibrary, createEngine } from "../../src/content";
-import { createStockEngine } from "../../src/stock";
 import type { BattleState, DifficultyId, EncounterId } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
@@ -55,6 +55,7 @@ function mount(supported = languages) {
             return { engine, dispose: vi.fn() };
         },
     }), root);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     return { root, sessions };
 }
 function selectLanguage(id: string) {

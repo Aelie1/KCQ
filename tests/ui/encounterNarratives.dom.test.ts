@@ -49,7 +49,7 @@ describe("Encounter Details narrative tabs", () => {
     it("defaults to Description and never renders locked narratives", () => {
         mount(() => createComponent(EncounterDetailsPanel, {
             model: createEncounterDetailsViewModel(library, "plains_1", presentation),
-            onBack: () => {}, onChooseDifficulty: () => {},
+            onBack: () => { }, onChooseDifficulty: () => { },
         }));
         expect(tabs().map(tab => tab.textContent)).toEqual(["Description locale", "Victoire", "Défaite"]);
         expect(tabs().map(tab => tab.disabled)).toEqual([false, true, true]);
@@ -95,13 +95,13 @@ describe("Encounter Details narrative tabs", () => {
             useCombatKeyboard(() => host, () => true, () => false, () => "always");
             return createComponent(EncounterDetailsPanel, {
                 model: createEncounterDetailsViewModel(library, "plains_1", presentation, "standard"),
-                onBack: () => {}, onChooseDifficulty,
+                onBack: () => { }, onChooseDifficulty,
             });
         });
         await new Promise<void>(resolve => queueMicrotask(resolve));
         tabs()[0]!.focus();
         for (const [key, index] of [["ArrowRight", 1], ["ArrowRight", 2], ["ArrowRight", 0],
-            ["ArrowLeft", 2], ["Home", 0], ["End", 2]] as const) {
+        ["ArrowLeft", 2], ["Home", 0], ["End", 2]] as const) {
             expect(press(document.activeElement as HTMLElement, key).defaultPrevented).toBe(true);
             expect(document.activeElement).toBe(tabs()[index]);
             expect(tabs()[index]!.getAttribute("aria-selected")).toBe("true");
@@ -118,7 +118,7 @@ describe("Encounter Details narrative tabs", () => {
     it("defaults to Description when the encounter changes, including an uncleared encounter", () => {
         const [model, setModel] = createSignal(createEncounterDetailsViewModel(library, "plains_1", presentation, "casual"));
         mount(() => createComponent(EncounterDetailsPanel, {
-            get model() { return model(); }, onBack: () => {}, onChooseDifficulty: () => {},
+            get model() { return model(); }, onBack: () => { }, onChooseDifficulty: () => { },
         }));
         tabs()[2]!.click();
         setModel(createEncounterDetailsViewModel(library, "plains_2", presentation, "mythic"));
@@ -137,7 +137,7 @@ describe("Encounter Details narrative tabs", () => {
         const missing = new Presentation(strings);
         mount(() => createComponent(EncounterDetailsPanel, {
             model: createEncounterDetailsViewModel(library, "plains_1", missing, "standard"),
-            onBack: () => {}, onChooseDifficulty: () => {},
+            onBack: () => { }, onChooseDifficulty: () => { },
         }));
         for (const tab of tabs().slice(1)) {
             expect(tab.disabled).toBe(false); tab.click();
@@ -149,12 +149,13 @@ describe("Encounter Details narrative tabs", () => {
     it("loads saved clears through the app and preserves details and navigation", () => {
         localStorage.setItem("kcq.clears", JSON.stringify({ outside: "casual", plains_1: "standard" }));
         const engine = createStockEngine();
-        const prepareBattle = vi.fn(() => ({ engine, dispose: () => {} }));
+        const prepareBattle = vi.fn(() => ({ engine, dispose: () => { } }));
         mount(() => createComponent(GraphicalApp, {
             characterLibrary: createCharacterLibrary(), createEngine,
             campaigns: ["skunk"], release: "test", presentation,
             composeCampaign: () => ({ library: engine.getLibrary(), presentation }), prepareBattle,
         }));
+        document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
         element(".kcq-title-screen__campaign").click();
         const select = (id: string) => {
             const row = [...document.querySelectorAll<HTMLButtonElement>(".kcq-encounter-picker__row")]

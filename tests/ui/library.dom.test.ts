@@ -132,6 +132,7 @@ describe("Library game integration", () => {
             characterLibrary: createCharacterLibrary(), createEngine,
             campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ library: engine.getLibrary(), presentation }), prepareBattle,
         }));
+        document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
         element(".kcq-title-screen__campaign").click();
         const picker = element(".kcq-encounter-picker");
         const libraryButton = element<HTMLButtonElement>(".kcq-header-controls > .kcq-combat-header__library");
@@ -180,6 +181,7 @@ describe("Library campaign selection and localization", () => {
             characterLibrary: createCharacterLibrary(), createEngine,
             campaigns: ["skunk"], release: "test", presentation, composeCampaign: () => ({ library: engine.getLibrary(), presentation }), prepareBattle,
         }));
+        document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
         element(".kcq-title-screen__campaign").click();
         element('.kcq-encounter-picker__row[data-kcq-shortcut="1"]').click();
         element(".kcq-encounter-details__footer button").click();

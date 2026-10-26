@@ -2,13 +2,14 @@ import type { KCQCampaign, KCQCharacter } from "../src/content";
 import type { StringTable } from "../src/ui/presentation/presentation";
 import { hinariEnglishStrings, koEnglishStrings, matsukoEnglishStrings, naruyoEnglishStrings, sakariEnglishStrings } from "./en/characters";
 import { gameGuideEnglishStrings } from "./en/gameGuide";
+import { patchNotesEnglishStrings } from "./en/patchNotes";
 import { skunkEnglishStrings } from "./en/skunk";
 import { systemEnglishStrings } from "./en/system";
 
 export type KCQLanguage = "en";
 
 export const baseStrings: Record<KCQLanguage, StringTable> = {
-    "en": { ...systemEnglishStrings, ...gameGuideEnglishStrings }
+    "en": { ...systemEnglishStrings, ...gameGuideEnglishStrings, ...patchNotesEnglishStrings }
 };
 
 export const characterStrings: Record<KCQCharacter, Record<KCQLanguage, StringTable>> = {

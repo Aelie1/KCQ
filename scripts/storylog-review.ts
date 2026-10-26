@@ -31,11 +31,16 @@ const actorBySection: Record<string, string> = {
     skunk: "Skunkette A",
 };
 
-const sample = (section: string, text: string): string => {
+const sample = (section: string, key: string, text: string): string => {
     const playerSection = section in actorBySection && section !== "skunk";
+    const plural = key.endsWith(".plural");
+    const enemyPlural = key.includes(".enemies.plural") || key === "enemy.narrative.spawned.plural";
+    const target = plural
+        ? enemyPlural ? "Skunkette A and Skunkette B" : "Ko-chan and Matsuko"
+        : playerSection ? "Skunkette A" : "Ko-chan";
     const values: Record<string, string> = {
         actor: actorBySection[section] ?? "Ko-chan",
-        target: playerSection ? "Skunkette A" : "Ko-chan",
+        target,
         targetCount: playerSection ? "the entire enemy party" : "Ko-chan and Matsuko",
         hits: "Ko-chan and Matsuko",
         misses: "Hinari",
@@ -88,7 +93,7 @@ for (const { section, strings } of sources) {
             section,
             key,
             text,
-            sample(section, text),
+            sample(section, key, text),
             placeholders,
             strings[`${key}.suppress`] ?? "",
             "",

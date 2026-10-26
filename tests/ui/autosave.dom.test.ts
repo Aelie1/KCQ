@@ -1,10 +1,10 @@
+import { compressToBase64 } from "lz-string";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCampaignLibrary, createCharacterLibrary } from "../../src/content";
-import { compressToBase64 } from "lz-string";
-import { createStockEngine } from "../../src/stock";
 import type { DifficultyId, EncounterId, Engine } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
@@ -67,6 +67,7 @@ function mount(configure?: (engine: Engine) => void, titlePresentation = present
         campaigns: ["skunk"], release: "test", presentation: titlePresentation, prepareBattle, composeCampaign,
         characterLibrary: createCharacterLibrary(), createEngine,
     }), host);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     return { sessions, restoredEngines, prepareBattle, composeCampaign };
 }
 function start(encounter = "forest_3", difficulty = "Veteran"): void {
@@ -108,7 +109,8 @@ describe("title saved-battle card", () => {
         const source = seedSave("plains_3");
         source.save.saveState.turn.round = 7;
         writeSave(source.save);
-        const localized = new Presentation({ ...stockStrings,
+        const localized = new Presentation({
+            ...stockStrings,
             "campaign.skunk.name": "Localized campaign", "encounter.plains_3.name": "Localized encounter",
             "difficulty.veteran.name": "Localized difficulty", "ui.battleOverview.round": "Turn {round}",
             "ui.title.resumeBattle": "Localized resume", "ui.title.continue": "Localized continue",

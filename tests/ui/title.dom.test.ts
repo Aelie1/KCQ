@@ -3,13 +3,13 @@ import { render } from "solid-js/web";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getStringTable } from "../../localization";
 import { createCampaignLibrary, createCharacterLibrary, createEngine, type KCQCampaign } from "../../src/content";
-import { stockCharacters } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
+import { stockCharacters } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
-import type { LanguageOption } from "../../src/ui/web/app/language";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import { TitleScreen } from "../../src/ui/web/app/components/TitleScreen";
+import type { LanguageOption } from "../../src/ui/web/app/language";
 import { createTitleViewModel } from "../../src/ui/web/app/viewModels/title";
 
 let unmount: (() => void) | undefined;
@@ -39,6 +39,7 @@ function mount(languages?: readonly LanguageOption[]) {
         campaigns: ["skunk"], release: "test", presentation: new Presentation(getStringTable("en", stockCharacters)), languages,
         composeCampaign, prepareBattle, characterLibrary: createCharacterLibrary(), createEngine,
     }), root);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     return { composeCampaign, prepareBattle, compositions };
 }
 
@@ -124,7 +125,8 @@ describe("title navigation", () => {
 
     it("updates localized title content in place and shares language with campaign screens and return to title", () => {
         const presentation = new Presentation(getStringTable("en"));
-        const alternate = new Presentation({ ...getStringTable("en", stockCharacters, "skunk"),
+        const alternate = new Presentation({
+            ...getStringTable("en", stockCharacters, "skunk"),
             "ui.title.name": "Test Quest", "ui.title.campaigns": "Test campaigns", "ui.title.party": "Test party",
             "ui.battleSettings.language": "Test language label",
             "campaign.skunk.name": "Test campaign", "campaign.skunk.desc": "Test description",

@@ -52,6 +52,7 @@ function mount(strings: StringTable = victoryStoryStrings) {
         characterLibrary: createStockEngine().getLibrary(), createEngine: () => createStockEngine(),
         composeCampaign: () => ({ library: createStockEngine().getLibrary(), presentation }),
     }), host);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     element(".kcq-title-screen__campaign").click();
     element('.kcq-encounter-picker__row[data-kcq-shortcut="1"]').click();
     element(".kcq-encounter-details__footer button").click();

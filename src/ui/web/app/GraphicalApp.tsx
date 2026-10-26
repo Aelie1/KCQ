@@ -1,4 +1,4 @@
-import { createEffect, createMemo, createSignal, Match, onCleanup, Show, Switch, type JSX } from "solid-js";
+import { createEffect, createMemo, createSignal, Match, onCleanup, onMount, Show, Switch, type JSX } from "solid-js";
 import type { KCQCampaign, KCQCharacter } from "../../../content";
 import type { ContentLibrary } from "../../../engine/public/library";
 import type { DifficultyId, EncounterId, Engine } from "../../../engine/public/types";
@@ -9,6 +9,7 @@ import { DifficultySelectPanel } from "./components/DifficultySelectPanel";
 import { EncounterDetailsPanel } from "./components/EncounterDetailsPanel";
 import { EncounterPickerPanel } from "./components/EncounterPickerPanel";
 import { PartySelectionPanel } from "./components/PartySelectionPanel";
+import { PatchNotesScreen } from "./components/PatchNotesScreen";
 import { TitleScreen } from "./components/TitleScreen";
 import { createGraphicalController, type GraphicalBattleSession } from "./graphicalController";
 import { useCombatKeyboard, type SharedKeyboard } from "./keyboard";
@@ -17,14 +18,17 @@ import { createOverviewGameLogPreference } from "./overviewGameLogLines";
 import { BattleSettingsPanel } from "./panels/BattleSettingsPanel";
 import { LibraryPanel } from "./panels/LibraryPanel";
 import { availableCharacters } from "./partySelection";
+import { hasSeenPatchNotes, markPatchNotesSeen } from "./patchNotes";
 import { createPlaybackSpeedPreference } from "./playbackSpeed";
 import { clearSave, readSave, type SaveReadResult } from "./savePersistence";
 import { createShortcutHintPreference } from "./shortcutHints";
 import { createThemePreference } from "./theme";
+import { displayVersion } from "./version";
 import { createDifficultySelectViewModel } from "./viewModels/difficulty";
 import { createEncounterDetailsViewModel, createEncounterPickerViewModel } from "./viewModels/encounters";
 import type { LibraryPage } from "./viewModels/library";
 import { createPartySelectionViewModel } from "./viewModels/partySelection";
+import { createPatchNotesViewModel } from "./viewModels/patchNotes";
 import { createTitleViewModel } from "./viewModels/title";
 import { createViewPreferences, ViewPreferencesContext } from "./viewPreferences";
 
@@ -85,9 +89,20 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
         setSettingsOpen(true);
     };
     const navigate = (callback: () => void): void => {
-        if (!settingsOpen() && !libraryOpen()) callback();
+        if (!settingsOpen() && !libraryOpen() && !PatchNotesOpen()) callback();
     };
     const controller = createGraphicalController(props.prepareBattle, undefined, () => library());
+    const [PatchNotesOpen, setPatchNotesOpen] = createSignal(false);
+    // Check once per app session, only while initially on the title screen.
+    // Returning from party selection or a battle must never trigger this again.
+    onMount(() => {
+        if (controller.screen().screen === "title") setPatchNotesOpen(!hasSeenPatchNotes(displayVersion(props.release)));
+    });
+    const closePatchNotes = (): void => {
+        markPatchNotesSeen(displayVersion(props.release));
+        setPatchNotesOpen(false);
+        background?.querySelector<HTMLButtonElement>(".kcq-title-screen__patch-notes")?.focus();
+    };
     const [restoredComposition, setRestoredComposition] = createSignal<GraphicalCampaignComposition>();
     const [autosave, setAutosave] = createSignal<SaveReadResult>({ status: "missing" });
     createEffect(() => {
@@ -166,7 +181,7 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
 
     let background: HTMLDivElement | undefined;
     let battleGlobalAction: ((key: string) => boolean) | undefined;
-    const hintsVisible = useCombatKeyboard(() => background, () => !settingsOpen() && !libraryOpen(),
+    const hintsVisible = useCombatKeyboard(() => background, () => !settingsOpen() && !libraryOpen() && !PatchNotesOpen(),
         key => battle() ? battleGlobalAction?.(key) ?? false : false, () => shortcutHints.value);
     const keyboard: SharedKeyboard = {
         hintsVisible,
@@ -177,11 +192,12 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
     };
 
     return <ViewPreferencesContext.Provider value={viewPreferences}><App>
-        <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} inert={settingsOpen() || libraryOpen()} aria-hidden={settingsOpen() || libraryOpen() ? true : undefined}>
+        <div ref={background} class="kcq-graphical-app__background" data-kcq-hints-visible={hintsVisible()} inert={settingsOpen() || libraryOpen() || PatchNotesOpen()} aria-hidden={settingsOpen() || libraryOpen() || PatchNotesOpen() ? true : undefined}>
             <Switch>
                 <Match when={controller.screen().screen === "title"}>
                     <TitleScreen model={createTitleViewModel(props.campaigns, presentation(), props.release, savedBattle(), controller.party())}
                         language={languageSelection}
+                        onPatchNotes={() => navigate(() => setPatchNotesOpen(true))}
                         onChangeParty={() => navigate(controller.changeParty)}
                         saveStatus={autosave().status} onContinue={() => navigate(continueBattle)}
                         onDelete={deleteSave}
@@ -232,6 +248,9 @@ export function GraphicalApp(props: GraphicalAppProps): JSX.Element {
                 </Match>
             </Switch>
         </div>
+        <Show when={PatchNotesOpen() && controller.screen().screen === "title"}>
+            <PatchNotesScreen model={createPatchNotesViewModel(presentation())} viewPreferences={viewPreferences} onClose={closePatchNotes} />
+        </Show>
         <Show when={libraryOpen() && (controller.screen().screen === "party" ? props.characterLibrary : library())}>
             {current => <LibraryPanel
                 library={current()}

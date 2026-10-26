@@ -65,6 +65,7 @@ function mount() {
         characterLibrary: createCharacterLibrary(), createEngine: restoreEngine,
         languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }],
     }), host);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     return { composeCampaign, prepareBattle, restoreEngine };
 }
 

@@ -4975,7 +4975,89 @@ button {
 }
 
 .kcq-title-screen__version {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px 10px;
     text-align: right;
+}
+
+.kcq-title-screen__patch-notes {
+    max-width: 100%;
+    padding: 4px 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    overflow-wrap: anywhere;
+    cursor: pointer;
+}
+
+.kcq-title-screen__patch-notes:hover {
+    color: var(--kcq-accent-primary);
+}
+
+.kcq-title-screen__patch-notes:focus-visible,
+.kcq-patch-notes button:focus-visible,
+.kcq-patch-notes__history:focus-visible {
+    outline: 2px solid var(--kcq-accent-primary);
+    outline-offset: -2px;
+}
+
+.kcq-patch-notes__header,
+.kcq-patch-notes__footer {
+    flex-shrink: 0;
+}
+
+.kcq-patch-notes__history {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    overflow-wrap: anywhere;
+}
+
+.kcq-patch-notes__footer {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.kcq-patch-notes__header h1:focus {
+    outline: none;
+}
+
+.kcq-patch-notes__release {
+    padding: 0 0 10px;
+    color: var(--kcq-text-primary);
+}
+
+.kcq-patch-notes__release+.kcq-patch-notes__release {
+    padding-top: 10px;
+    border-top: 1px solid var(--kcq-structure-border);
+}
+
+.kcq-patch-notes__release h2 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    line-height: 1.4;
+}
+
+.kcq-patch-notes__section h3 {
+    margin: 12px 0 8px;
+    font-size: 14px;
+}
+
+.kcq-patch-notes__section ul {
+    margin: 0;
+    font-size: 13px;
+    padding-left: 24px;
+    line-height: 1.6;
+}
+
+.kcq-patch-notes__section li+li {
+    margin-top: 6px;
 }
 
 /* Medium and wide use the two-section title arrangement. */
@@ -6858,12 +6940,13 @@ button {
 
 /* Compact settings for the wide portal layout. */
 /* Dialog sizing */
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-result__viewport {
+:is(.kcq-battle-settings__overlay, .kcq-patch-notes__overlay)[data-kcq-layout="wide"] .kcq-battle-result__viewport {
     width: 400px;
     max-width: 100%;
 }
 
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings {
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings,
+.kcq-patch-notes__overlay[data-kcq-layout="wide"] .kcq-patch-notes {
     max-width: 380px;
     gap: 6px;
     padding: 16px;
@@ -6904,7 +6987,8 @@ button {
 }
 
 /* Compact buttons */
-.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings .kcq-battle-result__actions button {
+.kcq-battle-settings__overlay[data-kcq-layout="wide"] .kcq-battle-settings .kcq-battle-result__actions button,
+.kcq-patch-notes__overlay[data-kcq-layout="wide"] .kcq-patch-notes .kcq-battle-result__actions button {
     min-height: 36px;
     padding: 6px 10px;
     font-size: 12px;

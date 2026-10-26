@@ -1,10 +1,10 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createStockEngine } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
@@ -48,6 +48,7 @@ function mount(localized = presentation) {
         characterLibrary: createStockEngine().getLibrary(), createEngine: () => createStockEngine(),
         composeCampaign: () => ({ library: createStockEngine().getLibrary(), presentation: localized }),
     }), host);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     element(".kcq-title-screen__campaign").click();
     return { sessions, prepareBattle };
 }

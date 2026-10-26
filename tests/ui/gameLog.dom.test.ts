@@ -74,6 +74,7 @@ function mountBattle() {
         }),
         languages: [{ id: "en", label: "English", presentation }, { id: "test", label: "Test", presentation: alternate }],
     }), host);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     click(".kcq-title-screen__campaign");
     click('.kcq-encounter-picker__row[data-kcq-shortcut="1"]');
     click(".kcq-encounter-details__footer button");

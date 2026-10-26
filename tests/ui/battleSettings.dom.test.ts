@@ -1,14 +1,14 @@
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { stockStrings } from "../helpers/stockStrings";
-import { createStockEngine } from "../../src/stock";
 import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
+import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
 import { GraphicalApp } from "../../src/ui/web/app/GraphicalApp";
 import type { LanguageOption } from "../../src/ui/web/app/language";
 import { createBattleTelemetryObserver } from "../../src/ui/web/telemetry";
+import { stockStrings } from "../helpers/stockStrings";
 
 const presentation = new Presentation(stockStrings);
 let unmount: (() => void) | undefined;
@@ -66,6 +66,7 @@ function mountBattle(languages?: readonly LanguageOption[], release = "v0.8-sett
         composeCampaign: () => ({ library: createStockEngine().getLibrary(), presentation, languages }),
         presentation, prepareBattle, languages,
     }), root);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     document.querySelector<HTMLButtonElement>(".kcq-title-screen__campaign")!.click();
     document.querySelector<HTMLButtonElement>('.kcq-encounter-picker__row[data-kcq-shortcut="1"]')!.click();
     document.querySelector<HTMLButtonElement>(".kcq-encounter-details__footer button")!.click();
@@ -174,9 +175,11 @@ describe("battle settings interactions", () => {
     });
 
     it("changes presentation immediately without recreating or mutating the battle", () => {
-        const alternate = new Presentation({ ...stockStrings,
+        const alternate = new Presentation({
+            ...stockStrings,
             "ui.battleSettings.resume": "Continue test", "ui.battleOverview.endTurn": "End test turn",
-            "ui.battleSettings.backToTitle": "Test title screen", "ui.version.name": "Release {version}" });
+            "ui.battleSettings.backToTitle": "Test title screen", "ui.version.name": "Release {version}"
+        });
         const { engine, prepareBattle, sessions } = mountBattle([
             { id: "en", label: "English", presentation },
             { id: "test", label: "Test language", presentation: alternate },

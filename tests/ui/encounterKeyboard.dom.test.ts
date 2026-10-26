@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
 import type { Window as HappyWindow } from "happy-dom";
+import { readFileSync } from "node:fs";
 import { createComponent } from "solid-js";
 import { render } from "solid-js/web";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCampaignLibrary, createCharacterLibrary, createEngine } from "../../src/content";
+import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 import { createStockEngine } from "../../src/stock";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { createBattle } from "../../src/ui/web/app";
@@ -12,7 +13,6 @@ import { EncounterPickerPanel } from "../../src/ui/web/app/components/EncounterP
 import { combatShortcut, useCombatKeyboard } from "../../src/ui/web/app/keyboard";
 import { createEncounterPickerViewModel } from "../../src/ui/web/app/viewModels/encounters";
 import { stockStrings } from "../helpers/stockStrings";
-import type { DifficultyId, EncounterId } from "../../src/engine/public/types";
 
 const presentation = new Presentation(stockStrings);
 const viewport = (window as unknown as HappyWindow).happyDOM;
@@ -59,6 +59,7 @@ function mountApp() {
         campaigns: ["skunk"], release: "test", presentation, prepareBattle,
         composeCampaign: () => ({ library: createCampaignLibrary(["ko", "matsuko", "hinari"], "skunk"), presentation }),
     }), host);
+    document.querySelector<HTMLButtonElement>(".kcq-patch-notes__footer button")?.click();
     button(".kcq-title-screen__campaign").click();
     press("1"); press("Escape");
     return { prepareBattle, catalog };
@@ -235,7 +236,7 @@ describe("encounter keyboard navigation", () => {
         vi.advanceTimersByTime(3000);
         assertBadges(mode === "always");
         keydown("Shift");
-        for (const navigate of [() => {}, () => press("Enter"), () => press("Enter"), () => press("-")]) {
+        for (const navigate of [() => { }, () => press("Enter"), () => press("Enter"), () => press("-")]) {
             navigate();
             assertBadges(true);
             viewport.setViewport({ width: 390 });

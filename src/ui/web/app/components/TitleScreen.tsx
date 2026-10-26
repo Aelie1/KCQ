@@ -13,6 +13,7 @@ export function TitleScreen(props: {
     saveStatus?: SaveReadResult["status"];
     onContinue?: () => void;
     onDelete?: () => boolean;
+    onPatchNotes?: () => void;
 }): JSX.Element {
     const [confirming, setConfirming] = createSignal(false);
     const [deleteFailed, setDeleteFailed] = createSignal(false);
@@ -129,7 +130,12 @@ export function TitleScreen(props: {
                 <p>{props.model.credit}</p>
                 <p>{props.model.copyright}</p>
             </div>
-            <p class="kcq-title-screen__version">{props.model.version}</p>
+            <div class="kcq-title-screen__version">
+                <Show when={props.onPatchNotes}>
+                    <button type="button" class="kcq-title-screen__patch-notes" onClick={props.onPatchNotes}>{props.model.patchNotesLabel}</button>
+                </Show>
+                <span>{props.model.version}</span>
+            </div>
         </footer>}
     />;
 }
