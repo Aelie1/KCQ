@@ -129,8 +129,10 @@ export function createStoryLogViewModel(
         const base = `move.${entry.move}.narrative`;
         const actor = p.entity(entry.actor);
         const move = p.move(entry.move);
+        const hits = results.filter(result => result.hit.result !== "miss");
+        const misses = results.filter(result => result.hit.result === "miss");
         const target = names(entry.targetIds);
-        const targetCount = targetSummary(entry.targetIds, entry.livingEnemies);
+        const targetCount = targetSummary(results.length ? hits.map(result => result.target) : entry.targetIds, entry.livingEnemies,);
         const targetSide = entry.targetIds.some(id => party?.includes(id)) ? "characters" : "enemies";
         if (!results.length) {
             if (entry.result && entry.result !== "none") {
@@ -139,8 +141,6 @@ export function createStoryLogViewModel(
             return p.resolveNarrative([`${base}.action.${targetSide}`, `${base}.action`], { actor, move, target, targetCount });
         }
 
-        const hits = results.filter(result => result.hit.result !== "miss");
-        const misses = results.filter(result => result.hit.result === "miss");
         const category = !hits.length ? "miss" : "hit";
         const firstBand = results[0]?.hit.result;
         const exactBand = firstBand && results.every(result => result.hit.result === firstBand) ? firstBand : undefined;
