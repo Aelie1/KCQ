@@ -647,7 +647,7 @@ export interface CooldownEvent {
 }
 
 export interface TrapEvent {
-    type: "trapAdded" | "trapRemoved" | "trapTriggered";
+    type: "trapAdded" | "trapRemoved" | "trapTriggered" | "trapTriggeredEnd";
     actor: EntityId;
     trap: TrapId;
     amount: number;

@@ -57,7 +57,10 @@ export interface ResourceOutcome {
 export interface BindingTickOutcome {
     kind: "bindingTick"; target: EntityId; binding: BindingId; level?: BindingLevel; outcomes: LogOutcome[];
 }
-export type LogOutcome = (BindingTickOutcome | ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
+export type LogOutcome = {
+    /** Event-local activation index, recorded only inside a matched trap trigger/end pair. */
+    trapTrigger?: number;
+} & (BindingTickOutcome | ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
     | { kind: "character"; target: EntityId; operation: "incapacitated" | "rescued" }
     | { kind: "enemy"; target: EntityId; operation: "spawned" | "defeated" }
     | { kind: "interrupt"; actor: EntityId; reason: FailureReason }
@@ -226,6 +229,18 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
             }
         }
     }
+    const trapRanges: { start: number; end: number }[] = [];
+    let trapStart: number | undefined;
+    for (const [index, leaf] of event.effects.entries()) {
+        if (leaf.type === "trapTriggered") trapStart = index;
+        if (leaf.type !== "trapTriggeredEnd" || trapStart === undefined) continue;
+        const start = event.effects[trapStart]!;
+        if (start.type === "trapTriggered" && start.actor === leaf.actor && start.trap === leaf.trap) {
+            trapRanges.push({ start: trapStart, end: index });
+            trapStart = undefined;
+        }
+    }
+    let activeTrap: number | undefined;
     const current = () => outcomes.slice(segmentStart);
     const trapDeltas = new Map<TrapOutcome, number>();
     const summarized = transitionConsequences(event, before, after, recorded);
@@ -406,9 +421,26 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
                     amount: effect.amount
                 });
                 break;
+            case "trapTriggeredEnd": break; // scope marker, not another trap mutation
             case "cooldownChanged": break; // bookkeeping, not an action outcome
         }
+        if (activeTrap !== undefined) {
+            for (const outcome of scope.slice(start)) outcome.trapTrigger = activeTrap;
+        }
     };
+    // Traps resolve before target results and move-wide effects. Keep their
+    // aggregation scopes separate so later changes cannot absorb their consequences.
+    const consumedTrapEffects = new Set<number>();
+    for (const [activation, range] of trapRanges.entries()) {
+        segmentStart = outcomes.length;
+        activeTrap = activation;
+        for (let index = range.start; index <= range.end; index++) {
+            consumedTrapEffects.add(index);
+            consume(event.effects[index]!);
+        }
+        activeTrap = undefined;
+        segmentStart = outcomes.length;
+    }
     if (event.type === "useMove") {
         const defeated = new Set<EntityId>();
         for (const target of event.targets) {
@@ -429,7 +461,9 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
             }
         }
     }
-    for (const effect of event.effects) consume(effect);
+    for (const [index, effect] of event.effects.entries()) {
+        if (!consumedTrapEffects.has(index)) consume(effect);
+    }
     const flatten = (items: LogOutcome[]): LogOutcome[] => items.flatMap(outcome =>
         outcome.kind === "bindingTick" ? flatten(outcome.outcomes) : [outcome]);
     const all = flatten(result);
@@ -446,7 +480,7 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
     for (const [outcome, leaves] of evidence) {
         if (leaves.every(leaf => summarized.has(leaf))) outcome.summarized = true;
     }
-    if (boundaries.size) {
+    if (boundaries.size || trapRanges.length) {
         // Frames describe the entire action. Split known numeric endpoints using
         // emitted applied deltas so repeated activations get their own transitions.
         const bindings = new Map<string, BindingOutcome[]>();

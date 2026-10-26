@@ -126,11 +126,14 @@ export function createStoryLogViewModel(
         });
     };
 
-    const moveNarrative = (entry: MoveEntry): ResolvedNarrative | undefined => {
+    const moveNarrative = (entry: MoveEntry, outcomes: readonly LogOutcome[]): ResolvedNarrative | undefined => {
+        if (flatten(entry.outcomes).some(outcome => outcome.kind === "interrupt" && outcome.actor === entry.actor)) {
+            return undefined;
+        }
         const results: HitResult[] = [];
-        entry.outcomes.forEach((outcome, index) => {
+        outcomes.forEach(outcome => {
             if (outcome.kind !== "damage") return;
-            outcome.hits.forEach((hit, hitIndex) => {
+            outcome.hits.forEach(hit => {
                 if (hit.result !== "none") results.push({
                     target: outcome.target,
                     hit,
@@ -173,7 +176,7 @@ export function createStoryLogViewModel(
         }
         keys.push(`${base}.action`);
 
-        const bindings = [...new Set(entry.outcomes.flatMap(outcome =>
+        const bindings = [...new Set(outcomes.flatMap(outcome =>
             outcome.kind === "binding" && outcome.change > 0
                 ? [outcome.binding] : []))];
         const hitLocation = bindings.length === 1 ? p.ui("storyLog.hitLocation.single", { binding: p.binding(bindings[0]!, "short").toLowerCase() })
@@ -250,7 +253,7 @@ export function createStoryLogViewModel(
         });
     };
 
-    const effects = (entry: GameLogPresentationEntry, outcomes: readonly LogOutcome[]): StoryNarrative[] => {
+    const effects = (entry: GameLogPresentationEntry, outcomes: readonly LogOutcome[], causalOrder = false): StoryNarrative[] => {
         const grouped = new Map<string, BuffGroup>();
         for (const outcome of outcomes) {
             if (outcome.kind !== "buff") continue;
@@ -272,17 +275,22 @@ export function createStoryLogViewModel(
         const emitted = new Set<string>();
         const narratives: StoryNarrative[] = [];
 
-        if (spawned.length) {
+        const spawnNarrative = (): ResolvedNarrative | undefined => {
+            if (!spawned.length) return undefined;
             const plural = spawned.length > 1;
 
-            const text = p.resolveNarrative([
+            return p.resolveNarrative([
                 ...(plural ? ["enemy.narrative.spawned.plural"] : []),
                 "enemy.narrative.spawned",
             ], {
                 target: spawnedTargets,
             });
-
-            if (text) narratives.push(text);
+        };
+        let emittedSpawn = false;
+        if (!causalOrder) {
+            const spawn = spawnNarrative();
+            if (spawn) narratives.push(spawn);
+            emittedSpawn = true;
         }
 
         for (const outcome of outcomes) {
@@ -340,7 +348,14 @@ export function createStoryLogViewModel(
                 }
                 case "character":
                 case "enemy":
-                    if (outcome.operation === "spawned") break;
+                    if (outcome.operation === "spawned") {
+                        if (!emittedSpawn) {
+                            const spawn = spawnNarrative();
+                            if (spawn) narratives.push(spawn);
+                            emittedSpawn = true;
+                        }
+                        break;
+                    }
                     if (outcome.kind === "character" && outcome.operation === "incapacitated") {
                         tone = "danger";
                     }
@@ -379,6 +394,13 @@ export function createStoryLogViewModel(
                     });
                     break;
                 }
+                case "interrupt": {
+                    text = p.resolveNarrative(["ui.gameLog.interrupted"], {
+                        reason: p.failure(outcome.reason),
+                    });
+                    tone = "warning";
+                    break;
+                }
                 case "bindingTick": {
                     const tick = tickNarrative(outcome);
 
@@ -390,9 +412,10 @@ export function createStoryLogViewModel(
                         narratives.push(...effects(
                             entry,
                             outcome.outcomes.filter(child => child.kind !== "binding"),
+                            causalOrder,
                         ));
                     } else {
-                        narratives.push(...effects(entry, outcome.outcomes));
+                        narratives.push(...effects(entry, outcome.outcomes, causalOrder));
                     }
 
                     break;
@@ -412,32 +435,48 @@ export function createStoryLogViewModel(
         return new RegExp(`^${escaped}$`).test(key);
     };
 
+    const unsuppressed = (narratives: StoryNarrative[]): StoryNarrative[] => {
+        // Apply every active directive once, including those on suppressed narratives.
+        const patterns = narratives.flatMap(narrative => narrative.suppress);
+        return narratives.filter(narrative => !patterns.some(pattern => matchesPattern(narrative.key, pattern)));
+    };
+
     const result: StoryLogEntry[] = [];
     let pendingPhase: StoryLogEntry | undefined;
 
     for (const entry of entries) {
         const outcomes = flatten(entry.outcomes);
         const narratives: StoryNarrative[] = [];
+        const trapGroups = new Map<number | LogOutcome, LogOutcome[]>();
+        const moveOutcomes: LogOutcome[] = [];
+        for (const outcome of entry.outcomes) {
+            if ((entry.kind === "move" || entry.kind === "escape")
+                && (outcome.trapTrigger !== undefined || outcome.kind === "trap" && outcome.triggers.length > 0)) {
+                // Older events lack end markers: keep the trigger visible without
+                // claiming unrelated move consequences as part of that trap.
+                const key = outcome.trapTrigger ?? outcome;
+                const group = trapGroups.get(key);
+                if (group) group.push(outcome);
+                else trapGroups.set(key, [outcome]);
+            } else moveOutcomes.push(outcome);
+        }
+        const trapNarratives = [...trapGroups.values()].map(group => unsuppressed(effects(entry, group, true)));
 
         if (entry.kind === "move") {
-            const text = moveNarrative(entry);
+            const text = moveNarrative(entry, moveOutcomes);
             if (text) narratives.push({
                 ...text,
                 ...(library?.moves[entry.move]?.traits?.includes("onetime")
                     ? { glow: playerTone(entry.actor) } : {}),
             });
         } else if (entry.kind === "escape") {
-            const text = escapeNarrative(entry, outcomes);
+            const text = outcomes.some(outcome => outcome.kind === "interrupt" && outcome.actor === entry.actor)
+                ? undefined : escapeNarrative(entry, flatten(moveOutcomes));
             if (text) narratives.push(text);
         }
 
-        narratives.push(...effects(entry, entry.outcomes));
-
-        // Apply every active directive once, including those on suppressed narratives.
-        const patterns = narratives.flatMap(narrative => narrative.suppress);
-        const activeNarratives = narratives.filter(
-            narrative => !patterns.some(pattern => matchesPattern(narrative.key, pattern))
-        );
+        narratives.push(...effects(entry, moveOutcomes));
+        const activeNarratives = unsuppressed(narratives);
 
         // Phase entries must be handled before the empty-paragraph check.
         // Most phases have no narrative of their own and are held until the next
@@ -471,6 +510,14 @@ export function createStoryLogViewModel(
         }
 
         const paragraphs: StoryLogParagraph[] = [];
+        for (const group of trapNarratives) {
+            if (!group.length) continue;
+            paragraphs.push({
+                text: group.map(narrative => narrative.text).join(" "),
+                tone: (["danger", "warning", "success"] as const)
+                    .find(tone => group.some(narrative => narrative.tone === tone)),
+            });
+        }
         let normal = "";
         let parts: StoryLogText[] = [];
         const flushNormal = () => {

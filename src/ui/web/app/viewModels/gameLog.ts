@@ -386,6 +386,10 @@ export function createGameLogViewModel(
         const rendered: GameLogRow[] = [];
         let start = 0;
         for (const [index, outcome] of outcomes.entries()) {
+            if (index > start && outcome.trapTrigger !== outcomes[index - 1]!.trapTrigger) {
+                rendered.push(...renderScope(outcomes.slice(start, index), actor, compactBindings));
+                start = index;
+            }
             if (outcome.kind !== "bindingTick") continue;
             rendered.push(...renderScope(outcomes.slice(start, index), actor, compactBindings), ...renderScope([outcome]));
             start = index + 1;
