@@ -157,8 +157,8 @@ export const skunkPerfume: MoveDef = {
     targets: "all",
     type: "none",
     accuracy: {
-        miss: 60,
-        hit: 40,
+        miss: 40,
+        hit: 60,
     },
     check: "willpower",
     cooldown: { "skunkPerfume": 5 },
