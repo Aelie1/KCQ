@@ -394,7 +394,7 @@ export const systemEnglishStrings: StringTable = {
     "ui.library.upTo": "Up to {amount}",
     "ui.library.usedBy": "Used By",
     "ui.library.variableAmount": "Variable",
-    "ui.library.willpower": "Willpower",
+    "ui.library.willpower": "Base Willpower",
 
     "moveType.arms.compact": "Arms",
     "moveType.mouth.compact": "Mouth",

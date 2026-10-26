@@ -313,7 +313,7 @@ export class GameEffects {
         let modifiedAmount = amount;
         for (const buff of target.buffs) {
             if (buff.active && buff.callback?.modifyDamage) {
-                const result = buff.callback.modifyDamage(this.state, target, buff, modifiedAmount);
+                const result = buff.callback.modifyDamage(target, buff, modifiedAmount);
                 modifiedAmount = result.value;
                 this.stack(result.effects);
             }
@@ -363,6 +363,26 @@ export class GameEffects {
     }
 
     private defeatEnemy(target: iEnemy) {
+        let blocked = false;
+        for (const buff of target.buffs) {
+            if (buff.active && buff.callback?.checkDefeat) {
+                const result = buff.callback.checkDefeat(target, buff);
+                this.stack(result.effects);
+                if (result.value < 0) {
+                    blocked = true;
+                }
+            }
+        }
+        if (blocked) {
+            this.addEvent({
+                type: "enemyDamaged",
+                target: target.id,
+                amount: target.currHp
+            });
+            target.currHp = 0;
+            return;
+        }
+
         this.effects.push({
             type: "enemy",
             operation: "remove",

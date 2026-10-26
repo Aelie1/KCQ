@@ -20,7 +20,7 @@ export function EffectPreview(props: EffectPreviewProps): JSX.Element {
                 {(effect) => {
                     const accuracy = effect() as Extract<EffectPreviewViewModel, { kind: "accuracy-profile" }>;
                     return (
-                        <div class="kcq-preview-effect kcq-preview-effect--primary">
+                        <div class={`kcq-preview-effect kcq-preview-effect--${props.effect.tone}`}>
                             <span class="kcq-preview-effect__accent" aria-hidden="true" />
                             <span class="kcq-preview-effect__tag">{accuracy.label}</span>
                             <div class="kcq-accuracy-profile">

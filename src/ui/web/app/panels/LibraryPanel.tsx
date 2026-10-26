@@ -470,10 +470,9 @@ function MoveDetail(props: { reference: MoveReference }): JSX.Element {
         </dl >
         <Description entry={{ category: "moves", id: props.reference.id }} />
         <SurfaceCard title={c.presentation.ui("library.effects")}>
-            <Show when={props.reference.check === "willpower"}><p class="kcq-library__muted">{c.presentation.ui("library.willpower")}</p></Show>
             <div class="kcq-library__effect-cards">
                 <Show when={!rows().some(row => row.preview?.kind === "damage-profile") && accuracy().length}><EffectPreview effect={{
-                    kind: "accuracy-profile", type: "accuracy", tone: "primary", label: c.presentation.ui("library.accuracy"),
+                    kind: "accuracy-profile", type: "accuracy", tone: props.reference.check === "willpower" ? "special" : "primary", label: c.presentation.ui(props.reference.check === "willpower" ? "library.willpower" : "library.accuracy"),
                     bands: accuracy().map(([band, chance]) => ({ band, chance, chanceLabel: c.presentation.ui("targeting.chance", { band: c.presentation.hitBand(band), chance }), label: c.presentation.hitBand(band), zero: chance === 0 })),
                 }} /></Show>
                 <For each={grouped().groups}>{group => <div class="kcq-encounter-details__effect-group" data-library-recipient={group.id}><h3>{libraryMoveRecipient(group.id, c.library, c.presentation)}</h3><For each={group.effects}>{row => <MoveEffectRow row={row} hideDuration={durations().length === 1 && row.duration !== undefined} />}</For></div>}</For>

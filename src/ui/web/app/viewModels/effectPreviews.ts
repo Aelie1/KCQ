@@ -18,7 +18,7 @@ export interface AccuracyBandViewModel {
     band: Exclude<HitBand, "none">; chance: number; chanceLabel: string; label: string; zero: boolean;
 }
 export interface AccuracyProfileViewModel {
-    bands: readonly AccuracyBandViewModel[]; kind: "accuracy-profile"; label: string; tone: "primary"; type: "accuracy";
+    bands: readonly AccuracyBandViewModel[]; kind: "accuracy-profile"; label: string; tone: "primary" | "special"; type: "accuracy";
 }
 export interface CompactEffectViewModel {
     details: readonly string[]; id: string; kind: "compact"; label: string; payload: string;

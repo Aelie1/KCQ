@@ -4,7 +4,7 @@ import { epilogue, forest_1, forest_2, forest_3, interlude_1, interlude_2, inter
 import { barrierCallback, barrierMagic, bindingMagic, empoweringMagic, fairy, healingMagic } from "./fairy";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
-import { callReinforcements, latexRainmaker, queen, skunkCollar, skunkGun, skunkPerfume } from "./queen";
+import { callReinforcements, healingPerfume, latexRainmaker, queen, skunkCollar, skunkGun, skunkPerfume } from "./queen";
 import { latexRain, rainmaker } from "./rainmaker";
 import { latexExplosion, latexPuddle, latexRegeneration, latexShower, skunk, skunkEmpress } from "./skunk";
 import { latexMist, latexSpray, pounce, skunkette, skunketteQueen, throwOff } from "./skunkette";
@@ -30,7 +30,7 @@ export const skunkCatalog: ContentCatalogFragment = {
         //rainmaker
         latexRain,
         //queen
-        skunkGun, skunkPerfume, callReinforcements, latexRainmaker, skunkCollar,
+        skunkGun, skunkPerfume, healingPerfume, callReinforcements, latexRainmaker, skunkCollar,
     ],
 
     bindings: [

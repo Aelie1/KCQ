@@ -5,7 +5,7 @@ import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { EntityId } from "../../engine/public/types";
-import { DORMANT_BUFF, EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, HEAL_FILTER, MIGHT_BUFF, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID, SPRAYER_BUFF } from "./constants";
+import { COLLAR_BUFF, DORMANT_BUFF, EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, HEAL_FILTER, MIGHT_BUFF, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID, SPRAYER_BUFF } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 
 const QUEEN_HP = 750;
@@ -214,7 +214,7 @@ export const skunkPerfume: MoveDef = {
 export const healingPerfume: MoveDef = {
     id: "healingPerfume",
     targetSide: "enemy",
-    targets: 0,
+    targets: 1,
     type: "none",
     cooldown: { "skunkPerfume": 2, "healingPerfume": 5 },
     traits: ["heal"],
@@ -245,7 +245,7 @@ export const queen: EnemyDef = {
     hp: QUEEN_HP,
     defense: QUEEN_DEF,
     passives: [],
-    moves: [skunkGun, skunkPerfume, callReinforcements, latexRainmaker, skunkCollar],
+    moves: [skunkGun, skunkPerfume, healingPerfume, callReinforcements, latexRainmaker, skunkCollar],
     ai: function (state: iGameState, actor: iEnemy, rng: Random): iMoveEffect[] {
         const effects: iMoveEffect[] = [];
         const bindings = [latexHead, latexArms, latexTorso, latexLegs];
@@ -400,6 +400,16 @@ export const queen: EnemyDef = {
                     type: "enemy",
                     target: enemy,
                     operation: "defeat"
+                });
+                continue;
+            }
+            const buff = findBuff(enemy, COLLAR_BUFF);
+            if (buff) {
+                effects.push({
+                    type: "buff",
+                    target: enemy,
+                    buff: buff,
+                    operation: "remove"
                 });
             }
         }
