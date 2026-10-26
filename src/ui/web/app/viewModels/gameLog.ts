@@ -101,6 +101,10 @@ export function createGameLogViewModel(
     });
     const row = (outcome: LogOutcome, compactBinding = false): GameLogRow => {
         switch (outcome.kind) {
+            case "trapActivation": {
+                const [trigger, ...children] = renderOutcomes(outcome.outcomes, undefined, true);
+                return { ...trigger, kind: outcome.kind, values: trigger?.values ?? [], rows: children };
+            }
             case "bindingTick": {
                 const visible = outcome.outcomes.filter(effect => {
                     if (effect.kind === "binding") return effect.change !== 0 || effect.blocked !== 0
@@ -386,11 +390,7 @@ export function createGameLogViewModel(
         const rendered: GameLogRow[] = [];
         let start = 0;
         for (const [index, outcome] of outcomes.entries()) {
-            if (index > start && outcome.trapTrigger !== outcomes[index - 1]!.trapTrigger) {
-                rendered.push(...renderScope(outcomes.slice(start, index), actor, compactBindings));
-                start = index;
-            }
-            if (outcome.kind !== "bindingTick") continue;
+            if (outcome.kind !== "bindingTick" && outcome.kind !== "trapActivation") continue;
             rendered.push(...renderScope(outcomes.slice(start, index), actor, compactBindings), ...renderScope([outcome]));
             start = index + 1;
         }

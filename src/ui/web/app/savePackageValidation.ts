@@ -57,6 +57,7 @@ const stanceFields = { actor: text, initial: optional(stance), final: stance, su
 const stanceOutcome = shape({ kind: oneOf("stance"), ...stanceFields });
 const outcome: Check = variant("kind", {
     bindingTick: { target: text, binding: text, level: optional(level), outcomes: list(value => outcome(value)) },
+    trapActivation: { outcomes: list(value => outcome(value)) },
     resource: { target: text, resource: text, change: number, initial: optional(number), final: optional(number), max: optional(number) },
     damage: {
         target: text, damage: number, healing: number, blocked: number,
@@ -99,6 +100,7 @@ const leaf = variant("type", {
     enemySpawned: { target: text }, enemyDefeated: { target: text },
     stanceSet: { actor: text, stance }, cooldownChanged: { target: text, move: text, value: number },
     trapAdded: { actor: text, trap: text, amount: number }, trapRemoved: { actor: text, trap: text, amount: number }, trapTriggered: { actor: text, trap: text, amount: number, severity: optional(number) },
+    trapTriggeredEnd: { actor: text, trap: text, amount: number, severity: optional(number) },
     actionInterrupted: { actor: text, reason: text }, actionRefreshed: { target: text }, targetChanged: { target: text, destination: text },
     intentionCancelled: { target: text, move: text }, intentionWeakened: { target: text, move: text }, intentionDiscorded: { target: text, move: text },
     dataChanged: { ...targetAmount, name: text }, characterIncapacitated: { target: text }, characterRescued: { target: text },

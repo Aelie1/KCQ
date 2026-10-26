@@ -57,10 +57,11 @@ export interface ResourceOutcome {
 export interface BindingTickOutcome {
     kind: "bindingTick"; target: EntityId; binding: BindingId; level?: BindingLevel; outcomes: LogOutcome[];
 }
-export type LogOutcome = {
-    /** Event-local activation index, recorded only inside a matched trap trigger/end pair. */
-    trapTrigger?: number;
-} & (BindingTickOutcome | ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
+/** A matched trap trigger/end pair owns its trigger and all immediate consequences. */
+export interface TrapActivationOutcome {
+    kind: "trapActivation"; outcomes: LogOutcome[];
+}
+export type LogOutcome = (BindingTickOutcome | TrapActivationOutcome | ResourceOutcome | DamageOutcome | BindingOutcome | BuffOutcome | StanceOutcome | TrapOutcome
     | { kind: "character"; target: EntityId; operation: "incapacitated" | "rescued" }
     | { kind: "enemy"; target: EntityId; operation: "spawned" | "defeated" }
     | { kind: "interrupt"; actor: EntityId; reason: FailureReason }
@@ -240,7 +241,6 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
             trapStart = undefined;
         }
     }
-    let activeTrap: number | undefined;
     const current = () => outcomes.slice(segmentStart);
     const trapDeltas = new Map<TrapOutcome, number>();
     const summarized = transitionConsequences(event, before, after, recorded);
@@ -259,8 +259,6 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
         return group;
     };
     const consume = (effect: LeafEvent, hit?: { target: EntityId; value: LogHit }): void => {
-        const scope = outcomes;
-        const start = scope.length;
         switch (effect.type) {
             case "bindingTickStart": {
                 if (!boundaries.has(effect)) break;
@@ -424,22 +422,21 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
             case "trapTriggeredEnd": break; // scope marker, not another trap mutation
             case "cooldownChanged": break; // bookkeeping, not an action outcome
         }
-        if (activeTrap !== undefined) {
-            for (const outcome of scope.slice(start)) outcome.trapTrigger = activeTrap;
-        }
     };
     // Traps resolve before target results and move-wide effects. Keep their
     // aggregation scopes separate so later changes cannot absorb their consequences.
     const consumedTrapEffects = new Set<number>();
-    for (const [activation, range] of trapRanges.entries()) {
-        segmentStart = outcomes.length;
-        activeTrap = activation;
+    for (const range of trapRanges) {
+        const activation: TrapActivationOutcome = { kind: "trapActivation", outcomes: [] };
+        result.push(activation);
+        outcomes = activation.outcomes;
+        segmentStart = 0;
         for (let index = range.start; index <= range.end; index++) {
             consumedTrapEffects.add(index);
             consume(event.effects[index]!);
         }
-        activeTrap = undefined;
-        segmentStart = outcomes.length;
+        outcomes = result;
+        segmentStart = result.length;
     }
     if (event.type === "useMove") {
         const defeated = new Set<EntityId>();
@@ -465,7 +462,7 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
         if (!consumedTrapEffects.has(index)) consume(effect);
     }
     const flatten = (items: LogOutcome[]): LogOutcome[] => items.flatMap(outcome =>
-        outcome.kind === "bindingTick" ? flatten(outcome.outcomes) : [outcome]);
+        outcome.kind === "bindingTick" || outcome.kind === "trapActivation" ? flatten(outcome.outcomes) : [outcome]);
     const all = flatten(result);
     for (const outcome of all) {
         if (outcome.kind === "binding") {
@@ -578,7 +575,7 @@ export function aggregateGameLogOutcomes(event: GameEvent, before?: GameLogConte
         }
     }
     const visible = (items: LogOutcome[]): LogOutcome[] => items.filter(outcome => {
-        if (outcome.kind === "bindingTick") outcome.outcomes = visible(outcome.outcomes);
+        if (outcome.kind === "bindingTick" || outcome.kind === "trapActivation") outcome.outcomes = visible(outcome.outcomes);
         return outcome.kind !== "stance" || outcome.initial !== outcome.final;
     });
     const visibleOutcomes = visible(result);

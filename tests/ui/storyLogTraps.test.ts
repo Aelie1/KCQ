@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GameState, LeafEvent, MoveEvent } from "../../src/engine/public/types";
-import { aggregateGameLogOutcomes, createGameLogEntries, gameLogEntry, type GameLogContext, type GameLogPresentationEntry, type LogOutcome } from "../../src/ui/presentation/gameLog";
+import { aggregateGameLogOutcomes, createGameLogEntries, gameLogEntry, type GameLogContext, type GameLogPresentationEntry, type LogOutcome, type TrapActivationOutcome } from "../../src/ui/presentation/gameLog";
 import { Presentation } from "../../src/ui/presentation/presentation";
 import { makeFixtureCharacter } from "../../src/ui/web/app/fixtures/publicFixture";
 import { createGameLogHistory } from "../../src/ui/web/app/viewModels/gameLogHistory";
@@ -31,7 +31,7 @@ const strings = {
 };
 const p = new Presentation(strings);
 const trigger: LogOutcome = {
-    trapTrigger: 0, kind: "trap", trap: "puddle", triggers: [{ actor: "ko", amount: 20, severity: 3 }],
+    kind: "trap", trap: "puddle", triggers: [{ actor: "ko", amount: 20, severity: 3 }],
 };
 const binding = (id: string): LogOutcome => ({
     kind: "binding", target: "ko", binding: id, change: 20, blocked: 0,
@@ -40,7 +40,9 @@ const binding = (id: string): LogOutcome => ({
 const buff = (target: string, id: string): LogOutcome => ({
     kind: "buff", buff: id, participants: [{ target, initial: { present: false }, final: { present: true } }],
 });
-const inTrap = (...outcomes: LogOutcome[]): LogOutcome[] => outcomes.map(outcome => ({ ...outcome, trapTrigger: 0 }));
+const activation = (...outcomes: LogOutcome[]): TrapActivationOutcome => ({ kind: "trapActivation", outcomes: [trigger, ...outcomes] });
+const flatten = (outcomes: LogOutcome[]): LogOutcome[] => outcomes.flatMap(outcome =>
+    outcome.kind === "trapActivation" || outcome.kind === "bindingTick" ? flatten(outcome.outcomes) : [outcome]);
 const move = (outcomes: LogOutcome[]): GameLogPresentationEntry => ({
     kind: "move", actor: "ko", move: "attack", targetIds: ["enemy"], outcomes,
 });
@@ -78,7 +80,7 @@ describe("Story Log trap ordering", () => {
     });
 
     it("keeps multiple bindings and statuses caused by a trap in one preceding paragraph", () => {
-        const entry = move([buff("enemy", "mark"), trigger, ...inTrap(binding("legs"), binding("arms"), buff("ko", "slow"))]);
+        const entry = move([buff("enemy", "mark"), activation(binding("legs"), binding("arms"), buff("ko", "slow"))]);
         const saved = JSON.stringify(entry);
         expect(render(entry)).toEqual([
             { text: "Ko trips into a puddle! Latex binds Ko's legs. Latex binds Ko's arms. Ko is slowed." },
@@ -90,13 +92,15 @@ describe("Story Log trap ordering", () => {
 
     it("does not use trap bindings to describe where the move hit", () => {
         const entry = createGameLogEntries([event()])[0]!;
-        entry.outcomes.splice(1, 0, ...inTrap(binding("legs")));
+        const trap = entry.outcomes[0]!;
+        if (trap.kind !== "trapActivation") throw new Error("Expected trap activation");
+        trap.outcomes.splice(1, 0, binding("legs"));
         expect(render(entry)?.[1]?.text).toBe("Ko attacks Enemy. Enemy is marked.");
     });
 
     it("keeps spawned creatures and incapacitation after the trap trigger in its paragraph", () => {
         expect(render(move([
-            trigger, ...inTrap(
+            activation(
                 binding("legs"),
                 { kind: "enemy", target: "enemy", operation: "spawned" },
                 { kind: "character", target: "ko", operation: "incapacitated" },
@@ -138,11 +142,13 @@ describe("Story Log trap ordering", () => {
             { text: "Ko trips into a puddle! Ko is slowed." },
             { text: targetless ? "Ko attacks Enemy. Ko regains her speed." : "Ko attacks Enemy. Enemy is marked. Ko regains her speed." },
         ]);
-        const statuses = entry.outcomes.filter(outcome => outcome.kind === "buff" && outcome.buff === "slow");
+        const statuses = flatten(entry.outcomes).filter(outcome => outcome.kind === "buff" && outcome.buff === "slow");
         expect(statuses).toHaveLength(2);
-        expect(statuses[0]).toMatchObject({ trapTrigger: 0, participants: [{ initial: { present: false }, final: { present: true } }] });
+        expect(entry.outcomes[0]).toMatchObject({ kind: "trapActivation", outcomes: [
+            { kind: "trap" }, { kind: "buff", participants: [{ initial: { present: false }, final: { present: true } }] },
+        ] });
         expect(statuses[1]).toMatchObject({ participants: [{ initial: { present: true }, final: { present: false } }] });
-        expect(statuses[1]?.trapTrigger).toBeUndefined();
+        expect(entry.outcomes).toContain(statuses[1]);
     });
 
     it("preserves separate binding transitions when the move reverses a trap's bindings", () => {
@@ -166,14 +172,15 @@ describe("Story Log trap ordering", () => {
             { text: "Ko trips into a puddle! Latex binds Ko's legs. Latex binds Ko's arms. Ko is slowed." },
             { text: "Ko attacks Enemy. Enemy is marked. Ko frees her legs." },
         ]);
-        expect(outcomes.filter(outcome => outcome.kind === "binding" && outcome.binding === "legs"))
+        expect(flatten(outcomes).filter(outcome => outcome.kind === "binding" && outcome.binding === "legs"))
             .toMatchObject([
-                { trapTrigger: 0, initial: { value: 0, level: "none" }, final: { value: 20 } },
+                { initial: { value: 0, level: "none" }, final: { value: 20 } },
                 { initial: { value: 20 }, final: { value: 0, level: "none" } },
             ]);
         // The combat view must not merge the trap's binding gain into the move's removal.
         const rows = createGameLogViewModel([entry], p, ["ko"])[0]!.rows;
-        expect(rows.filter(row => row.kind === "binding")).toHaveLength(2);
+        expect(rows[0]).toMatchObject({ kind: "trapActivation", rows: [{ kind: "binding" }, { kind: "buff" }] });
+        expect(rows.filter(row => row.kind === "binding")).toHaveLength(1);
         expect(render(JSON.parse(JSON.stringify(entry)))).toEqual(render(entry));
     });
 
@@ -190,7 +197,7 @@ describe("Story Log trap ordering", () => {
         const effects = trapEffects.slice(0, -1);
         if (kind === "mismatched") effects.push({ type: "trapTriggeredEnd", actor: "ko", trap: "other", amount: 0 });
         const entry = createGameLogEntries([event(effects)])[0]!;
-        expect(entry.outcomes.every(outcome => outcome.trapTrigger === undefined)).toBe(true);
+        expect(entry.outcomes.some(outcome => outcome.kind === "trapActivation")).toBe(false);
         expect(render(entry)).toEqual([
             { text: "Ko trips into a puddle!" },
             { text: "Ko attacks Enemy. Enemy is marked. Ko is slowed." },
@@ -214,7 +221,47 @@ describe("Story Log trap ordering", () => {
             { text: "Ko trips into a puddle! Ko is slowed." },
             { text: "Ko attacks Enemy." },
         ]);
-        expect(entries[0]!.outcomes.find(outcome => outcome.kind === "buff" && outcome.buff === "slow"))
-            .toMatchObject({ trapTrigger: 0, participants: [{ final: { details: { severity: 3 } } }] });
+        expect(entries[0]!.outcomes[0]).toMatchObject({ kind: "trapActivation", outcomes: [
+            { kind: "trap" }, { kind: "buff", participants: [{ final: { details: { severity: 3 } } }] },
+        ] });
+    });
+
+    it("reconstructs endpoints across trap activations, nested ticks and move consequences", () => {
+        const before: GameLogContext = {
+            characters: [{ id: "ko", standing: false, data: { focus: 10 }, buffs: [], bindings: [] }],
+            enemies: [], traps: [{ id: "puddle", amount: 50 }], turn: { round: 1 },
+        };
+        const after = structuredClone(before);
+        after.characters[0]!.data.focus = 8;
+        after.characters[0]!.bindings = [{ id: "legs", value: 20, level: "moderate" }];
+        after.traps[0]!.amount = 30;
+        const action = event([
+            trapEffects[0]!,
+            { type: "dataChanged", target: "ko", name: "focus", amount: -2 },
+            { type: "bondageAdded", target: "ko", binding: "legs", amount: 10 },
+            { type: "bindingTickStart", target: "ko", binding: "arms" },
+            { type: "bondageChanged", target: "ko", binding: "legs", amount: 2 },
+            { type: "bindingTickEnd", target: "ko", binding: "arms" },
+            trapEffects[2]!,
+            { type: "trapTriggered", actor: "ko", trap: "puddle", amount: 10, severity: 3 },
+            { type: "dataChanged", target: "ko", name: "focus", amount: -1 },
+            { type: "bondageChanged", target: "ko", binding: "legs", amount: 8 },
+            trapEffects[2]!,
+            { type: "dataChanged", target: "ko", name: "focus", amount: 1 },
+            { type: "trapAdded", actor: "ko", trap: "puddle", amount: 10 },
+        ]);
+        const outcomes = aggregateGameLogOutcomes(action, before, after);
+        expect(outcomes.slice(0, 2).map(outcome => outcome.kind)).toEqual(["trapActivation", "trapActivation"]);
+        const all = flatten(outcomes);
+        expect(all.filter(outcome => outcome.kind === "binding").map(outcome => [outcome.initial?.value, outcome.final?.value]))
+            .toEqual([[0, 10], [10, 12], [12, 20]]);
+        expect(all.filter(outcome => outcome.kind === "resource").map(outcome => [outcome.initial, outcome.final]))
+            .toEqual([[10, 8], [8, 7], [7, 8]]);
+        expect(all.filter(outcome => outcome.kind === "trap").map(outcome => [outcome.initial, outcome.final, outcome.change]))
+            .toEqual([[50, 30, -20], [30, 20, -10], [20, 30, 10]]);
+        const rows = createGameLogViewModel([gameLogEntry(action, outcomes)!], p, ["ko"])[0]!.rows;
+        expect(rows.slice(0, 2).map(row => row.kind)).toEqual(["trapActivation", "trapActivation"]);
+        expect(rows[0]!.rows?.some(row => row.kind === "bindingTick")).toBe(true);
+        expect(rows[2]?.kind).toBe("damage");
     });
 });

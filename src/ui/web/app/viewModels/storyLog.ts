@@ -68,7 +68,7 @@ export function createStoryLogViewModel(
     const names = (ids: readonly string[]): string => list(ids.map(id => p.entity(id)));
 
     const flatten = (outcomes: readonly LogOutcome[]): LogOutcome[] => outcomes.flatMap(outcome =>
-        outcome.kind === "bindingTick" ? flatten(outcome.outcomes) : [outcome]);
+        outcome.kind === "bindingTick" || outcome.kind === "trapActivation" ? flatten(outcome.outcomes) : [outcome]);
 
     const buffChanges = (outcome: BuffOutcome): BuffChange[] => {
         if (outcome.summarized) return [];
@@ -401,6 +401,10 @@ export function createStoryLogViewModel(
                     tone = "warning";
                     break;
                 }
+                case "trapActivation": {
+                    narratives.push(...effects(entry, outcome.outcomes, true));
+                    break;
+                }
                 case "bindingTick": {
                     const tick = tickNarrative(outcome);
 
@@ -447,20 +451,17 @@ export function createStoryLogViewModel(
     for (const entry of entries) {
         const outcomes = flatten(entry.outcomes);
         const narratives: StoryNarrative[] = [];
-        const trapGroups = new Map<number | LogOutcome, LogOutcome[]>();
+        const trapGroups: LogOutcome[][] = [];
         const moveOutcomes: LogOutcome[] = [];
         for (const outcome of entry.outcomes) {
             if ((entry.kind === "move" || entry.kind === "escape")
-                && (outcome.trapTrigger !== undefined || outcome.kind === "trap" && outcome.triggers.length > 0)) {
+                && (outcome.kind === "trapActivation" || outcome.kind === "trap" && outcome.triggers.length > 0)) {
                 // Older events lack end markers: keep the trigger visible without
                 // claiming unrelated move consequences as part of that trap.
-                const key = outcome.trapTrigger ?? outcome;
-                const group = trapGroups.get(key);
-                if (group) group.push(outcome);
-                else trapGroups.set(key, [outcome]);
+                trapGroups.push(outcome.kind === "trapActivation" ? outcome.outcomes : [outcome]);
             } else moveOutcomes.push(outcome);
         }
-        const trapNarratives = [...trapGroups.values()].map(group => unsuppressed(effects(entry, group, true)));
+        const trapNarratives = trapGroups.map(group => unsuppressed(effects(entry, group, true)));
 
         if (entry.kind === "move") {
             const text = moveNarrative(entry, moveOutcomes);

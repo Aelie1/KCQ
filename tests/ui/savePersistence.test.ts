@@ -261,3 +261,46 @@ it("uses browser localStorage by default when it is available", () => {
     expect(clearSave().status).toBe("cleared");
     expect(readSave().status).toBe("missing");
 });
+it("round-trips nested trap activations and pending trap events through save packages", () => {
+    const session = battle();
+    const state = session.engine.getGameState();
+    const hidden: EventFrame = { state, event: { type: "useMove", actor: "ko", move: "wait", targets: [], effects: [
+        { type: "trapTriggered", actor: "ko", trap: "trapPuddle", amount: 20, severity: 3 },
+        { type: "bindingTickStart", target: "ko", binding: "latexCollar" },
+        { type: "buffAdded", target: "ko", buff: "pending" },
+        { type: "bindingTickEnd", target: "ko", binding: "latexCollar" },
+        { type: "trapTriggeredEnd", actor: "ko", trap: "trapPuddle", amount: 0 },
+    ] } };
+    session.gameLog.record([hidden]);
+    const saved = session.save();
+    expect(saved.gameLog.pendingBuffs).toHaveLength(1);
+    expect(saved.gameLog.entries[0]!.outcomes[0]).toMatchObject({ kind: "trapActivation", outcomes: [
+        { kind: "trap", triggers: [{ actor: "ko", amount: 20, severity: 3 }] },
+        { kind: "bindingTick", outcomes: [{ kind: "buff", buff: "pending" }] },
+    ] });
+    expect(saved.gameLog.pendingBuffs[0]!.event.effects.at(-1)?.type).toBe("trapTriggeredEnd");
+    const decoded = deserializeSavePackage(serializeSavePackage(saved));
+    if (decoded.status !== "loaded") throw new Error("Expected saved trap activation");
+    expect(decoded.save.gameLog).toEqual(saved.gameLog);
+    const history = createGameLogHistory(state, decoded.save.gameLog);
+    const active = structuredClone(state);
+    active.characters.find(character => character.id === "ko")!.buffs.push({ id: "pending", severity: 2 });
+    const reveal: EventFrame = { state: active, event: { type: "changePhase", phase: "player", effects: [] } };
+    const resumed = history.record([reveal]);
+    expect(resumed).toEqual(session.gameLog.record([reveal]));
+    expect(resumed[0]!.outcomes[0]).toMatchObject({ kind: "trapActivation", outcomes: [
+        { kind: "trap" },
+        { kind: "bindingTick", outcomes: [{ kind: "buff", participants: [{ final: { details: { severity: 2 } } }] }] },
+    ] });
+    expect(history.getSaveState().pendingBuffs).toEqual([]);
+    expect(deserializeSavePackage(serializeSavePackage(createSavePackage(
+        decoded.save.saveState, history.getSaveState(), decoded.save.stats,
+    ))).status).toBe("loaded");
+
+    const corrupt = structuredClone(saved);
+    const activation = corrupt.gameLog.entries[0]!.outcomes[0]!;
+    if (activation.kind !== "trapActivation") throw new Error("Expected trap activation");
+    activation.outcomes = [{ kind: "unknown" } as never];
+    expect(deserializeSavePackage(encode(corrupt))).toEqual({ status: "corrupted" });
+    expect(() => serializeSavePackage(corrupt)).toThrow("Invalid save package");
+});

@@ -45,7 +45,7 @@ export function createGameLogHistory(initialState: GameState, saved?: GameLogSav
         history.previous.livingEnemies ??= [...living];
         const undo = (outcomes: readonly LogOutcome[]) => {
             for (const outcome of [...outcomes].reverse()) {
-                if (outcome.kind === "bindingTick") undo(outcome.outcomes);
+                if (outcome.kind === "bindingTick" || outcome.kind === "trapActivation") undo(outcome.outcomes);
                 if (outcome.kind === "enemy") {
                     if (outcome.operation === "defeated") living.add(outcome.target);
                     else living.delete(outcome.target);
