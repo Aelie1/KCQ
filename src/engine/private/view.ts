@@ -58,7 +58,7 @@ function getMovesList(state: iGameState, actor: iCharacter, statuses: StatusMap)
             reason = "cooldownIncomplete";
         }
         else if (!move.alwaysAvailable && !status.canAttack()) {
-            reason = "attackUnavailable";
+            continue;
         }
         else if (!status.canUseMoveType(move.type)) {
             reason = "bindingRestriction";

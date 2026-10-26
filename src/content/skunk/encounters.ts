@@ -96,7 +96,7 @@ const setupOutside: TowerSetup = {
     enemyMod: 8,
     queenWave: 6,
     collarAmount: 0,
-    regenAmount: 5,
+    regenAmount: 1,
     playerMod: 0,
     playerAmbushed: false,
     enemyAmbushed: false,

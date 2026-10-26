@@ -162,8 +162,8 @@ export const skunkPerfume: MoveDef = {
         hit: 60,
     },
     check: "willpower",
-    cooldown: { "skunkPerfume": 5 },
-    traits: ["debuff", "heal"],
+    cooldown: { "skunkPerfume": 5, "healingPerfume": 2 },
+    traits: ["debuff"],
     resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
         const result: iMoveResult = { effects: [], targets: [] };
         const type = move.data?.["type"] ?? 0;
@@ -205,31 +205,36 @@ export const skunkPerfume: MoveDef = {
                     ));
                 }
                 break;
-
-            case 2:  //Heal perfume
-                const damagedEnemies = state.enemies.filter(x => (HEAL_FILTER.includes(x.definition.rank) && x.currHp < x.definition.hp));
-                const regenBuff: iBuff = {
-                    id: REGEN_BUFF,
-                    icon: "regen",
-                    active: true,
-                    modifiers: { regeneration: PERFUME_HEAL_MODIFIER },
-                    duration: Math.ceil(PERFUME_DURATION / 2),
-                }
-                for (const enemy of damagedEnemies) {
-                    result.targets.push({
-                        target: enemy,
-                        result: "none",
-                        effects: [{
-                            type: "buff",
-                            operation: "add",
-                            buff: regenBuff,
-                            target: enemy
-                        }]
-                    });
-                }
-                break;
         }
 
+        return result;
+    },
+}
+
+export const healingPerfume: MoveDef = {
+    id: "healingPerfume",
+    targetSide: "enemy",
+    targets: 0,
+    type: "none",
+    cooldown: { "skunkPerfume": 2, "healingPerfume": 5 },
+    traits: ["heal"],
+    resolve: function (state: iGameState, actor: iEntity, move: iMove, targets: iTargetInfo[]): iMoveResult {
+        const result: iMoveResult = { effects: [], targets: [] };
+        const regenBuff: iBuff = {
+            id: REGEN_BUFF,
+            icon: "regen",
+            active: true,
+            modifiers: { regeneration: PERFUME_HEAL_MODIFIER },
+            duration: Math.ceil(PERFUME_DURATION / 2),
+        }
+        for (const target of targets) {
+            result.targets.push(tr(target, [{
+                type: "buff",
+                operation: "add",
+                buff: regenBuff,
+                target: target.target
+            }]));
+        }
         return result;
     },
 }
@@ -295,8 +300,7 @@ export const queen: EnemyDef = {
         {
             if ((actor.cooldowns['skunkPerfume'] ?? 0) === 0) {
                 const roll = rng.random();
-                const damagedEnemies = state.enemies.filter(x => (HEAL_FILTER.includes(x.definition.rank) && x.currHp < x.definition.hp));
-                const type = damagedEnemies.length > 0 ? Math.floor(roll * 3) : Math.floor(roll * 2);
+                const type = Math.floor(roll * 2);
 
                 effects.push({
                     type: "move",
@@ -305,6 +309,25 @@ export const queen: EnemyDef = {
                     targets: []
                 });
                 return effects;
+            }
+        }
+
+        {
+            const damagedEnemies = state.enemies.filter(x => (HEAL_FILTER.includes(x.definition.rank) && x.currHp < x.definition.hp));
+            if ((actor.cooldowns['healingPerfume'] ?? 0) === 0 && damagedEnemies.length > 0) {
+                const totalHP = damagedEnemies.reduce((sum, x) => sum + x.currHp, 0);
+                const maxHP = damagedEnemies.reduce((sum, x) => sum + x.definition.hp, 0);
+                const ratio = totalHP / maxHP;
+                const roll = rng.random();
+                if (roll > ratio) {
+                    effects.push({
+                        type: "move",
+                        actor: actor,
+                        move: { definition: healingPerfume },
+                        targets: state.enemies.filter(x => HEAL_FILTER.includes(x.definition.rank))
+                    });
+                    return effects;
+                }
             }
         }
 
@@ -372,7 +395,7 @@ export const queen: EnemyDef = {
     onDefeat(state: iGameState, target: iEnemy): iEffect[] {
         const effects: iEffect[] = [];
         for (const enemy of state.enemies) {
-            if (findBuff(target, DORMANT_BUFF)) {
+            if (findBuff(enemy, DORMANT_BUFF)) {
                 effects.push({
                     type: "enemy",
                     target: enemy,

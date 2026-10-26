@@ -241,6 +241,10 @@ export const skunkEnglishStrings: StringTable = {
     "move.skunkPerfume.narrative.action": "The {actor} sprays her skunk-scented perfume all over the place...",
     "move.skunkPerfume.narrative.miss": "{target} ignores the perfume even though it smells bad.",
     "move.skunkPerfume.narrative.miss.plural": "The party ignores the perfume even though it smells bad.",
+    "move.healingPerfume.name": "Skunk Perfume",
+    "move.healingPerfume.desc": "The Skunk Queen sprays her perfume, but it's a sweet, rubbery scent that makes those who smell it more attracted to skunks... Randomly applies one of two weakening perfumes or a regenerative perfume.",
+    "move.healingPerfume.effect.heal.note": "Heals damaged [enemies:skunkette], [enemies:skunk], and [enemies:fairy].",
+    "move.healingPerfume.narrative.action": "The {actor} sprays her own minions with the perfume, causing them to start to regenrate...",
 
     "buff.defensePerfume.name": "Defense Perfume",
     "buff.defensePerfume.narrative.added": "{target} can't resist the urge and lowers her defenses a bit in response.",

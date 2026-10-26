@@ -429,59 +429,63 @@ function createCommands(
     ));
     const stanceDestination = character.standing ? "moving" : "standing";
 
-    commands.push({
-        id: "stance",
-        name: presentation.ui("characterDetails.changeStance"),
-        shortcutKey: COMBAT_SHORTCUTS.stance,
-        shortcutLabel: shortcutBadgeLabel(COMBAT_SHORTCUTS.stance),
-        available: action.available && action.stance.available,
-        ...reasonLabel(action.available && action.stance.available, action.reason ?? action.stance.reason, presentation),
-        tags: [
-            tag(
-                "stance-destination",
-                presentation.stance(character.standing ? "standing" : "moving"),
-                character.standing ? "warning" : "success"),
-            tag(
-                "stance-destination",
-                presentation.stance(stanceDestination),
-                stanceDestination === "moving" ? "success" : "warning",
-                presentation.ui("characterDetails.stanceTransitionIndicator"),
-            )],
-    });
+    if (action.stance.available) {
+        commands.push({
+            id: "stance",
+            name: presentation.ui("characterDetails.changeStance"),
+            shortcutKey: COMBAT_SHORTCUTS.stance,
+            shortcutLabel: shortcutBadgeLabel(COMBAT_SHORTCUTS.stance),
+            available: action.available && action.stance.available,
+            ...reasonLabel(action.available && action.stance.available, action.reason ?? action.stance.reason, presentation),
+            tags: [
+                tag(
+                    "stance-destination",
+                    presentation.stance(character.standing ? "standing" : "moving"),
+                    character.standing ? "warning" : "success"),
+                tag(
+                    "stance-destination",
+                    presentation.stance(stanceDestination),
+                    stanceDestination === "moving" ? "success" : "warning",
+                    presentation.ui("characterDetails.stanceTransitionIndicator"),
+                )],
+        });
+    }
 
-    const availableEscape = action.escape.available && action.escapes.some(({ available }) => available);
-    const escapeReason = action.escapes.find(({ reason }) => reason)?.reason ?? action.escape.reason;
-    const escapeTargets = new Set(action.escapes
-        .filter(({ available }) => available)
-        .map(({ target }) => target));
-    const escapeTags: CommandTagViewModel[] = [];
-    if ([...escapeTargets].some((target) => target !== character.id)) {
-        escapeTags.push(tag("ally", presentation.ui("characterDetails.tagAlly"), "ally"));
-    }
-    if (escapeTargets.has(character.id)) {
-        escapeTags.push(tag("self", presentation.ui("characterDetails.tagSelf"), "success"));
-    }
-    if (!character.acted && availableEscape) {
-        if (!action.bonus.available) {
-            escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusBlocked"), "danger"));
-        } else if (!character.standing) {
-            escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusStanding"), "warning"));
-        } else {
-            escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusEligible"), "success"));
+    if (action.escape.available) {
+        const availableEscape = action.escape.available && action.escapes.some(({ available }) => available);
+        const escapeReason = action.escapes.find(({ reason }) => reason)?.reason ?? action.escape.reason;
+        const escapeTargets = new Set(action.escapes
+            .filter(({ available }) => available)
+            .map(({ target }) => target));
+        const escapeTags: CommandTagViewModel[] = [];
+        if ([...escapeTargets].some((target) => target !== character.id)) {
+            escapeTags.push(tag("ally", presentation.ui("characterDetails.tagAlly"), "ally"));
         }
-    }
+        if (escapeTargets.has(character.id)) {
+            escapeTags.push(tag("self", presentation.ui("characterDetails.tagSelf"), "success"));
+        }
+        if (!character.acted && availableEscape) {
+            if (!action.bonus.available) {
+                escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusBlocked"), "danger"));
+            } else if (!character.standing) {
+                escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusStanding"), "warning"));
+            } else {
+                escapeTags.push(tag("bonus", presentation.ui("characterDetails.tagBonusEligible"), "success"));
+            }
+        }
 
-    commands.push({
-        id: "escape",
-        name: presentation.ui("characterDetails.escape"),
-        shortcutKey: COMBAT_SHORTCUTS.escape,
-        shortcutLabel: shortcutBadgeLabel(COMBAT_SHORTCUTS.escape),
-        available: availableEscape,
-        ...(action.escape.available && action.escapes.length === 0
-            ? { reasonLabel: presentation.ui("characterDetails.noEscapeTargets") }
-            : reasonLabel(availableEscape, escapeReason, presentation)),
-        tags: escapeTags,
-    });
+        commands.push({
+            id: "escape",
+            name: presentation.ui("characterDetails.escape"),
+            shortcutKey: COMBAT_SHORTCUTS.escape,
+            shortcutLabel: shortcutBadgeLabel(COMBAT_SHORTCUTS.escape),
+            available: availableEscape,
+            ...(action.escape.available && action.escapes.length === 0
+                ? { reasonLabel: presentation.ui("characterDetails.noEscapeTargets") }
+                : reasonLabel(availableEscape, escapeReason, presentation)),
+            tags: escapeTags,
+        });
+    }
 
     return commands;
 }
