@@ -59,6 +59,7 @@ function enemy(id: string, currHp: number, maxHp: number, intentions: Intention[
         intentions,
         buffs: [],
         cooldowns: {},
+        skipped: false,
     };
 }
 

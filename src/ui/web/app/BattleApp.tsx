@@ -24,9 +24,9 @@ import { CombatReactionsContext, createCombatReactions } from "./combatReactions
 import { CharacterDetailsLayout } from "./components/CharacterDetailsLayout";
 import { CombatHeader } from "./components/CombatHeader";
 import { CompactGameLog } from "./components/CompactGameLog";
-import { createGameLogModePreference } from "./gameLogMode";
 import { Shortcut } from "./components/Shortcut";
 import { createEnemyDefeats } from "./enemyDefeats";
+import { createGameLogModePreference } from "./gameLogMode";
 import { COMBAT_SHORTCUTS, useCombatKeyboard, type SharedKeyboard } from "./keyboard";
 import type { LanguageSelection } from "./language";
 import { getNextEncounter } from "./nextEncounter";
@@ -116,7 +116,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             if (resultModel()) return; // The result panel restores its own View Game Log focus.
             const target = logTrigger instanceof HTMLElement && logTrigger.isConnected
                 ? logTrigger : stage?.querySelector<HTMLElement>(".kcq-compact-game-log")
-                    ?? stage?.querySelector<HTMLElement>('.kcq-overview-game-log-tabs [aria-selected="true"]');
+                ?? stage?.querySelector<HTMLElement>('.kcq-overview-game-log-tabs [aria-selected="true"]');
             if (target && !target.closest("[inert], [hidden]")) target.focus();
         });
     };
@@ -462,7 +462,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
 
     const Overview = (): JSX.Element => {
         const model = createMemo(() => createBattleOverviewViewModel(
-            state(), actions(), thresholds(), props.presentation, logEntries(), library,
+            state(), actions(), thresholds(), props.presentation, logEntries(),
         ));
         const overview: BattleOverviewPanelProps = {
             get actions() { return actions(); },
@@ -582,7 +582,7 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
             state(), actions(), characterActorId()!, thresholds(), props.presentation,
         ));
         const overview = createMemo(() => createBattleOverviewViewModel(
-            state(), actions(), thresholds(), props.presentation, logEntries(), library,
+            state(), actions(), thresholds(), props.presentation, logEntries(),
         ));
         return <CharacterDetailsLayout model={character()}
             contextLabel={props.presentation.ui("combatHeader.character")}

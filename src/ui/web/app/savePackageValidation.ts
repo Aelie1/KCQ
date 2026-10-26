@@ -24,7 +24,7 @@ const band = oneOf("none", "miss", "graze", "hit", "crit");
 const level = oneOf("none", "light", "moderate", "heavy", "severe", "overwhelming", "max");
 const trap = shape({ id: text, amount: number });
 const buffFields = {
-    id: text, icon: optional(oneOf("shield", "sword", "shield-off", "sword-off", "crown", "sun", "ambush", "sprayer")),
+    id: text, icon: optional(oneOf("shield", "sword", "shield-off", "sword-off", "crown", "sun", "ambush", "sprayer", "regen", "dormant")),
     severity: optional(number), duration: optional(number), linkedEntity: optional(text),
     statuses: optional(list(shape({ id: text, value: number }))), modifiers: optional(record(number)),
     moveList: optional(shape({ addedMoves: optional(list(text)), blockedMoves: optional(list(text)) })),
@@ -127,7 +127,7 @@ const stats = shape({
         peakBinding: number, incapacitations: integer, rescues: integer, progress: shape({ boss: optional(number), enemies: optional(number) })
     }),
     playerIds: list(text), tracks: list(shape({ id: text, bindings: list(shape({ id: text, value: number })) })),
-    enemyHp: list(shape({ id: text, rank: oneOf("minion", "enemy", "boss"), maxHp: number, currHp: number })),
+    enemyHp: list(shape({ id: text, rank: oneOf("minion", "enemy", "elite", "boss"), maxHp: number, currHp: number })),
     previous: list(shape({ id: text, incapacitated: boolean, skunkLink: optional(text) })), terminal: boolean,
 });
 const savePackage = shape({ version: value => text(value) && value !== "", saveState, gameLog, stats });

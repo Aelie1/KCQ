@@ -43,7 +43,7 @@ export interface iCharacter extends Omit<Character, "buffs" | "bindings" | "modi
     bindings: iBinding[];
 }
 
-export interface iEnemy extends Omit<Enemy, "buffs" | "intentions" | "modifiers" | "rank" | "defense" | "maxHp"> {
+export interface iEnemy extends Omit<Enemy, "buffs" | "intentions" | "modifiers" | "rank" | "defense" | "maxHp" | "skipped"> {
     definition: EnemyDef;
     intentions: iIntention[];
     buffs: iBuff[];

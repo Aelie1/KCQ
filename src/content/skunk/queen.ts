@@ -1,11 +1,11 @@
 import { EnemyDef, MoveDef } from "../../engine/protected/definitions";
 import { getValidTargets, pickBinding, pickTarget } from "../../engine/protected/enemies";
-import { isCharacter } from "../../engine/protected/helpers";
+import { findBuff, isCharacter } from "../../engine/protected/helpers";
 import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { EntityId } from "../../engine/public/types";
-import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, HEAL_FILTER, MIGHT_BUFF, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID, SPRAYER_BUFF } from "./constants";
+import { DORMANT_BUFF, EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, HEAL_FILTER, MIGHT_BUFF, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID, SPRAYER_BUFF } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 
 const QUEEN_HP = 750;
@@ -366,6 +366,20 @@ export const queen: EnemyDef = {
             }
         }
         target.data["minHp"] = Math.min((target.data["minHp"] ?? target.definition.hp), target.currHp);
+        return effects;
+    },
+
+    onDefeat(state: iGameState, target: iEnemy): iEffect[] {
+        const effects: iEffect[] = [];
+        for (const enemy of state.enemies) {
+            if (findBuff(target, DORMANT_BUFF)) {
+                effects.push({
+                    type: "enemy",
+                    target: enemy,
+                    operation: "defeat"
+                });
+            }
+        }
         return effects;
     }
 }

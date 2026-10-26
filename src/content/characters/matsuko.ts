@@ -1,8 +1,7 @@
-import { CharacterDef, MoveDef, PassiveDef } from "../../engine/protected/definitions";
+import { CharacterDef, MoveDef, PassiveDef, StatusDef } from "../../engine/protected/definitions";
 import { findBuff, isCharacter, isEnemy } from "../../engine/protected/helpers";
 import { basicDamageEffect, basicPlayerAccuracy, tr } from "../../engine/protected/mechanics";
 import { s } from "../../engine/protected/status";
-import { servitude } from "../../engine/protected/statuses";
 import { ContentCatalogFragment, iBuff, iEntity, iGameState, iMove, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { FailureReason } from "../../engine/public/types";
 import { removeEmpowerment } from "./ko";
@@ -33,6 +32,14 @@ const ATTACKME_MODIFIER = 3;
 const ATTACKME_BUFF = "defenseBarrier";
 
 const DEFAULT_COMPULSION_COOLDOWN = 2;
+
+export const servitude: StatusDef = {
+    id: "servitude",
+    levels: [
+        {},
+        { flags: ["blocksEscape"] }
+    ]
+};
 
 export const absoluteWill: PassiveDef = {
     id: "absoluteWill",
@@ -319,5 +326,6 @@ export const matsuko: CharacterDef = {
 export const matsukoCatalog: ContentCatalogFragment = {
     characters: [matsuko],
     moves: [whiteFlame, phoenixKick, immolation, obey, stop, attackMe, fairyWhiteFlame, fairyPhoenixKick, punch, kick],
-    passives: [absoluteWill]
+    passives: [absoluteWill],
+    statuses: [servitude]
 };

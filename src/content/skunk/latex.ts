@@ -6,8 +6,6 @@ import { bound, breathless, gagged, hobbled, incapacitated, submissive, vibratin
 import { iBinding, iBuff, iCharacter, iEffect, iGameState } from "../../engine/protected/types";
 import { POUNCE_BUFF, SKUNKED_BUFF, SKUNKETTE_ID } from "./constants";
 
-const COLLAR_BINDING = 10;
-
 const SPREAD_MODIFIER = 0.1;
 const HEAVY_SPREAD_RATIO = 0.25;
 const SEVERE_SPREAD_RATIO = 0.5;

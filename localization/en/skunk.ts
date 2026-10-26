@@ -24,7 +24,14 @@ export const skunkEnglishStrings: StringTable = {
     "buff.ambushed.name": "Ambushed!",
     "buff.collar.name": "Slave Collar",
     "buff.skunkCollar.name": "Skunk Collar",
+    "buff.dormant.name": "Dormant",
+    "buff.dormant.narrative.added": "{target}'s skunk suit is damaged to the point that it can't function anymore, but her collar is continually attempting to repair it with fresh latex.  Eventually it will have recovered enough to rejoin the fight.",
+    "buff.dormant.narrative.removed": "{target}'s skunk suit looks as good as new and she is ready to fight once more!",
 
+
+    "status.dormant.name": "Skips Turn",
+    "status.dormant.desc": "Cannot move until fully regenerated.",
+    "status.dormant.libraryName": "Dormant",
 
 
     // Skunkette

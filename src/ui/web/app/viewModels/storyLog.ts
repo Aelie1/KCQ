@@ -318,7 +318,10 @@ export function createStoryLogViewModel(
                             buff: p.buff(change.buff, severity),
                             ...(entry.kind === "move" || entry.kind === "escape" ? { actor: p.entity(entry.actor) } : {}),
                         });
-                        if (line) narratives.push(line);
+                        if (line) narratives.push({
+                            ...line,
+                            ...(change.buff === "dormant" ? { tone: "warning" as const } : {})
+                        });
                     }
                     break;
                 }

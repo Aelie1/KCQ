@@ -85,7 +85,7 @@ export interface StatusLevelDef {
 
 export interface CallbackDef {
     id: CallbackId;
-    modifyDamage?: (target: iEnemy, buff: iBuff, amount: number) => iCallbackReturn;
+    modifyDamage?: (tate: iGameState, target: iEnemy, buff: iBuff, amount: number) => iCallbackReturn;
     modifyBinding?: (state: iGameState, actor: iEntity, target: iCharacter, buff: iBuff, binding: BindingDef, amount: number) => iCallbackReturn;
 }
 

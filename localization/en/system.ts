@@ -468,9 +468,6 @@ export const systemEnglishStrings: StringTable = {
     "status.incapacitated.name": "Incapacitated",
     "status.incapacitated.short": "Incap",
     "status.incapacitated.desc": "Marks a character as incapacitated and causes them to skip their turn.",
-    "status.servitude.name": "Blocks Escape",
-    "status.servitude.desc": "Prevents Escape while the status is active.",
-    "status.servitude.libraryName": "Servitude",
 
     "modifier.hitarms.name": "Accuracy(Arms)",
     "modifier.hitarms.compact": "HIT",

@@ -10,8 +10,8 @@ import type { GameLogPresentationEntry } from "../../../presentation/gameLog";
 import type { Presentation } from "../../../presentation/presentation";
 import { CombatHeader } from "../components/CombatHeader";
 import { CompactGameLog } from "../components/CompactGameLog";
-import type { GameLogMode } from "../components/GameLogTabs";
 import { EnemyCard } from "../components/EnemyCard";
+import type { GameLogMode } from "../components/GameLogTabs";
 import { PartyCard } from "../components/PartyCard";
 import { ScreenLayout } from "../components/ScreenLayout";
 import { Shortcut } from "../components/Shortcut";
@@ -62,7 +62,6 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
         props.thresholds,
         props.presentation,
         props.history,
-        props.library,
     ));
 
     const visible = (section: keyof BattleOverviewSections) => props.sections?.[section] !== false;

@@ -7,7 +7,8 @@ import { makeFixtureCharacter } from "./publicFixture";
 
 const enemy = (id: string): Enemy => ({
     id, defId: "skunkette", rank: "enemy", maxHp: 200, currHp: 200, defense: 0, modifiers: {},
-    intentions: [], cooldowns: {}, buffs: id === "skunkette1" ? [{ id: "pounce", severity: 4, linkedEntity: "ko" }] : [],
+    intentions: [], cooldowns: {}, buffs: id === "skunkette1" ? [{ id: "pounce", severity: 4, linkedEntity: "ko" }] : [], skipped: false,
+
 });
 const initialState: GameState = {
     turn: { round: 4, step: 1, phase: "player", outcome: "ongoing" },

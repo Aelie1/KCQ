@@ -41,6 +41,7 @@ export function createEnemyCardViewModel(
 
         return {
             ...model,
+            resolved: model.resolved || enemy.skipped,
             ...(targetsFullParty ? {
                 allTargetsLabel: presentation.ui("intentions.all"),
                 targetLabel: presentation.ui("intentions.all"),
@@ -48,7 +49,8 @@ export function createEnemyCardViewModel(
             } : {}),
             // Only the wide card reads detailed previews; other layouts keep their summary cost.
             get previewRows() {
-                return createIntentPreviewRows(intention, presentation, enemy.id, previewContext);
+                return createIntentPreviewRows(intention, presentation, enemy.id, previewContext)
+                    .map(row => ({ ...row, resolved: row.resolved || enemy.skipped, }));
             },
         };
     });
@@ -57,7 +59,6 @@ export function createEnemyCardViewModel(
         ...intentions.filter(x => x.resolved),
     ];
     const summary = summarizeIntentions(ordered);
-
     return {
         id: enemy.id,
         name: presentation.entity(enemy.id),

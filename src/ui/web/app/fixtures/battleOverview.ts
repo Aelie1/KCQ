@@ -57,6 +57,7 @@ function enemy(
         intentions,
         buffs: [],
         cooldowns: {},
+        skipped: false,
     };
 }
 

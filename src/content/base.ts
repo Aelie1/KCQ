@@ -1,4 +1,4 @@
-import { blinded, bound, breathless, gagged, helpless, hobbled, immobilized, incapacitated, servitude, stunned, submissive, vibrating } from "../engine/protected/statuses";
+import { blinded, bound, breathless, gagged, helpless, hobbled, immobilized, incapacitated, stunned, submissive, vibrating } from "../engine/protected/statuses";
 import { ContentCatalogFragment } from "../engine/protected/types";
 
 export const baseCatalog: ContentCatalogFragment = {
@@ -14,6 +14,5 @@ export const baseCatalog: ContentCatalogFragment = {
         helpless,
         stunned,
         incapacitated,
-        servitude,
     ],
 };

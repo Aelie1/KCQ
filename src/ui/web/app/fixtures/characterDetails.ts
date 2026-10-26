@@ -225,6 +225,7 @@ const state = {
         intentions: [],
         buffs: [],
         cooldowns: {},
+        skipped: false,
     }],
     traps: [],
     encounter: {

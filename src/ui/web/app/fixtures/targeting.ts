@@ -37,6 +37,7 @@ function enemy(id: string): Enemy {
         intentions: [],
         buffs: [],
         cooldowns: {},
+        skipped: false,
     };
 }
 

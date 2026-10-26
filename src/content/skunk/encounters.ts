@@ -3,7 +3,7 @@ import { s } from "../../engine/protected/status";
 import { helpless } from "../../engine/protected/statuses";
 import { iEffect, iEntity, iGameState } from "../../engine/protected/types";
 import { Effect, EnemySetup } from "../../engine/public/types";
-import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, QUEEN_ID, SKUNK_EMPRESS_ID, SKUNK_ID, SKUNKETTE_ID, SKUNKETTE_QUEEN_ID } from "./constants";
+import { eliteCallback, EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, QUEEN_ID, SKUNK_EMPRESS_ID, SKUNK_ID, SKUNKETTE_ID, SKUNKETTE_QUEEN_ID } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 import { trapPuddle } from "./puddles";
 
@@ -175,7 +175,8 @@ function towerBuffs(state: iGameState, setup: TowerSetup): iEffect[] {
                     id: "skunkCollar",
                     icon: "regen",
                     active: true,
-                    modifiers: { regeneration: setup.regenAmount }
+                    modifiers: { regeneration: setup.regenAmount },
+                    callback: eliteCallback
                 }
             });
         }

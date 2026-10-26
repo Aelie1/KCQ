@@ -79,7 +79,7 @@ export type SectionId = string;
 
 export type CallbackId = string;
 
-export type IconId = "shield" | "sword" | "shield-off" | "sword-off" | "crown" | "sun" | "ambush" | "sprayer" | "regen";
+export type IconId = "shield" | "sword" | "shield-off" | "sword-off" | "crown" | "sun" | "ambush" | "sprayer" | "regen" | "dormant";
 
 
 /*******************************************************
@@ -114,6 +114,7 @@ export interface Enemy {
     buffs: Buff[];
     cooldowns: Record<MoveId, number>;
     modifiers: ModifierSet;
+    skipped: boolean;
 }
 
 export interface Intention {
@@ -393,19 +394,7 @@ export interface Status {
     value: number;
 }
 
-export type StatusId =
-    | "bound"
-    | "gagged"
-    | "hobbled"
-    | "vibrating"
-    | "submissive"
-    | "breathless"
-    | "blinded"
-    | "immobilized"
-    | "helpless"
-    | "stunned"
-    | "incapacitated"
-    | "servitude";
+export type StatusId = string;
 
 export type ModifierSet = Partial<Record<ModifierId, number>>;
 

@@ -57,7 +57,6 @@ export function createBattleOverviewViewModel(
     thresholds: ThresholdInfo,
     presentation: Presentation,
     history: readonly GameLogPresentationEntry[] = [],
-    library?: ContentLibrary,
 ): BattleOverviewViewModel {
     const actionsById = new Map(actions.map((action) => [action.id, action]));
     const traps = state.traps.map((trap) => createTrapViewModel(trap, presentation));
@@ -69,7 +68,7 @@ export function createBattleOverviewViewModel(
         const incomingBindings: Record<BindingId, number> = {};
 
         for (const enemy of state.enemies) {
-            if (!canProjectAttack(enemy, library)) continue;
+            if (enemy.skipped) continue;
             for (const intention of enemy.intentions) {
                 if (intention.resolved) continue;
                 const target = intention.targets.find(target => target.target === character.id);

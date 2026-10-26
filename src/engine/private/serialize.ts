@@ -41,6 +41,7 @@ function serializeCharacter(state: iGameState, character: iCharacter, statuses: 
 }
 
 function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): Enemy {
+    const status = getStatus(statuses, enemy);
     return {
         id: enemy.id,
         defId: enemy.defId,
@@ -51,7 +52,8 @@ function serializeEnemy(state: iGameState, enemy: iEnemy, statuses: StatusMap): 
         intentions: enemy.intentions.map(x => (serializeIntention(state, statuses, x))),
         buffs: enemy.buffs.map(serializeBuff),
         cooldowns: { ...enemy.cooldowns },
-        modifiers: { ...getStatus(statuses, enemy).getModifiers() },
+        modifiers: { ...status.getModifiers() },
+        skipped: status.isSkipped(),
     };
 }
 

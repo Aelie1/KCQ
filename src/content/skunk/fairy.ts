@@ -20,10 +20,10 @@ const EMPOWERING_MAGIC_DURATION = 1;
 
 export const barrierCallback: CallbackDef = {
     id: "barrier",
-    modifyDamage(target: iEntity, buff: iBuff, amount: number): iCallbackReturn {
+    modifyDamage(tate: iGameState, target: iEntity, buff: iBuff, amount: number): iCallbackReturn {
         const effects: iEffect[] = [];
         let newAmount = amount;
-        if (buff.duration && buff.duration > 0) {
+        if (amount > 0 && buff.duration && buff.duration > 0) {
             buff.duration--;
             if (buff.duration === 0) {
                 effects.push({

@@ -145,6 +145,10 @@ export const matsukoEnglishStrings: StringTable = {
     "buff.burnout.allow": "Adds Basic Moves",
     "buff.defenseBarrier.name": "Defense Barrier",
     "buff.servitude.name": "Servitude",
+
+    "status.servitude.name": "Blocks Escape",
+    "status.servitude.desc": "Prevents Escape while the status is active.",
+    "status.servitude.libraryName": "Servitude",
 };
 
 export const hinariEnglishStrings: StringTable = {
