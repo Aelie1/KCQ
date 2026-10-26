@@ -13,3 +13,4 @@ export const MIGHT_BUFF = "might";
 export const SPRAYER_BUFF = "extraSprayers";
 export const ELITE_HP_MODIFIER = 1.5;
 export const ELITE_DEF_MODIFIER = 2;
+export const HEAL_FILTER = ["enemy", "elite"];

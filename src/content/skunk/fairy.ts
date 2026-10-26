@@ -5,7 +5,7 @@ import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iCallbackReturn, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { HitBand } from "../../engine/public/types";
-import { FAIRY_ID } from "./constants";
+import { FAIRY_ID, HEAL_FILTER } from "./constants";
 import { latexArms, latexHead, latexLegs, latexTorso } from "./latex";
 
 const FAIRY_HP = 200;
@@ -89,8 +89,7 @@ export const healingMagic: MoveDef = {
             }
         }
         if (target.band === "crit") {
-            const rankFilter = ["enemy", "elite"];
-            const enemies = state.enemies.filter(x => (rankFilter.includes(x.definition.rank) && x.currHp < x.definition.hp));
+            const enemies = state.enemies.filter(x => (HEAL_FILTER.includes(x.definition.rank) && x.currHp < x.definition.hp));
             for (const enemy of enemies) {
                 if (enemy !== target.target) {
                     result.effects.push({
@@ -145,8 +144,7 @@ export const empoweringMagic: MoveDef = {
             }
         }
         if (target.band === "crit") {
-            const enemies = state.enemies.filter(x => (x.definition.rank !== "minion"));
-            for (const enemy of enemies) {
+            for (const enemy of state.enemies) {
                 if (enemy !== target.target) {
                     result.effects.push({
                         type: "buff",
@@ -241,14 +239,11 @@ export const fairy: EnemyDef = {
         }
 
         //0) Determine which moves are valid
-        const healFilter = ["enemy", "elite"];
-        const healTargets = validTargets.filter(x => (isEnemy(x) && healFilter.includes(x.definition.rank) && x.currHp < x.definition.hp));
+        const healTargets = validTargets.filter(x => (isEnemy(x) && HEAL_FILTER.includes(x.definition.rank) && x.currHp < x.definition.hp));
 
-        const barrierFilter = ["enemy", "elite", "boss"];
-        const barrierTargets = validTargets.filter(x => (isEnemy(x) && barrierFilter.includes(x.definition.rank)) && !x.buffs.some(y => y.id === "barrierMagic"));
+        const barrierTargets = validTargets.filter(x => !x.buffs.some(y => y.id === "barrierMagic"));
 
-        const empowerFilter = ["enemy", "elite", "boss"];
-        const empowerTargets = validTargets.filter(x => (isEnemy(x) && empowerFilter.includes(x.definition.rank)));
+        const empowerTargets = validTargets;
 
         type FairyAction = "heal" | "barrier" | "empower";
         const actions: FairyAction[] = [];

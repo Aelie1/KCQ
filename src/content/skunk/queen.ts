@@ -5,7 +5,7 @@ import { basicBindingEffect, tr } from "../../engine/protected/mechanics";
 import { Random } from "../../engine/protected/random";
 import { iBuff, iEffect, iEnemy, iEntity, iGameState, iMove, iMoveEffect, iMoveResult, iTargetInfo } from "../../engine/protected/types";
 import { EntityId } from "../../engine/public/types";
-import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, MIGHT_BUFF, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID, SPRAYER_BUFF } from "./constants";
+import { EMPRESS_BUFF, FAIRY_ID, GODDESS_BUFF, HEAL_FILTER, MIGHT_BUFF, QUEEN_ID, RAINMAKER_ID, SKUNK_ID, SKUNKETTE_ID, SPRAYER_BUFF } from "./constants";
 import { latexArms, latexCollar, latexHead, latexLegs, latexTorso } from "./latex";
 
 const QUEEN_HP = 750;
@@ -207,8 +207,7 @@ export const skunkPerfume: MoveDef = {
                 break;
 
             case 2:  //Heal perfume
-                const rankFilter = ["enemy", "elite"];
-                const damagedEnemies = state.enemies.filter(x => (rankFilter.includes(x.definition.rank) && x.currHp < x.definition.hp));
+                const damagedEnemies = state.enemies.filter(x => (HEAL_FILTER.includes(x.definition.rank) && x.currHp < x.definition.hp));
                 const regenBuff: iBuff = {
                     id: REGEN_BUFF,
                     icon: "regen",
@@ -296,8 +295,7 @@ export const queen: EnemyDef = {
         {
             if ((actor.cooldowns['skunkPerfume'] ?? 0) === 0) {
                 const roll = rng.random();
-                const rankFilter = ["enemy", "elite"];
-                const damagedEnemies = state.enemies.filter(x => (rankFilter.includes(x.definition.rank) && x.currHp < x.definition.hp));
+                const damagedEnemies = state.enemies.filter(x => (HEAL_FILTER.includes(x.definition.rank) && x.currHp < x.definition.hp));
                 const type = damagedEnemies.length > 0 ? Math.floor(roll * 3) : Math.floor(roll * 2);
 
                 effects.push({
