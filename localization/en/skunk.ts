@@ -126,13 +126,13 @@ export const skunkEnglishStrings: StringTable = {
     "move.latexExplosion.narrative.miss": "{actor} tries to explode on {target}, but completely misses.",
     "move.latexExplosion.narrative.graze": "{actor} tries to explode on {target}, but only manages a glancing blow.",
     "move.latexExplosion.narrative.hit": "{actor} tries to explode on {target} and hits her square in the chest!",
-    "move.latexExplosion.narrative.crit": "{actor} tries to explode on {target} and explodes right in her face!  Additionally, it emerges from the explosion unharmed —in fact it looks even healthier than before!",
+    "move.latexExplosion.narrative.crit": "{actor} tries to explode on {target} and explodes right in her face!  Additionally, it emerges from the explosion unharmed — in fact it looks even healthier than before!",
 
     // Fairy
     "entity.fairy.generic": "Fairy",
     "entity.fairy.name": "Fairy {index}",
     "entity.fairy.desc": "A tiny skunk with fairy wings. Just what kind of experiment created this being?",
-    "entity.fairy.strategy": "The Fairy chooses one of three support actions: healing Skunkettes or Skunks with [moves:healingMagic], shield an ally using [moves:barrierMagic], or strengthen an ally with [moves:empoweringMagic].\nIf there are no valid support targets, it uses [moves:bindingMagic] on a random valid character.",
+    "entity.fairy.strategy": "The Fairy chooses one of three support actions: healing Skunkettes or Skunks with [moves:healingMagic], shielding an ally using [moves:barrierMagic], or strengthening an ally with [moves:empoweringMagic].\nIf there are no valid support targets, it uses [moves:bindingMagic] on a random valid character.",
     "entity.fairy.narrative.defeated": "{target}'s magic fades, along with its wings.  It dissolves into a pool of latex.",
     "difficulty.extreme.fairy": "Has a 50% chance to use Binding Magic as an extra attack each turn.",
     "difficulty.mythic.fairy": "Uses Binding Magic as an extra attack each turn.",

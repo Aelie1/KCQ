@@ -13,7 +13,6 @@ export interface StoryLogText {
 export interface StoryLogParagraph {
     text: string;
     tone?: StoryTone;
-    /** Inline parts keep skill highlighting separate from consequences in the same paragraph. */
     parts?: StoryLogText[];
 }
 
