@@ -459,14 +459,14 @@ describe("Queen Perfume", () => {
         expect(queenState(engine).cooldowns.skunkPerfume).toBe(4);
         for (const id of successful) {
             expect(engine.getGameState().characters.find((character) => character.id === id)?.buffs)
-                .toContainEqual(expect.objectContaining({ id: "defensePerfume", duration: 4 }));
+                .toContainEqual(expect.objectContaining({ id: "defensePerfume", duration: 3 }));
         }
         for (const id of missed) {
             expect(engine.getGameState().characters.find((character) => character.id === id)?.buffs)
                 .not.toContainEqual(expect.objectContaining({ id: "defensePerfume" }));
         }
 
-        for (let turn = 0; turn < 4; turn++) endTurn(engine);
+        for (let turn = 0; turn < 3; turn++) endTurn(engine);
         for (const id of successful) {
             expect(engine.getGameState().characters.find((character) => character.id === id)?.buffs)
                 .not.toContainEqual(expect.objectContaining({ id: "defensePerfume" }));
@@ -519,16 +519,23 @@ describe("Queen Perfume", () => {
         );
     }
 
-    it("heals damaged Skunks and Skunkettes, but not Rainmakers, without exceeding max HP", () => {
+    it("starts healing damaged Skunks and Skunkettes on the following round, excluding Rainmakers and capping HP", () => {
         const extras = [skunk, skunkette, rainmaker];
         const engine = healingPerfumeEngine(healingSeed(extras), [], extras);
         const result = endTurn(engine);
-        const byPrefix = (prefix: string) => result.frames.at(-1)!.state.enemies.find(({ id }) => id.startsWith(prefix));
+        const byPrefix = (prefix: string) => engine.getGameState().enemies.find(({ id }) => id.startsWith(prefix));
 
-        expect(byPrefix("skunk1")).toMatchObject({ currHp: 280, maxHp: 300 });
-        expect(byPrefix("skunkette1")).toMatchObject({ currHp: 180, maxHp: 200 });
-        expect(byPrefix("rainmaker1")).toMatchObject({ currHp: 150, maxHp: 200 });
-        expect(result.frames.at(-1)!.state.enemies.every(({ currHp, maxHp }) => currHp <= maxHp)).toBe(true);
+        expect(byPrefix("skunk1")).toMatchObject({ currHp: 250, maxHp: 300, buffs: [expect.objectContaining({ id: "regenPerfume", duration: 3 })] });
+        expect(byPrefix("skunkette1")).toMatchObject({ currHp: 150, maxHp: 200 });
+        expect(resolvedEvents(result.frames).filter(event => event.type === "enemyHealed")).toEqual([]);
+        for (const hp of [260, 270, 280]) {
+            endTurn(engine);
+            expect(byPrefix("skunk1")).toMatchObject({ currHp: hp, maxHp: 300 });
+            expect(byPrefix("skunkette1")).toMatchObject({ currHp: hp - 100, maxHp: 200 });
+            expect(byPrefix("rainmaker1")).toMatchObject({ currHp: 150, maxHp: 200 });
+        }
+        expect(byPrefix("skunk1")?.buffs).not.toContainEqual(expect.objectContaining({ id: "regenPerfume" }));
+        expect(engine.getGameState().enemies.every(({ currHp, maxHp }) => currHp <= maxHp)).toBe(true);
     });
 
     it("keeps healing mode fixed when the battlefield changes before execution", () => {
@@ -536,7 +543,7 @@ describe("Queen Perfume", () => {
         const seed = healingSeed();
         const engine = healingPerfumeEngine(seed, [healSkunk]);
         const preview = intentionFor(engine, "healingPerfume");
-        expect(preview?.targets).toContainEqual(expect.objectContaining({ target: "skunk1", effects: [expect.objectContaining({ type: "buff", buff: expect.objectContaining({ id: "regenPerfume", duration: 2, modifiers: { regeneration: 3 } }) })] }));
+        expect(preview?.targets).toContainEqual(expect.objectContaining({ target: "skunk1", effects: [expect.objectContaining({ type: "buff", buff: expect.objectContaining({ id: "regenPerfume", duration: 3, modifiers: { regeneration: 1 } }) })] }));
 
         execute(engine, { type: "move", actor: "hero", move: healSkunk.id, targets: ["skunk1"] });
         const phase = endTurn(engine);
@@ -573,7 +580,7 @@ describe("Queen Perfume", () => {
             .toEqual(expectedModifiers);
     });
 
-    it("heals enemies that become damaged after healing mode was chosen", () => {
+    it("heals enemies damaged after healing mode was chosen on the following round", () => {
         const wound = damageMove("wound-skunkette", 10);
         const extras = [skunk, skunkette];
         const build = (seed: number) => loadQueen({
@@ -600,8 +607,14 @@ describe("Queen Perfume", () => {
 
         execute(engine, { type: "move", actor: "hero", move: wound.id, targets: ["skunkette1"] });
         const phase = endTurn(engine);
-        expect(phase.frames.at(-1)!.state.enemies.find(({ id }) => id === "skunkette1")?.currHp).toBe(200);
-        expect(resolvedEvents(phase.frames)).toContainEqual({ type: "enemyHealed", target: "skunkette1", amount: 10 });
+        expect(phase.frames.at(-1)!.state.enemies.find(({ id }) => id === "skunkette1"))
+            .toMatchObject({ currHp: 190, buffs: [expect.objectContaining({ id: "regenPerfume", duration: 3 })] });
+        expect(resolvedEvents(phase.frames)).not.toContainEqual(expect.objectContaining({ type: "enemyHealed", target: "skunkette1" }));
+        expect(engine.getGameState().enemies.find(({ id }) => id === "skunk1")?.buffs)
+            .toContainEqual(expect.objectContaining({ id: "regenPerfume", duration: 3 }));
+        const following = endTurn(engine);
+        expect(engine.getGameState().enemies.find(({ id }) => id === "skunkette1")?.currHp).toBe(200);
+        expect(resolvedEvents(following.frames)).toContainEqual({ type: "enemyHealed", target: "skunkette1", amount: 10 });
     });
 });
 

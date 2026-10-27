@@ -52,7 +52,11 @@ describe("difficulty select panel", () => {
         if (special) {
             expect(html).toContain('scope="col">Enemy');
             expect(html).toContain('scope="col">Change');
-            expect(html.match(/scope="row"/g)).toHaveLength(7);
+            expect(html.match(/scope="row"/g)).toHaveLength(5);
+            for (const enemy of ["rainmaker", "skunkette", "skunk", "fairy", "queen"]) {
+                expect(html).toContain(presentation.difficulty(difficulty, enemy));
+            }
+            expect(html).not.toMatch(/\[difficulty\./);
         }
     });
 

@@ -257,12 +257,12 @@ describe("perfume library references", () => {
     it("keeps perfume preview recipients, signed modifiers, and durations aligned with combat", () => {
         const debuff = libraryMoveEffectRows(library.moves.skunkPerfume!, library, presentation);
         expect(debuff.map(row => ({ recipient: row.recipient, duration: row.duration, preview: row.preview }))).toMatchObject([
-            { recipient: "players", duration: 4, preview: { kind: "buff", name: "Defense Perfume", modifiers: [{ value: -2, signedValue: "-2" }] } },
-            { recipient: "players", duration: 4, preview: { kind: "buff", name: "Escape Perfume", modifiers: [{ value: -2, signedValue: "-2" }] } },
+            { recipient: "target", duration: 3, preview: { kind: "buff", name: "Defense Perfume", modifiers: [{ value: -2, signedValue: "-2" }] } },
+            { recipient: "target", duration: 3, preview: { kind: "buff", name: "Escape Perfume", modifiers: [{ value: -2, signedValue: "-2" }] } },
         ]);
         const healing = libraryMoveEffectRows(library.moves.healingPerfume!, library, presentation);
         expect(healing).toMatchObject([
-            { recipient: "enemies", duration: 2, preview: { kind: "buff", name: "Healing Perfume", modifiers: [{ value: 3, signedValue: "+3" }] } },
+            { recipient: "enemies", duration: 3, preview: { kind: "buff", name: "Healing Perfume", modifiers: [{ value: 1, signedValue: "+1" }] } },
         ]);
     });
 });

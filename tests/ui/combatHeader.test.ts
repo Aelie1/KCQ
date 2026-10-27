@@ -13,6 +13,7 @@ describe("combat header", () => {
             variant: "overview",
             encounterLabel: "Skunk Queen's Rematch",
             difficultyLabel: "Veteran",
+            difficultyId: "veteran",
             roundLabel: "Round 1",
             phaseLabel: "Player Phase",
             settingsLabel: "Settings",

@@ -269,8 +269,9 @@ describe("Library category layouts", () => {
     it("uses global effects and an enemy rules table for difficulty, omitting empty effects", () => {
         libraryMount({ kind: "entry", category: "difficulties", id: "extreme" });
         expect(element(".kcq-library__global-effects").textContent).toContain("POT+1");
-        expect(document.querySelectorAll(".kcq-library__rules-table tbody tr")).toHaveLength(7);
-        expect(document.querySelectorAll(".kcq-library__rules-table [data-library-focus^='enemies:']")).toHaveLength(7);
+        expect(document.querySelectorAll(".kcq-library__rules-table tbody tr")).toHaveLength(5);
+        expect([...document.querySelectorAll<HTMLElement>(".kcq-library__rules-table [data-library-focus^='enemies:']")]
+            .map(link => link.dataset.libraryFocus)).toEqual(["enemies:rainmaker", "enemies:skunkette", "enemies:skunk", "enemies:fairy", "enemies:queen"]);
         unmount!(); libraryMount({ kind: "entry", category: "difficulties", id: "standard" });
         expect(document.querySelector(".kcq-library__global-effects")).toBeNull();
         expect(document.querySelector(".kcq-library__rules-table")).toBeNull();
@@ -1013,27 +1014,27 @@ describe("Library modal and desktop navigation", () => {
 });
 
 describe("Library perfume mechanics", () => {
-    it("classifies Skunk Perfume as a debuff and previews both four-round penalties on the right", () => {
+    it("classifies Skunk Perfume as a debuff and previews both three-round penalties on the right", () => {
         libraryMount({ kind: "entry", category: "moves", id: "skunkPerfume" });
         expect(element(".kcq-library__detail").textContent).toContain("Debuff");
         const previews = [...document.querySelectorAll(".kcq-buff-effect")];
         expect(previews).toHaveLength(2);
-        expect(element(".kcq-library__facts").textContent).toContain("Duration4 Rounds");
+        expect(element(".kcq-library__facts").textContent).toContain("Duration3 Rounds");
         expect(previews.map(preview => preview.querySelector(".kcq-effect-modifier strong")?.textContent)).toEqual(["-2", "-2"]);
         expect(previews.map(preview => [...preview.querySelectorAll(".kcq-pip-meter__pip")].flatMap((pip, index) =>
             pip.classList.contains("kcq-pip-meter__pip--active") ? [index] : []))).toEqual([[6, 7], [6, 7]]);
         expect(element(".kcq-library__detail").textContent).not.toContain("Regeneration");
     });
-    it("classifies Healing Perfume as healing and previews two rounds of +3 regeneration", () => {
+    it("classifies Healing Perfume as healing and previews three rounds of +1 regeneration", () => {
         libraryMount({ kind: "entry", category: "moves", id: "healingPerfume" });
         const detail = element(".kcq-library__detail");
         expect(detail.textContent).toContain("Healing");
         expect(detail.textContent).not.toContain("Debuff");
         expect(document.querySelectorAll(".kcq-buff-effect")).toHaveLength(1);
-        expect(element(".kcq-library__facts").textContent).toContain("Duration2 Rounds");
-        expect(element(".kcq-effect-modifier strong").textContent).toBe("+3");
+        expect(element(".kcq-library__facts").textContent).toContain("Duration3 Rounds");
+        expect(element(".kcq-effect-modifier strong").textContent).toBe("+1");
         expect([...document.querySelectorAll(".kcq-pip-meter__pip")].flatMap((pip, index) =>
-            pip.classList.contains("kcq-pip-meter__pip--active") ? [index] : [])).toEqual([0, 1, 2]);
+            pip.classList.contains("kcq-pip-meter__pip--active") ? [index] : [])).toEqual([0]);
         expect([...detail.querySelectorAll(".kcq-preview-effect__tag")].map(tag => tag.textContent)).toEqual(["Add Buff"]);
     });
     it.each(["skunkPerfume"])("labels %s's willpower profile Base Willpower", id => {

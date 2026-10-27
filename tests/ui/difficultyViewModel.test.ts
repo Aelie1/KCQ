@@ -9,7 +9,7 @@ import { stockStrings } from "../helpers/stockStrings";
 const library = createStockEngine().getLibrary();
 const presentation = new Presentation(stockStrings);
 const difficulties: DifficultyId[] = ["casual", "standard", "veteran", "extreme", "mythic"];
-const ruleOrder = ["skunkette", "skunk", "fairy", "queen", "rainmaker"];
+const ruleOrder = ["rainmaker", "skunkette", "skunk", "fairy", "queen"];
 
 describe("difficulty select view model", () => {
     it.each(difficulties)("localizes choices, selection and description for %s", difficulty => {
@@ -54,6 +54,25 @@ describe("difficulty select view model", () => {
         expect(effect.modifiers.map(({ label }) => label)).toEqual(
             difficulty === "casual" ? ["HIT", "ESC"] : ["POT"],
         );
+    });
+
+    it.each(["extreme", "mythic"] as const)("lists only authored %s rules in library order", difficulty => {
+        const model = createDifficultySelectViewModel(library, "forest_3", difficulty, presentation);
+        expect(model.specialRules?.rows).toEqual(ruleOrder.map(enemyId => ({
+            enemyId, enemyName: presentation.enemyDefinition(enemyId),
+            description: presentation.difficulty(difficulty, enemyId),
+        })));
+    });
+
+    it("omits missing and placeholder rules without publishing an empty card", () => {
+        const localized = new Presentation({
+            "difficulty.mythic.skunkette": "...",
+            "difficulty.mythic.skunk": " ",
+            "difficulty.mythic.queen": "A translated rule",
+        });
+        expect(createDifficultySelectViewModel(library, "forest_3", "mythic", localized).specialRules?.rows)
+            .toEqual([{ enemyId: "queen", enemyName: localized.enemyDefinition("queen"), description: "A translated rule" }]);
+        expect(createDifficultySelectViewModel(library, "forest_3", "extreme", localized)).not.toHaveProperty("specialRules");
     });
 
     it("uses supplied public modifier values instead of duplicating the engine numbers", () => {

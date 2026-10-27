@@ -191,7 +191,7 @@ describe("encounter setup recipient groups", () => {
         expect(model.effectGroups[1].effects).toMatchObject([{
             kind: "buff", modifiers: [{ value: 8, signedValue: "+8" }],
         }]);
-        expect(model.effectGroups[2].effects).toMatchObject([{ kind: "buff", modifiers: [{ value: 5, signedValue: "+5" }] }]);
+        expect(model.effectGroups[2].effects).toMatchObject([{ kind: "buff", modifiers: [{ value: 1, signedValue: "+1" }] }]);
         const allies = model.effectGroups[0];
         expect(allies.effects).toHaveLength(2);
         expect(allies.effects[0]).toMatchObject({

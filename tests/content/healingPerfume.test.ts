@@ -57,20 +57,25 @@ describe("separate Queen perfumes", () => {
         expect(intention.targets.map(target => target.band)).toEqual(["none", "none"]);
         for (const target of intention.targets) expect(target.effects).toMatchObject([{
             type: "buff", operation: "add", target: target.target,
-            buff: { id: "regenPerfume", duration: 2, modifiers: { regeneration: 3 } },
+            buff: { id: "regenPerfume", duration: 3, modifiers: { regeneration: 1 } },
         }]);
         const result = execute(engine, { type: "endTurn" });
         const used = resolvedEvents(result.frames).find(event => event.type === "useMove" && event.actor === "queen1");
         expect(used).toMatchObject({ move: "healingPerfume", targets: [{ target: "ally1", result: "none" }, { target: "elite1", result: "none" }] });
-        expect(enemyState(engine, "ally1").currHp).toBe(31);
-        expect(enemyState(engine, "elite1").currHp).toBe(31);
+        expect(enemyState(engine, "ally1")).toMatchObject({ currHp: 1, buffs: [{ id: "regenPerfume", duration: 3 }] });
+        expect(enemyState(engine, "elite1").currHp).toBe(1);
         expect(enemyState(engine, "minion1").currHp).toBe(1);
         expect(enemyState(engine, "queen1").buffs).toEqual([]);
         expect(engine.getGameState().characters[0]!.buffs).toEqual([]);
         execute(engine, { type: "endTurn" });
-        expect(enemyState(engine, "ally1")).toMatchObject({ currHp: 61, buffs: [] });
+        expect(enemyState(engine, "ally1")).toMatchObject({ currHp: 11, buffs: [{ id: "regenPerfume", duration: 2 }] });
         execute(engine, { type: "endTurn" });
-        expect(enemyState(engine, "ally1").currHp).toBe(61);
+        expect(enemyState(engine, "ally1")).toMatchObject({ currHp: 21, buffs: [{ id: "regenPerfume", duration: 1 }] });
+        execute(engine, { type: "endTurn" });
+        expect(enemyState(engine, "ally1")).toMatchObject({ currHp: 31, buffs: [] });
+        expect(enemyState(engine, "elite1")).toMatchObject({ currHp: 31, buffs: [] });
+        execute(engine, { type: "endTurn" });
+        expect(enemyState(engine, "ally1").currHp).toBe(31);
     });
     it.each([false, true])("applies own and cross cooldowns (healing: %s)", healing => {
         const engine = battle(1, healing);

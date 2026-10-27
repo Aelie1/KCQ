@@ -41,6 +41,7 @@ describe("Game Guide references", () => {
         ["Bonus Escape", undefined, "guide", "bindings-and-escaping", "bonus-escapes"],
         ["Hit", undefined, "guide", "modifiers", "hit"],
         ["Defense", undefined, "guide", "modifiers", "defense"],
+        ["Regeneration", undefined, "guide", "modifiers", "regeneration"],
         ["Crit", undefined, "guide", "moves", "move-results"],
         ["Free", undefined, "guide", "moves", "move-traits"],
         ["Vibrating", undefined, "statuses", "vibrating", undefined],

@@ -60,8 +60,9 @@ const loggedActors = () => [...document.querySelectorAll<HTMLElement>(".kcq-comp
     .map(entry => entry.dataset.actor);
 
 describe("BattleApp incoming binding playback", () => {
-    it("recalculates both existing meters at each real-engine action and keeps the log in sync", () => {
-        const b = mount();
+    // blocksAttack restricts player moves; enemy attacks continue unless skipsTurn applies.
+    it.each([undefined, "blocksAttack"] as const)("keeps meters and logs in sync while enemy attacks continue (status: %s)", interruption => {
+        const b = mount({ interruption });
         const originalMeters = meters();
         expectMeters([[72, 28], [35, 20]]);
         b.endTurn();
@@ -88,7 +89,7 @@ describe("BattleApp incoming binding playback", () => {
         vi.advanceTimersByTime(500); expectMeters([[92, undefined], [45, undefined]]);
         expectMeters(authoritativeMeters(b));
     });
-    it.each(["cancel", "defeat", "blocksAttack", "skipsTurn"] as const)("excludes %s attacks as soon as playback makes them non-actionable", interruption => {
+    it.each(["cancel", "defeat", "skipsTurn"] as const)("excludes %s attacks as soon as playback makes them non-actionable", interruption => {
         const b = mount({ interruption });
         expectMeters([[72, 28], [35, 20]]);
         b.endTurn(); b.paint(); b.paint();

@@ -33,7 +33,10 @@ export function createDifficultySelectViewModel(
             modifiers: target === "allies" ? reference.playerModifiers : reference.enemyModifiers,
         },
     };
-    const ruleIds = Object.values(library.enemies).map(x => x.id);
+    const rules = Object.values(library.enemies).flatMap(enemy => {
+        const description = presentation.referenceText("difficulty", difficulty, enemy.id);
+        return description ? [{ enemyId: enemy.id, enemyName: presentation.enemyDefinition(enemy.id), description }] : [];
+    });
     return {
         encounterId,
         encounterName: presentation.encounter(encounterId),
@@ -47,13 +50,9 @@ export function createDifficultySelectViewModel(
                 effects: createEffectPreviewViewModels([modifierEffect], { presentation, scopeTarget: target }, "difficulty"),
             },
         } : {}),
-        ...((difficulty === "extreme" || difficulty === "mythic") && ruleIds.length > 0 ? {
+        ...((difficulty === "extreme" || difficulty === "mythic") && rules.length > 0 ? {
             specialRules: {
-                rows: ruleIds.map(enemyId => ({
-                    enemyId,
-                    enemyName: presentation.enemyDefinition(enemyId),
-                    description: presentation.difficulty(difficulty, enemyId),
-                })),
+                rows: rules,
             },
         } : {}),
         labels: {

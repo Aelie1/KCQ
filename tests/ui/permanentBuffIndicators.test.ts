@@ -78,7 +78,7 @@ describe("permanent buff indicators", () => {
             const permanent = enemy.buffs.filter(buff => buff.icon && buff.duration === undefined);
             expect(permanent.length).toBeGreaterThan(0);
             expect(model.permanentEffects.map(effect => effect.valueLabel))
-                .toEqual(permanent.map(buff => `+${buff.modifiers!.hit ?? buff.modifiers!.regeneration}`));
+                .toEqual(permanent.map(buff => buff.modifiers?.hit === undefined ? undefined : `+${buff.modifiers.hit}`));
             const html = renderToString(() => createComponent(EnemyCard, { enemy: model }));
             for (const buff of permanent) expect(html).toContain('data-icon="' + buff.icon + '"');
         }

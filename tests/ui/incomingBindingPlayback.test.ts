@@ -20,8 +20,9 @@ function resolve(options: Parameters<typeof incomingBindingBattle>[0] = {}) {
 }
 
 describe("incoming bindings during combat playback", () => {
-    it("projects all pending attacks, then combines displayed bindings with only the remaining attacks", () => {
-        const b = resolve();
+    // blocksAttack restricts player moves; enemy attacks continue unless skipsTurn applies.
+    it.each([undefined, "blocksAttack"] as const)("projects pending and remaining attacks without suppressing enemies (status: %s)", interruption => {
+        const b = resolve({ interruption });
         expect(projections(b.initial, b.actions, b.library)).toEqual([[72, 28], [35, 20]]);
         expect(projections(b.result.frames[0]!.state, b.actions, b.library)).toEqual([[72, 28], [35, 20]]);
         expect(b.moves.map(frame => frame.state.enemies.map(enemy => enemy.intentions.length)))
@@ -73,7 +74,7 @@ describe("incoming bindings during combat playback", () => {
         expect(b.moves[2]!.state.enemies[2]!.intentions).toMatchObject([{ move: "latexShower", resolved: true }]);
         expect(projections(b.moves[2]!.state, b.actions, b.library)).toEqual([[100, undefined], [55, undefined]]);
     });
-    it.each(["cancel", "defeat", "blocksAttack", "skipsTurn"] as const)("excludes %s actions at the snapshot where they stop being actionable", interruption => {
+    it.each(["cancel", "defeat", "skipsTurn"] as const)("excludes %s actions at the snapshot where they stop being actionable", interruption => {
         const b = resolve({ interruption });
         expect(b.moves.map(frame => frame.event.type === "useMove" && frame.event.actor)).toEqual(["skunkette1", "queen1"]);
         const interrupted = b.moves[0]!.state.enemies.find(enemy => enemy.id === "skunk1");

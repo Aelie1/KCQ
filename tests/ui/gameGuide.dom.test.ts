@@ -102,6 +102,7 @@ describe("Game Guide in the Library", () => {
             ["Traps", "Affects the chance of triggering a trap"],
             ["Willpower", "Affects the accuracy of Willpower moves"],
             ["Spread", "Affects the amount of binding that is spread to other locations by escapes"],
+            ["Regeneration", "Affects the amount of health automatically gained every round"],
         ]);
         expect(article().querySelector(".kcq-pip-meter, button, a")).toBeNull();
         dispose!(); mount(1, { kind: "entry", category: "guide", id: "strategy" }); await tick();

@@ -180,7 +180,7 @@ describe("encounters", () => {
                 buffs: [expect.objectContaining({
                     id: enemyBuff,
                     modifiers: { hit: enemyHit },
-                }), expect.objectContaining({ id: "skunkCollar", modifiers: { regeneration: encounter === tower_1 ? 5 : encounter === tower_2 ? 3 : 1 } }), ...(enemyAmbushed ? [expect.objectContaining({
+                }), expect.objectContaining({ id: "skunkCollar", modifiers: { regeneration: 1 } }), ...(enemyAmbushed ? [expect.objectContaining({
                     id: "ambushed", duration: 1, statuses: [{ id: "helpless", value: 1 }],
                 })] : [])],
             });
