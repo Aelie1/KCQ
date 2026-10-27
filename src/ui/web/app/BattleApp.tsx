@@ -622,6 +622,13 @@ export function BattleApp(props: BattleAppProps): JSX.Element {
                 header: <CombatHeader variant="overview"
                     encounterLabel={overview().header.encounterLabel}
                     difficultyLabel={overview().header.difficultyLabel}
+                    difficultyTooltip={state().difficulty.id === "standard"
+                        ? undefined
+                        : state().difficulty.id === "casual"
+                            ? props.presentation.ui("combatHeader.characterBonus", { amount: 2 })
+                            : props.presentation.ui("combatHeader.enemyBonus", {
+                                amount: state().difficulty.id === "mythic" ? 2 : 1,
+                            })}
                     difficultyId={state().difficulty.id}
                     roundLabel={overview().header.roundLabel} phaseLabel={overview().header.phaseLabel}
                     trap={overview().header.trap}

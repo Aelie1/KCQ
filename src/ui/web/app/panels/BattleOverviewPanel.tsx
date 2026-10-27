@@ -92,7 +92,7 @@ export function BattleOverviewPanel(props: BattleOverviewPanelProps): JSX.Elemen
                     difficultyTooltip={props.state.difficulty.id === "standard"
                         ? undefined
                         : props.state.difficulty.id === "casual"
-                            ? props.presentation.ui("combatHeader.playerBonus")
+                            ? props.presentation.ui("combatHeader.characterBonus", { amount: 2 })
                             : props.presentation.ui("combatHeader.enemyBonus", {
                                 amount: props.state.difficulty.id === "mythic" ? 2 : 1,
                             })} difficultyId={props.state.difficulty.id}
